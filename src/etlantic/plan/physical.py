@@ -429,36 +429,6 @@ class PhysicalDAG:
                 raise ValueError(
                     "PMADP403: generated compute unit lacks contract bindings"
                 )
-            if unit.kind is PhysicalUnitKind.COMPUTE:
-                logical_node = unit.logical_nodes[0]
-                payload = {
-                    "kind": "compute",
-                    "node": logical_node,
-                    "target": unit.target_identity,
-                    "contracts": (
-                        [dict(value) for value in unit.input_contracts],
-                        [dict(value) for value in unit.output_contracts],
-                    ),
-                    "security": unit.policy.get("security_domain", ""),
-                    "policy": {
-                        "security_domain": unit.policy.get("security_domain", "")
-                    },
-                }
-                expected = (
-                    "unit:"
-                    + hashlib.sha256(
-                        json.dumps(
-                            payload,
-                            sort_keys=True,
-                            separators=(",", ":"),
-                            ensure_ascii=False,
-                        ).encode("utf-8")
-                    ).hexdigest()[:24]
-                )
-                if unit.identity != expected:
-                    raise ValueError(
-                        "PMADP403: generated compute identity does not bind policy"
-                    )
             if unit.kind is PhysicalUnitKind.TRANSFER:
                 contract = unit.metadata.get("etlantic.handoff_contract")
                 evidence = unit.metadata.get("etlantic.handoff_evidence")
@@ -486,6 +456,12 @@ class PhysicalDAG:
                     raise ValueError(
                         "PMADP403: generated transfer identity does not bind contracts, policy, and handoff evidence"
                     )
+                continue
+            expected = _generated_unit_identity(unit)
+            if unit.identity != expected:
+                raise ValueError(
+                    "PMADP403: generated physical unit identity does not bind its envelope"
+                )
 
     @classmethod
     def from_dict(cls, data: Mapping[str, Any]) -> PhysicalDAG:
@@ -508,8 +484,28 @@ class PhysicalDAG:
         )
 
 
+def _generated_unit_identity(unit: PhysicalUnit) -> str:
+    """Recompute a generated identity from every semantic envelope field."""
+    payload = {
+        "kind": PhysicalUnitKind(unit.kind).value,
+        "target_identity": unit.target_identity,
+        "logical_nodes": list(unit.logical_nodes),
+        "input_contracts": [dict(value) for value in unit.input_contracts],
+        "output_contracts": [dict(value) for value in unit.output_contracts],
+        "policy": dict(unit.policy),
+        "retry_policy": dict(unit.retry_policy),
+        "ownership": dict(unit.ownership),
+        "protocol_versions": dict(unit.protocol_versions),
+        "metadata": mutable_copy(unit.metadata),
+    }
+    encoded = json.dumps(
+        payload, sort_keys=True, separators=(",", ":"), ensure_ascii=False
+    ).encode("utf-8")
+    return f"unit:{hashlib.sha256(encoded).hexdigest()[:24]}"
+
+
 def _generated_transfer_identity(unit: PhysicalUnit) -> str:
-    """Recompute the generated transfer identity from its complete envelope."""
+    """Recompute the generated transfer identity from its handoff envelope."""
     metadata = unit.metadata
     edge_ports = list(metadata.get("etlantic.edge_ports", ()))
     edge = (
@@ -531,6 +527,38 @@ def _generated_transfer_identity(unit: PhysicalUnit) -> str:
         "retry_policy": dict(unit.retry_policy),
         "ownership": dict(unit.ownership),
         "protocol_versions": dict(unit.protocol_versions),
+    }
+    encoded = json.dumps(
+        payload, sort_keys=True, separators=(",", ":"), ensure_ascii=False
+    ).encode("utf-8")
+    return f"unit:{hashlib.sha256(encoded).hexdigest()[:24]}"
+
+
+def generated_unit_identity(
+    *,
+    kind: PhysicalUnitKind | str,
+    target_identity: str,
+    logical_nodes: tuple[str, ...] = (),
+    input_contracts: tuple[Mapping[str, Any], ...] = (),
+    output_contracts: tuple[Mapping[str, Any], ...] = (),
+    policy: Mapping[str, Any] | None = None,
+    retry_policy: Mapping[str, Any] | None = None,
+    ownership: Mapping[str, Any] | None = None,
+    protocol_versions: Mapping[str, str] | None = None,
+    metadata: Mapping[str, Any] | None = None,
+) -> str:
+    """Create the content-derived identity used by generated physical units."""
+    payload = {
+        "kind": PhysicalUnitKind(kind).value,
+        "target_identity": target_identity,
+        "logical_nodes": list(logical_nodes),
+        "input_contracts": [dict(value) for value in input_contracts],
+        "output_contracts": [dict(value) for value in output_contracts],
+        "policy": dict(policy or {}),
+        "retry_policy": dict(retry_policy or {}),
+        "ownership": dict(ownership or {}),
+        "protocol_versions": dict(protocol_versions or {}),
+        "metadata": mutable_copy(metadata or {}),
     }
     encoded = json.dumps(
         payload, sort_keys=True, separators=(",", ":"), ensure_ascii=False

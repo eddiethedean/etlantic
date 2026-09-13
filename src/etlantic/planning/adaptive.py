@@ -36,6 +36,7 @@ from etlantic.plan.physical import (
     PhysicalDependency,
     PhysicalUnit,
     PhysicalUnitKind,
+    generated_unit_identity,
 )
 from etlantic.plan.slicing import (
     dependency_closure,
@@ -270,9 +271,25 @@ def _build_adaptive_plan(
     ):
         plan = AdaptivePipelinePlan(**plan_fields)
         fingerprint = adaptive_plan_fingerprint(plan)
-        return replace(
+        final_plan = replace(
             plan, fingerprint=fingerprint, plan_id=f"plan:{fingerprint[:16]}"
         )
+        # Preflight the exact persisted plan through the bounded explain
+        # projection so callers never receive a plan whose mandatory audit
+        # mapping cannot be represented within the explain contract.
+        from etlantic.plan.explain import explain_plan
+
+        try:
+            explain_plan(final_plan)
+        except ValueError as exc:
+            if str(exc).startswith("PMADP305:"):
+                raise _error(
+                    "PMADP305",
+                    "Adaptive explain output exceeds the 4 MiB limit.",
+                    path=("adaptive", "explain"),
+                ) from exc
+            raise
+        return final_plan
 
 
 def _graph_for_input(
@@ -1614,6 +1631,16 @@ def _physical_dag(
             self.tokens[uid] = token
             super().__setitem__(uid, spec)
 
+        def refresh(self, uid: str) -> None:
+            """Reconcile the staging charge after an admitted spec changes."""
+            spec = self[uid]
+            token = current_budget().reserve(
+                canonical_size({"identity": uid, **spec}) + 64,
+                "boundary-staging",
+            )
+            current_budget().release(self.tokens[uid])
+            self.tokens[uid] = token
+
     unit_specs: _StagedSpecs = _StagedSpecs()
     dependencies: dict[str, list[PhysicalDependency]] = {
         node.name: [] for node in graph.nodes
@@ -1658,32 +1685,31 @@ def _physical_dag(
 
     for node in graph.nodes:
         target = target_map[decision_map[node.name].target_id]
-        compute_payload = {
-            "kind": "compute",
-            "node": node.name,
-            "target": _target_identity(target),
-            "contracts": contracts(node),
-            "security": target.security_domain,
-            "policy": {"security_domain": target.security_domain},
+        compute_inputs, compute_outputs = contracts(node)
+        compute_metadata = {
+            "etlantic.engine": target.engine,
+            "etlantic.region": region_by_node.get(node.name),
+            "etlantic.logical_predecessors": sorted(
+                edge.producer_node
+                for edge in graph.edges
+                if edge.consumer_node == node.name
+            ),
         }
-        uid = f"unit:{_digest(compute_payload)[:24]}"
+        compute_envelope = envelope(node, target)
+        uid = generated_unit_identity(
+            kind=PhysicalUnitKind.COMPUTE,
+            target_identity=_target_identity(target),
+            logical_nodes=(node.name,),
+            input_contracts=compute_inputs,
+            output_contracts=compute_outputs,
+            policy=compute_envelope["policy"],
+            retry_policy=compute_envelope["retry_policy"],
+            ownership=compute_envelope["ownership"],
+            protocol_versions=compute_envelope["protocol_versions"],
+            metadata=compute_metadata,
+        )
         compute_ids[node.name] = uid
         node_tails[node.name] = uid
-        unit_specs[uid] = {
-            "kind": PhysicalUnitKind.COMPUTE,
-            "target_identity": _target_identity(target),
-            "logical_nodes": (node.name,),
-            "metadata": {
-                "etlantic.engine": target.engine,
-                "etlantic.region": region_by_node.get(node.name),
-                "etlantic.logical_predecessors": sorted(
-                    edge.producer_node
-                    for edge in graph.edges
-                    if edge.consumer_node == node.name
-                ),
-            },
-            **envelope(node, target),
-        }
     for edge in graph.edges:
         producer = decision_map[edge.producer_node]
         consumer = decision_map[edge.consumer_node]
@@ -1801,13 +1827,7 @@ def _physical_dag(
                     getattr(graph.node_map()[edge.consumer_node], "metadata", {}) or {}
                 ).get("etlantic.collection_required")
             ):
-                collection_payload = {
-                    "kind": "collection",
-                    "edge": transfer_id,
-                    "target": _target_identity(destination),
-                }
-                collection_id = f"unit:{_digest(collection_payload)[:24]}"
-                unit_specs[collection_id] = {
+                collection_spec = {
                     "kind": PhysicalUnitKind.COLLECTION,
                     "target_identity": _target_identity(destination),
                     "dependencies": (PhysicalDependency(transfer_id),),
@@ -1816,7 +1836,40 @@ def _physical_dag(
                     },
                     **envelope(node_map[edge.consumer_node], destination),
                 }
+                collection_id = generated_unit_identity(
+                    kind=collection_spec["kind"],
+                    target_identity=collection_spec["target_identity"],
+                    logical_nodes=collection_spec.get("logical_nodes", ()),
+                    input_contracts=collection_spec["input_contracts"],
+                    output_contracts=collection_spec["output_contracts"],
+                    policy=collection_spec["policy"],
+                    retry_policy=collection_spec["retry_policy"],
+                    ownership=collection_spec["ownership"],
+                    protocol_versions=collection_spec["protocol_versions"],
+                    metadata=collection_spec["metadata"],
+                )
+                unit_specs[collection_id] = collection_spec
                 dependencies[edge.consumer_node][-1] = PhysicalDependency(collection_id)
+    # Compute specs are admitted only after edge processing has completed, so
+    # their retained dependency metadata is charged as part of staging.
+    for node in graph.nodes:
+        target = target_map[decision_map[node.name].target_id]
+        compute_envelope = envelope(node, target)
+        unit_specs[compute_ids[node.name]] = {
+            "kind": PhysicalUnitKind.COMPUTE,
+            "target_identity": _target_identity(target),
+            "logical_nodes": (node.name,),
+            "metadata": {
+                "etlantic.engine": target.engine,
+                "etlantic.region": region_by_node.get(node.name),
+                "etlantic.logical_predecessors": sorted(
+                    edge.producer_node
+                    for edge in graph.edges
+                    if edge.consumer_node == node.name
+                ),
+            },
+            **compute_envelope,
+        }
     for node in graph.nodes:
         target = target_map[decision_map[node.name].target_id]
         node_metadata = dict(getattr(node, "metadata", {}) or {})
@@ -1828,14 +1881,7 @@ def _physical_dag(
         ):
             if not node_metadata.get(flag):
                 continue
-            payload = {
-                "kind": kind.value,
-                "node": node.name,
-                "target": _target_identity(target),
-                "value": node_metadata[flag],
-            }
-            uid = f"unit:{_digest(payload)[:24]}"
-            unit_specs[uid] = {
+            boundary_spec = {
                 "kind": kind,
                 "target_identity": _target_identity(target),
                 "dependencies": (PhysicalDependency(tail),),
@@ -1845,25 +1891,46 @@ def _physical_dag(
                 },
                 **envelope(node, target),
             }
+            uid = generated_unit_identity(
+                kind=boundary_spec["kind"],
+                target_identity=boundary_spec["target_identity"],
+                logical_nodes=boundary_spec.get("logical_nodes", ()),
+                input_contracts=boundary_spec["input_contracts"],
+                output_contracts=boundary_spec["output_contracts"],
+                policy=boundary_spec["policy"],
+                retry_policy=boundary_spec["retry_policy"],
+                ownership=boundary_spec["ownership"],
+                protocol_versions=boundary_spec["protocol_versions"],
+                metadata=boundary_spec["metadata"],
+            )
+            unit_specs[uid] = boundary_spec
             tail = uid
         node_tails[node.name] = tail
         if node.kind is NodeKind.SINK:
-            publication_payload = {
-                "kind": "publication",
-                "node": node.name,
-                "target": _target_identity(target),
-            }
-            uid = f"unit:{_digest(publication_payload)[:24]}"
-            unit_specs[uid] = {
+            publication_spec = {
                 "kind": PhysicalUnitKind.PUBLICATION,
                 "target_identity": _target_identity(target),
                 "dependencies": (PhysicalDependency(tail, "lifecycle"),),
                 "metadata": {"etlantic.logical_node": node.name},
                 **envelope(node, target),
             }
+            uid = generated_unit_identity(
+                kind=publication_spec["kind"],
+                target_identity=publication_spec["target_identity"],
+                logical_nodes=publication_spec.get("logical_nodes", ()),
+                input_contracts=publication_spec["input_contracts"],
+                output_contracts=publication_spec["output_contracts"],
+                policy=publication_spec["policy"],
+                retry_policy=publication_spec["retry_policy"],
+                ownership=publication_spec["ownership"],
+                protocol_versions=publication_spec["protocol_versions"],
+                metadata=publication_spec["metadata"],
+            )
+            unit_specs[uid] = publication_spec
     units: list[PhysicalUnit] = []
     producer_for_compute = {unit_id: node for node, unit_id in compute_ids.items()}
-    for uid, spec in unit_specs.items():
+    while unit_specs:
+        uid, spec = next(iter(unit_specs.items()))
         if spec["kind"] is PhysicalUnitKind.COMPUTE:
             name = spec["logical_nodes"][0]
             rewritten = []
@@ -1875,6 +1942,7 @@ def _physical_dag(
                     else dep
                 )
             spec["dependencies"] = tuple({d.unit_id: d for d in rewritten}.values())
+            unit_specs.refresh(uid)
         elif spec.get("dependencies") and spec["kind"] is PhysicalUnitKind.TRANSFER:
             # Rewrite transfer dependencies to include a producer's declared
             # boundary, while preserving validation/materialization chains.
@@ -1887,6 +1955,7 @@ def _physical_dag(
                     else dep
                 )
             spec["dependencies"] = tuple({d.unit_id: d for d in rewritten}.values())
+            unit_specs.refresh(uid)
         # The staging map admitted each projection before retaining it. Keep
         # that ownership charge until the retained model record is complete.
         staging_token = unit_specs.tokens.pop(uid)
@@ -1894,6 +1963,7 @@ def _physical_dag(
             units.append(owned_record(PhysicalUnit, "boundary", identity=uid, **spec))
         finally:
             current_budget().release(staging_token)
+            del unit_specs[uid]
     order = _topological_units(units)
     return PhysicalDAG(
         units=tuple(units), logical_to_physical=compute_ids, topological_order=order

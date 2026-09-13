@@ -584,11 +584,16 @@ def _acquire_lock(path: Path, *, timeout: float) -> Path:
             os.write(fd, str(os.getpid()).encode("ascii"))
             os.close(fd)
             return lock
-        except (FileExistsError, PermissionError):
+        except FileExistsError:
+            # The exclusive create failed because another writer won the
+            # race.  Do not probe for existence here: the owner may release
+            # the lock between the failed open and any filesystem check.
+            pass
+        except PermissionError:
             # Windows reports a sharing violation as PermissionError when
-            # another process owns the lock file. Treat it as contention only
-            # while the lock still exists; unrelated permission failures must
-            # continue to surface to the caller.
+            # another process owns the lock file.  Only treat that as
+            # contention while the lock is still present; unrelated
+            # permission failures must continue to surface to the caller.
             if not lock.exists():
                 raise
             if time.monotonic() >= deadline:
