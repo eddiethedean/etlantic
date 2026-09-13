@@ -596,13 +596,13 @@ def _acquire_lock(path: Path, *, timeout: float) -> Path:
             # permission failures must continue to surface to the caller.
             if not lock.exists():
                 raise
-            if time.monotonic() >= deadline:
-                raise _io_error(
-                    "PMSRC112",
-                    f"Timed out acquiring lock for {path}",
-                    path,
-                ) from None
-            time.sleep(0.05)
+        if time.monotonic() >= deadline:
+            raise _io_error(
+                "PMSRC112",
+                f"Timed out acquiring lock for {path}",
+                path,
+            ) from None
+        time.sleep(0.05)
 
 
 def _release_lock(lock: Path) -> None:

@@ -486,22 +486,29 @@ class PhysicalDAG:
 
 def _generated_unit_identity(unit: PhysicalUnit) -> str:
     """Recompute a generated identity from every semantic envelope field."""
-    payload = {
-        "kind": PhysicalUnitKind(unit.kind).value,
-        "target_identity": unit.target_identity,
-        "logical_nodes": list(unit.logical_nodes),
-        "input_contracts": [dict(value) for value in unit.input_contracts],
-        "output_contracts": [dict(value) for value in unit.output_contracts],
-        "policy": dict(unit.policy),
-        "retry_policy": dict(unit.retry_policy),
-        "ownership": dict(unit.ownership),
-        "protocol_versions": dict(unit.protocol_versions),
-        "metadata": mutable_copy(unit.metadata),
-    }
-    encoded = json.dumps(
-        payload, sort_keys=True, separators=(",", ":"), ensure_ascii=False
-    ).encode("utf-8")
-    return f"unit:{hashlib.sha256(encoded).hexdigest()[:24]}"
+    return generated_unit_identity(
+        kind=unit.kind,
+        target_identity=unit.target_identity,
+        logical_nodes=unit.logical_nodes,
+        input_contracts=unit.input_contracts,
+        output_contracts=unit.output_contracts,
+        policy=unit.policy,
+        retry_policy=unit.retry_policy,
+        ownership=unit.ownership,
+        protocol_versions=unit.protocol_versions,
+        metadata=unit.metadata,
+    )
+
+
+def _identity_digest(payload: Mapping[str, Any]) -> str:
+    """Hash borrowed envelope data with bounded canonical UTF-8 chunks."""
+    # Keep the import local: planning initializes the physical protocol too.
+    from etlantic.planning.adaptive_budget import canonical_chunks
+
+    digest = hashlib.sha256()
+    for chunk in canonical_chunks(payload):
+        digest.update(chunk)
+    return f"unit:{digest.hexdigest()[:24]}"
 
 
 def _generated_transfer_identity(unit: PhysicalUnit) -> str:
@@ -519,19 +526,16 @@ def _generated_transfer_identity(unit: PhysicalUnit) -> str:
         "edge": edge,
         "source": metadata.get("etlantic.source_target"),
         "destination": metadata.get("etlantic.destination_target"),
-        "handoff_contract": dict(metadata.get("etlantic.handoff_contract", {})),
-        "handoff_evidence": list(metadata.get("etlantic.handoff_evidence", ())),
-        "input_contracts": [dict(value) for value in unit.input_contracts],
-        "output_contracts": [dict(value) for value in unit.output_contracts],
-        "policy": dict(unit.policy),
-        "retry_policy": dict(unit.retry_policy),
-        "ownership": dict(unit.ownership),
-        "protocol_versions": dict(unit.protocol_versions),
+        "handoff_contract": metadata.get("etlantic.handoff_contract", {}),
+        "handoff_evidence": metadata.get("etlantic.handoff_evidence", ()),
+        "input_contracts": unit.input_contracts,
+        "output_contracts": unit.output_contracts,
+        "policy": unit.policy,
+        "retry_policy": unit.retry_policy,
+        "ownership": unit.ownership,
+        "protocol_versions": unit.protocol_versions,
     }
-    encoded = json.dumps(
-        payload, sort_keys=True, separators=(",", ":"), ensure_ascii=False
-    ).encode("utf-8")
-    return f"unit:{hashlib.sha256(encoded).hexdigest()[:24]}"
+    return _identity_digest(payload)
 
 
 def generated_unit_identity(
@@ -551,19 +555,16 @@ def generated_unit_identity(
     payload = {
         "kind": PhysicalUnitKind(kind).value,
         "target_identity": target_identity,
-        "logical_nodes": list(logical_nodes),
-        "input_contracts": [dict(value) for value in input_contracts],
-        "output_contracts": [dict(value) for value in output_contracts],
-        "policy": dict(policy or {}),
-        "retry_policy": dict(retry_policy or {}),
-        "ownership": dict(ownership or {}),
-        "protocol_versions": dict(protocol_versions or {}),
-        "metadata": mutable_copy(metadata or {}),
+        "logical_nodes": logical_nodes,
+        "input_contracts": input_contracts,
+        "output_contracts": output_contracts,
+        "policy": policy or {},
+        "retry_policy": retry_policy or {},
+        "ownership": ownership or {},
+        "protocol_versions": protocol_versions or {},
+        "metadata": metadata or {},
     }
-    encoded = json.dumps(
-        payload, sort_keys=True, separators=(",", ":"), ensure_ascii=False
-    ).encode("utf-8")
-    return f"unit:{hashlib.sha256(encoded).hexdigest()[:24]}"
+    return _identity_digest(payload)
 
 
 def _reject_unknown(data: Mapping[str, Any], allowed: set[str], label: str) -> None:

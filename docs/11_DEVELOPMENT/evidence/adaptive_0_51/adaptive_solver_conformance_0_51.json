@@ -5,7 +5,7 @@
   "passed_scenarios": 5,
   "planner_version": "0.52",
   "public_schema": "etlantic.plan/2",
-  "repository_revision": "sha256:fc5b4994be8800622838962b47c16f9863610699ad01119a17e374bdb89524d7",
+  "repository_revision": "sha256:18536874a3a1871408b96524e60246744d89481ed1997ac34ab1429f3ac9d601",
   "result": "pass",
   "scenario_count": 5,
   "scenarios": [
@@ -130,6 +130,8 @@
     "tests/profile/test_adaptive_profile_0_51.py",
     "tests/plan/test_adaptive_wire_0_51.py",
     "tests/plan/test_phase_0_52_review_blockers.py",
+    "tests/plan/test_sol_0_52_rereview.py",
+    "tests/plan/test_release_remediation_0_52.py",
     "-k",
     "not final_052_006"
   ],

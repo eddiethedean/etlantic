@@ -49,6 +49,10 @@ CAMPAIGNS: dict[str, tuple[tuple[str, str], ...]] = {
             "AC-052-009",
             "test_final_052_018_each_owner_has_exact_before_at_after_limits",
         ),
+        (
+            "AC-052-009",
+            "test_sol_052_018_lowering_rejects_before_identity_buffer_allocation",
+        ),
     ),
     "adaptive_physical_dag_conformance_0_51.json": (
         ("AC-052-010", "test_adaptive_regions_are_maximal_and_unfused_without_proof"),
@@ -64,6 +68,10 @@ CAMPAIGNS: dict[str, tuple[tuple[str, str], ...]] = {
         (
             "AC-052-011",
             "test_final_052_022_generated_units_bind_contract_and_policy_evidence",
+        ),
+        (
+            "AC-052-011",
+            "test_sol_052_022_parallel_port_collections_remain_distinct",
         ),
     ),
     "adaptive_runtime_conformance_0_51.json": (
@@ -112,6 +120,8 @@ VERIFICATION_FILES = (
     "tests/profile/test_adaptive_profile_0_51.py",
     "tests/plan/test_adaptive_wire_0_51.py",
     "tests/plan/test_phase_0_52_review_blockers.py",
+    "tests/plan/test_sol_0_52_rereview.py",
+    "tests/plan/test_release_remediation_0_52.py",
 )
 
 REVISION_FILES = (

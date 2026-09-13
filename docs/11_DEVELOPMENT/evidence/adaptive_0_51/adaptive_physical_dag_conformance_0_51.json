@@ -2,12 +2,12 @@
   "artifact": "adaptive_physical_dag_conformance_0_51.json",
   "issue_ledger": "docs/11_DEVELOPMENT/phase_0_52_issue_ledger.json",
   "issue_ledger_sha256": "34759b51a7e663f5f34d746fa231682f1b1bb4aceed3fb27b5f0d315678b2fab",
-  "passed_scenarios": 5,
+  "passed_scenarios": 6,
   "planner_version": "0.52",
   "public_schema": "etlantic.plan/2",
-  "repository_revision": "sha256:fc5b4994be8800622838962b47c16f9863610699ad01119a17e374bdb89524d7",
+  "repository_revision": "sha256:18536874a3a1871408b96524e60246744d89481ed1997ac34ab1429f3ac9d601",
   "result": "pass",
-  "scenario_count": 5,
+  "scenario_count": 6,
   "scenarios": [
     {
       "acceptance_criterion": "AC-052-010",
@@ -58,6 +58,16 @@
       "plan_fingerprint": "c4ded78d55d2a8e3282f0316ea1a1617c2294a67174033da8c25c8d24efb77f3",
       "result": "pass",
       "verification": "test_final_052_022_generated_units_bind_contract_and_policy_evidence"
+    },
+    {
+      "acceptance_criterion": "AC-052-011",
+      "actual": "pass",
+      "executed": true,
+      "expected": "pass",
+      "id": "test_sol_052_022_parallel_port_collections_remain_distinct",
+      "plan_fingerprint": "c4ded78d55d2a8e3282f0316ea1a1617c2294a67174033da8c25c8d24efb77f3",
+      "result": "pass",
+      "verification": "test_sol_052_022_parallel_port_collections_remain_distinct"
     }
   ],
   "schema": "etlantic.adaptive-evidence/1",
@@ -130,6 +140,8 @@
     "tests/profile/test_adaptive_profile_0_51.py",
     "tests/plan/test_adaptive_wire_0_51.py",
     "tests/plan/test_phase_0_52_review_blockers.py",
+    "tests/plan/test_sol_0_52_rereview.py",
+    "tests/plan/test_release_remediation_0_52.py",
     "-k",
     "not final_052_006"
   ],

@@ -1832,7 +1832,14 @@ def _physical_dag(
                     "target_identity": _target_identity(destination),
                     "dependencies": (PhysicalDependency(transfer_id),),
                     "metadata": {
-                        "etlantic.edge": [edge.producer_node, edge.consumer_node]
+                        "etlantic.edge": [edge.producer_node, edge.consumer_node],
+                        "etlantic.edge_ports": [
+                            edge.producer_node,
+                            edge.consumer_node,
+                            edge.producer_port,
+                            edge.consumer_port,
+                        ],
+                        "etlantic.transfer_unit": transfer_id,
                     },
                     **envelope(node_map[edge.consumer_node], destination),
                 }
