@@ -215,11 +215,19 @@ def test_final_007_cancel_and_cleanup_finish_under_run_timeout() -> None:
     async def exercise() -> None:
         request = RunRequest(timeout=TimeoutPolicy(run_seconds=0.05))
         plan = plan_pipeline(Sample, profile=adaptive_profile(), request=request)
+        support = support_row_for(plan)
+        assert support is not None
         runtime = PipelineRuntime()
         calls: list[str] = []
 
         class Executor:
-            info = PhysicalExecutorInfo("cancel-sentinel", "sol-sentinel", "1")
+            info = PhysicalExecutorInfo(
+                "etlantic.physical.local/1",
+                "etlantic",
+                "0.52.1",
+                capability_fingerprint=plan.inventory.targets[0].capability_fingerprint,
+                evidence_refs=support.evidence_refs,
+            )
 
             def analyze(self, plan: Any, unit: Any) -> PhysicalUnitSupport:
                 return PhysicalUnitSupport(True, self.info.identity)

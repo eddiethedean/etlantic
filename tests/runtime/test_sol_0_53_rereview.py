@@ -101,11 +101,20 @@ def test_final_001_live_storage_replacement_rejects_before_effects() -> None:
 def test_final_001_all_unit_support_analysis_precedes_session() -> None:
     request = RunRequest()
     plan = plan_pipeline(Sample, profile=adaptive_profile(), request=request)
+    assert isinstance(plan, AdaptivePipelinePlan)
+    support = support_row_for(plan)
+    assert support is not None
     runtime = PipelineRuntime()
     calls: list[str] = []
 
     class RejectingExecutor:
-        info = PhysicalExecutorInfo("rejecting", "test-provider", "1")
+        info = PhysicalExecutorInfo(
+            "etlantic.physical.local/1",
+            "etlantic",
+            "0.52.1",
+            capability_fingerprint=plan.inventory.targets[0].capability_fingerprint,
+            evidence_refs=support.evidence_refs,
+        )
 
         def analyze(self, plan: Any, unit: Any) -> PhysicalUnitSupport:
             calls.append(unit.identity)
@@ -240,18 +249,18 @@ def test_final_004_invalid_numeric_policy_rejects(invalid_policy: RunRequest) ->
     assert error.value.code == "PMADP522"
 
 
-def test_final_005_definite_publication_failure_is_logically_failed() -> None:
+def test_final_005_definite_publication_failure_is_logically_failed(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
     async def exercise() -> None:
         request = RunRequest()
         runtime = PipelineRuntime()
         runtime.memory.seed("rows", [{"id": 1}])
 
-        class FailingStorage(MemoryStorage):
-            async def write(self, **kwargs: Any) -> Any:
-                raise OSError("synthetic publication failure")
+        async def fail_write(**kwargs: Any) -> Any:
+            raise OSError("synthetic publication failure")
 
-        runtime.storage["memory"] = FailingStorage()
-        runtime.storage["memory"]._store["rows"] = [{"id": 1}]  # type: ignore[attr-defined]
+        monkeypatch.setattr(runtime.memory, "write", fail_write)
         report = await LocalScheduler().execute(
             plan_pipeline(Sample, profile=adaptive_profile(), request=request),
             request=request,

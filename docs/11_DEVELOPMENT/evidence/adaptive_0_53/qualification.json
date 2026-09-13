@@ -22,12 +22,12 @@
       "pyarrow": "25.0.0"
     }
   },
-  "junit_sha256": "35473714cba488764c6bb8f066f8c6152d7bb5cd8abcf820c2a645e540e5e44f",
-  "observed_at": "2026-09-13T23:08:31.572221+00:00",
-  "passed_scenarios": 88,
+  "junit_sha256": "120c45b727b579c41837b9684a342d2b40fe11c5a8db8290b35285212c539301",
+  "observed_at": "2026-09-13T23:14:28.206737+00:00",
+  "passed_scenarios": 91,
   "phase": "0.53",
-  "result": "fail",
-  "returncode": 1,
+  "result": "pass",
+  "returncode": 0,
   "scenario_count": 91,
   "scenarios": [
     {
@@ -373,7 +373,7 @@
     {
       "executed": true,
       "id": "tests.runtime.test_sol_0_53_contract_rereview::test_final_007_cancel_and_cleanup_finish_under_run_timeout",
-      "result": "failure"
+      "result": "pass"
     },
     {
       "executed": true,
@@ -388,7 +388,7 @@
     {
       "executed": true,
       "id": "tests.runtime.test_sol_0_53_rereview::test_final_001_all_unit_support_analysis_precedes_session",
-      "result": "failure"
+      "result": "pass"
     },
     {
       "executed": true,
@@ -448,7 +448,7 @@
     {
       "executed": true,
       "id": "tests.runtime.test_sol_0_53_rereview::test_final_005_definite_publication_failure_is_logically_failed",
-      "result": "failure"
+      "result": "pass"
     },
     {
       "executed": true,
@@ -488,7 +488,7 @@
   ],
   "schema": "etlantic.adaptive_evidence/2",
   "source_changed": false,
-  "source_revision": "sha256:77c4bd1ebc54ce6c55cbe2e99bb1094c6236494a285d06f3141fa1a958173b5e",
+  "source_revision": "sha256:e2fb2bc23a9007ea17ab35dc7d2cfa8651e3a8c1f379f75275a47815bca68652",
   "stderr_sha256": "05edbd111e3a90ba0587a5fcdd4c8554984634ecbd0b3ca664b4c3a844f8c76a",
-  "stdout_sha256": "8e78f0949224abdabfd79ea490eec85090cf6d5bfb099c700e44a2f15fdc3e79"
+  "stdout_sha256": "4c60836f15d3fdd09fcba6908fe1dc6a145e1eae8a08a414ca61bebfe1d107cb"
 }
