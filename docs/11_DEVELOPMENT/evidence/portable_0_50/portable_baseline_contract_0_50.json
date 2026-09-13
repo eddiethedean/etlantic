@@ -775,8 +775,8 @@
       }
     }
   },
-  "repository_commit": "a4c96e454dedd8037948b6296738fa2b422da12c",
+  "repository_commit": "3b79bf59924599ed45a0b863c3949281d154edee",
   "result": "pass",
   "schema": "etlantic.portable-baseline/1",
-  "source_tree_digest": "32ecf7b89a9baf41ad022c4bf4bcf2bed3e317c84292370d138c9a0f81256998"
+  "source_tree_digest": "6b769ef1968386e195c45b5f4701103240cfbfc1c4131f236e1addec025f0c15"
 }

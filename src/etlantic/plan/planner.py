@@ -1890,6 +1890,7 @@ def _materialization_boundaries(
         prod_engine = eng(edge.producer_node)
         cons_engine = eng(edge.consumer_node)
         if prod_engine != cons_engine:
+            # Boundaries transfer computed values, not portable expressions.
             metadata: dict[str, Any] = {
                 "consumer_node": edge.consumer_node,
                 "consumer_port": edge.consumer_port,

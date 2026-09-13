@@ -2,8 +2,7 @@
 
 from __future__ import annotations
 
-import sys
-import unicodedata
+from collections.abc import Mapping
 from decimal import Decimal
 from functools import lru_cache
 from typing import Any
@@ -28,7 +27,14 @@ from etlantic.sql.protocol import (
     UnaryExpr,
     WriteIntentKind,
 )
+from etlantic.transform.portable_baseline import AGGREGATE_FUNCTIONS
 from etlantic_sql.dialect_postgresql import quote_identifier
+from etlantic_sql.unicode_data import (
+    CASE_IGNORABLE_CLASS,
+    CASED_CLASS,
+    EXPANSIONS,
+    SIMPLE_RANGES,
+)
 
 _BINARY_SQL = {
     "eq": "=",
@@ -61,6 +67,66 @@ _JOIN_SQL = {
     "anti": "LEFT ANTI JOIN",
 }
 
+_SQL_AGGREGATE_FUNCTIONS = frozenset(AGGREGATE_FUNCTIONS) | {
+    "dtcs:decimal_sum",
+    "dtcs:decimal_average",
+    "dtcs:decimal_min",
+    "dtcs:decimal_max",
+}
+_CASING_AGGREGATE_SCOPE_ERROR = (
+    "PostgreSQL casing around a field-free aggregate changes aggregate scope; "
+    "compute the aggregate in a separate step before casing"
+)
+
+
+def _casing_aggregate_scope_violations(
+    definition: Mapping[str, Any],
+) -> tuple[str, ...]:
+    """Find aggregates that would bind to a casing operand's implicit row.
+
+    Accept both portable plan expressions and serialized SQL expressions so
+    analysis and direct SQL compilation enforce the same scope constraint.
+    """
+
+    def has_column(value: Any) -> bool:
+        if isinstance(value, Mapping):
+            if value.get("kind") == "literal":
+                return False
+            if value.get("kind") == "fieldRef":
+                return value.get("scope", "field") == "field"
+            if value.get("kind") in {None, "column"} and isinstance(
+                value.get("column"), str
+            ):
+                return True
+            return any(has_column(child) for child in value.values())
+        if isinstance(value, (list, tuple)):
+            return any(has_column(child) for child in value)
+        return False
+
+    violations: list[str] = []
+
+    def walk(value: Any, path: str, *, within_casing: bool = False) -> None:
+        if isinstance(value, Mapping):
+            if value.get("kind") == "literal":
+                return
+            if value.get("kind") == "call":
+                callee = value.get("callee")
+                if (
+                    within_casing
+                    and callee in _SQL_AGGREGATE_FUNCTIONS
+                    and not has_column(value.get("args"))
+                ):
+                    violations.append(path)
+                within_casing = within_casing or callee in {"dtcs:lower", "dtcs:upper"}
+            for key, child in value.items():
+                walk(child, f"{path}.{key}", within_casing=within_casing)
+        elif isinstance(value, (list, tuple)):
+            for index, child in enumerate(value):
+                walk(child, f"{path}[{index}]", within_casing=within_casing)
+
+    walk(definition, "plan")
+    return tuple(violations)
+
 
 class SqlCompiler:
     """IR → parameterized SQL text (values never interpolated)."""
@@ -69,6 +135,7 @@ class SqlCompiler:
         self.dialect = dialect
         self.supports_merge = supports_merge
         self._param_counter = 0
+        self._case_counter = 0
 
     def quote(self, name: str) -> str:
         return quote_identifier(name, dialect=self.dialect)
@@ -194,6 +261,12 @@ class SqlCompiler:
         self, expr: CallExpr, *, params: dict[str, Any], relation_sql: str
     ) -> str:
         callee = expr.callee
+        if (
+            self.dialect == "postgresql"
+            and callee in {"dtcs:lower", "dtcs:upper"}
+            and _casing_aggregate_scope_violations(expr.to_dict())
+        ):
+            raise ValueError(_CASING_AGGREGATE_SCOPE_ERROR)
         args = [
             self.compile_expr(a, params=params, relation_sql=relation_sql)
             for a in expr.args
@@ -224,14 +297,24 @@ class SqlCompiler:
             if self.dialect == "sqlite":
                 body = f"ETLANTIC_UNICODE_LOWER({args[0]})"
             elif self.dialect == "postgresql":
-                body = _postgres_unicode_case(args[0], mode="lower")
+                self._case_counter += 1
+                body = _postgres_unicode_case(
+                    args[0],
+                    mode="lower",
+                    operand_alias=f"etlantic_case_{self._case_counter}",
+                )
             else:
                 body = f"LOWER({args[0]})"
         elif callee == "dtcs:upper":
             if self.dialect == "sqlite":
                 body = f"ETLANTIC_UNICODE_UPPER({args[0]})"
             elif self.dialect == "postgresql":
-                body = _postgres_unicode_case(args[0], mode="upper")
+                self._case_counter += 1
+                body = _postgres_unicode_case(
+                    args[0],
+                    mode="upper",
+                    operand_alias=f"etlantic_case_{self._case_counter}",
+                )
             else:
                 body = f"UPPER({args[0]})"
         elif callee == "dtcs:concat":
@@ -415,6 +498,10 @@ class SqlCompiler:
                 "dtcs:count_distinct",
             }
             and args
+            # PostgreSQL casing propagates nulls using its bound operand.
+            and not (
+                self.dialect == "postgresql" and callee in {"dtcs:lower", "dtcs:upper"}
+            )
         ):
             null_check = " OR ".join(f"({arg} IS NULL)" for arg in args)
             body = f"CASE WHEN {null_check} THEN NULL ELSE {body} END"
@@ -704,16 +791,41 @@ class SqlCompiler:
 
 @lru_cache(maxsize=2)
 def _unicode_expansions(mode: str) -> tuple[tuple[str, str], ...]:
-    """Return the host Unicode database's full one-codepoint case expansions."""
+    """Return the pinned Unicode database's full one-codepoint expansions."""
     if mode not in {"lower", "upper"}:
         raise ValueError(f"Unsupported Unicode case mode {mode!r}")
-    expansions: list[tuple[str, str]] = []
-    for codepoint in range(sys.maxunicode + 1):
-        char = chr(codepoint)
-        mapped = getattr(char, mode)()
-        if len(mapped) != 1:
-            expansions.append((char, mapped))
-    return tuple(expansions)
+    return EXPANSIONS[mode]
+
+
+@lru_cache(maxsize=2)
+def _unicode_simple_case_translation(
+    mode: str, value: str = "etlantic_chars.ch"
+) -> str:
+    """Return a compact SQL translation for pinned simple case mappings."""
+    if mode not in {"lower", "upper"}:
+        raise ValueError(f"Unsupported Unicode case mode {mode!r}")
+    sources: list[str] = []
+    targets: list[str] = []
+    for start, end, offset in SIMPLE_RANGES[mode]:
+        sources.extend(chr(codepoint) for codepoint in range(start, end + 1))
+        targets.extend(chr(codepoint + offset) for codepoint in range(start, end + 1))
+    return (
+        f"TRANSLATE({value}, {_sql_literal(''.join(sources))}, "
+        f"{_sql_literal(''.join(targets))})"
+    )
+
+
+@lru_cache(maxsize=4)
+def _unicode_case_translation(mode: str, value: str) -> str:
+    """Return whole-string pinned casing for inputs without contextual sigma."""
+    if mode not in {"lower", "upper"}:
+        raise ValueError(f"Unsupported Unicode case mode {mode!r}")
+    translated = _unicode_simple_case_translation(mode, value)
+    for source, mapped in _unicode_expansions(mode):
+        translated = (
+            f"REPLACE({translated}, {_sql_literal(source)}, {_sql_literal(mapped)})"
+        )
+    return translated
 
 
 def _sql_literal(value: str) -> str:
@@ -727,64 +839,27 @@ def _postgres_case_ignorable_class() -> str:
     PostgreSQL's POSIX ``alpha`` class is not sufficient for Unicode default
     casing context: punctuation such as a hyphen must stop a sigma context,
     while combining marks, modifier characters, and the punctuation listed by
-    Unicode's ``Case_Ignorable`` property must be skipped.  Python's Unicode
-    database is available at compile time, so encode the category-based subset
-    and the assigned punctuation exceptions as compact character ranges in the
-    generated SQL.
+    Unicode's ``Case_Ignorable`` property must be skipped. The pinned Unicode
+    data is encoded as a compact character range in the generated SQL.
     """
 
-    # Python's stdlib exposes General_Category but not the derived
-    # Case_Ignorable property. Keep the assigned punctuation exceptions
-    # explicit so PostgreSQL's final-sigma context matches default Unicode
-    # casing (including separators such as ':' and '.').
-    case_ignorable_punctuation = {
-        0x27,
-        0x2E,
-        0x3A,
-        0xB7,
-        0x387,
-        0x55F,
-        0x5F4,
-        0x2018,
-        0x2019,
-        0x2024,
-        0x2027,
-        0xFE13,
-        0xFE52,
-        0xFE55,
-        0xFF07,
-        0xFF0E,
-        0xFF1A,
-    }
-    codepoints = [
-        codepoint
-        for codepoint in range(sys.maxunicode + 1)
-        if unicodedata.category(chr(codepoint)) in {"Mn", "Me", "Cf", "Lm", "Sk"}
-        or codepoint in case_ignorable_punctuation
-    ]
-    ranges: list[tuple[int, int]] = []
-    if codepoints:
-        start = previous = codepoints[0]
-        for codepoint in codepoints[1:]:
-            if codepoint == previous + 1:
-                previous = codepoint
-                continue
-            ranges.append((start, previous))
-            start = previous = codepoint
-        ranges.append((start, previous))
-
-    def escaped(codepoint: int) -> str:
-        char = chr(codepoint)
-        return "\\" + char if char in {"\\", "]", "-", "^"} else char
-
-    parts = [
-        escaped(start) if start == end else f"{escaped(start)}-{escaped(end)}"
-        for start, end in ranges
-    ]
-    return "[" + "".join(parts) + "]"
+    return CASE_IGNORABLE_CLASS
 
 
-def _postgres_unicode_case(value: str, *, mode: str) -> str:
+@lru_cache(maxsize=1)
+def _postgres_cased_class() -> str:
+    """Return a locale-independent regex class for Unicode ``Cased`` code points.
+
+    PostgreSQL's ``UPPER``/``LOWER`` functions are locale-sensitive. They
+    must not decide whether a neighboring character is cased because that
+    would make final-sigma lowering vary with the database locale or build
+    architecture. The pinned Unicode default property is used to generate
+    this literal class.
+    """
+    return CASED_CLASS
+
+
+def _postgres_unicode_case(value: str, *, mode: str, operand_alias: str) -> str:
     """Compile full default Unicode casing for PostgreSQL relation plans.
 
     PostgreSQL 16 applies simple mappings and omits expansions such as
@@ -792,22 +867,24 @@ def _postgres_unicode_case(value: str, *, mode: str) -> str:
     into code points keeps execution in SQL while applying the full mapping.
     Lowercase sigma additionally needs the default context-sensitive final form.
     """
-    simple = mode.upper()
-    clauses = [
-        f"WHEN etlantic_chars.ch = {_sql_literal(source)} THEN {_sql_literal(mapped)}"
-        for source, mapped in _unicode_expansions(mode)
-    ]
+    # OFFSET 0 prevents PostgreSQL from flattening the operand subquery and
+    # duplicating a composed expression across the casing and null checks.
+    operand = f"CAST({value} AS TEXT)"
+    value = f"{operand_alias}.value"
+    clauses: list[str] = []
     if mode == "lower":
         text = f"CAST({value} AS TEXT)"
+        context_text = f'{text} COLLATE "C"'
         ignorable = _postgres_case_ignorable_class()
+        cased = _postgres_cased_class()
         prefix = (
-            f"REGEXP_REPLACE(SUBSTRING({text} FROM 1 FOR "
+            f"REGEXP_REPLACE(SUBSTRING({context_text} FROM 1 FOR "
             "CAST(etlantic_chars.ordinality - 1 AS INTEGER)), "
             f"{_sql_literal(ignorable + '+$')}"
             ", '')"
         )
         suffix = (
-            f"REGEXP_REPLACE(SUBSTRING({text} FROM "
+            f"REGEXP_REPLACE(SUBSTRING({context_text} FROM "
             "CAST(etlantic_chars.ordinality + 1 AS INTEGER)), "
             f"{_sql_literal('^' + ignorable + '+')}"
             ", '')"
@@ -815,18 +892,45 @@ def _postgres_unicode_case(value: str, *, mode: str) -> str:
         clauses.append(
             "WHEN etlantic_chars.ch = 'Σ' "
             f"AND LENGTH({prefix}) > 0 "
-            f"AND UPPER(RIGHT({prefix}, 1)) <> LOWER(RIGHT({prefix}, 1)) "
+            f'AND RIGHT({prefix}, 1) COLLATE "C" ~ {_sql_literal(cased)} '
             f"AND (LENGTH({suffix}) = 0 OR "
-            f"UPPER(LEFT({suffix}, 1)) = LOWER(LEFT({suffix}, 1))) "
+            f'LEFT({suffix}, 1) COLLATE "C" !~ {_sql_literal(cased)}) '
             "THEN 'ς'"
         )
+    clauses.extend(
+        f"WHEN etlantic_chars.ch = {_sql_literal(source)} THEN {_sql_literal(mapped)}"
+        for source, mapped in _unicode_expansions(mode)
+    )
     cases = " ".join(clauses)
-    return (
+    simple_character = _unicode_simple_case_translation(mode)
+    split_case = (
         "(SELECT COALESCE(STRING_AGG(CASE "
-        f"{cases} ELSE {simple}(etlantic_chars.ch) END, '' "
+        f"{cases} ELSE {simple_character} END, '' "
         "ORDER BY etlantic_chars.ordinality), '') "
         f"FROM REGEXP_SPLIT_TO_TABLE(CAST({value} AS TEXT), '') WITH ORDINALITY "
         "AS etlantic_chars(ch, ordinality))"
+    )
+    if mode == "lower":
+        simple = _unicode_simple_case_translation(mode, text)
+        special = " OR ".join(
+            f"POSITION({_sql_literal(source)} IN ({text})) > 0"
+            for source, _ in (("Σ", "ς"), *EXPANSIONS[mode])
+        )
+        body = f"COALESCE(CASE WHEN {special} THEN {split_case} ELSE {simple} END, '')"
+    else:
+        text = f"CAST({value} AS TEXT)"
+        special = " OR ".join(
+            f"POSITION({_sql_literal(source)} IN ({text})) > 0"
+            for source, _ in EXPANSIONS[mode]
+        )
+        body = (
+            "COALESCE(CASE "
+            f"WHEN {special} THEN {_unicode_case_translation(mode, text)} "
+            f"ELSE {_unicode_simple_case_translation(mode, text)} END, '')"
+        )
+    return (
+        f"(SELECT CASE WHEN {value} IS NULL THEN NULL ELSE {body} END "
+        f"FROM (SELECT {operand} AS value OFFSET 0) AS {operand_alias})"
     )
 
 

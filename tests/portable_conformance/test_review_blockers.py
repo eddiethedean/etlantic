@@ -196,15 +196,144 @@ def test_final_rel_003_postgresql_uses_complete_case_ignorable_context() -> None
             {"text": "A\u03a3:B"},
             {"text": "A'\u03a3"},
             {"text": "A\u03a3'B"},
+            {"text": "A\u03a3\u0301"},
+            {"text": "A\u03a3\u0301B"},
         ],
         expected=[
             {"value": "a:\u03c2"},
             {"value": "a\u03c3:b"},
             {"value": "a'\u03c2"},
             {"value": "a\u03c3'b"},
+            {"value": "a\u03c2\u0301"},
+            {"value": "a\u03c3\u0301b"},
         ],
     )
     _run(create_transform_compiler(), case)
+
+
+@pytest.mark.sql
+def test_final_rel_003_postgresql_arm64_locale_evidence() -> None:
+    """Record the PostgreSQL environment used for the sigma parity proof."""
+    _require_postgresql()
+    if os.environ.get("ETLANTIC_REQUIRE_ARM64_POSTGRES_EVIDENCE") != "1":
+        pytest.skip("ARM64 evidence is collected only by the dedicated CI step")
+    pytest.importorskip("sqlalchemy")
+    import json
+    import platform
+    import re
+
+    from sqlalchemy import create_engine, text
+
+    url = os.environ["ETLANTIC_SQL_URL"]
+    engine = create_engine(url)
+    try:
+        with engine.connect() as connection:
+            version = str(connection.execute(text("SELECT version()")).scalar_one())
+            environment = connection.execute(
+                text(
+                    """
+                    SELECT current_setting('server_version_num'),
+                           pg_encoding_to_char(dat.encoding),
+                           dat.datcollate,
+                           dat.datctype,
+                           dat.datlocprovider
+                    FROM pg_database AS dat
+                    WHERE dat.datname = current_database()
+                    """
+                )
+            ).one()
+    finally:
+        engine.dispose()
+
+    server_version, encoding, collate, ctype, provider = environment
+    server_architecture_match = re.search(r"\bon\s+([^,]+)", version)
+    server_architecture = (
+        server_architecture_match.group(1).strip()
+        if server_architecture_match
+        else None
+    )
+    runner_architecture = platform.machine().lower()
+    assert str(server_version).startswith("16")
+    assert encoding == "UTF8"
+    assert collate
+    assert ctype
+    assert provider in {"c", "i", "d"}
+    assert runner_architecture in {"aarch64", "arm64"}
+    assert server_architecture
+    assert server_architecture.lower().startswith(("aarch64", "arm64"))
+    print(
+        "FINAL-REL-003 PostgreSQL evidence "
+        + json.dumps(
+            {
+                "architecture": runner_architecture,
+                "server_architecture": server_architecture,
+                "server_version": version,
+                "server_version_num": server_version,
+                "encoding": encoding,
+                "collate": collate,
+                "ctype": ctype,
+                "locale_provider": provider,
+            },
+            sort_keys=True,
+        )
+    )
+
+
+@pytest.mark.sql
+@pytest.mark.parametrize("host_unicode", ["14.0.0", "15.0.0", "15.1.0"])
+def test_final_rel_003_sqlite_uses_pinned_unicode_context(
+    monkeypatch, host_unicode: str
+) -> None:
+    """SQLite casing must not vary with the host Python Unicode database."""
+    import unicodedata
+
+    monkeypatch.setattr(unicodedata, "unidata_version", host_unicode)
+    monkeypatch.setenv("ETLANTIC_SQL_URL", "sqlite+pysqlite:///:memory:")
+    pytest.importorskip("sqlalchemy")
+    from etlantic_sql import create_transform_compiler
+
+    case = _project_case(
+        "final_rel_003_sqlite_pinned_unicode_context",
+        [
+            ("value", _call("dtcs:lower", _field("text"))),
+            ("upper", _call("dtcs:upper", _field("text"))),
+        ],
+        rows=[
+            {"text": "AΣ\u0eceB"},
+            {"text": "A-\U0001e900"},
+            {"text": "ßİ"},
+        ],
+        expected=[
+            {"value": "aς\u0eceb", "upper": "AΣ\u0eceB"},
+            {"value": "a-\U0001e922", "upper": "A-\U0001e900"},
+            {"value": "ßi\u0307", "upper": "SSİ"},
+        ],
+    )
+    _run(create_transform_compiler(), case)
+
+
+def test_final_rel_003_sqlite_handles_long_sigma_text() -> None:
+    """SQLite sigma context stays correct for long inputs with many sigmas."""
+    from etlantic_sql.unicode_data import unicode_case
+
+    value = "A" + ("Σ" * 4096) + "B"
+    assert unicode_case(value, mode="lower") == "a" + ("\u03c3" * 4096) + "b"
+
+
+@pytest.mark.sql
+def test_final_rel_003_sqlite_skips_sigma_context_without_sigma(monkeypatch) -> None:
+    """SQLite casing should not scan Unicode context when no sigma is present."""
+    import etlantic_sql.unicode_data as unicode_data
+
+    class UnexpectedContextScan:
+        def fullmatch(self, character: str) -> None:
+            raise AssertionError(f"unexpected context scan for {character!r}")
+
+    monkeypatch.setattr(unicode_data, "_CASE_IGNORABLE", UnexpectedContextScan())
+    monkeypatch.setattr(unicode_data, "_CASED", UnexpectedContextScan())
+
+    value = "A" * 4096
+    assert unicode_data.unicode_case(value, mode="lower") == "a" * 4096
 
 
 def test_final_rel_004_unbounded_substring_offsets_fail_analysis() -> None:

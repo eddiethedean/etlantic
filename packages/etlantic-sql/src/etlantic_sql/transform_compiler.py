@@ -30,11 +30,20 @@ from etlantic.transform.compiler import (
 )
 from etlantic.transform.portable_baseline import BASELINE_OPERATORS, BASELINE_TYPES
 from etlantic.transform.protocol import KERNEL_PROFILE_V1, RELATIONAL_PROFILE_V1
-from etlantic_sql.compiler import SqlCompiler
+from etlantic_sql.compiler import (
+    _CASING_AGGREGATE_SCOPE_ERROR,
+    SqlCompiler,
+    _casing_aggregate_scope_violations,
+)
 from etlantic_sql.frame import SqlRelationFrame
 from etlantic_sql.lowering.actions import (
     CLAIMED_ACTIONS,
     apply_action_to_query,
+)
+from etlantic_sql.unicode_data import (
+    UNICODE_DATA_FINGERPRINT,
+    UNICODE_DATA_VERSION,
+    unicode_case,
 )
 
 __version__ = "0.50.0"
@@ -88,6 +97,11 @@ _COLLISION_POLICIES = frozenset({"fail"})
 _UNION_MODES = frozenset({"byName", "byPosition"})
 
 
+def _dialect_from_url(url: str) -> str:
+    """Return the SQLAlchemy dialect name encoded by a database URL."""
+    return url.split(":", 1)[0].split("+", 1)[0].lower()
+
+
 def create_transform_compiler() -> SqlTransformCompiler:
     """Entry-point factory for ``etlantic.transform_compilers``."""
     return SqlTransformCompiler()
@@ -96,9 +110,25 @@ def create_transform_compiler() -> SqlTransformCompiler:
 def _environment_identity(dialect: str | None = None) -> dict[str, str]:
     """Return the SQL runtime identity used for planning evidence."""
     if dialect is None:
-        url = os.environ.get("ETLANTIC_SQL_URL", "")
-        dialect = url.split(":", 1)[0].split("+", 1)[0] if url else "unknown"
-    return {"dialect": dialect or "unknown", "runtime": "sqlalchemy"}
+        url = os.environ.get("ETLANTIC_SQL_URL") or os.environ.get("DATABASE_URL")
+        dialect = _dialect_from_url(url) if url else "sqlite"
+    dialect = _dialect_from_url(str(dialect or "sqlite"))
+    environment = {
+        "dialect": dialect,
+        "runtime": "sqlalchemy",
+    }
+    if dialect in {"sqlite", "postgresql"}:
+        environment.update(
+            {
+                "unicode": UNICODE_DATA_VERSION,
+                "unicode_fingerprint": UNICODE_DATA_FINGERPRINT,
+            }
+        )
+    elif dialect in {"unknown", ""}:
+        environment["unicode"] = "unknown"
+    else:
+        environment["unicode"] = "backend-defined"
+    return environment
 
 
 class SqlTransformCompiler:
@@ -126,14 +156,14 @@ class SqlTransformCompiler:
             name="etlantic-sql",
             version=__version__,
             engine="sql",
-            implementation="sql-native/1",
+            implementation="sql-native/2",
             package="etlantic-sql",
             compiler_protocol=COMPILER_PROTOCOL,
             capabilities=caps,
             evidence_fingerprint=capabilities_fingerprint(
                 caps,
                 compiler="etlantic-sql",
-                implementation="sql-native/1",
+                implementation="sql-native/2",
                 package="etlantic-sql",
                 version=__version__,
                 engine="sql",
@@ -171,8 +201,18 @@ class SqlTransformCompiler:
         findings.extend(three_state_findings(definition, self._info.capabilities))
         findings.extend(portable_shape_findings(definition))
         findings.extend(portable_arithmetic_findings(definition))
-        # Reject trusted SQL fragments in portable definitions.
+        if (self._info.environment or {}).get("dialect") == "postgresql":
+            findings.extend(
+                TransformSupportFinding(
+                    code="PMXFORM301",
+                    requirement="mode:casing_aggregate_scope",
+                    reason=_CASING_AGGREGATE_SCOPE_ERROR,
+                    expression_path=path,
+                )
+                for path in _casing_aggregate_scope_violations(definition)
+            )
         blob = json.dumps(definition, sort_keys=True)
+        # Reject trusted SQL fragments in portable definitions.
         if "trusted_fragment" in blob or "TrustedSqlFragment" in blob:
             findings.append(
                 TransformSupportFinding(
@@ -277,13 +317,21 @@ class SqlTransformCompiler:
                 driver.create_function(
                     "ETLANTIC_UNICODE_LOWER",
                     1,
-                    lambda value: None if value is None else str(value).lower(),
+                    lambda value: (
+                        None
+                        if value is None
+                        else unicode_case(str(value), mode="lower")
+                    ),
                     deterministic=True,
                 )
                 driver.create_function(
                     "ETLANTIC_UNICODE_UPPER",
                     1,
-                    lambda value: None if value is None else str(value).upper(),
+                    lambda value: (
+                        None
+                        if value is None
+                        else unicode_case(str(value), mode="upper")
+                    ),
                     deterministic=True,
                 )
                 driver.create_aggregate("ETLANTIC_DECIMAL_SUM", 1, _DecimalSumAggregate)
@@ -481,7 +529,8 @@ def _open_engine(metadata: Mapping[str, Any]) -> tuple[str, Any]:
     )
     if url:
         engine = create_engine(str(url))
-        return engine.dialect.name, engine
+        dialect = engine.dialect.name
+        return dialect, engine
     # Conformance / local default: in-memory SQLite (PostgreSQL via env for gate).
     engine = create_engine("sqlite+pysqlite:///:memory:")
     return "sqlite", engine
