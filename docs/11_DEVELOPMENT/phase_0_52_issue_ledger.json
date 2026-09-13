@@ -246,7 +246,7 @@
     },
     {
       "issue": 51,
-      "scope": "Complete canonical source/sink/portable candidate matrix; rejected cells retained; pure analyze-only enumeration.",
+      "scope": "Source and sink candidate rows are complete and canonically ordered across every eligible target.",
       "status": "implemented",
       "acceptance_criteria": [
         "AC-052-003",
@@ -258,14 +258,12 @@
       ],
       "verification": [
         "test_candidate_matrix_is_canonical_node_then_target_order",
-        "test_candidate_matrix_rejects_duplicate_node_target_cell",
-        "test_adaptive_candidate_analysis_is_analyze_only",
-        "test_final_052_001_target_limit_precedes_plugin_discovery"
+        "test_final_052_018_full_candidate_matrix_limit"
       ]
     },
     {
       "issue": 52,
-      "scope": "Complete canonical source/sink/portable candidate matrix; rejected cells retained; pure analyze-only enumeration.",
+      "scope": "Portable transformation candidates are admitted only from cached IR analysis and retain immutable evidence.",
       "status": "implemented",
       "acceptance_criteria": [
         "AC-052-003",
@@ -276,15 +274,13 @@
         "src/etlantic/plan/adaptive_model.py:CandidateRecord"
       ],
       "verification": [
-        "test_candidate_matrix_is_canonical_node_then_target_order",
-        "test_candidate_matrix_rejects_duplicate_node_target_cell",
         "test_adaptive_candidate_analysis_is_analyze_only",
-        "test_final_052_001_target_limit_precedes_plugin_discovery"
+        "test_final_052_019_candidate_credits_require_content_evidence"
       ]
     },
     {
       "issue": 53,
-      "scope": "Complete canonical source/sink/portable candidate matrix; rejected cells retained; pure analyze-only enumeration.",
+      "scope": "Rejected candidate cells remain in the matrix with stable reason codes and duplicate cells are refused.",
       "status": "implemented",
       "acceptance_criteria": [
         "AC-052-003",
@@ -295,15 +291,13 @@
         "src/etlantic/plan/adaptive_model.py:CandidateRecord"
       ],
       "verification": [
-        "test_candidate_matrix_is_canonical_node_then_target_order",
         "test_candidate_matrix_rejects_duplicate_node_target_cell",
-        "test_adaptive_candidate_analysis_is_analyze_only",
-        "test_final_052_001_target_limit_precedes_plugin_discovery"
+        "test_final_052_001_missing_target_reference_is_negative"
       ]
     },
     {
       "issue": 54,
-      "scope": "Complete canonical source/sink/portable candidate matrix; rejected cells retained; pure analyze-only enumeration.",
+      "scope": "Candidate enumeration enforces fixed node, target, and matrix bounds before plugin discovery.",
       "status": "implemented",
       "acceptance_criteria": [
         "AC-052-003",
@@ -314,10 +308,8 @@
         "src/etlantic/plan/adaptive_model.py:CandidateRecord"
       ],
       "verification": [
-        "test_candidate_matrix_is_canonical_node_then_target_order",
-        "test_candidate_matrix_rejects_duplicate_node_target_cell",
-        "test_adaptive_candidate_analysis_is_analyze_only",
-        "test_final_052_001_target_limit_precedes_plugin_discovery"
+        "test_final_052_001_target_limit_precedes_plugin_discovery",
+        "test_final_052_018_target_limit"
       ]
     },
     {
@@ -511,6 +503,7 @@
       ],
       "verification": [
         "test_final_052_022_generated_units_bind_contract_and_policy_evidence",
+        "test_final_052_022_transfer_identity_binds_handoff_envelope",
         "test_adaptive_logical_path_can_cross_all_boundary_unit_kinds",
         "test_final_052_017_generated_edge_requires_one_data_path",
         "test_final_052_017_logical_diamond_preserves_individual_edge_paths",

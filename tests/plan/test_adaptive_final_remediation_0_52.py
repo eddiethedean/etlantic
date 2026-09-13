@@ -585,6 +585,26 @@ def test_final_052_020_solver_infeasibility_uses_explicit_fallback(
     assert result.metadata["etlantic.adaptive_fallback"]["chosen_target"] == "local"
 
 
+def test_final_052_020_security_solver_failure_never_falls_back(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    from etlantic.planning import adaptive
+
+    def insecure(*args: object, **kwargs: object) -> object:
+        del args, kwargs
+        raise adaptive._error(
+            "PMADP320",
+            "No viable adaptive assignment satisfies directional handoff and security policy.",
+            path=("adaptive", "solver"),
+        )
+
+    monkeypatch.setattr(adaptive, "_solve", insecure)
+    with pytest.raises(PipelineValidationError, match="PMADP320"):
+        plan_pipeline(
+            Sample, profile=profile().with_updates(adaptive_fallback="explicit")
+        )
+
+
 def test_final_052_022_generated_units_bind_contract_and_policy_evidence() -> None:
     """Every generated unit has the executable evidence envelope."""
     plan = plan_pipeline(Sample, profile=profile())
@@ -603,6 +623,56 @@ def test_final_052_021_regions_bind_execution_policy_and_fusion_facts() -> None:
     assert region.metadata["etlantic.fusion_evidence"] == "none"
 
 
+def test_final_052_021_region_identity_binds_fusion_state() -> None:
+    data = plan_pipeline(Sample, profile=profile()).to_dict()
+    data["regions"][0]["fused"] = True
+    with pytest.raises(ValueError, match="PMADP403"):
+        plan_from_json(sign(data))
+
+
+def test_final_052_022_transfer_identity_binds_handoff_envelope() -> None:
+    import hashlib
+
+    from etlantic.planning.adaptive import _handoff_contract
+    from etlantic.registry import (
+        PlanningContext,
+        PluginDescriptor,
+        builtin_stub_registry,
+    )
+
+    targets = {
+        "producer": PlacementTarget(engine="local"),
+        "consumer": PlacementTarget(engine="null"),
+    }
+    configured = profile().with_updates(
+        placement_targets=targets,
+        eligible_targets=("producer", "consumer"),
+        implementation_overrides={"raw": "producer", "out": "consumer"},
+    )
+    context = PlanningContext.create(configured, registry=builtin_stub_registry())
+    evidence = _handoff_contract(
+        targets["producer"], targets["consumer"], Sample.build_graph().edges[0], context
+    )
+    evidence["evidence_ref"] = "sha256:" + hashlib.sha256(b"handoff").hexdigest()
+    context.registry.register_plugin(
+        PluginDescriptor(
+            name="verified-handoff",
+            kind="handoff",
+            version="1",
+            metadata={"handoff_evidence": [evidence]},
+        )
+    )
+    data = plan_pipeline(Sample, context=context).to_dict()
+    transfer = next(
+        unit for unit in data["physical_dag"]["units"] if unit["kind"] == "transfer"
+    )
+    transfer["metadata"]["etlantic.handoff_evidence"] = [
+        "sha256:" + hashlib.sha256(b"tampered").hexdigest()
+    ]
+    with pytest.raises(ValueError, match="PMADP403"):
+        plan_from_json(sign(data))
+
+
 def test_final_052_023_truncated_explain_retains_release_contract_fields() -> None:
     """A bounded explain result retains its mandatory audit summary."""
     plan = plan_pipeline(Sample, profile=profile())
@@ -616,3 +686,10 @@ def test_final_052_023_truncated_explain_retains_release_contract_fields() -> No
         "rejection_reason_counts",
         "omitted_sha256",
     } <= set(summary)
+
+
+def test_final_052_026_generated_objective_shape_is_fixed() -> None:
+    data = plan_pipeline(Sample, profile=profile()).to_dict()
+    data["objective"] = [99]
+    with pytest.raises(ValueError, match="PMADP321"):
+        plan_from_json(sign(data))

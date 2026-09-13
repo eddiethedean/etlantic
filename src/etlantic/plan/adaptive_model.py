@@ -6,6 +6,7 @@ does not discover plugins, solve placement, or execute physical units.
 
 from __future__ import annotations
 
+import hashlib
 import json
 from collections.abc import Mapping
 from dataclasses import dataclass, field
@@ -43,6 +44,10 @@ class TargetDescriptor:
             value = getattr(self, name)
             if not isinstance(value, str) or not value.strip():
                 raise ValueError(f"PMADP201: target descriptor {name} is required")
+            if len(value) > 4096:
+                raise ValueError(
+                    f"PMADP201: target descriptor {name} exceeds the 4096-character limit"
+                )
         for name in ("compiler", "executor", "connector", "resource"):
             value = getattr(self, name)
             if value is not None and (not isinstance(value, str) or not value.strip()):
@@ -195,6 +200,10 @@ class CandidateRecord:
             value = getattr(self, name)
             if not isinstance(value, str) or not value.strip():
                 raise ValueError(f"PMADP220: candidate {name} is required")
+            if len(value) > 4096:
+                raise ValueError(
+                    f"PMADP220: candidate {name} exceeds the 4096-character limit"
+                )
         if not isinstance(self.kind, str) or self.kind not in {
             "source",
             "sink",
@@ -314,6 +323,10 @@ class AdaptiveRegion:
             value = getattr(self, name)
             if not isinstance(value, str) or not value.strip():
                 raise ValueError(f"PMADP403: adaptive region {name} is required")
+            if len(value) > 4096:
+                raise ValueError(
+                    f"PMADP403: adaptive region {name} exceeds the 4096-character limit"
+                )
         nodes = _validated_array(
             self.logical_nodes, "adaptive region logical_nodes", code="PMADP403"
         )
@@ -435,6 +448,8 @@ class AdaptivePipelinePlan:
                 not isinstance(node, str) or not node.strip() for node in selected_tuple
             ):
                 raise ValueError("PMADP403: selected_nodes must contain node names")
+            if any(len(node) > 4096 for node in selected_tuple):
+                raise ValueError("PMADP403: selected_nodes exceed the 4096-character limit")
             if not selected_tuple or len(set(selected_tuple)) != len(selected_tuple):
                 raise ValueError(
                     "PMADP403: selected_nodes must be null or non-empty and unique"
@@ -455,6 +470,8 @@ class AdaptivePipelinePlan:
                 )
         else:
             selected_tuple = node_order
+        if any(len(node) > 4096 for node in node_order):
+            raise ValueError("PMADP403: logical node names exceed the 4096-character limit")
         selected = set(selected_tuple)
         inventory = (
             self.inventory
@@ -544,6 +561,36 @@ class AdaptivePipelinePlan:
                 raise ValueError(
                     "PMADP403: adaptive region target must match each node decision"
                 )
+        generated = getattr(self.metadata, "get", lambda *_: None)(
+            "etlantic.planner_version"
+        ) == "0.52"
+        if generated:
+            for region in regions:
+                evidence = region.metadata.get("etlantic.fusion_evidence")
+                if region.fused:
+                    if not isinstance(evidence, str) or not _is_content_evidence_ref(
+                        evidence
+                    ):
+                        raise ValueError(
+                            "PMADP403: fused adaptive region requires content-addressed fusion evidence"
+                        )
+                elif evidence not in (None, "none"):
+                    raise ValueError(
+                        "PMADP403: unfused adaptive region has inconsistent fusion evidence"
+                    )
+                if region.metadata.get("etlantic.target_identity") != targets_by_id[
+                    region.target_id
+                ].identity:
+                    raise ValueError(
+                        "PMADP403: adaptive region target identity evidence is inconsistent"
+                    )
+                expected_identity = _generated_region_identity(
+                    region, targets_by_id[region.target_id]
+                )
+                if region.identity != expected_identity:
+                    raise ValueError(
+                        "PMADP403: adaptive region identity does not bind its boundary facts"
+                    )
         dag = (
             self.physical_dag
             if isinstance(self.physical_dag, PhysicalDAG)
@@ -619,6 +666,21 @@ class AdaptivePipelinePlan:
             raise ValueError(
                 "PMADP321: adaptive plan objective must be integer/string values"
             )
+        if generated:
+            expected_length = 6 + 2 * len(selected_tuple)
+            if len(objective) != expected_length:
+                raise ValueError(
+                    "PMADP321: generated adaptive objective must contain "
+                    f"6 + 2N values (expected {expected_length})"
+                )
+            if any(type(value) is not int for value in objective[: 6 + len(selected_tuple)]):
+                raise ValueError(
+                    "PMADP321: generated adaptive objective scalar and priority values must be integers"
+                )
+            if any(not isinstance(value, str) for value in objective[6 + len(selected_tuple) :]):
+                raise ValueError(
+                    "PMADP321: generated adaptive objective identity values must be strings"
+                )
         profile_snapshot = _validated_json_mapping(
             self.profile_snapshot, "adaptive plan profile_snapshot"
         )
@@ -763,6 +825,34 @@ def _reject_wire_sensitive_material(value: Any, *, path: str) -> None:
         _reject_nested_source_row_material(value, path=path)
     except (TypeError, ValueError) as exc:
         raise ValueError(f"PMADP101: invalid {path}: {exc}") from exc
+
+
+def _is_content_evidence_ref(value: str) -> bool:
+    prefix, separator, digest = value.partition(":")
+    return (
+        prefix == "sha256"
+        and separator == ":"
+        and len(digest) == 64
+        and all(char in "0123456789abcdef" for char in digest)
+    )
+
+
+def _generated_region_identity(region: AdaptiveRegion, target: TargetDescriptor) -> str:
+    """Recompute the 0.52 region identity from immutable boundary facts."""
+    payload = {
+        "target": region.metadata.get("etlantic.target_identity", target.identity),
+        "nodes": list(region.logical_nodes),
+        "security": region.security_domain,
+        "execution": region.metadata.get("etlantic.execution", "planning-only"),
+        "policy": region.metadata.get("etlantic.boundary_policy", "conservative"),
+        "fused": region.fused,
+        "fusion_evidence": region.metadata.get("etlantic.fusion_evidence", "none"),
+        "planner": "0.52",
+    }
+    encoded = json.dumps(
+        payload, sort_keys=True, separators=(",", ":"), ensure_ascii=False
+    ).encode("utf-8")
+    return f"region:{hashlib.sha256(encoded).hexdigest()[:24]}"
 
 
 def _validated_string_map(value: Mapping[str, str], label: str) -> dict[str, str]:

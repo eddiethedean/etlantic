@@ -513,6 +513,10 @@ class Profile:
             raise ValueError(
                 "PMADP102: eligible_targets must contain non-blank strings"
             )
+        if any(len(value) > 4096 for value in eligible):
+            raise ValueError("PMADP102: eligible target ids exceed the 4096-character limit")
+        if any(len(str(value)) > 4096 for value in targets):
+            raise ValueError("PMADP102: placement target ids exceed the 4096-character limit")
         if len(set(eligible)) != len(eligible):
             raise ValueError("PMADP102: eligible_targets must not contain duplicates")
         missing_targets = sorted(set(eligible) - set(targets))

@@ -46,6 +46,7 @@ from etlantic.plan.slicing import (
 from etlantic.planning.adaptive_budget import (
     budget_scope,
     canonical_chunks,
+    canonical_size,
     current_budget,
     materialize_wire,
     redacted_view,
@@ -181,7 +182,11 @@ def _build_adaptive_plan(
         # empty viable row, and is the only solver failure eligible for the
         # explicitly requested fallback.
         codes = {diagnostic.code for diagnostic in error.report.diagnostics}
-        if context.profile.adaptive_fallback == "explicit" and codes == {"PMADP320"}:
+        if (
+            context.profile.adaptive_fallback == "explicit"
+            and codes == {"PMADP320"}
+            and _solver_fallback_allowed(error)
+        ):
             return _explicit_fallback(
                 pipeline_cls,
                 context,
@@ -786,6 +791,8 @@ def _candidate_objective_evidence(
                     (
                         support.get("pushdown_evidence"),
                         support.get("semantic_parity_evidence"),
+                        support.get("fusion_evidence"),
+                        support.get("fusion_proof"),
                         getattr(implementation, "compiler_evidence_fingerprint", None),
                     )
                 )
@@ -804,6 +811,19 @@ def _fallback_allowed(candidates: tuple[CandidateRecord, ...]) -> bool:
     }
     rejected = [code for candidate in candidates for code in candidate.reason_codes]
     return not any(code in hard for code in rejected)
+
+
+def _solver_fallback_allowed(error: PipelineValidationError) -> bool:
+    """Permit fallback only for ordinary assignment infeasibility.
+
+    The solver uses PMADP320 for both ordinary empty assignments and policy
+    failures caused by missing directional handoff/security proof.  The latter
+    must fail closed and cannot be hidden by the legacy explicit fallback.
+    """
+    return not any(
+        any(token in diagnostic.message.lower() for token in ("handoff", "security"))
+        for diagnostic in error.report.diagnostics
+    )
 
 
 def _handoff_contract(
@@ -1073,8 +1093,11 @@ def _objective_facts(
                     and pushdown_evidence
                 )
             )
+            fusion_evidence = _content_evidence_refs(
+                (support.get("fusion_evidence"), support.get("fusion_proof"))
+            )
             facts["safely_fusible_logical_edges"] = int(
-                bool(support.get("fusion") or support.get("fusible"))
+                bool((support.get("fusion") or support.get("fusible")) and fusion_evidence)
             )
         del transform
     return facts
@@ -1470,6 +1493,7 @@ def _regions(
             "execution": "planning-only",
             "policy": "conservative",
             "fused": False,
+            "fusion_evidence": "none",
             "planner": "0.52",
         }
         region_id = f"region:{_digest(boundary_facts)[:24]}"
@@ -1489,6 +1513,7 @@ def _regions(
                     "etlantic.execution": "planning-only",
                     "etlantic.fusion_evidence": "none",
                     "etlantic.security_domain": target.security_domain,
+                    "etlantic.target_identity": _target_identity(target),
                 },
             )
         )
@@ -1648,6 +1673,7 @@ def _physical_dag(
                     "Cross-target physical boundary lacks directional handoff evidence.",
                     path=("physical_dag", "transfer"),
                 )
+            handoff_contract = _handoff_contract(source, destination, edge, context)
             transfer_payload = {
                 "kind": "transfer",
                 "edge": [
@@ -1658,6 +1684,30 @@ def _physical_dag(
                 ],
                 "source": _target_identity(source),
                 "destination": _target_identity(destination),
+                "handoff_contract": handoff_contract,
+                "handoff_evidence": list(handoff_refs),
+                "input_contracts": [
+                    {"port": edge.producer_port, "contract_id": edge.producer_contract_id or ""}
+                ],
+                "output_contracts": [
+                    {"port": edge.consumer_port, "contract_id": edge.consumer_contract_id or ""}
+                ],
+                "policy": {
+                    "source_security_domain": source.security_domain,
+                    "destination_security_domain": destination.security_domain,
+                    "mode": "batch",
+                    "durability": "ephemeral",
+                },
+                "retry_policy": {"mode": "declared", "boundary": True},
+                "ownership": {
+                    "source_target": _target_identity(source),
+                    "destination_target": _target_identity(destination),
+                },
+                "protocol_versions": {
+                    "physical_unit": PHYSICAL_UNIT_SCHEMA,
+                    "contract": "etlantic.contract/1",
+                    "handoff": "etlantic.handoff/1",
+                },
             }
             transfer_id = f"unit:{_digest(transfer_payload)[:24]}"
             unit_specs[transfer_id] = {
@@ -1675,9 +1725,7 @@ def _physical_dag(
                         edge.consumer_port,
                     ],
                     "etlantic.handoff_evidence": list(handoff_refs),
-                    "etlantic.handoff_contract": _handoff_contract(
-                        source, destination, edge, context
-                    ),
+                    "etlantic.handoff_contract": handoff_contract,
                 },
                 "input_contracts": (
                     {
@@ -1800,7 +1848,18 @@ def _physical_dag(
                     else dep
                 )
             spec["dependencies"] = tuple({d.unit_id: d for d in rewritten}.values())
-        units.append(owned_record(PhysicalUnit, "boundary", identity=uid, **spec))
+        # Admit the complete boundary projection before constructing the
+        # retained PhysicalUnit.  This prevents an oversized staging record
+        # from being materialized while the budget still reports zero live
+        # bytes.
+        projected = {"identity": uid, **spec}
+        staging_token = current_budget().reserve(
+            canonical_size(projected) + 64, "boundary-staging"
+        )
+        try:
+            units.append(owned_record(PhysicalUnit, "boundary", identity=uid, **spec))
+        finally:
+            current_budget().release(staging_token)
     order = _topological_units(units)
     return PhysicalDAG(
         units=tuple(units), logical_to_physical=compute_ids, topological_order=order

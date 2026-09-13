@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import hashlib
 import json
 from collections.abc import Mapping
 from dataclasses import dataclass, field
@@ -450,6 +451,11 @@ class PhysicalDAG:
                     raise ValueError(
                         "PMADP403: generated transfer lacks bound handoff contract evidence"
                     )
+                expected = _generated_transfer_identity(unit)
+                if unit.identity != expected:
+                    raise ValueError(
+                        "PMADP403: generated transfer identity does not bind contracts, policy, and handoff evidence"
+                    )
 
     @classmethod
     def from_dict(cls, data: Mapping[str, Any]) -> PhysicalDAG:
@@ -470,6 +476,35 @@ class PhysicalDAG:
             logical_to_physical=mapping,
             topological_order=data.get("topological_order", ()),
         )
+
+
+def _generated_transfer_identity(unit: PhysicalUnit) -> str:
+    """Recompute the generated transfer identity from its complete envelope."""
+    metadata = unit.metadata
+    edge_ports = list(metadata.get("etlantic.edge_ports", ()))
+    edge = (
+        [edge_ports[0], edge_ports[2], edge_ports[1], edge_ports[3]]
+        if len(edge_ports) == 4
+        else edge_ports
+    )
+    payload = {
+        "kind": "transfer",
+        "edge": edge,
+        "source": metadata.get("etlantic.source_target"),
+        "destination": metadata.get("etlantic.destination_target"),
+        "handoff_contract": dict(metadata.get("etlantic.handoff_contract", {})),
+        "handoff_evidence": list(metadata.get("etlantic.handoff_evidence", ())),
+        "input_contracts": [dict(value) for value in unit.input_contracts],
+        "output_contracts": [dict(value) for value in unit.output_contracts],
+        "policy": dict(unit.policy),
+        "retry_policy": dict(unit.retry_policy),
+        "ownership": dict(unit.ownership),
+        "protocol_versions": dict(unit.protocol_versions),
+    }
+    encoded = json.dumps(
+        payload, sort_keys=True, separators=(",", ":"), ensure_ascii=False
+    ).encode("utf-8")
+    return f"unit:{hashlib.sha256(encoded).hexdigest()[:24]}"
 
 
 def _reject_unknown(data: Mapping[str, Any], allowed: set[str], label: str) -> None:
