@@ -121,7 +121,7 @@ def main() -> int:
             errors.append(f"{pkg} missing Beta classifier")
         major_minor = ".".join(version.split(".")[:2])
         next_minor = f"{major_minor.split('.')[0]}.{int(major_minor.split('.')[1]) + 1}"
-        expected_dep = f"etlantic>={major_minor}.0,<{next_minor}"
+        expected_dep = f"etlantic>={version},<{next_minor}"
         if expected_dep not in text:
             errors.append(f"{pkg} missing core dependency {expected_dep}")
 
@@ -145,7 +145,7 @@ def main() -> int:
             )
         major_minor = ".".join(version.split(".")[:2])
         next_minor = f"{major_minor.split('.')[0]}.{int(major_minor.split('.')[1]) + 1}"
-        expected_dep = f"etlantic>={major_minor}.0,<{next_minor}"
+        expected_dep = f"etlantic>={version},<{next_minor}"
         if expected_dep not in text:
             errors.append(f"{pkg} missing core dependency {expected_dep}")
 
@@ -182,7 +182,7 @@ def main() -> int:
             errors.append(f"{pkg} should use Beta, not Production/Stable")
         major_minor = ".".join(version.split(".")[:2])
         next_minor = f"{major_minor.split('.')[0]}.{int(major_minor.split('.')[1]) + 1}"
-        expected_dep = f"etlantic>={major_minor}.0,<{next_minor}"
+        expected_dep = f"etlantic>={version},<{next_minor}"
         if expected_dep not in text:
             errors.append(f"{pkg} missing core dependency {expected_dep}")
 
@@ -197,7 +197,7 @@ def main() -> int:
         text = path.read_text(encoding="utf-8")
         major_minor = ".".join(version.split(".")[:2])
         next_minor = f"{major_minor.split('.')[0]}.{int(major_minor.split('.')[1]) + 1}"
-        expected_dep = f"etlantic>={major_minor}.0,<{next_minor}"
+        expected_dep = f"etlantic>={version},<{next_minor}"
         if expected_dep not in text:
             errors.append(f"{pkg} missing core dependency {expected_dep}")
         if "Development Status :: 3 - Alpha" not in text:

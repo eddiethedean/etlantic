@@ -14,4 +14,4 @@ warnings.warn(
     stacklevel=2,
 )
 
-__version__ = "0.52.0"
+__version__ = "0.52.1"

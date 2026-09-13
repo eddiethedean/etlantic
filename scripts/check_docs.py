@@ -2643,7 +2643,7 @@ def main() -> None:
             if alpha_classifier not in text:
                 raise SystemExit(f"{path} experimental package should use Alpha")
             if next_minor is not None:
-                expected_alt = f"etlantic>={major_minor}.0,<{next_minor}"
+                expected_alt = f"etlantic>={package_version},<{next_minor}"
                 if expected_alt not in text:
                     raise SystemExit(
                         f"{path} must depend on {expected_alt} (found mismatched core range)"
@@ -2657,7 +2657,7 @@ def main() -> None:
                     f"{path} reference package should use Beta, not Production/Stable"
                 )
             if next_minor is not None:
-                expected_alt = f"etlantic>={major_minor}.0,<{next_minor}"
+                expected_alt = f"etlantic>={package_version},<{next_minor}"
                 if expected_alt not in text:
                     raise SystemExit(
                         f"{path} must depend on {expected_alt} (found mismatched core range)"

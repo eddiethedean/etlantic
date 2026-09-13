@@ -5,7 +5,7 @@
   "passed_scenarios": 1,
   "planner_version": "0.52",
   "public_schema": "etlantic.plan/2",
-  "repository_revision": "sha256:18536874a3a1871408b96524e60246744d89481ed1997ac34ab1429f3ac9d601",
+  "repository_revision": "sha256:030b3abf5d2300e512e20a9a3ad7045fa0abb567fd0f662523af5ffe9c3545d0",
   "result": "pass",
   "scenario_count": 1,
   "scenarios": [
@@ -15,7 +15,7 @@
       "executed": true,
       "expected": "pass",
       "id": "test_adaptive_release_side_effect_sentinels",
-      "plan_fingerprint": "c4ded78d55d2a8e3282f0316ea1a1617c2294a67174033da8c25c8d24efb77f3",
+      "plan_fingerprint": "8d02afdfaf57d6e44ca03a9693b3508a7f2c343727dd1d83077d4846351275de",
       "result": "pass",
       "verification": "test_adaptive_release_side_effect_sentinels"
     }

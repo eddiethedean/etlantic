@@ -16,6 +16,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Executable, revision-bound adaptive conformance evidence covering
   AC-052-001 through AC-052-018, enforced by the CI evidence verifier.
 
+## [0.52.1] - 2026-09-13
+
+### Fixed
+
+- Scope schedule firing deduplication by tenant and workspace so equal schedule,
+  revision, and nominal-time values in different workspaces create independent
+  canonical firings and durable submissions.
+- Rebuild firing indexes from canonical record scope when loading snapshots,
+  preserving firing and submission identities from earlier releases.
+
 ## [0.52.0] - 2026-09-12
 
 ### Added
@@ -2000,6 +2010,7 @@ See `docs/11_DEVELOPMENT/MIGRATION_0_16_TO_0_17.md`.
 
 [Unreleased]: https://github.com/eddiethedean/etlantic/compare/v0.51.0...HEAD
 [0.51.0]: https://github.com/eddiethedean/etlantic/releases/tag/v0.51.0
+[0.52.1]: https://github.com/eddiethedean/etlantic/releases/tag/v0.52.1
 [0.52.0]: https://github.com/eddiethedean/etlantic/releases/tag/v0.52.0
 [0.50.1]: https://github.com/eddiethedean/etlantic/releases/tag/v0.50.1
 [0.50.0]: https://github.com/eddiethedean/etlantic/releases/tag/v0.50.0

@@ -1,6 +1,6 @@
 # Security Policy
 
-ETLantic 0.52.0 is the **current published Beta release** suitable for documented
+ETLantic 0.52.1 is the **current published Beta release** suitable for documented
 single-tenant pilots. You can embed an HTTP control plane with **Supported** isolation
 profiles (`isolated-deployment`, `dedicated-schema`). There is no hosted
 multi-tenant SaaS. Security reports
