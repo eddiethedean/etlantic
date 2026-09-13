@@ -11,7 +11,7 @@ import subprocess
 import tempfile
 import xml.etree.ElementTree as ET
 from datetime import UTC, datetime
-from importlib.metadata import version
+from importlib.metadata import PackageNotFoundError, version
 from pathlib import Path
 from typing import Any
 
@@ -25,6 +25,17 @@ TESTS = (
     "tests/runtime/physical/test_qualification_0_53.py",
 )
 EVIDENCE_SCHEMA = "etlantic.adaptive_evidence/2"
+
+
+def installed_versions() -> dict[str, str | None]:
+    """Report missing optional distributions without breaking fail-closed checks."""
+    versions: dict[str, str | None] = {}
+    for name in ("etlantic", "polars", "pandas", "pyarrow"):
+        try:
+            versions[name] = version(name)
+        except PackageNotFoundError:
+            versions[name] = None
+    return versions
 
 
 def source_revision() -> str:
@@ -213,10 +224,7 @@ def main() -> int:
                 "os": platform.system(),
                 "python": platform.python_version(),
                 "machine": platform.machine(),
-                "versions": {
-                    name: version(name)
-                    for name in ("etlantic", "polars", "pandas", "pyarrow")
-                },
+                "versions": installed_versions(),
             },
             "result": "pass" if qualified else "fail",
             "scenario_count": len(scenarios),
