@@ -350,6 +350,7 @@
       ],
       "verification": [
         "test_adaptive_report_path_uses_same_plan_dispatch",
+        "test_final_052_026_generated_objective_shape_is_fixed",
         "test_final_052_003_fallback_report_and_integrity",
         "test_adaptive_solver_matches_seeded_oracle_corpus",
         "test_adaptive_solver_oracle_rejects_a_nonoptimal_assignment"
@@ -431,6 +432,7 @@
       ],
       "verification": [
         "test_final_052_021_regions_bind_execution_policy_and_fusion_facts",
+        "test_final_052_021_region_identity_binds_fusion_state",
         "test_adaptive_regions_are_maximal_and_unfused_without_proof",
         "test_explicit_plan_snapshot_omits_dormant_adaptive_policy",
         "test_adaptive_bytes_ignore_target_mapping_insertion_order"
