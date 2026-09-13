@@ -103,6 +103,17 @@ distributions without authorizing qualification. The three fixtures are correcte
 as above; source-bound 0.52 and 0.53 evidence is regenerated only through executing
 their existing campaigns. No gate or assertion is disabled.
 
+The first corrected CI run additionally exposed checkout newline dependence on
+Windows: qualification_bundle hashed CRLF bytes differently from identical LF
+content, changing the public plan fingerprint and all nine historical JSON
+artifacts. A new regression reproduced that failure before the production fix.
+`qualification_bundle` now normalizes newline encoding before hashing. The 0.53
+source digest also uses normalized newlines and POSIX relative paths, and observed
+stdout/stderr artifacts are written as exact UTF-8 bytes matching their digests.
+Both new cross-checkout identity regressions pass; the historical plan fingerprint
+is identical under simulated LF and CRLF reads. No qualified content is omitted
+from the digest and no expected plan fingerprint was weakened.
+
 Before-fix verification: Six core failures on Linux/macOS/Windows at c83bd970;
 three fixture conflicts remained after 24c0b234 repaired metadata/evidence.
 

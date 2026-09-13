@@ -2,6 +2,9 @@
 
 from __future__ import annotations
 
+import runpy
+from pathlib import Path
+
 import anyio
 import pytest
 
@@ -15,6 +18,38 @@ from etlantic.registry import PlanningContext, PluginDescriptor
 from etlantic.runtime.execute import arun_pipeline
 from etlantic.runtime.request import InvalidationMode, RunRequest
 from tests.plan.test_adaptive_planner_0_52 import Sample, adaptive_profile
+
+
+def test_adaptive_plan_identity_survives_checkout_line_endings(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    before = plan_pipeline(Sample, profile=adaptive_profile())
+    read_bytes = Path.read_bytes
+
+    def windows_checkout(path: Path) -> bytes:
+        raw = read_bytes(path)
+        if path.name == "adaptive_support.json":
+            return raw.replace(b"\r\n", b"\n").replace(b"\n", b"\r\n")
+        return raw
+
+    monkeypatch.setattr(Path, "read_bytes", windows_checkout)
+    after = plan_pipeline(Sample, profile=adaptive_profile())
+    assert after.fingerprint == before.fingerprint
+
+
+def test_adaptive_evidence_digest_survives_checkout_line_endings(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    script = Path(__file__).resolve().parents[2] / "scripts/check_adaptive_0_53.py"
+    source_revision = runpy.run_path(str(script))["source_revision"]
+    before = source_revision()
+    read_bytes = Path.read_bytes
+
+    def windows_checkout(path: Path) -> bytes:
+        return read_bytes(path).replace(b"\r\n", b"\n").replace(b"\n", b"\r\n")
+
+    monkeypatch.setattr(Path, "read_bytes", windows_checkout)
+    assert source_revision() == before
 
 
 class CrossRow(Data):

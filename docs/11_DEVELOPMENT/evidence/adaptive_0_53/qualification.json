@@ -22,13 +22,13 @@
       "pyarrow": "25.0.0"
     }
   },
-  "junit_sha256": "120c45b727b579c41837b9684a342d2b40fe11c5a8db8290b35285212c539301",
-  "observed_at": "2026-09-13T23:14:28.206737+00:00",
-  "passed_scenarios": 91,
+  "junit_sha256": "1558097255ff190ccf66b301a4c0cddaefb628e307eec5c67025ac55c4160322",
+  "observed_at": "2026-09-13T23:23:26.185520+00:00",
+  "passed_scenarios": 93,
   "phase": "0.53",
   "result": "pass",
   "returncode": 0,
-  "scenario_count": 91,
+  "scenario_count": 93,
   "scenarios": [
     {
       "executed": true,
@@ -317,7 +317,17 @@
     },
     {
       "executed": true,
+      "id": "tests.runtime.test_adaptive_execution_0_53::test_adaptive_evidence_digest_survives_checkout_line_endings",
+      "result": "pass"
+    },
+    {
+      "executed": true,
       "id": "tests.runtime.test_adaptive_execution_0_53::test_adaptive_physical_execution_routes_portable_polars_to_pandas",
+      "result": "pass"
+    },
+    {
+      "executed": true,
+      "id": "tests.runtime.test_adaptive_execution_0_53::test_adaptive_plan_identity_survives_checkout_line_endings",
       "result": "pass"
     },
     {
@@ -488,7 +498,7 @@
   ],
   "schema": "etlantic.adaptive_evidence/2",
   "source_changed": false,
-  "source_revision": "sha256:e2fb2bc23a9007ea17ab35dc7d2cfa8651e3a8c1f379f75275a47815bca68652",
+  "source_revision": "sha256:b9201e1a7211b1c586e42c6398b118331e7dec7b64d48667f219b2146ef40ce4",
   "stderr_sha256": "05edbd111e3a90ba0587a5fcdd4c8554984634ecbd0b3ca664b4c3a844f8c76a",
-  "stdout_sha256": "4c60836f15d3fdd09fcba6908fe1dc6a145e1eae8a08a414ca61bebfe1d107cb"
+  "stdout_sha256": "9c44d15e061126d386adcb82c1ea9d3e153d1281b776008a805855c499847837"
 }

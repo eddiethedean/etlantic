@@ -23,6 +23,8 @@ def qualification_bundle() -> tuple[dict[str, Any], str]:
     from importlib.resources import files
 
     raw = files("etlantic.runtime").joinpath("adaptive_support.json").read_bytes()
+    # Git checkouts may translate newlines without changing qualified content.
+    raw = raw.replace(b"\r\n", b"\n").replace(b"\r", b"\n")
     bundle = json.loads(raw)
     if (
         set(bundle) != {"schema", "maturity", "rows", "observations"}

@@ -55,10 +55,10 @@ def source_revision() -> str:
         )
     )
     digest = hashlib.sha256()
-    for path in sorted(paths):
-        digest.update(str(path.relative_to(ROOT)).encode())
+    for path in sorted(paths, key=lambda item: item.relative_to(ROOT).as_posix()):
+        digest.update(path.relative_to(ROOT).as_posix().encode())
         digest.update(b"\0")
-        digest.update(path.read_bytes())
+        digest.update(path.read_bytes().replace(b"\r\n", b"\n").replace(b"\r", b"\n"))
         digest.update(b"\0")
     return "sha256:" + digest.hexdigest()
 
@@ -236,8 +236,8 @@ def main() -> int:
             (args.output / "qualification.json").write_text(
                 json.dumps(record, indent=2, sort_keys=True) + "\n"
             )
-            (args.output / "qualification.stdout.txt").write_text(safe_stdout)
-            (args.output / "qualification.stderr.txt").write_text(safe_stderr)
+            (args.output / "qualification.stdout.txt").write_bytes(safe_stdout.encode())
+            (args.output / "qualification.stderr.txt").write_bytes(safe_stderr.encode())
             (args.output / "qualification.xml").write_bytes(safe_junit)
         elif not _verify_committed_evidence(record, record["source_revision"]):
             print(
