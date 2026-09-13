@@ -129,6 +129,8 @@ class PolarsDataframePlugin:
                 InterchangeMechanism.ARROW_IPC_FILE,
             }:
                 return pl.from_arrow(to_arrow_table_strict(value))
+        if isinstance(value, (list, tuple)) and not value:
+            return self._from_records(value, contract_type)
         table = to_arrow_table(value)
         if table is not None:
             return pl.from_arrow(table)

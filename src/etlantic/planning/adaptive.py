@@ -339,6 +339,32 @@ def _build_adaptive_plan(
                             for record in metadata.get("etlantic.implementations", ())
                             if record.get("binding") is not None
                         },
+                        "contracts": {
+                            port.contract_id: _digest(
+                                port.contract_type.model_json_schema()
+                            )
+                            for node in graph.nodes
+                            for port in (*node.inputs, *node.outputs)
+                            if port.contract_id
+                            and port.contract_type is not None
+                            and hasattr(port.contract_type, "model_json_schema")
+                        }
+                        | {
+                            node.contract_id: _digest(
+                                node.contract_type.model_json_schema()
+                            )
+                            for node in graph.nodes
+                            if node.contract_id
+                            and node.contract_type is not None
+                            and hasattr(node.contract_type, "model_json_schema")
+                        },
+                        "bindings": {
+                            record["node_name"]: context.registry.bindings[
+                                record["binding"]
+                            ].to_dict()
+                            for record in metadata.get("etlantic.implementations", ())
+                            if record.get("binding") in context.registry.bindings
+                        },
                         "evidence_refs": list(support_row.evidence_refs),
                     }
                 )
@@ -2020,41 +2046,50 @@ def _physical_dag(
                 },
             }
             dependencies[edge.consumer_node].append(PhysicalDependency(transfer_id))
-            if bool(
-                dict(
-                    getattr(graph.node_map()[edge.consumer_node], "metadata", {}) or {}
-                ).get("etlantic.collection_required")
-            ):
-                collection_spec = {
-                    "kind": PhysicalUnitKind.COLLECTION,
-                    "target_identity": _target_identity(destination),
-                    "dependencies": (PhysicalDependency(transfer_id),),
-                    "metadata": {
-                        "etlantic.edge": [edge.producer_node, edge.consumer_node],
-                        "etlantic.edge_ports": [
-                            edge.producer_node,
-                            edge.consumer_node,
-                            edge.producer_port,
-                            edge.consumer_port,
-                        ],
-                        "etlantic.transfer_unit": transfer_id,
-                    },
-                    **envelope(node_map[edge.consumer_node], destination),
-                }
-                collection_id = generated_unit_identity(
-                    kind=collection_spec["kind"],
-                    target_identity=collection_spec["target_identity"],
-                    logical_nodes=collection_spec.get("logical_nodes", ()),
-                    input_contracts=collection_spec["input_contracts"],
-                    output_contracts=collection_spec["output_contracts"],
-                    policy=collection_spec["policy"],
-                    retry_policy=collection_spec["retry_policy"],
-                    ownership=collection_spec["ownership"],
-                    protocol_versions=collection_spec["protocol_versions"],
-                    metadata=collection_spec["metadata"],
-                )
-                unit_specs[collection_id] = collection_spec
-                dependencies[edge.consumer_node][-1] = PhysicalDependency(collection_id)
+        destination = target_map[consumer.target_id]
+        boundary_dependency = (
+            transfer_id
+            if producer.target_id != consumer.target_id
+            else compute_ids[edge.producer_node]
+        )
+        if bool(
+            dict(
+                getattr(graph.node_map()[edge.consumer_node], "metadata", {}) or {}
+            ).get("etlantic.collection_required")
+        ):
+            collection_spec = {
+                "kind": PhysicalUnitKind.COLLECTION,
+                "target_identity": _target_identity(destination),
+                "dependencies": (PhysicalDependency(boundary_dependency),),
+                "metadata": {
+                    "etlantic.edge": [edge.producer_node, edge.consumer_node],
+                    "etlantic.edge_ports": [
+                        edge.producer_node,
+                        edge.consumer_node,
+                        edge.producer_port,
+                        edge.consumer_port,
+                    ],
+                    "etlantic.transfer_unit": boundary_dependency,
+                    "etlantic.requirement": dict(
+                        node_map[edge.consumer_node].metadata
+                    ).get("etlantic.collection_required"),
+                },
+                **envelope(node_map[edge.consumer_node], destination),
+            }
+            collection_id = generated_unit_identity(
+                kind=collection_spec["kind"],
+                target_identity=collection_spec["target_identity"],
+                logical_nodes=collection_spec.get("logical_nodes", ()),
+                input_contracts=collection_spec["input_contracts"],
+                output_contracts=collection_spec["output_contracts"],
+                policy=collection_spec["policy"],
+                retry_policy=collection_spec["retry_policy"],
+                ownership=collection_spec["ownership"],
+                protocol_versions=collection_spec["protocol_versions"],
+                metadata=collection_spec["metadata"],
+            )
+            unit_specs[collection_id] = collection_spec
+            dependencies[edge.consumer_node][-1] = PhysicalDependency(collection_id)
     # Compute specs are admitted only after edge processing has completed, so
     # their retained dependency metadata is charged as part of staging.
     for node in graph.nodes:

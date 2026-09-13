@@ -133,3 +133,40 @@ evidence types from `etlantic.interchange.tabular`. Adopter guides:
       show_root_heading: true
       members_order: source
       filters: ["!^_"]
+
+## Experimental adaptive physical execution (0.53)
+
+Local `/2` execution requires a packaged fixture-qualified support row and a
+fresh whole-DAG admission. Stored portable definitions, contract fingerprints,
+compiler/dataframe versions, bindings and exact executor evidence are checked
+before resources or I/O. Selected adapters are pinned for the invocation;
+changing a runtime registry after admission cannot redirect execution.
+
+Boundary requirements use closed versioned metadata maps. Bare truthy flags
+and unknown fields or versions reject before effects:
+
+| Graph metadata | Required descriptor / behavior |
+|---|---|
+| `etlantic.collection_required` on a consumer | `{"schema":"etlantic.physical_operation/1","kind":"collection","max_rows":1000,"max_bytes":1048576}`; executes an explicit edge collection and enforces both finite positive integer bounds. |
+| `etlantic.validation_required` | `{"schema":"etlantic.physical_operation/1","kind":"validation","port":"result","outcome":"fail"}`; invokes output contract validation on the contracted port. Outcomes also support reject, quarantine, warn and observe_only through the existing validation protocol. |
+| `etlantic.materialization_required` | `{"schema":"etlantic.physical_operation/1","kind":"materialization","checkpoint":"checkpoint_name"}`; atomically stores records and integrity/contract/security metadata in a named local workspace checkpoint. |
+| `etlantic.reuse_artifact` | `{"schema":"etlantic.physical_operation/1","kind":"reuse","checkpoint":"checkpoint_name"}`; retains its producer dependency, verifies the checkpoint and selects it or the producer on a miss/stale record. Integrity or authorization failures fail the boundary. |
+
+For materialization/reuse, `checkpoint` defaults to `memory`; names contain only
+ASCII letters, digits, `_` and `-`. Named checkpoints require `workspace` during
+scheduler admission. An optional `ttl_seconds` must be finite and positive.
+`port` defaults to the first contracted output and must name a declared port.
+Collection bounds do not change existing explicit `/1` collection behavior.
+
+Physical publication retains a committed receipt before logical sink success.
+Qualified JSON/CSV overwrite uses safe atomic, destination-locked writes;
+missing acknowledgements retain `PMADP524` reconciliation identities and forbid
+blind retry. Cancellation drains owned cleanup under a shield and its configured
+abandonment deadline; unresolved owners remain in `PMADP523` obligations.
+Protocol metadata excludes native serializers, row payloads and free-form backend
+exception text. Physical counters are nested under namespaced report metadata.
+
+The qualification campaign and exact backend versions are documented in
+[0.53 evidence](../11_DEVELOPMENT/evidence/adaptive_0_53/README.md). These APIs
+remain Experimental and require Sol review; a passing implementation-side
+campaign is not independent release approval.

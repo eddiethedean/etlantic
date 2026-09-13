@@ -16,15 +16,38 @@ SUPPORT_MATURITY = "Experimental"
 SUPPORTED_PATTERNS = frozenset(
     {"chain/1", "diamond/1", "fanout/1", "dual-port-chain/1"}
 )
-# These identifiers refer to the checked-in 0.53 qualification bundle.  They
-# are deliberately independent of a submitted graph fingerprint: topology
-# matching selects a row, while this immutable bundle is the authority for the
-# operations, policies and backend versions that row permits.
-_QUALIFIED_EVIDENCE = {
-    (pattern, family): f"bundle:adaptive-0.53/{pattern}/{family}/v1"
-    for pattern in SUPPORTED_PATTERNS
-    for family in ("local", "polars", "pandas")
-}
+
+
+def qualification_bundle() -> tuple[dict[str, Any], str]:
+    """Read packaged support data independent from submitted plans/reports."""
+    from importlib.resources import files
+
+    raw = files("etlantic.runtime").joinpath("adaptive_support.json").read_bytes()
+    bundle = json.loads(raw)
+    if (
+        set(bundle) != {"schema", "maturity", "rows", "observations"}
+        or bundle["schema"] != "etlantic.adaptive_qualification/1"
+        or bundle["maturity"] != SUPPORT_MATURITY
+    ):
+        raise ValueError("Packaged adaptive qualification schema is invalid")
+    observations = bundle["observations"]
+    if not observations or any(
+        set(case) != {"id", "result"} or case["result"] != "pass"
+        for case in observations
+    ):
+        raise ValueError("Packaged adaptive qualification lacks passing observations")
+    evidence = (
+        "sha256:"
+        + hashlib.sha256(
+            json.dumps(observations, sort_keys=True, separators=(",", ":")).encode()
+        ).hexdigest()
+    )
+    for row in bundle["rows"].values():
+        if set(row) != {"versions", "operations", "policies", "evidence_refs"} or row[
+            "evidence_refs"
+        ] != [evidence]:
+            raise ValueError("Packaged adaptive qualification evidence drifted")
+    return bundle, "sha256:" + hashlib.sha256(raw).hexdigest()
 
 
 @dataclass(frozen=True, slots=True)
@@ -58,77 +81,124 @@ class SupportRow:
 
 def _pattern(plan: AdaptivePipelinePlan) -> str:
     graph = plan.logical_graph
-    nodes = {node.name: node for node in graph.nodes}
-    indegree = {name: 0 for name in nodes}
-    outdegree = {name: 0 for name in nodes}
+    nodes = graph.node_map()
+    incoming = {name: [] for name in nodes}
+    outgoing = {name: [] for name in nodes}
     for edge in graph.edges:
-        indegree[edge.consumer_node] += 1
-        outdegree[edge.producer_node] += 1
-    sources = [name for name, value in indegree.items() if value == 0]
-    sinks = [name for name, value in outdegree.items() if value == 0]
-    if len(sources) != 1:
+        outgoing[edge.producer_node].append(edge)
+        incoming[edge.consumer_node].append(edge)
+    roots = [name for name in nodes if not incoming[name]]
+    if len(roots) != 1 or nodes[roots[0]].kind.value != "source":
         return "unknown/1"
-    source_kinds = {nodes[name].kind.value for name in sources}
-    sink_kinds = {nodes[name].kind.value for name in sinks}
-    if (
-        source_kinds == {"source"}
-        and (len(sinks) == 1 or (len(nodes) == 1 and sinks == sources))
-        and (not sinks or sink_kinds == {"sink"} or sinks == sources)
-        and len(graph.edges) == max(0, len(nodes) - 1)
-        and all(value <= 1 for value in indegree.values())
-        and all(value <= 1 for value in outdegree.values())
+    root = roots[0]
+    if any(
+        node.kind.value not in {"source", "step", "sink"} for node in nodes.values()
     ):
-        return "chain/1"
-    # A diamond is exactly source -> two branches -> join -> sink.
-    if (
-        len(nodes) == 5
-        and len(sinks) == 1
-        and source_kinds == {"source"}
-        and sink_kinds == {"sink"}
-        and len(graph.edges) == 5
-        and sum(v == 2 for v in indegree.values()) == 1
-        and sum(v == 2 for v in outdegree.values()) == 1
-        and sum(v == 0 for v in indegree.values()) == 1
-        and sum(v == 0 for v in outdegree.values()) == 1
-    ):
-        return "diamond/1"
-    # A fanout has a shared source-side step and two independent leaf steps,
-    # each terminating in its own sink (six logical nodes total).
-    if (
-        len(nodes) == 6
-        and len(sinks) == 2
-        and source_kinds == {"source"}
-        and sink_kinds == {"sink"}
-        and len(graph.edges) == 5
-        and sum(v == 2 for v in outdegree.values()) == 1
-        and sum(v == 1 for v in indegree.values()) == 5
-        and sum(v == 0 for v in indegree.values()) == 1
-    ):
-        return "fanout/1"
-    # A two-port boundary is distinguishable from an arbitrary two-input join.
-    if (
-        len(nodes) == 4
-        and len(sinks) == 1
-        and source_kinds == {"source"}
-        and sink_kinds == {"sink"}
-        and len(graph.edges) == 4
-        and sum(len(node.outputs) == 2 for node in nodes.values()) == 1
-        and sum(len(node.inputs) == 2 for node in nodes.values()) == 1
-        and sorted(outdegree.values()) == [0, 1, 1, 2]
-        and sorted(indegree.values()) == [0, 1, 1, 2]
-    ):
-        return "dual-port-chain/1"
+        return "unknown/1"
+    if sum(node.kind.value == "source" for node in nodes.values()) != 1:
+        return "unknown/1"
+    if all(len(incoming[n]) <= 1 and len(outgoing[n]) <= 1 for n in nodes):
+        current = root
+        visited = set()
+        while current not in visited:
+            visited.add(current)
+            if nodes[current].kind.value == "sink" and outgoing[current]:
+                break
+            if not outgoing[current]:
+                return "chain/1" if visited == set(nodes) else "unknown/1"
+            current = outgoing[current][0].consumer_node
+        return "unknown/1"
+    if len(nodes) == 5 and len(outgoing[root]) == 2:
+        branches = [edge.consumer_node for edge in outgoing[root]]
+        if len(set(branches)) == 2 and all(
+            nodes[b].kind.value == "step"
+            and len(incoming[b]) == 1
+            and len(outgoing[b]) == 1
+            for b in branches
+        ):
+            joins = [outgoing[b][0].consumer_node for b in branches]
+            if joins[0] == joins[1]:
+                join = joins[0]
+                if (
+                    nodes[join].kind.value == "step"
+                    and len(incoming[join]) == 2
+                    and len(outgoing[join]) == 1
+                ):
+                    sink = outgoing[join][0].consumer_node
+                    if (
+                        nodes[sink].kind.value == "sink"
+                        and not outgoing[sink]
+                        and len(incoming[sink]) == 1
+                        and len(graph.edges) == 5
+                    ):
+                        return "diamond/1"
+    if len(nodes) == 6 and len(outgoing[root]) == 1:
+        shared = outgoing[root][0].consumer_node
+        if (
+            nodes[shared].kind.value == "step"
+            and len(incoming[shared]) == 1
+            and len(outgoing[shared]) == 2
+        ):
+            leaves = [edge.consumer_node for edge in outgoing[shared]]
+            if len(set(leaves)) == 2 and all(
+                nodes[n].kind.value == "step"
+                and len(incoming[n]) == 1
+                and len(outgoing[n]) == 1
+                for n in leaves
+            ):
+                sinks = [outgoing[n][0].consumer_node for n in leaves]
+                if (
+                    len(set(sinks)) == 2
+                    and all(
+                        nodes[n].kind.value == "sink"
+                        and len(incoming[n]) == 1
+                        and not outgoing[n]
+                        for n in sinks
+                    )
+                    and len(graph.edges) == 5
+                ):
+                    return "fanout/1"
+    if len(nodes) == 4 and len(outgoing[root]) == 1:
+        producer = outgoing[root][0].consumer_node
+        routes = outgoing[producer]
+        if (
+            nodes[producer].kind.value == "step"
+            and len(routes) == 2
+            and len(nodes[producer].outputs) == 2
+            and len(incoming[producer]) == 1
+        ):
+            consumer = routes[0].consumer_node
+            if (
+                routes[1].consumer_node == consumer
+                and len({r.producer_port for r in routes}) == 2
+                and len({r.consumer_port for r in routes}) == 2
+                and len(nodes[consumer].inputs) == 2
+                and nodes[consumer].kind.value == "step"
+                and len(outgoing[consumer]) == 1
+            ):
+                sink = outgoing[consumer][0].consumer_node
+                if (
+                    nodes[sink].kind.value == "sink"
+                    and not outgoing[sink]
+                    and len(graph.edges) == 4
+                ):
+                    return "dual-port-chain/1"
     return "unknown/1"
 
 
 def _target_family(plan: AdaptivePipelinePlan) -> tuple[str, ...]:
     by_id = {target.target_id: target for target in plan.inventory.targets}
-    ordered: list[str] = []
-    for identity in plan.inventory.eligible_target_order:
-        target = by_id.get(identity)
-        if target is not None:
-            ordered.append(target.engine)
-    return tuple(ordered)
+    assignments = {
+        decision.node_name: decision.target_id for decision in plan.decisions
+    }
+    segments = []
+    for node in plan.logical_graph.nodes:
+        target_id = assignments.get(node.name)
+        if target_id is None or target_id not in by_id:
+            return ()
+        if not segments or segments[-1] != target_id:
+            segments.append(target_id)
+    return tuple(by_id[target_id].engine for target_id in segments)
 
 
 def topology_fingerprint(plan: AdaptivePipelinePlan) -> str:
@@ -151,10 +221,18 @@ def support_row_for(plan: AdaptivePipelinePlan) -> SupportRow | None:
     pattern = _pattern(plan)
     if pattern not in SUPPORTED_PATTERNS:
         return None
+    if any(
+        unit.kind.value == "compute" and len(unit.logical_nodes) != 1
+        for unit in plan.physical_dag.units
+    ):
+        return None
     families: tuple[str, ...] = _target_family(plan)
     if not families or len(families) > 2:
         return None
-    if any(target.location != "local" for target in plan.inventory.targets):
+    if any(
+        target.location != "local" or target.resource is not None
+        for target in plan.inventory.targets
+    ):
         return None
     first_family = next(iter(families), "")
     if len(set(families)) == 1 and first_family not in {"local", "polars", "pandas"}:
@@ -168,6 +246,11 @@ def support_row_for(plan: AdaptivePipelinePlan) -> SupportRow | None:
         return None
     if pattern in {"diamond/1", "fanout/1"} and len(families) != 1:
         return None
+    bundle, bundle_digest = qualification_bundle()
+    key = f"{pattern}:{'-'.join(families)}"
+    qualified = bundle["rows"].get(key)
+    if qualified is None:
+        return None
     kinds = tuple(kind.value for kind in PhysicalUnitKind)
     return SupportRow(
         row_id=f"local-static:{pattern}:{'-'.join(families)}",
@@ -176,16 +259,13 @@ def support_row_for(plan: AdaptivePipelinePlan) -> SupportRow | None:
         version_requirements={
             "plan": "etlantic.plan/2",
             "physical_unit": "etlantic.physical_unit/1",
+            **qualified["versions"],
         },
         unit_kinds=kinds,
         contract_profiles=("etlantic.contract/1",),
         io_families=("memory", "json", "csv", "null"),
         policy_modes=("standard", "validate", "overwrite", "no_write"),
-        evidence_refs=tuple(
-            _QUALIFIED_EVIDENCE[(pattern, family)]
-            for family in dict.fromkeys(families)
-            if (pattern, family) in _QUALIFIED_EVIDENCE
-        ),
+        evidence_refs=(bundle_digest, *qualified["evidence_refs"]),
     )
 
 

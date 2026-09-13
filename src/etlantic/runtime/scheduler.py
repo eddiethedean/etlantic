@@ -11,7 +11,7 @@ from dataclasses import dataclass, field
 from enum import StrEnum
 from typing import Any, Protocol, runtime_checkable
 
-from etlantic.plan.adaptive_model import PlanDocument
+from etlantic.plan.adaptive_model import AdaptivePipelinePlan, PlanDocument
 from etlantic.reports.model import PipelineRunReport
 from etlantic.runtime.request import RunRequest
 
@@ -151,7 +151,10 @@ class LocalScheduler:
     ) -> SchedulerSupportReport:
         from etlantic.plan.adaptive_model import ADAPTIVE_PLAN_SCHEMA
 
-        if getattr(plan, "schema", None) == ADAPTIVE_PLAN_SCHEMA:
+        if (
+            isinstance(plan, AdaptivePipelinePlan)
+            or getattr(plan, "schema", None) == ADAPTIVE_PLAN_SCHEMA
+        ):
             from etlantic.runtime.adaptive_support import is_executable_plan
 
             if not is_executable_plan(plan):
@@ -240,13 +243,21 @@ class LocalScheduler:
         from etlantic.plan.adaptive_model import ADAPTIVE_PLAN_SCHEMA
         from etlantic.runtime.orchestrator import LocalOrchestrator
 
-        if getattr(plan, "schema", None) == ADAPTIVE_PLAN_SCHEMA:
+        if (
+            isinstance(plan, AdaptivePipelinePlan)
+            or getattr(plan, "schema", None) == ADAPTIVE_PLAN_SCHEMA
+        ):
             from etlantic.runtime.adaptive_admission import admit_adaptive_plan
             from etlantic.runtime.physical_host import pipeline_plan_for_adaptive
 
-            admission = admit_adaptive_plan(plan, request=request, runtime=runtime)
+            admission = admit_adaptive_plan(
+                plan, request=request, runtime=runtime, workspace=workspace
+            )
             host_plan = pipeline_plan_for_adaptive(
-                plan, runtime=runtime, pipeline_cls=pipeline_cls
+                plan,
+                runtime=runtime,
+                pipeline_cls=pipeline_cls,
+                contract_pins=admission.contract_pins,
             )
             host = LocalOrchestrator(
                 runtime=runtime,
@@ -260,6 +271,8 @@ class LocalScheduler:
                 adaptive_plan=plan,
                 physical_executor_pins=admission.executor_pins,
                 physical_storage_pins=admission.storage_pins,
+                physical_compiler_pins=admission.compiler_pins,
+                physical_dataframe_pins=dict(admission.dataframe_pins),
             )
             result = await host.execute()
             result.metadata.setdefault("etlantic.scheduler", self.info.name)

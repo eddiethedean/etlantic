@@ -251,6 +251,8 @@ class LocalOrchestrator:
     # runtime registries during a run.
     physical_executor_pins: Mapping[str, Any] | None = field(default=None, repr=False)
     physical_storage_pins: Mapping[str, Any] | None = field(default=None, repr=False)
+    physical_compiler_pins: Mapping[str, Any] | None = field(default=None, repr=False)
+    physical_dataframe_pins: dict[str, Any] | None = field(default=None, repr=False)
     _persistence: _RunPersistenceState = field(
         default_factory=_RunPersistenceState, repr=False
     )
@@ -268,6 +270,12 @@ class LocalOrchestrator:
     _transferred_values: dict[str, Any] = field(default_factory=dict, repr=False)
     _transferred_inputs: set[str] = field(default_factory=set, repr=False)
     _unknown_publications: list[dict[str, Any]] = field(
+        default_factory=list, repr=False
+    )
+
+    _physical_cleanup_pending: list[Any] = field(default_factory=list, repr=False)
+    _cleanup_obligations: list[dict[str, Any]] = field(default_factory=list, repr=False)
+    _publication_receipt_summaries: list[dict[str, Any]] = field(
         default_factory=list, repr=False
     )
 
@@ -597,12 +605,21 @@ class LocalOrchestrator:
     def _append_validation(
         self, validations: list[ValidationResult], item: ValidationResult
     ) -> None:
+        if self.physical_mode and item.message:
+            item = replace(
+                item,
+                message="Physical validation reported a contract or policy finding.",
+            )
         with self._collect_lock:
             validations.extend([item])
 
     def _append_diagnostic(
         self, diagnostics: list[RunDiagnostic], item: RunDiagnostic
     ) -> None:
+        if self.physical_mode:
+            item = replace(
+                item, message="Physical execution reported " + item.code + "."
+            )
         with self._collect_lock:
             diagnostics.extend([item])
 
@@ -1070,6 +1087,10 @@ class LocalOrchestrator:
                 "etlantic.orchestrator": "local",
                 "etlantic.outbound_events": list(self.outbound_events),
                 "etlantic.unknown_publications": list(self._unknown_publications),
+                "etlantic.cleanup_obligations": list(self._cleanup_obligations),
+                "etlantic.publication_receipts": list(
+                    self._publication_receipt_summaries
+                ),
             },
         )
         bridge = getattr(self.runtime, "observability_bridge", None)
@@ -1140,6 +1161,7 @@ class LocalOrchestrator:
             )
         unit_trace: list[dict[str, Any]] = []
         status = RunStatus.RUNNING
+        cancelled: BaseException | None = None
         try:
 
             async def run_units() -> None:
@@ -1170,9 +1192,7 @@ class LocalOrchestrator:
             self._finalize_incomplete_steps(
                 nodes, terminal=StepStatus.CANCELLED, message="Run cancelled"
             )
-            raise PipelineCancelledError(
-                "Run cancelled", run_id=run_id, code="PMEXEC409"
-            ) from exc
+            cancelled = exc
         except TimeoutError:
             status = RunStatus.FAILED
             self._finalize_incomplete_steps(
@@ -1196,7 +1216,11 @@ class LocalOrchestrator:
                     ),
                 )
         except Exception as exc:
-            status = RunStatus.FAILED
+            status = (
+                RunStatus.PARTIAL
+                if any(state.status is StepStatus.SUCCEEDED for state in nodes.values())
+                else RunStatus.FAILED
+            )
             self._finalize_incomplete_steps(
                 nodes, terminal=StepStatus.FAILED, message=redact_message(str(exc))
             )
@@ -1206,6 +1230,60 @@ class LocalOrchestrator:
                     code=getattr(exc, "code", None) or "PMADP520",
                     severity="error",
                     message=redact_message(str(exc)),
+                ),
+            )
+        finally:
+            for executor, context, result in self._physical_cleanup_pending:
+                cleanup = getattr(executor, "cleanup", None)
+                if not callable(cleanup):
+                    continue
+                try:
+                    with anyio.move_on_after(
+                        self.request.cancellation.abandon_after_seconds, shield=True
+                    ) as scope:
+                        receipts = await cast(Any, cleanup)(context, result)
+                    from etlantic.connectors.models import CleanupReceipt
+
+                    if any(
+                        not isinstance(receipt, CleanupReceipt)
+                        or receipt.status == "failed"
+                        for receipt in (receipts or ())
+                    ):
+                        raise RuntimeError(
+                            "Owned cleanup returned an unresolved receipt"
+                        )
+                    if scope.cancel_called:
+                        raise TimeoutError("Owned cleanup did not drain")
+                except Exception:
+                    self._cleanup_obligations.append(
+                        {
+                            "unit_id": context.unit.identity,
+                            "owner": executor.info.identity,
+                            "operation": "cleanup",
+                            "code": "PMADP523",
+                        }
+                    )
+            self._physical_cleanup_pending.clear()
+            if self._cleanup_obligations:
+                self._append_diagnostic(
+                    diagnostics,
+                    RunDiagnostic(
+                        code="PMADP523",
+                        severity="error",
+                        message="Physical cleanup has unresolved owner obligations.",
+                    ),
+                )
+                if status is RunStatus.RUNNING:
+                    status = RunStatus.FAILED
+        if self._unknown_publications and not any(
+            diagnostic.code == "PMADP524" for diagnostic in diagnostics
+        ):
+            self._append_diagnostic(
+                diagnostics,
+                RunDiagnostic(
+                    code="PMADP524",
+                    severity="error",
+                    message="Publication requires reconciliation.",
                 ),
             )
         succeeded = sum(
@@ -1246,12 +1324,44 @@ class LocalOrchestrator:
                 "etlantic.physical_trace": unit_trace,
             },
         )
-        self._persist_report(report)
-        event_kind = "run_completed" if status is RunStatus.SUCCEEDED else "run_failed"
-        self.runtime.events.emit(
-            self._lifecycle_event(kind=event_kind, run_id=run_id, status=status.value)
-        )
-        await self.runtime.callbacks.emit(event_kind, report)
+        try:
+            with anyio.CancelScope(shield=True):
+                self._persist_report(report)
+                event_kind = (
+                    "run_completed" if status is RunStatus.SUCCEEDED else "run_failed"
+                )
+                self.runtime.events.emit(
+                    self._lifecycle_event(
+                        kind=event_kind, run_id=run_id, status=status.value
+                    )
+                )
+                await self.runtime.callbacks.emit(event_kind, report)
+        except Exception as exc:
+            if cancelled is None:
+                if isinstance(exc, PipelineExecutionError) and exc.report is not None:
+                    raise
+                raise PipelineExecutionError(
+                    "Physical terminal report delivery failed",
+                    run_id=run_id,
+                    report=report,
+                    code="PMEXEC410",
+                    stage="report",
+                ) from exc
+            report = replace(
+                report,
+                diagnostics=(
+                    *report.diagnostics,
+                    RunDiagnostic(
+                        code="PMEXEC410",
+                        severity="error",
+                        message="Physical terminal report delivery failed.",
+                    ),
+                ),
+            )
+        if cancelled is not None:
+            raise PipelineCancelledError(
+                "Run cancelled", run_id=run_id, report=report, code="PMEXEC409"
+            ) from cancelled
         return report
 
     async def _execute_physical_units(
@@ -1358,47 +1468,62 @@ class LocalOrchestrator:
                     run_id=run_id,
                     unit_attempt=1,
                     effective_policy=self.request.to_dict(),
+                    member_attempts={
+                        name: nodes[name].attempts + 1
+                        for name in protocol_unit.logical_nodes
+                        if name in nodes
+                    },
+                    services={"events": self.runtime.events},
                     inputs=self._physical_inputs(
                         protocol_unit, nodes, artifacts, graph
                     ),
-                    adapters={protocol_unit.target_identity: executor.info},
+                    adapters={
+                        "executor": executor,
+                        "dataframe": (self.physical_dataframe_pins or {}).get(
+                            unit.engine
+                        ),
+                        "compilers": {
+                            name: (self.physical_compiler_pins or {}).get(name)
+                            for name in protocol_unit.logical_nodes
+                        },
+                        "storage": dict(self.physical_storage_pins or {}),
+                    },
                 )
                 result = None
-                primary_error: BaseException | None = None
+                cleanup_record = [executor, context, None]
+                self._physical_cleanup_pending.append(cleanup_record)
                 try:
                     result = await cast(Any, executor.execute)(context)
+                    cleanup_record[2] = result
                 except BaseException as exc:
-                    primary_error = exc
                     if isinstance(exc, anyio.get_cancelled_exc_class()):
                         cancel = getattr(executor, "cancel", None)
                         if callable(cancel):
-                            with anyio.CancelScope(shield=True):
-                                await cast(Any, cancel)(context)
-                    raise
-                finally:
-                    cleanup = getattr(executor, "cleanup", None)
-                    if callable(cleanup):
-                        try:
-                            with anyio.CancelScope(shield=True):
-                                receipts = await cast(Any, cleanup)(context, result)
-                            if receipts:
-                                unit_trace.append(
+                            try:
+                                with anyio.move_on_after(
+                                    self.request.cancellation.abandon_after_seconds,
+                                    shield=True,
+                                ) as scope:
+                                    await cast(Any, cancel)(context)
+                                if scope.cancel_called:
+                                    self._cleanup_obligations.append(
+                                        {
+                                            "unit_id": unit.identity,
+                                            "owner": executor.info.identity,
+                                            "operation": "cancel",
+                                            "code": "PMADP523",
+                                        }
+                                    )
+                            except Exception:
+                                self._cleanup_obligations.append(
                                     {
-                                        "unit": unit.identity,
-                                        "kind": kind,
-                                        "operation": "cleanup",
-                                        "status": "succeeded",
-                                        "receipt_count": len(receipts),
+                                        "unit_id": unit.identity,
+                                        "owner": executor.info.identity,
+                                        "operation": "cancel",
+                                        "code": "PMADP523",
                                     }
                                 )
-                        except BaseException as cleanup_error:
-                            if primary_error is None:
-                                raise PipelineExecutionError(
-                                    "Physical unit cleanup failed",
-                                    run_id=run_id,
-                                    code="PMADP523",
-                                    stage="cleanup",
-                                ) from cleanup_error
+                    raise
                 result = cast(Any, result)
                 validate_unit_result(result, protocol_unit)
                 if result.status != "succeeded":
@@ -1408,63 +1533,160 @@ class LocalOrchestrator:
                         code="PMADP520",
                         stage="execute",
                     )
-                # Register executor-owned outputs at the logical artifact
-                # boundary while keeping native handles process-local.
-                output_index = 0
-                outcomes = {
-                    outcome.logical_name: outcome for outcome in result.logical_outcomes
+                # Validate the complete result before exposing any of its ports.
+                outcomes = {o.logical_name: o for o in result.logical_outcomes}
+                members = set(protocol_unit.logical_nodes)
+                if (
+                    len(outcomes) != len(result.logical_outcomes)
+                    or set(outcomes) != members
+                ):
+                    raise PipelineExecutionError(
+                        "Physical result logical coverage is incomplete",
+                        code="PMADP400",
+                        stage="execute",
+                    )
+                expected = {
+                    f"{name}.{port.name}": (nodes[name].node, port.name)
+                    for name in members
+                    if name in nodes and outcomes[name].status == "succeeded"
+                    for port in nodes[name].node.outputs
                 }
-                for logical_name in protocol_unit.logical_nodes:
-                    if logical_name not in nodes:
-                        continue
-                    node = nodes[logical_name].node
-                    ports = node.outputs or ()
-                    if output_index + len(ports) > len(result.outputs):
+                if kind in {"transfer", "collection"}:
+                    edge_route = unit.metadata.get("etlantic.edge_ports")
+                    if (
+                        not isinstance(edge_route, (tuple, list))
+                        or len(edge_route) != 4
+                    ):
                         raise PipelineExecutionError(
-                            f"Physical executor returned incomplete outputs for {logical_name}",
-                            run_id=run_id,
+                            "Physical boundary route is incomplete",
                             code="PMADP400",
                             stage="execute",
                         )
-                    for port in ports or (None,):
-                        handle = result.outputs[output_index]
+                    expected = {f"{edge_route[1]}.{edge_route[3]}": (None, None)}
+                elif kind in {"validation", "materialization", "reuse"}:
+                    logical_name = unit.metadata.get("etlantic.logical_node")
+                    boundary_node = nodes[logical_name].node
+                    descriptor = unit.metadata["etlantic.requirement"]
+                    port = descriptor.get("port") or boundary_node.outputs[0].name
+                    expected = {f"{logical_name}.{port}": (boundary_node, port)}
+                routed = {}
+                for handle in result.outputs:
+                    if (
+                        not isinstance(handle.ref, ArtifactRef)
+                        or handle.ref.logical_output not in expected
+                        or handle.ref.logical_output in routed
+                        or handle.ref.security_domain != self.plan.security_domain
+                        or handle.ownership
+                        not in {"owned", "copied", "borrowed", "shared"}
+                    ):
+                        raise PipelineExecutionError(
+                            "Physical result output route is invalid",
+                            code="PMADP400",
+                            stage="execute",
+                        )
+                    routed[handle.ref.logical_output] = handle
+                if set(routed) != set(expected):
+                    raise PipelineExecutionError(
+                        "Physical result output coverage is incomplete",
+                        code="PMADP400",
+                        stage="execute",
+                    )
+                for outcome in outcomes.values():
+                    if (
+                        outcome.status
+                        not in {
+                            "succeeded",
+                            "skipped",
+                            "failed",
+                            "cancelled",
+                            "timed_out",
+                            "abandoned",
+                        }
+                        or isinstance(outcome.attempts, bool)
+                        or outcome.attempts < 1
+                    ):
+                        raise PipelineExecutionError(
+                            "Physical result outcome is invalid",
+                            code="PMADP400",
+                            stage="execute",
+                        )
+                if kind == "publication":
+                    from etlantic.connectors.models import CommitReceipt
+
+                    receipt = result.commit_receipt
+                    if (
+                        not isinstance(receipt, CommitReceipt)
+                        or receipt.status != "committed"
+                    ):
+                        raise PipelineExecutionError(
+                            "Physical publication has no committed receipt",
+                            code="PMADP524",
+                            stage="write",
+                        )
+                    self._publication_receipt_summaries.append(
+                        {
+                            "unit_id": unit.identity,
+                            "status": "committed",
+                            "publication_id": receipt.publication_id,
+                        }
+                    )
+                for route, handle in routed.items():
+                    node, port_name = expected[route]
+                    if node is None:
+                        self._transferred_values[route] = handle.value
+                        self._transferred_inputs.add(route)
+                    else:
+                        if not isinstance(port_name, str):
+                            raise PipelineExecutionError(
+                                "Physical result port is invalid",
+                                code="PMADP400",
+                                stage="execute",
+                            )
                         self._store_output_port(
                             node,
-                            port.name if port else "result",
+                            port_name,
                             handle.value,
                             artifacts,
+                            ownership=handle.ownership,
                         )
-                        output_index += 1
-                    outcome = outcomes.get(logical_name)
-                    if outcome is not None:
-                        nodes[logical_name].records_in = outcome.records_in
-                        nodes[logical_name].records_out = outcome.records_out
-                    outcome_status = (
-                        str(getattr(outcome, "status", "succeeded")).lower()
-                        if outcome is not None
-                        else "succeeded"
+                unsuccessful = None
+                for name, outcome in outcomes.items():
+                    state = nodes[name]
+                    state.attempts = outcome.attempts
+                    state.records_in = outcome.records_in
+                    state.records_out = outcome.records_out
+                    state.status = (
+                        StepStatus.PENDING
+                        if kind == "compute"
+                        and state.node.kind is NodeKind.SINK
+                        and outcome.status == "succeeded"
+                        and not self.request.no_write
+                        else StepStatus(outcome.status)
                     )
-                    if outcome_status not in {"succeeded", "skipped"}:
-                        nodes[logical_name].status = StepStatus.FAILED
-                        nodes[logical_name].stage = (
-                            getattr(outcome, "failure_stage", None) or "execute"
-                        )
-                        nodes[logical_name].error = (
-                            getattr(outcome, "code", None)
-                            or "Physical executor reported a failed logical outcome"
-                        )
-                        raise PipelineExecutionError(
-                            f"Physical executor failed logical node {logical_name}",
+                    state.ended_at = datetime.now(UTC)
+                    state.metadata["etlantic.physical_metrics"] = outcome.to_dict()[
+                        "metrics"
+                    ]
+                    if outcome.status not in {"succeeded", "skipped"}:
+                        state.stage = outcome.failure_stage or "execute"
+                        state.error = outcome.code or "Physical logical outcome failed"
+                        unsuccessful = state
+                if kind == "publication":
+                    logical_name = unit.metadata.get("etlantic.logical_node")
+                    if logical_name in nodes:
+                        nodes[logical_name].status = StepStatus.SUCCEEDED
+                        nodes[logical_name].ended_at = datetime.now(UTC)
+                        self._notify_publication(
                             run_id=run_id,
-                            code=getattr(outcome, "code", None) or "PMADP520",
-                            stage=nodes[logical_name].stage,
+                            node=nodes[logical_name].node,
+                            attempt=nodes[logical_name].attempts,
                         )
-                    nodes[logical_name].status = (
-                        StepStatus.SKIPPED
-                        if outcome_status == "skipped"
-                        else StepStatus.SUCCEEDED
+                if unsuccessful is not None:
+                    raise PipelineExecutionError(
+                        "Physical executor returned a failed logical outcome",
+                        code=unsuccessful.error,
+                        stage=unsuccessful.stage,
                     )
-                    nodes[logical_name].ended_at = datetime.now(UTC)
                 unit_trace.append(
                     {
                         "unit": unit.identity,
@@ -1472,6 +1694,15 @@ class LocalOrchestrator:
                         "status": "succeeded",
                         "executor": executor.info.identity,
                     }
+                )
+                self.runtime.events.emit(
+                    self._lifecycle_event(
+                        kind="physical_unit_completed",
+                        run_id=run_id,
+                        physical_unit=unit.identity,
+                        status="succeeded",
+                        backend=unit.engine,
+                    )
                 )
                 return
             if kind == "compute":
@@ -1576,7 +1807,9 @@ class LocalOrchestrator:
                     ):
                         plugin = resolve_dataframe_plugin(
                             consumer_engine,
-                            plugins=getattr(self.runtime, "dataframe_plugins", None),
+                            plugins=self.physical_dataframe_pins
+                            if self.physical_dataframe_pins is not None
+                            else getattr(self.runtime, "dataframe_plugins", None),
                             node_name=consumer_name,
                         )
                         consumer_node = next(
@@ -1638,156 +1871,89 @@ class LocalOrchestrator:
                         source_value
                     )
                     self._transferred_inputs.add(f"{consumer_name}.{consumer_port}")
-                elif kind == "collection":
-                    edge = unit.metadata.get("etlantic.edge_ports")
-                    if not isinstance(edge, (list, tuple)) or len(edge) != 4:
-                        raise PipelineExecutionError(
-                            "Physical collection is missing its edge route",
-                            run_id=run_id,
-                            code="PMADP403",
-                            stage="admission",
-                        )
-                    producer_name, consumer_name, producer_port, consumer_port = map(
-                        str, edge
-                    )
-                    source_key = f"{producer_name}.{producer_port}"
-                    if not artifacts.has(source_key):
-                        raise PipelineExecutionError(
-                            "Physical collection input artifact is unavailable",
-                            run_id=run_id,
-                            code="PMADP520",
-                            stage="execute",
-                        )
-                    collected = artifacts.get_raw(source_key)
-                    # Collection is a real bounded dataframe operation when a
-                    # plugin is available.  The local plugin is eager and
-                    # therefore provides the same operation without optional
-                    # dependencies; unknown engines fail closed at admission.
-                    if is_dataframe_engine(
-                        self._engine_for(consumer_name), registry=self.runtime.registry
-                    ):
-                        plugin = resolve_dataframe_plugin(
-                            self._engine_for(consumer_name),
-                            plugins=getattr(self.runtime, "dataframe_plugins", None),
-                            node_name=consumer_name,
-                        )
-                        if plugin is not None:
-                            collected = plugin.collect_if_needed(
-                                collected,
-                                context=DataframeExecutionContext(
-                                    run_id=run_id,
-                                    pipeline_id=self.plan.pipeline_id,
-                                    plan_id=self.plan.plan_id,
-                                    step_name=consumer_name,
-                                    engine=self._engine_for(consumer_name),
-                                    collect=True,
-                                    ownership=ownership_for_engine(
-                                        self._engine_for(consumer_name)
-                                    ),
-                                    metadata={"physical_unit": unit.identity},
-                                ),
-                            )
-                    self._transferred_values[f"{consumer_name}.{consumer_port}"] = (
-                        collected
-                    )
-                    self._transferred_inputs.add(f"{consumer_name}.{consumer_port}")
-                elif kind in {"validation", "materialization", "reuse"}:
-                    logical_name = str(unit.metadata.get("etlantic.logical_node") or "")
-                    if not logical_name or logical_name not in nodes:
-                        raise PipelineExecutionError(
-                            f"Physical {kind} unit is missing its logical node",
-                            run_id=run_id,
-                            code="PMADP401",
-                            stage="admission",
-                        )
-                    logical_node = nodes[logical_name].node
-                    output_port = (
-                        logical_node.outputs[0].name
-                        if logical_node.outputs
-                        else "result"
-                    )
-                    artifact_key = f"{logical_name}.{output_port}"
-                    if not artifacts.has(artifact_key):
-                        raise PipelineExecutionError(
-                            f"Physical {kind} input artifact is unavailable",
-                            run_id=run_id,
-                            code="PMADP520",
-                            stage="execute",
-                        )
-                    value = artifacts.get_raw(artifact_key)
-                    if kind == "validation":
-                        engine = self._engine_for(logical_name)
-                        if is_dataframe_engine(engine, registry=self.runtime.registry):
-                            plugin = resolve_dataframe_plugin(
-                                engine,
-                                plugins=getattr(
-                                    self.runtime, "dataframe_plugins", None
-                                ),
-                                node_name=logical_name,
-                            )
-                            if plugin is not None:
-                                value, decision, validation_diags, _invalid = (
-                                    plugin.validate_frame(
-                                        value,
-                                        contract_type=logical_node.contract_type,
-                                        context=DataframeExecutionContext(
-                                            run_id=run_id,
-                                            pipeline_id=self.plan.pipeline_id,
-                                            plan_id=self.plan.plan_id,
-                                            step_name=logical_name,
-                                            engine=engine,
-                                            ownership=ownership_for_engine(engine),
-                                            metadata={"physical_unit": unit.identity},
-                                        ),
-                                        boundary="physical",
-                                        port_name=output_port,
-                                    )
-                                )
-                                if str(getattr(decision, "value", decision)) in {
-                                    "failed",
-                                    "rejected",
-                                }:
-                                    raise PipelineExecutionError(
-                                        f"Physical validation failed for {logical_name}",
-                                        run_id=run_id,
-                                        code="PMADP520",
-                                        stage="validate",
-                                    )
-                                diagnostics.extend(
-                                    RunDiagnostic(
-                                        code=str(item.get("code") or "PMADP530"),
-                                        severity=str(item.get("severity") or "info"),
-                                        message=redact_message(
-                                            str(
-                                                item.get("message")
-                                                or "physical validation"
-                                            )
-                                        ),
-                                    )
-                                    for item in validation_diags
-                                    if isinstance(item, Mapping)
-                                )
-                    elif kind == "materialization":
-                        ref = next(
-                            (
-                                ref
-                                for ref in artifacts.list_refs()
-                                if ref.logical_output == artifact_key
-                            ),
-                            None,
-                        )
-                        if ref is None:
+                else:
+                    from etlantic.runtime.physical_operations import execute_boundary
+
+                    descriptor = unit.metadata["etlantic.requirement"]
+                    if kind == "collection":
+                        edge = unit.metadata.get("etlantic.edge_ports")
+                        if not isinstance(edge, (list, tuple)) or len(edge) != 4:
                             raise PipelineExecutionError(
-                                f"Physical materialization reference is unavailable for {logical_name}",
-                                run_id=run_id,
-                                code="PMADP520",
+                                "Physical collection route is incomplete",
+                                code="PMADP403",
                                 stage="execute",
                             )
-                        artifacts.put(ref, value, durable=True)
+                        producer, consumer, producer_port, consumer_port = map(
+                            str, edge
+                        )
+                        logical_node = nodes[consumer].node
+                        key = f"{producer}.{producer_port}"
+                        route = f"{consumer}.{consumer_port}"
+                        value = self._transferred_values.get(
+                            route, artifacts.get_raw(key)
+                        )
                     else:
-                        # Reuse verifies that the previously materialized
-                        # artifact is available before allowing dependents.
-                        artifacts.get_raw(artifact_key)
+                        logical_node = nodes[
+                            str(unit.metadata["etlantic.logical_node"])
+                        ].node
+                        port = str(
+                            descriptor.get("port")
+                            or (
+                                logical_node.outputs[0].name
+                                if logical_node.outputs
+                                else "result"
+                            )
+                        )
+                        key = f"{logical_node.name}.{port}"
+                        value = artifacts.get_raw(key)
+                        output = next(
+                            (p for p in logical_node.outputs if p.name == port), None
+                        )
+                        if output is not None:
+                            logical_node = replace(
+                                logical_node,
+                                contract_type=output.contract_type,
+                                contract_id=output.contract_id,
+                            )
+                    plugin = (self.physical_dataframe_pins or {})[
+                        self._engine_for(logical_node.name)
+                    ]
+                    value, operation = await execute_boundary(
+                        kind=kind,
+                        unit=unit,
+                        node=logical_node,
+                        value=value,
+                        plugin=plugin,
+                        run_id=run_id,
+                        plan=self.plan,
+                        workspace=self.workspace,
+                        artifacts=artifacts,
+                        artifact_key=key,
+                        requirement=descriptor,
+                    )
+                    if kind == "collection":
+                        self._transferred_values[route] = value
+                        self._transferred_inputs.add(route)
+                    else:
+                        self._store_output_port(logical_node, port, value, artifacts)
+                    unit_trace.append(
+                        {
+                            "unit": unit.identity,
+                            "kind": kind,
+                            "status": "succeeded",
+                            **operation,
+                        }
+                    )
+                    self.runtime.events.emit(
+                        self._lifecycle_event(
+                            kind="physical_unit_completed",
+                            run_id=run_id,
+                            physical_unit=unit.identity,
+                            status="succeeded",
+                            backend=unit.engine,
+                        )
+                    )
+                    return
                 unit_trace.append(
                     {
                         "unit": unit.identity,
@@ -1866,6 +2032,17 @@ class LocalOrchestrator:
                     await run_one(unit)
                 except BaseException as exc:
                     error_box.append(exc)
+                    physical_kind = unit.metadata.get("etlantic.physical_kind")
+                    logical_name = unit.metadata.get("etlantic.logical_node")
+                    if (
+                        physical_kind in {"validation", "materialization", "reuse"}
+                        and logical_name in nodes
+                    ):
+                        state = nodes[logical_name]
+                        state.status = StepStatus.FAILED
+                        state.stage = physical_kind
+                        state.error = getattr(exc, "code", None) or "PMADP520"
+                        state.ended_at = datetime.now(UTC)
                     unit_trace.append(
                         {
                             "unit": unit.identity,
@@ -1984,6 +2161,10 @@ class LocalOrchestrator:
                 "etlantic.orchestrator": "local",
                 "etlantic.outbound_events": list(self.outbound_events),
                 "etlantic.unknown_publications": list(self._unknown_publications),
+                "etlantic.cleanup_obligations": list(self._cleanup_obligations),
+                "etlantic.publication_receipts": list(
+                    self._publication_receipt_summaries
+                ),
             },
         )
 
@@ -2000,7 +2181,13 @@ class LocalOrchestrator:
             ended_at=state.ended_at,
             duration_seconds=duration,
             failure_stage=state.stage,
-            error_message=redact_message(state.error) if state.error else None,
+            error_message=(
+                "Physical logical node failed; consult its diagnostic code and stage."
+                if self.physical_mode
+                else redact_message(state.error)
+            )
+            if state.error
+            else None,
             records_in=state.records_in,
             records_out=state.records_out,
             implementation=state.implementation,
@@ -2706,7 +2893,11 @@ class LocalOrchestrator:
                 engine = descriptor.engine
                 state.implementation = descriptor.identity
                 if (
-                    not is_dataframe_engine(engine, registry=self.runtime.registry)
+                    not (
+                        self.physical_dataframe_pins is not None
+                        and engine in self.physical_dataframe_pins
+                    )
+                    and not is_dataframe_engine(engine, registry=self.runtime.registry)
                     and engine != "local"
                     and not is_spark_engine(engine)
                     and not self._is_sql_engine(engine)
@@ -2841,7 +3032,11 @@ class LocalOrchestrator:
                 return
 
             if (
-                is_dataframe_engine(engine, registry=self.runtime.registry)
+                (
+                    engine in self.physical_dataframe_pins
+                    if self.physical_dataframe_pins is not None
+                    else is_dataframe_engine(engine, registry=self.runtime.registry)
+                )
                 and not is_spark_engine(engine)
             ) or (
                 descriptor is not None
@@ -2850,7 +3045,9 @@ class LocalOrchestrator:
             ):
                 plugin = resolve_dataframe_plugin(
                     engine,
-                    plugins=getattr(self.runtime, "dataframe_plugins", None),
+                    plugins=self.physical_dataframe_pins
+                    if self.physical_dataframe_pins is not None
+                    else getattr(self.runtime, "dataframe_plugins", None),
                     node_name=node.name,
                 )
                 # Skip record-oriented input validation; plugin validates.
@@ -2879,6 +3076,9 @@ class LocalOrchestrator:
                         for port in inputs
                         if f"{node.name}.{port}" in self._transferred_inputs
                     },
+                    admitted_compiler=(self.physical_compiler_pins or {}).get(
+                        node.name
+                    ),
                 )
                 for diag in bundle.diagnostics:
                     self._append_diagnostic(
@@ -3284,6 +3484,18 @@ class LocalOrchestrator:
         """Validate portable compiler evidence before gathering any inputs."""
         from etlantic.profile import Profile, resolve_profile
         from etlantic.transform.compiler import preflight_portable_support
+
+        if self.physical_compiler_pins is not None:
+            compiler = self.physical_compiler_pins.get(node_name)
+            if compiler is None:
+                raise NodeExecutionError(
+                    "Admitted compiler is missing",
+                    node_name=node_name,
+                    stage="admission",
+                    code="PMADP501",
+                )
+            preflight_portable_support(descriptor, compiler, engine=descriptor.engine)
+            return
         from etlantic.transform.discovery import (
             discover_transform_compilers_for_profile,
         )
@@ -3388,7 +3600,9 @@ class LocalOrchestrator:
         try:
             plugin = resolve_dataframe_plugin(
                 engine,
-                plugins=getattr(self.runtime, "dataframe_plugins", None),
+                plugins=self.physical_dataframe_pins
+                if self.physical_dataframe_pins is not None
+                else getattr(self.runtime, "dataframe_plugins", None),
             )
             return plugin.to_records(data, contract_type=contract_type)
         except NodeExecutionError:
@@ -3421,6 +3635,12 @@ class LocalOrchestrator:
     def _dataframe_engine_for_frame(self, data: Any) -> str:
         settings = self.plan.execution_settings or {}
         profile = self.plan.profile_snapshot or {}
+        module = type(data).__module__ or ""
+        if self.adaptive_plan is not None:
+            if module.startswith("polars"):
+                return "polars"
+            if module.startswith("pandas"):
+                return "pandas"
         for source in (settings, profile):
             engine = source.get("dataframe_engine")
             if engine:
@@ -3439,7 +3659,13 @@ class LocalOrchestrator:
         self._store_output_port(node, port, data, artifacts)
 
     def _store_output_port(
-        self, node: Node, port: str, data: Any, artifacts: ArtifactStore
+        self,
+        node: Node,
+        port: str,
+        data: Any,
+        artifacts: ArtifactStore,
+        *,
+        ownership: str | None = None,
     ) -> None:
         strategy = self._strategy_for(node.name, port)
         logical = f"{node.name}.{port}"
@@ -3453,7 +3679,7 @@ class LocalOrchestrator:
             self.request.materialization is MaterializationPolicy.DURABLE
             or artifacts.should_durable(strategy)
         )
-        artifacts.put(ref, data, durable=durable)
+        artifacts.put(ref, data, durable=durable, ownership=ownership)
 
     def _physical_inputs(
         self,
@@ -3466,18 +3692,50 @@ class LocalOrchestrator:
         from etlantic.runtime.physical_protocol import PhysicalArtifactHandle
 
         names = set(unit.logical_nodes)
+        logical_name = unit.metadata.get("etlantic.logical_node")
+        if logical_name:
+            names.add(logical_name)
+        route = unit.metadata.get("etlantic.edge_ports")
+        if isinstance(route, (tuple, list)) and len(route) == 4:
+            names.add(route[1])
+        refs = {ref.logical_output: ref for ref in artifacts.list_refs()}
         inputs: dict[str, Any] = {}
         for edge in graph.edges:
             if edge.consumer_node not in names:
                 continue
+            if route and list(route) != [
+                edge.producer_node,
+                edge.consumer_node,
+                edge.producer_port,
+                edge.consumer_port,
+            ]:
+                continue
             key = f"{edge.producer_node}.{edge.producer_port}"
+            destination = f"{edge.consumer_node}.{edge.consumer_port}"
             if artifacts.has(key):
-                inputs[f"{edge.consumer_node}.{edge.consumer_port}"] = (
-                    PhysicalArtifactHandle(
-                        ref=key,
-                        value=artifacts.get_raw(key),
-                    )
+                value = self._transferred_values.get(
+                    destination, artifacts.get_raw(key)
                 )
+                inputs[destination] = PhysicalArtifactHandle(
+                    ref=refs[key],
+                    value=value,
+                    target_identity=unit.target_identity,
+                    ownership=artifacts.ownership(key) or "borrowed",
+                )
+        if logical_name and str(getattr(unit.kind, "value", unit.kind)) in {
+            "validation",
+            "materialization",
+            "reuse",
+        }:
+            node = nodes[logical_name].node
+            for port in node.outputs:
+                key = f"{logical_name}.{port.name}"
+                if artifacts.has(key):
+                    inputs[key] = PhysicalArtifactHandle(
+                        ref=refs[key],
+                        value=artifacts.get_raw(key),
+                        target_identity=unit.target_identity,
+                    )
         return inputs
 
     def _parameters_for(self, node: Node) -> dict[str, Any]:
@@ -3593,6 +3851,10 @@ class LocalOrchestrator:
         self, node: Node, binding_name: str
     ) -> BindingDescriptor | None:
         override = self.request.binding_overrides.get(node.name)
+        if self.physical_mode:
+            return self.plan.bindings.get(node.name) or self.plan.bindings.get(
+                override or binding_name
+            )
         if override:
             if override in self.runtime.registry.bindings:
                 return self.runtime.registry.bindings[override]
@@ -3610,7 +3872,11 @@ class LocalOrchestrator:
             provider_name = "memory"
 
         # Connector path (0.38): source connectors such as local-files.
-        source_connectors = getattr(self.runtime, "source_connectors", None) or {}
+        source_connectors = (
+            {}
+            if self.physical_mode
+            else (getattr(self.runtime, "source_connectors", None) or {})
+        )
         if provider_name in source_connectors:
             from etlantic.connectors.session import run_source_connector_extract
 
@@ -3696,11 +3962,16 @@ class LocalOrchestrator:
                 descriptor.secret_ref, run_id=run_id, step=node.name
             )
         profile = getattr(self.runtime, "_active_profile", None)
-        if profile is not None and getattr(profile, "safe_io", None):
+        safe_io = (
+            (self.plan.profile_snapshot or {}).get("safe_io")
+            if self.physical_mode
+            else getattr(profile, "safe_io", None)
+        )
+        if safe_io:
             from etlantic.io_policy import SafeIoPolicy
 
             try:
-                context["safe_io"] = SafeIoPolicy.from_dict(dict(profile.safe_io))
+                context["safe_io"] = SafeIoPolicy.from_dict(dict(safe_io))
             except Exception as exc:
                 raise NodeExecutionError(
                     f"Invalid safe_io policy for source {node.name!r}: {exc}",
@@ -3900,7 +4171,11 @@ class LocalOrchestrator:
             provider_name = "memory"
         if self.request.no_write or mode is WriteMode.NO_WRITE:
             provider_name = "null"
-        storage = self.runtime.storage.get(provider_name)
+        storage = (
+            self.physical_storage_pins
+            if self.physical_storage_pins is not None
+            else self.runtime.storage
+        ).get(provider_name)
         if storage is None:
             if provider_name == "memory":
                 storage = self.runtime.memory
@@ -3920,11 +4195,16 @@ class LocalOrchestrator:
             "contract_type": node.contract_type,
         }
         profile = getattr(self.runtime, "_active_profile", None)
-        if profile is not None and getattr(profile, "safe_io", None):
+        safe_io = (
+            (self.plan.profile_snapshot or {}).get("safe_io")
+            if self.physical_mode
+            else getattr(profile, "safe_io", None)
+        )
+        if safe_io:
             from etlantic.io_policy import SafeIoPolicy
 
             try:
-                context["safe_io"] = SafeIoPolicy.from_dict(dict(profile.safe_io))
+                context["safe_io"] = SafeIoPolicy.from_dict(dict(safe_io))
             except Exception as exc:
                 raise NodeExecutionError(
                     f"Invalid safe_io policy for sink {node.name!r}: {exc}",
@@ -4011,41 +4291,98 @@ class LocalOrchestrator:
             await self._finalize_landing_after_commit(receipt)
             return
         try:
-            receipt = await storage.write(
-                binding=binding_name,
-                location=location,
-                data=data,
-                contract_type=node.contract_type,
-                context=context,
+            publication_unit = next(
+                (
+                    unit.identity
+                    for unit in self.plan.physical_units
+                    if unit.metadata.get("etlantic.physical_kind") == "publication"
+                    and unit.metadata.get("etlantic.logical_node") == node.name
+                ),
+                node.name,
             )
-            # Retain the provider's commit receipt for the run lifecycle.  A
-            # successful response is intentionally kept process-local; only
-            # bounded status/identity fields belong in reports.
-            self._sink_commit_receipts.append(receipt)
-            if self.physical_mode and isinstance(receipt, Mapping):
-                status = str(receipt.get("status") or "committed").lower()
-                if status == "unknown":
+            publication_id = (
+                f"pub:{run_id}:{self.plan.fingerprint[:16]}:{publication_unit}"
+            )
+            if self.physical_mode and provider_name in {"json", "csv"}:
+                from etlantic.runtime.adaptive_publication import publish_file
+
+                if location is None:
+                    raise NodeExecutionError(
+                        "File publication requires a location",
+                        node_name=node.name,
+                        stage="write",
+                        code="PMADP520",
+                    )
+                receipt = await publish_file(
+                    provider=provider_name,
+                    location=location,
+                    data=data,
+                    contract_type=node.contract_type,
+                    policy=context.get("safe_io"),
+                    publication_id=publication_id,
+                )
+            else:
+                receipt = await storage.write(
+                    binding=binding_name,
+                    location=location,
+                    data=data,
+                    contract_type=node.contract_type,
+                    context=context,
+                )
+            if self.physical_mode:
+                from etlantic.connectors.models import CommitReceipt
+
+                if isinstance(receipt, Mapping):
+                    # Qualified legacy memory/null providers acknowledge synchronously.
+                    status = receipt.get("status", "committed")
+                    if status not in {"committed", "rolled_back", "unknown"}:
+                        status = "unknown"
+                    receipt = CommitReceipt(
+                        status=status,
+                        provider=provider_name,
+                        publication_id=publication_id,
+                    )
+                if not isinstance(receipt, CommitReceipt):
+                    receipt = CommitReceipt(
+                        status="unknown",
+                        provider=provider_name,
+                        publication_id=publication_id,
+                    )
+                self._sink_commit_receipts.append(receipt)
+                self._publication_receipt_summaries.append(
+                    {
+                        "status": receipt.status,
+                        "publication_id": publication_id,
+                        "unit_id": publication_unit,
+                        "provider": provider_name,
+                    }
+                )
+                if receipt.status == "unknown":
                     self._unknown_publications.append(
                         {
                             "status": "unknown",
                             "code": "PMADP524",
-                            "publication_id": str(
-                                receipt.get("publication_id")
-                                or f"pub:{self.plan.fingerprint[:16]}:{node.name}:{run_id}"
-                            ),
-                            "binding": binding_name,
+                            "publication_id": publication_id,
                             "provider": provider_name,
-                            "message": "Publication acknowledgement was not received.",
                         }
                     )
                     raise NodeExecutionError(
                         "Publication acknowledgement was not received; reconciliation required",
                         node_name=node.name,
-                        stage=FailureStage.WRITE.value,
+                        stage="write",
                         code="PMADP524",
+                    )
+                if receipt.status != "committed":
+                    raise NodeExecutionError(
+                        "Publication was rolled back",
+                        node_name=node.name,
+                        stage="write",
+                        code="PMADP520",
                     )
         except (TimeoutError, anyio.get_cancelled_exc_class()) as exc:
             if not self.physical_mode:
+                if isinstance(exc, anyio.get_cancelled_exc_class()):
+                    raise
                 raise NodeExecutionError(
                     redact_message(str(exc)),
                     node_name=node.name,
@@ -4058,9 +4395,7 @@ class LocalOrchestrator:
             obligation = {
                 "status": "unknown",
                 "code": "PMADP524",
-                "publication_id": (
-                    f"pub:{self.plan.fingerprint[:16]}:{node.name}:{run_id}"
-                ),
+                "publication_id": (publication_id),
                 "binding": binding_name,
                 "provider": provider_name,
                 "message": "Publication acknowledgement was not received.",
@@ -4244,7 +4579,9 @@ class LocalOrchestrator:
             try:
                 plugin = resolve_dataframe_plugin(
                     str(engine),
-                    plugins=getattr(self.runtime, "dataframe_plugins", None),
+                    plugins=self.physical_dataframe_pins
+                    if self.physical_dataframe_pins is not None
+                    else getattr(self.runtime, "dataframe_plugins", None),
                 )
             except NodeExecutionError:
                 plugin = None

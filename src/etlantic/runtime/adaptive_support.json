@@ -1,0 +1,539 @@
+{
+  "maturity": "Experimental",
+  "observations": [
+    {
+      "id": "tests.runtime.physical.test_qualification_0_53::test_atomic_file_publication[csv]",
+      "result": "pass"
+    },
+    {
+      "id": "tests.runtime.physical.test_qualification_0_53::test_atomic_file_publication[json]",
+      "result": "pass"
+    },
+    {
+      "id": "tests.runtime.physical.test_qualification_0_53::test_checkpoint_and_reuse_execute[local]",
+      "result": "pass"
+    },
+    {
+      "id": "tests.runtime.physical.test_qualification_0_53::test_checkpoint_and_reuse_execute[pandas]",
+      "result": "pass"
+    },
+    {
+      "id": "tests.runtime.physical.test_qualification_0_53::test_checkpoint_and_reuse_execute[polars]",
+      "result": "pass"
+    },
+    {
+      "id": "tests.runtime.physical.test_qualification_0_53::test_collection_executes_bounds[1-families0]",
+      "result": "pass"
+    },
+    {
+      "id": "tests.runtime.physical.test_qualification_0_53::test_collection_executes_bounds[1-families1]",
+      "result": "pass"
+    },
+    {
+      "id": "tests.runtime.physical.test_qualification_0_53::test_collection_executes_bounds[1-families2]",
+      "result": "pass"
+    },
+    {
+      "id": "tests.runtime.physical.test_qualification_0_53::test_collection_executes_bounds[1-families3]",
+      "result": "pass"
+    },
+    {
+      "id": "tests.runtime.physical.test_qualification_0_53::test_collection_executes_bounds[1-families4]",
+      "result": "pass"
+    },
+    {
+      "id": "tests.runtime.physical.test_qualification_0_53::test_collection_executes_bounds[2-families0]",
+      "result": "pass"
+    },
+    {
+      "id": "tests.runtime.physical.test_qualification_0_53::test_collection_executes_bounds[2-families1]",
+      "result": "pass"
+    },
+    {
+      "id": "tests.runtime.physical.test_qualification_0_53::test_collection_executes_bounds[2-families2]",
+      "result": "pass"
+    },
+    {
+      "id": "tests.runtime.physical.test_qualification_0_53::test_collection_executes_bounds[2-families3]",
+      "result": "pass"
+    },
+    {
+      "id": "tests.runtime.physical.test_qualification_0_53::test_collection_executes_bounds[2-families4]",
+      "result": "pass"
+    },
+    {
+      "id": "tests.runtime.physical.test_qualification_0_53::test_definite_publication_failure_through_admitted_provider[families0]",
+      "result": "pass"
+    },
+    {
+      "id": "tests.runtime.physical.test_qualification_0_53::test_definite_publication_failure_through_admitted_provider[families1]",
+      "result": "pass"
+    },
+    {
+      "id": "tests.runtime.physical.test_qualification_0_53::test_definite_publication_failure_through_admitted_provider[families2]",
+      "result": "pass"
+    },
+    {
+      "id": "tests.runtime.physical.test_qualification_0_53::test_definite_publication_failure_through_admitted_provider[families3]",
+      "result": "pass"
+    },
+    {
+      "id": "tests.runtime.physical.test_qualification_0_53::test_definite_publication_failure_through_admitted_provider[families4]",
+      "result": "pass"
+    },
+    {
+      "id": "tests.runtime.physical.test_qualification_0_53::test_distinct_directional_ports[families0]",
+      "result": "pass"
+    },
+    {
+      "id": "tests.runtime.physical.test_qualification_0_53::test_distinct_directional_ports[families1]",
+      "result": "pass"
+    },
+    {
+      "id": "tests.runtime.physical.test_qualification_0_53::test_exact_single_target_branch_families[local-Diamond]",
+      "result": "pass"
+    },
+    {
+      "id": "tests.runtime.physical.test_qualification_0_53::test_exact_single_target_branch_families[local-Fanout]",
+      "result": "pass"
+    },
+    {
+      "id": "tests.runtime.physical.test_qualification_0_53::test_exact_single_target_branch_families[pandas-Diamond]",
+      "result": "pass"
+    },
+    {
+      "id": "tests.runtime.physical.test_qualification_0_53::test_exact_single_target_branch_families[pandas-Fanout]",
+      "result": "pass"
+    },
+    {
+      "id": "tests.runtime.physical.test_qualification_0_53::test_exact_single_target_branch_families[polars-Diamond]",
+      "result": "pass"
+    },
+    {
+      "id": "tests.runtime.physical.test_qualification_0_53::test_exact_single_target_branch_families[polars-Fanout]",
+      "result": "pass"
+    },
+    {
+      "id": "tests.runtime.physical.test_qualification_0_53::test_five_family_stored_differential[rows0-families0]",
+      "result": "pass"
+    },
+    {
+      "id": "tests.runtime.physical.test_qualification_0_53::test_five_family_stored_differential[rows0-families1]",
+      "result": "pass"
+    },
+    {
+      "id": "tests.runtime.physical.test_qualification_0_53::test_five_family_stored_differential[rows0-families2]",
+      "result": "pass"
+    },
+    {
+      "id": "tests.runtime.physical.test_qualification_0_53::test_five_family_stored_differential[rows0-families3]",
+      "result": "pass"
+    },
+    {
+      "id": "tests.runtime.physical.test_qualification_0_53::test_five_family_stored_differential[rows0-families4]",
+      "result": "pass"
+    },
+    {
+      "id": "tests.runtime.physical.test_qualification_0_53::test_five_family_stored_differential[rows1-families0]",
+      "result": "pass"
+    },
+    {
+      "id": "tests.runtime.physical.test_qualification_0_53::test_five_family_stored_differential[rows1-families1]",
+      "result": "pass"
+    },
+    {
+      "id": "tests.runtime.physical.test_qualification_0_53::test_five_family_stored_differential[rows1-families2]",
+      "result": "pass"
+    },
+    {
+      "id": "tests.runtime.physical.test_qualification_0_53::test_five_family_stored_differential[rows1-families3]",
+      "result": "pass"
+    },
+    {
+      "id": "tests.runtime.physical.test_qualification_0_53::test_five_family_stored_differential[rows1-families4]",
+      "result": "pass"
+    },
+    {
+      "id": "tests.runtime.physical.test_qualification_0_53::test_partial_chain_ending_at_step",
+      "result": "pass"
+    },
+    {
+      "id": "tests.runtime.physical.test_qualification_0_53::test_physical_validation_is_executed[False-local]",
+      "result": "pass"
+    },
+    {
+      "id": "tests.runtime.physical.test_qualification_0_53::test_physical_validation_is_executed[False-pandas]",
+      "result": "pass"
+    },
+    {
+      "id": "tests.runtime.physical.test_qualification_0_53::test_physical_validation_is_executed[False-polars]",
+      "result": "pass"
+    },
+    {
+      "id": "tests.runtime.physical.test_qualification_0_53::test_physical_validation_is_executed[True-local]",
+      "result": "pass"
+    },
+    {
+      "id": "tests.runtime.physical.test_qualification_0_53::test_physical_validation_is_executed[True-pandas]",
+      "result": "pass"
+    },
+    {
+      "id": "tests.runtime.physical.test_qualification_0_53::test_physical_validation_is_executed[True-polars]",
+      "result": "pass"
+    },
+    {
+      "id": "tests.runtime.physical.test_qualification_0_53::test_public_scheduler_file_receipt[csv]",
+      "result": "pass"
+    },
+    {
+      "id": "tests.runtime.physical.test_qualification_0_53::test_public_scheduler_file_receipt[json]",
+      "result": "pass"
+    },
+    {
+      "id": "tests.runtime.physical.test_qualification_0_53::test_qualified_executor_cancel_and_cleanup_drain",
+      "result": "pass"
+    },
+    {
+      "id": "tests.runtime.physical.test_qualification_0_53::test_qualified_executor_routes_outputs_and_retains_lifetime",
+      "result": "pass"
+    },
+    {
+      "id": "tests.runtime.physical.test_qualification_0_53::test_retry_safety_rejects_before_reads",
+      "result": "pass"
+    }
+  ],
+  "rows": {
+    "chain/1:local": {
+      "evidence_refs": [
+        "sha256:4f2f2dfad8c18e7a8e9fc35506a7fdbe840e6a528c59cc931e3be7685f526b74"
+      ],
+      "operations": [
+        "compute",
+        "transfer",
+        "collection",
+        "validation",
+        "materialization",
+        "reuse",
+        "publication"
+      ],
+      "policies": [
+        "standard",
+        "validate",
+        "overwrite",
+        "no_write"
+      ],
+      "versions": {
+        "etlantic": "0.52.1"
+      }
+    },
+    "chain/1:pandas": {
+      "evidence_refs": [
+        "sha256:4f2f2dfad8c18e7a8e9fc35506a7fdbe840e6a528c59cc931e3be7685f526b74"
+      ],
+      "operations": [
+        "compute",
+        "transfer",
+        "collection",
+        "validation",
+        "materialization",
+        "reuse",
+        "publication"
+      ],
+      "policies": [
+        "standard",
+        "validate",
+        "overwrite",
+        "no_write"
+      ],
+      "versions": {
+        "etlantic": "0.52.1",
+        "etlantic-pandas": "0.52.1",
+        "pandas": "2.3.3"
+      }
+    },
+    "chain/1:pandas-polars": {
+      "evidence_refs": [
+        "sha256:4f2f2dfad8c18e7a8e9fc35506a7fdbe840e6a528c59cc931e3be7685f526b74"
+      ],
+      "operations": [
+        "compute",
+        "transfer",
+        "collection",
+        "validation",
+        "materialization",
+        "reuse",
+        "publication"
+      ],
+      "policies": [
+        "standard",
+        "validate",
+        "overwrite",
+        "no_write"
+      ],
+      "versions": {
+        "etlantic": "0.52.1",
+        "etlantic-pandas": "0.52.1",
+        "etlantic-polars": "0.52.1",
+        "pandas": "2.3.3",
+        "polars": "1.42.1",
+        "pyarrow": "25.0.0"
+      }
+    },
+    "chain/1:polars": {
+      "evidence_refs": [
+        "sha256:4f2f2dfad8c18e7a8e9fc35506a7fdbe840e6a528c59cc931e3be7685f526b74"
+      ],
+      "operations": [
+        "compute",
+        "transfer",
+        "collection",
+        "validation",
+        "materialization",
+        "reuse",
+        "publication"
+      ],
+      "policies": [
+        "standard",
+        "validate",
+        "overwrite",
+        "no_write"
+      ],
+      "versions": {
+        "etlantic": "0.52.1",
+        "etlantic-polars": "0.52.1",
+        "polars": "1.42.1"
+      }
+    },
+    "chain/1:polars-pandas": {
+      "evidence_refs": [
+        "sha256:4f2f2dfad8c18e7a8e9fc35506a7fdbe840e6a528c59cc931e3be7685f526b74"
+      ],
+      "operations": [
+        "compute",
+        "transfer",
+        "collection",
+        "validation",
+        "materialization",
+        "reuse",
+        "publication"
+      ],
+      "policies": [
+        "standard",
+        "validate",
+        "overwrite",
+        "no_write"
+      ],
+      "versions": {
+        "etlantic": "0.52.1",
+        "etlantic-pandas": "0.52.1",
+        "etlantic-polars": "0.52.1",
+        "pandas": "2.3.3",
+        "polars": "1.42.1",
+        "pyarrow": "25.0.0"
+      }
+    },
+    "diamond/1:local": {
+      "evidence_refs": [
+        "sha256:4f2f2dfad8c18e7a8e9fc35506a7fdbe840e6a528c59cc931e3be7685f526b74"
+      ],
+      "operations": [
+        "compute",
+        "transfer",
+        "collection",
+        "validation",
+        "materialization",
+        "reuse",
+        "publication"
+      ],
+      "policies": [
+        "standard",
+        "validate",
+        "overwrite",
+        "no_write"
+      ],
+      "versions": {
+        "etlantic": "0.52.1"
+      }
+    },
+    "diamond/1:pandas": {
+      "evidence_refs": [
+        "sha256:4f2f2dfad8c18e7a8e9fc35506a7fdbe840e6a528c59cc931e3be7685f526b74"
+      ],
+      "operations": [
+        "compute",
+        "transfer",
+        "collection",
+        "validation",
+        "materialization",
+        "reuse",
+        "publication"
+      ],
+      "policies": [
+        "standard",
+        "validate",
+        "overwrite",
+        "no_write"
+      ],
+      "versions": {
+        "etlantic": "0.52.1",
+        "etlantic-pandas": "0.52.1",
+        "pandas": "2.3.3"
+      }
+    },
+    "diamond/1:polars": {
+      "evidence_refs": [
+        "sha256:4f2f2dfad8c18e7a8e9fc35506a7fdbe840e6a528c59cc931e3be7685f526b74"
+      ],
+      "operations": [
+        "compute",
+        "transfer",
+        "collection",
+        "validation",
+        "materialization",
+        "reuse",
+        "publication"
+      ],
+      "policies": [
+        "standard",
+        "validate",
+        "overwrite",
+        "no_write"
+      ],
+      "versions": {
+        "etlantic": "0.52.1",
+        "etlantic-polars": "0.52.1",
+        "polars": "1.42.1"
+      }
+    },
+    "dual-port-chain/1:pandas-polars": {
+      "evidence_refs": [
+        "sha256:4f2f2dfad8c18e7a8e9fc35506a7fdbe840e6a528c59cc931e3be7685f526b74"
+      ],
+      "operations": [
+        "compute",
+        "transfer",
+        "collection",
+        "validation",
+        "materialization",
+        "reuse",
+        "publication"
+      ],
+      "policies": [
+        "standard",
+        "validate",
+        "overwrite",
+        "no_write"
+      ],
+      "versions": {
+        "etlantic": "0.52.1",
+        "etlantic-pandas": "0.52.1",
+        "etlantic-polars": "0.52.1",
+        "pandas": "2.3.3",
+        "polars": "1.42.1",
+        "pyarrow": "25.0.0"
+      }
+    },
+    "dual-port-chain/1:polars-pandas": {
+      "evidence_refs": [
+        "sha256:4f2f2dfad8c18e7a8e9fc35506a7fdbe840e6a528c59cc931e3be7685f526b74"
+      ],
+      "operations": [
+        "compute",
+        "transfer",
+        "collection",
+        "validation",
+        "materialization",
+        "reuse",
+        "publication"
+      ],
+      "policies": [
+        "standard",
+        "validate",
+        "overwrite",
+        "no_write"
+      ],
+      "versions": {
+        "etlantic": "0.52.1",
+        "etlantic-pandas": "0.52.1",
+        "etlantic-polars": "0.52.1",
+        "pandas": "2.3.3",
+        "polars": "1.42.1",
+        "pyarrow": "25.0.0"
+      }
+    },
+    "fanout/1:local": {
+      "evidence_refs": [
+        "sha256:4f2f2dfad8c18e7a8e9fc35506a7fdbe840e6a528c59cc931e3be7685f526b74"
+      ],
+      "operations": [
+        "compute",
+        "transfer",
+        "collection",
+        "validation",
+        "materialization",
+        "reuse",
+        "publication"
+      ],
+      "policies": [
+        "standard",
+        "validate",
+        "overwrite",
+        "no_write"
+      ],
+      "versions": {
+        "etlantic": "0.52.1"
+      }
+    },
+    "fanout/1:pandas": {
+      "evidence_refs": [
+        "sha256:4f2f2dfad8c18e7a8e9fc35506a7fdbe840e6a528c59cc931e3be7685f526b74"
+      ],
+      "operations": [
+        "compute",
+        "transfer",
+        "collection",
+        "validation",
+        "materialization",
+        "reuse",
+        "publication"
+      ],
+      "policies": [
+        "standard",
+        "validate",
+        "overwrite",
+        "no_write"
+      ],
+      "versions": {
+        "etlantic": "0.52.1",
+        "etlantic-pandas": "0.52.1",
+        "pandas": "2.3.3"
+      }
+    },
+    "fanout/1:polars": {
+      "evidence_refs": [
+        "sha256:4f2f2dfad8c18e7a8e9fc35506a7fdbe840e6a528c59cc931e3be7685f526b74"
+      ],
+      "operations": [
+        "compute",
+        "transfer",
+        "collection",
+        "validation",
+        "materialization",
+        "reuse",
+        "publication"
+      ],
+      "policies": [
+        "standard",
+        "validate",
+        "overwrite",
+        "no_write"
+      ],
+      "versions": {
+        "etlantic": "0.52.1",
+        "etlantic-polars": "0.52.1",
+        "polars": "1.42.1"
+      }
+    }
+  },
+  "schema": "etlantic.adaptive_qualification/1"
+}

@@ -167,6 +167,7 @@ async def execute_dataframe_step(
     collect_outputs: bool | None = None,
     descriptor: ImplementationDescriptor | None = None,
     pre_materialized_ports: set[str] | None = None,
+    admitted_compiler: Any | None = None,
 ) -> DataframeOutputBundle:
     """Materialize → invoke/compile → normalize → validate through a dataframe plugin."""
     engine = (
@@ -302,6 +303,7 @@ async def execute_dataframe_step(
                 plan=plan,
                 node=node,
                 context=context,
+                admitted_compiler=admitted_compiler,
             )
         else:
             if impl is None:
@@ -455,6 +457,7 @@ async def _execute_portable(
     plan: PipelinePlan,
     node: Node,
     context: DataframeExecutionContext,
+    admitted_compiler: Any | None = None,
 ) -> Any:
     from collections.abc import Mapping
 
@@ -474,8 +477,14 @@ async def _execute_portable(
     elif not isinstance(profile, Profile):
         profile = resolve_profile(getattr(plan, "profile_name", None))
 
-    compiler = None
-    if descriptor.compiler_name:
+    compiler = admitted_compiler
+    if compiler is not None:
+        if (
+            compiler.info.name != descriptor.compiler_name
+            or compiler.info.version != descriptor.compiler_version
+        ):
+            raise ValueError("Admitted compiler does not match stored implementation")
+    elif descriptor.compiler_name:
         for candidate in discover_transform_compilers_for_profile(profile).values():
             info = candidate.info
             if info.name != descriptor.compiler_name:

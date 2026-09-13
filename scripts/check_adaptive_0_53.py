@@ -1,141 +1,243 @@
 #!/usr/bin/env python3
-"""Run the phase 0.53 adaptive execution qualification campaign.
-
-The campaign records only command results and immutable source revision data;
-it never embeds pipeline rows, secrets, or process-local handles.
-"""
+"""Execute and verify source-bound, non-skipped adaptive qualification evidence."""
 
 from __future__ import annotations
 
 import argparse
 import hashlib
 import json
+import platform
 import subprocess
+import tempfile
+import xml.etree.ElementTree as ET
 from datetime import UTC, datetime
+from importlib.metadata import version
 from pathlib import Path
+from typing import Any
 
 ROOT = Path(__file__).resolve().parents[1]
-OUT = ROOT / "docs" / "11_DEVELOPMENT" / "evidence" / "adaptive_0_53"
+OUT = ROOT / "docs/11_DEVELOPMENT/evidence/adaptive_0_53"
 TESTS = (
     "tests/runtime/test_adaptive_execution_0_53.py",
     "tests/plan/test_adaptive_planner_0_52.py",
+    "tests/runtime/test_sol_0_53_rereview.py",
     "tests/runtime/test_sol_0_53_contract_rereview.py",
+    "tests/runtime/physical/test_qualification_0_53.py",
 )
-EVIDENCE_SCHEMA = "etlantic.adaptive_evidence/1"
+EVIDENCE_SCHEMA = "etlantic.adaptive_evidence/2"
 
 
 def source_revision() -> str:
-    files = subprocess.run(
-        [
-            "git",
-            "ls-files",
-            "src/etlantic",
-            "tests/runtime/test_adaptive_execution_0_53.py",
-            "tests/plan/test_adaptive_planner_0_52.py",
-            "tests/runtime/test_sol_0_53_rereview.py",
-            "tests/runtime/test_sol_0_53_contract_rereview.py",
+    paths = set(ROOT.joinpath("src/etlantic").rglob("*.py"))
+    paths.update(ROOT.joinpath("packages/etlantic-polars/src").rglob("*.py"))
+    paths.update(ROOT.joinpath("packages/etlantic-pandas/src").rglob("*.py"))
+    paths.update(ROOT / name for name in TESTS)
+    paths.update(
+        ROOT / name
+        for name in (
+            "src/etlantic/runtime/adaptive_support.json",
             "scripts/check_adaptive_0_53.py",
             "docs/11_DEVELOPMENT/evidence/adaptive_0_53/README.md",
             ".github/workflows/checks.yml",
             "pyproject.toml",
-        ],
-        cwd=ROOT,
-        check=True,
-        capture_output=True,
-        text=True,
-    ).stdout.splitlines()
+            "uv.lock",
+        )
+    )
     digest = hashlib.sha256()
-    for name in sorted(files):
-        path = ROOT / name
-        digest.update(name.encode())
+    for path in sorted(paths):
+        digest.update(str(path.relative_to(ROOT)).encode())
         digest.update(b"\0")
         digest.update(path.read_bytes())
         digest.update(b"\0")
     return "sha256:" + digest.hexdigest()
 
 
-def _verify_committed_evidence(record: dict[str, object], revision: str) -> bool:
-    """Require an existing, matching qualification record for read-only runs."""
-    path = OUT / "qualification.json"
-    if not path.is_file():
-        return False
-    try:
-        committed = json.loads(path.read_text(encoding="utf-8"))
-    except (OSError, json.JSONDecodeError):
-        return False
-    if not isinstance(committed, dict):
-        return False
-    required = {
-        "schema": EVIDENCE_SCHEMA,
-        "phase": "0.53",
-        "source_revision": revision,
-        "returncode": 0,
-    }
-    if not all(committed.get(key) == value for key, value in required.items()):
-        return False
-    if committed.get("command") != record.get("command"):
-        return False
-    for field in ("stdout_sha256", "stderr_sha256"):
-        digest = committed.get(field)
-        if not isinstance(digest, str) or len(digest) != 64:
-            return False
-    scenarios = committed.get("scenarios")
-    return (
-        committed.get("result") == "pass"
-        and isinstance(committed.get("scenario_count"), int)
-        and committed["scenario_count"] == len(TESTS)
-        and committed.get("passed_scenarios") == len(TESTS)
-        and isinstance(scenarios, list)
-        and len(scenarios) == len(TESTS)
-        and all(
-            isinstance(item, dict)
-            and item.get("result") == "pass"
-            and item.get("executed") is True
-            for item in scenarios
+def scenarios_from_junit(path: Path) -> list[dict[str, Any]]:
+    root = ET.parse(path).getroot()
+    scenarios = []
+    for case in root.iter("testcase"):
+        status = "pass"
+        for tag in ("skipped", "failure", "error"):
+            if case.find(tag) is not None:
+                status = tag
+        scenarios.append(
+            {
+                "id": case.get("classname", "") + "::" + case.get("name", ""),
+                "result": status,
+                "executed": status != "skipped",
+            }
         )
-    )
+    return sorted(scenarios, key=lambda item: item["id"])
+
+
+def redacted_junit(scenarios: list[dict[str, Any]]) -> bytes:
+    """Retain executed test identities/statuses, never captured exception/log payloads."""
+    root = ET.Element("testsuites")
+    suite = ET.SubElement(root, "testsuite", tests=str(len(scenarios)))
+    for scenario in scenarios:
+        classname, _, name = scenario["id"].partition("::")
+        case = ET.SubElement(suite, "testcase", classname=classname, name=name)
+        if scenario["result"] != "pass":
+            ET.SubElement(case, scenario["result"])
+    return ET.tostring(root, encoding="utf-8", xml_declaration=True)
+
+
+def _qualified(scenarios: Any) -> bool:
+    if not isinstance(scenarios, list) or not scenarios:
+        return False
+    if any(
+        not isinstance(s, dict)
+        or s.get("result") != "pass"
+        or s.get("executed") is not True
+        for s in scenarios
+    ):
+        return False
+    ids = [s["id"] for s in scenarios]
+    if len(set(ids)) != len(ids):
+        return False
+    for name in TESTS:
+        prefix = name.removesuffix(".py").replace("/", ".") + "::"
+        if not any(identity.startswith(prefix) for identity in ids):
+            return False
+    # Every empty/nullable baseline and each directional multi-port row must execute.
+    for row in range(2):
+        for family in range(5):
+            if not any(
+                identity.endswith(
+                    f"test_five_family_stored_differential[rows{row}-families{family}]"
+                )
+                for identity in ids
+            ):
+                return False
+    return True
+
+
+def _verify_committed_evidence(record: dict[str, Any], revision: str) -> bool:
+    try:
+        committed = json.loads((OUT / "qualification.json").read_text())
+        if not isinstance(committed, dict):
+            return False
+        if any(
+            committed.get(k) != v
+            for k, v in {
+                "schema": EVIDENCE_SCHEMA,
+                "phase": "0.53",
+                "source_revision": revision,
+                "returncode": 0,
+                "result": "pass",
+                "source_changed": False,
+            }.items()
+        ):
+            return False
+        if (
+            committed.get("environment") != record.get("environment")
+            or committed.get("command") != record.get("command")
+            or not _qualified(committed.get("scenarios"))
+        ):
+            return False
+        stored = scenarios_from_junit(OUT / "qualification.xml")
+        if stored != committed["scenarios"] or record.get("scenarios") != stored:
+            return False
+        for field, filename in (
+            ("stdout_sha256", "qualification.stdout.txt"),
+            ("stderr_sha256", "qualification.stderr.txt"),
+            ("junit_sha256", "qualification.xml"),
+        ):
+            if hashlib.sha256(
+                (OUT / filename).read_bytes()
+            ).hexdigest() != committed.get(field):
+                return False
+        return committed.get("scenario_count") == len(stored) and committed.get(
+            "passed_scenarios"
+        ) == len(stored)
+    except (OSError, ValueError, ET.ParseError, KeyError, TypeError):
+        return False
 
 
 def main() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument(
-        "--write", action="store_true", help="write the observed campaign result"
+        "--write",
+        action="store_true",
+        help="record the observed result, including failures",
+    )
+    parser.add_argument(
+        "--output",
+        type=Path,
+        default=OUT,
+        help="output directory for environment-specific CI proof",
     )
     args = parser.parse_args()
-    command = ["uv", "run", "pytest", "-q", *TESTS]
-    result = subprocess.run(command, cwd=ROOT, text=True, capture_output=True)
-    record = {
-        "schema": EVIDENCE_SCHEMA,
-        "phase": "0.53",
-        "source_revision": source_revision(),
-        "command": command,
-        "returncode": result.returncode,
-        "stdout_sha256": hashlib.sha256(result.stdout.encode()).hexdigest(),
-        "stderr_sha256": hashlib.sha256(result.stderr.encode()).hexdigest(),
-        "observed_at": datetime.now(UTC).isoformat(),
-        "result": "pass" if result.returncode == 0 else "fail",
-        "scenario_count": len(TESTS),
-        "passed_scenarios": len(TESTS) if result.returncode == 0 else 0,
-        "scenarios": [
-            {"id": test, "result": "pass", "executed": True} for test in TESTS
-        ]
-        if result.returncode == 0
-        else [],
-    }
-    if not args.write and not _verify_committed_evidence(
-        record, record["source_revision"]
-    ):
-        print(
-            "committed adaptive qualification evidence is missing or stale", flush=True
+    command = ["uv", "run", "--no-sync", "pytest", "-q", *TESTS]
+    revision_before = source_revision()
+    with tempfile.TemporaryDirectory(prefix="etlantic053-") as temporary:
+        junit = Path(temporary) / "qualification.xml"
+        result = subprocess.run(
+            [*command, f"--junitxml={junit}"], cwd=ROOT, text=True, capture_output=True
         )
-        return 1
-    if args.write:
-        OUT.mkdir(parents=True, exist_ok=True)
-        (OUT / "qualification.json").write_text(
-            json.dumps(record, indent=2, sort_keys=True) + "\n", encoding="utf-8"
+        try:
+            scenarios = scenarios_from_junit(junit)
+        except (OSError, ET.ParseError):
+            scenarios = []
+        source_changed = revision_before != source_revision()
+        qualified = (
+            result.returncode == 0 and _qualified(scenarios) and not source_changed
         )
-    print(json.dumps(record, sort_keys=True))
-    return result.returncode
+        safe_junit = redacted_junit(scenarios)
+        safe_stdout = (
+            json.dumps(
+                {
+                    "returncode": result.returncode,
+                    "scenario_count": len(scenarios),
+                    "passed": sum(s["result"] == "pass" for s in scenarios),
+                },
+                sort_keys=True,
+            )
+            + "\n"
+        )
+        safe_stderr = (
+            json.dumps({"stderr_present": bool(result.stderr)}, sort_keys=True) + "\n"
+        )
+        record = {
+            "schema": EVIDENCE_SCHEMA,
+            "phase": "0.53",
+            "source_revision": revision_before,
+            "source_changed": source_changed,
+            "command": command,
+            "returncode": result.returncode,
+            "stdout_sha256": hashlib.sha256(safe_stdout.encode()).hexdigest(),
+            "stderr_sha256": hashlib.sha256(safe_stderr.encode()).hexdigest(),
+            "junit_sha256": hashlib.sha256(safe_junit).hexdigest(),
+            "observed_at": datetime.now(UTC).isoformat(),
+            "environment": {
+                "os": platform.system(),
+                "python": platform.python_version(),
+                "machine": platform.machine(),
+                "versions": {
+                    name: version(name)
+                    for name in ("etlantic", "polars", "pandas", "pyarrow")
+                },
+            },
+            "result": "pass" if qualified else "fail",
+            "scenario_count": len(scenarios),
+            "passed_scenarios": sum(s["result"] == "pass" for s in scenarios),
+            "scenarios": scenarios,
+        }
+        if args.write:
+            args.output.mkdir(parents=True, exist_ok=True)
+            (args.output / "qualification.json").write_text(
+                json.dumps(record, indent=2, sort_keys=True) + "\n"
+            )
+            (args.output / "qualification.stdout.txt").write_text(safe_stdout)
+            (args.output / "qualification.stderr.txt").write_text(safe_stderr)
+            (args.output / "qualification.xml").write_bytes(safe_junit)
+        elif not _verify_committed_evidence(record, record["source_revision"]):
+            print(
+                "committed adaptive qualification evidence is missing, stale, skipped or unsubstantiated"
+            )
+            return 1
+        print(json.dumps(record, sort_keys=True))
+        return 0 if qualified else 1
 
 
 if __name__ == "__main__":

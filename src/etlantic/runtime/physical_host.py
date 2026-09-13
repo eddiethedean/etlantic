@@ -18,22 +18,82 @@ from etlantic.plan.freeze import mutable_copy
 from etlantic.plan.model import PhysicalUnit, PipelinePlan
 from etlantic.plan.regions import ExecutionRegion, MaterializationBoundary
 from etlantic.registry import ImplementationDescriptor
-from etlantic.transform.compiler import TransformPlanningContext
+
+
+def stored_implementations(adaptive_plan: Any) -> dict[str, ImplementationDescriptor]:
+    """Decode only fingerprinted portable records; live authoring is not authority."""
+    implementations: dict[str, ImplementationDescriptor] = {}
+    records = adaptive_plan.metadata.get("etlantic.implementations") or ()
+    for record in records:
+        if not isinstance(record, Mapping) or record.get("kind") != "step":
+            continue
+        raw = mutable_copy(record.get("implementation") or {})
+        allowed = {
+            "transformation_id",
+            "engine",
+            "identity",
+            "is_async",
+            "kind",
+            "ir_fingerprint",
+            "compiler_name",
+            "compiler_version",
+            "compiler_protocol",
+            "requirements",
+            "support_summary",
+            "fallback_reason",
+            "portable_plan",
+            "metadata",
+            "compiler_evidence_fingerprint",
+            "portable_plan_json",
+            "support_summary_json",
+            "portable_plan_fingerprint",
+        }
+        if set(raw) - allowed:
+            raise ValueError("Stored portable descriptor contains unknown fields")
+        for encoded_key, decoded_key in (
+            ("portable_plan_json", "portable_plan"),
+            ("support_summary_json", "support_summary"),
+        ):
+            encoded = raw.get(encoded_key)
+            if encoded is not None:
+                raw[decoded_key] = json.loads(
+                    base64.b64decode(encoded, validate=True).decode()
+                )
+        descriptor = ImplementationDescriptor.from_dict(raw)
+        if descriptor.kind != "portable_compiled" or not descriptor.portable_plan:
+            raise ValueError("Adaptive step requires a stored portable definition")
+        implementations[str(record["node_name"])] = descriptor
+    return implementations
+
+
+def resolve_contract_type(contract_id: str | None) -> type[Any] | None:
+    if not contract_id or ":" not in contract_id:
+        return None
+    module_name, qualname = contract_id.split(":", 1)
+    try:
+        value: Any = importlib.import_module(module_name)
+        for part in qualname.split("."):
+            value = getattr(value, part)
+        return value if isinstance(value, type) else None
+    except (ImportError, AttributeError):
+        return None
 
 
 def pipeline_plan_for_adaptive(
-    adaptive_plan: Any, *, runtime: Any, pipeline_cls: type[Any] | None
+    adaptive_plan: Any,
+    *,
+    runtime: Any,
+    pipeline_cls: type[Any] | None,
+    contract_pins: Mapping[str, type[Any]] | None = None,
 ) -> PipelinePlan:
     """Build the read-only host view required by :class:`LocalOrchestrator`.
 
-    Implementation descriptors are resolved from the already-scoped runtime
-    registry or from the authored transformation class.  No plugin discovery,
+    Implementation descriptors are decoded from the fingerprinted stored records.  No plugin discovery,
     compilation, or execution occurs here.
     """
     target_by_id = {
         target.target_id: target for target in adaptive_plan.inventory.targets
     }
-    decisions = {decision.node_name: decision for decision in adaptive_plan.decisions}
     regions = tuple(
         ExecutionRegion(
             identity=region.identity,
@@ -45,119 +105,7 @@ def pipeline_plan_for_adaptive(
         for region in adaptive_plan.regions
     )
 
-    implementations: dict[str, ImplementationDescriptor] = {}
-    members = getattr(pipeline_cls, "__pipeline_members__", {}) if pipeline_cls else {}
-    stored_records = dict(adaptive_plan.metadata).get("etlantic.implementations") or ()
-    stored_by_node = {
-        str(record.get("node_name")): record
-        for record in stored_records
-        if isinstance(record, Mapping) and record.get("node_name")
-    }
-    for node in adaptive_plan.logical_graph.nodes:
-        if node.kind.value != "step":
-            continue
-        member = members.get(node.name)
-        target = target_by_id[decisions[node.name].target_id]
-        engine = target.engine
-        key = f"{node.transformation_id}::{engine}"
-        descriptor = getattr(runtime, "registry", None)
-        descriptor = (
-            getattr(descriptor, "implementations", {}).get(key)
-            if descriptor is not None
-            else None
-        )
-        if descriptor is None:
-            stored = stored_by_node.get(node.name, {})
-            implementation = (
-                stored.get("implementation") if isinstance(stored, Mapping) else None
-            )
-            if isinstance(implementation, Mapping):
-                raw_impl = dict(implementation)
-                encoded = raw_impl.get("portable_plan_json")
-                if encoded and isinstance(encoded, str):
-                    try:
-                        raw_impl["portable_plan"] = json.loads(
-                            base64.b64decode(encoded).decode()
-                        )
-                    except json.JSONDecodeError:
-                        raw_impl["portable_plan"] = None
-                support_encoded = raw_impl.get("support_summary_json")
-                if support_encoded and isinstance(support_encoded, str):
-                    try:
-                        raw_impl["support_summary"] = json.loads(
-                            base64.b64decode(support_encoded).decode()
-                        )
-                    except json.JSONDecodeError:
-                        raw_impl["support_summary"] = None
-                descriptor = ImplementationDescriptor.from_dict(raw_impl)
-            transform = getattr(member, "transformation", None)
-            if transform is not None:
-                portable = getattr(transform, "portable_definition", lambda: None)()
-                if portable is not None:
-                    from etlantic.transform.discovery import (
-                        discover_transform_compilers_for_profile,
-                    )
-
-                    compiler = getattr(
-                        getattr(runtime, "registry", None),
-                        "transform_compilers",
-                        {},
-                    ).get(engine)
-                    if compiler is None:
-                        compiler = discover_transform_compilers_for_profile(
-                            getattr(runtime, "_active_profile", None)
-                            or adaptive_plan.profile_name
-                        ).get(engine)
-                    if compiler is not None:
-                        info = compiler.info
-                        analysis = compiler.analyze(
-                            portable.plan,
-                            context=TransformPlanningContext(
-                                adaptive_plan.pipeline_id,
-                                node.name,
-                                adaptive_plan.profile_name,
-                                engine,
-                            ),
-                            requirements=portable.requirements,
-                        )
-                        descriptor = ImplementationDescriptor(
-                            transformation_id=node.transformation_id or "unknown",
-                            engine=engine,
-                            identity=f"portable:{info.name}@{portable.fingerprint[:16]}",
-                            is_async=True,
-                            kind="portable_compiled",
-                            ir_fingerprint=portable.fingerprint,
-                            compiler_name=info.name,
-                            compiler_version=info.version,
-                            compiler_protocol=info.compiler_protocol,
-                            compiler_evidence_fingerprint=info.evidence_fingerprint,
-                            requirements={
-                                k: list(v) for k, v in portable.requirements.items()
-                            },
-                            support_summary=analysis.to_requirement_support(
-                                target={
-                                    "engine": info.engine,
-                                    "compiler": info.name,
-                                    "version": info.version,
-                                    "protocol": info.compiler_protocol,
-                                    "package": info.package or info.name,
-                                    "implementation": info.implementation or info.name,
-                                }
-                            ),
-                            portable_plan=mutable_copy(portable.plan),
-                        )
-                if descriptor is None:
-                    record = transform.implementations().get(engine)
-                    if record is not None:
-                        descriptor = ImplementationDescriptor(
-                            transformation_id=node.transformation_id or "unknown",
-                            engine=engine,
-                            identity=record.identity,
-                            is_async=record.is_async,
-                            kind="native",
-                        )
-        if descriptor is not None:
-            implementations[node.name] = descriptor
+    implementations = stored_implementations(adaptive_plan)
 
     target_by_identity = {
         target.identity: target for target in adaptive_plan.inventory.targets
@@ -165,7 +113,7 @@ def pipeline_plan_for_adaptive(
     physical_units = tuple(adaptive_plan.physical_dag.units)
     logical_to_physical = dict(adaptive_plan.physical_dag.logical_to_physical)
     execution = dict(adaptive_plan.metadata).get("etlantic.runtime") or {}
-    request_meta = execution.get("request") if isinstance(execution, dict) else {}
+    request_meta = execution.get("request") if isinstance(execution, Mapping) else {}
     settings = {
         "concurrency": (request_meta or {}).get("metadata", {}).get("concurrency", 4)
     }
@@ -194,19 +142,16 @@ def pipeline_plan_for_adaptive(
             )
         )
     logical_graph = adaptive_plan.logical_graph
-    if pipeline_cls is None:
+    if pipeline_cls is None or contract_pins is not None:
 
         def resolve_type(contract_id: str | None) -> type[Any] | None:
-            if not contract_id or ":" not in contract_id:
+            if contract_id is None:
                 return None
-            module_name, qualname = contract_id.split(":", 1)
-            try:
-                value: Any = importlib.import_module(module_name)
-                for part in qualname.split("."):
-                    value = getattr(value, part)
-                return value if isinstance(value, type) else None
-            except (ImportError, AttributeError):
-                return None
+            return (
+                contract_pins.get(contract_id)
+                if contract_pins is not None
+                else resolve_contract_type(contract_id)
+            )
 
         def resolve_port(port: Any) -> Any:
             return replace(port, contract_type=resolve_type(port.contract_id))

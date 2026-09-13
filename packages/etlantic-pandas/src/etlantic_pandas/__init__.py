@@ -146,6 +146,8 @@ class PandasDataframePlugin:
                 InterchangeMechanism.ARROW_IPC_FILE,
             }:
                 return to_arrow_table_strict(value).to_pandas()
+        if isinstance(value, (list, tuple)) and not value:
+            return self._from_records(value, contract_type)
         table = to_arrow_table(value)
         if table is not None:
             return table.to_pandas()
@@ -235,7 +237,7 @@ class PandasDataframePlugin:
                 context=context,
                 port_name=port_name or "value",
             )
-        rows = frame.to_dict(orient="records")
+        rows = frame.astype(object).where(frame.notna(), None).to_dict(orient="records")
         valid, invalid, diagnostics = split_valid_invalid_records(
             rows, contract_type=contract_type
         )
@@ -320,7 +322,12 @@ class PandasDataframePlugin:
         contract_type: type[Any] | None,
     ) -> list[Any]:
         if isinstance(value, pd.DataFrame):
-            return as_records(value.to_dict(orient="records"), contract_type)
+            return as_records(
+                value.astype(object)
+                .where(value.notna(), None)
+                .to_dict(orient="records"),
+                contract_type,
+            )
         return as_records(value, contract_type)
 
     def row_count(self, value: Any) -> int | None:
