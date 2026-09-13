@@ -584,7 +584,13 @@ def _acquire_lock(path: Path, *, timeout: float) -> Path:
             os.write(fd, str(os.getpid()).encode("ascii"))
             os.close(fd)
             return lock
-        except FileExistsError:
+        except (FileExistsError, PermissionError):
+            # Windows reports a sharing violation as PermissionError when
+            # another process owns the lock file. Treat it as contention only
+            # while the lock still exists; unrelated permission failures must
+            # continue to surface to the caller.
+            if not lock.exists():
+                raise
             if time.monotonic() >= deadline:
                 raise _io_error(
                     "PMSRC112",
