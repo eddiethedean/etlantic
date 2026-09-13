@@ -1373,6 +1373,27 @@ class LocalOrchestrator:
                     await run_one(unit)
                 except BaseException as exc:
                     error_box.append(exc)
+                    unit_trace.append(
+                        {
+                            "unit": unit.identity,
+                            "kind": str(
+                                unit.metadata.get("etlantic.physical_kind") or unit.kind
+                            ),
+                            "status": "cancelled"
+                            if isinstance(exc, anyio.get_cancelled_exc_class())
+                            else "failed",
+                            "code": getattr(exc, "code", None) or "PMADP520",
+                        }
+                    )
+                    self.runtime.events.emit(
+                        self._lifecycle_event(
+                            kind="physical_unit_failed",
+                            run_id=run_id,
+                            physical_unit=unit.identity,
+                            status="failed",
+                            backend=unit.engine,
+                        )
+                    )
 
             async with anyio.create_task_group() as task_group:
                 for unit in batch:
