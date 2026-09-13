@@ -1,6 +1,6 @@
 # Exit Gate 0.52 — Deterministic Adaptive Planning
 
-> **Status: 0.52.0 planning release published.**
+> **Status: 0.52.0 release published.**
 
 The release claim is limited to deterministic, side-effect-free adaptive plan
 generation and inspection. Generated plans contain a complete candidate matrix,
