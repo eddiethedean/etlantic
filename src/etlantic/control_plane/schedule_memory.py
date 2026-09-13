@@ -64,7 +64,7 @@ class MemoryScheduleStore:
 
     def __init__(self) -> None:
         self._schedules: dict[tuple[str, str, str], ScheduleRecord] = {}
-        self._firings: dict[str, FiringRecord] = {}
+        self._firings: dict[tuple[str, str, str], FiringRecord] = {}
         self._leaders: dict[tuple[str, str], SchedulerLeaderLease] = {}
         self._lock = threading.RLock()
 
@@ -263,10 +263,11 @@ class MemoryScheduleStore:
     ) -> tuple[FiringRecord, bool]:
         logical = firing_key(schedule_id, revision_id, nominal_fire_time)
         scope = _scope(ctx)
+        firing_scope = (*scope, logical)
         with self._lock:
             if require_leader_lease:
                 self._require_leader(scope, owner_id, fencing_token)
-            existing = self._firings.get(logical)
+            existing = self._firings.get(firing_scope)
             if existing is not None:
                 return deepcopy(existing), False
             sk = (*scope, schedule_id)
@@ -306,7 +307,7 @@ class MemoryScheduleStore:
                 )
                 submission_id = submission.submission_id
             firing = replace(firing, submission_id=submission_id)
-            self._firings[logical] = firing
+            self._firings[firing_scope] = firing
             if rec is not None:
                 self._schedules[sk] = replace(
                     rec, next_fire_at=next_fire_at, updated_at=_iso()
@@ -350,7 +351,10 @@ class MemoryScheduleStore:
                     json.dumps(list(key)): rec.to_dict()
                     for key, rec in self._schedules.items()
                 },
-                "firings": {key: rec.to_dict() for key, rec in self._firings.items()},
+                "firings": {
+                    json.dumps(list(key)): rec.to_dict()
+                    for key, rec in self._firings.items()
+                },
                 "leaders": {
                     json.dumps(list(key)): asdict(lease)
                     for key, lease in self._leaders.items()
@@ -363,9 +367,16 @@ class MemoryScheduleStore:
                 tuple(json.loads(key)): ScheduleRecord.from_dict(value)
                 for key, value in dict(payload.get("schedules") or {}).items()
             }
+            # Rebuild from canonical record scope so pre-fix snapshots whose
+            # index keys omitted tenant/workspace remain readable and retain
+            # their original firing and submission identities.
+            firings = (
+                FiringRecord.from_dict(value)
+                for value in dict(payload.get("firings") or {}).values()
+            )
             self._firings = {
-                str(key): FiringRecord.from_dict(value)
-                for key, value in dict(payload.get("firings") or {}).items()
+                (record.tenant_id, record.workspace_id, record.logical_key): record
+                for record in firings
             }
             self._leaders = {
                 tuple(json.loads(key)): SchedulerLeaderLease(**value)
