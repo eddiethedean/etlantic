@@ -1,6 +1,6 @@
 # Production sample pilot
 
-> **Status: Available in ETLantic 0.51.0 (published Beta).** Clone companion under
+> **Status: Available in ETLantic 0.52.0 (published Beta).** Clone companion under
 > `examples/sample_pilot/`. Demonstrates a production profile
 > (`security_mode=production` + allowlist), file I/O, SARIF validate,
 > and optional Airflow compile.
@@ -8,7 +8,7 @@
 ## PyPI path (no clone)
 
 ```bash
-python -m pip install 'etlantic[polars]==0.51.0'
+python -m pip install 'etlantic[polars]==0.52.0'
 mkdir pilot && cd pilot
 python -m etlantic init --with-toml
 ```
@@ -28,7 +28,7 @@ each discovered package or validation fails with `PMPLUG402`):
   "portable_transform_policy": "require",
   "validation_policy": "strict",
   "plugin_allowlist": {
-    "etlantic-polars": "==0.51.0"
+    "etlantic-polars": "==0.52.0"
   },
   "assets": {
     "rows": "json://data/sample.json",
@@ -49,7 +49,7 @@ python -m etlantic run pipeline.py:SamplePipeline \
 Optional Airflow compile (install `etlantic-airflow`; does not install Airflow):
 
 ```bash
-python -m pip install 'etlantic-airflow==0.51.0'
+python -m pip install 'etlantic-airflow==0.52.0'
 python -m etlantic compile pipeline.py:SamplePipeline \
   --profile profiles/prod.json --target airflow -o dags/
 ```
@@ -57,7 +57,7 @@ python -m etlantic compile pipeline.py:SamplePipeline \
 ## Clone companion
 
 ```bash
-git clone --branch v0.51.0 https://github.com/eddiethedean/etlantic.git
+git clone --branch v0.52.0 https://github.com/eddiethedean/etlantic.git
 cd etlantic
 uv sync --group dataframes
 uv run python examples/sample_pilot/run_pilot.py

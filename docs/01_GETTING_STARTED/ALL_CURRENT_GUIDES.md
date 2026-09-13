@@ -1,6 +1,6 @@
 # All current guides
 
-> **Status: Available in ETLantic 0.51.0 (published Beta).** Visible sitemap for the primary
+> **Status: Available in ETLantic 0.52.0 (published Beta).** Visible sitemap for the primary
 > eight-section nav. Historical pages remain searchable via
 > [Earlier releases](EARLIER_RELEASES.md) and the archive index.
 
@@ -12,7 +12,7 @@
 - [First pipeline](FIRST_PIPELINE.md)
 - [Engine selection](ENGINE_SELECTION.md)
 - [Learning path](LEARNING_PATH.md)
-- [Current 0.51 Guide](CURRENT_VERSION.md)
+- [Current 0.52 Guide](CURRENT_VERSION.md)
 
 ## Evaluate
 

@@ -1,7 +1,7 @@
 # etlantic-airflow
 
 Airflow reference orchestrator compiler for
-[ETLantic](https://github.com/eddiethedean/etlantic) 0.51.
+[ETLantic](https://github.com/eddiethedean/etlantic) 0.52.
 
 > **Note:** This plugin and ETLantic core use Beta classifiers for documented
 > single-tenant pilots. Classifiers are not an enterprise SLA.

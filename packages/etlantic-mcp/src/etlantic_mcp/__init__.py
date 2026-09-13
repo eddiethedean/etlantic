@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-__version__ = "0.51.0"
+__version__ = "0.52.0"
 
 from etlantic_mcp.server import FakeMcpServer, create_server, live_configured
 

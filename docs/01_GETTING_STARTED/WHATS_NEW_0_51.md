@@ -1,8 +1,8 @@
 # What's New in ETLantic 0.51
 
-> **Status: Available in ETLantic 0.51.0 (published Beta).**
+> **Status: Available in ETLantic 0.52.0 (published Beta).**
 
-ETLantic 0.51.0 ships the first closed foundation for adaptive heterogeneous
+ETLantic 0.52.0 ships the first closed foundation for adaptive heterogeneous
 planning without claiming an adaptive planner or runtime. It adds opt-in
 Profile policy, immutable placement-target descriptors, a fingerprinted
 `etlantic.plan/2` document model, and the built-in run-report metadata
@@ -10,8 +10,8 @@ namespace migration.
 
 ## Upgrade impact
 
-- Pin core and every first-party plugin to `0.51.0`; plugin requirements use
-  `etlantic>=0.51.0,<0.52`.
+- Pin core and every first-party plugin to `0.52.0`; plugin requirements use
+  `etlantic>=0.52.0,<0.53`.
 - Existing explicit profiles remain the executable path and continue to use
   canonical `etlantic.plan/1` documents.
 - New writers emit built-in step metrics under `etlantic.dataframe`,
@@ -27,7 +27,7 @@ and the [0.51 exit gate](../11_DEVELOPMENT/EXIT_GATE_0_51.md).
 
 ## Available foundation
 
-| Surface | 0.51.0 status |
+| Surface | 0.52.0 status |
 |---|---|
 | Existing explicit Profile and `etlantic.plan/1` | Available and executable |
 | Adaptive Profile policy and `PlacementTarget` | Available for opt-in contract authoring |

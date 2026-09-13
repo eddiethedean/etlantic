@@ -6,7 +6,7 @@
 > [Capabilities](docs/01_GETTING_STARTED/CAPABILITIES.md) for what ships now.
 > Review this header for every release or sequence change.
 
-**Current release:** ETLantic **0.51.0** (published Beta) — the opt-in
+**Current release:** ETLantic **0.52.0** (published Beta) — the opt-in
 adaptive Profile and `/2` wire foundation plus the run-report metadata
 namespace migration. Adaptive planning and physical-DAG execution remain
 unavailable and fail closed. The release preserves the technically qualified
@@ -21,7 +21,7 @@ through **0.37** (stable foundation) are shipped.
 
 | Horizon | Release | Outcome | Status |
 |---|---:|---|---|
-| Current | 0.51 | Adaptive Profile and `/2` wire foundation; adaptive planning/execution unavailable | Published / shipped evidence |
+| Current | 0.52 | Deterministic adaptive planning and plan-only physical lowering; execution unavailable | Published / shipped evidence |
 | Previous | 0.50 | Seven-engine portable baseline with 0.50.1 compatibility fixes | Published / shipped evidence |
 | Previous | 0.49 | Qualified optional DuckDB engine package | Gate-ready / shipped evidence |
 | Previous | 0.48 | AI-assisted, human-governed proposals | Gate-ready / shipped evidence |
@@ -35,7 +35,7 @@ through **0.37** (stable foundation) are shipped.
 | Previous | 0.40 | Tenant registry / workspaces (CP2) | Gate-ready / shipped evidence |
 | Previous | 0.39 | Multi-tenant control plane (CP1) | Gate-ready / shipped evidence |
 | Previous | 0.38 | Data connectivity and connector SDK | Gate-ready / shipped evidence |
-| Next | 0.52 | Adaptive planning, physical lowering, and explain/diff | Planned |
+| Next | 0.53 | Adaptive execution for qualified local combinations | Planned |
 | Later | 0.53 | Local adaptive physical-DAG execution | Planned |
 | Later | 0.54 | Adaptive conformance, qualification, and graduation | Planned |
 | Later | 0.55 | Brownfield adoption bridges | Planning freeze |
@@ -43,7 +43,7 @@ through **0.37** (stable foundation) are shipped.
 | Later | 0.57 | Managed runtime and enterprise provider packs | Planned |
 | Later | 0.58 | TransformationModel incubation | Proposed |
 | Foundation | 0.36–0.37 | Joint burn-in → stable foundation | Gate-ready (0.37) |
-| Post-foundation | 0.38–0.58 | Connectivity → control plane → developer intelligence → optimization → streaming → federation → governed AI → DuckDB package → portable-engine baseline → adaptive execution → adoption → operations → providers → modeling incubation | In progress (0.51 adaptive contract/wire foundation published) |
+| Post-foundation | 0.38–0.58 | Connectivity → control plane → developer intelligence → optimization → streaming → federation → governed AI → DuckDB package → portable-engine baseline → adaptive execution → adoption → operations → providers → modeling incubation | In progress (0.52 adaptive planning published) |
 
 For connectivity evidence, see
 [What's New in 0.38](docs/01_GETTING_STARTED/WHATS_NEW_0_38.md) and the

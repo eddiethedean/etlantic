@@ -9,7 +9,7 @@ from etlantic_duckdb.transform_compiler import (
     create_transform_compiler,
 )
 
-__version__ = "0.51.0"
+__version__ = "0.52.0"
 
 __all__ = [
     "DuckDBFrame",

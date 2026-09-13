@@ -37,7 +37,7 @@ For the status, current boundary, and owner of every domain plan, use the
 | Previous | 0.39 | Multi-tenant control plane (CP1) | [Gate-ready / shipped evidence](EXIT_GATE_0_39.md) |
 | Previous | 0.38 | Data connectivity and connector SDK | [Gate-ready / shipped evidence](EXIT_GATE_0_38.md) |
 | Previous | 0.49 | Qualified optional DuckDB engine package | Implemented qualified subset — [plan](IMPLEMENTATION_PLAN_0_49.md), [exit gate](EXIT_GATE_0_49.md), [findings ledger](FINDINGS_0_49.md) |
-| Current | 0.51 | Adaptive Profile and `/2` wire foundation; planning/execution unavailable | Published foundation; [plan](IMPLEMENTATION_PLAN_0_51.md) and [exit gate](EXIT_GATE_0_51.md) |
+| Current | 0.52 | Adaptive Profile and `/2` wire foundation; planning/execution unavailable | Published foundation; [plan](IMPLEMENTATION_PLAN_0_51.md) and [exit gate](EXIT_GATE_0_51.md) |
 | Previous | 0.50 | Seven-engine portable execution and pushdown conformance | Published and technically qualified; [plan](IMPLEMENTATION_PLAN_0_50.md), [evidence gate](EXIT_GATE_0_50.md), and [evidence index](evidence/portable_0_50/portable_evidence_index_0_50.json) |
 | Next | 0.52 | Adaptive planning, physical lowering, and explain/diff | Implemented on main; executable evidence generated — [plan](IMPLEMENTATION_PLAN_0_52.md), [evidence](evidence/adaptive_0_51/FINDINGS.md), governed by [ADR-025](adr/ADR-025-ADAPTIVE-EXECUTION-AND-PHYSICAL-DAG.md) |
 | Later | 0.53 | Local adaptive physical-DAG execution | Planned — [plan](IMPLEMENTATION_PLAN_0_53.md), [milestone](https://github.com/eddiethedean/etlantic/milestone/5) |

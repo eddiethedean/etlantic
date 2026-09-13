@@ -11,7 +11,7 @@ print('echo pass conformance ok')
 "
 ```
 
-Pin: `etlantic>=0.51.0,<0.52`.
+Pin: `etlantic>=0.52.0,<0.53`.
 
 Register via entry point group `etlantic.optimization_passes` and allowlist
 `example.pass.echo` under `Profile.optimization_pass_allowlist` in production.

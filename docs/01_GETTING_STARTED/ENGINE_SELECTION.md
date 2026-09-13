@@ -1,6 +1,6 @@
 # Engine selection
 
-> **Status: Available in ETLantic 0.51.0 (published Beta).**
+> **Status: Available in ETLantic 0.52.0 (published Beta).**
 
 !!! tip "PyPI vs clone"
     Recommended path below is **PyPI-only**. Rows marked clone-assisted need a
@@ -11,7 +11,7 @@
 After Quickstart succeeds on **local** Python with its generated portable
 transformation:
 
-1. `python -m pip install 'etlantic[polars]==0.51.0'`
+1. `python -m pip install 'etlantic[polars]==0.52.0'`
 2. Set `dataframe_engine` to `"polars"`; keep
    `portable_transform_policy="require"` and the transformation body unchanged
    as shown in the
@@ -25,15 +25,15 @@ dataframe engine works.
 
 | Goal | Install | Profile hint | Guide |
 |---|---|---|---|
-| Learn the model with JSON files | `etlantic==0.51.0` | `development` | [Quickstart](QUICKSTART.md) |
+| Learn the model with JSON files | `etlantic==0.52.0` | `development` | [Quickstart](QUICKSTART.md) |
 | JSON / CSV files | core only | file storage bindings | [File storage](../06_EXECUTION/FILE_STORAGE_TUTORIAL.md) (PyPI) |
-| Fast local dataframes | `etlantic[polars]==0.51.0` | `dataframe_engine="polars"`, portable policy `"require"` | [Polars tutorial (PyPI path)](../06_EXECUTION/POLARS_TUTORIAL.md) |
-| Pandas compatibility | `etlantic[pandas]==0.51.0` | `dataframe_engine="pandas"`, portable policy `"require"` | [Pandas tutorial (PyPI path)](../06_EXECUTION/PANDAS_TUTORIAL.md) |
-| Cross-engine Polars↔Pandas | `etlantic[dataframes]==0.51.0` | both plugins allowlisted | [Interchange example](../09_EXAMPLES/INTERCHANGE_POLARS_PANDAS.md) (clone) |
-| Keep work in SQL | `etlantic[sql]==0.51.0` | `sql_engine="sql"` | [SQL hello (PyPI)](../06_EXECUTION/SQL_HELLO_PYPI.md) → [SQL tutorial (clone)](../06_EXECUTION/SQL_TUTORIAL.md) |
-| Local Spark batch | `etlantic[pyspark]==0.51.0` | `spark_engine="pyspark"` (needs Java) | [PySpark tutorial](../06_EXECUTION/PYSPARK_TUTORIAL.md) (clone-assisted) |
-| Emit Airflow DAGs | `etlantic[airflow]==0.51.0` | `orchestrator="airflow"` | [Airflow tutorial](../06_EXECUTION/AIRFLOW_TUTORIAL.md) |
-| Prefect local scheduler | `etlantic[prefect]==0.51.0` | `orchestrator="prefect"` | [Prefect example](../09_EXAMPLES/PREFECT_RUN.md) (clone) |
+| Fast local dataframes | `etlantic[polars]==0.52.0` | `dataframe_engine="polars"`, portable policy `"require"` | [Polars tutorial (PyPI path)](../06_EXECUTION/POLARS_TUTORIAL.md) |
+| Pandas compatibility | `etlantic[pandas]==0.52.0` | `dataframe_engine="pandas"`, portable policy `"require"` | [Pandas tutorial (PyPI path)](../06_EXECUTION/PANDAS_TUTORIAL.md) |
+| Cross-engine Polars↔Pandas | `etlantic[dataframes]==0.52.0` | both plugins allowlisted | [Interchange example](../09_EXAMPLES/INTERCHANGE_POLARS_PANDAS.md) (clone) |
+| Keep work in SQL | `etlantic[sql]==0.52.0` | `sql_engine="sql"` | [SQL hello (PyPI)](../06_EXECUTION/SQL_HELLO_PYPI.md) → [SQL tutorial (clone)](../06_EXECUTION/SQL_TUTORIAL.md) |
+| Local Spark batch | `etlantic[pyspark]==0.52.0` | `spark_engine="pyspark"` (needs Java) | [PySpark tutorial](../06_EXECUTION/PYSPARK_TUTORIAL.md) (clone-assisted) |
+| Emit Airflow DAGs | `etlantic[airflow]==0.52.0` | `orchestrator="airflow"` | [Airflow tutorial](../06_EXECUTION/AIRFLOW_TUTORIAL.md) |
+| Prefect local scheduler | `etlantic[prefect]==0.52.0` | `orchestrator="prefect"` | [Prefect example](../09_EXAMPLES/PREFECT_RUN.md) (clone) |
 | Portable transforms (recommended) | matching engine plugin | `portable_transform_policy="require"` | [Portable transforms](../04_TRANSFORMATIONS/PORTABLE_TRANSFORMATIONS.md) |
 
 ## Rules of thumb
@@ -41,7 +41,7 @@ dataframe engine works.
 1. **One engine first.** Do not combine SQL + Spark + dataframes until a single
    engine path works under `validate` and `plan`.
 2. **Pin the minor in 0.x.** Keep core and every official plugin on the same
-   release (for example `etlantic==0.51.0` with `etlantic-polars==0.51.0`).
+   release (for example `etlantic==0.52.0` with `etlantic-polars==0.52.0`).
 3. **Production profiles need allowlists.** Create `profiles/prod.json` from the
    embedded JSON in [Capabilities → CI starter](CAPABILITIES.md#ci-starter).
    Trim the allowlist to engines you install.

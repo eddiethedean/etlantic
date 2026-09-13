@@ -1,11 +1,11 @@
 # ETLantic 0.51 User Guide
 
-> **Status: Available in ETLantic 0.51.0 (published Beta).**
+> **Status: Available in ETLantic 0.52.0 (published Beta).**
 
 Use this page **after** Ada/Grace success on the docs home
 [green path](../README.md). Do **not** start here for install.
 
-ETLantic **0.51.0** is the current **published Beta release** for documented
+ETLantic **0.52.0** is the current **published Beta release** for documented
 single-tenant pilots. You can embed an HTTP control plane with **Supported**
 isolation profiles (`isolated-deployment`, `dedicated-schema`). There is no
 hosted multi-tenant SaaS. The line includes **human-governed AI**
@@ -16,7 +16,7 @@ Kafka, schema-registry, Kubernetes, Spark Connect, and MCP extras remain
 Experimental. `shared-service` remains Experimental. Support is community
 **non-SLA**.
 
-0.51.0 also includes the opt-in adaptive Profile and `etlantic.plan/2` wire
+0.52.0 also includes the opt-in adaptive Profile and `etlantic.plan/2` wire
 foundation. Adaptive planning and execution are not available in this release;
 keep executable Profiles explicit. Unsupported `/2` consumers fail closed
 before external I/O.

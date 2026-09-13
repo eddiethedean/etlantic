@@ -21,6 +21,11 @@ released.
 
 ## Current migrations and exit gates
 
+- [0.52 adaptive-planning plan](IMPLEMENTATION_PLAN_0_52.md),
+  [exit gate](EXIT_GATE_0_52.md),
+  [Migration 0.51 → 0.52](MIGRATION_0_51_TO_0_52.md), and
+  [What's new in 0.52](../01_GETTING_STARTED/WHATS_NEW_0_52.md)
+
 - [0.50 portable-baseline plan](IMPLEMENTATION_PLAN_0_50.md),
   [exit gate](EXIT_GATE_0_50.md),
   [Migration 0.50 → 0.51](MIGRATION_0_50_TO_0_51.md), and

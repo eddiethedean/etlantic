@@ -1,6 +1,6 @@
 # Exit Gate 0.51 — Adaptive Heterogeneous Planning and Executable Physical DAGs
 
-> **Status: 0.51.0 foundation release published; this record continues as the
+> **Status: 0.52.0 foundation release published; this record continues as the
 > adaptive-program evidence ledger for 0.52–0.54.**
 > [ADR-025](adr/ADR-025-ADAPTIVE-EXECUTION-AND-PHYSICAL-DAG.md) and the
 > machine-readable contract freeze establish the implementation boundary.
@@ -16,24 +16,24 @@ See the [adaptive program plan](IMPLEMENTATION_PLAN_0_51.md), the
 [0.53 execution plan](IMPLEMENTATION_PLAN_0_53.md),
 [0.54 graduation plan](IMPLEMENTATION_PLAN_0_54.md),
 [epic #30](https://github.com/eddiethedean/etlantic/issues/30), and
-[0.51 milestone](https://github.com/eddiethedean/etlantic/milestone/1).
+[0.52 milestone](https://github.com/eddiethedean/etlantic/milestone/1).
 
 ## Target Claim
 
 | Surface | Target at gate | Current |
 |---|---|---|
 | Existing explicit profiles and canonical `etlantic.plan/1` | Available, unchanged; adaptive fallback alone may add namespaced fallback metadata | Existing explicit behavior preserved; full fallback-provenance evidence pending |
-| 0.50.1 portable requirement/support and adaptive-handoff evidence | Digest-bound input to candidate analysis | Technically qualified and published; 0.51 lineage/drift verification pending |
+| 0.50.1 portable requirement/support and adaptive-handoff evidence | Digest-bound input to candidate analysis | Technically qualified and published; 0.52 lineage/drift verification pending |
 | Native `@Transformation.implementation(engine)` bodies | Explicit `/1` escape hatch only; never an adaptive candidate | Existing explicit behavior; adaptive ineligibility/fallback evidence pending |
 | `StepRunReport.metadata` built-in engine keys | Namespaced writer output with warning-free 0.50 bare-key reads under `etlantic.run_report/1` | Implemented; namespaced values win collisions and reserialization is canonical |
 | Adaptive Profile policy and `etlantic.plan/2` authoring/inspection | Available through a schema-specific `AdaptivePipelinePlan`; `PipelinePlan` remains `/1`-only | Implemented as a non-executable foundation |
 | Local static-batch physical-DAG execution | Available only for qualified combinations | Not implemented |
 | Local portable compiler, Polars, and Pandas single-target adaptive plans | Available after per-row evidence; arbitrary Python/native bodies excluded | Not qualified |
-| DuckDB single-target adaptive plans | Experimental candidate; 0.50 baseline/pushdown prerequisite passed, independent `/2` physical-DAG evidence required | 0.50 prerequisite complete; 0.51 row not qualified |
+| DuckDB single-target adaptive plans | Experimental candidate; 0.50 baseline/pushdown prerequisite passed, independent `/2` physical-DAG evidence required | 0.50 prerequisite complete; 0.52 row not qualified |
 | Polars → Pandas and Pandas → Polars | Available through directional `etlantic.interchange/1` Gate A evidence | Not qualified |
 | DuckDB ↔ Local/Polars/Pandas | No availability claim until each directional handoff is independently qualified | Not qualified |
 | Third-party placement claims | Public conformance protocol; maturity remains provider-owned | Not implemented |
-| SQL, PySpark, DataFusion, remote warehouse combinations | No 0.51 adaptive availability claim | Out of target matrix |
+| SQL, PySpark, DataFusion, remote warehouse combinations | No 0.52 adaptive availability claim | Out of target matrix |
 | External compilation, control-plane, durable/federated `/2` execution | Reject before acceptance or external I/O | Core compile, local, Prefect, CP1, and remote rejection paths covered; full consumer artifact pending |
 | Streaming and runtime-expanded adaptive graphs | Reject with stable diagnostics | Adaptive streaming Profiles reject; runtime expansion remains outside the foundation release |
 
@@ -131,9 +131,9 @@ or allows new writers to emit the retired bare built-in keys.
 
 ## Go / No-Go
 
-**GO for the published 0.51.0 foundation-only package release. NO-GO for any
+**GO for the published 0.52.0 foundation-only package release. NO-GO for any
 adaptive planning or execution availability claim until its assigned follow-on
-gate passes.** The 0.51 release may expose the opt-in
+gate passes.** The 0.52 release may expose the opt-in
 Profile contract, closed `/2` authoring/inspection/verification model, and
 report metadata migration only. 0.52 may graduate planning/inspection while
 keeping execution disabled; 0.53 may land fixture-qualified execution without

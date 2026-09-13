@@ -1,7 +1,7 @@
 ---
 status: available
 since: "0.43.0"
-current_minor: "0.51"
+current_minor: "0.52"
 audience: developer
 ---
 
@@ -15,7 +15,7 @@ audience: developer
 ## Setup
 
 ```bash
-pip install 'etlantic-openlineage==0.51.0'
+pip install 'etlantic-openlineage==0.52.0'
 ```
 
 ```python

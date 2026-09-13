@@ -42,7 +42,7 @@ is not dbt, not a dataframe engine, and not a hosted scheduler.
 ETLantic requires Python 3.11 or newer. In an activated virtual environment:
 
 ```bash
-python -m pip install 'etlantic==0.51.0'
+python -m pip install 'etlantic==0.52.0'
 python -m etlantic --version
 mkdir my-pipeline
 cd my-pipeline
@@ -57,7 +57,7 @@ for setup details and expected output.
 
 If `init` refuses the directory, use an empty folder (or `--force` only after
 you have reviewed what it overwrites). Pin every official plugin to the same
-version as core (`etlantic-polars==0.51.0` with `etlantic==0.51.0`). Mixed
+version as core (`etlantic-polars==0.52.0` with `etlantic==0.52.0`). Mixed
 plugin versions fail closed — see
 [Troubleshooting](https://etlantic.readthedocs.io/en/stable/01_GETTING_STARTED/TROUBLESHOOTING/#core-and-plugin-versions-do-not-match).
 
@@ -103,7 +103,7 @@ The public CLI (see the
 Core has no dataframe, database, Spark, or orchestrator dependency. Install
 only the integrations a pipeline needs:
 
-| Capability | 0.51 |
+| Capability | 0.52 |
 |---|---|
 | Local Python + JSON/CSV | `etlantic` |
 | Polars or Pandas | `etlantic[polars]` or `etlantic[pandas]` |
@@ -142,8 +142,8 @@ before a pilot.
 ## Learn more
 
 These links use the Read the Docs **stable** alias, which remains on the latest
-published release until 0.51.0 is tagged. The immutable 0.51.0 tree will be at
-[v0.51.0](https://etlantic.readthedocs.io/en/v0.51.0/).
+published release until 0.52.0 is tagged. The immutable 0.52.0 tree will be at
+[v0.52.0](https://etlantic.readthedocs.io/en/v0.52.0/).
 
 - [Quickstart](https://etlantic.readthedocs.io/en/stable/01_GETTING_STARTED/QUICKSTART/)
   and [first pipeline](https://etlantic.readthedocs.io/en/stable/01_GETTING_STARTED/FIRST_PIPELINE/)

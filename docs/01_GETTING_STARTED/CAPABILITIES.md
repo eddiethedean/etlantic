@@ -1,6 +1,6 @@
 # Current Capabilities and Limitations
 
-> **Status: Available in ETLantic 0.51.0 (published Beta).** What is implemented and technically
+> **Status: Available in ETLantic 0.52.0 (published Beta).** What is implemented and technically
 > qualified for controlled single-tenant pilots and Supported multi-tenant
 > profiles.
 
@@ -8,10 +8,10 @@
     Read **What works today** and **Limits** first. Residual gaps and CI
     starter JSON are further down for evaluators.
 
-## What works today (0.51)
+## What works today (0.52)
 
-ETLantic 0.51.0 is the **published Beta release** for documented, controlled,
-single-tenant pilots (install `etlantic==0.51.0` from PyPI). You can embed an
+ETLantic 0.52.0 is the **published Beta release** for documented, controlled,
+single-tenant pilots (install `etlantic==0.52.0` from PyPI). You can embed an
 HTTP control plane with **Supported** isolation profiles
 (`isolated-deployment`, `dedicated-schema`). There is no hosted multi-tenant
 SaaS and no SLA. It validates and
@@ -99,7 +99,7 @@ Public surface classes:
     `pip install etlantic` does **not** install `examples/`. Use Quickstart
     paste paths. Checkout demos require a clone.
 
-## Available in 0.51
+## Available in 0.52
 
 ### Human-governed AI
 
@@ -269,8 +269,8 @@ See also [Experimental surfaces](EXPERIMENTAL_SURFACES.md).
 | Human-governed AI context/proposals | **Available in the bounded 0.49 envelope** — redacted bundles, proposal sandbox, user-region generators; `etlantic-mcp` Experimental — see [What's new in 0.49](WHATS_NEW_0_49.md) and [ADR-024](../11_DEVELOPMENT/adr/ADR-024-HUMAN-GOVERNED-AI.md) |
 | Embedded DuckDB engine package | **Available (qualified subset)** in 0.49: optional `etlantic-duckdb` package with native embedded runtime, dialect/compiler subset, security policy, and qualification evidence — see [implementation plan](../11_DEVELOPMENT/IMPLEMENTATION_PLAN_0_49.md), [exit gate](../11_DEVELOPMENT/EXIT_GATE_0_49.md), and [What's new in 0.49](WHATS_NEW_0_49.md) |
 | Baseline portable execution across first-party engines | **Published and technically qualified** for 0.50: the frozen seven-engine baseline across Local, Polars, Pandas, SQL, PySpark, DataFusion, and DuckDB passed the recorded real-backend campaign and pushdown contract. See the [implementation plan](../11_DEVELOPMENT/IMPLEMENTATION_PLAN_0_50.md), [evidence gate](../11_DEVELOPMENT/EXIT_GATE_0_50.md), and [evidence index](../11_DEVELOPMENT/evidence/portable_0_50/portable_evidence_index_0_50.json). |
-| Adaptive Profile and physical-DAG wire foundation | **Published in 0.51; planning and execution unavailable** — see [ADR-025](../11_DEVELOPMENT/adr/ADR-025-ADAPTIVE-EXECUTION-AND-PHYSICAL-DAG.md) and the [foundation gate](../11_DEVELOPMENT/EXIT_GATE_0_51.md) |
-| Adaptive placement planning, lowering, and explain/diff | **Implemented on main for 0.52; execution remains disabled** — see the [0.52 plan](../11_DEVELOPMENT/IMPLEMENTATION_PLAN_0_52.md) and [generated evidence](../11_DEVELOPMENT/evidence/adaptive_0_51/FINDINGS.md). The published 0.51 package remains foundation-only. |
+| Adaptive Profile and physical-DAG wire foundation | **Published in 0.52; planning and execution unavailable** — see [ADR-025](../11_DEVELOPMENT/adr/ADR-025-ADAPTIVE-EXECUTION-AND-PHYSICAL-DAG.md) and the [foundation gate](../11_DEVELOPMENT/EXIT_GATE_0_51.md) |
+| Adaptive placement planning, lowering, and explain/diff | **Implemented on main for 0.52; execution remains disabled** — see the [0.52 plan](../11_DEVELOPMENT/IMPLEMENTATION_PLAN_0_52.md) and [generated evidence](../11_DEVELOPMENT/evidence/adaptive_0_51/FINDINGS.md). The published 0.52 package remains foundation-only. |
 | Local adaptive physical-DAG execution | **Planned behind qualification gates for 0.53; no availability claim** — see the [0.53 plan](../11_DEVELOPMENT/IMPLEMENTATION_PLAN_0_53.md) |
 | Adaptive conformance and exact-matrix graduation | **Planned for 0.54**; proposed qualification is Local/Polars/Pandas single-target plus directional Polars↔Pandas Gate A — see the [0.54 plan](../11_DEVELOPMENT/IMPLEMENTATION_PLAN_0_54.md) and [epic #30](https://github.com/eddiethedean/etlantic/issues/30) |
 | Bounded dynamic mapping/reduction and explicit conditional/failure/compensation branches | **Supported** (core) in 0.46 — [exit gate](../11_DEVELOPMENT/EXIT_GATE_0_46.md) / [ADR-022](../11_DEVELOPMENT/adr/ADR-022-DYNAMIC-CONTROL-AND-STREAMING.md) |
@@ -301,7 +301,7 @@ Never put secrets in plans, reports, or CI logs.
 
 **Pip users:** create `profiles/prod.json` yourself. Start from the JSON
 below, then **trim `plugin_allowlist` to the engines you actually install**
-(the sample uses Polars — install `etlantic-polars==0.51.0` first).
+(the sample uses Polars — install `etlantic-polars==0.52.0` first).
 
 ```json
 {
@@ -314,7 +314,7 @@ below, then **trim `plugin_allowlist` to the engines you actually install**
   "validation_policy": "strict",
   "allow_trusted_sql": false,
   "plugin_allowlist": {
-    "etlantic-polars": "==0.51.0"
+    "etlantic-polars": "==0.52.0"
   },
   "assets": {},
   "secrets": {},
@@ -330,17 +330,17 @@ python -m etlantic plan path/to/pipeline.py:MyPipeline --profile ./profiles/prod
 ```
 
 ```bash
-pip install 'etlantic==0.51.0'
-pip install 'etlantic[lsp]==0.51.0'            # optional language server
-pip install 'etlantic-polars==0.51.0'          # optional
-pip install 'etlantic-pandas==0.51.0'          # optional
-pip install 'etlantic-sql==0.51.0'             # optional
-pip install 'etlantic-pyspark==0.51.0'         # optional
-pip install 'etlantic-airflow==0.51.0'         # optional
-pip install 'etlantic-prefect==0.51.0'         # optional
-pip install 'etlantic-keyring==0.51.0'         # optional
-pip install 'etlantic-sqlmodel==0.51.0'        # optional
-pip install 'medallantic==0.51.0'              # optional
+pip install 'etlantic==0.52.0'
+pip install 'etlantic[lsp]==0.52.0'            # optional language server
+pip install 'etlantic-polars==0.52.0'          # optional
+pip install 'etlantic-pandas==0.52.0'          # optional
+pip install 'etlantic-sql==0.52.0'             # optional
+pip install 'etlantic-pyspark==0.52.0'         # optional
+pip install 'etlantic-airflow==0.52.0'         # optional
+pip install 'etlantic-prefect==0.52.0'         # optional
+pip install 'etlantic-keyring==0.52.0'         # optional
+pip install 'etlantic-sqlmodel==0.52.0'        # optional
+pip install 'medallantic==0.52.0'              # optional
 ```
 
 See [Installation](INSTALLATION.md), [Evaluator brief](EVALUATOR.md), and

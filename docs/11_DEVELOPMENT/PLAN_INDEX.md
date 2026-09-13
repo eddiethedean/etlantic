@@ -64,7 +64,8 @@ is available and its release gate has passed.
 
 ## Portfolio at a glance
 
-Status is relative to the published **0.51** foundation release.
+Status is relative to the published **0.52** adaptive-planning release.
+See [what ETLantic 0.52 can do now](../01_GETTING_STARTED/WHATS_NEW_0_52.md).
 Prior scheduler/federation evidence remains in **0.47**; Streaming evidence remains in **0.46**; Optimization SDK evidence remains
 in **0.45**; Developer Intelligence remains in **0.44**; CP-GA evidence remains
 in **0.43**; CP4 evidence remains in **0.42**; CP3 evidence remains in **0.41**;
@@ -73,11 +74,11 @@ evidence remains in **0.38**.
 
 | Plan | Status | Current boundary | Next horizon or gate |
 |---|---|---|---|
-| [Main roadmap](https://github.com/eddiethedean/etlantic/blob/main/ROADMAP.md) | Current sequence | 0.51 adaptive contract/wire foundation published; adaptive planning and execution remain unavailable | [ROADMAP](https://github.com/eddiethedean/etlantic/blob/main/ROADMAP.md) §§ 0.51–0.54 |
+| [Main roadmap](https://github.com/eddiethedean/etlantic/blob/main/ROADMAP.md) | Current sequence | 0.52 deterministic adaptive planning and plan-only physical lowering published; execution remains unavailable | [ROADMAP](https://github.com/eddiethedean/etlantic/blob/main/ROADMAP.md) §§ 0.52–0.54 |
 | [0.49 implementation plan](IMPLEMENTATION_PLAN_0_49.md) | Implemented qualified subset | Optional DuckDB engine package, embedded runtime, dialect/compiler subset, security policy, and qualification evidence; advanced matrix/release evidence remains tracked in the exit gate | [Exit gate 0.49](EXIT_GATE_0_49.md) · [findings ledger](FINDINGS_0_49.md) · [epic #110](https://github.com/eddiethedean/etlantic/issues/110) |
 | [0.50 implementation plan](IMPLEMENTATION_PLAN_0_50.md) | Published; technical qualification complete | Frozen seven-engine baseline, pushdown conformance, and requirement-level evidence generated for 0.51 consumption | [Exit gate 0.50](EXIT_GATE_0_50.md) · [evidence index](evidence/portable_0_50/portable_evidence_index_0_50.json) |
 | [0.51 implementation plan](IMPLEMENTATION_PLAN_0_51.md) | Foundation published; adaptive qualification pending | Profile policy, report metadata migration, and closed `/2` wire model are implemented; candidate discovery, solver, and runtime remain unavailable | [ADR-025](adr/ADR-025-ADAPTIVE-EXECUTION-AND-PHYSICAL-DAG.md) · [Exit gate 0.51](EXIT_GATE_0_51.md) · [epic #30](https://github.com/eddiethedean/etlantic/issues/30) |
-| [0.52 implementation plan](IMPLEMENTATION_PLAN_0_52.md) | Implemented on main; release check pending | Trusted inventory, candidate matrix, exact placement, physical lowering, and explain/diff; execution remains unavailable | [Generated evidence](evidence/adaptive_0_51/FINDINGS.md) · Adaptive program Phases 3–7 / I1 |
+| [0.52 implementation plan](IMPLEMENTATION_PLAN_0_52.md) | Published 0.52.0 | Trusted inventory, candidate matrix, exact placement, physical lowering, and explain/diff; execution remains unavailable | [Exit gate 0.52](EXIT_GATE_0_52.md) · [Generated evidence](evidence/adaptive_0_51/FINDINGS.md) |
 | [0.53 implementation plan](IMPLEMENTATION_PLAN_0_53.md) | Planned | Whole-DAG admission and fixture-qualified local physical execution; availability remains gated | Adaptive program Phases 8–9 / I2 |
 | [0.54 implementation plan](IMPLEMENTATION_PLAN_0_54.md) | Planned | Public conformance, differential/security qualification, and exact-matrix graduation | Adaptive program Phase 10 / I3 |
 | [ADR-025: Adaptive execution and physical DAG](adr/ADR-025-ADAPTIVE-EXECUTION-AND-PHYSICAL-DAG.md) | Accepted | `/1` preservation, opt-in `/2`, portable-only candidates, physical-DAG authority, and fail-closed consumers | 0.51 Phase 0 |
