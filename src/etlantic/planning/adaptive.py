@@ -257,6 +257,9 @@ def _build_adaptive_plan(
             "schema": "etlantic.adaptive_runtime/1",
             "request": _safe_ref(raw_request),
         }
+        metadata["etlantic.implementations"] = _implementation_records(
+            selected, decisions, context, pipeline_cls
+        )
     selected_nodes = (
         None if not (selection or context.selection) else selected.node_names()
     )
@@ -299,6 +302,41 @@ def _build_adaptive_plan(
         budget.allocation(plan_fields, "serialization-buffer"),
     ):
         plan = AdaptivePipelinePlan(**plan_fields)
+        if request is not None:
+            from etlantic.runtime.adaptive_support import support_row_for
+
+            support_row = support_row_for(plan)
+            if support_row is not None:
+                runtime_metadata = dict(plan.metadata.get("etlantic.runtime") or {})
+                runtime_metadata.update(
+                    {
+                        "support_row_id": support_row.row_id,
+                        "support_row": support_row.to_dict(),
+                        "policy": {
+                            "intent": getattr(request.intent, "value", request.intent),
+                            "materialization": getattr(
+                                request.materialization,
+                                "value",
+                                request.materialization,
+                            ),
+                            "no_write": bool(request.no_write),
+                        },
+                        "binding": {
+                            record["node_name"]: record.get("binding")
+                            for record in metadata.get("etlantic.implementations", ())
+                            if record.get("binding") is not None
+                        },
+                        "evidence_refs": list(support_row.evidence_refs),
+                    }
+                )
+                plan = replace(
+                    plan,
+                    metadata={
+                        **dict(plan.metadata),
+                        "etlantic.runtime": runtime_metadata,
+                        "etlantic.support_row": support_row.to_dict(),
+                    },
+                )
         fingerprint = adaptive_plan_fingerprint(plan)
         final_plan = replace(
             plan, fingerprint=fingerprint, plan_id=f"plan:{fingerprint[:16]}"
@@ -331,6 +369,78 @@ def _graph_for_input(
     if pipeline_cls is None:
         raise TypeError("pipeline_cls is required when definition is omitted")
     return pipeline_cls.build_graph()
+
+
+def _implementation_records(
+    graph: LogicalGraph,
+    decisions: tuple[AdaptiveDecision, ...],
+    context: PlanningContext,
+    pipeline_cls: type[Any] | None,
+) -> list[dict[str, Any]]:
+    """Return ordered, wire-safe implementation descriptors for execution."""
+    decision_map = {decision.node_name: decision for decision in decisions}
+    targets = {target_id: target for target_id, target, _ in _inventory(context)}
+    members = getattr(pipeline_cls, "__pipeline_members__", {}) if pipeline_cls else {}
+    records: list[dict[str, Any]] = []
+    for node in graph.nodes:
+        target = targets[decision_map[node.name].target_id]
+        descriptor: dict[str, Any] = {
+            "node_name": node.name,
+            "logical_nodes": [node.name],
+            "target_id": decision_map[node.name].target_id,
+            "target_identity": _target_identity(target),
+            "kind": node.kind.value,
+        }
+        if node.kind is NodeKind.STEP:
+            key = f"{node.transformation_id}::{target.engine}"
+            selected = context.registry.implementations.get(key)
+            if selected is not None:
+                descriptor["implementation"] = selected.to_dict()
+            else:
+                member = members.get(node.name)
+                transform = getattr(member, "transformation", None)
+                portable = (
+                    getattr(transform, "portable_definition", lambda: None)()
+                    if transform is not None
+                    else None
+                )
+                compiler = context.registry.transform_compilers.get(target.engine)
+                if compiler is None and target.engine == "local":
+                    from etlantic.transform.local_compiler import LocalTransformCompiler
+
+                    compiler = LocalTransformCompiler()
+                if portable is not None and compiler is not None:
+                    info = compiler.info
+                    descriptor["implementation"] = {
+                        "transformation_id": node.transformation_id or "unknown",
+                        "engine": target.engine,
+                        "identity": f"portable:{info.name}@{portable.fingerprint[:16]}",
+                        "is_async": True,
+                        "kind": "portable_compiled",
+                        "ir_fingerprint": portable.fingerprint,
+                        "compiler_name": info.name,
+                        "compiler_version": info.version,
+                        "compiler_protocol": info.compiler_protocol,
+                        "compiler_evidence_fingerprint": info.evidence_fingerprint,
+                        "requirements": {
+                            key: list(value)
+                            for key, value in portable.requirements.items()
+                        },
+                        # The executable plan carries the immutable IR by
+                        # fingerprint.  Keeping the complete expression tree
+                        # here would exceed the repository metadata depth
+                        # budget; the live pipeline definition remains the
+                        # authoritative source for the process-local compile.
+                        "portable_plan": None,
+                        "portable_plan_fingerprint": portable.fingerprint,
+                    }
+        else:
+            descriptor["binding"] = node.binding or node.name
+            descriptor["operation"] = (
+                "read" if node.kind is NodeKind.SOURCE else "prepare"
+            )
+        records.append(descriptor)
+    return records
 
 
 def _canonical_graph(graph: LogicalGraph) -> LogicalGraph:
@@ -1771,6 +1881,22 @@ def _physical_dag(
                 )
             assert context is not None
             handoff_contract = _handoff_contract(source, destination, edge, context)
+            interchange_metadata: dict[str, Any] = {}
+            if {source.engine, destination.engine} == {"polars", "pandas"}:
+                # Reuse the repository's versioned Gate-A selector so the
+                # physical transfer records the exact mechanism selected at
+                # planning time.  No live plugin objects enter the plan.
+                from etlantic.plan.planner import _interchange_descriptor
+
+                interchange_metadata["etlantic.interchange"] = _interchange_descriptor(
+                    producer_engine=source.engine,
+                    consumer_engine=destination.engine,
+                    producer_capabilities=context.registry.engines.get(source.engine),
+                    consumer_capabilities=context.registry.engines.get(
+                        destination.engine
+                    ),
+                    contract_id=edge.producer_contract_id or edge.consumer_contract_id,
+                ).to_dict()
             transfer_payload = {
                 "kind": "transfer",
                 "target_identity": _target_identity(destination),
@@ -1830,6 +1956,7 @@ def _physical_dag(
                     ],
                     "etlantic.handoff_evidence": list(handoff_refs),
                     "etlantic.handoff_contract": handoff_contract,
+                    **interchange_metadata,
                 },
                 "input_contracts": (
                     {

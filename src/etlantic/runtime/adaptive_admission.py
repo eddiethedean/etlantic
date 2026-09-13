@@ -9,6 +9,7 @@ from typing import Any
 
 from etlantic.exceptions import PipelineExecutionError
 from etlantic.plan.adaptive_model import ADAPTIVE_PLAN_SCHEMA, AdaptivePipelinePlan
+from etlantic.plan.freeze import mutable_copy
 from etlantic.plan.serialize import verify_plan_fingerprint
 from etlantic.runtime.adaptive_support import (
     SupportRow,
@@ -92,6 +93,58 @@ def admit_adaptive_plan(
     selected = set(
         plan.selected_nodes or (node.name for node in plan.logical_graph.nodes)
     )
+    metadata = dict(plan.metadata)
+    stored_row = metadata.get("etlantic.support_row")
+    if not isinstance(stored_row, Mapping):
+        raise _reject(
+            "Executable adaptive plan is missing its support-row record", "PMADP401"
+        )
+    if (
+        stored_row.get("schema") != row.to_dict()["schema"]
+        or stored_row.get("row_id") != row.row_id
+        or tuple(stored_row.get("evidence_refs") or ()) != row.evidence_refs
+    ):
+        raise _reject("Adaptive support-row record does not match the plan", "PMADP401")
+    runtime_record = metadata.get("etlantic.runtime")
+    if not isinstance(runtime_record, Mapping):
+        raise _reject(
+            "Executable adaptive plan is missing runtime metadata", "PMADP401"
+        )
+    stored_request = runtime_record.get("request")
+    if mutable_copy(stored_request or {}) != mutable_copy(request.to_dict()):
+        raise _reject(
+            "Runtime request differs from the fingerprinted adaptive request",
+            "PMADP122",
+        )
+    if runtime_record.get("support_row_id") not in {None, row.row_id}:
+        raise _reject("Adaptive runtime support-row identity drifted", "PMADP401")
+    implementations = metadata.get("etlantic.implementations")
+    if not isinstance(implementations, (list, tuple)):
+        raise _reject(
+            "Executable adaptive plan is missing implementation records", "PMADP401"
+        )
+    implementation_nodes = {
+        str(record.get("node_name"))
+        for record in implementations
+        if isinstance(record, Mapping)
+    }
+    if implementation_nodes != selected:
+        raise _reject(
+            "Adaptive implementation records do not cover the selection", "PMADP403"
+        )
+    target_by_id = {target.target_id: target for target in plan.inventory.targets}
+    for record in implementations:
+        if not isinstance(record, Mapping):
+            raise _reject("Adaptive implementation record is not an object", "PMADP400")
+        target = target_by_id.get(str(record.get("target_id")))
+        if target is None or record.get("target_identity") != target.identity:
+            raise _reject("Adaptive implementation target identity drifted", "PMADP401")
+        if record.get("kind") == "step" and not isinstance(
+            record.get("implementation"), Mapping
+        ):
+            raise _reject(
+                "Adaptive step is missing its implementation descriptor", "PMADP401"
+            )
     # Compare resolved names, rather than accepting a request that could cause
     # a fresh slice or a different logical closure at runtime.
     requested = tuple(request.selection.resolve(plan.logical_graph))

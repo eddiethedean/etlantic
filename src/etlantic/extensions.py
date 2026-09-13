@@ -363,6 +363,13 @@ def _is_namespaced_extension_key(key: Any) -> bool:
 
 def _is_source_row_key(key: Any) -> bool:
     key_l = _normalize_metadata_key(key)
+    # ``etlantic.support_row`` is a versioned capability-matrix record.  Its
+    # name ends in ``row`` for historical reasons, but the value contains
+    # execution metadata rather than source data.  Keep the strict source-row
+    # detector fail-closed for all other keys while allowing this audited
+    # extension record to be serialized in executable plans.
+    if key_l == "support_row" or key_l.endswith("_support_row"):
+        return False
     key_tail = key_l.rsplit("_", 1)[-1]
     compact_tail = key_tail.replace("_", "")
     return (

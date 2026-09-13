@@ -7,11 +7,12 @@ used by the physical scheduler; it does not alter or re-plan the stored DAG.
 
 from __future__ import annotations
 
+from collections.abc import Mapping
 from typing import Any
 
 from etlantic.plan.freeze import mutable_copy
 from etlantic.plan.model import PhysicalUnit, PipelinePlan
-from etlantic.plan.regions import ExecutionRegion
+from etlantic.plan.regions import ExecutionRegion, MaterializationBoundary
 from etlantic.registry import ImplementationDescriptor
 from etlantic.transform.compiler import TransformPlanningContext
 
@@ -42,6 +43,12 @@ def pipeline_plan_for_adaptive(
 
     implementations: dict[str, ImplementationDescriptor] = {}
     members = getattr(pipeline_cls, "__pipeline_members__", {}) if pipeline_cls else {}
+    stored_records = dict(adaptive_plan.metadata).get("etlantic.implementations") or ()
+    stored_by_node = {
+        str(record.get("node_name")): record
+        for record in stored_records
+        if isinstance(record, dict) and record.get("node_name")
+    }
     for node in adaptive_plan.logical_graph.nodes:
         if node.kind.value != "step":
             continue
@@ -54,6 +61,13 @@ def pipeline_plan_for_adaptive(
             if descriptor is not None
             else None
         )
+        if descriptor is None:
+            stored = stored_by_node.get(node.name, {})
+            implementation = (
+                stored.get("implementation") if isinstance(stored, dict) else None
+            )
+            if isinstance(implementation, dict):
+                descriptor = ImplementationDescriptor.from_dict(implementation)
         if descriptor is None:
             member = members.get(node.name)
             transform = getattr(member, "transformation", None)
@@ -129,6 +143,30 @@ def pipeline_plan_for_adaptive(
     settings = {
         "concurrency": (request_meta or {}).get("metadata", {}).get("concurrency", 4)
     }
+    boundaries: list[MaterializationBoundary] = []
+    for unit in physical_units:
+        if unit.kind.value != "transfer":
+            continue
+        edge = unit.metadata.get("etlantic.edge_ports")
+        interchange = unit.metadata.get("etlantic.interchange")
+        if not isinstance(edge, (list, tuple)) or len(edge) != 4:
+            continue
+        boundaries.append(
+            MaterializationBoundary(
+                identity=unit.identity,
+                producer_node=str(edge[0]),
+                producer_port=str(edge[2]),
+                reason="cross_engine",
+                security_domain=adaptive_plan.security_domain,
+                metadata={
+                    "interchange": mutable_copy(interchange)
+                    if isinstance(interchange, Mapping)
+                    else None,
+                    "consumer_node": str(edge[1]),
+                    "consumer_port": str(edge[3]),
+                },
+            )
+        )
     return PipelinePlan(
         schema="etlantic.plan/1",
         plan_id=adaptive_plan.plan_id,
@@ -148,10 +186,14 @@ def pipeline_plan_for_adaptive(
                     **mutable_copy(unit.metadata),
                     "etlantic.physical_kind": unit.kind.value,
                     "etlantic.target_identity": unit.target_identity,
+                    "etlantic.dependencies": [
+                        dependency.to_dict() for dependency in unit.dependencies
+                    ],
                 },
             )
             for unit in physical_units
         ),
+        materialization_boundaries=tuple(boundaries),
         logical_to_physical=logical_to_physical,
         implementations=implementations,
         bindings=dict(
