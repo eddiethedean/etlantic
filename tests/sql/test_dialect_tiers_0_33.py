@@ -12,6 +12,8 @@ from etlantic.sql.expression import col
 from etlantic.sql.protocol import (
     AliasedExpr,
     CallExpr,
+    CteDef,
+    LiteralExpr,
     RelationRef,
     SqlExecutionContext,
     SqlQuery,
@@ -263,6 +265,154 @@ def test_sql_compiler_evidence_fingerprints_unicode_database() -> None:
     compiler = create_transform_compiler()
     assert compiler.info.environment["unicode"] == UNICODE_DATA_VERSION
     assert compiler.info.environment["unicode_fingerprint"] == UNICODE_DATA_FINGERPRINT
+
+
+@pytest.mark.parametrize("mode", ["lower", "upper"])
+@pytest.mark.parametrize("aggregate", ["count_all", "count", "sum", "max"])
+def test_postgresql_casing_rejects_unscoped_aggregate(
+    mode: str, aggregate: str
+) -> None:
+    """A field-free aggregate must not be moved into the operand SELECT."""
+    args = () if aggregate == "count_all" else (LiteralExpr(1),)
+    expression = CallExpr(f"dtcs:{mode}", (CallExpr(f"dtcs:{aggregate}", args),))
+    compiler = SqlCompiler(dialect="postgresql", supports_merge=True)
+    with pytest.raises(ValueError, match=r"aggregate.*separate step"):
+        compiler.compile_query(
+            SqlQuery(
+                source=RelationRef(name="items"),
+                columns=(AliasedExpr(expression, "value"),),
+            ),
+            context=SqlExecutionContext(
+                run_id="r", pipeline_id="p", plan_id="plan", step_name="case"
+            ),
+        )
+
+
+@pytest.mark.parametrize("mode", ["lower", "upper"])
+@pytest.mark.parametrize("aggregate", ["count_all", "count", "sum", "max"])
+def test_portable_postgresql_casing_rejects_unscoped_aggregate(
+    mode: str, aggregate: str
+) -> None:
+    from etlantic.transform.compiler import (
+        TransformCompileContext,
+        TransformPlanningContext,
+    )
+    from etlantic_sql.transform_compiler import SqlTransformCompiler
+
+    args = (
+        []
+        if aggregate == "count_all"
+        else [{"kind": "literal", "value": {"type": "integer", "value": 1}}]
+    )
+    expression = {
+        "kind": "call",
+        "callee": f"dtcs:{mode}",
+        "args": [{"kind": "call", "callee": f"dtcs:{aggregate}", "args": args}],
+    }
+    definition = {
+        "planIdentity": "dtcs.transform-plan/2",
+        "inputs": {"t": {}},
+        "actions": [
+            {
+                "id": "a",
+                "kind": {
+                    "id": "a",
+                    "action": "dtcs:aggregate",
+                    "target": "t",
+                    "parameters": {
+                        "groupBy": [],
+                        "aggregates": [{"name": "value", "expression": expression}],
+                    },
+                },
+            }
+        ],
+        "outputs": {"result": {"id": "result"}},
+        "requirements": {
+            "dependencies": [{"from": "a", "to": "result", "reason": "lineage"}]
+        },
+    }
+    compiler = SqlTransformCompiler(dialect="postgresql")
+    context = TransformPlanningContext("p", "s", "profile", "sql")
+    report = compiler.analyze(definition, context=context)
+    assert not report.supported
+    assert any(
+        finding.requirement == "mode:casing_aggregate_scope"
+        for finding in report.findings
+    )
+    with pytest.raises(ValueError, match=r"aggregate.*separate step"):
+        compiler.compile(
+            definition,
+            context=TransformCompileContext("p", "plan", "s", "profile", "sql"),
+        )
+
+    # Ordinary aggregates and aggregates with outer field references retain
+    # their original scope and must not be rejected by this guard.
+    compiler = SqlTransformCompiler(dialect="sqlite")
+    assert compiler.analyze(definition, context=context).supported
+    expression["args"][0]["callee"] = "dtcs:max"
+    expression["args"][0]["args"] = [
+        {"kind": "fieldRef", "scope": "field", "target": "name"}
+    ]
+    compiler = SqlTransformCompiler(dialect="postgresql")
+    assert compiler.analyze(definition, context=context).supported
+
+
+@pytest.mark.parametrize("mode", ["lower", "upper"])
+@pytest.mark.parametrize("row_count", [0, 3])
+def test_postgresql_casing_preserves_supported_aggregate_scopes(
+    mode: str, row_count: int
+) -> None:
+    """Counts in a separate step and directly cased column aggregates work."""
+    if not os.environ.get("ETLANTIC_SQL_URL", "").startswith("postgresql"):
+        pytest.skip("PostgreSQL execution requires ETLANTIC_SQL_URL")
+    from sqlalchemy import create_engine, text
+
+    context = SqlExecutionContext(
+        run_id="r", pipeline_id="p", plan_id="plan", step_name="scope"
+    )
+    source = RelationRef(name="aggregate_scope_033")
+    counted = SqlQuery(
+        source=source,
+        columns=(AliasedExpr(CallExpr("dtcs:count_all"), "total"),),
+    )
+    queries = (
+        SqlQuery(
+            source=RelationRef(name="counted"),
+            ctes=(CteDef(name="counted", query=counted),),
+            columns=(CallExpr(f"dtcs:{mode}", (col("total"),)),),
+        ),
+        SqlQuery(
+            source=source,
+            columns=(
+                CallExpr(f"dtcs:{mode}", (CallExpr("dtcs:max", (col("name"),)),)),
+            ),
+        ),
+    )
+    engine = create_engine(os.environ["ETLANTIC_SQL_URL"])
+    try:
+        with engine.begin() as connection:
+            connection.execute(
+                text("CREATE TEMP TABLE aggregate_scope_033 (name TEXT)")
+            )
+            if row_count:
+                connection.execute(
+                    text("INSERT INTO aggregate_scope_033 VALUES (:name)"),
+                    [{"name": "AbC"}] * row_count,
+                )
+            for query, expected in zip(
+                queries,
+                [str(row_count), getattr("AbC", mode)() if row_count else None],
+                strict=True,
+            ):
+                compiled = SqlCompiler(
+                    dialect="postgresql", supports_merge=True
+                ).compile_query(query, context=context)
+                rows = connection.execute(
+                    text(compiled.text), compiled.metadata["_bound_params"]
+                ).all()
+                assert rows == [(expected,)]
+    finally:
+        engine.dispose()
 
 
 def test_sql_compiler_identity_honors_database_url(monkeypatch) -> None:

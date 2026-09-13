@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from collections.abc import Mapping
 from decimal import Decimal
 from functools import lru_cache
 from typing import Any
@@ -26,6 +27,7 @@ from etlantic.sql.protocol import (
     UnaryExpr,
     WriteIntentKind,
 )
+from etlantic.transform.portable_baseline import AGGREGATE_FUNCTIONS
 from etlantic_sql.dialect_postgresql import quote_identifier
 from etlantic_sql.unicode_data import (
     CASE_IGNORABLE_CLASS,
@@ -64,6 +66,66 @@ _JOIN_SQL = {
     "semi": "LEFT SEMI JOIN",  # rewritten below for PostgreSQL
     "anti": "LEFT ANTI JOIN",
 }
+
+_SQL_AGGREGATE_FUNCTIONS = frozenset(AGGREGATE_FUNCTIONS) | {
+    "dtcs:decimal_sum",
+    "dtcs:decimal_average",
+    "dtcs:decimal_min",
+    "dtcs:decimal_max",
+}
+_CASING_AGGREGATE_SCOPE_ERROR = (
+    "PostgreSQL casing around a field-free aggregate changes aggregate scope; "
+    "compute the aggregate in a separate step before casing"
+)
+
+
+def _casing_aggregate_scope_violations(
+    definition: Mapping[str, Any],
+) -> tuple[str, ...]:
+    """Find aggregates that would bind to a casing operand's implicit row.
+
+    Accept both portable plan expressions and serialized SQL expressions so
+    analysis and direct SQL compilation enforce the same scope constraint.
+    """
+
+    def has_column(value: Any) -> bool:
+        if isinstance(value, Mapping):
+            if value.get("kind") == "literal":
+                return False
+            if value.get("kind") == "fieldRef":
+                return value.get("scope", "field") == "field"
+            if value.get("kind") in {None, "column"} and isinstance(
+                value.get("column"), str
+            ):
+                return True
+            return any(has_column(child) for child in value.values())
+        if isinstance(value, (list, tuple)):
+            return any(has_column(child) for child in value)
+        return False
+
+    violations: list[str] = []
+
+    def walk(value: Any, path: str, *, within_casing: bool = False) -> None:
+        if isinstance(value, Mapping):
+            if value.get("kind") == "literal":
+                return
+            if value.get("kind") == "call":
+                callee = value.get("callee")
+                if (
+                    within_casing
+                    and callee in _SQL_AGGREGATE_FUNCTIONS
+                    and not has_column(value.get("args"))
+                ):
+                    violations.append(path)
+                within_casing = within_casing or callee in {"dtcs:lower", "dtcs:upper"}
+            for key, child in value.items():
+                walk(child, f"{path}.{key}", within_casing=within_casing)
+        elif isinstance(value, (list, tuple)):
+            for index, child in enumerate(value):
+                walk(child, f"{path}[{index}]", within_casing=within_casing)
+
+    walk(definition, "plan")
+    return tuple(violations)
 
 
 class SqlCompiler:
@@ -199,6 +261,12 @@ class SqlCompiler:
         self, expr: CallExpr, *, params: dict[str, Any], relation_sql: str
     ) -> str:
         callee = expr.callee
+        if (
+            self.dialect == "postgresql"
+            and callee in {"dtcs:lower", "dtcs:upper"}
+            and _casing_aggregate_scope_violations(expr.to_dict())
+        ):
+            raise ValueError(_CASING_AGGREGATE_SCOPE_ERROR)
         args = [
             self.compile_expr(a, params=params, relation_sql=relation_sql)
             for a in expr.args

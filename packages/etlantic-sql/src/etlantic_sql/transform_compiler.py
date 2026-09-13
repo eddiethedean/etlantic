@@ -30,7 +30,11 @@ from etlantic.transform.compiler import (
 )
 from etlantic.transform.portable_baseline import BASELINE_OPERATORS, BASELINE_TYPES
 from etlantic.transform.protocol import KERNEL_PROFILE_V1, RELATIONAL_PROFILE_V1
-from etlantic_sql.compiler import SqlCompiler
+from etlantic_sql.compiler import (
+    _CASING_AGGREGATE_SCOPE_ERROR,
+    SqlCompiler,
+    _casing_aggregate_scope_violations,
+)
 from etlantic_sql.frame import SqlRelationFrame
 from etlantic_sql.lowering.actions import (
     CLAIMED_ACTIONS,
@@ -197,6 +201,16 @@ class SqlTransformCompiler:
         findings.extend(three_state_findings(definition, self._info.capabilities))
         findings.extend(portable_shape_findings(definition))
         findings.extend(portable_arithmetic_findings(definition))
+        if (self._info.environment or {}).get("dialect") == "postgresql":
+            findings.extend(
+                TransformSupportFinding(
+                    code="PMXFORM301",
+                    requirement="mode:casing_aggregate_scope",
+                    reason=_CASING_AGGREGATE_SCOPE_ERROR,
+                    expression_path=path,
+                )
+                for path in _casing_aggregate_scope_violations(definition)
+            )
         blob = json.dumps(definition, sort_keys=True)
         # Reject trusted SQL fragments in portable definitions.
         if "trusted_fragment" in blob or "TrustedSqlFragment" in blob:
