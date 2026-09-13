@@ -475,6 +475,18 @@ class PlanningContext:
                     "pyspark" in reg.engines or "spark" in reg.engines
                 )
                 return not aliased
+            if resolved.execution_strategy == "adaptive":
+                # A caller may provide a registry containing dataframe
+                # plugins without their paired portable compilers.  Adaptive
+                # candidate analysis requires the exact compiler capability
+                # for every eligible engine, so complete the scoped planning
+                # discovery before solving instead of treating those engines
+                # as unsupported.
+                return any(
+                    engine_name not in reg.transform_compilers
+                    for engine_name in adaptive_target_engines
+                    if engine_name not in {"local", "null"}
+                )
             return False
 
         if _needs_planning_discovery():

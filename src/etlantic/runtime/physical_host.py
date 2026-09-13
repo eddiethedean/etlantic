@@ -73,15 +73,21 @@ def pipeline_plan_for_adaptive(
             transform = getattr(member, "transformation", None)
             if transform is not None:
                 portable = getattr(transform, "portable_definition", lambda: None)()
-                if portable is not None and engine == "local":
+                if portable is not None:
                     from etlantic.transform.discovery import (
                         discover_transform_compilers_for_profile,
                     )
 
-                    compiler = discover_transform_compilers_for_profile(
-                        getattr(runtime, "_active_profile", None)
-                        or adaptive_plan.profile_name
-                    ).get("local")
+                    compiler = getattr(
+                        getattr(runtime, "registry", None),
+                        "transform_compilers",
+                        {},
+                    ).get(engine)
+                    if compiler is None:
+                        compiler = discover_transform_compilers_for_profile(
+                            getattr(runtime, "_active_profile", None)
+                            or adaptive_plan.profile_name
+                        ).get(engine)
                     if compiler is not None:
                         info = compiler.info
                         analysis = compiler.analyze(

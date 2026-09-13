@@ -33,6 +33,18 @@ def _reject(message: str, code: str) -> PipelineExecutionError:
 
 
 def _validate_request(request: RunRequest) -> None:
+    intent = getattr(request.intent, "value", request.intent)
+    if intent not in {"standard", "validate"}:
+        raise _reject(
+            "Adaptive execution supports only standard and validate intents",
+            "PMADP522",
+        )
+    invalidation = getattr(request.invalidation, "value", request.invalidation)
+    if invalidation != "none":
+        raise _reject(
+            "Adaptive execution does not support invalidation policies",
+            "PMADP522",
+        )
     concurrency = request.metadata.get("concurrency", 4)
     if (
         isinstance(concurrency, bool)
@@ -59,6 +71,10 @@ def _validate_request(request: RunRequest) -> None:
     if not request.cancellation.cooperative:
         raise _reject(
             "Adaptive execution requires cooperative cancellation", "PMADP522"
+        )
+    if request.cancellation.abandon_after_seconds is not None:
+        raise _reject(
+            "Adaptive execution does not support abandonment deadlines", "PMADP522"
         )
 
 

@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import asyncio
+import copy
 import uuid
 from dataclasses import dataclass, field, replace
 from pathlib import Path
@@ -120,7 +121,20 @@ async def arun_pipeline(
             code="PMADP500",
             stage="admission",
         )
+    if resolved.execution_strategy == "adaptive":
+        # Validate request policy before runtime refresh or invalidation can
+        # produce observable effects.  Full plan/envelope checks still occur
+        # in the scheduler admission boundary.
+        from etlantic.runtime.adaptive_admission import _validate_request
+
+        _validate_request(request)
     runtime = runtime or PipelineRuntime()
+    if context is not None and context.registry is runtime.registry:
+        # Runtime plugin refresh is intentionally allowed to replace its
+        # discovered maps.  Keep the caller's planning evidence/compilers
+        # immutable for this invocation so a refresh cannot erase a
+        # directional handoff record between planning and admission.
+        context = replace(context, registry=copy.deepcopy(context.registry))
     trust_diags = runtime.ensure_plugins_for_profile(resolved)
     from etlantic.plugin_trust import is_non_blocking_trust_diagnostic
 

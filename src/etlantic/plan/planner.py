@@ -184,6 +184,7 @@ def plan_pipeline(
             context=context,
             profile=profile,
             selection=selection,
+            request=request,
         )
 
     ctx = context or _create_context_with_adaptive_preflight(

@@ -3275,6 +3275,16 @@ class LocalOrchestrator:
             runtime_engines = self.request.metadata.get("engine_capabilities")
             if isinstance(runtime_engines, dict) and engine in runtime_engines:
                 caps = runtime_engines[engine]
+            else:
+                # Adaptive execution may resolve dataframe engines during
+                # runtime plugin admission without serializing their
+                # capabilities into the immutable request metadata.  Consult
+                # the admitted registry before failing closed.
+                registry_engines = getattr(
+                    getattr(self.runtime, "registry", None), "engines", {}
+                )
+                if isinstance(registry_engines, dict) and engine in registry_engines:
+                    caps = registry_engines[engine]
             try:
                 meta: dict[str, Any] = {}
                 descriptor_preview = self._binding_descriptor(node, binding_name)
