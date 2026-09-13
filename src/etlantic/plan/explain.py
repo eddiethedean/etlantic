@@ -250,14 +250,10 @@ def _explain_adaptive_bounded(plan: AdaptivePipelinePlan) -> dict[str, Any]:
         summary.pop("profile", None)
         summary.pop("security_domain", None)
     if sum(len(chunk) for chunk in canonical_chunks(summary)) > 4 * 1024 * 1024:
-        # Keep the required mapping but make its values fixed-width content
-        # identities; the complete omitted payload remains bound by
-        # omitted_sha256.
-        summary["selected_targets"] = {
-            hashlib.sha256(name.encode("utf-8")).hexdigest(): hashlib.sha256(
-                target.encode("utf-8")
-            ).hexdigest()
-            for name, target in summary["selected_targets"].items()
-        }
+        # The mapping is mandatory. If it cannot fit, fail closed rather than
+        # silently replacing the actual assignments with opaque identifiers.
+        raise ValueError(
+            "PMADP305: mandatory selected-target mapping exceeds the 4 MiB explain limit."
+        )
     with current_budget().allocation(summary, "explain", 64):
         return materialize_wire(summary)

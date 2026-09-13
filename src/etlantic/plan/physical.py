@@ -429,6 +429,36 @@ class PhysicalDAG:
                 raise ValueError(
                     "PMADP403: generated compute unit lacks contract bindings"
                 )
+            if unit.kind is PhysicalUnitKind.COMPUTE:
+                logical_node = unit.logical_nodes[0]
+                payload = {
+                    "kind": "compute",
+                    "node": logical_node,
+                    "target": unit.target_identity,
+                    "contracts": (
+                        [dict(value) for value in unit.input_contracts],
+                        [dict(value) for value in unit.output_contracts],
+                    ),
+                    "security": unit.policy.get("security_domain", ""),
+                    "policy": {
+                        "security_domain": unit.policy.get("security_domain", "")
+                    },
+                }
+                expected = (
+                    "unit:"
+                    + hashlib.sha256(
+                        json.dumps(
+                            payload,
+                            sort_keys=True,
+                            separators=(",", ":"),
+                            ensure_ascii=False,
+                        ).encode("utf-8")
+                    ).hexdigest()[:24]
+                )
+                if unit.identity != expected:
+                    raise ValueError(
+                        "PMADP403: generated compute identity does not bind policy"
+                    )
             if unit.kind is PhysicalUnitKind.TRANSFER:
                 contract = unit.metadata.get("etlantic.handoff_contract")
                 evidence = unit.metadata.get("etlantic.handoff_evidence")
@@ -489,6 +519,7 @@ def _generated_transfer_identity(unit: PhysicalUnit) -> str:
     )
     payload = {
         "kind": "transfer",
+        "target_identity": unit.target_identity,
         "edge": edge,
         "source": metadata.get("etlantic.source_target"),
         "destination": metadata.get("etlantic.destination_target"),

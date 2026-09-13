@@ -5,7 +5,7 @@
   "passed_scenarios": 8,
   "planner_version": "0.52",
   "public_schema": "etlantic.plan/2",
-  "repository_revision": "sha256:082fad96608f40d3b4692faf6690ce8fb0ef2c1cd3dcb80d16e248d727725f74",
+  "repository_revision": "sha256:9f9c12818b5069dbcfe61468f71735d439aa591dea06d3d01c50960871ea3023",
   "result": "pass",
   "scenario_count": 8,
   "scenarios": [
@@ -15,7 +15,7 @@
       "executed": true,
       "expected": "pass",
       "id": "test_explicit_plan_snapshot_omits_dormant_adaptive_policy",
-      "plan_fingerprint": "63b74173ef7330901c1a9d8423f1ec92ec47d70b00cf58ebd60a77d09956af61",
+      "plan_fingerprint": "84670db7e2a8e66cb301ffe3c4a8c91400c45fbe8428b283523bf8204dac974d",
       "result": "pass",
       "verification": "test_explicit_plan_snapshot_omits_dormant_adaptive_policy"
     },
@@ -25,7 +25,7 @@
       "executed": true,
       "expected": "pass",
       "id": "test_final_052_003_fallback_report_and_integrity",
-      "plan_fingerprint": "63b74173ef7330901c1a9d8423f1ec92ec47d70b00cf58ebd60a77d09956af61",
+      "plan_fingerprint": "84670db7e2a8e66cb301ffe3c4a8c91400c45fbe8428b283523bf8204dac974d",
       "result": "pass",
       "verification": "test_final_052_003_fallback_report_and_integrity"
     },
@@ -35,7 +35,7 @@
       "executed": true,
       "expected": "pass",
       "id": "test_adaptive_wire_round_trip_and_dispatch",
-      "plan_fingerprint": "63b74173ef7330901c1a9d8423f1ec92ec47d70b00cf58ebd60a77d09956af61",
+      "plan_fingerprint": "84670db7e2a8e66cb301ffe3c4a8c91400c45fbe8428b283523bf8204dac974d",
       "result": "pass",
       "verification": "test_adaptive_wire_round_trip_and_dispatch"
     },
@@ -45,7 +45,7 @@
       "executed": true,
       "expected": "pass",
       "id": "test_final_052_016_historical_incomplete_topology_remains_readable",
-      "plan_fingerprint": "63b74173ef7330901c1a9d8423f1ec92ec47d70b00cf58ebd60a77d09956af61",
+      "plan_fingerprint": "84670db7e2a8e66cb301ffe3c4a8c91400c45fbe8428b283523bf8204dac974d",
       "result": "pass",
       "verification": "test_final_052_016_historical_incomplete_topology_remains_readable"
     },
@@ -55,7 +55,7 @@
       "executed": true,
       "expected": "pass",
       "id": "test_final_052_017_generated_edge_requires_one_data_path",
-      "plan_fingerprint": "63b74173ef7330901c1a9d8423f1ec92ec47d70b00cf58ebd60a77d09956af61",
+      "plan_fingerprint": "84670db7e2a8e66cb301ffe3c4a8c91400c45fbe8428b283523bf8204dac974d",
       "result": "pass",
       "verification": "test_final_052_017_generated_edge_requires_one_data_path"
     },
@@ -65,7 +65,7 @@
       "executed": true,
       "expected": "pass",
       "id": "test_adaptive_release_evidence_contract_is_ci_gated",
-      "plan_fingerprint": "63b74173ef7330901c1a9d8423f1ec92ec47d70b00cf58ebd60a77d09956af61",
+      "plan_fingerprint": "84670db7e2a8e66cb301ffe3c4a8c91400c45fbe8428b283523bf8204dac974d",
       "result": "pass",
       "verification": "test_adaptive_release_evidence_contract_is_ci_gated"
     },
@@ -75,7 +75,7 @@
       "executed": true,
       "expected": "pass",
       "id": "test_final_052_019_candidate_credits_require_content_evidence",
-      "plan_fingerprint": "63b74173ef7330901c1a9d8423f1ec92ec47d70b00cf58ebd60a77d09956af61",
+      "plan_fingerprint": "84670db7e2a8e66cb301ffe3c4a8c91400c45fbe8428b283523bf8204dac974d",
       "result": "pass",
       "verification": "test_final_052_019_candidate_credits_require_content_evidence"
     },
@@ -85,7 +85,7 @@
       "executed": true,
       "expected": "pass",
       "id": "test_final_052_015_issue_ledger_rejects_missing_or_unexecuted_proof",
-      "plan_fingerprint": "63b74173ef7330901c1a9d8423f1ec92ec47d70b00cf58ebd60a77d09956af61",
+      "plan_fingerprint": "84670db7e2a8e66cb301ffe3c4a8c91400c45fbe8428b283523bf8204dac974d",
       "result": "pass",
       "verification": "test_final_052_015_issue_ledger_rejects_missing_or_unexecuted_proof"
     }

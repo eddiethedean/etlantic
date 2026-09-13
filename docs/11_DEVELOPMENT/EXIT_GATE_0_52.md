@@ -23,4 +23,6 @@ python scripts/check_portable_0_50.py
 ```
 
 Rollback by repinning the complete 0.51.x package set and using explicit
-profiles. Never feed `/2` documents to 0.51 readers.
+profiles. A 0.52-generated `/2` document is not downgraded; the retained 0.51
+reader compatibility contract applies only to valid historical foundation
+documents.

@@ -2,7 +2,7 @@
   "capabilities": [
     "k8s"
   ],
-  "digest": "sha256:cf710e2f0f5331b6369b8aa550f236704963855c7282ed9c7f1208f8fa4a1aa3",
+  "digest": "sha256:3dff4677ce75e7b96d6701006a7f21445661fdbced2dc4823cf13cee0a651ae9",
   "entries": [
     {
       "capabilities": [

@@ -198,6 +198,18 @@ def _build_adaptive_plan(
         raise
     with budget.frame():
         _check_oracle(selected, candidates, targets, decisions, context)
+    # The bounded explain contract requires the actual node-to-target mapping.
+    # Reject an assignment whose UTF-8 mapping alone cannot fit, rather than
+    # emitting an opaque hash in place of a mandatory audit field.
+    selected_target_mapping = {
+        decision.node_name: decision.target_id for decision in decisions
+    }
+    if canonical_size(selected_target_mapping) > 4 * 1024 * 1024:
+        raise _error(
+            "PMADP305",
+            "Adaptive selected-target mapping exceeds the 4 MiB explain limit.",
+            path=("adaptive", "explain"),
+        )
     regions = _regions(selected, decisions, targets, context)
     physical = _physical_dag(selected, decisions, targets, regions, context)
     inventory = _inventory_model(targets)
@@ -1586,7 +1598,23 @@ def _physical_dag(
     }
     compute_ids: dict[str, str] = {}
     node_tails: dict[str, str] = {}
-    unit_specs: dict[str, dict[str, Any]] = {}
+
+    class _StagedSpecs(dict[str, dict[str, Any]]):
+        """Admit a boundary projection before retaining it in the staging map."""
+
+        def __init__(self) -> None:
+            super().__init__()
+            self.tokens: dict[str, int] = {}
+
+        def __setitem__(self, uid: str, spec: dict[str, Any]) -> None:
+            token = current_budget().reserve(
+                canonical_size({"identity": uid, **spec}) + 64,
+                "boundary-staging",
+            )
+            self.tokens[uid] = token
+            super().__setitem__(uid, spec)
+
+    unit_specs: _StagedSpecs = _StagedSpecs()
     dependencies: dict[str, list[PhysicalDependency]] = {
         node.name: [] for node in graph.nodes
     }
@@ -1636,6 +1664,7 @@ def _physical_dag(
             "target": _target_identity(target),
             "contracts": contracts(node),
             "security": target.security_domain,
+            "policy": {"security_domain": target.security_domain},
         }
         uid = f"unit:{_digest(compute_payload)[:24]}"
         compute_ids[node.name] = uid
@@ -1679,6 +1708,7 @@ def _physical_dag(
             handoff_contract = _handoff_contract(source, destination, edge, context)
             transfer_payload = {
                 "kind": "transfer",
+                "target_identity": _target_identity(destination),
                 "edge": [
                     edge.producer_node,
                     edge.producer_port,
@@ -1857,14 +1887,9 @@ def _physical_dag(
                     else dep
                 )
             spec["dependencies"] = tuple({d.unit_id: d for d in rewritten}.values())
-        # Admit the complete boundary projection before constructing the
-        # retained PhysicalUnit.  This prevents an oversized staging record
-        # from being materialized while the budget still reports zero live
-        # bytes.
-        projected = {"identity": uid, **spec}
-        staging_token = current_budget().reserve(
-            canonical_size(projected) + 64, "boundary-staging"
-        )
+        # The staging map admitted each projection before retaining it. Keep
+        # that ownership charge until the retained model record is complete.
+        staging_token = unit_specs.tokens.pop(uid)
         try:
             units.append(owned_record(PhysicalUnit, "boundary", identity=uid, **spec))
         finally:
