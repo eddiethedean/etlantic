@@ -1097,7 +1097,10 @@ def _objective_facts(
                 (support.get("fusion_evidence"), support.get("fusion_proof"))
             )
             facts["safely_fusible_logical_edges"] = int(
-                bool((support.get("fusion") or support.get("fusible")) and fusion_evidence)
+                bool(
+                    (support.get("fusion") or support.get("fusible"))
+                    and fusion_evidence
+                )
             )
         del transform
     return facts
@@ -1687,10 +1690,16 @@ def _physical_dag(
                 "handoff_contract": handoff_contract,
                 "handoff_evidence": list(handoff_refs),
                 "input_contracts": [
-                    {"port": edge.producer_port, "contract_id": edge.producer_contract_id or ""}
+                    {
+                        "port": edge.producer_port,
+                        "contract_id": edge.producer_contract_id or "",
+                    }
                 ],
                 "output_contracts": [
-                    {"port": edge.consumer_port, "contract_id": edge.consumer_contract_id or ""}
+                    {
+                        "port": edge.consumer_port,
+                        "contract_id": edge.consumer_contract_id or "",
+                    }
                 ],
                 "policy": {
                     "source_security_domain": source.security_domain,

@@ -95,11 +95,13 @@ def run_compat_campaign() -> dict[str, Any]:
 
     installed = pkg_version("etlantic")
     major_minor = ".".join(installed.split(".")[:2])
+    major, minor = (int(part) for part in major_minor.split("."))
+    next_minor = f"{major}.{minor + 1}"
     cases.append(
         {
             "id": "compat_floor",
-            "status": "pass" if major_minor == "0.51" else "fail",
-            "policy": ">=0.51.0,<0.52",
+            "status": "pass" if major_minor == "0.52" else "fail",
+            "policy": f">={major_minor}.0,<{next_minor}",
             "installed": installed,
         }
     )

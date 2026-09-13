@@ -449,7 +449,9 @@ class AdaptivePipelinePlan:
             ):
                 raise ValueError("PMADP403: selected_nodes must contain node names")
             if any(len(node) > 4096 for node in selected_tuple):
-                raise ValueError("PMADP403: selected_nodes exceed the 4096-character limit")
+                raise ValueError(
+                    "PMADP403: selected_nodes exceed the 4096-character limit"
+                )
             if not selected_tuple or len(set(selected_tuple)) != len(selected_tuple):
                 raise ValueError(
                     "PMADP403: selected_nodes must be null or non-empty and unique"
@@ -471,7 +473,9 @@ class AdaptivePipelinePlan:
         else:
             selected_tuple = node_order
         if any(len(node) > 4096 for node in node_order):
-            raise ValueError("PMADP403: logical node names exceed the 4096-character limit")
+            raise ValueError(
+                "PMADP403: logical node names exceed the 4096-character limit"
+            )
         selected = set(selected_tuple)
         inventory = (
             self.inventory
@@ -561,9 +565,10 @@ class AdaptivePipelinePlan:
                 raise ValueError(
                     "PMADP403: adaptive region target must match each node decision"
                 )
-        generated = getattr(self.metadata, "get", lambda *_: None)(
-            "etlantic.planner_version"
-        ) == "0.52"
+        generated = (
+            getattr(self.metadata, "get", lambda *_: None)("etlantic.planner_version")
+            == "0.52"
+        )
         if generated:
             for region in regions:
                 evidence = region.metadata.get("etlantic.fusion_evidence")
@@ -578,9 +583,10 @@ class AdaptivePipelinePlan:
                     raise ValueError(
                         "PMADP403: unfused adaptive region has inconsistent fusion evidence"
                     )
-                if region.metadata.get("etlantic.target_identity") != targets_by_id[
-                    region.target_id
-                ].identity:
+                if (
+                    region.metadata.get("etlantic.target_identity")
+                    != targets_by_id[region.target_id].identity
+                ):
                     raise ValueError(
                         "PMADP403: adaptive region target identity evidence is inconsistent"
                     )
@@ -673,11 +679,16 @@ class AdaptivePipelinePlan:
                     "PMADP321: generated adaptive objective must contain "
                     f"6 + 2N values (expected {expected_length})"
                 )
-            if any(type(value) is not int for value in objective[: 6 + len(selected_tuple)]):
+            if any(
+                type(value) is not int for value in objective[: 6 + len(selected_tuple)]
+            ):
                 raise ValueError(
                     "PMADP321: generated adaptive objective scalar and priority values must be integers"
                 )
-            if any(not isinstance(value, str) for value in objective[6 + len(selected_tuple) :]):
+            if any(
+                not isinstance(value, str)
+                for value in objective[6 + len(selected_tuple) :]
+            ):
                 raise ValueError(
                     "PMADP321: generated adaptive objective identity values must be strings"
                 )
