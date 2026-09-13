@@ -83,7 +83,7 @@ jobs:
 
       - name: Install exact adaptive qualification backends
         run: |
-          uv sync --locked --group dataframes
+          uv sync --locked --inexact --group dataframes
           uv pip install "polars==1.42.1" "pandas==2.3.3" "pyarrow==25.0.0"
 
       - name: Adaptive 0.53 environment qualification
