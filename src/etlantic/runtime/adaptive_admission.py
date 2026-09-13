@@ -175,6 +175,7 @@ def admit_adaptive_plan(
             "Adaptive implementation records do not cover the selection", "PMADP403"
         )
     target_by_id = {target.target_id: target for target in plan.inventory.targets}
+    target_by_identity = {target.identity: target for target in plan.inventory.targets}
     for record in implementations:
         if not isinstance(record, Mapping):
             raise _reject("Adaptive implementation record is not an object", "PMADP400")
@@ -187,6 +188,7 @@ def admit_adaptive_plan(
             raise _reject(
                 "Adaptive step is missing its implementation descriptor", "PMADP401"
             )
+    dag = plan.physical_dag
     # Resolve the live trust boundary before a session is entered.  Stored
     # descriptors are data only; a live binding must still be present and
     # admissible for this invocation.
@@ -194,6 +196,11 @@ def admit_adaptive_plan(
         registry = getattr(runtime, "registry", None)
         live_bindings = getattr(registry, "bindings", {}) or {}
         allowed_providers = {"memory", "local", "python", "null", "json", "csv"}
+        manual_storage = getattr(runtime, "_manual_storage_bindings", {}) or {}
+        if "memory" in manual_storage and getattr(runtime, "storage", {}).get(
+            "memory"
+        ) is not getattr(runtime, "memory", None):
+            raise _reject("Adaptive storage binding identity drifted", "PMADP501")
         for node in plan.logical_graph.nodes:
             if node.name not in selected or node.kind.value not in {"source", "sink"}:
                 continue
@@ -214,9 +221,48 @@ def admit_adaptive_plan(
             if provider not in allowed_providers:
                 raise _reject("Adaptive binding provider is not admitted", "PMADP501")
             if node.kind.value == "sink" and str(
-                getattr(descriptor, "mode", "") or "overwrite"
+                getattr(descriptor, "mode", "")
+                or (getattr(descriptor, "metadata", {}) or {}).get("write_mode")
+                or "overwrite"
             ) not in {"overwrite", "no_write"}:
                 raise _reject("Adaptive sink write mode is not admitted", "PMADP522")
+            # Built-in memory is an in-process singleton. Replacing its
+            # binding after planning would silently redirect reads/writes and
+            # defeats the stored trust decision, even when the replacement is
+            # a subclass with the same nominal provider name.
+            if (
+                provider == "memory"
+                and binding in {"memory", "local", "python"}
+                and binding in manual_storage
+                and getattr(runtime, "storage", {}).get(provider)
+                is not getattr(runtime, "memory", None)
+            ):
+                raise _reject("Adaptive storage binding identity drifted", "PMADP501")
+
+        # Physical executor analysis is a pure, metadata-only admission step.
+        # It must run for every selected unit before the caller enters a
+        # runtime session or permits any data effect.
+        executors = getattr(runtime, "physical_executors", {}) or {}
+        for unit in dag.units:
+            target = target_by_identity.get(unit.target_identity) or target_by_id.get(
+                unit.target_identity
+            )
+            if target is None:
+                raise _reject("Adaptive unit target is not admitted", "PMADP501")
+            executor = executors.get(unit.target_identity) or executors.get(
+                target.engine
+            )
+            if executor is None:
+                continue
+            analyze = getattr(executor, "analyze", None)
+            if not callable(analyze):
+                raise _reject("Adaptive executor has no metadata analysis", "PMADP501")
+            support = analyze(plan, unit)
+            if not getattr(support, "supported", False):
+                raise _reject(
+                    f"Physical executor does not support unit {unit.identity}",
+                    "PMADP500",
+                )
     # Compare resolved names, rather than accepting a request that could cause
     # a fresh slice or a different logical closure at runtime.
     requested = tuple(request.selection.resolve(plan.logical_graph))
@@ -227,7 +273,6 @@ def admit_adaptive_plan(
         raise _reject(
             "Runtime selection differs from fingerprinted adaptive plan", "PMADP122"
         )
-    dag = plan.physical_dag
     if set(dag.logical_to_physical) != selected or set(dag.topological_order) != {
         unit.identity for unit in dag.units
     }:

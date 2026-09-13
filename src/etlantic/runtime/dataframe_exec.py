@@ -166,6 +166,7 @@ async def execute_dataframe_step(
     attempt: int,
     collect_outputs: bool | None = None,
     descriptor: ImplementationDescriptor | None = None,
+    pre_materialized_ports: set[str] | None = None,
 ) -> DataframeOutputBundle:
     """Materialize → invoke/compile → normalize → validate through a dataframe plugin."""
     engine = (
@@ -214,12 +215,18 @@ async def execute_dataframe_step(
                 await maybe_inject_async(FaultBoundary.CONVERT, step_name=node.name)
             value_before = value
             await maybe_inject_async(FaultBoundary.MATERIALIZE, step_name=node.name)
-            frame = plugin.materialize_input(
-                value,
-                contract_type=contract,
-                context=input_context,
-                port_name=port_name,
-            )
+            if pre_materialized_ports and port_name in pre_materialized_ports:
+                # A physical transfer already performed the conversion at the
+                # declared boundary. Validate the owned destination frame but
+                # never invoke the plugin's conversion hook a second time.
+                frame = value
+            else:
+                frame = plugin.materialize_input(
+                    value,
+                    contract_type=contract,
+                    context=input_context,
+                    port_name=port_name,
+                )
             await maybe_inject_async(FaultBoundary.VALIDATE, step_name=node.name)
             result = plugin.validate_frame(
                 frame,

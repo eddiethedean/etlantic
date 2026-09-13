@@ -363,6 +363,11 @@ def _is_namespaced_extension_key(key: Any) -> bool:
 
 def _is_source_row_key(key: Any) -> bool:
     key_l = _normalize_metadata_key(key)
+    # The portable plan is a canonical, validated IR encoded as JSON.  It is
+    # executable metadata rather than source data; keep strict row rejection
+    # focused on actual data-bearing fields.
+    if key_l in {"portable_plan_json", "portable_plan_fingerprint"}:
+        return False
     # ``etlantic.support_row`` is a versioned capability-matrix record.  Its
     # name ends in ``row`` for historical reasons, but the value contains
     # execution metadata rather than source data.  Keep the strict source-row
@@ -388,6 +393,12 @@ def _looks_like_source_row_payload(value: Any, *, context: bool = False) -> bool
     if isinstance(value, Mapping):
         for key, child in value.items():
             key_l = _normalize_metadata_key(key)
+            if key_l in {
+                "portable_plan_json",
+                "portable_plan_fingerprint",
+                "support_summary_json",
+            }:
+                continue
             row_key = _is_source_row_key(key)
             namespaced_key = _is_namespaced_extension_key(key)
             if row_key and (

@@ -206,6 +206,13 @@ def plan_pipeline(
     if ctx.profile.execution_strategy == "adaptive":
         from etlantic.planning.adaptive import build_adaptive_plan
 
+        # Adaptive planning is executable by default.  A missing request uses
+        # the profile's default policy, while an explicit request selection is
+        # normalized before candidate construction so it cannot be lost.
+        if request is None:
+            from etlantic.runtime.request import RunRequest
+
+            request = RunRequest()
         return build_adaptive_plan(
             pipeline_cls, ctx, selection=selection or ctx.selection, request=request
         )
@@ -276,6 +283,10 @@ def plan_pipeline_with_report(
         if ctx.profile.execution_strategy == "adaptive":
             from etlantic.planning.adaptive import build_adaptive_plan
 
+            if request is None:
+                from etlantic.runtime.request import RunRequest
+
+                request = RunRequest()
             plan = build_adaptive_plan(
                 pipeline_cls, ctx, selection=selection or ctx.selection, request=request
             )

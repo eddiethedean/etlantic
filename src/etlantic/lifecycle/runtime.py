@@ -95,6 +95,7 @@ class PipelineRuntime:
     _manual_source_connectors: dict[str, Any] = field(default_factory=dict, repr=False)
     _manual_sink_connectors: dict[str, Any] = field(default_factory=dict, repr=False)
     _manual_storage_connectors: dict[str, Any] = field(default_factory=dict, repr=False)
+    _manual_storage_bindings: dict[str, Any] = field(default_factory=dict, repr=False)
     _observability_bridge: Any = field(default=None, repr=False)
 
     def __post_init__(self) -> None:
@@ -432,6 +433,7 @@ class PipelineRuntime:
         """
         self._assert_manual_plugin_allowed(name, binding, kind="storage")
         self.storage[name] = binding
+        self._manual_storage_bindings[name] = binding
         self._configured_profile_key = None
 
     def register_source_connector(self, name: str, connector: Any) -> None:

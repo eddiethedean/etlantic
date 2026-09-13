@@ -12,13 +12,56 @@ from dataclasses import dataclass, field
 from typing import Any, Protocol, runtime_checkable
 
 from etlantic.plan.physical import PHYSICAL_UNIT_SCHEMA, PhysicalUnit, PhysicalUnitKind
-from etlantic.runtime.logging import redact_message, redact_value
+from etlantic.runtime.logging import redact_message
 
 PHYSICAL_EXECUTION_SCHEMA = "etlantic.physical_execution/1"
 
 
+_SENSITIVE_KEYS = frozenset(
+    {
+        "secret",
+        "password",
+        "token",
+        "credential",
+        "authorization",
+        "rows",
+        "records",
+        "data",
+        "payload",
+        "value",
+        "frame",
+        "table",
+        "native",
+        "handle",
+        "ref",
+    }
+)
+
+
+def _safe_wire_value(value: Any, *, key: str | None = None) -> Any:
+    """Project protocol metadata without traversing row/native payloads."""
+    if key is not None and key.lower() in _SENSITIVE_KEYS:
+        return "<redacted>"
+    if isinstance(value, Mapping):
+        return {
+            str(item_key): _safe_wire_value(item_value, key=str(item_key))
+            for item_key, item_value in value.items()
+            if str(item_key).lower() not in _SENSITIVE_KEYS
+        }
+    if isinstance(value, (list, tuple, set, frozenset)):
+        return [
+            item
+            if item is None or isinstance(item, (str, int, float, bool))
+            else f"<{type(item).__name__}>"
+            for item in value
+        ]
+    if value is None or isinstance(value, (str, int, float, bool)):
+        return value
+    return f"<{type(value).__name__}>"
+
+
 def _safe_mapping(value: Mapping[str, Any] | None) -> dict[str, Any]:
-    return redact_value(dict(value or {}))
+    return _safe_wire_value(value or {})
 
 
 @dataclass(frozen=True, slots=True)
@@ -92,13 +135,13 @@ class PhysicalArtifactHandle:
     cleanup_token: str | None = None
 
     def to_dict(self) -> dict[str, Any]:
+        # ``ref`` is process-local. Never invoke arbitrary provider
+        # serialization hooks; expose only a bounded type/scalar identity.
         ref = (
-            self.ref.to_dict()
-            if hasattr(self.ref, "to_dict")
-            else {"identity": str(self.ref)}
+            {"identity": str(self.ref)}
+            if self.ref is None or isinstance(self.ref, (str, int, float, bool))
+            else {"identity": type(self.ref).__name__}
         )
-        if not isinstance(ref, Mapping):
-            ref = {"identity": str(ref)}
         return {
             "schema": PHYSICAL_EXECUTION_SCHEMA,
             "ref": ref,
@@ -209,13 +252,23 @@ class PhysicalUnitFailure(Exception):
             "code": self.code,
             "stage": self.stage,
             "logical_names": list(self.logical_names),
-            "message": redact_message(str(self))[:1024],
+            "message": _safe_failure_message(str(self)),
             "unknown_receipt": (
                 receipt.to_dict()
                 if receipt is not None and hasattr(receipt, "to_dict")
                 else None
             ),
         }
+
+
+def _safe_failure_message(message: str) -> str:
+    cleaned = redact_message(message)
+    lowered = cleaned.lower()
+    if any(marker in lowered for marker in ("rows", "records", "payload")) or any(
+        marker in cleaned for marker in ("{", "[")
+    ):
+        return "Physical unit failure details were redacted."
+    return cleaned[:1024]
 
 
 def validate_unit_result(result: PhysicalUnitResult, unit: PhysicalUnit) -> None:

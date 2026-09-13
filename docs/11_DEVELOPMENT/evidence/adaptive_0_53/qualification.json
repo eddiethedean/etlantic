@@ -7,11 +7,11 @@
     "tests/runtime/test_adaptive_execution_0_53.py",
     "tests/plan/test_adaptive_planner_0_52.py"
   ],
-  "observed_at": "2026-09-13T18:00:01.955441+00:00",
+  "observed_at": "2026-09-13T21:30:19.562873+00:00",
   "phase": "0.53",
   "returncode": 0,
   "schema": "etlantic.adaptive_evidence/1",
-  "source_revision": "sha256:5b87e0c32164eeb40d16e2d2822e4d23afe8fde22946cd471474d3919b9f8150",
+  "source_revision": "sha256:b9462a4da1e14fb986c545499157e320a2cad97125d5997ee0a52fbee202c6b2",
   "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
-  "stdout_sha256": "7d31decb06e9ba500eca881ba49eeaf762b56821d748ae6b56083a0d8258b78a"
+  "stdout_sha256": "c17dc01f6eb2b85f689383844689fe5f1575c1b1e783afb7ff7ef88fa81fbca6"
 }

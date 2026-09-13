@@ -96,12 +96,12 @@ def test_adaptive_admission_rejects_invalid_concurrency_before_storage_effects()
     anyio.run(run)
 
 
-def test_executable_adaptive_plan_is_distinct_from_planning_only_variant() -> None:
+def test_default_adaptive_plan_uses_executable_lowering() -> None:
     planning = plan_pipeline(Sample, profile=adaptive_profile())
     executable = plan_pipeline(Sample, profile=adaptive_profile(), request=RunRequest())
-    assert planning.metadata["etlantic.execution"] == "planning-only"
+    assert planning.metadata["etlantic.execution"] == "local-static-batch/1"
     assert executable.metadata["etlantic.execution"] == "local-static-batch/1"
-    assert planning.fingerprint != executable.fingerprint
+    assert planning.fingerprint == executable.fingerprint
 
 
 def test_adaptive_physical_execution_routes_portable_polars_to_pandas() -> None:

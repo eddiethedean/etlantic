@@ -8,8 +8,10 @@ used by the physical scheduler; it does not alter or re-plan the stored DAG.
 from __future__ import annotations
 
 import base64
+import importlib
 import json
 from collections.abc import Mapping
+from dataclasses import replace
 from typing import Any
 
 from etlantic.plan.freeze import mutable_copy
@@ -54,6 +56,7 @@ def pipeline_plan_for_adaptive(
     for node in adaptive_plan.logical_graph.nodes:
         if node.kind.value != "step":
             continue
+        member = members.get(node.name)
         target = target_by_id[decisions[node.name].target_id]
         engine = target.engine
         key = f"{node.transformation_id}::{engine}"
@@ -66,7 +69,7 @@ def pipeline_plan_for_adaptive(
         if descriptor is None:
             stored = stored_by_node.get(node.name, {})
             implementation = (
-                stored.get("implementation") if isinstance(stored, dict) else None
+                stored.get("implementation") if isinstance(stored, Mapping) else None
             )
             if isinstance(implementation, Mapping):
                 raw_impl = dict(implementation)
@@ -78,9 +81,15 @@ def pipeline_plan_for_adaptive(
                         )
                     except json.JSONDecodeError:
                         raw_impl["portable_plan"] = None
+                support_encoded = raw_impl.get("support_summary_json")
+                if support_encoded and isinstance(support_encoded, str):
+                    try:
+                        raw_impl["support_summary"] = json.loads(
+                            base64.b64decode(support_encoded).decode()
+                        )
+                    except json.JSONDecodeError:
+                        raw_impl["support_summary"] = None
                 descriptor = ImplementationDescriptor.from_dict(raw_impl)
-        if descriptor is None:
-            member = members.get(node.name)
             transform = getattr(member, "transformation", None)
             if transform is not None:
                 portable = getattr(transform, "portable_definition", lambda: None)()
@@ -184,6 +193,37 @@ def pipeline_plan_for_adaptive(
                 },
             )
         )
+    logical_graph = adaptive_plan.logical_graph
+    if pipeline_cls is None:
+
+        def resolve_type(contract_id: str | None) -> type[Any] | None:
+            if not contract_id or ":" not in contract_id:
+                return None
+            module_name, qualname = contract_id.split(":", 1)
+            try:
+                value: Any = importlib.import_module(module_name)
+                for part in qualname.split("."):
+                    value = getattr(value, part)
+                return value if isinstance(value, type) else None
+            except (ImportError, AttributeError):
+                return None
+
+        def resolve_port(port: Any) -> Any:
+            return replace(port, contract_type=resolve_type(port.contract_id))
+
+        logical_graph = replace(
+            logical_graph,
+            nodes=tuple(
+                replace(
+                    node,
+                    contract_type=resolve_type(node.contract_id),
+                    inputs=tuple(resolve_port(port) for port in node.inputs),
+                    outputs=tuple(resolve_port(port) for port in node.outputs),
+                )
+                for node in logical_graph.nodes
+            ),
+        )
+
     return PipelinePlan(
         schema="etlantic.plan/1",
         plan_id=adaptive_plan.plan_id,
@@ -191,7 +231,7 @@ def pipeline_plan_for_adaptive(
         pipeline_name=adaptive_plan.pipeline_name,
         profile_name=adaptive_plan.profile_name,
         fingerprint=adaptive_plan.fingerprint,
-        logical_graph=adaptive_plan.logical_graph,
+        logical_graph=logical_graph,
         regions=regions,
         physical_units=tuple(
             PhysicalUnit(

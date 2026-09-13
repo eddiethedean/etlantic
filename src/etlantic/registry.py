@@ -5,6 +5,7 @@ Registries belong to a PlanningContext instance (ADR-004), never process globals
 
 from __future__ import annotations
 
+from collections.abc import Mapping
 from dataclasses import dataclass, field, replace
 from typing import Any
 
@@ -323,6 +324,9 @@ class PlanningContext:
     selection: dict[str, Any] = field(default_factory=dict)
     plugin_trust_records: list[dict[str, Any]] = field(default_factory=list)
     plugin_discovery_diagnostics: tuple[Diagnostic, ...] = ()
+    adaptive_support_cache: dict[tuple[str, str], Mapping[str, Any]] = field(
+        default_factory=dict, repr=False
+    )
 
     @classmethod
     def create(

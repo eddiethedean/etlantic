@@ -59,8 +59,13 @@ def _pattern(plan: AdaptivePipelinePlan) -> str:
     sinks = [name for name, value in outdegree.items() if value == 0]
     if len(sources) != 1:
         return "unknown/1"
+    source_kinds = {nodes[name].kind.value for name in sources}
+    sink_kinds = {nodes[name].kind.value for name in sinks}
     if (
         len(sinks) == 1
+        and source_kinds == {"source"}
+        and sink_kinds == {"sink"}
+        and len(graph.edges) == max(0, len(nodes) - 1)
         and all(value <= 1 for value in indegree.values())
         and all(value <= 1 for value in outdegree.values())
     ):
@@ -69,6 +74,9 @@ def _pattern(plan: AdaptivePipelinePlan) -> str:
     if (
         len(nodes) == 5
         and len(sinks) == 1
+        and source_kinds == {"source"}
+        and sink_kinds == {"sink"}
+        and len(graph.edges) == 6
         and sum(v == 2 for v in indegree.values()) == 1
         and sum(v == 2 for v in outdegree.values()) == 1
         and sum(v == 0 for v in indegree.values()) == 1
@@ -80,17 +88,25 @@ def _pattern(plan: AdaptivePipelinePlan) -> str:
     if (
         len(nodes) == 6
         and len(sinks) == 2
+        and source_kinds == {"source"}
+        and sink_kinds == {"sink"}
+        and len(graph.edges) == 5
         and sum(v == 2 for v in outdegree.values()) == 1
-        and sum(v == 1 for v in indegree.values()) == 4
+        and sum(v == 1 for v in indegree.values()) == 5
         and sum(v == 0 for v in indegree.values()) == 1
     ):
         return "fanout/1"
     # A two-port boundary is distinguishable from an arbitrary two-input join.
     if (
         len(nodes) == 4
-        and any(len(node.outputs) == 2 for node in nodes.values())
-        and any(len(node.inputs) == 2 for node in nodes.values())
         and len(sinks) == 1
+        and source_kinds == {"source"}
+        and sink_kinds == {"sink"}
+        and len(graph.edges) == 4
+        and sum(len(node.outputs) == 2 for node in nodes.values()) == 1
+        and sum(len(node.inputs) == 2 for node in nodes.values()) == 1
+        and sorted(outdegree.values()) == [0, 1, 1, 2]
+        and sorted(indegree.values()) == [0, 1, 1, 2]
     ):
         return "dual-port-chain/1"
     return "unknown/1"

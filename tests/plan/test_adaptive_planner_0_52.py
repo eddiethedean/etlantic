@@ -52,7 +52,7 @@ def test_adaptive_plan_is_verified_and_explainable() -> None:
     assert plan.plan_id == f"plan:{plan.fingerprint[:16]}"
     assert plan_from_json(plan_to_json(plan)).to_dict() == plan.to_dict()
     explanation = explain_plan(plan)
-    assert explanation["planning_only"] is True
+    assert explanation["planning_only"] is False
     assert len(explanation["decisions"]) == 2
 
 

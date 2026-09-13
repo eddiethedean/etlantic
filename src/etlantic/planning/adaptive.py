@@ -140,6 +140,18 @@ def _build_adaptive_plan(
     request: Any | None = None,
 ) -> AdaptivePipelinePlan | Any:
     graph = _graph_for_input(pipeline_cls, definition)
+    # Request selection is part of the effective planning input.  Normalize it
+    # against the full authored graph before slicing so a request-only run
+    # cannot silently fall back to the context's default all-nodes selection.
+    if request is not None:
+        request_selection = request.selection.to_plan_selection(graph)
+        if selection and selection != request_selection:
+            raise _error(
+                "PMADP122",
+                "Explicit selection conflicts with RunRequest.selection.",
+                path=("selection",),
+            )
+        selection = request_selection
     selected = _canonical_graph(_select_graph(graph, selection or context.selection))
     _validate_scope(selected)
     targets = _inventory(context)
@@ -427,10 +439,20 @@ def _implementation_records(
                             key: list(value)
                             for key, value in portable.requirements.items()
                         },
-                        # Executable plans must remain runnable after a
+                        "support_summary": None,
+                        "support_summary_json": base64.b64encode(
+                            json.dumps(
+                                context.adaptive_support_cache.get(
+                                    (node.name, decision_map[node.name].target_id), {}
+                                ),
+                                sort_keys=True,
+                                separators=(",", ":"),
+                            ).encode()
+                        ).decode(),
+                        # Executable plans remain runnable after a
                         # serialize/deserialize round trip.  The canonical
-                        # portable IR is data-only and is therefore safe to
-                        # carry in the stored implementation descriptor.
+                        # portable IR is data-only and carried in a bounded
+                        # encoded field.
                         "portable_plan": None,
                         "portable_plan_json": base64.b64encode(
                             json.dumps(
@@ -860,6 +882,9 @@ def _candidate_matrix(
                             }
                             summary = support.to_requirement_support(
                                 target=target_payload
+                            )
+                            context.adaptive_support_cache[(node.name, target_id)] = (
+                                summary
                             )
                             failures = required_support_failures(summary)
                             if failures:

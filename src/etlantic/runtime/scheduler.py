@@ -11,6 +11,7 @@ from dataclasses import dataclass, field
 from enum import StrEnum
 from typing import Any, Protocol, runtime_checkable
 
+from etlantic.plan.adaptive_model import PlanDocument
 from etlantic.plan.model import PipelinePlan
 from etlantic.reports.model import PipelineRunReport
 from etlantic.runtime.request import RunRequest
@@ -99,7 +100,7 @@ class ExecutionScheduler(Protocol):
 
     def analyze(
         self,
-        plan: PipelinePlan,
+        plan: PlanDocument,
         *,
         request: RunRequest,
         context: SchedulingContext,
@@ -107,7 +108,7 @@ class ExecutionScheduler(Protocol):
 
     async def execute(
         self,
-        plan: PipelinePlan,
+        plan: PlanDocument,
         *,
         request: RunRequest,
         runtime: Any,
@@ -257,6 +258,7 @@ class LocalScheduler:
                 artifacts=artifact_store,
                 run_id=context.run_id if context is not None else None,
                 physical_mode=True,
+                adaptive_plan=plan,
             )
             result = await host.execute()
             result.metadata.setdefault("etlantic.scheduler", self.info.name)

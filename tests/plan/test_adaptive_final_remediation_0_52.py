@@ -618,7 +618,7 @@ def test_final_052_022_generated_units_bind_contract_and_policy_evidence() -> No
 def test_final_052_021_regions_bind_execution_policy_and_fusion_facts() -> None:
     """Region identity inputs and metadata retain boundary-relevant facts."""
     region = plan_pipeline(Sample, profile=profile()).regions[0]
-    assert region.metadata["etlantic.execution"] == "planning-only"
+    assert region.metadata["etlantic.execution"] == "local-static-batch/1"
     assert region.metadata["etlantic.boundary_policy"] == "conservative"
     assert region.metadata["etlantic.fusion_evidence"] == "none"
 
