@@ -65,16 +65,33 @@ def _pattern(plan: AdaptivePipelinePlan) -> str:
         and all(value <= 1 for value in outdegree.values())
     ):
         return "chain/1"
+    # A diamond is exactly source -> two branches -> join -> sink.
     if (
-        len(sinks) == 1
-        and sorted(indegree.values()).count(2) == 1
-        and sorted(outdegree.values()).count(2) == 1
+        len(nodes) == 5
+        and len(sinks) == 1
+        and sum(v == 2 for v in indegree.values()) == 1
+        and sum(v == 2 for v in outdegree.values()) == 1
+        and sum(v == 0 for v in indegree.values()) == 1
+        and sum(v == 0 for v in outdegree.values()) == 1
     ):
         return "diamond/1"
-    if len(sinks) == 2 and max(outdegree.values(), default=0) == 2:
+    # A fanout has a shared source-side step and two independent leaf steps,
+    # each terminating in its own sink (six logical nodes total).
+    if (
+        len(nodes) == 6
+        and len(sinks) == 2
+        and sum(v == 2 for v in outdegree.values()) == 1
+        and sum(v == 1 for v in indegree.values()) == 4
+        and sum(v == 0 for v in indegree.values()) == 1
+    ):
         return "fanout/1"
     # A two-port boundary is distinguishable from an arbitrary two-input join.
-    if any(len(node.outputs) >= 2 for node in nodes.values()) and len(sinks) == 1:
+    if (
+        len(nodes) == 4
+        and any(len(node.outputs) == 2 for node in nodes.values())
+        and any(len(node.inputs) == 2 for node in nodes.values())
+        and len(sinks) == 1
+    ):
         return "dual-port-chain/1"
     return "unknown/1"
 

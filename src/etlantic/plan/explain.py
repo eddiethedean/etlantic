@@ -179,7 +179,8 @@ def _explain_adaptive_bounded(plan: AdaptivePipelinePlan) -> dict[str, Any]:
         "fingerprint": plan.fingerprint,
         "schema": plan.schema,
         "security_domain": plan.security_domain,
-        "planning_only": True,
+        "planning_only": dict(plan.metadata).get("etlantic.execution")
+        != "local-static-batch/1",
         "objective": list(plan.objective),
         "inventory": plan.inventory,
         "decisions": list(decisions.values()),
@@ -215,7 +216,8 @@ def _explain_adaptive_bounded(plan: AdaptivePipelinePlan) -> dict[str, Any]:
         "fingerprint": plan.fingerprint,
         "schema": plan.schema,
         "security_domain": plan.security_domain,
-        "planning_only": True,
+        "planning_only": dict(plan.metadata).get("etlantic.execution")
+        != "local-static-batch/1",
         "truncated": True,
         "diagnostic": {
             "code": "PMADP305",

@@ -8,7 +8,7 @@ import anyio
 import pytest
 
 from etlantic import Data, Extract, Load, Pipeline
-from etlantic.exceptions import PipelineExecutionError, PipelineValidationError
+from etlantic.exceptions import PipelineValidationError
 from etlantic.plan import (
     AdaptivePipelinePlan,
     explain_plan,
@@ -62,10 +62,10 @@ def test_adaptive_report_path_uses_same_plan_dispatch() -> None:
     assert isinstance(plan, AdaptivePipelinePlan)
 
 
-def test_adaptive_execution_rejects_before_runtime() -> None:
+def test_adaptive_execution_uses_default_request() -> None:
     async def run() -> None:
-        with pytest.raises(PipelineExecutionError, match="PMADP500"):
-            await arun_pipeline(Sample, profile=adaptive_profile())
+        report = await arun_pipeline(Sample, profile=adaptive_profile())
+        assert report.status.value == "succeeded"
 
     anyio.run(run)
 

@@ -56,7 +56,11 @@ def _validate_request(request: RunRequest) -> None:
         )
     retry = request.retry
     if (
-        retry.max_attempts < 1
+        isinstance(retry.max_attempts, bool)
+        or not isinstance(retry.max_attempts, int)
+        or retry.max_attempts < 1
+        or isinstance(retry.backoff_seconds, bool)
+        or not isinstance(retry.backoff_seconds, (int, float))
         or not math.isfinite(float(retry.backoff_seconds))
         or retry.backoff_seconds < 0
     ):
@@ -66,7 +70,12 @@ def _validate_request(request: RunRequest) -> None:
         request.timeout.step_seconds,
         request.cancellation.abandon_after_seconds,
     ):
-        if value is not None and (not math.isfinite(float(value)) or value <= 0):
+        if value is not None and (
+            isinstance(value, bool)
+            or not isinstance(value, (int, float))
+            or not math.isfinite(float(value))
+            or value <= 0
+        ):
             raise _reject("Adaptive timeout policy is invalid", "PMADP522")
     if not request.cancellation.cooperative:
         raise _reject(
@@ -126,6 +135,23 @@ def admit_adaptive_plan(
         raise _reject(
             "Executable adaptive plan is missing runtime metadata", "PMADP401"
         )
+    if runtime_record.get("schema") != "etlantic.adaptive_runtime/1":
+        raise _reject("Adaptive runtime metadata schema is unsupported", "PMADP401")
+    allowed_runtime = {
+        "schema",
+        "request",
+        "support_row_id",
+        "support_row",
+        "policy",
+        "binding",
+        "bindings",
+        "targets",
+        "implementations",
+        "compiler",
+        "evidence_refs",
+    }
+    if set(runtime_record) - allowed_runtime:
+        raise _reject("Adaptive runtime metadata contains unknown fields", "PMADP401")
     stored_request = runtime_record.get("request")
     if mutable_copy(stored_request or {}) != mutable_copy(request.to_dict()):
         raise _reject(
@@ -161,6 +187,36 @@ def admit_adaptive_plan(
             raise _reject(
                 "Adaptive step is missing its implementation descriptor", "PMADP401"
             )
+    # Resolve the live trust boundary before a session is entered.  Stored
+    # descriptors are data only; a live binding must still be present and
+    # admissible for this invocation.
+    if runtime is not None:
+        registry = getattr(runtime, "registry", None)
+        live_bindings = getattr(registry, "bindings", {}) or {}
+        allowed_providers = {"memory", "local", "python", "null", "json", "csv"}
+        for node in plan.logical_graph.nodes:
+            if node.name not in selected or node.kind.value not in {"source", "sink"}:
+                continue
+            binding = (
+                request.binding_overrides.get(node.name) or node.binding or node.name
+            )
+            descriptor = live_bindings.get(binding)
+            if descriptor is None:
+                # Built-in in-memory bindings are implicit and require no
+                # registry entry.  Any explicitly qualified binding must be
+                # represented by a live descriptor.
+                # The built-in memory connector is implicit; its binding may
+                # legitimately have no registry descriptor until first write.
+                if getattr(runtime, "memory", None) is None:
+                    raise _reject("Adaptive binding is not live", "PMADP501")
+                continue
+            provider = str(getattr(descriptor, "provider", ""))
+            if provider not in allowed_providers:
+                raise _reject("Adaptive binding provider is not admitted", "PMADP501")
+            if node.kind.value == "sink" and str(
+                getattr(descriptor, "mode", "") or "overwrite"
+            ) not in {"overwrite", "no_write"}:
+                raise _reject("Adaptive sink write mode is not admitted", "PMADP522")
     # Compare resolved names, rather than accepting a request that could cause
     # a fresh slice or a different logical closure at runtime.
     requested = tuple(request.selection.resolve(plan.logical_graph))

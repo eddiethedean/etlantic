@@ -1252,6 +1252,7 @@ class LocalOrchestrator:
         positions = {unit.identity: index for index, unit in enumerate(units)}
         pending = set(by_id)
         completed: set[str] = set()
+        failed_units: set[str] = set()
         concurrency = self.request.metadata.get("concurrency", 4)
         # Admission validates this value; the defensive conversion keeps the
         # scheduler fail-closed if called directly by an integration.
@@ -1275,6 +1276,49 @@ class LocalOrchestrator:
                     backend=unit.engine,
                 )
             )
+            executors = getattr(self.runtime, "physical_executors", {}) or {}
+            target_identity = str(unit.metadata.get("etlantic.target_identity") or "")
+            executor = executors.get(target_identity) or executors.get(unit.engine)
+            if executor is not None:
+                from etlantic.runtime.physical_protocol import (
+                    PhysicalUnitContext,
+                    validate_unit_result,
+                )
+
+                support = executor.analyze(self.plan, unit)
+                if not support.supported:
+                    raise PipelineExecutionError(
+                        f"Physical executor does not support unit {unit.identity}",
+                        run_id=run_id,
+                        code="PMADP500",
+                        stage="admission",
+                    )
+                result = await executor.execute(
+                    PhysicalUnitContext(
+                        plan=self.plan,
+                        unit=unit,
+                        run_id=run_id,
+                        unit_attempt=1,
+                        effective_policy=self.request.to_dict(),
+                    )
+                )
+                validate_unit_result(result, unit)
+                if result.status != "succeeded":
+                    raise PipelineExecutionError(
+                        f"Physical executor failed unit {unit.identity}",
+                        run_id=run_id,
+                        code="PMADP520",
+                        stage="execute",
+                    )
+                unit_trace.append(
+                    {
+                        "unit": unit.identity,
+                        "kind": kind,
+                        "status": "succeeded",
+                        "executor": executor.info.identity,
+                    }
+                )
+                return
             if kind == "compute":
                 for name in unit.logical_nodes:
                     if name not in selected:
@@ -1294,6 +1338,7 @@ class LocalOrchestrator:
                     if nodes[name].status not in {
                         StepStatus.SUCCEEDED,
                         StepStatus.SKIPPED,
+                        StepStatus.PENDING,
                     }:
                         raise PipelineExecutionError(
                             f"Physical unit {unit.identity} failed at {name}",
@@ -1310,27 +1355,88 @@ class LocalOrchestrator:
                 payload = self._pending_publications.pop(name, None)
                 if name and payload is not None and not self.request.no_write:
                     node = nodes[name].node
-                    await self._write_sink(node, payload, run_id=run_id)
+                    try:
+                        await self._write_sink(node, payload, run_id=run_id)
+                    except BaseException as exc:
+                        nodes[name].status = StepStatus.FAILED
+                        nodes[name].stage = FailureStage.WRITE.value
+                        nodes[name].error = redact_message(str(exc))
+                        raise
                     self._notify_publication(
                         run_id=run_id, node=node, attempt=nodes[name].attempts
                     )
                     self._commit_state_after_write(node=node)
-            elif kind not in {
+                    nodes[name].status = StepStatus.SUCCEEDED
+                    nodes[name].ended_at = datetime.now(UTC)
+                    self.runtime.events.emit(
+                        self._lifecycle_event(
+                            kind="step_completed",
+                            run_id=run_id,
+                            step_name=name,
+                            attempt=nodes[name].attempts,
+                            status="succeeded",
+                        )
+                    )
+            elif kind in {
                 "transfer",
                 "collection",
                 "validation",
                 "materialization",
                 "reuse",
             }:
+                # Boundary units are executable protocol steps even when the
+                # local host can satisfy the operation in-process.  Validate
+                # their stored route and materialize a traceable receipt so a
+                # transfer/validation cannot silently disappear.
+                if kind == "transfer":
+                    edge = unit.metadata.get("etlantic.edge_ports")
+                    if not isinstance(edge, (list, tuple)) or len(edge) != 4:
+                        raise PipelineExecutionError(
+                            "Physical transfer is missing its edge route",
+                            run_id=run_id,
+                            code="PMADP403",
+                            stage="admission",
+                        )
+                    key = f"{edge[0]}.{edge[2]}"
+                    if not artifacts.has(key):
+                        raise PipelineExecutionError(
+                            "Physical transfer input artifact is unavailable",
+                            run_id=run_id,
+                            code="PMADP520",
+                            stage="execute",
+                        )
+                if kind == "validation" and not unit.metadata.get("etlantic.contract"):
+                    raise PipelineExecutionError(
+                        "Physical validation unit is missing its contract",
+                        run_id=run_id,
+                        code="PMADP401",
+                        stage="admission",
+                    )
+                unit_trace.append(
+                    {
+                        "unit": unit.identity,
+                        "kind": kind,
+                        "operation": "committed",
+                        "status": "succeeded",
+                    }
+                )
+            else:
                 raise PipelineExecutionError(
                     f"Unknown adaptive physical unit kind {kind!r}",
                     run_id=run_id,
                     code="PMADP400",
                     stage="admission",
                 )
-            unit_trace.append(
-                {"unit": unit.identity, "kind": kind, "status": "succeeded"}
-            )
+            if kind not in {
+                "transfer",
+                "collection",
+                "validation",
+                "materialization",
+                "reuse",
+            }:
+                unit_trace.append(
+                    {"unit": unit.identity, "kind": kind, "status": "succeeded"}
+                )
             self.runtime.events.emit(
                 self._lifecycle_event(
                     kind="physical_unit_completed",
@@ -1353,10 +1459,41 @@ class LocalOrchestrator:
                         )
                         if isinstance(dep, dict)
                     )
+                    and not any(
+                        str(dep.get("unit_id")) in failed_units
+                        for dep in (
+                            by_id[unit_id].metadata.get("etlantic.dependencies") or ()
+                        )
+                        if isinstance(dep, dict)
+                    )
                 ),
                 key=lambda unit: positions[unit.identity],
             )
             if not ready:
+                blocked = [
+                    unit_id
+                    for unit_id in pending
+                    if any(
+                        str(dep.get("unit_id")) in failed_units
+                        for dep in (
+                            by_id[unit_id].metadata.get("etlantic.dependencies") or ()
+                        )
+                        if isinstance(dep, dict)
+                    )
+                ]
+                if blocked:
+                    for unit_id in blocked:
+                        for name in by_id[unit_id].logical_nodes:
+                            if name in nodes:
+                                nodes[name].status = StepStatus.SKIPPED
+                                nodes[
+                                    name
+                                ].error = (
+                                    "Skipped because an upstream physical unit failed"
+                                )
+                        pending.remove(unit_id)
+                        completed.add(unit_id)
+                    continue
                 raise PipelineExecutionError(
                     "Adaptive physical DAG made no progress",
                     run_id=run_id,
@@ -1365,6 +1502,7 @@ class LocalOrchestrator:
                 )
             batch = ready[:limit]
             results: list[BaseException] = []
+            first_error: BaseException | None = None
 
             async def guarded(
                 unit: Any, error_box: list[BaseException] = results
@@ -1399,10 +1537,46 @@ class LocalOrchestrator:
                 for unit in batch:
                     task_group.start_soon(guarded, unit)
             if results:
-                raise results[0]
+                # Mark failed units complete so independent branches continue;
+                # dependents are skipped below.  Surface the first error only
+                # after the scheduler has drained all runnable work.
+                first_error = results[0]
             for unit in batch:
                 pending.remove(unit.identity)
                 completed.add(unit.identity)
+            if results:
+                failed_units.update(
+                    {
+                        u.identity
+                        for u in batch
+                        if any(
+                            t.get("unit") == u.identity and t.get("status") == "failed"
+                            for t in unit_trace
+                        )
+                    }
+                )
+                for unit_id in tuple(pending):
+                    deps = by_id[unit_id].metadata.get("etlantic.dependencies") or ()
+                    if any(
+                        str(dep.get("unit_id")) in failed_units
+                        for dep in deps
+                        if isinstance(dep, dict)
+                    ):
+                        for name in by_id[unit_id].logical_nodes:
+                            if name in nodes and nodes[name].status in {
+                                StepStatus.PENDING,
+                                StepStatus.READY,
+                            }:
+                                nodes[name].status = StepStatus.SKIPPED
+                                nodes[
+                                    name
+                                ].error = (
+                                    "Skipped because an upstream physical unit failed"
+                                )
+                        pending.remove(unit_id)
+                        completed.add(unit_id)
+                if not pending and first_error is not None:
+                    raise first_error
 
     def _build_report(
         self,
@@ -1418,6 +1592,16 @@ class LocalOrchestrator:
     ) -> PipelineRunReport:
         ended = datetime.now(UTC)
         selected = set(self.plan.selected_nodes or list(nodes.keys()))
+        states = tuple(nodes.values())
+        succeeded = sum(s.status is StepStatus.SUCCEEDED for s in states)
+        failed = sum(
+            s.status in {StepStatus.FAILED, StepStatus.ABANDONED, StepStatus.TIMED_OUT}
+            for s in states
+        )
+        skipped = sum(s.status is StepStatus.SKIPPED for s in states)
+        cancelled = sum(s.status is StepStatus.CANCELLED for s in states)
+        records_in = sum(s.records_in or 0 for s in states) if states else 0
+        records_out = sum(s.records_out or 0 for s in states) if states else 0
         return PipelineRunReport(
             pipeline_id=self.plan.pipeline_id,
             plan_id=self.plan.plan_id,
@@ -1428,7 +1612,16 @@ class LocalOrchestrator:
             started_at=started,
             ended_at=ended,
             duration=ended - started,
-            summary=RunSummary(total_steps=len(nodes)),
+            summary=RunSummary(
+                total_steps=len(nodes),
+                succeeded=succeeded,
+                failed=failed,
+                skipped=skipped,
+                cancelled=cancelled,
+                retried=sum(max(0, s.attempts - 1) for s in states),
+                records_in=records_in,
+                records_out=records_out,
+            ),
             steps=tuple(self._step_report(s) for s in nodes.values()),
             artifacts=tuple(
                 ArtifactResult(
@@ -1554,17 +1747,26 @@ class LocalOrchestrator:
                 else:
                     await self.runtime.step_middleware.run(step_context, terminal)
                 body_succeeded = True
-                state.status = StepStatus.SUCCEEDED
-                state.ended_at = datetime.now(UTC)
-                self.runtime.events.emit(
-                    self._lifecycle_event(
-                        kind="step_completed",
-                        run_id=run_id,
-                        step_name=name,
-                        attempt=attempt,
-                        status=state.status.value,
-                    )
+                deferred_publication = (
+                    self.physical_mode
+                    and state.node.kind is NodeKind.SINK
+                    and name in self._pending_publications
+                    and not self.request.no_write
                 )
+                state.status = (
+                    StepStatus.PENDING if deferred_publication else StepStatus.SUCCEEDED
+                )
+                state.ended_at = datetime.now(UTC)
+                if not deferred_publication:
+                    self.runtime.events.emit(
+                        self._lifecycle_event(
+                            kind="step_completed",
+                            run_id=run_id,
+                            step_name=name,
+                            attempt=attempt,
+                            status=state.status.value,
+                        )
+                    )
             except (TimeoutError, Exception) as exc:
                 last_error = exc
                 timed_out = isinstance(exc, TimeoutError)

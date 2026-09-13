@@ -7,6 +7,8 @@ used by the physical scheduler; it does not alter or re-plan the stored DAG.
 
 from __future__ import annotations
 
+import base64
+import json
 from collections.abc import Mapping
 from typing import Any
 
@@ -47,7 +49,7 @@ def pipeline_plan_for_adaptive(
     stored_by_node = {
         str(record.get("node_name")): record
         for record in stored_records
-        if isinstance(record, dict) and record.get("node_name")
+        if isinstance(record, Mapping) and record.get("node_name")
     }
     for node in adaptive_plan.logical_graph.nodes:
         if node.kind.value != "step":
@@ -66,8 +68,17 @@ def pipeline_plan_for_adaptive(
             implementation = (
                 stored.get("implementation") if isinstance(stored, dict) else None
             )
-            if isinstance(implementation, dict):
-                descriptor = ImplementationDescriptor.from_dict(implementation)
+            if isinstance(implementation, Mapping):
+                raw_impl = dict(implementation)
+                encoded = raw_impl.get("portable_plan_json")
+                if encoded and isinstance(encoded, str):
+                    try:
+                        raw_impl["portable_plan"] = json.loads(
+                            base64.b64decode(encoded).decode()
+                        )
+                    except json.JSONDecodeError:
+                        raw_impl["portable_plan"] = None
+                descriptor = ImplementationDescriptor.from_dict(raw_impl)
         if descriptor is None:
             member = members.get(node.name)
             transform = getattr(member, "transformation", None)

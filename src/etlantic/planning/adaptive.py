@@ -7,6 +7,7 @@ logical graph and the profile's target descriptors, produces the closed
 
 from __future__ import annotations
 
+import base64
 import hashlib
 import heapq
 import json
@@ -426,12 +427,18 @@ def _implementation_records(
                             key: list(value)
                             for key, value in portable.requirements.items()
                         },
-                        # The executable plan carries the immutable IR by
-                        # fingerprint.  Keeping the complete expression tree
-                        # here would exceed the repository metadata depth
-                        # budget; the live pipeline definition remains the
-                        # authoritative source for the process-local compile.
+                        # Executable plans must remain runnable after a
+                        # serialize/deserialize round trip.  The canonical
+                        # portable IR is data-only and is therefore safe to
+                        # carry in the stored implementation descriptor.
                         "portable_plan": None,
+                        "portable_plan_json": base64.b64encode(
+                            json.dumps(
+                                mutable_copy(portable.plan),
+                                sort_keys=True,
+                                separators=(",", ":"),
+                            ).encode()
+                        ).decode(),
                         "portable_plan_fingerprint": portable.fingerprint,
                     }
         else:

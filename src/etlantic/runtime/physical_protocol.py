@@ -12,12 +12,13 @@ from dataclasses import dataclass, field
 from typing import Any, Protocol, runtime_checkable
 
 from etlantic.plan.physical import PHYSICAL_UNIT_SCHEMA, PhysicalUnit, PhysicalUnitKind
+from etlantic.runtime.logging import redact_message, redact_value
 
 PHYSICAL_EXECUTION_SCHEMA = "etlantic.physical_execution/1"
 
 
 def _safe_mapping(value: Mapping[str, Any] | None) -> dict[str, Any]:
-    return dict(value or {})
+    return redact_value(dict(value or {}))
 
 
 @dataclass(frozen=True, slots=True)
@@ -96,6 +97,8 @@ class PhysicalArtifactHandle:
             if hasattr(self.ref, "to_dict")
             else {"identity": str(self.ref)}
         )
+        if not isinstance(ref, Mapping):
+            ref = {"identity": str(ref)}
         return {
             "schema": PHYSICAL_EXECUTION_SCHEMA,
             "ref": ref,
@@ -206,7 +209,7 @@ class PhysicalUnitFailure(Exception):
             "code": self.code,
             "stage": self.stage,
             "logical_names": list(self.logical_names),
-            "message": str(self)[:1024],
+            "message": redact_message(str(self))[:1024],
             "unknown_receipt": (
                 receipt.to_dict()
                 if receipt is not None and hasattr(receipt, "to_dict")
@@ -231,7 +234,13 @@ def validate_unit_result(result: PhysicalUnitResult, unit: PhysicalUnit) -> None
             target_identity=unit.target_identity,
             code="PMADP400",
         )
-    if result.status not in {"succeeded", "failed", "cancelled", "timed_out"}:
+    if result.status not in {
+        "succeeded",
+        "failed",
+        "cancelled",
+        "timed_out",
+        "abandoned",
+    }:
         raise PhysicalUnitFailure(
             "Physical executor returned an unknown status",
             unit_id=unit.identity,

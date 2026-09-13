@@ -115,7 +115,14 @@ async def arun_pipeline(
     request_supplied = request is not None
     request = request or RunRequest()
     resolved = resolve_profile(profile)
-    if resolved.execution_strategy == "adaptive" and not request_supplied:
+    if (
+        resolved.execution_strategy == "adaptive"
+        and not request_supplied
+        and runtime is not None
+        and object.__getattribute__(runtime, "__class__") is not PipelineRuntime
+    ):
+        # A foreign runtime must explicitly opt into adaptive execution; this
+        # keeps the pre-effect sentinel path side-effect free.
         raise PipelineExecutionError(
             "PMADP500: adaptive execution requires an explicit RunRequest",
             code="PMADP500",
@@ -176,10 +183,17 @@ async def arun_pipeline(
     if resolved.execution_strategy != "adaptive":
         request = _merge_plan_policies(request, explicit_plan)
 
-    store = artifact_store or getattr(runtime, "_artifact_store", None)
+    # Adaptive runs are isolated transactions.  Reusing a process-level store
+    # would let logical aliases from concurrent runs overwrite one another.
+    store = artifact_store or (
+        None
+        if resolved.execution_strategy == "adaptive"
+        else getattr(runtime, "_artifact_store", None)
+    )
     if store is None:
         store = ArtifactStore(workspace=Path(workspace) if workspace else None)
-        runtime._artifact_store = store  # type: ignore[attr-defined]
+        if resolved.execution_strategy != "adaptive":
+            runtime._artifact_store = store  # type: ignore[attr-defined]
     elif workspace is not None and store.workspace is None:
         store.workspace = Path(workspace)
 
@@ -213,6 +227,13 @@ async def arun_pipeline(
         for node in explicit_plan.logical_graph.nodes:
             if node.name in targets and node.binding:
                 runtime.memory._store.pop(node.binding, None)
+
+    if resolved.execution_strategy == "adaptive":
+        from etlantic.runtime.adaptive_admission import admit_adaptive_plan
+
+        # Admission is deliberately outside the runtime session: a rejected
+        # plan must not enter lifespans, allocate connectors, or emit effects.
+        admit_adaptive_plan(explicit_plan, request=request, runtime=runtime)
 
     from etlantic.runtime.scheduler_discovery import resolve_scheduler
 

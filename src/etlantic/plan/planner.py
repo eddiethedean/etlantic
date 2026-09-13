@@ -172,12 +172,19 @@ def plan_pipeline(
     """
     from etlantic.authoring.definition import PipelineDefinition
     from etlantic.authoring.lifecycle import plan_pipeline_like
+    from etlantic.exceptions import PipelineExecutionError
     from etlantic.validation import validate_pipeline
 
     if isinstance(pipeline_cls, PipelineDefinition):
         if context is None:
             context = _create_context_with_adaptive_preflight(
                 pipeline_cls, profile=profile, selection=selection
+            )
+        if request is not None and context.profile.execution_strategy != "adaptive":
+            raise PipelineExecutionError(
+                "RunRequest is supported only by adaptive execution profiles",
+                code="PMADP522",
+                stage="planning",
             )
         return plan_pipeline_like(
             pipeline_cls,
@@ -201,6 +208,12 @@ def plan_pipeline(
 
         return build_adaptive_plan(
             pipeline_cls, ctx, selection=selection or ctx.selection, request=request
+        )
+    if request is not None:
+        raise PipelineExecutionError(
+            "RunRequest is supported only by adaptive execution profiles",
+            code="PMADP522",
+            stage="planning",
         )
     return _build_plan(pipeline_cls, ctx, selection=selection or ctx.selection)
 
