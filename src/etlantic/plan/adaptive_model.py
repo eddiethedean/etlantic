@@ -565,10 +565,9 @@ class AdaptivePipelinePlan:
                 raise ValueError(
                     "PMADP403: adaptive region target must match each node decision"
                 )
-        generated = (
-            getattr(self.metadata, "get", lambda *_: None)("etlantic.planner_version")
-            == "0.52"
-        )
+        generated = getattr(self.metadata, "get", lambda *_: None)(
+            "etlantic.planner_version"
+        ) in {"0.52", "0.53"}
         if generated:
             for region in regions:
                 evidence = region.metadata.get("etlantic.fusion_evidence")
@@ -610,7 +609,7 @@ class AdaptivePipelinePlan:
         # Generation completeness belongs to the versioned planner contract,
         # not to the historical /2 schema itself.
         metadata = _validated_metadata(self.metadata, "adaptive plan metadata")
-        if metadata.get("etlantic.planner_version") == "0.52":
+        if metadata.get("etlantic.planner_version") in {"0.52", "0.53"}:
             dag.validate_logical_paths(
                 tuple(
                     (
@@ -858,7 +857,11 @@ def _generated_region_identity(region: AdaptiveRegion, target: TargetDescriptor)
         "policy": region.metadata.get("etlantic.boundary_policy", "conservative"),
         "fused": region.fused,
         "fusion_evidence": region.metadata.get("etlantic.fusion_evidence", "none"),
-        "planner": "0.52",
+        "planner": (
+            "0.53"
+            if region.metadata.get("etlantic.execution") == "local-static-batch/1"
+            else "0.52"
+        ),
     }
     encoded = json.dumps(
         payload, sort_keys=True, separators=(",", ":"), ensure_ascii=False
@@ -906,7 +909,7 @@ def _validated_metadata(value: Mapping[str, Any], label: str) -> dict[str, Any]:
     from etlantic.extensions import validate_extension_metadata
 
     try:
-        validate_extension_metadata(result, path=label, strict=False)
+        validate_extension_metadata(mutable_copy(result), path=label, strict=False)
     except (TypeError, ValueError) as exc:
         raise ValueError(f"PMADP101: invalid {label}: {exc}") from exc
     return result

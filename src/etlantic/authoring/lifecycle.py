@@ -393,17 +393,22 @@ def plan_pipeline_like(
     context: PlanningContext | None = None,
     profile: str | Any | None = None,
     selection: dict[str, Any] | None = None,
+    request: Any | None = None,
 ) -> PlanDocument:
     """Plan a pipeline class or PipelineDefinition."""
     from etlantic.plan.planner import plan_pipeline
 
     if is_pipeline_class(pipeline):
         return plan_pipeline(
-            pipeline, context=context, profile=profile, selection=selection
+            pipeline,
+            context=context,
+            profile=profile,
+            selection=selection,
+            request=request,
         )
     assert isinstance(pipeline, PipelineDefinition)
     return _plan_definition(
-        pipeline, context=context, profile=profile, selection=selection
+        pipeline, context=context, profile=profile, selection=selection, request=request
     )
 
 
@@ -413,6 +418,7 @@ def _plan_definition(
     context: PlanningContext | None = None,
     profile: str | Any | None = None,
     selection: dict[str, Any] | None = None,
+    request: Any | None = None,
 ) -> PlanDocument:
     from etlantic.plan import planner as planner_mod
 
@@ -426,7 +432,7 @@ def _plan_definition(
             report=report,
         )
     return planner_mod._build_plan_from_definition(
-        defn, ctx, selection=selection or ctx.selection
+        defn, ctx, selection=selection or ctx.selection, request=request
     )
 
 

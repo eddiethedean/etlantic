@@ -472,6 +472,7 @@ class Pipeline(metaclass=_PipelineMeta):
         *,
         context: Any = None,
         selection: dict[str, Any] | None = None,
+        request: Any | None = None,
     ) -> PlanDocument:
         """Resolve an immutable, secret-free execution plan.
 
@@ -492,7 +493,9 @@ class Pipeline(metaclass=_PipelineMeta):
         """
         from etlantic.plan.planner import plan_pipeline
 
-        return plan_pipeline(cls, context=context, profile=profile, selection=selection)
+        return plan_pipeline(
+            cls, context=context, profile=profile, selection=selection, request=request
+        )
 
     @classmethod
     def explain_plan(

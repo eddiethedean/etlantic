@@ -111,11 +111,12 @@ async def arun_pipeline(
     from etlantic.exceptions import PipelineExecutionError
     from etlantic.profile import resolve_profile
 
+    request_supplied = request is not None
     request = request or RunRequest()
     resolved = resolve_profile(profile)
-    if getattr(resolved, "execution_strategy", "explicit") == "adaptive":
+    if resolved.execution_strategy == "adaptive" and not request_supplied:
         raise PipelineExecutionError(
-            "PMADP500: adaptive etlantic.plan/2 execution is not available in 0.52",
+            "PMADP500: adaptive execution requires an explicit RunRequest",
             code="PMADP500",
             stage="admission",
         )
@@ -155,9 +156,11 @@ async def arun_pipeline(
         context=context,
         profile=profile,
         selection=selection,
+        request=request if resolved.execution_strategy == "adaptive" else None,
     )
     explicit_plan = cast(PipelinePlan, plan)
-    request = _merge_plan_policies(request, explicit_plan)
+    if resolved.execution_strategy != "adaptive":
+        request = _merge_plan_policies(request, explicit_plan)
 
     store = artifact_store or getattr(runtime, "_artifact_store", None)
     if store is None:
@@ -201,7 +204,7 @@ async def arun_pipeline(
 
     orchestrator_name = str(
         getattr(resolved, "orchestrator", None)
-        or (explicit_plan.execution_settings or {}).get("orchestrator")
+        or (getattr(explicit_plan, "execution_settings", {}) or {}).get("orchestrator")
         or "local"
     )
     scheduler_plugins = getattr(runtime, "scheduler_plugins", None)

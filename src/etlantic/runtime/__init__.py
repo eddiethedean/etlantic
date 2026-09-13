@@ -27,6 +27,15 @@ __all__ = [
     "LocalScheduler",
     "MaterializationPolicy",
     "MemoryStateStore",
+    "PhysicalArtifactHandle",
+    "PhysicalExecutorInfo",
+    "PhysicalLogicalOutcome",
+    "PhysicalScheduler",
+    "PhysicalUnitContext",
+    "PhysicalUnitExecutor",
+    "PhysicalUnitFailure",
+    "PhysicalUnitResult",
+    "PhysicalUnitSupport",
     "RetryPolicy",
     "RunIntent",
     "RunRequest",
@@ -53,6 +62,23 @@ def __getattr__(name: str) -> Any:
         from etlantic.runtime.scheduler import LocalScheduler
 
         return LocalScheduler
+    if name in {
+        "PhysicalArtifactHandle",
+        "PhysicalExecutorInfo",
+        "PhysicalLogicalOutcome",
+        "PhysicalUnitContext",
+        "PhysicalUnitExecutor",
+        "PhysicalUnitFailure",
+        "PhysicalUnitResult",
+        "PhysicalUnitSupport",
+    }:
+        from etlantic.runtime import physical_protocol
+
+        return getattr(physical_protocol, name)
+    if name == "PhysicalScheduler":
+        from etlantic.runtime.physical_scheduler import PhysicalScheduler
+
+        return PhysicalScheduler
     if name in {
         "FileStateStore",
         "IncrementalStrategy",

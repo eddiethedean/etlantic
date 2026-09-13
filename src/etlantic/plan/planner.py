@@ -148,6 +148,7 @@ def plan_pipeline(
     context: PlanningContext | None = None,
     profile: str | Any | None = None,
     selection: dict[str, Any] | None = None,
+    request: Any | None = None,
 ) -> PlanDocument:
     """Resolve a validated logical pipeline into a secret-free plan document.
 
@@ -198,7 +199,7 @@ def plan_pipeline(
         from etlantic.planning.adaptive import build_adaptive_plan
 
         return build_adaptive_plan(
-            pipeline_cls, ctx, selection=selection or ctx.selection
+            pipeline_cls, ctx, selection=selection or ctx.selection, request=request
         )
     return _build_plan(pipeline_cls, ctx, selection=selection or ctx.selection)
 
@@ -209,6 +210,7 @@ def plan_pipeline_with_report(
     context: PlanningContext | None = None,
     profile: str | Any | None = None,
     selection: dict[str, Any] | None = None,
+    request: Any | None = None,
 ) -> tuple[PlanDocument | None, ValidationReport]:
     """Plan a pipeline and always return the validation report.
 
@@ -244,6 +246,7 @@ def plan_pipeline_with_report(
                 pipeline_cls,
                 context=ctx,
                 selection=selection or ctx.selection,
+                request=request,
             )
             return plan, _adaptive_fallback_report(plan, report)
         except PipelineValidationError as exc:
@@ -260,7 +263,7 @@ def plan_pipeline_with_report(
             from etlantic.planning.adaptive import build_adaptive_plan
 
             plan = build_adaptive_plan(
-                pipeline_cls, ctx, selection=selection or ctx.selection
+                pipeline_cls, ctx, selection=selection or ctx.selection, request=request
             )
             return plan, _adaptive_fallback_report(plan, report)
         return _build_plan(
@@ -368,6 +371,7 @@ def _build_plan_from_definition(
     context: PlanningContext,
     *,
     selection: dict[str, Any] | None = None,
+    request: Any | None = None,
 ) -> PlanDocument:
     """Build a plan from an unresolved PipelineDefinition."""
     if context.profile.execution_strategy == "adaptive":
@@ -378,6 +382,7 @@ def _build_plan_from_definition(
             context,
             selection=selection or context.selection,
             definition=definition,
+            request=request,
         )
     return _build_plan(None, context, selection=selection, definition=definition)
 

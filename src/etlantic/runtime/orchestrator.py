@@ -242,6 +242,7 @@ class LocalOrchestrator:
     wave_runner: Any | None = field(default=None, repr=False)
     # Optional caller-supplied run id (scheduler plugins should thread this).
     run_id: str | None = field(default=None)
+    physical_mode: bool = field(default=False, repr=False)
     _persistence: _RunPersistenceState = field(
         default_factory=_RunPersistenceState, repr=False
     )
@@ -255,6 +256,7 @@ class LocalOrchestrator:
     _sink_commit_receipts: list[Any] = field(default_factory=list, repr=False)
     _expected_sink_commits: int = field(default=0, repr=False)
     _publication_barrier: Any | None = field(default=None, repr=False)
+    _pending_publications: dict[str, Any] = field(default_factory=dict, repr=False)
 
     def __post_init__(self) -> None:
         if self.state_store is None:
@@ -387,6 +389,8 @@ class LocalOrchestrator:
         status: str | None = None,
         message: str | None = None,
         correlation_id: str | None = None,
+        physical_unit: str | None = None,
+        backend: str | None = None,
     ) -> LifecycleEvent:
         regions = self._region_by_node()
         return LifecycleEvent(
@@ -395,8 +399,8 @@ class LocalOrchestrator:
             pipeline_id=self.plan.pipeline_id,
             plan_id=self.plan.plan_id,
             region_id=regions.get(step_name) if step_name else None,
-            physical_unit=self._physical_unit_for_node(step_name),
-            backend=self._backend_for_node(step_name),
+            physical_unit=physical_unit or self._physical_unit_for_node(step_name),
+            backend=backend or self._backend_for_node(step_name),
             step_name=step_name,
             attempt=attempt,
             status=status,
@@ -661,6 +665,8 @@ class LocalOrchestrator:
                 code="PMADP500",
                 stage="admission",
             )
+        if self.physical_mode:
+            return await self._execute_physical()
         verify_plan_fingerprint(self.plan)
         self._validate_cancellation_policy()
         run_id = self.run_id or f"run-{uuid.uuid4().hex[:12]}"
@@ -1081,6 +1087,174 @@ class LocalOrchestrator:
                         report=report,
                         code="PMEXEC411",
                     ) from exc
+        await self.runtime.callbacks.emit(event_kind, report)
+        return report
+
+    async def _execute_physical(self) -> PipelineRunReport:
+        """Execute the stored physical-unit order through existing host operations."""
+        from etlantic.lifecycle.lifespan import run_lifespan
+
+        run_id = self.run_id or f"run-{uuid.uuid4().hex[:12]}"
+        started = datetime.now(UTC)
+        logger = RunLogger(run_id=run_id, pipeline_id=self.plan.pipeline_id)
+        artifacts = self.artifacts or ArtifactStore(workspace=self.workspace)
+        graph = self.plan.logical_graph
+        nodes = {n.name: _NodeState(node=n) for n in graph.nodes}
+        validations: list[ValidationResult] = []
+        diagnostics: list[RunDiagnostic] = []
+        schema_obs: list[SchemaObservationResult] = []
+        selected = set(self.plan.selected_nodes or graph.node_names())
+        run_context = RunContext(
+            run_id=run_id,
+            pipeline_id=self.plan.pipeline_id,
+            plan_id=self.plan.plan_id,
+            profile=self.plan.profile_name,
+            intent=self.request.intent.value,
+        )
+        self._collect_lock = threading.Lock()
+        self._preflight_portable_plan(selected)
+        self.runtime.events.emit(
+            self._lifecycle_event(kind="run_started", run_id=run_id, status="running")
+        )
+        bridge = getattr(self.runtime, "observability_bridge", None)
+        if bridge is not None:
+            bridge.start_run(
+                run_id=run_id,
+                pipeline_id=self.plan.pipeline_id,
+                plan_id=self.plan.plan_id,
+                correlation_id=run_id,
+            )
+        unit_trace: list[dict[str, Any]] = []
+        status = RunStatus.RUNNING
+        try:
+            async with run_lifespan(self.runtime, run_id):
+                for unit in self.plan.physical_units:
+                    kind = str(unit.metadata.get("etlantic.physical_kind") or "compute")
+                    self.runtime.events.emit(
+                        self._lifecycle_event(
+                            kind="physical_unit_started",
+                            run_id=run_id,
+                            physical_unit=unit.identity,
+                            status="running",
+                            backend=unit.engine,
+                        )
+                    )
+                    if kind == "compute":
+                        for name in unit.logical_nodes:
+                            if name not in selected:
+                                continue
+                            await self._execute_node(
+                                name=name,
+                                state=nodes[name],
+                                run_id=run_id,
+                                artifacts=artifacts,
+                                graph=graph,
+                                validations=validations,
+                                diagnostics=diagnostics,
+                                schema_obs=schema_obs,
+                                logger=logger,
+                                run_context=run_context,
+                            )
+                            if nodes[name].status not in {
+                                StepStatus.SUCCEEDED,
+                                StepStatus.SKIPPED,
+                            }:
+                                raise PipelineExecutionError(
+                                    f"Physical unit {unit.identity} failed at {name}",
+                                    run_id=run_id,
+                                    code="PMADP520",
+                                    stage="execute",
+                                )
+                    elif kind == "publication":
+                        name = str(
+                            unit.metadata.get("logical_node")
+                            or unit.metadata.get("etlantic.logical_node")
+                            or ""
+                        )
+                        payload = self._pending_publications.pop(name, None)
+                        if name and payload is not None and not self.request.no_write:
+                            node = nodes[name].node
+                            await self._write_sink(node, payload, run_id=run_id)
+                            self._notify_publication(
+                                run_id=run_id, node=node, attempt=nodes[name].attempts
+                            )
+                            self._commit_state_after_write(node=node)
+                    unit_trace.append(
+                        {"unit": unit.identity, "kind": kind, "status": "succeeded"}
+                    )
+                    self.runtime.events.emit(
+                        self._lifecycle_event(
+                            kind="physical_unit_completed",
+                            run_id=run_id,
+                            physical_unit=unit.identity,
+                            status="succeeded",
+                            backend=unit.engine,
+                        )
+                    )
+        except anyio.get_cancelled_exc_class() as exc:
+            status = RunStatus.CANCELLED
+            self._finalize_incomplete_steps(
+                nodes, terminal=StepStatus.CANCELLED, message="Run cancelled"
+            )
+            raise PipelineCancelledError(
+                "Run cancelled", run_id=run_id, code="PMEXEC409"
+            ) from exc
+        except Exception as exc:
+            status = RunStatus.FAILED
+            self._finalize_incomplete_steps(
+                nodes, terminal=StepStatus.FAILED, message=redact_message(str(exc))
+            )
+            self._append_diagnostic(
+                diagnostics,
+                RunDiagnostic(
+                    code=getattr(exc, "code", None) or "PMADP520",
+                    severity="error",
+                    message=redact_message(str(exc)),
+                ),
+            )
+        succeeded = sum(
+            1 for state in nodes.values() if state.status is StepStatus.SUCCEEDED
+        )
+        failed = sum(
+            1
+            for state in nodes.values()
+            if state.status
+            in {
+                StepStatus.FAILED,
+                StepStatus.ABANDONED,
+                StepStatus.TIMED_OUT,
+                StepStatus.PENDING,
+            }
+        )
+        if status is RunStatus.RUNNING:
+            status = (
+                RunStatus.SUCCEEDED
+                if failed == 0
+                else (RunStatus.PARTIAL if succeeded else RunStatus.FAILED)
+            )
+        report = self._build_report(
+            run_id=run_id,
+            started=started,
+            nodes=nodes,
+            validations=validations,
+            diagnostics=diagnostics,
+            schema_obs=schema_obs,
+            artifacts=artifacts,
+            status=status,
+        )
+        report = replace(
+            report,
+            metadata={
+                **dict(report.metadata),
+                "etlantic.physical_execution": True,
+                "etlantic.physical_trace": unit_trace,
+            },
+        )
+        self._persist_report(report)
+        event_kind = "run_completed" if status is RunStatus.SUCCEEDED else "run_failed"
+        self.runtime.events.emit(
+            self._lifecycle_event(kind=event_kind, run_id=run_id, status=status.value)
+        )
         await self.runtime.callbacks.emit(event_kind, report)
         return report
 
@@ -1809,6 +1983,13 @@ class LocalOrchestrator:
             if write_mode_for_request(self.request).value == "no_write":
                 state.records_in = _count(payload)
                 state.records_out = 0
+                return
+            if self.physical_mode:
+                # Publication is a distinct physical unit.  Keep the prepared
+                # payload owned by this run until that unit commits it.
+                self._pending_publications[node.name] = payload
+                state.records_in = _count(payload)
+                state.records_out = _count(payload)
                 return
             await self._write_sink(node, payload, run_id=run_id)
             state.records_in = _count(payload)

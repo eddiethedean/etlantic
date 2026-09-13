@@ -152,19 +152,20 @@ class LocalScheduler:
         from etlantic.plan.adaptive_model import ADAPTIVE_PLAN_SCHEMA
 
         if getattr(plan, "schema", None) == ADAPTIVE_PLAN_SCHEMA:
-            return SchedulerSupportReport(
-                supported=False,
-                findings=(
-                    SchedulerSupportFinding(
-                        code="PMADP500",
-                        requirement="etlantic.plan/2",
-                        reason=(
-                            "LocalScheduler does not advertise adaptive "
-                            "physical-unit execution"
+            from etlantic.runtime.adaptive_support import is_executable_plan
+
+            if not is_executable_plan(plan):
+                return SchedulerSupportReport(
+                    supported=False,
+                    findings=(
+                        SchedulerSupportFinding(
+                            code="PMADP500",
+                            requirement="etlantic.plan/2",
+                            reason="Adaptive plan has no qualified local support row",
                         ),
                     ),
-                ),
-            )
+                )
+            return SchedulerSupportReport(supported=True)
         findings: list[SchedulerSupportFinding] = []
         # Local scheduler schedules logical graph nodes (physical_units are
         # advisory metadata until fusion-driven unit scheduling lands).
@@ -236,7 +237,33 @@ class LocalScheduler:
                 stage="admission",
             )
 
+        from etlantic.plan.adaptive_model import ADAPTIVE_PLAN_SCHEMA
         from etlantic.runtime.orchestrator import LocalOrchestrator
+
+        if getattr(plan, "schema", None) == ADAPTIVE_PLAN_SCHEMA:
+            from etlantic.runtime.adaptive_admission import admit_adaptive_plan
+            from etlantic.runtime.physical_host import pipeline_plan_for_adaptive
+
+            admit_adaptive_plan(plan, request=request, runtime=runtime)
+            host_plan = pipeline_plan_for_adaptive(
+                plan, runtime=runtime, pipeline_cls=pipeline_cls
+            )
+            host = LocalOrchestrator(
+                runtime=runtime,
+                plan=host_plan,
+                request=request,
+                pipeline_cls=pipeline_cls,
+                workspace=workspace,
+                artifacts=artifact_store,
+                run_id=context.run_id if context is not None else None,
+                physical_mode=True,
+            )
+            result = await host.execute()
+            result.metadata.setdefault("etlantic.scheduler", self.info.name)
+            result.metadata.setdefault(
+                "etlantic.scheduler_protocol", SCHEDULER_PROTOCOL
+            )
+            return result
 
         host = LocalOrchestrator(
             runtime=runtime,

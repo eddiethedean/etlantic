@@ -30,6 +30,7 @@ from etlantic.plan.adaptive_model import (
     TargetDescriptor,
 )
 from etlantic.plan.adaptive_serialize import adaptive_plan_fingerprint
+from etlantic.plan.freeze import mutable_copy
 from etlantic.plan.physical import (
     PHYSICAL_UNIT_SCHEMA,
     PhysicalDAG,
@@ -116,11 +117,16 @@ def build_adaptive_plan(
     *,
     selection: dict[str, Any] | None = None,
     definition: Any | None = None,
+    request: Any | None = None,
 ) -> AdaptivePipelinePlan | Any:
     """Build an adaptive plan, or the explicitly configured fallback plan."""
     with budget_scope(MAX_TRANSIENT_BYTES) as budget, budget.frame():
         return _build_adaptive_plan(
-            pipeline_cls, context, selection=selection, definition=definition
+            pipeline_cls,
+            context,
+            selection=selection,
+            definition=definition,
+            request=request,
         )
 
 
@@ -130,6 +136,7 @@ def _build_adaptive_plan(
     *,
     selection: dict[str, Any] | None = None,
     definition: Any | None = None,
+    request: Any | None = None,
 ) -> AdaptivePipelinePlan | Any:
     graph = _graph_for_input(pipeline_cls, definition)
     selected = _canonical_graph(_select_graph(graph, selection or context.selection))
@@ -211,27 +218,49 @@ def _build_adaptive_plan(
             "Adaptive selected-target mapping exceeds the 4 MiB explain limit.",
             path=("adaptive", "explain"),
         )
-    regions = _regions(selected, decisions, targets, context)
-    physical = _physical_dag(selected, decisions, targets, regions, context)
+    regions = _regions(
+        selected, decisions, targets, context, executable=request is not None
+    )
+    physical = _physical_dag(
+        selected,
+        decisions,
+        targets,
+        regions,
+        context,
+        executable=request is not None,
+    )
     inventory = _inventory_model(targets)
     objective = _objective(selected, decisions, candidates, inventory)
 
     profile = context.profile
     metadata = {
         "etlantic.planner": "etlantic.planning.adaptive",
-        "etlantic.planner_version": "0.52",
+        "etlantic.planner_version": "0.53" if request is not None else "0.52",
         "etlantic.objective_version": "etlantic.adaptive-objective/1",
         "etlantic.limits_version": ADAPTIVE_LIMITS_VERSION,
         "etlantic.solver": "deterministic-lexicographic/1",
-        "etlantic.execution": "planning-only",
+        "etlantic.execution": "local-static-batch/1"
+        if request is not None
+        else "planning-only",
         "etlantic.selected-node-count": len(selected.nodes),
         "etlantic.candidate-count": len(candidates),
         "etlantic.objective": list(objective),
     }
+    if request is not None:
+        # RunRequest is a data-only policy object.  Keep its public shape in
+        # the fingerprint while applying the repository's recursive wire
+        # redaction before it enters the plan.
+        raw_request = (
+            mutable_copy(request.to_dict()) if hasattr(request, "to_dict") else {}
+        )
+        metadata["etlantic.runtime"] = {
+            "schema": "etlantic.adaptive_runtime/1",
+            "request": _safe_ref(raw_request),
+        }
     selected_nodes = (
         None if not (selection or context.selection) else selected.node_names()
     )
-    plan_fields = dict(
+    plan_fields: dict[str, Any] = dict(
         schema=ADAPTIVE_PLAN_SCHEMA,
         plan_id="plan:pending",
         pipeline_id=selected.pipeline_id,
@@ -620,7 +649,12 @@ def _inventory_model(targets: tuple[tuple[str, Any, Any], ...]) -> AdaptiveInven
         "inventory",
     )
     with current_budget().allocation(payload, "validation-buffer"):
-        return AdaptiveInventory(targets=tuple(descriptors), **shell)
+        return AdaptiveInventory(
+            targets=tuple(descriptors),
+            eligible_target_order=tuple(shell["eligible_target_order"]),
+            fingerprint=str(shell["fingerprint"]),
+            evidence_refs=tuple(shell["evidence_refs"]),
+        )
 
 
 def _candidate_matrix(
@@ -1480,6 +1514,7 @@ def _regions(
     decisions: tuple[AdaptiveDecision, ...],
     inventory: tuple[tuple[str, Any, Any], ...],
     context: PlanningContext,
+    executable: bool = False,
 ) -> tuple[AdaptiveRegion, ...]:
     by_node = {d.node_name: d.target_id for d in decisions}
     target_by_id = {name: target for name, target, _ in inventory}
@@ -1522,11 +1557,11 @@ def _regions(
             "target": _target_identity(target),
             "nodes": members,
             "security": target.security_domain,
-            "execution": "planning-only",
+            "execution": "local-static-batch/1" if executable else "planning-only",
             "policy": "conservative",
             "fused": False,
             "fusion_evidence": "none",
-            "planner": "0.52",
+            "planner": "0.53" if executable else "0.52",
         }
         region_id = f"region:{_digest(boundary_facts)[:24]}"
         for member in members:
@@ -1542,7 +1577,9 @@ def _regions(
                 security_domain=target.security_domain,
                 metadata={
                     "etlantic.boundary_policy": "conservative",
-                    "etlantic.execution": "planning-only",
+                    "etlantic.execution": "local-static-batch/1"
+                    if executable
+                    else "planning-only",
                     "etlantic.fusion_evidence": "none",
                     "etlantic.security_domain": target.security_domain,
                     "etlantic.target_identity": _target_identity(target),
@@ -1607,6 +1644,7 @@ def _physical_dag(
     targets: tuple[tuple[str, Any, Any], ...],
     regions: tuple[AdaptiveRegion, ...],
     context: PlanningContext | None = None,
+    executable: bool = False,
 ) -> PhysicalDAG:
     target_map = {name: target for name, target, _ in targets}
     decision_map = {d.node_name: d for d in decisions}
@@ -1670,7 +1708,7 @@ def _physical_dag(
             "output_contracts": outputs,
             "policy": {
                 "security_domain": target.security_domain,
-                "execution": "planning-only",
+                "execution": "local-static-batch/1" if executable else "planning-only",
             },
             "retry_policy": {"mode": "declared", "boundary": False},
             "ownership": {
@@ -1731,6 +1769,7 @@ def _physical_dag(
                     "Cross-target physical boundary lacks directional handoff evidence.",
                     path=("physical_dag", "transfer"),
                 )
+            assert context is not None
             handoff_contract = _handoff_contract(source, destination, edge, context)
             transfer_payload = {
                 "kind": "transfer",
