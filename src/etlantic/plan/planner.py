@@ -1921,9 +1921,24 @@ def _materialization_boundaries(
                 uses_unicode_casing(edge.producer_node)
                 or uses_unicode_casing(edge.consumer_node)
             ):
-                raise PipelineValidationError(
+                message = (
                     "Cross-engine portable Unicode casing requires matching "
                     "Unicode data across the participating engines"
+                )
+                raise PipelineValidationError(
+                    message,
+                    report=ValidationReport.from_diagnostics(
+                        [
+                            Diagnostic(
+                                code="PMPLAN402",
+                                severity=Severity.ERROR,
+                                message=message,
+                                path=("capability", "unicode"),
+                                phase="capability",
+                            )
+                        ],
+                        phases=("capability",),
+                    ),
                 )
             metadata: dict[str, Any] = {
                 "consumer_node": edge.consumer_node,
