@@ -63,6 +63,7 @@ from etlantic.testing.orchestrator import (
     assert_orchestrator_plugin_info,
     run_orchestrator_conformance_suite,
 )
+from etlantic.testing.physical import run_physical_unit_conformance_smoke
 from etlantic.testing.pipeline_case import (
     MAX_SEED_ROWS_PER_ASSET,
     MAX_SNAPSHOT_BYTES,
@@ -80,7 +81,6 @@ from etlantic.testing.pipeline_case import (
     snapshot_plan,
     snapshot_report,
 )
-from etlantic.testing.physical import run_physical_unit_conformance_smoke
 from etlantic.testing.policy_conformance import run_policy_conformance_suite
 from etlantic.testing.portable_transform_conformance import (
     normalize_rows,
@@ -188,8 +188,8 @@ __all__ = [
     "run_ops_campaign",
     "run_optimizer_conformance_suite",
     "run_orchestrator_conformance_suite",
-    "run_pipeline_case",
     "run_physical_unit_conformance_smoke",
+    "run_pipeline_case",
     "run_policy_conformance_suite",
     "run_portable_transform_conformance_suite",
     "run_production_conformance_suite",
