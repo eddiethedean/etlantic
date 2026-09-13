@@ -1863,36 +1863,12 @@ def _materialization_boundaries(
     engines: dict[str, PluginCapabilities] | None = None,
     sql_engine: str | None = None,
 ) -> list[MaterializationBoundary]:
-    from etlantic.engines import get_engine_registry
     from etlantic.planning.capabilities import is_dataframe_engine
 
     binding_map = bindings or {}
     engine_capabilities = engines or {}
-    engine_registry = get_engine_registry()
     boundaries: list[MaterializationBoundary] = []
     fanout: dict[tuple[str, str], int] = {}
-
-    def uses_unicode_casing(node_name: str) -> bool:
-        implementation = implementations.get(node_name)
-        portable_plan = (
-            implementation.portable_plan if implementation is not None else None
-        )
-        if not isinstance(portable_plan, Mapping):
-            return False
-
-        def walk(value: Any) -> bool:
-            if isinstance(value, Mapping):
-                if value.get("kind") == "call" and value.get("callee") in {
-                    "dtcs:lower",
-                    "dtcs:upper",
-                }:
-                    return True
-                return any(walk(item) for item in value.values())
-            if isinstance(value, list):
-                return any(walk(item) for item in value)
-            return False
-
-        return walk(portable_plan)
 
     def eng(name: str) -> str:
         node = next((n for n in graph.nodes if n.name == name), None)
@@ -1914,32 +1890,7 @@ def _materialization_boundaries(
         prod_engine = eng(edge.producer_node)
         cons_engine = eng(edge.consumer_node)
         if prod_engine != cons_engine:
-            if (
-                engine_registry.is_sql_engine(prod_engine, engine_capabilities)
-                or engine_registry.is_sql_engine(cons_engine, engine_capabilities)
-            ) and (
-                uses_unicode_casing(edge.producer_node)
-                or uses_unicode_casing(edge.consumer_node)
-            ):
-                message = (
-                    "Cross-engine portable Unicode casing requires matching "
-                    "Unicode data across the participating engines"
-                )
-                raise PipelineValidationError(
-                    message,
-                    report=ValidationReport.from_diagnostics(
-                        [
-                            Diagnostic(
-                                code="PMPLAN402",
-                                severity=Severity.ERROR,
-                                message=message,
-                                path=("capability", "unicode"),
-                                phase="capability",
-                            )
-                        ],
-                        phases=("capability",),
-                    ),
-                )
+            # Boundaries transfer computed values, not portable expressions.
             metadata: dict[str, Any] = {
                 "consumer_node": edge.consumer_node,
                 "consumer_port": edge.consumer_port,

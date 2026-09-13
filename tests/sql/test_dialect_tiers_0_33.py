@@ -205,15 +205,20 @@ def test_sql_compiler_identity_honors_database_url(monkeypatch) -> None:
     assert compiler.info.environment["dialect"] == "postgresql"
 
 
-def test_sql_portable_casing_rejects_unpinned_host_unicode(monkeypatch) -> None:
-    """Portable SQL casing must fail closed when host Unicode data differs."""
-    import etlantic_sql.transform_compiler as transform_compiler
-    from etlantic.transform.compiler import TransformPlanningContext
-    from etlantic_sql.transform_compiler import create_transform_compiler
+@pytest.mark.parametrize("host_unicode", ["15.0.0", "15.1.0"])
+@pytest.mark.parametrize("dialect", ["sqlite", "postgresql"])
+@pytest.mark.parametrize("callee", ["dtcs:lower", "dtcs:upper"])
+def test_sql_portable_casing_accepts_newer_host_unicode(
+    monkeypatch, host_unicode: str, dialect: str, callee: str
+) -> None:
+    """Pinned SQL casing is independent of the host Unicode database."""
+    import unicodedata
 
-    monkeypatch.setattr(
-        transform_compiler, "_unicode_runtime_matches_pinned", lambda: False
-    )
+    from etlantic.transform.compiler import TransformPlanningContext
+    from etlantic_sql.transform_compiler import SqlTransformCompiler
+
+    monkeypatch.setattr(unicodedata, "unidata_version", host_unicode)
+    compiler = SqlTransformCompiler(dialect=dialect)
     definition = {
         "planIdentity": "dtcs.transform-plan/2",
         "actions": [
@@ -226,7 +231,7 @@ def test_sql_portable_casing_rejects_unpinned_host_unicode(monkeypatch) -> None:
                                 "name": "value",
                                 "expression": {
                                     "kind": "call",
-                                    "callee": "dtcs:lower",
+                                    "callee": callee,
                                     "args": [
                                         {
                                             "kind": "fieldRef",
@@ -242,11 +247,11 @@ def test_sql_portable_casing_rejects_unpinned_host_unicode(monkeypatch) -> None:
             }
         ],
     }
-    report = create_transform_compiler().analyze(
+    report = compiler.analyze(
         definition,
         context=TransformPlanningContext("p", "s", "profile", "sql"),
     )
-    assert any(finding.code == "PMXFORM304" for finding in report.findings)
+    assert report.supported, report.findings
 
     literal_definition = {
         **definition,
@@ -272,11 +277,11 @@ def test_sql_portable_casing_rejects_unpinned_host_unicode(monkeypatch) -> None:
             }
         ],
     }
-    literal_report = create_transform_compiler().analyze(
+    literal_report = compiler.analyze(
         literal_definition,
         context=TransformPlanningContext("p", "s", "profile", "sql"),
     )
-    assert not any(finding.code == "PMXFORM304" for finding in literal_report.findings)
+    assert literal_report.supported, literal_report.findings
 
 
 def test_model_create_and_pk_validation_sqlite() -> None:

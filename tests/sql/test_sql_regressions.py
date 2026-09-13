@@ -30,6 +30,7 @@ from etlantic.sql import RelationRef, col, select
 from etlantic.sql.discovery import register_discovered_plugins
 from etlantic.sql.expression import col as col_expr
 from etlantic.sql.protocol import SqlExecutionContext, TransactionOutcome
+from etlantic.transform import functions as F
 
 pytestmark = pytest.mark.sql
 
@@ -53,6 +54,91 @@ class PythonToSqlPipeline(Pipeline):
     src: Extract[Item] = Extract(asset="mem_items")
     made = LocalMake.step(items=src)
     dst: Load[Item] = Load(input=made.result, asset="sql_dst")
+
+
+class PortableLocalLower(Transformation):
+    items: Input[Item]
+    result: Output[Item]
+
+
+@PortableLocalLower.portable
+def portable_lower(items):
+    return items.withColumn("name", F.lower(F.col("name")))
+
+
+class PortableCasingToSqlPipeline(Pipeline):
+    src: Extract[Item] = Extract(asset="portable_case_items")
+    lowered = PortableLocalLower.step(items=src)
+    dst: Load[Item] = Load(input=lowered.result, asset="portable_case_sql_dst")
+
+
+def test_portable_local_casing_can_load_sql_sink(sql_plugin) -> None:
+    """A SQL sink stores values without re-evaluating portable casing."""
+    from uuid import uuid4
+
+    from sqlalchemy import Column, Integer, MetaData, String, Table, select
+
+    engine = sql_plugin._get_engine()
+    table = Table(
+        f"portable_case_sql_dst_{uuid4().hex}",
+        MetaData(),
+        Column("id", Integer),
+        Column("name", String),
+    )
+    table.create(engine)
+    try:
+        registry = builtin_stub_registry()
+        register_discovered_plugins(registry, plugins={"sql": sql_plugin})
+        registry.register_binding(
+            BindingDescriptor(
+                binding="portable_case_items",
+                provider="memory",
+                location="portable_case_items",
+            )
+        )
+        registry.register_binding(
+            BindingDescriptor(
+                binding="portable_case_sql_dst",
+                provider="sql",
+                location=table.name,
+                metadata={"write_intent": "insert_select"},
+            )
+        )
+        profile = Profile(
+            name="portable-case-sql-load",
+            dataframe_engine="local",
+            portable_transform_policy="require",
+        )
+        context = PlanningContext.create(profile, registry=registry)
+        plan = PortableCasingToSqlPipeline.plan(context=context)
+        assert plan.implementations["lowered"].kind == "portable_compiled"
+        assert plan.implementations["lowered"].engine == "local"
+        assert any(
+            boundary.reason == "cross_engine"
+            and boundary.producer_node == "lowered"
+            and boundary.metadata["consumer_node"] == "dst"
+            for boundary in plan.materialization_boundaries
+        )
+        runtime = PipelineRuntime(registry=registry)
+        runtime.register_sql_plugin("sql", sql_plugin)
+        runtime.memory.seed(
+            "portable_case_items",
+            [
+                Item(id=1, name="ABC"),
+                Item(id=2, name="AΣ"),
+                Item(id=3, name="AΣ:B"),
+                Item(id=4, name="ßİ"),
+            ],
+        )
+        report = PortableCasingToSqlPipeline.run(
+            profile=profile, runtime=runtime, context=context
+        )
+        assert report.status.value == "succeeded"
+        with engine.connect() as connection:
+            rows = connection.execute(select(table).order_by(table.c.id)).all()
+        assert rows == [(1, "abc"), (2, "aς"), (3, "a\u03c3:b"), (4, "ßi\u0307")]
+    finally:
+        table.drop(engine)
 
 
 class FailWriteNorm(Transformation):

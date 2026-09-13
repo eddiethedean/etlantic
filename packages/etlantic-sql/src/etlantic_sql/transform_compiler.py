@@ -98,13 +98,6 @@ def _dialect_from_url(url: str) -> str:
     return url.split(":", 1)[0].split("+", 1)[0].lower()
 
 
-def _unicode_runtime_matches_pinned() -> bool:
-    """Return whether host Unicode data matches the SQL compiler's pinned data."""
-    import unicodedata
-
-    return unicodedata.unidata_version == UNICODE_DATA_VERSION
-
-
 def create_transform_compiler() -> SqlTransformCompiler:
     """Entry-point factory for ``etlantic.transform_compilers``."""
     return SqlTransformCompiler()
@@ -205,22 +198,6 @@ class SqlTransformCompiler:
         findings.extend(portable_shape_findings(definition))
         findings.extend(portable_arithmetic_findings(definition))
         blob = json.dumps(definition, sort_keys=True)
-        uses_unicode_casing = any(
-            function in {"dtcs:lower", "dtcs:upper"}
-            for function in req.get("functions", ())
-        )
-        if not _unicode_runtime_matches_pinned() and uses_unicode_casing:
-            findings.append(
-                TransformSupportFinding(
-                    code="PMXFORM304",
-                    requirement=f"environment:unicode:{UNICODE_DATA_VERSION}",
-                    reason=(
-                        "SQL portable casing is pinned to Unicode "
-                        f"{UNICODE_DATA_VERSION}, but the host runtime uses a "
-                        "different Unicode database"
-                    ),
-                )
-            )
         # Reject trusted SQL fragments in portable definitions.
         if "trusted_fragment" in blob or "TrustedSqlFragment" in blob:
             findings.append(

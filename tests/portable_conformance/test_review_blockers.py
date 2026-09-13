@@ -280,22 +280,33 @@ def test_final_rel_003_postgresql_arm64_locale_evidence() -> None:
 
 
 @pytest.mark.sql
-def test_final_rel_003_sqlite_uses_pinned_unicode_context(monkeypatch) -> None:
+@pytest.mark.parametrize("host_unicode", ["14.0.0", "15.0.0", "15.1.0"])
+def test_final_rel_003_sqlite_uses_pinned_unicode_context(
+    monkeypatch, host_unicode: str
+) -> None:
     """SQLite casing must not vary with the host Python Unicode database."""
+    import unicodedata
+
+    monkeypatch.setattr(unicodedata, "unidata_version", host_unicode)
     monkeypatch.setenv("ETLANTIC_SQL_URL", "sqlite+pysqlite:///:memory:")
     pytest.importorskip("sqlalchemy")
     from etlantic_sql import create_transform_compiler
 
     case = _project_case(
         "final_rel_003_sqlite_pinned_unicode_context",
-        [("value", _call("dtcs:lower", _field("text")))],
+        [
+            ("value", _call("dtcs:lower", _field("text"))),
+            ("upper", _call("dtcs:upper", _field("text"))),
+        ],
         rows=[
             {"text": "AΣ\u0eceB"},
             {"text": "A-\U0001e900"},
+            {"text": "ßİ"},
         ],
         expected=[
-            {"value": "aς\u0eceb"},
-            {"value": "a-\U0001e922"},
+            {"value": "aς\u0eceb", "upper": "AΣ\u0eceB"},
+            {"value": "a-\U0001e922", "upper": "A-\U0001e900"},
+            {"value": "ßi\u0307", "upper": "SSİ"},
         ],
     )
     _run(create_transform_compiler(), case)
