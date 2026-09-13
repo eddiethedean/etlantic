@@ -73,6 +73,7 @@ class SqlCompiler:
         self.dialect = dialect
         self.supports_merge = supports_merge
         self._param_counter = 0
+        self._case_counter = 0
 
     def quote(self, name: str) -> str:
         return quote_identifier(name, dialect=self.dialect)
@@ -228,14 +229,24 @@ class SqlCompiler:
             if self.dialect == "sqlite":
                 body = f"ETLANTIC_UNICODE_LOWER({args[0]})"
             elif self.dialect == "postgresql":
-                body = _postgres_unicode_case(args[0], mode="lower")
+                self._case_counter += 1
+                body = _postgres_unicode_case(
+                    args[0],
+                    mode="lower",
+                    operand_alias=f"etlantic_case_{self._case_counter}",
+                )
             else:
                 body = f"LOWER({args[0]})"
         elif callee == "dtcs:upper":
             if self.dialect == "sqlite":
                 body = f"ETLANTIC_UNICODE_UPPER({args[0]})"
             elif self.dialect == "postgresql":
-                body = _postgres_unicode_case(args[0], mode="upper")
+                self._case_counter += 1
+                body = _postgres_unicode_case(
+                    args[0],
+                    mode="upper",
+                    operand_alias=f"etlantic_case_{self._case_counter}",
+                )
             else:
                 body = f"UPPER({args[0]})"
         elif callee == "dtcs:concat":
@@ -419,6 +430,10 @@ class SqlCompiler:
                 "dtcs:count_distinct",
             }
             and args
+            # PostgreSQL casing propagates nulls using its bound operand.
+            and not (
+                self.dialect == "postgresql" and callee in {"dtcs:lower", "dtcs:upper"}
+            )
         ):
             null_check = " OR ".join(f"({arg} IS NULL)" for arg in args)
             body = f"CASE WHEN {null_check} THEN NULL ELSE {body} END"
@@ -776,7 +791,7 @@ def _postgres_cased_class() -> str:
     return CASED_CLASS
 
 
-def _postgres_unicode_case(value: str, *, mode: str) -> str:
+def _postgres_unicode_case(value: str, *, mode: str, operand_alias: str) -> str:
     """Compile full default Unicode casing for PostgreSQL relation plans.
 
     PostgreSQL 16 applies simple mappings and omits expansions such as
@@ -784,6 +799,10 @@ def _postgres_unicode_case(value: str, *, mode: str) -> str:
     into code points keeps execution in SQL while applying the full mapping.
     Lowercase sigma additionally needs the default context-sensitive final form.
     """
+    # OFFSET 0 prevents PostgreSQL from flattening the operand subquery and
+    # duplicating a composed expression across the casing and null checks.
+    operand = f"CAST({value} AS TEXT)"
+    value = f"{operand_alias}.value"
     clauses: list[str] = []
     if mode == "lower":
         text = f"CAST({value} AS TEXT)"
@@ -829,16 +848,21 @@ def _postgres_unicode_case(value: str, *, mode: str) -> str:
             f"POSITION({_sql_literal(source)} IN ({text})) > 0"
             for source, _ in (("Σ", "ς"), *EXPANSIONS[mode])
         )
-        return f"COALESCE(CASE WHEN {special} THEN {split_case} ELSE {simple} END, '')"
-    text = f"CAST({value} AS TEXT)"
-    special = " OR ".join(
-        f"POSITION({_sql_literal(source)} IN ({text})) > 0"
-        for source, _ in EXPANSIONS[mode]
-    )
+        body = f"COALESCE(CASE WHEN {special} THEN {split_case} ELSE {simple} END, '')"
+    else:
+        text = f"CAST({value} AS TEXT)"
+        special = " OR ".join(
+            f"POSITION({_sql_literal(source)} IN ({text})) > 0"
+            for source, _ in EXPANSIONS[mode]
+        )
+        body = (
+            "COALESCE(CASE "
+            f"WHEN {special} THEN {_unicode_case_translation(mode, text)} "
+            f"ELSE {_unicode_simple_case_translation(mode, text)} END, '')"
+        )
     return (
-        "COALESCE(CASE "
-        f"WHEN {special} THEN {_unicode_case_translation(mode, text)} "
-        f"ELSE {_unicode_simple_case_translation(mode, text)} END, '')"
+        f"(SELECT CASE WHEN {value} IS NULL THEN NULL ELSE {body} END "
+        f"FROM (SELECT {operand} AS value OFFSET 0) AS {operand_alias})"
     )
 
 

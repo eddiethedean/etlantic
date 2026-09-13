@@ -140,7 +140,8 @@ def test_postgresql_sigma_mapping_is_stable_under_c_collation() -> None:
     assert rows == [("a-\u03c3",), ("a\u03c2-b",), ("a-𞤢",)]
 
 
-def test_postgresql_lower_preserves_input_collation() -> None:
+@pytest.mark.parametrize("mode", ["lower", "upper"])
+def test_postgresql_casing_preserves_input_collation(mode: str) -> None:
     """Context classification must not force the result to C collation."""
     if not os.environ.get("ETLANTIC_SQL_URL", "").startswith("postgresql"):
         pytest.skip("PostgreSQL collation verification requires ETLANTIC_SQL_URL")
@@ -152,7 +153,7 @@ def test_postgresql_lower_preserves_input_collation() -> None:
             source=RelationRef(name="sigma_collation_033"),
             columns=(
                 AliasedExpr(
-                    CallExpr("dtcs:lower", (col("name"),)),
+                    CallExpr(f"dtcs:{mode}", (col("name"),)),
                     "lower_name",
                 ),
             ),
@@ -181,6 +182,77 @@ def test_postgresql_lower_preserves_input_collation() -> None:
     finally:
         engine.dispose()
     assert rows == [('"en-US-x-icu"', True)]
+
+
+def _nested_casing_query(modes: tuple[str, ...]) -> SqlQuery:
+    expression = col("name")
+    for mode in modes:
+        expression = CallExpr(f"dtcs:{mode}", (expression,))
+    return SqlQuery(
+        source=RelationRef(name="nested_casing_033"),
+        columns=(col("id"), AliasedExpr(expression, "value")),
+    )
+
+
+def test_postgresql_nested_casing_sql_grows_linearly() -> None:
+    """Casing binds its operand once, including the null-propagation check."""
+    compiler = SqlCompiler(dialect="postgresql", supports_merge=True)
+    context = SqlExecutionContext(
+        run_id="r", pipeline_id="p", plan_id="plan", step_name="nested"
+    )
+    for mode in ("upper", "lower"):
+        for depth in (1, 2, 4, 8):
+            compiled = compiler.compile_query(
+                _nested_casing_query((mode,) * depth), context=context
+            )
+            assert compiled.text.count('"name"') == 1
+            assert len(compiled.text.encode("utf-8")) < 50_000 * depth
+
+
+@pytest.mark.parametrize(
+    "modes",
+    [
+        ("upper",) * 4,
+        ("lower",) * 4,
+        ("upper", "lower", "upper", "lower"),
+    ],
+)
+def test_postgresql_nested_casing_execution(modes: tuple[str, ...]) -> None:
+    """Nested operand scopes preserve nulls, empty strings, and Unicode context."""
+    if not os.environ.get("ETLANTIC_SQL_URL", "").startswith("postgresql"):
+        pytest.skip("PostgreSQL execution requires ETLANTIC_SQL_URL")
+    from sqlalchemy import create_engine, text
+
+    compiler = SqlCompiler(dialect="postgresql", supports_merge=True)
+    compiled = compiler.compile_query(
+        _nested_casing_query(modes),
+        context=SqlExecutionContext(
+            run_id="r", pipeline_id="p", plan_id="plan", step_name="nested"
+        ),
+    )
+    values = [None, "", "ASCII", "ßİ", "AΣ:B", "AΣ\u0301"]
+    engine = create_engine(os.environ["ETLANTIC_SQL_URL"])
+    try:
+        with engine.begin() as connection:
+            connection.execute(
+                text("CREATE TEMP TABLE nested_casing_033 (id INTEGER, name TEXT)")
+            )
+            connection.execute(
+                text("INSERT INTO nested_casing_033 VALUES (:id, :name)"),
+                [{"id": index, "name": value} for index, value in enumerate(values)],
+            )
+            rows = connection.execute(
+                text(compiled.text + ' ORDER BY "id"'),
+                compiled.metadata["_bound_params"],
+            ).all()
+    finally:
+        engine.dispose()
+    expected = []
+    for index, value in enumerate(values):
+        for mode in modes:
+            value = None if value is None else getattr(value, mode)()
+        expected.append((index, value))
+    assert rows == expected
 
 
 def test_sql_compiler_evidence_fingerprints_unicode_database() -> None:
