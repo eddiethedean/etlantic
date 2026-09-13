@@ -22736,10 +22736,10 @@
       }
     }
   },
-  "repository_commit": "e6b86e0b628abaf1eefc49813393fcd10f6f1b49",
+  "repository_commit": "3687b7c96c7e9393c38217ea5b717504a9023c89",
   "result": "pass",
   "schema": "etlantic.portable-requirement-support/1",
-  "source_tree_digest": "263e4e95d8ba4132aae050a17f742d7039c64e62a54fa01662f6beaef6445766",
+  "source_tree_digest": "a68fb1a16647960064af8cf372a8beadb15f19537b306e2e514a1b1681aff95d",
   "support_states": [
     "supported_exact",
     "supported_with_lowering",

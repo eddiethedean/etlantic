@@ -146,10 +146,10 @@
     "native_explain_digest": "c88823ae96c666284ef9b80e88b71ea596f3efec86f3120244f194d61a45600d",
     "result_digest": "054501c07dbba56f01869be6956e25cea290878ec096039b0d3a5c8a698ffde2"
   },
-  "repository_commit": "e6b86e0b628abaf1eefc49813393fcd10f6f1b49",
+  "repository_commit": "3687b7c96c7e9393c38217ea5b717504a9023c89",
   "result": "pass",
   "schema": "etlantic.portable-conformance/1",
-  "source_tree_digest": "263e4e95d8ba4132aae050a17f742d7039c64e62a54fa01662f6beaef6445766",
+  "source_tree_digest": "a68fb1a16647960064af8cf372a8beadb15f19537b306e2e514a1b1681aff95d",
   "tests": [
     "tests/portable_conformance/test_public_suite.py",
     "tests/sql/test_sql_portable_security.py",
