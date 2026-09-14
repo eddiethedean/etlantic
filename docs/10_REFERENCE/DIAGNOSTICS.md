@@ -1,6 +1,6 @@
 # Diagnostics Reference
 
-> **Status: Available in ETLantic 0.52.1 (published Beta).**
+> **Status: Available in ETLantic 0.53.0 (Beta release candidate).**
 
 Diagnostics are structured findings produced while loading, inspecting,
 validating, planning, compiling, or executing a pipeline.

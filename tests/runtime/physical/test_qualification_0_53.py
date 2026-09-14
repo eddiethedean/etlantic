@@ -10,7 +10,16 @@ from typing import Any
 import anyio
 import pytest
 
-from etlantic import Data, Extract, Input, Load, Output, Pipeline, Transformation
+from etlantic import (
+    Data,
+    Extract,
+    Input,
+    Load,
+    Output,
+    Pipeline,
+    Transformation,
+    __version__,
+)
 from etlantic.exceptions import PipelineExecutionError
 from etlantic.lifecycle.runtime import PipelineRuntime
 from etlantic.plan import plan_from_json, plan_pipeline, plan_to_json
@@ -457,7 +466,7 @@ def test_qualified_executor_cancel_and_cleanup_drain() -> None:
             info = PhysicalExecutorInfo(
                 "etlantic.physical.local/1",
                 "etlantic",
-                "0.52.1",
+                __version__,
                 capability_fingerprint=plan.inventory.targets[0].capability_fingerprint,
                 evidence_refs=support.evidence_refs,
             )
@@ -509,7 +518,7 @@ def test_qualified_executor_routes_outputs_and_retains_lifetime() -> None:
             info = PhysicalExecutorInfo(
                 "etlantic.physical.local/1",
                 "etlantic",
-                "0.52.1",
+                __version__,
                 capability_fingerprint=plan.inventory.targets[0].capability_fingerprint,
                 evidence_refs=support.evidence_refs,
             )

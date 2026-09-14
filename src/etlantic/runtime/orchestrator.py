@@ -3967,10 +3967,17 @@ class LocalOrchestrator:
         descriptor: ImplementationDescriptor | None = self.plan.implementations.get(
             node.name
         )
-        # Adaptive target overrides are already captured in the plan. Explicit
-        # native requests retain their existing engine override precedence.
+        # Both physical plans and independently planned explicit fallbacks have
+        # resolved adaptive target IDs into engine descriptors. Preserve that
+        # resolution without changing the original request used for reporting.
+        # Only ordinary explicit requests carry late-bound engine overrides.
+        fallback = self.plan.metadata.get("etlantic.adaptive_fallback")
+        target_overrides_resolved = self.physical_mode or (
+            isinstance(fallback, Mapping)
+            and fallback.get("schema") == "etlantic.plan/1"
+        )
         engine = (descriptor.engine if descriptor else None) or "local"
-        if not self.physical_mode:
+        if not target_overrides_resolved:
             engine = self.request.implementation_overrides.get(node.name) or engine
         from etlantic.authoring.resolve import callable_registry
 

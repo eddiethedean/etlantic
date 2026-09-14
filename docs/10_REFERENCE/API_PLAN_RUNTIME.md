@@ -1,6 +1,6 @@
 # API — Plan and Runtime
 
-> **Status: Available in ETLantic 0.52.0 (published Beta).**
+> **Status: Available in ETLantic 0.53.0 (Beta release candidate).**
 
 > Generated from package source. Hub: [Python API Reference](API_REFERENCE.md).
 
@@ -118,7 +118,7 @@ See [Migration 0.20 → 0.21](../11_DEVELOPMENT/MIGRATION_0_20_TO_0_21.md) and
 
 ## Gate A tabular interchange (`etlantic.interchange/1`)
 
-> **ETLantic 0.52.0 (published Beta).** Versioned, capability-driven tabular
+> **ETLantic 0.53.0 (Beta release candidate).** Versioned, capability-driven tabular
 > interchange for **Polars ↔ Pandas** boundaries. PySpark/SQL Gate A pairs are
 > not in scope yet. Legacy Arrow-assisted helpers (when PyArrow is installed)
 > are **not** the Gate A contract.
@@ -141,6 +141,13 @@ fresh whole-DAG admission. Stored portable definitions, contract fingerprints,
 compiler/dataframe versions, bindings and exact executor evidence are checked
 before resources or I/O. Selected adapters are pinned for the invocation;
 changing a runtime registry after admission cannot redirect execution.
+
+Adaptive `RunRequest.implementation_overrides` values are placement target IDs.
+When opted-in planning independently produces an explicit `/1` fallback,
+`LocalScheduler` executes its resolved engine descriptors; the original target
+IDs are not reinterpreted as engine names. Ordinary explicit requests retain
+their existing engine override precedence. Stored `/2` plans cannot downgrade
+to explicit execution.
 
 Boundary requirements use closed versioned metadata maps. Bare truthy flags
 and unknown fields or versions reject before effects:

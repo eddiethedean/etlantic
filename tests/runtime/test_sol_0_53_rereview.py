@@ -17,7 +17,7 @@ from typing import Any, cast
 import anyio
 import pytest
 
-from etlantic import Extract, Load, Pipeline
+from etlantic import Extract, Load, Pipeline, __version__
 from etlantic.exceptions import PipelineExecutionError
 from etlantic.lifecycle.runtime import PipelineRuntime
 from etlantic.plan import explain_plan, plan_from_json, plan_pipeline, plan_to_json
@@ -111,7 +111,7 @@ def test_final_001_all_unit_support_analysis_precedes_session() -> None:
         info = PhysicalExecutorInfo(
             "etlantic.physical.local/1",
             "etlantic",
-            "0.52.1",
+            __version__,
             capability_fingerprint=plan.inventory.targets[0].capability_fingerprint,
             evidence_refs=support.evidence_refs,
         )

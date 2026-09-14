@@ -1,6 +1,6 @@
 # Upgrade Hub
 
-> **Status: Available in ETLantic 0.52.0 (published Beta).**
+> **Status: Available in ETLantic 0.53.0 (Beta release candidate).**
 
 !!! warning "Upgraders only"
     New users: start at the [docs home green path](../README.md) or
@@ -9,17 +9,20 @@
 Upgrade between ETLantic 0.x releases using the guides below. Always pin core
 and first-party plugins to the **same minor** after upgrading.
 
+Every older path below ends by applying the [0.52 → 0.53 migration](../11_DEVELOPMENT/MIGRATION_0_52_TO_0_53.md).
+
 Historical release notes: [Earlier releases](EARLIER_RELEASES.md).
 
 ## Current target
 
-**ETLantic 0.52.0** (published Beta) — choose your guide:
+**ETLantic 0.53.0** (Beta release candidate) — choose your guide:
 
-| From version | Ordered path to 0.52 |
+| From version | Ordered path to 0.53 |
 |---|---|
-| 0.52.x | Already current |
-| 0.51.x | [Migration 0.51 → 0.52](../11_DEVELOPMENT/MIGRATION_0_51_TO_0_52.md) |
-| 0.50.x | [Migration 0.50 → 0.51](../11_DEVELOPMENT/MIGRATION_0_50_TO_0_51.md), then 0.51 → 0.52 |
+| 0.53.x | Already current |
+| 0.52.x | [Migration 0.52 → 0.53](../11_DEVELOPMENT/MIGRATION_0_52_TO_0_53.md) |
+| 0.51.x | [Migration 0.51 → 0.52](../11_DEVELOPMENT/MIGRATION_0_51_TO_0_52.md), then 0.52 → 0.53 |
+| 0.50.x | [Migration 0.50 → 0.51](../11_DEVELOPMENT/MIGRATION_0_50_TO_0_51.md), then 0.51 → 0.52 → 0.53 |
 | 0.49.x | [Migration 0.49 → 0.50](../11_DEVELOPMENT/MIGRATION_0_49_TO_0_50.md) |
 | 0.48.x | [0.48 → 0.49](../11_DEVELOPMENT/MIGRATION_0_48_TO_0_49.md) |
 | 0.47.x | [0.47 → 0.48](../11_DEVELOPMENT/MIGRATION_0_47_TO_0_48.md) |
@@ -295,15 +298,15 @@ See [Migration 0.29 → 0.30](../11_DEVELOPMENT/MIGRATION_0_29_TO_0_30.md).
 See [Migration 0.30 → 0.31](../11_DEVELOPMENT/MIGRATION_0_30_TO_0_31.md).
 
 
-## 0.52 configuration cheat sheet
+## 0.53 configuration cheat sheet
 
 | Do | Don't |
 |---|---|
-| Pin `etlantic==0.52.0` and matching plugins / `medallantic==0.52.0` | Mix plugin minor lines |
-| Opt into adaptive planning with ordered targets and `portable_transform_policy="require"` | Expect adaptive execution or external compilation |
-| Keep explicit Profiles for executable `/1` consumers | Downgrade stored `/2` documents |
+| Pin `etlantic==0.53.0` and matching plugins / `medallantic==0.53.0` | Mix plugin minor lines |
+| Opt into Experimental local adaptive execution with ordered targets, `portable_transform_policy="require"` and exact qualified support rows | Expect arbitrary topologies, other engines, durable/remote execution or external compilation |
+| Keep explicit Profiles as the default; replan historical adaptive documents before local execution | Downgrade or relabel stored `/2` documents |
 
-See [Migration 0.51 → 0.52](../11_DEVELOPMENT/MIGRATION_0_51_TO_0_52.md).
+See [Migration 0.52 → 0.53](../11_DEVELOPMENT/MIGRATION_0_52_TO_0_53.md).
 
 ## 0.51 configuration cheat sheet
 

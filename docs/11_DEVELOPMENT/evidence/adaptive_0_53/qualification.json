@@ -13,18 +13,18 @@
     "tests/runtime/test_native_execution.py"
   ],
   "environment": {
-    "machine": "arm64",
-    "os": "Darwin",
-    "python": "3.11.15",
+    "machine": "aarch64",
+    "os": "Linux",
+    "python": "3.11.16",
     "versions": {
-      "etlantic": "0.52.1",
+      "etlantic": "0.53.0",
       "pandas": "2.3.3",
       "polars": "1.42.1",
       "pyarrow": "25.0.0"
     }
   },
   "junit_sha256": "d11b8bf6fb934f51301106c8865068bb0ee5dd1e322b024961e9ced1ee506702",
-  "observed_at": "2026-09-14T20:11:50.984109+00:00",
+  "observed_at": "2026-09-14T21:45:55.246214+00:00",
   "passed_scenarios": 128,
   "phase": "0.53",
   "result": "pass",
@@ -674,7 +674,7 @@
   ],
   "schema": "etlantic.adaptive_evidence/2",
   "source_changed": false,
-  "source_revision": "sha256:361a114f4193c39a97e91f391fa65d48e43ec6589358888298c030c6db08c7ed",
+  "source_revision": "sha256:0df659dfe19e03b605cb04b83f960ca7bc6b908d79f83dcc0d52e438889b3a27",
   "stderr_sha256": "05edbd111e3a90ba0587a5fcdd4c8554984634ecbd0b3ca664b4c3a844f8c76a",
   "stdout_sha256": "a622c2785fe45e193102891155bf3f9bdf3e99b0ca8dfbcdf4c466746dd8e5b6"
 }

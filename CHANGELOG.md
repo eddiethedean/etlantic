@@ -7,14 +7,38 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.53.0] - Unreleased
+
 ### Added
 
-- Phase 0.52 adaptive placement planning: trusted target inventory, complete
-  candidate matrices, exact branch-and-bound placement, physical-DAG lowering,
-  and schema-aware explain/diff surfaces for planning-only `etlantic.plan/2`
-  documents. Adaptive execution remains disabled until Phase 0.53.
-- Executable, revision-bound adaptive conformance evidence covering
-  AC-052-001 through AC-052-018, enforced by the CI evidence verifier.
+- Experimental, fixture-qualified local adaptive physical-DAG execution for
+  Local, Polars, Pandas, Polars→Pandas and Pandas→Polars static-batch pipelines.
+- Whole-DAG admission with exact adapter, contract, binding and compiler pins;
+  versioned physical executor contracts and source-bound qualification evidence.
+- Explicit transfer, collection, validation, checkpoint/reuse and publication
+  units, with logical reports, deadlines, cleanup and reconciliation receipts.
+- Adaptive `RunRequest` capture before validation and placement, including
+  parameter, asset, target, scope and execution-policy inputs.
+
+### Changed
+
+- Core and first-party packages use the lockstep 0.53.0 compatibility line;
+  plugins require `etlantic>=0.53.0,<0.54`.
+
+### Fixed
+
+- Preserve explicit native engine override precedence while retaining resolved
+  target-to-engine choices for independently planned explicit fallbacks.
+
+### Safety boundary
+
+- Explicit execution remains the default. Historical planning-only `/2` plans
+  remain readable but cannot execute; replan to obtain executable descriptors.
+- Adaptive execution remains Experimental and limited to packaged support rows.
+  Native bodies, other adaptive engines, durable/remote/dynamic execution and
+  external compilation are excluded; stored `/2` plans cannot downgrade.
+- Unsupported policies and dependency drift reject before effects. This release
+  does not grant the broader qualification or availability owned by phase 0.54.
 
 ## [0.52.1] - 2026-09-13
 
@@ -2008,8 +2032,9 @@ See `docs/11_DEVELOPMENT/MIGRATION_0_16_TO_0_17.md`.
 - uv + ruff toolchain, MkDocs documentation site, shared GitHub Actions
   checks, and tag-triggered PyPI release
 
-[Unreleased]: https://github.com/eddiethedean/etlantic/compare/v0.51.0...HEAD
+[Unreleased]: https://github.com/eddiethedean/etlantic/compare/v0.53.0...HEAD
 [0.51.0]: https://github.com/eddiethedean/etlantic/releases/tag/v0.51.0
+[0.53.0]: https://github.com/eddiethedean/etlantic/compare/v0.52.1...v0.53.0
 [0.52.1]: https://github.com/eddiethedean/etlantic/releases/tag/v0.52.1
 [0.52.0]: https://github.com/eddiethedean/etlantic/releases/tag/v0.52.0
 [0.50.1]: https://github.com/eddiethedean/etlantic/releases/tag/v0.50.1

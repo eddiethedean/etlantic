@@ -21,7 +21,7 @@ from typing import Any
 import anyio
 import pytest
 
-from etlantic import Extract, Input, Load, Output, Pipeline, Transformation
+from etlantic import Extract, Input, Load, Output, Pipeline, Transformation, __version__
 from etlantic.exceptions import PipelineExecutionError, PipelineValidationError
 from etlantic.lifecycle.runtime import PipelineRuntime
 from etlantic.plan import plan_pipeline
@@ -249,7 +249,7 @@ def test_final_005_executor_deadline_retains_committed_receipt() -> None:
             info = PhysicalExecutorInfo(
                 "etlantic.physical.local/1",
                 "etlantic",
-                "0.52.1",
+                __version__,
                 capability_fingerprint=plan.inventory.targets[0].capability_fingerprint,
                 evidence_refs=support.evidence_refs,
             )
@@ -445,7 +445,7 @@ def test_final_007_cancel_and_cleanup_finish_under_run_timeout() -> None:
             info = PhysicalExecutorInfo(
                 "etlantic.physical.local/1",
                 "etlantic",
-                "0.52.1",
+                __version__,
                 capability_fingerprint=plan.inventory.targets[0].capability_fingerprint,
                 evidence_refs=support.evidence_refs,
             )
@@ -875,7 +875,7 @@ def test_sol_011_failed_executor_branch_has_terminal_logical_report(
             info = PhysicalExecutorInfo(
                 "etlantic.physical.local/1",
                 "etlantic",
-                "0.52.1",
+                __version__,
                 capability_fingerprint=plan.inventory.targets[0].capability_fingerprint,
                 evidence_refs=support.evidence_refs,
             )

@@ -2,7 +2,7 @@
   "capabilities": [
     "k8s"
   ],
-  "digest": "sha256:610399adca957ea754d1fb13ae6f7726bff888d3e5bb7a67f0378b037109f703",
+  "digest": "sha256:a402f0664e911c777fb0ae65aa27ba4b8d44c9bb3795aeba4c6405746cc2c249",
   "entries": [
     {
       "capabilities": [
@@ -23,5 +23,5 @@
     "maturity": "experimental"
   },
   "schema": "etlantic.plugin_manifest/1",
-  "version": "0.52.1"
+  "version": "0.53.0"
 }

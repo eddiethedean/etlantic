@@ -1,6 +1,6 @@
 # How-to guides
 
-> **Status: Available in ETLantic 0.52.0 (published Beta).** Task-oriented pages. Prefer these
+> **Status: Available in ETLantic 0.53.0 (Beta release candidate).** Task-oriented pages. Prefer these
 > after [Quickstart](QUICKSTART.md) success.
 
 | Goal | Guide | Prereq |

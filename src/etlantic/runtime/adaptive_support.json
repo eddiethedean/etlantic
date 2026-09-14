@@ -223,7 +223,7 @@
         "no_write"
       ],
       "versions": {
-        "etlantic": "0.52.1"
+        "etlantic": "0.53.0"
       }
     },
     "chain/1:pandas": {
@@ -246,8 +246,8 @@
         "no_write"
       ],
       "versions": {
-        "etlantic": "0.52.1",
-        "etlantic-pandas": "0.52.1",
+        "etlantic": "0.53.0",
+        "etlantic-pandas": "0.53.0",
         "pandas": "2.3.3"
       }
     },
@@ -271,9 +271,9 @@
         "no_write"
       ],
       "versions": {
-        "etlantic": "0.52.1",
-        "etlantic-pandas": "0.52.1",
-        "etlantic-polars": "0.52.1",
+        "etlantic": "0.53.0",
+        "etlantic-pandas": "0.53.0",
+        "etlantic-polars": "0.53.0",
         "pandas": "2.3.3",
         "polars": "1.42.1",
         "pyarrow": "25.0.0"
@@ -299,8 +299,8 @@
         "no_write"
       ],
       "versions": {
-        "etlantic": "0.52.1",
-        "etlantic-polars": "0.52.1",
+        "etlantic": "0.53.0",
+        "etlantic-polars": "0.53.0",
         "polars": "1.42.1"
       }
     },
@@ -324,9 +324,9 @@
         "no_write"
       ],
       "versions": {
-        "etlantic": "0.52.1",
-        "etlantic-pandas": "0.52.1",
-        "etlantic-polars": "0.52.1",
+        "etlantic": "0.53.0",
+        "etlantic-pandas": "0.53.0",
+        "etlantic-polars": "0.53.0",
         "pandas": "2.3.3",
         "polars": "1.42.1",
         "pyarrow": "25.0.0"
@@ -352,7 +352,7 @@
         "no_write"
       ],
       "versions": {
-        "etlantic": "0.52.1"
+        "etlantic": "0.53.0"
       }
     },
     "diamond/1:pandas": {
@@ -375,8 +375,8 @@
         "no_write"
       ],
       "versions": {
-        "etlantic": "0.52.1",
-        "etlantic-pandas": "0.52.1",
+        "etlantic": "0.53.0",
+        "etlantic-pandas": "0.53.0",
         "pandas": "2.3.3"
       }
     },
@@ -400,8 +400,8 @@
         "no_write"
       ],
       "versions": {
-        "etlantic": "0.52.1",
-        "etlantic-polars": "0.52.1",
+        "etlantic": "0.53.0",
+        "etlantic-polars": "0.53.0",
         "polars": "1.42.1"
       }
     },
@@ -425,9 +425,9 @@
         "no_write"
       ],
       "versions": {
-        "etlantic": "0.52.1",
-        "etlantic-pandas": "0.52.1",
-        "etlantic-polars": "0.52.1",
+        "etlantic": "0.53.0",
+        "etlantic-pandas": "0.53.0",
+        "etlantic-polars": "0.53.0",
         "pandas": "2.3.3",
         "polars": "1.42.1",
         "pyarrow": "25.0.0"
@@ -453,9 +453,9 @@
         "no_write"
       ],
       "versions": {
-        "etlantic": "0.52.1",
-        "etlantic-pandas": "0.52.1",
-        "etlantic-polars": "0.52.1",
+        "etlantic": "0.53.0",
+        "etlantic-pandas": "0.53.0",
+        "etlantic-polars": "0.53.0",
         "pandas": "2.3.3",
         "polars": "1.42.1",
         "pyarrow": "25.0.0"
@@ -481,7 +481,7 @@
         "no_write"
       ],
       "versions": {
-        "etlantic": "0.52.1"
+        "etlantic": "0.53.0"
       }
     },
     "fanout/1:pandas": {
@@ -504,8 +504,8 @@
         "no_write"
       ],
       "versions": {
-        "etlantic": "0.52.1",
-        "etlantic-pandas": "0.52.1",
+        "etlantic": "0.53.0",
+        "etlantic-pandas": "0.53.0",
         "pandas": "2.3.3"
       }
     },
@@ -529,8 +529,8 @@
         "no_write"
       ],
       "versions": {
-        "etlantic": "0.52.1",
-        "etlantic-polars": "0.52.1",
+        "etlantic": "0.53.0",
+        "etlantic-polars": "0.53.0",
         "polars": "1.42.1"
       }
     }

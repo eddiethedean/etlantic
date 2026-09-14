@@ -65,7 +65,7 @@ is available and its release gate has passed.
 ## Portfolio at a glance
 
 Status is relative to the published **0.52** adaptive-planning release.
-See [what ETLantic 0.52 can do now](../01_GETTING_STARTED/WHATS_NEW_0_52.md).
+See [what ETLantic 0.53 can do now](../01_GETTING_STARTED/WHATS_NEW_0_52.md).
 Prior scheduler/federation evidence remains in **0.47**; Streaming evidence remains in **0.46**; Optimization SDK evidence remains
 in **0.45**; Developer Intelligence remains in **0.44**; CP-GA evidence remains
 in **0.43**; CP4 evidence remains in **0.42**; CP3 evidence remains in **0.41**;

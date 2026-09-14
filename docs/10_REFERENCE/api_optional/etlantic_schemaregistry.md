@@ -1,7 +1,7 @@
 ---
 status: available
 since: "0.50.0"
-current_minor: "0.52"
+current_minor: "0.53"
 audience: developer
 ---
 
@@ -14,7 +14,7 @@ audience: developer
 ## Setup
 
 ```bash
-pip install 'etlantic-schemaregistry==0.52.0'
+pip install 'etlantic-schemaregistry==0.53.0'
 ```
 
 ```python

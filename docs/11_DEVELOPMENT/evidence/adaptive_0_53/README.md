@@ -14,7 +14,7 @@ and qualified executor lifecycle/port ownership.
 
 Run `uv sync --locked --group dataframes`, then install the exact qualified
 backends with `uv pip install "polars==1.42.1" "pandas==2.3.3" "pyarrow==25.0.0"`.
-Core and first-party plugin distributions are 0.52.1 on this development base.
+Core and first-party plugin distributions are 0.53.0 for this release candidate.
 Installation alone grants no qualification.
 
 Use `--write` to record observed results (including failures); it does not grant
@@ -33,6 +33,6 @@ own passing signature and is rejected by these rows.
 
 CI executes qualification on Linux, macOS and Windows with Python 3.11, 3.12 and
 3.13, retaining separate environment proof artifacts. Those jobs must actually
-pass before any environment qualification claim; local macOS evidence does not
+pass before any environment qualification claim; a single local environment proof does not
 stand in for the remaining CI environments. All functionality remains
 Experimental pending the independent 0.54 qualification decision.

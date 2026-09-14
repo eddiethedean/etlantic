@@ -201,3 +201,7 @@ defines how design examples, proposals, and normative requirements should be
 interpreted during implementation.
 
 - [EXIT_GATE_0_41.md](EXIT_GATE_0_41.md)
+
+Current candidate: [What's new in 0.53](../01_GETTING_STARTED/WHATS_NEW_0_53.md),
+[migration 0.52 → 0.53](MIGRATION_0_52_TO_0_53.md), and
+[0.53 exit gate](EXIT_GATE_0_53.md).

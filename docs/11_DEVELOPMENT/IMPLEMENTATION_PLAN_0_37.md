@@ -1,7 +1,7 @@
 ---
 status: in-progress
 since: "0.41.0"
-current_minor: "0.52"
+current_minor: "0.53"
 audience: maintainer
 ---
 

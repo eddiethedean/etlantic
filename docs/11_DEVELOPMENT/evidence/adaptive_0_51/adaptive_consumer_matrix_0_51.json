@@ -5,7 +5,7 @@
   "passed_scenarios": 2,
   "planner_version": "0.52",
   "public_schema": "etlantic.plan/2",
-  "repository_revision": "sha256:6561393d45efe21e6e5005f50650b28a8ecec7ed72a76f45c9563098366395b0",
+  "repository_revision": "sha256:a3c7a3f814bd3ebb469994eb28b381dd5ef157f631c137fb55f6c3321fd58e38",
   "result": "pass",
   "scenario_count": 2,
   "scenarios": [
@@ -15,7 +15,7 @@
       "executed": true,
       "expected": "pass",
       "id": "test_adaptive_report_path_uses_same_plan_dispatch",
-      "plan_fingerprint": "792db69c4dd48f079d2573f45a092677c83fe67c5ac741a7ad860ab1513ca810",
+      "plan_fingerprint": "b09941acb471ba95178761556be15744c858cd616f2e1d3b3d7be154258b08fc",
       "result": "pass",
       "verification": "test_adaptive_report_path_uses_same_plan_dispatch"
     },
@@ -25,7 +25,7 @@
       "executed": true,
       "expected": "pass",
       "id": "test_adaptive_surface_projections_share_plan_identity",
-      "plan_fingerprint": "792db69c4dd48f079d2573f45a092677c83fe67c5ac741a7ad860ab1513ca810",
+      "plan_fingerprint": "b09941acb471ba95178761556be15744c858cd616f2e1d3b3d7be154258b08fc",
       "result": "pass",
       "verification": "test_adaptive_surface_projections_share_plan_identity"
     }

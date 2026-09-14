@@ -6,11 +6,13 @@
 > [Capabilities](docs/01_GETTING_STARTED/CAPABILITIES.md) for what ships now.
 > Review this header for every release or sequence change.
 
-**Current release:** ETLantic **0.52.0** (published Beta) — the opt-in
-adaptive Profile and `/2` wire foundation plus the run-report metadata
-namespace migration. Adaptive planning and physical-DAG execution remain
-unavailable and fail closed. The release preserves the technically qualified
-seven-engine portable baseline from 0.50.1.
+**Current release:** ETLantic **0.53.0** (Beta release candidate) —
+Experimental, fixture-qualified local adaptive physical-DAG execution for
+Local, Polars, Pandas and both single-cut Polars/Pandas directions. Explicit
+execution remains the default and retains the seven-engine portable baseline.
+Unsupported combinations and consumers fail closed before effects. Broader
+qualification and availability remain in 0.54. The status below is conditional: tag/publish is gated by the
+[0.53 exit gate](docs/11_DEVELOPMENT/EXIT_GATE_0_53.md).
 Prior **0.49** qualified optional DuckDB; prior **0.48** human-governed AI
 context/proposals and Experimental `etlantic-mcp`
 fakes; prior **0.47** scheduler/runner service and remote
@@ -21,7 +23,8 @@ through **0.37** (stable foundation) are shipped.
 
 | Horizon | Release | Outcome | Status |
 |---|---:|---|---|
-| Current | 0.52 | Deterministic adaptive planning and plan-only physical lowering; execution unavailable | Published / shipped evidence |
+| Current | 0.53 | Experimental fixture-qualified local adaptive physical-DAG execution | Gate-ready for tag/publish |
+| Previous | 0.52 | Deterministic adaptive planning and plan-only physical lowering | Published / shipped evidence |
 | Previous | 0.50 | Seven-engine portable baseline with 0.50.1 compatibility fixes | Published / shipped evidence |
 | Previous | 0.49 | Qualified optional DuckDB engine package | Gate-ready / shipped evidence |
 | Previous | 0.48 | AI-assisted, human-governed proposals | Gate-ready / shipped evidence |
@@ -35,15 +38,13 @@ through **0.37** (stable foundation) are shipped.
 | Previous | 0.40 | Tenant registry / workspaces (CP2) | Gate-ready / shipped evidence |
 | Previous | 0.39 | Multi-tenant control plane (CP1) | Gate-ready / shipped evidence |
 | Previous | 0.38 | Data connectivity and connector SDK | Gate-ready / shipped evidence |
-| Next | 0.53 | Adaptive execution for qualified local combinations | Planned |
-| Later | 0.53 | Local adaptive physical-DAG execution | Planned |
-| Later | 0.54 | Adaptive conformance, qualification, and graduation | Planned |
+| Next | 0.54 | Adaptive conformance, qualification, and graduation | Planned |
 | Later | 0.55 | Brownfield adoption bridges | Planning freeze |
 | Later | 0.56 | Operator Console | Planned |
 | Later | 0.57 | Managed runtime and enterprise provider packs | Planned |
 | Later | 0.58 | TransformationModel incubation | Proposed |
 | Foundation | 0.36–0.37 | Joint burn-in → stable foundation | Gate-ready (0.37) |
-| Post-foundation | 0.38–0.58 | Connectivity → control plane → developer intelligence → optimization → streaming → federation → governed AI → DuckDB package → portable-engine baseline → adaptive execution → adoption → operations → providers → modeling incubation | In progress (0.52 adaptive planning published) |
+| Post-foundation | 0.38–0.58 | Connectivity → control plane → developer intelligence → optimization → streaming → federation → governed AI → DuckDB package → portable-engine baseline → adaptive execution → adoption → operations → providers → modeling incubation | In progress (0.53 local adaptive execution candidate) |
 
 For connectivity evidence, see
 [What's New in 0.38](docs/01_GETTING_STARTED/WHATS_NEW_0_38.md) and the

@@ -100,7 +100,7 @@ def run_compat_campaign() -> dict[str, Any]:
     cases.append(
         {
             "id": "compat_floor",
-            "status": "pass" if major_minor == "0.52" else "fail",
+            "status": "pass" if major_minor == "0.53" else "fail",
             "policy": f">={major_minor}.0,<{next_minor}",
             "installed": installed,
         }
