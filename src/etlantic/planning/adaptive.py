@@ -131,6 +131,25 @@ def build_adaptive_plan(
         )
 
 
+def _effective_adaptive_context(
+    context: PlanningContext, request: Any | None
+) -> PlanningContext:
+    """Return a context whose placement constraints include the request.
+
+    Requests may narrow an already-qualified adaptive placement.  They never
+    add targets: target IDs are still checked against the profile inventory.
+    """
+
+    requested = dict(getattr(request, "implementation_overrides", {}) or {})
+    if not requested:
+        return context
+    overrides = {**context.profile.implementation_overrides, **requested}
+    return replace(
+        context,
+        profile=context.profile.with_updates(implementation_overrides=overrides),
+    )
+
+
 def _build_adaptive_plan(
     pipeline_cls: type[Any] | None,
     context: PlanningContext,
@@ -139,6 +158,7 @@ def _build_adaptive_plan(
     definition: Any | None = None,
     request: Any | None = None,
 ) -> AdaptivePipelinePlan | Any:
+    context = _effective_adaptive_context(context, request)
     graph = _graph_for_input(pipeline_cls, definition)
     # Asset overrides are part of the effective adaptive input.  Apply them
     # to the immutable graph before selection, candidate construction, and
@@ -147,6 +167,8 @@ def _build_adaptive_plan(
     # left for request validation/admission to reject without broadening scope.
     if request is not None and request.binding_overrides:
         graph = _apply_binding_overrides(graph, request.binding_overrides)
+    if request is not None and request.parameter_overrides:
+        graph = _apply_parameter_overrides(graph, request.parameter_overrides)
     # Request selection is part of the effective planning input.  Normalize it
     # against the full authored graph before slicing so a request-only run
     # cannot silently fall back to the context's default all-nodes selection.
@@ -433,6 +455,32 @@ def _apply_binding_overrides(
             ),
         )
         for node in graph.nodes
+    )
+    return replace(graph, nodes=nodes)
+
+
+def _apply_parameter_overrides(
+    graph: LogicalGraph, overrides: Mapping[str, Mapping[str, Any]]
+) -> LogicalGraph:
+    """Return a graph with request parameters captured in its node records."""
+
+    nodes = tuple(
+        replace(
+            node,
+            parameters=tuple(
+                replace(parameter, value=values[parameter.name], has_value=True)
+                if parameter.name in values
+                else parameter
+                for parameter in node.parameters
+            ),
+            nested_graph=(
+                _apply_parameter_overrides(node.nested_graph, overrides)
+                if node.nested_graph is not None
+                else None
+            ),
+        )
+        for node in graph.nodes
+        for values in (overrides.get(node.name, {}),)
     )
     return replace(graph, nodes=nodes)
 

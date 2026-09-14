@@ -3967,11 +3967,10 @@ class LocalOrchestrator:
         descriptor: ImplementationDescriptor | None = self.plan.implementations.get(
             node.name
         )
-        engine = (
-            self.request.implementation_overrides.get(node.name)
-            or (descriptor.engine if descriptor else None)
-            or "local"
-        )
+        # Adaptive placement overrides are resolved and pinned in the plan.
+        # Reinterpreting their target IDs as engine names here would both
+        # bypass the captured placement decision and fail for non-engine IDs.
+        engine = (descriptor.engine if descriptor else None) or "local"
         from etlantic.authoring.resolve import callable_registry
 
         # Class-authored runs prefer the transformation class implementations so

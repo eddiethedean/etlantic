@@ -10,9 +10,11 @@ import anyio
 import pytest
 
 from etlantic import Data, Extract, Input, Load, Output, Pipeline, Transformation
+from etlantic.authoring.normalize import definition_from_pipeline
 from etlantic.exceptions import PipelineExecutionError
 from etlantic.lifecycle.runtime import PipelineRuntime
-from etlantic.plan.planner import plan_pipeline
+from etlantic.plan import AdaptivePipelinePlan
+from etlantic.plan.planner import plan_pipeline, plan_pipeline_with_report
 from etlantic.planning.adaptive import _handoff_contract
 from etlantic.profile import PlacementTarget, Profile
 from etlantic.registry import BindingDescriptor, PlanningContext, PluginDescriptor
@@ -92,6 +94,33 @@ def test_adaptive_asset_override_is_captured_before_admission(tmp_path: Path) ->
         assert json.loads(destination.read_text()) == [{"id": 1}, {"id": 2}]
 
     anyio.run(run)
+
+
+def test_adaptive_definition_request_placement_overrides_are_persisted() -> None:
+    """Definition planning has the same request precedence as class planning."""
+
+    profile = adaptive_profile(
+        placement_targets={
+            "first": PlacementTarget(engine="local", location="primary"),
+            "second": PlacementTarget(engine="local", location="alternate"),
+        },
+        eligible_targets=("first", "second"),
+        implementation_overrides={"raw": "first", "out": "first"},
+    )
+    request = RunRequest(implementation_overrides={"raw": "second", "out": "second"})
+    definition = definition_from_pipeline(Sample)
+
+    for plan in (
+        plan_pipeline(definition, profile=profile, request=request),
+        plan_pipeline_with_report(definition, profile=profile, request=request)[0],
+    ):
+        assert isinstance(plan, AdaptivePipelinePlan)
+        assert {
+            decision.node_name: decision.target_id for decision in plan.decisions
+        } == {
+            "raw": "second",
+            "out": "second",
+        }
 
 
 def test_executable_adaptive_plan_captures_request_and_runs_physical_units() -> None:

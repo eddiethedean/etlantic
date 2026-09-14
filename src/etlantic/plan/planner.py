@@ -197,14 +197,11 @@ def plan_pipeline(
     ctx = context or _create_context_with_adaptive_preflight(
         pipeline_cls, profile=profile, selection=selection
     )
-    report = validate_pipeline(pipeline_cls, context=ctx)
-    if report.has_errors:
-        raise PipelineValidationError(
-            f"Cannot plan invalid pipeline {pipeline_cls.__name__}.",
-            report=report,
-        )
     if ctx.profile.execution_strategy == "adaptive":
-        from etlantic.planning.adaptive import build_adaptive_plan
+        from etlantic.planning.adaptive import (
+            _effective_adaptive_context,
+            build_adaptive_plan,
+        )
 
         # Adaptive planning is executable by default.  A missing request uses
         # the profile's default policy, while an explicit request selection is
@@ -213,6 +210,17 @@ def plan_pipeline(
             from etlantic.runtime.request import RunRequest
 
             request = RunRequest()
+        ctx = _effective_adaptive_context(ctx, request)
+        report = validate_pipeline(
+            pipeline_cls,
+            context=ctx,
+            parameter_overrides=request.parameter_overrides,
+        )
+        if report.has_errors:
+            raise PipelineValidationError(
+                f"Cannot plan invalid pipeline {pipeline_cls.__name__}.",
+                report=report,
+            )
         return build_adaptive_plan(
             pipeline_cls, ctx, selection=selection or ctx.selection, request=request
         )
@@ -221,6 +229,12 @@ def plan_pipeline(
             "RunRequest is supported only by adaptive execution profiles",
             code="PMADP522",
             stage="planning",
+        )
+    report = validate_pipeline(pipeline_cls, context=ctx)
+    if report.has_errors:
+        raise PipelineValidationError(
+            f"Cannot plan invalid pipeline {pipeline_cls.__name__}.",
+            report=report,
         )
     return _build_plan(pipeline_cls, ctx, selection=selection or ctx.selection)
 
@@ -280,21 +294,32 @@ def plan_pipeline_with_report(
     )
     if request is not None and ctx.profile.execution_strategy != "adaptive":
         return None, _adaptive_request_required_report()
-    report = validate_pipeline(pipeline_cls, context=ctx)
-    if report.has_errors:
-        return None, report
     try:
         if ctx.profile.execution_strategy == "adaptive":
-            from etlantic.planning.adaptive import build_adaptive_plan
+            from etlantic.planning.adaptive import (
+                _effective_adaptive_context,
+                build_adaptive_plan,
+            )
 
             if request is None:
                 from etlantic.runtime.request import RunRequest
 
                 request = RunRequest()
+            ctx = _effective_adaptive_context(ctx, request)
+            report = validate_pipeline(
+                pipeline_cls,
+                context=ctx,
+                parameter_overrides=request.parameter_overrides,
+            )
+            if report.has_errors:
+                return None, report
             plan = build_adaptive_plan(
                 pipeline_cls, ctx, selection=selection or ctx.selection, request=request
             )
             return plan, _adaptive_fallback_report(plan, report)
+        report = validate_pipeline(pipeline_cls, context=ctx)
+        if report.has_errors:
+            return None, report
         return _build_plan(
             pipeline_cls, ctx, selection=selection or ctx.selection
         ), report

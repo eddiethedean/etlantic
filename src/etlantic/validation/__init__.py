@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from collections.abc import Mapping
 from typing import TYPE_CHECKING, Any
 
 from etlantic.contracts import is_data_contract_type
@@ -40,6 +41,7 @@ def validate_pipeline(
     context: PlanningContext | None = None,
     profile: str | Any | None = None,
     policy: str | ValidationPolicy | None = None,
+    parameter_overrides: Mapping[str, Mapping[str, Any]] | None = None,
 ) -> ValidationReport:
     """Validate a pipeline through structural → capability phases.
 
@@ -63,7 +65,12 @@ def validate_pipeline(
     diagnostics: list[Diagnostic] = []
 
     # Phase 1: structural
-    structural = _phase_structural(pipeline_cls, context, resolved_policy)
+    structural = _phase_structural(
+        pipeline_cls,
+        context,
+        resolved_policy,
+        parameter_overrides=parameter_overrides,
+    )
     diagnostics.extend(_tag_phase(structural, "structural"))
 
     graph = pipeline_cls.build_graph()
@@ -163,9 +170,16 @@ def _phase_structural(
     pipeline_cls: type[Pipeline],
     context: PlanningContext,
     policy: ValidationPolicy,
+    *,
+    parameter_overrides: Mapping[str, Mapping[str, Any]] | None = None,
 ) -> list[Diagnostic]:
     diagnostics: list[Diagnostic] = []
-    diagnostics.extend(_validate_member_definitions(pipeline_cls))
+    diagnostics.extend(
+        _validate_member_definitions(
+            pipeline_cls,
+            parameter_overrides=parameter_overrides,
+        )
+    )
     diagnostics.extend(
         _validate_nested_subpipelines(pipeline_cls, context=context, policy=policy)
     )
@@ -483,7 +497,11 @@ def _validate_nested_subpipelines(
     return diagnostics
 
 
-def _validate_member_definitions(pipeline_cls: type[Pipeline]) -> list[Diagnostic]:
+def _validate_member_definitions(
+    pipeline_cls: type[Pipeline],
+    *,
+    parameter_overrides: Mapping[str, Mapping[str, Any]] | None = None,
+) -> list[Diagnostic]:
     diagnostics: list[Diagnostic] = []
     members = pipeline_cls.__pipeline_members__
 
@@ -551,8 +569,13 @@ def _validate_member_definitions(pipeline_cls: type[Pipeline]) -> list[Diagnosti
                             path=("transformation", transform.__name__, port.name),
                         )
                     )
+            supplied = (parameter_overrides or {}).get(name, {})
             for port in transform.parameters():
-                if not port.has_default and port.name not in member.parameters:
+                if (
+                    not port.has_default
+                    and port.name not in member.parameters
+                    and port.name not in supplied
+                ):
                     diagnostics.append(
                         Diagnostic(
                             code="PMTRN102",

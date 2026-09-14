@@ -23,13 +23,13 @@
       "pyarrow": "25.0.0"
     }
   },
-  "junit_sha256": "088fb62ed693e783cd4c0b17fc8223e744494744c8df6c57e9bcd22125a49bbd",
-  "observed_at": "2026-09-14T18:46:48.993837+00:00",
-  "passed_scenarios": 127,
+  "junit_sha256": "d11b8bf6fb934f51301106c8865068bb0ee5dd1e322b024961e9ced1ee506702",
+  "observed_at": "2026-09-14T19:32:18.829505+00:00",
+  "passed_scenarios": 128,
   "phase": "0.53",
   "result": "pass",
   "returncode": 0,
-  "scenario_count": 127,
+  "scenario_count": 128,
   "scenarios": [
     {
       "executed": true,
@@ -344,6 +344,11 @@
     {
       "executed": true,
       "id": "tests.runtime.test_adaptive_execution_0_53::test_adaptive_asset_override_is_captured_before_admission",
+      "result": "pass"
+    },
+    {
+      "executed": true,
+      "id": "tests.runtime.test_adaptive_execution_0_53::test_adaptive_definition_request_placement_overrides_are_persisted",
       "result": "pass"
     },
     {
@@ -669,7 +674,7 @@
   ],
   "schema": "etlantic.adaptive_evidence/2",
   "source_changed": false,
-  "source_revision": "sha256:47551e2bda5c539732c22c80735fbe2055f41e4e426654b4bb9e4c6923040f4c",
+  "source_revision": "sha256:8af25289674196afc3d4634aef17c1b4325b602085ed8760ff2c7c2866d40267",
   "stderr_sha256": "05edbd111e3a90ba0587a5fcdd4c8554984634ecbd0b3ca664b4c3a844f8c76a",
-  "stdout_sha256": "e58e86b7c3dbe87a3d324b440c2ca4f809cd70e8b6ab5dafbdbee7efd4c2a375"
+  "stdout_sha256": "a622c2785fe45e193102891155bf3f9bdf3e99b0ca8dfbcdf4c466746dd8e5b6"
 }
