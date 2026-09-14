@@ -232,6 +232,10 @@ preparation; timed-out members are not retried. Failed durable preparation
 restores prior artifact files or removes newly created files, recording an owner
 obligation if cleanup cannot finish.
 
+Physical transfer and executor results are subject to the same run-deadline
+fence before their routes or output handles are registered, and the scheduler
+checks cancellation before starting each subsequent unit.
+
 Experimental local adaptive `/2` execution owns each admitted native worker.
 Cancellation drains that worker for `CancellationPolicy.abandon_after_seconds`;
 without a bound, it drains fully. If work is still in flight after the bound,

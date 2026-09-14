@@ -356,3 +356,42 @@ def test_deadline_during_output_validation_fences_registration(
         assert report.metadata["etlantic.cleanup_obligations"] == []
 
     anyio.run(exercise)
+
+
+@pytest.mark.polars
+@pytest.mark.pandas
+def test_run_deadline_fences_synchronous_physical_transfer(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """A delayed handoff cannot register a route or start its consumer."""
+    import time
+
+    from etlantic.runtime.request import RunRequest, TimeoutPolicy
+    from etlantic.runtime.scheduler import LocalScheduler
+    from tests.runtime.physical.test_qualification_0_53 import Chain, setup
+
+    async def exercise() -> None:
+        request = RunRequest(timeout=TimeoutPolicy(run_seconds=0.15))
+        runtime, _, plan = setup(Chain, ("polars", "pandas"), request)
+        runtime.memory.seed("rows", [{"id": 1}])
+        plugin = runtime.dataframe_plugins["pandas"]
+        original = plugin.materialize_input
+
+        def delayed_handoff(*args: Any, **kwargs: Any) -> Any:
+            converted = original(*args, **kwargs)
+            if kwargs["context"].interchange is not None:
+                time.sleep(0.3)
+            return converted
+
+        monkeypatch.setattr(plugin, "materialize_input", delayed_handoff)
+        report = await LocalScheduler().execute(plan, request=request, runtime=runtime)
+
+        assert report.status.value != "succeeded"
+        assert runtime.memory.get("out") == []
+        assert not any(a.logical_output == "second.source" for a in report.artifacts)
+        assert next(
+            s for s in report.steps if s.step_name == "second"
+        ).status.value == ("skipped")
+        assert any(d.code == "PMEXEC408" for d in report.diagnostics)
+
+    anyio.run(exercise)

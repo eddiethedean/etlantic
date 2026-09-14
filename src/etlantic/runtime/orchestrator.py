@@ -57,6 +57,7 @@ from etlantic.reports.model import (
 from etlantic.runtime.artifacts import (
     ArtifactStore,
     AttemptArtifactStore,
+    check_attempt_deadline,
 )
 from etlantic.runtime.context import AttemptContext, RunContext, StepContext
 from etlantic.runtime.dataframe_exec import (
@@ -1432,6 +1433,11 @@ class LocalOrchestrator:
                     changed = True
 
         async def run_one(unit: Any) -> None:
+            # A synchronous physical adapter or boundary may have crossed the
+            # run deadline while the event loop was unable to deliver
+            # cancellation. Do not even announce or start the next unit in
+            # that expired scope.
+            await check_attempt_deadline()
             kind = str(unit.metadata.get("etlantic.physical_kind") or unit.kind)
             self.runtime.events.emit(
                 self._lifecycle_event(
@@ -1498,6 +1504,10 @@ class LocalOrchestrator:
                 try:
                     result = await cast(Any, executor.execute)(context)
                     cleanup_record[2] = result
+                    # Executor implementations may perform synchronous work
+                    # before returning their async result. Fence that result
+                    # before validating or exposing any output handles.
+                    await check_attempt_deadline()
                 except BaseException as exc:
                     if isinstance(exc, anyio.get_cancelled_exc_class()):
                         cancel = getattr(executor, "cancel", None)
@@ -1529,6 +1539,7 @@ class LocalOrchestrator:
                     raise
                 result = cast(Any, result)
                 validate_unit_result(result, protocol_unit)
+                await check_attempt_deadline()
                 if result.status != "succeeded":
                     raise PipelineExecutionError(
                         f"Physical executor failed unit {unit.identity}",
@@ -1845,6 +1856,7 @@ class LocalOrchestrator:
                             context=context,
                             port_name=consumer_port,
                         )
+                        await check_attempt_deadline()
                         self._transferred_values[f"{consumer_name}.{consumer_port}"] = (
                             converted
                         )
@@ -1870,6 +1882,7 @@ class LocalOrchestrator:
                         return
                     # Non-dataframe transfers still establish an explicit
                     # in-process handoff for the downstream input.
+                    await check_attempt_deadline()
                     self._transferred_values[f"{consumer_name}.{consumer_port}"] = (
                         source_value
                     )
@@ -1934,6 +1947,7 @@ class LocalOrchestrator:
                         artifact_key=key,
                         requirement=descriptor,
                     )
+                    await check_attempt_deadline()
                     if kind == "collection":
                         self._transferred_values[route] = value
                         self._transferred_inputs.add(route)
@@ -1993,6 +2007,10 @@ class LocalOrchestrator:
             )
 
         while pending:
+            # Do not launch another ready batch after the run scope has
+            # expired. This check also delivers cancellation that a prior
+            # synchronous adapter delayed on the event loop.
+            await check_attempt_deadline()
             mark_blocked_units()
             ready = sorted(
                 (

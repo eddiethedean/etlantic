@@ -23,13 +23,13 @@
       "pyarrow": "25.0.0"
     }
   },
-  "junit_sha256": "cfd418e47b517d10be2f66e31df42692b7a5827e48ed844ab8a1e350cd7156b9",
-  "observed_at": "2026-09-14T01:59:47.239699+00:00",
-  "passed_scenarios": 112,
+  "junit_sha256": "91741294fa9d11b781287a20435191d89f457b511c0b00b72ec3fcda8d428a81",
+  "observed_at": "2026-09-14T02:39:01.018954+00:00",
+  "passed_scenarios": 113,
   "phase": "0.53",
   "result": "pass",
   "returncode": 0,
-  "scenario_count": 112,
+  "scenario_count": 113,
   "scenarios": [
     {
       "executed": true,
@@ -398,6 +398,11 @@
     },
     {
       "executed": true,
+      "id": "tests.runtime.test_native_execution::test_run_deadline_fences_synchronous_physical_transfer",
+      "result": "pass"
+    },
+    {
+      "executed": true,
       "id": "tests.runtime.test_native_execution::test_successful_attempt_publishes_all_ports_and_retains_borrowed_inputs",
       "result": "pass"
     },
@@ -594,7 +599,7 @@
   ],
   "schema": "etlantic.adaptive_evidence/2",
   "source_changed": false,
-  "source_revision": "sha256:e926aad863e33b4e8237ec0fac0edc9d391d15a999276ef4c2a21743ab997007",
+  "source_revision": "sha256:93e04c4effdf2464ab4cf5b4e84fa4afcf5fb9e9223e3a13e6ad54071fd191a6",
   "stderr_sha256": "05edbd111e3a90ba0587a5fcdd4c8554984634ecbd0b3ca664b4c3a844f8c76a",
-  "stdout_sha256": "f6a4c2705c041e9520766119d4484bed72130c0f883acb4b9cca16062c0cf8af"
+  "stdout_sha256": "a2fbb91cbc4a158e8c1dd521070dc3a7065b523d601605bbd8e713f826776a4d"
 }
