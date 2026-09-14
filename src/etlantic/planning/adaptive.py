@@ -300,7 +300,7 @@ def _build_adaptive_plan(
             "request": _safe_ref(raw_request),
         }
         metadata["etlantic.implementations"] = _implementation_records(
-            selected, decisions, context, pipeline_cls
+            selected, decisions, context, pipeline_cls, definition
         )
     selected_nodes = (
         None if not (selection or context.selection) else selected.node_names()
@@ -368,25 +368,7 @@ def _build_adaptive_plan(
                             for record in metadata.get("etlantic.implementations", ())
                             if record.get("binding") is not None
                         },
-                        "contracts": {
-                            port.contract_id: _digest(
-                                port.contract_type.model_json_schema()
-                            )
-                            for node in graph.nodes
-                            for port in (*node.inputs, *node.outputs)
-                            if port.contract_id
-                            and port.contract_type is not None
-                            and hasattr(port.contract_type, "model_json_schema")
-                        }
-                        | {
-                            node.contract_id: _digest(
-                                node.contract_type.model_json_schema()
-                            )
-                            for node in graph.nodes
-                            if node.contract_id
-                            and node.contract_type is not None
-                            and hasattr(node.contract_type, "model_json_schema")
-                        },
+                        "contracts": _contract_fingerprints(graph),
                         "bindings": {
                             record["node_name"]: context.registry.bindings[
                                 record["binding"]
@@ -425,6 +407,27 @@ def _build_adaptive_plan(
                 ) from exc
             raise
         return final_plan
+
+
+def _contract_fingerprints(graph: LogicalGraph) -> dict[str, str]:
+    """Capture the same contract authority used by stored-plan admission.
+
+    Definition graphs carry contract identities without live type objects.
+    Resolve those identities before capturing the schema digest, just as the
+    host does after a plan is deserialized. Missing contracts remain subject
+    to the existing fail-closed admission check.
+    """
+    from etlantic.runtime.physical_host import resolve_contract_type
+
+    result: dict[str, str] = {}
+    for node in graph.nodes:
+        for surface in (node, *node.inputs, *node.outputs):
+            if surface.contract_id is None:
+                continue
+            model = surface.contract_type or resolve_contract_type(surface.contract_id)
+            if model is not None and hasattr(model, "model_json_schema"):
+                result[surface.contract_id] = _digest(model.model_json_schema())
+    return result
 
 
 def _graph_for_input(
@@ -490,11 +493,12 @@ def _implementation_records(
     decisions: tuple[AdaptiveDecision, ...],
     context: PlanningContext,
     pipeline_cls: type[Any] | None,
+    definition: Any | None,
 ) -> list[dict[str, Any]]:
     """Return ordered, wire-safe implementation descriptors for execution."""
     decision_map = {decision.node_name: decision for decision in decisions}
     targets = {target_id: target for target_id, target, _ in _inventory(context)}
-    members = getattr(pipeline_cls, "__pipeline_members__", {}) if pipeline_cls else {}
+    transforms = _transform_map(pipeline_cls, definition)
     records: list[dict[str, Any]] = []
     for node in graph.nodes:
         target = targets[decision_map[node.name].target_id]
@@ -511,13 +515,7 @@ def _implementation_records(
             if selected is not None:
                 descriptor["implementation"] = selected.to_dict()
             else:
-                member = members.get(node.name)
-                transform = getattr(member, "transformation", None)
-                portable = (
-                    getattr(transform, "portable_definition", lambda: None)()
-                    if transform is not None
-                    else None
-                )
+                portable = _portable_definition(node, transforms)
                 compiler = context.registry.transform_compilers.get(target.engine)
                 if compiler is None and target.engine == "local":
                     from etlantic.transform.local_compiler import LocalTransformCompiler
@@ -1282,11 +1280,30 @@ def _portable_definition(node: Any, transforms: dict[str, Any]) -> Any | None:
     transform = transforms.get(node.transformation_id)
     if transform is None:
         return None
-    method = getattr(transform, "portable_definition", None)
-    if not callable(method):
-        return None
     try:
-        return method()
+        from etlantic.authoring.definition import TransformationDefinition
+
+        if isinstance(transform, TransformationDefinition):
+            if transform.portable_plan is None:
+                return None
+            import dtcs
+
+            from etlantic.transform.capabilities import requirements_from_plan
+            from etlantic.transform.protocol import (
+                AUTHORING_PROFILE,
+                PortableDefinition,
+            )
+
+            plan = mutable_copy(transform.portable_plan)
+            return PortableDefinition(
+                transformation_id=transform.identity,
+                authoring_profile=AUTHORING_PROFILE,
+                plan=plan,
+                fingerprint=dtcs.plan_fingerprint(plan),
+                requirements=requirements_from_plan(plan, include_extended=True),
+            )
+        method = getattr(transform, "portable_definition", None)
+        return method() if callable(method) else None
     except Exception:
         return None
 

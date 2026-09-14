@@ -442,13 +442,14 @@ def _build_plan_from_definition(
     """Build a plan from an unresolved PipelineDefinition."""
     if context.profile.execution_strategy == "adaptive":
         from etlantic.planning.adaptive import build_adaptive_plan
+        from etlantic.runtime.request import RunRequest
 
         return build_adaptive_plan(
             None,
             context,
             selection=selection or context.selection,
             definition=definition,
-            request=request,
+            request=request if request is not None else RunRequest(),
         )
     return _build_plan(None, context, selection=selection, definition=definition)
 
