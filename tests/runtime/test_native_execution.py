@@ -414,18 +414,27 @@ def test_staged_checkpoint_deadline_restores_files(
     old_bytes = existing.read_bytes()
     new = tmp_path / "checkpoint-new.json"
     original = artifact_module.write_text_safe
+    deadline_scope: anyio.CancelScope
 
     def persist(path: Path, *args: Any, **kwargs: Any) -> Any:
         result = original(path, *args, **kwargs)
         if path == new:
             if subsequent_writer:
                 original(existing, '{"records": [{"id": 2}]}', args[1])
+
+            def expire_after_preparation() -> None:
+                deadline_scope.deadline = anyio.current_time() + 0.1
+
+            # Arm the deadline at the operation under test. Thread startup and
+            # the first safe write must not consume the injected I/O budget.
+            anyio.from_thread.run_sync(expire_after_preparation)
             time.sleep(0.2)
         return result
 
     monkeypatch.setattr(artifact_module, "write_text_safe", persist)
 
     async def exercise() -> None:
+        nonlocal deadline_scope
         parent = ArtifactStore(workspace=tmp_path)
         borrowed = [{"id": 99}]
         parent.put(
@@ -446,7 +455,7 @@ def test_staged_checkpoint_deadline_restores_files(
         )
         assert existing.read_bytes() == old_bytes
         assert not new.exists()
-        with pytest.raises(TimeoutError), anyio.fail_after(0.1):
+        with pytest.raises(TimeoutError), anyio.fail_after(5) as deadline_scope:
             await pending.commit()
         expected = b'{"records": [{"id": 2}]}' if subsequent_writer else old_bytes
         assert existing.read_bytes() == expected

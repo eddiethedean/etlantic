@@ -24,7 +24,7 @@
     }
   },
   "junit_sha256": "d6dd318fdbd6ad5ebf66c5853c46479478792178e165fde251671e2b326d2cf0",
-  "observed_at": "2026-09-14T03:26:07.288093+00:00",
+  "observed_at": "2026-09-14T03:40:23.076153+00:00",
   "passed_scenarios": 117,
   "phase": "0.53",
   "result": "pass",
@@ -619,7 +619,7 @@
   ],
   "schema": "etlantic.adaptive_evidence/2",
   "source_changed": false,
-  "source_revision": "sha256:22610e9acd02c7c7038038187df0dec2a87cebee4238a3678d066ff121b650b9",
+  "source_revision": "sha256:bf1e641142252b9f5c2cb29b574f9e7ec7d9f4e18df5e637a854b3d80fd44d30",
   "stderr_sha256": "05edbd111e3a90ba0587a5fcdd4c8554984634ecbd0b3ca664b4c3a844f8c76a",
   "stdout_sha256": "42b1659230a9a38500791c244112af88135aaa61409fb7659c9a4bc03b4428d0"
 }

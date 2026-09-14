@@ -126,9 +126,19 @@ quality-gate relaxation was implemented.
 | Wheel build and isolated optional-free import | Yes | PASS |
 
 Final 0.53 source fingerprint:
-`sha256:22610e9acd02c7c7038038187df0dec2a87cebee4238a3678d066ff121b650b9`.
+`sha256:bf1e641142252b9f5c2cb29b574f9e7ec7d9f4e18df5e637a854b3d80fd44d30`.
 Qualification proof is refreshed only through the existing unchanged verifier.
 The exact pushed-commit CI result is reported in the conversation handoff.
+Initial CI run 34802733972 passed 34 jobs and failed three qualification jobs:
+Windows 3.12/3.13 each failed only the implementation-side subsequent-writer
+rollback case; macOS 3.11 failed only the protected post-compile schema deadline
+case. The rollback test now arms its injected deadline at the second write,
+after preparing the subsequent writer, so setup latency cannot substitute an
+earlier timeout for the required rollback exercise. Its assertions are unchanged.
+The protected schema verification remains unchanged and its isolated local
+rerun passes. A fresh complete CI run is required; the original run is not
+represented as passing and its redacted proof does not establish the macOS
+failure's exact assertion or root cause.
 No dependency, package version, migration, CI gate or public serialization change
 is required. There are no known unresolved implementation issues within scope.
 
