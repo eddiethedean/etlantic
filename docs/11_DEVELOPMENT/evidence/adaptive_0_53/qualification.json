@@ -23,13 +23,13 @@
       "pyarrow": "25.0.0"
     }
   },
-  "junit_sha256": "a70f84a75a8c82c6647e75c09fa6cdd0e0ce708e9df6ed1b1d7d91b900b69cbc",
-  "observed_at": "2026-09-14T15:22:26.531221+00:00",
-  "passed_scenarios": 121,
+  "junit_sha256": "2c9dbf2499e3d2e2fa77628a5895df2d1e46d2cf4ee06ffa2f7b1e72abdd5cf3",
+  "observed_at": "2026-09-14T16:16:01.579543+00:00",
+  "passed_scenarios": 123,
   "phase": "0.53",
   "result": "pass",
   "returncode": 0,
-  "scenario_count": 121,
+  "scenario_count": 123,
   "scenarios": [
     {
       "executed": true,
@@ -59,6 +59,16 @@
     {
       "executed": true,
       "id": "tests.plan.test_adaptive_planner_0_52::test_adaptive_report_path_uses_same_plan_dispatch",
+      "result": "pass"
+    },
+    {
+      "executed": true,
+      "id": "tests.plan.test_adaptive_planner_0_52::test_explicit_report_path_rejects_request_for_classes_and_definitions[default-request]",
+      "result": "pass"
+    },
+    {
+      "executed": true,
+      "id": "tests.plan.test_adaptive_planner_0_52::test_explicit_report_path_rejects_request_for_classes_and_definitions[non-default-request]",
       "result": "pass"
     },
     {
@@ -639,7 +649,7 @@
   ],
   "schema": "etlantic.adaptive_evidence/2",
   "source_changed": false,
-  "source_revision": "sha256:6aaaa08cadd74d6817d912c72f78e0ecfa340104f3eb72cc334aa51cc8f4e642",
+  "source_revision": "sha256:18047ec1b621e4907b10ff1089854acc172a7e69a857468c8a8db86b9b077fc1",
   "stderr_sha256": "05edbd111e3a90ba0587a5fcdd4c8554984634ecbd0b3ca664b4c3a844f8c76a",
-  "stdout_sha256": "fbe5f8165f8c3ab0f1b658fce60f6ea6c5986ae90c9279acb5f5c9427af0f15c"
+  "stdout_sha256": "81bcdc4cb285dd94abea6e32de64f3ad3aad1d609156e5003386bd84259c5412"
 }

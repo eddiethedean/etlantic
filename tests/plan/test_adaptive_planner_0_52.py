@@ -8,6 +8,7 @@ import anyio
 import pytest
 
 from etlantic import Data, Extract, Load, Pipeline
+from etlantic.authoring import definition_from_pipeline
 from etlantic.exceptions import PipelineValidationError
 from etlantic.plan import (
     AdaptivePipelinePlan,
@@ -20,6 +21,7 @@ from etlantic.plan import (
 from etlantic.profile import PlacementTarget, Profile
 from etlantic.registry import PlanningContext, PluginDescriptor, builtin_stub_registry
 from etlantic.runtime.execute import arun_pipeline
+from etlantic.runtime.request import RunRequest, RunSelection
 
 
 class Row(Data):
@@ -60,6 +62,32 @@ def test_adaptive_report_path_uses_same_plan_dispatch() -> None:
     plan, report = plan_pipeline_with_report(Sample, profile=adaptive_profile())
     assert report.valid
     assert isinstance(plan, AdaptivePipelinePlan)
+
+
+@pytest.mark.parametrize(
+    "run_request",
+    [
+        pytest.param(RunRequest(), id="default-request"),
+        pytest.param(
+            RunRequest(selection=RunSelection.until("raw"), no_write=True),
+            id="non-default-request",
+        ),
+    ],
+)
+def test_explicit_report_path_rejects_request_for_classes_and_definitions(
+    run_request: RunRequest,
+) -> None:
+    """Reporting planning must not silently discard the adaptive-only request API."""
+    profile = Profile(name="explicit-request", execution_strategy="explicit")
+    for pipeline in (Sample, definition_from_pipeline(Sample)):
+        plan, report = plan_pipeline_with_report(
+            pipeline,
+            profile=profile,
+            request=run_request,
+        )
+        assert plan is None
+        assert report.has_errors
+        assert report.codes() == ("PMADP522",)
 
 
 def test_adaptive_execution_uses_default_request() -> None:

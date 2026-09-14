@@ -259,6 +259,8 @@ def plan_pipeline_with_report(
         ctx = context or _create_context_with_adaptive_preflight(
             pipeline_cls, profile=profile, selection=selection
         )
+        if request is not None and ctx.profile.execution_strategy != "adaptive":
+            return None, _adaptive_request_required_report()
         report = validate_pipeline_like(pipeline_cls, context=ctx)
         if report.has_errors:
             return None, report
@@ -276,6 +278,8 @@ def plan_pipeline_with_report(
     ctx = context or _create_context_with_adaptive_preflight(
         pipeline_cls, profile=profile, selection=selection
     )
+    if request is not None and ctx.profile.execution_strategy != "adaptive":
+        return None, _adaptive_request_required_report()
     report = validate_pipeline(pipeline_cls, context=ctx)
     if report.has_errors:
         return None, report
@@ -296,6 +300,18 @@ def plan_pipeline_with_report(
         ), report
     except PipelineValidationError as exc:
         return None, exc.report if exc.report is not None else report
+
+
+def _adaptive_request_required_report() -> ValidationReport:
+    """Report the same explicit-profile request rejection as ``plan_pipeline``."""
+    diagnostic = Diagnostic(
+        code="PMADP522",
+        severity=Severity.ERROR,
+        message="RunRequest is supported only by adaptive execution profiles",
+        path=("request",),
+        phase="planning",
+    )
+    return ValidationReport.from_diagnostics([diagnostic], phases=("planning",))
 
 
 def _adaptive_fallback_report(
