@@ -5,9 +5,6 @@ from __future__ import annotations
 from dataclasses import replace
 from typing import Any
 
-from anyio import current_effective_deadline, current_time
-from anyio.lowlevel import checkpoint, checkpoint_if_cancelled
-
 from etlantic.capabilities import PluginCapabilities
 from etlantic.dataframe.discovery import load_dataframe_plugin, resolve_plugin_info
 from etlantic.dataframe.protocol import (
@@ -452,13 +449,6 @@ async def execute_dataframe_step(
         bundle.metrics.rows_out = sum(
             (plugin.row_count(v) or 0) for v in bundle.valid.values()
         )
-    if native_execution is not None:
-        # Synchronous normalization/validation may outlast the deadline after
-        # native work has drained. Deliver cancellation before registration.
-        await checkpoint_if_cancelled()
-        if current_time() >= current_effective_deadline():
-            raise TimeoutError("Adaptive dataframe result exceeded its deadline")
-        await checkpoint()
     return bundle
 
 

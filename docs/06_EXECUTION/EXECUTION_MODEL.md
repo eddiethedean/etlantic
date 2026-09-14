@@ -224,6 +224,14 @@ Cancellation behavior differs by mode:
 
 Results must distinguish cancellation, timeout, failure, and abandonment.
 
+Adaptive member outputs remain private until the complete member body and step
+middleware finish. The effective member/run deadline is checked after schema
+inspection and durable preparation, before outputs become available to dependent
+units. Timeout or cancellation discards that attempt's outputs and pending sink
+preparation; timed-out members are not retried. Failed durable preparation
+restores prior artifact files or removes newly created files, recording an owner
+obligation if cleanup cannot finish.
+
 Experimental local adaptive `/2` execution owns each admitted native worker.
 Cancellation drains that worker for `CancellationPolicy.abandon_after_seconds`;
 without a bound, it drains fully. If work is still in flight after the bound,

@@ -6,6 +6,9 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
 
+import anyio
+from anyio.lowlevel import checkpoint, checkpoint_if_cancelled
+
 from etlantic.io_policy import SafeIoPolicy, write_json_safe
 from etlantic.plan.artifacts import ArtifactRef, ArtifactStrategy
 from etlantic.storage.protocol import as_records, records_to_dicts
@@ -107,6 +110,108 @@ class ArtifactStore:
     def should_durable(self, strategy: ArtifactStrategy | str) -> bool:
         value = strategy.value if isinstance(strategy, ArtifactStrategy) else strategy
         return value == ArtifactStrategy.DURABLE.value
+
+
+async def check_attempt_deadline() -> None:
+    """Deliver cancellation and enforce deadlines even after synchronous work."""
+    await checkpoint_if_cancelled()
+    if anyio.current_time() >= anyio.current_effective_deadline():
+        raise TimeoutError("Adaptive member exceeded its deadline")
+    await checkpoint()
+    if anyio.current_time() >= anyio.current_effective_deadline():
+        raise TimeoutError("Adaptive member exceeded its deadline")
+
+
+class AttemptArtifactStore(ArtifactStore):
+    """Private adaptive member outputs, published only after its complete body.
+
+    Reads fall through to the run store without copying or reclaiming borrowed
+    inputs. Writes remain private through schema work and middleware unwinding.
+    Durable preparation also precedes the final deadline/visibility boundary.
+    """
+
+    def __init__(self, parent: ArtifactStore) -> None:
+        super().__init__(workspace=parent.workspace, policy=parent.policy)
+        self._parent = parent
+        self._durable: dict[str, bool] = {}
+        self.cleanup_failed = False
+
+    def put(
+        self,
+        ref: ArtifactRef,
+        value: Any,
+        *,
+        durable: bool = False,
+        ownership: str | None = None,
+    ) -> None:
+        super().put(ref, value, durable=False, ownership=ownership)
+        self._durable[ref.identity] = durable
+
+    def get_raw(self, key: str) -> Any:
+        if super().has(key):
+            return super().get_raw(key)
+        return self._parent.get_raw(key)
+
+    def has(self, key: str) -> bool:
+        return super().has(key) or self._parent.has(key)
+
+    def ownership(self, key: str) -> str | None:
+        if super().has(key):
+            return super().ownership(key)
+        return self._parent.ownership(key)
+
+    async def commit(self) -> None:
+        await check_attempt_deadline()
+        # Keep even partially prepared durable outputs out of the run's lookup
+        # maps. Their files are owned by this attempt until visibility commits.
+        prepared = ArtifactStore(workspace=self.workspace, policy=self.policy)
+        written: list[tuple[Path, str | None, SafeIoPolicy]] = []
+        try:
+            for ref in self.list_refs():
+                durable = self._durable[ref.identity]
+                if durable and self.workspace is not None:
+                    from etlantic.io_policy import read_text_safe, resolve_under_policy
+
+                    policy = self.policy or SafeIoPolicy.for_root(self.workspace)
+                    path, _ = resolve_under_policy(
+                        self.workspace
+                        / f"{ref.identity.replace(':', '_').replace('/', '_')}.json",
+                        policy,
+                        run_id=ref.identity,
+                    )
+                    previous = (
+                        read_text_safe(path, policy, run_id=ref.identity)[1]
+                        if path.exists()
+                        else None
+                    )
+                    written.append((path, previous, policy))
+                prepared.put(
+                    ref,
+                    self.get_raw(ref.identity),
+                    durable=durable,
+                    ownership=self.ownership(ref.identity),
+                )
+            await check_attempt_deadline()
+        except BaseException:
+            from etlantic.io_policy import write_text_safe
+
+            for path, previous, policy in reversed(written):
+                try:
+                    if previous is None:
+                        path.unlink(missing_ok=True)
+                    else:
+                        write_text_safe(path, previous, policy)
+                except Exception:
+                    # Preserve the original failure. The host records the owned
+                    # cleanup obligation without exposing paths or row payloads.
+                    self.cleanup_failed = True
+            raise
+        # No user/backend operation or checkpoint between these map updates and
+        # the host's terminal-success transition. Dependents see the whole set.
+        self._parent._values.update(prepared._values)
+        self._parent._refs.update(prepared._refs)
+        self._parent._ownership.update(prepared._ownership)
+        self._parent.policy = prepared.policy
 
 
 def _looks_like_frame(value: Any) -> bool:

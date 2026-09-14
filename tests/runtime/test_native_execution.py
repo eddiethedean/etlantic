@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import threading
+from pathlib import Path
 from typing import Any
 
 import anyio
@@ -53,6 +54,166 @@ def test_cancelled_native_work_drains_before_return(
             release.set()
             if started.is_set():
                 assert await run_sync(finished.wait, 2.0)
+
+    anyio.run(exercise)
+
+
+@pytest.mark.polars
+@pytest.mark.pandas
+@pytest.mark.parametrize("member", ["raw", "first", "out"])
+def test_complete_member_timeout_discards_private_outputs(member: str) -> None:
+    import time
+
+    from etlantic.runtime.artifacts import ArtifactStore
+    from etlantic.runtime.request import RunRequest, TimeoutPolicy
+    from etlantic.runtime.scheduler import LocalScheduler
+    from tests.runtime.physical.test_qualification_0_53 import Chain, setup
+
+    async def exercise() -> None:
+        request = RunRequest(timeout=TimeoutPolicy(step_seconds=0.2))
+        runtime, _, plan = setup(Chain, ("polars",), request)
+        runtime.memory.seed("rows", [{"id": 1}])
+        artifacts = ArtifactStore()
+        entered: list[str] = []
+
+        async def finish(context: Any, call_next: Any) -> None:
+            await call_next()
+            if context.step_name == member:
+                entered.append(member)
+                assert not artifacts.has(f"{member}.result")
+                time.sleep(0.4)
+
+        runtime.step_middleware.add(finish)
+        report = await LocalScheduler().execute(
+            plan, request=request, runtime=runtime, artifact_store=artifacts
+        )
+        assert entered == [member]
+        step = next(s for s in report.steps if s.step_name == member)
+        assert step.status.value == "timed_out"
+        assert step.attempts == 1
+        assert not artifacts.has(f"{member}.result")
+        assert not any(a.logical_output == f"{member}.result" for a in report.artifacts)
+        assert runtime.memory.get("out") == []
+        assert report.status.value != "succeeded"
+        assert report.metadata["etlantic.cleanup_obligations"] == []
+
+    anyio.run(exercise)
+
+
+@pytest.mark.polars
+@pytest.mark.pandas
+def test_external_cancellation_after_member_body_discards_output() -> None:
+    from etlantic.exceptions import PipelineCancelledError
+    from etlantic.runtime.artifacts import ArtifactStore
+    from etlantic.runtime.request import RunRequest
+    from etlantic.runtime.scheduler import LocalScheduler
+    from tests.runtime.physical.test_qualification_0_53 import Chain, setup
+
+    async def exercise() -> None:
+        request = RunRequest()
+        runtime, _, plan = setup(Chain, ("local",), request)
+        runtime.memory.seed("rows", [{"id": 1}])
+        artifacts = ArtifactStore()
+        with anyio.CancelScope() as scope:
+
+            async def cancel(context: Any, call_next: Any) -> None:
+                await call_next()
+                if context.step_name == "first":
+                    assert not artifacts.has("first.result")
+                    scope.cancel()
+
+            runtime.step_middleware.add(cancel)
+            with pytest.raises(PipelineCancelledError) as error:
+                await LocalScheduler().execute(
+                    plan, request=request, runtime=runtime, artifact_store=artifacts
+                )
+            assert error.value.report.status.value == "cancelled"
+            assert not artifacts.has("first.result")
+            assert runtime.memory.get("out") == []
+        assert scope.cancel_called
+
+    anyio.run(exercise)
+
+
+def test_durable_attempt_deadline_restores_files_and_exposes_no_outputs(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    import time
+
+    import etlantic.runtime.artifacts as artifact_module
+    from etlantic.plan.artifacts import ArtifactRef, ArtifactStrategy
+    from etlantic.runtime.artifacts import ArtifactStore, AttemptArtifactStore
+
+    original = artifact_module.write_json_safe
+    existing = tmp_path / "existing.json"
+    existing.write_text('[{"id": 99}]\n')
+    old_bytes = existing.read_bytes()
+
+    def persist(path: Path, *args: Any, **kwargs: Any) -> Any:
+        result = original(path, *args, **kwargs)
+        if path.name == "new.json":
+            time.sleep(0.2)
+        return result
+
+    monkeypatch.setattr(artifact_module, "write_json_safe", persist)
+
+    async def exercise() -> None:
+        parent = ArtifactStore(workspace=tmp_path)
+        attempt = AttemptArtifactStore(parent)
+        for name in ("existing", "new"):
+            attempt.put(
+                ArtifactRef(name, f"member.{name}", ArtifactStrategy.DURABLE),
+                [{"id": 1}],
+                durable=True,
+            )
+        assert existing.read_bytes() == old_bytes
+        assert not (tmp_path / "new.json").exists()
+        with pytest.raises(TimeoutError), anyio.fail_after(0.1):
+            await attempt.commit()
+        assert parent.list_refs() == ()
+        assert not parent.has("member.existing")
+        assert not parent.has("member.new")
+        assert existing.read_bytes() == old_bytes
+        assert not (tmp_path / "new.json").exists()
+        assert not attempt.cleanup_failed
+
+    anyio.run(exercise)
+
+
+def test_successful_attempt_publishes_all_ports_and_retains_borrowed_inputs(
+    tmp_path: Path,
+) -> None:
+    import json
+
+    from etlantic.plan.artifacts import ArtifactRef, ArtifactStrategy
+    from etlantic.runtime.artifacts import ArtifactStore, AttemptArtifactStore
+
+    async def exercise() -> None:
+        parent = ArtifactStore(workspace=tmp_path)
+        borrowed = [{"id": 1}]
+        parent.put(
+            ArtifactRef("input", "source.result", ArtifactStrategy.IN_MEMORY),
+            borrowed,
+            ownership="shared",
+        )
+        attempt = AttemptArtifactStore(parent)
+        assert attempt.get_raw("source.result") is borrowed
+        assert attempt.ownership("source.result") == "shared"
+        for name in ("left", "right"):
+            attempt.put(
+                ArtifactRef(name, f"member.{name}", ArtifactStrategy.DURABLE),
+                borrowed,
+                durable=True,
+                ownership="borrowed",
+            )
+        assert len(parent.list_refs()) == 1
+        await attempt.commit()
+        attempt.clear()
+        for name in ("left", "right"):
+            assert parent.get_raw(f"member.{name}") is borrowed
+            assert parent.ownership(f"member.{name}") == "borrowed"
+            assert json.loads((tmp_path / f"{name}.json").read_text()) == borrowed
+        assert parent.get_raw("source.result") is borrowed
 
     anyio.run(exercise)
 

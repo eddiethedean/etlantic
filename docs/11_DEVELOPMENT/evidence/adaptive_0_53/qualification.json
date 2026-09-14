@@ -23,13 +23,13 @@
       "pyarrow": "25.0.0"
     }
   },
-  "junit_sha256": "192cdf9f5fd63235d2350dc164014483f332af2c618070f8ad2e77b6ac9d7519",
-  "observed_at": "2026-09-14T00:58:09.136614+00:00",
-  "passed_scenarios": 105,
+  "junit_sha256": "cfd418e47b517d10be2f66e31df42692b7a5827e48ed844ab8a1e350cd7156b9",
+  "observed_at": "2026-09-14T01:48:01.664502+00:00",
+  "passed_scenarios": 112,
   "phase": "0.53",
   "result": "pass",
   "returncode": 0,
-  "scenario_count": 105,
+  "scenario_count": 112,
   "scenarios": [
     {
       "executed": true,
@@ -363,12 +363,42 @@
     },
     {
       "executed": true,
+      "id": "tests.runtime.test_native_execution::test_complete_member_timeout_discards_private_outputs[first]",
+      "result": "pass"
+    },
+    {
+      "executed": true,
+      "id": "tests.runtime.test_native_execution::test_complete_member_timeout_discards_private_outputs[out]",
+      "result": "pass"
+    },
+    {
+      "executed": true,
+      "id": "tests.runtime.test_native_execution::test_complete_member_timeout_discards_private_outputs[raw]",
+      "result": "pass"
+    },
+    {
+      "executed": true,
       "id": "tests.runtime.test_native_execution::test_deadline_during_output_validation_fences_registration",
       "result": "pass"
     },
     {
       "executed": true,
+      "id": "tests.runtime.test_native_execution::test_durable_attempt_deadline_restores_files_and_exposes_no_outputs",
+      "result": "pass"
+    },
+    {
+      "executed": true,
+      "id": "tests.runtime.test_native_execution::test_external_cancellation_after_member_body_discards_output",
+      "result": "pass"
+    },
+    {
+      "executed": true,
       "id": "tests.runtime.test_native_execution::test_external_native_cancellation_retains_terminal_owner",
+      "result": "pass"
+    },
+    {
+      "executed": true,
+      "id": "tests.runtime.test_native_execution::test_successful_attempt_publishes_all_ports_and_retains_borrowed_inputs",
       "result": "pass"
     },
     {
@@ -444,6 +474,11 @@
     {
       "executed": true,
       "id": "tests.runtime.test_sol_0_53_contract_rereview::test_final_007_native_run_timeout_drains_or_records_owner",
+      "result": "pass"
+    },
+    {
+      "executed": true,
+      "id": "tests.runtime.test_sol_0_53_contract_rereview::test_final_007_post_compile_schema_deadline_fences_registration",
       "result": "pass"
     },
     {
@@ -559,7 +594,7 @@
   ],
   "schema": "etlantic.adaptive_evidence/2",
   "source_changed": false,
-  "source_revision": "sha256:16a77dcd863801ddee082063d2207398adb34419c2d2df29c8490fee2354c09e",
+  "source_revision": "sha256:bb5198725caeb1a4da88244527a9b01302862cb45d5e04de8aa03ea44c7c2bbb",
   "stderr_sha256": "05edbd111e3a90ba0587a5fcdd4c8554984634ecbd0b3ca664b4c3a844f8c76a",
-  "stdout_sha256": "db6e97345c6b678a0a8fb53734573e04118385231a588207a6e5e9b90dcdca21"
+  "stdout_sha256": "f6a4c2705c041e9520766119d4484bed72130c0f883acb4b9cca16062c0cf8af"
 }

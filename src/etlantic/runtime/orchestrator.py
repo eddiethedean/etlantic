@@ -54,7 +54,10 @@ from etlantic.reports.model import (
     StepRunReport,
     ValidationResult,
 )
-from etlantic.runtime.artifacts import ArtifactStore
+from etlantic.runtime.artifacts import (
+    ArtifactStore,
+    AttemptArtifactStore,
+)
 from etlantic.runtime.context import AttemptContext, RunContext, StepContext
 from etlantic.runtime.dataframe_exec import (
     execute_dataframe_step,
@@ -2225,6 +2228,9 @@ class LocalOrchestrator:
         retry_decl = self._retry_safety_for(name)
 
         for attempt in range(1, max_attempts + 1):
+            attempt_artifacts = (
+                AttemptArtifactStore(artifacts) if self.physical_mode else None
+            )
             state.attempts = attempt
             state.status = StepStatus.RUNNING if attempt == 1 else StepStatus.RETRYING
             state.started_at = state.started_at or datetime.now(UTC)
@@ -2249,11 +2255,14 @@ class LocalOrchestrator:
             async def terminal(
                 attempt_no: int = current_attempt,
                 ctx: StepContext = bound_step_context,
+                output_store: ArtifactStore = attempt_artifacts
+                if attempt_artifacts is not None
+                else artifacts,
             ) -> None:
                 await self._run_node_once(
                     state=state,
                     run_id=run_id,
-                    artifacts=artifacts,
+                    artifacts=output_store,
                     graph=graph,
                     validations=validations,
                     diagnostics=diagnostics,
@@ -2265,11 +2274,18 @@ class LocalOrchestrator:
             step_timeout = self.request.timeout.step_seconds
             body_succeeded = False
             try:
-                if step_timeout is not None:
-                    with anyio.fail_after(step_timeout):
-                        await self.runtime.step_middleware.run(step_context, terminal)
-                else:
+                # The adaptive attempt remains private through the complete
+                # middleware/body, including schema inspection and conversion.
+                # Keep the deadline scope active through artifact preparation
+                # and the final visibility check, then publish without yielding.
+                with (
+                    anyio.fail_after(step_timeout)
+                    if step_timeout is not None
+                    else contextlib.nullcontext()
+                ):
                     await self.runtime.step_middleware.run(step_context, terminal)
+                    if attempt_artifacts is not None:
+                        await attempt_artifacts.commit()
                 body_succeeded = True
                 deferred_publication = (
                     self.physical_mode
@@ -2434,6 +2450,21 @@ class LocalOrchestrator:
                 )
                 return
             finally:
+                if attempt_artifacts is not None:
+                    if not body_succeeded:
+                        self._pending_publications.pop(name, None)
+                    if attempt_artifacts.cleanup_failed:
+                        self._cleanup_obligations.append(
+                            {
+                                "unit_id": self.plan.logical_to_physical[name],
+                                "member": name,
+                                "attempt": current_attempt,
+                                "owner": "etlantic.runtime.attempt-artifacts",
+                                "operation": "cleanup",
+                                "code": "PMADP523",
+                            }
+                        )
+                    attempt_artifacts.clear()
                 try:
                     await self.runtime.resources.cleanup_scope(
                         "attempt", f"{name}:{current_attempt}"

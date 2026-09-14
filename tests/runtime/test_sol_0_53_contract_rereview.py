@@ -111,6 +111,49 @@ def test_final_001_executor_replacement_after_admission_is_never_used(
     anyio.run(exercise)
 
 
+@pytest.mark.polars
+@pytest.mark.pandas
+def test_final_007_post_compile_schema_deadline_fences_registration(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """The member deadline covers schema work before exposing compiler outputs."""
+    from tests.runtime.physical.test_qualification_0_53 import Chain, setup
+
+    async def exercise() -> None:
+        request = RunRequest(timeout=TimeoutPolicy(step_seconds=0.1))
+        runtime, _, plan = setup(Chain, ("polars",), request)
+        runtime.memory.seed("rows", [{"id": 1}])
+        plugin = runtime.dataframe_plugins["polars"]
+        original = plugin.inspect_schema
+        entered: list[str] = []
+
+        def inspect_schema(*args: Any, **kwargs: Any) -> Any:
+            if kwargs.get("identity") == "observed:first":
+                # Preserve the admitted compiler, schema operation and output;
+                # inject latency at the real post-compile inspection boundary.
+                entered.append("first_schema")
+                time.sleep(0.3)
+            return original(*args, **kwargs)
+
+        monkeypatch.setattr(plugin, "inspect_schema", inspect_schema)
+        report = await LocalScheduler().execute(plan, request=request, runtime=runtime)
+        first = next(step for step in report.steps if step.step_name == "first")
+        assert entered, "The post-compile schema operation must be exercised"
+        assert first.status.value == "timed_out", first
+        assert first.attempts == 1
+        assert (
+            next(
+                step for step in report.steps if step.step_name == "second"
+            ).status.value
+            == "skipped"
+        )
+        assert not any(a.logical_output == "first.result" for a in report.artifacts)
+        assert runtime.memory.get("out") == []
+        assert report.status.value != "succeeded"
+
+    anyio.run(exercise)
+
+
 def test_final_003_truthy_boundary_flag_cannot_authorize_noop_execution(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
