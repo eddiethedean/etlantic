@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import contextlib
+import hashlib
 import inspect
 import threading
 import uuid
@@ -1458,6 +1459,7 @@ class LocalOrchestrator:
             if executor is not None:
                 from etlantic.runtime.physical_protocol import (
                     PhysicalUnitContext,
+                    safe_receipt,
                     validate_unit_result,
                 )
 
@@ -1501,12 +1503,50 @@ class LocalOrchestrator:
                 result = None
                 cleanup_record = [executor, context, None]
                 self._physical_cleanup_pending.append(cleanup_record)
+                publication_obligation = None
+                if kind == "publication":
+                    # Until an identity-validated receipt arrives, an executor
+                    # may have committed without acknowledging the effect.
+                    publication_obligation = {
+                        "unit_id": unit.identity,
+                        "status": "unknown",
+                        "code": "PMADP524",
+                        "publication_id": "pub:"
+                        + hashlib.sha256(
+                            f"{run_id}:{self.plan.fingerprint}:{unit.identity}".encode()
+                        ).hexdigest(),
+                    }
+                    self._unknown_publications.append(publication_obligation)
                 try:
                     result = await cast(Any, executor.execute)(context)
                     cleanup_record[2] = result
+                    validate_unit_result(result, protocol_unit)
+                    if publication_obligation is not None:
+                        receipt_summary = safe_receipt(result.commit_receipt) or {}
+                        publication_obligation.update(
+                            {
+                                key: receipt_summary[key]
+                                for key in ("publication_id", "session_id", "provider")
+                                if key in receipt_summary
+                            }
+                        )
+                        if receipt_summary.get("status") in {
+                            "committed",
+                            "rolled_back",
+                        }:
+                            self._publication_receipt_summaries.append(
+                                {
+                                    "unit_id": unit.identity,
+                                    **receipt_summary,
+                                    "publication_id": publication_obligation[
+                                        "publication_id"
+                                    ],
+                                }
+                            )
+                            self._unknown_publications.remove(publication_obligation)
                     # Executor implementations may perform synchronous work
-                    # before returning their async result. Fence that result
-                    # before validating or exposing any output handles.
+                    # before returning their async result. Preserve commit
+                    # evidence first, then fence all successful output visibility.
                     await check_attempt_deadline()
                 except BaseException as exc:
                     if isinstance(exc, anyio.get_cancelled_exc_class()):
@@ -1538,7 +1578,6 @@ class LocalOrchestrator:
                                 )
                     raise
                 result = cast(Any, result)
-                validate_unit_result(result, protocol_unit)
                 await check_attempt_deadline()
                 if result.status != "succeeded":
                     raise PipelineExecutionError(
@@ -1629,7 +1668,7 @@ class LocalOrchestrator:
 
                     receipt = result.commit_receipt
                     if (
-                        not isinstance(receipt, CommitReceipt)
+                        type(receipt) is not CommitReceipt
                         or receipt.status != "committed"
                     ):
                         raise PipelineExecutionError(
@@ -1637,32 +1676,41 @@ class LocalOrchestrator:
                             code="PMADP524",
                             stage="write",
                         )
-                    self._publication_receipt_summaries.append(
-                        {
-                            "unit_id": unit.identity,
-                            "status": "committed",
-                            "publication_id": receipt.publication_id,
-                        }
-                    )
-                for route, handle in routed.items():
-                    node, port_name = expected[route]
-                    if node is None:
-                        self._transferred_values[route] = handle.value
-                        self._transferred_inputs.add(route)
-                    else:
-                        if not isinstance(port_name, str):
-                            raise PipelineExecutionError(
-                                "Physical result port is invalid",
-                                code="PMADP400",
-                                stage="execute",
+                executor_artifacts = AttemptArtifactStore(artifacts)
+                transfer_outputs: dict[str, Any] = {}
+                try:
+                    for route, handle in routed.items():
+                        node, port_name = expected[route]
+                        if node is None:
+                            transfer_outputs[route] = handle.value
+                        else:
+                            if not isinstance(port_name, str):
+                                raise PipelineExecutionError(
+                                    "Physical result port is invalid",
+                                    code="PMADP400",
+                                    stage="execute",
+                                )
+                            self._store_output_port(
+                                node,
+                                port_name,
+                                handle.value,
+                                executor_artifacts,
+                                ownership=handle.ownership,
                             )
-                        self._store_output_port(
-                            node,
-                            port_name,
-                            handle.value,
-                            artifacts,
-                            ownership=handle.ownership,
+                    await executor_artifacts.commit()
+                finally:
+                    if executor_artifacts.cleanup_failed:
+                        self._cleanup_obligations.append(
+                            {
+                                "unit_id": unit.identity,
+                                "owner": "etlantic.runtime.executor-artifacts",
+                                "operation": "cleanup",
+                                "code": "PMADP523",
+                            }
                         )
+                    executor_artifacts.clear()
+                self._transferred_values.update(transfer_outputs)
+                self._transferred_inputs.update(transfer_outputs)
                 unsuccessful = None
                 for name, outcome in outcomes.items():
                     state = nodes[name]
@@ -1934,25 +1982,40 @@ class LocalOrchestrator:
                     plugin = (self.physical_dataframe_pins or {})[
                         self._engine_for(logical_node.name)
                     ]
-                    value, operation = await execute_boundary(
-                        kind=kind,
-                        unit=unit,
-                        node=logical_node,
-                        value=value,
-                        plugin=plugin,
-                        run_id=run_id,
-                        plan=self.plan,
-                        workspace=self.workspace,
-                        artifacts=artifacts,
-                        artifact_key=key,
-                        requirement=descriptor,
-                    )
-                    await check_attempt_deadline()
+                    boundary_artifacts = AttemptArtifactStore(artifacts)
+                    try:
+                        value, operation = await execute_boundary(
+                            kind=kind,
+                            unit=unit,
+                            node=logical_node,
+                            value=value,
+                            plugin=plugin,
+                            run_id=run_id,
+                            plan=self.plan,
+                            workspace=self.workspace,
+                            artifacts=boundary_artifacts,
+                            artifact_key=key,
+                            requirement=descriptor,
+                        )
+                        if kind != "collection":
+                            self._store_output_port(
+                                logical_node, port, value, boundary_artifacts
+                            )
+                        await boundary_artifacts.commit()
+                    finally:
+                        if boundary_artifacts.cleanup_failed:
+                            self._cleanup_obligations.append(
+                                {
+                                    "unit_id": unit.identity,
+                                    "owner": "etlantic.runtime.boundary-artifacts",
+                                    "operation": "cleanup",
+                                    "code": "PMADP523",
+                                }
+                            )
+                        boundary_artifacts.clear()
                     if kind == "collection":
                         self._transferred_values[route] = value
                         self._transferred_inputs.add(route)
-                    else:
-                        self._store_output_port(logical_node, port, value, artifacts)
                     unit_trace.append(
                         {
                             "unit": unit.identity,

@@ -236,6 +236,13 @@ Physical transfer and executor results are subject to the same run-deadline
 fence before their routes or output handles are registered, and the scheduler
 checks cancellation before starting each subsequent unit.
 
+Physical boundaries and executor result sets keep artifacts private through
+their complete operation. Named checkpoint files share the artifact visibility
+commit: expired preparation restores prior files or removes new files, preserving
+a later writer's replacement. Returned, identity-validated publication receipts
+are retained before deadline fencing; missing acknowledgements keep an unknown
+publication and its reconciliation identifier even when the run fails.
+
 Experimental local adaptive `/2` execution owns each admitted native worker.
 Cancellation drains that worker for `CancellationPolicy.abandon_after_seconds`;
 without a bound, it drains fully. If work is still in flight after the bound,

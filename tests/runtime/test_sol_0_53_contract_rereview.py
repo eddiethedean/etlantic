@@ -154,6 +154,180 @@ def test_final_007_post_compile_schema_deadline_fences_registration(
     anyio.run(exercise)
 
 
+@pytest.mark.polars
+@pytest.mark.pandas
+def test_final_007_boundary_deadline_cannot_register_checkpoint(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """A boundary's private side effects also need the run visibility fence."""
+    from etlantic.runtime.physical_operations import OPERATION_SCHEMA
+    from tests.runtime.physical.test_qualification_0_53 import Chain, setup
+
+    graph = Chain.build_graph()
+    graph = replace(
+        graph,
+        nodes=tuple(
+            replace(
+                node,
+                metadata={
+                    **dict(node.metadata),
+                    "etlantic.materialization_required": {
+                        "schema": OPERATION_SCHEMA,
+                        "kind": "materialization",
+                        "checkpoint": "memory",
+                    },
+                },
+            )
+            if node.name == "first"
+            else node
+            for node in graph.nodes
+        ),
+    )
+    monkeypatch.setattr(Chain, "build_graph", classmethod(lambda cls: graph))
+
+    async def exercise() -> None:
+        request = RunRequest(timeout=TimeoutPolicy(run_seconds=2.0))
+        runtime, _, plan = setup(Chain, ("polars",), request)
+        runtime.memory.seed("rows", [{"id": 1}])
+        plugin = runtime.dataframe_plugins["polars"]
+        original = plugin.ensure_ownership
+        entered: list[str] = []
+
+        def ensure_ownership(value: Any, **kwargs: Any) -> Any:
+            copied = original(value, **kwargs)
+            context = kwargs["context"]
+            if context.step_name == "first" and "physical_unit" in context.metadata:
+                entered.append("materialization")
+                # Cross the actual deadline inside the admitted operation;
+                # retain its real result rather than replacing it with a fake.
+                time.sleep(
+                    max(0.0, anyio.current_effective_deadline() - anyio.current_time())
+                    + 0.05
+                )
+            return copied
+
+        monkeypatch.setattr(plugin, "ensure_ownership", ensure_ownership)
+        report = await LocalScheduler().execute(plan, request=request, runtime=runtime)
+        assert entered, "The admitted materialization must be exercised"
+        assert report.status.value != "succeeded"
+        assert runtime.memory.get("out") == []
+        assert any(d.code == "PMEXEC408" for d in report.diagnostics)
+        assert not any(
+            ref.identity.startswith("checkpoint:") for ref in report.artifacts
+        ), "An expired boundary must not register an available checkpoint"
+        assert (
+            next(
+                step for step in report.steps if step.step_name == "second"
+            ).status.value
+            == "skipped"
+        )
+
+    anyio.run(exercise)
+
+
+@pytest.mark.polars
+@pytest.mark.pandas
+def test_final_005_executor_deadline_retains_committed_receipt() -> None:
+    """A late executor result cannot erase evidence of an actual publication."""
+    from etlantic.connectors.models import CommitReceipt
+    from etlantic.plan.artifacts import ArtifactRef, ArtifactStrategy
+    from etlantic.runtime.physical_protocol import (
+        PhysicalArtifactHandle,
+        PhysicalLogicalOutcome,
+    )
+    from tests.runtime.physical.test_qualification_0_53 import Chain, Row, setup
+
+    async def exercise() -> None:
+        request = RunRequest(timeout=TimeoutPolicy(run_seconds=2.0))
+        runtime, _, plan = setup(Chain, ("local",), request)
+        support = support_row_for(plan)
+        assert support is not None
+        committed: list[str] = []
+        publication_id = "pub:sol-final-005-executor-deadline"
+
+        class Executor:
+            info = PhysicalExecutorInfo(
+                "etlantic.physical.local/1",
+                "etlantic",
+                "0.52.1",
+                capability_fingerprint=plan.inventory.targets[0].capability_fingerprint,
+                evidence_refs=support.evidence_refs,
+            )
+
+            def analyze(self, plan: Any, unit: Any) -> PhysicalUnitSupport:
+                return PhysicalUnitSupport(True, self.info.identity)
+
+            async def execute(self, context: Any) -> PhysicalUnitResult:
+                unit = context.unit
+                if unit.kind.value == "publication":
+                    await runtime.memory.write(
+                        binding="out",
+                        location=None,
+                        data=[{"id": 1}],
+                        contract_type=Row,
+                        context={},
+                    )
+                    committed.append(publication_id)
+                    time.sleep(
+                        max(
+                            0.0,
+                            anyio.current_effective_deadline() - anyio.current_time(),
+                        )
+                        + 0.05
+                    )
+                    return PhysicalUnitResult(
+                        unit.identity,
+                        unit.target_identity,
+                        "succeeded",
+                        commit_receipt=CommitReceipt(
+                            "committed", publication_id=publication_id
+                        ),
+                    )
+                name = unit.logical_nodes[0]
+                node = context.plan.logical_graph.node_map()[name]
+                return PhysicalUnitResult(
+                    unit.identity,
+                    unit.target_identity,
+                    "succeeded",
+                    outputs=tuple(
+                        PhysicalArtifactHandle(
+                            ArtifactRef(
+                                identity=f"artifact:{name}:{port.name}",
+                                logical_output=f"{name}.{port.name}",
+                                strategy=ArtifactStrategy.IN_MEMORY,
+                            ),
+                            [{"id": 1}],
+                            unit.target_identity,
+                        )
+                        for port in node.outputs
+                    ),
+                    logical_outcomes=(PhysicalLogicalOutcome(name, "succeeded"),),
+                )
+
+            async def cancel(self, context: Any) -> None:
+                pass
+
+            async def cleanup(self, context: Any, result: Any) -> tuple[Any, ...]:
+                return ()
+
+        runtime.physical_executors = {"local": Executor()}  # type: ignore[attr-defined]
+        report = await LocalScheduler().execute(plan, request=request, runtime=runtime)
+        assert committed == [publication_id], "The actual effect must occur once"
+        assert [row.id for row in runtime.memory.get("out")] == [1]
+        assert report.status.value != "succeeded"
+        assert any(d.code == "PMEXEC408" for d in report.diagnostics)
+        receipts = report.metadata.get("etlantic.publication_receipts", [])
+        unknown = report.metadata.get("etlantic.unknown_publications", [])
+        assert any(
+            record.get("publication_id") == publication_id
+            for record in [*receipts, *unknown]
+        ), "The failed run must retain the known receipt or its reconciliation ID"
+        if any(record.get("publication_id") == publication_id for record in unknown):
+            assert any(d.code == "PMADP524" for d in report.diagnostics)
+
+    anyio.run(exercise)
+
+
 def test_final_003_truthy_boundary_flag_cannot_authorize_noop_execution(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:

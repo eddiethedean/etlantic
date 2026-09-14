@@ -23,13 +23,13 @@
       "pyarrow": "25.0.0"
     }
   },
-  "junit_sha256": "91741294fa9d11b781287a20435191d89f457b511c0b00b72ec3fcda8d428a81",
-  "observed_at": "2026-09-14T02:39:01.018954+00:00",
-  "passed_scenarios": 113,
+  "junit_sha256": "d6dd318fdbd6ad5ebf66c5853c46479478792178e165fde251671e2b326d2cf0",
+  "observed_at": "2026-09-14T03:26:07.288093+00:00",
+  "passed_scenarios": 117,
   "phase": "0.53",
   "result": "pass",
   "returncode": 0,
-  "scenario_count": 113,
+  "scenario_count": 117,
   "scenarios": [
     {
       "executed": true,
@@ -403,6 +403,16 @@
     },
     {
       "executed": true,
+      "id": "tests.runtime.test_native_execution::test_staged_checkpoint_deadline_restores_files[False]",
+      "result": "pass"
+    },
+    {
+      "executed": true,
+      "id": "tests.runtime.test_native_execution::test_staged_checkpoint_deadline_restores_files[True]",
+      "result": "pass"
+    },
+    {
+      "executed": true,
       "id": "tests.runtime.test_native_execution::test_successful_attempt_publishes_all_ports_and_retains_borrowed_inputs",
       "result": "pass"
     },
@@ -453,12 +463,22 @@
     },
     {
       "executed": true,
+      "id": "tests.runtime.test_sol_0_53_contract_rereview::test_final_005_executor_deadline_retains_committed_receipt",
+      "result": "pass"
+    },
+    {
+      "executed": true,
       "id": "tests.runtime.test_sol_0_53_contract_rereview::test_final_005_explicit_writer_timeout_preserves_legacy_outcome",
       "result": "pass"
     },
     {
       "executed": true,
       "id": "tests.runtime.test_sol_0_53_contract_rereview::test_final_005_timeout_after_commit_retains_unknown_obligation",
+      "result": "pass"
+    },
+    {
+      "executed": true,
+      "id": "tests.runtime.test_sol_0_53_contract_rereview::test_final_007_boundary_deadline_cannot_register_checkpoint",
       "result": "pass"
     },
     {
@@ -599,7 +619,7 @@
   ],
   "schema": "etlantic.adaptive_evidence/2",
   "source_changed": false,
-  "source_revision": "sha256:93e04c4effdf2464ab4cf5b4e84fa4afcf5fb9e9223e3a13e6ad54071fd191a6",
+  "source_revision": "sha256:22610e9acd02c7c7038038187df0dec2a87cebee4238a3678d066ff121b650b9",
   "stderr_sha256": "05edbd111e3a90ba0587a5fcdd4c8554984634ecbd0b3ca664b4c3a844f8c76a",
-  "stdout_sha256": "a2fbb91cbc4a158e8c1dd521070dc3a7065b523d601605bbd8e713f826776a4d"
+  "stdout_sha256": "42b1659230a9a38500791c244112af88135aaa61409fb7659c9a4bc03b4428d0"
 }

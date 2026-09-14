@@ -2,14 +2,15 @@
 
 from __future__ import annotations
 
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, replace
 from pathlib import Path
 from typing import Any
 
 import anyio
 from anyio.lowlevel import checkpoint, checkpoint_if_cancelled
+from anyio.to_thread import run_sync
 
-from etlantic.io_policy import SafeIoPolicy, write_json_safe
+from etlantic.io_policy import SafeIoPolicy, write_json_safe, write_text_safe
 from etlantic.plan.artifacts import ArtifactRef, ArtifactStrategy
 from etlantic.storage.protocol import as_records, records_to_dicts
 
@@ -134,7 +135,19 @@ class AttemptArtifactStore(ArtifactStore):
         super().__init__(workspace=parent.workspace, policy=parent.policy)
         self._parent = parent
         self._durable: dict[str, bool] = {}
+        self._text_files: list[tuple[Path, str, SafeIoPolicy, str]] = []
         self.cleanup_failed = False
+
+    def stage_text(
+        self, path: Path, text: str, policy: SafeIoPolicy, *, run_id: str
+    ) -> None:
+        """Prepare an owned checkpoint file at the same visibility boundary."""
+        self._text_files.append((path, text, policy, run_id))
+
+    def clear(self) -> None:
+        super().clear()
+        self._durable.clear()
+        self._text_files.clear()
 
     def put(
         self,
@@ -166,27 +179,69 @@ class AttemptArtifactStore(ArtifactStore):
         # maps. Their files are owned by this attempt until visibility commits.
         prepared = ArtifactStore(workspace=self.workspace, policy=self.policy)
         written: list[tuple[Path, str | None, SafeIoPolicy]] = []
+        checkpoint_payloads: dict[Path, bytes] = {}
+
+        def remember(path: Path, policy: SafeIoPolicy, run_id: str) -> Path:
+            from etlantic.interchange.security import ensure_file_within_budget
+            from etlantic.io_policy import resolve_under_policy
+
+            path, _ = resolve_under_policy(path, policy, run_id=run_id)
+            previous = None
+            if path.exists():
+                ensure_file_within_budget(path, max_bytes=policy.max_read_bytes)
+                previous = path.read_bytes().decode("utf-8")
+            written.append((path, previous, policy))
+            return path
+
         try:
+            for path, text, policy, run_id in self._text_files:
+
+                def prepare_text(
+                    path: Path = path,
+                    text: str = text,
+                    policy: SafeIoPolicy = policy,
+                    run_id: str = run_id,
+                ) -> None:
+                    from etlantic.io_policy import (
+                        _acquire_lock,
+                        _release_lock,
+                        resolve_under_policy,
+                    )
+
+                    path, _ = resolve_under_policy(path, policy, run_id=run_id)
+                    path.parent.mkdir(parents=True, exist_ok=True, mode=0o700)
+                    lock = (
+                        _acquire_lock(path, timeout=policy.lock_timeout_seconds)
+                        if policy.enable_locking
+                        else None
+                    )
+                    try:
+                        path = remember(path, policy, run_id)
+                        checkpoint_payloads[path] = text.encode("utf-8")
+                        # Hold the destination lock across preimage capture and
+                        # replacement; the nested safe write shares that lock.
+                        write_text_safe(
+                            path,
+                            text,
+                            replace(policy, enable_locking=False),
+                            run_id=run_id,
+                        )
+                    finally:
+                        if lock is not None:
+                            _release_lock(lock)
+
+                # Drain file I/O before rolling back or releasing its buffers.
+                await run_sync(prepare_text)
             for ref in self.list_refs():
                 durable = self._durable[ref.identity]
                 if durable and self.workspace is not None:
-                    from etlantic.interchange.security import ensure_file_within_budget
-                    from etlantic.io_policy import resolve_under_policy
-
                     policy = self.policy or SafeIoPolicy.for_root(self.workspace)
-                    path, _ = resolve_under_policy(
+                    remember(
                         self.workspace
                         / f"{ref.identity.replace(':', '_').replace('/', '_')}.json",
                         policy,
-                        run_id=ref.identity,
+                        ref.identity,
                     )
-                    previous = None
-                    if path.exists():
-                        ensure_file_within_budget(path, max_bytes=policy.max_read_bytes)
-                        # A rollback must preserve original bytes, including
-                        # CRLF. Universal-newline text reads would normalize it.
-                        previous = path.read_bytes().decode("utf-8")
-                    written.append((path, previous, policy))
                 prepared.put(
                     ref,
                     self.get_raw(ref.identity),
@@ -195,14 +250,39 @@ class AttemptArtifactStore(ArtifactStore):
                 )
             await check_attempt_deadline()
         except BaseException:
-            from etlantic.io_policy import write_text_safe
-
             for path, previous, policy in reversed(written):
                 try:
-                    if previous is None:
-                        path.unlink(missing_ok=True)
-                    else:
-                        write_text_safe(path, previous, policy)
+                    from etlantic.interchange.security import ensure_file_within_budget
+                    from etlantic.io_policy import _acquire_lock, _release_lock
+
+                    checkpoint = path in checkpoint_payloads
+                    lock = (
+                        _acquire_lock(path, timeout=policy.lock_timeout_seconds)
+                        if checkpoint and policy.enable_locking
+                        else None
+                    )
+                    try:
+                        if checkpoint and path.exists():
+                            ensure_file_within_budget(
+                                path, max_bytes=policy.max_read_bytes
+                            )
+                            if path.read_bytes() != checkpoint_payloads[path]:
+                                # A subsequent writer owns the replacement;
+                                # rollback must not restore over its output.
+                                continue
+                        if previous is None:
+                            path.unlink(missing_ok=True)
+                        else:
+                            write_text_safe(
+                                path,
+                                previous,
+                                replace(policy, enable_locking=False)
+                                if lock is not None
+                                else policy,
+                            )
+                    finally:
+                        if lock is not None:
+                            _release_lock(lock)
                 except Exception:
                     # Preserve the original failure. The host records the owned
                     # cleanup obligation without exposing paths or row payloads.

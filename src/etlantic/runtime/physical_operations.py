@@ -20,8 +20,9 @@ from etlantic.dataframe.protocol import (
     DataframeValidationPolicy,
 )
 from etlantic.exceptions import PipelineExecutionError
-from etlantic.io_policy import SafeIoPolicy, write_text_safe
+from etlantic.io_policy import SafeIoPolicy
 from etlantic.plan.artifacts import ArtifactRef, ArtifactStrategy
+from etlantic.runtime.artifacts import AttemptArtifactStore
 from etlantic.storage.protocol import records_to_dicts
 
 OPERATION_SCHEMA = "etlantic.physical_operation/1"
@@ -96,7 +97,7 @@ async def execute_boundary(
     run_id: str,
     plan: Any,
     workspace: Path | None,
-    artifacts: Any,
+    artifacts: AttemptArtifactStore,
     artifact_key: str,
     requirement: Mapping[str, Any],
 ) -> tuple[Any, dict[str, Any]]:
@@ -266,20 +267,16 @@ async def execute_boundary(
             "checkpoint": checkpoint,
         }
 
-    def write_checkpoint() -> None:
-        write_text_safe(
-            path,
-            json.dumps(
-                {"metadata": metadata, "records": records},
-                sort_keys=True,
-                allow_nan=False,
-            ),
-            policy,
-            run_id=run_id,
-        )
-
-    # Blocking atomic I/O drains before its buffers may be released.
-    await run_sync(write_checkpoint)
+    artifacts.stage_text(
+        path,
+        json.dumps(
+            {"metadata": metadata, "records": records},
+            sort_keys=True,
+            allow_nan=False,
+        ),
+        policy,
+        run_id=run_id,
+    )
     artifacts.put(ref, value, durable=False, ownership="copied")
     return value, {
         "operation": "checkpoint",

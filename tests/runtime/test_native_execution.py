@@ -395,3 +395,64 @@ def test_run_deadline_fences_synchronous_physical_transfer(
         assert any(d.code == "PMEXEC408" for d in report.diagnostics)
 
     anyio.run(exercise)
+
+
+@pytest.mark.parametrize("subsequent_writer", [False, True])
+def test_staged_checkpoint_deadline_restores_files(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, subsequent_writer: bool
+) -> None:
+    """Named boundary files roll back along with their unavailable refs."""
+    import time
+
+    import etlantic.runtime.artifacts as artifact_module
+    from etlantic.io_policy import SafeIoPolicy
+    from etlantic.plan.artifacts import ArtifactRef, ArtifactStrategy
+    from etlantic.runtime.artifacts import ArtifactStore, AttemptArtifactStore
+
+    existing = tmp_path / "checkpoint-existing.json"
+    existing.write_bytes(b'{"records": [{"id": 99}]}\r\n')
+    old_bytes = existing.read_bytes()
+    new = tmp_path / "checkpoint-new.json"
+    original = artifact_module.write_text_safe
+
+    def persist(path: Path, *args: Any, **kwargs: Any) -> Any:
+        result = original(path, *args, **kwargs)
+        if path == new:
+            if subsequent_writer:
+                original(existing, '{"records": [{"id": 2}]}', args[1])
+            time.sleep(0.2)
+        return result
+
+    monkeypatch.setattr(artifact_module, "write_text_safe", persist)
+
+    async def exercise() -> None:
+        parent = ArtifactStore(workspace=tmp_path)
+        borrowed = [{"id": 99}]
+        parent.put(
+            ArtifactRef("prior", "producer.result", ArtifactStrategy.IN_MEMORY),
+            borrowed,
+            ownership="borrowed",
+        )
+        pending = AttemptArtifactStore(parent)
+        policy = SafeIoPolicy.for_root(tmp_path)
+        for path in (existing, new):
+            pending.stage_text(path, '{"records": [{"id": 1}]}', policy, run_id="run")
+        pending.put(
+            ArtifactRef(
+                "checkpoint:run", "producer.result", ArtifactStrategy.IN_MEMORY
+            ),
+            [{"id": 1}],
+            ownership="copied",
+        )
+        assert existing.read_bytes() == old_bytes
+        assert not new.exists()
+        with pytest.raises(TimeoutError), anyio.fail_after(0.1):
+            await pending.commit()
+        expected = b'{"records": [{"id": 2}]}' if subsequent_writer else old_bytes
+        assert existing.read_bytes() == expected
+        assert not new.exists()
+        assert parent.get_raw("producer.result") is borrowed
+        assert not parent.has("checkpoint:run")
+        assert not pending.cleanup_failed
+
+    anyio.run(exercise)
