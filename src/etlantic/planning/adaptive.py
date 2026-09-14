@@ -140,6 +140,13 @@ def _build_adaptive_plan(
     request: Any | None = None,
 ) -> AdaptivePipelinePlan | Any:
     graph = _graph_for_input(pipeline_cls, definition)
+    # Asset overrides are part of the effective adaptive input.  Apply them
+    # to the immutable graph before selection, candidate construction, and
+    # runtime descriptor capture so planning and admission share one binding
+    # authority.  The override keys are logical node names; unknown keys are
+    # left for request validation/admission to reject without broadening scope.
+    if request is not None and request.binding_overrides:
+        graph = _apply_binding_overrides(graph, request.binding_overrides)
     # Request selection is part of the effective planning input.  Normalize it
     # against the full authored graph before slicing so a request-only run
     # cannot silently fall back to the context's default all-nodes selection.
@@ -408,6 +415,26 @@ def _graph_for_input(
     if pipeline_cls is None:
         raise TypeError("pipeline_cls is required when definition is omitted")
     return pipeline_cls.build_graph()
+
+
+def _apply_binding_overrides(
+    graph: LogicalGraph, overrides: Mapping[str, str]
+) -> LogicalGraph:
+    """Return a graph with request asset overrides applied by node name."""
+
+    nodes = tuple(
+        replace(
+            node,
+            binding=overrides.get(node.name, node.binding),
+            nested_graph=(
+                _apply_binding_overrides(node.nested_graph, overrides)
+                if node.nested_graph is not None
+                else None
+            ),
+        )
+        for node in graph.nodes
+    )
+    return replace(graph, nodes=nodes)
 
 
 def _implementation_records(

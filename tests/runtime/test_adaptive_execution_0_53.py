@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import json
 import runpy
 from pathlib import Path
 
@@ -14,7 +15,7 @@ from etlantic.lifecycle.runtime import PipelineRuntime
 from etlantic.plan.planner import plan_pipeline
 from etlantic.planning.adaptive import _handoff_contract
 from etlantic.profile import PlacementTarget, Profile
-from etlantic.registry import PlanningContext, PluginDescriptor
+from etlantic.registry import BindingDescriptor, PlanningContext, PluginDescriptor
 from etlantic.runtime.execute import arun_pipeline
 from etlantic.runtime.request import InvalidationMode, RunRequest
 from tests.plan.test_adaptive_planner_0_52 import Sample, adaptive_profile
@@ -70,6 +71,27 @@ class CrossPipeline(Pipeline):
     raw: Extract[CrossRow] = Extract(asset="cross-rows")
     step = CrossStep.step(source=raw)
     out: Load[CrossRow] = Load(input=step.result, asset="cross-out")
+
+
+def test_adaptive_asset_override_is_captured_before_admission(tmp_path: Path) -> None:
+    async def run() -> None:
+        destination = tmp_path / "destination.json"
+        destination.write_text(json.dumps([{"id": 99}]))
+        runtime = PipelineRuntime()
+        runtime.memory.seed("rows", [{"id": 1}, {"id": 2}])
+        runtime.registry.register_binding(
+            BindingDescriptor("destination", "json", location=str(destination))
+        )
+        report = await arun_pipeline(
+            Sample,
+            profile=adaptive_profile(),
+            request=RunRequest(asset_overrides={"out": "destination"}),
+            runtime=runtime,
+        )
+        assert report.status.value == "succeeded"
+        assert json.loads(destination.read_text()) == [{"id": 1}, {"id": 2}]
+
+    anyio.run(run)
 
 
 def test_executable_adaptive_plan_captures_request_and_runs_physical_units() -> None:

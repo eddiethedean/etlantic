@@ -23,13 +23,13 @@
       "pyarrow": "25.0.0"
     }
   },
-  "junit_sha256": "9bc9ff358cdd0bd6e372dca1d0447a5e67922770766d863320923d4ef21acb3a",
-  "observed_at": "2026-09-14T17:54:08.971374+00:00",
-  "passed_scenarios": 126,
+  "junit_sha256": "088fb62ed693e783cd4c0b17fc8223e744494744c8df6c57e9bcd22125a49bbd",
+  "observed_at": "2026-09-14T18:46:48.993837+00:00",
+  "passed_scenarios": 127,
   "phase": "0.53",
   "result": "pass",
   "returncode": 0,
-  "scenario_count": 126,
+  "scenario_count": 127,
   "scenarios": [
     {
       "executed": true,
@@ -339,6 +339,11 @@
     {
       "executed": true,
       "id": "tests.runtime.test_adaptive_execution_0_53::test_adaptive_admission_rejects_invalid_concurrency_before_storage_effects",
+      "result": "pass"
+    },
+    {
+      "executed": true,
+      "id": "tests.runtime.test_adaptive_execution_0_53::test_adaptive_asset_override_is_captured_before_admission",
       "result": "pass"
     },
     {
@@ -664,7 +669,7 @@
   ],
   "schema": "etlantic.adaptive_evidence/2",
   "source_changed": false,
-  "source_revision": "sha256:cabe1ac3f3f0c1b287ddc693d14c3c816d3243722a8692b9b220fa1a9ce2695f",
+  "source_revision": "sha256:47551e2bda5c539732c22c80735fbe2055f41e4e426654b4bb9e4c6923040f4c",
   "stderr_sha256": "05edbd111e3a90ba0587a5fcdd4c8554984634ecbd0b3ca664b4c3a844f8c76a",
-  "stdout_sha256": "f66da30f7e32d5816b1c2ced7ada36b197b2e47e38d0920fffcd386d98d1926a"
+  "stdout_sha256": "e58e86b7c3dbe87a3d324b440c2ca4f809cd70e8b6ab5dafbdbee7efd4c2a375"
 }
