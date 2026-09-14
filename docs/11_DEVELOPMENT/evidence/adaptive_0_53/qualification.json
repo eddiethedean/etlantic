@@ -9,7 +9,8 @@
     "tests/plan/test_adaptive_planner_0_52.py",
     "tests/runtime/test_sol_0_53_rereview.py",
     "tests/runtime/test_sol_0_53_contract_rereview.py",
-    "tests/runtime/physical/test_qualification_0_53.py"
+    "tests/runtime/physical/test_qualification_0_53.py",
+    "tests/runtime/test_native_execution.py"
   ],
   "environment": {
     "machine": "arm64",
@@ -22,13 +23,13 @@
       "pyarrow": "25.0.0"
     }
   },
-  "junit_sha256": "7917f33806954ff8bf5f6912ffbc4db273117b002a62ae472b047878a211b0f3",
-  "observed_at": "2026-09-14T00:21:21.134748+00:00",
-  "passed_scenarios": 98,
+  "junit_sha256": "192cdf9f5fd63235d2350dc164014483f332af2c618070f8ad2e77b6ac9d7519",
+  "observed_at": "2026-09-14T00:58:09.136614+00:00",
+  "passed_scenarios": 105,
   "phase": "0.53",
   "result": "pass",
   "returncode": 0,
-  "scenario_count": 98,
+  "scenario_count": 105,
   "scenarios": [
     {
       "executed": true,
@@ -347,6 +348,31 @@
     },
     {
       "executed": true,
+      "id": "tests.runtime.test_native_execution::test_cancelled_native_work_drains_before_return[0.5]",
+      "result": "pass"
+    },
+    {
+      "executed": true,
+      "id": "tests.runtime.test_native_execution::test_cancelled_native_work_drains_before_return[None]",
+      "result": "pass"
+    },
+    {
+      "executed": true,
+      "id": "tests.runtime.test_native_execution::test_cancelled_queued_native_work_never_starts",
+      "result": "pass"
+    },
+    {
+      "executed": true,
+      "id": "tests.runtime.test_native_execution::test_deadline_during_output_validation_fences_registration",
+      "result": "pass"
+    },
+    {
+      "executed": true,
+      "id": "tests.runtime.test_native_execution::test_external_native_cancellation_retains_terminal_owner",
+      "result": "pass"
+    },
+    {
+      "executed": true,
       "id": "tests.runtime.test_sol_0_53_contract_rereview::test_final_001_executor_replacement_after_admission_is_never_used",
       "result": "pass"
     },
@@ -407,7 +433,17 @@
     },
     {
       "executed": true,
+      "id": "tests.runtime.test_sol_0_53_contract_rereview::test_final_007_explicit_async_compiler_retains_host_resources",
+      "result": "pass"
+    },
+    {
+      "executed": true,
       "id": "tests.runtime.test_sol_0_53_contract_rereview::test_final_007_native_member_deadline_fences_late_output",
+      "result": "pass"
+    },
+    {
+      "executed": true,
+      "id": "tests.runtime.test_sol_0_53_contract_rereview::test_final_007_native_run_timeout_drains_or_records_owner",
       "result": "pass"
     },
     {
@@ -523,7 +559,7 @@
   ],
   "schema": "etlantic.adaptive_evidence/2",
   "source_changed": false,
-  "source_revision": "sha256:ab689c5f2f3edea3efce8ca64bd2af5ab207c9fa3e23a76ea5e5d8919479bdda",
+  "source_revision": "sha256:16a77dcd863801ddee082063d2207398adb34419c2d2df29c8490fee2354c09e",
   "stderr_sha256": "05edbd111e3a90ba0587a5fcdd4c8554984634ecbd0b3ca664b4c3a844f8c76a",
-  "stdout_sha256": "fa5a1f69aa0877741e9937e9457b33a9aeb8501a97265e9794571be27a0fa773"
+  "stdout_sha256": "db6e97345c6b678a0a8fb53734573e04118385231a588207a6e5e9b90dcdca21"
 }

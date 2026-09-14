@@ -23,6 +23,7 @@ TESTS = (
     "tests/runtime/test_sol_0_53_rereview.py",
     "tests/runtime/test_sol_0_53_contract_rereview.py",
     "tests/runtime/physical/test_qualification_0_53.py",
+    "tests/runtime/test_native_execution.py",
 )
 EVIDENCE_SCHEMA = "etlantic.adaptive_evidence/2"
 

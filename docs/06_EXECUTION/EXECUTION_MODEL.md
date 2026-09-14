@@ -224,6 +224,15 @@ Cancellation behavior differs by mode:
 
 Results must distinguish cancellation, timeout, failure, and abandonment.
 
+Experimental local adaptive `/2` execution owns each admitted native worker.
+Cancellation drains that worker for `CancellationPolicy.abandon_after_seconds`;
+without a bound, it drains fully. If work is still in flight after the bound,
+the terminal report records `PMADP523` and an owner obligation in
+`etlantic.cleanup_obligations`, identifying the stored physical unit, logical
+member and attempt. The worker retains its input buffers, and its late result
+cannot register an artifact or publish output. Explicit `/1` asynchronous
+compiler extensions continue to execute on their host event loop.
+
 ## Observability
 
 Execution should emit structured events with stable identities:

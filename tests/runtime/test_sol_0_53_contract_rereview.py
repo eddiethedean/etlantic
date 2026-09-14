@@ -6,11 +6,13 @@ They intentionally fail only for in-scope release blockers.
 
 from __future__ import annotations
 
+import asyncio
 import hashlib
 import importlib.util
 import json
 import subprocess
 import sys
+import threading
 import time
 from dataclasses import replace
 from pathlib import Path
@@ -499,5 +501,108 @@ def test_final_007_native_member_deadline_fences_late_output(
             ).status.value
             == "skipped"
         )
+
+    anyio.run(exercise)
+
+
+@pytest.mark.polars
+@pytest.mark.pandas
+def test_final_007_native_run_timeout_drains_or_records_owner(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """A terminal run cannot silently leave its native work in flight."""
+    import etlantic_polars.compiler as compiler_module
+    from etlantic.runtime.request import CancellationPolicy
+    from tests.runtime.physical.test_qualification_0_53 import Chain, setup
+
+    original = compiler_module.apply_action
+    started = threading.Event()
+    release = threading.Event()
+    finished = threading.Event()
+
+    def blocked_native_action(*args: Any, **kwargs: Any) -> Any:
+        started.set()
+        try:
+            release.wait(timeout=2.0)
+            return original(*args, **kwargs)
+        finally:
+            finished.set()
+
+    monkeypatch.setattr(compiler_module, "apply_action", blocked_native_action)
+
+    async def exercise() -> None:
+        request = RunRequest(
+            timeout=TimeoutPolicy(run_seconds=0.3),
+            cancellation=CancellationPolicy(abandon_after_seconds=0.1),
+        )
+        runtime, _, plan = setup(Chain, ("polars",), request)
+        runtime.memory.seed("rows", [{"id": 1}])
+        try:
+            report = await LocalScheduler().execute(
+                plan, request=request, runtime=runtime
+            )
+            assert started.is_set(), "The real native operation must be entered"
+            assert report.status.value != "succeeded"
+            assert runtime.memory.get("out") == []
+            if not finished.is_set():
+                obligations = report.metadata.get("etlantic.cleanup_obligations")
+                assert obligations, "In-flight native work requires an owner obligation"
+                assert any(
+                    item.get("code") == "PMADP523" and item.get("owner")
+                    for item in obligations
+                ), obligations
+                assert any(d.code == "PMADP523" for d in report.diagnostics)
+        finally:
+            # Drain the injected operation even when the assertion fails, so
+            # this review artifact does not leave a worker or patched call alive.
+            release.set()
+            if started.is_set():
+                assert await anyio.to_thread.run_sync(finished.wait, 2.0)
+
+    anyio.run(exercise)
+
+
+@pytest.mark.polars
+@pytest.mark.pandas
+def test_final_007_explicit_async_compiler_retains_host_resources(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """An explicit compiler may await an asynchronous resource from its host."""
+    import etlantic_polars.compiler as compiler_module
+    from etlantic.runtime.execute import arun_pipeline
+    from tests.runtime.physical.test_qualification_0_53 import Chain
+
+    original = compiler_module.PolarsTransformCompiler.execute
+
+    async def exercise() -> None:
+        loop = asyncio.get_running_loop()
+        ready = loop.create_future()
+
+        async def compiler_execute(self: Any, compiled: Any, **kwargs: Any) -> Any:
+            if not ready.done():
+                # Model a compiler's pre-existing asynchronous session/resource.
+                # It is completed by the host while execute awaits it; the
+                # original compiler and real dataframe result remain intact.
+                loop.call_soon_threadsafe(loop.call_later, 0.1, ready.set_result, None)
+            await ready
+            return await original(self, compiled, **kwargs)
+
+        monkeypatch.setattr(
+            compiler_module.PolarsTransformCompiler, "execute", compiler_execute
+        )
+        runtime = PipelineRuntime()
+        runtime.memory.seed("rows", [{"id": 1}])
+        report = await arun_pipeline(
+            Chain,
+            profile=Profile(
+                name="explicit-async-compiler",
+                dataframe_engine="polars",
+                portable_transform_policy="require",
+            ),
+            runtime=runtime,
+        )
+        await anyio.sleep(0.15)
+        assert report.status.value == "succeeded", report.diagnostics
+        assert [row.id for row in runtime.memory.get("out")] == [1]
 
     anyio.run(exercise)

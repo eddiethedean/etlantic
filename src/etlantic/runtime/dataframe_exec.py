@@ -5,7 +5,8 @@ from __future__ import annotations
 from dataclasses import replace
 from typing import Any
 
-from anyio.to_thread import run_sync
+from anyio import current_effective_deadline, current_time
+from anyio.lowlevel import checkpoint, checkpoint_if_cancelled
 
 from etlantic.capabilities import PluginCapabilities
 from etlantic.dataframe.discovery import load_dataframe_plugin, resolve_plugin_info
@@ -25,6 +26,7 @@ from etlantic.plan.model import PipelinePlan
 from etlantic.registry import ImplementationDescriptor
 from etlantic.runtime.faults import FaultBoundary, maybe_inject_async
 from etlantic.runtime.logging import redact_message
+from etlantic.runtime.native_execution import NativeExecution
 from etlantic.runtime.state import FailureStage
 from etlantic.transformation import ImplementationRecord
 
@@ -170,6 +172,7 @@ async def execute_dataframe_step(
     descriptor: ImplementationDescriptor | None = None,
     pre_materialized_ports: set[str] | None = None,
     admitted_compiler: Any | None = None,
+    native_execution: NativeExecution | None = None,
 ) -> DataframeOutputBundle:
     """Materialize → invoke/compile → normalize → validate through a dataframe plugin."""
     engine = (
@@ -306,6 +309,7 @@ async def execute_dataframe_step(
                 node=node,
                 context=context,
                 admitted_compiler=admitted_compiler,
+                native_execution=native_execution,
             )
         else:
             if impl is None:
@@ -448,6 +452,13 @@ async def execute_dataframe_step(
         bundle.metrics.rows_out = sum(
             (plugin.row_count(v) or 0) for v in bundle.valid.values()
         )
+    if native_execution is not None:
+        # Synchronous normalization/validation may outlast the deadline after
+        # native work has drained. Deliver cancellation before registration.
+        await checkpoint_if_cancelled()
+        if current_time() >= current_effective_deadline():
+            raise TimeoutError("Adaptive dataframe result exceeded its deadline")
+        await checkpoint()
     return bundle
 
 
@@ -460,6 +471,7 @@ async def _execute_portable(
     node: Node,
     context: DataframeExecutionContext,
     admitted_compiler: Any | None = None,
+    native_execution: NativeExecution | None = None,
 ) -> Any:
     from collections.abc import Mapping
 
@@ -623,20 +635,18 @@ async def _execute_portable(
             context=exec_ctx,
         )
 
-    # First-party compiler methods expose an async contract but perform their
-    # dataframe operations synchronously.  Run that native section off the
-    # event loop so a member deadline can cancel the awaiting host task.  An
-    # abandoned worker's result is intentionally discarded and can never be
-    # registered as an artifact or publication by this call path.
-    def run_compiler_in_worker() -> Any:
-        import anyio
+    if native_execution is None:
+        # Preserve the explicit asynchronous compiler contract and its host
+        # event-loop resources. Only admitted adaptive work uses a native worker.
+        bundle = await execute_compiler()
+    else:
 
-        return anyio.run(execute_compiler)
+        def run_compiler_in_worker() -> Any:
+            import anyio
 
-    bundle = await run_sync(
-        run_compiler_in_worker,
-        abandon_on_cancel=True,
-    )
+            return anyio.run(execute_compiler)
+
+        bundle = await native_execution.run(run_compiler_in_worker)
     if len(bundle.valid) == 1:
         return next(iter(bundle.valid.values()))
     return dict(bundle.valid)

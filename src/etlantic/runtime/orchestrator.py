@@ -2300,19 +2300,6 @@ class LocalOrchestrator:
                     else (getattr(exc, "stage", None) or FailureStage.TRANSFORM.value)
                 )
                 state.error = redact_message(str(exc))
-                if self.physical_mode and timed_out:
-                    # A synchronous native worker may continue after its host
-                    # task is cancelled.  Keep an explicit owner obligation
-                    # until that worker's resources are reconciled; its late
-                    # value is fenced by the abandoned await above.
-                    self._cleanup_obligations.append(
-                        {
-                            "unit_id": f"logical:{name}",
-                            "owner": "etlantic.runtime.native-worker",
-                            "operation": "native_execution",
-                            "code": "PMADP523",
-                        }
-                    )
                 results: list[Any] = []
                 try:
                     results = await self.runtime.callbacks.emit(
@@ -3074,6 +3061,19 @@ class LocalOrchestrator:
                             message=f"delegated to {engine} plugin",
                         ),
                     )
+                from etlantic.runtime.native_execution import NativeExecution
+
+                native_execution = (
+                    NativeExecution(
+                        unit_id=self.plan.logical_to_physical[node.name],
+                        member=node.name,
+                        attempt=attempt,
+                        abandon_after_seconds=self.request.cancellation.abandon_after_seconds,
+                        obligations=self._cleanup_obligations,
+                    )
+                    if self.physical_mode
+                    else None
+                )
                 bundle = await execute_dataframe_step(
                     plugin=plugin,
                     impl=impl,
@@ -3092,6 +3092,7 @@ class LocalOrchestrator:
                     admitted_compiler=(self.physical_compiler_pins or {}).get(
                         node.name
                     ),
+                    native_execution=native_execution,
                 )
                 for diag in bundle.diagnostics:
                     self._append_diagnostic(
