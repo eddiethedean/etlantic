@@ -5,6 +5,8 @@ from __future__ import annotations
 from dataclasses import replace
 from typing import Any
 
+from anyio.to_thread import run_sync
+
 from etlantic.capabilities import PluginCapabilities
 from etlantic.dataframe.discovery import load_dataframe_plugin, resolve_plugin_info
 from etlantic.dataframe.protocol import (
@@ -612,11 +614,28 @@ async def _execute_portable(
         attempt=context.attempt,
         collect=context.collect,
     )
-    bundle = await compiler.execute(
-        compiled,
-        inputs=inputs,
-        parameters=parameters,
-        context=exec_ctx,
+
+    async def execute_compiler() -> Any:
+        return await compiler.execute(
+            compiled,
+            inputs=inputs,
+            parameters=parameters,
+            context=exec_ctx,
+        )
+
+    # First-party compiler methods expose an async contract but perform their
+    # dataframe operations synchronously.  Run that native section off the
+    # event loop so a member deadline can cancel the awaiting host task.  An
+    # abandoned worker's result is intentionally discarded and can never be
+    # registered as an artifact or publication by this call path.
+    def run_compiler_in_worker() -> Any:
+        import anyio
+
+        return anyio.run(execute_compiler)
+
+    bundle = await run_sync(
+        run_compiler_in_worker,
+        abandon_on_cancel=True,
     )
     if len(bundle.valid) == 1:
         return next(iter(bundle.valid.values()))

@@ -2300,6 +2300,19 @@ class LocalOrchestrator:
                     else (getattr(exc, "stage", None) or FailureStage.TRANSFORM.value)
                 )
                 state.error = redact_message(str(exc))
+                if self.physical_mode and timed_out:
+                    # A synchronous native worker may continue after its host
+                    # task is cancelled.  Keep an explicit owner obligation
+                    # until that worker's resources are reconciled; its late
+                    # value is fenced by the abandoned await above.
+                    self._cleanup_obligations.append(
+                        {
+                            "unit_id": f"logical:{name}",
+                            "owner": "etlantic.runtime.native-worker",
+                            "operation": "native_execution",
+                            "code": "PMADP523",
+                        }
+                    )
                 results: list[Any] = []
                 try:
                     results = await self.runtime.callbacks.emit(

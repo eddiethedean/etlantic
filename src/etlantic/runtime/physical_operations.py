@@ -215,6 +215,22 @@ async def execute_boundary(
                 or stored.get("schema") != metadata["schema"]
             ):
                 raise _error("Checkpoint metadata is malformed")
+            # JSON accepts non-finite constants by default.  They are not part
+            # of the checkpoint writer's finite timestamp contract and must
+            # never make the expiry comparison below authorize a cache hit.
+            for field_name in ("created_at", "expires_at"):
+                timestamp = stored.get(field_name)
+                if timestamp is None and field_name == "expires_at":
+                    continue
+                if isinstance(timestamp, bool) or not isinstance(
+                    timestamp, (int, float)
+                ):
+                    raise _error("Checkpoint retention metadata is malformed")
+                try:
+                    if not math.isfinite(float(timestamp)):
+                        raise _error("Checkpoint retention metadata is malformed")
+                except (OverflowError, ValueError):
+                    raise _error("Checkpoint retention metadata is malformed") from None
             if stored["security_domain"] != plan.security_domain:
                 raise _error("Checkpoint authorization mismatch")
             raw = json.dumps(

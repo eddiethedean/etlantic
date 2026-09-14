@@ -6,10 +6,12 @@ They intentionally fail only for in-scope release blockers.
 
 from __future__ import annotations
 
+import hashlib
 import importlib.util
 import json
 import subprocess
 import sys
+import time
 from dataclasses import replace
 from pathlib import Path
 from typing import Any
@@ -361,3 +363,141 @@ def test_final_009_unknown_receipt_cannot_serialize_native_row_payload() -> None
     except (ValueError, TypeError):
         return
     assert marker not in json.dumps(wire), wire
+
+
+@pytest.mark.parametrize(
+    ("expires_at", "selection"),
+    [
+        (None, "checkpoint"),
+        (0.0, "producer"),
+        (float("nan"), None),
+        (float("inf"), None),
+    ],
+    ids=["unexpired", "expired", "nan-retention", "infinite-retention"],
+)
+def test_final_003_checkpoint_retention_must_be_valid_before_reuse(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    expires_at: float | None,
+    selection: str | None,
+) -> None:
+    """Malformed retention cannot grant a checkpoint hit or sink publication."""
+    from etlantic.plan.adaptive_model import AdaptivePipelinePlan
+    from etlantic.runtime.physical_operations import OPERATION_SCHEMA
+
+    graph = Sample.build_graph()
+    graph = replace(
+        graph,
+        nodes=tuple(
+            replace(
+                node,
+                metadata={
+                    **dict(node.metadata),
+                    "etlantic.reuse_artifact": {
+                        "schema": OPERATION_SCHEMA,
+                        "kind": "reuse",
+                        "checkpoint": "raw",
+                    },
+                },
+            )
+            if node.name == "raw"
+            else node
+            for node in graph.nodes
+        ),
+    )
+    monkeypatch.setattr(Sample, "build_graph", classmethod(lambda cls: graph))
+
+    async def exercise() -> None:
+        request = RunRequest()
+        plan = plan_pipeline(Sample, profile=adaptive_profile(), request=request)
+        assert isinstance(plan, AdaptivePipelinePlan)
+        runtime = PipelineRuntime()
+        runtime.memory.seed("rows", [{"id": 1}])
+        records = [{"id": 99}]
+        payload = json.dumps(records, sort_keys=True, separators=(",", ":"))
+        workspace = tmp_path.resolve()
+        checkpoint = {
+            "metadata": {
+                "schema": "etlantic.checkpoint/1",
+                "digest": "sha256:" + hashlib.sha256(payload.encode()).hexdigest(),
+                "producer_fingerprint": plan.fingerprint,
+                "contract_id": plan.logical_graph.node_map()["raw"]
+                .outputs[0]
+                .contract_id,
+                "security_domain": plan.security_domain,
+                "created_at": 0.0,
+                "expires_at": expires_at,
+            },
+            "records": records,
+        }
+        # Python's decoder accepts these nonfinite JSON constants; the runtime
+        # must reject them as malformed checkpoint state rather than a hit.
+        (workspace / "checkpoint-raw.json").write_text(
+            json.dumps(checkpoint), encoding="utf-8"
+        )
+        report = await LocalScheduler().execute(
+            plan, request=request, runtime=runtime, workspace=workspace
+        )
+        reuse = next(
+            trace
+            for trace in report.metadata["etlantic.physical_trace"]
+            if trace["kind"] == "reuse"
+        )
+        if selection is None:
+            assert reuse["status"] == "failed", reuse
+            assert runtime.memory.get("out") == []
+            assert report.status.value != "succeeded"
+        else:
+            assert reuse["selection"] == selection
+            assert report.status.value == "succeeded", report.diagnostics
+            assert [row.id for row in runtime.memory.get("out")] == [
+                99 if selection == "checkpoint" else 1
+            ]
+
+    anyio.run(exercise)
+
+
+@pytest.mark.polars
+@pytest.mark.pandas
+def test_final_007_native_member_deadline_fences_late_output(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Slow work in the admitted native compiler cannot turn timeout into success."""
+    import etlantic_polars.compiler as compiler_module
+    from etlantic.runtime.request import CancellationPolicy
+    from tests.runtime.physical.test_qualification_0_53 import Chain, setup
+
+    original = compiler_module.apply_action
+    calls: list[str] = []
+
+    def slow_native_action(*args: Any, **kwargs: Any) -> Any:
+        calls.append("native_started")
+        # Inject latency at the real synchronous native operation boundary,
+        # retaining its compiler, dataframe result and admitted provider.
+        time.sleep(0.4)
+        return original(*args, **kwargs)
+
+    monkeypatch.setattr(compiler_module, "apply_action", slow_native_action)
+
+    async def exercise() -> None:
+        request = RunRequest(
+            timeout=TimeoutPolicy(step_seconds=0.1),
+            cancellation=CancellationPolicy(abandon_after_seconds=0.1),
+        )
+        runtime, _, plan = setup(Chain, ("polars",), request)
+        runtime.memory.seed("rows", [{"id": 1}])
+        report = await LocalScheduler().execute(plan, request=request, runtime=runtime)
+        first = next(step for step in report.steps if step.step_name == "first")
+        assert calls, "The admitted native execution path must be exercised"
+        assert first.status.value in {"timed_out", "abandoned"}, first
+        assert first.attempts == 1
+        assert runtime.memory.get("out") == []
+        assert report.status.value != "succeeded"
+        assert (
+            next(
+                step for step in report.steps if step.step_name == "second"
+            ).status.value
+            == "skipped"
+        )
+
+    anyio.run(exercise)
