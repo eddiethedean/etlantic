@@ -841,6 +841,11 @@ def test_final_007_explicit_async_compiler_retains_host_resources(
             'rows=[{"id":"SOL_PRIVATE_ROW_MARKER"}]',
             id="final-009-inconsistent-unit-private-stage",
         ),
+        pytest.param(
+            "failed",
+            "rows:SOL_PRIVATE_ROW_MARKER",
+            id="final-009-identifier-shaped-private-stage",
+        ),
     ],
 )
 def test_sol_011_failed_executor_branch_has_terminal_logical_report(

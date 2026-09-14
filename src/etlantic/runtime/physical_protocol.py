@@ -57,6 +57,26 @@ _SAFE_NUMERIC_KEYS = frozenset(
     }
 )
 
+# Failure stages are a closed protocol vocabulary.  Executor supplied text is
+# untrusted even when it happens to match the lexical shape of an identifier.
+# Keep the operational stages emitted by the local physical host readable and
+# project every other value through the existing opaque identifier mapping.
+_SAFE_FAILURE_STAGES = frozenset(
+    {
+        "read",
+        "input_validation",
+        "transform",
+        "output_validation",
+        "write",
+        "resource",
+        "orchestrator",
+        "freshness",
+        "schema_drift",
+        "execute",
+        "admission",
+    }
+)
+
 
 def _count(value: Any) -> int | None:
     return value if type(value) is int and 0 <= value < 2**63 else None
@@ -103,6 +123,18 @@ def _identifier(value: Any) -> str | None:
     if type(value) is str:
         return "sha256:" + hashlib.sha256(value.encode()).hexdigest()
     return "opaque"
+
+
+def _failure_stage(value: Any) -> str | None:
+    """Project executor-controlled stages using the closed protocol vocabulary."""
+    if type(value) is str and value in _SAFE_FAILURE_STAGES:
+        return value
+    # `_identifier` intentionally preserves bounded identifiers for trusted
+    # identity fields.  Failure stages are executor-controlled text, so an
+    # unknown string must never inherit that identity-field behavior.
+    if type(value) is str:
+        return "sha256:" + hashlib.sha256(value.encode()).hexdigest()
+    return "opaque" if value is not None else None
 
 
 def _safe_wire_value(value: Any, *, key: str | None = None, depth: int = 0) -> Any:
@@ -305,7 +337,7 @@ class PhysicalLogicalOutcome:
             "implementation": _identifier(self.implementation),
             "records_in": _count(self.records_in),
             "records_out": _count(self.records_out),
-            "failure_stage": _identifier(self.failure_stage),
+            "failure_stage": _failure_stage(self.failure_stage),
             "code": _code(self.code),
             "metrics": _safe_mapping(self.metrics),
         }
@@ -384,7 +416,7 @@ class PhysicalUnitFailure(Exception):
             "unit_id": _identifier(self.unit_id),
             "target_identity": _identifier(self.target_identity),
             "code": _code(self.code),
-            "stage": _identifier(self.stage),
+            "stage": _failure_stage(self.stage),
             "logical_names": [_identifier(name) for name in self.logical_names[:256]],
             "message": _safe_failure_message(str(self)),
             "unknown_receipt": safe_unknown_receipt,
