@@ -827,7 +827,19 @@ def test_final_007_explicit_async_compiler_retains_host_resources(
 
 @pytest.mark.polars
 @pytest.mark.pandas
-def test_sol_011_failed_executor_branch_has_terminal_logical_report() -> None:
+@pytest.mark.parametrize(
+    "failure_stage",
+    [
+        pytest.param("transform", id="terminal-outcome"),
+        pytest.param(
+            'rows=[{"id":"SOL_PRIVATE_ROW_MARKER"}]',
+            id="final-009-private-stage",
+        ),
+    ],
+)
+def test_sol_011_failed_executor_branch_has_terminal_logical_report(
+    failure_stage: str,
+) -> None:
     """Later independent success must not erase an executor's failed outcome."""
     from etlantic.connectors.models import CommitReceipt
     from etlantic.plan.artifacts import ArtifactRef, ArtifactStrategy
@@ -892,7 +904,7 @@ def test_sol_011_failed_executor_branch_has_terminal_logical_report() -> None:
                                 name,
                                 "failed",
                                 attempts=1,
-                                failure_stage="transform",
+                                failure_stage=failure_stage,
                                 code="PMADP520",
                             ),
                         ),
@@ -944,5 +956,11 @@ def test_sol_011_failed_executor_branch_has_terminal_logical_report() -> None:
         assert report.summary.succeeded == 4
         assert report.summary.skipped == 1
         assert any(d.code == "PMADP520" for d in report.diagnostics)
+        if failure_stage == "transform":
+            assert steps["left"].failure_stage == "transform"
+        assert "SOL_PRIVATE_ROW_MARKER" not in json.dumps(report.to_dict()), (
+            "Returned executor failure stages must remain metadata-only in "
+            "the final logical report"
+        )
 
     anyio.run(exercise)

@@ -1624,7 +1624,7 @@ class LocalOrchestrator:
                         state.records_out = outcome.records_out
                         state.status = StepStatus(outcome.status)
                         state.stage = (
-                            outcome.failure_stage
+                            outcome.to_dict()["failure_stage"]
                             if outcome.status not in {"succeeded", "skipped"}
                             else None
                         )
