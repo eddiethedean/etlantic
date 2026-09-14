@@ -4060,9 +4060,10 @@ class LocalOrchestrator:
     ) -> BindingDescriptor | None:
         override = self.request.binding_overrides.get(node.name)
         if self.physical_mode:
-            return self.plan.bindings.get(node.name) or self.plan.bindings.get(
-                override or binding_name
-            )
+            # Adaptive admission pins descriptors by logical node.  Do not
+            # resolve an asset name in this mapping: it may name a different
+            # node's pin and would bypass the authority admitted for `node`.
+            return self.plan.bindings.get(node.name)
         if override:
             if override in self.runtime.registry.bindings:
                 return self.runtime.registry.bindings[override]

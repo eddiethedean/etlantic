@@ -68,6 +68,15 @@ class Chain(Pipeline):
     out: Load[Row] = Load(input=second.result, asset="out")
 
 
+class BindingAliasCollision(Pipeline):
+    """Source asset intentionally overlaps the sink node name."""
+
+    raw: Extract[Row] = Extract(asset="out")
+    first = Project.step(source=raw)
+    second = Project.step(source=first.result)
+    out: Load[Row] = Load(input=second.result, asset="destination")
+
+
 class Diamond(Pipeline):
     raw: Extract[Row] = Extract(asset="rows")
     left = Project.step(source=raw)
@@ -771,5 +780,40 @@ def test_admitted_binding_snapshot_survives_post_admission_registry_mutation(
         assert destination.exists()
         assert not replacement.exists()
         assert runtime.memory.get("out") == []
+
+    anyio.run(exercise)
+
+
+def test_implicit_source_cannot_resolve_another_node_binding(tmp_path):
+    """Node-keyed adaptive pins never become an asset-name lookup table."""
+    import json
+
+    from etlantic.registry import BindingDescriptor
+
+    async def exercise():
+        destination = tmp_path / "destination.json"
+        destination.write_text('[{"id": 99}]')
+        runtime = PipelineRuntime()
+        runtime.memory.seed("out", [{"id": 1}])
+        runtime.registry.register_binding(
+            BindingDescriptor("destination", "json", location=str(destination))
+        )
+        profile = Profile(
+            name="binding-alias-collision",
+            execution_strategy="adaptive",
+            portable_transform_policy="require",
+            placement_targets={"local": PlacementTarget(engine="local")},
+            eligible_targets=("local",),
+        )
+        request = RunRequest()
+        plan = plan_pipeline(
+            BindingAliasCollision,
+            profile=profile,
+            request=request,
+            context=PlanningContext.create(profile, registry=runtime.registry),
+        )
+        report = await LocalScheduler().execute(plan, request=request, runtime=runtime)
+        assert report.status.value == "succeeded", report.diagnostics
+        assert json.loads(destination.read_text()) == [{"id": 1}]
 
     anyio.run(exercise)
