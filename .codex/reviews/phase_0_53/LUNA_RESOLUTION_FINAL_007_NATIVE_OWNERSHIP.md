@@ -118,6 +118,8 @@ cross-run/crash-resumable reconciliation are not introduced.
 | Final focused native/compatibility run | Yes | PASS | 9 passed, 13 deselected |
 | Final qualification write campaign | Yes | PASS | 105 executed/pass, zero required skips, no source drift |
 | Historical adaptive evidence refresh | Yes | PASS | Unchanged 10-artifact / 18-AC verifier; only source fingerprints refreshed |
+| Initial pushed CI historical gate | Yes | FAIL — CHANGE CAUSED, resolved | Git-tracked source fingerprint added the newly committed helper/test; post-commit evidence refresh fixes the mismatch |
+| Post-commit historical refresh | Yes | PASS | All 10 artifacts retain their proofs; only repository_revision changes |
 | Interim core suite | Yes | FAIL — CHANGE CAUSED, resolved | 1 historical fingerprint failure while final fence was being added; final stable rerun required |
 | Final stable core suite | Yes | PASS | 1,851 passed, 5 skipped, 392 deselected, 48 existing warnings |
 | Final non-writing qualification | Yes | PASS | 105/105 executed/pass; committed proof matches source; source_changed=false |
@@ -130,6 +132,14 @@ cross-run/crash-resumable reconciliation are not introduced.
 
 All final local gates above pass. A prior revision's CI is not used as evidence
 for these fixes; exact pushed-revision CI is reported with the handoff.
+
+The first pushed run, 34794502260, exposed a tracked-file boundary in the
+historical verifier: it uses `git ls-files`, so pre-commit generation omitted the
+new untracked helper/test even though the pre-commit core suite passed. The same
+mismatch was reproduced locally after commit. Regenerating after those files
+became tracked changes only the ten historical source fingerprints. Production,
+tests, the historical gate and current 105-case qualification are unchanged by
+that correction. A new CI run verifies the corrected pushed tree.
 
 ## Scope / remaining issues
 
