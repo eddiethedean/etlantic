@@ -314,3 +314,9 @@ Residual risk: long-lived tokens may remain until every distribution is configur
 3. Confirm Installation / Quickstart pin that version (no day-0 `git+…@main`).
 4. Confirm enterprise / security pages match assets.
 5. Announce only after steps 1–4 pass (`check_docs` / `check_release`).
+
+Migration definition and plan goldens include adapter provenance, planner and
+plugin release versions. After a lockstep version bump, verify that canonical
+inputs differ only in those version fields before refreshing their expected
+fingerprints. Keep semantic, source, asset and node assertions intact; do not
+refresh goldens to conceal behavioral changes.
