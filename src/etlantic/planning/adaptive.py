@@ -368,7 +368,7 @@ def _build_adaptive_plan(
                             for record in metadata.get("etlantic.implementations", ())
                             if record.get("binding") is not None
                         },
-                        "contracts": _contract_fingerprints(graph),
+                        "contracts": _contract_fingerprints(selected),
                         "bindings": {
                             record["node_name"]: context.registry.bindings[
                                 record["binding"]

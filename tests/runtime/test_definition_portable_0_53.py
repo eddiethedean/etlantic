@@ -24,7 +24,7 @@ from etlantic.plan import (
 )
 from etlantic.registry import PlanningContext
 from etlantic.runtime.execute import arun_pipeline
-from etlantic.runtime.request import RunRequest
+from etlantic.runtime.request import RunRequest, RunSelection
 from etlantic.runtime.scheduler import LocalScheduler
 from tests.plan.test_adaptive_planner_0_52 import adaptive_profile
 from tests.runtime.physical.test_qualification_0_53 import Chain, Project, setup
@@ -181,3 +181,53 @@ def test_definition_missing_or_invalid_portable_ir_cannot_gain_eligibility(
     plan, report = plan_pipeline_with_report(definition, profile=adaptive_profile())
     assert plan is None
     assert report.has_errors
+
+
+@pytest.mark.parametrize("reporting", [False, True])
+def test_selected_definition_does_not_resolve_unselected_contracts(
+    reporting: bool, tmp_path: Any, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Partial definition plans must load contracts only for selected nodes."""
+    marker = tmp_path / "unselected_contract_loaded"
+    module = tmp_path / "unselected_contract.py"
+    module.write_text(
+        "from pathlib import Path\n"
+        "from tests.runtime.physical.test_qualification_0_53 import Row\n"
+        f"Path({str(marker)!r}).write_text('loaded')\n"
+        "raise RuntimeError('unselected contract module initialized')\n",
+        encoding="utf-8",
+    )
+    monkeypatch.syspath_prepend(str(tmp_path))
+
+    payload = definition_from_pipeline(Chain).to_dict()
+    unused = dict(payload["nodes"][0])
+    unused["name"] = "unused"
+    unused["identity"] = "unused"
+    unused["asset"] = "unused-rows"
+    unused["contract_id"] = "unselected_contract:Row"
+    unused["outputs"] = [
+        dict(unused["outputs"][0], contract_id="unselected_contract:Row")
+    ]
+    payload["nodes"].append(unused)
+    payload["contracts"].append(
+        dict(
+            payload["contracts"][0],
+            identity="unused-row",
+            authoring_id="unselected_contract:Row",
+        )
+    )
+    definition = pipeline_from_json(
+        pipeline_to_json(type(definition_from_pipeline(Chain)).from_dict(payload))
+    )
+    request = RunRequest(selection=RunSelection.until("out"))
+
+    if reporting:
+        plan, report = plan_pipeline_with_report(
+            definition, profile=adaptive_profile(), request=request
+        )
+        assert not report.has_errors, report.codes()
+    else:
+        plan = plan_pipeline(definition, profile=adaptive_profile(), request=request)
+
+    assert tuple(plan.logical_graph.node_names()) == ("raw", "first", "second", "out")
+    assert not marker.exists()
