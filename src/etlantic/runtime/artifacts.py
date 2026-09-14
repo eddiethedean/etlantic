@@ -170,7 +170,8 @@ class AttemptArtifactStore(ArtifactStore):
             for ref in self.list_refs():
                 durable = self._durable[ref.identity]
                 if durable and self.workspace is not None:
-                    from etlantic.io_policy import read_text_safe, resolve_under_policy
+                    from etlantic.interchange.security import ensure_file_within_budget
+                    from etlantic.io_policy import resolve_under_policy
 
                     policy = self.policy or SafeIoPolicy.for_root(self.workspace)
                     path, _ = resolve_under_policy(
@@ -179,11 +180,12 @@ class AttemptArtifactStore(ArtifactStore):
                         policy,
                         run_id=ref.identity,
                     )
-                    previous = (
-                        read_text_safe(path, policy, run_id=ref.identity)[1]
-                        if path.exists()
-                        else None
-                    )
+                    previous = None
+                    if path.exists():
+                        ensure_file_within_budget(path, max_bytes=policy.max_read_bytes)
+                        # A rollback must preserve original bytes, including
+                        # CRLF. Universal-newline text reads would normalize it.
+                        previous = path.read_bytes().decode("utf-8")
                     written.append((path, previous, policy))
                 prepared.put(
                     ref,

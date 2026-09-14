@@ -26,7 +26,8 @@ Production changes:
   borrowed inputs. Complete output sets become visible only after the member
   and middleware finish and the effective deadline/cancellation check passes.
   Durable preparation is also checked before visibility. Failure restores
-  previous artifact files/removes new files; cleanup failure is retained for
+  previous artifact bytes, including CRLF line endings, and removes new files;
+  cleanup failure is retained for
   an owner obligation while preserving the primary exception.
 - `runtime/artifacts.py`, `check_attempt_deadline`: delivers pending
   cancellation and checks the effective clock deadline around the cooperative
@@ -67,13 +68,23 @@ Additional tests in `tests/runtime/test_native_execution.py` (six new cases):
 - External cancellation after the body returns: no private transform output
   becomes available and the public cancelled report is retained.
 - Deadline during real durable preparation: old file bytes are restored, a
-  new file is removed and neither output is exposed in the parent store.
+  new file is removed and neither output is exposed in the parent store. The
+  existing file explicitly contains CRLF on every platform.
 - Successful multi-port durable completion: both ports/files appear together
   in the run store and borrowed input identity/ownership survives stage cleanup.
 
 A separate temporary runtime probe with an outer run deadline and synchronous
 post-body middleware also passed: failed run, no late transform artifact and
 zero sink effect. It adds no repository verification artifact.
+
+CI correction: The initial pushed revision `ea1ebd31` exposed newline
+normalization in the new durable backup on Windows Python 3.11/3.12/3.13.
+The old text reader normalized CRLF to LF before rollback. Strengthening the
+fixture to explicit CRLF reproduced the same failure locally (one failed,
+ten deselected), without changing its byte-equality assertion. The backup now
+reads exact UTF-8 bytes after the existing path and read-budget checks.
+The same strengthened test passes in the 15-case targeted selection. This is
+part of FINAL-007's rollback fix, not a separate follow-up or relaxed contract.
 
 Resolution: Deadline enforcement now belongs to the complete adaptive attempt's
 output visibility boundary. Source, transformation and sink preparation use the
@@ -115,12 +126,14 @@ outside scope.
 | Gate | Executed | Result | Notes |
 |---|---|---|---|
 | Before-fix protected schema deadline | Yes | FAIL — OPEN BLOCKER | Reproduced before edits |
+| Initial pushed CI, Windows core matrix | Yes | FAIL — CHANGE CAUSED | CRLF rollback normalization reproduced and corrected |
+| Before-correction CRLF rollback regression | Yes | FAIL — CHANGE CAUSED | One failed, 10 deselected; assertion preserved |
 | Targeted protected/native checks after initial fix | Yes | PASS | 9 passed, 14 deselected |
 | Complete focused lifecycle selection | Yes | PASS | 15 passed, 14 deselected |
 | Final phase 0.53 write campaign | Yes | PASS | 112 executed/pass, zero required skips, source_changed=false |
 | Final non-writing phase 0.53 verifier | Yes | PASS | 112/112; committed source/output proof matches |
 | Historical adaptive evidence refresh | Yes | PASS | Unchanged verifier, 10 artifacts / 18 criteria; source fingerprint refresh only |
-| Configured core suite | Yes | PASS | 1,853 passed, 5 existing skips, 397 deselected, 48 warnings; historical regeneration check included |
+| Configured core suite | Yes | PASS | 1,853 passed, 5 existing skips, 397 deselected, 49 warnings; rerun after CRLF correction, historical regeneration check included |
 | Polars/Pandas dataframe, compiler and public conformance selection | Yes | PASS | 62 passed, 194 deselected |
 | Ruff / format | Yes | PASS | 947 Python files formatted |
 | Configured Pyright | Yes | PASS | Zero errors/warnings |
@@ -132,7 +145,7 @@ outside scope.
 | Final diff/whitespace inspection | Yes | PASS | Production changes map only to FINAL-007; protected assertions/gates unchanged |
 
 Final source fingerprint:
-`sha256:bb5198725caeb1a4da88244527a9b01302862cb45d5e04de8aa03ea44c7c2bbb`.
+`sha256:e926aad863e33b4e8237ec0fac0edc9d391d15a999276ef4c2a21743ab997007`.
 Exact pushed-revision CI results will be supplied in the conversation handoff;
 the prior revision's green CI is not reused as proof of this remediation.
 

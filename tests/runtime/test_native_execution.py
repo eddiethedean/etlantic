@@ -146,7 +146,7 @@ def test_durable_attempt_deadline_restores_files_and_exposes_no_outputs(
 
     original = artifact_module.write_json_safe
     existing = tmp_path / "existing.json"
-    existing.write_text('[{"id": 99}]\n')
+    existing.write_bytes(b'[{"id": 99}]\r\n')
     old_bytes = existing.read_bytes()
 
     def persist(path: Path, *args: Any, **kwargs: Any) -> Any:
