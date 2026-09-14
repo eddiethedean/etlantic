@@ -65,6 +65,7 @@ identified during remediation.
 | Adaptive 0.52 evidence verification | Yes | PASS | 10 artifacts, 18 criteria |
 | Adaptive 0.53 evidence verification | Yes | PASS | 118/118 scenarios; source unchanged |
 | Full repository pytest suite | Yes | FAIL — PRE-EXISTING/UNRELATED | 2,229 passed, 29 skipped; 3 migration golden fingerprint mismatches in `tests/medallantic/test_migration_goldens_0_35.py`, outside the changed runtime path |
+| GitHub CI (`34841154363`) | Yes | PASS | 37/37 jobs passed on commit `89ff6e47` |
 
 ## Remediation Summary
 
