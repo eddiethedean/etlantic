@@ -258,6 +258,7 @@ class LocalScheduler:
                 runtime=runtime,
                 pipeline_cls=pipeline_cls,
                 contract_pins=admission.contract_pins,
+                binding_pins=admission.binding_pins,
             )
             host = LocalOrchestrator(
                 runtime=runtime,

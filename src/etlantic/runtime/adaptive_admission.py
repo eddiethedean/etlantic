@@ -31,6 +31,7 @@ class AdaptiveAdmission:
     compiler_pins: Mapping[str, Any] = field(default_factory=dict)
     dataframe_pins: Mapping[str, Any] = field(default_factory=dict)
     contract_pins: Mapping[str, type[Any]] = field(default_factory=dict)
+    binding_pins: Mapping[str, Any] = field(default_factory=dict)
 
 
 def _reject(message: str, code: str) -> PipelineExecutionError:
@@ -319,6 +320,7 @@ def admit_adaptive_plan(
     # admissible for this invocation.
     compiler_pins: dict[str, Any] = {}
     dataframe_pins: dict[str, Any] = {}
+    binding_pins: dict[str, Any] = {}
     if runtime is not None:
         registry = getattr(runtime, "registry", None)
         from importlib.metadata import version
@@ -383,15 +385,18 @@ def admit_adaptive_plan(
                 request.binding_overrides.get(node.name) or node.binding or node.name
             )
             descriptor = live_bindings.get(binding)
-            if descriptor is None:
-                # Built-in in-memory bindings are implicit and require no
-                # registry entry.  Any explicitly qualified binding must be
-                # represented by a live descriptor.
-                # The built-in memory connector is implicit; its binding may
-                # legitimately have no registry descriptor until first write.
+            stored_binding = (runtime_record.get("bindings") or {}).get(node.name)
+            if stored_binding is None:
+                # Built-in in-memory bindings are implicit. A descriptor that
+                # appeared after planning is drift, not an authority to change
+                # the captured operation.
+                if descriptor is not None:
+                    raise _reject("Adaptive binding descriptor drifted", "PMADP501")
                 if getattr(runtime, "memory", None) is None:
                     raise _reject("Adaptive binding is not live", "PMADP501")
                 continue
+            if descriptor is None:
+                raise _reject("Adaptive binding descriptor drifted", "PMADP501")
             provider = str(getattr(descriptor, "provider", ""))
             if provider not in allowed_providers:
                 raise _reject("Adaptive binding provider is not admitted", "PMADP501")
@@ -401,12 +406,15 @@ def admit_adaptive_plan(
                 or "overwrite"
             ) not in {"overwrite", "no_write"}:
                 raise _reject("Adaptive sink write mode is not admitted", "PMADP522")
-            stored_binding = (runtime_record.get("bindings") or {}).get(node.name)
-            if (
-                stored_binding is None
-                or mutable_copy(stored_binding) != descriptor.to_dict()
-            ):
+            if mutable_copy(stored_binding) != descriptor.to_dict():
                 raise _reject("Adaptive binding descriptor drifted", "PMADP501")
+            from etlantic.registry import BindingDescriptor
+
+            # The host must receive the admitted snapshot, rather than reading
+            # the mutable runtime registry after admission has completed.
+            binding_pins[node.name] = BindingDescriptor.from_dict(
+                mutable_copy(descriptor.to_dict())
+            )
             if (
                 provider in {"json", "csv"}
                 and node.kind.value == "sink"
@@ -662,6 +670,7 @@ def admit_adaptive_plan(
         compiler_pins,
         dataframe_pins,
         contract_pins,
+        binding_pins,
     )
 
 

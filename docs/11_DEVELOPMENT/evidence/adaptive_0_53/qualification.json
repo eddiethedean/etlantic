@@ -23,13 +23,13 @@
       "pyarrow": "25.0.0"
     }
   },
-  "junit_sha256": "2c9dbf2499e3d2e2fa77628a5895df2d1e46d2cf4ee06ffa2f7b1e72abdd5cf3",
-  "observed_at": "2026-09-14T16:16:01.579543+00:00",
-  "passed_scenarios": 123,
+  "junit_sha256": "222ad185e03826056f66360397444971cd068d62a256fc7c6e22459221b83c90",
+  "observed_at": "2026-09-14T17:16:34.798648+00:00",
+  "passed_scenarios": 125,
   "phase": "0.53",
   "result": "pass",
   "returncode": 0,
-  "scenario_count": 123,
+  "scenario_count": 125,
   "scenarios": [
     {
       "executed": true,
@@ -69,6 +69,11 @@
     {
       "executed": true,
       "id": "tests.plan.test_adaptive_planner_0_52::test_explicit_report_path_rejects_request_for_classes_and_definitions[non-default-request]",
+      "result": "pass"
+    },
+    {
+      "executed": true,
+      "id": "tests.runtime.physical.test_qualification_0_53::test_admitted_binding_snapshot_survives_post_admission_registry_mutation",
       "result": "pass"
     },
     {
@@ -259,6 +264,11 @@
     {
       "executed": true,
       "id": "tests.runtime.physical.test_qualification_0_53::test_five_family_stored_differential[rows1-families4]",
+      "result": "pass"
+    },
+    {
+      "executed": true,
+      "id": "tests.runtime.physical.test_qualification_0_53::test_missing_captured_binding_rejects_before_physical_effects",
       "result": "pass"
     },
     {
@@ -649,7 +659,7 @@
   ],
   "schema": "etlantic.adaptive_evidence/2",
   "source_changed": false,
-  "source_revision": "sha256:18047ec1b621e4907b10ff1089854acc172a7e69a857468c8a8db86b9b077fc1",
+  "source_revision": "sha256:3039cbf7aeb8e7cdfcba56915b46425988848b2b57adbf1caed921ea992937a2",
   "stderr_sha256": "05edbd111e3a90ba0587a5fcdd4c8554984634ecbd0b3ca664b4c3a844f8c76a",
-  "stdout_sha256": "81bcdc4cb285dd94abea6e32de64f3ad3aad1d609156e5003386bd84259c5412"
+  "stdout_sha256": "d3509a5706ca7a9986c61dc713ad3c0f3b1575ffd33520a51ea2bfce6aea3738"
 }

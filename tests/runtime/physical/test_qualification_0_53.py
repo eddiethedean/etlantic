@@ -679,3 +679,97 @@ def test_public_scheduler_file_receipt(provider, tmp_path):
                 assert list(csv.DictReader(stream)) == [{"id": "1"}, {"id": ""}]
 
     anyio.run(exercise)
+
+
+def test_missing_captured_binding_rejects_before_physical_effects(tmp_path):
+    """A removed explicit binding cannot silently fall back to memory."""
+    from etlantic.registry import BindingDescriptor
+
+    async def exercise():
+        destination = tmp_path / "out.json"
+        runtime = PipelineRuntime()
+        runtime.memory.seed("rows", [{"id": 1}])
+        runtime.registry.register_binding(
+            BindingDescriptor("out", "json", location=str(destination))
+        )
+        profile = Profile(
+            name="missing-binding",
+            execution_strategy="adaptive",
+            portable_transform_policy="require",
+            placement_targets={"local": PlacementTarget(engine="local")},
+            eligible_targets=("local",),
+        )
+        request = RunRequest()
+        plan = plan_pipeline(
+            Chain,
+            profile=profile,
+            request=request,
+            context=PlanningContext.create(profile, registry=runtime.registry),
+        )
+        runtime.registry.bindings.pop("out")
+        starts: list[str] = []
+        original_emit = runtime.events.emit
+
+        def emit(event):
+            if event.kind == "physical_unit_started":
+                starts.append(event.kind)
+            original_emit(event)
+
+        runtime.events.emit = emit
+        with pytest.raises(PipelineExecutionError) as exc_info:
+            await LocalScheduler().execute(plan, request=request, runtime=runtime)
+        assert exc_info.value.code == "PMADP501"
+        assert exc_info.value.stage == "admission"
+        assert starts == []
+        assert not destination.exists()
+        assert runtime.memory.get("out") == []
+
+    anyio.run(exercise)
+
+
+def test_admitted_binding_snapshot_survives_post_admission_registry_mutation(
+    tmp_path, monkeypatch: pytest.MonkeyPatch
+):
+    """The host executes the descriptor admitted for this invocation."""
+    from etlantic.registry import BindingDescriptor
+    from etlantic.runtime import physical_host
+
+    async def exercise():
+        destination = tmp_path / "admitted.json"
+        replacement = tmp_path / "replacement.json"
+        runtime = PipelineRuntime()
+        runtime.memory.seed("rows", [{"id": 1}])
+        runtime.registry.register_binding(
+            BindingDescriptor("out", "json", location=str(destination))
+        )
+        profile = Profile(
+            name="binding-snapshot",
+            execution_strategy="adaptive",
+            portable_transform_policy="require",
+            placement_targets={"local": PlacementTarget(engine="local")},
+            eligible_targets=("local",),
+        )
+        request = RunRequest()
+        plan = plan_pipeline(
+            Chain,
+            profile=profile,
+            request=request,
+            context=PlanningContext.create(profile, registry=runtime.registry),
+        )
+        original_build = physical_host.pipeline_plan_for_adaptive
+
+        def mutate_registry_after_admission(*args, **kwargs):
+            runtime.registry.register_binding(
+                BindingDescriptor("out", "json", location=str(replacement))
+            )
+            return original_build(*args, **kwargs)
+
+        monkeypatch.setattr(
+            physical_host, "pipeline_plan_for_adaptive", mutate_registry_after_admission
+        )
+        await LocalScheduler().execute(plan, request=request, runtime=runtime)
+        assert destination.exists()
+        assert not replacement.exists()
+        assert runtime.memory.get("out") == []
+
+    anyio.run(exercise)

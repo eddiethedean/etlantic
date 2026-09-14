@@ -85,6 +85,7 @@ def pipeline_plan_for_adaptive(
     runtime: Any,
     pipeline_cls: type[Any] | None,
     contract_pins: Mapping[str, type[Any]] | None = None,
+    binding_pins: Mapping[str, Any] | None = None,
 ) -> PipelinePlan:
     """Build the read-only host view required by :class:`LocalOrchestrator`.
 
@@ -198,9 +199,7 @@ def pipeline_plan_for_adaptive(
         materialization_boundaries=tuple(boundaries),
         logical_to_physical=logical_to_physical,
         implementations=implementations,
-        bindings=dict(
-            getattr(getattr(runtime, "registry", None), "bindings", {}) or {}
-        ),
+        bindings=dict(binding_pins or {}),
         selected_nodes=tuple(
             adaptive_plan.selected_nodes or adaptive_plan.logical_graph.node_names()
         ),
