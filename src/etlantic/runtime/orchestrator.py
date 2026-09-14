@@ -1623,18 +1623,19 @@ class LocalOrchestrator:
                         state.records_in = outcome.records_in
                         state.records_out = outcome.records_out
                         state.status = StepStatus(outcome.status)
+                        safe_outcome = outcome.to_dict()
                         state.stage = (
-                            outcome.to_dict()["failure_stage"]
+                            safe_outcome["failure_stage"]
                             if outcome.status not in {"succeeded", "skipped"}
                             else None
                         )
                         state.error = (
-                            outcome.code
+                            safe_outcome["code"]
                             if outcome.status not in {"succeeded", "skipped"}
                             else None
                         )
                         state.ended_at = datetime.now(UTC)
-                        state.metadata["etlantic.physical_metrics"] = outcome.to_dict()[
+                        state.metadata["etlantic.physical_metrics"] = safe_outcome[
                             "metrics"
                         ]
                     if not projection_error and not any(
@@ -1786,6 +1787,7 @@ class LocalOrchestrator:
                 unsuccessful = None
                 for name, outcome in outcomes.items():
                     state = nodes[name]
+                    safe_outcome = outcome.to_dict()
                     state.attempts = outcome.attempts
                     state.records_in = outcome.records_in
                     state.records_out = outcome.records_out
@@ -1798,12 +1800,14 @@ class LocalOrchestrator:
                         else StepStatus(outcome.status)
                     )
                     state.ended_at = datetime.now(UTC)
-                    state.metadata["etlantic.physical_metrics"] = outcome.to_dict()[
+                    state.metadata["etlantic.physical_metrics"] = safe_outcome[
                         "metrics"
                     ]
                     if outcome.status not in {"succeeded", "skipped"}:
-                        state.stage = outcome.failure_stage or "execute"
-                        state.error = outcome.code or "Physical logical outcome failed"
+                        state.stage = safe_outcome["failure_stage"] or "execute"
+                        state.error = (
+                            safe_outcome["code"] or "Physical logical outcome failed"
+                        )
                         unsuccessful = state
                 if kind == "publication":
                     logical_name = unit.metadata.get("etlantic.logical_node")

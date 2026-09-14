@@ -23,13 +23,13 @@
       "pyarrow": "25.0.0"
     }
   },
-  "junit_sha256": "9e7a2dacb81fb0d941438345275c153f4a38fba563aa57ba1dd1f2f7b10f44bf",
-  "observed_at": "2026-09-14T11:53:05.209594+00:00",
-  "passed_scenarios": 118,
+  "junit_sha256": "63ef8fc6b40129ffd20ee54a9c10a71de5a4621d289a40da422db1dadccf0eed",
+  "observed_at": "2026-09-14T13:26:50.172258+00:00",
+  "passed_scenarios": 120,
   "phase": "0.53",
   "result": "pass",
   "returncode": 0,
-  "scenario_count": 118,
+  "scenario_count": 120,
   "scenarios": [
     {
       "executed": true,
@@ -518,7 +518,17 @@
     },
     {
       "executed": true,
-      "id": "tests.runtime.test_sol_0_53_contract_rereview::test_sol_011_failed_executor_branch_has_terminal_logical_report",
+      "id": "tests.runtime.test_sol_0_53_contract_rereview::test_sol_011_failed_executor_branch_has_terminal_logical_report[final-009-inconsistent-unit-private-stage]",
+      "result": "pass"
+    },
+    {
+      "executed": true,
+      "id": "tests.runtime.test_sol_0_53_contract_rereview::test_sol_011_failed_executor_branch_has_terminal_logical_report[final-009-private-stage]",
+      "result": "pass"
+    },
+    {
+      "executed": true,
+      "id": "tests.runtime.test_sol_0_53_contract_rereview::test_sol_011_failed_executor_branch_has_terminal_logical_report[terminal-outcome]",
       "result": "pass"
     },
     {
@@ -624,7 +634,7 @@
   ],
   "schema": "etlantic.adaptive_evidence/2",
   "source_changed": false,
-  "source_revision": "sha256:a98bd18c1d0ba43a47f663b86175603002e737d980bf77a6c37482702aad1d72",
+  "source_revision": "sha256:9821cc94f32bde6611414fb1c5566ed373f84ffeb5a915b540fc7842bf1733f6",
   "stderr_sha256": "05edbd111e3a90ba0587a5fcdd4c8554984634ecbd0b3ca664b4c3a844f8c76a",
-  "stdout_sha256": "2cfab899cebcf6853f62a5a5e956fd96ac61c9836d016b3fcec196a9a35bf6ce"
+  "stdout_sha256": "e82fb4448863ab40738f1dba042790ec7421ca46bab374cefa69a7d3d55fa953"
 }

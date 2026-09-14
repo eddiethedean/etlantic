@@ -1,1 +1,1 @@
-{"passed": 118, "returncode": 0, "scenario_count": 118}
+{"passed": 120, "returncode": 0, "scenario_count": 120}

@@ -828,16 +828,23 @@ def test_final_007_explicit_async_compiler_retains_host_resources(
 @pytest.mark.polars
 @pytest.mark.pandas
 @pytest.mark.parametrize(
-    "failure_stage",
+    ("unit_status", "failure_stage"),
     [
-        pytest.param("transform", id="terminal-outcome"),
+        pytest.param("failed", "transform", id="terminal-outcome"),
         pytest.param(
+            "failed",
             'rows=[{"id":"SOL_PRIVATE_ROW_MARKER"}]',
             id="final-009-private-stage",
+        ),
+        pytest.param(
+            "succeeded",
+            'rows=[{"id":"SOL_PRIVATE_ROW_MARKER"}]',
+            id="final-009-inconsistent-unit-private-stage",
         ),
     ],
 )
 def test_sol_011_failed_executor_branch_has_terminal_logical_report(
+    unit_status: str,
     failure_stage: str,
 ) -> None:
     """Later independent success must not erase an executor's failed outcome."""
@@ -898,7 +905,7 @@ def test_sol_011_failed_executor_branch_has_terminal_logical_report(
                     return PhysicalUnitResult(
                         unit.identity,
                         unit.target_identity,
-                        "failed",
+                        unit_status,
                         logical_outcomes=(
                             PhysicalLogicalOutcome(
                                 name,
@@ -955,7 +962,10 @@ def test_sol_011_failed_executor_branch_has_terminal_logical_report(
         assert report.summary.failed == 1
         assert report.summary.succeeded == 4
         assert report.summary.skipped == 1
-        assert any(d.code == "PMADP520" for d in report.diagnostics)
+        expected_codes = (
+            {"PMADP400", "PMADP520"} if unit_status == "succeeded" else {"PMADP520"}
+        )
+        assert any(d.code in expected_codes for d in report.diagnostics)
         if failure_stage == "transform":
             assert steps["left"].failure_stage == "transform"
         assert "SOL_PRIVATE_ROW_MARKER" not in json.dumps(report.to_dict()), (
