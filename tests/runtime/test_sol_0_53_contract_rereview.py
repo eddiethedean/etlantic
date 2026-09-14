@@ -823,3 +823,126 @@ def test_final_007_explicit_async_compiler_retains_host_resources(
         assert [row.id for row in runtime.memory.get("out")] == [1]
 
     anyio.run(exercise)
+
+
+@pytest.mark.polars
+@pytest.mark.pandas
+def test_sol_011_failed_executor_branch_has_terminal_logical_report() -> None:
+    """Later independent success must not erase an executor's failed outcome."""
+    from etlantic.connectors.models import CommitReceipt
+    from etlantic.plan.artifacts import ArtifactRef, ArtifactStrategy
+    from etlantic.runtime.physical_protocol import (
+        PhysicalArtifactHandle,
+        PhysicalLogicalOutcome,
+    )
+    from tests.runtime.physical.test_qualification_0_53 import Fanout, Row, setup
+
+    async def exercise() -> None:
+        request = RunRequest(metadata={"concurrency": 2})
+        runtime, _, plan = setup(Fanout, ("local",), request)
+        support = support_row_for(plan)
+        assert support is not None
+        runtime.memory.seed("rows", [{"id": 1}])
+        started: list[str] = []
+        cleaned: list[str] = []
+        publications: list[str] = []
+
+        class Executor:
+            info = PhysicalExecutorInfo(
+                "etlantic.physical.local/1",
+                "etlantic",
+                "0.52.1",
+                capability_fingerprint=plan.inventory.targets[0].capability_fingerprint,
+                evidence_refs=support.evidence_refs,
+            )
+
+            def analyze(self, plan: Any, unit: Any) -> PhysicalUnitSupport:
+                return PhysicalUnitSupport(True, self.info.identity)
+
+            async def execute(self, context: Any) -> PhysicalUnitResult:
+                unit = context.unit
+                started.append(unit.identity)
+                if unit.kind.value == "publication":
+                    name = unit.metadata["etlantic.logical_node"]
+                    assert name == "right_out"
+                    await runtime.memory.write(
+                        binding="right-out",
+                        location=None,
+                        data=[{"id": 1}],
+                        contract_type=Row,
+                        context={},
+                    )
+                    publications.append(name)
+                    return PhysicalUnitResult(
+                        unit.identity,
+                        unit.target_identity,
+                        "succeeded",
+                        commit_receipt=CommitReceipt(
+                            "committed", publication_id="pub:sol-011-independent"
+                        ),
+                    )
+                name = unit.logical_nodes[0]
+                if name == "left":
+                    return PhysicalUnitResult(
+                        unit.identity,
+                        unit.target_identity,
+                        "failed",
+                        logical_outcomes=(
+                            PhysicalLogicalOutcome(
+                                name,
+                                "failed",
+                                attempts=1,
+                                failure_stage="transform",
+                                code="PMADP520",
+                            ),
+                        ),
+                    )
+                node = plan.logical_graph.node_map()[name]
+                return PhysicalUnitResult(
+                    unit.identity,
+                    unit.target_identity,
+                    "succeeded",
+                    outputs=tuple(
+                        PhysicalArtifactHandle(
+                            ArtifactRef(
+                                identity=f"artifact:{name}:{port.name}",
+                                logical_output=f"{name}.{port.name}",
+                                strategy=ArtifactStrategy.IN_MEMORY,
+                            ),
+                            [{"id": 1}],
+                            unit.target_identity,
+                        )
+                        for port in node.outputs
+                    ),
+                    logical_outcomes=(PhysicalLogicalOutcome(name, "succeeded"),),
+                )
+
+            async def cancel(self, context: Any) -> None:
+                pass
+
+            async def cleanup(self, context: Any, result: Any) -> tuple[Any, ...]:
+                cleaned.append(context.unit.identity)
+                return ()
+
+        runtime.physical_executors = {"local": Executor()}  # type: ignore[attr-defined]
+        report = await LocalScheduler().execute(plan, request=request, runtime=runtime)
+        steps = {step.step_name: step for step in report.steps}
+        assert set(steps) == set(plan.logical_graph.node_names())
+        assert report.status.value == "partial"
+        assert publications == ["right_out"]
+        assert [row.id for row in runtime.memory.get("right-out")] == [1]
+        assert runtime.memory.get("left-out") == []
+        assert steps["right_out"].status.value == "succeeded"
+        assert steps["left_out"].status.value == "skipped"
+        assert sorted(cleaned) == sorted(started)
+        assert steps["left"].status.value == "failed", (
+            "A failed executor branch must have a terminal logical report even "
+            "when a later independent branch succeeds"
+        )
+        assert steps["left"].attempts == 1
+        assert report.summary.failed == 1
+        assert report.summary.succeeded == 4
+        assert report.summary.skipped == 1
+        assert any(d.code == "PMADP520" for d in report.diagnostics)
+
+    anyio.run(exercise)

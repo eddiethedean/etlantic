@@ -23,13 +23,13 @@
       "pyarrow": "25.0.0"
     }
   },
-  "junit_sha256": "d6dd318fdbd6ad5ebf66c5853c46479478792178e165fde251671e2b326d2cf0",
-  "observed_at": "2026-09-14T03:40:23.076153+00:00",
-  "passed_scenarios": 117,
+  "junit_sha256": "9e7a2dacb81fb0d941438345275c153f4a38fba563aa57ba1dd1f2f7b10f44bf",
+  "observed_at": "2026-09-14T11:53:05.209594+00:00",
+  "passed_scenarios": 118,
   "phase": "0.53",
   "result": "pass",
   "returncode": 0,
-  "scenario_count": 117,
+  "scenario_count": 118,
   "scenarios": [
     {
       "executed": true,
@@ -518,6 +518,11 @@
     },
     {
       "executed": true,
+      "id": "tests.runtime.test_sol_0_53_contract_rereview::test_sol_011_failed_executor_branch_has_terminal_logical_report",
+      "result": "pass"
+    },
+    {
+      "executed": true,
       "id": "tests.runtime.test_sol_0_53_rereview::test_final_001_all_unit_support_analysis_precedes_session",
       "result": "pass"
     },
@@ -619,7 +624,7 @@
   ],
   "schema": "etlantic.adaptive_evidence/2",
   "source_changed": false,
-  "source_revision": "sha256:bf1e641142252b9f5c2cb29b574f9e7ec7d9f4e18df5e637a854b3d80fd44d30",
+  "source_revision": "sha256:a98bd18c1d0ba43a47f663b86175603002e737d980bf77a6c37482702aad1d72",
   "stderr_sha256": "05edbd111e3a90ba0587a5fcdd4c8554984634ecbd0b3ca664b4c3a844f8c76a",
-  "stdout_sha256": "42b1659230a9a38500791c244112af88135aaa61409fb7659c9a4bc03b4428d0"
+  "stdout_sha256": "2cfab899cebcf6853f62a5a5e956fd96ac61c9836d016b3fcec196a9a35bf6ce"
 }

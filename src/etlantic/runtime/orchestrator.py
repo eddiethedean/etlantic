@@ -1580,6 +1580,78 @@ class LocalOrchestrator:
                 result = cast(Any, result)
                 await check_attempt_deadline()
                 if result.status != "succeeded":
+                    # A physical executor can return a terminal failed unit
+                    # result with useful per-member attribution.  Project that
+                    # outcome before surfacing the unit error so independent
+                    # units cannot leave a failed logical member pending.
+                    members = set(protocol_unit.logical_nodes)
+                    outcomes = {
+                        outcome.logical_name: outcome
+                        for outcome in result.logical_outcomes
+                        if outcome.logical_name in members
+                    }
+                    valid_statuses = {
+                        "succeeded",
+                        "skipped",
+                        "failed",
+                        "cancelled",
+                        "timed_out",
+                        "abandoned",
+                    }
+                    projection_error = (
+                        len(outcomes) != len(result.logical_outcomes)
+                        or set(outcomes) != members
+                    )
+                    for name in members:
+                        state = nodes[name]
+                        outcome = outcomes.get(name)
+                        if (
+                            outcome is None
+                            or outcome.status not in valid_statuses
+                            or isinstance(outcome.attempts, bool)
+                            or not isinstance(outcome.attempts, int)
+                            or outcome.attempts < 1
+                        ):
+                            projection_error = True
+                            state.status = StepStatus.FAILED
+                            state.attempts = max(1, state.attempts)
+                            state.stage = "execute"
+                            state.error = "PMADP400"
+                            state.ended_at = datetime.now(UTC)
+                            continue
+                        state.attempts = outcome.attempts
+                        state.records_in = outcome.records_in
+                        state.records_out = outcome.records_out
+                        state.status = StepStatus(outcome.status)
+                        state.stage = (
+                            outcome.failure_stage
+                            if outcome.status not in {"succeeded", "skipped"}
+                            else None
+                        )
+                        state.error = (
+                            outcome.code
+                            if outcome.status not in {"succeeded", "skipped"}
+                            else None
+                        )
+                        state.ended_at = datetime.now(UTC)
+                        state.metadata["etlantic.physical_metrics"] = outcome.to_dict()[
+                            "metrics"
+                        ]
+                    if not projection_error and not any(
+                        outcome.status not in {"succeeded", "skipped"}
+                        for outcome in outcomes.values()
+                    ):
+                        # A failed unit with only successful member outcomes is
+                        # malformed; retain a safe terminal attribution rather
+                        # than reporting an apparently successful run.
+                        first_member = next(iter(members), None)
+                        if first_member is not None:
+                            state = nodes[first_member]
+                            state.status = StepStatus.FAILED
+                            state.attempts = max(1, state.attempts)
+                            state.stage = "execute"
+                            state.error = "PMADP520"
+                            state.ended_at = datetime.now(UTC)
                     raise PipelineExecutionError(
                         f"Physical executor failed unit {unit.identity}",
                         run_id=run_id,
@@ -2069,6 +2141,7 @@ class LocalOrchestrator:
                 )
             )
 
+        deferred_error: BaseException | None = None
         while pending:
             # Do not launch another ready batch after the run scope has
             # expired. This check also delivers cancellation that a prior
@@ -2107,7 +2180,6 @@ class LocalOrchestrator:
                 )
             batch = ready[:limit]
             results: list[BaseException] = []
-            first_error: BaseException | None = None
 
             async def guarded(
                 unit: Any, error_box: list[BaseException] = results
@@ -2152,11 +2224,11 @@ class LocalOrchestrator:
             async with anyio.create_task_group() as task_group:
                 for unit in batch:
                     task_group.start_soon(guarded, unit)
-            if results:
+            if results and deferred_error is None:
                 # Mark failed units complete so independent branches continue;
                 # dependents are skipped below.  Surface the first error only
                 # after the scheduler has drained all runnable work.
-                first_error = results[0]
+                deferred_error = results[0]
             for unit in batch:
                 pending.remove(unit.identity)
                 completed.add(unit.identity)
@@ -2172,8 +2244,14 @@ class LocalOrchestrator:
                     }
                 )
                 mark_blocked_units()
-                if not pending and first_error is not None:
-                    raise first_error
+                if not pending and deferred_error is not None:
+                    raise deferred_error
+
+        # A failed batch may have left independent units runnable. Once those
+        # units drain, surface the retained failure so the final report carries
+        # its diagnostic instead of silently becoming a success/partial report.
+        if deferred_error is not None:
+            raise deferred_error
 
     def _build_report(
         self,
