@@ -26,7 +26,8 @@ Resolution: Executor failure metadata now enters report state only through the e
 |---|---|---|---|
 | Targeted FINAL-009/SOL-011 | Yes | PASS | 3 passed, 19 deselected. |
 | Ruff / format / Pyright | Yes | PASS | Source/test checks; 0 type errors. |
-| Expanded 0.53 campaign | Attempted | NOT RUN — ENVIRONMENTAL/UNAVAILABLE | The source-bound runner hung after its child pytest exited; targeted protected verification passed and no qualification evidence was rewritten. |
+| Expanded 0.53 campaign | Yes | PASS | 119/119 scenarios passed, source unchanged; temporary proof generated after the production fix. |
+| Historical adaptive 0.52 evidence regeneration | Yes | PASS | 10 artifacts regenerated after the protected test source change; all 18 criteria passed and the verifier reports clean evidence. |
 | Existing core suite | Yes | PASS with unrelated failure | 1,854 passed, 5 skipped; one pre-existing schema-deadline fixture failure. |
 | Documentation / packaging / static gates | Yes | PASS | Existing review gates and wheel build. |
 
