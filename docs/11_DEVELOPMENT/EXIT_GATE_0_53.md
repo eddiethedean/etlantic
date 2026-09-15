@@ -1,6 +1,6 @@
 # Exit Gate 0.53 — Local Adaptive Physical-DAG Execution
 
-Status: **0.53.0 release candidate; adaptive execution remains Experimental.**
+Status: **0.53.0 released; adaptive execution remains Experimental.**
 
 The release boundary is the 24 acceptance criteria in the
 [approved implementation contract](IMPLEMENTATION_PLAN_0_53.md). Local static
@@ -14,7 +14,7 @@ failure, cancellation, deadlines, cleanup and reconciliation preserve the
 documented logical outcomes and ownership barriers. Explicit `/1` compatibility
 and valid historical `/2` reader compatibility remain required.
 
-Before tagging `v0.53.0`, require:
+The published `v0.53.0` release records the following completed gates:
 
 1. All in-scope ACs and previous blockers pass independent Sol review.
 2. Core and every first-party package declare 0.53.0, synchronized manifests,
@@ -30,7 +30,8 @@ Before tagging `v0.53.0`, require:
 Evidence and exact backend versions:
 [adaptive 0.53 qualification](evidence/adaptive_0_53/README.md).
 
-No tag, GitHub release or PyPI upload is created by preparing this candidate.
+The tag, GitHub release, PyPI packages, build attestations and release assets
+were published by the release workflow after the required checks passed.
 The existing tag-triggered Release workflow publishes only after its checks.
 Native adaptive bodies, additional engines, durable/remote/dynamic execution,
 arbitrary topologies and phase 0.54 availability graduation remain excluded.

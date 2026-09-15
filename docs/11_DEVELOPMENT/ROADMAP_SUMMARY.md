@@ -4,10 +4,9 @@ ETLantic **0.35.0** closed **Migration Completion and Joint Freeze (M7)**.
 **0.36.0** closed joint compatibility burn-in. **0.37** closed the
 stable-foundation gate. **0.38.0** closed the connectivity line.
 **0.39.0** closed CP1 incubation. **0.40.0** closed CP2 registry incubation.
-**0.51.0** is the current **published Beta release**: adaptive Profile policy,
-the closed `/2` wire foundation, and run-report metadata migration, with
-adaptive planning/execution still unavailable. It preserves the published
-portable-engine baseline from **0.50.1**. Prior
+**0.53.0** is the current **published Beta release**: local adaptive
+physical-DAG execution is Experimental and fixture-qualified, alongside the
+closed `/2` wire foundation and the published portable-engine baseline. Prior
 **0.49** qualified optional DuckDB; prior **0.48** closed human-governed AI
 context/proposals; prior
 **0.47** closed the scheduler/runner
@@ -37,17 +36,17 @@ For the status, current boundary, and owner of every domain plan, use the
 | Previous | 0.39 | Multi-tenant control plane (CP1) | [Gate-ready / shipped evidence](EXIT_GATE_0_39.md) |
 | Previous | 0.38 | Data connectivity and connector SDK | [Gate-ready / shipped evidence](EXIT_GATE_0_38.md) |
 | Previous | 0.49 | Qualified optional DuckDB engine package | Implemented qualified subset — [plan](IMPLEMENTATION_PLAN_0_49.md), [exit gate](EXIT_GATE_0_49.md), [findings ledger](FINDINGS_0_49.md) |
-| Current | 0.52 | Adaptive Profile and `/2` wire foundation; planning/execution unavailable | Published foundation; [plan](IMPLEMENTATION_PLAN_0_51.md) and [exit gate](EXIT_GATE_0_51.md) |
+| Previous | 0.51 | Adaptive Profile and `/2` wire foundation; planning/execution unavailable | Published foundation; [plan](IMPLEMENTATION_PLAN_0_51.md) and [exit gate](EXIT_GATE_0_51.md) |
 | Previous | 0.50 | Seven-engine portable execution and pushdown conformance | Published and technically qualified; [plan](IMPLEMENTATION_PLAN_0_50.md), [evidence gate](EXIT_GATE_0_50.md), and [evidence index](evidence/portable_0_50/portable_evidence_index_0_50.json) |
-| Next | 0.52 | Adaptive planning, physical lowering, and explain/diff | Implemented on main; executable evidence generated — [plan](IMPLEMENTATION_PLAN_0_52.md), [evidence](evidence/adaptive_0_51/FINDINGS.md), governed by [ADR-025](adr/ADR-025-ADAPTIVE-EXECUTION-AND-PHYSICAL-DAG.md) |
-| Later | 0.53 | Local adaptive physical-DAG execution | Planned — [plan](IMPLEMENTATION_PLAN_0_53.md), [milestone](https://github.com/eddiethedean/etlantic/milestone/5) |
+| Previous | 0.52 | Adaptive planning, physical lowering, and explain/diff | Implemented on main; executable evidence generated — [plan](IMPLEMENTATION_PLAN_0_52.md), [evidence](evidence/adaptive_0_51/FINDINGS.md), governed by [ADR-025](adr/ADR-025-ADAPTIVE-EXECUTION-AND-PHYSICAL-DAG.md) |
+| Current | 0.53 | Local adaptive physical-DAG execution | Published Experimental / fixture-qualified — [plan](IMPLEMENTATION_PLAN_0_53.md), [exit gate](EXIT_GATE_0_53.md), and [qualification evidence](evidence/adaptive_0_53/README.md) |
 | Later | 0.54 | Adaptive conformance, qualification, and graduation | Planned — [plan](IMPLEMENTATION_PLAN_0_54.md), [milestone](https://github.com/eddiethedean/etlantic/milestone/6) |
 | Later | 0.55 | Brownfield adoption bridges | Planning freeze — [milestone](https://github.com/eddiethedean/etlantic/milestone/7) |
 | Later | 0.56 | Operator console | Planned — [milestone](https://github.com/eddiethedean/etlantic/milestone/8) |
 | Later | 0.57 | Managed runtime and enterprise provider packs | Planned — [milestone](https://github.com/eddiethedean/etlantic/milestone/9) |
 | Later | 0.58 | TransformationModel incubation | Proposed — [milestone](https://github.com/eddiethedean/etlantic/milestone/10) |
 | Foundation | 0.36–0.37 | Joint burn-in → stable foundation | Gate-ready (0.37) |
-| Post-foundation | 0.38–0.58 | Connectivity → control plane → intelligence → federation → governed AI → DuckDB package → portable-engine baseline → adaptive execution → adoption → operations → providers → modeling incubation | In progress (0.51 foundation published; adaptive execution not yet qualified) |
+| Post-foundation | 0.38–0.58 | Connectivity → control plane → intelligence → federation → governed AI → DuckDB package → portable-engine baseline → adaptive execution → adoption → operations → providers → modeling incubation | In progress (0.53 adaptive execution published Experimental; 0.54 graduation remains next) |
 
 “Planned” records capability order only. It does not imply a release date or
 that the capability is available in the current package.
