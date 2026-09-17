@@ -68,3 +68,36 @@ def test_csv_append_to_empty_file_writes_header(tmp_path: Path) -> None:
 
     anyio.run(exercise)
     assert path.read_bytes() == b"id,amount\r\n2,200\r\n"
+
+
+def test_csv_append_preserves_a_concurrent_append(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    path = tmp_path / "rows.csv"
+    path.write_bytes(b"id,label\r\n1,a\r\n")
+    store = CsvStorage()
+    original_fieldnames = store._append_fieldnames
+
+    def competing_append(
+        target: Path,
+        contract_type: type[object] | None,
+        rows: list[dict[str, object]],
+    ) -> list[str]:
+        fieldnames = original_fieldnames(target, contract_type, rows)
+        with path.open("a", newline="", encoding="utf-8") as handle:
+            handle.write("3,c\r\n")
+        return fieldnames
+
+    monkeypatch.setattr(store, "_append_fieldnames", competing_append)
+
+    async def exercise() -> None:
+        await store.write(
+            binding="rows",
+            location=str(path),
+            data=[{"id": 2, "label": "b"}],
+            contract_type=None,
+            context={"write_mode": "append"},
+        )
+
+    anyio.run(exercise)
+    assert path.read_bytes() == b"id,label\r\n1,a\r\n3,c\r\n2,b\r\n"
