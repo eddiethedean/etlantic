@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import csv
+from io import StringIO
 from pathlib import Path
 from typing import Any
 
@@ -44,6 +45,26 @@ class CsvStorage:
         if rows:
             return list(rows[0].keys())
         return []
+
+    def _append_fieldnames(
+        self,
+        path: Path,
+        contract_type: type[Any] | None,
+        rows: list[dict[str, Any]],
+    ) -> list[str]:
+        """Use the existing header as the append serialization authority."""
+        with path.open(newline="", encoding="utf-8") as handle:
+            existing = csv.DictReader(handle)
+            fieldnames = list(existing.fieldnames or ())
+        if not fieldnames:
+            return self._fieldnames(contract_type, rows)
+        expected = set(fieldnames)
+        for row in rows:
+            if set(row) != expected:
+                raise ValueError(
+                    "CSV append rows must match the existing file header exactly"
+                )
+        return fieldnames
 
     async def read(
         self,
@@ -108,10 +129,16 @@ class CsvStorage:
             }
         path.parent.mkdir(parents=True, exist_ok=True)
         if mode == "append" and path.is_file():
+            fieldnames = self._append_fieldnames(path, contract_type, rows)
+            # Validate the complete batch before opening the destination for
+            # append, so a malformed row cannot leave a partial write.
+            output = StringIO(newline="")
+            writer = csv.DictWriter(
+                output, fieldnames=fieldnames or ["value"], extrasaction="raise"
+            )
+            writer.writerows(rows)
             with path.open("a", newline="", encoding="utf-8") as handle:
-                writer = csv.DictWriter(handle, fieldnames=fieldnames or ["value"])
-                for row in rows:
-                    writer.writerow(row)
+                handle.write(output.getvalue())
         else:
             with path.open("w", newline="", encoding="utf-8") as handle:
                 writer = csv.DictWriter(handle, fieldnames=fieldnames or ["value"])
