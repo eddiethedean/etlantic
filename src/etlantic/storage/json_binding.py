@@ -48,7 +48,7 @@ class JsonStorage:
         payload = json.loads(text) if text.strip() else []
         return payload if isinstance(payload, list) else [payload]
 
-    def _encode(self, rows: list[dict[str, Any]], path: Path) -> str:
+    def _encode(self, rows: list[Any], path: Path) -> str:
         if self._is_lines(path):
             return "".join(json.dumps(row, sort_keys=True) + "\n" for row in rows)
         return json.dumps(rows, indent=2, sort_keys=True) + "\n"
@@ -113,7 +113,7 @@ class JsonStorage:
 
             def merge(existing_text: str) -> str:
                 existing = self._decode(existing_text, path)
-                return self._encode([*records_to_dicts(existing), *rows], path)
+                return self._encode([*existing, *rows], path)
 
             if policy is not None:
                 from etlantic.io_policy import read_modify_write_text_safe

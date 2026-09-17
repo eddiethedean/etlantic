@@ -171,8 +171,13 @@ class CsvStorage:
             )
         elif mode == "append" and path.is_file():
             with path.open("r", newline="", encoding="utf-8") as handle:
-                updated = self._append_text(handle.read(), rows, contract_type)
-            path.write_text(updated, encoding="utf-8", newline="")
+                existing = handle.read()
+            updated = self._append_text(existing, rows, contract_type)
+            appended = updated[len(existing) :]
+            # Keep the append-only behavior when no SafeIoPolicy is supplied;
+            # a concurrent writer must not have its completed append replaced.
+            with path.open("a", newline="", encoding="utf-8") as handle:
+                handle.write(appended)
         elif policy is not None:
             from etlantic.io_policy import write_text_safe
 

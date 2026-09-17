@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import json
 from pathlib import Path
 
 import anyio
@@ -146,3 +147,58 @@ def test_policy_csv_preserves_embedded_newlines(tmp_path: Path) -> None:
 
     anyio.run(exercise)
     assert b'1,"a\r\nb"\r\n' in path.read_bytes()
+
+
+def test_csv_append_without_policy_preserves_a_concurrent_append(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    path = tmp_path / "concurrent.csv"
+    path.write_bytes(b"id,label\r\n1,a\r\n")
+    store = CsvStorage()
+    original_append_text = store._append_text
+
+    def competing_append(
+        existing: str,
+        rows: list[dict[str, object]],
+        contract_type: type[object] | None,
+    ) -> str:
+        updated = original_append_text(existing, rows, contract_type)
+        with path.open("a", newline="", encoding="utf-8") as handle:
+            handle.write("3,c\r\n")
+        return updated
+
+    monkeypatch.setattr(store, "_append_text", competing_append)
+
+    async def exercise() -> None:
+        await store.write(
+            binding="rows",
+            location=str(path),
+            data=[{"id": 2, "label": "b"}],
+            contract_type=None,
+            context={"write_mode": "append"},
+        )
+
+    anyio.run(exercise)
+    assert path.read_bytes() == b"id,label\r\n1,a\r\n3,c\r\n2,b\r\n"
+
+
+def test_json_append_preserves_existing_scalar_records(tmp_path: Path) -> None:
+    path = tmp_path / "values.json"
+    path.write_text('[1, "old", null]\n', encoding="utf-8")
+
+    async def exercise() -> None:
+        await JsonStorage().write(
+            binding="values",
+            location=str(path),
+            data=[{"id": 2}],
+            contract_type=None,
+            context={"write_mode": "append"},
+        )
+
+    anyio.run(exercise)
+    assert json.loads(path.read_text(encoding="utf-8")) == [
+        1,
+        "old",
+        None,
+        {"id": 2},
+    ]
