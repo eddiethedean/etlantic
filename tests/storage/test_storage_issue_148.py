@@ -202,3 +202,21 @@ def test_json_append_preserves_existing_scalar_records(tmp_path: Path) -> None:
         None,
         {"id": 2},
     ]
+
+
+def test_csv_append_to_blank_only_file_writes_an_intact_header(tmp_path: Path) -> None:
+    path = tmp_path / "blank.csv"
+    path.write_bytes(b"\n")
+
+    async def exercise() -> None:
+        args = {"binding": "blank", "location": str(path), "contract_type": None}
+        await CsvStorage().write(
+            **args,
+            data=[{"id": 2, "amount": 200}],
+            context={"write_mode": "append"},
+        )
+        rows = await CsvStorage().read(**args, context={})
+        assert rows == [{"id": "2", "amount": "200"}]
+
+    anyio.run(exercise)
+    assert path.read_bytes() == b"id,amount\r\n2,200\r\n"

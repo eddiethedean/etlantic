@@ -173,11 +173,15 @@ class CsvStorage:
             with path.open("r", newline="", encoding="utf-8") as handle:
                 existing = handle.read()
             updated = self._append_text(existing, rows, contract_type)
-            appended = updated[len(existing) :]
-            # Keep the append-only behavior when no SafeIoPolicy is supplied;
-            # a concurrent writer must not have its completed append replaced.
-            with path.open("a", newline="", encoding="utf-8") as handle:
-                handle.write(appended)
+            if not existing.strip():
+                with path.open("w", newline="", encoding="utf-8") as handle:
+                    handle.write(updated)
+            else:
+                appended = updated[len(existing) :]
+                # Keep the append-only behavior when no SafeIoPolicy is
+                # supplied; a concurrent writer must not be replaced.
+                with path.open("a", newline="", encoding="utf-8") as handle:
+                    handle.write(appended)
         elif policy is not None:
             from etlantic.io_policy import write_text_safe
 
