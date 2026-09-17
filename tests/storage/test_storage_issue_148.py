@@ -220,3 +220,32 @@ def test_csv_append_to_blank_only_file_writes_an_intact_header(tmp_path: Path) -
 
     anyio.run(exercise)
     assert path.read_bytes() == b"id,amount\r\n2,200\r\n"
+
+
+def test_csv_append_to_empty_file_merges_a_competing_append(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    from etlantic import io_policy
+
+    path = tmp_path / "empty.csv"
+    path.touch()
+    store = CsvStorage()
+    original = io_policy.read_modify_write_text_safe
+
+    def competing_write(*args: object, **kwargs: object) -> object:
+        path.write_bytes(b"id,label\r\n3,c\r\n")
+        return original(*args, **kwargs)
+
+    monkeypatch.setattr(io_policy, "read_modify_write_text_safe", competing_write)
+
+    async def exercise() -> None:
+        await store.write(
+            binding="empty",
+            location=str(path),
+            data=[{"id": 2, "label": "b"}],
+            contract_type=None,
+            context={"write_mode": "append"},
+        )
+
+    anyio.run(exercise)
+    assert path.read_bytes() == b"id,label\r\n3,c\r\n2,b\r\n"
