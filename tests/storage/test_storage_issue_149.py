@@ -76,19 +76,19 @@ def test_csv_append_preserves_a_concurrent_append(
     path = tmp_path / "rows.csv"
     path.write_bytes(b"id,label\r\n1,a\r\n")
     store = CsvStorage()
-    original_fieldnames = store._append_fieldnames
+    original_append_text = store._append_text
 
     def competing_append(
-        target: Path,
+        existing: str,
         contract_type: type[object] | None,
         rows: list[dict[str, object]],
-    ) -> list[str]:
-        fieldnames = original_fieldnames(target, contract_type, rows)
+    ) -> str:
+        updated = original_append_text(existing, contract_type, rows)
         with path.open("a", newline="", encoding="utf-8") as handle:
             handle.write("3,c\r\n")
-        return fieldnames
+        return updated
 
-    monkeypatch.setattr(store, "_append_fieldnames", competing_append)
+    monkeypatch.setattr(store, "_append_text", competing_append)
 
     async def exercise() -> None:
         await store.write(
@@ -119,3 +119,32 @@ def test_csv_append_to_blank_only_file_writes_an_intact_header(tmp_path: Path) -
 
     anyio.run(exercise)
     assert path.read_bytes() == b"id,amount\r\n2,200\r\n"
+
+
+def test_csv_append_to_empty_file_merges_a_competing_append(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    from etlantic import io_policy
+
+    path = tmp_path / "empty.csv"
+    path.touch()
+    store = CsvStorage()
+    original = io_policy.read_modify_write_text_safe
+
+    def competing_write(*args: object, **kwargs: object) -> object:
+        path.write_bytes(b"id,label\r\n3,c\r\n")
+        return original(*args, **kwargs)
+
+    monkeypatch.setattr(io_policy, "read_modify_write_text_safe", competing_write)
+
+    async def exercise() -> None:
+        await store.write(
+            binding="empty",
+            location=str(path),
+            data=[{"id": 2, "label": "b"}],
+            contract_type=None,
+            context={"write_mode": "append"},
+        )
+
+    anyio.run(exercise)
+    assert path.read_bytes() == b"id,label\r\n3,c\r\n2,b\r\n"

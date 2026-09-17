@@ -46,25 +46,34 @@ class CsvStorage:
             return list(rows[0].keys())
         return []
 
-    def _append_fieldnames(
+    def _append_text(
         self,
-        path: Path,
+        existing_text: str,
         contract_type: type[Any] | None,
         rows: list[dict[str, Any]],
-    ) -> list[str]:
+    ) -> str:
         """Use the existing header as the append serialization authority."""
-        with path.open(newline="", encoding="utf-8") as handle:
-            existing = csv.DictReader(handle)
-            fieldnames = list(existing.fieldnames or ())
-        if not fieldnames:
-            return self._fieldnames(contract_type, rows)
-        expected = set(fieldnames)
+        reader = csv.DictReader(StringIO(existing_text, newline=""))
+        existing_fieldnames = list(reader.fieldnames or ())
+        fieldnames = existing_fieldnames or self._fieldnames(contract_type, rows)
+        expected = set(fieldnames or ["value"])
         for row in rows:
             if set(row) != expected:
                 raise ValueError(
                     "CSV append rows must match the existing file header exactly"
                 )
-        return fieldnames
+        output = StringIO(newline="")
+        writer = csv.DictWriter(
+            output, fieldnames=fieldnames or ["value"], extrasaction="raise"
+        )
+        if not existing_fieldnames:
+            writer.writeheader()
+        writer.writerows(rows)
+        appended = output.getvalue()
+        if not existing_fieldnames:
+            return appended
+        separator = "" if existing_text.endswith(("\n", "\r")) else "\n"
+        return existing_text + separator + appended
 
     async def read(
         self,
@@ -131,23 +140,21 @@ class CsvStorage:
         if mode == "append" and path.is_file():
             with path.open("r", newline="", encoding="utf-8") as handle:
                 existing = handle.read()
-            has_header = bool(csv.DictReader(StringIO(existing, newline="")).fieldnames)
-            fieldnames = self._append_fieldnames(path, contract_type, rows)
-            # Validate the complete batch before opening the destination for
-            # append, so a malformed row cannot leave a partial write.
-            output = StringIO(newline="")
-            writer = csv.DictWriter(
-                output, fieldnames=fieldnames or ["value"], extrasaction="raise"
-            )
-            if not has_header:
-                writer.writeheader()
-            writer.writerows(rows)
-            appended = output.getvalue()
-            if existing and not existing.endswith(("\n", "\r")):
-                appended = "\n" + appended
-            mode_name = "a" if has_header else "w"
-            with path.open(mode_name, newline="", encoding="utf-8") as handle:
-                handle.write(appended)
+            if not existing.strip():
+                from etlantic.io_policy import SafeIoPolicy, read_modify_write_text_safe
+
+                read_modify_write_text_safe(
+                    path,
+                    SafeIoPolicy.for_root(path.parent),
+                    lambda current: self._append_text(current, contract_type, rows),
+                    run_id=str((context or {}).get("run_id") or binding),
+                    newline="",
+                )
+            else:
+                updated = self._append_text(existing, contract_type, rows)
+                appended = updated[len(existing) :]
+                with path.open("a", newline="", encoding="utf-8") as handle:
+                    handle.write(appended)
         else:
             with path.open("w", newline="", encoding="utf-8") as handle:
                 writer = csv.DictWriter(handle, fieldnames=fieldnames or ["value"])
