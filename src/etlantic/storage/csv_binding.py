@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import csv
+from io import StringIO
 from pathlib import Path
 from typing import Any
 
@@ -44,6 +45,35 @@ class CsvStorage:
         if rows:
             return list(rows[0].keys())
         return []
+
+    def _append_text(
+        self,
+        existing_text: str,
+        contract_type: type[Any] | None,
+        rows: list[dict[str, Any]],
+    ) -> str:
+        """Use the existing header as the append serialization authority."""
+        reader = csv.DictReader(StringIO(existing_text, newline=""))
+        existing_fieldnames = list(reader.fieldnames or ())
+        fieldnames = existing_fieldnames or self._fieldnames(contract_type, rows)
+        expected = set(fieldnames or ["value"])
+        for row in rows:
+            if set(row) != expected:
+                raise ValueError(
+                    "CSV append rows must match the existing file header exactly"
+                )
+        output = StringIO(newline="")
+        writer = csv.DictWriter(
+            output, fieldnames=fieldnames or ["value"], extrasaction="raise"
+        )
+        if not existing_fieldnames:
+            writer.writeheader()
+        writer.writerows(rows)
+        appended = output.getvalue()
+        if not existing_fieldnames:
+            return appended
+        separator = "" if existing_text.endswith(("\n", "\r")) else "\n"
+        return existing_text + separator + appended
 
     async def read(
         self,
@@ -108,10 +138,23 @@ class CsvStorage:
             }
         path.parent.mkdir(parents=True, exist_ok=True)
         if mode == "append" and path.is_file():
-            with path.open("a", newline="", encoding="utf-8") as handle:
-                writer = csv.DictWriter(handle, fieldnames=fieldnames or ["value"])
-                for row in rows:
-                    writer.writerow(row)
+            with path.open("r", newline="", encoding="utf-8") as handle:
+                existing = handle.read()
+            if not existing.strip():
+                from etlantic.io_policy import SafeIoPolicy, read_modify_write_text_safe
+
+                read_modify_write_text_safe(
+                    path,
+                    SafeIoPolicy.for_root(path.parent),
+                    lambda current: self._append_text(current, contract_type, rows),
+                    run_id=str((context or {}).get("run_id") or binding),
+                    newline="",
+                )
+            else:
+                updated = self._append_text(existing, contract_type, rows)
+                appended = updated[len(existing) :]
+                with path.open("a", newline="", encoding="utf-8") as handle:
+                    handle.write(appended)
         else:
             with path.open("w", newline="", encoding="utf-8") as handle:
                 writer = csv.DictWriter(handle, fieldnames=fieldnames or ["value"])

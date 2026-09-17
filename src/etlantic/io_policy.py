@@ -687,6 +687,54 @@ def write_text_safe(
     )
 
 
+def read_modify_write_text_safe(
+    path: str | Path,
+    policy: SafeIoPolicy,
+    modifier: Callable[[str], str],
+    *,
+    run_id: str = "io",
+    encoding: str = "utf-8",
+    newline: str | None = None,
+) -> SafeIoResult:
+    """Read, transform, and atomically replace text while holding one lock."""
+    resolved, events = resolve_under_policy(path, policy, run_id=run_id)
+    resolved.parent.mkdir(parents=True, exist_ok=True, mode=0o700)
+    lock: Path | None = None
+    if policy.enable_locking:
+        lock = _acquire_lock(resolved, timeout=policy.lock_timeout_seconds)
+    try:
+        current = ""
+        if resolved.exists():
+            ensure_file_within_budget(resolved, max_bytes=policy.max_read_bytes)
+            result = check_file_byte_limit(resolved, max_bytes=policy.max_read_bytes)
+            if result is not None and not result.success:
+                raise _io_error(
+                    "PMSRC103",
+                    f"Oversized input rejected: {resolved}",
+                    resolved,
+                )
+            with resolved.open("r", encoding=encoding, newline=newline) as handle:
+                current = handle.read()
+        updated = modifier(current)
+        result = write_text_safe(
+            resolved,
+            updated,
+            replace(policy, enable_locking=False),
+            run_id=run_id,
+            encoding=encoding,
+        )
+        events.extend(result.security_events)
+        return SafeIoResult(
+            path=result.path,
+            digest=result.digest,
+            bytes_written=result.bytes_written,
+            security_events=events,
+        )
+    finally:
+        if lock is not None:
+            _release_lock(lock)
+
+
 def append_line_safe(
     path: str | Path,
     line: str,
