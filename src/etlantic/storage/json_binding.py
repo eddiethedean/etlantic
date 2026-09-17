@@ -124,6 +124,9 @@ class JsonStorage:
                     merge,
                     run_id=str((context or {}).get("run_id") or binding),
                 )
+            elif self._is_lines(path) and path.is_file():
+                with path.open("a", encoding="utf-8") as handle:
+                    handle.write(serialized)
             else:
                 existing_text = (
                     path.read_text(encoding="utf-8") if path.is_file() else ""

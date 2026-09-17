@@ -204,6 +204,45 @@ def test_json_append_preserves_existing_scalar_records(tmp_path: Path) -> None:
     ]
 
 
+def test_json_lines_append_without_policy_preserves_a_concurrent_append(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    path = tmp_path / "concurrent.jsonl"
+    path.write_text('{"id": 1}\n', encoding="utf-8")
+    original_open = Path.open
+    injected = False
+
+    def competing_open(
+        target: Path, mode: str = "r", *args: object, **kwargs: object
+    ) -> object:
+        nonlocal injected
+        if target == path and mode == "a" and not injected:
+            injected = True
+            with original_open(path, "a", encoding="utf-8") as handle:
+                handle.write('{"id": 3}\n')
+        return original_open(target, mode, *args, **kwargs)
+
+    monkeypatch.setattr(Path, "open", competing_open)
+
+    async def exercise() -> None:
+        await JsonStorage().write(
+            binding="rows",
+            location=str(path),
+            data=[{"id": 2}],
+            contract_type=None,
+            context={"write_mode": "append"},
+        )
+
+    anyio.run(exercise)
+    assert [
+        json.loads(line) for line in path.read_text(encoding="utf-8").splitlines()
+    ] == [
+        {"id": 1},
+        {"id": 3},
+        {"id": 2},
+    ]
+
+
 def test_csv_append_to_blank_only_file_writes_an_intact_header(tmp_path: Path) -> None:
     path = tmp_path / "blank.csv"
     path.write_bytes(b"\n")

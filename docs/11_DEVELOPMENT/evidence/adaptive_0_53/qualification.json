@@ -674,7 +674,7 @@
   ],
   "schema": "etlantic.adaptive_evidence/2",
   "source_changed": false,
-  "source_revision": "sha256:07cac398493339eea125fe8dd42ad24f606ade06b5d7dab0f58f79c35321413f",
+  "source_revision": "sha256:605e9c8d24fb069c8b8518c12ee13440abbe7a3b25ea5ac7a504f5fc0fbec7b4",
   "stderr_sha256": "05edbd111e3a90ba0587a5fcdd4c8554984634ecbd0b3ca664b4c3a844f8c76a",
   "stdout_sha256": "a622c2785fe45e193102891155bf3f9bdf3e99b0ca8dfbcdf4c466746dd8e5b6"
 }
