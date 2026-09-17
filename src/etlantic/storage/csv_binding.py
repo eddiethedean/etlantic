@@ -131,7 +131,7 @@ class CsvStorage:
         if mode == "append" and path.is_file():
             with path.open("r", newline="", encoding="utf-8") as handle:
                 existing = handle.read()
-            empty_file = not existing
+            has_header = bool(csv.DictReader(StringIO(existing, newline="")).fieldnames)
             fieldnames = self._append_fieldnames(path, contract_type, rows)
             # Validate the complete batch before opening the destination for
             # append, so a malformed row cannot leave a partial write.
@@ -139,13 +139,14 @@ class CsvStorage:
             writer = csv.DictWriter(
                 output, fieldnames=fieldnames or ["value"], extrasaction="raise"
             )
-            if empty_file:
+            if not has_header:
                 writer.writeheader()
             writer.writerows(rows)
             appended = output.getvalue()
             if existing and not existing.endswith(("\n", "\r")):
                 appended = "\n" + appended
-            with path.open("a", newline="", encoding="utf-8") as handle:
+            mode_name = "a" if has_header else "w"
+            with path.open(mode_name, newline="", encoding="utf-8") as handle:
                 handle.write(appended)
         else:
             with path.open("w", newline="", encoding="utf-8") as handle:
