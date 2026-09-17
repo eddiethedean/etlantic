@@ -109,7 +109,7 @@ class JsonStorage:
         path.parent.mkdir(parents=True, exist_ok=True)
         serialized = self._encode(rows, path)
         policy = (context or {}).get("safe_io")
-        if mode == "append" and path.is_file():
+        if mode == "append":
 
             def merge(existing_text: str) -> str:
                 existing = self._decode(existing_text, path)
@@ -125,9 +125,10 @@ class JsonStorage:
                     run_id=str((context or {}).get("run_id") or binding),
                 )
             else:
-                path.write_text(
-                    merge(path.read_text(encoding="utf-8")), encoding="utf-8"
+                existing_text = (
+                    path.read_text(encoding="utf-8") if path.is_file() else ""
                 )
+                path.write_text(merge(existing_text), encoding="utf-8")
         elif policy is not None:
             from etlantic.io_policy import write_text_safe
 

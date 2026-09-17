@@ -554,6 +554,7 @@ def read_text_safe(
     *,
     run_id: str = "io",
     encoding: str = "utf-8",
+    newline: str | None = None,
 ) -> tuple[Path, str, list[SecurityEvent]]:
     """Bounded safe text read under policy."""
     resolved, events = resolve_under_policy(
@@ -568,7 +569,8 @@ def read_text_safe(
             f"Oversized input rejected: {resolved}",
             resolved,
         )
-    return resolved, resolved.read_text(encoding=encoding), events
+    with resolved.open("r", encoding=encoding, newline=newline) as handle:
+        return resolved, handle.read(), events
 
 
 def _lock_path(path: Path) -> Path:
@@ -694,6 +696,7 @@ def read_modify_write_text_safe(
     *,
     run_id: str = "io",
     encoding: str = "utf-8",
+    newline: str | None = None,
 ) -> SafeIoResult:
     """Read, transform, and atomically replace text while holding one lock.
 
@@ -719,7 +722,8 @@ def read_modify_write_text_safe(
                     f"Oversized input rejected: {resolved}",
                     resolved,
                 )
-            current = resolved.read_text(encoding=encoding)
+            with resolved.open("r", encoding=encoding, newline=newline) as handle:
+                current = handle.read()
         updated = modifier(current)
         # The caller already owns the lock; avoid trying to acquire it again.
         nested = replace(policy, enable_locking=False)

@@ -105,6 +105,7 @@ class CsvStorage:
                 path,
                 policy,
                 run_id=str((context or {}).get("run_id") or binding),
+                newline="",
             )
             reader = csv.DictReader(StringIO(text, newline=""))
             rows = list(reader)
@@ -158,21 +159,20 @@ class CsvStorage:
             }
         path.parent.mkdir(parents=True, exist_ok=True)
         policy = (context or {}).get("safe_io")
-        if mode == "append" and path.is_file():
-            if policy is not None:
-                from etlantic.io_policy import read_modify_write_text_safe
+        if mode == "append" and policy is not None:
+            from etlantic.io_policy import read_modify_write_text_safe
 
-                read_modify_write_text_safe(
-                    path,
-                    policy,
-                    lambda existing: self._append_text(existing, rows, contract_type),
-                    run_id=str((context or {}).get("run_id") or binding),
-                )
-            else:
-                updated = self._append_text(
-                    path.read_text(encoding="utf-8"), rows, contract_type
-                )
-                path.write_text(updated, encoding="utf-8", newline="")
+            read_modify_write_text_safe(
+                path,
+                policy,
+                lambda existing: self._append_text(existing, rows, contract_type),
+                run_id=str((context or {}).get("run_id") or binding),
+                newline="",
+            )
+        elif mode == "append" and path.is_file():
+            with path.open("r", newline="", encoding="utf-8") as handle:
+                updated = self._append_text(handle.read(), rows, contract_type)
+            path.write_text(updated, encoding="utf-8", newline="")
         elif policy is not None:
             from etlantic.io_policy import write_text_safe
 

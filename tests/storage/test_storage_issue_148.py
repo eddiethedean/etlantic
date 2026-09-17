@@ -87,3 +87,62 @@ def test_csv_serializes_the_complete_batch_before_mutation(tmp_path: Path) -> No
 
     anyio.run(exercise)
     assert path.read_text(encoding="utf-8") == initial
+
+
+@pytest.mark.parametrize("store", [JsonStorage(), CsvStorage()])
+def test_policy_append_to_missing_file_is_read_modify_write(
+    tmp_path: Path, store: object
+) -> None:
+    suffix = ".json" if isinstance(store, JsonStorage) else ".csv"
+    path = tmp_path / f"append{suffix}"
+    policy = SafeIoPolicy.for_root(tmp_path)
+
+    async def exercise() -> None:
+        await store.write(  # type: ignore[attr-defined]
+            binding="append",
+            location=str(path),
+            data=[{"id": 1}],
+            contract_type=None,
+            context={"safe_io": policy, "write_mode": "append"},
+        )
+        await store.write(  # type: ignore[attr-defined]
+            binding="append",
+            location=str(path),
+            data=[{"id": 2}],
+            contract_type=None,
+            context={"safe_io": policy, "write_mode": "append"},
+        )
+        rows = await store.read(  # type: ignore[attr-defined]
+            binding="append",
+            location=str(path),
+            contract_type=None,
+            context={"safe_io": policy},
+        )
+        assert len(rows) == 2
+
+    anyio.run(exercise)
+
+
+def test_policy_csv_preserves_embedded_newlines(tmp_path: Path) -> None:
+    path = tmp_path / "multiline.csv"
+    path.write_bytes(b'id,label\r\n1,"a\r\nb"\r\n')
+    policy = SafeIoPolicy.for_root(tmp_path)
+
+    async def exercise() -> None:
+        rows = await CsvStorage().read(
+            binding="input",
+            location=str(path),
+            contract_type=None,
+            context={"safe_io": policy},
+        )
+        assert rows == [{"id": "1", "label": "a\r\nb"}]
+        await CsvStorage().write(
+            binding="input",
+            location=str(path),
+            data=[{"id": 2, "label": "c"}],
+            contract_type=None,
+            context={"safe_io": policy, "write_mode": "append"},
+        )
+
+    anyio.run(exercise)
+    assert b'1,"a\r\nb"\r\n' in path.read_bytes()
