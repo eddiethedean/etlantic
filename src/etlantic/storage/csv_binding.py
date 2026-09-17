@@ -129,6 +129,7 @@ class CsvStorage:
             }
         path.parent.mkdir(parents=True, exist_ok=True)
         if mode == "append" and path.is_file():
+            empty_file = path.stat().st_size == 0
             fieldnames = self._append_fieldnames(path, contract_type, rows)
             # Validate the complete batch before opening the destination for
             # append, so a malformed row cannot leave a partial write.
@@ -136,6 +137,8 @@ class CsvStorage:
             writer = csv.DictWriter(
                 output, fieldnames=fieldnames or ["value"], extrasaction="raise"
             )
+            if empty_file:
+                writer.writeheader()
             writer.writerows(rows)
             with path.open("a", newline="", encoding="utf-8") as handle:
                 handle.write(output.getvalue())

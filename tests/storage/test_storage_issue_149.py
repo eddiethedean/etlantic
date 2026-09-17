@@ -49,3 +49,22 @@ def test_csv_append_rejects_incompatible_fields_before_mutation(tmp_path: Path) 
 
     anyio.run(exercise)
     assert path.read_text(encoding="utf-8") == initial
+
+
+def test_csv_append_to_empty_file_writes_header(tmp_path: Path) -> None:
+    path = tmp_path / "rows.csv"
+    path.touch()
+    store = CsvStorage()
+
+    async def exercise() -> None:
+        args = {"binding": "rows", "location": str(path), "contract_type": None}
+        await store.write(
+            **args,
+            data=[{"id": 2, "amount": 200}],
+            context={"write_mode": "append"},
+        )
+        rows = await store.read(**args, context={})
+        assert rows == [{"id": "2", "amount": "200"}]
+
+    anyio.run(exercise)
+    assert path.read_bytes() == b"id,amount\r\n2,200\r\n"
