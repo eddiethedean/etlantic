@@ -554,6 +554,7 @@ def read_text_safe(
     *,
     run_id: str = "io",
     encoding: str = "utf-8",
+    newline: str | None = None,
 ) -> tuple[Path, str, list[SecurityEvent]]:
     """Bounded safe text read under policy."""
     resolved, events = resolve_under_policy(
@@ -568,7 +569,8 @@ def read_text_safe(
             f"Oversized input rejected: {resolved}",
             resolved,
         )
-    return resolved, resolved.read_text(encoding=encoding), events
+    with resolved.open("r", encoding=encoding, newline=newline) as handle:
+        return resolved, handle.read(), events
 
 
 def _lock_path(path: Path) -> Path:
@@ -696,7 +698,14 @@ def read_modify_write_text_safe(
     encoding: str = "utf-8",
     newline: str | None = None,
 ) -> SafeIoResult:
-    """Read, transform, and atomically replace text while holding one lock."""
+    """Read, transform, and atomically replace text while holding one lock.
+
+    The existing file is read under the same destination lock used for the
+    replacement.  This is intended for append-like providers that must merge
+    with the current representation without exposing a read/modify/write race.
+    ``modifier`` runs before any destination mutation, so serialization or
+    validation failures leave the previous file untouched.
+    """
     resolved, events = resolve_under_policy(path, policy, run_id=run_id)
     resolved.parent.mkdir(parents=True, exist_ok=True, mode=0o700)
     lock: Path | None = None
@@ -716,12 +725,10 @@ def read_modify_write_text_safe(
             with resolved.open("r", encoding=encoding, newline=newline) as handle:
                 current = handle.read()
         updated = modifier(current)
+        # The caller already owns the lock; avoid trying to acquire it again.
+        nested = replace(policy, enable_locking=False)
         result = write_text_safe(
-            resolved,
-            updated,
-            replace(policy, enable_locking=False),
-            run_id=run_id,
-            encoding=encoding,
+            resolved, updated, nested, run_id=run_id, encoding=encoding
         )
         events.extend(result.security_events)
         return SafeIoResult(

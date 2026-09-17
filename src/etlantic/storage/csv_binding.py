@@ -46,33 +46,41 @@ class CsvStorage:
             return list(rows[0].keys())
         return []
 
+    def _serialize(
+        self, rows: list[dict[str, Any]], fieldnames: list[str], *, header: bool
+    ) -> str:
+        output = StringIO(newline="")
+        writer = csv.DictWriter(
+            output, fieldnames=fieldnames or ["value"], extrasaction="raise"
+        )
+        if header:
+            writer.writeheader()
+        writer.writerows(rows)
+        return output.getvalue()
+
     def _append_text(
         self,
         existing_text: str,
-        contract_type: type[Any] | None,
         rows: list[dict[str, Any]],
+        contract_type: type[Any] | None,
     ) -> str:
-        """Use the existing header as the append serialization authority."""
         reader = csv.DictReader(StringIO(existing_text, newline=""))
         existing_fieldnames = list(reader.fieldnames or ())
         fieldnames = existing_fieldnames or self._fieldnames(contract_type, rows)
-        expected = set(fieldnames or ["value"])
+        if not fieldnames:
+            fieldnames = ["value"]
+        expected = set(fieldnames)
         for row in rows:
             if set(row) != expected:
                 raise ValueError(
                     "CSV append rows must match the existing file header exactly"
                 )
-        output = StringIO(newline="")
-        writer = csv.DictWriter(
-            output, fieldnames=fieldnames or ["value"], extrasaction="raise"
-        )
-        if not existing_fieldnames:
-            writer.writeheader()
-        writer.writerows(rows)
-        appended = output.getvalue()
+        appended = self._serialize(rows, fieldnames, header=not existing_fieldnames)
         if not existing_fieldnames:
             return appended
-        separator = "" if existing_text.endswith(("\n", "\r")) else "\n"
+        separator = (
+            "" if not existing_text or existing_text.endswith(("\n", "\r")) else "\n"
+        )
         return existing_text + separator + appended
 
     async def read(
@@ -89,9 +97,22 @@ class CsvStorage:
                 f"CSV source not found: {path}",
                 code="PMEXEC454",
             )
-        with path.open(newline="", encoding="utf-8") as handle:
-            reader = csv.DictReader(handle)
+        policy = (context or {}).get("safe_io")
+        if policy is not None:
+            from etlantic.io_policy import read_text_safe
+
+            _resolved, text, _events = read_text_safe(
+                path,
+                policy,
+                run_id=str((context or {}).get("run_id") or binding),
+                newline="",
+            )
+            reader = csv.DictReader(StringIO(text, newline=""))
             rows = list(reader)
+        else:
+            with path.open(newline="", encoding="utf-8") as handle:
+                reader = csv.DictReader(handle)
+                rows = list(reader)
         # Coerce numeric-looking ints when contract fields are int.
         if contract_type is not None and hasattr(contract_type, "model_fields"):
             coerced: list[dict[str, Any]] = []
@@ -137,7 +158,18 @@ class CsvStorage:
                 "skipped": True,
             }
         path.parent.mkdir(parents=True, exist_ok=True)
-        if mode == "append" and path.is_file():
+        policy = (context or {}).get("safe_io")
+        if mode == "append" and policy is not None:
+            from etlantic.io_policy import read_modify_write_text_safe
+
+            read_modify_write_text_safe(
+                path,
+                policy,
+                lambda existing: self._append_text(existing, rows, contract_type),
+                run_id=str((context or {}).get("run_id") or binding),
+                newline="",
+            )
+        elif mode == "append" and path.is_file():
             with path.open("r", newline="", encoding="utf-8") as handle:
                 existing = handle.read()
             if not existing.strip():
@@ -146,21 +178,32 @@ class CsvStorage:
                 read_modify_write_text_safe(
                     path,
                     SafeIoPolicy.for_root(path.parent),
-                    lambda current: self._append_text(current, contract_type, rows),
+                    lambda current: self._append_text(current, rows, contract_type),
                     run_id=str((context or {}).get("run_id") or binding),
                     newline="",
                 )
             else:
-                updated = self._append_text(existing, contract_type, rows)
+                updated = self._append_text(existing, rows, contract_type)
                 appended = updated[len(existing) :]
+                # Keep the append-only behavior when no SafeIoPolicy is
+                # supplied; a concurrent writer must not be replaced.
                 with path.open("a", newline="", encoding="utf-8") as handle:
                     handle.write(appended)
+        elif policy is not None:
+            from etlantic.io_policy import write_text_safe
+
+            write_text_safe(
+                path,
+                self._serialize(rows, fieldnames, header=True),
+                policy,
+                run_id=str((context or {}).get("run_id") or binding),
+            )
         else:
-            with path.open("w", newline="", encoding="utf-8") as handle:
-                writer = csv.DictWriter(handle, fieldnames=fieldnames or ["value"])
-                writer.writeheader()
-                for row in rows:
-                    writer.writerow(row)
+            path.write_text(
+                self._serialize(rows, fieldnames, header=True),
+                encoding="utf-8",
+                newline="",
+            )
         return {
             "binding": binding,
             "location": str(path),

@@ -80,10 +80,10 @@ def test_csv_append_preserves_a_concurrent_append(
 
     def competing_append(
         existing: str,
-        contract_type: type[object] | None,
         rows: list[dict[str, object]],
+        contract_type: type[object] | None,
     ) -> str:
-        updated = original_append_text(existing, contract_type, rows)
+        updated = original_append_text(existing, rows, contract_type)
         with path.open("a", newline="", encoding="utf-8") as handle:
             handle.write("3,c\r\n")
         return updated
