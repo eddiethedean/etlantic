@@ -39,6 +39,20 @@ class JsonStorage:
             return Path(resolved)
         return raw
 
+    def _is_lines(self, path: Path) -> bool:
+        return self._lines or path.suffix in {".jsonl", ".ndjson"}
+
+    def _decode(self, text: str, path: Path) -> list[Any]:
+        if self._is_lines(path):
+            return [json.loads(line) for line in text.splitlines() if line.strip()]
+        payload = json.loads(text) if text.strip() else []
+        return payload if isinstance(payload, list) else [payload]
+
+    def _encode(self, rows: list[dict[str, Any]], path: Path) -> str:
+        if self._is_lines(path):
+            return "".join(json.dumps(row, sort_keys=True) + "\n" for row in rows)
+        return json.dumps(rows, indent=2, sort_keys=True) + "\n"
+
     async def read(
         self,
         *,
@@ -53,12 +67,18 @@ class JsonStorage:
                 f"JSON source not found: {path}",
                 code="PMEXEC451",
             )
-        text = path.read_text(encoding="utf-8")
-        if self._lines or path.suffix in {".jsonl", ".ndjson"}:
-            rows = [json.loads(line) for line in text.splitlines() if line.strip()]
+        policy = (context or {}).get("safe_io")
+        if policy is not None:
+            from etlantic.io_policy import read_text_safe
+
+            _resolved, text, _events = read_text_safe(
+                path,
+                policy,
+                run_id=str((context or {}).get("run_id") or binding),
+            )
         else:
-            payload = json.loads(text) if text.strip() else []
-            rows = payload if isinstance(payload, list) else [payload]
+            text = path.read_text(encoding="utf-8")
+        rows = self._decode(text, path)
         return as_records(rows, contract_type)
 
     async def write(
@@ -87,31 +107,38 @@ class JsonStorage:
                 "skipped": True,
             }
         path.parent.mkdir(parents=True, exist_ok=True)
+        serialized = self._encode(rows, path)
+        policy = (context or {}).get("safe_io")
         if mode == "append" and path.is_file():
-            if self._lines or path.suffix in {".jsonl", ".ndjson"}:
-                with path.open("a", encoding="utf-8") as handle:
-                    for row in rows:
-                        handle.write(json.dumps(row, sort_keys=True) + "\n")
-            else:
-                existing_text = path.read_text(encoding="utf-8")
-                existing = json.loads(existing_text) if existing_text.strip() else []
-                if not isinstance(existing, list):
-                    existing = [existing]
-                existing.extend(rows)
-                path.write_text(
-                    json.dumps(existing, indent=2, sort_keys=True) + "\n",
-                    encoding="utf-8",
+
+            def merge(existing_text: str) -> str:
+                existing = self._decode(existing_text, path)
+                return self._encode([*records_to_dicts(existing), *rows], path)
+
+            if policy is not None:
+                from etlantic.io_policy import read_modify_write_text_safe
+
+                read_modify_write_text_safe(
+                    path,
+                    policy,
+                    merge,
+                    run_id=str((context or {}).get("run_id") or binding),
                 )
-        elif self._lines or path.suffix in {".jsonl", ".ndjson"}:
-            path.write_text(
-                "".join(json.dumps(row, sort_keys=True) + "\n" for row in rows),
-                encoding="utf-8",
+            else:
+                path.write_text(
+                    merge(path.read_text(encoding="utf-8")), encoding="utf-8"
+                )
+        elif policy is not None:
+            from etlantic.io_policy import write_text_safe
+
+            write_text_safe(
+                path,
+                serialized,
+                policy,
+                run_id=str((context or {}).get("run_id") or binding),
             )
         else:
-            path.write_text(
-                json.dumps(rows, indent=2, sort_keys=True) + "\n",
-                encoding="utf-8",
-            )
+            path.write_text(serialized, encoding="utf-8")
         return {
             "binding": binding,
             "location": str(path),
