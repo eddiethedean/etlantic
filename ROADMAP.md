@@ -39,12 +39,13 @@ through **0.37** (stable foundation) are shipped.
 | Previous | 0.40 | Tenant registry / workspaces (CP2) | Gate-ready / shipped evidence |
 | Previous | 0.39 | Multi-tenant control plane (CP1) | Gate-ready / shipped evidence |
 | Previous | 0.38 | Data connectivity and connector SDK | Gate-ready / shipped evidence |
-| Next | 0.55 | Brownfield adoption bridges | Planning freeze |
-| Later | 0.56 | Operator Console | Planned |
-| Later | 0.57 | Managed runtime and enterprise provider packs | Planned |
-| Later | 0.58 | TransformationModel incubation | Proposed |
+| Next | 0.55 | Optional data-first authoring and inferred data models | Planned |
+| Later | 0.56 | Brownfield adoption bridges | Planning freeze |
+| Later | 0.57 | Operator Console | Planned |
+| Later | 0.58 | Managed runtime and enterprise provider packs | Planned |
+| Later | 0.59 | TransformationModel incubation | Proposed |
 | Foundation | 0.36–0.37 | Joint burn-in → stable foundation | Gate-ready (0.37) |
-| Post-foundation | 0.38–0.58 | Connectivity → control plane → developer intelligence → optimization → streaming → federation → governed AI → DuckDB package → portable-engine baseline → adaptive execution → adoption → operations → providers → modeling incubation | In progress (0.53 local adaptive execution candidate) |
+| Post-foundation | 0.38–0.59 | Connectivity → control plane → developer intelligence → optimization → streaming → federation → governed AI → DuckDB package → portable-engine baseline → adaptive execution → inferred model authoring → adoption → operations → providers → modeling incubation | In progress (0.54 published Beta; adaptive graduation pending) |
 
 For connectivity evidence, see
 [What's New in 0.38](docs/01_GETTING_STARTED/WHATS_NEW_0_38.md) and the
@@ -213,9 +214,9 @@ diagnostics, reports, lineage, authorization decisions, and audit evidence.
 |---|---|---|
 | 1 | Human CLI renderer, actionable diagnostics, target discovery, and progressive onboarding | Stable-foundation tooling follow-up; prerequisite for 0.44 |
 | 2 | React architecture spike, then an interactive, accessible, self-contained pipeline HTML workspace | Visualization/tooling precursor to 0.44 |
-| 3 | Local run dashboard and visual plan/report comparisons | Read-only precursor to 0.56 |
+| 3 | Local run dashboard and visual plan/report comparisons | Read-only precursor to 0.57 |
 | 4 | Watch mode, LSP, editor previews, and profile/impact explanations | 0.44 Developer Intelligence |
-| 5 | Hosted, governed product experience | 0.39–0.43 control-plane substrate; 0.56 Operator Console |
+| 5 | Hosted, governed product experience | 0.39–0.43 control-plane substrate; 0.57 Operator Console |
 
 Phases may land incrementally, but later phases cannot bypass earlier
 consistency, accessibility, redaction, safe-I/O, or bounded-rendering gates.
@@ -2464,7 +2465,7 @@ parity, followed by joint burn-in in **0.37** toward the 0.37 stable foundation.
 
 This is **not** a control-plane, GUI, or new-engine milestone. Data
 connectivity (0.38), FastAPI (0.39), registry/workspaces (0.40), and
-TransformationModel incubation (0.58) remain post-foundation phases.
+TransformationModel incubation (0.59) remain post-foundation phases.
 
 ### Prerequisites already shipped (0.24)
 
@@ -3524,7 +3525,7 @@ All planned ETLantic releases remain in the 0.x series. This roadmap has no
 sequential 0.x minors. Versions belonging to external standards, dependencies,
 or user-authored artifacts do not change this release-numbering policy.
 
-Phases 0.38 through 0.58 expand ETLantic around the stable-foundation model
+Phases 0.38 through 0.59 expand ETLantic around the stable-foundation model
 without turning the core into a storage system, server, catalog, scheduler,
 IDE, cloud control plane, or AI platform. Each initiative has one assigned
 phase or a named gate in an integrated multi-phase program; none is an
@@ -4110,7 +4111,7 @@ Planning freeze after **0.46.0**: [IMPLEMENTATION_PLAN_0_47](docs/11_DEVELOPMENT
 (Proposed), [EXIT_GATE_0_47](docs/11_DEVELOPMENT/EXIT_GATE_0_47.md). These
 surfaces are not Available. Kubernetes and Spark Connect are Experimental
 in-process fakes; live Kind/cluster and live Databricks/EMR hardening are
-**0.57**. Implementation of scheduler/worker processes, schedule HTTP routes,
+**0.58**. Implementation of scheduler/worker processes, schedule HTTP routes,
 or new packages is out of scope for this freeze.
 
 Deliver:
@@ -4143,10 +4144,10 @@ Deliver:
   terminal-state reconciliation, and bounded provider-owned cleanup;
   live Kind/cluster is skip `047-K-01`;
 - an Experimental Spark Connect reference (`etlantic-spark-connect`) plus
-  in-process fake; live Databricks, EMR, and Spark Connect packs remain 0.57
+  in-process fake; live Databricks, EMR, and Spark Connect packs remain 0.58
   (skip `047-S-01`);
 - FastAPI gateway support without requiring FastAPI in workers;
-- Helm/OCI production images remain out of 0.47 (0.57 `057-D`).
+- Helm/OCI production images remain out of 0.47 (0.58 `058-D`).
 
 Acceptance:
 
@@ -4193,8 +4194,8 @@ and 0.44 impact artifacts; hand off apply to existing 0.42 `ApprovalStore` /
 
 **Non-goals:** vendor AI SDKs or credentials in core; write MCP tools;
 autonomous run submission; applying optimizations without approval;
-brownfield dbt/orchestrator import (0.55); operator console (0.56); live
-cloud providers (0.57); live paid-model eval as a release blocker
+brownfield dbt/orchestrator import (0.56); operator console (0.57); live
+cloud providers (0.58); live paid-model eval as a release blocker
 (skip `048-E-01`).
 
 Supported vs Experimental (claims only until the exit gate is Met):
@@ -4206,7 +4207,7 @@ Supported vs Experimental (claims only until the exit gate is Met):
   prompt-injection and false-authority tests.
 - **Experimental:** optional `etlantic-mcp` read-only extra. Live MCP-client
   interop is skip `048-M-01` if fixtures suffice.
-- **Out of 0.48:** write MCP, vendor SDKs in core, GitOps promotion, 0.55–0.57
+- **Out of 0.48:** write MCP, vendor SDKs in core, GitOps promotion, 0.56–0.58
   programs.
 
 0.46/0.47 surfaces are **explain-only**: delivery objectives, DLQ, erasure,
@@ -4588,7 +4589,104 @@ Acceptance requires all adaptive-program ACs and release gates to pass. Only
 independently qualified rows graduate; every other engine, topology, execution
 mode, and consumer remains Experimental or unavailable.
 
-## 0.55 — Brownfield Adoption Bridges
+## 0.55 — Optional Data-First Authoring and Inferred Data Models
+
+**Status:** planned next phase. See the
+[0.55 implementation plan](docs/11_DEVELOPMENT/IMPLEMENTATION_PLAN_0_55.md)
+for the illustrative API, semantic matrix, workstreams, and exit evidence.
+
+**Objective:** let users start from any qualified first-party portable source,
+apply ETLantic portable transformations, and inspect automatically derived
+source and result models without writing source, transformation, or `Data`
+classes. Existing write targets provide their own inferred models for
+compatibility checks and can constrain ambiguous earlier models through
+portable lineage. Absent targets receive proposed models derived from the
+transformed output. The existing typed authoring path remains available.
+
+Deliver:
+
+- an optional data-first facade that creates an implicit logical source and
+  portable steps from an explicitly supplied frame, mapping iterable, file,
+  relation, or qualified connector binding;
+- a shared, engine-neutral records inferencer for finite collections,
+  one-shot mapping iterables, and CSV parser output, with bounded sampling,
+  deterministic type promotion, validated hints, and exactly-once replay of
+  sampled rows during session execution;
+- a direct records inspection result with schema, diagnostics, provenance,
+  and a single-use replay stream for one-shot iterables;
+- CSV header and parser validation with explicit null/type parsing rules,
+  ambiguity diagnostics, and safe file limits;
+- source schema inspection across Local, Pandas, Polars, PySpark, DataFusion,
+  SQL, and DuckDB portable engines; core records/memory and CSV/JSON/Parquet
+  file forms; and qualified first-party connectors, with logical types,
+  required/nullable distinctions, method, confidence, ambiguity, and stable
+  provenance;
+- an explicit source coverage matrix that distinguishes metadata-based
+  inspection, provisional bounded sampling, schema documents, user hints,
+  and uninspectable sources such as null or unqualified callables/streams;
+- static schema propagation over a qualified portable operation matrix,
+  including field shaping, scalar expressions, joins, unions, and aggregates;
+- canonical inferred `ContractDefinition` objects, an optional generated
+  `Data` view, and reviewable model/code export;
+- read-only target inspection with present/absent/unknown existence, observed
+  model generation for existing targets, output-derived model proposals for
+  new targets, and write-mode compatibility diagnostics;
+- bounded backward propagation of existing-target type requirements through
+  qualified portable operations, followed by forward resolution, with
+  provenance and explicit conversion or contradiction diagnostics;
+- bounded local preview and a path from an interactive session to a normal
+  `PipelineDefinition`, plan, and ODCS/DTCS/DPCS artifacts;
+- explicit rebindable source identity and schema review before durable export;
+- Pandas and Polars adapters that stay optional dependencies; records and CSV
+  rely on core Python and the existing safe file boundary.
+
+Acceptance:
+
+- the same portable expression derives equivalent canonical schemas and
+  portable logical IR from qualified sources without handwritten models when
+  their logical input schemas match;
+- every schema-bearing qualified first-party source has an inferred model;
+  opaque or unqualified forms carry a stable diagnostic naming the required
+  inspector or hint and are excluded from the inference support claim;
+  compiler support alone does not imply inference;
+- an existing destination is modeled from its inspected schema and compared
+  to the transformed output for the selected write mode; an absent destination
+  gets a proposal from the output model; unknown existence blocks publication;
+- an existing target can resolve ambiguous earlier logical types through
+  qualified lineage (for example CSV text destined for an integer column),
+  while a definite string source requires an explicit cast or mapping;
+  target-guided parsing validates every value and never rewrites observed
+  source facts or inserts a lossy conversion silently;
+- backward rules cover direct field lineage and qualified expression
+  signatures; ambiguous arithmetic, casts, joins, unions, conflicting target
+  constraints, and non-null requirements produce reviewable obligations or
+  diagnostics rather than invented source guarantees;
+- target inspection never writes or treats an empty field list as absence;
+  target schema revisions are checked again before publication, and creating
+  a missing target requires explicit intent and qualified provider support;
+- record inspection stays bounded for unbounded iterables and does not drop or
+  duplicate sampled rows from one-shot sources; CSV errors and late record
+  fields receive actionable diagnostics without row values;
+- source inference uses bounded input inspection and downstream inference uses
+  portable IR, without execution over sampled transformation results or
+  arbitrary Python tracing;
+- ambiguous or unsupported types produce actionable diagnostics and accept
+  validated hints rather than invented types or guarantees;
+- repeated inputs and expressions produce deterministic fingerprints, while
+  no source rows or secrets enter definitions, plans, reports, or history;
+- an in-memory source or one-shot iterator cannot be exported as a durable
+  runnable pipeline until rebound to a stable asset with a reviewed schema
+  snapshot;
+- subsequent source observations propose drift changes and never silently
+  mutate an accepted or production contract;
+- existing class-authored pipeline behavior and fingerprints remain unchanged,
+  and validation, compiler support, plugin trust, and safe-I/O gates still run.
+
+The initial release qualifies specific portable operations and engines. An
+unsupported operation must stop model generation with a diagnostic; advanced
+families graduate only after type/nullability transfer and differential tests.
+
+## 0.56 — Brownfield Adoption Bridges
 
 **Objective:** let teams introduce ETLantic alongside existing dbt and
 orchestrator projects through bounded metadata import, explicit fidelity
@@ -4625,7 +4723,7 @@ Acceptance:
 - at least one real project adopts ETLantic incrementally without a flag-day
   rewrite.
 
-## 0.56 — Operator Console
+## 0.57 — Operator Console
 
 **Objective:** provide a separately deployable, read-only-first operations UI
 over the graduated multi-tenant control plane.
@@ -4662,7 +4760,7 @@ Acceptance:
 - ETLantic core and the control API remain usable without frontend
   dependencies.
 
-## 0.57 — Managed Runtime and Enterprise Provider Packs
+## 0.58 — Managed Runtime and Enterprise Provider Packs
 
 **Objective:** graduate common cloud integrations into maintained,
 independently installable production profiles without coupling ETLantic core to
@@ -4698,7 +4796,7 @@ Acceptance:
 - live conformance uses isolated accounts or projects and proves cleanup;
 - no provider-specific type or SDK becomes a mandatory core dependency.
 
-## 0.58 — TransformationModel Incubation
+## 0.59 — TransformationModel Incubation
 
 **Status:** deferred from the 0.20+ and former 0.38 tracks; begins only after
 the higher-adoption connectivity, control-plane, interoperability, operations,
@@ -4762,7 +4860,7 @@ secret-resolution, or mutable-resource concerns.
 
 #### ETLantic adoption
 
-During 0.58, ETLantic may consume TransformationModel from the workspace behind
+During 0.59, ETLantic may consume TransformationModel from the workspace behind
 provisional boundaries. It becomes a required ETLantic dependency only after
 the graduation gates pass and a separately released version has proven the
 package boundary. No later 0.x compatibility promise may depend exclusively on

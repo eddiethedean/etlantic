@@ -129,9 +129,9 @@ remains in Medallantic—not core.
 - SOC2, GDPR, HIPAA, or other compliance attestations
 - HA/DR runbooks, Kubernetes reference architectures, or capacity SLAs in
   this Beta line; Kubernetes execution **fakes** shipped in 0.47 (live packs
-  remain 0.57)
+  remain 0.58)
 - Cloud secret managers (Vault, AWS Secrets Manager)—OS keyring ships via
-  `etlantic-keyring`; optional cloud provider packs are planned for 0.57
+  `etlantic-keyring`; optional cloud provider packs are planned for 0.58
 - Formal support SLAs or guaranteed response times
 
 ## Decision summary

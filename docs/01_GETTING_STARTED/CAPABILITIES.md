@@ -264,7 +264,7 @@ See also [Experimental surfaces](EXPERIMENTAL_SURFACES.md).
 | OpenLineage metadata interoperability | **Experimental** outbound via `etlantic-openlineage` (non-authority; not production multi-tenant) |
 | GitOps preview-to-production workflow | **Available** (CP-GA in-process evidence; see [WHATS_NEW_0_43](WHATS_NEW_0_43.md)) |
 | PySpark / SQL Arrow physical boundaries | Follow-up after Polars↔Pandas Gate A |
-| Managed Spark providers (Databricks/EMR/Connect) | Kubernetes Job + Spark Connect **Experimental fakes** ship in 0.47; live provider packs remain planned for 0.57 |
+| Managed Spark providers (Databricks/EMR/Connect) | Kubernetes Job + Spark Connect **Experimental fakes** ship in 0.47; live provider packs remain planned for 0.58 |
 | FastAPI scheduler/runner service and remote federation | **Available in the bounded 0.47 envelope** — gateway routes plus separate scheduler/worker processes; see [What's new in 0.47](WHATS_NEW_0_47.md) and [ADR-023](../11_DEVELOPMENT/adr/ADR-023-SCHEDULER-SERVICE-AND-FEDERATION.md) |
 | Human-governed AI context/proposals | **Available in the bounded 0.49 envelope** — redacted bundles, proposal sandbox, user-region generators; `etlantic-mcp` Experimental — see [What's new in 0.49](WHATS_NEW_0_49.md) and [ADR-024](../11_DEVELOPMENT/adr/ADR-024-HUMAN-GOVERNED-AI.md) |
 | Embedded DuckDB engine package | **Available (qualified subset)** in 0.49: optional `etlantic-duckdb` package with native embedded runtime, dialect/compiler subset, security policy, and qualification evidence — see [implementation plan](../11_DEVELOPMENT/IMPLEMENTATION_PLAN_0_49.md), [exit gate](../11_DEVELOPMENT/EXIT_GATE_0_49.md), and [What's new in 0.49](WHATS_NEW_0_49.md) |
@@ -274,16 +274,17 @@ See also [Experimental surfaces](EXPERIMENTAL_SURFACES.md).
 | Adaptive provider conformance and graduation safeguards | Public sync/async conformance and local evidence integrity tooling implemented; **graduation pending**, remote matrix/review follow-ups. See [0.54 gate](../11_DEVELOPMENT/EXIT_GATE_0_54.md). |
 | Bounded dynamic mapping/reduction and explicit conditional/failure/compensation branches | **Supported** (core) in 0.46 — [exit gate](../11_DEVELOPMENT/EXIT_GATE_0_46.md) / [ADR-022](../11_DEVELOPMENT/adr/ADR-022-DYNAMIC-CONTROL-AND-STREAMING.md) |
 | Streaming poison-record/DLQ policy and schema-registry interoperability | **Supported** core policy/protocol in 0.46; Kafka (`etlantic-kafka`) and Confluent adapter (`etlantic-schemaregistry`) remain **Experimental** — never Available-in-core |
-| Dagster / expanded Prefect / Argo compilers | Planned brownfield bridges in 0.55 |
-| Read-only-first operator console | Planned first-class for 0.56 |
-| AWS/Azure/GCP/Vault secret-provider packs | Planned as optional providers in 0.57 |
-| TransformationModel incubation | Deferred to 0.58 |
+| Data-first authoring and inferred data models | **Planned for 0.55**; qualified source inspection (frames, records, files, relations, connectors), forward and target-guided backward schema propagation, existing-target model inspection, new-target proposals, and reviewed pipeline export are not available in 0.54 — [plan](../11_DEVELOPMENT/IMPLEMENTATION_PLAN_0_55.md) |
+| Dagster / expanded Prefect / Argo compilers | Planned brownfield bridges in 0.56 |
+| Read-only-first operator console | Planned first-class for 0.57 |
+| AWS/Azure/GCP/Vault secret-provider packs | Planned as optional providers in 0.58 |
+| TransformationModel incubation | Deferred to 0.59 |
 | Full LSP server productization | **Available** in 0.44 (`etlantic-lsp`; VS Code client Experimental) |
 | Registry-backed schema history | **Available** (CP2 metadata-only histories) |
 | Production multi-tenant control plane | **Available** for Supported profiles (`isolated-deployment`, `dedicated-schema`); `shared-service` remains Experimental (see [support matrix](../11_DEVELOPMENT/cp_ga_support_matrix_0_43.json)) |
 | Stable-foundation compatibility inventories | Available in 0.37 (surface / protocol / diagnostic tiers; Beta retained) |
 | Portable continuation families (`relational-extended`, …) | Not yet — see [Portable Compiler Matrix](../10_REFERENCE/PORTABLE_COMPILER_MATRIX.md) |
-| Dedicated multi-worker / multi-tenant ops control plane | Partial — Supported profiles via CP-GA; Operator Console remains 0.56 ([plan](../11_DEVELOPMENT/MULTI_TENANT_CONTROL_PLANE_PLAN.md)) |
+| Dedicated multi-worker / multi-tenant ops control plane | Partial — Supported profiles via CP-GA; Operator Console remains 0.57 ([plan](../11_DEVELOPMENT/MULTI_TENANT_CONTROL_PLANE_PLAN.md)) |
 
 **Already shipped (0.28–0.34):** Plugin SDK `/1` freeze; quality; materialization;
 PySpark/Delta parity; SQL builder parity; M6 observability, run history, and

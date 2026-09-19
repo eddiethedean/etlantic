@@ -82,6 +82,7 @@ evidence remains in **0.38**.
 | [0.52 implementation plan](IMPLEMENTATION_PLAN_0_52.md) | Published 0.52.0 | Trusted inventory, candidate matrix, exact placement, physical lowering, and explain/diff; execution remains unavailable | [Exit gate 0.52](EXIT_GATE_0_52.md) · [Generated evidence](evidence/adaptive_0_51/FINDINGS.md) |
 | [0.53 implementation plan](IMPLEMENTATION_PLAN_0_53.md) | Planned | Whole-DAG admission and fixture-qualified local physical execution; availability remains gated | Adaptive program Phases 8–9 / I2 |
 | [0.54 implementation plan](IMPLEMENTATION_PLAN_0_54.md) | Published 0.54.0; adaptive graduation pending | Public conformance, differential/security qualification, and exact-matrix graduation | Adaptive program Phase 10 / I3 |
+| [0.55 inferred model authoring plan](IMPLEMENTATION_PLAN_0_55.md) | Planned next phase | Qualified source inspection, bounded records inference, forward and target-guided backward schema propagation, existing-target models and new-target proposals, reviewed durable export; no 0.54 availability claim | Source/target inspection and bidirectional type propagation qualification |
 | [ADR-025: Adaptive execution and physical DAG](adr/ADR-025-ADAPTIVE-EXECUTION-AND-PHYSICAL-DAG.md) | Accepted | `/1` preservation, opt-in `/2`, portable-only candidates, physical-DAG authority, and fail-closed consumers | 0.51 Phase 0 |
 | [0.48 implementation plan](IMPLEMENTATION_PLAN_0_48.md) | Gate-ready milestone | Human-governed AI proposals; reuse 0.42 approvals | [EXIT_GATE_0_48](EXIT_GATE_0_48.md) |
 | [ADR-024: Human-governed AI](adr/ADR-024-HUMAN-GOVERNED-AI.md) | Accepted | Proposals untrusted; read-only default; no vendor SDK in core | 0.48 |
@@ -99,27 +100,27 @@ evidence remains in **0.38**.
 | [0.40 implementation plan](IMPLEMENTATION_PLAN_0_40.md) | Previous / gate-ready | Registry records, revisions, isolation profiles, histories, OpenLineage | [EXIT_GATE_0_40](EXIT_GATE_0_40.md) |
 | [0.39 implementation plan](IMPLEMENTATION_PLAN_0_39.md) | Previous / gate-ready | Identity, API, durable submit, SSE, landing submitter, optional SQLModel | [EXIT_GATE_0_39](EXIT_GATE_0_39.md) |
 | [0.38 implementation plan](IMPLEMENTATION_PLAN_0_38.md) | Previous / gate-ready | Connector protocols, landing-zone modes, reference providers, conformance | [EXIT_GATE_0_38](EXIT_GATE_0_38.md) |
-| [Forward implementation plans](FORWARD_IMPLEMENTATION_PLANS.md) | Planned release program | Shared entry/done contract and implementation-grade plans for 0.39–0.58 | 0.41 CP3 gate-ready |
+| [Forward implementation plans](FORWARD_IMPLEMENTATION_PLANS.md) | Planned release program | Shared entry/done contract and implementation-grade plans for 0.39–0.59 | 0.41 CP3 gate-ready |
 | [0.37 implementation plan](IMPLEMENTATION_PLAN_0_37.md) | Previous milestone | Removals, testing graduation, acceptance 1–21, security matrix, freeze, rehearsal | [EXIT_GATE_0_37](EXIT_GATE_0_37.md) gate-ready |
 | [0.36 implementation plan](IMPLEMENTATION_PLAN_0_36.md) | Gate-ready / previous | Joint compatibility burn-in closed in-tree | Immutable docs residual on 0.36 |
-| [Adoption, connectivity, and operations](ADOPTION_ECOSYSTEM_PLAN.md) | Planned program | Connectivity gate-ready in 0.38; testing graduated in 0.37 | Continues through 0.58 |
+| [Adoption, connectivity, and operations](ADOPTION_ECOSYSTEM_PLAN.md) | Planned program | Connectivity gate-ready in 0.38; testing graduated in 0.37 | Continues through 0.59 |
 | [Landing-zone file connector](LANDING_ZONE_CONNECTOR_PLAN.md) | Gate-ready (0.38 + 0.39 composition) | Snapshot + incremental in 0.38 Preview; continuous submitters in 0.39 (outside core) | CP1 submitter bridge landed |
 | [ADR-015: Connector protocols](adr/ADR-015-CONNECTOR-PROTOCOLS.md) | Accepted | Protocol ids, entry points, capabilities, plan/runtime split, reference set | Maintenance |
 | [ADR-016: Control-plane identity](adr/ADR-016-CONTROL-PLANE-IDENTITY.md) | Accepted | Identity vocabulary, non-enumeration, durable accept, SSE cursor shapes | CP1 prior |
 | [ADR-017: Registry and isolation](adr/ADR-017-REGISTRY-AND-ISOLATION.md) | Accepted | Directory records, revisions, isolation profiles, metadata-only histories | CP2 prior |
 | [ADR-019: Policy, quotas, and audit](adr/ADR-019-POLICY-QUOTAS-AND-AUDIT.md) | Accepted | Policy envelope, quotas, SoD, audit chain | CP4 prior; CP-GA in 0.43 |
 | [ADR-018: Durable submission and state](adr/ADR-018-DURABLE-SUBMISSION-AND-STATE.md) | Accepted | Outbox, leases/fencing, effects, preview non-authority | CP3 prior |
-| [Multi-tenant control plane](MULTI_TENANT_CONTROL_PLANE_PLAN.md) | Graduated Supported profiles in 0.43 | CPn alone ≠ GA; `shared-service` Experimental | Post-CP-GA hardening / Operator Console 0.56 |
-| [User interface and experience](UI_UX_PLAN.md) | Partially shipped, cross-cutting | CLI + 0.44 LSP/IDE + 0.45 optimization SDK released; interactive HTML and hosted Operator Console remain planned | Hosted work follows control-plane gates; Operator Console 0.56 |
+| [Multi-tenant control plane](MULTI_TENANT_CONTROL_PLANE_PLAN.md) | Graduated Supported profiles in 0.43 | CPn alone ≠ GA; `shared-service` Experimental | Post-CP-GA hardening / Operator Console 0.57 |
+| [User interface and experience](UI_UX_PLAN.md) | Partially shipped, cross-cutting | CLI + 0.44 LSP/IDE + 0.45 optimization SDK released; interactive HTML and hosted Operator Console remain planned | Hosted work follows control-plane gates; Operator Console 0.57 |
 | [ETL reliability and recovery](ETL_RELIABILITY_PLAN.md) | Partially shipped, living plan | Public models, providers, and local CLI operations exist; managed and advanced capabilities remain planned | Delivery objectives and governed erasure in 0.42; bounded dynamic control, DLQ, and schema registries in 0.46 |
 | [Schema drift and evolution](SCHEMA_DRIFT_PLAN.md) | Partially shipped, living plan | File-backed history, inspection, comparison, impact, and acknowledgement workflows exist | Registry-backed history at 0.40 |
 | [SQLModel integration](SQLMODEL_INTEGRATION_PLAN.md) | Partially shipped; CP2 persistence open | The optional contract-to-SQLModel bridge exists; reference registry stores incubate with 0.40 | Request-scoped CP stores |
-| [FastAPI integration](FASTAPI_INTEGRATION_PLAN.md) | Graduated host in 0.43 for Supported profiles | `ETLanticAPI` + thin `create_reference_app`; CPn alone ≠ GA; 0.47 schedule routes are Available | [IMPLEMENTATION_PLAN_0_47](IMPLEMENTATION_PLAN_0_47.md); Operator Console 0.56 |
+| [FastAPI integration](FASTAPI_INTEGRATION_PLAN.md) | Graduated host in 0.43 for Supported profiles | `ETLanticAPI` + thin `create_reference_app`; CPn alone ≠ GA; 0.47 schedule routes are Available | [IMPLEMENTATION_PLAN_0_47](IMPLEMENTATION_PLAN_0_47.md); Operator Console 0.57 |
 | [Local scheduler and Prefect](SCHEDULER_AND_PREFECT_PLAN.md) | Local MVP shipped | The built-in scheduler and optional local Prefect path exist; durable cron is the 0.47 service (not `etlantic.scheduler/1`) | [IMPLEMENTATION_PLAN_0_47](IMPLEMENTATION_PLAN_0_47.md) |
 | [Portable transformations](PORTABLE_TRANSFORM_PLAN.md) | Shipped record with follow-up work | Authoring, planning, conformance, and first-party compilers exist; support remains operation- and backend-specific | Expand only through the published compiler matrix and conformance gates |
 | [Versioned tabular interchange](INTEROPERABILITY_FOUNDATION_PLAN.md) | Gate A shipped record | Polars↔Pandas Gate A exists; DataFusion Gate B remains experimental | Gate B graduates only after its explicit criteria pass |
 | [ContractModel upgrade](CONTRACTMODEL_UPGRADE_PLAN.md) | Historical review baseline with active follow-ups | The original review targeted ContractModel 0.1.2; ETLantic 0.36 requires ContractModel 0.2.x | Revalidate remaining proposals against the current upstream API |
-| [TransformationModel incubation](TRANSFORMATIONMODEL_PLAN.md) | Proposed incubation | No TransformationModel package or API is shipped | Post-foundation 0.58 incubation |
+| [TransformationModel incubation](TRANSFORMATIONMODEL_PLAN.md) | Proposed incubation | No TransformationModel package or API is shipped | Post-foundation 0.59 incubation |
 | [Medallantic roadmap](https://github.com/eddiethedean/etlantic/blob/main/packages/medallantic/ROADMAP.md) | Current companion sequence | Medallantic tracks ETLantic matching minor | Matching-minor joint release |
 
 ## Forward implementation sequence
@@ -132,7 +133,7 @@ evidence, and release gates. Read the
 |---|---|
 | Control plane | [0.39](IMPLEMENTATION_PLAN_0_39.md) · [0.40](IMPLEMENTATION_PLAN_0_40.md) · [0.41](IMPLEMENTATION_PLAN_0_41.md) · [0.42](IMPLEMENTATION_PLAN_0_42.md) · [0.43](IMPLEMENTATION_PLAN_0_43.md) |
 | Intelligence and execution | [0.44](IMPLEMENTATION_PLAN_0_44.md) · [0.45](IMPLEMENTATION_PLAN_0_45.md) · [0.46 dynamic control + streaming](IMPLEMENTATION_PLAN_0_46.md) · [0.47](IMPLEMENTATION_PLAN_0_47.md) · [0.48](IMPLEMENTATION_PLAN_0_48.md) · [0.49 DuckDB](IMPLEMENTATION_PLAN_0_49.md) · [0.50 portable-engine baseline](IMPLEMENTATION_PLAN_0_50.md) · [0.51 adaptive foundation](IMPLEMENTATION_PLAN_0_51.md) · [0.52 adaptive planning](IMPLEMENTATION_PLAN_0_52.md) · [0.53 adaptive execution](IMPLEMENTATION_PLAN_0_53.md) · [0.54 adaptive graduation](IMPLEMENTATION_PLAN_0_54.md) |
-| Adoption and incubation | [0.55](IMPLEMENTATION_PLAN_0_55.md) · [0.56](IMPLEMENTATION_PLAN_0_56.md) · [0.57](IMPLEMENTATION_PLAN_0_57.md) · [0.58](IMPLEMENTATION_PLAN_0_58.md) |
+| Inferred model authoring, adoption, and incubation | [0.55](IMPLEMENTATION_PLAN_0_55.md) · [0.56](IMPLEMENTATION_PLAN_0_56.md) · [0.57](IMPLEMENTATION_PLAN_0_57.md) · [0.58](IMPLEMENTATION_PLAN_0_58.md) · [0.59](IMPLEMENTATION_PLAN_0_59.md) |
 
 ## Status vocabulary
 

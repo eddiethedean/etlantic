@@ -522,10 +522,11 @@ def check_zero_x_roadmap_phases() -> None:
         "## 0.52 — Adaptive Planning, Physical Lowering, and Explainability",
         "## 0.53 — Local Adaptive Physical-DAG Execution",
         "## 0.54 — Adaptive Conformance, Qualification, and Graduation",
-        "## 0.55 — Brownfield Adoption Bridges",
-        "## 0.56 — Operator Console",
-        "## 0.57 — Managed Runtime and Enterprise Provider Packs",
-        "## 0.58 — TransformationModel Incubation",
+        "## 0.55 — Optional Data-First Authoring and Inferred Data Models",
+        "## 0.56 — Brownfield Adoption Bridges",
+        "## 0.57 — Operator Console",
+        "## 0.58 — Managed Runtime and Enterprise Provider Packs",
+        "## 0.59 — TransformationModel Incubation",
     )
     for marker in required_markers:
         if marker not in roadmap:
@@ -563,18 +564,22 @@ def check_zero_x_roadmap_phases() -> None:
         ),
         "0.55": (
             "IMPLEMENTATION_PLAN_0_55.md",
-            "brownfield metadata bridges",
+            "inferred data models",
         ),
         "0.56": (
             "IMPLEMENTATION_PLAN_0_56.md",
-            "operator console",
+            "brownfield metadata bridges",
         ),
         "0.57": (
             "IMPLEMENTATION_PLAN_0_57.md",
-            "provider packs",
+            "operator console",
         ),
         "0.58": (
             "IMPLEMENTATION_PLAN_0_58.md",
+            "provider packs",
+        ),
+        "0.59": (
+            "IMPLEMENTATION_PLAN_0_59.md",
             "TransformationModel",
         ),
     }
