@@ -115,7 +115,10 @@ class PolarsParquetStorage:
                     raise ValueError("Parquet source changed during snapshot")
                 snapshot = _sanitize_footer(destination.getvalue(), self.max_rows)
                 _inspect_snapshot(snapshot, self.max_rows, budget)
-                yield pl.scan_parquet(snapshot, hive_partitioning=False)
+        # Close the validated source before handing bytes to native Polars.
+        # In particular, Windows must be able to rename or replace the source
+        # path while the caller drains the independent in-memory snapshot.
+        yield pl.scan_parquet(snapshot, hive_partitioning=False)
 
     async def read(
         self,
