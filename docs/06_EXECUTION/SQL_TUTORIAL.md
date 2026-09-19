@@ -1,6 +1,6 @@
 # Execute Inside SQL
 
-> **Status: Available in ETLantic 0.54.0 (Beta release candidate).** Prefer the
+> **Status: Available in ETLantic 0.54.0 (published Beta).** Prefer the
 > [SQL hello (PyPI path)](SQL_HELLO_PYPI.md) first (SQLite, no clone).
 > This page is the deeper clone companion. PostgreSQL is the reference
 > backend for production; MERGE is PostgreSQL-only.

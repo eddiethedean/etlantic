@@ -1,6 +1,6 @@
 # Execute with Polars
 
-> **Status: Available in ETLantic 0.54.0 (Beta release candidate).** Prefer the **PyPI path** after
+> **Status: Available in ETLantic 0.54.0 (published Beta).** Prefer the **PyPI path** after
 > Quickstart. The clone companion is optional.
 
 !!! tip "PyPI vs clone"

@@ -1,4 +1,4 @@
-> **Status: Available in ETLantic 0.54.0 (Beta release candidate).** Medallion bronze/silver/gold and
+> **Status: Available in ETLantic 0.54.0 (published Beta).** Medallion bronze/silver/gold and
 > SparkForge migration live in **Medallantic**, not core.
 
 ## Install matching versions

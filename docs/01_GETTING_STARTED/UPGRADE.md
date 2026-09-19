@@ -1,6 +1,6 @@
 # Upgrade Hub
 
-> **Status: Available in ETLantic 0.54.0 (Beta release candidate).**
+> **Status: Available in ETLantic 0.54.0 (published Beta).**
 
 !!! warning "Upgraders only"
     New users: start at the [docs home green path](../README.md) or
@@ -15,7 +15,7 @@ Historical release notes: [Earlier releases](EARLIER_RELEASES.md).
 
 ## Current target
 
-**ETLantic 0.54.0** (Beta release candidate) — choose your guide:
+**ETLantic 0.54.0** (published Beta) — choose your guide:
 
 | From version | Ordered path to 0.54 |
 |---|---|
@@ -302,8 +302,8 @@ See [Migration 0.30 → 0.31](../11_DEVELOPMENT/MIGRATION_0_30_TO_0_31.md).
 ## 0.54 configuration cheat sheet
 
 Apply [Migration 0.53 → 0.54](../11_DEVELOPMENT/MIGRATION_0_53_TO_0_54.md)
-after the historical paths below. Current implementation is a candidate, not
-independently approved; adaptive remains Experimental.
+after the historical paths below. The 0.54 release is published; adaptive
+remains Experimental and is not independently graduated.
 
 | Do | Don't |
 |---|---|

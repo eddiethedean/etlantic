@@ -1,16 +1,16 @@
 # ETLantic 0.54 User Guide
 
-The [0.54 implementation candidate](WHATS_NEW_0_54.md) adds bounded scan fusion,
-public provider conformance and fresh evidence tooling. Publication and
-independent review are pending; adaptive remains Experimental. See
+The [0.54 release](WHATS_NEW_0_54.md) adds bounded scan fusion, public provider
+conformance and fresh evidence tooling. The release is published; independent
+adaptive graduation remains pending and adaptive remains Experimental. See
 [Migration 0.53 → 0.54](../11_DEVELOPMENT/MIGRATION_0_53_TO_0_54.md).
 
-> **Status: Available in ETLantic 0.54.0 (Beta release candidate).**
+> **Status: Available in ETLantic 0.54.0 (published Beta).**
 
 Use this page **after** Ada/Grace success on the docs home
 [green path](../README.md). Do **not** start here for install.
 
-ETLantic **0.54.0** is the current **Beta release candidate** for documented
+ETLantic **0.54.0** is the current **published Beta release** for documented
 single-tenant pilots. You can embed an HTTP control plane with **Supported**
 isolation profiles (`isolated-deployment`, `dedicated-schema`). There is no
 hosted multi-tenant SaaS. The line includes **human-governed AI**

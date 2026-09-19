@@ -7,7 +7,7 @@ audience: developer
 
 # etlantic-lsp API
 
-> **Status: Available in ETLantic 0.54.0 (Beta release candidate).** Editor-neutral language server
+> **Status: Available in ETLantic 0.54.0 (published Beta).** Editor-neutral language server
 > wrapping `etlantic.ide` analysis. Install via `etlantic[lsp]` or
 > `etlantic-lsp==0.54.0`. VS Code reference client remains **Experimental**.
 

@@ -1,6 +1,6 @@
 # Optional Packages
 
-> **Status: Available in ETLantic 0.54.0 (Beta release candidate).** Core `etlantic` does not install
+> **Status: Available in ETLantic 0.54.0 (published Beta).** Core `etlantic` does not install
 > engines. Install only the plugins you need, pinned to the same minor line.
 
 !!! warning "Maturity vs PyPI classifiers"

@@ -1,6 +1,6 @@
 # Development
 
-Current candidate: [0.54 migration](MIGRATION_0_53_TO_0_54.md),
+Current release: [0.54 migration](MIGRATION_0_53_TO_0_54.md),
 [local exit gate](EXIT_GATE_0_54.md), and
 [implementation report](IMPLEMENTATION_REPORT_0_54.md). Independent review and
 graduation remain pending.
@@ -207,6 +207,6 @@ interpreted during implementation.
 
 - [EXIT_GATE_0_41.md](EXIT_GATE_0_41.md)
 
-Current candidate: [What's new in 0.54](../01_GETTING_STARTED/WHATS_NEW_0_54.md),
+Current release: [What's new in 0.54](../01_GETTING_STARTED/WHATS_NEW_0_54.md),
 [migration 0.53 → 0.54](MIGRATION_0_53_TO_0_54.md), and
 [0.54 local exit gate](EXIT_GATE_0_54.md). Review and graduation are pending.

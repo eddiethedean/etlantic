@@ -1,6 +1,6 @@
 # Installing ETLantic 0.54.0
 
-> **Status: Available in ETLantic 0.54.0 (Beta release candidate).**
+> **Status: Available in ETLantic 0.54.0 (published Beta).**
 
 ETLantic **0.54.0** supports Python 3.11–3.13 and is published on
 [PyPI](https://pypi.org/project/etlantic/0.54.0/).

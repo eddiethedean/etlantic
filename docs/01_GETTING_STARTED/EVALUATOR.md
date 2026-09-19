@@ -1,6 +1,6 @@
 # Evaluator Brief
 
-> **Status: ETLantic 0.54.0 implementation candidate (Beta); review pending.**
+> **Status: Available in ETLantic 0.54.0 (published Beta); adaptive graduation remains pending.**
 
 A one-page answer for enterprise evaluators and technical decision-makers.
 
@@ -17,7 +17,7 @@ A one-page answer for enterprise evaluators and technical decision-makers.
 | Maturity | **Beta** (PyPI) |
 | Suitable for | Documented single-tenant pilots; Supported multi-tenant profiles |
 | Support | Community; **no formal SLA** |
-| LTS | Current release-candidate minor only (`0.54.x`) |
+| LTS | Current published minor only (`0.54.x`) |
 | Not included as GA | Unbounded scale; formal enterprise SLA; `shared-service` without real RLS |
 
 ## What ETLantic is

@@ -1,8 +1,8 @@
 # Known Limitations
 
-> **Status: Available in ETLantic 0.54.0 (Beta implementation candidate; review pending).**
+> **Status: Available in ETLantic 0.54.0 (published Beta); adaptive graduation remains pending.**
 
-ETLantic **0.54.x** is a **Beta** implementation candidate. Prior baselines are suitable for documented
+ETLantic **0.54.x** is the current **published Beta** line. Prior baselines are suitable for documented
 single-tenant reference deployments and Supported multi-tenant profiles.
 0.x releases may still introduce breaking API changes between minor versions.
 **CP-GA** graduated production multi-tenant for `isolated-deployment` /

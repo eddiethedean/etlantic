@@ -1,6 +1,6 @@
 # Application Integration (0.39)
 
-> **Status: Available in ETLantic 0.54.0 (Beta release candidate).** Framework-agnostic authoring contract
+> **Status: Available in ETLantic 0.54.0 (published Beta).** Framework-agnostic authoring contract
 > plus the optional FastAPI package dual surface (CP1 primary; sync reference
 > demo secondary).
 

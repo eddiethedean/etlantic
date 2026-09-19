@@ -8,13 +8,25 @@ audience: developer
 # 0.54 initial implementation report
 
 The bounded implementation and final stable-source observation verification are
-complete. This is not independent approval, production readiness or release
-permission. All fourteen candidate rows remain Experimental; graduation is pending.
+complete. This is not independent approval, production readiness or adaptive
+graduation. All fourteen candidate rows remain Experimental; graduation is
+pending.
+
+## Release fact
+
+ETLantic **0.54.0** was published on **2026-09-19**. The immutable
+[`v0.54.0` tag](https://github.com/eddiethedean/etlantic/releases/tag/v0.54.0)
+points to commit `7b477249b5a7e906e7f862b8d5a89e616590e864`; the [release
+workflow](https://github.com/eddiethedean/etlantic/actions/runs/35457133070)
+completed all 38 checks successfully and published all 24 PyPI distributions.
+This publication fact does not promote the Experimental adaptive rows to
+Available.
 
 ## Requirements
 
 These statuses apply to the approved **local initial-implementation boundary**.
-Remote CI execution and an independent graduation decision are follow-up work.
+Remote CI execution is recorded in the release fact above; an independent
+adaptive graduation decision remains follow-up work.
 The [frozen catalogue](evidence/adaptive_0_54/case_catalogue.json) maps all 24 local
 and all 24 program criteria to full pytest identities, all fourteen row signatures,
 and seventeen sanitized category reports.
@@ -68,7 +80,8 @@ Full exact test paths and parameters are in the catalogue.
 - Added public provider conformance without trust/maturity mutation, fresh
   observation/verification/aggregation tooling and locally tested graduation safeguards.
 - Prepared core plus 23 workspace packages at 0.54.0, dependency ranges, lockfile,
-  fifteen manifests and current-facing documentation. Publication is separate.
+  fifteen manifests and current-facing documentation. Publication is recorded
+  separately in `docs/release-facts.json`.
   No database migration, new core engine dependency, general fusion, connector-session
   expansion, durable queue or control-plane expansion was introduced.
 
@@ -123,7 +136,8 @@ The initial bare Pyright invocation selected the wrong interpreter and reported
 missing optional imports; the explicit workspace interpreter passed without
 suppressions. Initial release/docs/compatibility version drift was corrected,
 then the affected gates rerun. Release metadata checks passed and confirmed all
-24 versioned PyPI artifacts are still absent; nothing was published.
+24 versioned PyPI artifacts were still absent at this prepublication checkpoint;
+the subsequent tagged release published them.
 
 ## Remaining issues and limitations
 
@@ -148,9 +162,10 @@ source and plan fingerprints. Optional skips and legacy metadata warnings remain
 visible.
 Prefect emitted an existing shutdown logging error after pytest completion.
 
-Actual Linux/macOS/Windows × Python 3.11/3.12/3.13 CI observations, independent
-review, release-owner action, graduation and publication were not executed and
-are not required for this implementation handoff. Local synthetic matrix/go
+This initial local report did not itself execute the release-owner action or
+make an independent adaptive graduation decision. The subsequent tagged
+v0.54.0 release workflow completed the Linux/macOS/Windows × Python
+3.11/3.12/3.13 checks and published the release. Local synthetic matrix/go
 fixtures validate safeguards only; they are not remote evidence or approval.
 The runtime candidate remains exact-signature and Experimental, with the new
 fusion row restricted to development/test. No general source pushdown or fusion
@@ -182,12 +197,13 @@ disabled. Adapter wheel and sdist builds, Ruff, Pyright, documentation consisten
 and strict rendering passed. These results are separate overlapping runs, not
 additive counts. The existing broad full-suite result above predates these fixes.
 The 482-case phase campaign also passed again with stable-source observation
-verification after these corrections. No patch train was published and neither
-GitHub issue was closed; published
-artifact qualification requested by #143 remains a separate release action.
+verification after these corrections. Neither GitHub issue was closed; published
+artifact qualification requested by #143 remains recorded in the release fact
+above as a separate release action.
 
-Changes remain uncommitted in the shared workspace; no tag, push, release or
-Available promotion was performed.
+At the time of this report, changes were uncommitted and no tag, push, release
+or Available promotion had been performed. The later release fact records the
+immutable tag and publication; it does not promote adaptive rows.
 
 ### Review finding remediation
 
@@ -205,7 +221,8 @@ The expanded stable phase campaign passed **494 cases**. The broader adapter,
 provider and storage run passed **234 tests**, with three optional skips. All
 **13 targeted review regressions** passed against isolated rebuilt wheels.
 Counts overlap. Ruff, explicit-interpreter Pyright, wheel/sdist builds and strict
-documentation rendering passed. Remote CI execution is not claimed.
+documentation rendering passed. The initial report did not claim remote CI; the
+subsequent release workflow passed all 38 checks.
 
 Attempt 6 remains recorded: it was intentionally interrupted to complete the
 native-plan parser correction, causing cancellation of a running test and a
@@ -288,4 +305,5 @@ passed all **642 cases** in **344.90s**, zero skips, with 84 visible warnings.
 Its before/after/current source digest is
 `sha256:e96d2da29531535af267536d7de19648f912b4f5340154d2b41bd5e397caf5ee`;
 all seventeen category hashes and semantic records were verified independently.
-Candidate graduation remains pending; no commit or publication was performed.
+Candidate graduation remains pending; this evidence snapshot itself did not
+commit or publish.

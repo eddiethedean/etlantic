@@ -5,9 +5,10 @@ current_minor: "0.54"
 audience: developer
 ---
 
-# 0.54 development candidate APIs
+# 0.54 Experimental APIs
 
-> 0.54 release candidate; publication pending. Adaptive is Experimental.
+> **Status: Available in ETLantic 0.54.0 (published Beta).** Adaptive remains
+> Experimental and graduation remains pending.
 
 The public-only companion is `examples/adaptive_reference.py`. Run it with
 `python examples/adaptive_reference.py` after installing the matching Polars,

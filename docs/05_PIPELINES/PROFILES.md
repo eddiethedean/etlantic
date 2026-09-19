@@ -1,6 +1,6 @@
 # Profiles
 
-> **Status: Available in ETLantic 0.54.0 (Beta release candidate).** Field reference. Start with the
+> **Status: Available in ETLantic 0.54.0 (published Beta).** Field reference. Start with the
 > [Profiles hub](PROFILES_HUB.md) for the adopter path.
 
 A **Profile** defines how a validated Pipeline Plan is bound to a specific

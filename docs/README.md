@@ -2,14 +2,14 @@
 hide:
   - toc
 status: available
-since: "0.50.0"
+since: "0.54.0"
 current_minor: "0.54"
 audience: adopter
 ---
 
 <div class="etlantic-hero">
   <div class="etlantic-hero__content">
-    <span class="etlantic-hero__eyebrow">ETLantic 0.50 · Published Beta</span>
+    <span class="etlantic-hero__eyebrow">ETLantic 0.54 · Published Beta</span>
     <h1>One typed pipeline model. Many execution backends.</h1>
     <p>Define contracts and topology in Python, validate them before execution,
     then produce deterministic plans for local engines, backend plugins, or
@@ -62,7 +62,7 @@ audience: adopter
 
 ## Choose your path
 
-> **Status: Available in ETLantic 0.54.0 (Beta release candidate).**
+> **Status: Available in ETLantic 0.54.0 (published Beta).**
 
 
 <div class="etlantic-path-grid">

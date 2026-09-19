@@ -1,7 +1,8 @@
 # Migration from 0.53 to 0.54
 
-This is a local implementation candidate; independent review/publication remain
-pending. Upgrade core and first-party packages together to 0.54.0. Plugins depend
+The 0.54.0 release is published; adaptive execution remains Experimental and
+independent graduation remains pending. Upgrade core and first-party packages
+together to 0.54.0. Plugins depend
 on `etlantic>=0.54.0,<0.55`; package ranges are not adaptive backend support ranges.
 The adaptive campaign pins Polars 1.42.1, Pandas 2.3.3 and PyArrow 25.0.0.
 

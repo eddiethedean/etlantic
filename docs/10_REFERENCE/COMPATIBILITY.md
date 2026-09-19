@@ -1,6 +1,6 @@
 # Compatibility Matrix
 
-> **Status: Available in ETLantic 0.54.0 (Beta release candidate).**
+> **Status: Available in ETLantic 0.54.0 (published Beta).**
 
 This table describes the declared compatibility of ETLantic 0.54.0.
 Foundation policy summary ([ODCS](../03_DATA_CONTRACTS/ODCS.md) /

@@ -1,6 +1,6 @@
 # Performance envelope
 
-> **Status: Available in ETLantic 0.54.0 (Beta release candidate).** Coordination microbenchmarks only—
+> **Status: Available in ETLantic 0.54.0 (published Beta).** Coordination microbenchmarks only—
 > not warehouse throughput or SLA claims.
 
 ## Residual evaluation lead

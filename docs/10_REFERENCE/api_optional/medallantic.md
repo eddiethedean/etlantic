@@ -7,7 +7,7 @@ audience: developer
 
 # medallantic API
 
-> **Status: Available in ETLantic 0.54.0 (Beta release candidate).** Medallion facade + SparkForge migrate.
+> **Status: Available in ETLantic 0.54.0 (published Beta).** Medallion facade + SparkForge migrate.
 > Install narrative: package README. Hub: [Optional packages API](../API_OPTIONAL_PACKAGES.md).
 
 ## Setup

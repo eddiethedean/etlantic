@@ -6,12 +6,12 @@
 > [Capabilities](docs/01_GETTING_STARTED/CAPABILITIES.md) for what ships now.
 > Review this header for every release or sequence change.
 
-**Current release:** ETLantic **0.54.0** (Beta implementation candidate) —
+**Current release:** ETLantic **0.54.0** (published Beta) —
 Experimental, fixture-qualified local adaptive physical-DAG execution for
 Local, Polars, Pandas and both single-cut Polars/Pandas directions. Explicit
 execution remains the default and retains the seven-engine portable baseline.
 Unsupported combinations and consumers fail closed before effects. Broader
-qualification includes fourteen Experimental rows and the bounded Polars scan/filter/project reference. Graduation remains pending; local implementation completion does not imply independent review or publication. See the
+qualification includes fourteen Experimental rows and the bounded Polars scan/filter/project reference. Graduation remains pending; local implementation completion does not imply independent review or adaptive graduation. See the
 [0.54 exit gate](docs/11_DEVELOPMENT/EXIT_GATE_0_54.md).
 Prior **0.49** qualified optional DuckDB; prior **0.48** human-governed AI
 context/proposals and Experimental `etlantic-mcp`
@@ -23,7 +23,7 @@ through **0.37** (stable foundation) are shipped.
 
 | Horizon | Release | Outcome | Status |
 |---|---:|---|---|
-| Current | 0.54 | Adaptive conformance and bounded scan/filter/project implementation | Implementation candidate / review pending |
+| Current | 0.54 | Adaptive conformance and bounded scan/filter/project implementation | Published / shipped evidence |
 | Previous | 0.53 | Experimental fixture-qualified local adaptive physical-DAG execution | Historical candidate |
 | Previous | 0.52 | Deterministic adaptive planning and plan-only physical lowering | Published / shipped evidence |
 | Previous | 0.50 | Seven-engine portable baseline with 0.50.1 compatibility fixes | Published / shipped evidence |

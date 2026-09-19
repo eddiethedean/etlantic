@@ -1,6 +1,6 @@
 # Configuration in 0.54
 
-> **Status: Available in ETLantic 0.54.0 (Beta release candidate).**
+> **Status: Available in ETLantic 0.54.0 (published Beta).**
 
 ETLantic 0.54.0 configures execution with a `Profile` object, a JSON profile
 document, and an optional project `etlantic.toml`. Prefer **`assets`** for

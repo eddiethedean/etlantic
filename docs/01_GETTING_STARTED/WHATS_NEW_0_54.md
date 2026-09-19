@@ -7,8 +7,8 @@ audience: developer
 
 # What's new in 0.54
 
-0.54.0 is the implementation candidate; publication and independent review are
-pending. Explicit execution remains the default. Adaptive execution remains
+0.54.0 is published; independent adaptive graduation remains pending. Explicit
+execution remains the default. Adaptive execution remains
 **Experimental**, not Available or production-qualified.
 
 - Public immutable provider conformance cases/reports and sync/async helpers

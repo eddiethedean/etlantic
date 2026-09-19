@@ -1,6 +1,6 @@
 # Best Practices
 
-> **Status: Available in ETLantic 0.54.0 (Beta release candidate).** Adopter-facing habits for safe,
+> **Status: Available in ETLantic 0.54.0 (published Beta).** Adopter-facing habits for safe,
 > inspectable pipelines. Prefer this over scattered “best practices” asides.
 
 ## Authoring

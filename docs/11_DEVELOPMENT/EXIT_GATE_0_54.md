@@ -1,8 +1,10 @@
 # 0.54 local implementation exit gate
 
-This gate is initial implementation verification, not independent approval,
-production readiness or release permission. Graduation remains pending and all
-fourteen candidate rows remain Experimental.
+> **Status: 0.54.0 release published; adaptive graduation remains pending.**
+
+This gate records local adaptive implementation verification, not independent
+approval or production readiness. All fourteen candidate rows remain
+Experimental; publication does not promote any row to Available.
 
 Required local checks cover public conformance, bounded source/fusion execution,
 exact row/direction differentials, failure/ownership/publication, compatibility,

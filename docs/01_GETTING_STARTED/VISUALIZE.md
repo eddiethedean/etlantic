@@ -1,6 +1,6 @@
 # Visualize a pipeline
 
-> **Status: Available in ETLantic 0.54.0 (Beta release candidate).** After [Quickstart](QUICKSTART.md).
+> **Status: Available in ETLantic 0.54.0 (published Beta).** After [Quickstart](QUICKSTART.md).
 
 ## Python
 

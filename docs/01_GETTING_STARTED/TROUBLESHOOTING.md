@@ -1,6 +1,6 @@
 # Troubleshooting
 
-> **Status: Available in ETLantic 0.54.0 (Beta release candidate).**
+> **Status: Available in ETLantic 0.54.0 (published Beta).**
 
 ## Quickstart stuck?
 

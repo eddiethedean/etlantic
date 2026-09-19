@@ -63,5 +63,5 @@ or keep the existing orchestrator and call ETLantic validate/plan from CI.
 ## Next
 
 - [Compare](COMPARE.md) — positioning vs dbt / Airflow / Pandera
-- [Capabilities](CAPABILITIES.md) — current 0.54 implementation candidate
+- [Capabilities](CAPABILITIES.md) — current published 0.54 release
 - [Evaluator brief](EVALUATOR.md) — diligence packet

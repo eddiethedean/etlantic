@@ -8,9 +8,20 @@ audience: developer
 # 0.54 initial implementation status
 
 The bounded local implementation and final stable-source evidence verification
-are complete. This ledger is not independent approval or release
-permission. All fourteen candidate rows are Experimental and graduation is pending.
-External CI execution and independent approval are follow-ups, not completion gates.
+are complete. This ledger is not independent approval or adaptive graduation.
+All fourteen candidate rows are Experimental and graduation is pending. The
+release workflow and external checks are complete; independent adaptive approval
+remains a separate follow-up.
+
+## Release fact
+
+ETLantic **0.54.0** was published on **2026-09-19**. The immutable
+[`v0.54.0` tag](https://github.com/eddiethedean/etlantic/releases/tag/v0.54.0)
+points to commit `7b477249b5a7e906e7f862b8d5a89e616590e864`; the [release
+workflow](https://github.com/eddiethedean/etlantic/actions/runs/35457133070)
+completed all 38 checks successfully and published all 24 PyPI distributions.
+Publication records the release only; it does not promote the Experimental
+adaptive rows to Available.
 
 ## Requirements checklist
 
@@ -65,8 +76,10 @@ are at 0.54.0. All distributions built; isolated engine-free core and real optio
 wheel checks run independently. Historical qualification/wire evidence is retained;
 ordinary /1 does not gain adaptive metadata.
 
-No database migration, new core engine dependency, publication, tag, commit,
-push or Available-row promotion was performed.
+No database migration or new core engine dependency was introduced by the
+implementation, and no Available-row promotion was performed. Release
+publication, tagging and push are recorded above and remain separate from this
+implementation ledger.
 
 ## Second review remediation
 
@@ -110,8 +123,9 @@ The current [attempt 11 observation](evidence/adaptive_0_54/local/attempt-11/obs
 passed all 642 cases in 356.89s, zero skips, with 84 visible warnings. Its
 identical before/after/current source digest is
 `sha256:7f3ab7fdd3bd6e33c92e3483f976f285283b9b77ff1f0b6d36f5a3d4a0b771fc`.
-All seventeen category hashes and semantics were verified. No commit, push,
-publication or graduation was performed.
+All seventeen category hashes and semantics were verified. This observation is
+a historical local snapshot; it did not commit, push, publish, or graduate a
+row.
 
 ## Prior verification and follow-ups
 
@@ -137,8 +151,8 @@ Next: **Sol — Production Code Review**.
 Follow-up issues #143/#144 are implemented locally: concrete collection list
 denials and route-scoped safe validation errors. Adapter/provider tests passed
 191 cases (three skips); all 50 issue regressions passed against isolated built
-wheels. Publication and GitHub issue closure were not performed. See the
-implementation report for release qualification boundaries.
+wheels. GitHub issue closure was not performed. Release publication is recorded
+above; see the implementation report for adaptive qualification boundaries.
 
 All five subsequent review findings are fixed: custom contract hooks fail closed,
 immutable buffers eliminate replaceable disk snapshots and disk cleanup obligations, CI proofs stay
@@ -146,5 +160,6 @@ outside the checkout, native operator detection distinguishes names from plan
 operators, and FastAPI CI requires SQLModel coverage. Twelve new catalogue cases
 cover these corrections. The broader adapter/provider/storage run passed 234
 tests (three skips); 13 targeted regressions passed against isolated rebuilt
-wheels. The prior 629-case campaign includes these and all sixteen second-review fixes. Remote CI execution
-and release qualification remain unclaimed.
+wheels. The prior 629-case campaign includes these and all sixteen second-review fixes.
+Release workflow checks and publication are recorded above; adaptive graduation
+remains unclaimed.
