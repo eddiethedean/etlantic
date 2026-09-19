@@ -117,7 +117,23 @@ def test_final_007_post_compile_schema_deadline_fences_registration(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     """The member deadline covers schema work before exposing compiler outputs."""
+    from contextlib import contextmanager
+
     from tests.runtime.physical.test_qualification_0_53 import Chain, setup
+
+    scopes = []
+    original_timeout = anyio.fail_after
+
+    @contextmanager
+    def boundary_timeout(seconds, *, shield=False):
+        with original_timeout(
+            None if seconds == 0.1 else seconds, shield=shield
+        ) as scope:
+            if seconds == 0.1:
+                scopes.append(scope)
+            yield scope
+
+    monkeypatch.setattr(anyio, "fail_after", boundary_timeout)
 
     async def exercise() -> None:
         request = RunRequest(timeout=TimeoutPolicy(step_seconds=0.1))
@@ -132,7 +148,10 @@ def test_final_007_post_compile_schema_deadline_fences_registration(
                 # Preserve the admitted compiler, schema operation and output;
                 # inject latency at the real post-compile inspection boundary.
                 entered.append("first_schema")
-                time.sleep(0.3)
+                # Start the actual finite deadline only at the boundary under
+                # test; compiler startup cannot consume the probe's budget.
+                scopes[-1].deadline = anyio.current_time() + 0.02
+                time.sleep(0.05)
             return original(*args, **kwargs)
 
         monkeypatch.setattr(plugin, "inspect_schema", inspect_schema)

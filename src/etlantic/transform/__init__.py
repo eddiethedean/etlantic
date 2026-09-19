@@ -23,6 +23,11 @@ from etlantic.transform.compiler import (
 from etlantic.transform.complex import array, create_map, element_at, size, struct
 from etlantic.transform.dataframe import FrameExpr, GroupedData, input_frame
 from etlantic.transform.dtcs_builder import build_portable_definition, invoke_portable
+from etlantic.transform.fusion import (
+    FusionDescriptor,
+    FusionMember,
+    PortableFusionCompiler,
+)
 from etlantic.transform.lambda_expr import exists, forall, lambda_, transform
 from etlantic.transform.portable_baseline import (
     BASELINE_ID,
@@ -55,9 +60,12 @@ __all__ = [
     "ColumnExpr",
     "CompiledTransform",
     "FrameExpr",
+    "FusionDescriptor",
+    "FusionMember",
     "GroupedData",
     "ParameterRef",
     "PortableDefinition",
+    "PortableFusionCompiler",
     "PortableRequirement",
     "PortableSupportFinding",
     "PortableTransformCompiler",

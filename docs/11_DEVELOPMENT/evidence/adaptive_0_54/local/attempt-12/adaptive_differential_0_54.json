@@ -1,0 +1,89 @@
+{
+  "cases": [
+    {
+      "id": "tests/runtime/physical/test_qualification_0_53.py::test_five_family_stored_differential[rows0-families0]",
+      "status": "pass"
+    },
+    {
+      "id": "tests/runtime/physical/test_qualification_0_53.py::test_five_family_stored_differential[rows0-families1]",
+      "status": "pass"
+    },
+    {
+      "id": "tests/runtime/physical/test_qualification_0_53.py::test_five_family_stored_differential[rows0-families2]",
+      "status": "pass"
+    },
+    {
+      "id": "tests/runtime/physical/test_qualification_0_53.py::test_five_family_stored_differential[rows0-families3]",
+      "status": "pass"
+    },
+    {
+      "id": "tests/runtime/physical/test_qualification_0_53.py::test_five_family_stored_differential[rows0-families4]",
+      "status": "pass"
+    },
+    {
+      "id": "tests/runtime/physical/test_qualification_0_53.py::test_five_family_stored_differential[rows1-families0]",
+      "status": "pass"
+    },
+    {
+      "id": "tests/runtime/physical/test_qualification_0_53.py::test_five_family_stored_differential[rows1-families1]",
+      "status": "pass"
+    },
+    {
+      "id": "tests/runtime/physical/test_qualification_0_53.py::test_five_family_stored_differential[rows1-families2]",
+      "status": "pass"
+    },
+    {
+      "id": "tests/runtime/physical/test_qualification_0_53.py::test_five_family_stored_differential[rows1-families3]",
+      "status": "pass"
+    },
+    {
+      "id": "tests/runtime/physical/test_qualification_0_53.py::test_five_family_stored_differential[rows1-families4]",
+      "status": "pass"
+    },
+    {
+      "id": "tests/runtime/physical/test_review_remediation_0_54.py::test_actual_keyword_columns_preserve_native_scan_proof[FILTER FIELD]",
+      "status": "pass"
+    },
+    {
+      "id": "tests/runtime/physical/test_review_remediation_0_54.py::test_actual_keyword_columns_preserve_native_scan_proof[FILTER]",
+      "status": "pass"
+    },
+    {
+      "id": "tests/runtime/physical/test_review_remediation_0_54.py::test_custom_contract_hooks_are_not_schema_provable[CoreHookRaw]",
+      "status": "pass"
+    },
+    {
+      "id": "tests/runtime/physical/test_review_remediation_0_54.py::test_custom_contract_hooks_are_not_schema_provable[CustomInitRaw]",
+      "status": "pass"
+    },
+    {
+      "id": "tests/runtime/physical/test_review_remediation_0_54.py::test_custom_contract_hooks_are_not_schema_provable[PostInitRaw]",
+      "status": "pass"
+    },
+    {
+      "id": "tests/runtime/physical/test_review_remediation_0_54.py::test_custom_contract_hooks_are_not_schema_provable[ValidateRaw]",
+      "status": "pass"
+    },
+    {
+      "id": "tests/runtime/physical/test_review_remediation_0_54.py::test_custom_source_hook_cannot_gain_fusion_authority",
+      "status": "pass"
+    },
+    {
+      "id": "tests/runtime/physical/test_review_remediation_0_54.py::test_keyword_workspace_executes_actual_fused_query",
+      "status": "pass"
+    },
+    {
+      "id": "tests/runtime/physical/test_review_remediation_0_54.py::test_live_hook_drift_rejects_before_source_read",
+      "status": "pass"
+    },
+    {
+      "id": "tests/runtime/physical/test_review_remediation_0_54.py::test_standalone_filter_is_not_mistaken_for_scan_pushdown",
+      "status": "pass"
+    }
+  ],
+  "category": "adaptive_differential_0_54.json",
+  "phase": "0.54",
+  "result": "pass",
+  "schema": "etlantic.adaptive_category_observation/1",
+  "source": "sha256:6e1b2a2d6920c88cd6c4c22520bdc3d1125036db736654a3738a60f0833f8d2a"
+}

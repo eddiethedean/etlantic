@@ -14,6 +14,7 @@ from etlantic.control_plane import (
     require_authorized,
 )
 from etlantic.runtime.scheduler_service import SchedulerService
+from etlantic_fastapi.collections import visible_items
 from fastapi import APIRouter, Depends
 
 if TYPE_CHECKING:
@@ -88,8 +89,17 @@ def register_schedule_routes(
         )
         items = [
             rec.to_dict()
-            for rec in _require_schedule().list_schedules(ctx)
-            if rec.definition_id == definition_id
+            for rec in visible_items(
+                api.authorizer,
+                ctx,
+                "schedule.read",
+                [
+                    rec
+                    for rec in _require_schedule().list_schedules(ctx)
+                    if rec.definition_id == definition_id
+                ],
+                lambda rec: f"schedule:{rec.schedule_id}",
+            )
         ]
         return {"schedules": items}
 
@@ -220,7 +230,14 @@ def register_schedule_routes(
             resource_in_caller_scope=False,
         )
         items = [
-            rec.to_dict() for rec in _require_schedule().list_firings(ctx, schedule_id)
+            rec.to_dict()
+            for rec in visible_items(
+                api.authorizer,
+                ctx,
+                "schedule.read",
+                _require_schedule().list_firings(ctx, schedule_id),
+                lambda rec: f"schedule:firing:{rec.firing_id}",
+            )
         ]
         return {"firings": items}
 

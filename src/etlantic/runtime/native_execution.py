@@ -25,6 +25,7 @@ class NativeExecution:
     attempt: int
     abandon_after_seconds: float | None
     obligations: list[dict[str, Any]]
+    cancellation_observer: Callable[[float], None] | None = None
 
     async def run(self, operation: Callable[[], Any]) -> Any:
         completed = threading.Event()
@@ -48,6 +49,10 @@ class NativeExecution:
         try:
             return await run_sync(run_operation, abandon_on_cancel=True)
         except anyio.get_cancelled_exc_class():
+            # Preserve cancellation delivery time before a shielded drain can
+            # cross a deadline. The host, not elapsed cleanup time, classifies it.
+            if self.cancellation_observer is not None:
+                self.cancellation_observer(anyio.current_time())
             with gate:
                 cancelled = True
                 if not started:

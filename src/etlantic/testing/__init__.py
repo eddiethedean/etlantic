@@ -2,6 +2,12 @@
 
 from __future__ import annotations
 
+from etlantic.testing.adaptive import (
+    AdaptiveConformanceCase,
+    AdaptiveConformanceReport,
+    arun_adaptive_provider_conformance_suite,
+    run_adaptive_provider_conformance_suite,
+)
 from etlantic.testing.capability_truthfulness import (
     assert_capability_claims_consistent,
     assert_capability_matches_behavior,
@@ -134,6 +140,8 @@ __all__ = [
     "MAX_SEED_ROWS_PER_ASSET",
     "MAX_SNAPSHOT_BYTES",
     "SECRET_SENTINEL",
+    "AdaptiveConformanceCase",
+    "AdaptiveConformanceReport",
     "ExpectedResult",
     "FakeClock",
     "FakeRunIdentity",
@@ -147,6 +155,7 @@ __all__ = [
     "SparkForgeDifferentialResult",
     "SqlBuilderDifferentialFixture",
     "SqlBuilderDifferentialResult",
+    "arun_adaptive_provider_conformance_suite",
     "assert_capability_claims_consistent",
     "assert_capability_matches_behavior",
     "assert_case_succeeded",
@@ -173,6 +182,7 @@ __all__ = [
     "portable_transform_conformance",
     "register_faults",
     "reset_fault_counts",
+    "run_adaptive_provider_conformance_suite",
     "run_all_campaigns",
     "run_capacity_campaign",
     "run_compat_campaign",

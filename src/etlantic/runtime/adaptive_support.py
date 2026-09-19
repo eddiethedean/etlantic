@@ -52,6 +52,19 @@ def qualification_bundle() -> tuple[dict[str, Any], str]:
     return bundle, "sha256:" + hashlib.sha256(raw).hexdigest()
 
 
+def candidate_bundle() -> tuple[dict[str, Any], str]:
+    from importlib.resources import files
+
+    from etlantic.runtime.adaptive_graduation import validate_candidate
+
+    root = files("etlantic.runtime")
+    raw = root.joinpath("adaptive_candidate.json").read_bytes().replace(b"\r\n", b"\n")
+    bundle = json.loads(raw)
+    decision = json.loads(root.joinpath("adaptive_graduation.json").read_bytes())
+    validate_candidate(bundle, decision)
+    return bundle, "sha256:" + hashlib.sha256(raw).hexdigest()
+
+
 @dataclass(frozen=True, slots=True)
 class SupportRow:
     row_id: str
@@ -220,6 +233,11 @@ def topology_fingerprint(plan: AdaptivePipelinePlan) -> str:
 
 
 def support_row_for(plan: AdaptivePipelinePlan) -> SupportRow | None:
+    if any(
+        unit.metadata.get("etlantic.fusion") is not None
+        for unit in plan.physical_dag.units
+    ):
+        return _candidate_fusion_row(plan)
     pattern = _pattern(plan)
     if pattern not in SUPPORTED_PATTERNS:
         return None
@@ -248,7 +266,7 @@ def support_row_for(plan: AdaptivePipelinePlan) -> SupportRow | None:
         return None
     if pattern in {"diamond/1", "fanout/1"} and len(families) != 1:
         return None
-    bundle, bundle_digest = qualification_bundle()
+    bundle, bundle_digest = candidate_bundle()
     key = f"{pattern}:{'-'.join(families)}"
     qualified = bundle["rows"].get(key)
     if qualified is None:
@@ -269,6 +287,74 @@ def support_row_for(plan: AdaptivePipelinePlan) -> SupportRow | None:
         policy_modes=("standard", "validate", "overwrite", "no_write"),
         evidence_refs=(bundle_digest, *qualified["evidence_refs"]),
     )
+
+
+def _candidate_fusion_row(plan: AdaptivePipelinePlan) -> SupportRow | None:
+    """Development-only authority, explicitly distinct from qualification proof."""
+
+    from etlantic.transform.fusion import (
+        FUSION_SIGNATURE,
+        PARQUET_CAPABILITY_EVIDENCE,
+        FusionDescriptor,
+    )
+
+    if (
+        plan.profile_snapshot.get("security_mode") not in {"development", "test"}
+        or _pattern(plan) != "chain/1"
+        or len(plan.logical_graph.nodes) != 5
+        or _target_family(plan) != ("polars", "pandas")
+        or plan.logical_graph.nodes[3].metadata.get("etlantic.validation_required")
+        != {
+            "schema": "etlantic.physical_operation/1",
+            "kind": "validation",
+            "port": "result",
+            "outcome": "fail",
+        }
+    ):
+        return None
+    fused = [
+        unit for unit in plan.physical_dag.units if unit.metadata.get("etlantic.fusion")
+    ]
+    if len(fused) != 1:
+        return None
+    try:
+        descriptor = FusionDescriptor.from_dict(fused[0].metadata["etlantic.fusion"])
+        if (
+            descriptor.logical_nodes != fused[0].logical_nodes
+            or descriptor.target_identity != fused[0].target_identity
+            or tuple(n.name for n in plan.logical_graph.nodes[:3])
+            != descriptor.logical_nodes
+            or any(
+                len(unit.logical_nodes) != 1
+                for unit in plan.physical_dag.units
+                if unit.kind.value == "compute" and unit is not fused[0]
+            )
+        ):
+            return None
+        bundle, bundle_digest = candidate_bundle()
+        row = bundle["rows"][FUSION_SIGNATURE]
+        if row["maturity"] != "Experimental" or row["evidence_refs"]:
+            return None
+        return SupportRow(
+            row_id=f"local-static:{FUSION_SIGNATURE}",
+            pattern="scan-filter-project-chain/1",
+            target_families=("polars", "pandas"),
+            version_requirements={
+                "plan": "etlantic.plan/2",
+                "physical_unit": "etlantic.physical_unit/1",
+                **row["versions"],
+            },
+            unit_kinds=tuple(kind.value for kind in PhysicalUnitKind),
+            contract_profiles=("etlantic.contract/1",),
+            io_families=("polars-parquet", "memory", "json", "csv", "null"),
+            policy_modes=tuple(row["policies"]),
+            evidence_refs=(
+                bundle_digest,
+                PARQUET_CAPABILITY_EVIDENCE,
+            ),
+        )
+    except (ValueError, TypeError, KeyError):
+        return None
 
 
 def is_executable_plan(plan: Any) -> bool:

@@ -1,0 +1,97 @@
+{
+  "cases": [
+    {
+      "id": "tests/adaptive_conformance/test_public_suite.py::test_oracle_failure_is_safe_behavioral_failure",
+      "status": "pass"
+    },
+    {
+      "id": "tests/plan/test_adaptive_final_remediation_0_52.py::test_final_052_020_security_solver_failure_never_falls_back",
+      "status": "not-passed"
+    },
+    {
+      "id": "tests/plan/test_adaptive_planner_0_52.py::test_adaptive_artifacts_redact_absolute_target_resources",
+      "status": "not-passed"
+    },
+    {
+      "id": "tests/runtime/physical/test_fusion_0_54.py::test_drift_rejects_atomically_before_read[binding]",
+      "status": "pass"
+    },
+    {
+      "id": "tests/runtime/physical/test_fusion_0_54.py::test_drift_rejects_atomically_before_read[config]",
+      "status": "pass"
+    },
+    {
+      "id": "tests/runtime/physical/test_fusion_0_54.py::test_drift_rejects_atomically_before_read[middleware]",
+      "status": "pass"
+    },
+    {
+      "id": "tests/runtime/physical/test_fusion_0_54.py::test_drift_rejects_atomically_before_read[source]",
+      "status": "pass"
+    },
+    {
+      "id": "tests/runtime/physical/test_qualification_0_53.py::test_admitted_binding_snapshot_survives_post_admission_registry_mutation",
+      "status": "pass"
+    },
+    {
+      "id": "tests/runtime/physical/test_qualification_0_53.py::test_retry_safety_rejects_before_reads",
+      "status": "pass"
+    },
+    {
+      "id": "tests/runtime/physical/test_review_remediation_0_54.py::test_actual_keyword_columns_preserve_native_scan_proof[FILTER FIELD]",
+      "status": "not-passed"
+    },
+    {
+      "id": "tests/runtime/physical/test_review_remediation_0_54.py::test_actual_keyword_columns_preserve_native_scan_proof[FILTER]",
+      "status": "not-passed"
+    },
+    {
+      "id": "tests/runtime/physical/test_review_remediation_0_54.py::test_custom_contract_hooks_are_not_schema_provable[CoreHookRaw]",
+      "status": "not-passed"
+    },
+    {
+      "id": "tests/runtime/physical/test_review_remediation_0_54.py::test_custom_contract_hooks_are_not_schema_provable[CustomInitRaw]",
+      "status": "not-passed"
+    },
+    {
+      "id": "tests/runtime/physical/test_review_remediation_0_54.py::test_custom_contract_hooks_are_not_schema_provable[PostInitRaw]",
+      "status": "not-passed"
+    },
+    {
+      "id": "tests/runtime/physical/test_review_remediation_0_54.py::test_custom_contract_hooks_are_not_schema_provable[ValidateRaw]",
+      "status": "not-passed"
+    },
+    {
+      "id": "tests/runtime/physical/test_review_remediation_0_54.py::test_custom_source_hook_cannot_gain_fusion_authority",
+      "status": "not-passed"
+    },
+    {
+      "id": "tests/runtime/physical/test_review_remediation_0_54.py::test_keyword_workspace_executes_actual_fused_query",
+      "status": "not-passed"
+    },
+    {
+      "id": "tests/runtime/physical/test_review_remediation_0_54.py::test_live_hook_drift_rejects_before_source_read",
+      "status": "not-passed"
+    },
+    {
+      "id": "tests/runtime/physical/test_review_remediation_0_54.py::test_standalone_filter_is_not_mistaken_for_scan_pushdown",
+      "status": "not-passed"
+    },
+    {
+      "id": "tests/runtime/test_adaptive_execution_0_53.py::test_adaptive_admission_rejects_invalid_concurrency_before_storage_effects",
+      "status": "pass"
+    },
+    {
+      "id": "tests/runtime/test_adaptive_execution_0_53.py::test_adaptive_asset_override_is_captured_before_admission",
+      "status": "pass"
+    },
+    {
+      "id": "tests/runtime/test_sol_0_53_contract_rereview.py::test_final_001_executor_replacement_after_admission_is_never_used",
+      "status": "pass"
+    }
+  ],
+  "category": "adaptive_security_matrix_0_51.json",
+  "phase": "0.54",
+  "result": "fail",
+  "schema": "etlantic.adaptive_category_observation/1",
+  "source": "sha256:ea374d3945972fc259788f8c845f644eaab2ff95e22f5d74de7a36e0b8855542"
+}

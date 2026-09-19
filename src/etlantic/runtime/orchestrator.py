@@ -258,6 +258,7 @@ class LocalOrchestrator:
     physical_storage_pins: Mapping[str, Any] | None = field(default=None, repr=False)
     physical_compiler_pins: Mapping[str, Any] | None = field(default=None, repr=False)
     physical_dataframe_pins: dict[str, Any] | None = field(default=None, repr=False)
+    physical_io_policy_pins: Mapping[str, Any] | None = field(default=None, repr=False)
     _persistence: _RunPersistenceState = field(
         default_factory=_RunPersistenceState, repr=False
     )
@@ -279,6 +280,9 @@ class LocalOrchestrator:
     )
 
     _physical_cleanup_pending: list[Any] = field(default_factory=list, repr=False)
+    _physical_caller_cancellation: BaseException | None = field(
+        default=None, init=False, repr=False
+    )
     _cleanup_obligations: list[dict[str, Any]] = field(default_factory=list, repr=False)
     _publication_receipt_summaries: list[dict[str, Any]] = field(
         default_factory=list, repr=False
@@ -1165,6 +1169,7 @@ class LocalOrchestrator:
                 correlation_id=run_id,
             )
         unit_trace: list[dict[str, Any]] = []
+        self._physical_caller_cancellation = None
         status = RunStatus.RUNNING
         cancelled: BaseException | None = None
         try:
@@ -1199,18 +1204,28 @@ class LocalOrchestrator:
             )
             cancelled = exc
         except TimeoutError:
-            status = RunStatus.FAILED
-            self._finalize_incomplete_steps(
-                nodes, terminal=StepStatus.TIMED_OUT, message="Run timed out"
-            )
-            self._append_diagnostic(
-                diagnostics,
-                RunDiagnostic(
-                    code="PMEXEC408",
-                    severity="error",
-                    message="Adaptive run exceeded its configured timeout.",
-                ),
-            )
+            if self._physical_caller_cancellation is not None:
+                # fail_after may convert the original cancellation to a timeout
+                # when its deadline expires during shielded native cleanup.
+                # The first delivered cause remains authoritative.
+                cancelled = self._physical_caller_cancellation
+                status = RunStatus.CANCELLED
+                self._finalize_incomplete_steps(
+                    nodes, terminal=StepStatus.CANCELLED, message="Run cancelled"
+                )
+            else:
+                status = RunStatus.FAILED
+                self._finalize_incomplete_steps(
+                    nodes, terminal=StepStatus.TIMED_OUT, message="Run timed out"
+                )
+                self._append_diagnostic(
+                    diagnostics,
+                    RunDiagnostic(
+                        code="PMEXEC408",
+                        severity="error",
+                        message="Adaptive run exceeded its configured timeout.",
+                    ),
+                )
             if self._unknown_publications:
                 self._append_diagnostic(
                     diagnostics,
@@ -1844,6 +1859,25 @@ class LocalOrchestrator:
                 )
                 return
             if kind == "compute":
+                if unit.metadata.get("etlantic.fusion") is not None:
+                    await self._execute_fused_unit(
+                        unit=unit,
+                        nodes=nodes,
+                        run_id=run_id,
+                        artifacts=artifacts,
+                        validations=validations,
+                        unit_trace=unit_trace,
+                    )
+                    self.runtime.events.emit(
+                        self._lifecycle_event(
+                            kind="physical_unit_completed",
+                            run_id=run_id,
+                            physical_unit=unit.identity,
+                            status="succeeded",
+                            backend=unit.engine,
+                        )
+                    )
+                    return
                 for name in unit.logical_nodes:
                     if name not in selected:
                         continue
@@ -3945,6 +3979,167 @@ class LocalOrchestrator:
                         target_identity=unit.target_identity,
                     )
         return inputs
+
+    async def _execute_fused_unit(
+        self,
+        *,
+        unit: Any,
+        nodes: Mapping[str, _NodeState],
+        run_id: str,
+        artifacts: ArtifactStore,
+        validations: list[ValidationResult],
+        unit_trace: list[dict[str, Any]],
+    ) -> None:
+        """Schedule the stored fused group once, never through per-node bodies."""
+        from etlantic.runtime.fused_execution import execute_fused_scan
+        from etlantic.runtime.native_execution import NativeExecution
+        from etlantic.transform.fusion import FusionDescriptor
+
+        descriptor = FusionDescriptor.from_dict(unit.metadata["etlantic.fusion"])
+        compiler = (self.physical_compiler_pins or {})[
+            descriptor.members[0].logical_node
+        ]
+        source = (self.physical_storage_pins or {})["polars-parquet"]
+        started = datetime.now(UTC)
+        for name in descriptor.logical_nodes:
+            state = nodes[name]
+            state.attempts = 1
+            state.started_at = started
+            state.status = StepStatus.RUNNING
+            state.metadata["etlantic.fused_attempt"] = {
+                "unit": unit.identity,
+                "attempt": 1,
+            }
+            self.runtime.events.emit(
+                self._lifecycle_event(
+                    kind="step_started",
+                    run_id=run_id,
+                    step_name=name,
+                    attempt=1,
+                    status="running",
+                    physical_unit=unit.identity,
+                )
+            )
+        cancellation_time: float | None = None
+
+        def observe_cancellation(delivered_at: float) -> None:
+            nonlocal cancellation_time
+            cancellation_time = delivered_at
+
+        native = NativeExecution(
+            unit.identity,
+            descriptor.source_node,
+            1,
+            self.request.cancellation.abandon_after_seconds,
+            self._cleanup_obligations,
+            cancellation_observer=observe_cancellation,
+        )
+        attempt = AttemptArtifactStore(artifacts)
+        effective_deadline = float("inf")
+        try:
+            with anyio.fail_after(self.request.timeout.step_seconds):
+                # Capture before cancellation: AnyIO reports -inf for every
+                # cancelled scope, including caller cancellation without timeout.
+                effective_deadline = anyio.current_effective_deadline()
+                value, proof = await execute_fused_scan(
+                    descriptor,
+                    compiler=compiler,
+                    source=source,
+                    context={
+                        "safe_io": (self.physical_io_policy_pins or {})[
+                            descriptor.source_node
+                        ]
+                    },
+                    pipeline_id=self.plan.pipeline_id,
+                    plan_id=self.plan.plan_id,
+                    profile_name=self.plan.profile_name,
+                    run_id=run_id,
+                    native=native,
+                )
+                await check_attempt_deadline()
+                last = descriptor.members[-1]
+                self._store_output_port(
+                    nodes[last.logical_node].node,
+                    last.output_port,
+                    value,
+                    attempt,
+                    ownership="owned",
+                )
+                await attempt.commit()
+            for index, name in enumerate(descriptor.logical_nodes):
+                state = nodes[name]
+                state.status = StepStatus.SUCCEEDED
+                state.ended_at = datetime.now(UTC)
+                # No eager raw/filter artifact exists. Unknown source counts are
+                # represented explicitly, never replaced with invented zeroes.
+                state.records_in = value.height if index == 2 else None
+                state.records_out = value.height if index else None
+                if index:
+                    state.implementation = self.plan.implementations[name].identity
+                validations.append(ValidationResult(name, "fused_schema", "passed"))
+                self.runtime.events.emit(
+                    self._lifecycle_event(
+                        kind="step_completed",
+                        run_id=run_id,
+                        step_name=name,
+                        attempt=1,
+                        status="succeeded",
+                        physical_unit=unit.identity,
+                    )
+                )
+            unit_trace.append(
+                {
+                    "unit": unit.identity,
+                    "kind": "compute",
+                    "status": "succeeded",
+                    "fusion": proof,
+                }
+            )
+        except BaseException as exc:
+            cancelled = isinstance(exc, anyio.get_cancelled_exc_class())
+            timed_out = isinstance(exc, TimeoutError) or (
+                cancelled
+                and effective_deadline
+                <= (
+                    cancellation_time
+                    if cancellation_time is not None
+                    else anyio.current_time()
+                )
+            )
+            if cancelled and not timed_out:
+                self._physical_caller_cancellation = exc
+            failed_name = getattr(exc, "node_name", None) or descriptor.source_node
+            for name in descriptor.logical_nodes:
+                state = nodes[name]
+                state.status = (
+                    StepStatus.TIMED_OUT
+                    if timed_out
+                    else StepStatus.CANCELLED
+                    if cancelled
+                    else StepStatus.FAILED
+                    if name == failed_name
+                    else StepStatus.SKIPPED
+                )
+                state.stage = getattr(exc, "stage", None) or "orchestrator"
+                state.error = (
+                    "Fused execution timed out"
+                    if timed_out
+                    else "Fused execution cancelled"
+                    if cancelled
+                    else "Fused execution failed"
+                )
+                state.ended_at = datetime.now(UTC)
+                self.runtime.events.emit(
+                    self._lifecycle_event(
+                        kind="step_failed",
+                        run_id=run_id,
+                        step_name=name,
+                        attempt=1,
+                        status=state.status.value,
+                        physical_unit=unit.identity,
+                    )
+                )
+            raise
 
     def _parameters_for(self, node: Node) -> dict[str, Any]:
         params = {

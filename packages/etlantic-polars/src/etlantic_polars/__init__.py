@@ -34,18 +34,21 @@ from etlantic.quality.model import PORTABLE_QUALITY_CAPABILITIES
 from etlantic.reliability import WRITE_CAPABILITY_EXTRAS
 from etlantic.storage.protocol import as_records, records_to_dicts
 from etlantic_polars.compiler import PolarsTransformCompiler, create_transform_compiler
+from etlantic_polars.parquet_storage import PolarsParquetStorage, create_parquet_storage
 
 # Polars supports append/overwrite durable sinks; do not advertise merge/upsert.
 _POLARS_WRITE_EXTRAS = frozenset(
     e for e in WRITE_CAPABILITY_EXTRAS if e in {"write.append", "write.overwrite"}
 )
 
-__version__ = "0.53.0"
+__version__ = "0.54.0"
 
 __all__ = [
     "PolarsDataframePlugin",
+    "PolarsParquetStorage",
     "PolarsTransformCompiler",
     "__version__",
+    "create_parquet_storage",
     "create_plugin",
     "create_transform_compiler",
 ]

@@ -274,6 +274,7 @@ class LocalScheduler:
                 physical_storage_pins=admission.storage_pins,
                 physical_compiler_pins=admission.compiler_pins,
                 physical_dataframe_pins=dict(admission.dataframe_pins),
+                physical_io_policy_pins=admission.io_policy_pins,
             )
             result = await host.execute()
             result.metadata.setdefault("etlantic.scheduler", self.info.name)

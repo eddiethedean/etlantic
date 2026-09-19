@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from typing import Any
 
-__version__ = "0.53.0"
+__version__ = "0.54.0"
 
 
 def __getattr__(name: str) -> Any:

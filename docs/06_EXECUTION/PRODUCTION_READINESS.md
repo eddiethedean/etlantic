@@ -1,10 +1,10 @@
 # Production Readiness and Deployment Boundaries
 
-> **Status: Available in ETLantic 0.53.0 (Beta release candidate).**
+> **Status: Available in ETLantic 0.54.0 (Beta release candidate).**
 
 ## Residual evaluation lead
 
-| Topic | 0.53 |
+| Topic | 0.54 |
 |---|---|
 | Maturity | **Beta** |
 | Suitable for | Documented single-tenant pilots; Supported multi-tenant profiles |
@@ -21,7 +21,7 @@ graduates the integrated control plane for `isolated-deployment` and
 
 Experimental features remain experimental. Broader deployment topology,
 compliance attestations, and HA remain adopter-owned today. Supply
-chain for v0.53.0 publishes as a SHA-256 artifact manifest and GitHub
+chain for v0.54.0 publishes as a SHA-256 artifact manifest and GitHub
 provenance attestations; CycloneDX SBOM generation is optional (SBOM or
 `sbom-warning.txt`)—see
 [Release artifact verification](../01_GETTING_STARTED/RELEASE_ARTIFACT_VERIFICATION.md).
@@ -50,7 +50,7 @@ multi-tenant claims.
 
 ## Reference single-process topology
 
-1. Pin `etlantic==0.53.0` and matching plugins in a lockfile.
+1. Pin `etlantic==0.54.0` and matching plugins in a lockfile.
 2. Build an immutable image or venv; do not install untrusted entry points.
 3. Configure `Profile.plugin_allowlist` for production.
 4. Resolve secrets from env/files/keyring at runtime only.
@@ -100,7 +100,7 @@ reference controls are shipped:
 
 ## Shipped / adopter-owned / residual (0.39)
 
-| Concern | 0.53 status |
+| Concern | 0.54 status |
 |---|---|
 | Typed validate/plan/run | **Shipped** |
 | Programmatic / JSON authoring (`PipelineDefinition`) | **Shipped** |

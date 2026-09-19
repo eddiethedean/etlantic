@@ -1,0 +1,237 @@
+{
+  "cases": [
+    {
+      "id": "tests/plan/test_adaptive_wire_0_51.py::test_adaptive_external_consumer_rejected_before_compilation",
+      "status": "not-passed"
+    },
+    {
+      "id": "tests/plan/test_adaptive_wire_0_51.py::test_adaptive_json_decoder_rejects_unhashable_field_values_with_diagnostic[_set_candidate_kind_to_object]",
+      "status": "not-passed"
+    },
+    {
+      "id": "tests/plan/test_adaptive_wire_0_51.py::test_adaptive_json_decoder_rejects_unhashable_field_values_with_diagnostic[_set_dependency_kind_to_object]",
+      "status": "not-passed"
+    },
+    {
+      "id": "tests/plan/test_adaptive_wire_0_51.py::test_adaptive_json_decoder_rejects_unhashable_field_values_with_diagnostic[_set_logical_mapping_value_to_array]",
+      "status": "not-passed"
+    },
+    {
+      "id": "tests/plan/test_adaptive_wire_0_51.py::test_adaptive_json_decoder_rejects_unhashable_field_values_with_diagnostic[_set_topological_order_item_to_array]",
+      "status": "not-passed"
+    },
+    {
+      "id": "tests/plan/test_adaptive_wire_0_51.py::test_adaptive_json_schema_rejects_model_invalid_documents[logical_graph-value0]",
+      "status": "not-passed"
+    },
+    {
+      "id": "tests/plan/test_adaptive_wire_0_51.py::test_adaptive_json_schema_rejects_model_invalid_documents[selected_nodes-value1]",
+      "status": "not-passed"
+    },
+    {
+      "id": "tests/plan/test_adaptive_wire_0_51.py::test_adaptive_json_schema_rejects_model_invalid_documents[selected_nodes-value2]",
+      "status": "not-passed"
+    },
+    {
+      "id": "tests/plan/test_adaptive_wire_0_51.py::test_adaptive_json_schema_rejects_rejected_candidate_without_reason",
+      "status": "not-passed"
+    },
+    {
+      "id": "tests/plan/test_adaptive_wire_0_51.py::test_adaptive_metadata_rejects_live_backend_objects",
+      "status": "not-passed"
+    },
+    {
+      "id": "tests/plan/test_adaptive_wire_0_51.py::test_adaptive_nested_records_are_immutable",
+      "status": "not-passed"
+    },
+    {
+      "id": "tests/plan/test_adaptive_wire_0_51.py::test_adaptive_plan_allows_scalar_profile_snapshot_values",
+      "status": "not-passed"
+    },
+    {
+      "id": "tests/plan/test_adaptive_wire_0_51.py::test_adaptive_plan_allows_schema_valid_structured_metadata",
+      "status": "not-passed"
+    },
+    {
+      "id": "tests/plan/test_adaptive_wire_0_51.py::test_adaptive_plan_binds_physical_units_to_target_inventory",
+      "status": "not-passed"
+    },
+    {
+      "id": "tests/plan/test_adaptive_wire_0_51.py::test_adaptive_plan_binds_regions_to_inventory_and_decisions",
+      "status": "not-passed"
+    },
+    {
+      "id": "tests/plan/test_adaptive_wire_0_51.py::test_adaptive_plan_json_rejects_source_rows",
+      "status": "not-passed"
+    },
+    {
+      "id": "tests/plan/test_adaptive_wire_0_51.py::test_adaptive_plan_rejects_non_array_nested_fields[_set_physical_dependencies_to_object]",
+      "status": "not-passed"
+    },
+    {
+      "id": "tests/plan/test_adaptive_wire_0_51.py::test_adaptive_plan_rejects_non_array_nested_fields[_set_target_evidence_refs_to_scalar]",
+      "status": "not-passed"
+    },
+    {
+      "id": "tests/plan/test_adaptive_wire_0_51.py::test_adaptive_plan_rejects_non_array_objective",
+      "status": "not-passed"
+    },
+    {
+      "id": "tests/plan/test_adaptive_wire_0_51.py::test_adaptive_plan_rejects_non_string_fingerprint_before_verification",
+      "status": "not-passed"
+    },
+    {
+      "id": "tests/plan/test_adaptive_wire_0_51.py::test_adaptive_plan_rejects_source_rows_in_all_wire_sections[metadata-payload0]",
+      "status": "not-passed"
+    },
+    {
+      "id": "tests/plan/test_adaptive_wire_0_51.py::test_adaptive_plan_rejects_source_rows_in_all_wire_sections[metadata-payload2]",
+      "status": "not-passed"
+    },
+    {
+      "id": "tests/plan/test_adaptive_wire_0_51.py::test_adaptive_plan_rejects_source_rows_in_all_wire_sections[metadata-payload3]",
+      "status": "not-passed"
+    },
+    {
+      "id": "tests/plan/test_adaptive_wire_0_51.py::test_adaptive_plan_rejects_source_rows_in_all_wire_sections[metadata-payload4]",
+      "status": "not-passed"
+    },
+    {
+      "id": "tests/plan/test_adaptive_wire_0_51.py::test_adaptive_plan_rejects_source_rows_in_all_wire_sections[metadata-payload5]",
+      "status": "not-passed"
+    },
+    {
+      "id": "tests/plan/test_adaptive_wire_0_51.py::test_adaptive_plan_rejects_source_rows_in_all_wire_sections[profile_snapshot-payload1]",
+      "status": "not-passed"
+    },
+    {
+      "id": "tests/plan/test_adaptive_wire_0_51.py::test_adaptive_plan_rejects_source_rows_in_all_wire_sections[profile_snapshot-payload6]",
+      "status": "not-passed"
+    },
+    {
+      "id": "tests/plan/test_adaptive_wire_0_51.py::test_adaptive_plan_rejects_unknown_top_level_protocol_version",
+      "status": "not-passed"
+    },
+    {
+      "id": "tests/plan/test_adaptive_wire_0_51.py::test_adaptive_plan_rejects_unsupported_physical_protocol_version",
+      "status": "not-passed"
+    },
+    {
+      "id": "tests/plan/test_adaptive_wire_0_51.py::test_adaptive_region_rejects_non_boolean_fused_value",
+      "status": "not-passed"
+    },
+    {
+      "id": "tests/plan/test_adaptive_wire_0_51.py::test_adaptive_top_level_sequences_are_deeply_immutable",
+      "status": "not-passed"
+    },
+    {
+      "id": "tests/plan/test_adaptive_wire_0_51.py::test_adaptive_wire_round_trip_and_dispatch",
+      "status": "pass"
+    },
+    {
+      "id": "tests/plan/test_adaptive_wire_0_51.py::test_candidate_matrix_is_canonical_node_then_target_order",
+      "status": "not-passed"
+    },
+    {
+      "id": "tests/plan/test_adaptive_wire_0_51.py::test_candidate_matrix_rejects_duplicate_node_target_cell",
+      "status": "not-passed"
+    },
+    {
+      "id": "tests/plan/test_adaptive_wire_0_51.py::test_candidate_record_rejects_blank_identity_fields",
+      "status": "not-passed"
+    },
+    {
+      "id": "tests/plan/test_adaptive_wire_0_51.py::test_local_scheduler_rejects_adaptive_before_runtime_access",
+      "status": "not-passed"
+    },
+    {
+      "id": "tests/plan/test_adaptive_wire_0_51.py::test_partial_adaptive_plan_accepts_and_round_trips_sliced_logical_graph",
+      "status": "not-passed"
+    },
+    {
+      "id": "tests/plan/test_adaptive_wire_0_51.py::test_partial_adaptive_plan_rejects_unsliced_logical_graph",
+      "status": "not-passed"
+    },
+    {
+      "id": "tests/plan/test_adaptive_wire_0_51.py::test_physical_primary_mapping_must_match_compute_unit_attribution",
+      "status": "not-passed"
+    },
+    {
+      "id": "tests/plan/test_adaptive_wire_0_51.py::test_physical_primary_mapping_must_reference_compute_unit",
+      "status": "not-passed"
+    },
+    {
+      "id": "tests/plan/test_adaptive_wire_0_51.py::test_physical_unit_allows_scalar_policy_metadata_values",
+      "status": "not-passed"
+    },
+    {
+      "id": "tests/plan/test_adaptive_wire_0_51.py::test_physical_unit_from_dict_rejects_credential_url",
+      "status": "not-passed"
+    },
+    {
+      "id": "tests/plan/test_adaptive_wire_0_51.py::test_physical_unit_json_schema_rejects_duplicate_logical_nodes",
+      "status": "not-passed"
+    },
+    {
+      "id": "tests/plan/test_adaptive_wire_0_51.py::test_physical_unit_rejects_nested_sensitive_envelope_values[metadata0]",
+      "status": "not-passed"
+    },
+    {
+      "id": "tests/plan/test_adaptive_wire_0_51.py::test_physical_unit_rejects_nested_sensitive_envelope_values[metadata1]",
+      "status": "not-passed"
+    },
+    {
+      "id": "tests/plan/test_adaptive_wire_0_51.py::test_physical_unit_rejects_nested_sensitive_envelope_values[metadata2]",
+      "status": "not-passed"
+    },
+    {
+      "id": "tests/plan/test_adaptive_wire_0_51.py::test_physical_unit_rejects_nested_sensitive_envelope_values[metadata3]",
+      "status": "not-passed"
+    },
+    {
+      "id": "tests/plan/test_adaptive_wire_0_51.py::test_physical_unit_rejects_nested_sensitive_envelope_values[metadata4]",
+      "status": "not-passed"
+    },
+    {
+      "id": "tests/plan/test_adaptive_wire_0_51.py::test_physical_unit_rejects_nested_sensitive_envelope_values[metadata5]",
+      "status": "not-passed"
+    },
+    {
+      "id": "tests/plan/test_adaptive_wire_0_51.py::test_physical_unit_rejects_nested_sensitive_envelope_values[metadata6]",
+      "status": "not-passed"
+    },
+    {
+      "id": "tests/plan/test_adaptive_wire_0_51.py::test_physical_unit_rejects_nested_sensitive_envelope_values[metadata7]",
+      "status": "not-passed"
+    },
+    {
+      "id": "tests/plan/test_adaptive_wire_0_51.py::test_physical_unit_rejects_secret_like_metadata",
+      "status": "not-passed"
+    },
+    {
+      "id": "tests/plan/test_adaptive_wire_0_51.py::test_public_compile_rejects_adaptive_before_plugin_discovery",
+      "status": "not-passed"
+    },
+    {
+      "id": "tests/plan/test_adaptive_wire_0_51.py::test_tampered_adaptive_section_fails_fingerprint",
+      "status": "pass"
+    },
+    {
+      "id": "tests/plan/test_adaptive_wire_0_51.py::test_target_descriptor_rejects_non_json_capability_fingerprint",
+      "status": "not-passed"
+    },
+    {
+      "id": "tests/plan/test_adaptive_wire_0_51.py::test_target_descriptor_rejects_non_string_protocol_versions",
+      "status": "not-passed"
+    },
+    {
+      "id": "tests/plan/test_adaptive_wire_0_51.py::test_unknown_adaptive_section_rejected",
+      "status": "not-passed"
+    }
+  ],
+  "category": "adaptive_wire_compatibility_0_51.json",
+  "phase": "0.54",
+  "result": "fail",
+  "schema": "etlantic.adaptive_category_observation/1",
+  "source": "sha256:ea374d3945972fc259788f8c845f644eaab2ff95e22f5d74de7a36e0b8855542"
+}

@@ -1,0 +1,85 @@
+{
+  "cases": [
+    {
+      "id": "tests/adaptive_conformance/test_public_suite.py::test_actual_public_stored_execution_and_canonical_results",
+      "status": "pass"
+    },
+    {
+      "id": "tests/adaptive_conformance/test_public_suite.py::test_async_cancellation_propagates_after_active_read_cleanup",
+      "status": "pass"
+    },
+    {
+      "id": "tests/adaptive_conformance/test_public_suite.py::test_empty_duplicate_and_catalogue_bound_before_factories",
+      "status": "pass"
+    },
+    {
+      "id": "tests/adaptive_conformance/test_public_suite.py::test_expected_unqualified_execution_rejects_without_reads",
+      "status": "pass"
+    },
+    {
+      "id": "tests/adaptive_conformance/test_public_suite.py::test_hostile_oracle_serializer_never_runs",
+      "status": "pass"
+    },
+    {
+      "id": "tests/adaptive_conformance/test_public_suite.py::test_malformed_catalogue_before_factories[changes0]",
+      "status": "pass"
+    },
+    {
+      "id": "tests/adaptive_conformance/test_public_suite.py::test_malformed_catalogue_before_factories[changes10]",
+      "status": "pass"
+    },
+    {
+      "id": "tests/adaptive_conformance/test_public_suite.py::test_malformed_catalogue_before_factories[changes1]",
+      "status": "pass"
+    },
+    {
+      "id": "tests/adaptive_conformance/test_public_suite.py::test_malformed_catalogue_before_factories[changes2]",
+      "status": "pass"
+    },
+    {
+      "id": "tests/adaptive_conformance/test_public_suite.py::test_malformed_catalogue_before_factories[changes3]",
+      "status": "pass"
+    },
+    {
+      "id": "tests/adaptive_conformance/test_public_suite.py::test_malformed_catalogue_before_factories[changes4]",
+      "status": "pass"
+    },
+    {
+      "id": "tests/adaptive_conformance/test_public_suite.py::test_malformed_catalogue_before_factories[changes5]",
+      "status": "pass"
+    },
+    {
+      "id": "tests/adaptive_conformance/test_public_suite.py::test_malformed_catalogue_before_factories[changes6]",
+      "status": "pass"
+    },
+    {
+      "id": "tests/adaptive_conformance/test_public_suite.py::test_malformed_catalogue_before_factories[changes7]",
+      "status": "pass"
+    },
+    {
+      "id": "tests/adaptive_conformance/test_public_suite.py::test_malformed_catalogue_before_factories[changes8]",
+      "status": "pass"
+    },
+    {
+      "id": "tests/adaptive_conformance/test_public_suite.py::test_malformed_catalogue_before_factories[changes9]",
+      "status": "pass"
+    },
+    {
+      "id": "tests/adaptive_conformance/test_public_suite.py::test_oracle_failure_is_safe_behavioral_failure",
+      "status": "pass"
+    },
+    {
+      "id": "tests/adaptive_conformance/test_public_suite.py::test_reused_runtime_is_harness_error",
+      "status": "pass"
+    },
+    {
+      "id": "tests/adaptive_conformance/test_public_suite.py::test_sync_loop_guard_and_async_entry_point",
+      "status": "pass"
+    }
+  ],
+  "category": "adaptive_provider_0_54.json",
+  "phase": "0.54",
+  "result": "pass",
+  "schema": "etlantic.adaptive_category_observation/1",
+  "source": "sha256:6c6d64473bd0ebd79568223a0f31242c44a7bbf8d3854b17e1d811f97f282339"
+}

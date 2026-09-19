@@ -1,6 +1,6 @@
 # Third-Party Portable Compiler Tutorial
 
-> **Status: Available in ETLantic 0.53.0 (Beta release candidate).**
+> **Status: Available in ETLantic 0.54.0 (Beta release candidate).**
 
 ETLantic discovers portable transformation compilers through the
 `etlantic.transform_compilers` entry-point group. A compiler analyzes,
@@ -25,7 +25,7 @@ Start with a core range matching the minor release you test:
 name = "etlantic-acme"
 version = "0.1.0"
 requires-python = ">=3.11"
-dependencies = ["etlantic>=0.53.0,<0.54", "acme-frame>=2,<3"]
+dependencies = ["etlantic>=0.54.0,<0.55", "acme-frame>=2,<3"]
 
 [project.entry-points."etlantic.transform_compilers"]
 acme = "etlantic_acme:create_transform_compiler"

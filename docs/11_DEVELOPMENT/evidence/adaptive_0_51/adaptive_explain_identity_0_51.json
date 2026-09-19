@@ -15,7 +15,7 @@
       "executed": true,
       "expected": "pass",
       "id": "test_adaptive_explain_uses_the_bounded_summary",
-      "plan_fingerprint": "b09941acb471ba95178761556be15744c858cd616f2e1d3b3d7be154258b08fc",
+      "plan_fingerprint": "4bfe648060f33c96205a2643dc6b2c0ebff2ae574fc6636364fff3ab6b790afa",
       "result": "pass",
       "verification": "test_adaptive_explain_uses_the_bounded_summary"
     },
@@ -25,7 +25,7 @@
       "executed": true,
       "expected": "pass",
       "id": "test_adaptive_diff_covers_semantic_and_cross_schema_changes",
-      "plan_fingerprint": "b09941acb471ba95178761556be15744c858cd616f2e1d3b3d7be154258b08fc",
+      "plan_fingerprint": "4bfe648060f33c96205a2643dc6b2c0ebff2ae574fc6636364fff3ab6b790afa",
       "result": "pass",
       "verification": "test_adaptive_diff_covers_semantic_and_cross_schema_changes"
     },
@@ -35,7 +35,7 @@
       "executed": true,
       "expected": "pass",
       "id": "test_final_052_023_truncated_explain_retains_release_contract_fields",
-      "plan_fingerprint": "b09941acb471ba95178761556be15744c858cd616f2e1d3b3d7be154258b08fc",
+      "plan_fingerprint": "4bfe648060f33c96205a2643dc6b2c0ebff2ae574fc6636364fff3ab6b790afa",
       "result": "pass",
       "verification": "test_final_052_023_truncated_explain_retains_release_contract_fields"
     }

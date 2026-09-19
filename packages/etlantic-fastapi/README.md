@@ -1,6 +1,6 @@
 # etlantic-fastapi
 
-Optional FastAPI adapter for ETLantic **0.53.0**. Use **CP1/CP2** (`ETLanticAPI`)
+Optional FastAPI adapter for ETLantic **0.54.0**. Use **CP1/CP2** (`ETLanticAPI`)
 when you need an embeddable, authz’d, durable-accept control-plane HTTP API.
 Use **`create_reference_app`** only for the thin non-CP authoring demo — it is
 not the control plane. CP2 is incubation, **not** multi-tenant GA (0.43).
@@ -22,9 +22,9 @@ pollers observe accepted jobs outside the request.
 ## Install
 
 ```bash
-pip install 'etlantic-fastapi==0.53.0'
+pip install 'etlantic-fastapi==0.54.0'
 # keep core on the same pin:
-# pip install 'etlantic==0.53.0'
+# pip install 'etlantic==0.54.0'
 ```
 
 ## Control-plane usage
@@ -77,6 +77,45 @@ app = create_app(api)
 - Inject an app-defined principal dependency (`principal_dependency=`).
 - OAuth2/OIDC: validate tokens in the host, then map claims with
   `oauth2_oidc_principal_hook` (placeholder; no bundled IdP client).
+
+### Collection visibility and safe validation
+
+Collection authorization runs before repository access. Concrete item denials
+are filtered using the collection's action, independently of direct-read
+permission, before serialization and existing limits. Authorization-service
+failure aborts the response; it does not return partially authorized results.
+Scope remains server-derived; workspace directories intentionally list within
+the caller's tenant and still check each concrete workspace.
+
+Every control-plane route uses public `RedactedValidationRoute`, including
+schedule and agent routes. Both `create_app` and `include_router` reject invalid
+body/query/header input with HTTP 422 and this fixed `application/json` envelope:
+
+```json
+{"detail": [{"type": "request_validation", "loc": [], "msg": "Invalid request"}]}
+```
+
+Invalid input, locations, messages, context and request bodies are neither
+rendered nor logged by the adapter. Paths, operation IDs and request models
+are unchanged. This route-local strategy does not install or replace host
+exception handlers, so unrelated host routes keep their own validation behavior.
+`install_exception_handlers` continues to register only `ControlPlaneError`.
+
+Public `request_validation_error_handler(request, exc)` also returns the same
+envelope for hosts that explicitly want application-wide redaction:
+
+```python
+from fastapi.exceptions import RequestValidationError
+from etlantic_fastapi import request_validation_error_handler
+
+host.add_exception_handler(RequestValidationError, request_validation_error_handler)
+```
+
+Explicit application-wide registration replaces the handler for that exception
+key under FastAPI's normal semantics and affects unrelated host routes. To
+retain unrelated behavior, use `include_router` without registering this global
+handler. Host middleware, access logging and identity dependencies own their
+logging policy; avoid logging raw bodies, credentials or sensitive query URLs.
 
 ### Operability probes
 

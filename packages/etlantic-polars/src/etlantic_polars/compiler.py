@@ -16,6 +16,7 @@ from etlantic.transform.compiler import (
     TransformExecutionContext,
     TransformOutputBundle,
     TransformPlanningContext,
+    TransformPushdownFinding,
     TransformSupportFinding,
     TransformSupportReport,
     capabilities_fingerprint,
@@ -172,6 +173,62 @@ class PolarsTransformCompiler:
     @property
     def info(self) -> TransformCompilerInfo:
         return self._info
+
+    def analyze_fusion(
+        self, descriptor: Any, *, context: TransformPlanningContext
+    ) -> TransformSupportReport:
+        """Analyze only the exact data-only bounded scan composition."""
+        from etlantic.transform.fusion import (
+            FusionDescriptor,
+            compose_fusion_definition,
+        )
+
+        if type(descriptor) is not FusionDescriptor or (
+            descriptor.compiler_name != self.info.name
+            or descriptor.compiler_version != self.info.version
+            or descriptor.compiler_evidence != self.info.evidence_fingerprint
+            or context.engine != "polars"
+        ):
+            raise ValueError("Invalid bounded Polars fusion compiler identity")
+        report = self.analyze(compose_fusion_definition(descriptor), context=context)
+        if not report.supported:
+            return report
+        pushdown = tuple(
+            TransformPushdownFinding(
+                boundary=f"source:{descriptor.source_node}",
+                outcome="pushed_exact",
+                reason="Bounded Parquet scan with proven portable filter/project syntax",
+                action=member.definition["actions"][0]["kind"]["action"],
+                target="polars",
+                proof_reference=descriptor.fingerprint,
+                physical_effects=(
+                    "scan_predicate" if index == 0 else "scan_projection",
+                ),
+                evidence_fingerprint=self.info.evidence_fingerprint,
+                lowering_id="polars-scan-filter-project/1",
+            )
+            for index, member in enumerate(descriptor.members)
+        )
+        return replace(report, pushdown=pushdown)
+
+    def compile_fusion(
+        self, descriptor: Any, *, context: TransformCompileContext
+    ) -> CompiledTransform:
+        """Compile one alpha-renamed IR through the ordinary native lowering."""
+        from etlantic.transform.fusion import compose_fusion_definition
+
+        report = self.analyze_fusion(
+            descriptor,
+            context=TransformPlanningContext(
+                pipeline_id=context.pipeline_id,
+                step_name=context.step_name,
+                profile_name=context.profile_name,
+                engine=context.engine,
+            ),
+        )
+        if not report.supported:
+            raise ValueError("Unsupported bounded Polars fusion")
+        return self.compile(compose_fusion_definition(descriptor), context=context)
 
     def analyze(
         self,

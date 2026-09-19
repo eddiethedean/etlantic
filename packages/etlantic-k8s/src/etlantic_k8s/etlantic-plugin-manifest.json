@@ -2,7 +2,7 @@
   "capabilities": [
     "k8s"
   ],
-  "digest": "sha256:a402f0664e911c777fb0ae65aa27ba4b8d44c9bb3795aeba4c6405746cc2c249",
+  "digest": "sha256:96a1f0ec300a8434bbedee25af0211437f8956dcd3563a42bc3f33ceea8acad4",
   "entries": [
     {
       "capabilities": [
@@ -19,9 +19,9 @@
   "privileges": [],
   "protocol_range": "etlantic.resource/1",
   "provenance": {
-    "publisher": "etlantic",
-    "maturity": "experimental"
+    "maturity": "experimental",
+    "publisher": "etlantic"
   },
   "schema": "etlantic.plugin_manifest/1",
-  "version": "0.53.0"
+  "version": "0.54.0"
 }

@@ -1,0 +1,73 @@
+{
+  "cases": [
+    {
+      "id": "tests/adaptive_conformance/test_graduation_0_54.py::test_available_requires_independent_go_and_weakest_link[high-finding]",
+      "status": "pass"
+    },
+    {
+      "id": "tests/adaptive_conformance/test_graduation_0_54.py::test_available_requires_independent_go_and_weakest_link[no-proof]",
+      "status": "pass"
+    },
+    {
+      "id": "tests/adaptive_conformance/test_graduation_0_54.py::test_available_requires_independent_go_and_weakest_link[no_go]",
+      "status": "pass"
+    },
+    {
+      "id": "tests/adaptive_conformance/test_graduation_0_54.py::test_available_requires_independent_go_and_weakest_link[pending]",
+      "status": "pass"
+    },
+    {
+      "id": "tests/adaptive_conformance/test_graduation_0_54.py::test_available_requires_independent_go_and_weakest_link[primary]",
+      "status": "pass"
+    },
+    {
+      "id": "tests/adaptive_conformance/test_graduation_0_54.py::test_available_requires_independent_go_and_weakest_link[reverse]",
+      "status": "pass"
+    },
+    {
+      "id": "tests/adaptive_conformance/test_graduation_0_54.py::test_available_requires_independent_go_and_weakest_link[same-owner]",
+      "status": "pass"
+    },
+    {
+      "id": "tests/adaptive_conformance/test_graduation_0_54.py::test_available_requires_independent_go_and_weakest_link[undated]",
+      "status": "pass"
+    },
+    {
+      "id": "tests/adaptive_conformance/test_graduation_0_54.py::test_available_requires_independent_go_and_weakest_link[weakest]",
+      "status": "pass"
+    },
+    {
+      "id": "tests/adaptive_conformance/test_graduation_0_54.py::test_candidate_cannot_promote_itself[available]",
+      "status": "pass"
+    },
+    {
+      "id": "tests/adaptive_conformance/test_graduation_0_54.py::test_candidate_cannot_promote_itself[borrowed-evidence]",
+      "status": "pass"
+    },
+    {
+      "id": "tests/adaptive_conformance/test_graduation_0_54.py::test_candidate_cannot_promote_itself[missing-row]",
+      "status": "pass"
+    },
+    {
+      "id": "tests/adaptive_conformance/test_graduation_0_54.py::test_candidate_cannot_promote_itself[selfapproval]",
+      "status": "pass"
+    },
+    {
+      "id": "tests/adaptive_conformance/test_graduation_0_54.py::test_candidate_cannot_promote_itself[unknown]",
+      "status": "pass"
+    },
+    {
+      "id": "tests/adaptive_conformance/test_graduation_0_54.py::test_pending_candidate_and_historical_parser",
+      "status": "pass"
+    },
+    {
+      "id": "tests/adaptive_conformance/test_graduation_0_54.py::test_valid_review_projection_is_only_validated_not_written",
+      "status": "pass"
+    }
+  ],
+  "category": "adaptive_decision_0_54.json",
+  "phase": "0.54",
+  "result": "pass",
+  "schema": "etlantic.adaptive_category_observation/1",
+  "source": "sha256:6c6d64473bd0ebd79568223a0f31242c44a7bbf8d3854b17e1d811f97f282339"
+}

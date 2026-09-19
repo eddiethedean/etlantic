@@ -7,7 +7,7 @@ from __future__ import annotations
 
 from etlantic.service import AuthoringService, PolicyContext
 
-__version__ = "0.53.0"
+__version__ = "0.54.0"
 from etlantic_fastapi.api import ETLanticAPI, create_app, include_router
 from etlantic_fastapi.auth import (
     ContextFactory,
@@ -22,8 +22,10 @@ from etlantic_fastapi.auth import (
 )
 from etlantic_fastapi.deps import assert_path_scope, make_context_dependency
 from etlantic_fastapi.errors import (
+    RedactedValidationRoute,
     control_plane_error_handler,
     install_exception_handlers,
+    request_validation_error_handler,
 )
 from etlantic_fastapi.landing_sensor import (
     LandingWatchSubmitter,
@@ -49,6 +51,7 @@ __all__ = [
     "PolicyContext",
     "PrincipalDependency",
     "ReadyResponse",
+    "RedactedValidationRoute",
     "__version__",
     "assert_path_scope",
     "control_plane_error_handler",
@@ -65,6 +68,7 @@ __all__ = [
     "oauth2_oidc_principal_hook",
     "principal_dependency_from_callable",
     "principal_from_header",
+    "request_validation_error_handler",
     "sse_streaming_response",
     "static_context_factory",
 ]

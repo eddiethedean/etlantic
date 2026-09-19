@@ -147,6 +147,8 @@ def include_router(
     """Embed the control-plane router without owning host lifecycle.
 
     Does **not** install lifespan hooks, middleware, or exception handlers.
+    ETLantic routes redact request-validation errors locally; unrelated host
+    routes and their validation handlers are unchanged.
     Host applications should register Problem Details handlers and lifespan
     themselves when desired.
     """

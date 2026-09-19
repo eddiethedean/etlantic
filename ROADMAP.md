@@ -6,13 +6,13 @@
 > [Capabilities](docs/01_GETTING_STARTED/CAPABILITIES.md) for what ships now.
 > Review this header for every release or sequence change.
 
-**Current release:** ETLantic **0.53.0** (Beta release candidate) —
+**Current release:** ETLantic **0.54.0** (Beta implementation candidate) —
 Experimental, fixture-qualified local adaptive physical-DAG execution for
 Local, Polars, Pandas and both single-cut Polars/Pandas directions. Explicit
 execution remains the default and retains the seven-engine portable baseline.
 Unsupported combinations and consumers fail closed before effects. Broader
-qualification and availability remain in 0.54. The status below is conditional: tag/publish is gated by the
-[0.53 exit gate](docs/11_DEVELOPMENT/EXIT_GATE_0_53.md).
+qualification includes fourteen Experimental rows and the bounded Polars scan/filter/project reference. Graduation remains pending; local implementation completion does not imply independent review or publication. See the
+[0.54 exit gate](docs/11_DEVELOPMENT/EXIT_GATE_0_54.md).
 Prior **0.49** qualified optional DuckDB; prior **0.48** human-governed AI
 context/proposals and Experimental `etlantic-mcp`
 fakes; prior **0.47** scheduler/runner service and remote
@@ -23,7 +23,8 @@ through **0.37** (stable foundation) are shipped.
 
 | Horizon | Release | Outcome | Status |
 |---|---:|---|---|
-| Current | 0.53 | Experimental fixture-qualified local adaptive physical-DAG execution | Gate-ready for tag/publish |
+| Current | 0.54 | Adaptive conformance and bounded scan/filter/project implementation | Implementation candidate / review pending |
+| Previous | 0.53 | Experimental fixture-qualified local adaptive physical-DAG execution | Historical candidate |
 | Previous | 0.52 | Deterministic adaptive planning and plan-only physical lowering | Published / shipped evidence |
 | Previous | 0.50 | Seven-engine portable baseline with 0.50.1 compatibility fixes | Published / shipped evidence |
 | Previous | 0.49 | Qualified optional DuckDB engine package | Gate-ready / shipped evidence |
@@ -38,8 +39,7 @@ through **0.37** (stable foundation) are shipped.
 | Previous | 0.40 | Tenant registry / workspaces (CP2) | Gate-ready / shipped evidence |
 | Previous | 0.39 | Multi-tenant control plane (CP1) | Gate-ready / shipped evidence |
 | Previous | 0.38 | Data connectivity and connector SDK | Gate-ready / shipped evidence |
-| Next | 0.54 | Adaptive conformance, qualification, and graduation | Planned |
-| Later | 0.55 | Brownfield adoption bridges | Planning freeze |
+| Next | 0.55 | Brownfield adoption bridges | Planning freeze |
 | Later | 0.56 | Operator Console | Planned |
 | Later | 0.57 | Managed runtime and enterprise provider packs | Planned |
 | Later | 0.58 | TransformationModel incubation | Proposed |
@@ -4563,6 +4563,12 @@ availability remains withheld pending 0.54 qualification.
 
 [IMPLEMENTATION_PLAN_0_54](docs/11_DEVELOPMENT/IMPLEMENTATION_PLAN_0_54.md)
 owns increment I3 and adaptive-program Phase 10.
+
+The initial local implementation adds public conformance, fourteen Experimental
+candidate rows, and the exact bounded placement-bound Polars source/filter/project
+reference. Independent review, remote matrix observations and a graduation
+decision are follow-up release work, not initial implementation completion gates.
+See the [implementation report](docs/11_DEVELOPMENT/IMPLEMENTATION_REPORT_0_54.md).
 
 **Objective:** independently qualify and publish the exact adaptive matrix that
 is safe to claim as Available.

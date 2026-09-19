@@ -13,18 +13,18 @@
     "tests/runtime/test_native_execution.py"
   ],
   "environment": {
-    "machine": "aarch64",
-    "os": "Linux",
-    "python": "3.11.16",
+    "machine": "arm64",
+    "os": "Darwin",
+    "python": "3.11.15",
     "versions": {
-      "etlantic": "0.53.0",
+      "etlantic": "0.54.0",
       "pandas": "2.3.3",
       "polars": "1.42.1",
       "pyarrow": "25.0.0"
     }
   },
   "junit_sha256": "d11b8bf6fb934f51301106c8865068bb0ee5dd1e322b024961e9ced1ee506702",
-  "observed_at": "2026-09-14T22:43:27.222545+00:00",
+  "observed_at": "2026-09-19T15:08:33.105696+00:00",
   "passed_scenarios": 128,
   "phase": "0.53",
   "result": "pass",

@@ -1,0 +1,413 @@
+{
+  "cases": [
+    {
+      "id": "tests/adaptive_conformance/test_graduation_0_54.py::test_available_requires_independent_go_and_weakest_link[high-finding]",
+      "status": "pass"
+    },
+    {
+      "id": "tests/adaptive_conformance/test_graduation_0_54.py::test_available_requires_independent_go_and_weakest_link[no-proof]",
+      "status": "pass"
+    },
+    {
+      "id": "tests/adaptive_conformance/test_graduation_0_54.py::test_available_requires_independent_go_and_weakest_link[no_go]",
+      "status": "pass"
+    },
+    {
+      "id": "tests/adaptive_conformance/test_graduation_0_54.py::test_available_requires_independent_go_and_weakest_link[pending]",
+      "status": "pass"
+    },
+    {
+      "id": "tests/adaptive_conformance/test_graduation_0_54.py::test_available_requires_independent_go_and_weakest_link[primary]",
+      "status": "pass"
+    },
+    {
+      "id": "tests/adaptive_conformance/test_graduation_0_54.py::test_available_requires_independent_go_and_weakest_link[reverse]",
+      "status": "pass"
+    },
+    {
+      "id": "tests/adaptive_conformance/test_graduation_0_54.py::test_available_requires_independent_go_and_weakest_link[same-owner]",
+      "status": "pass"
+    },
+    {
+      "id": "tests/adaptive_conformance/test_graduation_0_54.py::test_available_requires_independent_go_and_weakest_link[undated]",
+      "status": "pass"
+    },
+    {
+      "id": "tests/adaptive_conformance/test_graduation_0_54.py::test_available_requires_independent_go_and_weakest_link[weakest]",
+      "status": "pass"
+    },
+    {
+      "id": "tests/adaptive_conformance/test_graduation_0_54.py::test_candidate_cannot_promote_itself[available]",
+      "status": "pass"
+    },
+    {
+      "id": "tests/adaptive_conformance/test_graduation_0_54.py::test_candidate_cannot_promote_itself[borrowed-evidence]",
+      "status": "pass"
+    },
+    {
+      "id": "tests/adaptive_conformance/test_graduation_0_54.py::test_candidate_cannot_promote_itself[missing-row]",
+      "status": "pass"
+    },
+    {
+      "id": "tests/adaptive_conformance/test_graduation_0_54.py::test_candidate_cannot_promote_itself[selfapproval]",
+      "status": "pass"
+    },
+    {
+      "id": "tests/adaptive_conformance/test_graduation_0_54.py::test_candidate_cannot_promote_itself[unknown]",
+      "status": "pass"
+    },
+    {
+      "id": "tests/adaptive_conformance/test_graduation_0_54.py::test_pending_candidate_and_historical_parser",
+      "status": "pass"
+    },
+    {
+      "id": "tests/adaptive_conformance/test_graduation_0_54.py::test_valid_review_projection_is_only_validated_not_written",
+      "status": "pass"
+    },
+    {
+      "id": "tests/adaptive_conformance/test_rereview_evidence_0_54.py::test_exact_candidate_dependencies[extra-chain/1:local]",
+      "status": "pass"
+    },
+    {
+      "id": "tests/adaptive_conformance/test_rereview_evidence_0_54.py::test_exact_candidate_dependencies[extra-chain/1:pandas-polars]",
+      "status": "pass"
+    },
+    {
+      "id": "tests/adaptive_conformance/test_rereview_evidence_0_54.py::test_exact_candidate_dependencies[extra-chain/1:pandas]",
+      "status": "pass"
+    },
+    {
+      "id": "tests/adaptive_conformance/test_rereview_evidence_0_54.py::test_exact_candidate_dependencies[extra-chain/1:polars-pandas]",
+      "status": "pass"
+    },
+    {
+      "id": "tests/adaptive_conformance/test_rereview_evidence_0_54.py::test_exact_candidate_dependencies[extra-chain/1:polars]",
+      "status": "pass"
+    },
+    {
+      "id": "tests/adaptive_conformance/test_rereview_evidence_0_54.py::test_exact_candidate_dependencies[extra-diamond/1:local]",
+      "status": "pass"
+    },
+    {
+      "id": "tests/adaptive_conformance/test_rereview_evidence_0_54.py::test_exact_candidate_dependencies[extra-diamond/1:pandas]",
+      "status": "pass"
+    },
+    {
+      "id": "tests/adaptive_conformance/test_rereview_evidence_0_54.py::test_exact_candidate_dependencies[extra-diamond/1:polars]",
+      "status": "pass"
+    },
+    {
+      "id": "tests/adaptive_conformance/test_rereview_evidence_0_54.py::test_exact_candidate_dependencies[extra-dual-port-chain/1:pandas-polars]",
+      "status": "pass"
+    },
+    {
+      "id": "tests/adaptive_conformance/test_rereview_evidence_0_54.py::test_exact_candidate_dependencies[extra-dual-port-chain/1:polars-pandas]",
+      "status": "pass"
+    },
+    {
+      "id": "tests/adaptive_conformance/test_rereview_evidence_0_54.py::test_exact_candidate_dependencies[extra-fanout/1:local]",
+      "status": "pass"
+    },
+    {
+      "id": "tests/adaptive_conformance/test_rereview_evidence_0_54.py::test_exact_candidate_dependencies[extra-fanout/1:pandas]",
+      "status": "pass"
+    },
+    {
+      "id": "tests/adaptive_conformance/test_rereview_evidence_0_54.py::test_exact_candidate_dependencies[extra-fanout/1:polars]",
+      "status": "pass"
+    },
+    {
+      "id": "tests/adaptive_conformance/test_rereview_evidence_0_54.py::test_exact_candidate_dependencies[extra-scan-filter-project-chain/1:polars-pandas]",
+      "status": "pass"
+    },
+    {
+      "id": "tests/adaptive_conformance/test_rereview_evidence_0_54.py::test_exact_candidate_dependencies[missing-chain/1:local]",
+      "status": "pass"
+    },
+    {
+      "id": "tests/adaptive_conformance/test_rereview_evidence_0_54.py::test_exact_candidate_dependencies[missing-chain/1:pandas-polars]",
+      "status": "pass"
+    },
+    {
+      "id": "tests/adaptive_conformance/test_rereview_evidence_0_54.py::test_exact_candidate_dependencies[missing-chain/1:pandas]",
+      "status": "pass"
+    },
+    {
+      "id": "tests/adaptive_conformance/test_rereview_evidence_0_54.py::test_exact_candidate_dependencies[missing-chain/1:polars-pandas]",
+      "status": "pass"
+    },
+    {
+      "id": "tests/adaptive_conformance/test_rereview_evidence_0_54.py::test_exact_candidate_dependencies[missing-chain/1:polars]",
+      "status": "pass"
+    },
+    {
+      "id": "tests/adaptive_conformance/test_rereview_evidence_0_54.py::test_exact_candidate_dependencies[missing-diamond/1:local]",
+      "status": "pass"
+    },
+    {
+      "id": "tests/adaptive_conformance/test_rereview_evidence_0_54.py::test_exact_candidate_dependencies[missing-diamond/1:pandas]",
+      "status": "pass"
+    },
+    {
+      "id": "tests/adaptive_conformance/test_rereview_evidence_0_54.py::test_exact_candidate_dependencies[missing-diamond/1:polars]",
+      "status": "pass"
+    },
+    {
+      "id": "tests/adaptive_conformance/test_rereview_evidence_0_54.py::test_exact_candidate_dependencies[missing-dual-port-chain/1:pandas-polars]",
+      "status": "pass"
+    },
+    {
+      "id": "tests/adaptive_conformance/test_rereview_evidence_0_54.py::test_exact_candidate_dependencies[missing-dual-port-chain/1:polars-pandas]",
+      "status": "pass"
+    },
+    {
+      "id": "tests/adaptive_conformance/test_rereview_evidence_0_54.py::test_exact_candidate_dependencies[missing-fanout/1:local]",
+      "status": "pass"
+    },
+    {
+      "id": "tests/adaptive_conformance/test_rereview_evidence_0_54.py::test_exact_candidate_dependencies[missing-fanout/1:pandas]",
+      "status": "pass"
+    },
+    {
+      "id": "tests/adaptive_conformance/test_rereview_evidence_0_54.py::test_exact_candidate_dependencies[missing-fanout/1:polars]",
+      "status": "pass"
+    },
+    {
+      "id": "tests/adaptive_conformance/test_rereview_evidence_0_54.py::test_exact_candidate_dependencies[missing-scan-filter-project-chain/1:polars-pandas]",
+      "status": "pass"
+    },
+    {
+      "id": "tests/adaptive_conformance/test_rereview_evidence_0_54.py::test_exact_candidate_dependencies[operations-chain/1:local]",
+      "status": "pass"
+    },
+    {
+      "id": "tests/adaptive_conformance/test_rereview_evidence_0_54.py::test_exact_candidate_dependencies[operations-chain/1:pandas-polars]",
+      "status": "pass"
+    },
+    {
+      "id": "tests/adaptive_conformance/test_rereview_evidence_0_54.py::test_exact_candidate_dependencies[operations-chain/1:pandas]",
+      "status": "pass"
+    },
+    {
+      "id": "tests/adaptive_conformance/test_rereview_evidence_0_54.py::test_exact_candidate_dependencies[operations-chain/1:polars-pandas]",
+      "status": "pass"
+    },
+    {
+      "id": "tests/adaptive_conformance/test_rereview_evidence_0_54.py::test_exact_candidate_dependencies[operations-chain/1:polars]",
+      "status": "pass"
+    },
+    {
+      "id": "tests/adaptive_conformance/test_rereview_evidence_0_54.py::test_exact_candidate_dependencies[operations-diamond/1:local]",
+      "status": "pass"
+    },
+    {
+      "id": "tests/adaptive_conformance/test_rereview_evidence_0_54.py::test_exact_candidate_dependencies[operations-diamond/1:pandas]",
+      "status": "pass"
+    },
+    {
+      "id": "tests/adaptive_conformance/test_rereview_evidence_0_54.py::test_exact_candidate_dependencies[operations-diamond/1:polars]",
+      "status": "pass"
+    },
+    {
+      "id": "tests/adaptive_conformance/test_rereview_evidence_0_54.py::test_exact_candidate_dependencies[operations-dual-port-chain/1:pandas-polars]",
+      "status": "pass"
+    },
+    {
+      "id": "tests/adaptive_conformance/test_rereview_evidence_0_54.py::test_exact_candidate_dependencies[operations-dual-port-chain/1:polars-pandas]",
+      "status": "pass"
+    },
+    {
+      "id": "tests/adaptive_conformance/test_rereview_evidence_0_54.py::test_exact_candidate_dependencies[operations-fanout/1:local]",
+      "status": "pass"
+    },
+    {
+      "id": "tests/adaptive_conformance/test_rereview_evidence_0_54.py::test_exact_candidate_dependencies[operations-fanout/1:pandas]",
+      "status": "pass"
+    },
+    {
+      "id": "tests/adaptive_conformance/test_rereview_evidence_0_54.py::test_exact_candidate_dependencies[operations-fanout/1:polars]",
+      "status": "pass"
+    },
+    {
+      "id": "tests/adaptive_conformance/test_rereview_evidence_0_54.py::test_exact_candidate_dependencies[operations-scan-filter-project-chain/1:polars-pandas]",
+      "status": "pass"
+    },
+    {
+      "id": "tests/adaptive_conformance/test_rereview_evidence_0_54.py::test_exact_candidate_dependencies[policies-chain/1:local]",
+      "status": "pass"
+    },
+    {
+      "id": "tests/adaptive_conformance/test_rereview_evidence_0_54.py::test_exact_candidate_dependencies[policies-chain/1:pandas-polars]",
+      "status": "pass"
+    },
+    {
+      "id": "tests/adaptive_conformance/test_rereview_evidence_0_54.py::test_exact_candidate_dependencies[policies-chain/1:pandas]",
+      "status": "pass"
+    },
+    {
+      "id": "tests/adaptive_conformance/test_rereview_evidence_0_54.py::test_exact_candidate_dependencies[policies-chain/1:polars-pandas]",
+      "status": "pass"
+    },
+    {
+      "id": "tests/adaptive_conformance/test_rereview_evidence_0_54.py::test_exact_candidate_dependencies[policies-chain/1:polars]",
+      "status": "pass"
+    },
+    {
+      "id": "tests/adaptive_conformance/test_rereview_evidence_0_54.py::test_exact_candidate_dependencies[policies-diamond/1:local]",
+      "status": "pass"
+    },
+    {
+      "id": "tests/adaptive_conformance/test_rereview_evidence_0_54.py::test_exact_candidate_dependencies[policies-diamond/1:pandas]",
+      "status": "pass"
+    },
+    {
+      "id": "tests/adaptive_conformance/test_rereview_evidence_0_54.py::test_exact_candidate_dependencies[policies-diamond/1:polars]",
+      "status": "pass"
+    },
+    {
+      "id": "tests/adaptive_conformance/test_rereview_evidence_0_54.py::test_exact_candidate_dependencies[policies-dual-port-chain/1:pandas-polars]",
+      "status": "pass"
+    },
+    {
+      "id": "tests/adaptive_conformance/test_rereview_evidence_0_54.py::test_exact_candidate_dependencies[policies-dual-port-chain/1:polars-pandas]",
+      "status": "pass"
+    },
+    {
+      "id": "tests/adaptive_conformance/test_rereview_evidence_0_54.py::test_exact_candidate_dependencies[policies-fanout/1:local]",
+      "status": "pass"
+    },
+    {
+      "id": "tests/adaptive_conformance/test_rereview_evidence_0_54.py::test_exact_candidate_dependencies[policies-fanout/1:pandas]",
+      "status": "pass"
+    },
+    {
+      "id": "tests/adaptive_conformance/test_rereview_evidence_0_54.py::test_exact_candidate_dependencies[policies-fanout/1:polars]",
+      "status": "pass"
+    },
+    {
+      "id": "tests/adaptive_conformance/test_rereview_evidence_0_54.py::test_exact_candidate_dependencies[policies-scan-filter-project-chain/1:polars-pandas]",
+      "status": "pass"
+    },
+    {
+      "id": "tests/adaptive_conformance/test_rereview_evidence_0_54.py::test_exact_candidate_dependencies[wrong-chain/1:local]",
+      "status": "pass"
+    },
+    {
+      "id": "tests/adaptive_conformance/test_rereview_evidence_0_54.py::test_exact_candidate_dependencies[wrong-chain/1:pandas-polars]",
+      "status": "pass"
+    },
+    {
+      "id": "tests/adaptive_conformance/test_rereview_evidence_0_54.py::test_exact_candidate_dependencies[wrong-chain/1:pandas]",
+      "status": "pass"
+    },
+    {
+      "id": "tests/adaptive_conformance/test_rereview_evidence_0_54.py::test_exact_candidate_dependencies[wrong-chain/1:polars-pandas]",
+      "status": "pass"
+    },
+    {
+      "id": "tests/adaptive_conformance/test_rereview_evidence_0_54.py::test_exact_candidate_dependencies[wrong-chain/1:polars]",
+      "status": "pass"
+    },
+    {
+      "id": "tests/adaptive_conformance/test_rereview_evidence_0_54.py::test_exact_candidate_dependencies[wrong-diamond/1:local]",
+      "status": "pass"
+    },
+    {
+      "id": "tests/adaptive_conformance/test_rereview_evidence_0_54.py::test_exact_candidate_dependencies[wrong-diamond/1:pandas]",
+      "status": "pass"
+    },
+    {
+      "id": "tests/adaptive_conformance/test_rereview_evidence_0_54.py::test_exact_candidate_dependencies[wrong-diamond/1:polars]",
+      "status": "pass"
+    },
+    {
+      "id": "tests/adaptive_conformance/test_rereview_evidence_0_54.py::test_exact_candidate_dependencies[wrong-dual-port-chain/1:pandas-polars]",
+      "status": "pass"
+    },
+    {
+      "id": "tests/adaptive_conformance/test_rereview_evidence_0_54.py::test_exact_candidate_dependencies[wrong-dual-port-chain/1:polars-pandas]",
+      "status": "pass"
+    },
+    {
+      "id": "tests/adaptive_conformance/test_rereview_evidence_0_54.py::test_exact_candidate_dependencies[wrong-fanout/1:local]",
+      "status": "pass"
+    },
+    {
+      "id": "tests/adaptive_conformance/test_rereview_evidence_0_54.py::test_exact_candidate_dependencies[wrong-fanout/1:pandas]",
+      "status": "pass"
+    },
+    {
+      "id": "tests/adaptive_conformance/test_rereview_evidence_0_54.py::test_exact_candidate_dependencies[wrong-fanout/1:polars]",
+      "status": "pass"
+    },
+    {
+      "id": "tests/adaptive_conformance/test_rereview_evidence_0_54.py::test_exact_candidate_dependencies[wrong-scan-filter-project-chain/1:polars-pandas]",
+      "status": "pass"
+    },
+    {
+      "id": "tests/adaptive_conformance/test_rereview_evidence_0_54.py::test_experimental_go_requires_proof",
+      "status": "pass"
+    },
+    {
+      "id": "tests/adaptive_conformance/test_rereview_evidence_0_54.py::test_graduation_binding[evidence]",
+      "status": "pass"
+    },
+    {
+      "id": "tests/adaptive_conformance/test_rereview_evidence_0_54.py::test_graduation_binding[row-ref]",
+      "status": "pass"
+    },
+    {
+      "id": "tests/adaptive_conformance/test_rereview_evidence_0_54.py::test_graduation_binding[source]",
+      "status": "pass"
+    },
+    {
+      "id": "tests/adaptive_conformance/test_rereview_evidence_0_54.py::test_hash_read_is_bounded",
+      "status": "pass"
+    },
+    {
+      "id": "tests/adaptive_conformance/test_rereview_evidence_0_54.py::test_rehashed_category_semantics[category]",
+      "status": "pass"
+    },
+    {
+      "id": "tests/adaptive_conformance/test_rereview_evidence_0_54.py::test_rehashed_category_semantics[empty]",
+      "status": "pass"
+    },
+    {
+      "id": "tests/adaptive_conformance/test_rereview_evidence_0_54.py::test_rehashed_category_semantics[id]",
+      "status": "pass"
+    },
+    {
+      "id": "tests/adaptive_conformance/test_rereview_evidence_0_54.py::test_rehashed_category_semantics[result]",
+      "status": "pass"
+    },
+    {
+      "id": "tests/adaptive_conformance/test_rereview_evidence_0_54.py::test_rehashed_category_semantics[source]",
+      "status": "pass"
+    },
+    {
+      "id": "tests/adaptive_conformance/test_rereview_evidence_0_54.py::test_rehashed_category_semantics[status]",
+      "status": "pass"
+    },
+    {
+      "id": "tests/adaptive_conformance/test_rereview_evidence_0_54.py::test_rehashed_category_semantics[unknown]",
+      "status": "pass"
+    },
+    {
+      "id": "tests/adaptive_conformance/test_rereview_evidence_0_54.py::test_relative_index",
+      "status": "pass"
+    },
+    {
+      "id": "tests/adaptive_conformance/test_rereview_evidence_0_54.py::test_row_cannot_borrow_unrelated_category",
+      "status": "pass"
+    },
+    {
+      "id": "tests/adaptive_conformance/test_rereview_evidence_0_54.py::test_windows_source_order_uses_posix_relative_paths",
+      "status": "pass"
+    }
+  ],
+  "category": "adaptive_decision_0_54.json",
+  "phase": "0.54",
+  "result": "pass",
+  "schema": "etlantic.adaptive_category_observation/1",
+  "source": "sha256:23aafa43c0e4af3d76eb9f7ea507e7ebd2360c20408b9f825e914b4f2dd9398f"
+}

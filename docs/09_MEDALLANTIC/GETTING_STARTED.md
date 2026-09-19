@@ -1,4 +1,4 @@
-> **Status: Available in ETLantic 0.53.0 (Beta release candidate).** Medallion bronze/silver/gold and
+> **Status: Available in ETLantic 0.54.0 (Beta release candidate).** Medallion bronze/silver/gold and
 > SparkForge migration live in **Medallantic**, not core.
 
 ## Install matching versions
@@ -7,14 +7,14 @@ Medallantic and ETLantic use matching minor versions:
 
 ```bash
 python -m pip install \
-  'etlantic==0.53.0' \
-  'medallantic==0.53.0'
+  'etlantic==0.54.0' \
+  'medallantic==0.54.0'
 ```
 
 The ETLantic extra is equivalent:
 
 ```bash
-python -m pip install 'etlantic[medallantic]==0.53.0'
+python -m pip install 'etlantic[medallantic]==0.54.0'
 ```
 
 Execution engines remain optional. Add only the plugins required by the target

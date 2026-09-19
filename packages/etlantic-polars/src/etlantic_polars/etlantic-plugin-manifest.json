@@ -1,9 +1,11 @@
 {
   "capabilities": [
     "dataframe",
-    "portable"
+    "portable",
+    "bounded-parquet-source",
+    "scan-filter-project-fusion"
   ],
-  "digest": "sha256:9004c764964e4ded1b6514510f915d9b8c60abc37ad731c477628667cdd4ff6e",
+  "digest": "sha256:a22f5418f7cfd6a5464bf64263a6ce7fff826e04afc93024ea9a5e3b79ef579d",
   "entries": [
     {
       "capabilities": [
@@ -19,7 +21,8 @@
     },
     {
       "capabilities": [
-        "portable"
+        "portable",
+        "scan-filter-project-fusion"
       ],
       "engine": "polars",
       "group": "etlantic.transform_compilers",
@@ -35,5 +38,5 @@
     "publisher": "etlantic"
   },
   "schema": "etlantic.plugin_manifest/1",
-  "version": "0.53.0"
+  "version": "0.54.0"
 }

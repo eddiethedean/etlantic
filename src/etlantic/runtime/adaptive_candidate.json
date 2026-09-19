@@ -1,0 +1,354 @@
+{
+  "schema": "etlantic.adaptive_qualification/2",
+  "authority": "development-candidate",
+  "graduation": "pending",
+  "rows": {
+    "scan-filter-project-chain/1:polars-pandas": {
+      "maturity": "Experimental",
+      "versions": {
+        "etlantic": "0.54.0",
+        "etlantic-polars": "0.54.0",
+        "etlantic-pandas": "0.54.0",
+        "polars": "1.42.1",
+        "pandas": "2.3.3",
+        "pyarrow": "25.0.0"
+      },
+      "operations": [
+        "bounded-parquet-snapshot",
+        "scan-equality-filter",
+        "ordered-project",
+        "arrow-transfer",
+        "pandas-project",
+        "validation",
+        "publication"
+      ],
+      "policies": [
+        "standard",
+        "validate",
+        "overwrite",
+        "no_write",
+        "single-attempt"
+      ],
+      "evidence_refs": []
+    },
+    "chain/1:local": {
+      "evidence_refs": [],
+      "operations": [
+        "compute",
+        "transfer",
+        "collection",
+        "validation",
+        "materialization",
+        "reuse",
+        "publication"
+      ],
+      "policies": [
+        "standard",
+        "validate",
+        "overwrite",
+        "no_write"
+      ],
+      "versions": {
+        "etlantic": "0.54.0"
+      },
+      "maturity": "Experimental"
+    },
+    "chain/1:pandas": {
+      "evidence_refs": [],
+      "operations": [
+        "compute",
+        "transfer",
+        "collection",
+        "validation",
+        "materialization",
+        "reuse",
+        "publication"
+      ],
+      "policies": [
+        "standard",
+        "validate",
+        "overwrite",
+        "no_write"
+      ],
+      "versions": {
+        "etlantic": "0.54.0",
+        "etlantic-pandas": "0.54.0",
+        "pandas": "2.3.3"
+      },
+      "maturity": "Experimental"
+    },
+    "chain/1:pandas-polars": {
+      "evidence_refs": [],
+      "operations": [
+        "compute",
+        "transfer",
+        "collection",
+        "validation",
+        "materialization",
+        "reuse",
+        "publication"
+      ],
+      "policies": [
+        "standard",
+        "validate",
+        "overwrite",
+        "no_write"
+      ],
+      "versions": {
+        "etlantic": "0.54.0",
+        "etlantic-pandas": "0.54.0",
+        "etlantic-polars": "0.54.0",
+        "pandas": "2.3.3",
+        "polars": "1.42.1",
+        "pyarrow": "25.0.0"
+      },
+      "maturity": "Experimental"
+    },
+    "chain/1:polars": {
+      "evidence_refs": [],
+      "operations": [
+        "compute",
+        "transfer",
+        "collection",
+        "validation",
+        "materialization",
+        "reuse",
+        "publication"
+      ],
+      "policies": [
+        "standard",
+        "validate",
+        "overwrite",
+        "no_write"
+      ],
+      "versions": {
+        "etlantic": "0.54.0",
+        "etlantic-polars": "0.54.0",
+        "polars": "1.42.1"
+      },
+      "maturity": "Experimental"
+    },
+    "chain/1:polars-pandas": {
+      "evidence_refs": [],
+      "operations": [
+        "compute",
+        "transfer",
+        "collection",
+        "validation",
+        "materialization",
+        "reuse",
+        "publication"
+      ],
+      "policies": [
+        "standard",
+        "validate",
+        "overwrite",
+        "no_write"
+      ],
+      "versions": {
+        "etlantic": "0.54.0",
+        "etlantic-pandas": "0.54.0",
+        "etlantic-polars": "0.54.0",
+        "pandas": "2.3.3",
+        "polars": "1.42.1",
+        "pyarrow": "25.0.0"
+      },
+      "maturity": "Experimental"
+    },
+    "diamond/1:local": {
+      "evidence_refs": [],
+      "operations": [
+        "compute",
+        "transfer",
+        "collection",
+        "validation",
+        "materialization",
+        "reuse",
+        "publication"
+      ],
+      "policies": [
+        "standard",
+        "validate",
+        "overwrite",
+        "no_write"
+      ],
+      "versions": {
+        "etlantic": "0.54.0"
+      },
+      "maturity": "Experimental"
+    },
+    "diamond/1:pandas": {
+      "evidence_refs": [],
+      "operations": [
+        "compute",
+        "transfer",
+        "collection",
+        "validation",
+        "materialization",
+        "reuse",
+        "publication"
+      ],
+      "policies": [
+        "standard",
+        "validate",
+        "overwrite",
+        "no_write"
+      ],
+      "versions": {
+        "etlantic": "0.54.0",
+        "etlantic-pandas": "0.54.0",
+        "pandas": "2.3.3"
+      },
+      "maturity": "Experimental"
+    },
+    "diamond/1:polars": {
+      "evidence_refs": [],
+      "operations": [
+        "compute",
+        "transfer",
+        "collection",
+        "validation",
+        "materialization",
+        "reuse",
+        "publication"
+      ],
+      "policies": [
+        "standard",
+        "validate",
+        "overwrite",
+        "no_write"
+      ],
+      "versions": {
+        "etlantic": "0.54.0",
+        "etlantic-polars": "0.54.0",
+        "polars": "1.42.1"
+      },
+      "maturity": "Experimental"
+    },
+    "dual-port-chain/1:pandas-polars": {
+      "evidence_refs": [],
+      "operations": [
+        "compute",
+        "transfer",
+        "collection",
+        "validation",
+        "materialization",
+        "reuse",
+        "publication"
+      ],
+      "policies": [
+        "standard",
+        "validate",
+        "overwrite",
+        "no_write"
+      ],
+      "versions": {
+        "etlantic": "0.54.0",
+        "etlantic-pandas": "0.54.0",
+        "etlantic-polars": "0.54.0",
+        "pandas": "2.3.3",
+        "polars": "1.42.1",
+        "pyarrow": "25.0.0"
+      },
+      "maturity": "Experimental"
+    },
+    "dual-port-chain/1:polars-pandas": {
+      "evidence_refs": [],
+      "operations": [
+        "compute",
+        "transfer",
+        "collection",
+        "validation",
+        "materialization",
+        "reuse",
+        "publication"
+      ],
+      "policies": [
+        "standard",
+        "validate",
+        "overwrite",
+        "no_write"
+      ],
+      "versions": {
+        "etlantic": "0.54.0",
+        "etlantic-pandas": "0.54.0",
+        "etlantic-polars": "0.54.0",
+        "pandas": "2.3.3",
+        "polars": "1.42.1",
+        "pyarrow": "25.0.0"
+      },
+      "maturity": "Experimental"
+    },
+    "fanout/1:local": {
+      "evidence_refs": [],
+      "operations": [
+        "compute",
+        "transfer",
+        "collection",
+        "validation",
+        "materialization",
+        "reuse",
+        "publication"
+      ],
+      "policies": [
+        "standard",
+        "validate",
+        "overwrite",
+        "no_write"
+      ],
+      "versions": {
+        "etlantic": "0.54.0"
+      },
+      "maturity": "Experimental"
+    },
+    "fanout/1:pandas": {
+      "evidence_refs": [],
+      "operations": [
+        "compute",
+        "transfer",
+        "collection",
+        "validation",
+        "materialization",
+        "reuse",
+        "publication"
+      ],
+      "policies": [
+        "standard",
+        "validate",
+        "overwrite",
+        "no_write"
+      ],
+      "versions": {
+        "etlantic": "0.54.0",
+        "etlantic-pandas": "0.54.0",
+        "pandas": "2.3.3"
+      },
+      "maturity": "Experimental"
+    },
+    "fanout/1:polars": {
+      "evidence_refs": [],
+      "operations": [
+        "compute",
+        "transfer",
+        "collection",
+        "validation",
+        "materialization",
+        "reuse",
+        "publication"
+      ],
+      "policies": [
+        "standard",
+        "validate",
+        "overwrite",
+        "no_write"
+      ],
+      "versions": {
+        "etlantic": "0.54.0",
+        "etlantic-polars": "0.54.0",
+        "polars": "1.42.1"
+      },
+      "maturity": "Experimental"
+    }
+  },
+  "observations": []
+}

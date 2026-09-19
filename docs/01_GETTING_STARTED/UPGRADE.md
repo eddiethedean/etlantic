@@ -1,6 +1,6 @@
 # Upgrade Hub
 
-> **Status: Available in ETLantic 0.53.0 (Beta release candidate).**
+> **Status: Available in ETLantic 0.54.0 (Beta release candidate).**
 
 !!! warning "Upgraders only"
     New users: start at the [docs home green path](../README.md) or
@@ -15,11 +15,12 @@ Historical release notes: [Earlier releases](EARLIER_RELEASES.md).
 
 ## Current target
 
-**ETLantic 0.53.0** (Beta release candidate) — choose your guide:
+**ETLantic 0.54.0** (Beta release candidate) — choose your guide:
 
-| From version | Ordered path to 0.53 |
+| From version | Ordered path to 0.54 |
 |---|---|
-| 0.53.x | Already current |
+| 0.54.x | Already current |
+| 0.53.x | [Migration 0.53 → 0.54](../11_DEVELOPMENT/MIGRATION_0_53_TO_0_54.md) |
 | 0.52.x | [Migration 0.52 → 0.53](../11_DEVELOPMENT/MIGRATION_0_52_TO_0_53.md) |
 | 0.51.x | [Migration 0.51 → 0.52](../11_DEVELOPMENT/MIGRATION_0_51_TO_0_52.md), then 0.52 → 0.53 |
 | 0.50.x | [Migration 0.50 → 0.51](../11_DEVELOPMENT/MIGRATION_0_50_TO_0_51.md), then 0.51 → 0.52 → 0.53 |
@@ -298,11 +299,15 @@ See [Migration 0.29 → 0.30](../11_DEVELOPMENT/MIGRATION_0_29_TO_0_30.md).
 See [Migration 0.30 → 0.31](../11_DEVELOPMENT/MIGRATION_0_30_TO_0_31.md).
 
 
-## 0.53 configuration cheat sheet
+## 0.54 configuration cheat sheet
+
+Apply [Migration 0.53 → 0.54](../11_DEVELOPMENT/MIGRATION_0_53_TO_0_54.md)
+after the historical paths below. Current implementation is a candidate, not
+independently approved; adaptive remains Experimental.
 
 | Do | Don't |
 |---|---|
-| Pin `etlantic==0.53.0` and matching plugins / `medallantic==0.53.0` | Mix plugin minor lines |
+| Pin `etlantic==0.54.0` and matching plugins / `medallantic==0.54.0` | Mix plugin minor lines |
 | Opt into Experimental local adaptive execution with ordered targets, `portable_transform_policy="require"` and exact qualified support rows | Expect arbitrary topologies, other engines, durable/remote execution or external compilation |
 | Keep explicit Profiles as the default; replan historical adaptive documents before local execution | Downgrade or relabel stored `/2` documents |
 

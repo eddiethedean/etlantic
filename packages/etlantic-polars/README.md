@@ -11,10 +11,10 @@ compilation on Polars. Keep the pin matched to core.
 ## Install
 
 ```bash
-pip install 'etlantic-polars==0.53.0'
+pip install 'etlantic-polars==0.54.0'
 # Optional Arrow interchange:
-pip install 'etlantic-polars[arrow]==0.53.0'
-# pip install 'etlantic==0.53.0'
+pip install 'etlantic-polars[arrow]==0.54.0'
+# pip install 'etlantic==0.54.0'
 ```
 
 ## Dataframe plugin
@@ -54,11 +54,31 @@ Runnable example: `examples/portable_polars_kernel.py` in the ETLantic repo.
 Window V1, complex-type/value, and conversion profiles are available in the
 current compiler; explicit window frames and Window V2 remain capability-gated.
 See the
-[compiler protocol](https://etlantic.readthedocs.io/en/v0.53.0/07_PLUGIN_SDK/PORTABLE_TRANSFORM_COMPILER/)
-and [compatibility matrix](https://etlantic.readthedocs.io/en/v0.53.0/10_REFERENCE/COMPATIBILITY/).
+[compiler protocol](https://etlantic.readthedocs.io/en/v0.54.0/07_PLUGIN_SDK/PORTABLE_TRANSFORM_COMPILER/)
+and [compatibility matrix](https://etlantic.readthedocs.io/en/v0.54.0/10_REFERENCE/COMPATIBILITY/).
+
+## Bounded Parquet snapshots
+
+`create_parquet_storage()` reads a single policy-approved source through a
+verified handle into bounded immutable bytes. Native scans use those bytes,
+so replacing or renaming the source or its parent cannot replace the snapshot.
+No filesystem artifact or additional approved root is required. Keep scans
+inside `open_scan()` until all native work has drained; cancellation of an
+ordinary read waits for that work.
+
+A bounded Compact-Thrift footer pass removes optional file key/value metadata,
+including `ARROW:schema`, before PyArrow or Polars constructs a reader. Custom
+Arrow extension semantics are discarded without invoking deserializers; every
+physical column must still pass the primitive int64/boolean gate. PyArrow 14
+and later are supported without the newer `arrow_extensions_enabled` keyword.
+The snapshot uses memory proportional to the configured byte budget, including
+bounded copies during footer sanitization and native scan construction.
+
+The cleanup inspection methods remain available for compatibility. Buffer
+snapshots create no disk cleanup obligations; unknown cleanup tokens reject.
 
 ## Links
 
-[Polars tutorial](https://etlantic.readthedocs.io/en/v0.53.0/06_EXECUTION/POLARS_TUTORIAL/) ·
+[Polars tutorial](https://etlantic.readthedocs.io/en/v0.54.0/06_EXECUTION/POLARS_TUTORIAL/) ·
 [Source](https://github.com/eddiethedean/etlantic/tree/main/packages/etlantic-polars) ·
 [Issues](https://github.com/eddiethedean/etlantic/issues)

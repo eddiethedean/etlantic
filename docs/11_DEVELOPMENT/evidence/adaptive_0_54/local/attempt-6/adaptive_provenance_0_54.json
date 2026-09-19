@@ -1,0 +1,185 @@
+{
+  "cases": [
+    {
+      "id": "tests/adaptive_conformance/test_evidence_0_54.py::test_category_payload_tamper_rejected",
+      "status": "not-passed"
+    },
+    {
+      "id": "tests/adaptive_conformance/test_evidence_0_54.py::test_duplicate_json_keys_rejected",
+      "status": "not-passed"
+    },
+    {
+      "id": "tests/adaptive_conformance/test_evidence_0_54.py::test_every_ac_and_row_is_mapped[local_ac]",
+      "status": "not-passed"
+    },
+    {
+      "id": "tests/adaptive_conformance/test_evidence_0_54.py::test_every_ac_and_row_is_mapped[program_ac]",
+      "status": "not-passed"
+    },
+    {
+      "id": "tests/adaptive_conformance/test_evidence_0_54.py::test_every_ac_and_row_is_mapped[rows]",
+      "status": "not-passed"
+    },
+    {
+      "id": "tests/adaptive_conformance/test_evidence_0_54.py::test_index_rejects_incomplete_or_tampered_matrix[absolute]",
+      "status": "not-passed"
+    },
+    {
+      "id": "tests/adaptive_conformance/test_evidence_0_54.py::test_index_rejects_incomplete_or_tampered_matrix[artifact-hash]",
+      "status": "not-passed"
+    },
+    {
+      "id": "tests/adaptive_conformance/test_evidence_0_54.py::test_index_rejects_incomplete_or_tampered_matrix[ci-missing]",
+      "status": "not-passed"
+    },
+    {
+      "id": "tests/adaptive_conformance/test_evidence_0_54.py::test_index_rejects_incomplete_or_tampered_matrix[cross-index-source]",
+      "status": "not-passed"
+    },
+    {
+      "id": "tests/adaptive_conformance/test_evidence_0_54.py::test_index_rejects_incomplete_or_tampered_matrix[different-commit]",
+      "status": "not-passed"
+    },
+    {
+      "id": "tests/adaptive_conformance/test_evidence_0_54.py::test_index_rejects_incomplete_or_tampered_matrix[different-run]",
+      "status": "not-passed"
+    },
+    {
+      "id": "tests/adaptive_conformance/test_evidence_0_54.py::test_index_rejects_incomplete_or_tampered_matrix[dirty]",
+      "status": "not-passed"
+    },
+    {
+      "id": "tests/adaptive_conformance/test_evidence_0_54.py::test_index_rejects_incomplete_or_tampered_matrix[duplicate-cell]",
+      "status": "not-passed"
+    },
+    {
+      "id": "tests/adaptive_conformance/test_evidence_0_54.py::test_index_rejects_incomplete_or_tampered_matrix[escape]",
+      "status": "not-passed"
+    },
+    {
+      "id": "tests/adaptive_conformance/test_evidence_0_54.py::test_index_rejects_incomplete_or_tampered_matrix[missing-cell]",
+      "status": "not-passed"
+    },
+    {
+      "id": "tests/adaptive_conformance/test_evidence_0_54.py::test_index_rejects_incomplete_or_tampered_matrix[unknown-index]",
+      "status": "not-passed"
+    },
+    {
+      "id": "tests/adaptive_conformance/test_evidence_0_54.py::test_observation_rejects_unqualified_data[case-hash]",
+      "status": "not-passed"
+    },
+    {
+      "id": "tests/adaptive_conformance/test_evidence_0_54.py::test_observation_rejects_unqualified_data[catalogue-hash]",
+      "status": "not-passed"
+    },
+    {
+      "id": "tests/adaptive_conformance/test_evidence_0_54.py::test_observation_rejects_unqualified_data[collection-error]",
+      "status": "not-passed"
+    },
+    {
+      "id": "tests/adaptive_conformance/test_evidence_0_54.py::test_observation_rejects_unqualified_data[cross-source]",
+      "status": "not-passed"
+    },
+    {
+      "id": "tests/adaptive_conformance/test_evidence_0_54.py::test_observation_rejects_unqualified_data[duplicate]",
+      "status": "not-passed"
+    },
+    {
+      "id": "tests/adaptive_conformance/test_evidence_0_54.py::test_observation_rejects_unqualified_data[failed]",
+      "status": "not-passed"
+    },
+    {
+      "id": "tests/adaptive_conformance/test_evidence_0_54.py::test_observation_rejects_unqualified_data[missing-backend]",
+      "status": "not-passed"
+    },
+    {
+      "id": "tests/adaptive_conformance/test_evidence_0_54.py::test_observation_rejects_unqualified_data[missing]",
+      "status": "not-passed"
+    },
+    {
+      "id": "tests/adaptive_conformance/test_evidence_0_54.py::test_observation_rejects_unqualified_data[naive-time]",
+      "status": "not-passed"
+    },
+    {
+      "id": "tests/adaptive_conformance/test_evidence_0_54.py::test_observation_rejects_unqualified_data[nonzero]",
+      "status": "not-passed"
+    },
+    {
+      "id": "tests/adaptive_conformance/test_evidence_0_54.py::test_observation_rejects_unqualified_data[old-time]",
+      "status": "not-passed"
+    },
+    {
+      "id": "tests/adaptive_conformance/test_evidence_0_54.py::test_observation_rejects_unqualified_data[parameter-id]",
+      "status": "not-passed"
+    },
+    {
+      "id": "tests/adaptive_conformance/test_evidence_0_54.py::test_observation_rejects_unqualified_data[pin]",
+      "status": "not-passed"
+    },
+    {
+      "id": "tests/adaptive_conformance/test_evidence_0_54.py::test_observation_rejects_unqualified_data[skip]",
+      "status": "not-passed"
+    },
+    {
+      "id": "tests/adaptive_conformance/test_evidence_0_54.py::test_observation_rejects_unqualified_data[source-changed]",
+      "status": "not-passed"
+    },
+    {
+      "id": "tests/adaptive_conformance/test_evidence_0_54.py::test_observation_rejects_unqualified_data[true-returncode]",
+      "status": "not-passed"
+    },
+    {
+      "id": "tests/adaptive_conformance/test_evidence_0_54.py::test_observation_rejects_unqualified_data[unknown]",
+      "status": "not-passed"
+    },
+    {
+      "id": "tests/adaptive_conformance/test_evidence_0_54.py::test_observation_rejects_unqualified_data[xfail]",
+      "status": "not-passed"
+    },
+    {
+      "id": "tests/adaptive_conformance/test_evidence_0_54.py::test_observation_rejects_unqualified_data[xpass]",
+      "status": "not-passed"
+    },
+    {
+      "id": "tests/adaptive_conformance/test_evidence_0_54.py::test_readonly_complete_matrix",
+      "status": "not-passed"
+    },
+    {
+      "id": "tests/adaptive_conformance/test_observation_0_54.py::test_collection_failure_is_retained_without_exception",
+      "status": "pass"
+    },
+    {
+      "id": "tests/adaptive_conformance/test_observation_0_54.py::test_full_parameter_identity_and_three_phases_required",
+      "status": "pass"
+    },
+    {
+      "id": "tests/adaptive_conformance/test_observation_0_54.py::test_nonpassing_phase_never_qualifies[failed]",
+      "status": "pass"
+    },
+    {
+      "id": "tests/adaptive_conformance/test_observation_0_54.py::test_nonpassing_phase_never_qualifies[skipped]",
+      "status": "pass"
+    },
+    {
+      "id": "tests/adaptive_conformance/test_observation_0_54.py::test_nonpassing_phase_never_qualifies[xfail]",
+      "status": "pass"
+    },
+    {
+      "id": "tests/adaptive_conformance/test_observation_0_54.py::test_nonpassing_phase_never_qualifies[xpass]",
+      "status": "pass"
+    },
+    {
+      "id": "tests/runtime/physical/test_review_remediation_0_54.py::test_ci_proofs_are_outside_checkout_and_do_not_dirty_git",
+      "status": "not-passed"
+    },
+    {
+      "id": "tests/runtime/physical/test_review_remediation_0_54.py::test_fastapi_ci_requires_both_provider_backends",
+      "status": "not-passed"
+    }
+  ],
+  "category": "adaptive_provenance_0_54.json",
+  "phase": "0.54",
+  "result": "fail",
+  "schema": "etlantic.adaptive_category_observation/1",
+  "source": "sha256:ea374d3945972fc259788f8c845f644eaab2ff95e22f5d74de7a36e0b8855542"
+}

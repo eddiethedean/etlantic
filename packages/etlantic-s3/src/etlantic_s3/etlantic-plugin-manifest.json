@@ -10,7 +10,7 @@
     "cleanup",
     "idempotency"
   ],
-  "digest": "sha256:b5fe383573ea9208c57764f1e54b43db4b2ebbd3f147b6af7ec5ca00a7ec478e",
+  "digest": "sha256:e9a5629e3557fb387f465c24dbd58540603b18df7dd951202b87ec0a2575d499",
   "entries": [
     {
       "capabilities": [
@@ -56,9 +56,9 @@
   "privileges": [],
   "protocol_range": "etlantic.source/1,etlantic.sink/1,etlantic.storage/1",
   "provenance": {
-    "publisher": "etlantic",
-    "maturity": "experimental"
+    "maturity": "experimental",
+    "publisher": "etlantic"
   },
   "schema": "etlantic.plugin_manifest/1",
-  "version": "0.53.0"
+  "version": "0.54.0"
 }

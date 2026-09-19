@@ -1,6 +1,6 @@
 # etlantic-k8s (Experimental / Preview)
 
-Version **0.53.0** (lockstep with ETLantic core).
+Version **0.54.0** (lockstep with ETLantic core).
 Fake-first Kubernetes resource provider for [ETLantic](https://github.com/eddiethedean/etlantic).
 Live Kind clusters are opt-in via `ETLANTIC_K8S_CONTEXT` and are skipped in CI (`047-K-01`).
 
@@ -9,10 +9,10 @@ Live Kind clusters are opt-in via `ETLANTIC_K8S_CONTEXT` and are skipped in CI (
 ## Install
 
 ```bash
-pip install 'etlantic-k8s==0.53.0'
+pip install 'etlantic-k8s==0.54.0'
 ```
 
-Core dependency: `etlantic>=0.53.0,<0.54`. No Kubernetes Python SDK in the default extra.
+Core dependency: `etlantic>=0.54.0,<0.55`. No Kubernetes Python SDK in the default extra.
 
 ## Entry points
 

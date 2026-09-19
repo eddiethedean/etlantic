@@ -4,7 +4,9 @@ ETLantic **0.35.0** closed **Migration Completion and Joint Freeze (M7)**.
 **0.36.0** closed joint compatibility burn-in. **0.37** closed the
 stable-foundation gate. **0.38.0** closed the connectivity line.
 **0.39.0** closed CP1 incubation. **0.40.0** closed CP2 registry incubation.
-**0.53.0** is the current **published Beta release**: local adaptive
+**0.54.0** is the current **Beta implementation candidate**, with review and
+graduation pending. It adds public conformance and the bounded source/fusion
+reference; local adaptive
 physical-DAG execution is Experimental and fixture-qualified, alongside the
 closed `/2` wire foundation and the published portable-engine baseline. Prior
 **0.49** qualified optional DuckDB; prior **0.48** closed human-governed AI

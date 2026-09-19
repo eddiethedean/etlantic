@@ -5,7 +5,7 @@ Install as an editable example or register via entry points::
     [project.entry-points."etlantic.optimization_passes"]
     echo = "examples.optimization_pass_echo.pass_impl:EchoOptimizationPass"
 
-Pin against ``etlantic>=0.53.0,<0.54``.
+Pin against ``etlantic>=0.54.0,<0.55``.
 """
 
 from __future__ import annotations

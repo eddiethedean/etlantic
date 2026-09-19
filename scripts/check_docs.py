@@ -748,6 +748,8 @@ def check_release_surface_version_drift(package_version: str) -> None:
     expected_status = (
         "Published / shipped evidence"
         if release_facts.get("publication_status") == "published"
+        else "Implementation candidate / review pending"
+        if current_minor == "0.54"
         else "Gate-ready for tag/publish"
     )
     current_row = re.compile(

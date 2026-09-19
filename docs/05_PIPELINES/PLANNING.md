@@ -1,6 +1,10 @@
 # Planning
 
-> **Status: Available in ETLantic 0.53.0 (Beta release candidate)** for deterministic
+The [0.54 candidate](../11_DEVELOPMENT/ADAPTIVE_0_54_USAGE.md) adds one exact
+placement-bound scan fusion. Conformance and content hashes do not grant runtime
+authority; adaptive remains Experimental and stored `/2` never downgrades.
+
+> **Status: Available in ETLantic 0.54.0 (Beta release candidate)** for deterministic
 > `PipelinePlan` production via `etlantic plan` / the planner APIs, plus
 > advisory optimization via `etlantic plan optimize` / `etl.optimization`.
 > Plans are secret-free and do not execute transforms. Some advanced analysis

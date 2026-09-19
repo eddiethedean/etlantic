@@ -28,6 +28,12 @@ class RunnableEntry:
 # executed_in_ci names the checks.yml job (or step group) that runs the companion.
 RUNNABLE_ENTRIES: tuple[RunnableEntry, ...] = (
     RunnableEntry(
+        "docs/11_DEVELOPMENT/ADAPTIVE_0_54_USAGE.md",
+        "examples/adaptive_reference.py",
+        executed_in_ci="checks",
+        external_dependency="polars,pandas,pyarrow",
+    ),
+    RunnableEntry(
         "docs/06_EXECUTION/FILE_STORAGE_TUTORIAL.md",
         "examples/file_storage.py",
         executed_in_ci=None,

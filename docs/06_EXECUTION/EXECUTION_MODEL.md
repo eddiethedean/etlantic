@@ -1,6 +1,6 @@
 # Execution Model
 
-> **Status: Available in ETLantic 0.53.0 (Beta release candidate).**
+> **Status: Available in ETLantic 0.54.0 (Beta release candidate).**
 
 The execution model defines how a resolved `PipelinePlan` is realized while
 preserving the observable semantics of the logical pipeline.

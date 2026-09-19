@@ -32,6 +32,7 @@ class AdaptiveAdmission:
     dataframe_pins: Mapping[str, Any] = field(default_factory=dict)
     contract_pins: Mapping[str, type[Any]] = field(default_factory=dict)
     binding_pins: Mapping[str, Any] = field(default_factory=dict)
+    io_policy_pins: Mapping[str, Any] = field(default_factory=dict)
 
 
 def _reject(message: str, code: str) -> PipelineExecutionError:
@@ -87,6 +88,145 @@ def _validate_request(request: RunRequest) -> None:
         raise _reject(
             "Adaptive execution requires cooperative cancellation", "PMADP522"
         )
+
+
+def _validate_required_boundaries(plan):
+    """Require lowering's exact marker coverage and prohibit data-path bypasses."""
+    dag = plan.physical_dag
+    from etlantic.runtime.adaptive_parameters import canonical_parameters
+    from etlantic.runtime.physical_operations import validate_operation
+
+    by_id = {unit.identity: unit for unit in dag.units}
+    forward = {uid: set() for uid in by_id}
+    for unit in dag.units:
+        for dependency in unit.dependencies:
+            if (
+                dependency.kind == "data"
+                or (dependency.kind == "lifecycle" and unit.kind.value == "publication")
+            ) and dependency.unit_id in forward:
+                forward[dependency.unit_id].add(unit.identity)
+
+    def reaches(start, end, excluded=None):
+        pending, seen = [start], set()
+        while pending:
+            uid = pending.pop()
+            if uid == excluded or uid in seen:
+                continue
+            if uid == end:
+                return True
+            seen.add(uid)
+            pending.extend(forward.get(uid, ()))
+        return False
+
+    expected_ids = set()
+    for node in plan.logical_graph.nodes:
+        origin = dag.logical_to_physical[node.name]
+        stage_tail = origin
+        for flag, kind in (
+            ("etlantic.validation_required", "validation"),
+            ("etlantic.materialization_required", "materialization"),
+            ("etlantic.reuse_artifact", "reuse"),
+            ("etlantic.collection_required", "collection"),
+        ):
+            requirement = node.metadata.get(flag)
+            if not requirement:
+                continue
+            try:
+                required = canonical_parameters(validate_operation(kind, requirement))
+            except ValueError as exc:
+                raise _reject(
+                    "Required logical barrier descriptor is invalid", "PMADP403"
+                ) from exc
+            edges = (
+                plan.logical_graph.edges_to(node.name)
+                if kind == "collection"
+                else [None]
+            )
+            if not edges:
+                raise _reject(
+                    "Required collection has no logical input edge", "PMADP403"
+                )
+            for edge in edges:
+                matches = [
+                    u
+                    for u in dag.units
+                    if u.kind.value == kind
+                    and (
+                        tuple(u.metadata.get("etlantic.edge_ports", ()))
+                        == (
+                            edge.producer_node,
+                            edge.consumer_node,
+                            edge.producer_port,
+                            edge.consumer_port,
+                        )
+                        if edge is not None
+                        else u.metadata.get("etlantic.logical_node") == node.name
+                    )
+                    and canonical_parameters(
+                        validate_operation(kind, u.metadata.get("etlantic.requirement"))
+                    )
+                    == required
+                ]
+                if len(matches) != 1:
+                    raise _reject(
+                        "Required logical barrier lacks exactly one physical descriptor",
+                        "PMADP403",
+                    )
+                barrier = matches[0].identity
+                if edge is None:
+                    if tuple((d.unit_id, d.kind) for d in matches[0].dependencies) != (
+                        (stage_tail, "data"),
+                    ):
+                        raise _reject(
+                            "Required logical barriers do not preserve lowering order",
+                            "PMADP403",
+                        )
+                    stage_tail = barrier
+                expected_ids.add(barrier)
+                start = (
+                    dag.logical_to_physical[edge.producer_node]
+                    if edge is not None
+                    else origin
+                )
+                ends = (
+                    [origin]
+                    if edge is not None
+                    else [
+                        dag.logical_to_physical[e.consumer_node]
+                        for e in plan.logical_graph.edges_from(node.name)
+                    ]
+                )
+                if node.kind.value == "sink" and edge is None:
+                    publications = [
+                        u
+                        for u in dag.units
+                        if u.kind.value == "publication"
+                        and u.metadata.get("etlantic.logical_node") == node.name
+                    ]
+                    if len(publications) != 1:
+                        raise _reject(
+                            "Required sink barrier lacks exact publication", "PMADP403"
+                        )
+                    ends.extend(u.identity for u in publications)
+                if not reaches(start, barrier):
+                    raise _reject(
+                        "Required barrier is detached from logical producer", "PMADP403"
+                    )
+                if any(
+                    not reaches(barrier, end) or reaches(start, end, barrier)
+                    for end in ends
+                ):
+                    raise _reject(
+                        "Required barrier is bypassed on downstream data path",
+                        "PMADP403",
+                    )
+    actual_ids = {
+        u.identity
+        for u in dag.units
+        if u.kind.value in {"validation", "materialization", "collection", "reuse"}
+    }
+    if actual_ids != expected_ids:
+        raise _reject("Physical barriers do not match logical requirements", "PMADP403")
 
 
 def admit_adaptive_plan(
@@ -193,6 +333,7 @@ def admit_adaptive_plan(
         "implementations",
         "compiler",
         "evidence_refs",
+        "parameters",
     }
     if set(runtime_record) - allowed_runtime:
         raise _reject("Adaptive runtime metadata contains unknown fields", "PMADP401")
@@ -202,6 +343,19 @@ def admit_adaptive_plan(
             "Runtime request differs from the fingerprinted adaptive request",
             "PMADP122",
         )
+    from etlantic.runtime.adaptive_parameters import (
+        canonical_parameters,
+        validate_parameters,
+    )
+
+    try:
+        parameters = validate_parameters(
+            plan.logical_graph, request, runtime_record.get("parameters")
+        )
+    except ValueError as exc:
+        raise _reject(
+            "Adaptive effective parameter capture is invalid or drifted", "PMADP403"
+        ) from exc
     if runtime_record.get("support_row_id") not in {None, row.row_id}:
         raise _reject("Adaptive runtime support-row identity drifted", "PMADP401")
     implementations = metadata.get("etlantic.implementations")
@@ -262,6 +416,84 @@ def admit_adaptive_plan(
                 "Adaptive step is missing its implementation descriptor", "PMADP401"
             )
     dag = plan.physical_dag
+    fused_descriptors = []
+    for unit in dag.units:
+        if unit.metadata.get("etlantic.fusion") is None:
+            continue
+        from etlantic.transform.fusion import FusionDescriptor, fusion_digest
+
+        try:
+            fusion = FusionDescriptor.from_dict(unit.metadata["etlantic.fusion"])
+        except (ValueError, TypeError, KeyError) as exc:
+            raise _reject("Invalid stored fusion descriptor", "PMADP403") from exc
+        if (
+            fusion.policy_digest != fusion_digest(request.to_dict())
+            or request.retry.max_attempts != 1
+            or request.materialization.value != "default"
+            or plan.profile_snapshot.get("security_mode") not in {"development", "test"}
+        ):
+            raise _reject("Unsupported fused execution policy", "PMADP522")
+        if runtime is not None and (
+            runtime.step_middleware.names
+            or runtime.callbacks._handlers.get("step_failed")
+        ):
+            raise _reject(
+                "Fusion does not support per-member middleware/callbacks", "PMADP522"
+            )
+        fused_descriptors.append(fusion)
+        try:
+            nodes = plan.logical_graph.node_map()
+            source = nodes[fusion.source_node]
+            source_port = next(
+                p for p in source.outputs if p.name == fusion.source_port
+            )
+            if (
+                source.contract_id != fusion.source_contract["id"]
+                or source_port.contract_id != fusion.source_contract["id"]
+                or tuple(unit.logical_nodes) != fusion.logical_nodes
+            ):
+                raise ValueError("Fusion source logical contract drifted")
+            for member in fusion.members:
+                node = nodes[member.logical_node]
+                input_port = next(p for p in node.inputs if p.name == member.input_port)
+                output_port = next(
+                    p for p in node.outputs if p.name == member.output_port
+                )
+                edges = plan.logical_graph.edges_to(node.name)
+                if (
+                    input_port.contract_id != member.input_contract["id"]
+                    or output_port.contract_id != member.output_contract["id"]
+                    or len(edges) != 1
+                    or (
+                        edges[0].producer_node,
+                        edges[0].producer_port,
+                        edges[0].consumer_port,
+                    )
+                    != (member.upstream_node, member.upstream_port, member.input_port)
+                    or edges[0].producer_contract_id != member.input_contract["id"]
+                    or edges[0].consumer_contract_id != member.input_contract["id"]
+                ):
+                    raise ValueError("Fusion member logical edge/contract drifted")
+            if (
+                canonical_parameters(fusion.parameters)
+                != canonical_parameters(
+                    parameters.get(fusion.members[0].logical_node, {})
+                )
+                or parameters.get(fusion.source_node)
+                or parameters.get(fusion.members[1].logical_node)
+            ):
+                raise ValueError("Fusion effective parameters drifted")
+        except (ValueError, KeyError, StopIteration) as exc:
+            raise _reject(
+                "Fusion logical contracts, edges, or effective parameters drifted",
+                "PMADP403",
+            ) from exc
+    try:
+        _validate_required_boundaries(plan)
+    except (ValueError, TypeError, KeyError) as exc:
+        raise _reject(
+            "Adaptive logical barrier descriptor is invalid", "PMADP403"
+        ) from exc
     # Boundary markers are not executable operations. Require a closed
     # descriptor before any runtime/session effect is permitted.
     for unit in dag.units:
@@ -321,6 +553,8 @@ def admit_adaptive_plan(
     compiler_pins: dict[str, Any] = {}
     dataframe_pins: dict[str, Any] = {}
     binding_pins: dict[str, Any] = {}
+    io_policy_pins: dict[str, Any] = {}
+    qualified_storage_pins: dict[str, Any] = {}
     if runtime is not None:
         registry = getattr(runtime, "registry", None)
         from importlib.metadata import version
@@ -332,9 +566,9 @@ def admit_adaptive_plan(
         captured_profile = Profile.from_plan_snapshot(
             mutable_copy(plan.profile_snapshot)
         )
-        from etlantic.runtime.adaptive_support import qualification_bundle
+        from etlantic.runtime.adaptive_support import candidate_bundle
 
-        bundle, _bundle_digest = qualification_bundle()
+        bundle, _bundle_digest = candidate_bundle()
         for target in plan.inventory.targets:
             qualification = bundle["rows"].get(f"chain/1:{target.engine}")
             if qualification is not None:
@@ -374,6 +608,8 @@ def admit_adaptive_plan(
             raise _reject("Adaptive safe-I/O policy is invalid", "PMADP522") from exc
         live_bindings = getattr(registry, "bindings", {}) or {}
         allowed_providers = {"memory", "local", "python", "null", "json", "csv"}
+        if fused_descriptors:
+            allowed_providers.add("polars-parquet")
         if getattr(runtime, "storage", {}).get("memory") is not getattr(
             runtime, "memory", None
         ):
@@ -426,6 +662,40 @@ def admit_adaptive_plan(
             storage = getattr(runtime, "storage", {}).get(
                 "memory" if provider in {"local", "python"} else provider
             )
+            if provider == "polars-parquet":
+                from pathlib import Path
+
+                from etlantic_polars import PolarsParquetStorage
+
+                fusion = next(
+                    (f for f in fused_descriptors if f.source_node == node.name), None
+                )
+                if (
+                    fusion is None
+                    or type(storage) is not PolarsParquetStorage
+                    or storage.configuration()
+                    != mutable_copy(fusion.source_binding["config"])
+                    or descriptor.to_dict() != mutable_copy(fusion.source_binding)
+                    or descriptor.provider_version != version("etlantic-polars")
+                    or safe_policy is None
+                    or workspace is None
+                    or descriptor.root_ref != "workspace"
+                    or tuple(
+                        (plan.profile_snapshot.get("safe_io") or {}).get(
+                            "root_refs", ()
+                        )
+                    )
+                    != ("workspace",)
+                ):
+                    raise _reject(
+                        "Adaptive Parquet source identity/configuration drifted",
+                        "PMADP501",
+                    )
+                io_policy_pins[node.name] = replace(
+                    safe_policy,
+                    approved_roots=(Path(workspace),),
+                )
+                qualified_storage_pins[provider] = storage
             if provider in {"json", "csv", "null"}:
                 from etlantic.storage.csv_binding import CsvStorage
                 from etlantic.storage.json_binding import JsonStorage
@@ -457,6 +727,11 @@ def admit_adaptive_plan(
             executor = executors.get(unit.target_identity) or executors.get(
                 target.engine
             )
+            if fused_descriptors and executor is not None:
+                raise _reject(
+                    "The fused candidate requires the qualified built-in executor",
+                    "PMADP501",
+                )
             executor_pins.setdefault(unit.target_identity, executor)
             executor_pins.setdefault(target.engine, executor)
             if executor is None:
@@ -556,6 +831,58 @@ def admit_adaptive_plan(
                     descriptor, compiler, engine=descriptor.engine
                 )
                 compiler_pins[name] = compiler
+            from etlantic.planning.fusion import schema_contract
+            from etlantic.transform.compiler import TransformPlanningContext
+
+            for fusion in fused_descriptors:
+                if plan.logical_graph.node_map()[fusion.source_node].metadata:
+                    raise ValueError("Fusion source boundary drifted")
+                compiler = compiler_pins.get(fusion.members[0].logical_node)
+                from etlantic_polars.compiler import PolarsTransformCompiler
+
+                if type(compiler) is not PolarsTransformCompiler:
+                    raise ValueError("Fusion requires the qualified compiler factory")
+                if compiler is None or not callable(
+                    getattr(compiler, "analyze_fusion", None)
+                ):
+                    raise ValueError("Fusion compiler unavailable")
+                for member in fusion.members:
+                    implementation = descriptors.get(member.logical_node)
+                    logical_node = plan.logical_graph.node_map()[member.logical_node]
+                    if (
+                        implementation is None
+                        or mutable_copy(implementation.portable_plan)
+                        != mutable_copy(member.definition)
+                        or implementation.ir_fingerprint != member.ir_fingerprint
+                        or schema_contract(
+                            contract_pins.get(member.input_contract["id"]),
+                            member.input_contract["id"],
+                        )
+                        != mutable_copy(member.input_contract)
+                        or schema_contract(
+                            contract_pins.get(member.output_contract["id"]),
+                            member.output_contract["id"],
+                        )
+                        != mutable_copy(member.output_contract)
+                        or logical_node.metadata
+                    ):
+                        raise ValueError("Fusion member contract/IR/boundary drifted")
+                if schema_contract(
+                    contract_pins.get(fusion.source_contract["id"]),
+                    fusion.source_contract["id"],
+                ) != mutable_copy(fusion.source_contract):
+                    raise ValueError("Fusion source contract drifted")
+                report = compiler.analyze_fusion(
+                    fusion,
+                    context=TransformPlanningContext(
+                        plan.pipeline_id,
+                        fusion.members[0].logical_node,
+                        plan.profile_name,
+                        "polars",
+                    ),
+                )
+                if not report.supported:
+                    raise ValueError("Fusion capability/evidence drifted")
             for decision in plan.decisions:
                 engine = target_by_id[decision.target_id].engine
                 if engine not in dataframe_pins:
@@ -659,6 +986,7 @@ def admit_adaptive_plan(
     if runtime is not None:
         storage_pins.update(getattr(runtime, "storage", {}) or {})
         storage_pins.setdefault("memory", getattr(runtime, "memory", None))
+        storage_pins.update(qualified_storage_pins)
     return AdaptiveAdmission(
         plan,
         row,
@@ -671,6 +999,7 @@ def admit_adaptive_plan(
         dataframe_pins,
         contract_pins,
         binding_pins,
+        io_policy_pins,
     )
 
 

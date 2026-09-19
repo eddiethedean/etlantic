@@ -567,7 +567,7 @@ class AdaptivePipelinePlan:
                 )
         generated = getattr(self.metadata, "get", lambda *_: None)(
             "etlantic.planner_version"
-        ) in {"0.52", "0.53"}
+        ) in {"0.52", "0.53", "0.54"}
         if generated:
             for region in regions:
                 evidence = region.metadata.get("etlantic.fusion_evidence")
@@ -609,7 +609,7 @@ class AdaptivePipelinePlan:
         # Generation completeness belongs to the versioned planner contract,
         # not to the historical /2 schema itself.
         metadata = _validated_metadata(self.metadata, "adaptive plan metadata")
-        if metadata.get("etlantic.planner_version") in {"0.52", "0.53"}:
+        if metadata.get("etlantic.planner_version") in {"0.52", "0.53", "0.54"}:
             dag.validate_logical_paths(
                 tuple(
                     (
@@ -623,7 +623,38 @@ class AdaptivePipelinePlan:
             )
             dag.validate_generated_envelope()
         units_by_id = {unit.identity: unit for unit in dag.units}
+        if metadata.get("etlantic.planner_version") == "0.54":
+            from etlantic.transform.fusion import FusionDescriptor
+
+            physical_fusions = {
+                (
+                    unit.logical_nodes,
+                    FusionDescriptor.from_dict(
+                        unit.metadata["etlantic.fusion"]
+                    ).fingerprint,
+                )
+                for unit in dag.units
+                if "etlantic.fusion" in unit.metadata
+            }
+            region_fusions = {
+                (region.logical_nodes, region.metadata.get("etlantic.fusion_evidence"))
+                for region in regions
+                if region.fused
+            }
+            if physical_fusions != region_fusions:
+                raise ValueError(
+                    "PMADP403: region fusion must match the physical descriptor"
+                )
         for unit in dag.units:
+            if (
+                metadata.get("etlantic.planner_version") == "0.54"
+                and len(unit.logical_nodes) > 1
+                and unit.kind.value == "compute"
+                and "etlantic.fusion" not in unit.metadata
+            ):
+                raise ValueError(
+                    "PMADP403: generated fused compute requires its descriptor"
+                )
             if unit.target_identity not in target_identities:
                 raise ValueError(
                     "PMADP403: physical unit references unknown target identity "

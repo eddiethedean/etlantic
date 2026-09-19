@@ -1,0 +1,17 @@
+{
+  "cases": [
+    {
+      "id": "tests/adaptive_conformance/test_operations_0_54.py::test_application_stop_quarantines_bytes_and_replans_explicit",
+      "status": "pass"
+    },
+    {
+      "id": "tests/adaptive_conformance/test_operations_0_54.py::test_public_example_finite_cleanup",
+      "status": "pass"
+    }
+  ],
+  "category": "adaptive_operations_0_54.json",
+  "phase": "0.54",
+  "result": "pass",
+  "schema": "etlantic.adaptive_category_observation/1",
+  "source": "sha256:6c6d64473bd0ebd79568223a0f31242c44a7bbf8d3854b17e1d811f97f282339"
+}

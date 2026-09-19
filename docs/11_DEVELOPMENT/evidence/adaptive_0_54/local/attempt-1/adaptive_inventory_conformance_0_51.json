@@ -1,0 +1,161 @@
+{
+  "cases": [
+    {
+      "id": "tests/plan/test_adaptive_planner_0_52.py::test_adaptive_artifacts_redact_absolute_target_resources",
+      "status": "pass"
+    },
+    {
+      "id": "tests/plan/test_adaptive_planner_0_52.py::test_adaptive_cross_target_accepts_fully_bound_content_evidence",
+      "status": "pass"
+    },
+    {
+      "id": "tests/plan/test_adaptive_planner_0_52.py::test_adaptive_cross_target_requires_directional_handoff_evidence",
+      "status": "pass"
+    },
+    {
+      "id": "tests/plan/test_adaptive_planner_0_52.py::test_adaptive_execution_uses_default_request",
+      "status": "pass"
+    },
+    {
+      "id": "tests/plan/test_adaptive_planner_0_52.py::test_adaptive_plan_is_verified_and_explainable",
+      "status": "pass"
+    },
+    {
+      "id": "tests/plan/test_adaptive_planner_0_52.py::test_adaptive_report_path_uses_same_plan_dispatch",
+      "status": "pass"
+    },
+    {
+      "id": "tests/plan/test_adaptive_planner_0_52.py::test_explicit_report_path_rejects_request_for_classes_and_definitions[default-request]",
+      "status": "pass"
+    },
+    {
+      "id": "tests/plan/test_adaptive_planner_0_52.py::test_explicit_report_path_rejects_request_for_classes_and_definitions[non-default-request]",
+      "status": "pass"
+    },
+    {
+      "id": "tests/profile/test_adaptive_profile_0_51.py::test_adaptive_planning_produces_plan_document",
+      "status": "pass"
+    },
+    {
+      "id": "tests/profile/test_adaptive_profile_0_51.py::test_adaptive_profile_round_trip_and_target_identity",
+      "status": "pass"
+    },
+    {
+      "id": "tests/profile/test_adaptive_profile_0_51.py::test_explicit_plan_snapshot_omits_dormant_adaptive_policy",
+      "status": "pass"
+    },
+    {
+      "id": "tests/profile/test_adaptive_profile_0_51.py::test_invalid_adaptive_profile_rejected[kwargs0]",
+      "status": "pass"
+    },
+    {
+      "id": "tests/profile/test_adaptive_profile_0_51.py::test_invalid_adaptive_profile_rejected[kwargs1]",
+      "status": "pass"
+    },
+    {
+      "id": "tests/profile/test_adaptive_profile_0_51.py::test_invalid_adaptive_profile_rejected[kwargs2]",
+      "status": "pass"
+    },
+    {
+      "id": "tests/profile/test_adaptive_profile_0_51.py::test_invalid_adaptive_profile_rejected[kwargs3]",
+      "status": "pass"
+    },
+    {
+      "id": "tests/profile/test_adaptive_profile_0_51.py::test_invalid_adaptive_profile_rejected[kwargs4]",
+      "status": "pass"
+    },
+    {
+      "id": "tests/profile/test_adaptive_profile_0_51.py::test_placement_target_version_constraints_are_immutable",
+      "status": "pass"
+    },
+    {
+      "id": "tests/profile/test_adaptive_profile_0_51.py::test_profile_from_dict_rejects_null_adaptive_policy[adaptive_fallback]",
+      "status": "pass"
+    },
+    {
+      "id": "tests/profile/test_adaptive_profile_0_51.py::test_profile_from_dict_rejects_null_adaptive_policy[execution_strategy]",
+      "status": "pass"
+    },
+    {
+      "id": "tests/profile/test_adaptive_profile_0_51.py::test_profile_from_dict_rejects_string_eligible_targets",
+      "status": "pass"
+    },
+    {
+      "id": "tests/profile/test_adaptive_profile_0_51.py::test_profile_json_schema_rejects_python_invalid_adaptive_forms[target0-eligible0]",
+      "status": "pass"
+    },
+    {
+      "id": "tests/profile/test_adaptive_profile_0_51.py::test_profile_json_schema_rejects_python_invalid_adaptive_forms[target1-eligible1]",
+      "status": "pass"
+    },
+    {
+      "id": "tests/profile/test_adaptive_profile_0_51.py::test_profile_json_schema_rejects_unsupported_adaptive_modes[unsupported_mode0]",
+      "status": "pass"
+    },
+    {
+      "id": "tests/profile/test_adaptive_profile_0_51.py::test_profile_json_schema_rejects_unsupported_adaptive_modes[unsupported_mode1]",
+      "status": "pass"
+    },
+    {
+      "id": "tests/profile/test_adaptive_profile_0_51.py::test_profile_updates_can_activate_dormant_adaptive_fields",
+      "status": "pass"
+    },
+    {
+      "id": "tests/profile/test_adaptive_profile_0_51.py::test_profile_updates_preserve_dormant_adaptive_fields",
+      "status": "pass"
+    },
+    {
+      "id": "tests/profile/test_adaptive_profile_0_51.py::test_target_constructor_rejects_non_array_capabilities[7]",
+      "status": "pass"
+    },
+    {
+      "id": "tests/profile/test_adaptive_profile_0_51.py::test_target_constructor_rejects_non_array_capabilities[None]",
+      "status": "pass"
+    },
+    {
+      "id": "tests/profile/test_adaptive_profile_0_51.py::test_target_constructor_rejects_non_array_capabilities[capabilities1]",
+      "status": "pass"
+    },
+    {
+      "id": "tests/profile/test_adaptive_profile_0_51.py::test_target_from_dict_rejects_acronym_secret_key",
+      "status": "pass"
+    },
+    {
+      "id": "tests/profile/test_adaptive_profile_0_51.py::test_target_from_dict_rejects_camel_case_secret_key",
+      "status": "pass"
+    },
+    {
+      "id": "tests/profile/test_adaptive_profile_0_51.py::test_target_from_dict_rejects_credential_url",
+      "status": "pass"
+    },
+    {
+      "id": "tests/profile/test_adaptive_profile_0_51.py::test_target_scalar_references_reject_credentials[compiler-token=resolved-secret]",
+      "status": "pass"
+    },
+    {
+      "id": "tests/profile/test_adaptive_profile_0_51.py::test_target_scalar_references_reject_credentials[executor-Bearer resolved-secret]",
+      "status": "pass"
+    },
+    {
+      "id": "tests/profile/test_adaptive_profile_0_51.py::test_target_scalar_references_reject_credentials[location-s3://AKIA:secret@bucket/path]",
+      "status": "pass"
+    },
+    {
+      "id": "tests/profile/test_adaptive_profile_0_51.py::test_target_scalar_references_reject_credentials[resource-postgres://token@host/db]",
+      "status": "pass"
+    },
+    {
+      "id": "tests/profile/test_adaptive_profile_0_51.py::test_target_scalar_references_reject_credentials[resource-postgres://user:pass@host/db]",
+      "status": "pass"
+    },
+    {
+      "id": "tests/profile/test_adaptive_profile_0_51.py::test_target_secret_like_field_rejected",
+      "status": "pass"
+    }
+  ],
+  "category": "adaptive_inventory_conformance_0_51.json",
+  "phase": "0.54",
+  "result": "pass",
+  "schema": "etlantic.adaptive_category_observation/1",
+  "source": "sha256:d5837b1e3582f0bfb783bbbac7e9f260c356892411b75c8518a834d57e858d62"
+}

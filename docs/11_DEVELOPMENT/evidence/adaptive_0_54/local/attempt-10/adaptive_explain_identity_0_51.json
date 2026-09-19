@@ -1,0 +1,65 @@
+{
+  "cases": [
+    {
+      "id": "tests/adaptive_conformance/test_observation_0_54.py::test_full_parameter_identity_and_three_phases_required",
+      "status": "pass"
+    },
+    {
+      "id": "tests/plan/test_adaptive_final_remediation_0_52.py::test_final_052_018_each_owner_has_exact_before_at_after_limits[explain-64]",
+      "status": "pass"
+    },
+    {
+      "id": "tests/plan/test_adaptive_final_remediation_0_52.py::test_final_052_018_explain_exact_four_mib_boundary",
+      "status": "pass"
+    },
+    {
+      "id": "tests/plan/test_adaptive_final_remediation_0_52.py::test_final_052_021_region_identity_binds_fusion_state",
+      "status": "pass"
+    },
+    {
+      "id": "tests/plan/test_adaptive_final_remediation_0_52.py::test_final_052_022_transfer_identity_binds_handoff_envelope",
+      "status": "pass"
+    },
+    {
+      "id": "tests/plan/test_adaptive_final_remediation_0_52.py::test_final_052_023_truncated_explain_retains_release_contract_fields",
+      "status": "pass"
+    },
+    {
+      "id": "tests/plan/test_adaptive_planner_0_52.py::test_adaptive_plan_is_verified_and_explainable",
+      "status": "pass"
+    },
+    {
+      "id": "tests/plan/test_adaptive_wire_0_51.py::test_adaptive_plan_rejects_non_string_fingerprint_before_verification",
+      "status": "pass"
+    },
+    {
+      "id": "tests/plan/test_adaptive_wire_0_51.py::test_candidate_record_rejects_blank_identity_fields",
+      "status": "pass"
+    },
+    {
+      "id": "tests/plan/test_adaptive_wire_0_51.py::test_tampered_adaptive_section_fails_fingerprint",
+      "status": "pass"
+    },
+    {
+      "id": "tests/plan/test_adaptive_wire_0_51.py::test_target_descriptor_rejects_non_json_capability_fingerprint",
+      "status": "pass"
+    },
+    {
+      "id": "tests/plan/test_sol_0_52_rereview.py::test_sol_052_018_lowering_rejects_before_identity_buffer_allocation",
+      "status": "pass"
+    },
+    {
+      "id": "tests/profile/test_adaptive_profile_0_51.py::test_adaptive_profile_round_trip_and_target_identity",
+      "status": "pass"
+    },
+    {
+      "id": "tests/runtime/test_adaptive_execution_0_53.py::test_adaptive_plan_identity_survives_checkout_line_endings",
+      "status": "pass"
+    }
+  ],
+  "category": "adaptive_explain_identity_0_51.json",
+  "phase": "0.54",
+  "result": "pass",
+  "schema": "etlantic.adaptive_category_observation/1",
+  "source": "sha256:e96d2da29531535af267536d7de19648f912b4f5340154d2b41bd5e397caf5ee"
+}

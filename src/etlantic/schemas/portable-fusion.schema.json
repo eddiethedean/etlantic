@@ -1,0 +1,393 @@
+{
+  "type": "object",
+  "properties": {
+    "schema": {
+      "const": "etlantic.portable_fusion/1"
+    },
+    "snapshot_strategy": {
+      "const": "bounded-local-snapshot/1"
+    },
+    "source_node": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 4096
+    },
+    "source_port": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 4096
+    },
+    "source_binding": {
+      "type": "object",
+      "properties": {
+        "binding": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 4096
+        },
+        "provider": { "const": "polars-parquet" },
+        "kind": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 4096
+        },
+        "location": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 4096
+        },
+        "secret_ref": {
+          "type": "null"
+        },
+        "metadata": {
+          "type": "object",
+          "properties": {
+            "etlantic.parquet_capability_evidence": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 4096
+            }
+          },
+          "required": [
+            "etlantic.parquet_capability_evidence"
+          ],
+          "additionalProperties": false
+        },
+        "provider_version": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 4096
+        },
+        "config_fingerprint": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 4096
+        },
+        "format": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 4096
+        },
+        "config": {
+          "$schema": "https://json-schema.org/draft/2020-12/schema",
+          "$id": "etlantic.polars_parquet_source/1",
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "schema",
+            "max_bytes",
+            "max_rows"
+          ],
+          "properties": {
+            "schema": {
+              "const": "etlantic.polars_parquet_source/1"
+            },
+            "max_bytes": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 268435456
+            },
+            "max_rows": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 1000000
+            }
+          }
+        },
+        "root_ref": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 4096
+        }
+      },
+      "required": [
+        "binding",
+        "provider",
+        "kind",
+        "location",
+        "secret_ref",
+        "metadata",
+        "provider_version",
+        "config_fingerprint",
+        "format",
+        "config",
+        "root_ref"
+      ],
+      "additionalProperties": false
+    },
+    "source_contract": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 4096
+        },
+        "fingerprint": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 4096
+        },
+        "etlantic.fields": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "column": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 4096
+              },
+              "dtype": {
+                "enum": [
+                  "int64",
+                  "boolean"
+                ]
+              }
+            },
+            "required": [
+              "column",
+              "dtype"
+            ],
+            "additionalProperties": false
+          },
+          "maxItems": 8,
+          "minItems": 1
+        }
+      },
+      "required": [
+        "id",
+        "fingerprint",
+        "etlantic.fields"
+      ],
+      "additionalProperties": false
+    },
+    "target_identity": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 4096
+    },
+    "compiler_name": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 4096
+    },
+    "compiler_version": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 4096
+    },
+    "compiler_evidence": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 4096
+    },
+    "policy_digest": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 4096
+    },
+    "members": {
+      "type": "object",
+      "minProperties": 2,
+      "maxProperties": 2,
+      "additionalProperties": {
+        "type": "object",
+        "properties": {
+          "logical_node": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 4096
+          },
+          "upstream_node": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 4096
+          },
+          "upstream_port": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 4096
+          },
+          "input_port": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 4096
+          },
+          "output_port": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 4096
+          },
+          "input_contract": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 4096
+              },
+              "fingerprint": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 4096
+              },
+              "etlantic.fields": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "column": {
+                      "type": "string",
+                      "minLength": 1,
+                      "maxLength": 4096
+                    },
+                    "dtype": {
+                      "enum": [
+                        "int64",
+                        "boolean"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "column",
+                    "dtype"
+                  ],
+                  "additionalProperties": false
+                },
+                "maxItems": 8,
+                "minItems": 1
+              }
+            },
+            "required": [
+              "id",
+              "fingerprint",
+              "etlantic.fields"
+            ],
+            "additionalProperties": false
+          },
+          "output_contract": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 4096
+              },
+              "fingerprint": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 4096
+              },
+              "etlantic.fields": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "column": {
+                      "type": "string",
+                      "minLength": 1,
+                      "maxLength": 4096
+                    },
+                    "dtype": {
+                      "enum": [
+                        "int64",
+                        "boolean"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "column",
+                    "dtype"
+                  ],
+                  "additionalProperties": false
+                },
+                "maxItems": 8,
+                "minItems": 1
+              }
+            },
+            "required": [
+              "id",
+              "fingerprint",
+              "etlantic.fields"
+            ],
+            "additionalProperties": false
+          },
+          "portable_plan_json": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 350000
+          },
+          "ir_fingerprint": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 4096
+          }
+        },
+        "required": [
+          "logical_node",
+          "upstream_node",
+          "upstream_port",
+          "input_port",
+          "output_port",
+          "input_contract",
+          "output_contract",
+          "portable_plan_json",
+          "ir_fingerprint"
+        ],
+        "additionalProperties": false
+      }
+    },
+    "member_order": {
+      "type": "array",
+      "minItems": 2,
+      "maxItems": 2,
+      "uniqueItems": true,
+      "items": {
+        "type": "string",
+        "minLength": 1,
+        "maxLength": 4096
+      }
+    },
+    "parameters": {
+      "type": "object",
+      "minProperties": 1,
+      "maxProperties": 1,
+      "additionalProperties": {
+        "type": "integer",
+        "minimum": -9223372036854776000,
+        "maximum": 9223372036854776000
+      }
+    },
+    "proof_references": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "minLength": 1,
+        "maxLength": 4096
+      },
+      "maxItems": 256
+    }
+  },
+  "required": [
+    "schema",
+    "snapshot_strategy",
+    "source_node",
+    "source_port",
+    "source_binding",
+    "source_contract",
+    "target_identity",
+    "compiler_name",
+    "compiler_version",
+    "compiler_evidence",
+    "policy_digest",
+    "members",
+    "member_order",
+    "parameters",
+    "proof_references"
+  ],
+  "additionalProperties": false,
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "etlantic.portable_fusion/1",
+  "title": "Bounded portable scan fusion descriptor"
+}

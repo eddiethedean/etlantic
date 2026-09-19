@@ -87,14 +87,28 @@ jobs:
           uv pip install "polars==1.42.1" "pandas==2.3.3" "pyarrow==25.0.0"
 
       - name: Adaptive 0.53 environment qualification
-        run: uv run --no-sync python scripts/check_adaptive_0_53.py --write --output adaptive-0.53-proof
+        run: uv run --no-sync python scripts/check_adaptive_0_53.py --write --output "${{ runner.temp }}/adaptive-0.53-proof"
+
+      - name: Adaptive 0.54 environment observation
+        run: uv run --no-sync python scripts/check_adaptive_0_54.py --write --output "${{ runner.temp }}/adaptive-0.54-proof"
+
+      - name: Execute public bounded reference
+        run: uv run --no-sync python examples/adaptive_reference.py
+
+      - name: Preserve fresh adaptive observation including failures
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: adaptive-0.54-${{ matrix.os }}-python-${{ matrix.python-version }}
+          path: ${{ runner.temp }}/adaptive-0.54-proof/
+          if-no-files-found: error
 
       - name: Preserve adaptive environment proof
         if: always()
         uses: actions/upload-artifact@v4
         with:
           name: adaptive-0.53-${{ matrix.os }}-python-${{ matrix.python-version }}
-          path: adaptive-0.53-proof/
+          path: ${{ runner.temp }}/adaptive-0.53-proof/
 
 
       - name: Release readiness check
@@ -200,6 +214,30 @@ jobs:
       - name: MkDocs
         if: matrix.os == 'ubuntu-latest' && matrix.python-version == '3.11'
         run: uv run python scripts/build_docs.py
+
+  adaptive-evidence:
+    name: Verify observed adaptive 0.54 matrix
+    needs: checks
+    if: always()
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: astral-sh/setup-uv@v9.0.0
+        with:
+          version: "0.12.0"
+          python-version: "3.11"
+      - run: uv sync --locked
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: adaptive-0.54-*
+          path: ${{ runner.temp }}/adaptive-0.54-matrix
+      - name: Aggregate and verify actual cells without graduation
+        run: uv run python scripts/check_adaptive_0_54.py --aggregate "${{ runner.temp }}/adaptive-0.54-matrix"
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: adaptive-0.54-index
+          path: ${{ runner.temp }}/adaptive-0.54-matrix/index.json
 
   dataframes:
     name: Dataframe plugins (${{ matrix.engine }})
@@ -881,9 +919,11 @@ jobs:
           github-token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Sync with fastapi extra
-        run: uv sync --locked --extra fastapi
+        run: uv sync --locked --extra fastapi --group sqlmodel
 
       - name: Pytest FastAPI reference suite
+        env:
+          ETLANTIC_REQUIRE_SQLMODEL: "1"
         run: |
           uv run pytest -q tests/fastapi packages/etlantic-fastapi/tests
 

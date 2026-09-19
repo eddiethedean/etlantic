@@ -1,6 +1,6 @@
 # Airflow Compile (runnable)
 
-> **Status: Available in ETLantic 0.53.0 (Beta release candidate).** Uses `etlantic-airflow` and
+> **Status: Available in ETLantic 0.54.0 (Beta release candidate).** Uses `etlantic-airflow` and
 > `examples/airflow_compile.py`.
 
 Compile an ETLantic `PipelinePlan` into an Airflow DAG artifact without
@@ -9,7 +9,7 @@ running Airflow itself.
 ## Setup
 
 ```bash
-git clone --branch v0.53.0 https://github.com/eddiethedean/etlantic.git
+git clone --branch v0.54.0 https://github.com/eddiethedean/etlantic.git
 cd etlantic
 uv sync --group airflow
 ```

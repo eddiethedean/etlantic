@@ -1,0 +1,281 @@
+{
+  "cases": [
+    {
+      "id": "tests/runtime/physical/test_fusion_0_54.py::test_actual_fused_query_arrow_consumer_validation_publication[rows0]",
+      "status": "pass"
+    },
+    {
+      "id": "tests/runtime/physical/test_fusion_0_54.py::test_actual_fused_query_arrow_consumer_validation_publication[rows1]",
+      "status": "pass"
+    },
+    {
+      "id": "tests/runtime/physical/test_fusion_0_54.py::test_actual_fused_query_arrow_consumer_validation_publication[rows2]",
+      "status": "pass"
+    },
+    {
+      "id": "tests/runtime/physical/test_fusion_0_54.py::test_actual_fused_query_arrow_consumer_validation_publication[rows3]",
+      "status": "pass"
+    },
+    {
+      "id": "tests/runtime/physical/test_fusion_0_54.py::test_compile_failure_is_attributed_without_publication",
+      "status": "pass"
+    },
+    {
+      "id": "tests/runtime/physical/test_fusion_0_54.py::test_drift_rejects_atomically_before_read[binding]",
+      "status": "pass"
+    },
+    {
+      "id": "tests/runtime/physical/test_fusion_0_54.py::test_drift_rejects_atomically_before_read[config]",
+      "status": "pass"
+    },
+    {
+      "id": "tests/runtime/physical/test_fusion_0_54.py::test_drift_rejects_atomically_before_read[middleware]",
+      "status": "pass"
+    },
+    {
+      "id": "tests/runtime/physical/test_fusion_0_54.py::test_drift_rejects_atomically_before_read[source]",
+      "status": "pass"
+    },
+    {
+      "id": "tests/runtime/physical/test_fusion_0_54.py::test_fused_retry_ineligible_without_source_effects",
+      "status": "pass"
+    },
+    {
+      "id": "tests/runtime/physical/test_fusion_0_54.py::test_native_deadline_drains_and_fences_late_registration",
+      "status": "pass"
+    },
+    {
+      "id": "tests/runtime/physical/test_fusion_0_54.py::test_real_dispatch_single_collect_no_intermediate_node_bodies",
+      "status": "pass"
+    },
+    {
+      "id": "tests/runtime/physical/test_fusion_0_54.py::test_snapshot_schema_fault_does_not_hide_dropped_column",
+      "status": "pass"
+    },
+    {
+      "id": "tests/runtime/physical/test_fusion_0_54.py::test_static_plan_without_source_file_and_roundtrip",
+      "status": "pass"
+    },
+    {
+      "id": "tests/runtime/physical/test_fusion_0_54.py::test_stored_fusion_internal_route_tamper",
+      "status": "pass"
+    },
+    {
+      "id": "tests/runtime/physical/test_qualification_0_53.py::test_admitted_binding_snapshot_survives_post_admission_registry_mutation",
+      "status": "pass"
+    },
+    {
+      "id": "tests/runtime/physical/test_qualification_0_53.py::test_atomic_file_publication[csv]",
+      "status": "pass"
+    },
+    {
+      "id": "tests/runtime/physical/test_qualification_0_53.py::test_atomic_file_publication[json]",
+      "status": "pass"
+    },
+    {
+      "id": "tests/runtime/physical/test_qualification_0_53.py::test_checkpoint_and_reuse_execute[local]",
+      "status": "pass"
+    },
+    {
+      "id": "tests/runtime/physical/test_qualification_0_53.py::test_checkpoint_and_reuse_execute[pandas]",
+      "status": "pass"
+    },
+    {
+      "id": "tests/runtime/physical/test_qualification_0_53.py::test_checkpoint_and_reuse_execute[polars]",
+      "status": "pass"
+    },
+    {
+      "id": "tests/runtime/physical/test_qualification_0_53.py::test_collection_executes_bounds[1-families0]",
+      "status": "pass"
+    },
+    {
+      "id": "tests/runtime/physical/test_qualification_0_53.py::test_collection_executes_bounds[1-families1]",
+      "status": "pass"
+    },
+    {
+      "id": "tests/runtime/physical/test_qualification_0_53.py::test_collection_executes_bounds[1-families2]",
+      "status": "pass"
+    },
+    {
+      "id": "tests/runtime/physical/test_qualification_0_53.py::test_collection_executes_bounds[1-families3]",
+      "status": "pass"
+    },
+    {
+      "id": "tests/runtime/physical/test_qualification_0_53.py::test_collection_executes_bounds[1-families4]",
+      "status": "pass"
+    },
+    {
+      "id": "tests/runtime/physical/test_qualification_0_53.py::test_collection_executes_bounds[2-families0]",
+      "status": "pass"
+    },
+    {
+      "id": "tests/runtime/physical/test_qualification_0_53.py::test_collection_executes_bounds[2-families1]",
+      "status": "pass"
+    },
+    {
+      "id": "tests/runtime/physical/test_qualification_0_53.py::test_collection_executes_bounds[2-families2]",
+      "status": "pass"
+    },
+    {
+      "id": "tests/runtime/physical/test_qualification_0_53.py::test_collection_executes_bounds[2-families3]",
+      "status": "pass"
+    },
+    {
+      "id": "tests/runtime/physical/test_qualification_0_53.py::test_collection_executes_bounds[2-families4]",
+      "status": "pass"
+    },
+    {
+      "id": "tests/runtime/physical/test_qualification_0_53.py::test_definite_publication_failure_through_admitted_provider[families0]",
+      "status": "pass"
+    },
+    {
+      "id": "tests/runtime/physical/test_qualification_0_53.py::test_definite_publication_failure_through_admitted_provider[families1]",
+      "status": "pass"
+    },
+    {
+      "id": "tests/runtime/physical/test_qualification_0_53.py::test_definite_publication_failure_through_admitted_provider[families2]",
+      "status": "pass"
+    },
+    {
+      "id": "tests/runtime/physical/test_qualification_0_53.py::test_definite_publication_failure_through_admitted_provider[families3]",
+      "status": "pass"
+    },
+    {
+      "id": "tests/runtime/physical/test_qualification_0_53.py::test_definite_publication_failure_through_admitted_provider[families4]",
+      "status": "pass"
+    },
+    {
+      "id": "tests/runtime/physical/test_qualification_0_53.py::test_distinct_directional_ports[families0]",
+      "status": "pass"
+    },
+    {
+      "id": "tests/runtime/physical/test_qualification_0_53.py::test_distinct_directional_ports[families1]",
+      "status": "pass"
+    },
+    {
+      "id": "tests/runtime/physical/test_qualification_0_53.py::test_exact_single_target_branch_families[local-Diamond]",
+      "status": "pass"
+    },
+    {
+      "id": "tests/runtime/physical/test_qualification_0_53.py::test_exact_single_target_branch_families[local-Fanout]",
+      "status": "pass"
+    },
+    {
+      "id": "tests/runtime/physical/test_qualification_0_53.py::test_exact_single_target_branch_families[pandas-Diamond]",
+      "status": "pass"
+    },
+    {
+      "id": "tests/runtime/physical/test_qualification_0_53.py::test_exact_single_target_branch_families[pandas-Fanout]",
+      "status": "pass"
+    },
+    {
+      "id": "tests/runtime/physical/test_qualification_0_53.py::test_exact_single_target_branch_families[polars-Diamond]",
+      "status": "pass"
+    },
+    {
+      "id": "tests/runtime/physical/test_qualification_0_53.py::test_exact_single_target_branch_families[polars-Fanout]",
+      "status": "pass"
+    },
+    {
+      "id": "tests/runtime/physical/test_qualification_0_53.py::test_five_family_stored_differential[rows0-families0]",
+      "status": "pass"
+    },
+    {
+      "id": "tests/runtime/physical/test_qualification_0_53.py::test_five_family_stored_differential[rows0-families1]",
+      "status": "pass"
+    },
+    {
+      "id": "tests/runtime/physical/test_qualification_0_53.py::test_five_family_stored_differential[rows0-families2]",
+      "status": "pass"
+    },
+    {
+      "id": "tests/runtime/physical/test_qualification_0_53.py::test_five_family_stored_differential[rows0-families3]",
+      "status": "pass"
+    },
+    {
+      "id": "tests/runtime/physical/test_qualification_0_53.py::test_five_family_stored_differential[rows0-families4]",
+      "status": "pass"
+    },
+    {
+      "id": "tests/runtime/physical/test_qualification_0_53.py::test_five_family_stored_differential[rows1-families0]",
+      "status": "pass"
+    },
+    {
+      "id": "tests/runtime/physical/test_qualification_0_53.py::test_five_family_stored_differential[rows1-families1]",
+      "status": "pass"
+    },
+    {
+      "id": "tests/runtime/physical/test_qualification_0_53.py::test_five_family_stored_differential[rows1-families2]",
+      "status": "pass"
+    },
+    {
+      "id": "tests/runtime/physical/test_qualification_0_53.py::test_five_family_stored_differential[rows1-families3]",
+      "status": "pass"
+    },
+    {
+      "id": "tests/runtime/physical/test_qualification_0_53.py::test_five_family_stored_differential[rows1-families4]",
+      "status": "pass"
+    },
+    {
+      "id": "tests/runtime/physical/test_qualification_0_53.py::test_implicit_source_cannot_resolve_another_node_binding",
+      "status": "pass"
+    },
+    {
+      "id": "tests/runtime/physical/test_qualification_0_53.py::test_missing_captured_binding_rejects_before_physical_effects",
+      "status": "pass"
+    },
+    {
+      "id": "tests/runtime/physical/test_qualification_0_53.py::test_partial_chain_ending_at_step",
+      "status": "pass"
+    },
+    {
+      "id": "tests/runtime/physical/test_qualification_0_53.py::test_physical_validation_is_executed[False-local]",
+      "status": "pass"
+    },
+    {
+      "id": "tests/runtime/physical/test_qualification_0_53.py::test_physical_validation_is_executed[False-pandas]",
+      "status": "pass"
+    },
+    {
+      "id": "tests/runtime/physical/test_qualification_0_53.py::test_physical_validation_is_executed[False-polars]",
+      "status": "pass"
+    },
+    {
+      "id": "tests/runtime/physical/test_qualification_0_53.py::test_physical_validation_is_executed[True-local]",
+      "status": "pass"
+    },
+    {
+      "id": "tests/runtime/physical/test_qualification_0_53.py::test_physical_validation_is_executed[True-pandas]",
+      "status": "pass"
+    },
+    {
+      "id": "tests/runtime/physical/test_qualification_0_53.py::test_physical_validation_is_executed[True-polars]",
+      "status": "pass"
+    },
+    {
+      "id": "tests/runtime/physical/test_qualification_0_53.py::test_public_scheduler_file_receipt[csv]",
+      "status": "pass"
+    },
+    {
+      "id": "tests/runtime/physical/test_qualification_0_53.py::test_public_scheduler_file_receipt[json]",
+      "status": "pass"
+    },
+    {
+      "id": "tests/runtime/physical/test_qualification_0_53.py::test_qualified_executor_cancel_and_cleanup_drain",
+      "status": "pass"
+    },
+    {
+      "id": "tests/runtime/physical/test_qualification_0_53.py::test_qualified_executor_routes_outputs_and_retains_lifetime",
+      "status": "pass"
+    },
+    {
+      "id": "tests/runtime/physical/test_qualification_0_53.py::test_retry_safety_rejects_before_reads",
+      "status": "pass"
+    }
+  ],
+  "category": "adaptive_e2e_0_51.json",
+  "phase": "0.54",
+  "result": "pass",
+  "schema": "etlantic.adaptive_category_observation/1",
+  "source": "sha256:5ab12871d53a8e850cceafecffbf7d4b341bcd4818b6e6814be4e2b4c6911770"
+}

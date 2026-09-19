@@ -1,0 +1,209 @@
+{
+  "cases": [
+    {
+      "id": "tests/runtime/physical/test_fusion_0_54.py::test_actual_fused_query_arrow_consumer_validation_publication[rows0]",
+      "status": "pass"
+    },
+    {
+      "id": "tests/runtime/physical/test_fusion_0_54.py::test_actual_fused_query_arrow_consumer_validation_publication[rows1]",
+      "status": "pass"
+    },
+    {
+      "id": "tests/runtime/physical/test_fusion_0_54.py::test_actual_fused_query_arrow_consumer_validation_publication[rows2]",
+      "status": "pass"
+    },
+    {
+      "id": "tests/runtime/physical/test_fusion_0_54.py::test_actual_fused_query_arrow_consumer_validation_publication[rows3]",
+      "status": "pass"
+    },
+    {
+      "id": "tests/runtime/physical/test_fusion_0_54.py::test_compile_failure_is_attributed_without_publication",
+      "status": "pass"
+    },
+    {
+      "id": "tests/runtime/physical/test_fusion_0_54.py::test_drift_rejects_atomically_before_read[binding]",
+      "status": "pass"
+    },
+    {
+      "id": "tests/runtime/physical/test_fusion_0_54.py::test_drift_rejects_atomically_before_read[config]",
+      "status": "pass"
+    },
+    {
+      "id": "tests/runtime/physical/test_fusion_0_54.py::test_drift_rejects_atomically_before_read[middleware]",
+      "status": "pass"
+    },
+    {
+      "id": "tests/runtime/physical/test_fusion_0_54.py::test_drift_rejects_atomically_before_read[source]",
+      "status": "pass"
+    },
+    {
+      "id": "tests/runtime/physical/test_fusion_0_54.py::test_fused_retry_ineligible_without_source_effects",
+      "status": "pass"
+    },
+    {
+      "id": "tests/runtime/physical/test_fusion_0_54.py::test_native_deadline_drains_and_fences_late_registration",
+      "status": "pass"
+    },
+    {
+      "id": "tests/runtime/physical/test_fusion_0_54.py::test_real_dispatch_single_collect_no_intermediate_node_bodies",
+      "status": "pass"
+    },
+    {
+      "id": "tests/runtime/physical/test_fusion_0_54.py::test_snapshot_schema_fault_does_not_hide_dropped_column",
+      "status": "pass"
+    },
+    {
+      "id": "tests/runtime/physical/test_fusion_0_54.py::test_static_plan_without_source_file_and_roundtrip",
+      "status": "pass"
+    },
+    {
+      "id": "tests/runtime/physical/test_fusion_0_54.py::test_stored_fusion_internal_route_tamper",
+      "status": "pass"
+    },
+    {
+      "id": "tests/runtime/physical/test_fusion_contract_0_54.py::test_caller_cancel_drains_snapshot_and_never_registers",
+      "status": "not-passed"
+    },
+    {
+      "id": "tests/runtime/physical/test_fusion_contract_0_54.py::test_closed_descriptor_tamper_before_source[member-ir]",
+      "status": "not-passed"
+    },
+    {
+      "id": "tests/runtime/physical/test_fusion_contract_0_54.py::test_closed_descriptor_tamper_before_source[missing-descriptor]",
+      "status": "not-passed"
+    },
+    {
+      "id": "tests/runtime/physical/test_fusion_contract_0_54.py::test_closed_descriptor_tamper_before_source[parameter-bool]",
+      "status": "not-passed"
+    },
+    {
+      "id": "tests/runtime/physical/test_fusion_contract_0_54.py::test_closed_descriptor_tamper_before_source[parameter-overflow]",
+      "status": "not-passed"
+    },
+    {
+      "id": "tests/runtime/physical/test_fusion_contract_0_54.py::test_closed_descriptor_tamper_before_source[source-evidence]",
+      "status": "not-passed"
+    },
+    {
+      "id": "tests/runtime/physical/test_fusion_contract_0_54.py::test_closed_descriptor_tamper_before_source[unknown-field]",
+      "status": "not-passed"
+    },
+    {
+      "id": "tests/runtime/physical/test_fusion_contract_0_54.py::test_closed_descriptor_tamper_before_source[wrong-member-order]",
+      "status": "not-passed"
+    },
+    {
+      "id": "tests/runtime/physical/test_fusion_contract_0_54.py::test_concurrent_fused_invocations_own_snapshots",
+      "status": "not-passed"
+    },
+    {
+      "id": "tests/runtime/physical/test_fusion_contract_0_54.py::test_descriptor_allocation_first_excess_and_release",
+      "status": "not-passed"
+    },
+    {
+      "id": "tests/runtime/physical/test_fusion_contract_0_54.py::test_explicit_adaptive_typed_lifecycle_parity[rows0]",
+      "status": "not-passed"
+    },
+    {
+      "id": "tests/runtime/physical/test_fusion_contract_0_54.py::test_explicit_adaptive_typed_lifecycle_parity[rows1]",
+      "status": "not-passed"
+    },
+    {
+      "id": "tests/runtime/physical/test_fusion_contract_0_54.py::test_explicit_adaptive_typed_lifecycle_parity[rows2]",
+      "status": "not-passed"
+    },
+    {
+      "id": "tests/runtime/physical/test_fusion_contract_0_54.py::test_explicit_adaptive_typed_lifecycle_parity[rows3]",
+      "status": "not-passed"
+    },
+    {
+      "id": "tests/runtime/physical/test_fusion_contract_0_54.py::test_original_ir_alpha_renaming_and_objective_proof",
+      "status": "not-passed"
+    },
+    {
+      "id": "tests/runtime/physical/test_fusion_contract_0_54.py::test_protected_candidate_boundaries_do_not_fuse[filter-metadata]",
+      "status": "not-passed"
+    },
+    {
+      "id": "tests/runtime/physical/test_fusion_contract_0_54.py::test_protected_candidate_boundaries_do_not_fuse[missing-validation]",
+      "status": "not-passed"
+    },
+    {
+      "id": "tests/runtime/physical/test_fusion_contract_0_54.py::test_protected_candidate_boundaries_do_not_fuse[partial-placement]",
+      "status": "not-passed"
+    },
+    {
+      "id": "tests/runtime/physical/test_fusion_contract_0_54.py::test_protected_candidate_boundaries_do_not_fuse[project-metadata]",
+      "status": "not-passed"
+    },
+    {
+      "id": "tests/runtime/physical/test_fusion_contract_0_54.py::test_protected_candidate_boundaries_do_not_fuse[source-metadata]",
+      "status": "not-passed"
+    },
+    {
+      "id": "tests/runtime/physical/test_fusion_contract_0_54.py::test_snapshot_cleanup_failure_retains_owner_and_blocks_sink",
+      "status": "not-passed"
+    },
+    {
+      "id": "tests/runtime/physical/test_fusion_contract_0_54.py::test_source_configuration_is_rejected_during_planning[-1]",
+      "status": "not-passed"
+    },
+    {
+      "id": "tests/runtime/physical/test_fusion_contract_0_54.py::test_source_configuration_is_rejected_during_planning[0]",
+      "status": "not-passed"
+    },
+    {
+      "id": "tests/runtime/physical/test_fusion_contract_0_54.py::test_source_configuration_is_rejected_during_planning[1000001]",
+      "status": "not-passed"
+    },
+    {
+      "id": "tests/runtime/physical/test_fusion_contract_0_54.py::test_source_configuration_is_rejected_during_planning[True]",
+      "status": "not-passed"
+    },
+    {
+      "id": "tests/runtime/physical/test_review_remediation_0_54.py::test_actual_keyword_columns_preserve_native_scan_proof[FILTER FIELD]",
+      "status": "not-passed"
+    },
+    {
+      "id": "tests/runtime/physical/test_review_remediation_0_54.py::test_actual_keyword_columns_preserve_native_scan_proof[FILTER]",
+      "status": "not-passed"
+    },
+    {
+      "id": "tests/runtime/physical/test_review_remediation_0_54.py::test_custom_contract_hooks_are_not_schema_provable[CoreHookRaw]",
+      "status": "not-passed"
+    },
+    {
+      "id": "tests/runtime/physical/test_review_remediation_0_54.py::test_custom_contract_hooks_are_not_schema_provable[CustomInitRaw]",
+      "status": "not-passed"
+    },
+    {
+      "id": "tests/runtime/physical/test_review_remediation_0_54.py::test_custom_contract_hooks_are_not_schema_provable[PostInitRaw]",
+      "status": "not-passed"
+    },
+    {
+      "id": "tests/runtime/physical/test_review_remediation_0_54.py::test_custom_contract_hooks_are_not_schema_provable[ValidateRaw]",
+      "status": "not-passed"
+    },
+    {
+      "id": "tests/runtime/physical/test_review_remediation_0_54.py::test_custom_source_hook_cannot_gain_fusion_authority",
+      "status": "not-passed"
+    },
+    {
+      "id": "tests/runtime/physical/test_review_remediation_0_54.py::test_keyword_workspace_executes_actual_fused_query",
+      "status": "not-passed"
+    },
+    {
+      "id": "tests/runtime/physical/test_review_remediation_0_54.py::test_live_hook_drift_rejects_before_source_read",
+      "status": "not-passed"
+    },
+    {
+      "id": "tests/runtime/physical/test_review_remediation_0_54.py::test_standalone_filter_is_not_mistaken_for_scan_pushdown",
+      "status": "not-passed"
+    }
+  ],
+  "category": "adaptive_fusion_0_54.json",
+  "phase": "0.54",
+  "result": "fail",
+  "schema": "etlantic.adaptive_category_observation/1",
+  "source": "sha256:ea374d3945972fc259788f8c845f644eaab2ff95e22f5d74de7a36e0b8855542"
+}

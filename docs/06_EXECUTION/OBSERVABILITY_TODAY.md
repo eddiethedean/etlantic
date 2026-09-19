@@ -1,6 +1,6 @@
 # Observability Today
 
-> **Status: Available in ETLantic 0.53.0 (Beta release candidate).** What ships now vs future provider
+> **Status: Available in ETLantic 0.54.0 (Beta release candidate).** What ships now vs future provider
 > protocols.
 
 ## Shipped (0.34+)

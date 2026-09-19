@@ -1,0 +1,33 @@
+{
+  "cases": [
+    {
+      "id": "tests/reports/test_metadata_namespace_0_51.py::test_bare_built_in_metadata_is_migrated_without_warning[dataframe]",
+      "status": "pass"
+    },
+    {
+      "id": "tests/reports/test_metadata_namespace_0_51.py::test_bare_built_in_metadata_is_migrated_without_warning[spark]",
+      "status": "pass"
+    },
+    {
+      "id": "tests/reports/test_metadata_namespace_0_51.py::test_bare_built_in_metadata_is_migrated_without_warning[spark_schema]",
+      "status": "pass"
+    },
+    {
+      "id": "tests/reports/test_metadata_namespace_0_51.py::test_bare_built_in_metadata_is_migrated_without_warning[sql]",
+      "status": "pass"
+    },
+    {
+      "id": "tests/reports/test_metadata_namespace_0_51.py::test_built_in_alias_migration_is_limited_to_step_metadata",
+      "status": "pass"
+    },
+    {
+      "id": "tests/reports/test_metadata_namespace_0_51.py::test_namespaced_metadata_wins_collision_and_reserializes_canonically",
+      "status": "pass"
+    }
+  ],
+  "category": "adaptive_runtime_metadata_namespace_compatibility_0_51.json",
+  "phase": "0.54",
+  "result": "pass",
+  "schema": "etlantic.adaptive_category_observation/1",
+  "source": "sha256:6e1b2a2d6920c88cd6c4c22520bdc3d1125036db736654a3738a60f0833f8d2a"
+}

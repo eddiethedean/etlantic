@@ -8,7 +8,7 @@
     "publication.atomic",
     "idempotency"
   ],
-  "digest": "sha256:b33316c64446e461aa0a63dad5eeca3a360678548099f046dfab65411d853219",
+  "digest": "sha256:dded430c92acd3e307b125c0c65c7614dc915033f089ec9a14033c19cc78cbd7",
   "entries": [
     {
       "capabilities": [
@@ -41,9 +41,9 @@
   "privileges": [],
   "protocol_range": "etlantic.source/1,etlantic.sink/1",
   "provenance": {
-    "publisher": "etlantic",
-    "maturity": "experimental"
+    "maturity": "experimental",
+    "publisher": "etlantic"
   },
   "schema": "etlantic.plugin_manifest/1",
-  "version": "0.53.0"
+  "version": "0.54.0"
 }

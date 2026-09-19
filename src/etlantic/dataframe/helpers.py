@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import Any
+from typing import Any, get_args, get_origin
 
 from etlantic.schema_drift import NormalizedSchema, normalize_schema_from_fields
 from etlantic.storage.protocol import as_records, records_to_dicts
@@ -10,9 +10,9 @@ from etlantic.storage.protocol import as_records, records_to_dicts
 
 def logical_type_from_annotation(annotation: Any) -> str:
     """Map a Python type annotation to a stable logical type name."""
-    origin = getattr(annotation, "__origin__", None)
+    origin = get_origin(annotation)
     if origin is not None:
-        args = getattr(annotation, "__args__", ())
+        args = get_args(annotation)
         non_none = [a for a in args if a is not type(None)]
         if non_none:
             return logical_type_from_annotation(non_none[0])

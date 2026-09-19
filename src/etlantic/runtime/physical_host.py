@@ -143,6 +143,35 @@ def pipeline_plan_for_adaptive(
             )
         )
     logical_graph = adaptive_plan.logical_graph
+    from etlantic.runtime.adaptive_parameters import validate_parameters
+    from etlantic.runtime.request import RunRequest
+
+    captured = validate_parameters(
+        logical_graph,
+        RunRequest(
+            parameter_overrides=mutable_copy(
+                (request_meta or {}).get("parameter_overrides", {})
+            )
+        ),
+        execution.get("parameters"),
+    )
+    logical_graph = replace(
+        logical_graph,
+        nodes=tuple(
+            replace(
+                node,
+                parameters=tuple(
+                    replace(
+                        parameter,
+                        value=mutable_copy(captured[node.name][parameter.name]),
+                        has_value=True,
+                    )
+                    for parameter in node.parameters
+                ),
+            )
+            for node in logical_graph.nodes
+        ),
+    )
     if pipeline_cls is None or contract_pins is not None:
 
         def resolve_type(contract_id: str | None) -> type[Any] | None:

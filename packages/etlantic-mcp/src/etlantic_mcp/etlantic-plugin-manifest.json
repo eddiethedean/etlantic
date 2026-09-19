@@ -2,7 +2,7 @@
   "capabilities": [
     "mcp"
   ],
-  "digest": "sha256:7f768099b42b82fb5de63a0322e980984b7f009326381f40f03608b0394deb7b",
+  "digest": "sha256:ebc9d6f9cdc0e5ed6a600268126e159c28e5bbc578651e4f66fd362107297aa1",
   "entries": [
     {
       "capabilities": [
@@ -19,9 +19,9 @@
   "privileges": [],
   "protocol_range": "etlantic.mcp/1",
   "provenance": {
-    "publisher": "etlantic",
-    "maturity": "experimental"
+    "maturity": "experimental",
+    "publisher": "etlantic"
   },
   "schema": "etlantic.plugin_manifest/1",
-  "version": "0.53.0"
+  "version": "0.54.0"
 }

@@ -13,6 +13,12 @@ plan_last_reviewed: 0.51.0
 > execution, and 0.54 owns qualification/graduation. None of those later
 > capabilities is implied by the 0.51.0 foundation release.
 
+The scope owner extended the 0.54 initial implementation to include the missing
+bounded Polars scan/filter/project reference and public provider conformance.
+The [0.54 contract](IMPLEMENTATION_PLAN_0_54.md) defines that exact signature and
+local completion boundary. Independent review, remote CI and graduation are
+follow-up release work; Experimental candidate execution is not Available.
+
 The 0.51–0.54 adaptive program turns the existing multi-engine planning,
 capability, optimization, interchange, and hybrid-runtime foundations into an
 opt-in adaptive execution strategy for static batch graphs. It converts one

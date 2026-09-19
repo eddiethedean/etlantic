@@ -1,0 +1,141 @@
+{
+  "cases": [
+    {
+      "id": "tests/adaptive_conformance/test_determinism_0_54.py::test_reference_canonical_graph_permutations[0]",
+      "status": "pass"
+    },
+    {
+      "id": "tests/adaptive_conformance/test_determinism_0_54.py::test_reference_canonical_graph_permutations[10]",
+      "status": "pass"
+    },
+    {
+      "id": "tests/adaptive_conformance/test_determinism_0_54.py::test_reference_canonical_graph_permutations[11]",
+      "status": "pass"
+    },
+    {
+      "id": "tests/adaptive_conformance/test_determinism_0_54.py::test_reference_canonical_graph_permutations[12]",
+      "status": "pass"
+    },
+    {
+      "id": "tests/adaptive_conformance/test_determinism_0_54.py::test_reference_canonical_graph_permutations[13]",
+      "status": "pass"
+    },
+    {
+      "id": "tests/adaptive_conformance/test_determinism_0_54.py::test_reference_canonical_graph_permutations[14]",
+      "status": "pass"
+    },
+    {
+      "id": "tests/adaptive_conformance/test_determinism_0_54.py::test_reference_canonical_graph_permutations[15]",
+      "status": "pass"
+    },
+    {
+      "id": "tests/adaptive_conformance/test_determinism_0_54.py::test_reference_canonical_graph_permutations[1]",
+      "status": "pass"
+    },
+    {
+      "id": "tests/adaptive_conformance/test_determinism_0_54.py::test_reference_canonical_graph_permutations[2]",
+      "status": "pass"
+    },
+    {
+      "id": "tests/adaptive_conformance/test_determinism_0_54.py::test_reference_canonical_graph_permutations[3]",
+      "status": "pass"
+    },
+    {
+      "id": "tests/adaptive_conformance/test_determinism_0_54.py::test_reference_canonical_graph_permutations[4]",
+      "status": "pass"
+    },
+    {
+      "id": "tests/adaptive_conformance/test_determinism_0_54.py::test_reference_canonical_graph_permutations[5]",
+      "status": "pass"
+    },
+    {
+      "id": "tests/adaptive_conformance/test_determinism_0_54.py::test_reference_canonical_graph_permutations[6]",
+      "status": "pass"
+    },
+    {
+      "id": "tests/adaptive_conformance/test_determinism_0_54.py::test_reference_canonical_graph_permutations[7]",
+      "status": "pass"
+    },
+    {
+      "id": "tests/adaptive_conformance/test_determinism_0_54.py::test_reference_canonical_graph_permutations[8]",
+      "status": "pass"
+    },
+    {
+      "id": "tests/adaptive_conformance/test_determinism_0_54.py::test_reference_canonical_graph_permutations[9]",
+      "status": "pass"
+    },
+    {
+      "id": "tests/adaptive_conformance/test_determinism_0_54.py::test_reference_plan_hash_seed_identity",
+      "status": "pass"
+    },
+    {
+      "id": "tests/adaptive_conformance/test_public_suite.py::test_hostile_oracle_serializer_never_runs",
+      "status": "pass"
+    },
+    {
+      "id": "tests/adaptive_conformance/test_public_suite.py::test_oracle_failure_is_safe_behavioral_failure",
+      "status": "pass"
+    },
+    {
+      "id": "tests/plan/test_adaptive_final_remediation_0_52.py::test_final_052_018_each_owner_has_exact_before_at_after_limits[oracle-frontier-128]",
+      "status": "pass"
+    },
+    {
+      "id": "tests/plan/test_adaptive_final_remediation_0_52.py::test_final_052_018_each_owner_has_exact_before_at_after_limits[oracle-incumbent-128]",
+      "status": "pass"
+    },
+    {
+      "id": "tests/plan/test_adaptive_final_remediation_0_52.py::test_final_052_018_each_owner_has_exact_before_at_after_limits[solver-frontier-128]",
+      "status": "pass"
+    },
+    {
+      "id": "tests/plan/test_adaptive_final_remediation_0_52.py::test_final_052_018_each_owner_has_exact_before_at_after_limits[solver-incumbent-128]",
+      "status": "pass"
+    },
+    {
+      "id": "tests/plan/test_adaptive_final_remediation_0_52.py::test_final_052_020_security_solver_failure_never_falls_back",
+      "status": "pass"
+    },
+    {
+      "id": "tests/plan/test_adaptive_final_remediation_0_52.py::test_final_052_020_solver_infeasibility_uses_explicit_fallback",
+      "status": "pass"
+    },
+    {
+      "id": "tests/plan/test_adaptive_planner_0_52.py::test_adaptive_artifacts_redact_absolute_target_resources",
+      "status": "pass"
+    },
+    {
+      "id": "tests/plan/test_adaptive_planner_0_52.py::test_adaptive_cross_target_accepts_fully_bound_content_evidence",
+      "status": "pass"
+    },
+    {
+      "id": "tests/plan/test_adaptive_planner_0_52.py::test_adaptive_cross_target_requires_directional_handoff_evidence",
+      "status": "pass"
+    },
+    {
+      "id": "tests/plan/test_adaptive_planner_0_52.py::test_adaptive_execution_uses_default_request",
+      "status": "pass"
+    },
+    {
+      "id": "tests/plan/test_adaptive_planner_0_52.py::test_adaptive_plan_is_verified_and_explainable",
+      "status": "pass"
+    },
+    {
+      "id": "tests/plan/test_adaptive_planner_0_52.py::test_adaptive_report_path_uses_same_plan_dispatch",
+      "status": "pass"
+    },
+    {
+      "id": "tests/plan/test_adaptive_planner_0_52.py::test_explicit_report_path_rejects_request_for_classes_and_definitions[default-request]",
+      "status": "pass"
+    },
+    {
+      "id": "tests/plan/test_adaptive_planner_0_52.py::test_explicit_report_path_rejects_request_for_classes_and_definitions[non-default-request]",
+      "status": "pass"
+    }
+  ],
+  "category": "adaptive_solver_conformance_0_51.json",
+  "phase": "0.54",
+  "result": "pass",
+  "schema": "etlantic.adaptive_category_observation/1",
+  "source": "sha256:34f0664be1458fc78c3724c008cca305aefa6986b9c22ddc35f3fbf18ad53f2c"
+}

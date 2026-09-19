@@ -7,6 +7,41 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- Control-plane collections honor concrete item denials before serialization
+  and existing limits, including definition and registry workspace lists (#143).
+- FastAPI control-plane request-validation failures return a fixed safe 422
+  envelope in standalone and embedded apps without changing unrelated host
+  validation behavior; public route and handler composition seams added (#144).
+
+## [0.54.0] - Unreleased implementation candidate
+
+### Added
+
+- Public sync/async adaptive provider conformance with immutable safe reports.
+- Bounded read-only optional Polars Parquet snapshots and exact portable
+  source/filter/project fusion with one native collection and Arrow handoff.
+- Fresh provenance-bound observations, closed nine-cell evidence verification,
+  and pending independent-graduation safeguards. Adaptive remains Experimental.
+
+### Changed
+
+- Lockstep core/plugins 0.54.0 line; old executable plans may require replanning.
+- Correct PEP 604 nullable primitive mapping for empty explicit dataframe inputs.
+
+### Fixed
+
+- Bind adaptive effective parameters, fused contracts and required barriers to
+  the fingerprinted logical plan; retain historical wire compatibility.
+- Scan immutable bounded Parquet bytes and remove optional footer metadata
+  before native readers, preventing path replacement and extension callbacks.
+- Preserve caller cancellation and fused timeout states; sanitize native panics.
+- Require exact candidate pins and semantically verified, row-bound evidence;
+  normalize source ordering and relative evidence paths across platforms.
+
+[0.54.0]: https://github.com/eddiethedean/etlantic/compare/v0.53.0...HEAD
+
 ## [0.53.0] - 2026-09-15
 
 ### Added

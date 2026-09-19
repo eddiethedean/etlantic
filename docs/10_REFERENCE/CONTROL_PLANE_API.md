@@ -54,7 +54,7 @@ SQLModel imports. Optional SQLModel reference stores live under
 | **CP3** | optional `durable_work=` | `/v1/durable/*` host routes + submit dual-write |
 | **Non-CP** | `create_reference_app` | Thin sync authoring demo only |
 
-Pin: `pip install 'etlantic-fastapi==0.53.0'` (match `etlantic==0.53.0`).
+Pin: `pip install 'etlantic-fastapi==0.54.0'` (match `etlantic==0.54.0`).
 
 When `durable_work` is set, `POST /v1/definitions/{id}/runs` dual-writes into
 `DurableWorkStore.accept` with the same `submission_id` as the CP1 receipt.
@@ -133,6 +133,50 @@ When the matching provider is injected on `ETLanticAPI`, hosts expose:
 Missing CP4 providers on a mounted route return Problem Details `PMCP501`.
 Policy/quota/approval/attestation gates run on submit/promote when those
 providers are configured.
+
+## Collection visibility and request validation
+
+Collection gates run before repository access. Concrete denied items are
+filtered before serialization and existing limits; list visibility uses the
+collection action, not an independent read action. Service failure aborts the
+response without partial results. Current item resource keys are:
+
+| Collection action | Concrete item resource |
+|---|---|
+| `definition.list` | `definition:{definition_id}` |
+| `registry.tenant.list` | `registry:tenant:{tenant_id}` |
+| `registry.workspace.list` | `registry:workspace:{workspace_id}` |
+| `registry.revision.list` | `registry:revision:{revision_id}` |
+| `schema.observations.list` | `schema:observation:{observation_id}` |
+| `reliability.list` | `reliability:observation:{observation_id}` |
+| `run.artifacts` | `artifact:{artifact_id}` |
+| `schedule.read` | `schedule:{schedule_id}` / `schedule:firing:{firing_id}` |
+| `durable.outbox.read` | `durable:outbox:{outbox_id}` |
+| `audit.read` | `audit:record:{record_id}` |
+
+Existing parent/collection resources and response shapes remain unchanged.
+Audit export remains a separately authorized complete evidence export, not a
+filtered list; filtering a hash-chain export would corrupt its evidence contract.
+
+Control-plane routes use exported `etlantic_fastapi.RedactedValidationRoute` to
+catch `RequestValidationError` locally in standalone and embedded applications.
+HTTP 422 returns fixed `application/json`:
+
+```json
+{"detail": [{"type": "request_validation", "loc": [], "msg": "Invalid request"}]}
+```
+
+No original input, error location/message/context or request body is rendered
+or logged by the adapter. Request models, paths and operation IDs are unchanged.
+`include_router` does not register global handlers; unrelated host routes retain
+their validation behavior, even when a custom host validation handler is present.
+`install_exception_handlers` registers only the existing `ControlPlaneError`
+handler. Hosts may explicitly register exported
+`request_validation_error_handler(request, exc)` for `RequestValidationError`
+when application-wide redaction is wanted. This replaces any handler under that
+exception key and changes unrelated routes; omit it for route-scoped behavior.
+Host middleware/access logging must independently avoid raw-body/credential
+logging and sensitive query URLs.
 
 ## PMCP errors
 

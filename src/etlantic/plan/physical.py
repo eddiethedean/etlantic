@@ -379,6 +379,31 @@ class PhysicalDAG:
             # Fused historical /2 documents legitimately cover both endpoints
             # with the same compute unit.
             if producer_id == consumer_id:
+                fusion = unit_map[producer_id].metadata.get("etlantic.fusion")
+                if fusion is not None:
+                    from etlantic.transform.fusion import FusionDescriptor
+
+                    descriptor = FusionDescriptor.from_dict(fusion)
+                    if (
+                        descriptor.logical_nodes != unit_map[producer_id].logical_nodes
+                        or descriptor.target_identity
+                        != unit_map[producer_id].target_identity
+                        or tuple(edge) not in descriptor.internal_edges
+                        or unit_map[producer_id].metadata.get(
+                            "etlantic.fusion_fingerprint"
+                        )
+                        != descriptor.fingerprint
+                        or tuple(
+                            tuple(route)
+                            for route in unit_map[producer_id].metadata.get(
+                                "etlantic.internal_edges", ()
+                            )
+                        )
+                        != descriptor.internal_edges
+                    ):
+                        raise ValueError(
+                            "PMADP403: invalid fused internal logical route"
+                        )
                 continue
             # Count edge realizations, not arbitrary transitive graph paths.
             # An intervening compute unit belongs to another logical edge;

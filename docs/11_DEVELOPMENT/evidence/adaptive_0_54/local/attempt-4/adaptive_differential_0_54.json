@@ -1,0 +1,49 @@
+{
+  "cases": [
+    {
+      "id": "tests/runtime/physical/test_qualification_0_53.py::test_five_family_stored_differential[rows0-families0]",
+      "status": "pass"
+    },
+    {
+      "id": "tests/runtime/physical/test_qualification_0_53.py::test_five_family_stored_differential[rows0-families1]",
+      "status": "pass"
+    },
+    {
+      "id": "tests/runtime/physical/test_qualification_0_53.py::test_five_family_stored_differential[rows0-families2]",
+      "status": "pass"
+    },
+    {
+      "id": "tests/runtime/physical/test_qualification_0_53.py::test_five_family_stored_differential[rows0-families3]",
+      "status": "pass"
+    },
+    {
+      "id": "tests/runtime/physical/test_qualification_0_53.py::test_five_family_stored_differential[rows0-families4]",
+      "status": "pass"
+    },
+    {
+      "id": "tests/runtime/physical/test_qualification_0_53.py::test_five_family_stored_differential[rows1-families0]",
+      "status": "pass"
+    },
+    {
+      "id": "tests/runtime/physical/test_qualification_0_53.py::test_five_family_stored_differential[rows1-families1]",
+      "status": "pass"
+    },
+    {
+      "id": "tests/runtime/physical/test_qualification_0_53.py::test_five_family_stored_differential[rows1-families2]",
+      "status": "pass"
+    },
+    {
+      "id": "tests/runtime/physical/test_qualification_0_53.py::test_five_family_stored_differential[rows1-families3]",
+      "status": "pass"
+    },
+    {
+      "id": "tests/runtime/physical/test_qualification_0_53.py::test_five_family_stored_differential[rows1-families4]",
+      "status": "pass"
+    }
+  ],
+  "category": "adaptive_differential_0_54.json",
+  "phase": "0.54",
+  "result": "pass",
+  "schema": "etlantic.adaptive_category_observation/1",
+  "source": "sha256:eac28b69c6dc3fb1cc8b2eb509ed1519e4a72e7ce138e866e2f2a841e41076ee"
+}

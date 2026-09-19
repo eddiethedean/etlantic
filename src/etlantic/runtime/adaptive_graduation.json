@@ -1,0 +1,209 @@
+{
+  "schema": "etlantic.adaptive_graduation/1",
+  "decision": "pending",
+  "date": null,
+  "reviewer": null,
+  "release_owner": null,
+  "source": null,
+  "evidence": null,
+  "rows": {
+    "chain/1:local": {
+      "decision": "pending",
+      "maturity": "Experimental",
+      "components": {
+        "engine": "Experimental",
+        "compiler": "Experimental",
+        "source": "Experimental",
+        "interchange": "Experimental",
+        "runtime": "Experimental",
+        "io": "Experimental",
+        "environment": "Experimental"
+      },
+      "evidence_refs": []
+    },
+    "chain/1:pandas": {
+      "decision": "pending",
+      "maturity": "Experimental",
+      "components": {
+        "engine": "Experimental",
+        "compiler": "Experimental",
+        "source": "Experimental",
+        "interchange": "Experimental",
+        "runtime": "Experimental",
+        "io": "Experimental",
+        "environment": "Experimental"
+      },
+      "evidence_refs": []
+    },
+    "chain/1:pandas-polars": {
+      "decision": "pending",
+      "maturity": "Experimental",
+      "components": {
+        "engine": "Experimental",
+        "compiler": "Experimental",
+        "source": "Experimental",
+        "interchange": "Experimental",
+        "runtime": "Experimental",
+        "io": "Experimental",
+        "environment": "Experimental"
+      },
+      "evidence_refs": []
+    },
+    "chain/1:polars": {
+      "decision": "pending",
+      "maturity": "Experimental",
+      "components": {
+        "engine": "Experimental",
+        "compiler": "Experimental",
+        "source": "Experimental",
+        "interchange": "Experimental",
+        "runtime": "Experimental",
+        "io": "Experimental",
+        "environment": "Experimental"
+      },
+      "evidence_refs": []
+    },
+    "chain/1:polars-pandas": {
+      "decision": "pending",
+      "maturity": "Experimental",
+      "components": {
+        "engine": "Experimental",
+        "compiler": "Experimental",
+        "source": "Experimental",
+        "interchange": "Experimental",
+        "runtime": "Experimental",
+        "io": "Experimental",
+        "environment": "Experimental"
+      },
+      "evidence_refs": []
+    },
+    "diamond/1:local": {
+      "decision": "pending",
+      "maturity": "Experimental",
+      "components": {
+        "engine": "Experimental",
+        "compiler": "Experimental",
+        "source": "Experimental",
+        "interchange": "Experimental",
+        "runtime": "Experimental",
+        "io": "Experimental",
+        "environment": "Experimental"
+      },
+      "evidence_refs": []
+    },
+    "diamond/1:pandas": {
+      "decision": "pending",
+      "maturity": "Experimental",
+      "components": {
+        "engine": "Experimental",
+        "compiler": "Experimental",
+        "source": "Experimental",
+        "interchange": "Experimental",
+        "runtime": "Experimental",
+        "io": "Experimental",
+        "environment": "Experimental"
+      },
+      "evidence_refs": []
+    },
+    "diamond/1:polars": {
+      "decision": "pending",
+      "maturity": "Experimental",
+      "components": {
+        "engine": "Experimental",
+        "compiler": "Experimental",
+        "source": "Experimental",
+        "interchange": "Experimental",
+        "runtime": "Experimental",
+        "io": "Experimental",
+        "environment": "Experimental"
+      },
+      "evidence_refs": []
+    },
+    "dual-port-chain/1:pandas-polars": {
+      "decision": "pending",
+      "maturity": "Experimental",
+      "components": {
+        "engine": "Experimental",
+        "compiler": "Experimental",
+        "source": "Experimental",
+        "interchange": "Experimental",
+        "runtime": "Experimental",
+        "io": "Experimental",
+        "environment": "Experimental"
+      },
+      "evidence_refs": []
+    },
+    "dual-port-chain/1:polars-pandas": {
+      "decision": "pending",
+      "maturity": "Experimental",
+      "components": {
+        "engine": "Experimental",
+        "compiler": "Experimental",
+        "source": "Experimental",
+        "interchange": "Experimental",
+        "runtime": "Experimental",
+        "io": "Experimental",
+        "environment": "Experimental"
+      },
+      "evidence_refs": []
+    },
+    "fanout/1:local": {
+      "decision": "pending",
+      "maturity": "Experimental",
+      "components": {
+        "engine": "Experimental",
+        "compiler": "Experimental",
+        "source": "Experimental",
+        "interchange": "Experimental",
+        "runtime": "Experimental",
+        "io": "Experimental",
+        "environment": "Experimental"
+      },
+      "evidence_refs": []
+    },
+    "fanout/1:pandas": {
+      "decision": "pending",
+      "maturity": "Experimental",
+      "components": {
+        "engine": "Experimental",
+        "compiler": "Experimental",
+        "source": "Experimental",
+        "interchange": "Experimental",
+        "runtime": "Experimental",
+        "io": "Experimental",
+        "environment": "Experimental"
+      },
+      "evidence_refs": []
+    },
+    "fanout/1:polars": {
+      "decision": "pending",
+      "maturity": "Experimental",
+      "components": {
+        "engine": "Experimental",
+        "compiler": "Experimental",
+        "source": "Experimental",
+        "interchange": "Experimental",
+        "runtime": "Experimental",
+        "io": "Experimental",
+        "environment": "Experimental"
+      },
+      "evidence_refs": []
+    },
+    "scan-filter-project-chain/1:polars-pandas": {
+      "decision": "pending",
+      "maturity": "Experimental",
+      "components": {
+        "engine": "Experimental",
+        "compiler": "Experimental",
+        "source": "Experimental",
+        "interchange": "Experimental",
+        "runtime": "Experimental",
+        "io": "Experimental",
+        "environment": "Experimental"
+      },
+      "evidence_refs": []
+    }
+  },
+  "findings": [],
+  "rollback_trigger": null
+}

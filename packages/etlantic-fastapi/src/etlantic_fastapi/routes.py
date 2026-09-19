@@ -24,6 +24,8 @@ from etlantic.control_plane import (
     require_authorized_run,
 )
 from etlantic.plan import ADAPTIVE_PLAN_SCHEMA
+from etlantic_fastapi.collections import visible_items, visible_limited_items
+from etlantic_fastapi.errors import RedactedValidationRoute
 from etlantic_fastapi.schemas import (
     AcceptReceiptResponse,
     AliasPutBody,
@@ -300,7 +302,7 @@ def _receipt_with_urls(receipt: Any) -> Any:
 
 def build_control_plane_router(api: ETLanticAPI) -> APIRouter:
     """Build the CP1 router with stable OpenAPI operationIds."""
-    router = APIRouter()
+    router = APIRouter(route_class=RedactedValidationRoute)
     get_ctx = api.context_dependency
 
     @router.get(
@@ -355,7 +357,13 @@ def build_control_plane_router(api: ETLanticAPI) -> APIRouter:
             "definition:*",
             resource_in_caller_scope=True,
         )
-        ids = api.definitions.list(ctx)
+        ids = visible_items(
+            api.authorizer,
+            ctx,
+            "definition.list",
+            api.definitions.list(ctx),
+            lambda i: f"definition:{i}",
+        )
         return DefinitionListResponse(
             items=[DefinitionSummary(definition_id=i) for i in ids]
         )
@@ -793,7 +801,15 @@ def build_control_plane_router(api: ETLanticAPI) -> APIRouter:
                     kind="accept_receipt",
                     media_type="application/json",
                 )
-            ],
+            ]
+            if visible_items(
+                api.authorizer,
+                ctx,
+                "run.artifacts",
+                [f"{run_id}:accept-receipt"],
+                lambda artifact_id: f"artifact:{artifact_id}",
+            )
+            else [],
         )
 
     @router.get(
@@ -838,7 +854,16 @@ def build_control_plane_router(api: ETLanticAPI) -> APIRouter:
         )
         history = getattr(api, "history_store", None)
         if history is not None:
-            items = [rec.to_dict() for rec in history.list_schema_observations(ctx)]
+            items = [
+                rec.to_dict()
+                for rec in visible_items(
+                    api.authorizer,
+                    ctx,
+                    "schema.observations.list",
+                    history.list_schema_observations(ctx),
+                    lambda rec: f"schema:observation:{rec.observation_id}",
+                )
+            ]
             return SchemaObservationsResponse(items=items)
         return SchemaObservationsResponse(items=[])
 
@@ -890,7 +915,14 @@ def build_control_plane_router(api: ETLanticAPI) -> APIRouter:
         history = getattr(api, "history_store", None)
         if history is not None:
             items = [
-                rec.to_dict() for rec in history.list_reliability_observations(ctx)
+                rec.to_dict()
+                for rec in visible_items(
+                    api.authorizer,
+                    ctx,
+                    "reliability.list",
+                    history.list_reliability_observations(ctx),
+                    lambda rec: f"reliability:observation:{rec.observation_id}",
+                )
             ]
             return ReliabilityListResponse(items=items)
         return ReliabilityListResponse(items=[])
@@ -930,7 +962,13 @@ def build_control_plane_router(api: ETLanticAPI) -> APIRouter:
         registry = _require_registry()
         items = [
             TenantRecordResponse.model_validate(t.to_dict())
-            for t in registry.tenants.list(ctx)
+            for t in visible_items(
+                api.authorizer,
+                ctx,
+                "registry.tenant.list",
+                registry.tenants.list(ctx),
+                lambda t: f"registry:tenant:{t.tenant_id}",
+            )
         ]
         return TenantListResponse(items=items)
 
@@ -1004,7 +1042,13 @@ def build_control_plane_router(api: ETLanticAPI) -> APIRouter:
         registry = _require_registry()
         items = [
             WorkspaceRecordResponse.model_validate(w.to_dict())
-            for w in registry.workspaces.list(ctx)
+            for w in visible_items(
+                api.authorizer,
+                ctx,
+                "registry.workspace.list",
+                registry.workspaces.list(ctx),
+                lambda w: f"registry:workspace:{w.workspace_id}",
+            )
         ]
         return WorkspaceListResponse(items=items)
 
@@ -1079,7 +1123,13 @@ def build_control_plane_router(api: ETLanticAPI) -> APIRouter:
         registry = _require_registry()
         items = [
             RevisionResponse.model_validate(redact_control_plane_payload(r.to_dict()))
-            for r in registry.revisions.list_revisions(ctx, logical_id)
+            for r in visible_items(
+                api.authorizer,
+                ctx,
+                "registry.revision.list",
+                registry.revisions.list_revisions(ctx, logical_id),
+                lambda r: f"registry:revision:{r.revision_id}",
+            )
         ]
         return RevisionListResponse(items=items)
 
@@ -1213,7 +1263,15 @@ def build_control_plane_router(api: ETLanticAPI) -> APIRouter:
             resource_in_caller_scope=False,
         )
         store = _require_durable()
-        return [row.to_dict() for row in store.pending_outbox(ctx, limit=limit)]
+        records = visible_limited_items(
+            api.authorizer,
+            ctx,
+            "durable.outbox.read",
+            lambda size: store.pending_outbox(ctx, limit=size),
+            lambda row: f"durable:outbox:{row.outbox_id}",
+            limit,
+        )
+        return [row.to_dict() for row in records]
 
     @router.post(
         "/v1/durable/outbox/{outbox_id}/published",
@@ -2008,7 +2066,14 @@ def build_control_plane_router(api: ETLanticAPI) -> APIRouter:
             resource_in_caller_scope=False,
         )
         audit = _require_cp4(api.audit, name="audit store")
-        records = audit.list(ctx, limit=limit)
+        records = visible_limited_items(
+            api.authorizer,
+            ctx,
+            "audit.read",
+            lambda size: audit.list(ctx, limit=size),
+            lambda row: f"audit:record:{row.record_id}",
+            limit,
+        )
         return {"records": [r.to_dict() for r in records]}
 
     @router.get(

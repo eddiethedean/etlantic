@@ -194,7 +194,88 @@ def _build_adaptive_plan(
             f"Unknown adaptive target override(s): {', '.join(unknown_overrides)}.",
             path=("profile", "implementation_overrides"),
         )
+    selected_bindings = {
+        node.binding or node.name
+        for node in selected.nodes
+        if node.kind.value == "source"
+    }
+    for name, binding in context.registry.bindings.items():
+        if name not in selected_bindings:
+            continue
+        if binding.provider == "polars-parquet":
+            from etlantic.transform.fusion import SOURCE_SCHEMA, parquet_source_location
+
+            config = binding.config
+            try:
+                parquet_source_location(binding.location)
+                if (
+                    set(config) != {"schema", "max_bytes", "max_rows"}
+                    or config["schema"] != SOURCE_SCHEMA
+                ):
+                    raise ValueError("Invalid closed source configuration")
+                for key, maximum in (("max_bytes", 268435456), ("max_rows", 1000000)):
+                    if type(config[key]) is not int or not 0 < config[key] <= maximum:
+                        raise ValueError("Invalid bounded source limit")
+            except (ValueError, TypeError, KeyError):
+                raise _error(
+                    "PMADP403",
+                    "Invalid bounded Parquet source descriptor.",
+                    path=("bindings", binding.binding),
+                ) from None
     candidates = _candidate_matrix(selected, targets, context, pipeline_cls, definition)
+    from types import SimpleNamespace
+
+    from etlantic.planning.fusion import recognize_fusion
+
+    forced = context.profile.implementation_overrides
+    fusion_proof = (
+        recognize_fusion(
+            selected,
+            tuple(
+                SimpleNamespace(node_name=n.name, target_id=forced.get(n.name))
+                for n in selected.nodes
+            ),
+            targets,
+            context,
+            request,
+            _transform_map(pipeline_cls, definition),
+        )
+        if set(forced) == {n.name for n in selected.nodes}
+        else None
+    )
+    if fusion_proof is not None:
+        enriched = []
+        for cell in candidates:
+            if (
+                cell.status == "eligible"
+                and cell.node_name in fusion_proof.logical_nodes
+                and cell.target_id == forced.get(cell.node_name)
+            ):
+                facts = dict(cell.objective_facts)
+                facts["safely_fusible_logical_edges"] = 1
+                facts["proven_pushdown_actions"] = int(
+                    cell.node_name != fusion_proof.source_node
+                )
+                replacement = owned_record(
+                    CandidateRecord,
+                    "fusion-candidate",
+                    **{
+                        **{
+                            field: getattr(cell, field)
+                            for field in cell.__dataclass_fields__
+                        },
+                        "objective_facts": facts,
+                        "evidence_refs": (
+                            *cell.evidence_refs,
+                            fusion_proof.fingerprint,
+                        ),
+                    },
+                )
+                current_budget().release_object(cell)
+                enriched.append(replacement)
+            else:
+                enriched.append(cell)
+        candidates = tuple(enriched)
     viable = {
         node.name: [
             c for c in candidates if c.node_name == node.name and c.status == "eligible"
@@ -260,8 +341,21 @@ def _build_adaptive_plan(
             "Adaptive selected-target mapping exceeds the 4 MiB explain limit.",
             path=("adaptive", "explain"),
         )
+    fusion = recognize_fusion(
+        selected,
+        decisions,
+        targets,
+        context,
+        request,
+        _transform_map(pipeline_cls, definition),
+    )
     regions = _regions(
-        selected, decisions, targets, context, executable=request is not None
+        selected,
+        decisions,
+        targets,
+        context,
+        executable=request is not None,
+        fusion=fusion,
     )
     physical = _physical_dag(
         selected,
@@ -271,13 +365,19 @@ def _build_adaptive_plan(
         context,
         executable=request is not None,
     )
+    from etlantic.planning.fusion import lower_fusion, recognize_fusion
+
+    if fusion is not None:
+        physical = lower_fusion(physical, fusion)
     inventory = _inventory_model(targets)
     objective = _objective(selected, decisions, candidates, inventory)
 
     profile = context.profile
     metadata = {
         "etlantic.planner": "etlantic.planning.adaptive",
-        "etlantic.planner_version": "0.53" if request is not None else "0.52",
+        "etlantic.planner_version": "0.54"
+        if fusion is not None
+        else ("0.53" if request is not None else "0.52"),
         "etlantic.objective_version": "etlantic.adaptive-objective/1",
         "etlantic.limits_version": ADAPTIVE_LIMITS_VERSION,
         "etlantic.solver": "deterministic-lexicographic/1",
@@ -299,6 +399,24 @@ def _build_adaptive_plan(
             "schema": "etlantic.adaptive_runtime/1",
             "request": _safe_ref(raw_request),
         }
+        from etlantic.runtime.adaptive_parameters import (
+            canonical_parameters,
+            capture_parameters,
+        )
+
+        try:
+            parameters = capture_parameters(selected, request)
+            if canonical_parameters(_safe_ref(parameters)) != canonical_parameters(
+                parameters
+            ):
+                raise ValueError("Sensitive adaptive parameter capture is unsupported")
+        except ValueError as exc:
+            raise _error(
+                "PMADP403",
+                "Adaptive parameter capture is invalid or unsupported",
+                path=("parameters",),
+            ) from exc
+        metadata["etlantic.runtime"]["parameters"] = parameters
         metadata["etlantic.implementations"] = _implementation_records(
             selected, decisions, context, pipeline_cls, definition
         )
@@ -1775,6 +1893,7 @@ def _regions(
     inventory: tuple[tuple[str, Any, Any], ...],
     context: PlanningContext,
     executable: bool = False,
+    fusion: Any = None,
 ) -> tuple[AdaptiveRegion, ...]:
     by_node = {d.node_name: d.target_id for d in decisions}
     target_by_id = {name: target for name, target, _ in inventory}
@@ -1811,6 +1930,8 @@ def _regions(
     regions: list[AdaptiveRegion] = []
     for members in ordered_groups:
         members = sorted(members, key=names.index)
+        fused = fusion is not None and tuple(members) == fusion.logical_nodes
+        fusion_evidence = fusion.fingerprint if fused else "none"
         target_id = by_node[members[0]]
         target = target_by_id[target_id]
         boundary_facts = {
@@ -1819,8 +1940,8 @@ def _regions(
             "security": target.security_domain,
             "execution": "local-static-batch/1" if executable else "planning-only",
             "policy": "conservative",
-            "fused": False,
-            "fusion_evidence": "none",
+            "fused": fused,
+            "fusion_evidence": fusion_evidence,
             "planner": "0.53" if executable else "0.52",
         }
         region_id = f"region:{_digest(boundary_facts)[:24]}"
@@ -1833,14 +1954,14 @@ def _regions(
                 identity=region_id,
                 target_id=target_id,
                 logical_nodes=tuple(members),
-                fused=False,
+                fused=fused,
                 security_domain=target.security_domain,
                 metadata={
                     "etlantic.boundary_policy": "conservative",
                     "etlantic.execution": "local-static-batch/1"
                     if executable
                     else "planning-only",
-                    "etlantic.fusion_evidence": "none",
+                    "etlantic.fusion_evidence": fusion_evidence,
                     "etlantic.security_domain": target.security_domain,
                     "etlantic.target_identity": _target_identity(target),
                 },
@@ -2275,7 +2396,10 @@ def _physical_dag(
                 )
             spec["dependencies"] = tuple({d.unit_id: d for d in rewritten}.values())
             unit_specs.refresh(uid)
-        elif spec.get("dependencies") and spec["kind"] is PhysicalUnitKind.TRANSFER:
+        elif spec.get("dependencies") and spec["kind"] in {
+            PhysicalUnitKind.TRANSFER,
+            PhysicalUnitKind.COLLECTION,
+        }:
             # Rewrite transfer dependencies to include a producer's declared
             # boundary, while preserving validation/materialization chains.
             rewritten = []

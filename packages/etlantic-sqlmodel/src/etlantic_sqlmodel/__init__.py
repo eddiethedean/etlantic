@@ -52,7 +52,7 @@ from etlantic_sqlmodel.migrations import (
 )
 from sqlmodel import Field, SQLModel
 
-__version__ = "0.53.0"
+__version__ = "0.54.0"
 
 __all__ = [
     "AliasRow",
