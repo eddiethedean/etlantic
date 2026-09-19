@@ -119,10 +119,10 @@ explicit-interpreter Pyright and docs checks passed.
 Attempt 9 passed all 642 tests but retains a nonpassing observation because the
 final predicate-identity guard changed the source during execution.
 
-The current [attempt 11 observation](evidence/adaptive_0_54/local/attempt-11/observation.json)
-passed all 642 cases in 356.89s, zero skips, with 84 visible warnings. Its
+The current [attempt 13 observation](evidence/adaptive_0_54/local/attempt-13/observation.json)
+passed all 642 cases in 328.70s, zero skips, with 84 visible warnings. Its
 identical before/after/current source digest is
-`sha256:7f3ab7fdd3bd6e33c92e3483f976f285283b9b77ff1f0b6d36f5a3d4a0b771fc`.
+`sha256:df6f75baf2a33334ac633ea312ed561761c647a6b8eaba9d0e667431b7eaef59`.
 All seventeen category hashes and semantics were verified. This observation is
 a historical local snapshot; it did not commit, push, publish, or graduate a
 row.

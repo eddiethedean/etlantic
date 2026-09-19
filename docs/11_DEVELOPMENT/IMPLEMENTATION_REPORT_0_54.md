@@ -109,7 +109,7 @@ Counts describe separate overlapping runs, not additive distinct coverage.
 |---|---|
 | Latest broad repository `pytest -q tests --tb=short` | 2,658 passed, 29 skipped, zero failures in 534.14s |
 | Prior phase catalogue | Attempt 8: 629 passed, zero skipped, 81 visible warnings in 346.17s; observation and all 17 category hashes/semantics verified against its recorded source |
-| Current phase catalogue | Attempt 11: 642 passed, zero skipped, 84 visible warnings in 356.89s; identical before/after/current source and all 17 category hashes/semantics verified |
+| Current phase catalogue | Attempt 13: 642 passed, zero skipped, 84 visible warnings in 328.70s; identical before/after/current source and all 17 category hashes/semantics verified |
 | Fresh prior-adaptive 0.53 campaign with `--write` to an isolated temporary directory | 128 scenarios passed; actual Darwin/arm64/Python 3.11.15 and 0.54 package version retained |
 | Focused region/objective/wire verification | Two passed before final coherence guard; covered again by final catalogue |
 | Evidence/graduation mechanisms | Passing focused runs, including 36 evidence cases; synthetic matrix fixtures are not actual CI proof |
@@ -145,7 +145,7 @@ There are no known unresolved implementation issues within the approved bounded
 scope. No requirement is marked PARTIALLY IMPLEMENTED or BLOCKED under the local
 completion boundary.
 
-The [current local observation](evidence/adaptive_0_54/local/attempt-11/observation.json)
+The [current local observation](evidence/adaptive_0_54/local/attempt-13/observation.json)
 records 642 passing cases on Darwin/arm64, Python 3.11.15, with the exact pinned
 backends and all seventeen category artifact hashes. Source digests before and
 after execution match. This is an uncommitted-workspace local observation, not
