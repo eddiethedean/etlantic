@@ -309,9 +309,9 @@ def infer_records(
             sampled_reason = "rows"
             replay_remainder = chain((item,), iterator)
             break
-        if (
-            limits.timeout_seconds is not None
-            and time.monotonic() - started_at >= limits.timeout_seconds
+        if limits.timeout_seconds is not None and (
+            limits.timeout_seconds <= 1e-9
+            or time.monotonic() - started_at >= limits.timeout_seconds
         ):
             sampled = True
             sampled_reason = "time"
