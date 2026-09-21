@@ -11,6 +11,99 @@ from typing import Any
 
 from etlantic.contracts import Data as Data
 from etlantic.diagnostics import ValidationReport as ValidationReport
+from etlantic.inference import (
+    FieldConstraint as FieldConstraint,
+)
+from etlantic.inference import (
+    InferenceLimits as InferenceLimits,
+)
+from etlantic.inference import (
+    InferenceObservation as InferenceObservation,
+)
+from etlantic.inference import (
+    InferenceResult as InferenceResult,
+)
+from etlantic.inference import (
+    OutputProposal as OutputProposal,
+)
+from etlantic.inference import (
+    ReplayHandle as ReplayHandle,
+)
+from etlantic.inference import (
+    SchemaEvidence as SchemaEvidence,
+)
+from etlantic.inference import (
+    TargetObservation as TargetObservation,
+)
+from etlantic.inference import (
+    WriteCompatibility as WriteCompatibility,
+)
+from etlantic.inference import (
+    backfill_schema as backfill_schema,
+)
+from etlantic.inference import (
+    check_write_compatibility as check_write_compatibility,
+)
+from etlantic.inference import (
+    forward_schema as forward_schema,
+)
+from etlantic.inference import (
+    infer_csv as infer_csv,
+)
+from etlantic.inference import (
+    infer_expression as infer_expression,
+)
+from etlantic.inference import (
+    infer_frame_schema as infer_frame_schema,
+)
+from etlantic.inference import (
+    infer_json as infer_json,
+)
+from etlantic.inference import (
+    infer_records as infer_records,
+)
+from etlantic.inference import (
+    infer_records_for_target as infer_records_for_target,
+)
+from etlantic.inference import (
+    infer_records_for_target_async as infer_records_for_target_async,
+)
+from etlantic.inference import (
+    infer_source as infer_source,
+)
+from etlantic.inference import (
+    infer_source_async as infer_source_async,
+)
+from etlantic.inference import (
+    inspect_target as inspect_target,
+)
+from etlantic.inference import (
+    inspect_target_async as inspect_target_async,
+)
+from etlantic.inference import (
+    solve_backward_constraints as solve_backward_constraints,
+)
+from etlantic.inference import (
+    model_from_schema as model_from_schema,
+)
+from etlantic.inference.facade import (
+    InferredDataset as InferredDataset,
+)
+from etlantic.inference.facade import (
+    from_pandas as from_pandas,
+)
+from etlantic.inference.facade import (
+    from_polars as from_polars,
+)
+from etlantic.inference.facade import (
+    from_records as from_records,
+)
+from etlantic.inference.facade import (
+    from_records_for_target as from_records_for_target,
+)
+from etlantic.inference.facade import (
+    read_csv as read_csv,
+)
 from etlantic.lifecycle import PipelineRuntime as PipelineRuntime
 from etlantic.orchestration import compile_plan as compile_plan
 from etlantic.pipeline import Extract as Extract

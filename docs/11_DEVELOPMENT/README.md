@@ -5,7 +5,8 @@ Current release: [0.54 migration](MIGRATION_0_53_TO_0_54.md),
 [implementation report](IMPLEMENTATION_REPORT_0_54.md). Independent review and
 graduation remain pending.
 
-Next planned phase: [0.55 inferred model authoring](IMPLEMENTATION_PLAN_0_55.md).
+Next planned phase: [0.55 inferred model authoring](IMPLEMENTATION_PLAN_0_55.md),
+with the [0.55 execution plan](EXECUTION_PLAN_0_55.md).
 The former brownfield, console, provider, and TransformationModel phases now
 follow as 0.56–0.59.
 

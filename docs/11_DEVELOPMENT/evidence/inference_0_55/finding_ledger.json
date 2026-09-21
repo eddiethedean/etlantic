@@ -1,0 +1,47 @@
+{
+  "schema": "etlantic.inference-finding-ledger/1",
+  "phase": "0.55",
+  "status": "in_progress",
+  "findings": [
+    {
+      "id": "P0-durable-definition",
+      "priority": "P0",
+      "status": "implemented-pending-gate",
+      "code": "src/etlantic/inference/facade.py",
+      "test": "tests/inference/test_review_fixes.py::test_definition_contains_each_portable_transformation_step",
+      "gate": "durable_definition"
+    },
+    {
+      "id": "P0-target-guided-observation",
+      "priority": "P0",
+      "status": "implemented-pending-gate",
+      "code": "src/etlantic/inference/targets.py",
+      "test": "tests/inference/test_review_fixes.py::test_backward_solver_retains_qualified_source_constraint",
+      "gate": "lineage_solver"
+    },
+    {
+      "id": "P1-wire-redaction",
+      "priority": "P1",
+      "status": "implemented-pending-gate",
+      "code": "src/etlantic/schema_drift.py",
+      "test": "tests/inference/test_review_fixes.py::test_provider_metadata_is_json_safe_and_python_types_are_normalized",
+      "gate": "wire_security"
+    },
+    {
+      "id": "P1-bounded-adapters",
+      "priority": "P1",
+      "status": "implemented-pending-gate",
+      "code": "src/etlantic/inference/sources.py",
+      "test": "tests/inference/test_review_fixes.py::test_local_provider_conversion_without_head_fails_closed",
+      "gate": "bounded_materialization"
+    },
+    {
+      "id": "P1-target-compatibility",
+      "priority": "P1",
+      "status": "implemented-pending-gate",
+      "code": "src/etlantic/inference/targets.py",
+      "test": "tests/inference/test_review_fixes.py::test_target_capabilities_and_revision_are_retained_for_writes",
+      "gate": "target_revision"
+    }
+  ]
+}

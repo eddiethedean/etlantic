@@ -1,0 +1,18 @@
+{
+  "schema": "etlantic.inference-capability-matrix/1",
+  "phase": "0.55",
+  "status": "in_progress",
+  "entries": [
+    {"surface": "records", "kind": "source", "state": "implemented", "evidence": "focused-tests"},
+    {"surface": "csv", "kind": "source", "state": "implemented", "evidence": "focused-tests"},
+    {"surface": "json", "kind": "source", "state": "implemented", "evidence": "focused-tests"},
+    {"surface": "pandas", "kind": "source", "state": "bounded-adapter", "evidence": "focused-tests"},
+    {"surface": "polars", "kind": "source", "state": "bounded-adapter", "evidence": "focused-tests"},
+    {"surface": "pyspark", "kind": "source", "state": "pending-qualification", "evidence": null},
+    {"surface": "datafusion", "kind": "source", "state": "pending-qualification", "evidence": null},
+    {"surface": "sql-duckdb", "kind": "source", "state": "pending-qualification", "evidence": null},
+    {"surface": "parquet", "kind": "source-target", "state": "pending-qualification", "evidence": null},
+    {"surface": "schema-registry", "kind": "source-target", "state": "pending-qualification", "evidence": null},
+    {"surface": "append-overwrite-merge-upsert-partition-replace", "kind": "write-mode", "state": "implemented-with-fakes", "evidence": "focused-tests"}
+  ]
+}

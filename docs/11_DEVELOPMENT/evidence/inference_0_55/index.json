@@ -1,0 +1,27 @@
+{
+  "schema": "etlantic.inference-evidence/1",
+  "phase": "0.55",
+  "status": "in_progress",
+  "plan": "../REVIEW_FIX_PLAN_0_55.md",
+  "row_free": true,
+  "qualified": false,
+  "artifacts": [
+    "capability_matrix.json",
+    "finding_ledger.json"
+  ],
+  "required_gates": [
+    "wire_security",
+    "bounded_materialization",
+    "lineage_solver",
+    "target_revision",
+    "durable_definition",
+    "optional_dependency_matrix",
+    "differential_fixtures",
+    "race_tests",
+    "full_regression"
+  ],
+  "limitations": [
+    "Optional engine and connector adapters remain pending qualification.",
+    "The 0.55 phase remains planned until all required gates pass."
+  ]
+}

@@ -3,11 +3,11 @@
 from __future__ import annotations
 
 from collections.abc import Mapping
+from contextlib import suppress
 from typing import Any
 
 from etlantic.capabilities import PluginCapabilities
 from etlantic.dataframe.helpers import (
-    normalized_from_field_dicts,
     schema_dict,
     split_valid_invalid_records,
 )
@@ -19,10 +19,51 @@ from etlantic.dataframe.protocol import (
     DataframeValidationOutcome,
     ValidationDecision,
 )
+from etlantic.inference import InferenceLimits, infer_source
 from etlantic.interchange.tabular import InterchangeMechanism
 from etlantic.storage.protocol import as_records, records_to_dicts
 
 __version__ = "0.51.0"
+
+
+def _iter_inference_records(value: Any, *, max_rows: int = 10_000):
+    """Adapt record-like values without materializing generic iterables."""
+    if isinstance(value, Mapping):
+        yield value
+        return
+    to_dicts = getattr(value, "to_dicts", None)
+    if callable(to_dicts):
+        head = getattr(value, "head", None)
+        if not callable(head):
+            return
+        bounded = head(max_rows)
+        bounded_to_dicts = getattr(bounded, "to_dicts", None)
+        if not callable(bounded_to_dicts):
+            return
+        value = bounded_to_dicts()
+    elif hasattr(value, "to_dict") and callable(value.to_dict):
+        head = getattr(value, "head", None)
+        if not callable(head):
+            return
+        bounded = head(max_rows)
+        bounded_to_dict = getattr(bounded, "to_dict", None)
+        if not callable(bounded_to_dict):
+            return
+        with suppress(TypeError):
+            value = bounded_to_dict(orient="records")
+    if isinstance(value, (str, bytes, bytearray)):
+        yield {"value": value}
+        return
+    try:
+        iterator = iter(value)
+    except TypeError:
+        yield {"value": value}
+        return
+    for item in iterator:
+        if hasattr(item, "model_dump"):
+            yield item.model_dump()
+        else:
+            yield item
 
 
 class LocalDataframePlugin:
@@ -136,19 +177,22 @@ class LocalDataframePlugin:
             invalid,
         )
 
-    def inspect_schema(self, value: Any, *, identity: str) -> dict[str, Any] | None:
-        rows = records_to_dicts(value)
-        names = list(rows[0]) if rows else []
-        fields = [
-            {
-                "name": name,
-                "logical_type": _logical(rows[0].get(name) if rows else None),
-                "required": True,
-                "nullable": True,
-            }
-            for name in names
-        ]
-        return schema_dict(normalized_from_field_dicts(fields, identity=identity))
+    def inspect_schema(
+        self,
+        value: Any,
+        *,
+        identity: str,
+        limits: InferenceLimits | None = None,
+    ) -> dict[str, Any] | None:
+        result = infer_source(value, identity=identity, limits=limits or InferenceLimits())
+        payload = schema_dict(result.schema)
+        if payload is not None and result.diagnostics:
+            payload["diagnostics"] = [
+                diagnostic.to_dict()
+                for diagnostic in result.diagnostics
+                if hasattr(diagnostic, "to_dict")
+            ]
+        return payload
 
     def ensure_ownership(
         self,

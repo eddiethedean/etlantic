@@ -10,6 +10,8 @@ plan_last_reviewed: 0.54.0
 > **Status:** planned next phase after 0.54. None of the API examples below is
 > available in 0.54. The [roadmap](../../ROADMAP.md) owns phase order; the
 > [capabilities page](../01_GETTING_STARTED/CAPABILITIES.md) owns shipped claims.
+> The [execution plan](EXECUTION_PLAN_0_55.md) owns implementation order,
+> code boundaries, fixtures, and merge gates.
 
 ## Outcome
 
