@@ -502,3 +502,68 @@ def test_schema_only_targets_do_not_invent_revisions() -> None:
             return schema
 
     assert asyncio.run(inspect_target_async(AsyncAdapter())).revision is None
+
+
+def test_target_guidance_does_not_replace_observed_source_contract() -> None:
+    dataset = etl.from_records_for_target(
+        [{"id": "1"}],
+        {
+            "revision": "r1",
+            "capabilities": {"write_modes": ["append"]},
+            "fields": [{"name": "id", "type": "integer"}],
+        },
+        name="orders",
+    )
+
+    definition = dataset.definition()
+    source_field = definition.contracts[0].fields[0]
+    assert source_field.type == "string"
+    assert definition.nodes[-1].bindings["target"]["revision"] == "r1"
+    assert (
+        definition.nodes[-1].bindings["target"]["requirements"]["fields"][0][
+            "logical_type"
+        ]
+        == "integer"
+    )
+
+
+def test_inferred_definition_round_trips_and_plans_without_runtime_source() -> None:
+    dataset = etl.from_records_for_target(
+        [{"id": "1"}],
+        {"revision": "r1", "fields": [{"name": "id", "type": "integer"}]},
+        name="orders",
+    )
+    restored = etl.authoring.pipeline_from_dict(dataset.definition().to_dict())
+    report = etl.authoring.validate_pipeline_like(restored)
+    assert report.valid
+    assert etl.authoring.plan_pipeline_like(restored).pipeline_name == "orders"
+
+
+def test_file_bindings_are_row_free_and_rebindable(tmp_path) -> None:
+    first = tmp_path / "first.csv"
+    second = tmp_path / "second.csv"
+    first.write_text("id\n1\n", encoding="utf-8")
+    second.write_text("id\n2\n", encoding="utf-8")
+
+    definition = etl.read_csv(str(first), name="events").definition()
+    binding = definition.nodes[0].bindings["source"]
+    assert binding["kind"] == "file"
+    assert binding["uri"] == str(first.resolve())
+    assert "\n1\n" not in json.dumps(definition.to_dict())
+
+    rebound = etl.rebind_definition(definition, source=str(second))
+    assert rebound.nodes[0].bindings["source"]["uri"] == str(second.resolve())
+    assert etl.authoring.pipeline_from_dict(rebound.to_dict()).fingerprint
+
+
+def test_unsupported_provider_does_not_look_durable() -> None:
+    class Frame:
+        def to_dicts(self):
+            return [{"id": 1}]
+
+        def head(self, count):
+            return self
+
+    dataset = etl.from_pandas(Frame(), name="frame")
+    with pytest.raises(ValueError, match="INFER_SOURCE_UNSUPPORTED"):
+        dataset.definition()

@@ -63,7 +63,11 @@ from etlantic.inference import (
     inspect_target,
     inspect_target_async,
     model_from_schema,
+    rebind_definition,
+    register_source_factory,
+    resolve_source_binding,
     solve_backward_constraints,
+    unregister_source_factory,
 )
 from etlantic.inference.facade import (
     InferredDataset,
@@ -72,6 +76,7 @@ from etlantic.inference.facade import (
     from_records,
     from_records_for_target,
     read_csv,
+    read_json,
 )
 from etlantic.lifecycle import PipelineRuntime
 from etlantic.orchestration import compile_plan
@@ -130,6 +135,11 @@ _CURATED: dict[str, Any] = {
     "from_records": from_records,
     "from_records_for_target": from_records_for_target,
     "read_csv": read_csv,
+    "read_json": read_json,
+    "rebind_definition": rebind_definition,
+    "register_source_factory": register_source_factory,
+    "resolve_source_binding": resolve_source_binding,
+    "unregister_source_factory": unregister_source_factory,
     "from_pandas": from_pandas,
     "from_polars": from_polars,
     "infer_csv": infer_csv,

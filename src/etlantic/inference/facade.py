@@ -28,6 +28,13 @@ from etlantic.schema_drift import NormalizedSchema
 from etlantic.transform.column import ColumnExpr, coerce_column
 from etlantic.transform.dataframe import FrameExpr
 
+from .durable import (
+    file_binding,
+    provider_binding,
+    rebind_definition,
+    records_binding,
+    target_binding,
+)
 from .records import _path_identity, infer_csv, infer_records
 from .sources import infer_source
 from .targets import (
@@ -418,10 +425,27 @@ class InferredDataset:
         name: str,
         frame: FrameExpr | None = None,
         root_schema: NormalizedSchema | None = None,
+        source_binding: Mapping[str, Any] | None = None,
+        target_binding_payload: Mapping[str, Any] | None = None,
     ):
         self._result = result
         self.name = name
         self._root_schema = root_schema or result.schema
+        self._source_binding = dict(source_binding or records_binding(name))
+        observation = result.target_observation
+        target_requirements = (
+            observation.schema.to_dict()
+            if observation is not None and observation.schema is not None
+            else None
+        )
+        self._target_binding = dict(
+            target_binding_payload
+            or target_binding(
+                observation,
+                identity=f"target:{name}",
+                requirements=target_requirements,
+            )
+        )
         self._frame = frame or FrameExpr(
             relation_id=name,
             root_input=name,
@@ -469,6 +493,11 @@ class InferredDataset:
 
     def definition(self) -> PipelineDefinition:
         """Build the normal row-free ETLantic authoring definition."""
+        if self._source_binding.get("kind") == "provider":
+            raise ValueError(
+                "INFER_SOURCE_UNSUPPORTED: provider source definitions require "
+                "an explicit durable rebind"
+            )
         errors = [
             item
             for item in self.diagnostics
@@ -492,6 +521,9 @@ class InferredDataset:
                 "durable inference definitions require a replayable source binding; "
                 "the inspected source is a one-shot bounded stream"
             )
+        # Target backfill is a write-boundary hypothesis.  It must never
+        # replace the observed source contract used by the serialized graph.
+        source_schema = self._result.observed_schema or self._root_schema
         if any(
             action.action
             in {
@@ -521,13 +553,18 @@ class InferredDataset:
                     )
                     for field in schema.fields
                 ),
-                metadata={"etlantic.inference": self.observation.to_dict()},
+                metadata={
+                    "etlantic.inference": {
+                        "observed_schema": source_schema.to_dict(),
+                        "source_binding": self._source_binding,
+                    }
+                },
             )
 
         # Materialize one contract for each relation state.  A step may alter
         # projection, names, or inferred types; pointing every node at the
         # final contract makes a serialized definition impossible to rebind.
-        state_schemas: list[NormalizedSchema] = [self._root_schema]
+        state_schemas: list[NormalizedSchema] = [source_schema]
         for index in range(1, len(self._frame.actions) + 1):
             prefix = FrameExpr(
                 relation_id=self._frame.actions[index - 1].action_id,
@@ -548,7 +585,7 @@ class InferredDataset:
             state_schemas.append(
                 forward_schema(
                     prefix,
-                    self._root_schema,
+                    source_schema,
                     max_diagnostics=int(
                         self.provenance.get("limits", {}).get("max_diagnostics", 100)
                     ),
@@ -601,7 +638,7 @@ class InferredDataset:
             NodeDefinition(
                 name=source_name,
                 kind="source",
-                identity=f"source:{self.schema.identity}",
+                identity=f"source:{source_schema.identity}",
                 contract_id=contract_ids[0],
                 outputs=(
                     PortDefinitionSpec(
@@ -609,8 +646,13 @@ class InferredDataset:
                     ),
                 ),
                 asset=self.name,
-                bindings={"source": self.name},
-                metadata={"etlantic.inference": self.observation.to_dict()},
+                bindings={"source": self._source_binding},
+                metadata={
+                    "etlantic.inference": {
+                        "observed_schema": source_schema.to_dict(),
+                        "source_binding": self._source_binding,
+                    }
+                },
             )
         ]
         edges: list[EdgeDefinition] = []
@@ -671,7 +713,16 @@ class InferredDataset:
                     ),
                 ),
                 asset=self.name,
-                bindings={"target": self.name},
+                bindings={"target": self._target_binding},
+                metadata={
+                    "etlantic.inference": {
+                        "target_requirements": self._target_binding.get(
+                            "requirements"
+                        ),
+                        "target_revision": self._target_binding.get("revision"),
+                        "write_mode": self._target_binding.get("write_mode"),
+                    }
+                },
             )
         )
         edges.append(
@@ -684,7 +735,7 @@ class InferredDataset:
                 consumer_contract_id=contract_ids[-1],
             )
         )
-        return PipelineDefinition(
+        definition = PipelineDefinition(
             pipeline_id=f"inferred:{self.name}",
             pipeline_name=self.name,
             contracts=tuple(contracts),
@@ -695,8 +746,23 @@ class InferredDataset:
                 "source": "etlantic.inference",
                 "observation": self.observation.to_dict(),
             },
-            metadata={"etlantic.lineage": self.schema.metadata.get("lineage", {})},
+            metadata={
+                "etlantic.lineage": self.schema.metadata.get("lineage", {}),
+                "etlantic.inference": {
+                    "observed_schema": source_schema.to_dict(),
+                    "target_binding": self._target_binding,
+                },
+            },
         )
+        from etlantic.authoring.serialize import pipeline_fingerprint
+
+        return definition.with_fingerprint(pipeline_fingerprint(definition))
+
+    def rebind_source(
+        self, source: str, *, format: str | None = None
+    ) -> PipelineDefinition:
+        """Return a definition explicitly rebound to a local source."""
+        return rebind_definition(self.definition(), source=source, format=format)
 
     def plan(self) -> PipelineDefinition:
         """Return the validated authoring definition used by plan consumers."""
@@ -804,7 +870,12 @@ class InferredDataset:
             self._result.target_observation,
         )
         return InferredDataset(
-            result, name=self.name, frame=frame, root_schema=self._root_schema
+            result,
+            name=self.name,
+            frame=frame,
+            root_schema=self._root_schema,
+            source_binding=self._source_binding,
+            target_binding_payload=self._target_binding,
         )
 
     def filter(self, condition: ColumnExpr) -> InferredDataset:
@@ -1115,6 +1186,7 @@ def from_records(
             records, hints=hints, limits=limits, identity=name, retain_rows=True
         ),
         name=name,
+        source_binding=records_binding(name),
     )
 
 
@@ -1141,6 +1213,7 @@ def from_records_for_target(
             revision_reader=revision_reader,
         ),
         name=name,
+        source_binding=records_binding(name),
     )
 
 
@@ -1163,6 +1236,43 @@ def read_csv(
             retain_rows=True,
         ),
         name=name,
+        source_binding=file_binding(
+            "csv",
+            path,
+            identity=source_identity,
+            options=options,
+        ),
+    )
+
+
+def read_json(
+    path: str,
+    *,
+    name: str = "json",
+    lines: bool = False,
+    hints: Mapping[str, Any] | None = None,
+    limits: InferenceLimits | None = None,
+) -> InferredDataset:
+    """Read a JSON array or JSON Lines source with a durable file binding."""
+    from .records import infer_json
+
+    source_identity = _path_identity("jsonl" if lines else "json", path)
+    return InferredDataset(
+        infer_json(
+            path,
+            lines=lines,
+            hints=hints,
+            limits=limits,
+            identity=source_identity,
+            retain_rows=True,
+        ),
+        name=name,
+        source_binding=file_binding(
+            "jsonl" if lines else "json",
+            path,
+            identity=source_identity,
+            lines=lines,
+        ),
     )
 
 
@@ -1175,7 +1285,9 @@ def from_pandas(
 ) -> InferredDataset:
     limits = limits or InferenceLimits()
     return InferredDataset(
-        infer_source(frame, identity=name, hints=hints, limits=limits), name=name
+        infer_source(frame, identity=name, hints=hints, limits=limits),
+        name=name,
+        source_binding=provider_binding(name, "pandas"),
     )
 
 
@@ -1188,5 +1300,7 @@ def from_polars(
 ) -> InferredDataset:
     limits = limits or InferenceLimits()
     return InferredDataset(
-        infer_source(frame, identity=name, hints=hints, limits=limits), name=name
+        infer_source(frame, identity=name, hints=hints, limits=limits),
+        name=name,
+        source_binding=provider_binding(name, "polars"),
     )

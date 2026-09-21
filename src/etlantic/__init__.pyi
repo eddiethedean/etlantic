@@ -84,7 +84,19 @@ from etlantic.inference import (
     model_from_schema as model_from_schema,
 )
 from etlantic.inference import (
+    rebind_definition as rebind_definition,
+)
+from etlantic.inference import (
+    register_source_factory as register_source_factory,
+)
+from etlantic.inference import (
+    resolve_source_binding as resolve_source_binding,
+)
+from etlantic.inference import (
     solve_backward_constraints as solve_backward_constraints,
+)
+from etlantic.inference import (
+    unregister_source_factory as unregister_source_factory,
 )
 from etlantic.inference.facade import (
     InferredDataset as InferredDataset,
@@ -103,6 +115,9 @@ from etlantic.inference.facade import (
 )
 from etlantic.inference.facade import (
     read_csv as read_csv,
+)
+from etlantic.inference.facade import (
+    read_json as read_json,
 )
 from etlantic.lifecycle import PipelineRuntime as PipelineRuntime
 from etlantic.orchestration import compile_plan as compile_plan

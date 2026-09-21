@@ -1,5 +1,12 @@
 """Optional, data first schema and model inference."""
 
+from .durable import (
+    rebind_definition,
+    register_source_factory,
+    resolve_source_binding,
+    source_factory,
+    unregister_source_factory,
+)
 from .facade import model_from_schema
 from .records import infer_csv, infer_json, infer_records
 from .sources import infer_source, infer_source_async
@@ -50,5 +57,10 @@ __all__ = [
     "inspect_target",
     "inspect_target_async",
     "model_from_schema",
+    "rebind_definition",
+    "register_source_factory",
+    "resolve_source_binding",
     "solve_backward_constraints",
+    "source_factory",
+    "unregister_source_factory",
 ]

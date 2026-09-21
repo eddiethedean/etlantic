@@ -58,7 +58,12 @@
     "inspect_target",
     "inspect_target_async",
     "solve_backward_constraints",
-    "read_csv"
+    "read_csv",
+    "read_json",
+    "rebind_definition",
+    "register_source_factory",
+    "resolve_source_binding",
+    "unregister_source_factory"
   ],
   "sdk_root_namespaces": [
     "authoring",
