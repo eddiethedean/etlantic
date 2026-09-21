@@ -33,6 +33,8 @@ from .durable import (
     provider_binding,
     rebind_definition,
     records_binding,
+    register_source_factory,
+    source_factory,
     target_binding,
 )
 from .records import _path_identity, infer_csv, infer_records
@@ -491,12 +493,24 @@ class InferredDataset:
     def to_records(self) -> list[dict[str, Any]]:
         return self.collect()
 
-    def definition(self) -> PipelineDefinition:
+    def definition(
+        self, *, _allow_unresolved_source: bool = False
+    ) -> PipelineDefinition:
         """Build the normal row-free ETLantic authoring definition."""
-        if self._source_binding.get("kind") == "provider":
+        source_kind = self._source_binding.get("kind")
+        if source_kind == "provider" and not _allow_unresolved_source:
             raise ValueError(
                 "INFER_SOURCE_UNSUPPORTED: provider source definitions require "
                 "an explicit durable rebind"
+            )
+        if (
+            source_kind == "records"
+            and source_factory(str(self._source_binding.get("factory_key") or ""))
+            is None
+        ):
+            raise ValueError(
+                "INFER_SOURCE_UNRESOLVABLE: register a source factory before "
+                "exporting a records definition"
             )
         errors = [
             item
@@ -513,8 +527,12 @@ class InferredDataset:
             )
         ]
         if errors:
+            error_codes = sorted(
+                {str(item.code) for item in errors if isinstance(item, Diagnostic)}
+            )
             raise ValueError(
-                "inference diagnostics contain errors; durable export is not qualified"
+                "inference diagnostics contain errors; durable export is not "
+                f"qualified ({', '.join(error_codes) or 'unknown diagnostic'})"
             )
         if self.replay is not None:
             raise ValueError(
@@ -716,9 +734,7 @@ class InferredDataset:
                 bindings={"target": self._target_binding},
                 metadata={
                     "etlantic.inference": {
-                        "target_requirements": self._target_binding.get(
-                            "requirements"
-                        ),
+                        "target_requirements": self._target_binding.get("requirements"),
                         "target_revision": self._target_binding.get("revision"),
                         "write_mode": self._target_binding.get("write_mode"),
                     }
@@ -762,7 +778,11 @@ class InferredDataset:
         self, source: str, *, format: str | None = None
     ) -> PipelineDefinition:
         """Return a definition explicitly rebound to a local source."""
-        return rebind_definition(self.definition(), source=source, format=format)
+        return rebind_definition(
+            self.definition(_allow_unresolved_source=True),
+            source=source,
+            format=format,
+        )
 
     def plan(self) -> PipelineDefinition:
         """Return the validated authoring definition used by plan consumers."""
@@ -1180,11 +1200,14 @@ def from_records(
     name: str = "records",
     hints: Mapping[str, Any] | None = None,
     limits: InferenceLimits | None = None,
+    source_factory: Callable[[], Any] | None = None,
 ) -> InferredDataset:
+    result = infer_records(
+        records, hints=hints, limits=limits, identity=name, retain_rows=True
+    )
+    _register_records_source(name, records, source_factory)
     return InferredDataset(
-        infer_records(
-            records, hints=hints, limits=limits, identity=name, retain_rows=True
-        ),
+        result,
         name=name,
         source_binding=records_binding(name),
     )
@@ -1199,21 +1222,44 @@ def from_records_for_target(
     limits: InferenceLimits | None = None,
     expected_revision: str | None = None,
     revision_reader: Callable[[], Any] | None = None,
+    source_factory: Callable[[], Any] | None = None,
 ) -> InferredDataset:
     """Create a data first handle using an existing target as a type constraint."""
+    result = infer_records_for_target(
+        records,
+        target,
+        hints=hints,
+        limits=limits,
+        identity=name,
+        retain_rows=True,
+        expected_revision=expected_revision,
+        revision_reader=revision_reader,
+    )
+    _register_records_source(name, records, source_factory)
     return InferredDataset(
-        infer_records_for_target(
-            records,
-            target,
-            hints=hints,
-            limits=limits,
-            identity=name,
-            retain_rows=True,
-            expected_revision=expected_revision,
-            revision_reader=revision_reader,
-        ),
+        result,
         name=name,
         source_binding=records_binding(name),
+    )
+
+
+def _register_records_source(
+    name: str,
+    records: Any,
+    factory: Callable[[], Any] | None,
+) -> None:
+    if factory is not None:
+        register_source_factory(name, factory)
+        return
+    if isinstance(records, Mapping):
+        snapshot = (dict(records),)
+    elif isinstance(records, (list, tuple)):
+        snapshot = tuple(dict(row) for row in records if isinstance(row, Mapping))
+    else:
+        return
+    register_source_factory(
+        name,
+        lambda snapshot=snapshot: [dict(row) for row in snapshot],
     )
 
 

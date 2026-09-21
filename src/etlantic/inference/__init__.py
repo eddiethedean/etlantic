@@ -1,8 +1,10 @@
 """Optional, data first schema and model inference."""
 
 from .durable import (
+    ResolvedFileSource,
     rebind_definition,
     register_source_factory,
+    reopen_source_binding,
     resolve_source_binding,
     source_factory,
     unregister_source_factory,
@@ -39,6 +41,7 @@ __all__ = [
     "InferenceResult",
     "OutputProposal",
     "ReplayHandle",
+    "ResolvedFileSource",
     "SchemaEvidence",
     "TargetObservation",
     "WriteCompatibility",
@@ -59,6 +62,7 @@ __all__ = [
     "model_from_schema",
     "rebind_definition",
     "register_source_factory",
+    "reopen_source_binding",
     "resolve_source_binding",
     "solve_backward_constraints",
     "source_factory",

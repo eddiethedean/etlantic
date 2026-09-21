@@ -18,6 +18,57 @@ BINDING_VERSION = 1
 _SOURCE_FACTORIES: dict[str, Callable[[], Any]] = {}
 
 
+class ResolvedFileSource:
+    """Resolved row-free file source details for a host-side reopen."""
+
+    __slots__ = ("format", "lines", "options", "path")
+
+    def __init__(
+        self,
+        path: Path,
+        format: str,
+        options: Mapping[str, Any],
+        lines: bool = False,
+    ) -> None:
+        self.path = path
+        self.format = format
+        self.options = dict(options)
+        self.lines = lines
+
+
+_FILE_OPTION_KEYS = frozenset(
+    {
+        "delimiter",
+        "quotechar",
+        "escapechar",
+        "doublequote",
+        "strict",
+        "encoding",
+        "null_values",
+    }
+)
+
+
+def _safe_file_options(options: Mapping[str, Any] | None) -> dict[str, Any]:
+    """Keep only bounded parser options with no provider or secret payloads."""
+    safe: dict[str, Any] = {}
+    normalized = {str(key): value for key, value in (options or {}).items()}
+    for key in sorted(normalized):
+        value = normalized[key]
+        if key not in _FILE_OPTION_KEYS:
+            continue
+        if key == "null_values":
+            if isinstance(value, (list, tuple, set, frozenset)):
+                values = list(value)
+                if isinstance(value, (set, frozenset)):
+                    values.sort(key=str)
+                safe[key] = [str(item) for item in values[:256]]
+            continue
+        if value is None or isinstance(value, (bool, int, str)):
+            safe[key] = value
+    return safe
+
+
 def register_source_factory(key: str, factory: Callable[[], Any]) -> None:
     """Register a host-owned source factory for a records binding.
 
@@ -64,7 +115,7 @@ def file_binding(
         "format": format,
         "identity": str(identity),
         "uri": str(Path(path).expanduser().resolve()),
-        "options": _wire_value(dict(options or {})),
+        "options": _safe_file_options(options),
     }
     if lines is not None:
         payload["lines"] = bool(lines)
@@ -112,7 +163,9 @@ def _source_binding_for_rebind(
         return payload
     path = Path(source)
     suffix = path.suffix.lower()
-    source_format = format or ("json" if suffix in {".json", ".jsonl"} else suffix.lstrip("."))
+    source_format = format or (
+        "json" if suffix in {".json", ".jsonl"} else suffix.lstrip(".")
+    )
     if source_format not in {"csv", "tsv", "json", "jsonl"}:
         raise ValueError(
             f"INFER_SOURCE_UNSUPPORTED: cannot durably bind {source_format!r} source"
@@ -137,11 +190,11 @@ def rebind_definition(
     if not isinstance(definition, PipelineDefinition):
         raise TypeError("definition must be a PipelineDefinition")
     source_payload = (
-        _source_binding_for_rebind(source, format=format) if source is not None else None
+        _source_binding_for_rebind(source, format=format)
+        if source is not None
+        else None
     )
-    target_payload = (
-        dict(_wire_value(dict(target))) if target is not None else None
-    )
+    target_payload = dict(_wire_value(dict(target))) if target is not None else None
     nodes: list[NodeDefinition] = []
     for node in definition.nodes:
         bindings = dict(node.bindings)
@@ -175,7 +228,52 @@ def resolve_source_binding(binding: Mapping[str, Any]) -> Any:
             raise ValueError(
                 f"INFER_SOURCE_UNRESOLVABLE: source file does not exist: {path}"
             )
-        return path
+        return ResolvedFileSource(
+            path,
+            str(binding["format"]),
+            binding.get("options", {})
+            if isinstance(binding.get("options", {}), Mapping)
+            else {},
+            bool(binding.get("lines", False)),
+        )
     raise ValueError(
         "INFER_SOURCE_UNSUPPORTED: source binding requires an explicit rebind"
+    )
+
+
+def reopen_source_binding(
+    binding: Mapping[str, Any],
+    *,
+    name: str | None = None,
+    hints: Mapping[str, Any] | None = None,
+    limits: Any | None = None,
+) -> Any:
+    """Reopen a durable binding through the public inference facade."""
+    resolved = resolve_source_binding(binding)
+    if isinstance(resolved, ResolvedFileSource):
+        from .facade import read_csv, read_json
+
+        source_name = name or str(binding.get("identity") or "source")
+        if resolved.format in {"csv", "tsv"}:
+            options = dict(resolved.options)
+            if resolved.format == "tsv":
+                options.setdefault("delimiter", "\t")
+            return read_csv(
+                str(resolved.path),
+                name=source_name,
+                options=options,
+                hints=hints,
+                limits=limits,
+            )
+        return read_json(
+            str(resolved.path),
+            name=source_name,
+            lines=resolved.lines or resolved.format == "jsonl",
+            hints=hints,
+            limits=limits,
+        )
+    from .facade import from_records
+
+    return from_records(
+        resolved, name=name or str(binding.get("identity") or "records")
     )

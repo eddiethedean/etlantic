@@ -30,6 +30,9 @@ from etlantic.inference import (
     ReplayHandle as ReplayHandle,
 )
 from etlantic.inference import (
+    ResolvedFileSource as ResolvedFileSource,
+)
+from etlantic.inference import (
     SchemaEvidence as SchemaEvidence,
 )
 from etlantic.inference import (
@@ -88,6 +91,9 @@ from etlantic.inference import (
 )
 from etlantic.inference import (
     register_source_factory as register_source_factory,
+)
+from etlantic.inference import (
+    reopen_source_binding as reopen_source_binding,
 )
 from etlantic.inference import (
     resolve_source_binding as resolve_source_binding,

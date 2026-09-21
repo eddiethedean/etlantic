@@ -555,6 +555,47 @@ def test_file_bindings_are_row_free_and_rebindable(tmp_path) -> None:
     assert rebound.nodes[0].bindings["source"]["uri"] == str(second.resolve())
     assert etl.authoring.pipeline_from_dict(rebound.to_dict()).fingerprint
 
+    resolved = etl.resolve_source_binding(binding)
+    assert resolved.path == first.resolve()
+
+
+def test_file_binding_reopens_with_parser_options(tmp_path) -> None:
+    path = tmp_path / "events.csv"
+    path.write_text("id;name\n1;one\n", encoding="utf-8")
+
+    dataset = etl.read_csv(
+        str(path), name="semicolon_events", options={"delimiter": ";"}
+    )
+    reopened = etl.reopen_source_binding(
+        dataset.definition().nodes[0].bindings["source"]
+    )
+    assert reopened.preview() == [{"id": 1, "name": "one"}]
+
+
+def test_provider_source_can_be_explicitly_rebound(tmp_path) -> None:
+    class Frame:
+        def __init__(self) -> None:
+            self.schema = {"id": int}
+
+    target = tmp_path / "rebound.csv"
+    target.write_text("id\n1\n", encoding="utf-8")
+    definition = etl.from_pandas(Frame(), name="frame").rebind_source(str(target))
+    assert definition.nodes[0].bindings["source"]["kind"] == "file"
+
+
+def test_records_definition_requires_a_registered_factory() -> None:
+    dataset = etl.from_records(
+        ({"id": value} for value in (1, 2)), name="one_shot_records"
+    )
+    with pytest.raises(ValueError, match="INFER_SOURCE_UNRESOLVABLE"):
+        dataset.definition()
+
+
+def test_materialized_records_register_a_runtime_reopen_factory() -> None:
+    dataset = etl.from_records([{"id": 1}], name="materialized_records")
+    binding = dataset.definition().nodes[0].bindings["source"]
+    assert etl.resolve_source_binding(binding) == [{"id": 1}]
+
 
 def test_unsupported_provider_does_not_look_durable() -> None:
     class Frame:
