@@ -6,6 +6,21 @@ from collections.abc import Iterable, Mapping
 from itertools import islice
 from typing import Any, Protocol, runtime_checkable
 
+DEFAULT_MATERIALIZATION_ROWS = 10_000
+
+
+def _bounded_view(data: Any, max_rows: int | None) -> Any:
+    """Require an explicit bounded view before eager provider conversion."""
+    if max_rows is None:
+        return data
+    head = getattr(data, "head", None)
+    if not callable(head):
+        raise ValueError("provider conversion requires a bounded head view")
+    bounded = head(max_rows + 1)
+    if bounded is data:
+        raise ValueError("provider head returned the unbounded source")
+    return bounded
+
 
 @runtime_checkable
 class StorageBinding(Protocol):
@@ -37,10 +52,10 @@ def as_records(
     data: Any,
     contract_type: type[Any] | None,
     *,
-    max_rows: int = 10_000,
+    max_rows: int | None = DEFAULT_MATERIALIZATION_ROWS,
 ) -> list[Any]:
     """Normalize data to a list of contract instances or mappings."""
-    if max_rows < 0:
+    if max_rows is not None and max_rows < 0:
         raise ValueError("max_rows must be non-negative")
     if data is None:
         return []
@@ -53,29 +68,41 @@ def as_records(
         # a declared materialization boundary.  Normalize that view before
         # validating a public Data contract rather than treating the frame
         # object itself as one record.
-        converted = data.to_dicts()
-        items = list(islice(converted, max_rows + 1)) if isinstance(converted, Iterable) else [converted]
+        converted = _bounded_view(data, max_rows).to_dicts()
+        items = (
+            list(islice(converted, max_rows + 1))
+            if max_rows is not None and isinstance(converted, Iterable)
+            else (list(converted) if isinstance(converted, Iterable) else [converted])
+        )
     elif hasattr(data, "to_dict") and callable(data.to_dict):
         try:
-            converted = data.to_dict(orient="records")
+            converted = _bounded_view(data, max_rows).to_dict(orient="records")
             items = (
                 list(islice(converted, max_rows + 1))
-                if isinstance(converted, Iterable)
+                if max_rows is not None
+                and isinstance(converted, Iterable)
                 and not isinstance(converted, Mapping)
-                else [converted]
+                else (
+                    list(converted)
+                    if isinstance(converted, Iterable)
+                    and not isinstance(converted, Mapping)
+                    else [converted]
+                )
             )
         except TypeError:
-            items = [data]
+            raise ValueError(
+                "provider to_dict conversion failed; refusing to retain provider object"
+            ) from None
     elif isinstance(data, Mapping):
         items = [data]
     elif isinstance(data, Iterable) and not isinstance(data, (str, bytes, bytearray)):
         # Generic iterables of dictionaries are the portable records boundary.
         # Materialize exactly once so generators remain usable by inference and
         # by subsequent contract validation.
-        items = list(islice(data, max_rows + 1))
+        items = list(islice(data, max_rows + 1)) if max_rows is not None else list(data)
     else:
         items = [data]
-    if len(items) > max_rows:
+    if max_rows is not None and len(items) > max_rows:
         raise ValueError(f"record materialization exceeded max_rows={max_rows}")
     if contract_type is None:
         return items
@@ -90,9 +117,11 @@ def as_records(
     return validated
 
 
-def records_to_dicts(data: Any) -> list[dict[str, Any]]:
+def records_to_dicts(
+    data: Any, *, max_rows: int | None = DEFAULT_MATERIALIZATION_ROWS
+) -> list[dict[str, Any]]:
     """Convert records to plain dicts for file writers."""
-    records = as_records(data, None)
+    records = as_records(data, None, max_rows=max_rows)
     out: list[dict[str, Any]] = []
     for item in records:
         if hasattr(item, "model_dump"):
@@ -100,5 +129,7 @@ def records_to_dicts(data: Any) -> list[dict[str, Any]]:
         elif isinstance(item, dict):
             out.append(dict(item))
         else:
-            out.append({"value": item})
+            raise ValueError(
+                "record conversion requires mappings or model instances; refusing provider object"
+            )
     return out

@@ -184,7 +184,9 @@ class LocalDataframePlugin:
         identity: str,
         limits: InferenceLimits | None = None,
     ) -> dict[str, Any] | None:
-        result = infer_source(value, identity=identity, limits=limits or InferenceLimits())
+        result = infer_source(
+            value, identity=identity, limits=limits or InferenceLimits()
+        )
         payload = schema_dict(result.schema)
         if payload is not None and result.diagnostics:
             payload["diagnostics"] = [

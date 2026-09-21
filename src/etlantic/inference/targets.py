@@ -5,8 +5,8 @@ from __future__ import annotations
 import datetime as _dt
 import inspect as _inspect
 import math
-from collections.abc import Mapping
-from decimal import Decimal
+from collections.abc import Callable, Mapping
+from decimal import Decimal, DecimalException
 from pathlib import Path
 from typing import Any
 
@@ -38,6 +38,41 @@ _LOSSLESS_CASTS = {
     ("date", "datetime"),
 }
 
+_KNOWN_LOGICAL_TYPES = {
+    "unknown",
+    "null",
+    "boolean",
+    "integer",
+    "number",
+    "decimal",
+    "string",
+    "binary",
+    "date",
+    "datetime",
+    "object",
+    "array",
+}
+
+
+def _target_logical_type(value: Any) -> str:
+    """Normalize provider types without inventing a new logical type."""
+    normalized = normalize_logical_type(value, preserve_decimal=True)
+    return normalized if normalized in _KNOWN_LOGICAL_TYPES else "unknown"
+
+
+def _unknown_type_diagnostics(schema: NormalizedSchema) -> tuple[Diagnostic, ...]:
+    return tuple(
+        Diagnostic(
+            "INFER_UNKNOWN_TYPE",
+            Severity.WARNING,
+            f"Target type for field {field.name!r} is unknown",
+            path=(field.name,),
+            phase="inference",
+        )
+        for field in schema.fields
+        if field.logical_type == "unknown"
+    )
+
 
 def _unknown_target(code: str = "INFER_TARGET_UNKNOWN") -> TargetObservation:
     return TargetObservation(
@@ -56,7 +91,22 @@ def _unknown_target(code: str = "INFER_TARGET_UNKNOWN") -> TargetObservation:
     )
 
 
-def _diagnostics_from_payload(value: Any) -> tuple[Diagnostic, ...]:
+def _with_target_diagnostic(
+    observation: TargetObservation, diagnostic: Diagnostic
+) -> TargetObservation:
+    return TargetObservation(
+        observation.schema,
+        observation.exists,
+        observation.revision,
+        observation.inspector,
+        (*observation.diagnostics, diagnostic),
+        observation.metadata,
+    )
+
+
+def _diagnostics_from_payload(
+    value: Any, *, max_diagnostics: int = 100
+) -> tuple[Diagnostic, ...]:
     """Normalize provider diagnostics without retaining arbitrary objects."""
     if not isinstance(value, (list, tuple)):
         return ()
@@ -71,7 +121,7 @@ def _diagnostics_from_payload(value: Any) -> tuple[Diagnostic, ...]:
             diagnostics.append(
                 Diagnostic(
                     str(item.get("code") or "INFER_TARGET_UNKNOWN"),
-                    Severity(str(item.get("severity") or "warning")),
+                    Severity(str(item.get("severity") or "warning").lower()),
                     str(item.get("message") or "Target inspection diagnostic"),
                     tuple(str(path) for path in item.get("path", ())),
                     phase="inference",
@@ -79,7 +129,7 @@ def _diagnostics_from_payload(value: Any) -> tuple[Diagnostic, ...]:
             )
         except (TypeError, ValueError):
             continue
-    return tuple(diagnostics)
+    return tuple(diagnostics[:max_diagnostics])
 
 
 def _schema_from_inspection(identity: str, fields: Any) -> NormalizedSchema:
@@ -110,9 +160,7 @@ def _schema_from_inspection(identity: str, fields: Any) -> NormalizedSchema:
                 item["logical_type"] = item["type"]
             if not item.get("name") or item.get("logical_type") is None:
                 raise ValueError("target field requires name and logical type")
-            item["logical_type"] = normalize_logical_type(
-                item["logical_type"], preserve_decimal=True
-            )
+            item["logical_type"] = _target_logical_type(item["logical_type"])
             normalized.append(item)
             continue
         field_name = getattr(field, "name", None)
@@ -123,9 +171,7 @@ def _schema_from_inspection(identity: str, fields: Any) -> NormalizedSchema:
             normalized.append(
                 {
                     "name": str(field_name),
-                    "logical_type": normalize_logical_type(
-                        logical_type, preserve_decimal=True
-                    ),
+                    "logical_type": _target_logical_type(logical_type),
                     "required": bool(getattr(field, "required", True)),
                     "nullable": bool(getattr(field, "nullable", False)),
                 }
@@ -147,10 +193,12 @@ def _attach_target_metadata(
     return NormalizedSchema(schema.identity, schema.fields, merged)
 
 
-def inspect_target(target: Any, *, identity: str = "target") -> TargetObservation:
+def inspect_target(
+    target: Any, *, identity: str = "target", max_diagnostics: int = 100
+) -> TargetObservation:
     """Inspect an existing target when its adapter exposes a schema."""
     if isinstance(target, NormalizedSchema):
-        return TargetObservation(target, "present", target.fingerprint(), "normalized")
+        return TargetObservation(target, "present", None, "normalized")
     if isinstance(target, Mapping):
         if not target:
             return TargetObservation(
@@ -188,11 +236,14 @@ def inspect_target(target: Any, *, identity: str = "target") -> TargetObservatio
             return TargetObservation(
                 schema if schema.fields else None,
                 "present",
-                str(revision) if revision is not None else (
-                    schema.fingerprint() if schema.fields else None
-                ),
+                str(revision) if revision is not None else None,
                 "mapping",
-                _diagnostics_from_payload(target.get("diagnostics")),
+                (
+                    *_unknown_type_diagnostics(schema),
+                    *_diagnostics_from_payload(
+                        target.get("diagnostics"), max_diagnostics=max_diagnostics
+                    ),
+                ),
                 metadata=metadata,
             )
     if hasattr(target, "names"):
@@ -201,7 +252,7 @@ def inspect_target(target: Any, *, identity: str = "target") -> TargetObservatio
             return TargetObservation(
                 schema if schema.fields else None,
                 "present",
-                schema.fingerprint() if schema.fields else None,
+                None,
                 type(target).__name__,
                 metadata={"empty": not bool(schema.fields), "identity": identity},
             )
@@ -231,7 +282,7 @@ def inspect_target(target: Any, *, identity: str = "target") -> TargetObservatio
         return TargetObservation(
             result.schema if result.schema.fields else None,
             "present",
-            result.schema.fingerprint() if result.schema.fields else None,
+            None,
             inspector,
             result.diagnostics,
             {"empty": not bool(result.schema.fields)},
@@ -246,23 +297,33 @@ def inspect_target(target: Any, *, identity: str = "target") -> TargetObservatio
                     close()
                 return _unknown_target("INFER_TARGET_UNSUPPORTED")
             if isinstance(result, NormalizedSchema):
-                return TargetObservation(
-                    result, "present", result.fingerprint(), type(target).__name__
-                )
+                return TargetObservation(result, "present", None, type(target).__name__)
             fields = (
                 result.get("fields", result)
                 if isinstance(result, Mapping)
                 else getattr(result, "fields", None)
             )
             if fields is not None:
-                schema = _schema_from_inspection(identity, fields)
+                target_identity = (
+                    str(result.get("identity") or identity)
+                    if isinstance(result, Mapping)
+                    else identity
+                )
+                schema = _schema_from_inspection(target_identity, fields)
                 payload_diagnostics = (
-                    _diagnostics_from_payload(result.get("diagnostics"))
+                    _diagnostics_from_payload(
+                        result.get("diagnostics"), max_diagnostics=max_diagnostics
+                    )
                     if isinstance(result, Mapping)
                     else ()
                 )
-                revision = result.get("revision") if isinstance(result, Mapping) else None
-                metadata = {"empty": not bool(schema.fields), "identity": identity}
+                revision = (
+                    result.get("revision") if isinstance(result, Mapping) else None
+                )
+                metadata = {
+                    "empty": not bool(schema.fields),
+                    "identity": target_identity,
+                }
                 if isinstance(result, Mapping):
                     for key in ("keys", "partitions", "capabilities"):
                         if key in result:
@@ -271,9 +332,7 @@ def inspect_target(target: Any, *, identity: str = "target") -> TargetObservatio
                 return TargetObservation(
                     schema if schema.fields else None,
                     "present",
-                    str(revision) if revision is not None else (
-                        schema.fingerprint() if schema.fields else None
-                    ),
+                    str(revision) if revision is not None else None,
                     type(target).__name__,
                     payload_diagnostics,
                     metadata,
@@ -292,9 +351,7 @@ def inspect_target(target: Any, *, identity: str = "target") -> TargetObservatio
         except Exception:
             schema_attr = None
     if isinstance(schema_attr, NormalizedSchema):
-        return TargetObservation(
-            schema_attr, "present", schema_attr.fingerprint(), type(target).__name__
-        )
+        return TargetObservation(schema_attr, "present", None, type(target).__name__)
     if isinstance(schema_attr, Mapping):
         fields = schema_attr.get("fields", schema_attr)
         try:
@@ -308,12 +365,16 @@ def inspect_target(target: Any, *, identity: str = "target") -> TargetObservatio
             for key in ("keys", "partitions", "capabilities"):
                 if key in schema_attr:
                     metadata[key] = schema_attr[key]
-        schema = _attach_target_metadata(schema, metadata, schema_attr.get("revision") if isinstance(schema_attr, Mapping) else None)
+        schema = _attach_target_metadata(
+            schema,
+            metadata,
+            schema_attr.get("revision") if isinstance(schema_attr, Mapping) else None,
+        )
         revision = schema_attr.get("revision")
         return TargetObservation(
             schema if schema.fields else None,
             "present",
-            str(revision) if revision is not None else (schema.fingerprint() if schema.fields else None),
+            str(revision) if revision is not None else None,
             type(target).__name__,
             _diagnostics_from_payload(schema_attr.get("diagnostics")),
             metadata,
@@ -327,14 +388,19 @@ async def inspect_target_async(
     identity: str = "target",
     binding: Mapping[str, Any] | None = None,
     context: Mapping[str, Any] | None = None,
+    max_diagnostics: int = 100,
 ) -> TargetObservation:
     """Inspect synchronous or asynchronous target adapters safely."""
     if isinstance(target, (NormalizedSchema, str, Path, bytes, Mapping)):
-        return inspect_target(target, identity=identity)
+        return inspect_target(
+            target, identity=identity, max_diagnostics=max_diagnostics
+        )
     inspect_schema = getattr(target, "inspect_schema", None)
     if not callable(inspect_schema):
         if not callable(getattr(target, "schema", None)):
-            return inspect_target(target, identity=identity)
+            return inspect_target(
+                target, identity=identity, max_diagnostics=max_diagnostics
+            )
         try:
             schema_attr = target.schema()
             if _inspect.isawaitable(schema_attr):
@@ -343,7 +409,7 @@ async def inspect_target_async(
                 return TargetObservation(
                     schema_attr,
                     "present",
-                    schema_attr.fingerprint(),
+                    None,
                     type(target).__name__,
                 )
             fields = (
@@ -353,11 +419,28 @@ async def inspect_target_async(
             )
             if fields is not None:
                 try:
-                    schema = _schema_from_inspection(identity, fields)
+                    target_identity = (
+                        str(schema_attr.get("identity") or identity)
+                        if isinstance(schema_attr, Mapping)
+                        else identity
+                    )
+                    schema = _schema_from_inspection(target_identity, fields)
                 except (KeyError, TypeError, ValueError):
                     return _unknown_target("INFER_TARGET_UNSUPPORTED")
-                revision = schema_attr.get("revision") if isinstance(schema_attr, Mapping) else None
-                metadata = {"empty": not bool(schema.fields), "identity": identity}
+                revision = (
+                    schema_attr.get("revision")
+                    if isinstance(schema_attr, Mapping)
+                    else None
+                )
+                target_identity = (
+                    str(schema_attr.get("identity") or identity)
+                    if isinstance(schema_attr, Mapping)
+                    else identity
+                )
+                metadata = {
+                    "empty": not bool(schema.fields),
+                    "identity": target_identity,
+                }
                 if isinstance(schema_attr, Mapping):
                     for key in ("keys", "partitions", "capabilities"):
                         if key in schema_attr:
@@ -366,14 +449,13 @@ async def inspect_target_async(
                 return TargetObservation(
                     schema if schema.fields else None,
                     "present",
-                    str(revision) if revision is not None else (
-                        schema.fingerprint() if schema.fields else None
-                    ),
+                    str(revision) if revision is not None else (None),
                     type(target).__name__,
                     _diagnostics_from_payload(
                         schema_attr.get("diagnostics")
                         if isinstance(schema_attr, Mapping)
-                        else None
+                        else None,
+                        max_diagnostics=max_diagnostics,
                     ),
                     metadata,
                 )
@@ -393,9 +475,7 @@ async def inspect_target_async(
         if _inspect.isawaitable(result):
             result = await result
         if isinstance(result, NormalizedSchema):
-            return TargetObservation(
-                result, "present", result.fingerprint(), type(target).__name__
-            )
+            return TargetObservation(result, "present", None, type(target).__name__)
         fields = (
             result.get("fields", result)
             if isinstance(result, Mapping)
@@ -403,16 +483,23 @@ async def inspect_target_async(
         )
         if fields is not None:
             try:
-                schema = _schema_from_inspection(identity, fields)
+                target_identity = (
+                    str(result.get("identity") or identity)
+                    if isinstance(result, Mapping)
+                    else identity
+                )
+                schema = _schema_from_inspection(target_identity, fields)
             except (KeyError, TypeError, ValueError):
                 return _unknown_target("INFER_TARGET_UNSUPPORTED")
             payload_diagnostics = (
-                _diagnostics_from_payload(result.get("diagnostics"))
+                _diagnostics_from_payload(
+                    result.get("diagnostics"), max_diagnostics=max_diagnostics
+                )
                 if isinstance(result, Mapping)
                 else ()
             )
             revision = result.get("revision") if isinstance(result, Mapping) else None
-            metadata = {"empty": not bool(schema.fields), "identity": identity}
+            metadata = {"empty": not bool(schema.fields), "identity": target_identity}
             if isinstance(result, Mapping):
                 for key in ("keys", "partitions", "capabilities"):
                     if key in result:
@@ -421,9 +508,7 @@ async def inspect_target_async(
             return TargetObservation(
                 schema if schema.fields else None,
                 "present",
-                str(revision) if revision is not None else (
-                    schema.fingerprint() if schema.fields else None
-                ),
+                str(revision) if revision is not None else (None),
                 type(target).__name__,
                 payload_diagnostics,
                 metadata,
@@ -440,7 +525,7 @@ async def inspect_target_async(
                 return TargetObservation(
                     schema_attr,
                     "present",
-                    schema_attr.fingerprint(),
+                    None,
                     type(target).__name__,
                 )
             fields = (
@@ -450,11 +535,23 @@ async def inspect_target_async(
             )
             if fields is not None:
                 try:
-                    schema = _schema_from_inspection(identity, fields)
+                    target_identity = (
+                        str(schema_attr.get("identity") or identity)
+                        if isinstance(schema_attr, Mapping)
+                        else identity
+                    )
+                    schema = _schema_from_inspection(target_identity, fields)
                 except (KeyError, TypeError, ValueError):
                     return _unknown_target("INFER_TARGET_UNSUPPORTED")
-                revision = schema_attr.get("revision") if isinstance(schema_attr, Mapping) else None
-                metadata = {"empty": not bool(schema.fields), "identity": identity}
+                revision = (
+                    schema_attr.get("revision")
+                    if isinstance(schema_attr, Mapping)
+                    else None
+                )
+                metadata = {
+                    "empty": not bool(schema.fields),
+                    "identity": target_identity,
+                }
                 if isinstance(schema_attr, Mapping):
                     for key in ("keys", "partitions", "capabilities"):
                         if key in schema_attr:
@@ -463,14 +560,13 @@ async def inspect_target_async(
                 return TargetObservation(
                     schema if schema.fields else None,
                     "present",
-                    str(revision) if revision is not None else (
-                        schema.fingerprint() if schema.fields else None
-                    ),
+                    str(revision) if revision is not None else None,
                     type(target).__name__,
                     _diagnostics_from_payload(
                         schema_attr.get("diagnostics")
                         if isinstance(schema_attr, Mapping)
-                        else None
+                        else None,
+                        max_diagnostics=max_diagnostics,
                     ),
                     metadata,
                 )
@@ -488,6 +584,7 @@ def infer_records_for_target(
     identity: str = "records",
     retain_rows: bool = False,
     expected_revision: str | None = None,
+    revision_reader: Callable[[], Any] | None = None,
 ) -> InferenceResult:
     """Infer records and apply constraints from an existing target schema."""
     # Keep the bounded prefix while validating conversions, even when the
@@ -495,7 +592,45 @@ def infer_records_for_target(
     source = infer_records(
         records, hints=hints, limits=limits, identity=identity, retain_rows=True
     )
-    observation = inspect_target(target, identity=f"target:{identity}")
+    limits = limits or InferenceLimits()
+    observation = (
+        target
+        if isinstance(target, TargetObservation)
+        else inspect_target(
+            target,
+            identity=f"target:{identity}",
+            max_diagnostics=limits.max_diagnostics,
+        )
+    )
+    if revision_reader is not None:
+        try:
+            current_revision = revision_reader()
+            if hasattr(current_revision, "__await__"):
+                raise TypeError("revision_reader returned an awaitable; use async API")
+        except Exception:
+            observation = _with_target_diagnostic(
+                observation,
+                Diagnostic(
+                    "INFER_TARGET_REVISION_UNKNOWN",
+                    Severity.ERROR,
+                    "Target revision could not be rechecked before planning",
+                    phase="inference",
+                ),
+            )
+        else:
+            current_revision = (
+                str(current_revision) if current_revision is not None else None
+            )
+            if current_revision != observation.revision:
+                observation = _with_target_diagnostic(
+                    observation,
+                    Diagnostic(
+                        "INFER_TARGET_STALE",
+                        Severity.ERROR,
+                        "Target revision changed after schema inspection",
+                        phase="inference",
+                    ),
+                )
     if expected_revision is not None and observation.revision != expected_revision:
         observation = TargetObservation(
             observation.schema,
@@ -523,6 +658,9 @@ def infer_records_for_target(
         {**result.provenance, "retained_rows": False},
         (),
         result.replay,
+        result.observed_schema,
+        result.target_hypothesis,
+        result.target_observation,
     )
 
 
@@ -537,14 +675,53 @@ async def infer_records_for_target_async(
     binding: Mapping[str, Any] | None = None,
     context: Mapping[str, Any] | None = None,
     expected_revision: str | None = None,
+    revision_reader: Callable[[], Any] | None = None,
 ) -> InferenceResult:
     """Async counterpart for connector-backed target schema inspection."""
     source = infer_records(
         records, hints=hints, limits=limits, identity=identity, retain_rows=True
     )
-    observation = await inspect_target_async(
-        target, identity=f"target:{identity}", binding=binding, context=context
+    limits = limits or InferenceLimits()
+    observation = (
+        target
+        if isinstance(target, TargetObservation)
+        else await inspect_target_async(
+            target,
+            identity=f"target:{identity}",
+            binding=binding,
+            context=context,
+            max_diagnostics=limits.max_diagnostics,
+        )
     )
+    if revision_reader is not None:
+        try:
+            current_revision = revision_reader()
+            if hasattr(current_revision, "__await__"):
+                current_revision = await current_revision
+        except Exception:
+            observation = _with_target_diagnostic(
+                observation,
+                Diagnostic(
+                    "INFER_TARGET_REVISION_UNKNOWN",
+                    Severity.ERROR,
+                    "Target revision could not be rechecked before planning",
+                    phase="inference",
+                ),
+            )
+        else:
+            current_revision = (
+                str(current_revision) if current_revision is not None else None
+            )
+            if current_revision != observation.revision:
+                observation = _with_target_diagnostic(
+                    observation,
+                    Diagnostic(
+                        "INFER_TARGET_STALE",
+                        Severity.ERROR,
+                        "Target revision changed after schema inspection",
+                        phase="inference",
+                    ),
+                )
     if expected_revision is not None and observation.revision != expected_revision:
         observation = TargetObservation(
             observation.schema,
@@ -572,24 +749,87 @@ async def infer_records_for_target_async(
         {**result.provenance, "retained_rows": False},
         (),
         result.replay,
+        result.observed_schema,
+        result.target_hypothesis,
+        result.target_observation,
     )
 
 
 def _backfill_observation(
     source: InferenceResult, observation: TargetObservation
 ) -> InferenceResult:
+    # Any target-side diagnostic means the target state is not qualified for
+    # constraint propagation.  A warning is still a provider assertion that
+    # the inspected schema may be incomplete or stale, so accepting it would
+    # turn partial target evidence into a durable source fact.
+    if observation.diagnostics:
+        return InferenceResult(
+            source.schema,
+            tuple(source.diagnostics) + tuple(observation.diagnostics),
+            source.evidence,
+            {
+                **source.provenance,
+                "target_exists": observation.exists,
+                "target_validation": "failed",
+            },
+            source.rows,
+            source.replay,
+            source.observed_schema,
+            source.target_hypothesis,
+            observation,
+        )
+    inspection_errors = tuple(
+        diagnostic
+        for diagnostic in observation.diagnostics
+        if getattr(
+            getattr(diagnostic, "severity", None),
+            "value",
+            getattr(diagnostic, "severity", None),
+        )
+        == Severity.ERROR.value
+        or (
+            isinstance(diagnostic, Mapping)
+            and str(diagnostic.get("severity", "")).lower() == "error"
+        )
+    )
+    if inspection_errors:
+        return InferenceResult(
+            source.schema,
+            tuple(source.diagnostics) + tuple(observation.diagnostics),
+            source.evidence,
+            {
+                **source.provenance,
+                "target_exists": observation.exists,
+                "target_validation": "failed",
+            },
+            source.rows,
+            source.replay,
+            source.observed_schema,
+            source.target_hypothesis,
+            observation,
+        )
     if any(
         getattr(diagnostic, "code", None) == "INFER_TARGET_STALE"
-        or (isinstance(diagnostic, Mapping) and diagnostic.get("code") == "INFER_TARGET_STALE")
+        or (
+            isinstance(diagnostic, Mapping)
+            and diagnostic.get("code") == "INFER_TARGET_STALE"
+        )
         for diagnostic in observation.diagnostics
     ):
         return InferenceResult(
             source.schema,
             tuple(source.diagnostics) + tuple(observation.diagnostics),
             source.evidence,
-            {**source.provenance, "target_exists": observation.exists, "target_validation": "stale"},
+            {
+                **source.provenance,
+                "target_exists": observation.exists,
+                "target_validation": "stale",
+            },
             source.rows,
             source.replay,
+            source.observed_schema,
+            source.target_hypothesis,
+            observation,
         )
     if observation.schema is None:
         return InferenceResult(
@@ -603,6 +843,9 @@ def _backfill_observation(
             },
             source.rows,
             source.replay,
+            source.observed_schema,
+            source.target_hypothesis,
+            observation,
         )
     backfilled = backfill_schema(source.schema, observation.schema)
     rows = list(source.rows)
@@ -619,9 +862,24 @@ def _backfill_observation(
                     continue
                 if source_field.logical_type == target_field.logical_type:
                     continue
+                if (
+                    source_field.logical_type,
+                    target_field.logical_type,
+                ) not in _LOSSLESS_CASTS:
+                    failed_fields.add(name)
+                    runtime_diagnostics.append(
+                        Diagnostic(
+                            "INFER_RUNTIME_CONVERSION",
+                            Severity.ERROR,
+                            f"Field {name!r} cannot be safely converted to {target_field.logical_type!r}",
+                            path=(name,),
+                            phase="inference",
+                        )
+                    )
+                    continue
                 try:
                     row[name] = _coerce_value(value, target_field.logical_type)
-                except (TypeError, ValueError, OverflowError):
+                except (TypeError, ValueError, OverflowError, DecimalException):
                     failed_fields.add(name)
                     runtime_diagnostics.append(
                         Diagnostic(
@@ -694,9 +952,17 @@ def _backfill_observation(
                     or source_field.logical_type == target_field.logical_type
                 ):
                     continue
+                if (
+                    source_field.logical_type,
+                    target_field.logical_type,
+                ) not in _LOSSLESS_CASTS:
+                    raise ValueError(
+                        f"Field {name!r} cannot be safely converted to target type "
+                        f"{target_field.logical_type!r}"
+                    )
                 try:
                     converted[name] = _coerce_value(value, target_field.logical_type)
-                except (TypeError, ValueError, OverflowError):
+                except (TypeError, ValueError, OverflowError, DecimalException):
                     raise ValueError(
                         f"Field {name!r} contains a value that cannot be converted "
                         f"to target type {target_field.logical_type!r}"
@@ -747,11 +1013,18 @@ def _backfill_observation(
         replay,
         source.observed_schema or source.schema,
         resolved_schema,
+        observation,
     )
 
 
 def _coerce_value(value: Any, logical_type: str) -> Any:
     if logical_type == "integer":
+        if isinstance(value, bool):
+            raise ValueError("boolean is not an integer value")
+        if isinstance(value, float) and not value.is_integer():
+            raise ValueError("integer conversion would lose the fractional part")
+        if isinstance(value, Decimal) and value != value.to_integral_value():
+            raise ValueError("integer conversion would lose the fractional part")
         return int(value)
     if logical_type == "number":
         converted = float(value)
@@ -862,10 +1135,16 @@ def backfill_schema(
                 if isinstance(lineage_entry, Mapping)
                 else True
             )
+            qualified_source_fields = (
+                tuple(lineage_entry.get("qualified_source_fields", ()))
+                if isinstance(lineage_entry, Mapping)
+                else (f"{source.identity}.{source_field.name}",)
+            )
             if len(source_fields) != 1 or not invertible:
                 backward_constraints[source_field.name] = {
                     "target_type": target_field.logical_type,
                     "source_fields": list(source_fields),
+                    "qualified_source_fields": list(qualified_source_fields),
                     "operations": list(
                         lineage_entry.get("operations", ())
                         if isinstance(lineage_entry, Mapping)
@@ -897,6 +1176,7 @@ def backfill_schema(
                         "status": "blocked",
                         "target_type": target_field.logical_type,
                         "source_fields": list(source_fields),
+                        "qualified_source_fields": list(qualified_source_fields),
                     }
                 )
                 continue
@@ -919,7 +1199,8 @@ def backfill_schema(
                     prior_types.update(
                         str(item.get("target_type"))
                         for item in prior.get("constraints", ())
-                        if isinstance(item, Mapping) and item.get("target_type") is not None
+                        if isinstance(item, Mapping)
+                        and item.get("target_type") is not None
                     )
                 if prior_types and target_field.logical_type not in prior_types:
                     backward_constraints[source_field.name] = {
@@ -929,6 +1210,9 @@ def backfill_schema(
                                 "target_type": target_field.logical_type,
                                 "observed_type": source_field.metadata.get(
                                     "observed_type", source_field.logical_type
+                                ),
+                                "qualified_source_fields": list(
+                                    qualified_source_fields
                                 ),
                                 "status": "conflict",
                             },
@@ -974,11 +1258,12 @@ def backfill_schema(
                     )
                     constraint = {
                         "target_type": target_field.logical_type,
-                            "observed_type": source_field.metadata.get(
-                                "observed_type", source_field.logical_type
-                            ),
+                        "observed_type": source_field.metadata.get(
+                            "observed_type", source_field.logical_type
+                        ),
                         "output_field": source_field.name,
                         "source_fields": [source_name],
+                        "qualified_source_fields": list(qualified_source_fields),
                         "operations": list(
                             lineage_entry.get("operations", ())
                             if isinstance(lineage_entry, Mapping)
@@ -994,9 +1279,13 @@ def backfill_schema(
                         previous_types.update(
                             str(item.get("target_type"))
                             for item in previous.get("constraints", ())
-                            if isinstance(item, Mapping) and item.get("target_type") is not None
+                            if isinstance(item, Mapping)
+                            and item.get("target_type") is not None
                         )
-                    if previous_types and target_field.logical_type not in previous_types:
+                    if (
+                        previous_types
+                        and target_field.logical_type not in previous_types
+                    ):
                         diagnostics.append(
                             Diagnostic(
                                 "INFER_BACKWARD_CONFLICT",
@@ -1019,6 +1308,7 @@ def backfill_schema(
                         "observed_type": source_field.logical_type,
                         "target_type": target_field.logical_type,
                         "source_fields": list(source_fields),
+                        "qualified_source_fields": list(qualified_source_fields),
                     }
                 )
                 diagnostics.append(
@@ -1059,7 +1349,13 @@ def backfill_schema(
             continue
         if any(
             target_field.metadata.get(key)
-            for key in ("default", "has_default", "generated", "identity", "auto_increment")
+            for key in (
+                "default",
+                "has_default",
+                "generated",
+                "identity",
+                "auto_increment",
+            )
         ):
             continue
         diagnostics.append(
@@ -1110,7 +1406,11 @@ def solve_backward_constraints(
     nonconvergent instead of returning an arbitrary final type.
     """
     current = InferenceResult(source)
-    target_items = tuple(targets) if not isinstance(targets, (NormalizedSchema, TargetObservation)) else (targets,)
+    target_items = (
+        tuple(targets)
+        if not isinstance(targets, (NormalizedSchema, TargetObservation))
+        else (targets,)
+    )
     seen: set[tuple[str, str]] = set()
     all_diagnostics: list[Any] = []
     for _iteration in range(max(1, max_iterations)):
@@ -1131,7 +1431,11 @@ def solve_backward_constraints(
         seen.add(before)
         changed = False
         for item in target_items:
-            observation = item if isinstance(item, TargetObservation) else TargetObservation(item, "present", item.fingerprint(), "provided")
+            observation = (
+                item
+                if isinstance(item, TargetObservation)
+                else TargetObservation(item, "present", None, "provided")
+            )
             result = _backfill_observation(current, observation)
             all_diagnostics.extend(result.diagnostics)
             changed = changed or result.schema != current.schema
@@ -1180,12 +1484,33 @@ def check_write_compatibility(
         # A schema accompanied by an inspector error is not a qualified
         # observation.  Do not let a useful-looking partial payload turn into
         # a proven write result.
+        if target_observation.diagnostics:
+            return WriteCompatibility(
+                False,
+                mode=mode,
+                diagnostics=(
+                    *target_observation.diagnostics,
+                    Diagnostic(
+                        "INFER_TARGET_UNKNOWN",
+                        Severity.ERROR,
+                        "Target inspection reported diagnostics; compatibility is unqualified",
+                        phase="inference",
+                    ),
+                ),
+            )
         inspector_errors = tuple(
             diagnostic
             for diagnostic in target_observation.diagnostics
-            if getattr(getattr(diagnostic, "severity", None), "value", getattr(diagnostic, "severity", None))
+            if getattr(
+                getattr(diagnostic, "severity", None),
+                "value",
+                getattr(diagnostic, "severity", None),
+            )
             == Severity.ERROR.value
-            or (isinstance(diagnostic, Mapping) and str(diagnostic.get("severity", "")).lower() == "error")
+            or (
+                isinstance(diagnostic, Mapping)
+                and str(diagnostic.get("severity", "")).lower() == "error"
+            )
         )
         if inspector_errors:
             return WriteCompatibility(
@@ -1349,9 +1674,7 @@ def check_write_compatibility(
         partitions = target_metadata.get("partitions")
         if not isinstance(partitions, (list, tuple)):
             partitions = [
-                field.name
-                for field in target.fields
-                if field.metadata.get("partition")
+                field.name for field in target.fields if field.metadata.get("partition")
             ]
         missing_partitions = [name for name in partitions if name not in source_fields]
         if not partitions or missing_partitions:
@@ -1370,7 +1693,10 @@ def check_write_compatibility(
     supported_modes: Any = None
     if isinstance(capabilities, Mapping):
         supported_modes = capabilities.get("write_modes", capabilities.get("modes"))
-        if not isinstance(supported_modes, (list, tuple, set)) or mode not in supported_modes:
+        if (
+            not isinstance(supported_modes, (list, tuple, set))
+            or mode not in supported_modes
+        ):
             diagnostics.append(
                 Diagnostic(
                     "INFER_WRITE_MODE_UNSUPPORTED",
@@ -1390,7 +1716,7 @@ def check_write_compatibility(
                     phase="inference",
                 )
             )
-    elif target_observation is not None and "capabilities" in target_metadata:
+    elif target_observation is not None:
         # Existing targets are qualified only when their adapter explicitly
         # advertises the requested operation.  Plain NormalizedSchema values
         # retain the legacy append behavior for class-authored contracts.
@@ -1417,7 +1743,9 @@ def check_write_compatibility(
     return WriteCompatibility(
         not incompatible
         and mode in modes
-        and not any(diagnostic.severity == Severity.ERROR for diagnostic in diagnostics),
+        and not any(
+            diagnostic.severity == Severity.ERROR for diagnostic in diagnostics
+        ),
         casts,
         tuple(incompatible),
         tuple(diagnostics),

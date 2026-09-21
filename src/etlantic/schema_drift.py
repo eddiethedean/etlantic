@@ -40,6 +40,110 @@ _ROW_LIKE_METADATA_KEYS = {
     "data",
 }
 
+# Metadata is not a general-purpose payload channel. Keep the control values
+# inference needs to round-trip, while redacting unknown primitive values that
+# may actually be provider row data.
+_SAFE_METADATA_KEYS = {
+    "version",
+    "fingerprint",
+    "code",
+    "severity",
+    "message",
+    "phase",
+    "path",
+    "identity",
+    "revision",
+    "source",
+    "method",
+    "inspector",
+    "status",
+    "exists",
+    "empty",
+    "sampled",
+    "header_only",
+    "rows_observed",
+    "retained_rows",
+    "bytes_observed",
+    "preview_rows_observed",
+    "preview_bytes_observed",
+    "preview_available",
+    "max_rows",
+    "max_fields",
+    "max_diagnostics",
+    "max_bytes",
+    "timeout_seconds",
+    "fields",
+    "field",
+    "name",
+    "logical_type",
+    "required",
+    "nullable",
+    "schema",
+    "observed_schema",
+    "target_hypothesis",
+    "target_observation",
+    "observed_values",
+    "null_values",
+    "missing_values",
+    "type_counts",
+    "limitations",
+    "inferred",
+    "inference_diagnostics",
+    "diagnostics",
+    "keys",
+    "partitions",
+    "capabilities",
+    "write_modes",
+    "modes",
+    "operations",
+    "operation",
+    "from",
+    "to",
+    "source_node",
+    "source_nodes",
+    "source_fields",
+    "qualified_source_fields",
+    "source_types",
+    "target_type",
+    "observed_type",
+    "output_field",
+    "constraints",
+    "confidence",
+    "lineage",
+    "lineage_version",
+    "lineage_fingerprint",
+    "graph",
+    "backward_constraints",
+    "backfill_explanations",
+    "target_validation",
+    "target_validation_fields",
+    "target_fingerprint",
+    "observed_schema_fingerprint",
+    "context",
+    "provider_object",
+    "provider_type",
+    "adapter",
+    "plugin",
+    "create_required",
+    "create_intent",
+    "can_create",
+    "mode",
+    "compatible",
+    "casts",
+    "obligations",
+    "target",
+}
+_STRUCTURAL_MAP_KEYS = {
+    "casts",
+    "type_counts",
+    "source_types",
+    "backward_constraints",
+    "field_constraints",
+    "graph",
+    "capabilities",
+    "limits",
+}
+
 
 def _metadata_key_kind(key: str) -> str | None:
     """Classify metadata keys before values are traversed.
@@ -49,29 +153,72 @@ def _metadata_key_kind(key: str) -> str | None:
     normalize the spelling first and classify by stable tokens instead.
     """
     normalized = re.sub(r"[^a-z0-9]", "", key.casefold())
-    if any(token in normalized for token in ("secret", "password", "credential", "authorization", "apikey", "token")):
+    if any(
+        token in normalized
+        for token in (
+            "secret",
+            "password",
+            "credential",
+            "authorization",
+            "apikey",
+            "token",
+        )
+    ):
         return "secret"
-    if any(token in normalized for token in ("row", "record", "sample", "payload", "sourcevalue", "providerdata")):
-        return "row"
-    if normalized in {"value", "values", "data", "body", "content"}:
+    # Match row-bearing aliases, not ordinary control fields such as
+    # ``max_rows``, ``sampled`` or ``rows_observed``.  Those fields are
+    # necessary inference metadata and redacting them corrupts round trips.
+    if normalized in {
+        "row",
+        "rows",
+        "record",
+        "records",
+        "sample",
+        "samples",
+        "samplerow",
+        "samplerows",
+        "sourcevalue",
+        "sourcevalues",
+        "value",
+        "values",
+        "data",
+        "body",
+        "content",
+        "providerpayload",
+        "providerdata",
+    }:
         return "row"
     return None
 
 
 def _looks_like_path(value: str) -> bool:
     """Return whether a string appears to contain a local or URI path."""
-    if os.path.isabs(value) or value.startswith(("~/", "file://", "s3://", "gs://", "az://")):
+    if os.path.isabs(value) or value.startswith(
+        ("~/", "file://", "s3://", "gs://", "az://")
+    ):
         return True
     # Avoid leaking common temporary/home path fragments embedded in messages.
     return bool(re.search(r"(?:^|[\s=])/(?:Users|home|tmp|var|Volumes)/", value))
 
 
-def _json_safe(value: Any, *, key: str | None = None, depth: int = 0) -> Any:
+def _json_safe(
+    value: Any,
+    *,
+    key: str | None = None,
+    depth: int = 0,
+    allow_unknown_primitive: bool = False,
+) -> Any:
     """Bound metadata to JSON primitives without retaining provider objects."""
     if key is not None:
         key_kind = _metadata_key_kind(key)
         if key_kind in {"secret", "row"}:
             return "<redacted>"
+        normalized_key = re.sub(r"[^a-z0-9_]", "", key.casefold())
+        if normalized_key not in _SAFE_METADATA_KEYS and not allow_unknown_primitive:
+            if isinstance(value, (str, int, float, bool, bytes, date, datetime)):
+                return "<redacted>"
+            if isinstance(value, (list, tuple, set, frozenset)):
+                return "<redacted>"
     if depth > 6:
         return "<truncated>"
     if value is None or isinstance(value, (bool, int)):
@@ -85,18 +232,25 @@ def _json_safe(value: Any, *, key: str | None = None, depth: int = 0) -> Any:
     if isinstance(value, bytes):
         return f"<bytes:{len(value)}>"
     if isinstance(value, Mapping):
+        allow_children = key in _STRUCTURAL_MAP_KEYS
         return {
-            str(k): _json_safe(v, key=str(k), depth=depth + 1)
-            for k, v in list(value.items())[:256]
+            str(k): _json_safe(
+                v,
+                key=str(k),
+                depth=depth + 1,
+                allow_unknown_primitive=allow_children,
+            )
+            for k, v in sorted(value.items(), key=lambda item: str(item[0]))[:256]
         }
     if isinstance(value, (list, tuple, set, frozenset)):
-        return [_json_safe(v, depth=depth + 1) for v in list(value)[:256]]
+        values = list(value)
+        if isinstance(value, (set, frozenset)):
+            values.sort(key=repr)
+        return [_json_safe(v, depth=depth + 1) for v in values[:256]]
     return f"<{type(value).__module__}.{type(value).__qualname__}>"
 
 
-def json_safe_metadata(
-    value: Any, *, key: str | None = None, depth: int = 0
-) -> Any:
+def json_safe_metadata(value: Any, *, key: str | None = None, depth: int = 0) -> Any:
     """Return the bounded, redacted wire representation for metadata."""
     return _json_safe(value, key=key, depth=depth)
 
@@ -160,7 +314,8 @@ class NormalizedSchema:
     def to_dict(self) -> dict[str, Any]:
         """Serialize schema."""
         return {
-            "identity": self.identity,
+            "version": 1,
+            "identity": _json_safe(self.identity, key="identity"),
             "fields": [f.to_dict() for f in self.fields],
             "fingerprint": self.fingerprint(),
             "metadata": _json_safe(self.metadata),
@@ -169,13 +324,16 @@ class NormalizedSchema:
     @classmethod
     def from_dict(cls, data: dict[str, Any]) -> NormalizedSchema:
         """Deserialize a normalized schema (fingerprint is recomputed)."""
+        version = int(data.get("version", 1))
+        if version != 1:
+            raise ValueError(f"unsupported normalized schema version: {version}")
         fields = tuple(
             NormalizedField(
                 name=str(item["name"]),
                 logical_type=str(item.get("logical_type") or "unknown"),
                 required=bool(item.get("required", True)),
                 nullable=bool(item.get("nullable", False)),
-                metadata=dict(item.get("metadata") or {}),
+                metadata=_json_safe(item.get("metadata") or {}),
             )
             for item in (data.get("fields") or ())
             if isinstance(item, dict)
@@ -183,7 +341,7 @@ class NormalizedSchema:
         return cls(
             identity=str(data.get("identity") or ""),
             fields=fields,
-            metadata=dict(data.get("metadata") or {}),
+            metadata=_json_safe(data.get("metadata") or {}),
         )
 
 
@@ -531,7 +689,11 @@ def normalize_logical_type(value: Any, *, preserve_decimal: bool = False) -> str
             # Provider datatype instances (for example Arrow decimal128) use
             # a useful stable spelling.  An arbitrary object repr contains a
             # memory address and must never become a logical type or fingerprint.
-            raw = rendered if " at 0x" not in rendered and not rendered.startswith("<") else "unknown"
+            raw = (
+                rendered
+                if " at 0x" not in rendered and not rendered.startswith("<")
+                else "unknown"
+            )
     raw = raw.replace("typing.", "").strip().lower()
     raw = raw.rsplit(".", 1)[-1]
     # Provider-qualified spellings such as ``int64[pyarrow]`` and
@@ -541,7 +703,9 @@ def normalize_logical_type(value: Any, *, preserve_decimal: bool = False) -> str
     raw = re.sub(r"\[(?:pyarrow|numpy|arrow|pandas)(?:[^]]*)\]$", "", raw)
     if re.fullmatch(r"(?:decimal|decimal128|decimal256|numeric)\s*(?:\([^)]*\))?", raw):
         return "decimal" if preserve_decimal else "number"
-    if re.fullmatch(r"(?:timestamp|datetime|datetime64)\s*(?:\[[^]]*\]|\([^)]*\))?", raw):
+    if re.fullmatch(
+        r"(?:timestamp|datetime|datetime64)\s*(?:\[[^]]*\]|\([^)]*\))?", raw
+    ):
         return "datetime"
     if re.fullmatch(r"(?:date|date32|date64)\s*(?:\([^)]*\))?", raw):
         return "date"

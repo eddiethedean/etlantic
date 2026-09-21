@@ -5,6 +5,7 @@ from __future__ import annotations
 import inspect as _inspect
 import time
 from collections.abc import Mapping
+from itertools import islice
 from pathlib import Path
 from typing import Any, cast
 
@@ -34,6 +35,24 @@ _KNOWN_LOGICAL_TYPES = {
 }
 
 
+class _UnboundedProvider(RuntimeError):
+    """Provider conversion cannot prove the configured materialization bound."""
+
+
+def _bounded_row_count(value: Any) -> int | None:
+    try:
+        return max(0, len(value))
+    except (TypeError, ValueError, OverflowError):
+        pass
+    rows = getattr(value, "rows", None)
+    if rows is None:
+        return None
+    try:
+        return max(0, len(rows))
+    except (TypeError, ValueError, OverflowError):
+        return None
+
+
 def _provider_logical_type(value: Any) -> str:
     normalized = normalize_logical_type(value, preserve_decimal=True)
     return normalized if normalized in _KNOWN_LOGICAL_TYPES else "unknown"
@@ -61,12 +80,34 @@ def _bounded_materialization(value: Any, limits: InferenceLimits) -> Any | None:
         and time.monotonic() - started >= limits.timeout_seconds
     ):
         return None
+    # A provider that returns itself from ``head`` has not established a
+    # bounded materialization boundary.  Calling its conversion method could
+    # still consume the complete source.
+    if bounded is value:
+        return None
+    row_count = _bounded_row_count(bounded)
+    if row_count is not None and row_count > limits.max_rows:
+        return None
+    if row_count is None:
+        module = type(bounded).__module__.split(".", 1)[0].casefold()
+        if not getattr(bounded, "__etlantic_bounded_view__", False) and module not in {
+            "pandas",
+            "polars",
+            "duckdb",
+            "pyarrow",
+            "datafusion",
+        }:
+            return None
     if limits.max_bytes is not None:
         estimate: Any = None
         for attr in ("estimated_size", "nbytes", "byte_size", "memory_usage"):
             candidate = getattr(bounded, attr, None)
             try:
-                estimate = candidate(index=True) if attr == "memory_usage" and callable(candidate) else (candidate() if callable(candidate) else candidate)
+                estimate = (
+                    candidate(index=True)
+                    if attr == "memory_usage" and callable(candidate)
+                    else (candidate() if callable(candidate) else candidate)
+                )
                 if attr == "memory_usage" and hasattr(estimate, "sum"):
                     estimate = estimate.sum()
             except Exception:
@@ -74,7 +115,9 @@ def _bounded_materialization(value: Any, limits: InferenceLimits) -> Any | None:
             item_method = getattr(estimate, "item", None)
             if isinstance(estimate, (int, float)) or callable(item_method):
                 try:
-                    estimate = float(cast(Any, item_method() if callable(item_method) else estimate))
+                    estimate = float(
+                        cast(Any, item_method() if callable(item_method) else estimate)
+                    )
                 except (TypeError, ValueError):
                     estimate = None
                 break
@@ -86,6 +129,37 @@ def _bounded_materialization(value: Any, limits: InferenceLimits) -> Any | None:
         if isinstance(estimate, (int, float)) and estimate > limits.max_bytes:
             return None
     return bounded
+
+
+def _provider_records(bounded: Any, limits: InferenceLimits) -> list[Any]:
+    """Convert a proven bounded provider view without retaining extra rows."""
+    started = time.monotonic()
+    to_dicts = getattr(bounded, "to_dicts", None)
+    to_dict = getattr(bounded, "to_dict", None)
+    if callable(to_dicts):
+        records = to_dicts()
+    elif callable(to_dict):
+        try:
+            records = to_dict(orient="records")
+        except TypeError:
+            records = to_dict()
+    else:
+        raise _UnboundedProvider("bounded provider view has no record conversion")
+    if (
+        limits.timeout_seconds is not None
+        and time.monotonic() - started >= limits.timeout_seconds
+    ):
+        raise _UnboundedProvider("provider conversion exceeded the time budget")
+    if isinstance(records, Mapping):
+        records = [records]
+    elif not isinstance(records, (list, tuple)):
+        try:
+            records = list(islice(cast(Any, records), limits.max_rows + 1))
+        except TypeError as exc:
+            raise _UnboundedProvider("provider records are not iterable") from exc
+    if len(records) > limits.max_rows:
+        raise _UnboundedProvider("provider conversion exceeded max_rows")
+    return list(records)
 
 
 def _looks_like_schema_mapping(value: Mapping[str, Any]) -> bool:
@@ -124,7 +198,7 @@ def _source_failure(identity: str, source_name: str) -> InferenceResult:
 
 
 def _schema_from_provider_result(
-    result: Any, *, identity: str, method: str
+    result: Any, *, identity: str, method: str, max_diagnostics: int = 100
 ) -> InferenceResult | None:
     """Normalize a provider schema payload without importing its package."""
     if isinstance(result, NormalizedSchema):
@@ -162,16 +236,42 @@ def _schema_from_provider_result(
                 item = dict(field)
                 if "logical_type" not in item and "type" in item:
                     item["logical_type"] = item["type"]
-                if "logical_type" in item:
-                    item["logical_type"] = _provider_logical_type(item["logical_type"])
+                if not item.get("name") or item.get("logical_type") is None:
+                    return InferenceResult(
+                        NormalizedSchema(identity=identity, fields=()),
+                        (
+                            Diagnostic(
+                                "INFER_SOURCE_UNSUPPORTED",
+                                Severity.ERROR,
+                                "Provider schema fields are malformed",
+                                phase="inference",
+                            ),
+                        ),
+                        provenance={"source": "metadata", "method": method},
+                    )
+                item["logical_type"] = _provider_logical_type(item["logical_type"])
                 field_items.append(item)
             else:
                 field_type = getattr(field, "logical_type", None)
                 if field_type is None:
-                    field_type = getattr(field, "type", "unknown")
+                    field_type = getattr(field, "type", None)
+                field_name = getattr(field, "name", None)
+                if field_name is None or field_type is None:
+                    return InferenceResult(
+                        NormalizedSchema(identity=identity, fields=()),
+                        (
+                            Diagnostic(
+                                "INFER_SOURCE_UNSUPPORTED",
+                                Severity.ERROR,
+                                "Provider schema fields are malformed",
+                                phase="inference",
+                            ),
+                        ),
+                        provenance={"source": "metadata", "method": method},
+                    )
                 field_items.append(
                     {
-                        "name": str(getattr(field, "name", "")),
+                        "name": str(field_name),
                         "logical_type": _provider_logical_type(field_type),
                         "nullable": bool(getattr(field, "nullable", True)),
                     }
@@ -219,11 +319,26 @@ def _schema_from_provider_result(
                     phase="inference",
                 )
             )
-    return InferenceResult(
-        normalize_schema_from_fields(
+    try:
+        schema = normalize_schema_from_fields(
             field_items, identity=identity, preserve_decimal=True
-        ),
-        tuple(diagnostics_list[:100]),
+        )
+    except (KeyError, TypeError, ValueError):
+        return InferenceResult(
+            NormalizedSchema(identity=identity, fields=()),
+            (
+                Diagnostic(
+                    "INFER_SOURCE_UNSUPPORTED",
+                    Severity.ERROR,
+                    "Provider schema fields are malformed",
+                    phase="inference",
+                ),
+            ),
+            provenance={"source": "metadata", "method": method},
+        )
+    return InferenceResult(
+        schema,
+        tuple(diagnostics_list[:max_diagnostics]),
         provenance={"source": "metadata", "method": method},
     )
 
@@ -245,27 +360,39 @@ def _attach_provider_preview(
     """
     bounded = _bounded_materialization(value, limits)
     if bounded is None:
+        if callable(getattr(value, "head", None)):
+            return result.replace(
+                diagnostics=(
+                    Diagnostic(
+                        "INFER_SOURCE_UNBOUNDED",
+                        Severity.ERROR,
+                        "Provider head view could not prove the configured bounds",
+                        phase="inference",
+                    ),
+                    *result.diagnostics,
+                )
+            )
         return result
     try:
-        if callable(getattr(bounded, "to_dicts", None)):
-            records = bounded.to_dicts()
-        elif callable(getattr(bounded, "to_dict", None)):
-            try:
-                records = bounded.to_dict(orient="records")
-            except TypeError:
-                records = bounded.to_dict()
-        else:
-            return result
-        if isinstance(records, Mapping):
-            records = [records]
-        if not isinstance(records, (list, tuple)):
-            records = list(records)
+        records = _provider_records(bounded, limits)
         preview = infer_records(
             records,
             hints=hints,
             limits=limits,
             identity=identity,
             retain_rows=True,
+        )
+    except _UnboundedProvider:
+        return result.replace(
+            diagnostics=(
+                Diagnostic(
+                    "INFER_SOURCE_UNBOUNDED",
+                    Severity.ERROR,
+                    "Provider preview conversion could not prove the configured bounds",
+                    phase="inference",
+                ),
+                *result.diagnostics,
+            )
         )
     except Exception:
         return result.replace(
@@ -282,9 +409,15 @@ def _attach_provider_preview(
     return result.replace(
         rows=preview.rows,
         replay=preview.replay,
+        diagnostics=(
+            *result.diagnostics,
+            *preview.diagnostics,
+        )[: limits.max_diagnostics],
         provenance={
             **result.provenance,
-            "preview_rows_observed": preview.provenance.get("rows_observed", len(preview.rows)),
+            "preview_rows_observed": preview.provenance.get(
+                "rows_observed", len(preview.rows)
+            ),
             "preview_bytes_observed": preview.provenance.get("bytes_observed", 0),
             "preview_available": True,
         },
@@ -324,7 +457,10 @@ def infer_source(
                 )
             return result
         direct_schema = _schema_from_provider_result(
-            value, identity=identity, method="provider_schema"
+            value,
+            identity=identity,
+            method="provider_schema",
+            max_diagnostics=limits.max_diagnostics,
         )
         if direct_schema is None and ("fields" in value or "schema" in value):
             return InferenceResult(
@@ -341,7 +477,10 @@ def infer_source(
             )
     else:
         direct_schema = _schema_from_provider_result(
-            value, identity=identity, method="provider_schema"
+            value,
+            identity=identity,
+            method="provider_schema",
+            max_diagnostics=limits.max_diagnostics,
         )
     if direct_schema is not None:
         return _attach_provider_preview(
@@ -399,7 +538,10 @@ def infer_source(
                     provenance={"source": type(value).__name__},
                 )
             result = _schema_from_provider_result(
-                inspected, identity=identity, method="inspect_schema"
+                inspected,
+                identity=identity,
+                method="inspect_schema",
+                max_diagnostics=limits.max_diagnostics,
             )
             if result is not None:
                 return _attach_provider_preview(
@@ -450,7 +592,10 @@ def infer_source(
     if schema is not None:
         if isinstance(schema, Mapping) and "fields" in schema:
             result = _schema_from_provider_result(
-                schema, identity=identity, method="schema"
+                schema,
+                identity=identity,
+                method="schema",
+                max_diagnostics=limits.max_diagnostics,
             )
             if result is not None:
                 return _attach_provider_preview(
@@ -470,11 +615,18 @@ def infer_source(
             )
         elif not isinstance(schema, Mapping):
             provider_schema = _schema_from_provider_result(
-                schema, identity=identity, method="schema"
+                schema,
+                identity=identity,
+                method="schema",
+                max_diagnostics=limits.max_diagnostics,
             )
             if provider_schema is not None:
                 return _attach_provider_preview(
-                    provider_schema, value, limits=limits, hints=hints, identity=identity
+                    provider_schema,
+                    value,
+                    limits=limits,
+                    hints=hints,
+                    identity=identity,
                 )
         fields: list[dict[str, Any]] = []
         if isinstance(schema, Mapping):
@@ -547,7 +699,20 @@ def infer_source(
                 provenance={"source": type(value).__name__},
             )
         try:
-            records = bounded.to_dicts()
+            records = _provider_records(bounded, limits)
+        except _UnboundedProvider:
+            return InferenceResult(
+                NormalizedSchema(identity=identity, fields=()),
+                (
+                    Diagnostic(
+                        "INFER_SOURCE_UNBOUNDED",
+                        Severity.ERROR,
+                        "Provider conversion could not prove the configured bounds",
+                        phase="inference",
+                    ),
+                ),
+                provenance={"source": type(value).__name__},
+            )
         except Exception:
             return InferenceResult(
                 NormalizedSchema(identity=identity, fields=()),
@@ -591,23 +756,20 @@ def infer_source(
                 provenance={"source": type(value).__name__},
             )
         try:
-            converted = bounded.to_dict(orient="records")
-        except TypeError:
-            try:
-                converted = bounded.to_dict()
-            except Exception:
-                return InferenceResult(
-                    NormalizedSchema(identity=identity, fields=()),
-                    (
-                        Diagnostic(
-                            "INFER_SOURCE_UNSUPPORTED",
-                            Severity.ERROR,
-                            "Bounded provider conversion failed",
-                            phase="inference",
-                        ),
+            converted = _provider_records(bounded, limits)
+        except _UnboundedProvider:
+            return InferenceResult(
+                NormalizedSchema(identity=identity, fields=()),
+                (
+                    Diagnostic(
+                        "INFER_SOURCE_UNBOUNDED",
+                        Severity.ERROR,
+                        "Provider conversion could not prove the configured bounds",
+                        phase="inference",
                     ),
-                    provenance={"source": type(value).__name__},
-                )
+                ),
+                provenance={"source": type(value).__name__},
+            )
         except Exception:
             return InferenceResult(
                 NormalizedSchema(identity=identity, fields=()),
@@ -660,10 +822,15 @@ async def infer_source_async(
             if _inspect.isawaitable(inspected):
                 inspected = await inspected
             result = _schema_from_provider_result(
-                inspected, identity=identity, method="inspect_schema"
+                inspected,
+                identity=identity,
+                method="inspect_schema",
+                max_diagnostics=limits.max_diagnostics,
             )
             if result is not None:
-                return result
+                return _attach_provider_preview(
+                    result, value, limits=limits, hints=hints, identity=identity
+                )
         except Exception:
             return _source_failure(identity, type(value).__name__)
     schema = getattr(value, "schema", None)
@@ -677,10 +844,15 @@ async def infer_source_async(
             fields: list[dict[str, Any]] = []
             if isinstance(schema, Mapping) and "fields" in schema:
                 result = _schema_from_provider_result(
-                    schema, identity=identity, method="schema"
+                    schema,
+                    identity=identity,
+                    method="schema",
+                    max_diagnostics=limits.max_diagnostics,
                 )
                 if result is not None:
-                    return result
+                    return _attach_provider_preview(
+                        result, value, limits=limits, hints=hints, identity=identity
+                    )
             if isinstance(schema, Mapping):
                 fields = [
                     {

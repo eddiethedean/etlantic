@@ -36,15 +36,19 @@ def _diagnostic_dict(value: Any) -> dict[str, Any]:
         value = value.to_dict()
     if isinstance(value, Mapping):
         payload = _wire_value(value)
-        return dict(payload) if isinstance(payload, dict) else {
-            "code": "INFER_UNKNOWN_DIAGNOSTIC",
-            "message": "Diagnostic payload was not a mapping",
-        }
+        return (
+            dict(payload)
+            if isinstance(payload, dict)
+            else {
+                "code": "INFER_UNKNOWN_DIAGNOSTIC",
+                "message": "Diagnostic payload was not a mapping",
+            }
+        )
     return {"code": "INFER_UNKNOWN_DIAGNOSTIC", "message": _wire_value(str(value))}
 
 
-def _wire_mapping(value: Any) -> dict[str, Any]:
-    safe = _wire_value(value)
+def _wire_mapping(value: Any, *, key: str | None = None) -> dict[str, Any]:
+    safe = _wire_value(value, key=key)
     return dict(safe) if isinstance(safe, Mapping) else {}
 
 
@@ -61,10 +65,12 @@ def _diagnostic_from_dict(value: Any) -> Any:
     try:
         return Diagnostic(
             str(value.get("code") or "INFER_UNKNOWN_DIAGNOSTIC"),
-            Severity(str(value.get("severity") or "warning")),
+            Severity(str(value.get("severity") or "warning").lower()),
             str(value.get("message") or "Inference diagnostic"),
             tuple(str(item) for item in value.get("path", ())),
-            phase=(str(value["phase"]) if value.get("phase") is not None else "inference"),
+            phase=(
+                str(value["phase"]) if value.get("phase") is not None else "inference"
+            ),
         )
     except (TypeError, ValueError):
         return Diagnostic(
@@ -95,6 +101,7 @@ class InferenceLimits:
 
     def to_dict(self) -> dict[str, Any]:
         return {
+            "version": 1,
             "max_rows": self.max_rows,
             "max_fields": self.max_fields,
             "max_diagnostics": self.max_diagnostics,
@@ -104,6 +111,9 @@ class InferenceLimits:
 
     @classmethod
     def from_dict(cls, payload: dict[str, Any]) -> InferenceLimits:
+        version = int(payload.get("version", 1))
+        if version != 1:
+            raise ValueError(f"unsupported inference limits version: {version}")
         defaults = cls()
         return cls(
             max_rows=int(payload.get("max_rows", defaults.max_rows)),
@@ -144,11 +154,12 @@ class SchemaEvidence:
 
     def to_dict(self) -> dict[str, Any]:
         return {
+            "version": 1,
             "field": self.field,
             "observed_values": self.observed_values,
             "null_values": self.null_values,
             "missing_values": self.missing_values,
-            "type_counts": _wire_value(self.type_counts),
+            "type_counts": _wire_value(self.type_counts, key="type_counts"),
             "sampled": self.sampled,
             "method": self.method,
             "confidence": self.confidence,
@@ -167,17 +178,25 @@ class InferenceObservation:
     version: int = 1
     observed_schema: NormalizedSchema | None = None
     target_hypothesis: NormalizedSchema | None = None
+    target_observation: TargetObservation | None = None
 
     def to_dict(self) -> dict[str, Any]:
         return {
             "version": self.version,
             "schema": self.schema.to_dict(),
             "observed_schema": (
-                self.observed_schema.to_dict() if self.observed_schema is not None else None
+                self.observed_schema.to_dict()
+                if self.observed_schema is not None
+                else None
             ),
             "target_hypothesis": (
                 self.target_hypothesis.to_dict()
                 if self.target_hypothesis is not None
+                else None
+            ),
+            "target_observation": (
+                self.target_observation.to_dict()
+                if self.target_observation is not None
                 else None
             ),
             "diagnostics": [_diagnostic_dict(d) for d in self.diagnostics],
@@ -187,6 +206,7 @@ class InferenceObservation:
 
     @classmethod
     def from_dict(cls, payload: dict[str, Any]) -> InferenceObservation:
+        payload = _wire_mapping(payload)
         version = int(payload.get("version", 1))
         if version != 1:
             raise ValueError(f"unsupported inference observation version: {version}")
@@ -210,7 +230,10 @@ class InferenceObservation:
         )
         return cls(
             NormalizedSchema.from_dict(schema_payload),
-            tuple(_diagnostic_from_dict(item) for item in (payload.get("diagnostics") or ())),
+            tuple(
+                _diagnostic_from_dict(item)
+                for item in (payload.get("diagnostics") or ())
+            ),
             evidence,
             _wire_mapping(payload.get("provenance") or {}),
             version,
@@ -219,6 +242,9 @@ class InferenceObservation:
             else None,
             NormalizedSchema.from_dict(payload["target_hypothesis"])
             if isinstance(payload.get("target_hypothesis"), dict)
+            else None,
+            TargetObservation.from_dict(payload["target_observation"])
+            if isinstance(payload.get("target_observation"), dict)
             else None,
         )
 
@@ -281,6 +307,7 @@ class InferenceResult:
         "provenance",
         "schema",
         "target_hypothesis",
+        "target_observation",
     )
 
     def __init__(
@@ -293,6 +320,7 @@ class InferenceResult:
         replay: ReplayHandle | None = None,
         observed_schema: NormalizedSchema | None = None,
         target_hypothesis: NormalizedSchema | None = None,
+        target_observation: TargetObservation | None = None,
     ) -> None:
         self.schema = schema
         self.diagnostics = tuple(diagnostics)
@@ -302,6 +330,7 @@ class InferenceResult:
         self._replay = replay
         self.observed_schema = observed_schema
         self.target_hypothesis = target_hypothesis
+        self.target_observation = target_observation
 
     def __eq__(self, other: object) -> bool:
         if not isinstance(other, InferenceResult):
@@ -313,6 +342,7 @@ class InferenceResult:
             and self.provenance == other.provenance
             and self.observed_schema == other.observed_schema
             and self.target_hypothesis == other.target_hypothesis
+            and self.target_observation == other.target_observation
         )
 
     def replace(self, **changes: Any) -> InferenceResult:
@@ -322,8 +352,15 @@ class InferenceResult:
         runtime rows and replay state out of generic dataclass serialization.
         """
         allowed = {
-            "schema", "diagnostics", "evidence", "provenance", "rows", "replay",
-            "observed_schema", "target_hypothesis",
+            "schema",
+            "diagnostics",
+            "evidence",
+            "provenance",
+            "rows",
+            "replay",
+            "observed_schema",
+            "target_hypothesis",
+            "target_observation",
         }
         unknown = set(changes) - allowed
         if unknown:
@@ -337,6 +374,7 @@ class InferenceResult:
             changes.get("replay", self.replay),
             changes.get("observed_schema", self.observed_schema),
             changes.get("target_hypothesis", self.target_hypothesis),
+            changes.get("target_observation", self.target_observation),
         )
 
     @property
@@ -381,6 +419,7 @@ class InferenceResult:
             1,
             self.observed_schema,
             self.target_hypothesis,
+            self.target_observation,
         )
 
 
@@ -408,29 +447,36 @@ class TargetObservation:
         return {
             "version": 1,
             "schema": self.schema.to_dict() if self.schema is not None else None,
-            "identity": self.identity,
+            "identity": _wire_value(self.identity, key="identity"),
             "exists": self.exists,
             "revision": self.revision,
-            "inspector": self.inspector,
+            "inspector": _wire_value(self.inspector, key="inspector"),
             "diagnostics": [_diagnostic_dict(d) for d in self.diagnostics],
             "metadata": _wire_value(self.metadata),
         }
 
     @classmethod
     def from_dict(cls, payload: dict[str, Any]) -> TargetObservation:
+        payload = _wire_mapping(payload)
         version = int(payload.get("version", 1))
         if version != 1:
             raise ValueError(f"unsupported target observation version: {version}")
         schema_payload = payload.get("schema")
+        metadata = _wire_mapping(payload.get("metadata") or {})
+        if payload.get("identity") is not None:
+            metadata.setdefault("identity", str(payload["identity"]))
         return cls(
             NormalizedSchema.from_dict(schema_payload)
             if isinstance(schema_payload, dict)
             else None,
             str(payload.get("exists") or "unknown"),
-            payload.get("revision"),
+            str(payload["revision"]) if payload.get("revision") is not None else None,
             payload.get("inspector"),
-            tuple(_diagnostic_from_dict(item) for item in (payload.get("diagnostics") or ())),
-            _wire_mapping(payload.get("metadata") or {}),
+            tuple(
+                _diagnostic_from_dict(item)
+                for item in (payload.get("diagnostics") or ())
+            ),
+            metadata,
         )
 
 
@@ -449,12 +495,16 @@ class OutputProposal:
     @property
     def can_create(self) -> bool:
         """Whether an explicit create intent and provider capability exist."""
-        return self.create_required and self.create_intent and "create" in self.capabilities
+        return (
+            self.create_required
+            and self.create_intent
+            and "create" in self.capabilities
+        )
 
     def to_dict(self) -> dict[str, Any]:
         return {
             "version": self.version,
-            "identity": self.identity,
+            "identity": _wire_value(self.identity, key="identity"),
             "schema": self.schema.to_dict(),
             "create_required": self.create_required,
             "capabilities": list(self.capabilities),
@@ -476,7 +526,10 @@ class OutputProposal:
             str(payload.get("identity") or "proposal"),
             bool(payload.get("create_required", True)),
             tuple(str(item) for item in payload.get("capabilities", ())),
-            tuple(_diagnostic_from_dict(item) for item in (payload.get("diagnostics") or ())),
+            tuple(
+                _diagnostic_from_dict(item)
+                for item in (payload.get("diagnostics") or ())
+            ),
             version,
             bool(payload.get("create_intent", False)),
         )
@@ -541,7 +594,7 @@ class WriteCompatibility:
             "version": 1,
             "status": self.status,
             "compatible": self.compatible,
-            "casts": _wire_value(self.casts),
+            "casts": _wire_value(self.casts, key="casts"),
             "incompatible_fields": list(self.incompatible_fields),
             "diagnostics": [_diagnostic_dict(d) for d in self.diagnostics],
             "obligations": [_wire_value(item) for item in self.obligations],
@@ -555,7 +608,7 @@ class WriteCompatibility:
             raise ValueError(f"unsupported write compatibility version: {version}")
         return cls(
             bool(payload.get("compatible", False)),
-            _wire_mapping(payload.get("casts") or {}),
+            _wire_mapping(payload.get("casts") or {}, key="casts"),
             tuple(str(item) for item in payload.get("incompatible_fields", ())),
             tuple(
                 _diagnostic_from_dict(item)

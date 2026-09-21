@@ -3,10 +3,11 @@
 from __future__ import annotations
 
 import datetime as _dt
+import math
 import operator
 import re
 from collections.abc import Callable, Mapping
-from decimal import Decimal
+from decimal import Decimal, DecimalException
 from typing import Any
 
 from pydantic import Field, create_model
@@ -15,6 +16,7 @@ from etlantic.authoring.definition import (
     ContractDefinition,
     EdgeDefinition,
     FieldSpec,
+    ImplementationRef,
     NodeDefinition,
     PipelineDefinition,
     PortDefinitionSpec,
@@ -30,6 +32,7 @@ from .records import _path_identity, infer_csv, infer_records
 from .sources import infer_source
 from .targets import (
     _backfill_observation,
+    _coerce_value,
     check_write_compatibility,
     infer_records_for_target,
     inspect_target,
@@ -131,7 +134,27 @@ def _literal(node: Mapping[str, Any]) -> Any:
     return raw
 
 
-def _eval(node: Any, row: Mapping[str, Any]) -> Any:
+def _sql_and(left: Any, right: Any) -> bool | None:
+    if left is False or right is False:
+        return False
+    if left is None or right is None:
+        return None
+    return bool(left and right)
+
+
+def _sql_or(left: Any, right: Any) -> bool | None:
+    if left is True or right is True:
+        return True
+    if left is None or right is None:
+        return None
+    return bool(left or right)
+
+
+def _eval(
+    node: Any,
+    row: Mapping[str, Any],
+    diagnostics: list[Diagnostic] | None = None,
+) -> Any:
     if not isinstance(node, Mapping):
         return node
     kind = node.get("kind")
@@ -140,8 +163,19 @@ def _eval(node: Any, row: Mapping[str, Any]) -> Any:
     if kind == "literal":
         return _literal(node)
     if kind == "binary":
-        left, right = _eval(node.get("left"), row), _eval(node.get("right"), row)
+        left, right = (
+            _eval(node.get("left"), row, diagnostics),
+            _eval(node.get("right"), row, diagnostics),
+        )
         op = str(node.get("op"))
+        if op in {"eq", "not_eq", "lt", "lte", "gt", "gte"} and (
+            left is None or right is None
+        ):
+            return None
+        if op == "and":
+            return _sql_and(left, right)
+        if op == "or":
+            return _sql_or(left, right)
         ops: dict[str, Callable[[Any, Any], Any]] = {
             "add": operator.add,
             "subtract": operator.sub,
@@ -154,18 +188,16 @@ def _eval(node: Any, row: Mapping[str, Any]) -> Any:
             "lte": operator.le,
             "gt": operator.gt,
             "gte": operator.ge,
-            "and": lambda a, b: bool(a and b),
-            "or": lambda a, b: bool(a or b),
             "null_safe_eq": lambda a, b: a == b,
         }
         try:
             return ops[op](left, right)
-        except (KeyError, TypeError, ZeroDivisionError):
+        except (KeyError, TypeError, ZeroDivisionError, DecimalException):
             return None
     if kind == "unary":
-        value = _eval(node.get("expr"), row)
+        value = _eval(node.get("expr"), row, diagnostics)
         if node.get("op") == "not":
-            return not bool(value)
+            return None if value is None else not bool(value)
         if node.get("op") == "negate":
             try:
                 return -value
@@ -173,7 +205,7 @@ def _eval(node: Any, row: Mapping[str, Any]) -> Any:
                 return None
     if kind == "call":
         callee = str(node.get("callee"))
-        args = [_eval(item, row) for item in node.get("args", ())]
+        args = [_eval(item, row, diagnostics) for item in node.get("args", ())]
         if callee in {"dtcs:is_null", "is_null"}:
             return args[0] is None
         if callee in {"dtcs:is_not_null", "is_not_null"}:
@@ -199,25 +231,39 @@ def _eval(node: Any, row: Mapping[str, Any]) -> Any:
             )
             target = str(target_value).lower()
             try:
-                if target in {"int", "integer", "long"}:
-                    return int(args[0])
-                if target in {"float", "number", "double"}:
-                    return float(args[0])
-                if target in {"decimal", "numeric"}:
-                    return Decimal(str(args[0]))
-                if target in {"bool", "boolean"}:
-                    return bool(args[0])
-                if target in {"str", "string"}:
-                    return str(args[0])
-                if target == "date":
-                    return _dt.date.fromisoformat(str(args[0]))
-                if target == "datetime":
-                    return _dt.datetime.fromisoformat(str(args[0]))
-                if target in {"binary", "bytes"}:
-                    return (
-                        args[0].encode() if isinstance(args[0], str) else bytes(args[0])
+                target_aliases = {
+                    "int": "integer",
+                    "long": "integer",
+                    "float": "number",
+                    "double": "number",
+                    "numeric": "decimal",
+                    "bool": "boolean",
+                    "str": "string",
+                    "bytes": "binary",
+                }
+                return _coerce_value(args[0], target_aliases.get(target, target))
+            except (TypeError, ValueError, OverflowError, DecimalException):
+                if callee == "dtcs:cast" and diagnostics is not None:
+                    diagnostics.append(
+                        Diagnostic(
+                            "INFER_RUNTIME_CONVERSION",
+                            Severity.ERROR,
+                            f"Preview value cannot be safely cast to {target!r}",
+                            phase="inference",
+                        )
                     )
-            except (TypeError, ValueError):
+                return None
+        if callee in {"dtcs:to_string", "to_string"} and args:
+            return None if args[0] is None else str(args[0])
+        if callee in {"dtcs:to_integer", "to_integer"} and args:
+            try:
+                return _coerce_value(args[0], "integer")
+            except (TypeError, ValueError, OverflowError, DecimalException):
+                return None
+        if callee in {"dtcs:to_decimal", "to_decimal"} and args:
+            try:
+                return _coerce_value(args[0], "decimal")
+            except (TypeError, ValueError, OverflowError, DecimalException):
                 return None
         if callee.endswith("lower") and args:
             if args[0] is None:
@@ -228,10 +274,20 @@ def _eval(node: Any, row: Mapping[str, Any]) -> Any:
                 return None
             return str(args[0]).upper()
         if callee in {"dtcs:concat", "concat"}:
-            return "".join(str(value) for value in args)
+            return (
+                None
+                if any(value is None for value in args)
+                else "".join(str(value) for value in args)
+            )
         if callee in {"dtcs:concat_ws", "concat_ws"} and args:
-            return str(args[0]).join(str(value) for value in args[1:])
+            if args[0] is None:
+                return None
+            return str(args[0]).join(
+                str(value) for value in args[1:] if value is not None
+            )
         if callee in {"dtcs:substr", "dtcs:substring"} and args:
+            if args[0] is None:
+                return None
             start = int(args[1]) if len(args) > 1 else 0
             length = int(args[2]) if len(args) > 2 else None
             return (
@@ -240,7 +296,29 @@ def _eval(node: Any, row: Mapping[str, Any]) -> Any:
                 else str(args[0])[start : start + length]
             )
         if callee in {"dtcs:replace", "replace"} and len(args) >= 3:
-            return str(args[0]).replace(str(args[1]), str(args[2]))
+            return (
+                None
+                if args[0] is None
+                else str(args[0]).replace(str(args[1]), str(args[2]))
+            )
+        if callee in {"dtcs:regex_extract", "regex_extract"} and len(args) >= 2:
+            if args[0] is None or args[1] is None:
+                return None
+            try:
+                match = re.search(str(args[1]), str(args[0]))
+                if match is None:
+                    return None
+                group = int(args[2]) if len(args) > 2 and args[2] is not None else 0
+                return match.group(group)
+            except (IndexError, re.error, TypeError, ValueError):
+                return None
+        if callee in {"dtcs:regex_replace", "regex_replace"} and len(args) >= 3:
+            if args[0] is None or args[1] is None or args[2] is None:
+                return None
+            try:
+                return re.sub(str(args[1]), str(args[2]), str(args[0]))
+            except (re.error, TypeError, ValueError):
+                return None
         if (
             callee
             in {
@@ -251,6 +329,8 @@ def _eval(node: Any, row: Mapping[str, Any]) -> Any:
             }
             and args
         ):
+            if args[0] is None:
+                return None
             value = str(args[0])
             if callee.endswith("ltrim"):
                 return value.lstrip()
@@ -270,9 +350,61 @@ def _eval(node: Any, row: Mapping[str, Any]) -> Any:
                 return None
         if callee in {"dtcs:round", "round"} and args:
             try:
-                return None if args[0] is None else round(args[0], int(args[1]) if len(args) > 1 and args[1] is not None else 0)
+                return (
+                    None
+                    if args[0] is None
+                    else round(
+                        args[0],
+                        int(args[1]) if len(args) > 1 and args[1] is not None else 0,
+                    )
+                )
             except (TypeError, ValueError, OverflowError):
                 return None
+        if callee in {"dtcs:floor", "floor"} and args:
+            try:
+                return None if args[0] is None else math.floor(args[0])
+            except (TypeError, ValueError, OverflowError):
+                return None
+        if callee in {"dtcs:ceil", "ceil"} and args:
+            try:
+                return None if args[0] is None else math.ceil(args[0])
+            except (TypeError, ValueError, OverflowError):
+                return None
+        if callee in {"dtcs:power", "power"} and len(args) >= 2:
+            try:
+                return (
+                    None
+                    if args[0] is None or args[1] is None
+                    else pow(args[0], args[1])
+                )
+            except (TypeError, ValueError, OverflowError):
+                return None
+        if callee in {"dtcs:sqrt", "sqrt"} and args:
+            try:
+                return None if args[0] is None else math.sqrt(args[0])
+            except (TypeError, ValueError, OverflowError):
+                return None
+        if callee in {"dtcs:least", "least", "dtcs:greatest", "greatest"} and args:
+            if any(value is None for value in args):
+                return None
+            try:
+                return min(args) if callee.endswith("least") else max(args)
+            except (TypeError, ValueError):
+                return None
+        if callee in {"dtcs:current_date", "current_date"}:
+            return _dt.date.today()
+        if callee in {"dtcs:current_timestamp", "current_timestamp"}:
+            return _dt.datetime.now(_dt.UTC)
+    if diagnostics is not None and kind == "call":
+        callee = str(node.get("callee"))
+        diagnostics.append(
+            Diagnostic(
+                "INFER_EVALUATION_UNSUPPORTED",
+                Severity.ERROR,
+                f"Preview evaluator does not support expression {callee!r}",
+                phase="inference",
+            )
+        )
     return None
 
 
@@ -340,12 +472,26 @@ class InferredDataset:
         errors = [
             item
             for item in self.diagnostics
-            if getattr(getattr(item, "severity", None), "value", getattr(item, "severity", None))
+            if getattr(
+                getattr(item, "severity", None),
+                "value",
+                getattr(item, "severity", None),
+            )
             == Severity.ERROR.value
-            or (isinstance(item, Mapping) and str(item.get("severity", "")).lower() == "error")
+            or (
+                isinstance(item, Mapping)
+                and str(item.get("severity", "")).lower() == "error"
+            )
         ]
         if errors:
-            raise ValueError("inference diagnostics contain errors; durable export is not qualified")
+            raise ValueError(
+                "inference diagnostics contain errors; durable export is not qualified"
+            )
+        if self.replay is not None:
+            raise ValueError(
+                "durable inference definitions require a replayable source binding; "
+                "the inspected source is a one-shot bounded stream"
+            )
         if any(
             action.action
             in {
@@ -360,6 +506,7 @@ class InferredDataset:
                 "durable inference definitions require explicit bindings for every input; "
                 "multi-input join/union export is not supported by this facade"
             )
+
         def make_contract(schema: NormalizedSchema, suffix: str) -> ContractDefinition:
             contract_id = f"contract:{schema.identity}:{suffix}"
             return ContractDefinition(
@@ -393,7 +540,9 @@ class InferredDataset:
                     *(action.profiles for action in self._frame.actions[:index])
                 ),
                 schema_fields=(
-                    self._frame.schema_fields if index == len(self._frame.actions) else None
+                    self._frame.schema_fields
+                    if index == len(self._frame.actions)
+                    else None
                 ),
             )
             state_schemas.append(
@@ -423,9 +572,28 @@ class InferredDataset:
                     "functions": sorted(action.functions),
                     "profiles": sorted(action.profiles),
                 },
+                ports=(
+                    PortDefinitionSpec(
+                        name="input",
+                        direction="input",
+                        contract_id=contract_ids[index],
+                    ),
+                    PortDefinitionSpec(
+                        name="output",
+                        direction="output",
+                        contract_id=contract_ids[index + 1],
+                    ),
+                ),
+                implementation_refs=(
+                    ImplementationRef(
+                        engine="local",
+                        identity=f"portable:{action.action_id}",
+                        kind="portable",
+                    ),
+                ),
                 metadata={"etlantic.inference": {"lineage_path": action.path}},
             )
-            for action in self._frame.actions
+            for index, action in enumerate(self._frame.actions)
         )
         source_name = f"{self.name}_source"
         sink_name = f"{self.name}_output"
@@ -435,7 +603,12 @@ class InferredDataset:
                 kind="source",
                 identity=f"source:{self.schema.identity}",
                 contract_id=contract_ids[0],
-                outputs=(PortDefinitionSpec(name="output", direction="output", contract_id=contract_ids[0]),),
+                outputs=(
+                    PortDefinitionSpec(
+                        name="output", direction="output", contract_id=contract_ids[0]
+                    ),
+                ),
+                asset=self.name,
                 bindings={"source": self.name},
                 metadata={"etlantic.inference": self.observation.to_dict()},
             )
@@ -454,12 +627,16 @@ class InferredDataset:
                     transformation_name=action.action,
                     inputs=(
                         PortDefinitionSpec(
-                            name="input", direction="input", contract_id=contract_ids[index - 1]
+                            name="input",
+                            direction="input",
+                            contract_id=contract_ids[index - 1],
                         ),
                     ),
                     outputs=(
                         PortDefinitionSpec(
-                            name="output", direction="output", contract_id=contract_ids[index]
+                            name="output",
+                            direction="output",
+                            contract_id=contract_ids[index],
                         ),
                     ),
                     metadata={
@@ -488,7 +665,12 @@ class InferredDataset:
                 kind="sink",
                 identity=f"sink:{self.name}",
                 contract_id=contract_ids[-1],
-                inputs=(PortDefinitionSpec(name="input", direction="input", contract_id=contract_ids[-1]),),
+                inputs=(
+                    PortDefinitionSpec(
+                        name="input", direction="input", contract_id=contract_ids[-1]
+                    ),
+                ),
+                asset=self.name,
                 bindings={"target": self.name},
             )
         )
@@ -498,8 +680,8 @@ class InferredDataset:
                 producer_port="output",
                 consumer_node=sink_name,
                 consumer_port="input",
-            producer_contract_id=contract_ids[-1],
-            consumer_contract_id=contract_ids[-1],
+                producer_contract_id=contract_ids[-1],
+                consumer_contract_id=contract_ids[-1],
             )
         )
         return PipelineDefinition(
@@ -509,7 +691,10 @@ class InferredDataset:
             transformations=transformations,
             nodes=tuple(nodes_list),
             edges=tuple(edges),
-            provenance={"source": "etlantic.inference", "observation": self.observation.to_dict()},
+            provenance={
+                "source": "etlantic.inference",
+                "observation": self.observation.to_dict(),
+            },
             metadata={"etlantic.lineage": self.schema.metadata.get("lineage", {})},
         )
 
@@ -523,8 +708,11 @@ class InferredDataset:
         frame: FrameExpr,
         schema: NormalizedSchema | None = None,
         replay: Any | None = None,
+        extra_diagnostics: tuple[Diagnostic, ...] = (),
     ) -> InferredDataset:
-        observed = infer_records(rows, identity=self._root_schema.identity, retain_rows=True)
+        observed = infer_records(
+            rows, identity=self._root_schema.identity, retain_rows=True
+        )
         final_schema = schema or observed.schema
         transfer_diagnostics = tuple(
             Diagnostic(
@@ -553,6 +741,7 @@ class InferredDataset:
             self._result.diagnostics
             + observed.diagnostics
             + transfer_diagnostics
+            + extra_diagnostics
             + tuple(runtime_diagnostics)
         )
         max_diagnostics = int(
@@ -612,6 +801,7 @@ class InferredDataset:
             replay,
             self._result.observed_schema or self._root_schema,
             self._result.target_hypothesis,
+            self._result.target_observation,
         )
         return InferredDataset(
             result, name=self.name, frame=frame, root_schema=self._root_schema
@@ -620,24 +810,36 @@ class InferredDataset:
     def filter(self, condition: ColumnExpr) -> InferredDataset:
         expr = coerce_column(condition)
         frame = self._frame.filter(expr)
+        evaluation_diagnostics: list[Diagnostic] = []
         replay = None
         if self._result.replay is not None:
             replay = self._result.replay.filter(
-                lambda row: isinstance(row, Mapping) and bool(_eval(expr.node, row))
+                lambda row: (
+                    isinstance(row, Mapping)
+                    and bool(_eval(expr.node, row, evaluation_diagnostics))
+                )
             )
         return self._new(
-            [row for row in self._result.rows if bool(_eval(expr.node, row))],
+            [
+                row
+                for row in self._result.rows
+                if bool(_eval(expr.node, row, evaluation_diagnostics))
+            ],
             frame,
             forward_schema(
                 frame,
                 self._root_schema,
-                max_diagnostics=int(self.provenance.get("limits", {}).get("max_diagnostics", 100)),
+                max_diagnostics=int(
+                    self.provenance.get("limits", {}).get("max_diagnostics", 100)
+                ),
             ),
             replay,
+            tuple(evaluation_diagnostics),
         )
 
     def select(self, *columns: Any) -> InferredDataset:
         fields: list[tuple[str, Any]] = []
+        evaluation_diagnostics: list[Diagnostic] = []
         for column in columns:
             if isinstance(column, str):
                 fields.append((column, {"kind": "fieldRef", "target": column}))
@@ -645,7 +847,7 @@ class InferredDataset:
                 expr = coerce_column(column)
                 fields.append((expr.alias_name or f"_col_{len(fields)}", expr.node))
         rows = [
-            {name: _eval(node, row) for name, node in fields}
+            {name: _eval(node, row, evaluation_diagnostics) for name, node in fields}
             for row in self._result.rows
         ]
         frame = self._frame.project(*columns)
@@ -653,7 +855,10 @@ class InferredDataset:
         if self._result.replay is not None:
             replay = self._result.replay.map(
                 lambda row: (
-                    {name: _eval(node, row) for name, node in fields}
+                    {
+                        name: _eval(node, row, evaluation_diagnostics)
+                        for name, node in fields
+                    }
                     if isinstance(row, Mapping)
                     else row
                 )
@@ -664,22 +869,29 @@ class InferredDataset:
             forward_schema(
                 frame,
                 self._root_schema,
-                max_diagnostics=int(self.provenance.get("limits", {}).get("max_diagnostics", 100)),
+                max_diagnostics=int(
+                    self.provenance.get("limits", {}).get("max_diagnostics", 100)
+                ),
             ),
             replay,
+            tuple(evaluation_diagnostics),
         )
 
     project = select
 
     def withColumn(self, name: str, value: Any) -> InferredDataset:
         expr = coerce_column(value)
-        rows = [{**row, name: _eval(expr.node, row)} for row in self._result.rows]
+        evaluation_diagnostics: list[Diagnostic] = []
+        rows = [
+            {**row, name: _eval(expr.node, row, evaluation_diagnostics)}
+            for row in self._result.rows
+        ]
         frame = self._frame.withColumn(name, expr)
         replay = None
         if self._result.replay is not None:
             replay = self._result.replay.map(
                 lambda row: (
-                    {**row, name: _eval(expr.node, row)}
+                    {**row, name: _eval(expr.node, row, evaluation_diagnostics)}
                     if isinstance(row, Mapping)
                     else row
                 )
@@ -690,9 +902,12 @@ class InferredDataset:
             forward_schema(
                 frame,
                 self._root_schema,
-                max_diagnostics=int(self.provenance.get("limits", {}).get("max_diagnostics", 100)),
+                max_diagnostics=int(
+                    self.provenance.get("limits", {}).get("max_diagnostics", 100)
+                ),
             ),
             replay,
+            tuple(evaluation_diagnostics),
         )
 
     def drop(self, *columns: str) -> InferredDataset:
@@ -716,7 +931,9 @@ class InferredDataset:
             forward_schema(
                 frame,
                 self._root_schema,
-                max_diagnostics=int(self.provenance.get("limits", {}).get("max_diagnostics", 100)),
+                max_diagnostics=int(
+                    self.provenance.get("limits", {}).get("max_diagnostics", 100)
+                ),
             ),
             replay,
         )
@@ -770,7 +987,9 @@ class InferredDataset:
             forward_schema(
                 frame,
                 self._root_schema,
-                max_diagnostics=int(self.provenance.get("limits", {}).get("max_diagnostics", 100)),
+                max_diagnostics=int(
+                    self.provenance.get("limits", {}).get("max_diagnostics", 100)
+                ),
             ),
             replay,
         )
@@ -788,7 +1007,9 @@ class InferredDataset:
             forward_schema(
                 frame,
                 self._root_schema,
-                max_diagnostics=int(self.provenance.get("limits", {}).get("max_diagnostics", 100)),
+                max_diagnostics=int(
+                    self.provenance.get("limits", {}).get("max_diagnostics", 100)
+                ),
             ),
             replay,
         )
@@ -799,7 +1020,7 @@ class InferredDataset:
             TargetObservation(
                 target_schema,
                 "present",
-                target_schema.fingerprint(),
+                None,
                 "provided",
             ),
         )
@@ -844,9 +1065,18 @@ class InferredDataset:
         raw_capabilities = observation.metadata.get("capabilities", {})
         declared_capabilities: tuple[str, ...]
         if isinstance(raw_capabilities, Mapping):
-            values = raw_capabilities.get("operations", raw_capabilities.get("modes", ()))
-            declared_capabilities = tuple(str(item) for item in values) if isinstance(values, (list, tuple, set)) else ()
-            if raw_capabilities.get("create") is True and "create" not in declared_capabilities:
+            values = raw_capabilities.get(
+                "operations", raw_capabilities.get("modes", ())
+            )
+            declared_capabilities = (
+                tuple(str(item) for item in values)
+                if isinstance(values, (list, tuple, set))
+                else ()
+            )
+            if (
+                raw_capabilities.get("create") is True
+                and "create" not in declared_capabilities
+            ):
                 declared_capabilities = (*declared_capabilities, "create")
         elif isinstance(raw_capabilities, (list, tuple, set)):
             declared_capabilities = tuple(str(item) for item in raw_capabilities)
@@ -867,7 +1097,9 @@ class InferredDataset:
             create_required=True,
             capabilities=declared_capabilities,
             diagnostics=tuple(diagnostics),
-            create_intent=create_intent and observation.exists == "absent" and "create" in declared_capabilities,
+            create_intent=create_intent
+            and observation.exists == "absent"
+            and "create" in declared_capabilities,
         )
 
 
@@ -894,6 +1126,7 @@ def from_records_for_target(
     hints: Mapping[str, Any] | None = None,
     limits: InferenceLimits | None = None,
     expected_revision: str | None = None,
+    revision_reader: Callable[[], Any] | None = None,
 ) -> InferredDataset:
     """Create a data first handle using an existing target as a type constraint."""
     return InferredDataset(
@@ -905,6 +1138,7 @@ def from_records_for_target(
             identity=name,
             retain_rows=True,
             expected_revision=expected_revision,
+            revision_reader=revision_reader,
         ),
         name=name,
     )
@@ -930,7 +1164,6 @@ def read_csv(
         ),
         name=name,
     )
-
 
 
 def from_pandas(

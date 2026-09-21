@@ -9,6 +9,18 @@
     "capability_matrix.json",
     "finding_ledger.json"
   ],
+  "required_findings": [
+    "P0-durable-definition",
+    "P0-target-guided-observation",
+    "P0-target-observation-durability",
+    "P1-wire-redaction",
+    "P1-bounded-adapters",
+    "P1-target-compatibility",
+    "P1-preview-evaluator-parity",
+    "P1-storage-materialization",
+    "P1-evidence-scanner",
+    "P1-target-revision-explicit"
+  ],
   "required_gates": [
     "wire_security",
     "bounded_materialization",

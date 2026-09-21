@@ -10,6 +10,7 @@ import re
 import sys
 import time
 from collections.abc import Iterable, Mapping
+from contextlib import contextmanager
 from decimal import Decimal
 from itertools import chain
 from pathlib import Path
@@ -56,6 +57,24 @@ def _append_diag(
         diagnostics.append(diagnostic)
 
 
+def _guarded_iterator(
+    iterator: Iterable[Any], diagnostics: list[Diagnostic], limit: int
+) -> Iterable[Any]:
+    """Turn provider iterator failures into bounded inference diagnostics."""
+    try:
+        yield from iterator
+    except Exception as exc:
+        _append_diag(
+            diagnostics,
+            _diag(
+                "INFER_SOURCE_UNSUPPORTED",
+                f"Record provider failed during iteration: {type(exc).__name__}",
+                severity=Severity.ERROR,
+            ),
+            limit,
+        )
+
+
 def _csv_row(
     row: Mapping[str | None, Any],
     *,
@@ -79,6 +98,18 @@ def _csv_row(
             max_diagnostics,
         )
     return {name: _parse_csv_value(row.get(name), null_values) for name in fieldnames}
+
+
+@contextmanager
+def _csv_field_limit(max_bytes: int | None):
+    """Bound csv's internal field buffer and restore its process-global setting."""
+    previous = csv.field_size_limit()
+    try:
+        if max_bytes is not None:
+            csv.field_size_limit(max(1, min(previous, max_bytes)))
+        yield
+    finally:
+        csv.field_size_limit(previous)
 
 
 def _type_of(value: Any) -> str:
@@ -149,7 +180,9 @@ def _promote(types: set[str]) -> tuple[str, bool]:
     if non_null <= {"integer", "decimal"}:
         return "decimal", False
     if non_null <= {"integer", "decimal", "number"}:
-        return "number", False
+        # Decimal is the lossless common representation.  Promoting this
+        # mixture to binary number silently loses precision for large values.
+        return "decimal", False
     if non_null <= {"date", "datetime"}:
         return "datetime", False
     # Heterogeneous values are representable as strings only when all values
@@ -245,7 +278,9 @@ def infer_records(
     else:
         iterator = records
     try:
-        iterator = iter(iterator)
+        iterator = _guarded_iterator(
+            iter(iterator), diagnostics, limits.max_diagnostics
+        )
     except TypeError:
         _append_diag(
             diagnostics,
@@ -401,6 +436,7 @@ def infer_records(
     fields: list[NormalizedField] = []
     evidence: list[SchemaEvidence] = []
     mixed_fields: set[str] = set()
+    decimal_fields: set[str] = set()
     for name in names:
         entry = stats[name]
         logical, mixed = _promote(set(entry["types"]))
@@ -456,6 +492,8 @@ def infer_records(
                 ),
                 limits.max_diagnostics,
             )
+        if logical == "decimal":
+            decimal_fields.add(name)
         nullable = entry["null"] > 0 or entry["missing"] > 0
         fields.append(
             NormalizedField(
@@ -487,6 +525,12 @@ def infer_records(
             for name in mixed_fields:
                 if name in row and row[name] is not None:
                     row[name] = str(row[name])
+    if decimal_fields:
+        for row in rows:
+            for name in decimal_fields:
+                value = row.get(name)
+                if isinstance(value, (int, float)) and not isinstance(value, bool):
+                    row[name] = Decimal(str(value))
     schema = NormalizedSchema(
         identity=identity,
         fields=tuple(sorted(fields, key=lambda field: field.name)),
@@ -504,19 +548,20 @@ def infer_records(
         if replay_remainder is not None
         else None
     )
-    if replay is not None and mixed_fields:
+    if replay is not None and (mixed_fields or decimal_fields):
 
         def normalize_replay_row(row: Any) -> Any:
             if not isinstance(row, Mapping):
                 return row
-            return {
-                **row,
-                **{
-                    name: str(row[name])
-                    for name in mixed_fields
-                    if name in row and row[name] is not None
-                },
-            }
+            normalized = dict(row)
+            for name in mixed_fields:
+                if name in normalized and normalized[name] is not None:
+                    normalized[name] = str(normalized[name])
+            for name in decimal_fields:
+                value = normalized.get(name)
+                if isinstance(value, (int, float)) and not isinstance(value, bool):
+                    normalized[name] = Decimal(str(value))
+            return normalized
 
         replay = replay.map(normalize_replay_row)
     return InferenceResult(
@@ -539,9 +584,11 @@ def infer_csv(
     retain_rows: bool = False,
 ) -> InferenceResult:
     """Infer a CSV schema, parsing common scalar spellings before inference."""
-    opts = dict(options or {})
     limits = limits or InferenceLimits()
     try:
+        if options is not None and not isinstance(options, Mapping):
+            raise TypeError("CSV options must be a mapping")
+        opts = dict(options or {})
         null_values = {str(value) for value in opts.pop("null_values", {""})}
         encoding = opts.pop("encoding", "utf-8")
     except (TypeError, ValueError):
@@ -571,7 +618,10 @@ def infer_csv(
         }
     )
     try:
-        with Path(path).open("r", newline="", encoding=encoding) as handle:
+        with (
+            _csv_field_limit(limits.max_bytes),
+            Path(path).open("r", newline="", encoding=encoding) as handle,
+        ):
             reader = csv.DictReader(handle, **opts)
             if reader.fieldnames is None:
                 return InferenceResult(
@@ -905,6 +955,151 @@ def _read_json_array(
     return rows, diagnostics, sampled, bytes_observed
 
 
+def _infer_jsonl_bounded(
+    path: str | Path,
+    *,
+    limits: InferenceLimits,
+    hints: Mapping[str, Any] | None,
+    identity: str,
+    retain_rows: bool,
+) -> InferenceResult:
+    """Read JSON Lines through a byte-bounded binary boundary."""
+    rows: list[Mapping[str, Any]] = []
+    diagnostics: list[Diagnostic] = []
+    bytes_observed = 0
+    sampled = False
+    started_at = time.monotonic()
+    try:
+        with Path(path).open("rb") as handle:
+            line_number = 0
+            loop_completed = True
+            for line_number in range(1, limits.max_rows + 1):
+                if (
+                    limits.timeout_seconds is not None
+                    and time.monotonic() - started_at >= limits.timeout_seconds
+                ):
+                    sampled = True
+                    loop_completed = False
+                    _append_diag(
+                        diagnostics,
+                        _diag("INFER_LIMIT", "JSONL inference time limit reached"),
+                        limits.max_diagnostics,
+                    )
+                    break
+                remaining = (
+                    limits.max_bytes - bytes_observed
+                    if limits.max_bytes is not None
+                    else None
+                )
+                read_size = remaining + 1 if remaining is not None else -1
+                raw = handle.readline(read_size)
+                if not raw:
+                    loop_completed = False
+                    break
+                if remaining is not None and len(raw) > remaining:
+                    sampled = True
+                    loop_completed = False
+                    _append_diag(
+                        diagnostics,
+                        _diag("INFER_LIMIT", "JSONL inference byte limit reached"),
+                        limits.max_diagnostics,
+                    )
+                    break
+                bytes_observed += len(raw)
+                try:
+                    line = raw.decode("utf-8")
+                except UnicodeDecodeError:
+                    _append_diag(
+                        diagnostics,
+                        _diag(
+                            "INFER_JSON_ROW",
+                            "JSONL row is not valid UTF-8",
+                            path=(str(line_number),),
+                        ),
+                        limits.max_diagnostics,
+                    )
+                    continue
+                if not line.strip():
+                    continue
+                try:
+                    value = json.loads(line)
+                except json.JSONDecodeError:
+                    _append_diag(
+                        diagnostics,
+                        _diag(
+                            "INFER_JSON_ROW",
+                            "JSONL row could not be parsed",
+                            path=(str(line_number),),
+                        ),
+                        limits.max_diagnostics,
+                    )
+                    continue
+                if not isinstance(value, Mapping):
+                    _append_diag(
+                        diagnostics,
+                        _diag(
+                            "INFER_JSON_ROW",
+                            "JSONL row must be an object",
+                            path=(str(line_number),),
+                        ),
+                        limits.max_diagnostics,
+                    )
+                    continue
+                rows.append(value)
+            if loop_completed and line_number >= limits.max_rows:
+                probe = handle.readline(1)
+                if probe:
+                    sampled = True
+                    _append_diag(
+                        diagnostics,
+                        _diag("INFER_LIMIT", "JSONL inference row limit reached"),
+                        limits.max_diagnostics,
+                    )
+            else:
+                # The loop ended because the file was exhausted.  A full
+                # boundary sample is therefore not a sampled result.
+                pass
+    except (OSError, UnicodeError) as exc:
+        return InferenceResult(
+            NormalizedSchema(identity=identity, fields=()),
+            (
+                _diag(
+                    "INFER_JSON_PARSE",
+                    f"Unable to parse JSON: {type(exc).__name__}",
+                    severity=Severity.ERROR,
+                ),
+            ),
+            provenance={"source": "jsonl", "limits": limits.to_dict()},
+        )
+    result = infer_records(
+        rows,
+        hints=hints,
+        limits=InferenceLimits(
+            max_rows=max(len(rows), 1),
+            max_fields=limits.max_fields,
+            max_diagnostics=limits.max_diagnostics,
+            max_bytes=None,
+            timeout_seconds=limits.timeout_seconds,
+        ),
+        identity=identity,
+        retain_rows=retain_rows,
+    )
+    return InferenceResult(
+        result.schema,
+        tuple((diagnostics + list(result.diagnostics))[: limits.max_diagnostics]),
+        result.evidence,
+        {
+            **result.provenance,
+            "source": "jsonl",
+            "limits": limits.to_dict(),
+            "sampled": sampled,
+            "bytes_observed": bytes_observed,
+        },
+        result.rows,
+        result.replay,
+    )
+
+
 def infer_json(
     path: str | Path,
     *,
@@ -917,6 +1112,14 @@ def infer_json(
     """Infer a bounded JSON array or JSON Lines source."""
     source_id = identity or _path_identity("json", path)
     limits = limits or InferenceLimits()
+    if lines:
+        return _infer_jsonl_bounded(
+            path,
+            limits=limits,
+            hints=hints,
+            identity=source_id,
+            retain_rows=retain_rows,
+        )
     try:
         with Path(path).open("r", encoding="utf-8") as handle:
             if lines:

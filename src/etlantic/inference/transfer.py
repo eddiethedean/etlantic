@@ -8,7 +8,7 @@ from collections.abc import Mapping
 from typing import Any
 
 from etlantic.diagnostics import Diagnostic, Severity
-from etlantic.schema_drift import NormalizedField, NormalizedSchema
+from etlantic.schema_drift import NormalizedField, NormalizedSchema, json_safe_metadata
 
 
 def _merge(left: str, right: str) -> str:
@@ -19,7 +19,7 @@ def _merge(left: str, right: str) -> str:
     if {left, right} <= {"integer", "decimal"}:
         return "decimal"
     if {left, right} <= {"integer", "decimal", "number"}:
-        return "number"
+        return "decimal"
     if "string" in {left, right}:
         return "string"
     return "unknown"
@@ -52,7 +52,9 @@ def _initial_lineage(schema: NormalizedSchema) -> dict[str, dict[str, Any]]:
             continue
         lineage[field.name] = {
             "field": field.name,
+            "source_node": schema.identity,
             "source_fields": [field.name],
+            "qualified_source_fields": [f"{schema.identity}.{field.name}"],
             "source_types": {field.name: field.logical_type},
             "operations": [],
             "invertible": True,
@@ -61,7 +63,12 @@ def _initial_lineage(schema: NormalizedSchema) -> dict[str, dict[str, Any]]:
 
 
 def _lineage_fingerprint(lineage: Mapping[str, Any]) -> str:
-    payload = json.dumps(lineage, sort_keys=True, default=str, separators=(",", ":"))
+    payload = json.dumps(
+        json_safe_metadata(lineage),
+        sort_keys=True,
+        allow_nan=False,
+        separators=(",", ":"),
+    )
     return hashlib.sha256(payload.encode("utf-8")).hexdigest()
 
 
@@ -92,7 +99,21 @@ def _lineage_expression(
     ]
     return {
         "field": operation,
+        "source_nodes": list(
+            dict.fromkeys(
+                str(entry.get("source_node"))
+                for entry in entries
+                if entry.get("source_node") is not None
+            )
+        ),
         "source_fields": source_fields,
+        "qualified_source_fields": list(
+            dict.fromkeys(
+                field
+                for entry in entries
+                for field in entry.get("qualified_source_fields", ())
+            )
+        ),
         "source_types": source_types,
         "operations": operations,
         "invertible": direct
@@ -120,9 +141,7 @@ def infer_expression(
     kind = node.get("kind")
     if kind == "fieldRef":
         target = node.get("target")
-        field = next(
-            (field for field in schema.fields if field.name == target), None
-        )
+        field = next((field for field in schema.fields if field.name == target), None)
         if field is None and diagnostics is not None:
             diagnostics.append(
                 Diagnostic(
@@ -194,13 +213,17 @@ def infer_expression(
             return logical, all(nullable for _, nullable in inferred)
         if callee in {"dtcs:if_null", "if_null"} and len(args) >= 2:
             inferred = [infer_expression(arg, schema, diagnostics) for arg in args[:2]]
-            return _merge(inferred[0][0], inferred[1][0]), inferred[0][1] and inferred[1][1]
+            return _merge(inferred[0][0], inferred[1][0]), inferred[0][1] and inferred[
+                1
+            ][1]
         if callee in {"dtcs:null_if", "null_if"} and args:
             logical, nullable = infer_expression(args[0], schema, diagnostics)
             return logical, True if len(args) > 1 else nullable
         if callee in {"dtcs:case_when", "case_when"} and args:
             value_args = args[1::2][:-1] + args[-1:]
-            inferred = [infer_expression(arg, schema, diagnostics) for arg in value_args]
+            inferred = [
+                infer_expression(arg, schema, diagnostics) for arg in value_args
+            ]
             logical = inferred[0][0]
             for value, _ in inferred[1:]:
                 logical = _merge(logical, value)
@@ -520,7 +543,12 @@ def forward_schema(
         "version": 1,
         "fields": {
             name: {
+                "source_nodes": list(entry.get("source_nodes", ()))
+                or ([entry.get("source_node")] if entry.get("source_node") else []),
                 "source_fields": list(entry.get("source_fields", ())),
+                "qualified_source_fields": list(
+                    entry.get("qualified_source_fields", ())
+                ),
                 "operations": list(entry.get("operations", ())),
                 "invertible": bool(entry.get("invertible", False)),
             }

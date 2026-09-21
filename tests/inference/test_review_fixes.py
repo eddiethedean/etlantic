@@ -1,6 +1,8 @@
 """Regression coverage for the 0.55 review closure work."""
 
+import asyncio
 import json
+from decimal import Decimal
 
 import pytest
 
@@ -12,10 +14,20 @@ from etlantic.inference import (
     check_write_compatibility,
     infer_records,
     inspect_target,
+    inspect_target_async,
     solve_backward_constraints,
 )
 from etlantic.schema_drift import NormalizedField, NormalizedSchema
-from etlantic.transform.functions import col
+from etlantic.storage.protocol import records_to_dicts
+from etlantic.transform.functions import (
+    ceil,
+    col,
+    floor,
+    power,
+    sqrt,
+    to_decimal,
+    to_integer,
+)
 
 
 def test_provider_metadata_is_json_safe_and_python_types_are_normalized() -> None:
@@ -47,6 +59,38 @@ def test_malformed_target_payloads_fail_closed_and_empty_is_explicit() -> None:
     assert empty.schema is None
 
 
+def test_target_inspection_error_cannot_backfill_partial_schema() -> None:
+    result = etl.infer_records_for_target(
+        [{"id": "7"}],
+        {
+            "fields": [{"name": "id", "type": "integer"}],
+            "diagnostics": [{"code": "PROVIDER_READ_FAILED", "severity": "error"}],
+        },
+    )
+    assert result.schema.fields[0].logical_type == "string"
+    assert "PROVIDER_READ_FAILED" in {item.code for item in result.diagnostics}
+
+
+def test_lossy_target_cast_is_not_applied_to_preview_rows() -> None:
+    result = etl.infer_records_for_target(
+        [{"id": 1.5}],
+        {"fields": [{"name": "id", "type": "integer"}]},
+        retain_rows=True,
+    )
+    assert result.rows == ({"id": 1.5},)
+    assert result.schema.fields[0].logical_type == "number"
+    assert "INFER_RUNTIME_CONVERSION" in {item.code for item in result.diagnostics}
+
+
+def test_unknown_target_types_are_diagnosed() -> None:
+    observation = inspect_target(
+        {"fields": [{"name": "value", "type": "made_up_type"}]}
+    )
+    assert observation.schema is not None
+    assert observation.schema.fields[0].logical_type == "unknown"
+    assert "INFER_UNKNOWN_TYPE" in {item.code for item in observation.diagnostics}
+
+
 def test_missing_expression_reference_is_diagnosed() -> None:
     dataset = etl.from_records([{"id": 1}]).select(col("missing").alias("value"))
     assert "INFER_LINEAGE_MISSING" in {item.code for item in dataset.diagnostics}
@@ -56,7 +100,9 @@ def test_date_datetime_promotion_and_decimal_compatibility() -> None:
     import datetime as dt
     from decimal import Decimal
 
-    result = infer_records([{"value": dt.date(2024, 1, 1)}, {"value": dt.datetime(2024, 1, 2)}])
+    result = infer_records(
+        [{"value": dt.date(2024, 1, 1)}, {"value": dt.datetime(2024, 1, 2)}]
+    )
     assert result.schema.fields[0].logical_type == "datetime"
     source = NormalizedSchema("source", (NormalizedField("value", "decimal"),))
     target = NormalizedSchema("target", (NormalizedField("value", "number"),))
@@ -86,7 +132,11 @@ def test_target_revision_mismatch_does_not_backfill() -> None:
 
 def test_write_check_accepts_revision_aware_target_observation() -> None:
     observation = inspect_target(
-        {"revision": "v1", "fields": [{"name": "id", "type": "integer"}]}
+        {
+            "revision": "v1",
+            "capabilities": {"write_modes": ["append"]},
+            "fields": [{"name": "id", "type": "integer"}],
+        }
     )
     source = NormalizedSchema("source", (NormalizedField("id", "integer"),))
     assert check_write_compatibility(source, observation).status == "proven"
@@ -121,6 +171,15 @@ def test_definition_and_plan_use_pipeline_definition() -> None:
     assert dataset.plan().pipeline_id == definition.pipeline_id
 
 
+def test_one_shot_sampled_sources_cannot_be_exported_as_durable_definitions() -> None:
+    dataset = etl.from_records(
+        ({"id": index} for index in range(3)),
+        limits=etl.InferenceLimits(max_rows=1),
+    )
+    with pytest.raises(ValueError, match="one-shot"):
+        dataset.definition()
+
+
 def test_definition_contains_each_portable_transformation_step() -> None:
     dataset = etl.from_records([{"id": "1", "amount": 2}], name="orders")
     transformed = dataset.withColumn("total", col("amount") + 1).select("id", "total")
@@ -135,7 +194,9 @@ def test_definition_contains_each_portable_transformation_step() -> None:
 
 def test_cumulative_schema_transfer_replays_from_root_schema() -> None:
     dataset = etl.from_records([{"id": "1", "amount": 2}], name="orders")
-    transformed = dataset.withColumn("total", col("amount") + 1).rename({"id": "order_id"})
+    transformed = dataset.withColumn("total", col("amount") + 1).rename(
+        {"id": "order_id"}
+    )
     assert {field.name for field in transformed.schema.fields} == {
         "order_id",
         "amount",
@@ -173,6 +234,25 @@ def test_wire_diagnostic_round_trip_rehydrates_diagnostic() -> None:
     assert all(isinstance(item, Diagnostic) for item in restored.diagnostics)
 
 
+def test_wire_ingress_redacts_row_like_metadata_and_preserves_target_identity() -> None:
+    observation = InferenceObservation.from_dict(
+        {
+            "schema": {
+                "identity": "source",
+                "fields": [],
+                "metadata": {"sampleRows": [{"id": 1}]},
+            },
+            "provenance": {"provider_payload": [{"id": 1}]},
+        }
+    )
+    assert observation.schema.metadata["sampleRows"] == "<redacted>"
+    assert observation.provenance["provider_payload"] == "<redacted>"
+    target = etl.TargetObservation.from_dict(
+        {"identity": "target-x", "exists": "present", "schema": None}
+    )
+    assert target.identity == "target-x"
+
+
 def test_local_provider_conversion_without_head_fails_closed() -> None:
     from etlantic.dataframe.local import LocalDataframePlugin
 
@@ -183,6 +263,53 @@ def test_local_provider_conversion_without_head_fails_closed() -> None:
     result = LocalDataframePlugin().inspect_schema(Unbounded(), identity="source")
     assert result is not None
     assert result["diagnostics"][0]["code"] == "INFER_SOURCE_UNBOUNDED"
+
+
+def test_provider_head_must_return_a_distinct_bounded_view() -> None:
+    class Unbounded:
+        def head(self, count):
+            return self
+
+        def to_dicts(self):
+            raise AssertionError("self-returning head must not be materialized")
+
+    result = etl.infer_source(Unbounded(), limits=etl.InferenceLimits(max_rows=2))
+    assert "INFER_SOURCE_UNBOUNDED" in {item.code for item in result.diagnostics}
+
+
+def test_provider_iterator_failure_is_a_bounded_diagnostic() -> None:
+    def broken():
+        yield {"id": 1}
+        raise RuntimeError("provider failure")
+
+    result = etl.infer_records(broken())
+    assert result.schema.fields[0].name == "id"
+    assert "INFER_SOURCE_UNSUPPORTED" in {item.code for item in result.diagnostics}
+
+
+def test_invalid_csv_options_are_diagnosed(tmp_path) -> None:
+    path = tmp_path / "rows.csv"
+    path.write_text("id\n1\n", encoding="utf-8")
+    result = etl.infer_csv(path, options=123)  # type: ignore[arg-type]
+    assert "INFER_CSV_OPTIONS" in {item.code for item in result.diagnostics}
+
+
+def test_jsonl_byte_limit_precedes_oversized_line_parse(tmp_path) -> None:
+    path = tmp_path / "rows.jsonl"
+    path.write_text('{"value":"this line is too large"}\n', encoding="utf-8")
+    result = etl.infer_json(
+        path, lines=True, limits=etl.InferenceLimits(max_rows=10, max_bytes=8)
+    )
+    assert result.schema.fields == ()
+    assert "INFER_LIMIT" in {item.code for item in result.diagnostics}
+
+
+def test_csv_field_limit_precedes_oversized_field_parse(tmp_path) -> None:
+    path = tmp_path / "rows.csv"
+    path.write_text("value\nthis value is too large\n", encoding="utf-8")
+    result = etl.infer_csv(path, limits=etl.InferenceLimits(max_rows=10, max_bytes=8))
+    assert result.schema.fields[0].metadata["header_only"] is True
+    assert "INFER_SOURCE_UNSUPPORTED" in {item.code for item in result.diagnostics}
 
 
 def test_datafusion_schema_is_metadata_first_when_installed() -> None:
@@ -239,7 +366,9 @@ def test_target_inspector_error_fails_closed_even_with_schema() -> None:
     observation = inspect_target(
         {
             "fields": [{"name": "id", "type": "integer"}],
-            "diagnostics": [{"code": "DENIED", "severity": "error", "message": "denied"}],
+            "diagnostics": [
+                {"code": "DENIED", "severity": "error", "message": "denied"}
+            ],
         }
     )
     result = check_write_compatibility(
@@ -247,3 +376,129 @@ def test_target_inspector_error_fails_closed_even_with_schema() -> None:
     )
     assert result.compatible is False
     assert "INFER_TARGET_UNKNOWN" in {item.code for item in result.diagnostics}
+
+
+def test_target_observation_round_trips_into_durable_definitions() -> None:
+    dataset = etl.from_records_for_target(
+        [{"id": "7"}],
+        {
+            "revision": "r1",
+            "capabilities": {"write_modes": ["append", "merge"]},
+            "fields": [{"name": "id", "type": "integer"}],
+        },
+        name="users",
+    )
+    observation = dataset.observation.to_dict()
+    restored = InferenceObservation.from_dict(observation)
+    assert restored.target_observation is not None
+    assert restored.target_observation.revision == "r1"
+    definition = dataset.definition().to_dict()
+    assert "r1" in json.dumps(definition, sort_keys=True)
+    assert "merge" in json.dumps(definition, sort_keys=True)
+
+
+@pytest.mark.parametrize("severity", ["ERROR", "Warning"])
+def test_any_target_diagnostic_fails_closed_and_normalizes_severity(
+    severity: str,
+) -> None:
+    observation = inspect_target(
+        {
+            "fields": [{"name": "id", "type": "integer"}],
+            "diagnostics": [{"code": "DENIED", "severity": severity}],
+        }
+    )
+    assert observation.diagnostics[0].severity.value == severity.lower()
+    result = etl.infer_records_for_target([{"id": "7"}], observation, retain_rows=True)
+    assert result.schema.fields[0].logical_type == "string"
+    assert result.target_observation == observation
+    assert result.provenance["target_validation"] == "failed"
+    compatibility = check_write_compatibility(
+        NormalizedSchema("source", (NormalizedField("id", "integer"),)), observation
+    )
+    assert compatibility.compatible is False
+    assert "INFER_TARGET_UNKNOWN" in {item.code for item in compatibility.diagnostics}
+
+
+def test_metadata_redaction_preserves_inference_control_values() -> None:
+    from etlantic.schema_drift import json_safe_metadata
+
+    safe = json_safe_metadata(
+        {"max_rows": 2, "rows_observed": 2, "sampled": True, "sampleRows": [{"id": 1}]}
+    )
+    assert safe == {
+        "max_rows": 2,
+        "rows_observed": 2,
+        "sampled": True,
+        "sampleRows": "<redacted>",
+    }
+
+
+def test_provider_head_must_prove_conversion_bound() -> None:
+    class Provider:
+        def inspect_schema(self):
+            return {"fields": [{"name": "id", "type": "integer"}]}
+
+        def head(self, count):
+            return View()
+
+    class View:
+        def to_dicts(self):
+            return [{"id": index} for index in range(1000)]
+
+    result = etl.infer_source(Provider(), limits=etl.InferenceLimits(max_rows=2))
+    assert "INFER_SOURCE_UNBOUNDED" in {item.code for item in result.diagnostics}
+
+
+def test_storage_materialization_is_bounded_by_default() -> None:
+    consumed = 0
+
+    def rows():
+        nonlocal consumed
+        for index in range(1000):
+            consumed += 1
+            yield {"id": index}
+
+    with pytest.raises(ValueError, match="max_rows"):
+        records_to_dicts(rows(), max_rows=2)
+    assert consumed == 3
+
+
+def test_preview_evaluator_covers_numeric_and_conversion_functions() -> None:
+    dataset = etl.from_records([{"value": 9.5, "text": "9"}]).select(
+        floor(col("value")).alias("floor"),
+        ceil(col("value")).alias("ceil"),
+        power(col("value"), 2).alias("power"),
+        sqrt(col("value")).alias("sqrt"),
+        to_integer(col("text")).alias("integer"),
+        to_decimal(col("text")).alias("decimal"),
+    )
+    row = dataset.preview()[0]
+    assert row["floor"] == 9
+    assert row["ceil"] == 10
+    assert row["power"] == 90.25
+    assert row["sqrt"] == pytest.approx(3.0822, rel=1e-4)
+    assert row["integer"] == 9
+    assert row["decimal"] == Decimal("9")
+    assert not {
+        item.code
+        for item in dataset.diagnostics
+        if getattr(item.severity, "value", item.severity) == "error"
+    }
+
+
+def test_preview_evaluator_rejects_lossy_explicit_cast() -> None:
+    dataset = etl.from_records([{"value": Decimal("9007199254740993")}]).withColumn(
+        "converted", col("value").cast("number")
+    )
+    assert "INFER_RUNTIME_CONVERSION" in {item.code for item in dataset.diagnostics}
+
+
+def test_schema_only_targets_do_not_invent_revisions() -> None:
+    schema = NormalizedSchema("target", (NormalizedField("id", "integer"),))
+    assert inspect_target(schema).revision is None
+
+    class AsyncAdapter:
+        async def schema(self):
+            return schema
+
+    assert asyncio.run(inspect_target_async(AsyncAdapter())).revision is None

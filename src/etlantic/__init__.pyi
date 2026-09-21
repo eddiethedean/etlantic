@@ -81,10 +81,10 @@ from etlantic.inference import (
     inspect_target_async as inspect_target_async,
 )
 from etlantic.inference import (
-    solve_backward_constraints as solve_backward_constraints,
+    model_from_schema as model_from_schema,
 )
 from etlantic.inference import (
-    model_from_schema as model_from_schema,
+    solve_backward_constraints as solve_backward_constraints,
 )
 from etlantic.inference.facade import (
     InferredDataset as InferredDataset,
