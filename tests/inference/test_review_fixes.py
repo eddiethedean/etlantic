@@ -8,6 +8,7 @@ import pytest
 
 import etlantic as etl
 from etlantic.diagnostics import Diagnostic
+from etlantic.exceptions import PipelineValidationError
 from etlantic.inference import (
     InferenceObservation,
     OutputProposal,
@@ -595,6 +596,54 @@ def test_materialized_records_register_a_runtime_reopen_factory() -> None:
     dataset = etl.from_records([{"id": 1}], name="materialized_records")
     binding = dataset.definition().nodes[0].bindings["source"]
     assert etl.resolve_source_binding(binding) == [{"id": 1}]
+
+
+def test_records_bindings_do_not_alias_same_named_sources() -> None:
+    first = etl.from_records([{"id": 1}], name="same_name")
+    first_binding = first.definition().nodes[0].bindings["source"]
+    etl.from_records([{"id": 2}], name="same_name")
+
+    assert etl.resolve_source_binding(first_binding) == [{"id": 1}]
+
+
+def test_reloaded_definition_fails_closed_when_source_factory_is_missing() -> None:
+    dataset = etl.from_records([{"id": 1}], name="missing_factory")
+    document = dataset.definition().to_dict()
+    binding = document["nodes"][0]["bindings"]["source"]
+    etl.unregister_source_factory(binding["factory_key"])
+
+    restored = etl.authoring.pipeline_from_dict(document)
+    report = etl.authoring.validate_pipeline_like(restored)
+    assert not report.valid
+    assert "INFER_SOURCE_UNRESOLVABLE" in {item.code for item in report.errors}
+    with pytest.raises(PipelineValidationError) as exc_info:
+        etl.authoring.plan_pipeline_like(restored)
+    assert "INFER_SOURCE_UNRESOLVABLE" in {
+        item.code for item in exc_info.value.report.errors
+    }
+
+
+def test_target_revision_is_rechecked_before_definition() -> None:
+    state = {"revision": "r1"}
+    dataset = etl.from_records_for_target(
+        [{"id": "1"}],
+        {"revision": "r1", "fields": [{"name": "id", "type": "integer"}]},
+        name="revisioned_target",
+        revision_reader=lambda: state["revision"],
+    )
+    state["revision"] = "r2"
+
+    with pytest.raises(ValueError, match="INFER_TARGET_STALE"):
+        dataset.definition()
+
+
+def test_malformed_csv_options_keep_the_inference_diagnostic(tmp_path) -> None:
+    path = tmp_path / "events.csv"
+    path.write_text("id\n1\n", encoding="utf-8")
+
+    dataset = etl.read_csv(str(path), options=["bad"])
+    with pytest.raises(ValueError, match="INFER_CSV_OPTIONS"):
+        dataset.definition()
 
 
 def test_unsupported_provider_does_not_look_durable() -> None:

@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from collections.abc import Mapping
 from typing import Any, cast
 
 from etlantic.authoring.definition import PipelineDefinition
@@ -88,6 +89,7 @@ def _validate_definition(
     resolved_policy = resolve_validation_policy(policy or ctx.profile.validation_policy)
     diagnostics: list[Diagnostic] = list(resolve_report.diagnostics)
     graph = logical_graph_from_definition(defn)
+    diagnostics.extend(_tag_phase(_validate_definition_bindings(defn), "reference"))
     diagnostics.extend(
         _tag_phase(_validate_definition_graph(defn, graph), "structural")
     )
@@ -163,6 +165,35 @@ def _validate_definition(
             for d in diagnostics
         ]
     return ValidationReport.from_diagnostics(diagnostics, phases=VALIDATION_PHASES)
+
+
+def _validate_definition_bindings(defn: PipelineDefinition) -> list[Diagnostic]:
+    from etlantic.inference import validate_source_binding
+
+    diagnostics: list[Diagnostic] = []
+    for node in defn.nodes:
+        if node.kind != "source":
+            continue
+        binding = node.bindings.get("source")
+        if not isinstance(binding, Mapping) or "kind" not in binding:
+            continue
+        try:
+            validate_source_binding(binding)
+        except ValueError as exc:
+            message = str(exc)
+            code = message.split(":", 1)[0]
+            if not code.startswith("INFER_"):
+                code = "INFER_SOURCE_BINDING"
+            diagnostics.append(
+                Diagnostic(
+                    code=code,
+                    severity=Severity.ERROR,
+                    message=message,
+                    path=("nodes", node.name, "bindings", "source"),
+                    phase="reference",
+                )
+            )
+    return diagnostics
 
 
 def _validate_definition_graph(

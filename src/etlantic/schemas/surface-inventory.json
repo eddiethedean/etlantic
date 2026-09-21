@@ -65,7 +65,8 @@
     "register_source_factory",
     "reopen_source_binding",
     "resolve_source_binding",
-    "unregister_source_factory"
+    "unregister_source_factory",
+    "validate_source_binding"
   ],
   "sdk_root_namespaces": [
     "authoring",

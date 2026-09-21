@@ -6,6 +6,7 @@ import datetime as _dt
 import math
 import operator
 import re
+import uuid
 from collections.abc import Callable, Mapping
 from decimal import Decimal, DecimalException
 from typing import Any
@@ -429,11 +430,13 @@ class InferredDataset:
         root_schema: NormalizedSchema | None = None,
         source_binding: Mapping[str, Any] | None = None,
         target_binding_payload: Mapping[str, Any] | None = None,
+        target_revision_reader: Callable[[], Any] | None = None,
     ):
         self._result = result
         self.name = name
         self._root_schema = root_schema or result.schema
         self._source_binding = dict(source_binding or records_binding(name))
+        self._target_revision_reader = target_revision_reader
         observation = result.target_observation
         target_requirements = (
             observation.schema.to_dict()
@@ -503,15 +506,6 @@ class InferredDataset:
                 "INFER_SOURCE_UNSUPPORTED: provider source definitions require "
                 "an explicit durable rebind"
             )
-        if (
-            source_kind == "records"
-            and source_factory(str(self._source_binding.get("factory_key") or ""))
-            is None
-        ):
-            raise ValueError(
-                "INFER_SOURCE_UNRESOLVABLE: register a source factory before "
-                "exporting a records definition"
-            )
         errors = [
             item
             for item in self.diagnostics
@@ -534,10 +528,20 @@ class InferredDataset:
                 "inference diagnostics contain errors; durable export is not "
                 f"qualified ({', '.join(error_codes) or 'unknown diagnostic'})"
             )
+        self._check_target_revision()
         if self.replay is not None:
             raise ValueError(
                 "durable inference definitions require a replayable source binding; "
                 "the inspected source is a one-shot bounded stream"
+            )
+        if (
+            source_kind == "records"
+            and source_factory(str(self._source_binding.get("factory_key") or ""))
+            is None
+        ):
+            raise ValueError(
+                "INFER_SOURCE_UNRESOLVABLE: register a source factory before "
+                "exporting a records definition"
             )
         # Target backfill is a write-boundary hypothesis.  It must never
         # replace the observed source contract used by the serialized graph.
@@ -784,6 +788,25 @@ class InferredDataset:
             format=format,
         )
 
+    def _check_target_revision(self) -> None:
+        reader = self._target_revision_reader
+        expected = self._target_binding.get("revision")
+        if reader is None or expected is None:
+            return
+        try:
+            current = reader()
+            if hasattr(current, "__await__"):
+                raise TypeError("revision_reader returned an awaitable; use async API")
+        except Exception as exc:
+            raise ValueError(
+                "INFER_TARGET_REVISION_UNKNOWN: target revision could not be "
+                "rechecked before publication"
+            ) from exc
+        if (str(current) if current is not None else None) != str(expected):
+            raise ValueError(
+                "INFER_TARGET_STALE: target revision changed after schema inspection"
+            )
+
     def plan(self) -> PipelineDefinition:
         """Return the validated authoring definition used by plan consumers."""
         return self.definition()
@@ -896,6 +919,7 @@ class InferredDataset:
             root_schema=self._root_schema,
             source_binding=self._source_binding,
             target_binding_payload=self._target_binding,
+            target_revision_reader=self._target_revision_reader,
         )
 
     def filter(self, condition: ColumnExpr) -> InferredDataset:
@@ -1201,15 +1225,17 @@ def from_records(
     hints: Mapping[str, Any] | None = None,
     limits: InferenceLimits | None = None,
     source_factory: Callable[[], Any] | None = None,
+    source_key: str | None = None,
 ) -> InferredDataset:
     result = infer_records(
         records, hints=hints, limits=limits, identity=name, retain_rows=True
     )
-    _register_records_source(name, records, source_factory)
+    factory_key = _records_factory_key(name, source_key)
+    _register_records_source(factory_key, records, source_factory)
     return InferredDataset(
         result,
         name=name,
-        source_binding=records_binding(name),
+        source_binding=records_binding(name, factory_key=factory_key),
     )
 
 
@@ -1223,6 +1249,7 @@ def from_records_for_target(
     expected_revision: str | None = None,
     revision_reader: Callable[[], Any] | None = None,
     source_factory: Callable[[], Any] | None = None,
+    source_key: str | None = None,
 ) -> InferredDataset:
     """Create a data first handle using an existing target as a type constraint."""
     result = infer_records_for_target(
@@ -1235,21 +1262,31 @@ def from_records_for_target(
         expected_revision=expected_revision,
         revision_reader=revision_reader,
     )
-    _register_records_source(name, records, source_factory)
+    factory_key = _records_factory_key(name, source_key)
+    _register_records_source(factory_key, records, source_factory)
     return InferredDataset(
         result,
         name=name,
-        source_binding=records_binding(name),
+        source_binding=records_binding(name, factory_key=factory_key),
+        target_revision_reader=revision_reader,
     )
 
 
+def _records_factory_key(name: str, source_key: str | None) -> str:
+    if source_key is not None:
+        if not str(source_key):
+            raise ValueError("source_key must not be empty")
+        return str(source_key)
+    return f"{name}:factory:{uuid.uuid4().hex}"
+
+
 def _register_records_source(
-    name: str,
+    factory_key: str,
     records: Any,
     factory: Callable[[], Any] | None,
 ) -> None:
     if factory is not None:
-        register_source_factory(name, factory)
+        register_source_factory(factory_key, factory)
         return
     if isinstance(records, Mapping):
         snapshot = (dict(records),)
@@ -1258,7 +1295,7 @@ def _register_records_source(
     else:
         return
     register_source_factory(
-        name,
+        factory_key,
         lambda snapshot=snapshot: [dict(row) for row in snapshot],
     )
 

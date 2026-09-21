@@ -104,6 +104,9 @@ from etlantic.inference import (
 from etlantic.inference import (
     unregister_source_factory as unregister_source_factory,
 )
+from etlantic.inference import (
+    validate_source_binding as validate_source_binding,
+)
 from etlantic.inference.facade import (
     InferredDataset as InferredDataset,
 )

@@ -8,6 +8,7 @@ from .durable import (
     resolve_source_binding,
     source_factory,
     unregister_source_factory,
+    validate_source_binding,
 )
 from .facade import model_from_schema
 from .records import infer_csv, infer_json, infer_records
@@ -67,4 +68,5 @@ __all__ = [
     "solve_backward_constraints",
     "source_factory",
     "unregister_source_factory",
+    "validate_source_binding",
 ]

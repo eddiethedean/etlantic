@@ -52,7 +52,9 @@ _FILE_OPTION_KEYS = frozenset(
 def _safe_file_options(options: Mapping[str, Any] | None) -> dict[str, Any]:
     """Keep only bounded parser options with no provider or secret payloads."""
     safe: dict[str, Any] = {}
-    normalized = {str(key): value for key, value in (options or {}).items()}
+    if options is None or not isinstance(options, Mapping):
+        return safe
+    normalized = {str(key): value for key, value in options.items()}
     for key in sorted(normalized):
         value = normalized[key]
         if key not in _FILE_OPTION_KEYS:
@@ -90,13 +92,13 @@ def source_factory(key: str) -> Callable[[], Any] | None:
     return _SOURCE_FACTORIES.get(str(key))
 
 
-def records_binding(identity: str) -> dict[str, Any]:
+def records_binding(identity: str, *, factory_key: str | None = None) -> dict[str, Any]:
     return {
         "version": BINDING_VERSION,
         "kind": "records",
         "identity": str(identity),
         "resolver": "registry",
-        "factory_key": str(identity),
+        "factory_key": str(factory_key or identity),
     }
 
 
@@ -207,8 +209,8 @@ def rebind_definition(
     return updated.with_fingerprint(pipeline_fingerprint(updated))
 
 
-def resolve_source_binding(binding: Mapping[str, Any]) -> Any:
-    """Resolve a registered records or local file binding for execution."""
+def validate_source_binding(binding: Mapping[str, Any]) -> None:
+    """Validate that a durable source binding can be reopened in this host."""
     if not isinstance(binding, Mapping):
         raise ValueError("INFER_SOURCE_BINDING: source binding must be a mapping")
     if int(binding.get("version", 0)) != BINDING_VERSION:
@@ -221,13 +223,30 @@ def resolve_source_binding(binding: Mapping[str, Any]) -> Any:
             raise ValueError(
                 f"INFER_SOURCE_UNRESOLVABLE: no source factory registered for {key!r}"
             )
-        return factory()
+        return
     if kind == "file" and binding.get("format") in {"csv", "tsv", "json", "jsonl"}:
         path = Path(str(binding.get("uri") or ""))
         if not path.is_file():
             raise ValueError(
                 f"INFER_SOURCE_UNRESOLVABLE: source file does not exist: {path}"
             )
+        return
+    raise ValueError(
+        "INFER_SOURCE_UNSUPPORTED: source binding requires an explicit rebind"
+    )
+
+
+def resolve_source_binding(binding: Mapping[str, Any]) -> Any:
+    """Resolve a registered records or local file binding for execution."""
+    validate_source_binding(binding)
+    kind = binding.get("kind")
+    if kind == "records":
+        key = str(binding.get("factory_key") or "")
+        factory = source_factory(key)
+        assert factory is not None
+        return factory()
+    if kind == "file":
+        path = Path(str(binding.get("uri") or ""))
         return ResolvedFileSource(
             path,
             str(binding["format"]),
@@ -236,9 +255,7 @@ def resolve_source_binding(binding: Mapping[str, Any]) -> Any:
             else {},
             bool(binding.get("lines", False)),
         )
-    raise ValueError(
-        "INFER_SOURCE_UNSUPPORTED: source binding requires an explicit rebind"
-    )
+    raise AssertionError("validated source binding has an unsupported kind")
 
 
 def reopen_source_binding(
