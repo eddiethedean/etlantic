@@ -8,7 +8,7 @@ plan_last_reviewed: 0.54.0
 # ETLantic 0.55 Implementation Plan — Inferred Model Authoring
 
 > **Status:** planned next phase after 0.54. None of the API examples below is
-> available in 0.54. The [roadmap](../../ROADMAP.md) owns phase order; the
+> available in 0.54. The [roadmap](https://github.com/eddiethedean/etlantic/blob/main/ROADMAP.md) owns phase order; the
 > [capabilities page](../01_GETTING_STARTED/CAPABILITIES.md) owns shipped claims.
 > The [execution plan](EXECUTION_PLAN_0_55.md) owns implementation order,
 > code boundaries, fixtures, and merge gates.
