@@ -182,7 +182,9 @@ def _safe_inference_limits(
     return None
 
 
-def _safe_binding_requirements(requirements: Mapping[str, Any] | None) -> dict[str, Any]:
+def _safe_binding_requirements(
+    requirements: Mapping[str, Any] | None,
+) -> dict[str, Any]:
     """Keep target requirements row-free and redact path-like identities."""
     payload = _wire_value(dict(requirements or {}))
 
@@ -194,11 +196,16 @@ def _safe_binding_requirements(requirements: Mapping[str, Any] | None) -> dict[s
             }
         if isinstance(value, list):
             return [sanitize(item) for item in value]
-        if isinstance(value, str) and key is not None and key.casefold() in {
-            "identity",
-            "path",
-            "uri",
-        }:
+        if (
+            isinstance(value, str)
+            and key is not None
+            and key.casefold()
+            in {
+                "identity",
+                "path",
+                "uri",
+            }
+        ):
             return _safe_file_identity(value)
         return value
 
@@ -226,7 +233,9 @@ def _validate_inference_limits(limits: Any) -> None:
     try:
         InferenceLimits.from_dict(dict(limits))
     except (TypeError, ValueError) as exc:
-        raise ValueError("INFER_SOURCE_BINDING: inference limits are malformed") from exc
+        raise ValueError(
+            "INFER_SOURCE_BINDING: inference limits are malformed"
+        ) from exc
 
 
 def _safe_file_options(options: Mapping[str, Any] | None) -> dict[str, Any]:
@@ -238,9 +247,7 @@ def _safe_file_options(options: Mapping[str, Any] | None) -> dict[str, Any]:
     for key in sorted(normalized):
         value = normalized[key]
         if key not in _FILE_OPTION_KEYS:
-            raise ValueError(
-                f"INFER_SOURCE_BINDING: unsupported file option {key!r}"
-            )
+            raise ValueError(f"INFER_SOURCE_BINDING: unsupported file option {key!r}")
         if key == "null_values":
             raise ValueError(
                 "INFER_SOURCE_BINDING: null_values cannot cross the durable "
@@ -314,9 +321,7 @@ def _source_binding_schema(
         if normalized is not None:
             # The durable wire form keeps ``float`` for compatibility, while
             # record inference normalizes it to the logical ``number`` type.
-            hints[str(field_name)] = (
-                "number" if normalized == "float" else normalized
-            )
+            hints[str(field_name)] = "number" if normalized == "float" else normalized
 
     adjusted: list[tuple[str, str, bool, bool]] = []
     for field_name, logical_type, required, nullable in signature:
@@ -448,9 +453,7 @@ def _retain_file_source(
     lease = _FileSourceLease(normalized_reference)
     token = weakref.ref(
         lease,
-        lambda released, ref=normalized_reference: _release_file_lease(
-            ref, released
-        ),
+        lambda released, ref=normalized_reference: _release_file_lease(ref, released),
     )
     entry.leases.add(token)
     return lease
@@ -517,9 +520,7 @@ def _source_binding_for_rebind(
                 str(raw.get("identity") or "records"),
                 factory_key=str(raw["factory_key"]),
                 hints=(
-                    raw.get("hints")
-                    if isinstance(raw.get("hints"), Mapping)
-                    else None
+                    raw.get("hints") if isinstance(raw.get("hints"), Mapping) else None
                 ),
                 limits=(
                     raw.get("limits")
@@ -539,8 +540,12 @@ def _source_binding_for_rebind(
                 identity=str(raw.get("identity") or raw["uri"]),
                 options=options if isinstance(options, Mapping) else None,
                 lines=(bool(raw["lines"]) if "lines" in raw else None),
-                hints=raw.get("hints") if isinstance(raw.get("hints"), Mapping) else None,
-                limits=raw.get("limits") if isinstance(raw.get("limits"), Mapping) else None,
+                hints=raw.get("hints")
+                if isinstance(raw.get("hints"), Mapping)
+                else None,
+                limits=raw.get("limits")
+                if isinstance(raw.get("limits"), Mapping)
+                else None,
             )
         return provider_binding(
             str(raw.get("identity") or "provider"), str(raw["provider"])
@@ -573,14 +578,12 @@ def _source_binding_for_rebind(
     )
     template_hints = (
         template.get("hints")
-        if isinstance(template, Mapping)
-        and isinstance(template.get("hints"), Mapping)
+        if isinstance(template, Mapping) and isinstance(template.get("hints"), Mapping)
         else None
     )
     template_limits = (
         template.get("limits")
-        if isinstance(template, Mapping)
-        and isinstance(template.get("limits"), Mapping)
+        if isinstance(template, Mapping) and isinstance(template.get("limits"), Mapping)
         else None
     )
     return file_binding(
@@ -669,9 +672,7 @@ def rebind_definition(
                 _source_factory_schema(str(source_payload.get("factory_key") or ""))
                 is not None
             ):
-                validate_source_binding_against_definition(
-                    definition, source_payload
-                )
+                validate_source_binding_against_definition(definition, source_payload)
     if target_payload is not None:
         _validate_rebound_target(definition, target_payload)
     nodes: list[NodeDefinition] = []
@@ -1067,9 +1068,7 @@ def _validate_file_options(options: Mapping[str, Any]) -> None:
             raise ValueError(
                 "INFER_SOURCE_BINDING: file option 'quoting' must be a non-negative integer"
             )
-        elif name == "lineterminator" and (
-            not isinstance(value, str) or not value
-        ):
+        elif name == "lineterminator" and (not isinstance(value, str) or not value):
             raise ValueError(
                 "INFER_SOURCE_BINDING: file option 'lineterminator' must be a non-empty string"
             )
@@ -1181,12 +1180,8 @@ def resolve_source_binding(binding: Mapping[str, Any]) -> Any:
             if isinstance(binding.get("options", {}), Mapping)
             else {},
             bool(binding.get("lines", False)),
-            binding.get("hints")
-            if isinstance(binding.get("hints"), Mapping)
-            else {},
-            binding.get("limits")
-            if isinstance(binding.get("limits"), Mapping)
-            else {},
+            binding.get("hints") if isinstance(binding.get("hints"), Mapping) else {},
+            binding.get("limits") if isinstance(binding.get("limits"), Mapping) else {},
         )
     raise AssertionError("validated source binding has an unsupported kind")
 

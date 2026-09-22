@@ -1019,9 +1019,7 @@ def test_reopened_generator_binding_isolated_from_override() -> None:
         reopened = etl.reopen_source_binding(
             binding, limits=etl.InferenceLimits(max_rows=1)
         )
-        reopened_key = reopened.definition().nodes[0].bindings["source"][
-            "factory_key"
-        ]
+        reopened_key = reopened.definition().nodes[0].bindings["source"]["factory_key"]
         assert reopened_key != key
         assert source_factory(key) is factory
     finally:
@@ -1036,11 +1034,10 @@ def test_reopened_record_overrides_do_not_mutate_original_schema() -> None:
     reopened_binding = reopened.definition().nodes[0].bindings["source"]
 
     assert reopened.schema.fields[0].logical_type == "number"
+    assert reopened_binding["factory_key"] != binding["factory_key"]
     assert (
-        reopened_binding["factory_key"] != binding["factory_key"]
-    )
-    assert dataset.definition().nodes[0].bindings["source"]["factory_key"] == (
-        binding["factory_key"]
+        dataset.definition().nodes[0].bindings["source"]["factory_key"]
+        == (binding["factory_key"])
     )
 
     del dataset
@@ -1545,9 +1542,9 @@ def test_path_like_source_and_target_identities_are_redacted(tmp_path) -> None:
     rebound_path = tmp_path / "frame.csv"
     rebound_path.write_text("id\n1\n", encoding="utf-8")
     source_identity = "/Users/alice/private/frame"
-    source_definition = etl.from_pandas(
-        Frame(), name=source_identity
-    ).rebind_source(str(rebound_path))
+    source_definition = etl.from_pandas(Frame(), name=source_identity).rebind_source(
+        str(rebound_path)
+    )
     assert source_identity not in json.dumps(source_definition.to_dict())
 
     target_identity = "/Users/alice/private/target"

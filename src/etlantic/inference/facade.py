@@ -1623,7 +1623,9 @@ class _SnapshotFactory:
         try:
             return [deepcopy(row) for row in owner.snapshot]
         except Exception as exc:
-            raise ValueError("implicit records snapshot is no longer replayable") from exc
+            raise ValueError(
+                "implicit records snapshot is no longer replayable"
+            ) from exc
 
 
 def _register_records_source(
