@@ -77,6 +77,7 @@ def _unknown_type_diagnostics(schema: NormalizedSchema) -> tuple[Diagnostic, ...
 
 
 _MISSING = object()
+_MALFORMED = object()
 
 
 def _unknown_target(
@@ -249,6 +250,24 @@ def _provider_payload_value(payload: Any, key: str, default: Any = _MISSING) -> 
     return getattr(payload, key, default)
 
 
+def _raw_exists_field_is_schema(payload: Mapping[str, Any]) -> bool:
+    """Distinguish a raw ``exists`` field from an envelope state.
+
+    Direct mappings historically accepted ``{field: type}`` as a schema.  A
+    type-like value for a field named ``exists`` must keep that behavior,
+    while arbitrary values remain invalid existence states and therefore
+    fail closed.
+    """
+    value = payload.get("exists", _MISSING)
+    if isinstance(value, type):
+        return True
+    return (
+        isinstance(value, str)
+        and value not in TARGET_EXISTENCE_STATES
+        and _target_logical_type(value) != "unknown"
+    )
+
+
 def _normalize_provider_payload(
     payload: Any,
     *,
@@ -277,11 +296,16 @@ def _normalize_provider_payload(
             schema_payload, (str, type)
         )
         raw_schema_mapping = (
-            "exists" not in payload
+            ("exists" not in payload or _raw_exists_field_is_schema(payload))
             and "fields" not in payload
             and not schema_is_envelope
             and all(isinstance(value, (str, type)) for value in payload.values())
         )
+        if raw_schema_mapping:
+            # A direct mapping is also a supported raw schema form.  In that
+            # form a field named ``exists`` is a field, not an envelope state.
+            explicit_exists = None
+            exists_diagnostic = None
 
     fields = (
         payload if raw_schema_mapping else _provider_payload_value(payload, "fields")
@@ -298,6 +322,8 @@ def _normalize_provider_payload(
                 isinstance(value, (str, type)) for value in schema_payload.values()
             ):
                 fields = schema_payload
+            else:
+                fields = _MALFORMED
         else:
             fields = schema_payload
     if fields is _MISSING and hasattr(payload, "names"):

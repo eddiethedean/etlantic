@@ -96,6 +96,53 @@ def test_target_envelopes_do_not_become_raw_schema_mappings() -> None:
     assert [field.name for field in nested_schema.schema.fields] == ["id"]
 
 
+def test_raw_schema_field_named_exists_is_not_an_envelope_state() -> None:
+    observation = inspect_target({"exists": "BOOLEAN", "id": "INTEGER"})
+
+    assert observation.exists == "present"
+    assert observation.schema is not None
+    assert [field.name for field in observation.schema.fields] == ["exists", "id"]
+    assert observation.schema.fields[0].logical_type == "boolean"
+
+    invalid_state = inspect_target({"exists": "not-a-state"})
+    assert invalid_state.exists == "unknown"
+    assert invalid_state.schema is None
+    assert "INFER_TARGET_UNKNOWN" in {
+        diagnostic.code for diagnostic in invalid_state.diagnostics
+    }
+
+
+def test_malformed_nested_schema_fails_closed_and_blocks_publication() -> None:
+    payload = {"exists": "present", "schema": {"id": 1}}
+
+    class SyncInspector:
+        def inspect_schema(self):
+            return payload
+
+    class AsyncInspector:
+        async def inspect_schema(self):
+            return payload
+
+    observations = (
+        inspect_target(payload),
+        inspect_target(SyncInspector()),
+        asyncio.run(inspect_target_async(AsyncInspector())),
+    )
+    for observation in observations:
+        assert observation.exists == "unknown"
+        assert observation.schema is None
+        assert "INFER_TARGET_UNSUPPORTED" in {
+            diagnostic.code for diagnostic in observation.diagnostics
+        }
+        assert "INFER_TARGET_UNKNOWN" in {
+            diagnostic.code for diagnostic in observation.diagnostics
+        }
+
+    dataset = etl.from_records_for_target([{"id": 1}], payload, name="orders")
+    with pytest.raises(ValueError, match="inference diagnostics contain errors"):
+        dataset.definition()
+
+
 @pytest.mark.parametrize("exists", ["absent", "unknown"])
 def test_explicit_target_existence_precedes_schema_shape(exists: str) -> None:
     observation = inspect_target(
