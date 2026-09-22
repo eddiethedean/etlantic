@@ -47,6 +47,10 @@ _FILE_OPTION_KEYS = frozenset(
         "null_values",
     }
 )
+_SOURCE_FORMATS = frozenset({"csv", "tsv", "json", "jsonl"})
+_TARGET_WRITE_MODES = frozenset(
+    {"append", "overwrite", "merge", "upsert", "partition_replace"}
+)
 
 
 def _safe_file_options(options: Mapping[str, Any] | None) -> dict[str, Any]:
@@ -160,15 +164,14 @@ def _source_binding_for_rebind(
 ) -> dict[str, Any]:
     if isinstance(source, Mapping):
         payload = dict(_wire_value(dict(source)))
-        if payload.get("version") != BINDING_VERSION:
-            raise ValueError("unsupported source binding version")
+        _validate_source_binding_shape(payload)
         return payload
     path = Path(source)
     suffix = path.suffix.lower()
     source_format = format or (
         "json" if suffix in {".json", ".jsonl"} else suffix.lstrip(".")
     )
-    if source_format not in {"csv", "tsv", "json", "jsonl"}:
+    if source_format not in _SOURCE_FORMATS:
         raise ValueError(
             f"INFER_SOURCE_UNSUPPORTED: cannot durably bind {source_format!r} source"
         )
@@ -197,6 +200,8 @@ def rebind_definition(
         else None
     )
     target_payload = dict(_wire_value(dict(target))) if target is not None else None
+    if target_payload is not None:
+        validate_target_binding(target_payload)
     nodes: list[NodeDefinition] = []
     for node in definition.nodes:
         bindings = dict(node.bindings)
@@ -209,22 +214,84 @@ def rebind_definition(
     return updated.with_fingerprint(pipeline_fingerprint(updated))
 
 
-def validate_source_binding(binding: Mapping[str, Any]) -> None:
-    """Validate that a durable source binding can be reopened in this host."""
+def _validate_source_binding_shape(binding: Mapping[str, Any]) -> None:
     if not isinstance(binding, Mapping):
         raise ValueError("INFER_SOURCE_BINDING: source binding must be a mapping")
-    if int(binding.get("version", 0)) != BINDING_VERSION:
+    try:
+        version = int(binding.get("version", 0))
+    except (TypeError, ValueError) as exc:
+        raise ValueError("INFER_SOURCE_BINDING: invalid binding version") from exc
+    if version != BINDING_VERSION:
         raise ValueError("INFER_SOURCE_BINDING: unsupported source binding version")
     kind = binding.get("kind")
-    if kind == "records" and binding.get("resolver") == "registry":
+    if kind == "records":
+        if binding.get("resolver") != "registry":
+            raise ValueError(
+                "INFER_SOURCE_BINDING: records binding must use the registry resolver"
+            )
+        if not str(binding.get("factory_key") or ""):
+            raise ValueError(
+                "INFER_SOURCE_BINDING: records binding requires a factory key"
+            )
+        return
+    if kind == "file":
+        if binding.get("format") not in _SOURCE_FORMATS:
+            raise ValueError("INFER_SOURCE_BINDING: unsupported file source format")
+        if not str(binding.get("uri") or ""):
+            raise ValueError("INFER_SOURCE_BINDING: file binding requires a URI")
+        options = binding.get("options", {})
+        if not isinstance(options, Mapping):
+            raise ValueError("INFER_SOURCE_BINDING: file options must be a mapping")
+        return
+    if kind == "provider":
+        if not str(binding.get("provider") or ""):
+            raise ValueError(
+                "INFER_SOURCE_BINDING: provider binding requires a provider"
+            )
+        if binding.get("resolver") != "explicit_rebind":
+            raise ValueError(
+                "INFER_SOURCE_BINDING: provider binding requires explicit rebinding"
+            )
+        return
+    raise ValueError("INFER_SOURCE_BINDING: unsupported source binding kind")
+
+
+def validate_target_binding(binding: Mapping[str, Any]) -> None:
+    """Validate the row-free shape of a durable target binding."""
+    if not isinstance(binding, Mapping):
+        raise ValueError("INFER_TARGET_BINDING: target binding must be a mapping")
+    try:
+        version = int(binding.get("version", 0))
+    except (TypeError, ValueError) as exc:
+        raise ValueError("INFER_TARGET_BINDING: invalid binding version") from exc
+    if version != BINDING_VERSION:
+        raise ValueError("INFER_TARGET_BINDING: unsupported binding version")
+    if binding.get("kind") != "target":
+        raise ValueError("INFER_TARGET_BINDING: binding kind must be target")
+    if not str(binding.get("identity") or ""):
+        raise ValueError("INFER_TARGET_BINDING: target binding requires an identity")
+    if binding.get("revision") is not None and not isinstance(
+        binding.get("revision"), str
+    ):
+        raise ValueError("INFER_TARGET_BINDING: target revision must be a string")
+    if binding.get("write_mode", "append") not in _TARGET_WRITE_MODES:
+        raise ValueError("INFER_TARGET_BINDING: unsupported target write mode")
+    if not isinstance(binding.get("requirements", {}), Mapping):
+        raise ValueError("INFER_TARGET_BINDING: target requirements must be a mapping")
+
+
+def validate_source_binding(binding: Mapping[str, Any]) -> None:
+    """Validate that a durable source binding can be reopened in this host."""
+    _validate_source_binding_shape(binding)
+    kind = binding.get("kind")
+    if kind == "records":
         key = str(binding.get("factory_key") or "")
-        factory = source_factory(key)
-        if factory is None:
+        if source_factory(key) is None:
             raise ValueError(
                 f"INFER_SOURCE_UNRESOLVABLE: no source factory registered for {key!r}"
             )
         return
-    if kind == "file" and binding.get("format") in {"csv", "tsv", "json", "jsonl"}:
+    if kind == "file":
         path = Path(str(binding.get("uri") or ""))
         if not path.is_file():
             raise ValueError(

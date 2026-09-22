@@ -646,6 +646,30 @@ def test_malformed_csv_options_keep_the_inference_diagnostic(tmp_path) -> None:
         dataset.definition()
 
 
+def test_rebinding_rejects_malformed_source_and_target_bindings() -> None:
+    definition = etl.from_records([{"id": 1}], name="binding_shape").definition()
+
+    with pytest.raises(ValueError, match="INFER_SOURCE_BINDING"):
+        etl.rebind_definition(definition, source={"version": 1})
+    with pytest.raises(ValueError, match="INFER_TARGET_BINDING"):
+        etl.rebind_definition(definition, target={"version": 1})
+
+
+def test_loaded_malformed_bindings_fail_closed() -> None:
+    document = etl.from_records([{"id": 1}], name="loaded_binding_shape").definition()
+    payload = document.to_dict()
+    payload["nodes"][0]["bindings"]["source"] = {"version": 1}
+    payload["nodes"][-1]["bindings"]["target"] = {"version": 1}
+    payload.pop("fingerprint")
+
+    restored = etl.authoring.pipeline_from_dict(payload, verify=False)
+    report = etl.authoring.validate_pipeline_like(restored)
+    assert not report.valid
+    assert {"INFER_SOURCE_BINDING", "INFER_TARGET_BINDING"} <= {
+        item.code for item in report.errors
+    }
+
+
 def test_unsupported_provider_does_not_look_durable() -> None:
     class Frame:
         def to_dicts(self):

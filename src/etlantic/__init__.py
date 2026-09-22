@@ -71,6 +71,7 @@ from etlantic.inference import (
     solve_backward_constraints,
     unregister_source_factory,
     validate_source_binding,
+    validate_target_binding,
 )
 from etlantic.inference.facade import (
     InferredDataset,
@@ -146,6 +147,7 @@ _CURATED: dict[str, Any] = {
     "resolve_source_binding": resolve_source_binding,
     "unregister_source_factory": unregister_source_factory,
     "validate_source_binding": validate_source_binding,
+    "validate_target_binding": validate_target_binding,
     "from_pandas": from_pandas,
     "from_polars": from_polars,
     "infer_csv": infer_csv,

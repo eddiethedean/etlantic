@@ -9,6 +9,7 @@ from .durable import (
     source_factory,
     unregister_source_factory,
     validate_source_binding,
+    validate_target_binding,
 )
 from .facade import model_from_schema
 from .records import infer_csv, infer_json, infer_records
@@ -69,4 +70,5 @@ __all__ = [
     "source_factory",
     "unregister_source_factory",
     "validate_source_binding",
+    "validate_target_binding",
 ]

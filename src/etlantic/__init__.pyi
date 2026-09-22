@@ -107,6 +107,9 @@ from etlantic.inference import (
 from etlantic.inference import (
     validate_source_binding as validate_source_binding,
 )
+from etlantic.inference import (
+    validate_target_binding as validate_target_binding,
+)
 from etlantic.inference.facade import (
     InferredDataset as InferredDataset,
 )

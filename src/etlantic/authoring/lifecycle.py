@@ -168,17 +168,26 @@ def _validate_definition(
 
 
 def _validate_definition_bindings(defn: PipelineDefinition) -> list[Diagnostic]:
-    from etlantic.inference import validate_source_binding
+    from etlantic.inference import validate_source_binding, validate_target_binding
 
     diagnostics: list[Diagnostic] = []
     for node in defn.nodes:
-        if node.kind != "source":
+        if node.kind == "source":
+            binding = node.bindings.get("source")
+            validator = validate_source_binding
+            binding_path = ("nodes", node.name, "bindings", "source")
+        elif node.kind == "sink":
+            binding = node.bindings.get("target")
+            validator = validate_target_binding
+            binding_path = ("nodes", node.name, "bindings", "target")
+        else:
             continue
-        binding = node.bindings.get("source")
-        if not isinstance(binding, Mapping) or "kind" not in binding:
+        if not isinstance(binding, Mapping) or not (
+            "kind" in binding or "version" in binding
+        ):
             continue
         try:
-            validate_source_binding(binding)
+            validator(binding)
         except ValueError as exc:
             message = str(exc)
             code = message.split(":", 1)[0]
@@ -189,7 +198,7 @@ def _validate_definition_bindings(defn: PipelineDefinition) -> list[Diagnostic]:
                     code=code,
                     severity=Severity.ERROR,
                     message=message,
-                    path=("nodes", node.name, "bindings", "source"),
+                    path=binding_path,
                     phase="reference",
                 )
             )
