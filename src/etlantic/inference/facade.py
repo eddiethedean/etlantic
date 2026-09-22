@@ -3,11 +3,13 @@
 from __future__ import annotations
 
 import datetime as _dt
+import hashlib
+import json
 import math
 import operator
 import re
-import uuid
 from collections.abc import Callable, Mapping
+from dataclasses import replace
 from decimal import Decimal, DecimalException
 from typing import Any
 
@@ -27,7 +29,7 @@ from etlantic.contracts import Data
 from etlantic.diagnostics import Diagnostic, Severity
 from etlantic.schema_drift import NormalizedSchema
 from etlantic.transform.column import ColumnExpr, coerce_column
-from etlantic.transform.dataframe import FrameExpr
+from etlantic.transform.dataframe import FrameAction, FrameExpr
 
 from .durable import (
     file_binding,
@@ -101,6 +103,54 @@ def model_from_schema(
             default if safe == alias else Field(default, alias=alias),
         )
     return create_model(_model_name(name or schema.identity), __base__=Data, **fields)
+
+
+def _target_cast_action(
+    source_schema: NormalizedSchema,
+    target_schema: NormalizedSchema,
+    root_input: str,
+) -> FrameAction | None:
+    """Create an explicit executable cast boundary for target backfills."""
+    target_fields = {field.name: field for field in target_schema.fields}
+    casts = [
+        (field.name, target_fields[field.name].logical_type)
+        for field in source_schema.fields
+        if field.name in target_fields
+        and field.logical_type != target_fields[field.name].logical_type
+        and target_schema.metadata.get("conditional_casts", {}).get(field.name)
+        == target_fields[field.name].logical_type
+    ]
+    if not casts:
+        return None
+    assignments = [
+        {
+            "name": name,
+            "expression": {
+                "kind": "call",
+                "callee": "dtcs:cast",
+                "args": [
+                    {"kind": "fieldRef", "target": name},
+                    {
+                        "kind": "literal",
+                        "value": {"type": "string", "value": logical_type},
+                    },
+                ],
+            },
+        }
+        for name, logical_type in casts
+    ]
+    payload = {"action": "dtcs:with_fields", "assignments": assignments}
+    digest = hashlib.sha256(
+        json.dumps(payload, sort_keys=True, separators=(",", ":")).encode("utf-8")
+    ).hexdigest()[:8]
+    return FrameAction(
+        action_id=f"{root_input}__target_cast_{digest}",
+        action="dtcs:with_fields",
+        target=root_input,
+        parameters={"assignments": assignments},
+        functions=frozenset({"dtcs:cast"}),
+        path="target_cast",
+    )
 
 
 def _literal(node: Mapping[str, Any]) -> Any:
@@ -431,6 +481,7 @@ class InferredDataset:
         source_binding: Mapping[str, Any] | None = None,
         target_binding_payload: Mapping[str, Any] | None = None,
         target_revision_reader: Callable[[], Any] | None = None,
+        target_write_mode: str = "append",
     ):
         self._result = result
         self.name = name
@@ -449,6 +500,7 @@ class InferredDataset:
                 observation,
                 identity=f"target:{name}",
                 requirements=target_requirements,
+                write_mode=target_write_mode,
             )
         )
         self._frame = frame or FrameExpr(
@@ -569,6 +621,16 @@ class InferredDataset:
                 "durable inference definitions require explicit bindings for every input; "
                 "multi-input join/union export is not supported by this facade"
             )
+        target_cast = _target_cast_action(
+            source_schema, self._root_schema, self._frame.root_input
+        )
+        definition_actions = list(self._frame.actions)
+        if target_cast is not None:
+            if definition_actions:
+                definition_actions[0] = replace(
+                    definition_actions[0], target=target_cast.action_id
+                )
+            definition_actions.insert(0, target_cast)
 
         def make_contract(schema: NormalizedSchema, suffix: str) -> ContractDefinition:
             contract_id = f"contract:{schema.identity}:{suffix}"
@@ -596,20 +658,20 @@ class InferredDataset:
         # projection, names, or inferred types; pointing every node at the
         # final contract makes a serialized definition impossible to rebind.
         state_schemas: list[NormalizedSchema] = [source_schema]
-        for index in range(1, len(self._frame.actions) + 1):
+        for index in range(1, len(definition_actions) + 1):
             prefix = FrameExpr(
-                relation_id=self._frame.actions[index - 1].action_id,
+                relation_id=definition_actions[index - 1].action_id,
                 root_input=self._frame.root_input,
-                actions=self._frame.actions[:index],
+                actions=tuple(definition_actions[:index]),
                 functions=frozenset().union(
-                    *(action.functions for action in self._frame.actions[:index])
+                    *(action.functions for action in definition_actions[:index])
                 ),
                 profiles=frozenset().union(
-                    *(action.profiles for action in self._frame.actions[:index])
+                    *(action.profiles for action in definition_actions[:index])
                 ),
                 schema_fields=(
                     self._frame.schema_fields
-                    if index == len(self._frame.actions)
+                    if index == len(definition_actions)
                     else None
                 ),
             )
@@ -627,6 +689,23 @@ class InferredDataset:
             for index, schema in enumerate(state_schemas)
         ]
         contract_ids = [contract.identity for contract in contracts]
+        target_observation = self._result.target_observation
+        if target_observation is not None and target_observation.schema is not None:
+            target_for_check: Any = target_observation
+            if target_observation.inspector == "provided":
+                target_for_check = target_observation.schema
+            compatibility = check_write_compatibility(
+                state_schemas[-1],
+                target_for_check,
+                mode=str(self._target_binding.get("write_mode", "append")),
+                expected_revision=self._target_binding.get("revision"),
+            )
+            if not compatibility.compatible:
+                codes = sorted({item.code for item in compatibility.diagnostics})
+                raise ValueError(
+                    "INFER_TARGET_WRITE_UNQUALIFIED: durable export is not "
+                    f"compatible with the target ({', '.join(codes) or 'unknown'})"
+                )
         transformations = tuple(
             TransformationDefinition(
                 identity=action.action_id,
@@ -661,7 +740,7 @@ class InferredDataset:
                 ),
                 metadata={"etlantic.inference": {"lineage_path": action.path}},
             )
-            for index, action in enumerate(self._frame.actions)
+            for index, action in enumerate(definition_actions)
         )
         source_name = f"{self.name}_source"
         sink_name = f"{self.name}_output"
@@ -688,7 +767,7 @@ class InferredDataset:
         ]
         edges: list[EdgeDefinition] = []
         previous_name = source_name
-        for index, action in enumerate(self._frame.actions, start=1):
+        for index, action in enumerate(definition_actions, start=1):
             step_name = f"{self.name}_step_{index}"
             nodes_list.append(
                 NodeDefinition(
@@ -716,7 +795,6 @@ class InferredDataset:
                         "etlantic.inference": {
                             "action_id": action.action_id,
                             "path": action.path,
-                            "parameters": action.parameters,
                         }
                     },
                 )
@@ -1242,7 +1320,7 @@ def from_records(
     result = infer_records(
         records, hints=hints, limits=limits, identity=name, retain_rows=True
     )
-    factory_key = _records_factory_key(name, source_key)
+    factory_key = _records_factory_key(name, source_key, records, source_factory)
     _register_records_source(factory_key, records, source_factory)
     return InferredDataset(
         result,
@@ -1262,6 +1340,7 @@ def from_records_for_target(
     revision_reader: Callable[[], Any] | None = None,
     source_factory: Callable[[], Any] | None = None,
     source_key: str | None = None,
+    write_mode: str = "append",
 ) -> InferredDataset:
     """Create a data first handle using an existing target as a type constraint."""
     result = infer_records_for_target(
@@ -1274,22 +1353,41 @@ def from_records_for_target(
         expected_revision=expected_revision,
         revision_reader=revision_reader,
     )
-    factory_key = _records_factory_key(name, source_key)
+    factory_key = _records_factory_key(name, source_key, records, source_factory)
     _register_records_source(factory_key, records, source_factory)
     return InferredDataset(
         result,
         name=name,
         source_binding=records_binding(name, factory_key=factory_key),
         target_revision_reader=revision_reader,
+        target_write_mode=write_mode,
     )
 
 
-def _records_factory_key(name: str, source_key: str | None) -> str:
+def _records_factory_key(
+    name: str,
+    source_key: str | None,
+    records: Any,
+    source_factory: Callable[[], Any] | None,
+) -> str:
     if source_key is not None:
         if not str(source_key):
             raise ValueError("source_key must not be empty")
         return str(source_key)
-    return f"{name}:factory:{uuid.uuid4().hex}"
+    if source_factory is not None:
+        raise ValueError(
+            "source_key is required when source_factory is supplied so the "
+            "durable binding remains deterministic"
+        )
+    if isinstance(records, Mapping):
+        snapshot = [dict(records)]
+    elif isinstance(records, (list, tuple)):
+        snapshot = [dict(row) for row in records if isinstance(row, Mapping)]
+    else:
+        return f"{name}:stream"
+    payload = json.dumps(snapshot, sort_keys=True, default=str, separators=(",", ":"))
+    digest = hashlib.sha256(payload.encode("utf-8")).hexdigest()[:32]
+    return f"{name}:snapshot:{digest}"
 
 
 def _register_records_source(

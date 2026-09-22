@@ -16,6 +16,16 @@ from .types import TargetObservation, _wire_value
 BINDING_VERSION = 1
 
 _SOURCE_FACTORIES: dict[str, Callable[[], Any]] = {}
+_FILE_SOURCES: dict[str, Path] = {}
+_FILE_REFERENCE_PREFIX = "file-ref:"
+
+
+def _safe_file_identity(identity: str) -> str:
+    value = str(identity)
+    if value.startswith(("/", "~/", "file://", "s3://", "gs://", "az://")):
+        digest = hashlib.sha256(value.encode("utf-8")).hexdigest()[:20]
+        return f"file:{digest}"
+    return value
 
 
 class ResolvedFileSource:
@@ -115,17 +125,33 @@ def file_binding(
     lines: bool | None = None,
 ) -> dict[str, Any]:
     """Create a stable, row-free local file binding."""
+    reference = _file_reference(path)
     payload: dict[str, Any] = {
         "version": BINDING_VERSION,
         "kind": "file",
         "format": format,
-        "identity": str(identity),
-        "uri": str(Path(path).expanduser().resolve()),
+        "identity": _safe_file_identity(str(identity)),
+        "uri": reference,
         "options": _safe_file_options(options),
     }
     if lines is not None:
         payload["lines"] = bool(lines)
     return payload
+
+
+def _file_reference(path: str | Path) -> str:
+    """Register a local path and return a stable, non-path wire reference."""
+    if isinstance(path, str) and path.startswith(_FILE_REFERENCE_PREFIX):
+        return path
+    resolved = Path(path).expanduser().resolve()
+    digest = hashlib.sha256(str(resolved).encode("utf-8")).hexdigest()[:32]
+    reference = f"{_FILE_REFERENCE_PREFIX}{digest}"
+    _FILE_SOURCES[reference] = resolved
+    return reference
+
+
+def _registered_file_path(reference: str) -> Path | None:
+    return _FILE_SOURCES.get(reference)
 
 
 def provider_binding(identity: str, provider: str) -> dict[str, Any]:
@@ -172,15 +198,16 @@ def _source_binding_for_rebind(
                 factory_key=str(raw["factory_key"]),
             )
         if kind == "file":
+            options = raw.get("options")
+            _validate_file_options(options if isinstance(options, Mapping) else {})
+            uri = str(raw["uri"])
+            if not uri.startswith(_FILE_REFERENCE_PREFIX):
+                uri = _file_reference(uri)
             return file_binding(
                 str(raw["format"]),
-                str(raw["uri"]),
+                uri,
                 identity=str(raw.get("identity") or raw["uri"]),
-                options=(
-                    raw.get("options")
-                    if isinstance(raw.get("options"), Mapping)
-                    else None
-                ),
+                options=options if isinstance(options, Mapping) else None,
                 lines=(bool(raw["lines"]) if "lines" in raw else None),
             )
         return provider_binding(
@@ -283,6 +310,9 @@ def _validate_source_binding_shape(binding: Mapping[str, Any]) -> None:
         options = binding.get("options", {})
         if not isinstance(options, Mapping):
             raise ValueError("INFER_SOURCE_BINDING: file options must be a mapping")
+        _validate_file_options(options)
+        if "lines" in binding and not isinstance(binding["lines"], bool):
+            raise ValueError("INFER_SOURCE_BINDING: file lines must be boolean")
         return
     if kind == "provider":
         if not str(binding.get("provider") or ""):
@@ -317,8 +347,110 @@ def validate_target_binding(binding: Mapping[str, Any]) -> None:
         raise ValueError("INFER_TARGET_BINDING: target revision must be a string")
     if binding.get("write_mode", "append") not in _TARGET_WRITE_MODES:
         raise ValueError("INFER_TARGET_BINDING: unsupported target write mode")
-    if not isinstance(binding.get("requirements", {}), Mapping):
+    requirements = binding.get("requirements", {})
+    if not isinstance(requirements, Mapping):
         raise ValueError("INFER_TARGET_BINDING: target requirements must be a mapping")
+    if not isinstance(binding.get("observed", False), bool):
+        raise ValueError("INFER_TARGET_BINDING: observed must be boolean")
+    if requirements:
+        _validate_target_requirements(requirements)
+        if binding.get("observed", False):
+            capabilities = requirements.get("metadata", {}).get("capabilities")
+            if not _supports_write_mode(capabilities, str(binding.get("write_mode", "append"))):
+                raise ValueError(
+                    "INFER_TARGET_BINDING: target does not advertise the requested "
+                    f"write mode {binding.get('write_mode', 'append')!r}"
+                )
+
+
+def _validate_file_options(options: Mapping[str, Any]) -> None:
+    """Validate the parser subset that can cross the durable boundary."""
+    unknown = set(str(key) for key in options) - _FILE_OPTION_KEYS
+    if unknown:
+        raise ValueError(
+            f"INFER_SOURCE_BINDING: unsupported file options {sorted(unknown)!r}"
+        )
+    for key, value in options.items():
+        name = str(key)
+        if name in {"delimiter", "quotechar", "escapechar"}:
+            if value is not None and (not isinstance(value, str) or len(value) != 1):
+                raise ValueError(
+                    f"INFER_SOURCE_BINDING: file option {name!r} must be one character"
+                )
+        elif name == "encoding":
+            if not isinstance(value, str) or not value:
+                raise ValueError(
+                    "INFER_SOURCE_BINDING: file option 'encoding' must be a string"
+                )
+        elif name in {"doublequote", "strict"}:
+            if not isinstance(value, bool):
+                raise ValueError(
+                    f"INFER_SOURCE_BINDING: file option {name!r} must be boolean"
+                )
+        elif name == "null_values" and (
+            not isinstance(value, (list, tuple, set, frozenset))
+            or not all(
+                isinstance(item, (str, int, float, bool)) for item in value
+            )
+        ):
+            raise ValueError(
+                "INFER_SOURCE_BINDING: file option 'null_values' must be a sequence"
+            )
+
+
+def _validate_target_requirements(requirements: Mapping[str, Any]) -> None:
+    """Validate a serialized normalized target schema and its capabilities."""
+    from etlantic.schema_drift import NormalizedSchema
+
+    if requirements.get("version", 1) != 1:
+        raise ValueError("INFER_TARGET_BINDING: unsupported target schema version")
+    if not isinstance(requirements.get("identity"), str) or not requirements.get(
+        "identity"
+    ):
+        raise ValueError("INFER_TARGET_BINDING: target schema identity is required")
+    fields = requirements.get("fields")
+    if not isinstance(fields, (list, tuple)) or any(
+        not isinstance(field, Mapping)
+        or not isinstance(field.get("name"), str)
+        or not isinstance(field.get("logical_type"), str)
+        for field in fields
+    ):
+        raise ValueError("INFER_TARGET_BINDING: target schema fields are malformed")
+    if requirements.get("fingerprint") is not None and not isinstance(
+        requirements.get("fingerprint"), str
+    ):
+        raise ValueError("INFER_TARGET_BINDING: target schema fingerprint is malformed")
+    try:
+        NormalizedSchema.from_dict(dict(requirements))
+    except (KeyError, TypeError, ValueError) as exc:
+        raise ValueError(
+            "INFER_TARGET_BINDING: target requirements are not a normalized schema"
+        ) from exc
+    metadata = requirements.get("metadata", {})
+    if not isinstance(metadata, Mapping):
+        raise ValueError("INFER_TARGET_BINDING: target metadata must be a mapping")
+    if "capabilities" in metadata:
+        capabilities = metadata["capabilities"]
+        if isinstance(capabilities, Mapping):
+            modes = capabilities.get("write_modes", capabilities.get("modes"))
+            if modes is not None and (
+                not isinstance(modes, (list, tuple, set, frozenset))
+                or not all(isinstance(mode, str) for mode in modes)
+            ):
+                raise ValueError(
+                    "INFER_TARGET_BINDING: target write modes must be a sequence"
+                )
+        elif not isinstance(capabilities, (list, tuple, set, frozenset)):
+            raise ValueError("INFER_TARGET_BINDING: target capabilities are malformed")
+
+
+def _supports_write_mode(capabilities: Any, mode: str) -> bool:
+    if isinstance(capabilities, Mapping):
+        modes = capabilities.get("write_modes", capabilities.get("modes"))
+        return isinstance(modes, (list, tuple, set, frozenset)) and mode in modes
+    if isinstance(capabilities, (list, tuple, set, frozenset)):
+        return mode in capabilities
+    return False
 
 
 def validate_source_binding(binding: Mapping[str, Any]) -> None:
@@ -333,7 +465,13 @@ def validate_source_binding(binding: Mapping[str, Any]) -> None:
             )
         return
     if kind == "file":
-        path = Path(str(binding.get("uri") or ""))
+        reference = str(binding.get("uri") or "")
+        path = _registered_file_path(reference)
+        if path is None:
+            raise ValueError(
+                "INFER_SOURCE_UNRESOLVABLE: file binding requires an explicit "
+                "host-side rebind"
+            )
         if not path.is_file():
             raise ValueError(
                 f"INFER_SOURCE_UNRESOLVABLE: source file does not exist: {path}"
@@ -354,7 +492,13 @@ def resolve_source_binding(binding: Mapping[str, Any]) -> Any:
         assert factory is not None
         return factory()
     if kind == "file":
-        path = Path(str(binding.get("uri") or ""))
+        reference = str(binding.get("uri") or "")
+        path = _registered_file_path(reference)
+        if path is None:
+            raise ValueError(
+                "INFER_SOURCE_UNRESOLVABLE: file binding requires an explicit "
+                "host-side rebind"
+            )
         return ResolvedFileSource(
             path,
             str(binding["format"]),
