@@ -771,30 +771,6 @@ def inspect_target(
             diagnostic=adapter_diagnostic,
         )
     try:
-        has_names = getattr(target, "names", _MISSING) is not _MISSING
-    except Exception:
-        return _unknown_target(
-            "INFER_TARGET_UNKNOWN", identity=identity, inspector=type(target).__name__
-        )
-    if has_names:
-        try:
-            observation = _normalize_provider_payload(
-                target,
-                identity=identity,
-                inspector=type(target).__name__,
-                max_diagnostics=max_diagnostics,
-                fallback_exists=adapter_exists,
-                provider_exists=(adapter_exists, adapter_diagnostic),
-            )
-        except Exception:
-            return _unknown_target(
-                "INFER_TARGET_UNKNOWN",
-                identity=identity,
-                inspector=type(target).__name__,
-            )
-        if observation is not None:
-            return observation
-    try:
         inspect = getattr(target, "inspect_schema", None)
     except Exception:
         return _unknown_target(
@@ -1757,6 +1733,38 @@ def backfill_schema(
     while ``backward_constraints`` retains the observed source type and the
     qualified path used to derive the constraint.
     """
+    try:
+        target = _validated_normalized_schema(target)
+    except (AttributeError, KeyError, TypeError, ValueError):
+        return InferenceResult(
+            source,
+            (
+                Diagnostic(
+                    "INFER_TARGET_UNSUPPORTED",
+                    Severity.ERROR,
+                    "Target fields are malformed; backward constraints were not applied",
+                    phase="inference",
+                ),
+            ),
+            provenance={
+                "source": "target_backfill",
+                "target_validation": "failed",
+            },
+            observed_schema=source,
+            target_hypothesis=source,
+        )
+    unknown_type_diagnostics = _unknown_type_diagnostics(target)
+    if unknown_type_diagnostics:
+        return InferenceResult(
+            source,
+            unknown_type_diagnostics,
+            provenance={
+                "source": "target_backfill",
+                "target_validation": "failed",
+            },
+            observed_schema=source,
+            target_hypothesis=source,
+        )
     target_fields = {field.name: field for field in target.fields}
     fields: list[NormalizedField] = []
     diagnostics: list[Diagnostic] = []
@@ -2200,6 +2208,19 @@ def check_write_compatibility(
                     ),
                 ),
             )
+        unknown_type_diagnostics = _unknown_type_diagnostics(target_schema)
+        if unknown_type_diagnostics:
+            diagnostics = (
+                tuple(target_observation.diagnostics)
+                if target_observation is not None
+                else ()
+            )
+            return WriteCompatibility(
+                False,
+                mode=mode,
+                diagnostics=(*diagnostics, *unknown_type_diagnostics),
+            )
+        target = target_schema
     if target_observation is not None:
         if target_observation.exists != "present":
             state = target_observation.exists

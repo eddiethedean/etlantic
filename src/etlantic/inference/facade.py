@@ -712,6 +712,8 @@ class InferredDataset:
                 and target_observation.schema is not None
                 and not target_observation.diagnostics
                 and target_observation.inspector in {"provided", "normalized"}
+                and isinstance(target_observation.metadata, Mapping)
+                and isinstance(target_observation.schema.metadata, Mapping)
             ):
                 schema_metadata = {
                     **target_observation.schema.metadata,

@@ -102,6 +102,12 @@ def test_duplicate_fields_in_normalized_targets_fail_closed() -> None:
     assert inferred.target_observation.exists == "unknown"
     assert inferred.provenance["target_validation"] == "not_performed"
 
+    backfilled = etl.inference.backfill_schema(source, target)
+    assert backfilled.schema == source
+    assert "INFER_TARGET_UNSUPPORTED" in {
+        diagnostic.code for diagnostic in backfilled.diagnostics
+    }
+
     source = NormalizedSchema("source", (NormalizedField("id", "integer"),))
     malformed_observation = etl.TargetObservation(
         target,
@@ -119,6 +125,25 @@ def test_duplicate_fields_in_normalized_targets_fail_closed() -> None:
         assert solved.schema == source
         assert "INFER_TARGET_UNSUPPORTED" in {
             diagnostic.code for diagnostic in solved.diagnostics
+        }
+
+
+def test_unknown_target_types_cannot_prove_write_compatibility() -> None:
+    source = NormalizedSchema("source", (NormalizedField("id", "unknown"),))
+    target_schema = NormalizedSchema(
+        "target",
+        (NormalizedField("id", "unknown"),),
+        {"capabilities": {"write_modes": ["append"]}},
+    )
+
+    for target in (
+        target_schema,
+        etl.TargetObservation(target_schema, "present"),
+    ):
+        compatibility = check_write_compatibility(source, target)
+        assert compatibility.status == "conflict"
+        assert "INFER_UNKNOWN_TYPE" in {
+            diagnostic.code for diagnostic in compatibility.diagnostics
         }
 
 
@@ -398,6 +423,46 @@ def test_sync_and_async_schema_none_fallbacks_match() -> None:
 
     assert sync_observation.exists == async_observation.exists == "present"
     assert sync_observation.schema == async_observation.schema
+
+
+def test_sync_and_async_inspection_use_same_provider_schema() -> None:
+    class Target:
+        names = ("id",)
+
+        def __iter__(self):
+            return iter([{"name": "id", "type": "string"}])
+
+        def inspect_schema(self):
+            return {"fields": [{"name": "id", "type": "integer"}]}
+
+    sync_observation = inspect_target(Target())
+    async_observation = asyncio.run(inspect_target_async(Target()))
+
+    assert sync_observation.schema is not None
+    assert async_observation.schema is not None
+    assert sync_observation.schema == async_observation.schema
+    assert sync_observation.schema.fields[0].logical_type == "integer"
+
+
+def test_names_only_provider_unknown_types_are_diagnosed_in_both_apis() -> None:
+    class Target:
+        names = ("id",)
+
+        def __iter__(self):
+            return iter([{"name": "id", "type": "unsupported-type"}])
+
+    observations = (
+        inspect_target(Target()),
+        asyncio.run(inspect_target_async(Target())),
+    )
+
+    for observation in observations:
+        assert observation.exists == "present"
+        assert observation.schema is not None
+        assert observation.schema.fields[0].logical_type == "unknown"
+        assert "INFER_UNKNOWN_TYPE" in {
+            diagnostic.code for diagnostic in observation.diagnostics
+        }
 
 
 def test_async_empty_inspector_falls_back_to_schema_attribute() -> None:
@@ -1231,6 +1296,19 @@ def test_provided_target_diagnostics_are_not_dropped_before_publication() -> Non
         "present",
         inspector="provided",
         diagnostics=(Diagnostic("DENIED", Severity.WARNING, "target unavailable"),),
+    )
+    dataset = etl.from_records_for_target([{"id": 7}], target, name="orders")
+
+    with pytest.raises(ValueError, match="INFER_TARGET_WRITE_UNQUALIFIED"):
+        dataset.definition()
+
+
+def test_malformed_provided_target_metadata_fails_closed_before_publication() -> None:
+    target = etl.TargetObservation(
+        NormalizedSchema("target", (NormalizedField("id", "integer"),)),
+        "present",
+        inspector="provided",
+        metadata="malformed",
     )
     dataset = etl.from_records_for_target([{"id": 7}], target, name="orders")
 
