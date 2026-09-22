@@ -541,6 +541,25 @@ def test_schema_only_targets_do_not_invent_revisions() -> None:
     assert asyncio.run(inspect_target_async(AsyncAdapter())).revision is None
 
 
+def test_async_target_inspection_redacts_normalized_schema_identities() -> None:
+    identity = "/Users/alice/private/target"
+    schema = NormalizedSchema(identity, (NormalizedField("id", "integer"),))
+
+    class AsyncSchema:
+        async def schema(self):
+            return schema
+
+    class AsyncInspector:
+        async def inspect_schema(self):
+            return schema
+
+    for target in (AsyncSchema(), AsyncInspector()):
+        observation = asyncio.run(inspect_target_async(target))
+        assert observation.schema is not None
+        assert observation.schema.identity != identity
+        assert observation.schema.identity.startswith("file:")
+
+
 def test_target_guidance_does_not_replace_observed_source_contract() -> None:
     dataset = etl.from_records_for_target(
         [{"id": "1"}],
@@ -1014,15 +1033,23 @@ def test_reopened_record_overrides_do_not_mutate_original_schema() -> None:
     binding = dataset.definition().nodes[0].bindings["source"]
 
     reopened = etl.reopen_source_binding(binding, hints={"id": float})
+    reopened_binding = reopened.definition().nodes[0].bindings["source"]
 
     assert reopened.schema.fields[0].logical_type == "number"
     assert (
-        reopened.definition().nodes[0].bindings["source"]["factory_key"]
-        != binding["factory_key"]
+        reopened_binding["factory_key"] != binding["factory_key"]
     )
     assert dataset.definition().nodes[0].bindings["source"]["factory_key"] == (
         binding["factory_key"]
     )
+
+    del dataset
+    gc.collect()
+    assert etl.resolve_source_binding(reopened_binding) == [{"id": 1}]
+
+    del reopened
+    gc.collect()
+    assert source_factory(reopened_binding["factory_key"]) is None
 
 
 def test_provider_source_can_be_explicitly_rebound(tmp_path) -> None:

@@ -1604,6 +1604,13 @@ class _SnapshotFactory:
         self._key = key
         self._owner_ref = weakref.ref(owner, self._owner_released)
 
+    @property
+    def key(self) -> str:
+        return self._key
+
+    def owner(self) -> _SnapshotOwner | None:
+        return self._owner_ref()
+
     def _owner_released(self, _owner_ref: weakref.ReferenceType[Any]) -> None:
         from .durable import unregister_source_factory
 
@@ -1628,8 +1635,14 @@ def _register_records_source(
     snapshot: tuple[dict[str, Any], ...] | None = None,
 ) -> _SnapshotOwner | None:
     if factory is not None:
-        register_source_factory(factory_key, factory, schema=schema)
-        return None
+        registered_factory = factory
+        source_owner: _SnapshotOwner | None = None
+        if isinstance(factory, _SnapshotFactory):
+            source_owner = factory.owner()
+            if source_owner is not None and factory.key != factory_key:
+                registered_factory = _SnapshotFactory(factory_key, source_owner)
+        register_source_factory(factory_key, registered_factory, schema=schema)
+        return source_owner
     if snapshot is None:
         return None
     owner = _SnapshotOwner(snapshot)

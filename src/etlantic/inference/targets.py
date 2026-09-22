@@ -428,7 +428,7 @@ async def inspect_target_async(
                 schema_attr = await schema_attr
             if isinstance(schema_attr, NormalizedSchema):
                 return TargetObservation(
-                    schema_attr,
+                    _safe_target_schema(schema_attr),
                     "present",
                     None,
                     type(target).__name__,
@@ -496,7 +496,12 @@ async def inspect_target_async(
         if _inspect.isawaitable(result):
             result = await result
         if isinstance(result, NormalizedSchema):
-            return TargetObservation(result, "present", None, type(target).__name__)
+            return TargetObservation(
+                _safe_target_schema(result),
+                "present",
+                None,
+                type(target).__name__,
+            )
         fields = (
             result.get("fields", result)
             if isinstance(result, Mapping)
