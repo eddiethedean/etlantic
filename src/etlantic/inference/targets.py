@@ -267,6 +267,37 @@ def _provider_exists(
     )
 
 
+def _provider_state_observation(
+    state: str,
+    *,
+    identity: str,
+    inspector: str,
+    diagnostic: Diagnostic | None = None,
+) -> TargetObservation:
+    diagnostics: list[Diagnostic] = []
+    if diagnostic is not None:
+        diagnostics.append(diagnostic)
+    if state == "unknown" and not any(
+        item.code == "INFER_TARGET_UNKNOWN" for item in diagnostics
+    ):
+        diagnostics.append(
+            Diagnostic(
+                "INFER_TARGET_UNKNOWN",
+                Severity.WARNING,
+                "Target existence could not be established",
+                phase="inference",
+            )
+        )
+    return TargetObservation(
+        None,
+        state,
+        None,
+        inspector,
+        tuple(diagnostics),
+        {"empty": True, "identity": _safe_file_identity(identity)},
+    )
+
+
 def _provider_payload_value(payload: Any, key: str, default: Any = _MISSING) -> Any:
     if isinstance(payload, Mapping):
         return payload.get(key, default)
@@ -298,6 +329,7 @@ def _normalize_provider_payload(
     inspector: str,
     max_diagnostics: int = 100,
     direct_mapping: bool = False,
+    fallback_exists: str | None = None,
 ) -> TargetObservation | None:
     """Normalize every provider response through the same tri-state path."""
     if isinstance(payload, TargetObservation):
@@ -376,6 +408,9 @@ def _normalize_provider_payload(
             value = _provider_payload_value(payload, key)
             if value is not _MISSING:
                 metadata[key] = value
+
+    if explicit_exists is None and fallback_exists is not None:
+        explicit_exists = fallback_exists
 
     diagnostics: list[Diagnostic] = []
     if exists_diagnostic is not None:
@@ -476,15 +511,6 @@ def inspect_target(
                     observation.metadata,
                 )
             return observation
-    if hasattr(target, "names"):
-        observation = _normalize_provider_payload(
-            target,
-            identity=identity,
-            inspector=type(target).__name__,
-            max_diagnostics=max_diagnostics,
-        )
-        if observation is not None:
-            return observation
     if isinstance(target, bytes):
         return _unknown_target(
             "INFER_TARGET_UNSUPPORTED", identity=identity, inspector="bytes"
@@ -525,7 +551,41 @@ def inspect_target(
                 "identity": _safe_file_identity(identity),
             },
         )
-    inspect = getattr(target, "inspect_schema", None)
+    try:
+        adapter_exists, adapter_diagnostic = _provider_exists(target)
+    except Exception:
+        return _unknown_target(
+            "INFER_TARGET_UNKNOWN", identity=identity, inspector=type(target).__name__
+        )
+    if adapter_exists in {"absent", "unknown"}:
+        return _provider_state_observation(
+            adapter_exists,
+            identity=identity,
+            inspector=type(target).__name__,
+            diagnostic=adapter_diagnostic,
+        )
+    try:
+        has_names = getattr(target, "names", _MISSING) is not _MISSING
+    except Exception:
+        return _unknown_target(
+            "INFER_TARGET_UNKNOWN", identity=identity, inspector=type(target).__name__
+        )
+    if has_names:
+        observation = _normalize_provider_payload(
+            target,
+            identity=identity,
+            inspector=type(target).__name__,
+            max_diagnostics=max_diagnostics,
+            fallback_exists=adapter_exists,
+        )
+        if observation is not None:
+            return observation
+    try:
+        inspect = getattr(target, "inspect_schema", None)
+    except Exception:
+        return _unknown_target(
+            "INFER_TARGET_UNKNOWN", identity=identity, inspector=type(target).__name__
+        )
     if callable(inspect):
         try:
             result = inspect()
@@ -544,6 +604,7 @@ def inspect_target(
                 inspector=type(target).__name__,
                 max_diagnostics=max_diagnostics,
                 direct_mapping=True,
+                fallback_exists=adapter_exists,
             )
             if observation is not None:
                 if observation.schema is not None:
@@ -565,7 +626,12 @@ def inspect_target(
                 identity=identity,
                 inspector=type(target).__name__,
             )
-    schema_attr = getattr(target, "schema", None)
+    try:
+        schema_attr = getattr(target, "schema", _MISSING)
+    except Exception:
+        return _unknown_target(
+            "INFER_TARGET_UNKNOWN", identity=identity, inspector=type(target).__name__
+        )
     if callable(schema_attr):
         try:
             schema_attr = schema_attr()
@@ -578,15 +644,31 @@ def inspect_target(
                     identity=identity,
                     inspector=type(target).__name__,
                 )
+            if schema_attr is None:
+                return _unknown_target(
+                    "INFER_TARGET_UNSUPPORTED",
+                    identity=identity,
+                    inspector=type(target).__name__,
+                )
         except Exception:
-            schema_attr = None
-    observation = _normalize_provider_payload(
-        schema_attr,
-        identity=identity,
-        inspector=type(target).__name__,
-        max_diagnostics=max_diagnostics,
-        direct_mapping=True,
-    )
+            return _unknown_target(
+                "INFER_TARGET_UNKNOWN",
+                identity=identity,
+                inspector=type(target).__name__,
+            )
+    try:
+        observation = _normalize_provider_payload(
+            schema_attr,
+            identity=identity,
+            inspector=type(target).__name__,
+            max_diagnostics=max_diagnostics,
+            direct_mapping=True,
+            fallback_exists=adapter_exists,
+        )
+    except Exception:
+        return _unknown_target(
+            "INFER_TARGET_UNKNOWN", identity=identity, inspector=type(target).__name__
+        )
     if observation is not None:
         if observation.schema is not None:
             observation = TargetObservation(
@@ -620,22 +702,55 @@ async def inspect_target_async(
         return inspect_target(
             target, identity=identity, max_diagnostics=max_diagnostics
         )
-    inspect_schema = getattr(target, "inspect_schema", None)
+    try:
+        adapter_exists, adapter_diagnostic = _provider_exists(target)
+    except Exception:
+        return _unknown_target(
+            "INFER_TARGET_UNKNOWN", identity=identity, inspector=type(target).__name__
+        )
+    if adapter_exists in {"absent", "unknown"}:
+        return _provider_state_observation(
+            adapter_exists,
+            identity=identity,
+            inspector=type(target).__name__,
+            diagnostic=adapter_diagnostic,
+        )
+    try:
+        inspect_schema = getattr(target, "inspect_schema", None)
+    except Exception:
+        return _unknown_target(
+            "INFER_TARGET_UNKNOWN", identity=identity, inspector=type(target).__name__
+        )
     if not callable(inspect_schema):
-        if not callable(getattr(target, "schema", None)):
+        try:
+            schema_method = getattr(target, "schema", None)
+        except Exception:
+            return _unknown_target(
+                "INFER_TARGET_UNKNOWN",
+                identity=identity,
+                inspector=type(target).__name__,
+            )
+        if not callable(schema_method):
             return inspect_target(
                 target, identity=identity, max_diagnostics=max_diagnostics
             )
         try:
-            schema_attr = target.schema()
+            schema_attr = schema_method()
             if _inspect.isawaitable(schema_attr):
                 schema_attr = await schema_attr
+            if schema_attr is None:
+                return _unknown_target(
+                    "INFER_TARGET_UNSUPPORTED",
+                    identity=identity,
+                    inspector=type(target).__name__,
+                )
             observation = _normalize_provider_payload(
                 schema_attr,
                 identity=identity,
                 inspector=type(target).__name__,
                 max_diagnostics=max_diagnostics,
                 direct_mapping=True,
+                fallback_exists=adapter_exists,
             )
             if observation is not None:
                 if observation.schema is not None:
@@ -680,6 +795,7 @@ async def inspect_target_async(
             inspector=type(target).__name__,
             max_diagnostics=max_diagnostics,
             direct_mapping=True,
+            fallback_exists=adapter_exists,
         )
         if observation is not None:
             if observation.schema is not None:
@@ -701,18 +817,30 @@ async def inspect_target_async(
             identity=identity,
             inspector=type(target).__name__,
         )
-    schema_attr = getattr(target, "schema", None)
+    try:
+        schema_attr = getattr(target, "schema", _MISSING)
+    except Exception:
+        return _unknown_target(
+            "INFER_TARGET_UNKNOWN", identity=identity, inspector=type(target).__name__
+        )
     if callable(schema_attr):
         try:
             schema_attr = schema_attr()
             if _inspect.isawaitable(schema_attr):
                 schema_attr = await schema_attr
+            if schema_attr is None:
+                return _unknown_target(
+                    "INFER_TARGET_UNSUPPORTED",
+                    identity=identity,
+                    inspector=type(target).__name__,
+                )
             observation = _normalize_provider_payload(
                 schema_attr,
                 identity=identity,
                 inspector=type(target).__name__,
                 max_diagnostics=max_diagnostics,
                 direct_mapping=True,
+                fallback_exists=adapter_exists,
             )
             if observation is not None:
                 if observation.schema is not None:

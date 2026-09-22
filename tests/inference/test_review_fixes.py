@@ -196,6 +196,86 @@ def test_async_provider_existence_probe_is_closed_and_fails_closed() -> None:
     }
 
 
+def test_adapter_existence_precedes_schema_inspection() -> None:
+    calls: list[str] = []
+
+    class SyncAbsent:
+        exists = "absent"
+
+        def inspect_schema(self):
+            calls.append("sync")
+            return {
+                "fields": [{"name": "id", "type": "integer"}],
+                "capabilities": {"write_modes": ["append"]},
+            }
+
+    class SyncUnknown:
+        def exists(self):
+            return "unknown"
+
+        @property
+        def schema(self):
+            calls.append("unknown")
+            return {"fields": [{"name": "id", "type": "integer"}]}
+
+    class AsyncAbsent:
+        exists = "absent"
+
+        async def inspect_schema(self):
+            calls.append("async")
+            return {"fields": [{"name": "id", "type": "integer"}]}
+
+    sync_absent = inspect_target(SyncAbsent())
+    sync_unknown = inspect_target(SyncUnknown())
+    async_absent = asyncio.run(inspect_target_async(AsyncAbsent()))
+
+    assert sync_absent.exists == "absent"
+    assert sync_unknown.exists == "unknown"
+    assert async_absent.exists == "absent"
+    assert calls == []
+
+    dataset = etl.from_records_for_target([{"id": 1}], SyncAbsent(), name="orders")
+    with pytest.raises(ValueError, match="inference diagnostics contain errors"):
+        dataset.definition()
+
+
+def test_empty_inspector_result_falls_back_to_schema() -> None:
+    class Adapter:
+        def inspect_schema(self):
+            return None
+
+        @property
+        def schema(self):
+            return {"id": "INTEGER"}
+
+    observation = inspect_target(Adapter())
+    assert observation.exists == "present"
+    assert observation.schema is not None
+    assert observation.schema.fields[0].name == "id"
+
+
+@pytest.mark.parametrize("async_mode", [False, True])
+def test_provider_attribute_failures_become_unknown(async_mode: bool) -> None:
+    class BadSchema:
+        @property
+        def schema(self):
+            raise PermissionError("schema access denied")
+
+    class BadInspector:
+        @property
+        def inspect_schema(self):
+            raise PermissionError("inspection access denied")
+
+    inspect = inspect_target_async if async_mode else inspect_target
+    for target in (BadSchema(), BadInspector()):
+        observation = asyncio.run(inspect(target)) if async_mode else inspect(target)
+        assert observation.exists == "unknown"
+        assert observation.schema is None
+        assert "INFER_TARGET_UNKNOWN" in {
+            diagnostic.code for diagnostic in observation.diagnostics
+        }
+
+
 @pytest.mark.parametrize("exists", ["absent", "unknown"])
 def test_explicit_target_existence_precedes_schema_shape(exists: str) -> None:
     observation = inspect_target(
