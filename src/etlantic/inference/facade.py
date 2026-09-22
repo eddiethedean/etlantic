@@ -705,9 +705,15 @@ class InferredDataset:
         ]
         contract_ids = [contract.identity for contract in contracts]
         target_observation = self._result.target_observation
-        if target_observation is not None and target_observation.schema is not None:
+        if target_observation is not None and (
+            target_observation.schema is not None or target_observation.diagnostics
+        ):
             target_for_check: Any = target_observation
-            if target_observation.inspector in {"provided", "normalized"}:
+            if (
+                target_observation.schema is not None
+                and not target_observation.diagnostics
+                and target_observation.inspector in {"provided", "normalized"}
+            ):
                 target_for_check = target_observation.schema
             compatibility = check_write_compatibility(
                 state_schemas[-1],
@@ -900,8 +906,13 @@ class InferredDataset:
     def _check_target_revision(self) -> None:
         reader = self._target_revision_reader
         expected = self._target_binding.get("revision")
-        if reader is None or expected is None:
+        if reader is None:
             return
+        if expected is None:
+            raise ValueError(
+                "INFER_TARGET_REVISION_UNKNOWN: target revision is missing; "
+                "publication cannot be fenced"
+            )
         try:
             current = reader()
             if hasattr(current, "__await__"):

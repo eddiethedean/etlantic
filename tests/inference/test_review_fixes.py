@@ -9,7 +9,7 @@ from decimal import Decimal
 import pytest
 
 import etlantic as etl
-from etlantic.diagnostics import Diagnostic
+from etlantic.diagnostics import Diagnostic, Severity
 from etlantic.exceptions import PipelineValidationError
 from etlantic.inference import (
     InferenceObservation,
@@ -760,6 +760,54 @@ def test_any_target_diagnostic_fails_closed_and_normalizes_severity(
     )
     assert compatibility.compatible is False
     assert "INFER_TARGET_UNKNOWN" in {item.code for item in compatibility.diagnostics}
+
+
+def test_target_diagnostics_block_schema_less_publication() -> None:
+    dataset = etl.from_records_for_target(
+        [{"id": 7}],
+        {
+            "exists": "present",
+            "fields": [],
+            "diagnostics": [{"code": "DENIED", "severity": "warning"}],
+        },
+        name="orders",
+    )
+
+    with pytest.raises(ValueError, match="INFER_TARGET_WRITE_UNQUALIFIED"):
+        dataset.definition()
+
+
+def test_provided_target_diagnostics_are_not_dropped_before_publication() -> None:
+    target = etl.TargetObservation(
+        NormalizedSchema("target", (NormalizedField("id", "integer"),)),
+        "present",
+        inspector="provided",
+        diagnostics=(Diagnostic("DENIED", Severity.WARNING, "target unavailable"),),
+    )
+    dataset = etl.from_records_for_target([{"id": 7}], target, name="orders")
+
+    with pytest.raises(ValueError, match="INFER_TARGET_WRITE_UNQUALIFIED"):
+        dataset.definition()
+
+
+def test_revision_reader_rejects_missing_revision() -> None:
+    dataset = etl.from_records_for_target(
+        [{"id": 7}],
+        {
+            "exists": "present",
+            "revision": None,
+            "capabilities": {"write_modes": ["append"]},
+            "fields": [{"name": "id", "type": "integer"}],
+        },
+        name="orders",
+        revision_reader=lambda: None,
+    )
+
+    assert "INFER_TARGET_REVISION_UNKNOWN" in {
+        item.code for item in dataset.diagnostics
+    }
+    with pytest.raises(ValueError, match="inference diagnostics contain errors"):
+        dataset.definition()
 
 
 def test_metadata_redaction_preserves_inference_control_values() -> None:

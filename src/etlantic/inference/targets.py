@@ -915,7 +915,17 @@ def infer_records_for_target(
             current_revision = (
                 str(current_revision) if current_revision is not None else None
             )
-            if current_revision != observation.revision:
+            if current_revision is None or observation.revision is None:
+                observation = _with_target_diagnostic(
+                    observation,
+                    Diagnostic(
+                        "INFER_TARGET_REVISION_UNKNOWN",
+                        Severity.ERROR,
+                        "Target revision is missing; publication cannot be fenced",
+                        phase="inference",
+                    ),
+                )
+            elif current_revision != observation.revision:
                 observation = _with_target_diagnostic(
                     observation,
                     Diagnostic(
@@ -1006,7 +1016,17 @@ async def infer_records_for_target_async(
             current_revision = (
                 str(current_revision) if current_revision is not None else None
             )
-            if current_revision != observation.revision:
+            if current_revision is None or observation.revision is None:
+                observation = _with_target_diagnostic(
+                    observation,
+                    Diagnostic(
+                        "INFER_TARGET_REVISION_UNKNOWN",
+                        Severity.ERROR,
+                        "Target revision is missing; publication cannot be fenced",
+                        phase="inference",
+                    ),
+                )
+            elif current_revision != observation.revision:
                 observation = _with_target_diagnostic(
                     observation,
                     Diagnostic(
