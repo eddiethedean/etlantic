@@ -26,12 +26,11 @@ _SOURCE_SCHEMAS: dict[str, tuple[tuple[str, str, bool, bool], ...]] = {}
 
 
 class _FileSourceEntry:
-    __slots__ = ("leases", "path", "persistent")
+    __slots__ = ("leases", "path")
 
-    def __init__(self, path: Path, *, persistent: bool = False) -> None:
+    def __init__(self, path: Path) -> None:
         self.path = path
         self.leases: set[weakref.ReferenceType[_FileSourceLease]] = set()
-        self.persistent = persistent
 
 
 class _FileSourceLease:
@@ -39,6 +38,16 @@ class _FileSourceLease:
 
     def __init__(self, reference: str) -> None:
         self.reference = reference
+
+
+class _FileBinding(dict[str, Any]):
+    """Wire-compatible binding that owns a host-local source lease."""
+
+    __slots__ = ("lease",)
+
+    def __init__(self, payload: Mapping[str, Any]) -> None:
+        super().__init__(payload)
+        self.lease: _FileSourceLease | None = None
 
 
 _FILE_SOURCES: dict[str, _FileSourceEntry] = {}
@@ -90,6 +99,9 @@ _FILE_OPTION_KEYS = frozenset(
         "quotechar",
         "escapechar",
         "doublequote",
+        "lineterminator",
+        "quoting",
+        "skipinitialspace",
         "strict",
         "encoding",
         "null_values",
@@ -201,7 +213,9 @@ def _safe_file_options(options: Mapping[str, Any] | None) -> dict[str, Any]:
     for key in sorted(normalized):
         value = normalized[key]
         if key not in _FILE_OPTION_KEYS:
-            continue
+            raise ValueError(
+                f"INFER_SOURCE_BINDING: unsupported file option {key!r}"
+            )
         if key == "null_values":
             raise ValueError(
                 "INFER_SOURCE_BINDING: null_values cannot cross the durable "
@@ -297,7 +311,7 @@ def file_binding(
         payload["hints"] = safe_hints
     if safe_limits is not None:
         payload["limits"] = safe_limits
-    return payload
+    return _FileBinding(payload)
 
 
 def _file_reference(path: str | Path) -> str:
@@ -318,7 +332,7 @@ def _release_file_lease(
     if entry is None:
         return
     entry.leases.discard(token)
-    if not entry.leases and not entry.persistent:
+    if not entry.leases:
         _FILE_SOURCES.pop(reference, None)
 
 
@@ -342,13 +356,6 @@ def _retain_file_source(
     )
     entry.leases.add(token)
     return lease
-
-
-def _persist_file_source(reference: str) -> None:
-    """Keep an explicitly rebound file usable through its returned binding."""
-    entry = _FILE_SOURCES.get(str(reference))
-    if entry is not None:
-        entry.persistent = True
 
 
 def unregister_file_source(reference: str) -> None:
@@ -381,6 +388,11 @@ def target_binding(
 ) -> dict[str, Any]:
     """Serialize target identity, revision, intent, and requirements separately."""
     observed_identity = observation.identity if observation is not None else None
+    is_observed = (
+        observation is not None
+        and observation.schema is not None
+        and observation.inspector != "provided"
+    )
     return {
         "version": BINDING_VERSION,
         "kind": "target",
@@ -388,12 +400,15 @@ def target_binding(
         "revision": observation.revision if observation is not None else None,
         "write_mode": str(write_mode),
         "requirements": _wire_value(dict(requirements or {})),
-        "observed": observation is not None and observation.schema is not None,
+        "observed": is_observed,
     }
 
 
 def _source_binding_for_rebind(
-    source: str | Path | Mapping[str, Any], *, format: str | None = None
+    source: str | Path | Mapping[str, Any],
+    *,
+    format: str | None = None,
+    template: Mapping[str, Any] | None = None,
 ) -> dict[str, Any]:
     if isinstance(source, Mapping):
         raw = dict(source)
@@ -437,12 +452,52 @@ def _source_binding_for_rebind(
         )
     resolved = str(path.expanduser().resolve())
     identity = f"{source_format}:{hashlib.sha256(resolved.encode()).hexdigest()[:20]}"
+    template_options = (
+        template.get("options")
+        if isinstance(template, Mapping)
+        and isinstance(template.get("options"), Mapping)
+        else None
+    )
+    template_format = (
+        template.get("format")
+        if isinstance(template, Mapping) and isinstance(template.get("format"), str)
+        else None
+    )
+    template_hints = (
+        template.get("hints")
+        if isinstance(template, Mapping)
+        and isinstance(template.get("hints"), Mapping)
+        else None
+    )
+    template_limits = (
+        template.get("limits")
+        if isinstance(template, Mapping)
+        and isinstance(template.get("limits"), Mapping)
+        else None
+    )
     return file_binding(
         source_format,
         path,
         identity=identity,
+        options=(
+            template_options
+            if source_format in {"csv", "tsv"} and template_format == source_format
+            else None
+        ),
         lines=True if source_format == "jsonl" else None,
+        hints=template_hints,
+        limits=template_limits,
     )
+
+
+def _file_binding_template(definition: PipelineDefinition) -> Mapping[str, Any] | None:
+    for node in definition.nodes:
+        if node.kind != "source":
+            continue
+        binding = node.bindings.get("source")
+        if isinstance(binding, Mapping) and binding.get("kind") == "file":
+            return binding
+    return None
 
 
 def rebind_definition(
@@ -461,7 +516,15 @@ def rebind_definition(
     if not isinstance(definition, PipelineDefinition):
         raise TypeError("definition must be a PipelineDefinition")
     source_payload = (
-        _source_binding_for_rebind(source, format=format)
+        _source_binding_for_rebind(
+            source,
+            format=format,
+            template=(
+                _file_binding_template(definition)
+                if not isinstance(source, Mapping)
+                else None
+            ),
+        )
         if source is not None
         else None
     )
@@ -481,11 +544,11 @@ def rebind_definition(
     source_lease: _FileSourceLease | None = None
     if source_payload is not None and source_payload.get("kind") == "file":
         source_lease = _retain_file_source(str(source_payload["uri"]))
+        if isinstance(source_payload, _FileBinding):
+            source_payload.lease = source_lease
         _validate_rebound_file_source(definition, source_payload)
     if target_payload is not None:
         _validate_rebound_target(definition, target_payload)
-    if source_lease is not None:
-        _persist_file_source(str(source_payload["uri"]))
     nodes: list[NodeDefinition] = []
     for node in definition.nodes:
         bindings = dict(node.bindings)
@@ -848,6 +911,22 @@ def _validate_file_options(options: Mapping[str, Any]) -> None:
         elif name in {"doublequote", "strict"} and not isinstance(value, bool):
             raise ValueError(
                 f"INFER_SOURCE_BINDING: file option {name!r} must be boolean"
+            )
+        elif name == "skipinitialspace" and not isinstance(value, bool):
+            raise ValueError(
+                "INFER_SOURCE_BINDING: file option 'skipinitialspace' must be boolean"
+            )
+        elif name == "quoting" and (
+            isinstance(value, bool) or not isinstance(value, int) or value < 0
+        ):
+            raise ValueError(
+                "INFER_SOURCE_BINDING: file option 'quoting' must be a non-negative integer"
+            )
+        elif name == "lineterminator" and (
+            not isinstance(value, str) or not value
+        ):
+            raise ValueError(
+                "INFER_SOURCE_BINDING: file option 'lineterminator' must be a non-empty string"
             )
 
 

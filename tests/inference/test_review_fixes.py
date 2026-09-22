@@ -698,6 +698,37 @@ def test_file_binding_reopens_with_inference_hints_and_limits(tmp_path) -> None:
     assert sampled.definition().contracts[0].fields[0].type == "integer"
 
 
+def test_file_rebinding_preserves_inference_settings(tmp_path) -> None:
+    first = tmp_path / "first.csv"
+    second = tmp_path / "second.csv"
+    first.write_text("id\n1\n2\n", encoding="utf-8")
+    second.write_text("id\n3\n4\n", encoding="utf-8")
+
+    dataset = etl.read_csv(
+        first,
+        hints={"id": float},
+        limits=etl.InferenceLimits(max_rows=1),
+    )
+    rebound = dataset.rebind_source(str(second))
+
+    binding = rebound.nodes[0].bindings["source"]
+    assert binding["hints"] == {"id": "float"}
+    assert binding["limits"]["max_rows"] == 1
+    assert etl.reopen_source_binding(binding).schema.fields[0].logical_type == "number"
+
+
+def test_file_binding_preserves_supported_csv_options(tmp_path) -> None:
+    path = tmp_path / "events.csv"
+    path.write_text("id, name\n1, Alice\n", encoding="utf-8")
+
+    dataset = etl.read_csv(path, options={"skipinitialspace": True})
+    binding = dataset.definition().nodes[0].bindings["source"]
+    reopened = etl.reopen_source_binding(binding)
+
+    assert binding["options"]["skipinitialspace"] is True
+    assert reopened.preview() == dataset.preview()
+
+
 def test_rebinding_preserves_valid_binding_mappings(tmp_path) -> None:
     path = tmp_path / "events.csv"
     path.write_text("id\n1\n", encoding="utf-8")
@@ -904,6 +935,24 @@ def test_jsonl_rebinding_detects_line_format(tmp_path) -> None:
     )
     assert binding["format"] == "jsonl"
     assert etl.reopen_source_binding(binding).preview() == [{"id": 1}, {"id": 2}]
+
+
+def test_rebound_file_binding_lease_follows_the_binding(tmp_path) -> None:
+    path = tmp_path / "events.csv"
+    path.write_text("id\n1\n", encoding="utf-8")
+    definition = etl.from_records([{"id": 1}], name="events").definition()
+
+    rebound = etl.rebind_definition(definition, source=str(path))
+    binding = rebound.nodes[0].bindings["source"]
+    wire_binding = dict(binding)
+    del rebound
+    gc.collect()
+    assert etl.resolve_source_binding(binding).path == path.resolve()
+
+    del binding
+    gc.collect()
+    with pytest.raises(ValueError, match="INFER_SOURCE_UNRESOLVABLE"):
+        etl.resolve_source_binding(wire_binding)
 
 
 def test_reopened_generator_binding_keeps_its_factory() -> None:
@@ -1264,6 +1313,32 @@ def test_file_source_registry_releases_when_dataset_is_collected(tmp_path) -> No
 
     with pytest.raises(ValueError, match="INFER_SOURCE_UNRESOLVABLE"):
         etl.resolve_source_binding(binding)
+
+
+def test_materialized_record_snapshot_isolated_from_nested_mutations() -> None:
+    row = {"payload": {"value": 1}}
+    dataset = etl.from_records([row], name="nested_snapshot")
+    binding = dataset.definition().nodes[0].bindings["source"]
+
+    row["payload"]["value"] = 2
+    resolved = etl.resolve_source_binding(binding)
+    resolved[0]["payload"]["value"] = 3
+
+    assert etl.resolve_source_binding(binding) == [{"payload": {"value": 1}}]
+
+
+def test_provided_target_binding_validates_after_reload() -> None:
+    target = NormalizedSchema("provided_target", (NormalizedField("id", "integer"),))
+    dataset = etl.from_records_for_target(
+        [{"id": 1}],
+        etl.TargetObservation(target, "present", None, "provided"),
+        name="provided_target",
+    )
+    definition = dataset.definition()
+    assert definition.nodes[-1].bindings["target"]["observed"] is False
+
+    restored = etl.authoring.pipeline_from_dict(definition.to_dict())
+    assert etl.authoring.validate_pipeline_like(restored).valid
 
 
 @pytest.mark.parametrize(

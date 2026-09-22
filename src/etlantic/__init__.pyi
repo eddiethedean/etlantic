@@ -102,6 +102,9 @@ from etlantic.inference import (
     solve_backward_constraints as solve_backward_constraints,
 )
 from etlantic.inference import (
+    unregister_file_source as unregister_file_source,
+)
+from etlantic.inference import (
     unregister_source_factory as unregister_source_factory,
 )
 from etlantic.inference import (

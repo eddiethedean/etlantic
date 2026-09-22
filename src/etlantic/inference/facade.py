@@ -10,6 +10,7 @@ import operator
 import re
 import weakref
 from collections.abc import Callable, Mapping
+from copy import deepcopy
 from dataclasses import replace
 from decimal import Decimal, DecimalException
 from typing import Any
@@ -1512,7 +1513,10 @@ class _SnapshotFactory:
         owner = self._owner_ref()
         if owner is None:
             raise ValueError("implicit records source is no longer available")
-        return [dict(row) for row in owner.snapshot]
+        try:
+            return [deepcopy(row) for row in owner.snapshot]
+        except Exception as exc:
+            raise ValueError("implicit records snapshot is no longer replayable") from exc
 
 
 def _register_records_source(
@@ -1525,11 +1529,16 @@ def _register_records_source(
     if factory is not None:
         register_source_factory(factory_key, factory, schema=schema)
         return None
-    if isinstance(records, Mapping):
-        snapshot = (dict(records),)
-    elif isinstance(records, (list, tuple)):
-        snapshot = tuple(dict(row) for row in records if isinstance(row, Mapping))
-    else:
+    try:
+        if isinstance(records, Mapping):
+            snapshot = (deepcopy(dict(records)),)
+        elif isinstance(records, (list, tuple)):
+            snapshot = tuple(
+                deepcopy(dict(row)) for row in records if isinstance(row, Mapping)
+            )
+        else:
+            return None
+    except Exception:
         return None
     owner = _SnapshotOwner(snapshot)
     register_source_factory(
