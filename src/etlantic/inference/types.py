@@ -564,7 +564,8 @@ class TargetObservation:
                     phase="inference",
                 )
             )
-            exists = "unknown"
+            if exists == "present":
+                exists = "unknown"
         if exists != "present" and restored_schema is not None:
             metadata["untrusted_schema_fingerprint"] = restored_schema.fingerprint()
             restored_schema = None

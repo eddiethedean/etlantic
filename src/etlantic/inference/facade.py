@@ -705,9 +705,7 @@ class InferredDataset:
         ]
         contract_ids = [contract.identity for contract in contracts]
         target_observation = self._result.target_observation
-        if target_observation is not None and (
-            target_observation.schema is not None or target_observation.diagnostics
-        ):
+        if target_observation is not None:
             target_for_check: Any = target_observation
             if (
                 target_observation.exists == "present"

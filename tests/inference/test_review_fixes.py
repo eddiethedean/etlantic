@@ -96,13 +96,23 @@ def test_target_envelopes_do_not_become_raw_schema_mappings() -> None:
     assert [field.name for field in nested_schema.schema.fields] == ["id"]
 
 
-def test_raw_schema_field_named_exists_is_not_an_envelope_state() -> None:
-    observation = inspect_target({"exists": "BOOLEAN", "id": "INTEGER"})
+def test_invalid_exists_value_is_not_reinterpreted_as_a_schema_field() -> None:
+    target = {"exists": "BOOLEAN", "id": "INTEGER"}
+    observation = inspect_target(target)
 
-    assert observation.exists == "present"
-    assert observation.schema is not None
-    assert [field.name for field in observation.schema.fields] == ["exists", "id"]
-    assert observation.schema.fields[0].logical_type == "boolean"
+    assert observation.exists == "unknown"
+    assert observation.schema is None
+    assert "INFER_TARGET_UNKNOWN" in {
+        diagnostic.code for diagnostic in observation.diagnostics
+    }
+    result = etl.infer_records_for_target(
+        [{"exists": "true", "id": "1"}], target, retain_rows=True
+    )
+    assert result.provenance["target_validation"] == "not_performed"
+    assert [field.logical_type for field in result.schema.fields] == [
+        "string",
+        "string",
+    ]
 
     invalid_state = inspect_target({"exists": "not-a-state"})
     assert invalid_state.exists == "unknown"
@@ -495,6 +505,24 @@ def test_malformed_target_schema_is_unknown_on_the_wire() -> None:
     }
     source = NormalizedSchema("source", ())
     assert check_write_compatibility(source, observation).status == "conflict"
+
+
+@pytest.mark.parametrize("exists", ["absent", "unknown"])
+def test_malformed_wire_schema_does_not_override_explicit_nonpresent_state(
+    exists: str,
+) -> None:
+    observation = etl.TargetObservation.from_dict(
+        {
+            "exists": exists,
+            "schema": {"identity": "target", "fields": "malformed"},
+        }
+    )
+
+    assert observation.exists == exists
+    assert observation.schema is None
+    assert "INFER_TARGET_UNSUPPORTED" in {
+        diagnostic.code for diagnostic in observation.diagnostics
+    }
 
 
 @pytest.mark.parametrize("logical_type", ["unknown", "made-up"])
@@ -1001,6 +1029,17 @@ def test_target_diagnostics_block_schema_less_publication() -> None:
             "fields": [],
             "diagnostics": [{"code": "DENIED", "severity": "warning"}],
         },
+        name="orders",
+    )
+
+    with pytest.raises(ValueError, match="INFER_TARGET_WRITE_UNQUALIFIED"):
+        dataset.definition()
+
+
+def test_schema_less_present_target_blocks_publication_without_diagnostics() -> None:
+    dataset = etl.from_records_for_target(
+        [{"id": 7}],
+        {"exists": "present", "fields": []},
         name="orders",
     )
 
