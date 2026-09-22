@@ -19,6 +19,7 @@ from etlantic.inference import (
     inspect_target,
     inspect_target_async,
     solve_backward_constraints,
+    source_factory,
     unregister_file_source,
     validate_source_binding_against_definition,
 )
@@ -937,6 +938,17 @@ def test_jsonl_rebinding_detects_line_format(tmp_path) -> None:
     assert etl.reopen_source_binding(binding).preview() == [{"id": 1}, {"id": 2}]
 
 
+def test_rebinding_rejects_file_sources_with_error_diagnostics(tmp_path) -> None:
+    valid = tmp_path / "valid.json"
+    malformed = tmp_path / "malformed.json"
+    valid.write_text('[{"id": 1}]', encoding="utf-8")
+    malformed.write_text('[{"id": 1}] trailing', encoding="utf-8")
+
+    definition = etl.read_json(valid, name="events").definition()
+    with pytest.raises(ValueError, match="INFER_SOURCE_REBIND"):
+        etl.rebind_definition(definition, source=malformed)
+
+
 def test_rebound_file_binding_lease_follows_the_binding(tmp_path) -> None:
     path = tmp_path / "events.csv"
     path.write_text("id\n1\n", encoding="utf-8")
@@ -955,7 +967,22 @@ def test_rebound_file_binding_lease_follows_the_binding(tmp_path) -> None:
         etl.resolve_source_binding(wire_binding)
 
 
-def test_reopened_generator_binding_keeps_its_factory() -> None:
+def test_definition_builders_preserve_file_source_leases(tmp_path) -> None:
+    from etlantic.authoring.builders import replace_nodes
+
+    path = tmp_path / "events.csv"
+    path.write_text("id\n1\n", encoding="utf-8")
+    original = etl.read_csv(path, name="builder_lease").definition()
+    updated = replace_nodes(original, original.nodes)
+    binding = updated.nodes[0].bindings["source"]
+
+    del original
+    gc.collect()
+
+    assert etl.resolve_source_binding(binding).path == path.resolve()
+
+
+def test_reopened_generator_binding_isolated_from_override() -> None:
     key = "test-reopened-generator-binding"
 
     def factory():
@@ -973,9 +1000,29 @@ def test_reopened_generator_binding_keeps_its_factory() -> None:
         reopened = etl.reopen_source_binding(
             binding, limits=etl.InferenceLimits(max_rows=1)
         )
-        assert reopened.definition().nodes[0].bindings["source"]["factory_key"] == key
+        reopened_key = reopened.definition().nodes[0].bindings["source"][
+            "factory_key"
+        ]
+        assert reopened_key != key
+        assert source_factory(key) is factory
     finally:
         etl.unregister_source_factory(key)
+
+
+def test_reopened_record_overrides_do_not_mutate_original_schema() -> None:
+    dataset = etl.from_records([{"id": 1}], name="override_isolation")
+    binding = dataset.definition().nodes[0].bindings["source"]
+
+    reopened = etl.reopen_source_binding(binding, hints={"id": float})
+
+    assert reopened.schema.fields[0].logical_type == "number"
+    assert (
+        reopened.definition().nodes[0].bindings["source"]["factory_key"]
+        != binding["factory_key"]
+    )
+    assert dataset.definition().nodes[0].bindings["source"]["factory_key"] == (
+        binding["factory_key"]
+    )
 
 
 def test_provider_source_can_be_explicitly_rebound(tmp_path) -> None:
@@ -1001,6 +1048,67 @@ def test_materialized_records_register_a_runtime_reopen_factory() -> None:
     dataset = etl.from_records([{"id": 1}], name="materialized_records")
     binding = dataset.definition().nodes[0].bindings["source"]
     assert etl.resolve_source_binding(binding) == [{"id": 1}]
+
+
+def test_records_binding_reopens_with_inference_contract() -> None:
+    dataset = etl.from_records(
+        [{"id": 1}],
+        name="hinted_records",
+        hints={"id": float},
+        limits=etl.InferenceLimits(max_rows=1),
+    )
+    binding = dataset.definition().nodes[0].bindings["source"]
+
+    assert binding["hints"] == {"id": "float"}
+    assert binding["limits"]["max_rows"] == 1
+    reopened = etl.reopen_source_binding(binding)
+    assert reopened.schema.fields[0].logical_type == "number"
+    assert reopened.provenance["limits"]["max_rows"] == 1
+
+
+def test_record_rebinding_rejects_hints_that_change_the_source_contract() -> None:
+    definition = etl.from_records([{"id": 1}], name="hinted_rebind").definition()
+    binding = dict(definition.nodes[0].bindings["source"])
+    binding["hints"] = {"id": "float"}
+
+    with pytest.raises(ValueError, match="INFER_SOURCE_SCHEMA_MISMATCH"):
+        etl.rebind_definition(definition, source=binding)
+
+
+def test_materialized_records_over_limits_do_not_get_an_implicit_factory() -> None:
+    dataset = etl.from_records(
+        [{"id": 1}, {"id": 2}],
+        limits=etl.InferenceLimits(max_rows=1),
+    )
+    factory_key = dataset._source_binding["factory_key"]
+
+    assert source_factory(factory_key) is None
+    with pytest.raises(ValueError, match="one-shot"):
+        dataset.definition()
+
+
+def test_unsupported_materialized_values_fail_closed() -> None:
+    class SameString:
+        def __init__(self, value: int) -> None:
+            self.value = value
+
+        def __str__(self) -> str:
+            return "same"
+
+    dataset = etl.from_records(
+        [{"value": SameString(1)}], name="unsupported_snapshot_value"
+    )
+
+    assert source_factory(dataset._source_binding["factory_key"]) is None
+    with pytest.raises(ValueError, match="INFER_SOURCE_UNRESOLVABLE"):
+        dataset.definition()
+
+
+def test_default_record_pipeline_ids_are_source_specific() -> None:
+    first = etl.from_records([{"id": 1}]).definition()
+    second = etl.from_records([{"id": 2}]).definition()
+
+    assert first.pipeline_id != second.pipeline_id
 
 
 def test_records_bindings_do_not_alias_same_named_sources() -> None:
@@ -1302,6 +1410,34 @@ def test_reloaded_definition_rechecks_target_schema_compatibility() -> None:
     assert "INFER_TARGET_WRITE_UNQUALIFIED" in {item.code for item in report.errors}
 
 
+def test_definition_rejects_a_final_target_cast_after_transformations() -> None:
+    dataset = etl.from_records_for_target(
+        [{"id": "12"}],
+        {
+            "revision": "r1",
+            "capabilities": {"write_modes": ["append"]},
+            "fields": [{"name": "id", "type": "integer"}],
+        },
+        name="orders",
+    ).select(col("id").cast("string").alias("id"))
+
+    with pytest.raises(
+        ValueError,
+        match=r"INFER_TARGET_WRITE_UNQUALIFIED.*INFER_RUNTIME_CONVERSION",
+    ):
+        dataset.definition()
+
+
+def test_schema_only_target_is_a_durable_write_hypothesis() -> None:
+    target = NormalizedSchema("schema_only_target", (NormalizedField("id", "integer"),))
+    definition = etl.from_records_for_target(
+        [{"id": 1}], target, name="schema_only_source"
+    ).definition()
+
+    assert definition.nodes[-1].bindings["target"]["observed"] is False
+    assert etl.authoring.validate_pipeline_like(definition).valid
+
+
 def test_file_source_registry_releases_when_dataset_is_collected(tmp_path) -> None:
     path = tmp_path / "events.csv"
     path.write_text("id\n1\n", encoding="utf-8")
@@ -1372,3 +1508,24 @@ def test_unsupported_provider_does_not_look_durable() -> None:
     dataset = etl.from_pandas(Frame(), name="frame")
     with pytest.raises(ValueError, match="INFER_SOURCE_UNSUPPORTED"):
         dataset.definition()
+
+
+def test_path_like_source_and_target_identities_are_redacted(tmp_path) -> None:
+    class Frame:
+        def __init__(self) -> None:
+            self.schema = {"id": int}
+
+    rebound_path = tmp_path / "frame.csv"
+    rebound_path.write_text("id\n1\n", encoding="utf-8")
+    source_identity = "/Users/alice/private/frame"
+    source_definition = etl.from_pandas(
+        Frame(), name=source_identity
+    ).rebind_source(str(rebound_path))
+    assert source_identity not in json.dumps(source_definition.to_dict())
+
+    target_identity = "/Users/alice/private/target"
+    target = NormalizedSchema(target_identity, (NormalizedField("id", "integer"),))
+    target_definition = etl.from_records_for_target(
+        [{"id": 1}], target, name="safe_target"
+    ).definition()
+    assert target_identity not in json.dumps(target_definition.to_dict())

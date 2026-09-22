@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import datetime as _dt
 import hashlib
+import json
 import os
 import re
 import weakref
@@ -181,6 +182,30 @@ def _safe_inference_limits(
     return None
 
 
+def _safe_binding_requirements(requirements: Mapping[str, Any] | None) -> dict[str, Any]:
+    """Keep target requirements row-free and redact path-like identities."""
+    payload = _wire_value(dict(requirements or {}))
+
+    def sanitize(value: Any, key: str | None = None) -> Any:
+        if isinstance(value, Mapping):
+            return {
+                str(item_key): sanitize(item_value, str(item_key))
+                for item_key, item_value in value.items()
+            }
+        if isinstance(value, list):
+            return [sanitize(item) for item in value]
+        if isinstance(value, str) and key is not None and key.casefold() in {
+            "identity",
+            "path",
+            "uri",
+        }:
+            return _safe_file_identity(value)
+        return value
+
+    safe = sanitize(payload)
+    return dict(safe) if isinstance(safe, Mapping) else {}
+
+
 def _validate_inference_hints(hints: Any) -> None:
     if not isinstance(hints, Mapping):
         raise ValueError("INFER_SOURCE_BINDING: inference hints must be a mapping")
@@ -272,14 +297,87 @@ def _source_factory_schema(
     return _SOURCE_SCHEMAS.get(str(key))
 
 
-def records_binding(identity: str, *, factory_key: str | None = None) -> dict[str, Any]:
-    return {
+def _source_binding_schema(
+    binding: Mapping[str, Any],
+) -> tuple[tuple[str, str, bool, bool], ...] | None:
+    """Return registered source schema after applying serialized hints."""
+    signature = _source_factory_schema(str(binding.get("factory_key") or ""))
+    if signature is None:
+        return None
+    raw_hints = binding.get("hints")
+    if not isinstance(raw_hints, Mapping) or not raw_hints:
+        return signature
+
+    hints: dict[str, str] = {}
+    for field_name, raw_hint in raw_hints.items():
+        normalized = _normalize_inference_hint(raw_hint)
+        if normalized is not None:
+            # The durable wire form keeps ``float`` for compatibility, while
+            # record inference normalizes it to the logical ``number`` type.
+            hints[str(field_name)] = (
+                "number" if normalized == "float" else normalized
+            )
+
+    adjusted: list[tuple[str, str, bool, bool]] = []
+    for field_name, logical_type, required, nullable in signature:
+        hint = hints.get(field_name)
+        if hint is None:
+            adjusted.append((field_name, logical_type, required, nullable))
+            continue
+        if logical_type == "unknown":
+            adjusted.append((field_name, hint, required, nullable))
+            continue
+        if logical_type != hint and not {logical_type, hint} <= {
+            "integer",
+            "number",
+        }:
+            raise ValueError(
+                "INFER_SOURCE_SCHEMA_MISMATCH: source binding hint conflicts "
+                f"with registered field {field_name!r}"
+            )
+        adjusted.append((field_name, hint, required, nullable))
+    return tuple(sorted(adjusted))
+
+
+def _reopened_source_factory_key(
+    factory_key: str,
+    *,
+    hints: Mapping[str, Any] | None,
+    limits: InferenceLimits | Mapping[str, Any] | None,
+) -> str:
+    """Return an isolated identity for a reopened source with overrides."""
+    payload = {
+        "factory_key": str(factory_key),
+        "hints": _safe_inference_hints(hints),
+        "limits": _safe_inference_limits(limits),
+    }
+    encoded = json.dumps(payload, sort_keys=True, separators=(",", ":"))
+    digest = hashlib.sha256(encoded.encode("utf-8")).hexdigest()[:32]
+    return f"reopen:{digest}"
+
+
+def records_binding(
+    identity: str,
+    *,
+    factory_key: str | None = None,
+    hints: Mapping[str, Any] | None = None,
+    limits: InferenceLimits | Mapping[str, Any] | None = None,
+) -> dict[str, Any]:
+    safe_identity = _safe_file_identity(str(identity))
+    payload: dict[str, Any] = {
         "version": BINDING_VERSION,
         "kind": "records",
-        "identity": str(identity),
+        "identity": safe_identity,
         "resolver": "registry",
-        "factory_key": str(factory_key or identity),
+        "factory_key": str(factory_key if factory_key is not None else safe_identity),
     }
+    safe_hints = _safe_inference_hints(hints)
+    safe_limits = _safe_inference_limits(limits)
+    if safe_hints:
+        payload["hints"] = safe_hints
+    if safe_limits is not None:
+        payload["limits"] = safe_limits
+    return payload
 
 
 def file_binding(
@@ -374,7 +472,7 @@ def provider_binding(identity: str, provider: str) -> dict[str, Any]:
         "version": BINDING_VERSION,
         "kind": "provider",
         "provider": provider,
-        "identity": str(identity),
+        "identity": _safe_file_identity(str(identity)),
         "resolver": "explicit_rebind",
     }
 
@@ -391,15 +489,15 @@ def target_binding(
     is_observed = (
         observation is not None
         and observation.schema is not None
-        and observation.inspector != "provided"
+        and observation.inspector not in {"provided", "normalized"}
     )
     return {
         "version": BINDING_VERSION,
         "kind": "target",
-        "identity": str(observed_identity or identity),
+        "identity": _safe_file_identity(str(observed_identity or identity)),
         "revision": observation.revision if observation is not None else None,
         "write_mode": str(write_mode),
-        "requirements": _wire_value(dict(requirements or {})),
+        "requirements": _safe_binding_requirements(requirements),
         "observed": is_observed,
     }
 
@@ -418,6 +516,16 @@ def _source_binding_for_rebind(
             return records_binding(
                 str(raw.get("identity") or "records"),
                 factory_key=str(raw["factory_key"]),
+                hints=(
+                    raw.get("hints")
+                    if isinstance(raw.get("hints"), Mapping)
+                    else None
+                ),
+                limits=(
+                    raw.get("limits")
+                    if isinstance(raw.get("limits"), Mapping)
+                    else None
+                ),
             )
         if kind == "file":
             options = raw.get("options")
@@ -535,18 +643,35 @@ def rebind_definition(
         target_payload = {
             "version": BINDING_VERSION,
             "kind": "target",
-            "identity": str(raw_target["identity"]),
+            "identity": _safe_file_identity(str(raw_target["identity"])),
             "revision": raw_target.get("revision"),
             "write_mode": str(raw_target.get("write_mode", "append")),
-            "requirements": _wire_value(dict(raw_target.get("requirements") or {})),
+            "requirements": _safe_binding_requirements(
+                raw_target.get("requirements")
+                if isinstance(raw_target.get("requirements"), Mapping)
+                else None
+            ),
             "observed": bool(raw_target.get("observed", False)),
         }
     source_lease: _FileSourceLease | None = None
-    if source_payload is not None and source_payload.get("kind") == "file":
-        source_lease = _retain_file_source(str(source_payload["uri"]))
-        if isinstance(source_payload, _FileBinding):
-            source_payload.lease = source_lease
-        _validate_rebound_file_source(definition, source_payload)
+    if source_payload is not None:
+        if source_payload.get("kind") == "file":
+            source_lease = _retain_file_source(str(source_payload["uri"]))
+            if isinstance(source_payload, _FileBinding):
+                source_payload.lease = source_lease
+            _validate_rebound_file_source(definition, source_payload)
+        elif source_payload.get("kind") == "records":
+            # An unresolved factory may be registered by the eventual host,
+            # but validate its schema now whenever this host has metadata for
+            # it. This prevents serialized hints from silently changing the
+            # source contract.
+            if (
+                _source_factory_schema(str(source_payload.get("factory_key") or ""))
+                is not None
+            ):
+                validate_source_binding_against_definition(
+                    definition, source_payload
+                )
     if target_payload is not None:
         _validate_rebound_target(definition, target_payload)
     nodes: list[NodeDefinition] = []
@@ -689,9 +814,7 @@ def validate_source_binding_against_definition(
         raise ValueError("INFER_SOURCE_REBIND: definition has no source node")
     kind = binding.get("kind")
     if kind == "records":
-        rebound_signature = _source_factory_schema(
-            str(binding.get("factory_key") or "")
-        )
+        rebound_signature = _source_binding_schema(binding)
         if rebound_signature is None:
             raise ValueError(
                 "INFER_SOURCE_SCHEMA_UNVERIFIED: records source factory has no "
@@ -700,6 +823,24 @@ def validate_source_binding_against_definition(
     elif kind == "file":
         try:
             dataset = reopen_source_binding(binding)
+            error_diagnostics = [
+                diagnostic
+                for diagnostic in getattr(dataset, "diagnostics", ())
+                if getattr(
+                    getattr(diagnostic, "severity", None),
+                    "value",
+                    getattr(diagnostic, "severity", None),
+                )
+                == "error"
+                or (
+                    isinstance(diagnostic, Mapping)
+                    and str(diagnostic.get("severity", "")).lower() == "error"
+                )
+            ]
+            if error_diagnostics:
+                raise ValueError(
+                    "INFER_SOURCE_REBIND: rebound source reported error diagnostics"
+                )
             rebound_signature = _schema_signature(dataset.schema)
         except Exception as exc:
             raise ValueError(
@@ -809,6 +950,10 @@ def _validate_source_binding_shape(binding: Mapping[str, Any]) -> None:
             raise ValueError(
                 "INFER_SOURCE_BINDING: records binding requires a factory key"
             )
+        if "hints" in binding:
+            _validate_inference_hints(binding["hints"])
+        if "limits" in binding:
+            _validate_inference_limits(binding["limits"])
         return
     if kind == "file":
         format_name = binding.get("format")
@@ -1085,11 +1230,24 @@ def reopen_source_binding(
 
     factory_key = str(binding.get("factory_key") or "")
     factory = source_factory(factory_key)
+    resolved_hints = hints
+    if resolved_hints is None and isinstance(binding.get("hints"), Mapping):
+        resolved_hints = binding["hints"]
+    resolved_limits = limits
+    if resolved_limits is None and isinstance(binding.get("limits"), Mapping):
+        resolved_limits = InferenceLimits.from_dict(dict(binding["limits"]))
+    reopened_key = factory_key
+    if hints is not None or limits is not None:
+        reopened_key = _reopened_source_factory_key(
+            factory_key,
+            hints=resolved_hints,
+            limits=resolved_limits,
+        )
     return from_records(
         resolved,
         name=name or str(binding.get("identity") or "records"),
-        hints=hints,
-        limits=limits,
+        hints=resolved_hints,
+        limits=resolved_limits,
         source_factory=factory,
-        source_key=factory_key,
+        source_key=reopened_key,
     )

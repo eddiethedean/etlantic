@@ -8,6 +8,7 @@ import json
 import math
 import operator
 import re
+import time
 import weakref
 from collections.abc import Callable, Mapping
 from copy import deepcopy
@@ -47,7 +48,7 @@ from .durable import (
     validate_source_binding_against_definition,
     validate_target_binding,
 )
-from .records import _path_identity, infer_csv, infer_records
+from .records import _estimate_size, _path_identity, infer_csv, infer_records
 from .sources import infer_source
 from .targets import (
     _backfill_observation,
@@ -497,7 +498,7 @@ class InferredDataset:
         self._source_owner = source_owner
         self.name = (
             _safe_file_identity(name)
-            if self._source_binding.get("kind") == "file"
+            if self._source_binding.get("kind") in {"file", "provider", "records"}
             else name
         )
         self._target_revision_reader = target_revision_reader
@@ -706,7 +707,7 @@ class InferredDataset:
         target_observation = self._result.target_observation
         if target_observation is not None and target_observation.schema is not None:
             target_for_check: Any = target_observation
-            if target_observation.inspector == "provided":
+            if target_observation.inspector in {"provided", "normalized"}:
                 target_for_check = target_observation.schema
             compatibility = check_write_compatibility(
                 state_schemas[-1],
@@ -714,11 +715,13 @@ class InferredDataset:
                 mode=str(self._target_binding.get("write_mode", "append")),
                 expected_revision=self._target_binding.get("revision"),
             )
-            if not compatibility.compatible:
-                codes = sorted({item.code for item in compatibility.diagnostics})
+            if not compatibility.compatible or compatibility.casts:
+                codes = {item.code for item in compatibility.diagnostics}
+                if compatibility.casts:
+                    codes.add("INFER_RUNTIME_CONVERSION")
                 raise ValueError(
                     "INFER_TARGET_WRITE_UNQUALIFIED: durable export is not "
-                    f"compatible with the target ({', '.join(codes) or 'unknown'})"
+                    f"compatible with the target ({', '.join(sorted(codes)) or 'unknown'})"
                 )
         transformations = tuple(
             TransformationDefinition(
@@ -857,7 +860,7 @@ class InferredDataset:
             )
         )
         definition = PipelineDefinition(
-            pipeline_id=f"inferred:{self.name}",
+            pipeline_id=_inferred_pipeline_id(self.name, self._source_binding),
             pipeline_name=self.name,
             contracts=tuple(contracts),
             transformations=transformations,
@@ -1349,17 +1352,31 @@ def from_records(
     source_factory: Callable[[], Any] | None = None,
     source_key: str | None = None,
 ) -> InferredDataset:
+    safe_name = _safe_file_identity(name)
     result = infer_records(
-        records, hints=hints, limits=limits, identity=name, retain_rows=True
+        records, hints=hints, limits=limits, identity=safe_name, retain_rows=True
     )
-    factory_key = _records_factory_key(name, source_key, records, source_factory)
+    snapshot = (
+        _bounded_materialized_snapshot(records, limits)
+        if source_factory is None and source_key is None
+        else None
+    )
+    factory_key = _records_factory_key(
+        safe_name, source_key, records, source_factory, snapshot=snapshot
+    )
     source_owner = _register_records_source(
-        factory_key, records, source_factory, schema=result.schema
+        factory_key,
+        records,
+        source_factory,
+        schema=result.schema,
+        snapshot=snapshot,
     )
     return InferredDataset(
         result,
-        name=name,
-        source_binding=records_binding(name, factory_key=factory_key),
+        name=safe_name,
+        source_binding=records_binding(
+            safe_name, factory_key=factory_key, hints=hints, limits=limits
+        ),
         source_owner=source_owner,
     )
 
@@ -1378,27 +1395,38 @@ def from_records_for_target(
     write_mode: str = "append",
 ) -> InferredDataset:
     """Create a data first handle using an existing target as a type constraint."""
+    safe_name = _safe_file_identity(name)
     result = infer_records_for_target(
         records,
         target,
         hints=hints,
         limits=limits,
-        identity=name,
+        identity=safe_name,
         retain_rows=True,
         expected_revision=expected_revision,
         revision_reader=revision_reader,
     )
-    factory_key = _records_factory_key(name, source_key, records, source_factory)
+    snapshot = (
+        _bounded_materialized_snapshot(records, limits)
+        if source_factory is None and source_key is None
+        else None
+    )
+    factory_key = _records_factory_key(
+        safe_name, source_key, records, source_factory, snapshot=snapshot
+    )
     source_owner = _register_records_source(
         factory_key,
         records,
         source_factory,
         schema=result.observed_schema or result.schema,
+        snapshot=snapshot,
     )
     return InferredDataset(
         result,
-        name=name,
-        source_binding=records_binding(name, factory_key=factory_key),
+        name=safe_name,
+        source_binding=records_binding(
+            safe_name, factory_key=factory_key, hints=hints, limits=limits
+        ),
         source_owner=source_owner,
         target_revision_reader=revision_reader,
         target_write_mode=write_mode,
@@ -1410,6 +1438,8 @@ def _records_factory_key(
     source_key: str | None,
     records: Any,
     source_factory: Callable[[], Any] | None,
+    *,
+    snapshot: tuple[dict[str, Any], ...] | None = None,
 ) -> str:
     if source_key is not None:
         if not str(source_key):
@@ -1420,11 +1450,7 @@ def _records_factory_key(
             "source_key is required when source_factory is supplied so the "
             "durable binding remains deterministic"
         )
-    if isinstance(records, Mapping):
-        snapshot = [dict(records)]
-    elif isinstance(records, (list, tuple)):
-        snapshot = [dict(row) for row in records if isinstance(row, Mapping)]
-    else:
+    if snapshot is None:
         return f"{name}:stream"
     payload = json.dumps(
         [_canonical_snapshot_value(row) for row in snapshot],
@@ -1434,6 +1460,58 @@ def _records_factory_key(
     )
     digest = hashlib.sha256(payload.encode("utf-8")).hexdigest()[:32]
     return f"{name}:snapshot:{digest}"
+
+
+def _bounded_materialized_snapshot(
+    records: Any, limits: InferenceLimits | None
+) -> tuple[dict[str, Any], ...] | None:
+    """Copy only a fully bounded materialized source for durable replay.
+
+    A materialized source is eligible for an implicit factory only when the
+    complete source fits the same row, byte, and time limits used for
+    inference.  Otherwise export must use an explicit factory or rebind.
+    """
+    if isinstance(records, Mapping):
+        items: Any = (records,)
+    elif isinstance(records, (list, tuple)):
+        if limits is not None and len(records) > limits.max_rows:
+            return None
+        items = records
+    else:
+        return None
+    effective_limits = limits or InferenceLimits()
+    if effective_limits.max_rows < len(items):
+        return None
+    started_at = time.monotonic()
+    bytes_observed = 0
+    snapshot: list[dict[str, Any]] = []
+    try:
+        for item in items:
+            if effective_limits.timeout_seconds is not None and (
+                time.monotonic() - started_at >= effective_limits.timeout_seconds
+            ):
+                return None
+            if not isinstance(item, Mapping):
+                return None
+            item_bytes = _estimate_size(item)
+            if (
+                effective_limits.max_bytes is not None
+                and bytes_observed + item_bytes > effective_limits.max_bytes
+            ):
+                return None
+            bytes_observed += item_bytes
+            snapshot.append(deepcopy(dict(item)))
+    except Exception:
+        return None
+    try:
+        for row in snapshot:
+            _canonical_snapshot_value(row)
+    except (TypeError, ValueError):
+        # An arbitrary object cannot be represented safely by a deterministic,
+        # collision-resistant row-free binding.  Leave the source unresolved
+        # rather than falling back to a string representation.
+        return None
+    return tuple(snapshot)
 
 
 def _canonical_snapshot_value(value: Any) -> Any:
@@ -1480,10 +1558,32 @@ def _canonical_snapshot_value(value: Any) -> Any:
             "items": items,
         }
     value_type = type(value)
-    return {
-        "type": f"{value_type.__module__}.{value_type.__qualname__}",
-        "value": str(value),
+    raise TypeError(
+        "materialized source snapshots do not support arbitrary values of "
+        f"type {value_type.__module__}.{value_type.__qualname__}"
+    )
+
+
+_DEFAULT_SOURCE_NAMES = frozenset({"records", "csv", "json", "pandas", "polars"})
+
+
+def _inferred_pipeline_id(name: str, binding: Mapping[str, Any]) -> str:
+    """Give default data-first sources a stable identity of their own."""
+    if name not in _DEFAULT_SOURCE_NAMES:
+        return f"inferred:{name}"
+    identity_payload = {
+        "kind": binding.get("kind"),
+        "identity": binding.get("identity"),
+        "factory_key": binding.get("factory_key"),
+        "format": binding.get("format"),
+        "uri": binding.get("uri"),
+        "provider": binding.get("provider"),
     }
+    encoded = json.dumps(
+        identity_payload, sort_keys=True, separators=(",", ":"), default=str
+    )
+    digest = hashlib.sha256(encoded.encode("utf-8")).hexdigest()[:20]
+    return f"inferred:{name}:{digest}"
 
 
 class _SnapshotOwner:
@@ -1525,20 +1625,12 @@ def _register_records_source(
     factory: Callable[[], Any] | None,
     *,
     schema: NormalizedSchema,
+    snapshot: tuple[dict[str, Any], ...] | None = None,
 ) -> _SnapshotOwner | None:
     if factory is not None:
         register_source_factory(factory_key, factory, schema=schema)
         return None
-    try:
-        if isinstance(records, Mapping):
-            snapshot = (deepcopy(dict(records)),)
-        elif isinstance(records, (list, tuple)):
-            snapshot = tuple(
-                deepcopy(dict(row)) for row in records if isinstance(row, Mapping)
-            )
-        else:
-            return None
-    except Exception:
+    if snapshot is None:
         return None
     owner = _SnapshotOwner(snapshot)
     register_source_factory(
@@ -1624,10 +1716,11 @@ def from_pandas(
     limits: InferenceLimits | None = None,
 ) -> InferredDataset:
     limits = limits or InferenceLimits()
+    safe_name = _safe_file_identity(name)
     return InferredDataset(
-        infer_source(frame, identity=name, hints=hints, limits=limits),
-        name=name,
-        source_binding=provider_binding(name, "pandas"),
+        infer_source(frame, identity=safe_name, hints=hints, limits=limits),
+        name=safe_name,
+        source_binding=provider_binding(safe_name, "pandas"),
     )
 
 
@@ -1639,8 +1732,9 @@ def from_polars(
     limits: InferenceLimits | None = None,
 ) -> InferredDataset:
     limits = limits or InferenceLimits()
+    safe_name = _safe_file_identity(name)
     return InferredDataset(
-        infer_source(frame, identity=name, hints=hints, limits=limits),
-        name=name,
-        source_binding=provider_binding(name, "polars"),
+        infer_source(frame, identity=safe_name, hints=hints, limits=limits),
+        name=safe_name,
+        source_binding=provider_binding(safe_name, "polars"),
     )
