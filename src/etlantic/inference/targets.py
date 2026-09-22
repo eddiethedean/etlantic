@@ -294,6 +294,8 @@ def _normalize_provider_payload(
         target_identity = identity
     target_identity = str(target_identity)
     revision = _provider_payload_value(payload, "revision")
+    if revision is _MISSING:
+        revision = None
     metadata: dict[str, Any] = {
         "identity": _safe_file_identity(target_identity),
     }
@@ -467,6 +469,7 @@ def inspect_target(
                 identity=identity,
                 inspector=type(target).__name__,
                 max_diagnostics=max_diagnostics,
+                direct_mapping=True,
             )
             if observation is not None:
                 if observation.schema is not None:
@@ -602,6 +605,7 @@ async def inspect_target_async(
             identity=identity,
             inspector=type(target).__name__,
             max_diagnostics=max_diagnostics,
+            direct_mapping=True,
         )
         if observation is not None:
             if observation.schema is not None:
@@ -634,6 +638,7 @@ async def inspect_target_async(
                 identity=identity,
                 inspector=type(target).__name__,
                 max_diagnostics=max_diagnostics,
+                direct_mapping=True,
             )
             if observation is not None:
                 if observation.schema is not None:

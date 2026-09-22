@@ -636,6 +636,40 @@ def test_schema_only_targets_do_not_invent_revisions() -> None:
     assert asyncio.run(inspect_target_async(AsyncAdapter())).revision is None
 
 
+def test_provider_schema_mappings_preserve_schema_and_missing_revisions() -> None:
+    class SyncInspector:
+        def inspect_schema(self):
+            return {"id": "INTEGER"}
+
+    class AsyncInspector:
+        async def inspect_schema(self):
+            return {"id": "INTEGER"}
+
+    class SyncSchema:
+        def schema(self):
+            return {"id": "INTEGER"}
+
+    class AsyncSchema:
+        async def schema(self):
+            return {"id": "INTEGER"}
+
+    sync_observations = [
+        inspect_target(SyncInspector()),
+        inspect_target(SyncSchema()),
+    ]
+    async_observations = [
+        asyncio.run(inspect_target_async(AsyncInspector())),
+        asyncio.run(inspect_target_async(AsyncSchema())),
+    ]
+
+    for observation in (*sync_observations, *async_observations):
+        assert observation.exists == "present"
+        assert observation.schema is not None
+        assert observation.schema.fields[0].logical_type == "integer"
+        assert observation.revision is None
+        json.dumps(observation.to_dict())
+
+
 def test_async_target_inspection_redacts_normalized_schema_identities() -> None:
     identity = "/Users/alice/private/target"
     schema = NormalizedSchema(identity, (NormalizedField("id", "integer"),))
