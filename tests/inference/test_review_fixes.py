@@ -573,6 +573,87 @@ def test_file_binding_reopens_with_parser_options(tmp_path) -> None:
     assert reopened.preview() == [{"id": 1, "name": "one"}]
 
 
+def test_rebinding_preserves_valid_binding_mappings(tmp_path) -> None:
+    path = tmp_path / "events.csv"
+    path.write_text("id\n1\n", encoding="utf-8")
+
+    definition = etl.read_csv(str(path), name="events").definition()
+    source_binding = definition.nodes[0].bindings["source"]
+    target_binding = definition.nodes[-1].bindings["target"]
+    rebound = etl.rebind_definition(
+        definition, source=source_binding, target=target_binding
+    )
+
+    assert rebound.nodes[0].bindings["source"]["kind"] == "file"
+    assert rebound.nodes[-1].bindings["target"]["kind"] == "target"
+
+
+def test_backfill_preserves_the_durable_source_binding() -> None:
+    target = NormalizedSchema("target", (NormalizedField("id", "integer"),))
+    dataset = etl.from_records([{"id": "12"}], name="orders").backfill_from(
+        target
+    )
+
+    assert dataset.definition().nodes[0].bindings["source"]["kind"] == "records"
+
+
+def test_sampled_csv_with_a_file_binding_can_be_exported(tmp_path) -> None:
+    path = tmp_path / "events.csv"
+    path.write_text("id\n1\n2\n", encoding="utf-8")
+
+    definition = etl.read_csv(
+        str(path), limits=etl.InferenceLimits(max_rows=1)
+    ).definition()
+    assert definition.nodes[0].bindings["source"]["kind"] == "file"
+
+
+def test_sampled_one_shot_source_can_be_explicitly_rebound(tmp_path) -> None:
+    path = tmp_path / "events.csv"
+    path.write_text("id\n1\n", encoding="utf-8")
+    dataset = etl.from_records(
+        ({"id": value} for value in (1, 2)),
+        limits=etl.InferenceLimits(max_rows=1),
+    )
+
+    definition = dataset.rebind_source(str(path))
+    assert definition.nodes[0].bindings["source"]["kind"] == "file"
+
+
+def test_jsonl_rebinding_detects_line_format(tmp_path) -> None:
+    path = tmp_path / "events.jsonl"
+    path.write_text('{"id": 1}\n{"id": 2}\n', encoding="utf-8")
+
+    definition = etl.from_records([{"id": 1}], name="events").definition()
+    binding = etl.rebind_definition(definition, source=str(path)).nodes[0].bindings[
+        "source"
+    ]
+    assert binding["format"] == "jsonl"
+    assert etl.reopen_source_binding(binding).preview() == [{"id": 1}, {"id": 2}]
+
+
+def test_reopened_generator_binding_keeps_its_factory() -> None:
+    key = "test-reopened-generator-binding"
+
+    def factory():
+        return ({"id": value} for value in (1, 2))
+
+    etl.register_source_factory(key, factory)
+    try:
+        binding = {
+            "version": 1,
+            "kind": "records",
+            "identity": "generator",
+            "resolver": "registry",
+            "factory_key": key,
+        }
+        reopened = etl.reopen_source_binding(
+            binding, limits=etl.InferenceLimits(max_rows=1)
+        )
+        assert reopened.definition().nodes[0].bindings["source"]["factory_key"] == key
+    finally:
+        etl.unregister_source_factory(key)
+
+
 def test_provider_source_can_be_explicitly_rebound(tmp_path) -> None:
     class Frame:
         def __init__(self) -> None:

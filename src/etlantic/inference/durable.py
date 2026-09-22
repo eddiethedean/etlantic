@@ -163,13 +163,37 @@ def _source_binding_for_rebind(
     source: str | Path | Mapping[str, Any], *, format: str | None = None
 ) -> dict[str, Any]:
     if isinstance(source, Mapping):
-        payload = dict(_wire_value(dict(source)))
-        _validate_source_binding_shape(payload)
-        return payload
+        raw = dict(source)
+        _validate_source_binding_shape(raw)
+        kind = raw["kind"]
+        if kind == "records":
+            return records_binding(
+                str(raw.get("identity") or "records"),
+                factory_key=str(raw["factory_key"]),
+            )
+        if kind == "file":
+            return file_binding(
+                str(raw["format"]),
+                str(raw["uri"]),
+                identity=str(raw.get("identity") or raw["uri"]),
+                options=(
+                    raw.get("options")
+                    if isinstance(raw.get("options"), Mapping)
+                    else None
+                ),
+                lines=(bool(raw["lines"]) if "lines" in raw else None),
+            )
+        return provider_binding(
+            str(raw.get("identity") or "provider"), str(raw["provider"])
+        )
     path = Path(source)
     suffix = path.suffix.lower()
     source_format = format or (
-        "json" if suffix in {".json", ".jsonl"} else suffix.lstrip(".")
+        "jsonl"
+        if suffix == ".jsonl"
+        else "json"
+        if suffix == ".json"
+        else suffix.lstrip(".")
     )
     if source_format not in _SOURCE_FORMATS:
         raise ValueError(
@@ -177,7 +201,12 @@ def _source_binding_for_rebind(
         )
     resolved = str(path.expanduser().resolve())
     identity = f"{source_format}:{hashlib.sha256(resolved.encode()).hexdigest()[:20]}"
-    return file_binding(source_format, path, identity=identity)
+    return file_binding(
+        source_format,
+        path,
+        identity=identity,
+        lines=True if source_format == "jsonl" else None,
+    )
 
 
 def rebind_definition(
@@ -199,9 +228,21 @@ def rebind_definition(
         if source is not None
         else None
     )
-    target_payload = dict(_wire_value(dict(target))) if target is not None else None
-    if target_payload is not None:
-        validate_target_binding(target_payload)
+    target_payload = None
+    if target is not None:
+        raw_target = dict(target)
+        validate_target_binding(raw_target)
+        target_payload = {
+            "version": BINDING_VERSION,
+            "kind": "target",
+            "identity": str(raw_target["identity"]),
+            "revision": raw_target.get("revision"),
+            "write_mode": str(raw_target.get("write_mode", "append")),
+            "requirements": _wire_value(
+                dict(raw_target.get("requirements") or {})
+            ),
+            "observed": bool(raw_target.get("observed", False)),
+        }
     nodes: list[NodeDefinition] = []
     for node in definition.nodes:
         bindings = dict(node.bindings)
@@ -358,6 +399,13 @@ def reopen_source_binding(
         )
     from .facade import from_records
 
+    factory_key = str(binding.get("factory_key") or "")
+    factory = source_factory(factory_key)
     return from_records(
-        resolved, name=name or str(binding.get("identity") or "records")
+        resolved,
+        name=name or str(binding.get("identity") or "records"),
+        hints=hints,
+        limits=limits,
+        source_factory=factory,
+        source_key=factory_key,
     )

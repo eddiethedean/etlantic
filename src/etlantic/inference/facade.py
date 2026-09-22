@@ -529,15 +529,24 @@ class InferredDataset:
                 f"qualified ({', '.join(error_codes) or 'unknown diagnostic'})"
             )
         self._check_target_revision()
-        if self.replay is not None:
+        factory_key = str(self._source_binding.get("factory_key") or "")
+        has_registered_factory = (
+            source_kind == "records" and source_factory(factory_key) is not None
+        )
+        can_reopen_source = (
+            source_kind == "file"
+            or has_registered_factory
+            or _allow_unresolved_source
+        )
+        if self.replay is not None and not can_reopen_source:
             raise ValueError(
-                "durable inference definitions require a replayable source binding; "
+                "durable inference definitions require a reopenable source binding; "
                 "the inspected source is a one-shot bounded stream"
             )
         if (
             source_kind == "records"
-            and source_factory(str(self._source_binding.get("factory_key") or ""))
-            is None
+            and not has_registered_factory
+            and not _allow_unresolved_source
         ):
             raise ValueError(
                 "INFER_SOURCE_UNRESOLVABLE: register a source factory before "
@@ -1143,6 +1152,9 @@ class InferredDataset:
             result,
             name=self.name,
             frame=self._frame,
+            root_schema=self._root_schema,
+            source_binding=self._source_binding,
+            target_revision_reader=self._target_revision_reader,
         )
 
     def check_write(self, target_schema: NormalizedSchema, *, mode: str = "append"):
