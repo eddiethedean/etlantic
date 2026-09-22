@@ -3,6 +3,8 @@
 from __future__ import annotations
 
 import hashlib
+import os
+import re
 from collections.abc import Callable, Mapping
 from dataclasses import replace
 from pathlib import Path
@@ -18,11 +20,20 @@ BINDING_VERSION = 1
 _SOURCE_FACTORIES: dict[str, Callable[[], Any]] = {}
 _FILE_SOURCES: dict[str, Path] = {}
 _FILE_REFERENCE_PREFIX = "file-ref:"
+_ABSOLUTE_PATH_FRAGMENT = re.compile(
+    r"(?:^|[^A-Za-z0-9/:])(?:[A-Za-z]:[\\/]|/(?!/)|~[\\/])"
+)
+_PATH_URI_FRAGMENT = re.compile(r"(?:^|[^A-Za-z0-9])(?:file|s3|gs|az)://")
 
 
 def _safe_file_identity(identity: str) -> str:
     value = str(identity)
-    if value.startswith(("/", "~/", "file://", "s3://", "gs://", "az://")):
+    if (
+        os.path.isabs(value)
+        or value.startswith(("/", "~/", "file://", "s3://", "gs://", "az://"))
+        or _ABSOLUTE_PATH_FRAGMENT.search(value)
+        or _PATH_URI_FRAGMENT.search(value)
+    ):
         digest = hashlib.sha256(value.encode("utf-8")).hexdigest()[:20]
         return f"file:{digest}"
     return value
@@ -245,8 +256,9 @@ def rebind_definition(
 ) -> PipelineDefinition:
     """Return a definition with explicit source and/or target rebinding.
 
-    Rebinding changes only row-free binding metadata.  It never reads a
-    source, embeds rows, or silently changes contracts.
+    Rebinding changes only row-free binding metadata.  Local file rebinding
+    performs a bounded schema check, but never embeds rows or changes
+    contracts silently.
     """
     if not isinstance(definition, PipelineDefinition):
         raise TypeError("definition must be a PipelineDefinition")
@@ -408,6 +420,15 @@ def _validate_rebound_file_source(
             )
 
 
+def validate_file_binding_against_definition(
+    definition: PipelineDefinition, binding: Mapping[str, Any]
+) -> None:
+    """Verify a generated local file binding before durable export."""
+    if binding.get("kind") != "file":
+        raise ValueError("INFER_SOURCE_REBIND: expected a file source binding")
+    _validate_rebound_file_source(definition, binding)
+
+
 def _validate_rebound_target(
     definition: PipelineDefinition, binding: Mapping[str, Any]
 ) -> None:
@@ -495,7 +516,9 @@ def _validate_source_binding_shape(binding: Mapping[str, Any]) -> None:
     raise ValueError("INFER_SOURCE_BINDING: unsupported source binding kind")
 
 
-def validate_target_binding(binding: Mapping[str, Any]) -> None:
+def validate_target_binding(
+    binding: Mapping[str, Any], *, check_capabilities: bool = True
+) -> None:
     """Validate the row-free shape of a durable target binding."""
     if not isinstance(binding, Mapping):
         raise ValueError("INFER_TARGET_BINDING: target binding must be a mapping")
@@ -520,9 +543,13 @@ def validate_target_binding(binding: Mapping[str, Any]) -> None:
         raise ValueError("INFER_TARGET_BINDING: target requirements must be a mapping")
     if not isinstance(binding.get("observed", False), bool):
         raise ValueError("INFER_TARGET_BINDING: observed must be boolean")
+    if binding.get("observed", False) and not requirements:
+        raise ValueError(
+            "INFER_TARGET_BINDING: observed target requires normalized requirements"
+        )
     if requirements:
         _validate_target_requirements(requirements)
-        if binding.get("observed", False):
+        if binding.get("observed", False) and check_capabilities:
             capabilities = requirements.get("metadata", {}).get("capabilities")
             if not _supports_write_mode(
                 capabilities, str(binding.get("write_mode", "append"))
@@ -641,9 +668,7 @@ def validate_source_binding(binding: Mapping[str, Any]) -> None:
                 "host-side rebind"
             )
         if not path.is_file():
-            raise ValueError(
-                f"INFER_SOURCE_UNRESOLVABLE: source file does not exist: {path}"
-            )
+            raise ValueError("INFER_SOURCE_UNRESOLVABLE: source file is unavailable")
         return
     raise ValueError(
         "INFER_SOURCE_UNSUPPORTED: source binding requires an explicit rebind"

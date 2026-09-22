@@ -32,6 +32,7 @@ from etlantic.transform.column import ColumnExpr, coerce_column
 from etlantic.transform.dataframe import FrameAction, FrameExpr
 
 from .durable import (
+    _safe_file_identity,
     file_binding,
     provider_binding,
     rebind_definition,
@@ -39,6 +40,9 @@ from .durable import (
     register_source_factory,
     source_factory,
     target_binding,
+    validate_file_binding_against_definition,
+    validate_source_binding,
+    validate_target_binding,
 )
 from .records import _path_identity, infer_csv, infer_records
 from .sources import infer_source
@@ -484,9 +488,13 @@ class InferredDataset:
         target_write_mode: str = "append",
     ):
         self._result = result
-        self.name = name
         self._root_schema = root_schema or result.schema
         self._source_binding = dict(source_binding or records_binding(name))
+        self.name = (
+            _safe_file_identity(name)
+            if self._source_binding.get("kind") == "file"
+            else name
+        )
         self._target_revision_reader = target_revision_reader
         observation = result.target_observation
         target_requirements = (
@@ -498,7 +506,7 @@ class InferredDataset:
             target_binding_payload
             or target_binding(
                 observation,
-                identity=f"target:{name}",
+                identity=f"target:{self.name}",
                 requirements=target_requirements,
                 write_mode=target_write_mode,
             )
@@ -581,14 +589,15 @@ class InferredDataset:
                 f"qualified ({', '.join(error_codes) or 'unknown diagnostic'})"
             )
         self._check_target_revision()
+        validate_target_binding(self._target_binding, check_capabilities=False)
+        if source_kind == "file" and not _allow_unresolved_source:
+            validate_source_binding(self._source_binding)
         factory_key = str(self._source_binding.get("factory_key") or "")
         has_registered_factory = (
             source_kind == "records" and source_factory(factory_key) is not None
         )
         can_reopen_source = (
-            source_kind == "file"
-            or has_registered_factory
-            or _allow_unresolved_source
+            source_kind == "file" or has_registered_factory or _allow_unresolved_source
         )
         if self.replay is not None and not can_reopen_source:
             raise ValueError(
@@ -861,6 +870,8 @@ class InferredDataset:
                 },
             },
         )
+        if source_kind == "file" and not _allow_unresolved_source:
+            validate_file_binding_against_definition(definition, self._source_binding)
         from etlantic.authoring.serialize import pipeline_fingerprint
 
         return definition.with_fingerprint(pipeline_fingerprint(definition))
@@ -1232,6 +1243,12 @@ class InferredDataset:
             frame=self._frame,
             root_schema=self._root_schema,
             source_binding=self._source_binding,
+            target_binding_payload=target_binding(
+                None,
+                identity=target_schema.identity,
+                requirements=target_schema.to_dict(),
+                write_mode="append",
+            ),
             target_revision_reader=self._target_revision_reader,
         )
 
@@ -1385,9 +1402,64 @@ def _records_factory_key(
         snapshot = [dict(row) for row in records if isinstance(row, Mapping)]
     else:
         return f"{name}:stream"
-    payload = json.dumps(snapshot, sort_keys=True, default=str, separators=(",", ":"))
+    payload = json.dumps(
+        [_canonical_snapshot_value(row) for row in snapshot],
+        sort_keys=True,
+        separators=(",", ":"),
+        allow_nan=False,
+    )
     digest = hashlib.sha256(payload.encode("utf-8")).hexdigest()[:32]
     return f"{name}:snapshot:{digest}"
+
+
+def _canonical_snapshot_value(value: Any) -> Any:
+    """Encode snapshot values without collapsing distinct Python types."""
+    if value is None:
+        return {"type": "null", "value": None}
+    if isinstance(value, bool):
+        return {"type": "bool", "value": value}
+    if isinstance(value, int):
+        return {"type": "int", "value": str(value)}
+    if isinstance(value, float):
+        return {"type": "float", "value": value.hex()}
+    if isinstance(value, Decimal):
+        return {"type": "decimal", "value": str(value)}
+    if isinstance(value, str):
+        return {"type": "str", "value": value}
+    if isinstance(value, _dt.datetime):
+        return {"type": "datetime", "value": value.isoformat()}
+    if isinstance(value, _dt.date):
+        return {"type": "date", "value": value.isoformat()}
+    if isinstance(value, (bytes, bytearray, memoryview)):
+        return {"type": "bytes", "value": bytes(value).hex()}
+    if isinstance(value, Mapping):
+        items = [
+            [_canonical_snapshot_value(key), _canonical_snapshot_value(item)]
+            for key, item in value.items()
+        ]
+        items.sort(
+            key=lambda item: json.dumps(item[0], sort_keys=True, separators=(",", ":"))
+        )
+        return {"type": "mapping", "items": items}
+    if isinstance(value, (list, tuple)):
+        return {
+            "type": "tuple" if isinstance(value, tuple) else "list",
+            "items": [_canonical_snapshot_value(item) for item in value],
+        }
+    if isinstance(value, (set, frozenset)):
+        items = [_canonical_snapshot_value(item) for item in value]
+        items.sort(
+            key=lambda item: json.dumps(item, sort_keys=True, separators=(",", ":"))
+        )
+        return {
+            "type": "frozenset" if isinstance(value, frozenset) else "set",
+            "items": items,
+        }
+    value_type = type(value)
+    return {
+        "type": f"{value_type.__module__}.{value_type.__qualname__}",
+        "value": str(value),
+    }
 
 
 def _register_records_source(
@@ -1418,7 +1490,9 @@ def read_csv(
     hints: Mapping[str, Any] | None = None,
     limits: InferenceLimits | None = None,
 ) -> InferredDataset:
-    source_identity = _path_identity("csv", path) if name == "csv" else name
+    source_identity = (
+        _path_identity("csv", path) if name == "csv" else _safe_file_identity(name)
+    )
     return InferredDataset(
         infer_csv(
             path,

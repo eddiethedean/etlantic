@@ -122,6 +122,37 @@ def test_path_identities_do_not_collide_on_same_filename(tmp_path) -> None:
     assert etl.infer_csv(left).schema.identity != etl.infer_csv(right).schema.identity
 
 
+def test_custom_file_identities_are_path_free(tmp_path) -> None:
+    path = tmp_path / "events.csv"
+    path.write_text("id\n1\n", encoding="utf-8")
+
+    definition = etl.read_csv(str(path), name=f"dataset={path}").definition()
+    payload = json.dumps(definition.to_dict())
+
+    assert str(path) not in payload
+    assert definition.nodes[0].bindings["source"]["identity"].startswith("file:")
+
+
+def test_file_definition_rechecks_the_current_source_schema(tmp_path) -> None:
+    path = tmp_path / "events.csv"
+    path.write_text("id\n1\n", encoding="utf-8")
+    dataset = etl.read_csv(path, name="events")
+
+    path.write_text("name\nAda\n", encoding="utf-8")
+    with pytest.raises(ValueError, match="INFER_SOURCE_SCHEMA_MISMATCH"):
+        dataset.definition()
+
+
+def test_file_definition_rejects_a_missing_source(tmp_path) -> None:
+    path = tmp_path / "events.csv"
+    path.write_text("id\n1\n", encoding="utf-8")
+    dataset = etl.read_csv(path, name="events")
+    path.unlink()
+
+    with pytest.raises(ValueError, match="INFER_SOURCE_UNRESOLVABLE"):
+        dataset.definition()
+
+
 def test_target_revision_mismatch_does_not_backfill() -> None:
     result = etl.infer_records_for_target(
         [{"id": "1"}],
@@ -681,7 +712,9 @@ def test_backfill_preserves_the_durable_source_binding() -> None:
     target = NormalizedSchema("target", (NormalizedField("id", "integer"),))
     dataset = etl.from_records([{"id": "12"}], name="orders").backfill_from(target)
 
-    assert dataset.definition().nodes[0].bindings["source"]["kind"] == "records"
+    definition = dataset.definition()
+    assert definition.nodes[0].bindings["source"]["kind"] == "records"
+    assert etl.authoring.validate_pipeline_like(definition).valid
 
 
 def test_sampled_csv_with_a_file_binding_can_be_exported(tmp_path) -> None:
@@ -772,6 +805,32 @@ def test_records_bindings_do_not_alias_same_named_sources() -> None:
     etl.from_records([{"id": 2}], name="same_name")
 
     assert etl.resolve_source_binding(first_binding) == [{"id": 1}]
+
+
+def test_records_bindings_preserve_value_type_distinctions() -> None:
+    first = etl.from_records([{"id": Decimal("1")}], name="same_name")
+    first_binding = first.definition().nodes[0].bindings["source"]
+    second_binding = (
+        etl.from_records([{"id": "1"}], name="same_name")
+        .definition()
+        .nodes[0]
+        .bindings["source"]
+    )
+
+    assert first_binding != second_binding
+    resolved = etl.resolve_source_binding(first_binding)
+    assert isinstance(resolved[0]["id"], Decimal)
+
+
+def test_missing_file_diagnostics_do_not_echo_the_source_path(tmp_path) -> None:
+    path = tmp_path / "events.csv"
+    path.write_text("id\n1\n", encoding="utf-8")
+    definition = etl.read_csv(path, name="events").definition()
+    path.unlink()
+
+    report = etl.authoring.validate_pipeline_like(definition)
+    assert not report.valid
+    assert str(path) not in " ".join(item.message for item in report.errors)
 
 
 def test_identical_materialized_records_have_deterministic_definitions() -> None:
@@ -923,6 +982,37 @@ def test_target_write_mode_must_be_advertised() -> None:
     )
 
 
+def test_invalid_target_write_mode_fails_without_a_target_schema() -> None:
+    dataset = etl.from_records_for_target(
+        [{"id": 1}], {"fields": []}, name="orders", write_mode="garbage"
+    )
+
+    with pytest.raises(ValueError, match="INFER_TARGET_BINDING"):
+        dataset.definition()
+
+
+def test_observed_target_binding_requires_normalized_requirements() -> None:
+    definition = etl.from_records([{"id": 1}], name="observed_target").definition()
+    bad_target = {
+        "version": 1,
+        "kind": "target",
+        "identity": "observed_target",
+        "write_mode": "append",
+        "observed": True,
+        "requirements": {},
+    }
+    sink = replace(definition.nodes[-1], bindings={"target": bad_target})
+    malformed = replace(
+        definition,
+        nodes=(*definition.nodes[:-1], sink),
+        fingerprint=None,
+    ).with_fingerprint(None)
+
+    report = etl.authoring.validate_pipeline_like(malformed)
+    assert not report.valid
+    assert "INFER_TARGET_BINDING" in {item.code for item in report.errors}
+
+
 def test_loaded_malformed_bindings_fail_closed() -> None:
     document = etl.from_records([{"id": 1}], name="loaded_binding_shape").definition()
     payload = document.to_dict()
@@ -936,6 +1026,26 @@ def test_loaded_malformed_bindings_fail_closed() -> None:
     assert {"INFER_SOURCE_BINDING", "INFER_TARGET_BINDING"} <= {
         item.code for item in report.errors
     }
+
+
+@pytest.mark.parametrize(
+    "binding",
+    [
+        {"kind": "s3", "uri": "s3://bucket/key"},
+        {"version": 1, "kind": "s3", "uri": "s3://bucket/key"},
+    ],
+)
+def test_lifecycle_ignores_non_durable_connector_bindings(binding) -> None:
+    definition = etl.from_records([{"id": 1}], name="connector_binding").definition()
+    source = replace(definition.nodes[0], bindings={"source": binding})
+    connector_definition = replace(
+        definition,
+        nodes=(source, *definition.nodes[1:]),
+        fingerprint=None,
+    ).with_fingerprint(None)
+
+    report = etl.authoring.validate_pipeline_like(connector_definition)
+    assert "INFER_SOURCE_BINDING" not in {item.code for item in report.errors}
 
 
 def test_unsupported_provider_does_not_look_durable() -> None:

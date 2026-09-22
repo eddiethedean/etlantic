@@ -182,9 +182,15 @@ def _validate_definition_bindings(defn: PipelineDefinition) -> list[Diagnostic]:
             binding_path = ("nodes", node.name, "bindings", "target")
         else:
             continue
-        if not isinstance(binding, Mapping) or not (
-            "kind" in binding or "version" in binding
-        ):
+        if not isinstance(binding, Mapping):
+            continue
+        kind = binding.get("kind")
+        known_kinds = (
+            {"records", "file", "provider"} if node.kind == "source" else {"target"}
+        )
+        if kind is not None and kind not in known_kinds:
+            continue
+        if kind is None and "version" not in binding:
             continue
         try:
             validator(binding)
