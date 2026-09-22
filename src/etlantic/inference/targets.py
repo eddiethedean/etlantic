@@ -6,6 +6,7 @@ import datetime as _dt
 import inspect as _inspect
 import math
 from collections.abc import Callable, Mapping
+from contextlib import suppress
 from decimal import Decimal, DecimalException
 from pathlib import Path
 from typing import Any
@@ -220,17 +221,39 @@ def _provider_exists(
     payload: Any,
 ) -> tuple[str | None, Diagnostic | None]:
     """Read an explicit provider existence state without inferring one."""
-    if isinstance(payload, Mapping):
-        raw = payload.get("exists", _MISSING)
-    else:
-        raw = getattr(payload, "exists", _MISSING)
-        if callable(raw):
-            try:
+    try:
+        if isinstance(payload, Mapping):
+            raw = payload.get("exists", _MISSING)
+        else:
+            raw = getattr(payload, "exists", _MISSING)
+            if callable(raw):
                 raw = raw()
-            except Exception:
-                raw = _MISSING
+    except Exception:
+        return (
+            "unknown",
+            Diagnostic(
+                "INFER_TARGET_UNKNOWN",
+                Severity.WARNING,
+                "Provider target existence could not be established",
+                phase="inference",
+            ),
+        )
     if raw is _MISSING:
         return None, None
+    if _inspect.isawaitable(raw):
+        close = getattr(raw, "close", None)
+        if callable(close):
+            with suppress(Exception):
+                close()
+        return (
+            "unknown",
+            Diagnostic(
+                "INFER_TARGET_UNKNOWN",
+                Severity.WARNING,
+                "Provider returned an awaitable target existence state",
+                phase="inference",
+            ),
+        )
     if isinstance(raw, str) and raw in TARGET_EXISTENCE_STATES:
         return raw, None
     return (

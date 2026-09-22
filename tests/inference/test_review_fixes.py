@@ -143,6 +143,59 @@ def test_malformed_nested_schema_fails_closed_and_blocks_publication() -> None:
         dataset.definition()
 
 
+def test_provider_existence_probe_failures_fail_closed() -> None:
+    class Result:
+        def __init__(self):
+            self.fields = [{"name": "id", "type": "integer"}]
+            self.capabilities = {"write_modes": ["append"]}
+
+        def exists(self):
+            raise PermissionError("target inspection denied")
+
+    class SyncProvider:
+        def inspect_schema(self):
+            return Result()
+
+    class AsyncProvider:
+        async def inspect_schema(self):
+            return Result()
+
+    observations = (
+        inspect_target(SyncProvider()),
+        asyncio.run(inspect_target_async(AsyncProvider())),
+    )
+    for observation in observations:
+        assert observation.exists == "unknown"
+        assert observation.schema is None
+        assert "INFER_TARGET_UNKNOWN" in {
+            diagnostic.code for diagnostic in observation.diagnostics
+        }
+
+    dataset = etl.from_records_for_target([{"id": 1}], SyncProvider(), name="orders")
+    with pytest.raises(ValueError, match="inference diagnostics contain errors"):
+        dataset.definition()
+
+
+def test_async_provider_existence_probe_is_closed_and_fails_closed() -> None:
+    class Result:
+        def __init__(self):
+            self.fields = [{"name": "id", "type": "integer"}]
+
+        async def exists(self):
+            return "present"
+
+    class Provider:
+        async def inspect_schema(self):
+            return Result()
+
+    observation = asyncio.run(inspect_target_async(Provider()))
+    assert observation.exists == "unknown"
+    assert observation.schema is None
+    assert "INFER_TARGET_UNKNOWN" in {
+        diagnostic.code for diagnostic in observation.diagnostics
+    }
+
+
 @pytest.mark.parametrize("exists", ["absent", "unknown"])
 def test_explicit_target_existence_precedes_schema_shape(exists: str) -> None:
     observation = inspect_target(
