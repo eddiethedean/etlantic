@@ -368,6 +368,7 @@ def _normalize_provider_payload(
     max_diagnostics: int = 100,
     direct_mapping: bool = False,
     fallback_exists: str | None = None,
+    provider_exists: tuple[str | None, Diagnostic | None] | None = None,
 ) -> TargetObservation | None:
     """Normalize every provider response through the same tri-state path."""
     if isinstance(payload, TargetObservation):
@@ -381,7 +382,10 @@ def _normalize_provider_payload(
             metadata={"identity": _safe_file_identity(payload.identity)},
         )
 
-    explicit_exists, exists_diagnostic = _provider_exists(payload)
+    if provider_exists is None:
+        explicit_exists, exists_diagnostic = _provider_exists(payload)
+    else:
+        explicit_exists, exists_diagnostic = provider_exists
     raw_schema_mapping = False
     if direct_mapping and isinstance(payload, Mapping):
         schema_payload = payload.get("schema", _MISSING)
@@ -516,6 +520,30 @@ def _normalize_provider_payload(
         inspector,
         tuple(diagnostics[:max_diagnostics]),
         metadata,
+    )
+
+
+async def _normalize_provider_payload_async(
+    payload: Any,
+    *,
+    identity: str,
+    inspector: str,
+    max_diagnostics: int = 100,
+    direct_mapping: bool = False,
+    fallback_exists: str | None = None,
+    provider_exists: tuple[str | None, Diagnostic | None] | None = None,
+) -> TargetObservation | None:
+    """Normalize a provider response after awaiting its existence state."""
+    if provider_exists is None:
+        provider_exists = await _provider_exists_async(payload)
+    return _normalize_provider_payload(
+        payload,
+        identity=identity,
+        inspector=inspector,
+        max_diagnostics=max_diagnostics,
+        direct_mapping=direct_mapping,
+        fallback_exists=fallback_exists,
+        provider_exists=provider_exists,
     )
 
 
@@ -794,8 +822,31 @@ async def inspect_target_async(
                 inspector=type(target).__name__,
             )
         if not callable(schema_method):
-            return inspect_target(
-                target, identity=identity, max_diagnostics=max_diagnostics
+            observation = await _normalize_provider_payload_async(
+                target,
+                identity=identity,
+                inspector=type(target).__name__,
+                max_diagnostics=max_diagnostics,
+                fallback_exists=adapter_exists,
+                provider_exists=(adapter_exists, adapter_diagnostic),
+            )
+            if observation is not None:
+                if observation.schema is not None:
+                    observation = TargetObservation(
+                        observation.schema,
+                        observation.exists,
+                        observation.revision,
+                        observation.inspector,
+                        (
+                            *_unknown_type_diagnostics(observation.schema),
+                            *observation.diagnostics,
+                        ),
+                        observation.metadata,
+                    )
+                return observation
+            return _unknown_target(
+                identity=identity,
+                inspector=type(target).__name__,
             )
         try:
             schema_attr = schema_method()
@@ -807,7 +858,7 @@ async def inspect_target_async(
                     identity=identity,
                     inspector=type(target).__name__,
                 )
-            observation = _normalize_provider_payload(
+            observation = await _normalize_provider_payload_async(
                 schema_attr,
                 identity=identity,
                 inspector=type(target).__name__,
@@ -852,7 +903,7 @@ async def inspect_target_async(
             result = inspect_schema()
         if _inspect.isawaitable(result):
             result = await result
-        observation = _normalize_provider_payload(
+        observation = await _normalize_provider_payload_async(
             result,
             identity=identity,
             inspector=type(target).__name__,
@@ -897,7 +948,37 @@ async def inspect_target_async(
                     identity=identity,
                     inspector=type(target).__name__,
                 )
-            observation = _normalize_provider_payload(
+            observation = await _normalize_provider_payload_async(
+                schema_attr,
+                identity=identity,
+                inspector=type(target).__name__,
+                max_diagnostics=max_diagnostics,
+                direct_mapping=True,
+                fallback_exists=adapter_exists,
+            )
+            if observation is not None:
+                if observation.schema is not None:
+                    observation = TargetObservation(
+                        observation.schema,
+                        observation.exists,
+                        observation.revision,
+                        observation.inspector,
+                        (
+                            *_unknown_type_diagnostics(observation.schema),
+                            *observation.diagnostics,
+                        ),
+                        observation.metadata,
+                    )
+                return observation
+        except Exception:
+            return _unknown_target(
+                "INFER_TARGET_UNKNOWN",
+                identity=identity,
+                inspector=type(target).__name__,
+            )
+    elif schema_attr is not _MISSING:
+        try:
+            observation = await _normalize_provider_payload_async(
                 schema_attr,
                 identity=identity,
                 inspector=type(target).__name__,

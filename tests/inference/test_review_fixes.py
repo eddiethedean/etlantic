@@ -194,6 +194,60 @@ def test_async_provider_existence_probe_is_awaited() -> None:
     assert observation.schema.fields[0].name == "id"
 
 
+def test_async_inspector_result_existence_probe_is_awaited() -> None:
+    class Result:
+        def __init__(self):
+            self.fields = [{"name": "id", "type": "integer"}]
+
+        async def exists(self):
+            return "present"
+
+    class Provider:
+        async def exists(self):
+            return "present"
+
+        async def inspect_schema(self):
+            return Result()
+
+    observation = asyncio.run(inspect_target_async(Provider()))
+
+    assert observation.exists == "present"
+    assert observation.schema is not None
+    assert observation.schema.fields[0].name == "id"
+
+
+def test_async_names_target_reuses_awaited_existence_state() -> None:
+    class Target:
+        names = ("id",)
+
+        def __iter__(self):
+            return iter([{"name": "id", "type": "integer"}])
+
+        async def exists(self):
+            return "present"
+
+    observation = asyncio.run(inspect_target_async(Target()))
+
+    assert observation.exists == "present"
+    assert observation.schema is not None
+    assert observation.schema.fields[0].name == "id"
+
+
+def test_async_empty_inspector_falls_back_to_schema_attribute() -> None:
+    class Adapter:
+        def __init__(self):
+            self.schema = {"id": "INTEGER"}
+
+        def inspect_schema(self):
+            return None
+
+    observation = asyncio.run(inspect_target_async(Adapter()))
+
+    assert observation.exists == "present"
+    assert observation.schema is not None
+    assert observation.schema.fields[0].logical_type == "integer"
+
+
 def test_adapter_existence_precedes_schema_inspection() -> None:
     calls: list[str] = []
 
@@ -379,6 +433,41 @@ def test_malformed_target_schema_is_unknown_on_the_wire() -> None:
     }
     source = NormalizedSchema("source", ())
     assert check_write_compatibility(source, observation).status == "conflict"
+
+
+@pytest.mark.parametrize("logical_type", ["unknown", "made-up"])
+def test_unknown_target_logical_types_are_not_trusted_on_the_wire(
+    logical_type: str,
+) -> None:
+    observation = etl.TargetObservation.from_dict(
+        {
+            "exists": "present",
+            "schema": {
+                "identity": "target",
+                "fields": [{"name": "id", "logical_type": logical_type}],
+            },
+            "metadata": {"capabilities": {"write_modes": ["append"]}},
+        }
+    )
+
+    assert observation.exists == "unknown"
+    assert observation.schema is None
+    assert "INFER_TARGET_UNSUPPORTED" in {
+        diagnostic.code for diagnostic in observation.diagnostics
+    }
+
+
+def test_empty_present_target_wire_payload_is_schema_less() -> None:
+    observation = etl.TargetObservation.from_dict(
+        {
+            "exists": "present",
+            "schema": {"identity": "target", "fields": []},
+        }
+    )
+
+    assert observation.exists == "present"
+    assert observation.schema is None
+    assert observation.metadata["empty"] is True
 
 
 def test_non_present_target_wire_payload_does_not_serialize_schema() -> None:

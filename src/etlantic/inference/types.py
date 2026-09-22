@@ -19,6 +19,21 @@ from etlantic.schema_drift import NormalizedSchema, json_safe_metadata
 
 TargetExistence = Literal["present", "absent", "unknown"]
 TARGET_EXISTENCE_STATES = frozenset(("present", "absent", "unknown"))
+_TARGET_LOGICAL_TYPES = frozenset(
+    (
+        "null",
+        "boolean",
+        "integer",
+        "number",
+        "decimal",
+        "string",
+        "binary",
+        "date",
+        "datetime",
+        "object",
+        "array",
+    )
+)
 
 
 def _wire_value(value: Any, *, key: str | None = None, depth: int = 0) -> Any:
@@ -516,6 +531,7 @@ class TargetObservation:
                     or not item.get("name")
                     or not isinstance(item.get("logical_type"), str)
                     or not item.get("logical_type")
+                    or item.get("logical_type") not in _TARGET_LOGICAL_TYPES
                     for item in fields_payload
                 )
                 if not malformed_schema:
@@ -535,6 +551,13 @@ class TargetObservation:
             exists = "unknown"
         if exists != "present" and restored_schema is not None:
             metadata["untrusted_schema_fingerprint"] = restored_schema.fingerprint()
+            restored_schema = None
+        elif (
+            exists == "present"
+            and restored_schema is not None
+            and not restored_schema.fields
+        ):
+            metadata["empty"] = True
             restored_schema = None
         return cls(
             restored_schema,
