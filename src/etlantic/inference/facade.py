@@ -713,7 +713,17 @@ class InferredDataset:
                 and not target_observation.diagnostics
                 and target_observation.inspector in {"provided", "normalized"}
             ):
-                target_for_check = target_observation.schema
+                schema_metadata = {
+                    **target_observation.schema.metadata,
+                    **target_observation.metadata,
+                }
+                if target_observation.revision is not None:
+                    schema_metadata["revision"] = target_observation.revision
+                target_for_check = NormalizedSchema(
+                    target_observation.schema.identity,
+                    target_observation.schema.fields,
+                    schema_metadata,
+                )
             compatibility = check_write_compatibility(
                 state_schemas[-1],
                 target_for_check,

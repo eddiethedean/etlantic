@@ -5,6 +5,7 @@ from __future__ import annotations
 import datetime as _dt
 import inspect as _inspect
 import math
+import stat as _stat
 from collections.abc import Callable, Mapping
 from contextlib import suppress
 from decimal import Decimal, DecimalException
@@ -179,7 +180,22 @@ def _schema_from_inspection(identity: str, fields: Any) -> NormalizedSchema:
             for flag in (field.required, field.nullable)
         ):
             raise TypeError("target field required and nullable flags must be booleans")
-        return NormalizedSchema(identity=identity, fields=tuple(values))
+        normalized_fields: list[NormalizedField] = []
+        for field in values:
+            if not isinstance(field.logical_type, str):
+                raise TypeError("target field logical types must be strings")
+            if not isinstance(field.metadata, Mapping):
+                raise TypeError("target field metadata must be a mapping")
+            normalized_fields.append(
+                NormalizedField(
+                    field.name,
+                    _target_logical_type(field.logical_type),
+                    field.required,
+                    field.nullable,
+                    dict(field.metadata),
+                )
+            )
+        return NormalizedSchema(identity=identity, fields=tuple(normalized_fields))
     normalized: list[Any] = []
     names: set[str] = set()
     for field in values:
@@ -243,11 +259,53 @@ def _attach_target_metadata(
     return NormalizedSchema(schema.identity, schema.fields, merged)
 
 
-def _safe_target_schema(schema: NormalizedSchema) -> NormalizedSchema:
-    identity = _safe_file_identity(schema.identity)
-    if identity == schema.identity:
-        return schema
-    return NormalizedSchema(identity, schema.fields, schema.metadata)
+def _validated_normalized_schema(schema: NormalizedSchema) -> NormalizedSchema:
+    """Revalidate even normalized schemas at an untrusted inspection boundary."""
+    if not isinstance(schema, NormalizedSchema):
+        raise TypeError("target schema must be normalized")
+    if not isinstance(schema.metadata, Mapping):
+        raise TypeError("target schema metadata must be a mapping")
+    normalized = _schema_from_inspection(schema.identity, schema.fields)
+    return NormalizedSchema(
+        normalized.identity, normalized.fields, dict(schema.metadata)
+    )
+
+
+def _normalize_target_observation(
+    observation: TargetObservation,
+) -> TargetObservation:
+    """Validate schema fields carried by a provider-created observation."""
+    if observation.schema is None:
+        return observation
+    try:
+        schema = _validated_normalized_schema(observation.schema)
+    except (AttributeError, KeyError, TypeError, ValueError):
+        diagnostics = (
+            *observation.diagnostics,
+            Diagnostic(
+                "INFER_TARGET_UNSUPPORTED",
+                Severity.WARNING,
+                "Target fields are malformed",
+                phase="inference",
+            ),
+        )
+        exists = "unknown" if observation.exists == "present" else observation.exists
+        return TargetObservation(
+            None,
+            exists,
+            observation.revision,
+            observation.inspector,
+            diagnostics,
+            observation.metadata,
+        )
+    return TargetObservation(
+        schema,
+        observation.exists,
+        observation.revision,
+        observation.inspector,
+        (*observation.diagnostics, *_unknown_type_diagnostics(schema)),
+        observation.metadata,
+    )
 
 
 def _provider_exists(
@@ -387,13 +445,23 @@ def _normalize_provider_payload(
 ) -> TargetObservation | None:
     """Normalize every provider response through the same tri-state path."""
     if isinstance(payload, TargetObservation):
-        return payload
+        return _normalize_target_observation(payload)
     if isinstance(payload, NormalizedSchema):
+        try:
+            schema = _validated_normalized_schema(payload)
+        except (AttributeError, KeyError, TypeError, ValueError):
+            return _unknown_target(
+                "INFER_TARGET_UNSUPPORTED",
+                identity=payload.identity,
+                inspector=inspector,
+                message="Target fields are malformed",
+            )
         return TargetObservation(
-            _safe_target_schema(payload),
+            schema,
             "present",
             None,
             inspector,
+            _unknown_type_diagnostics(schema),
             metadata={"identity": _safe_file_identity(payload.identity)},
         )
 
@@ -485,7 +553,7 @@ def _normalize_provider_payload(
     if fields is not _MISSING:
         try:
             schema = _schema_from_inspection(target_identity, fields)
-        except (KeyError, TypeError, ValueError):
+        except (AttributeError, KeyError, TypeError, ValueError):
             schema_error = "Target fields are malformed"
 
     if schema_error is not None:
@@ -566,9 +634,24 @@ def inspect_target(
     target: Any, *, identity: str = "target", max_diagnostics: int = 100
 ) -> TargetObservation:
     """Inspect an existing target when its adapter exposes a schema."""
+    if isinstance(target, TargetObservation):
+        return _normalize_target_observation(target)
     if isinstance(target, NormalizedSchema):
+        try:
+            schema = _validated_normalized_schema(target)
+        except (AttributeError, KeyError, TypeError, ValueError):
+            return _unknown_target(
+                "INFER_TARGET_UNSUPPORTED",
+                identity=target.identity,
+                inspector="normalized",
+                message="Target fields are malformed",
+            )
         return TargetObservation(
-            _safe_target_schema(target), "present", None, "normalized"
+            schema,
+            "present",
+            None,
+            "normalized",
+            _unknown_type_diagnostics(schema),
         )
     if isinstance(target, Mapping):
         try:
@@ -606,7 +689,9 @@ def inspect_target(
         )
     if isinstance(target, (str, Path)):
         path = Path(target)
-        if not path.exists():
+        try:
+            path_stat = path.stat()
+        except FileNotFoundError:
             return TargetObservation(
                 None,
                 "absent",
@@ -614,21 +699,36 @@ def inspect_target(
                 "filesystem",
                 metadata={"identity": _safe_file_identity(identity)},
             )
-        if not path.is_file():
+        except (OSError, ValueError):
+            return _unknown_target(
+                "INFER_TARGET_UNKNOWN",
+                identity=identity,
+                inspector="filesystem",
+                message="Target filesystem state could not be established",
+            )
+        if not _stat.S_ISREG(path_stat.st_mode):
             return _unknown_target("INFER_TARGET_UNSUPPORTED", identity=identity)
         suffix = path.suffix.lower()
-        if suffix in {".json", ".jsonl"}:
-            result = infer_json(path, identity=identity)
-            inspector = "json"
-        elif suffix in {".csv", ".tsv"}:
-            result = infer_csv(
-                path,
-                options={"delimiter": "\t"} if suffix == ".tsv" else None,
+        try:
+            if suffix in {".json", ".jsonl"}:
+                result = infer_json(path, identity=identity)
+                inspector = "json"
+            elif suffix in {".csv", ".tsv"}:
+                result = infer_csv(
+                    path,
+                    options={"delimiter": "\t"} if suffix == ".tsv" else None,
+                    identity=identity,
+                )
+                inspector = "csv"
+            else:
+                return _unknown_target("INFER_TARGET_UNSUPPORTED", identity=identity)
+        except OSError:
+            return _unknown_target(
+                "INFER_TARGET_UNKNOWN",
                 identity=identity,
+                inspector="filesystem",
+                message="Target file could not be read",
             )
-            inspector = "csv"
-        else:
-            return _unknown_target("INFER_TARGET_UNSUPPORTED", identity=identity)
         diagnostics = tuple(result.diagnostics) + _unknown_type_diagnostics(
             result.schema
         )
@@ -811,6 +911,8 @@ async def inspect_target_async(
     max_diagnostics: int = 100,
 ) -> TargetObservation:
     """Inspect synchronous or asynchronous target adapters safely."""
+    if isinstance(target, TargetObservation):
+        return _normalize_target_observation(target)
     if isinstance(target, (NormalizedSchema, str, Path, bytes, Mapping)):
         return inspect_target(
             target, identity=identity, max_diagnostics=max_diagnostics
@@ -1109,7 +1211,7 @@ def infer_records_for_target(
     )
     limits = limits or InferenceLimits()
     observation = (
-        target
+        _normalize_target_observation(target)
         if isinstance(target, TargetObservation)
         else inspect_target(
             target,
@@ -1208,7 +1310,7 @@ async def infer_records_for_target_async(
     )
     limits = limits or InferenceLimits()
     observation = (
-        target
+        _normalize_target_observation(target)
         if isinstance(target, TargetObservation)
         else await inspect_target_async(
             target,

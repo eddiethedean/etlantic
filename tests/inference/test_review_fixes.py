@@ -5,6 +5,7 @@ import gc
 import json
 from dataclasses import replace
 from decimal import Decimal
+from pathlib import Path
 
 import pytest
 
@@ -63,6 +64,74 @@ def test_malformed_target_payloads_fail_closed_and_empty_is_explicit() -> None:
     empty = inspect_target({"exists": "present", "fields": []})
     assert empty.exists == "present"
     assert empty.schema is None
+
+
+def test_duplicate_fields_in_normalized_targets_fail_closed() -> None:
+    target = NormalizedSchema(
+        "target",
+        (
+            NormalizedField("id", "string"),
+            NormalizedField("id", "integer"),
+        ),
+        {"capabilities": {"write_modes": ["append"]}},
+    )
+
+    class Provider:
+        def inspect_schema(self):
+            return target
+
+    source = NormalizedSchema("source", (NormalizedField("id", "integer"),))
+    for observation in (
+        inspect_target(target),
+        inspect_target(Provider()),
+        inspect_target(etl.TargetObservation(target, "present", inspector="provided")),
+    ):
+        assert observation.exists == "unknown"
+        assert observation.schema is None
+        assert "INFER_TARGET_UNSUPPORTED" in {
+            diagnostic.code for diagnostic in observation.diagnostics
+        }
+        assert check_write_compatibility(source, observation).status == "conflict"
+
+    inferred = etl.infer_records_for_target(
+        [{"id": 1}],
+        etl.TargetObservation(target, "present", inspector="provided"),
+        retain_rows=True,
+    )
+    assert inferred.target_observation is not None
+    assert inferred.target_observation.exists == "unknown"
+    assert inferred.provenance["target_validation"] == "not_performed"
+
+
+def test_filesystem_inspection_permission_errors_fail_closed(tmp_path, monkeypatch):
+    def denied_stat(_path, *args, **kwargs):
+        raise PermissionError("denied")
+
+    monkeypatch.setattr(Path, "stat", denied_stat)
+    observation = inspect_target(tmp_path / "denied.csv")
+
+    assert observation.exists == "unknown"
+    assert observation.schema is None
+    assert "INFER_TARGET_UNKNOWN" in {
+        diagnostic.code for diagnostic in observation.diagnostics
+    }
+
+
+def test_filesystem_read_errors_fail_closed(tmp_path, monkeypatch):
+    path = tmp_path / "unreadable.csv"
+    path.write_text("id\n1\n", encoding="utf-8")
+
+    def denied_read(*args, **kwargs):
+        raise PermissionError("denied")
+
+    monkeypatch.setattr("etlantic.inference.targets.infer_csv", denied_read)
+    observation = inspect_target(path)
+
+    assert observation.exists == "unknown"
+    assert observation.schema is None
+    assert "INFER_TARGET_UNKNOWN" in {
+        diagnostic.code for diagnostic in observation.diagnostics
+    }
 
 
 @pytest.mark.parametrize(
@@ -828,6 +897,27 @@ def test_target_capabilities_and_revision_are_retained_for_writes() -> None:
     assert not check_write_compatibility(
         source, observation, mode="overwrite"
     ).compatible
+
+
+def test_provided_target_revision_is_preserved_during_definition_export() -> None:
+    target = NormalizedSchema(
+        "target",
+        (NormalizedField("id", "integer"),),
+    )
+    observation = etl.TargetObservation(
+        target,
+        "present",
+        revision="r1",
+        inspector="provided",
+        metadata={"capabilities": {"write_modes": ["append"]}},
+    )
+    dataset = etl.from_records_for_target(
+        [{"id": 1}], observation, name="revisioned_target"
+    )
+
+    definition = dataset.definition()
+
+    assert definition.nodes[-1].bindings["target"]["revision"] == "r1"
 
 
 def test_wire_diagnostic_round_trip_rehydrates_diagnostic() -> None:
