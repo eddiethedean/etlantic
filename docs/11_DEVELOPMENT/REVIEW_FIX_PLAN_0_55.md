@@ -415,9 +415,11 @@ F8 passes when focused, full-suite, typing, documentation, adaptive,
 security, optional-dependency, differential, race, and evidence checks are
 reproducible.
 
-The repository evidence manifest can be checked with
-`uv run python scripts/check_inference_0_55.py`; this validates the pending
-status and row-free shape before any optional dependency campaign is run.
+The repository evidence manifest and gate campaign can be checked with
+`uv run python scripts/check_inference_0_55.py --verify PATH`; this validates
+the row-free shape, commit-pinned gate results, and explicit unsupported
+optional surfaces before qualification is accepted. Use
+`--run-gates --output PATH` to produce the machine-readable campaign.
 
 ## 4. Concrete regression inventory
 

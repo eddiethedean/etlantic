@@ -50,6 +50,18 @@ jobs:
       - name: Pytest (core)
         run: uv run pytest -q -m "not medallantic and not polars and not pandas and not sql and not spark and not real_pyspark and not airflow and not prefect and not keyring and not sqlmodel and not datafusion"
 
+      - name: Phase 0.55 inference evidence campaign
+        if: matrix.os == 'ubuntu-latest' && matrix.python-version == '3.11'
+        run: uv run python scripts/check_inference_0_55.py --run-gates --output "${{ runner.temp }}/inference-0.55"
+
+      - name: Preserve phase 0.55 inference evidence
+        if: always() && matrix.os == 'ubuntu-latest' && matrix.python-version == '3.11'
+        uses: actions/upload-artifact@v4
+        with:
+          name: inference-0.55-evidence
+          path: ${{ runner.temp }}/inference-0.55/
+          if-no-files-found: error
+
       - name: Pipeline codec burn-in
         if: matrix.os == 'ubuntu-latest' && matrix.python-version == '3.11'
         run: uv run python scripts/check_pipeline_codec_burn_in.py
