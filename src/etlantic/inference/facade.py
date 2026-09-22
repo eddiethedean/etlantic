@@ -902,7 +902,13 @@ class InferredDataset:
             validate_source_binding_against_definition(definition, self._source_binding)
         from etlantic.authoring.serialize import pipeline_fingerprint
 
-        return definition.with_fingerprint(pipeline_fingerprint(definition))
+        fingerprinted_definition = definition.with_fingerprint(
+            pipeline_fingerprint(definition)
+        )
+        # Source validation and compatibility construction can take time; fence
+        # the final artifact against a target revision change during that work.
+        self._check_target_revision()
+        return fingerprinted_definition
 
     def rebind_source(
         self, source: str, *, format: str | None = None

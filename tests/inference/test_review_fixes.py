@@ -2139,6 +2139,37 @@ def test_target_revision_is_rechecked_before_definition() -> None:
         dataset.definition()
 
 
+def test_target_revision_change_during_definition_is_rejected(monkeypatch) -> None:
+    import etlantic.inference.facade as inference_facade
+
+    state = {"revision": "r1"}
+    dataset = etl.from_records_for_target(
+        [{"id": 1}],
+        {
+            "revision": "r1",
+            "capabilities": {"write_modes": ["append"]},
+            "fields": [{"name": "id", "type": "integer"}],
+        },
+        name="revision_race",
+        revision_reader=lambda: state["revision"],
+    )
+    check_compatibility = inference_facade.check_write_compatibility
+
+    def change_revision_during_compatibility(*args, **kwargs):
+        result = check_compatibility(*args, **kwargs)
+        state["revision"] = "r2"
+        return result
+
+    monkeypatch.setattr(
+        inference_facade,
+        "check_write_compatibility",
+        change_revision_during_compatibility,
+    )
+
+    with pytest.raises(ValueError, match="INFER_TARGET_STALE"):
+        dataset.definition()
+
+
 def test_malformed_csv_options_keep_the_inference_diagnostic(tmp_path) -> None:
     path = tmp_path / "events.csv"
     path.write_text("id\n1\n", encoding="utf-8")
