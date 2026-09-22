@@ -784,6 +784,7 @@ def inspect_target(
                 inspector=type(target).__name__,
                 max_diagnostics=max_diagnostics,
                 fallback_exists=adapter_exists,
+                provider_exists=(adapter_exists, adapter_diagnostic),
             )
         except Exception:
             return _unknown_target(
@@ -869,14 +870,18 @@ def inspect_target(
                 identity=identity,
                 inspector=type(target).__name__,
             )
+    payload = target if schema_attr is _MISSING or schema_attr is None else schema_attr
     try:
         observation = _normalize_provider_payload(
-            schema_attr,
+            payload,
             identity=identity,
             inspector=type(target).__name__,
             max_diagnostics=max_diagnostics,
-            direct_mapping=True,
+            direct_mapping=payload is not target,
             fallback_exists=adapter_exists,
+            provider_exists=(adapter_exists, adapter_diagnostic)
+            if payload is target
+            else None,
         )
     except Exception:
         return _unknown_target(
@@ -2079,6 +2084,33 @@ def solve_backward_constraints(
         if not isinstance(targets, (NormalizedSchema, TargetObservation))
         else (targets,)
     )
+    observations: list[TargetObservation] = []
+    for item in target_items:
+        if isinstance(item, TargetObservation):
+            observations.append(_normalize_target_observation(item))
+            continue
+        try:
+            schema = _validated_normalized_schema(item)
+        except (AttributeError, KeyError, TypeError, ValueError):
+            identity = getattr(item, "identity", "target")
+            observations.append(
+                _unknown_target(
+                    "INFER_TARGET_UNSUPPORTED",
+                    identity=identity,
+                    inspector="provided",
+                    message="Target fields are malformed",
+                )
+            )
+            continue
+        observations.append(
+            TargetObservation(
+                schema,
+                "present",
+                None,
+                "provided",
+                _unknown_type_diagnostics(schema),
+            )
+        )
     seen: set[tuple[str, str]] = set()
     all_diagnostics: list[Any] = []
     for _iteration in range(max(1, max_iterations)):
@@ -2098,12 +2130,7 @@ def solve_backward_constraints(
             break
         seen.add(before)
         changed = False
-        for item in target_items:
-            observation = (
-                item
-                if isinstance(item, TargetObservation)
-                else TargetObservation(item, "present", None, "provided")
-            )
+        for observation in observations:
             result = _backfill_observation(current, observation)
             all_diagnostics.extend(result.diagnostics)
             changed = changed or result.schema != current.schema
@@ -2148,6 +2175,31 @@ def check_write_compatibility(
     target_observation = target if isinstance(target, TargetObservation) else None
     observation_metadata: dict[str, Any] = {}
     observed_revision: str | None = None
+    target_schema = (
+        target_observation.schema if target_observation is not None else target
+    )
+    if target_schema is not None:
+        try:
+            target_schema = _validated_normalized_schema(target_schema)
+        except (AttributeError, KeyError, TypeError, ValueError):
+            diagnostics = (
+                tuple(target_observation.diagnostics)
+                if target_observation is not None
+                else ()
+            )
+            return WriteCompatibility(
+                False,
+                mode=mode,
+                diagnostics=(
+                    *diagnostics,
+                    Diagnostic(
+                        "INFER_TARGET_UNSUPPORTED",
+                        Severity.ERROR,
+                        "Target fields are malformed",
+                        phase="inference",
+                    ),
+                ),
+            )
     if target_observation is not None:
         if target_observation.exists != "present":
             state = target_observation.exists
@@ -2230,7 +2282,21 @@ def check_write_compatibility(
                     ),
                 ),
             )
-        target = target_observation.schema
+        if not isinstance(target_observation.metadata, Mapping):
+            return WriteCompatibility(
+                False,
+                mode=mode,
+                diagnostics=(
+                    *target_observation.diagnostics,
+                    Diagnostic(
+                        "INFER_TARGET_UNSUPPORTED",
+                        Severity.ERROR,
+                        "Target observation metadata is malformed",
+                        phase="inference",
+                    ),
+                ),
+            )
+        target = target_schema
         observation_metadata = dict(target_observation.metadata)
         observed_revision = target_observation.revision
     assert isinstance(target, NormalizedSchema)

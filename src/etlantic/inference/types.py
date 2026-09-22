@@ -536,6 +536,7 @@ class TargetObservation:
                 )
                 malformed_schema = (
                     not isinstance(fields_payload, list)
+                    or not isinstance(schema_payload.get("metadata", {}), Mapping)
                     or any(
                         not isinstance(item, dict)
                         or not isinstance(item.get("name"), str)
@@ -545,6 +546,7 @@ class TargetObservation:
                         or item.get("logical_type") not in _TARGET_LOGICAL_TYPES
                         or not isinstance(item.get("required", True), bool)
                         or not isinstance(item.get("nullable", False), bool)
+                        or not isinstance(item.get("metadata", {}), Mapping)
                         for item in fields_payload
                     )
                     or len(field_names) != len(fields_payload or ())

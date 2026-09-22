@@ -102,6 +102,25 @@ def test_duplicate_fields_in_normalized_targets_fail_closed() -> None:
     assert inferred.target_observation.exists == "unknown"
     assert inferred.provenance["target_validation"] == "not_performed"
 
+    source = NormalizedSchema("source", (NormalizedField("id", "integer"),))
+    malformed_observation = etl.TargetObservation(
+        target,
+        "present",
+        metadata={"capabilities": {"write_modes": ["append"]}},
+    )
+    for malformed in (target, malformed_observation):
+        compatibility = check_write_compatibility(source, malformed)
+        assert compatibility.status == "conflict"
+        assert "INFER_TARGET_UNSUPPORTED" in {
+            diagnostic.code for diagnostic in compatibility.diagnostics
+        }
+
+        solved = solve_backward_constraints(source, malformed)
+        assert solved.schema == source
+        assert "INFER_TARGET_UNSUPPORTED" in {
+            diagnostic.code for diagnostic in solved.diagnostics
+        }
+
 
 def test_filesystem_inspection_permission_errors_fail_closed(tmp_path, monkeypatch):
     def denied_stat(_path, *args, **kwargs):
@@ -222,6 +241,40 @@ def test_malformed_nested_schema_fails_closed_and_blocks_publication() -> None:
         dataset.definition()
 
 
+@pytest.mark.parametrize(
+    "schema_payload",
+    [
+        {
+            "identity": "target",
+            "fields": [{"name": "id", "logical_type": "integer"}],
+            "metadata": "malformed",
+        },
+        {
+            "identity": "target",
+            "fields": [
+                {
+                    "name": "required",
+                    "logical_type": "integer",
+                    "metadata": "malformed",
+                }
+            ],
+        },
+    ],
+)
+def test_malformed_target_wire_metadata_fails_closed(schema_payload) -> None:
+    observation = etl.TargetObservation.from_dict(
+        {"exists": "present", "schema": schema_payload}
+    )
+
+    assert observation.exists == "unknown"
+    assert observation.schema is None
+    assert "INFER_TARGET_UNSUPPORTED" in {
+        diagnostic.code for diagnostic in observation.diagnostics
+    }
+    source = NormalizedSchema("source", (NormalizedField("id", "integer"),))
+    assert check_write_compatibility(source, observation).status == "conflict"
+
+
 def test_provider_existence_probe_failures_fail_closed() -> None:
     class Result:
         def __init__(self):
@@ -310,6 +363,41 @@ def test_async_names_target_reuses_awaited_existence_state() -> None:
     assert observation.exists == "present"
     assert observation.schema is not None
     assert observation.schema.fields[0].name == "id"
+
+
+def test_sync_names_target_reuses_existence_probe() -> None:
+    class Target:
+        names = ("id",)
+
+        def __init__(self):
+            self.exists_calls = 0
+
+        def exists(self):
+            self.exists_calls += 1
+            return "present"
+
+        def __iter__(self):
+            return iter([{"name": "id", "type": "integer"}])
+
+    target = Target()
+    observation = inspect_target(target)
+
+    assert target.exists_calls == 1
+    assert observation.exists == "present"
+    assert observation.schema is not None
+    assert observation.schema.fields[0].name == "id"
+
+
+def test_sync_and_async_schema_none_fallbacks_match() -> None:
+    class Target:
+        schema = None
+        fields = ({"name": "id", "type": "integer"},)
+
+    sync_observation = inspect_target(Target())
+    async_observation = asyncio.run(inspect_target_async(Target()))
+
+    assert sync_observation.exists == async_observation.exists == "present"
+    assert sync_observation.schema == async_observation.schema
 
 
 def test_async_empty_inspector_falls_back_to_schema_attribute() -> None:
