@@ -662,13 +662,20 @@ def inspect_target(
             "INFER_TARGET_UNKNOWN", identity=identity, inspector=type(target).__name__
         )
     if has_names:
-        observation = _normalize_provider_payload(
-            target,
-            identity=identity,
-            inspector=type(target).__name__,
-            max_diagnostics=max_diagnostics,
-            fallback_exists=adapter_exists,
-        )
+        try:
+            observation = _normalize_provider_payload(
+                target,
+                identity=identity,
+                inspector=type(target).__name__,
+                max_diagnostics=max_diagnostics,
+                fallback_exists=adapter_exists,
+            )
+        except Exception:
+            return _unknown_target(
+                "INFER_TARGET_UNKNOWN",
+                identity=identity,
+                inspector=type(target).__name__,
+            )
         if observation is not None:
             return observation
     try:
@@ -814,22 +821,77 @@ async def inspect_target_async(
         )
     if not callable(inspect_schema):
         try:
-            schema_method = getattr(target, "schema", None)
+            schema_method = getattr(target, "schema", _MISSING)
         except Exception:
             return _unknown_target(
                 "INFER_TARGET_UNKNOWN",
                 identity=identity,
                 inspector=type(target).__name__,
             )
-        if not callable(schema_method):
-            observation = await _normalize_provider_payload_async(
-                target,
+        if (
+            schema_method is not _MISSING
+            and schema_method is not None
+            and not callable(schema_method)
+        ):
+            try:
+                schema_attr = schema_method
+                if _inspect.isawaitable(schema_attr):
+                    schema_attr = await schema_attr
+                if schema_attr is None:
+                    return _unknown_target(
+                        "INFER_TARGET_UNSUPPORTED",
+                        identity=identity,
+                        inspector=type(target).__name__,
+                    )
+                observation = await _normalize_provider_payload_async(
+                    schema_attr,
+                    identity=identity,
+                    inspector=type(target).__name__,
+                    max_diagnostics=max_diagnostics,
+                    direct_mapping=True,
+                    fallback_exists=adapter_exists,
+                )
+                if observation is not None:
+                    if observation.schema is not None:
+                        observation = TargetObservation(
+                            observation.schema,
+                            observation.exists,
+                            observation.revision,
+                            observation.inspector,
+                            (
+                                *_unknown_type_diagnostics(observation.schema),
+                                *observation.diagnostics,
+                            ),
+                            observation.metadata,
+                        )
+                    return observation
+            except Exception:
+                return _unknown_target(
+                    "INFER_TARGET_UNKNOWN",
+                    identity=identity,
+                    inspector=type(target).__name__,
+                )
+            return _unknown_target(
+                "INFER_TARGET_UNSUPPORTED",
                 identity=identity,
                 inspector=type(target).__name__,
-                max_diagnostics=max_diagnostics,
-                fallback_exists=adapter_exists,
-                provider_exists=(adapter_exists, adapter_diagnostic),
             )
+        if schema_method is _MISSING or schema_method is None:
+            try:
+                observation = await _normalize_provider_payload_async(
+                    target,
+                    identity=identity,
+                    inspector=type(target).__name__,
+                    max_diagnostics=max_diagnostics,
+                    fallback_exists=adapter_exists,
+                    provider_exists=(adapter_exists, adapter_diagnostic),
+                )
+            except Exception:
+                return _unknown_target(
+                    "INFER_TARGET_UNKNOWN",
+                    identity=identity,
+                    inspector=type(target).__name__,
+                )
             if observation is not None:
                 if observation.schema is not None:
                     observation = TargetObservation(

@@ -248,6 +248,68 @@ def test_async_empty_inspector_falls_back_to_schema_attribute() -> None:
     assert observation.schema.fields[0].logical_type == "integer"
 
 
+@pytest.mark.parametrize("exists", ["absent", "unknown"])
+def test_async_direct_schema_attribute_preserves_target_existence(exists: str) -> None:
+    class Adapter:
+        def __init__(self):
+            self.schema = {
+                "exists": exists,
+                "fields": [{"name": "id", "type": "integer"}],
+            }
+
+    observation = asyncio.run(inspect_target_async(Adapter()))
+
+    assert observation.exists == exists
+    assert observation.schema is None
+
+
+def test_async_direct_schema_attribute_supports_normalized_and_awaitable_values() -> (
+    None
+):
+    schema = NormalizedSchema("target", (NormalizedField("id", "integer"),))
+
+    class NormalizedAdapter:
+        def __init__(self):
+            self.schema = schema
+
+    class AwaitableAdapter:
+        async def _schema(self):
+            return {"id": "INTEGER"}
+
+        def __init__(self):
+            self.schema = self._schema()
+
+    normalized = asyncio.run(inspect_target_async(NormalizedAdapter()))
+    awaitable = asyncio.run(inspect_target_async(AwaitableAdapter()))
+
+    assert normalized.exists == "present"
+    assert normalized.schema == schema
+    assert awaitable.exists == "present"
+    assert awaitable.schema is not None
+    assert awaitable.schema.fields[0].logical_type == "integer"
+
+
+@pytest.mark.parametrize("async_mode", [False, True])
+def test_names_provider_failures_become_unknown(async_mode: bool) -> None:
+    class BrokenNames:
+        exists = "present"
+        names = ("id",)
+
+        def __iter__(self):
+            raise PermissionError("target rows unavailable")
+
+    inspect = inspect_target_async if async_mode else inspect_target
+    observation = (
+        asyncio.run(inspect(BrokenNames())) if async_mode else inspect(BrokenNames())
+    )
+
+    assert observation.exists == "unknown"
+    assert observation.schema is None
+    assert "INFER_TARGET_UNKNOWN" in {
+        diagnostic.code for diagnostic in observation.diagnostics
+    }
+
+
 def test_adapter_existence_precedes_schema_inspection() -> None:
     calls: list[str] = []
 
@@ -447,6 +509,32 @@ def test_unknown_target_logical_types_are_not_trusted_on_the_wire(
                 "fields": [{"name": "id", "logical_type": logical_type}],
             },
             "metadata": {"capabilities": {"write_modes": ["append"]}},
+        }
+    )
+
+    assert observation.exists == "unknown"
+    assert observation.schema is None
+    assert "INFER_TARGET_UNSUPPORTED" in {
+        diagnostic.code for diagnostic in observation.diagnostics
+    }
+
+
+@pytest.mark.parametrize(
+    "fields",
+    [
+        [
+            {"name": "id", "logical_type": "integer"},
+            {"name": "id", "logical_type": "string"},
+        ],
+        [{"name": "id", "logical_type": "integer", "required": "false"}],
+        [{"name": "id", "logical_type": "integer", "nullable": "false"}],
+    ],
+)
+def test_malformed_target_field_constraints_are_not_trusted_on_the_wire(fields) -> None:
+    observation = etl.TargetObservation.from_dict(
+        {
+            "exists": "present",
+            "schema": {"identity": "target", "fields": fields},
         }
     )
 

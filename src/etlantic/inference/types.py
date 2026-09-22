@@ -525,14 +525,30 @@ class TargetObservation:
                 if schema_payload.get("identity") is not None:
                     metadata.setdefault("identity", str(schema_payload["identity"]))
                 fields_payload = schema_payload.get("fields")
-                malformed_schema = not isinstance(fields_payload, list) or any(
-                    not isinstance(item, dict)
-                    or not isinstance(item.get("name"), str)
-                    or not item.get("name")
-                    or not isinstance(item.get("logical_type"), str)
-                    or not item.get("logical_type")
-                    or item.get("logical_type") not in _TARGET_LOGICAL_TYPES
-                    for item in fields_payload
+                field_names = (
+                    [
+                        item.get("name")
+                        for item in fields_payload
+                        if isinstance(item, dict) and isinstance(item.get("name"), str)
+                    ]
+                    if isinstance(fields_payload, list)
+                    else []
+                )
+                malformed_schema = (
+                    not isinstance(fields_payload, list)
+                    or any(
+                        not isinstance(item, dict)
+                        or not isinstance(item.get("name"), str)
+                        or not item.get("name")
+                        or not isinstance(item.get("logical_type"), str)
+                        or not item.get("logical_type")
+                        or item.get("logical_type") not in _TARGET_LOGICAL_TYPES
+                        or not isinstance(item.get("required", True), bool)
+                        or not isinstance(item.get("nullable", False), bool)
+                        for item in fields_payload
+                    )
+                    or len(field_names) != len(fields_payload or ())
+                    or len(field_names) != len(set(field_names))
                 )
                 if not malformed_schema:
                     try:
