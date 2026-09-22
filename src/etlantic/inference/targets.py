@@ -21,6 +21,7 @@ from etlantic.schema_drift import (
 from .durable import _safe_file_identity
 from .records import infer_csv, infer_json, infer_records
 from .types import (
+    TARGET_EXISTENCE_STATES,
     FieldConstraint,
     InferenceLimits,
     InferenceResult,
@@ -75,20 +76,32 @@ def _unknown_type_diagnostics(schema: NormalizedSchema) -> tuple[Diagnostic, ...
     )
 
 
-def _unknown_target(code: str = "INFER_TARGET_UNKNOWN") -> TargetObservation:
+_MISSING = object()
+
+
+def _unknown_target(
+    code: str = "INFER_TARGET_UNKNOWN",
+    *,
+    identity: str = "target",
+    inspector: str | None = None,
+    message: str = "Target schema could not be inspected",
+    metadata: Mapping[str, Any] | None = None,
+) -> TargetObservation:
+    safe_metadata = {"identity": _safe_file_identity(identity), **dict(metadata or {})}
     return TargetObservation(
         None,
         "unknown",
         None,
-        None,
+        inspector,
         (
             Diagnostic(
                 code,
                 Severity.WARNING,
-                "Target schema could not be inspected",
+                message,
                 phase="inference",
             ),
         ),
+        safe_metadata,
     )
 
 
@@ -202,6 +215,161 @@ def _safe_target_schema(schema: NormalizedSchema) -> NormalizedSchema:
     return NormalizedSchema(identity, schema.fields, schema.metadata)
 
 
+def _provider_exists(
+    payload: Any,
+) -> tuple[str | None, Diagnostic | None]:
+    """Read an explicit provider existence state without inferring one."""
+    if isinstance(payload, Mapping):
+        raw = payload.get("exists", _MISSING)
+    else:
+        raw = getattr(payload, "exists", _MISSING)
+        if callable(raw):
+            try:
+                raw = raw()
+            except Exception:
+                raw = _MISSING
+    if raw is _MISSING:
+        return None, None
+    if isinstance(raw, str) and raw in TARGET_EXISTENCE_STATES:
+        return raw, None
+    return (
+        "unknown",
+        Diagnostic(
+            "INFER_TARGET_UNKNOWN",
+            Severity.WARNING,
+            "Provider returned an invalid target existence state",
+            phase="inference",
+        ),
+    )
+
+
+def _provider_payload_value(payload: Any, key: str, default: Any = _MISSING) -> Any:
+    if isinstance(payload, Mapping):
+        return payload.get(key, default)
+    return getattr(payload, key, default)
+
+
+def _normalize_provider_payload(
+    payload: Any,
+    *,
+    identity: str,
+    inspector: str,
+    max_diagnostics: int = 100,
+    direct_mapping: bool = False,
+) -> TargetObservation | None:
+    """Normalize every provider response through the same tri-state path."""
+    if isinstance(payload, TargetObservation):
+        return payload
+    if isinstance(payload, NormalizedSchema):
+        return TargetObservation(
+            _safe_target_schema(payload),
+            "present",
+            None,
+            inspector,
+            metadata={"identity": _safe_file_identity(payload.identity)},
+        )
+
+    explicit_exists, exists_diagnostic = _provider_exists(payload)
+    fields = _provider_payload_value(payload, "fields")
+    schema_payload = _provider_payload_value(payload, "schema")
+    if fields is _MISSING and schema_payload is not _MISSING:
+        fields = (
+            _provider_payload_value(schema_payload, "fields")
+            if isinstance(schema_payload, Mapping)
+            else schema_payload
+        )
+    if fields is _MISSING and direct_mapping and isinstance(payload, Mapping):
+        if not payload:
+            fields = []
+        elif all(isinstance(value, (str, type)) for value in payload.values()):
+            fields = payload
+    if fields is _MISSING and hasattr(payload, "names"):
+        fields = payload
+
+    if explicit_exists is None and fields is _MISSING:
+        return None
+
+    target_identity = _provider_payload_value(payload, "identity", identity)
+    if target_identity is _MISSING or target_identity is None:
+        target_identity = identity
+    target_identity = str(target_identity)
+    revision = _provider_payload_value(payload, "revision")
+    metadata: dict[str, Any] = {
+        "identity": _safe_file_identity(target_identity),
+    }
+    for key in ("keys", "partitions", "capabilities"):
+        value = _provider_payload_value(payload, key)
+        if value is not _MISSING:
+            metadata[key] = value
+
+    diagnostics: list[Diagnostic] = []
+    if exists_diagnostic is not None:
+        diagnostics.append(exists_diagnostic)
+    payload_diagnostics = _provider_payload_value(payload, "diagnostics")
+    diagnostics.extend(
+        _diagnostics_from_payload(
+            payload_diagnostics,
+            max_diagnostics=max_diagnostics,
+        )
+    )
+
+    schema: NormalizedSchema | None = None
+    schema_error: str | None = None
+    if fields is not _MISSING:
+        try:
+            schema = _schema_from_inspection(target_identity, fields)
+        except (KeyError, TypeError, ValueError):
+            schema_error = "Target fields are malformed"
+
+    if schema_error is not None:
+        diagnostics.append(
+            Diagnostic(
+                "INFER_TARGET_UNSUPPORTED",
+                Severity.WARNING,
+                schema_error,
+                phase="inference",
+            )
+        )
+        # An explicit absent/unknown state remains authoritative, but a
+        # malformed present payload cannot prove a usable target contract.
+        if explicit_exists == "present" or explicit_exists is None:
+            explicit_exists = "unknown"
+    if schema is not None:
+        metadata["empty"] = not bool(schema.fields)
+        schema = _attach_target_metadata(schema, metadata, revision)
+        if explicit_exists in {"absent", "unknown"}:
+            # Keep only bounded provenance for untrusted schema-shaped data.
+            metadata["untrusted_schema_fingerprint"] = schema.fingerprint()
+            schema = None
+    elif explicit_exists is not None:
+        metadata["empty"] = True
+
+    if explicit_exists is None:
+        empty_fields = isinstance(fields, (list, tuple)) and not fields
+        explicit_exists = "present" if schema is not None or empty_fields else "unknown"
+    if explicit_exists == "unknown" and not any(
+        diagnostic.code == "INFER_TARGET_UNKNOWN" for diagnostic in diagnostics
+    ):
+        diagnostics.append(
+            Diagnostic(
+                "INFER_TARGET_UNKNOWN",
+                Severity.WARNING,
+                "Target existence could not be established",
+                phase="inference",
+            )
+        )
+    if explicit_exists != "present":
+        schema = None
+    return TargetObservation(
+        schema if schema is not None and schema.fields else None,
+        explicit_exists,
+        str(revision) if revision is not None else None,
+        inspector,
+        tuple(diagnostics[:max_diagnostics]),
+        metadata,
+    )
+
+
 def inspect_target(
     target: Any, *, identity: str = "target", max_diagnostics: int = 100
 ) -> TargetObservation:
@@ -211,72 +379,52 @@ def inspect_target(
             _safe_target_schema(target), "present", None, "normalized"
         )
     if isinstance(target, Mapping):
-        if not target:
-            return TargetObservation(
-                None,
-                "present",
-                None,
-                "mapping",
-                metadata={"empty": True, "identity": identity},
-            )
-        if "fields" in target:
-            fields = target["fields"]
-            target_identity = str(target.get("identity") or identity)
-        elif target and all(
-            isinstance(value, (str, type)) for value in target.values()
-        ):
-            fields = target
-            target_identity = identity
-        else:
-            fields = None
-            target_identity = identity
-        if fields is not None:
-            try:
-                schema = _schema_from_inspection(target_identity, fields)
-            except (KeyError, TypeError, ValueError):
-                return _unknown_target("INFER_TARGET_UNSUPPORTED")
-            revision = target.get("revision")
-            metadata = {
-                "empty": not bool(schema.fields),
-                "identity": target_identity,
-            }
-            for key in ("keys", "partitions", "capabilities"):
-                if key in target:
-                    metadata[key] = target[key]
-            schema = _attach_target_metadata(schema, metadata, revision)
-            return TargetObservation(
-                schema if schema.fields else None,
-                "present",
-                str(revision) if revision is not None else None,
-                "mapping",
-                (
-                    *_unknown_type_diagnostics(schema),
-                    *_diagnostics_from_payload(
-                        target.get("diagnostics"), max_diagnostics=max_diagnostics
+        observation = _normalize_provider_payload(
+            target,
+            identity=identity,
+            inspector="mapping",
+            max_diagnostics=max_diagnostics,
+            direct_mapping=True,
+        )
+        if observation is not None:
+            if observation.schema is not None:
+                observation = TargetObservation(
+                    observation.schema,
+                    observation.exists,
+                    observation.revision,
+                    observation.inspector,
+                    (
+                        *_unknown_type_diagnostics(observation.schema),
+                        *observation.diagnostics,
                     ),
-                ),
-                metadata=metadata,
-            )
+                    observation.metadata,
+                )
+            return observation
     if hasattr(target, "names"):
-        try:
-            schema = _schema_from_inspection(identity, target)
-            return TargetObservation(
-                schema if schema.fields else None,
-                "present",
-                None,
-                type(target).__name__,
-                metadata={"empty": not bool(schema.fields), "identity": identity},
-            )
-        except (KeyError, TypeError, ValueError):
-            return _unknown_target("INFER_TARGET_UNSUPPORTED")
+        observation = _normalize_provider_payload(
+            target,
+            identity=identity,
+            inspector=type(target).__name__,
+            max_diagnostics=max_diagnostics,
+        )
+        if observation is not None:
+            return observation
     if isinstance(target, bytes):
-        return _unknown_target("INFER_TARGET_UNSUPPORTED")
+        return _unknown_target(
+            "INFER_TARGET_UNSUPPORTED", identity=identity, inspector="bytes"
+        )
     if isinstance(target, (str, Path)):
         path = Path(target)
         if not path.exists():
-            return TargetObservation(None, "absent", None, "filesystem")
+            return TargetObservation(
+                None,
+                "absent",
+                None,
+                "filesystem",
+                metadata={"identity": _safe_file_identity(identity)},
+            )
         if not path.is_file():
-            return _unknown_target("INFER_TARGET_UNSUPPORTED")
+            return _unknown_target("INFER_TARGET_UNSUPPORTED", identity=identity)
         suffix = path.suffix.lower()
         if suffix in {".json", ".jsonl"}:
             result = infer_json(path, identity=identity)
@@ -289,14 +437,17 @@ def inspect_target(
             )
             inspector = "csv"
         else:
-            return _unknown_target("INFER_TARGET_UNSUPPORTED")
+            return _unknown_target("INFER_TARGET_UNSUPPORTED", identity=identity)
         return TargetObservation(
             result.schema if result.schema.fields else None,
             "present",
             None,
             inspector,
             result.diagnostics,
-            {"empty": not bool(result.schema.fields)},
+            {
+                "empty": not bool(result.schema.fields),
+                "identity": _safe_file_identity(identity),
+            },
         )
     inspect = getattr(target, "inspect_schema", None)
     if callable(inspect):
@@ -306,55 +457,37 @@ def inspect_target(
                 close = getattr(result, "close", None)
                 if callable(close):
                     close()
-                return _unknown_target("INFER_TARGET_UNSUPPORTED")
-            if isinstance(result, NormalizedSchema):
-                return TargetObservation(
-                    _safe_target_schema(result),
-                    "present",
-                    None,
-                    type(target).__name__,
+                return _unknown_target(
+                    "INFER_TARGET_UNSUPPORTED",
+                    identity=identity,
+                    inspector=type(target).__name__,
                 )
-            fields = (
-                result.get("fields", result)
-                if isinstance(result, Mapping)
-                else getattr(result, "fields", None)
+            observation = _normalize_provider_payload(
+                result,
+                identity=identity,
+                inspector=type(target).__name__,
+                max_diagnostics=max_diagnostics,
             )
-            if fields is not None:
-                target_identity = (
-                    str(result.get("identity") or identity)
-                    if isinstance(result, Mapping)
-                    else identity
-                )
-                schema = _schema_from_inspection(target_identity, fields)
-                payload_diagnostics = (
-                    _diagnostics_from_payload(
-                        result.get("diagnostics"), max_diagnostics=max_diagnostics
+            if observation is not None:
+                if observation.schema is not None:
+                    observation = TargetObservation(
+                        observation.schema,
+                        observation.exists,
+                        observation.revision,
+                        observation.inspector,
+                        (
+                            *_unknown_type_diagnostics(observation.schema),
+                            *observation.diagnostics,
+                        ),
+                        observation.metadata,
                     )
-                    if isinstance(result, Mapping)
-                    else ()
-                )
-                revision = (
-                    result.get("revision") if isinstance(result, Mapping) else None
-                )
-                metadata = {
-                    "empty": not bool(schema.fields),
-                    "identity": target_identity,
-                }
-                if isinstance(result, Mapping):
-                    for key in ("keys", "partitions", "capabilities"):
-                        if key in result:
-                            metadata[key] = result[key]
-                schema = _attach_target_metadata(schema, metadata, revision)
-                return TargetObservation(
-                    schema if schema.fields else None,
-                    "present",
-                    str(revision) if revision is not None else None,
-                    type(target).__name__,
-                    payload_diagnostics,
-                    metadata,
-                )
+                return observation
         except Exception:
-            return _unknown_target("INFER_TARGET_UNKNOWN")
+            return _unknown_target(
+                "INFER_TARGET_UNKNOWN",
+                identity=identity,
+                inspector=type(target).__name__,
+            )
     schema_attr = getattr(target, "schema", None)
     if callable(schema_attr):
         try:
@@ -363,44 +496,38 @@ def inspect_target(
                 close = getattr(schema_attr, "close", None)
                 if callable(close):
                     close()
-                return _unknown_target("INFER_TARGET_UNSUPPORTED")
+                return _unknown_target(
+                    "INFER_TARGET_UNSUPPORTED",
+                    identity=identity,
+                    inspector=type(target).__name__,
+                )
         except Exception:
             schema_attr = None
-    if isinstance(schema_attr, NormalizedSchema):
-        return TargetObservation(
-            _safe_target_schema(schema_attr),
-            "present",
-            None,
-            type(target).__name__,
-        )
-    if isinstance(schema_attr, Mapping):
-        fields = schema_attr.get("fields", schema_attr)
-        try:
-            schema = _schema_from_inspection(
-                str(schema_attr.get("identity") or identity), fields
+    observation = _normalize_provider_payload(
+        schema_attr,
+        identity=identity,
+        inspector=type(target).__name__,
+        max_diagnostics=max_diagnostics,
+        direct_mapping=True,
+    )
+    if observation is not None:
+        if observation.schema is not None:
+            observation = TargetObservation(
+                observation.schema,
+                observation.exists,
+                observation.revision,
+                observation.inspector,
+                (
+                    *_unknown_type_diagnostics(observation.schema),
+                    *observation.diagnostics,
+                ),
+                observation.metadata,
             )
-        except (KeyError, TypeError, ValueError):
-            return _unknown_target("INFER_TARGET_UNSUPPORTED")
-        metadata = {"empty": not bool(schema.fields), "identity": identity}
-        if isinstance(schema_attr, Mapping):
-            for key in ("keys", "partitions", "capabilities"):
-                if key in schema_attr:
-                    metadata[key] = schema_attr[key]
-        schema = _attach_target_metadata(
-            schema,
-            metadata,
-            schema_attr.get("revision") if isinstance(schema_attr, Mapping) else None,
-        )
-        revision = schema_attr.get("revision")
-        return TargetObservation(
-            schema if schema.fields else None,
-            "present",
-            str(revision) if revision is not None else None,
-            type(target).__name__,
-            _diagnostics_from_payload(schema_attr.get("diagnostics")),
-            metadata,
-        )
-    return _unknown_target()
+        return observation
+    return _unknown_target(
+        identity=identity,
+        inspector=type(target).__name__,
+    )
 
 
 async def inspect_target_async(
@@ -426,63 +553,38 @@ async def inspect_target_async(
             schema_attr = target.schema()
             if _inspect.isawaitable(schema_attr):
                 schema_attr = await schema_attr
-            if isinstance(schema_attr, NormalizedSchema):
-                return TargetObservation(
-                    _safe_target_schema(schema_attr),
-                    "present",
-                    None,
-                    type(target).__name__,
-                )
-            fields = (
-                schema_attr.get("fields", schema_attr)
-                if isinstance(schema_attr, Mapping)
-                else getattr(schema_attr, "fields", None)
+            observation = _normalize_provider_payload(
+                schema_attr,
+                identity=identity,
+                inspector=type(target).__name__,
+                max_diagnostics=max_diagnostics,
+                direct_mapping=True,
             )
-            if fields is not None:
-                try:
-                    target_identity = (
-                        str(schema_attr.get("identity") or identity)
-                        if isinstance(schema_attr, Mapping)
-                        else identity
+            if observation is not None:
+                if observation.schema is not None:
+                    observation = TargetObservation(
+                        observation.schema,
+                        observation.exists,
+                        observation.revision,
+                        observation.inspector,
+                        (
+                            *_unknown_type_diagnostics(observation.schema),
+                            *observation.diagnostics,
+                        ),
+                        observation.metadata,
                     )
-                    schema = _schema_from_inspection(target_identity, fields)
-                except (KeyError, TypeError, ValueError):
-                    return _unknown_target("INFER_TARGET_UNSUPPORTED")
-                revision = (
-                    schema_attr.get("revision")
-                    if isinstance(schema_attr, Mapping)
-                    else None
-                )
-                target_identity = (
-                    str(schema_attr.get("identity") or identity)
-                    if isinstance(schema_attr, Mapping)
-                    else identity
-                )
-                metadata = {
-                    "empty": not bool(schema.fields),
-                    "identity": target_identity,
-                }
-                if isinstance(schema_attr, Mapping):
-                    for key in ("keys", "partitions", "capabilities"):
-                        if key in schema_attr:
-                            metadata[key] = schema_attr[key]
-                schema = _attach_target_metadata(schema, metadata, revision)
-                return TargetObservation(
-                    schema if schema.fields else None,
-                    "present",
-                    str(revision) if revision is not None else (None),
-                    type(target).__name__,
-                    _diagnostics_from_payload(
-                        schema_attr.get("diagnostics")
-                        if isinstance(schema_attr, Mapping)
-                        else None,
-                        max_diagnostics=max_diagnostics,
-                    ),
-                    metadata,
-                )
+                return observation
         except Exception:
-            return _unknown_target("INFER_TARGET_UNKNOWN")
-        return _unknown_target("INFER_TARGET_UNSUPPORTED")
+            return _unknown_target(
+                "INFER_TARGET_UNKNOWN",
+                identity=identity,
+                inspector=type(target).__name__,
+            )
+        return _unknown_target(
+            "INFER_TARGET_UNSUPPORTED",
+            identity=identity,
+            inspector=type(target).__name__,
+        )
     kwargs: dict[str, Any] = {}
     if binding is not None:
         kwargs["binding"] = binding
@@ -495,110 +597,69 @@ async def inspect_target_async(
             result = inspect_schema()
         if _inspect.isawaitable(result):
             result = await result
-        if isinstance(result, NormalizedSchema):
-            return TargetObservation(
-                _safe_target_schema(result),
-                "present",
-                None,
-                type(target).__name__,
-            )
-        fields = (
-            result.get("fields", result)
-            if isinstance(result, Mapping)
-            else getattr(result, "fields", None)
+        observation = _normalize_provider_payload(
+            result,
+            identity=identity,
+            inspector=type(target).__name__,
+            max_diagnostics=max_diagnostics,
         )
-        if fields is not None:
-            try:
-                target_identity = (
-                    str(result.get("identity") or identity)
-                    if isinstance(result, Mapping)
-                    else identity
+        if observation is not None:
+            if observation.schema is not None:
+                observation = TargetObservation(
+                    observation.schema,
+                    observation.exists,
+                    observation.revision,
+                    observation.inspector,
+                    (
+                        *_unknown_type_diagnostics(observation.schema),
+                        *observation.diagnostics,
+                    ),
+                    observation.metadata,
                 )
-                schema = _schema_from_inspection(target_identity, fields)
-            except (KeyError, TypeError, ValueError):
-                return _unknown_target("INFER_TARGET_UNSUPPORTED")
-            payload_diagnostics = (
-                _diagnostics_from_payload(
-                    result.get("diagnostics"), max_diagnostics=max_diagnostics
-                )
-                if isinstance(result, Mapping)
-                else ()
-            )
-            revision = result.get("revision") if isinstance(result, Mapping) else None
-            metadata = {"empty": not bool(schema.fields), "identity": target_identity}
-            if isinstance(result, Mapping):
-                for key in ("keys", "partitions", "capabilities"):
-                    if key in result:
-                        metadata[key] = result[key]
-            schema = _attach_target_metadata(schema, metadata, revision)
-            return TargetObservation(
-                schema if schema.fields else None,
-                "present",
-                str(revision) if revision is not None else (None),
-                type(target).__name__,
-                payload_diagnostics,
-                metadata,
-            )
+            return observation
     except Exception:
-        return _unknown_target("INFER_TARGET_UNKNOWN")
+        return _unknown_target(
+            "INFER_TARGET_UNKNOWN",
+            identity=identity,
+            inspector=type(target).__name__,
+        )
     schema_attr = getattr(target, "schema", None)
     if callable(schema_attr):
         try:
             schema_attr = schema_attr()
             if _inspect.isawaitable(schema_attr):
                 schema_attr = await schema_attr
-            if isinstance(schema_attr, NormalizedSchema):
-                return TargetObservation(
-                    schema_attr,
-                    "present",
-                    None,
-                    type(target).__name__,
-                )
-            fields = (
-                schema_attr.get("fields", schema_attr)
-                if isinstance(schema_attr, Mapping)
-                else getattr(schema_attr, "fields", None)
+            observation = _normalize_provider_payload(
+                schema_attr,
+                identity=identity,
+                inspector=type(target).__name__,
+                max_diagnostics=max_diagnostics,
             )
-            if fields is not None:
-                try:
-                    target_identity = (
-                        str(schema_attr.get("identity") or identity)
-                        if isinstance(schema_attr, Mapping)
-                        else identity
+            if observation is not None:
+                if observation.schema is not None:
+                    observation = TargetObservation(
+                        observation.schema,
+                        observation.exists,
+                        observation.revision,
+                        observation.inspector,
+                        (
+                            *_unknown_type_diagnostics(observation.schema),
+                            *observation.diagnostics,
+                        ),
+                        observation.metadata,
                     )
-                    schema = _schema_from_inspection(target_identity, fields)
-                except (KeyError, TypeError, ValueError):
-                    return _unknown_target("INFER_TARGET_UNSUPPORTED")
-                revision = (
-                    schema_attr.get("revision")
-                    if isinstance(schema_attr, Mapping)
-                    else None
-                )
-                metadata = {
-                    "empty": not bool(schema.fields),
-                    "identity": target_identity,
-                }
-                if isinstance(schema_attr, Mapping):
-                    for key in ("keys", "partitions", "capabilities"):
-                        if key in schema_attr:
-                            metadata[key] = schema_attr[key]
-                schema = _attach_target_metadata(schema, metadata, revision)
-                return TargetObservation(
-                    schema if schema.fields else None,
-                    "present",
-                    str(revision) if revision is not None else None,
-                    type(target).__name__,
-                    _diagnostics_from_payload(
-                        schema_attr.get("diagnostics")
-                        if isinstance(schema_attr, Mapping)
-                        else None,
-                        max_diagnostics=max_diagnostics,
-                    ),
-                    metadata,
-                )
+                return observation
         except Exception:
-            return _unknown_target("INFER_TARGET_UNKNOWN")
-    return _unknown_target("INFER_TARGET_UNSUPPORTED")
+            return _unknown_target(
+                "INFER_TARGET_UNKNOWN",
+                identity=identity,
+                inspector=type(target).__name__,
+            )
+    return _unknown_target(
+        "INFER_TARGET_UNSUPPORTED",
+        identity=identity,
+        inspector=type(target).__name__,
+    )
 
 
 def infer_records_for_target(
@@ -784,6 +845,37 @@ async def infer_records_for_target_async(
 def _backfill_observation(
     source: InferenceResult, observation: TargetObservation
 ) -> InferenceResult:
+    if observation.exists != "present":
+        state = observation.exists
+        code = "INFER_TARGET_ABSENT" if state == "absent" else "INFER_TARGET_UNKNOWN"
+        return InferenceResult(
+            source.schema,
+            tuple(source.diagnostics)
+            + tuple(observation.diagnostics)
+            + (
+                Diagnostic(
+                    code,
+                    Severity.ERROR,
+                    (
+                        "Target is absent; target constraints were not applied"
+                        if state == "absent"
+                        else "Target existence is unknown; target constraints were not applied"
+                    ),
+                    phase="inference",
+                ),
+            ),
+            source.evidence,
+            {
+                **source.provenance,
+                "target_exists": state,
+                "target_validation": "not_performed",
+            },
+            source.rows,
+            source.replay,
+            source.observed_schema,
+            source.target_hypothesis,
+            observation,
+        )
     # Any target-side diagnostic means the target state is not qualified for
     # constraint propagation.  A warning is still a provider assertion that
     # the inspected schema may be incomplete or stale, so accepting it would
@@ -1507,6 +1599,28 @@ def check_write_compatibility(
     observation_metadata: dict[str, Any] = {}
     observed_revision: str | None = None
     if target_observation is not None:
+        if target_observation.exists != "present":
+            state = target_observation.exists
+            diagnostics = list(target_observation.diagnostics)
+            diagnostics.append(
+                Diagnostic(
+                    "INFER_TARGET_ABSENT"
+                    if state == "absent"
+                    else "INFER_TARGET_UNKNOWN",
+                    Severity.ERROR,
+                    (
+                        "Target is absent; compatibility is not qualified"
+                        if state == "absent"
+                        else "Target existence is unknown; compatibility is not qualified"
+                    ),
+                    phase="inference",
+                )
+            )
+            return WriteCompatibility(
+                False,
+                mode=mode,
+                diagnostics=tuple(diagnostics),
+            )
         # A schema accompanied by an inspector error is not a qualified
         # observation.  Do not let a useful-looking partial payload turn into
         # a proven write result.

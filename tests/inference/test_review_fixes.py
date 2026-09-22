@@ -65,6 +65,101 @@ def test_malformed_target_payloads_fail_closed_and_empty_is_explicit() -> None:
     assert empty.schema is None
 
 
+@pytest.mark.parametrize("exists", ["absent", "unknown"])
+def test_explicit_target_existence_precedes_schema_shape(exists: str) -> None:
+    observation = inspect_target(
+        {
+            "exists": exists,
+            "fields": [{"name": "id", "type": "integer"}],
+        }
+    )
+    assert observation.exists == exists
+    assert observation.schema is None
+    assert "untrusted_schema_fingerprint" in observation.metadata
+
+
+def test_explicit_empty_present_target_is_preserved() -> None:
+    observation = inspect_target({"exists": "present", "fields": []})
+    assert observation.exists == "present"
+    assert observation.schema is None
+    assert observation.metadata["empty"] is True
+
+
+@pytest.mark.parametrize("exists", ["absent", "unknown"])
+def test_sync_and_async_inspectors_preserve_explicit_target_existence(
+    exists: str,
+) -> None:
+    class SyncInspector:
+        def inspect_schema(self):
+            return {
+                "exists": exists,
+                "fields": [{"name": "id", "type": "integer"}],
+            }
+
+    class AsyncInspector:
+        async def inspect_schema(self):
+            return {
+                "exists": exists,
+                "fields": [{"name": "id", "type": "integer"}],
+            }
+
+    class SyncSchema:
+        def schema(self):
+            return {
+                "exists": exists,
+                "fields": [{"name": "id", "type": "integer"}],
+            }
+
+    class AsyncSchema:
+        async def schema(self):
+            return {
+                "exists": exists,
+                "fields": [{"name": "id", "type": "integer"}],
+            }
+
+    assert inspect_target(SyncInspector()).exists == exists
+    assert inspect_target(SyncSchema()).exists == exists
+    assert asyncio.run(inspect_target_async(AsyncInspector())).exists == exists
+    assert asyncio.run(inspect_target_async(AsyncSchema())).exists == exists
+
+
+def test_invalid_target_existence_is_unknown_on_the_wire() -> None:
+    for value in ("typo", "", None):
+        observation = etl.TargetObservation.from_dict(
+            {"exists": value, "schema": None, "metadata": {}}
+        )
+        assert observation.exists == "unknown"
+        assert "INFER_TARGET_UNKNOWN" in {
+            diagnostic.code for diagnostic in observation.diagnostics
+        }
+
+    with pytest.raises(ValueError, match="present, absent, unknown"):
+        etl.TargetObservation(None, "typo")
+
+
+@pytest.mark.parametrize("exists", ["absent", "unknown"])
+def test_non_present_targets_cannot_prove_compatibility_or_backfill(
+    exists: str,
+) -> None:
+    target_schema = NormalizedSchema("target", (NormalizedField("id", "integer"),))
+    observation = etl.TargetObservation(target_schema, exists, revision="r1")
+    source = NormalizedSchema("source", (NormalizedField("id", "string"),))
+
+    compatibility = check_write_compatibility(source, observation)
+    assert compatibility.status == "conflict"
+    assert "INFER_TARGET_" in next(
+        diagnostic.code for diagnostic in compatibility.diagnostics
+    )
+
+    result = etl.infer_records_for_target([{"id": "1"}], observation, retain_rows=True)
+    assert result.schema.fields[0].logical_type == "string"
+    assert result.provenance["target_validation"] == "not_performed"
+    assert result.provenance["target_exists"] == exists
+
+    solved = solve_backward_constraints(source, [observation])
+    assert solved.schema.fields[0].logical_type == "string"
+
+
 def test_target_inspection_error_cannot_backfill_partial_schema() -> None:
     result = etl.infer_records_for_target(
         [{"id": "7"}],

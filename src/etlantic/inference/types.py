@@ -12,10 +12,13 @@ from collections.abc import Iterable, Iterator, Mapping
 from dataclasses import dataclass
 from dataclasses import field as dataclass_field
 from itertools import chain, islice
-from typing import Any
+from typing import Any, Literal
 
 from etlantic.diagnostics import Diagnostic, Severity
 from etlantic.schema_drift import NormalizedSchema, json_safe_metadata
+
+TargetExistence = Literal["present", "absent", "unknown"]
+TARGET_EXISTENCE_STATES = frozenset(("present", "absent", "unknown"))
 
 
 def _wire_value(value: Any, *, key: str | None = None, depth: int = 0) -> Any:
@@ -434,6 +437,15 @@ class TargetObservation:
     diagnostics: tuple[Any, ...] = ()
     metadata: dict[str, Any] = dataclass_field(default_factory=dict)
 
+    def __post_init__(self) -> None:
+        if (
+            not isinstance(self.exists, str)
+            or self.exists not in TARGET_EXISTENCE_STATES
+        ):
+            raise ValueError(
+                "target observation exists must be one of: present, absent, unknown"
+            )
+
     @property
     def identity(self) -> str | None:
         """Stable target identity when an inspected schema provides one."""
@@ -465,17 +477,36 @@ class TargetObservation:
         metadata = _wire_mapping(payload.get("metadata") or {})
         if payload.get("identity") is not None:
             metadata.setdefault("identity", str(payload["identity"]))
-        return cls(
+        diagnostics = [
+            _diagnostic_from_dict(item) for item in (payload.get("diagnostics") or ())
+        ]
+        raw_exists = payload.get("exists")
+        if not isinstance(raw_exists, str) or raw_exists not in TARGET_EXISTENCE_STATES:
+            diagnostics.append(
+                Diagnostic(
+                    "INFER_TARGET_UNKNOWN",
+                    Severity.WARNING,
+                    "Target existence state is missing or invalid",
+                    phase="inference",
+                )
+            )
+            exists: TargetExistence = "unknown"
+        else:
+            exists = raw_exists
+        restored_schema = (
             NormalizedSchema.from_dict(schema_payload)
             if isinstance(schema_payload, dict)
-            else None,
-            str(payload.get("exists") or "unknown"),
+            else None
+        )
+        if exists != "present" and restored_schema is not None:
+            metadata["untrusted_schema_fingerprint"] = restored_schema.fingerprint()
+            restored_schema = None
+        return cls(
+            restored_schema,
+            exists,
             str(payload["revision"]) if payload.get("revision") is not None else None,
             payload.get("inspector"),
-            tuple(
-                _diagnostic_from_dict(item)
-                for item in (payload.get("diagnostics") or ())
-            ),
+            tuple(diagnostics),
             metadata,
         )
 
