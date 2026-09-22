@@ -168,15 +168,40 @@ def _schema_from_inspection(identity: str, fields: Any) -> NormalizedSchema:
         raise TypeError("target fields must be a mapping or sequence")
     values = list(fields)
     if all(isinstance(field, NormalizedField) for field in values):
+        names = [field.name for field in values]
+        if any(not isinstance(name, str) or not name for name in names):
+            raise ValueError("target field names must be non-empty strings")
+        if len(names) != len(set(names)):
+            raise ValueError("target field names must be unique")
+        if any(
+            not isinstance(flag, bool)
+            for field in values
+            for flag in (field.required, field.nullable)
+        ):
+            raise TypeError("target field required and nullable flags must be booleans")
         return NormalizedSchema(identity=identity, fields=tuple(values))
     normalized: list[Any] = []
+    names: set[str] = set()
     for field in values:
         if isinstance(field, Mapping):
             item = dict(field)
             if "logical_type" not in item and "type" in item:
                 item["logical_type"] = item["type"]
-            if not item.get("name") or item.get("logical_type") is None:
+            field_name = item.get("name")
+            if not isinstance(field_name, str) or not field_name:
+                raise ValueError("target field name must be a non-empty string")
+            if field_name in names:
+                raise ValueError("target field names must be unique")
+            names.add(field_name)
+            if item.get("logical_type") is None:
                 raise ValueError("target field requires name and logical type")
+            if any(
+                flag in item and not isinstance(item[flag], bool)
+                for flag in ("required", "nullable")
+            ):
+                raise TypeError(
+                    "target field required and nullable flags must be booleans"
+                )
             item["logical_type"] = _target_logical_type(item["logical_type"])
             normalized.append(item)
             continue
@@ -184,17 +209,25 @@ def _schema_from_inspection(identity: str, fields: Any) -> NormalizedSchema:
         logical_type = getattr(field, "logical_type", None)
         if logical_type is None:
             logical_type = getattr(field, "type", None)
-        if field_name is not None and logical_type is not None:
-            normalized.append(
-                {
-                    "name": str(field_name),
-                    "logical_type": _target_logical_type(logical_type),
-                    "required": bool(getattr(field, "required", True)),
-                    "nullable": bool(getattr(field, "nullable", False)),
-                }
+        if not isinstance(field_name, str) or not field_name or logical_type is None:
+            raise TypeError(
+                "target fields must contain named fields with logical types"
             )
-            continue
-        raise TypeError("target fields must contain field mappings or objects")
+        if field_name in names:
+            raise ValueError("target field names must be unique")
+        names.add(field_name)
+        required = getattr(field, "required", True)
+        nullable = getattr(field, "nullable", False)
+        if not isinstance(required, bool) or not isinstance(nullable, bool):
+            raise TypeError("target field required and nullable flags must be booleans")
+        normalized.append(
+            {
+                "name": field_name,
+                "logical_type": _target_logical_type(logical_type),
+                "required": required,
+                "nullable": nullable,
+            }
+        )
     return normalize_schema_from_fields(
         normalized, identity=identity, preserve_decimal=True
     )

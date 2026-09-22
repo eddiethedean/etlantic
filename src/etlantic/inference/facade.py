@@ -710,7 +710,8 @@ class InferredDataset:
         ):
             target_for_check: Any = target_observation
             if (
-                target_observation.schema is not None
+                target_observation.exists == "present"
+                and target_observation.schema is not None
                 and not target_observation.diagnostics
                 and target_observation.inspector in {"provided", "normalized"}
             ):
