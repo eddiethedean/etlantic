@@ -265,21 +265,189 @@ def rebind_definition(
             "identity": str(raw_target["identity"]),
             "revision": raw_target.get("revision"),
             "write_mode": str(raw_target.get("write_mode", "append")),
-            "requirements": _wire_value(
-                dict(raw_target.get("requirements") or {})
-            ),
+            "requirements": _wire_value(dict(raw_target.get("requirements") or {})),
             "observed": bool(raw_target.get("observed", False)),
         }
+    if source_payload is not None and source_payload.get("kind") == "file":
+        _validate_rebound_file_source(definition, source_payload)
+    if target_payload is not None:
+        _validate_rebound_target(definition, target_payload)
     nodes: list[NodeDefinition] = []
     for node in definition.nodes:
         bindings = dict(node.bindings)
+        metadata = dict(node.metadata)
         if source_payload is not None and node.kind == "source":
             bindings["source"] = source_payload
+            metadata = _update_binding_metadata(metadata, source_payload=source_payload)
         if target_payload is not None and node.kind == "sink":
             bindings["target"] = target_payload
-        nodes.append(replace(node, bindings=bindings))
-    updated = replace(definition, nodes=tuple(nodes), fingerprint=None)
+            metadata = _update_binding_metadata(metadata, target_payload=target_payload)
+        nodes.append(replace(node, bindings=bindings, metadata=metadata))
+    contracts = tuple(
+        replace(
+            contract,
+            metadata=_update_binding_metadata(
+                contract.metadata,
+                source_payload=source_payload
+                if isinstance(contract.metadata.get("etlantic.inference"), Mapping)
+                and "source_binding" in contract.metadata["etlantic.inference"]
+                else None,
+            ),
+        )
+        for contract in definition.contracts
+    )
+    updated_metadata = _update_binding_metadata(
+        definition.metadata,
+        source_payload=source_payload,
+        target_payload=target_payload,
+    )
+    updated = replace(
+        definition,
+        contracts=contracts,
+        nodes=tuple(nodes),
+        metadata=updated_metadata,
+        fingerprint=None,
+    )
     return updated.with_fingerprint(pipeline_fingerprint(updated))
+
+
+def _update_binding_metadata(
+    metadata: Mapping[str, Any],
+    *,
+    source_payload: Mapping[str, Any] | None = None,
+    target_payload: Mapping[str, Any] | None = None,
+) -> dict[str, Any]:
+    """Keep duplicated inference binding metadata aligned with node bindings."""
+    updated = dict(metadata)
+    raw_inference = updated.get("etlantic.inference")
+    inference = dict(raw_inference) if isinstance(raw_inference, Mapping) else {}
+    if source_payload is not None:
+        inference["source_binding"] = dict(source_payload)
+    if target_payload is not None:
+        inference["target_binding"] = dict(target_payload)
+        inference["target_requirements"] = target_payload.get("requirements")
+        inference["target_revision"] = target_payload.get("revision")
+        inference["write_mode"] = target_payload.get("write_mode")
+    if (
+        source_payload is not None
+        or target_payload is not None
+        or raw_inference is not None
+    ):
+        updated["etlantic.inference"] = inference
+    return updated
+
+
+def _contract_for_node(definition: PipelineDefinition, node: NodeDefinition) -> Any:
+    if node.contract_id is None:
+        raise ValueError(
+            "INFER_REBIND_CONTRACT: rebound node does not declare a source contract"
+        )
+    for contract in definition.contracts:
+        if (
+            contract.identity == node.contract_id
+            or contract.authoring_id == node.contract_id
+        ):
+            return contract
+    raise ValueError(
+        f"INFER_REBIND_CONTRACT: rebound node references unknown contract {node.contract_id!r}"
+    )
+
+
+def _normalized_schema_from_contract(contract: Any) -> Any:
+    from etlantic.schema_drift import NormalizedField, NormalizedSchema
+
+    return NormalizedSchema(
+        contract.identity,
+        tuple(
+            NormalizedField(
+                field.name,
+                field.type,
+                required=field.required,
+                nullable=field.nullable,
+            )
+            for field in contract.fields
+        ),
+    )
+
+
+def _schema_signature(schema: Any) -> tuple[tuple[str, str, bool, bool], ...]:
+    return tuple(
+        sorted(
+            (
+                field.name,
+                field.logical_type,
+                field.required,
+                field.nullable,
+            )
+            for field in schema.fields
+        )
+    )
+
+
+def _validate_rebound_file_source(
+    definition: PipelineDefinition, binding: Mapping[str, Any]
+) -> None:
+    """Verify a local file rebinding still satisfies every source contract."""
+    try:
+        dataset = reopen_source_binding(binding)
+        rebound_schema = dataset.schema
+    except Exception as exc:
+        raise ValueError(
+            "INFER_SOURCE_REBIND: rebound file could not be inspected safely"
+        ) from exc
+    source_nodes = [node for node in definition.nodes if node.kind == "source"]
+    if not source_nodes:
+        raise ValueError("INFER_SOURCE_REBIND: definition has no source node")
+    for node in source_nodes:
+        contract = _contract_for_node(definition, node)
+        expected_schema = _normalized_schema_from_contract(contract)
+        if _schema_signature(rebound_schema) != _schema_signature(expected_schema):
+            raise ValueError(
+                "INFER_SOURCE_SCHEMA_MISMATCH: rebound source schema does not "
+                f"match contract {contract.identity!r}"
+            )
+
+
+def _validate_rebound_target(
+    definition: PipelineDefinition, binding: Mapping[str, Any]
+) -> None:
+    """Verify an observed target rebinding against the final sink contract."""
+    if not binding.get("observed"):
+        return
+    requirements = binding.get("requirements")
+    if not isinstance(requirements, Mapping) or not requirements:
+        raise ValueError(
+            "INFER_TARGET_BINDING: observed target rebinding requires a schema"
+        )
+    from etlantic.inference.targets import check_write_compatibility
+    from etlantic.schema_drift import NormalizedSchema
+
+    try:
+        target_schema = NormalizedSchema.from_dict(dict(requirements))
+    except (KeyError, TypeError, ValueError) as exc:
+        raise ValueError(
+            "INFER_TARGET_BINDING: observed target schema is malformed"
+        ) from exc
+    sink_nodes = [node for node in definition.nodes if node.kind == "sink"]
+    if not sink_nodes:
+        raise ValueError("INFER_TARGET_REBIND: definition has no sink node")
+    for node in sink_nodes:
+        contract = _contract_for_node(definition, node)
+        source_schema = _normalized_schema_from_contract(contract)
+        compatibility = check_write_compatibility(
+            source_schema,
+            target_schema,
+            mode=str(binding.get("write_mode", "append")),
+        )
+        if not compatibility.compatible or compatibility.casts:
+            codes = sorted({item.code for item in compatibility.diagnostics})
+            if compatibility.casts:
+                codes.append("INFER_RUNTIME_CONVERSION")
+            raise ValueError(
+                "INFER_TARGET_WRITE_UNQUALIFIED: rebound target is not "
+                f"compatible with contract {contract.identity!r} "
+                f"({', '.join(codes) or 'unknown'})"
+            )
 
 
 def _validate_source_binding_shape(binding: Mapping[str, Any]) -> None:
@@ -356,7 +524,9 @@ def validate_target_binding(binding: Mapping[str, Any]) -> None:
         _validate_target_requirements(requirements)
         if binding.get("observed", False):
             capabilities = requirements.get("metadata", {}).get("capabilities")
-            if not _supports_write_mode(capabilities, str(binding.get("write_mode", "append"))):
+            if not _supports_write_mode(
+                capabilities, str(binding.get("write_mode", "append"))
+            ):
                 raise ValueError(
                     "INFER_TARGET_BINDING: target does not advertise the requested "
                     f"write mode {binding.get('write_mode', 'append')!r}"
@@ -389,9 +559,7 @@ def _validate_file_options(options: Mapping[str, Any]) -> None:
                 )
         elif name == "null_values" and (
             not isinstance(value, (list, tuple, set, frozenset))
-            or not all(
-                isinstance(item, (str, int, float, bool)) for item in value
-            )
+            or not all(isinstance(item, (str, int, float, bool)) for item in value)
         ):
             raise ValueError(
                 "INFER_SOURCE_BINDING: file option 'null_values' must be a sequence"

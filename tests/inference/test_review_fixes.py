@@ -569,6 +569,17 @@ def test_file_bindings_are_row_free_and_rebindable(tmp_path) -> None:
     assert resolved.path == first.resolve()
 
 
+def test_rebinding_rejects_a_source_with_a_different_schema(tmp_path) -> None:
+    first = tmp_path / "first.csv"
+    second = tmp_path / "second.csv"
+    first.write_text("id\n1\n", encoding="utf-8")
+    second.write_text("name\nAlice\n", encoding="utf-8")
+
+    definition = etl.read_csv(str(first), name="events").definition()
+    with pytest.raises(ValueError, match="INFER_SOURCE_SCHEMA_MISMATCH"):
+        etl.rebind_definition(definition, source=str(second))
+
+
 def test_file_binding_reopens_with_parser_options(tmp_path) -> None:
     path = tmp_path / "events.csv"
     path.write_text("id;name\n1;one\n", encoding="utf-8")
@@ -597,11 +608,78 @@ def test_rebinding_preserves_valid_binding_mappings(tmp_path) -> None:
     assert rebound.nodes[-1].bindings["target"]["kind"] == "target"
 
 
+def test_rebinding_updates_embedded_binding_metadata(tmp_path) -> None:
+    first = tmp_path / "first.csv"
+    second = tmp_path / "second.csv"
+    first.write_text("id\n1\n", encoding="utf-8")
+    second.write_text("id\n2\n", encoding="utf-8")
+
+    definition = etl.read_csv(str(first), name="events").definition()
+    rebound = etl.rebind_definition(
+        definition,
+        source=str(second),
+        target=definition.nodes[-1].bindings["target"],
+    )
+    source_binding = rebound.nodes[0].bindings["source"]
+    target_binding = rebound.nodes[-1].bindings["target"]
+
+    assert (
+        rebound.nodes[0].metadata["etlantic.inference"]["source_binding"]
+        == source_binding
+    )
+    assert (
+        rebound.contracts[0].metadata["etlantic.inference"]["source_binding"]
+        == source_binding
+    )
+    assert rebound.metadata["etlantic.inference"]["target_binding"] == target_binding
+    assert (
+        rebound.nodes[-1].metadata["etlantic.inference"]["target_requirements"]
+        == target_binding["requirements"]
+    )
+
+
+def test_rebinding_rejects_an_incompatible_target() -> None:
+    definition = etl.from_records([{"id": 1}], name="orders").definition()
+    target_schema = NormalizedSchema("sink", (NormalizedField("id", "string"),))
+    target = {
+        "version": 1,
+        "kind": "target",
+        "identity": "sink",
+        "revision": "r1",
+        "write_mode": "append",
+        "observed": True,
+        "requirements": {
+            **target_schema.to_dict(),
+            "metadata": {"capabilities": {"write_modes": ["append"]}},
+        },
+    }
+
+    with pytest.raises(ValueError, match="INFER_TARGET_WRITE_UNQUALIFIED"):
+        etl.rebind_definition(definition, target=target)
+
+
+def test_rebinding_rejects_a_target_that_needs_an_unmaterialized_cast() -> None:
+    definition = etl.from_records([{"id": "1"}], name="orders").definition()
+    target_schema = NormalizedSchema("sink", (NormalizedField("id", "integer"),))
+    target = {
+        "version": 1,
+        "kind": "target",
+        "identity": "sink",
+        "write_mode": "append",
+        "observed": True,
+        "requirements": {
+            **target_schema.to_dict(),
+            "metadata": {"capabilities": {"write_modes": ["append"]}},
+        },
+    }
+
+    with pytest.raises(ValueError, match="INFER_RUNTIME_CONVERSION"):
+        etl.rebind_definition(definition, target=target)
+
+
 def test_backfill_preserves_the_durable_source_binding() -> None:
     target = NormalizedSchema("target", (NormalizedField("id", "integer"),))
-    dataset = etl.from_records([{"id": "12"}], name="orders").backfill_from(
-        target
-    )
+    dataset = etl.from_records([{"id": "12"}], name="orders").backfill_from(target)
 
     assert dataset.definition().nodes[0].bindings["source"]["kind"] == "records"
 
@@ -633,9 +711,9 @@ def test_jsonl_rebinding_detects_line_format(tmp_path) -> None:
     path.write_text('{"id": 1}\n{"id": 2}\n', encoding="utf-8")
 
     definition = etl.from_records([{"id": 1}], name="events").definition()
-    binding = etl.rebind_definition(definition, source=str(path)).nodes[0].bindings[
-        "source"
-    ]
+    binding = (
+        etl.rebind_definition(definition, source=str(path)).nodes[0].bindings["source"]
+    )
     assert binding["format"] == "jsonl"
     assert etl.reopen_source_binding(binding).preview() == [{"id": 1}, {"id": 2}]
 
@@ -753,7 +831,9 @@ def test_rebinding_rejects_malformed_source_and_target_bindings() -> None:
         etl.rebind_definition(definition, target={"version": 1})
 
 
-def test_loaded_bindings_validate_parser_options_and_target_requirements(tmp_path) -> None:
+def test_loaded_bindings_validate_parser_options_and_target_requirements(
+    tmp_path,
+) -> None:
     path = tmp_path / "events.csv"
     path.write_text("id\n1\n", encoding="utf-8")
     definition = etl.read_csv(path, name="events").definition()
@@ -838,7 +918,9 @@ def test_target_write_mode_must_be_advertised() -> None:
         name="orders",
         write_mode="merge",
     )
-    assert merge_dataset.definition().nodes[-1].bindings["target"]["write_mode"] == "merge"
+    assert (
+        merge_dataset.definition().nodes[-1].bindings["target"]["write_mode"] == "merge"
+    )
 
 
 def test_loaded_malformed_bindings_fail_closed() -> None:
