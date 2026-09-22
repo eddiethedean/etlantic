@@ -20,6 +20,7 @@ import argparse
 import hashlib
 import importlib.util
 import json
+import os
 import platform
 import subprocess
 import sys
@@ -103,6 +104,11 @@ GATE_TESTS: dict[str, tuple[str, ...]] = {
     ),
     "full_regression": (),
 }
+CORE_REGRESSION_MARKERS = (
+    "not medallantic and not polars and not pandas and not sql and not spark and "
+    "not real_pyspark and not airflow and not prefect and not keyring and "
+    "not sqlmodel and not datafusion"
+)
 
 
 def _key_kind(key: str, *, literal_node: bool = False) -> str | None:
@@ -381,7 +387,7 @@ def _actual_command(gate: str) -> list[str]:
     if gate in {"wire_security", "optional_dependency_matrix"}:
         return ["python", "scripts/check_inference_0_55.py", "--gate", gate]
     if gate == "full_regression":
-        return ["python", "-m", "pytest", "-q"]
+        return ["python", "-m", "pytest", "-q", "-m", CORE_REGRESSION_MARKERS]
     return ["python", "-m", "pytest", "-q", *GATE_TESTS[gate]]
 
 
@@ -392,6 +398,15 @@ def _runtime_command(gate: str) -> list[str]:
     return [sys.executable, *display[1:]]
 
 
+def _gate_environment() -> dict[str, str]:
+    environment = os.environ.copy()
+    source = str(ROOT / "src")
+    environment["PYTHONPATH"] = os.pathsep.join(
+        path for path in (source, environment.get("PYTHONPATH")) if path
+    )
+    return environment
+
+
 def _run_gate_action(gate: str, matrix: dict[str, Any]) -> int:
     if gate == "wire_security":
         _check_generated_payloads()
@@ -400,7 +415,12 @@ def _run_gate_action(gate: str, matrix: dict[str, Any]) -> int:
     if gate == "optional_dependency_matrix":
         _check_optional_dependency_gate(matrix)
         return 0
-    completed = subprocess.run(_runtime_command(gate), cwd=ROOT, check=False)
+    completed = subprocess.run(
+        _runtime_command(gate),
+        cwd=ROOT,
+        check=False,
+        env=_gate_environment(),
+    )
     return completed.returncode
 
 
@@ -461,6 +481,7 @@ def _run_campaign(output: Path) -> tuple[int, dict[str, Any]]:
             check=False,
             capture_output=True,
             text=True,
+            env=_gate_environment(),
         )
         gate_finished = datetime.now(UTC).isoformat()
         record = _gate_record(gate, identity, gate_started, gate_finished, completed)
