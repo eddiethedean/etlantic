@@ -327,6 +327,7 @@ def replace_nodes(
         provenance=defn.provenance,
         extensions=defn.extensions,
         metadata=defn.metadata,
+        runtime_source_leases=defn.runtime_source_leases,
     )
     return updated.with_fingerprint(pipeline_fingerprint(updated))
 
@@ -359,6 +360,7 @@ def remove_node(defn: PipelineDefinition, name: str) -> PipelineDefinition:
         provenance=defn.provenance,
         extensions=defn.extensions,
         metadata=defn.metadata,
+        runtime_source_leases=defn.runtime_source_leases,
     )
     return updated.with_fingerprint(pipeline_fingerprint(updated))
 
@@ -414,6 +416,7 @@ def connect(
         provenance=defn.provenance,
         extensions=defn.extensions,
         metadata=defn.metadata,
+        runtime_source_leases=defn.runtime_source_leases,
     )
     return updated.with_fingerprint(pipeline_fingerprint(updated))
 
@@ -451,6 +454,7 @@ def disconnect(
         provenance=defn.provenance,
         extensions=defn.extensions,
         metadata=defn.metadata,
+        runtime_source_leases=defn.runtime_source_leases,
     )
     return updated.with_fingerprint(pipeline_fingerprint(updated))
 
