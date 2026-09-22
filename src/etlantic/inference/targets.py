@@ -154,7 +154,7 @@ def _schema_from_inspection(identity: str, fields: Any) -> NormalizedSchema:
             for name, logical_type in fields.items()
         ]
     elif fields is None:
-        fields = []
+        raise TypeError("target fields must be a mapping or sequence")
     elif hasattr(fields, "names") and isinstance(
         getattr(fields, "names", None), (list, tuple)
     ):
@@ -270,39 +270,63 @@ def _normalize_provider_payload(
         )
 
     explicit_exists, exists_diagnostic = _provider_exists(payload)
-    fields = _provider_payload_value(payload, "fields")
+    raw_schema_mapping = False
+    if direct_mapping and isinstance(payload, Mapping):
+        schema_payload = payload.get("schema", _MISSING)
+        schema_is_envelope = schema_payload is not _MISSING and not isinstance(
+            schema_payload, (str, type)
+        )
+        raw_schema_mapping = (
+            "exists" not in payload
+            and "fields" not in payload
+            and not schema_is_envelope
+            and all(isinstance(value, (str, type)) for value in payload.values())
+        )
+
+    fields = (
+        payload if raw_schema_mapping else _provider_payload_value(payload, "fields")
+    )
     schema_payload = _provider_payload_value(payload, "schema")
     if fields is _MISSING and schema_payload is not _MISSING:
-        fields = (
-            _provider_payload_value(schema_payload, "fields")
-            if isinstance(schema_payload, Mapping)
-            else schema_payload
-        )
-    if fields is _MISSING and direct_mapping and isinstance(payload, Mapping):
-        if not payload:
-            fields = []
-        elif all(isinstance(value, (str, type)) for value in payload.values()):
-            fields = payload
+        if isinstance(schema_payload, Mapping):
+            nested_fields = _provider_payload_value(schema_payload, "fields")
+            if nested_fields is not _MISSING:
+                fields = nested_fields
+            elif not schema_payload:
+                fields = []
+            elif all(
+                isinstance(value, (str, type)) for value in schema_payload.values()
+            ):
+                fields = schema_payload
+        else:
+            fields = schema_payload
     if fields is _MISSING and hasattr(payload, "names"):
         fields = payload
 
     if explicit_exists is None and fields is _MISSING:
         return None
 
-    target_identity = _provider_payload_value(payload, "identity", identity)
-    if target_identity is _MISSING or target_identity is None:
+    if raw_schema_mapping:
         target_identity = identity
-    target_identity = str(target_identity)
-    revision = _provider_payload_value(payload, "revision")
-    if revision is _MISSING:
         revision = None
-    metadata: dict[str, Any] = {
-        "identity": _safe_file_identity(target_identity),
-    }
-    for key in ("keys", "partitions", "capabilities"):
-        value = _provider_payload_value(payload, key)
-        if value is not _MISSING:
-            metadata[key] = value
+        metadata: dict[str, Any] = {
+            "identity": _safe_file_identity(identity),
+        }
+    else:
+        target_identity = _provider_payload_value(payload, "identity", identity)
+        if target_identity is _MISSING or target_identity is None:
+            target_identity = identity
+        target_identity = str(target_identity)
+        revision = _provider_payload_value(payload, "revision")
+        if revision is _MISSING:
+            revision = None
+        metadata = {
+            "identity": _safe_file_identity(target_identity),
+        }
+        for key in ("keys", "partitions", "capabilities"):
+            value = _provider_payload_value(payload, key)
+            if value is not _MISSING:
+                metadata[key] = value
 
     diagnostics: list[Diagnostic] = []
     if exists_diagnostic is not None:
@@ -347,8 +371,9 @@ def _normalize_provider_payload(
         metadata["empty"] = True
 
     if explicit_exists is None:
-        empty_fields = isinstance(fields, (list, tuple)) and not fields
-        explicit_exists = "present" if schema is not None or empty_fields else "unknown"
+        explicit_exists = (
+            "present" if schema is not None and schema.fields else "unknown"
+        )
     if explicit_exists == "unknown" and not any(
         diagnostic.code == "INFER_TARGET_UNKNOWN" for diagnostic in diagnostics
     ):

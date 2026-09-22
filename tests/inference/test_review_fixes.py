@@ -60,9 +60,40 @@ def test_provider_metadata_is_json_safe_and_python_types_are_normalized() -> Non
 def test_malformed_target_payloads_fail_closed_and_empty_is_explicit() -> None:
     assert inspect_target({"fields": [1]}).exists == "unknown"
     assert inspect_target({"fields": "abc"}).exists == "unknown"
-    empty = inspect_target({"fields": []})
+    empty = inspect_target({"exists": "present", "fields": []})
     assert empty.exists == "present"
     assert empty.schema is None
+
+
+@pytest.mark.parametrize(
+    "payload", [{}, {"fields": []}, {"fields": None}, {"schema": None}]
+)
+def test_unqualified_empty_target_payloads_are_unknown(payload) -> None:
+    observation = inspect_target(payload)
+    assert observation.exists == "unknown"
+    assert "INFER_TARGET_UNKNOWN" in {
+        diagnostic.code for diagnostic in observation.diagnostics
+    }
+
+
+def test_target_envelopes_do_not_become_raw_schema_mappings() -> None:
+    present = inspect_target({"exists": "present"})
+    assert present.exists == "present"
+    assert present.schema is None
+    assert present.metadata["empty"] is True
+
+    absent = inspect_target({"exists": "absent"})
+    assert absent.exists == "absent"
+    assert absent.schema is None
+
+    raw_schema = inspect_target({"revision": "INTEGER"})
+    assert raw_schema.exists == "present"
+    assert raw_schema.revision is None
+    assert [field.name for field in raw_schema.schema.fields] == ["revision"]
+
+    nested_schema = inspect_target({"schema": {"id": "INTEGER"}})
+    assert nested_schema.exists == "present"
+    assert [field.name for field in nested_schema.schema.fields] == ["id"]
 
 
 @pytest.mark.parametrize("exists", ["absent", "unknown"])
@@ -668,6 +699,23 @@ def test_provider_schema_mappings_preserve_schema_and_missing_revisions() -> Non
         assert observation.schema.fields[0].logical_type == "integer"
         assert observation.revision is None
         json.dumps(observation.to_dict())
+
+
+@pytest.mark.parametrize("async_mode", [False, True])
+def test_async_and_sync_empty_provider_payloads_fail_closed(async_mode: bool) -> None:
+    class Provider:
+        def inspect_schema(self):
+            return {"fields": None}
+
+    target = Provider()
+    if async_mode:
+        observation = asyncio.run(inspect_target_async(target))
+    else:
+        observation = inspect_target(target)
+    assert observation.exists == "unknown"
+    assert "INFER_TARGET_UNKNOWN" in {
+        diagnostic.code for diagnostic in observation.diagnostics
+    }
 
 
 def test_async_target_inspection_redacts_normalized_schema_identities() -> None:
@@ -1449,7 +1497,10 @@ def test_target_write_mode_must_be_advertised() -> None:
 
 def test_invalid_target_write_mode_fails_without_a_target_schema() -> None:
     dataset = etl.from_records_for_target(
-        [{"id": 1}], {"fields": []}, name="orders", write_mode="garbage"
+        [{"id": 1}],
+        {"exists": "present", "fields": []},
+        name="orders",
+        write_mode="garbage",
     )
 
     with pytest.raises(ValueError, match="INFER_TARGET_BINDING"):
