@@ -267,6 +267,44 @@ def _provider_exists(
     )
 
 
+async def _provider_exists_async(
+    payload: Any,
+) -> tuple[str | None, Diagnostic | None]:
+    """Read an explicit provider existence state in an async context."""
+    try:
+        if isinstance(payload, Mapping):
+            raw = payload.get("exists", _MISSING)
+        else:
+            raw = getattr(payload, "exists", _MISSING)
+            if callable(raw):
+                raw = raw()
+        if _inspect.isawaitable(raw):
+            raw = await raw
+    except Exception:
+        return (
+            "unknown",
+            Diagnostic(
+                "INFER_TARGET_UNKNOWN",
+                Severity.WARNING,
+                "Provider target existence could not be established",
+                phase="inference",
+            ),
+        )
+    if raw is _MISSING:
+        return None, None
+    if isinstance(raw, str) and raw in TARGET_EXISTENCE_STATES:
+        return raw, None
+    return (
+        "unknown",
+        Diagnostic(
+            "INFER_TARGET_UNKNOWN",
+            Severity.WARNING,
+            "Provider returned an invalid target existence state",
+            phase="inference",
+        ),
+    )
+
+
 def _provider_state_observation(
     state: str,
     *,
@@ -490,13 +528,21 @@ def inspect_target(
             _safe_target_schema(target), "present", None, "normalized"
         )
     if isinstance(target, Mapping):
-        observation = _normalize_provider_payload(
-            target,
-            identity=identity,
-            inspector="mapping",
-            max_diagnostics=max_diagnostics,
-            direct_mapping=True,
-        )
+        try:
+            observation = _normalize_provider_payload(
+                target,
+                identity=identity,
+                inspector="mapping",
+                max_diagnostics=max_diagnostics,
+                direct_mapping=True,
+            )
+        except Exception:
+            return _unknown_target(
+                "INFER_TARGET_UNKNOWN",
+                identity=identity,
+                inspector="mapping",
+                message="Target mapping could not be inspected",
+            )
         if observation is not None:
             if observation.schema is not None:
                 observation = TargetObservation(
@@ -540,12 +586,29 @@ def inspect_target(
             inspector = "csv"
         else:
             return _unknown_target("INFER_TARGET_UNSUPPORTED", identity=identity)
+        diagnostics = tuple(result.diagnostics) + _unknown_type_diagnostics(
+            result.schema
+        )
+        if diagnostics:
+            metadata: dict[str, Any] = {
+                "identity": _safe_file_identity(identity),
+            }
+            if result.schema.fields:
+                metadata["untrusted_schema_fingerprint"] = result.schema.fingerprint()
+            return TargetObservation(
+                None,
+                "unknown",
+                None,
+                inspector,
+                diagnostics,
+                metadata,
+            )
         return TargetObservation(
             result.schema if result.schema.fields else None,
             "present",
             None,
             inspector,
-            result.diagnostics,
+            (),
             {
                 "empty": not bool(result.schema.fields),
                 "identity": _safe_file_identity(identity),
@@ -703,7 +766,7 @@ async def inspect_target_async(
             target, identity=identity, max_diagnostics=max_diagnostics
         )
     try:
-        adapter_exists, adapter_diagnostic = _provider_exists(target)
+        adapter_exists, adapter_diagnostic = await _provider_exists_async(target)
     except Exception:
         return _unknown_target(
             "INFER_TARGET_UNKNOWN", identity=identity, inspector=type(target).__name__

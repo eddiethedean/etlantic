@@ -176,24 +176,22 @@ def test_provider_existence_probe_failures_fail_closed() -> None:
         dataset.definition()
 
 
-def test_async_provider_existence_probe_is_closed_and_fails_closed() -> None:
+def test_async_provider_existence_probe_is_awaited() -> None:
     class Result:
         def __init__(self):
             self.fields = [{"name": "id", "type": "integer"}]
 
+    class Provider:
         async def exists(self):
             return "present"
 
-    class Provider:
         async def inspect_schema(self):
             return Result()
 
     observation = asyncio.run(inspect_target_async(Provider()))
-    assert observation.exists == "unknown"
-    assert observation.schema is None
-    assert "INFER_TARGET_UNKNOWN" in {
-        diagnostic.code for diagnostic in observation.diagnostics
-    }
+    assert observation.exists == "present"
+    assert observation.schema is not None
+    assert observation.schema.fields[0].name == "id"
 
 
 def test_adapter_existence_precedes_schema_inspection() -> None:
@@ -276,6 +274,20 @@ def test_provider_attribute_failures_become_unknown(async_mode: bool) -> None:
         }
 
 
+def test_mapping_access_failures_become_unknown() -> None:
+    class BrokenMapping(dict):
+        def get(self, key, default=None):
+            raise PermissionError("target mapping access denied")
+
+    observation = inspect_target(BrokenMapping())
+
+    assert observation.exists == "unknown"
+    assert observation.schema is None
+    assert "INFER_TARGET_UNKNOWN" in {
+        diagnostic.code for diagnostic in observation.diagnostics
+    }
+
+
 @pytest.mark.parametrize("exists", ["absent", "unknown"])
 def test_explicit_target_existence_precedes_schema_shape(exists: str) -> None:
     observation = inspect_target(
@@ -348,6 +360,37 @@ def test_invalid_target_existence_is_unknown_on_the_wire() -> None:
         etl.TargetObservation(None, "typo")
 
 
+def test_malformed_target_schema_is_unknown_on_the_wire() -> None:
+    observation = etl.TargetObservation.from_dict(
+        {
+            "exists": "present",
+            "schema": {
+                "identity": "target",
+                "fields": "not-a-field-list",
+            },
+            "metadata": {"capabilities": {"write_modes": ["append"]}},
+        }
+    )
+
+    assert observation.exists == "unknown"
+    assert observation.schema is None
+    assert "INFER_TARGET_UNSUPPORTED" in {
+        diagnostic.code for diagnostic in observation.diagnostics
+    }
+    source = NormalizedSchema("source", ())
+    assert check_write_compatibility(source, observation).status == "conflict"
+
+
+def test_non_present_target_wire_payload_does_not_serialize_schema() -> None:
+    schema = NormalizedSchema("target", (NormalizedField("id", "integer"),))
+    observation = etl.TargetObservation(schema, "unknown", revision="r1")
+
+    payload = observation.to_dict()
+
+    assert payload["schema"] is None
+    assert "untrusted_schema_fingerprint" in payload["metadata"]
+
+
 @pytest.mark.parametrize("exists", ["absent", "unknown"])
 def test_non_present_targets_cannot_prove_compatibility_or_backfill(
     exists: str,
@@ -381,6 +424,17 @@ def test_target_inspection_error_cannot_backfill_partial_schema() -> None:
     )
     assert result.schema.fields[0].logical_type == "string"
     assert "PROVIDER_READ_FAILED" in {item.code for item in result.diagnostics}
+
+
+def test_malformed_filesystem_targets_are_unknown(tmp_path) -> None:
+    malformed_json = tmp_path / "target.json"
+    malformed_json.write_text("{not-json", encoding="utf-8")
+
+    observation = inspect_target(malformed_json)
+
+    assert observation.exists == "unknown"
+    assert observation.schema is None
+    assert observation.diagnostics
 
 
 def test_lossy_target_cast_is_not_applied_to_preview_rows() -> None:

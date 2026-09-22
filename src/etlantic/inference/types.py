@@ -456,15 +456,23 @@ class TargetObservation:
         )
 
     def to_dict(self) -> dict[str, Any]:
+        metadata = dict(self.metadata)
+        schema = self.schema
+        if self.exists != "present":
+            if schema is not None:
+                metadata.setdefault(
+                    "untrusted_schema_fingerprint", schema.fingerprint()
+                )
+            schema = None
         return {
             "version": 1,
-            "schema": self.schema.to_dict() if self.schema is not None else None,
+            "schema": schema.to_dict() if schema is not None else None,
             "identity": _wire_value(self.identity, key="identity"),
             "exists": self.exists,
             "revision": self.revision,
             "inspector": _wire_value(self.inspector, key="inspector"),
             "diagnostics": [_diagnostic_dict(d) for d in self.diagnostics],
-            "metadata": _wire_value(self.metadata),
+            "metadata": _wire_value(metadata),
         }
 
     @classmethod
@@ -493,11 +501,38 @@ class TargetObservation:
             exists: TargetExistence = "unknown"
         else:
             exists = raw_exists
-        restored_schema = (
-            NormalizedSchema.from_dict(schema_payload)
-            if isinstance(schema_payload, dict)
-            else None
-        )
+        malformed_schema = False
+        restored_schema = None
+        if schema_payload is not None:
+            if not isinstance(schema_payload, dict):
+                malformed_schema = True
+            else:
+                if schema_payload.get("identity") is not None:
+                    metadata.setdefault("identity", str(schema_payload["identity"]))
+                fields_payload = schema_payload.get("fields")
+                malformed_schema = not isinstance(fields_payload, list) or any(
+                    not isinstance(item, dict)
+                    or not isinstance(item.get("name"), str)
+                    or not item.get("name")
+                    or not isinstance(item.get("logical_type"), str)
+                    or not item.get("logical_type")
+                    for item in fields_payload
+                )
+                if not malformed_schema:
+                    try:
+                        restored_schema = NormalizedSchema.from_dict(schema_payload)
+                    except (KeyError, TypeError, ValueError):
+                        malformed_schema = True
+        if malformed_schema:
+            diagnostics.append(
+                Diagnostic(
+                    "INFER_TARGET_UNSUPPORTED",
+                    Severity.WARNING,
+                    "Target schema payload is malformed",
+                    phase="inference",
+                )
+            )
+            exists = "unknown"
         if exists != "present" and restored_schema is not None:
             metadata["untrusted_schema_fingerprint"] = restored_schema.fingerprint()
             restored_schema = None
