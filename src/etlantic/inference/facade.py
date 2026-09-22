@@ -705,10 +705,27 @@ class InferredDataset:
         ]
         contract_ids = [contract.identity for contract in contracts]
         target_observation = self._result.target_observation
-        if target_observation is not None and target_observation.schema is not None:
+        if target_observation is not None:
             target_for_check: Any = target_observation
-            if target_observation.inspector in {"provided", "normalized"}:
-                target_for_check = target_observation.schema
+            if (
+                target_observation.exists == "present"
+                and target_observation.schema is not None
+                and not target_observation.diagnostics
+                and target_observation.inspector in {"provided", "normalized"}
+                and isinstance(target_observation.metadata, Mapping)
+                and isinstance(target_observation.schema.metadata, Mapping)
+            ):
+                schema_metadata = {
+                    **target_observation.schema.metadata,
+                    **target_observation.metadata,
+                }
+                if target_observation.revision is not None:
+                    schema_metadata["revision"] = target_observation.revision
+                target_for_check = NormalizedSchema(
+                    target_observation.schema.identity,
+                    target_observation.schema.fields,
+                    schema_metadata,
+                )
             compatibility = check_write_compatibility(
                 state_schemas[-1],
                 target_for_check,
@@ -885,7 +902,13 @@ class InferredDataset:
             validate_source_binding_against_definition(definition, self._source_binding)
         from etlantic.authoring.serialize import pipeline_fingerprint
 
-        return definition.with_fingerprint(pipeline_fingerprint(definition))
+        fingerprinted_definition = definition.with_fingerprint(
+            pipeline_fingerprint(definition)
+        )
+        # Source validation and compatibility construction can take time; fence
+        # the final artifact against a target revision change during that work.
+        self._check_target_revision()
+        return fingerprinted_definition
 
     def rebind_source(
         self, source: str, *, format: str | None = None
@@ -900,8 +923,13 @@ class InferredDataset:
     def _check_target_revision(self) -> None:
         reader = self._target_revision_reader
         expected = self._target_binding.get("revision")
-        if reader is None or expected is None:
+        if reader is None:
             return
+        if expected is None:
+            raise ValueError(
+                "INFER_TARGET_REVISION_UNKNOWN: target revision is missing; "
+                "publication cannot be fenced"
+            )
         try:
             current = reader()
             if hasattr(current, "__await__"):
