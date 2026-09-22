@@ -8,6 +8,7 @@ import json
 import math
 import operator
 import re
+import weakref
 from collections.abc import Callable, Mapping
 from dataclasses import replace
 from decimal import Decimal, DecimalException
@@ -32,6 +33,7 @@ from etlantic.transform.column import ColumnExpr, coerce_column
 from etlantic.transform.dataframe import FrameAction, FrameExpr
 
 from .durable import (
+    _retain_file_source,
     _safe_file_identity,
     file_binding,
     provider_binding,
@@ -40,8 +42,8 @@ from .durable import (
     register_source_factory,
     source_factory,
     target_binding,
-    validate_file_binding_against_definition,
     validate_source_binding,
+    validate_source_binding_against_definition,
     validate_target_binding,
 )
 from .records import _path_identity, infer_csv, infer_records
@@ -486,10 +488,12 @@ class InferredDataset:
         target_binding_payload: Mapping[str, Any] | None = None,
         target_revision_reader: Callable[[], Any] | None = None,
         target_write_mode: str = "append",
+        source_owner: Any | None = None,
     ):
         self._result = result
         self._root_schema = root_schema or result.schema
         self._source_binding = dict(source_binding or records_binding(name))
+        self._source_owner = source_owner
         self.name = (
             _safe_file_identity(name)
             if self._source_binding.get("kind") == "file"
@@ -512,8 +516,8 @@ class InferredDataset:
             )
         )
         self._frame = frame or FrameExpr(
-            relation_id=name,
-            root_input=name,
+            relation_id=self.name,
+            root_input=self.name,
             schema_fields=tuple(f.name for f in result.schema.fields),
         )
 
@@ -869,9 +873,12 @@ class InferredDataset:
                     "target_binding": self._target_binding,
                 },
             },
+            runtime_source_leases=(
+                (self._source_owner,) if self._source_owner is not None else ()
+            ),
         )
-        if source_kind == "file" and not _allow_unresolved_source:
-            validate_file_binding_against_definition(definition, self._source_binding)
+        if source_kind in {"file", "records"} and not _allow_unresolved_source:
+            validate_source_binding_against_definition(definition, self._source_binding)
         from etlantic.authoring.serialize import pipeline_fingerprint
 
         return definition.with_fingerprint(pipeline_fingerprint(definition))
@@ -1018,6 +1025,7 @@ class InferredDataset:
             source_binding=self._source_binding,
             target_binding_payload=self._target_binding,
             target_revision_reader=self._target_revision_reader,
+            source_owner=self._source_owner,
         )
 
     def filter(self, condition: ColumnExpr) -> InferredDataset:
@@ -1241,8 +1249,14 @@ class InferredDataset:
             result,
             name=self.name,
             frame=self._frame,
-            root_schema=self._root_schema,
+            # Keep the observed source schema in ``result.observed_schema``
+            # while using the target-guided schema as the frame root.  This
+            # lets definition() emit an executable cast from the observed
+            # source contract into the backfilled contract before applying
+            # any subsequent actions.
+            root_schema=result.schema,
             source_binding=self._source_binding,
+            source_owner=self._source_owner,
             target_binding_payload=target_binding(
                 None,
                 identity=target_schema.identity,
@@ -1338,11 +1352,14 @@ def from_records(
         records, hints=hints, limits=limits, identity=name, retain_rows=True
     )
     factory_key = _records_factory_key(name, source_key, records, source_factory)
-    _register_records_source(factory_key, records, source_factory)
+    source_owner = _register_records_source(
+        factory_key, records, source_factory, schema=result.schema
+    )
     return InferredDataset(
         result,
         name=name,
         source_binding=records_binding(name, factory_key=factory_key),
+        source_owner=source_owner,
     )
 
 
@@ -1371,11 +1388,17 @@ def from_records_for_target(
         revision_reader=revision_reader,
     )
     factory_key = _records_factory_key(name, source_key, records, source_factory)
-    _register_records_source(factory_key, records, source_factory)
+    source_owner = _register_records_source(
+        factory_key,
+        records,
+        source_factory,
+        schema=result.observed_schema or result.schema,
+    )
     return InferredDataset(
         result,
         name=name,
         source_binding=records_binding(name, factory_key=factory_key),
+        source_owner=source_owner,
         target_revision_reader=revision_reader,
         target_write_mode=write_mode,
     )
@@ -1462,24 +1485,57 @@ def _canonical_snapshot_value(value: Any) -> Any:
     }
 
 
+class _SnapshotOwner:
+    """Keep an implicit records snapshot alive only with its dataset."""
+
+    __slots__ = ("__weakref__", "snapshot")
+
+    def __init__(self, snapshot: tuple[dict[str, Any], ...]):
+        self.snapshot = snapshot
+
+
+class _SnapshotFactory:
+    """Weak-owner factory used for implicit, process-local record snapshots."""
+
+    __slots__ = ("_key", "_owner_ref")
+
+    def __init__(self, key: str, owner: _SnapshotOwner):
+        self._key = key
+        self._owner_ref = weakref.ref(owner, self._owner_released)
+
+    def _owner_released(self, _owner_ref: weakref.ReferenceType[Any]) -> None:
+        from .durable import unregister_source_factory
+
+        unregister_source_factory(self._key, expected_factory=self)
+
+    def __call__(self) -> list[dict[str, Any]]:
+        owner = self._owner_ref()
+        if owner is None:
+            raise ValueError("implicit records source is no longer available")
+        return [dict(row) for row in owner.snapshot]
+
+
 def _register_records_source(
     factory_key: str,
     records: Any,
     factory: Callable[[], Any] | None,
-) -> None:
+    *,
+    schema: NormalizedSchema,
+) -> _SnapshotOwner | None:
     if factory is not None:
-        register_source_factory(factory_key, factory)
-        return
+        register_source_factory(factory_key, factory, schema=schema)
+        return None
     if isinstance(records, Mapping):
         snapshot = (dict(records),)
     elif isinstance(records, (list, tuple)):
         snapshot = tuple(dict(row) for row in records if isinstance(row, Mapping))
     else:
-        return
+        return None
+    owner = _SnapshotOwner(snapshot)
     register_source_factory(
-        factory_key,
-        lambda snapshot=snapshot: [dict(row) for row in snapshot],
+        factory_key, _SnapshotFactory(factory_key, owner), schema=schema
     )
+    return owner
 
 
 def read_csv(
@@ -1493,6 +1549,14 @@ def read_csv(
     source_identity = (
         _path_identity("csv", path) if name == "csv" else _safe_file_identity(name)
     )
+    source_binding = file_binding(
+        "csv",
+        path,
+        identity=source_identity,
+        options=options,
+        hints=hints,
+        limits=limits,
+    )
     return InferredDataset(
         infer_csv(
             path,
@@ -1503,12 +1567,8 @@ def read_csv(
             retain_rows=True,
         ),
         name=name,
-        source_binding=file_binding(
-            "csv",
-            path,
-            identity=source_identity,
-            options=options,
-        ),
+        source_binding=source_binding,
+        source_owner=_retain_file_source(source_binding["uri"], path),
     )
 
 
@@ -1524,6 +1584,14 @@ def read_json(
     from .records import infer_json
 
     source_identity = _path_identity("jsonl" if lines else "json", path)
+    source_binding = file_binding(
+        "jsonl" if lines else "json",
+        path,
+        identity=source_identity,
+        lines=lines,
+        hints=hints,
+        limits=limits,
+    )
     return InferredDataset(
         infer_json(
             path,
@@ -1534,12 +1602,8 @@ def read_json(
             retain_rows=True,
         ),
         name=name,
-        source_binding=file_binding(
-            "jsonl" if lines else "json",
-            path,
-            identity=source_identity,
-            lines=lines,
-        ),
+        source_binding=source_binding,
+        source_owner=_retain_file_source(source_binding["uri"], path),
     )
 
 

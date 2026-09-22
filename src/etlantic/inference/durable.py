@@ -2,23 +2,46 @@
 
 from __future__ import annotations
 
+import datetime as _dt
 import hashlib
 import os
 import re
+import weakref
 from collections.abc import Callable, Mapping
 from dataclasses import replace
+from decimal import Decimal
 from pathlib import Path
 from typing import Any
 
 from etlantic.authoring.definition import NodeDefinition, PipelineDefinition
 from etlantic.authoring.serialize import pipeline_fingerprint
+from etlantic.plan.freeze import mutable_copy
 
-from .types import TargetObservation, _wire_value
+from .types import InferenceLimits, TargetObservation, _wire_value
 
 BINDING_VERSION = 1
 
 _SOURCE_FACTORIES: dict[str, Callable[[], Any]] = {}
-_FILE_SOURCES: dict[str, Path] = {}
+_SOURCE_SCHEMAS: dict[str, tuple[tuple[str, str, bool, bool], ...]] = {}
+
+
+class _FileSourceEntry:
+    __slots__ = ("leases", "path", "persistent")
+
+    def __init__(self, path: Path, *, persistent: bool = False) -> None:
+        self.path = path
+        self.leases: set[weakref.ReferenceType[_FileSourceLease]] = set()
+        self.persistent = persistent
+
+
+class _FileSourceLease:
+    __slots__ = ("__weakref__", "reference")
+
+    def __init__(self, reference: str) -> None:
+        self.reference = reference
+
+
+_FILE_SOURCES: dict[str, _FileSourceEntry] = {}
 _FILE_REFERENCE_PREFIX = "file-ref:"
 _ABSOLUTE_PATH_FRAGMENT = re.compile(
     r"(?:^|[^A-Za-z0-9/:])(?:[A-Za-z]:[\\/]|/(?!/)|~[\\/])"
@@ -42,7 +65,7 @@ def _safe_file_identity(identity: str) -> str:
 class ResolvedFileSource:
     """Resolved row-free file source details for a host-side reopen."""
 
-    __slots__ = ("format", "lines", "options", "path")
+    __slots__ = ("format", "hints", "limits", "lines", "options", "path")
 
     def __init__(
         self,
@@ -50,11 +73,15 @@ class ResolvedFileSource:
         format: str,
         options: Mapping[str, Any],
         lines: bool = False,
+        hints: Mapping[str, str] | None = None,
+        limits: Mapping[str, Any] | None = None,
     ) -> None:
         self.path = path
         self.format = format
         self.options = dict(options)
         self.lines = lines
+        self.hints = dict(hints or {})
+        self.limits = dict(limits or {})
 
 
 _FILE_OPTION_KEYS = frozenset(
@@ -72,6 +99,97 @@ _SOURCE_FORMATS = frozenset({"csv", "tsv", "json", "jsonl"})
 _TARGET_WRITE_MODES = frozenset(
     {"append", "overwrite", "merge", "upsert", "partition_replace"}
 )
+_HINT_ALIASES = {
+    "int": "integer",
+    "integer": "integer",
+    "float": "float",
+    "double": "float",
+    "number": "float",
+    "decimal": "decimal",
+    "str": "string",
+    "string": "string",
+    "bool": "boolean",
+    "boolean": "boolean",
+    "bytes": "binary",
+    "binary": "binary",
+    "date": "date",
+    "datetime": "datetime",
+    "dict": "object",
+    "object": "object",
+    "list": "array",
+    "array": "array",
+}
+_HINT_TYPES = (
+    (bool, "boolean"),
+    (int, "integer"),
+    (float, "float"),
+    (str, "string"),
+    (bytes, "binary"),
+    (Decimal, "decimal"),
+    (_dt.date, "date"),
+    (_dt.datetime, "datetime"),
+    (dict, "object"),
+    (list, "array"),
+)
+
+
+def _normalize_inference_hint(value: Any) -> str | None:
+    if isinstance(value, str):
+        return _HINT_ALIASES.get(value.casefold())
+    for hint_type, normalized in _HINT_TYPES:
+        if value is hint_type:
+            return normalized
+    return None
+
+
+def _safe_inference_hints(hints: Mapping[str, Any] | None) -> dict[str, str]:
+    if hints is None or not isinstance(hints, Mapping):
+        return {}
+    safe: dict[str, str] = {}
+    for key, value in hints.items():
+        normalized = _normalize_inference_hint(value)
+        if normalized is not None:
+            safe[str(key)] = normalized
+    return safe
+
+
+def _safe_inference_limits(
+    limits: InferenceLimits | Mapping[str, Any] | None,
+) -> dict[str, Any] | None:
+    if limits is None:
+        return None
+    if isinstance(limits, InferenceLimits):
+        return limits.to_dict()
+    if isinstance(limits, Mapping):
+        raw = dict(limits)
+        try:
+            return InferenceLimits.from_dict(raw).to_dict()
+        except (TypeError, ValueError):
+            return None
+    return None
+
+
+def _validate_inference_hints(hints: Any) -> None:
+    if not isinstance(hints, Mapping):
+        raise ValueError("INFER_SOURCE_BINDING: inference hints must be a mapping")
+    for key, value in hints.items():
+        if not isinstance(key, str) or not key:
+            raise ValueError(
+                "INFER_SOURCE_BINDING: inference hint field names must be strings"
+            )
+        if _normalize_inference_hint(value) is None:
+            raise ValueError(
+                f"INFER_SOURCE_BINDING: unsupported inference hint for {key!r}"
+            )
+
+
+def _validate_inference_limits(limits: Any) -> None:
+    if not isinstance(limits, Mapping):
+        raise ValueError("INFER_SOURCE_BINDING: inference limits must be a mapping")
+    try:
+        InferenceLimits.from_dict(dict(limits))
+    except (TypeError, ValueError) as exc:
+        raise ValueError("INFER_SOURCE_BINDING: inference limits are malformed") from exc
 
 
 def _safe_file_options(options: Mapping[str, Any] | None) -> dict[str, Any]:
@@ -85,36 +203,59 @@ def _safe_file_options(options: Mapping[str, Any] | None) -> dict[str, Any]:
         if key not in _FILE_OPTION_KEYS:
             continue
         if key == "null_values":
-            if isinstance(value, (list, tuple, set, frozenset)):
-                values = list(value)
-                if isinstance(value, (set, frozenset)):
-                    values.sort(key=str)
-                safe[key] = [str(item) for item in values[:256]]
-            continue
+            raise ValueError(
+                "INFER_SOURCE_BINDING: null_values cannot cross the durable "
+                "boundary because they may contain source or secret values"
+            )
         if value is None or isinstance(value, (bool, int, str)):
             safe[key] = value
     return safe
 
 
-def register_source_factory(key: str, factory: Callable[[], Any]) -> None:
+def register_source_factory(
+    key: str,
+    factory: Callable[[], Any],
+    *,
+    schema: Any | None = None,
+) -> None:
     """Register a host-owned source factory for a records binding.
 
     Only the key is serialized.  The callable remains process-local and is
-    deliberately never walked by the definition serializer.
+    deliberately never walked by the definition serializer. ``schema`` is
+    normalized metadata used by static definition validation; registering a
+    factory never executes it.
     """
     if not key or not callable(factory):
         raise ValueError("source factory registrations require a key and callable")
-    _SOURCE_FACTORIES[str(key)] = factory
+    normalized_key = str(key)
+    _SOURCE_FACTORIES[normalized_key] = factory
+    if schema is None:
+        _SOURCE_SCHEMAS.pop(normalized_key, None)
+    else:
+        _SOURCE_SCHEMAS[normalized_key] = _schema_signature(schema)
 
 
-def unregister_source_factory(key: str) -> None:
+def unregister_source_factory(
+    key: str, *, expected_factory: Callable[[], Any] | None = None
+) -> None:
     """Remove a process-local source factory registration."""
-    _SOURCE_FACTORIES.pop(str(key), None)
+    normalized_key = str(key)
+    current = _SOURCE_FACTORIES.get(normalized_key)
+    if expected_factory is not None and current is not expected_factory:
+        return
+    _SOURCE_FACTORIES.pop(normalized_key, None)
+    _SOURCE_SCHEMAS.pop(normalized_key, None)
 
 
 def source_factory(key: str) -> Callable[[], Any] | None:
     """Return a registered source factory, if one exists in this process."""
     return _SOURCE_FACTORIES.get(str(key))
+
+
+def _source_factory_schema(
+    key: str,
+) -> tuple[tuple[str, str, bool, bool], ...] | None:
+    return _SOURCE_SCHEMAS.get(str(key))
 
 
 def records_binding(identity: str, *, factory_key: str | None = None) -> dict[str, Any]:
@@ -134,8 +275,13 @@ def file_binding(
     identity: str,
     options: Mapping[str, Any] | None = None,
     lines: bool | None = None,
+    hints: Mapping[str, Any] | None = None,
+    limits: InferenceLimits | Mapping[str, Any] | None = None,
 ) -> dict[str, Any]:
     """Create a stable, row-free local file binding."""
+    safe_options = _safe_file_options(options)
+    safe_hints = _safe_inference_hints(hints)
+    safe_limits = _safe_inference_limits(limits)
     reference = _file_reference(path)
     payload: dict[str, Any] = {
         "version": BINDING_VERSION,
@@ -143,10 +289,14 @@ def file_binding(
         "format": format,
         "identity": _safe_file_identity(str(identity)),
         "uri": reference,
-        "options": _safe_file_options(options),
+        "options": safe_options,
     }
     if lines is not None:
         payload["lines"] = bool(lines)
+    if safe_hints:
+        payload["hints"] = safe_hints
+    if safe_limits is not None:
+        payload["limits"] = safe_limits
     return payload
 
 
@@ -157,12 +307,58 @@ def _file_reference(path: str | Path) -> str:
     resolved = Path(path).expanduser().resolve()
     digest = hashlib.sha256(str(resolved).encode("utf-8")).hexdigest()[:32]
     reference = f"{_FILE_REFERENCE_PREFIX}{digest}"
-    _FILE_SOURCES[reference] = resolved
+    _FILE_SOURCES.setdefault(reference, _FileSourceEntry(resolved))
     return reference
 
 
+def _release_file_lease(
+    reference: str, token: weakref.ReferenceType[_FileSourceLease]
+) -> None:
+    entry = _FILE_SOURCES.get(reference)
+    if entry is None:
+        return
+    entry.leases.discard(token)
+    if not entry.leases and not entry.persistent:
+        _FILE_SOURCES.pop(reference, None)
+
+
+def _retain_file_source(
+    reference: str, path: str | Path | None = None
+) -> _FileSourceLease:
+    """Return a host-local lease for a registered file reference."""
+    normalized_reference = str(reference)
+    entry = _FILE_SOURCES.get(normalized_reference)
+    if entry is None and path is not None:
+        entry = _FileSourceEntry(Path(path).expanduser().resolve())
+        _FILE_SOURCES[normalized_reference] = entry
+    if entry is None:
+        raise ValueError("INFER_SOURCE_UNRESOLVABLE: source file is unavailable")
+    lease = _FileSourceLease(normalized_reference)
+    token = weakref.ref(
+        lease,
+        lambda released, ref=normalized_reference: _release_file_lease(
+            ref, released
+        ),
+    )
+    entry.leases.add(token)
+    return lease
+
+
+def _persist_file_source(reference: str) -> None:
+    """Keep an explicitly rebound file usable through its returned binding."""
+    entry = _FILE_SOURCES.get(str(reference))
+    if entry is not None:
+        entry.persistent = True
+
+
+def unregister_file_source(reference: str) -> None:
+    """Release a process-local file reference registration."""
+    _FILE_SOURCES.pop(str(reference), None)
+
+
 def _registered_file_path(reference: str) -> Path | None:
-    return _FILE_SOURCES.get(reference)
+    entry = _FILE_SOURCES.get(reference)
+    return entry.path if entry is not None else None
 
 
 def provider_binding(identity: str, provider: str) -> dict[str, Any]:
@@ -220,6 +416,8 @@ def _source_binding_for_rebind(
                 identity=str(raw.get("identity") or raw["uri"]),
                 options=options if isinstance(options, Mapping) else None,
                 lines=(bool(raw["lines"]) if "lines" in raw else None),
+                hints=raw.get("hints") if isinstance(raw.get("hints"), Mapping) else None,
+                limits=raw.get("limits") if isinstance(raw.get("limits"), Mapping) else None,
             )
         return provider_binding(
             str(raw.get("identity") or "provider"), str(raw["provider"])
@@ -280,10 +478,14 @@ def rebind_definition(
             "requirements": _wire_value(dict(raw_target.get("requirements") or {})),
             "observed": bool(raw_target.get("observed", False)),
         }
+    source_lease: _FileSourceLease | None = None
     if source_payload is not None and source_payload.get("kind") == "file":
+        source_lease = _retain_file_source(str(source_payload["uri"]))
         _validate_rebound_file_source(definition, source_payload)
     if target_payload is not None:
         _validate_rebound_target(definition, target_payload)
+    if source_lease is not None:
+        _persist_file_source(str(source_payload["uri"]))
     nodes: list[NodeDefinition] = []
     for node in definition.nodes:
         bindings = dict(node.bindings)
@@ -319,6 +521,10 @@ def rebind_definition(
         nodes=tuple(nodes),
         metadata=updated_metadata,
         fingerprint=None,
+        runtime_source_leases=(
+            definition.runtime_source_leases
+            + ((source_lease,) if source_lease is not None else ())
+        ),
     )
     return updated.with_fingerprint(pipeline_fingerprint(updated))
 
@@ -396,28 +602,65 @@ def _schema_signature(schema: Any) -> tuple[tuple[str, str, bool, bool], ...]:
     )
 
 
-def _validate_rebound_file_source(
-    definition: PipelineDefinition, binding: Mapping[str, Any]
+def validate_source_binding_against_definition(
+    definition: PipelineDefinition,
+    binding: Mapping[str, Any],
+    *,
+    source_node: NodeDefinition | None = None,
 ) -> None:
-    """Verify a local file rebinding still satisfies every source contract."""
-    try:
-        dataset = reopen_source_binding(binding)
-        rebound_schema = dataset.schema
-    except Exception as exc:
-        raise ValueError(
-            "INFER_SOURCE_REBIND: rebound file could not be inspected safely"
-        ) from exc
-    source_nodes = [node for node in definition.nodes if node.kind == "source"]
+    """Verify a source binding still satisfies its source contract.
+
+    The binding shape and host-side resolver are validated separately by
+    ``validate_source_binding``. This check performs the definition-aware
+    schema comparison needed when a serialized definition is loaded again.
+    File bindings are reopened only to inspect their normalized schema. Record
+    bindings use schema metadata captured at registration time, so validation
+    never executes an arbitrary source factory.
+    """
+    source_nodes = (
+        [source_node]
+        if source_node is not None
+        else [node for node in definition.nodes if node.kind == "source"]
+    )
     if not source_nodes:
         raise ValueError("INFER_SOURCE_REBIND: definition has no source node")
+    kind = binding.get("kind")
+    if kind == "records":
+        rebound_signature = _source_factory_schema(
+            str(binding.get("factory_key") or "")
+        )
+        if rebound_signature is None:
+            raise ValueError(
+                "INFER_SOURCE_SCHEMA_UNVERIFIED: records source factory has no "
+                "registered schema metadata"
+            )
+    elif kind == "file":
+        try:
+            dataset = reopen_source_binding(binding)
+            rebound_signature = _schema_signature(dataset.schema)
+        except Exception as exc:
+            raise ValueError(
+                "INFER_SOURCE_REBIND: rebound source could not be inspected safely"
+            ) from exc
+    else:
+        raise ValueError(
+            "INFER_SOURCE_UNSUPPORTED: source binding requires an explicit rebind"
+        )
     for node in source_nodes:
         contract = _contract_for_node(definition, node)
         expected_schema = _normalized_schema_from_contract(contract)
-        if _schema_signature(rebound_schema) != _schema_signature(expected_schema):
+        if rebound_signature != _schema_signature(expected_schema):
             raise ValueError(
                 "INFER_SOURCE_SCHEMA_MISMATCH: rebound source schema does not "
                 f"match contract {contract.identity!r}"
             )
+
+
+def _validate_rebound_file_source(
+    definition: PipelineDefinition, binding: Mapping[str, Any]
+) -> None:
+    """Verify a local file rebinding still satisfies every source contract."""
+    validate_source_binding_against_definition(definition, binding)
 
 
 def validate_file_binding_against_definition(
@@ -426,14 +669,17 @@ def validate_file_binding_against_definition(
     """Verify a generated local file binding before durable export."""
     if binding.get("kind") != "file":
         raise ValueError("INFER_SOURCE_REBIND: expected a file source binding")
-    _validate_rebound_file_source(definition, binding)
+    validate_source_binding_against_definition(definition, binding)
 
 
-def _validate_rebound_target(
-    definition: PipelineDefinition, binding: Mapping[str, Any]
+def validate_target_binding_against_definition(
+    definition: PipelineDefinition,
+    binding: Mapping[str, Any],
+    *,
+    sink_node: NodeDefinition | None = None,
 ) -> None:
-    """Verify an observed target rebinding against the final sink contract."""
-    if not binding.get("observed"):
+    """Verify a target binding's schema against its sink contract."""
+    if not binding.get("observed") and not binding.get("requirements"):
         return
     requirements = binding.get("requirements")
     if not isinstance(requirements, Mapping) or not requirements:
@@ -444,12 +690,16 @@ def _validate_rebound_target(
     from etlantic.schema_drift import NormalizedSchema
 
     try:
-        target_schema = NormalizedSchema.from_dict(dict(requirements))
+        target_schema = NormalizedSchema.from_dict(mutable_copy(requirements))
     except (KeyError, TypeError, ValueError) as exc:
         raise ValueError(
             "INFER_TARGET_BINDING: observed target schema is malformed"
         ) from exc
-    sink_nodes = [node for node in definition.nodes if node.kind == "sink"]
+    sink_nodes = (
+        [sink_node]
+        if sink_node is not None
+        else [node for node in definition.nodes if node.kind == "sink"]
+    )
     if not sink_nodes:
         raise ValueError("INFER_TARGET_REBIND: definition has no sink node")
     for node in sink_nodes:
@@ -471,13 +721,19 @@ def _validate_rebound_target(
             )
 
 
+def _validate_rebound_target(
+    definition: PipelineDefinition, binding: Mapping[str, Any]
+) -> None:
+    """Verify an observed target rebinding against the final sink contract."""
+    validate_target_binding_against_definition(definition, binding)
+
+
 def _validate_source_binding_shape(binding: Mapping[str, Any]) -> None:
     if not isinstance(binding, Mapping):
         raise ValueError("INFER_SOURCE_BINDING: source binding must be a mapping")
-    try:
-        version = int(binding.get("version", 0))
-    except (TypeError, ValueError) as exc:
-        raise ValueError("INFER_SOURCE_BINDING: invalid binding version") from exc
+    version = binding.get("version")
+    if isinstance(version, bool) or not isinstance(version, int):
+        raise ValueError("INFER_SOURCE_BINDING: invalid binding version")
     if version != BINDING_VERSION:
         raise ValueError("INFER_SOURCE_BINDING: unsupported source binding version")
     kind = binding.get("kind")
@@ -492,7 +748,8 @@ def _validate_source_binding_shape(binding: Mapping[str, Any]) -> None:
             )
         return
     if kind == "file":
-        if binding.get("format") not in _SOURCE_FORMATS:
+        format_name = binding.get("format")
+        if not isinstance(format_name, str) or format_name not in _SOURCE_FORMATS:
             raise ValueError("INFER_SOURCE_BINDING: unsupported file source format")
         if not str(binding.get("uri") or ""):
             raise ValueError("INFER_SOURCE_BINDING: file binding requires a URI")
@@ -502,6 +759,10 @@ def _validate_source_binding_shape(binding: Mapping[str, Any]) -> None:
         _validate_file_options(options)
         if "lines" in binding and not isinstance(binding["lines"], bool):
             raise ValueError("INFER_SOURCE_BINDING: file lines must be boolean")
+        if "hints" in binding:
+            _validate_inference_hints(binding["hints"])
+        if "limits" in binding:
+            _validate_inference_limits(binding["limits"])
         return
     if kind == "provider":
         if not str(binding.get("provider") or ""):
@@ -522,13 +783,12 @@ def validate_target_binding(
     """Validate the row-free shape of a durable target binding."""
     if not isinstance(binding, Mapping):
         raise ValueError("INFER_TARGET_BINDING: target binding must be a mapping")
-    try:
-        version = int(binding.get("version", 0))
-    except (TypeError, ValueError) as exc:
-        raise ValueError("INFER_TARGET_BINDING: invalid binding version") from exc
+    version = binding.get("version")
+    if isinstance(version, bool) or not isinstance(version, int):
+        raise ValueError("INFER_TARGET_BINDING: invalid binding version")
     if version != BINDING_VERSION:
         raise ValueError("INFER_TARGET_BINDING: unsupported binding version")
-    if binding.get("kind") != "target":
+    if not isinstance(binding.get("kind"), str) or binding.get("kind") != "target":
         raise ValueError("INFER_TARGET_BINDING: binding kind must be target")
     if not str(binding.get("identity") or ""):
         raise ValueError("INFER_TARGET_BINDING: target binding requires an identity")
@@ -536,7 +796,8 @@ def validate_target_binding(
         binding.get("revision"), str
     ):
         raise ValueError("INFER_TARGET_BINDING: target revision must be a string")
-    if binding.get("write_mode", "append") not in _TARGET_WRITE_MODES:
+    write_mode = binding.get("write_mode", "append")
+    if not isinstance(write_mode, str) or write_mode not in _TARGET_WRITE_MODES:
         raise ValueError("INFER_TARGET_BINDING: unsupported target write mode")
     requirements = binding.get("requirements", {})
     if not isinstance(requirements, Mapping):
@@ -569,6 +830,11 @@ def _validate_file_options(options: Mapping[str, Any]) -> None:
         )
     for key, value in options.items():
         name = str(key)
+        if name == "null_values":
+            raise ValueError(
+                "INFER_SOURCE_BINDING: null_values cannot cross the durable "
+                "boundary because they may contain source or secret values"
+            )
         if name in {"delimiter", "quotechar", "escapechar"}:
             if value is not None and (not isinstance(value, str) or len(value) != 1):
                 raise ValueError(
@@ -579,17 +845,9 @@ def _validate_file_options(options: Mapping[str, Any]) -> None:
                 raise ValueError(
                     "INFER_SOURCE_BINDING: file option 'encoding' must be a string"
                 )
-        elif name in {"doublequote", "strict"}:
-            if not isinstance(value, bool):
-                raise ValueError(
-                    f"INFER_SOURCE_BINDING: file option {name!r} must be boolean"
-                )
-        elif name == "null_values" and (
-            not isinstance(value, (list, tuple, set, frozenset))
-            or not all(isinstance(item, (str, int, float, bool)) for item in value)
-        ):
+        elif name in {"doublequote", "strict"} and not isinstance(value, bool):
             raise ValueError(
-                "INFER_SOURCE_BINDING: file option 'null_values' must be a sequence"
+                f"INFER_SOURCE_BINDING: file option {name!r} must be boolean"
             )
 
 
@@ -616,7 +874,7 @@ def _validate_target_requirements(requirements: Mapping[str, Any]) -> None:
     ):
         raise ValueError("INFER_TARGET_BINDING: target schema fingerprint is malformed")
     try:
-        NormalizedSchema.from_dict(dict(requirements))
+        NormalizedSchema.from_dict(mutable_copy(requirements))
     except (KeyError, TypeError, ValueError) as exc:
         raise ValueError(
             "INFER_TARGET_BINDING: target requirements are not a normalized schema"
@@ -699,6 +957,12 @@ def resolve_source_binding(binding: Mapping[str, Any]) -> Any:
             if isinstance(binding.get("options", {}), Mapping)
             else {},
             bool(binding.get("lines", False)),
+            binding.get("hints")
+            if isinstance(binding.get("hints"), Mapping)
+            else {},
+            binding.get("limits")
+            if isinstance(binding.get("limits"), Mapping)
+            else {},
         )
     raise AssertionError("validated source binding has an unsupported kind")
 
@@ -716,6 +980,10 @@ def reopen_source_binding(
         from .facade import read_csv, read_json
 
         source_name = name or str(binding.get("identity") or "source")
+        resolved_hints = hints if hints is not None else resolved.hints or None
+        resolved_limits = limits
+        if resolved_limits is None and resolved.limits:
+            resolved_limits = InferenceLimits.from_dict(resolved.limits)
         if resolved.format in {"csv", "tsv"}:
             options = dict(resolved.options)
             if resolved.format == "tsv":
@@ -724,15 +992,15 @@ def reopen_source_binding(
                 str(resolved.path),
                 name=source_name,
                 options=options,
-                hints=hints,
-                limits=limits,
+                hints=resolved_hints,
+                limits=resolved_limits,
             )
         return read_json(
             str(resolved.path),
             name=source_name,
             lines=resolved.lines or resolved.format == "jsonl",
-            hints=hints,
-            limits=limits,
+            hints=resolved_hints,
+            limits=resolved_limits,
         )
     from .facade import from_records
 

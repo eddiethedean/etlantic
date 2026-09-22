@@ -7,9 +7,12 @@ from .durable import (
     reopen_source_binding,
     resolve_source_binding,
     source_factory,
+    unregister_file_source,
     unregister_source_factory,
     validate_source_binding,
+    validate_source_binding_against_definition,
     validate_target_binding,
+    validate_target_binding_against_definition,
 )
 from .facade import model_from_schema
 from .records import infer_csv, infer_json, infer_records
@@ -68,7 +71,10 @@ __all__ = [
     "resolve_source_binding",
     "solve_backward_constraints",
     "source_factory",
+    "unregister_file_source",
     "unregister_source_factory",
     "validate_source_binding",
+    "validate_source_binding_against_definition",
     "validate_target_binding",
+    "validate_target_binding_against_definition",
 ]

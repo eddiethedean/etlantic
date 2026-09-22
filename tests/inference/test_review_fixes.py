@@ -1,6 +1,7 @@
 """Regression coverage for the 0.55 review closure work."""
 
 import asyncio
+import gc
 import json
 from dataclasses import replace
 from decimal import Decimal
@@ -18,6 +19,8 @@ from etlantic.inference import (
     inspect_target,
     inspect_target_async,
     solve_backward_constraints,
+    unregister_file_source,
+    validate_source_binding_against_definition,
 )
 from etlantic.schema_drift import NormalizedField, NormalizedSchema
 from etlantic.storage.protocol import records_to_dicts
@@ -560,6 +563,41 @@ def test_target_guidance_does_not_replace_observed_source_contract() -> None:
     )
 
 
+def test_backfill_serializes_an_executable_cast_boundary() -> None:
+    target = NormalizedSchema("target", (NormalizedField("id", "integer"),))
+    dataset = etl.from_records([{"id": "12"}], name="orders").backfill_from(target)
+
+    definition = dataset.definition()
+    assert definition.contracts[0].fields[0].type == "string"
+    assert definition.contracts[-1].fields[0].type == "integer"
+    assert definition.transformations[0].portable_plan["action"] == "dtcs:with_fields"
+    assert (
+        definition.transformations[0].portable_plan["parameters"]["assignments"][0][
+            "expression"
+        ]["callee"]
+        == "dtcs:cast"
+    )
+
+
+def test_backfill_cast_precedes_following_transformations() -> None:
+    target = NormalizedSchema("target", (NormalizedField("id", "integer"),))
+    dataset = etl.from_records([{"id": "12"}], name="orders").backfill_from(target)
+    dataset = dataset.filter(col("id") > 0)
+
+    definition = dataset.definition()
+    assert definition.contracts[0].fields[0].type == "string"
+    assert definition.contracts[-1].fields[0].type == "integer"
+    assert definition.transformations[0].portable_plan["action"] == "dtcs:with_fields"
+    assert definition.transformations[1].portable_plan["action"] == "dtcs:filter"
+
+
+def test_materialized_definition_keeps_a_runtime_source_lease() -> None:
+    definition = etl.from_records([{"id": 1}], name="temporary_definition").definition()
+    restored = etl.authoring.pipeline_from_dict(definition.to_dict())
+
+    assert etl.authoring.validate_pipeline_like(restored).valid
+
+
 def test_inferred_definition_round_trips_and_plans_without_runtime_source() -> None:
     dataset = etl.from_records_for_target(
         [{"id": "1"}],
@@ -600,6 +638,16 @@ def test_file_bindings_are_row_free_and_rebindable(tmp_path) -> None:
     assert resolved.path == first.resolve()
 
 
+def test_file_binding_options_reject_potentially_sensitive_null_values(
+    tmp_path,
+) -> None:
+    path = tmp_path / "events.csv"
+    path.write_text("id\n1\n", encoding="utf-8")
+
+    with pytest.raises(ValueError, match="null_values"):
+        etl.read_csv(str(path), options={"null_values": ["PRIVATE_TOKEN"]}).definition()
+
+
 def test_rebinding_rejects_a_source_with_a_different_schema(tmp_path) -> None:
     first = tmp_path / "first.csv"
     second = tmp_path / "second.csv"
@@ -609,6 +657,21 @@ def test_rebinding_rejects_a_source_with_a_different_schema(tmp_path) -> None:
     definition = etl.read_csv(str(first), name="events").definition()
     with pytest.raises(ValueError, match="INFER_SOURCE_SCHEMA_MISMATCH"):
         etl.rebind_definition(definition, source=str(second))
+
+
+def test_reloaded_file_definition_rechecks_current_schema(tmp_path) -> None:
+    path = tmp_path / "events.csv"
+    path.write_text("id\n1\n", encoding="utf-8")
+
+    definition = etl.read_csv(str(path), name="events").definition()
+    path.write_text("name\nAda\n", encoding="utf-8")
+    restored = etl.authoring.pipeline_from_dict(definition.to_dict())
+
+    report = etl.authoring.validate_pipeline_like(restored)
+    assert not report.valid
+    assert "INFER_SOURCE_SCHEMA_MISMATCH" in {item.code for item in report.errors}
+    with pytest.raises(PipelineValidationError):
+        etl.authoring.plan_pipeline_like(restored)
 
 
 def test_file_binding_reopens_with_parser_options(tmp_path) -> None:
@@ -622,6 +685,17 @@ def test_file_binding_reopens_with_parser_options(tmp_path) -> None:
         dataset.definition().nodes[0].bindings["source"]
     )
     assert reopened.preview() == [{"id": 1, "name": "one"}]
+
+
+def test_file_binding_reopens_with_inference_hints_and_limits(tmp_path) -> None:
+    path = tmp_path / "events.csv"
+    path.write_text("id\n1\n2\n", encoding="utf-8")
+
+    hinted = etl.read_csv(path, hints={"id": float})
+    sampled = etl.read_csv(path, limits=etl.InferenceLimits(max_rows=1))
+
+    assert hinted.definition().contracts[0].fields[0].type == "number"
+    assert sampled.definition().contracts[0].fields[0].type == "integer"
 
 
 def test_rebinding_preserves_valid_binding_mappings(tmp_path) -> None:
@@ -715,6 +789,87 @@ def test_backfill_preserves_the_durable_source_binding() -> None:
     definition = dataset.definition()
     assert definition.nodes[0].bindings["source"]["kind"] == "records"
     assert etl.authoring.validate_pipeline_like(definition).valid
+
+
+def test_reloaded_record_definition_does_not_execute_factory_during_validation() -> (
+    None
+):
+    state = {"rows": [{"id": 1}]}
+    calls: list[str] = []
+
+    def factory():
+        calls.append("called")
+        return list(state["rows"])
+
+    dataset = etl.from_records(
+        state["rows"],
+        name="factory_events",
+        source_factory=factory,
+        source_key="factory_events",
+    )
+    definition = dataset.definition()
+    calls.clear()
+    state["rows"] = [{"name": "Ada"}]
+    restored = etl.authoring.pipeline_from_dict(definition.to_dict())
+
+    report = etl.authoring.validate_pipeline_like(restored)
+    assert report.valid
+    assert calls == []
+
+
+def test_source_binding_schema_validation_is_scoped_to_the_current_node() -> None:
+    left_dataset = etl.from_records([{"id": 1}], name="left_scoped")
+    right_dataset = etl.from_records([{"name": "Ada"}], name="right_scoped")
+    left = left_dataset.definition()
+    right = right_dataset.definition()
+    combined = replace(
+        left,
+        contracts=left.contracts + right.contracts,
+        nodes=(*left.nodes, right.nodes[0]),
+    )
+
+    validate_source_binding_against_definition(
+        combined,
+        left.nodes[0].bindings["source"],
+        source_node=left.nodes[0],
+    )
+
+
+def test_transformed_file_definitions_keep_custom_identities_path_free(
+    tmp_path,
+) -> None:
+    path = tmp_path / "events.csv"
+    path.write_text("id\n1\n", encoding="utf-8")
+    dataset = etl.read_csv(str(path), name=f"dataset={path}").withColumn(
+        "double_id", col("id") * 2
+    )
+
+    encoded = json.dumps(dataset.definition().to_dict())
+    assert str(path.resolve()) not in encoded
+
+
+def test_implicit_record_snapshots_do_not_outlive_their_dataset() -> None:
+    dataset = etl.from_records([{"id": 1}], name="ephemeral_snapshot")
+    binding = dataset.definition().nodes[0].bindings["source"]
+    assert etl.resolve_source_binding(binding) == [{"id": 1}]
+
+    del dataset
+    gc.collect()
+
+    with pytest.raises(ValueError, match="INFER_SOURCE_UNRESOLVABLE"):
+        etl.resolve_source_binding(binding)
+
+
+def test_file_source_registry_can_be_released_explicitly(tmp_path) -> None:
+    path = tmp_path / "events.csv"
+    path.write_text("id\n1\n", encoding="utf-8")
+    dataset = etl.read_csv(str(path), name="releasable_events")
+    binding = dataset.definition().nodes[0].bindings["source"]
+
+    unregister_file_source(binding["uri"])
+
+    with pytest.raises(ValueError, match="INFER_SOURCE_UNRESOLVABLE"):
+        etl.resolve_source_binding(binding)
 
 
 def test_sampled_csv_with_a_file_binding_can_be_exported(tmp_path) -> None:
@@ -1026,6 +1181,89 @@ def test_loaded_malformed_bindings_fail_closed() -> None:
     assert {"INFER_SOURCE_BINDING", "INFER_TARGET_BINDING"} <= {
         item.code for item in report.errors
     }
+
+
+def test_loaded_binding_type_errors_fail_closed() -> None:
+    definition = etl.from_records([{"id": 1}], name="loaded_binding_types").definition()
+    source = replace(
+        definition.nodes[0],
+        bindings={
+            "source": {
+                "version": 1,
+                "kind": "file",
+                "format": [],
+                "uri": "file-ref:invalid",
+                "options": {},
+            }
+        },
+    )
+    sink = replace(
+        definition.nodes[-1],
+        bindings={
+            "target": {
+                "version": 1,
+                "kind": "target",
+                "identity": "loaded_binding_types",
+                "write_mode": [],
+                "observed": False,
+                "requirements": {},
+            }
+        },
+    )
+    malformed = replace(
+        definition,
+        nodes=(source, *definition.nodes[1:-1], sink),
+        fingerprint=None,
+    ).with_fingerprint(None)
+
+    report = etl.authoring.validate_pipeline_like(malformed)
+
+    assert not report.valid
+    assert {"INFER_SOURCE_BINDING", "INFER_TARGET_BINDING"} <= {
+        item.code for item in report.errors
+    }
+
+
+def test_reloaded_definition_rechecks_target_schema_compatibility() -> None:
+    definition = etl.from_records([{"id": 1}], name="target_contract").definition()
+    target_schema = NormalizedSchema(
+        "incompatible_target", (NormalizedField("id", "string"),)
+    )
+    target = {
+        "version": 1,
+        "kind": "target",
+        "identity": "incompatible_target",
+        "write_mode": "append",
+        "observed": True,
+        "requirements": {
+            **target_schema.to_dict(),
+            "metadata": {"capabilities": {"write_modes": ["append"]}},
+        },
+    }
+    sink = replace(definition.nodes[-1], bindings={"target": target})
+    malformed = replace(
+        definition,
+        nodes=(*definition.nodes[:-1], sink),
+        fingerprint=None,
+    ).with_fingerprint(None)
+
+    report = etl.authoring.validate_pipeline_like(malformed)
+
+    assert not report.valid
+    assert "INFER_TARGET_WRITE_UNQUALIFIED" in {item.code for item in report.errors}
+
+
+def test_file_source_registry_releases_when_dataset_is_collected(tmp_path) -> None:
+    path = tmp_path / "events.csv"
+    path.write_text("id\n1\n", encoding="utf-8")
+    dataset = etl.read_csv(path, name="collected_events")
+    binding = dataset.definition().nodes[0].bindings["source"]
+
+    del dataset
+    gc.collect()
+
+    with pytest.raises(ValueError, match="INFER_SOURCE_UNRESOLVABLE"):
+        etl.resolve_source_binding(binding)
 
 
 @pytest.mark.parametrize(

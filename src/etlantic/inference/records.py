@@ -210,6 +210,7 @@ def _hint_type(hint: Any) -> str | None:
             "integer": "integer",
             "float": "number",
             "double": "number",
+            "number": "number",
             "decimal": "decimal",
             "str": "string",
             "string": "string",
@@ -219,6 +220,10 @@ def _hint_type(hint: Any) -> str | None:
             "binary": "binary",
             "date": "date",
             "datetime": "datetime",
+            "object": "object",
+            "dict": "object",
+            "array": "array",
+            "list": "array",
         }
         return aliases.get(hint.lower())
     mapping = {
