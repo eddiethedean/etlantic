@@ -3,10 +3,16 @@
 from __future__ import annotations
 
 import datetime as _dt
+import hashlib
+import json
 import math
 import operator
 import re
+import time
+import weakref
 from collections.abc import Callable, Mapping
+from copy import deepcopy
+from dataclasses import replace
 from decimal import Decimal, DecimalException
 from typing import Any
 
@@ -26,9 +32,23 @@ from etlantic.contracts import Data
 from etlantic.diagnostics import Diagnostic, Severity
 from etlantic.schema_drift import NormalizedSchema
 from etlantic.transform.column import ColumnExpr, coerce_column
-from etlantic.transform.dataframe import FrameExpr
+from etlantic.transform.dataframe import FrameAction, FrameExpr
 
-from .records import _path_identity, infer_csv, infer_records
+from .durable import (
+    _retain_file_source,
+    _safe_file_identity,
+    file_binding,
+    provider_binding,
+    rebind_definition,
+    records_binding,
+    register_source_factory,
+    source_factory,
+    target_binding,
+    validate_source_binding,
+    validate_source_binding_against_definition,
+    validate_target_binding,
+)
+from .records import _estimate_size, _path_identity, infer_csv, infer_records
 from .sources import infer_source
 from .targets import (
     _backfill_observation,
@@ -91,6 +111,54 @@ def model_from_schema(
             default if safe == alias else Field(default, alias=alias),
         )
     return create_model(_model_name(name or schema.identity), __base__=Data, **fields)
+
+
+def _target_cast_action(
+    source_schema: NormalizedSchema,
+    target_schema: NormalizedSchema,
+    root_input: str,
+) -> FrameAction | None:
+    """Create an explicit executable cast boundary for target backfills."""
+    target_fields = {field.name: field for field in target_schema.fields}
+    casts = [
+        (field.name, target_fields[field.name].logical_type)
+        for field in source_schema.fields
+        if field.name in target_fields
+        and field.logical_type != target_fields[field.name].logical_type
+        and target_schema.metadata.get("conditional_casts", {}).get(field.name)
+        == target_fields[field.name].logical_type
+    ]
+    if not casts:
+        return None
+    assignments = [
+        {
+            "name": name,
+            "expression": {
+                "kind": "call",
+                "callee": "dtcs:cast",
+                "args": [
+                    {"kind": "fieldRef", "target": name},
+                    {
+                        "kind": "literal",
+                        "value": {"type": "string", "value": logical_type},
+                    },
+                ],
+            },
+        }
+        for name, logical_type in casts
+    ]
+    payload = {"action": "dtcs:with_fields", "assignments": assignments}
+    digest = hashlib.sha256(
+        json.dumps(payload, sort_keys=True, separators=(",", ":")).encode("utf-8")
+    ).hexdigest()[:8]
+    return FrameAction(
+        action_id=f"{root_input}__target_cast_{digest}",
+        action="dtcs:with_fields",
+        target=root_input,
+        parameters={"assignments": assignments},
+        functions=frozenset({"dtcs:cast"}),
+        path="target_cast",
+    )
 
 
 def _literal(node: Mapping[str, Any]) -> Any:
@@ -418,13 +486,40 @@ class InferredDataset:
         name: str,
         frame: FrameExpr | None = None,
         root_schema: NormalizedSchema | None = None,
+        source_binding: Mapping[str, Any] | None = None,
+        target_binding_payload: Mapping[str, Any] | None = None,
+        target_revision_reader: Callable[[], Any] | None = None,
+        target_write_mode: str = "append",
+        source_owner: Any | None = None,
     ):
         self._result = result
-        self.name = name
         self._root_schema = root_schema or result.schema
+        self._source_binding = dict(source_binding or records_binding(name))
+        self._source_owner = source_owner
+        self.name = (
+            _safe_file_identity(name)
+            if self._source_binding.get("kind") in {"file", "provider", "records"}
+            else name
+        )
+        self._target_revision_reader = target_revision_reader
+        observation = result.target_observation
+        target_requirements = (
+            observation.schema.to_dict()
+            if observation is not None and observation.schema is not None
+            else None
+        )
+        self._target_binding = dict(
+            target_binding_payload
+            or target_binding(
+                observation,
+                identity=f"target:{self.name}",
+                requirements=target_requirements,
+                write_mode=target_write_mode,
+            )
+        )
         self._frame = frame or FrameExpr(
-            relation_id=name,
-            root_input=name,
+            relation_id=self.name,
+            root_input=self.name,
             schema_fields=tuple(f.name for f in result.schema.fields),
         )
 
@@ -467,8 +562,16 @@ class InferredDataset:
     def to_records(self) -> list[dict[str, Any]]:
         return self.collect()
 
-    def definition(self) -> PipelineDefinition:
+    def definition(
+        self, *, _allow_unresolved_source: bool = False
+    ) -> PipelineDefinition:
         """Build the normal row-free ETLantic authoring definition."""
+        source_kind = self._source_binding.get("kind")
+        if source_kind == "provider" and not _allow_unresolved_source:
+            raise ValueError(
+                "INFER_SOURCE_UNSUPPORTED: provider source definitions require "
+                "an explicit durable rebind"
+            )
         errors = [
             item
             for item in self.diagnostics
@@ -484,14 +587,41 @@ class InferredDataset:
             )
         ]
         if errors:
-            raise ValueError(
-                "inference diagnostics contain errors; durable export is not qualified"
+            error_codes = sorted(
+                {str(item.code) for item in errors if isinstance(item, Diagnostic)}
             )
-        if self.replay is not None:
             raise ValueError(
-                "durable inference definitions require a replayable source binding; "
+                "inference diagnostics contain errors; durable export is not "
+                f"qualified ({', '.join(error_codes) or 'unknown diagnostic'})"
+            )
+        self._check_target_revision()
+        validate_target_binding(self._target_binding, check_capabilities=False)
+        if source_kind == "file" and not _allow_unresolved_source:
+            validate_source_binding(self._source_binding)
+        factory_key = str(self._source_binding.get("factory_key") or "")
+        has_registered_factory = (
+            source_kind == "records" and source_factory(factory_key) is not None
+        )
+        can_reopen_source = (
+            source_kind == "file" or has_registered_factory or _allow_unresolved_source
+        )
+        if self.replay is not None and not can_reopen_source:
+            raise ValueError(
+                "durable inference definitions require a reopenable source binding; "
                 "the inspected source is a one-shot bounded stream"
             )
+        if (
+            source_kind == "records"
+            and not has_registered_factory
+            and not _allow_unresolved_source
+        ):
+            raise ValueError(
+                "INFER_SOURCE_UNRESOLVABLE: register a source factory before "
+                "exporting a records definition"
+            )
+        # Target backfill is a write-boundary hypothesis.  It must never
+        # replace the observed source contract used by the serialized graph.
+        source_schema = self._result.observed_schema or self._root_schema
         if any(
             action.action
             in {
@@ -506,6 +636,16 @@ class InferredDataset:
                 "durable inference definitions require explicit bindings for every input; "
                 "multi-input join/union export is not supported by this facade"
             )
+        target_cast = _target_cast_action(
+            source_schema, self._root_schema, self._frame.root_input
+        )
+        definition_actions = list(self._frame.actions)
+        if target_cast is not None:
+            if definition_actions:
+                definition_actions[0] = replace(
+                    definition_actions[0], target=target_cast.action_id
+                )
+            definition_actions.insert(0, target_cast)
 
         def make_contract(schema: NormalizedSchema, suffix: str) -> ContractDefinition:
             contract_id = f"contract:{schema.identity}:{suffix}"
@@ -521,34 +661,39 @@ class InferredDataset:
                     )
                     for field in schema.fields
                 ),
-                metadata={"etlantic.inference": self.observation.to_dict()},
+                metadata={
+                    "etlantic.inference": {
+                        "observed_schema": source_schema.to_dict(),
+                        "source_binding": self._source_binding,
+                    }
+                },
             )
 
         # Materialize one contract for each relation state.  A step may alter
         # projection, names, or inferred types; pointing every node at the
         # final contract makes a serialized definition impossible to rebind.
-        state_schemas: list[NormalizedSchema] = [self._root_schema]
-        for index in range(1, len(self._frame.actions) + 1):
+        state_schemas: list[NormalizedSchema] = [source_schema]
+        for index in range(1, len(definition_actions) + 1):
             prefix = FrameExpr(
-                relation_id=self._frame.actions[index - 1].action_id,
+                relation_id=definition_actions[index - 1].action_id,
                 root_input=self._frame.root_input,
-                actions=self._frame.actions[:index],
+                actions=tuple(definition_actions[:index]),
                 functions=frozenset().union(
-                    *(action.functions for action in self._frame.actions[:index])
+                    *(action.functions for action in definition_actions[:index])
                 ),
                 profiles=frozenset().union(
-                    *(action.profiles for action in self._frame.actions[:index])
+                    *(action.profiles for action in definition_actions[:index])
                 ),
                 schema_fields=(
                     self._frame.schema_fields
-                    if index == len(self._frame.actions)
+                    if index == len(definition_actions)
                     else None
                 ),
             )
             state_schemas.append(
                 forward_schema(
                     prefix,
-                    self._root_schema,
+                    source_schema,
                     max_diagnostics=int(
                         self.provenance.get("limits", {}).get("max_diagnostics", 100)
                     ),
@@ -559,6 +704,25 @@ class InferredDataset:
             for index, schema in enumerate(state_schemas)
         ]
         contract_ids = [contract.identity for contract in contracts]
+        target_observation = self._result.target_observation
+        if target_observation is not None and target_observation.schema is not None:
+            target_for_check: Any = target_observation
+            if target_observation.inspector in {"provided", "normalized"}:
+                target_for_check = target_observation.schema
+            compatibility = check_write_compatibility(
+                state_schemas[-1],
+                target_for_check,
+                mode=str(self._target_binding.get("write_mode", "append")),
+                expected_revision=self._target_binding.get("revision"),
+            )
+            if not compatibility.compatible or compatibility.casts:
+                codes = {item.code for item in compatibility.diagnostics}
+                if compatibility.casts:
+                    codes.add("INFER_RUNTIME_CONVERSION")
+                raise ValueError(
+                    "INFER_TARGET_WRITE_UNQUALIFIED: durable export is not "
+                    f"compatible with the target ({', '.join(sorted(codes)) or 'unknown'})"
+                )
         transformations = tuple(
             TransformationDefinition(
                 identity=action.action_id,
@@ -593,7 +757,7 @@ class InferredDataset:
                 ),
                 metadata={"etlantic.inference": {"lineage_path": action.path}},
             )
-            for index, action in enumerate(self._frame.actions)
+            for index, action in enumerate(definition_actions)
         )
         source_name = f"{self.name}_source"
         sink_name = f"{self.name}_output"
@@ -601,7 +765,7 @@ class InferredDataset:
             NodeDefinition(
                 name=source_name,
                 kind="source",
-                identity=f"source:{self.schema.identity}",
+                identity=f"source:{source_schema.identity}",
                 contract_id=contract_ids[0],
                 outputs=(
                     PortDefinitionSpec(
@@ -609,13 +773,18 @@ class InferredDataset:
                     ),
                 ),
                 asset=self.name,
-                bindings={"source": self.name},
-                metadata={"etlantic.inference": self.observation.to_dict()},
+                bindings={"source": self._source_binding},
+                metadata={
+                    "etlantic.inference": {
+                        "observed_schema": source_schema.to_dict(),
+                        "source_binding": self._source_binding,
+                    }
+                },
             )
         ]
         edges: list[EdgeDefinition] = []
         previous_name = source_name
-        for index, action in enumerate(self._frame.actions, start=1):
+        for index, action in enumerate(definition_actions, start=1):
             step_name = f"{self.name}_step_{index}"
             nodes_list.append(
                 NodeDefinition(
@@ -643,7 +812,6 @@ class InferredDataset:
                         "etlantic.inference": {
                             "action_id": action.action_id,
                             "path": action.path,
-                            "parameters": action.parameters,
                         }
                     },
                 )
@@ -671,7 +839,14 @@ class InferredDataset:
                     ),
                 ),
                 asset=self.name,
-                bindings={"target": self.name},
+                bindings={"target": self._target_binding},
+                metadata={
+                    "etlantic.inference": {
+                        "target_requirements": self._target_binding.get("requirements"),
+                        "target_revision": self._target_binding.get("revision"),
+                        "write_mode": self._target_binding.get("write_mode"),
+                    }
+                },
             )
         )
         edges.append(
@@ -684,8 +859,8 @@ class InferredDataset:
                 consumer_contract_id=contract_ids[-1],
             )
         )
-        return PipelineDefinition(
-            pipeline_id=f"inferred:{self.name}",
+        definition = PipelineDefinition(
+            pipeline_id=_inferred_pipeline_id(self.name, self._source_binding),
             pipeline_name=self.name,
             contracts=tuple(contracts),
             transformations=transformations,
@@ -695,8 +870,51 @@ class InferredDataset:
                 "source": "etlantic.inference",
                 "observation": self.observation.to_dict(),
             },
-            metadata={"etlantic.lineage": self.schema.metadata.get("lineage", {})},
+            metadata={
+                "etlantic.lineage": self.schema.metadata.get("lineage", {}),
+                "etlantic.inference": {
+                    "observed_schema": source_schema.to_dict(),
+                    "target_binding": self._target_binding,
+                },
+            },
+            runtime_source_leases=(
+                (self._source_owner,) if self._source_owner is not None else ()
+            ),
         )
+        if source_kind in {"file", "records"} and not _allow_unresolved_source:
+            validate_source_binding_against_definition(definition, self._source_binding)
+        from etlantic.authoring.serialize import pipeline_fingerprint
+
+        return definition.with_fingerprint(pipeline_fingerprint(definition))
+
+    def rebind_source(
+        self, source: str, *, format: str | None = None
+    ) -> PipelineDefinition:
+        """Return a definition explicitly rebound to a local source."""
+        return rebind_definition(
+            self.definition(_allow_unresolved_source=True),
+            source=source,
+            format=format,
+        )
+
+    def _check_target_revision(self) -> None:
+        reader = self._target_revision_reader
+        expected = self._target_binding.get("revision")
+        if reader is None or expected is None:
+            return
+        try:
+            current = reader()
+            if hasattr(current, "__await__"):
+                raise TypeError("revision_reader returned an awaitable; use async API")
+        except Exception as exc:
+            raise ValueError(
+                "INFER_TARGET_REVISION_UNKNOWN: target revision could not be "
+                "rechecked before publication"
+            ) from exc
+        if (str(current) if current is not None else None) != str(expected):
+            raise ValueError(
+                "INFER_TARGET_STALE: target revision changed after schema inspection"
+            )
 
     def plan(self) -> PipelineDefinition:
         """Return the validated authoring definition used by plan consumers."""
@@ -804,7 +1022,14 @@ class InferredDataset:
             self._result.target_observation,
         )
         return InferredDataset(
-            result, name=self.name, frame=frame, root_schema=self._root_schema
+            result,
+            name=self.name,
+            frame=frame,
+            root_schema=self._root_schema,
+            source_binding=self._source_binding,
+            target_binding_payload=self._target_binding,
+            target_revision_reader=self._target_revision_reader,
+            source_owner=self._source_owner,
         )
 
     def filter(self, condition: ColumnExpr) -> InferredDataset:
@@ -1028,6 +1253,21 @@ class InferredDataset:
             result,
             name=self.name,
             frame=self._frame,
+            # Keep the observed source schema in ``result.observed_schema``
+            # while using the target-guided schema as the frame root.  This
+            # lets definition() emit an executable cast from the observed
+            # source contract into the backfilled contract before applying
+            # any subsequent actions.
+            root_schema=result.schema,
+            source_binding=self._source_binding,
+            source_owner=self._source_owner,
+            target_binding_payload=target_binding(
+                None,
+                identity=target_schema.identity,
+                requirements=target_schema.to_dict(),
+                write_mode="append",
+            ),
+            target_revision_reader=self._target_revision_reader,
         )
 
     def check_write(self, target_schema: NormalizedSchema, *, mode: str = "append"):
@@ -1109,12 +1349,35 @@ def from_records(
     name: str = "records",
     hints: Mapping[str, Any] | None = None,
     limits: InferenceLimits | None = None,
+    source_factory: Callable[[], Any] | None = None,
+    source_key: str | None = None,
 ) -> InferredDataset:
+    safe_name = _safe_file_identity(name)
+    result = infer_records(
+        records, hints=hints, limits=limits, identity=safe_name, retain_rows=True
+    )
+    snapshot = (
+        _bounded_materialized_snapshot(records, limits)
+        if source_factory is None and source_key is None
+        else None
+    )
+    factory_key = _records_factory_key(
+        safe_name, source_key, records, source_factory, snapshot=snapshot
+    )
+    source_owner = _register_records_source(
+        factory_key,
+        records,
+        source_factory,
+        schema=result.schema,
+        snapshot=snapshot,
+    )
     return InferredDataset(
-        infer_records(
-            records, hints=hints, limits=limits, identity=name, retain_rows=True
+        result,
+        name=safe_name,
+        source_binding=records_binding(
+            safe_name, factory_key=factory_key, hints=hints, limits=limits
         ),
-        name=name,
+        source_owner=source_owner,
     )
 
 
@@ -1127,21 +1390,266 @@ def from_records_for_target(
     limits: InferenceLimits | None = None,
     expected_revision: str | None = None,
     revision_reader: Callable[[], Any] | None = None,
+    source_factory: Callable[[], Any] | None = None,
+    source_key: str | None = None,
+    write_mode: str = "append",
 ) -> InferredDataset:
     """Create a data first handle using an existing target as a type constraint."""
-    return InferredDataset(
-        infer_records_for_target(
-            records,
-            target,
-            hints=hints,
-            limits=limits,
-            identity=name,
-            retain_rows=True,
-            expected_revision=expected_revision,
-            revision_reader=revision_reader,
-        ),
-        name=name,
+    safe_name = _safe_file_identity(name)
+    result = infer_records_for_target(
+        records,
+        target,
+        hints=hints,
+        limits=limits,
+        identity=safe_name,
+        retain_rows=True,
+        expected_revision=expected_revision,
+        revision_reader=revision_reader,
     )
+    snapshot = (
+        _bounded_materialized_snapshot(records, limits)
+        if source_factory is None and source_key is None
+        else None
+    )
+    factory_key = _records_factory_key(
+        safe_name, source_key, records, source_factory, snapshot=snapshot
+    )
+    source_owner = _register_records_source(
+        factory_key,
+        records,
+        source_factory,
+        schema=result.observed_schema or result.schema,
+        snapshot=snapshot,
+    )
+    return InferredDataset(
+        result,
+        name=safe_name,
+        source_binding=records_binding(
+            safe_name, factory_key=factory_key, hints=hints, limits=limits
+        ),
+        source_owner=source_owner,
+        target_revision_reader=revision_reader,
+        target_write_mode=write_mode,
+    )
+
+
+def _records_factory_key(
+    name: str,
+    source_key: str | None,
+    records: Any,
+    source_factory: Callable[[], Any] | None,
+    *,
+    snapshot: tuple[dict[str, Any], ...] | None = None,
+) -> str:
+    if source_key is not None:
+        if not str(source_key):
+            raise ValueError("source_key must not be empty")
+        return str(source_key)
+    if source_factory is not None:
+        raise ValueError(
+            "source_key is required when source_factory is supplied so the "
+            "durable binding remains deterministic"
+        )
+    if snapshot is None:
+        return f"{name}:stream"
+    payload = json.dumps(
+        [_canonical_snapshot_value(row) for row in snapshot],
+        sort_keys=True,
+        separators=(",", ":"),
+        allow_nan=False,
+    )
+    digest = hashlib.sha256(payload.encode("utf-8")).hexdigest()[:32]
+    return f"{name}:snapshot:{digest}"
+
+
+def _bounded_materialized_snapshot(
+    records: Any, limits: InferenceLimits | None
+) -> tuple[dict[str, Any], ...] | None:
+    """Copy only a fully bounded materialized source for durable replay.
+
+    A materialized source is eligible for an implicit factory only when the
+    complete source fits the same row, byte, and time limits used for
+    inference.  Otherwise export must use an explicit factory or rebind.
+    """
+    if isinstance(records, Mapping):
+        items: Any = (records,)
+    elif isinstance(records, (list, tuple)):
+        if limits is not None and len(records) > limits.max_rows:
+            return None
+        items = records
+    else:
+        return None
+    effective_limits = limits or InferenceLimits()
+    if effective_limits.max_rows < len(items):
+        return None
+    started_at = time.monotonic()
+    bytes_observed = 0
+    snapshot: list[dict[str, Any]] = []
+    try:
+        for item in items:
+            if effective_limits.timeout_seconds is not None and (
+                time.monotonic() - started_at >= effective_limits.timeout_seconds
+            ):
+                return None
+            if not isinstance(item, Mapping):
+                return None
+            item_bytes = _estimate_size(item)
+            if (
+                effective_limits.max_bytes is not None
+                and bytes_observed + item_bytes > effective_limits.max_bytes
+            ):
+                return None
+            bytes_observed += item_bytes
+            snapshot.append(deepcopy(dict(item)))
+    except Exception:
+        return None
+    try:
+        for row in snapshot:
+            _canonical_snapshot_value(row)
+    except (TypeError, ValueError):
+        # An arbitrary object cannot be represented safely by a deterministic,
+        # collision-resistant row-free binding.  Leave the source unresolved
+        # rather than falling back to a string representation.
+        return None
+    return tuple(snapshot)
+
+
+def _canonical_snapshot_value(value: Any) -> Any:
+    """Encode snapshot values without collapsing distinct Python types."""
+    if value is None:
+        return {"type": "null", "value": None}
+    if isinstance(value, bool):
+        return {"type": "bool", "value": value}
+    if isinstance(value, int):
+        return {"type": "int", "value": str(value)}
+    if isinstance(value, float):
+        return {"type": "float", "value": value.hex()}
+    if isinstance(value, Decimal):
+        return {"type": "decimal", "value": str(value)}
+    if isinstance(value, str):
+        return {"type": "str", "value": value}
+    if isinstance(value, _dt.datetime):
+        return {"type": "datetime", "value": value.isoformat()}
+    if isinstance(value, _dt.date):
+        return {"type": "date", "value": value.isoformat()}
+    if isinstance(value, (bytes, bytearray, memoryview)):
+        return {"type": "bytes", "value": bytes(value).hex()}
+    if isinstance(value, Mapping):
+        items = [
+            [_canonical_snapshot_value(key), _canonical_snapshot_value(item)]
+            for key, item in value.items()
+        ]
+        items.sort(
+            key=lambda item: json.dumps(item[0], sort_keys=True, separators=(",", ":"))
+        )
+        return {"type": "mapping", "items": items}
+    if isinstance(value, (list, tuple)):
+        return {
+            "type": "tuple" if isinstance(value, tuple) else "list",
+            "items": [_canonical_snapshot_value(item) for item in value],
+        }
+    if isinstance(value, (set, frozenset)):
+        items = [_canonical_snapshot_value(item) for item in value]
+        items.sort(
+            key=lambda item: json.dumps(item, sort_keys=True, separators=(",", ":"))
+        )
+        return {
+            "type": "frozenset" if isinstance(value, frozenset) else "set",
+            "items": items,
+        }
+    value_type = type(value)
+    raise TypeError(
+        "materialized source snapshots do not support arbitrary values of "
+        f"type {value_type.__module__}.{value_type.__qualname__}"
+    )
+
+
+_DEFAULT_SOURCE_NAMES = frozenset({"records", "csv", "json", "pandas", "polars"})
+
+
+def _inferred_pipeline_id(name: str, binding: Mapping[str, Any]) -> str:
+    """Give default data-first sources a stable identity of their own."""
+    if name not in _DEFAULT_SOURCE_NAMES:
+        return f"inferred:{name}"
+    identity_payload = {
+        "kind": binding.get("kind"),
+        "identity": binding.get("identity"),
+        "factory_key": binding.get("factory_key"),
+        "format": binding.get("format"),
+        "uri": binding.get("uri"),
+        "provider": binding.get("provider"),
+    }
+    encoded = json.dumps(
+        identity_payload, sort_keys=True, separators=(",", ":"), default=str
+    )
+    digest = hashlib.sha256(encoded.encode("utf-8")).hexdigest()[:20]
+    return f"inferred:{name}:{digest}"
+
+
+class _SnapshotOwner:
+    """Keep an implicit records snapshot alive only with its dataset."""
+
+    __slots__ = ("__weakref__", "snapshot")
+
+    def __init__(self, snapshot: tuple[dict[str, Any], ...]):
+        self.snapshot = snapshot
+
+
+class _SnapshotFactory:
+    """Weak-owner factory used for implicit, process-local record snapshots."""
+
+    __slots__ = ("_key", "_owner_ref")
+
+    def __init__(self, key: str, owner: _SnapshotOwner):
+        self._key = key
+        self._owner_ref = weakref.ref(owner, self._owner_released)
+
+    @property
+    def key(self) -> str:
+        return self._key
+
+    def owner(self) -> _SnapshotOwner | None:
+        return self._owner_ref()
+
+    def _owner_released(self, _owner_ref: weakref.ReferenceType[Any]) -> None:
+        from .durable import unregister_source_factory
+
+        unregister_source_factory(self._key, expected_factory=self)
+
+    def __call__(self) -> list[dict[str, Any]]:
+        owner = self._owner_ref()
+        if owner is None:
+            raise ValueError("implicit records source is no longer available")
+        try:
+            return [deepcopy(row) for row in owner.snapshot]
+        except Exception as exc:
+            raise ValueError("implicit records snapshot is no longer replayable") from exc
+
+
+def _register_records_source(
+    factory_key: str,
+    records: Any,
+    factory: Callable[[], Any] | None,
+    *,
+    schema: NormalizedSchema,
+    snapshot: tuple[dict[str, Any], ...] | None = None,
+) -> _SnapshotOwner | None:
+    if factory is not None:
+        registered_factory = factory
+        source_owner: _SnapshotOwner | None = None
+        if isinstance(factory, _SnapshotFactory):
+            source_owner = factory.owner()
+            if source_owner is not None and factory.key != factory_key:
+                registered_factory = _SnapshotFactory(factory_key, source_owner)
+        register_source_factory(factory_key, registered_factory, schema=schema)
+        return source_owner
+    if snapshot is None:
+        return None
+    owner = _SnapshotOwner(snapshot)
+    register_source_factory(
+        factory_key, _SnapshotFactory(factory_key, owner), schema=schema
+    )
+    return owner
 
 
 def read_csv(
@@ -1152,7 +1660,17 @@ def read_csv(
     hints: Mapping[str, Any] | None = None,
     limits: InferenceLimits | None = None,
 ) -> InferredDataset:
-    source_identity = _path_identity("csv", path) if name == "csv" else name
+    source_identity = (
+        _path_identity("csv", path) if name == "csv" else _safe_file_identity(name)
+    )
+    source_binding = file_binding(
+        "csv",
+        path,
+        identity=source_identity,
+        options=options,
+        hints=hints,
+        limits=limits,
+    )
     return InferredDataset(
         infer_csv(
             path,
@@ -1163,6 +1681,43 @@ def read_csv(
             retain_rows=True,
         ),
         name=name,
+        source_binding=source_binding,
+        source_owner=_retain_file_source(source_binding["uri"], path),
+    )
+
+
+def read_json(
+    path: str,
+    *,
+    name: str = "json",
+    lines: bool = False,
+    hints: Mapping[str, Any] | None = None,
+    limits: InferenceLimits | None = None,
+) -> InferredDataset:
+    """Read a JSON array or JSON Lines source with a durable file binding."""
+    from .records import infer_json
+
+    source_identity = _path_identity("jsonl" if lines else "json", path)
+    source_binding = file_binding(
+        "jsonl" if lines else "json",
+        path,
+        identity=source_identity,
+        lines=lines,
+        hints=hints,
+        limits=limits,
+    )
+    return InferredDataset(
+        infer_json(
+            path,
+            lines=lines,
+            hints=hints,
+            limits=limits,
+            identity=source_identity,
+            retain_rows=True,
+        ),
+        name=name,
+        source_binding=source_binding,
+        source_owner=_retain_file_source(source_binding["uri"], path),
     )
 
 
@@ -1174,8 +1729,11 @@ def from_pandas(
     limits: InferenceLimits | None = None,
 ) -> InferredDataset:
     limits = limits or InferenceLimits()
+    safe_name = _safe_file_identity(name)
     return InferredDataset(
-        infer_source(frame, identity=name, hints=hints, limits=limits), name=name
+        infer_source(frame, identity=safe_name, hints=hints, limits=limits),
+        name=safe_name,
+        source_binding=provider_binding(safe_name, "pandas"),
     )
 
 
@@ -1187,6 +1745,9 @@ def from_polars(
     limits: InferenceLimits | None = None,
 ) -> InferredDataset:
     limits = limits or InferenceLimits()
+    safe_name = _safe_file_identity(name)
     return InferredDataset(
-        infer_source(frame, identity=name, hints=hints, limits=limits), name=name
+        infer_source(frame, identity=safe_name, hints=hints, limits=limits),
+        name=safe_name,
+        source_binding=provider_binding(safe_name, "polars"),
     )

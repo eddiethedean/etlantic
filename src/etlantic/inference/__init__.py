@@ -1,5 +1,19 @@
 """Optional, data first schema and model inference."""
 
+from .durable import (
+    ResolvedFileSource,
+    rebind_definition,
+    register_source_factory,
+    reopen_source_binding,
+    resolve_source_binding,
+    source_factory,
+    unregister_file_source,
+    unregister_source_factory,
+    validate_source_binding,
+    validate_source_binding_against_definition,
+    validate_target_binding,
+    validate_target_binding_against_definition,
+)
 from .facade import model_from_schema
 from .records import infer_csv, infer_json, infer_records
 from .sources import infer_source, infer_source_async
@@ -32,6 +46,7 @@ __all__ = [
     "InferenceResult",
     "OutputProposal",
     "ReplayHandle",
+    "ResolvedFileSource",
     "SchemaEvidence",
     "TargetObservation",
     "WriteCompatibility",
@@ -50,5 +65,16 @@ __all__ = [
     "inspect_target",
     "inspect_target_async",
     "model_from_schema",
+    "rebind_definition",
+    "register_source_factory",
+    "reopen_source_binding",
+    "resolve_source_binding",
     "solve_backward_constraints",
+    "source_factory",
+    "unregister_file_source",
+    "unregister_source_factory",
+    "validate_source_binding",
+    "validate_source_binding_against_definition",
+    "validate_target_binding",
+    "validate_target_binding_against_definition",
 ]

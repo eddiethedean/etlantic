@@ -18,6 +18,7 @@ from etlantic.schema_drift import (
     normalize_schema_from_fields,
 )
 
+from .durable import _safe_file_identity
 from .records import infer_csv, infer_json, infer_records
 from .types import (
     FieldConstraint,
@@ -133,6 +134,7 @@ def _diagnostics_from_payload(
 
 
 def _schema_from_inspection(identity: str, fields: Any) -> NormalizedSchema:
+    identity = _safe_file_identity(identity)
     if isinstance(fields, Mapping):
         fields = [
             {"name": name, "logical_type": logical_type}
@@ -193,12 +195,21 @@ def _attach_target_metadata(
     return NormalizedSchema(schema.identity, schema.fields, merged)
 
 
+def _safe_target_schema(schema: NormalizedSchema) -> NormalizedSchema:
+    identity = _safe_file_identity(schema.identity)
+    if identity == schema.identity:
+        return schema
+    return NormalizedSchema(identity, schema.fields, schema.metadata)
+
+
 def inspect_target(
     target: Any, *, identity: str = "target", max_diagnostics: int = 100
 ) -> TargetObservation:
     """Inspect an existing target when its adapter exposes a schema."""
     if isinstance(target, NormalizedSchema):
-        return TargetObservation(target, "present", None, "normalized")
+        return TargetObservation(
+            _safe_target_schema(target), "present", None, "normalized"
+        )
     if isinstance(target, Mapping):
         if not target:
             return TargetObservation(
@@ -297,7 +308,12 @@ def inspect_target(
                     close()
                 return _unknown_target("INFER_TARGET_UNSUPPORTED")
             if isinstance(result, NormalizedSchema):
-                return TargetObservation(result, "present", None, type(target).__name__)
+                return TargetObservation(
+                    _safe_target_schema(result),
+                    "present",
+                    None,
+                    type(target).__name__,
+                )
             fields = (
                 result.get("fields", result)
                 if isinstance(result, Mapping)
@@ -351,7 +367,12 @@ def inspect_target(
         except Exception:
             schema_attr = None
     if isinstance(schema_attr, NormalizedSchema):
-        return TargetObservation(schema_attr, "present", None, type(target).__name__)
+        return TargetObservation(
+            _safe_target_schema(schema_attr),
+            "present",
+            None,
+            type(target).__name__,
+        )
     if isinstance(schema_attr, Mapping):
         fields = schema_attr.get("fields", schema_attr)
         try:
@@ -407,7 +428,7 @@ async def inspect_target_async(
                 schema_attr = await schema_attr
             if isinstance(schema_attr, NormalizedSchema):
                 return TargetObservation(
-                    schema_attr,
+                    _safe_target_schema(schema_attr),
                     "present",
                     None,
                     type(target).__name__,
@@ -475,7 +496,12 @@ async def inspect_target_async(
         if _inspect.isawaitable(result):
             result = await result
         if isinstance(result, NormalizedSchema):
-            return TargetObservation(result, "present", None, type(target).__name__)
+            return TargetObservation(
+                _safe_target_schema(result),
+                "present",
+                None,
+                type(target).__name__,
+            )
         fields = (
             result.get("fields", result)
             if isinstance(result, Mapping)

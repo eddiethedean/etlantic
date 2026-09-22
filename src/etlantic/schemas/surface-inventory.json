@@ -34,6 +34,7 @@
     "InferenceResult",
     "OutputProposal",
     "ReplayHandle",
+    "ResolvedFileSource",
     "InferredDataset",
     "SchemaEvidence",
     "TargetObservation",
@@ -58,7 +59,16 @@
     "inspect_target",
     "inspect_target_async",
     "solve_backward_constraints",
-    "read_csv"
+    "read_csv",
+    "read_json",
+    "rebind_definition",
+    "register_source_factory",
+    "reopen_source_binding",
+    "resolve_source_binding",
+    "unregister_file_source",
+    "unregister_source_factory",
+    "validate_source_binding",
+    "validate_target_binding"
   ],
   "sdk_root_namespaces": [
     "authoring",

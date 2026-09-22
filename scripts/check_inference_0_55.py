@@ -40,9 +40,11 @@ FORBIDDEN_KEYS = {
 }
 
 
-def _key_kind(key: str) -> str | None:
+def _key_kind(key: str, *, literal_node: bool = False) -> str | None:
     normalized = "".join(char for char in key.casefold() if char.isalnum())
     if normalized in {"rowfree", "rowsfree"}:
+        return None
+    if literal_node and normalized in {"value", "values"}:
         return None
     if any(
         token in normalized
@@ -61,13 +63,20 @@ def _key_kind(key: str) -> str | None:
     return None
 
 
-def _check_row_free(value: Any, path: str = "manifest") -> None:
+def _check_row_free(
+    value: Any, path: str = "manifest", *, literal_node: bool = False
+) -> None:
     if isinstance(value, dict):
+        is_literal_node = value.get("kind") == "literal"
         for key, item in value.items():
-            kind = _key_kind(str(key))
+            kind = _key_kind(str(key), literal_node=literal_node or is_literal_node)
             if kind is not None:
                 raise ValueError(f"{kind} evidence key is forbidden: {path}.{key}")
-            _check_row_free(item, f"{path}.{key}")
+            _check_row_free(
+                item,
+                f"{path}.{key}",
+                literal_node=literal_node or is_literal_node,
+            )
     elif isinstance(value, list):
         for index, item in enumerate(value):
             _check_row_free(item, f"{path}[{index}]")

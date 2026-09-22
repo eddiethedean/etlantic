@@ -374,6 +374,13 @@ class PipelineDefinition:
     provenance: Mapping[str, Any] = field(default_factory=_empty_map)
     extensions: Mapping[str, Any] = field(default_factory=_empty_map)
     metadata: Mapping[str, Any] = field(default_factory=_empty_map)
+    # Host-local source leases are deliberately excluded from the wire model
+    # and fingerprint. They keep process-local bindings alive while an
+    # in-memory definition is retained, without retaining rows in serialized
+    # artifacts.
+    runtime_source_leases: tuple[Any, ...] = field(
+        default_factory=tuple, repr=False, compare=False
+    )
 
     def to_dict(self) -> dict[str, Any]:
         """Serialize to a JSON-friendly dict (includes fingerprint when set).
@@ -483,6 +490,7 @@ class PipelineDefinition:
             provenance=self.provenance,
             extensions=self.extensions,
             metadata=self.metadata,
+            runtime_source_leases=self.runtime_source_leases,
         )
 
 
