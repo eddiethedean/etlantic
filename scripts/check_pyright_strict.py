@@ -6,6 +6,7 @@ from __future__ import annotations
 import hashlib
 import io
 import json
+import platform
 import shutil
 import subprocess
 import tempfile
@@ -15,7 +16,12 @@ from typing import Any
 
 # Filled from the current repository after the shadow scan is generated. Any
 # diagnostic change must be reviewed explicitly, including newly hidden errors.
-EXPECTED_DIGEST = "4dad7cb890b921e4c12f85663551953e6c9cbfe4a1c0dddeeb795a92faca488a"
+EXPECTED_DIGESTS = {
+    # Pyright's import/type surface differs by host platform because the
+    # synchronized dependency set includes platform-specific distributions.
+    "Darwin": "4dad7cb890b921e4c12f85663551953e6c9cbfe4a1c0dddeeb795a92faca488a",
+    "Linux": "dcdb59d0e718481cbfedba10d73960aaab73e8d5e1596472177f8b36b3a1d50f",
+}
 
 
 def _is_suppression(comment: str) -> bool:
@@ -102,10 +108,15 @@ def main() -> int:
     payload = json.loads(result.stdout)
     fingerprints = _diagnostic_fingerprints(payload, shadow)
     digest = hashlib.sha256("\n".join(fingerprints).encode()).hexdigest()
-    if digest != EXPECTED_DIGEST:
+    system = platform.system()
+    expected_digest = EXPECTED_DIGESTS.get(system)
+    if expected_digest is None:
+        print(f"Strict Pyright baseline is unavailable for platform {system!r}.")
+        return 1
+    if digest != expected_digest:
         print("Strict Pyright diagnostics changed; review the type debt delta.")
         print(f"diagnostics={len(fingerprints)}")
-        print(f"expected={EXPECTED_DIGEST}")
+        print(f"expected={expected_digest}")
         print(f"actual={digest}")
         return 1
     print(f"Strict shadow scan verified ({len(fingerprints)} existing diagnostics).")
