@@ -1310,7 +1310,7 @@ class InferredDataset:
         create_intent: bool = False,
     ) -> OutputProposal:
         """Return an explicit create proposal for an absent target."""
-        observation = inspect_target(target, identity=identity or f"target:{self.name}")
+        observation = inspect_target(target, identity=identity)
         proposal_identity = identity or observation.identity or f"target:{self.name}"
         diagnostics = list(observation.diagnostics)
         if observation.exists == "present":

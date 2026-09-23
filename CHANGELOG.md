@@ -14,6 +14,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - FastAPI control-plane request-validation failures return a fixed safe 422
   envelope in standalone and embedded apps without changing unrelated host
   validation behavior; public route and handler composition seams added (#144).
+- Inference target observations use stable path or provider-binding identities
+  across absent, empty, and populated states; output proposals and durable
+  bindings retain the identity without serializing raw paths (#168).
 
 ## [0.54.0] - Unreleased implementation candidate
 
