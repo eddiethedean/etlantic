@@ -61,6 +61,33 @@ def test_source_inference_matches_across_records_pandas_and_polars(
     assert all(result.schema.identity == "differential-source" for result in results)
 
 
+def test_typed_empty_dataframes_preserve_declared_columns() -> None:
+    pandas_result = etl.infer_source(
+        pd.DataFrame(
+            {
+                "id": pd.Series([], dtype="int64"),
+                "name": pd.Series([], dtype="string"),
+            }
+        ),
+        identity="differential-empty",
+    )
+    polars_result = etl.infer_source(
+        pl.DataFrame(
+            {
+                "id": pl.Series([], dtype=pl.Int64),
+                "name": pl.Series([], dtype=pl.String),
+            }
+        ),
+        identity="differential-empty",
+    )
+
+    assert _schema_signature(pandas_result) == _schema_signature(polars_result)
+    assert _schema_signature(pandas_result) == [
+        ("id", "integer", False, True),
+        ("name", "string", False, True),
+    ]
+
+
 def test_lineage_transfer_matches_across_records_pandas_and_polars() -> None:
     datasets = [
         etl.from_records(ROWS, name="differential-source"),

@@ -610,6 +610,8 @@ def _run_gate_action(
     if gate == "optional_dependency_matrix":
         _check_optional_dependency_gate(matrix)
         return 0
+    if gate == "differential_fixtures":
+        _check_optional_dependency_gate(matrix)
     return _run_pytest_gate(gate, findings)
 
 

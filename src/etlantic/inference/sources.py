@@ -344,6 +344,43 @@ def _schema_from_provider_result(
     )
 
 
+def _schema_from_column_metadata(
+    value: Any, *, identity: str
+) -> InferenceResult | None:
+    """Recover a schema from dataframe columns when no rows are available."""
+    columns = getattr(value, "columns", None)
+    dtypes = getattr(value, "dtypes", None)
+    if columns is None or dtypes is None:
+        return None
+    try:
+        names = list(columns)
+        dtype_values = (
+            list(dtypes.values()) if isinstance(dtypes, Mapping) else list(dtypes)
+        )
+    except (TypeError, ValueError):
+        return None
+    if not names or len(names) != len(dtype_values):
+        return None
+    try:
+        schema = normalize_schema_from_fields(
+            [
+                {
+                    "name": str(name),
+                    "logical_type": _provider_logical_type(dtype),
+                }
+                for name, dtype in zip(names, dtype_values, strict=True)
+            ],
+            identity=identity,
+            preserve_decimal=True,
+        )
+    except (TypeError, ValueError):
+        return None
+    return InferenceResult(
+        schema,
+        provenance={"source": "metadata", "method": "provider_columns"},
+    )
+
+
 def _attach_provider_preview(
     result: InferenceResult,
     value: Any,
@@ -413,8 +450,8 @@ def _attach_provider_preview(
         NormalizedField(
             name=field.name,
             logical_type=field.logical_type,
-            required=preview_fields.get(field.name, field).required,
-            nullable=preview_fields.get(field.name, field).nullable,
+            required=field.required and preview_fields.get(field.name, field).required,
+            nullable=field.nullable or preview_fields.get(field.name, field).nullable,
             metadata=dict(field.metadata),
         )
         for field in result.schema.fields
@@ -802,13 +839,33 @@ def infer_source(
                 ),
                 provenance={"source": type(value).__name__},
             )
-        return infer_records(
+        result = infer_records(
             converted,
             hints=hints,
             limits=limits,
             identity=identity,
             retain_rows=True,
         )
+        if not converted and not result.schema.fields:
+            column_schema = _schema_from_column_metadata(value, identity=identity)
+            if column_schema is not None:
+                return column_schema.replace(
+                    diagnostics=(
+                        *column_schema.diagnostics,
+                        *result.diagnostics,
+                    )[: limits.max_diagnostics],
+                    provenance={
+                        **column_schema.provenance,
+                        **{
+                            key: item
+                            for key, item in result.provenance.items()
+                            if key != "source"
+                        },
+                    },
+                    rows=result.rows,
+                    replay=result.replay,
+                )
+        return result
     if isinstance(value, Mapping) or hasattr(value, "__iter__"):
         return infer_records(value, hints=hints, limits=limits, identity=identity)
     return InferenceResult(
