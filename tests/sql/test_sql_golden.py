@@ -1,3 +1,4 @@
+# pyright: reportAttributeAccessIssue=false, reportMissingParameterType=false, reportMissingTypeStubs=false, reportUnknownArgumentType=false, reportUnknownMemberType=false, reportUnknownParameterType=false, reportUnknownVariableType=false
 """Golden fixtures for SQL plan / compile / evidence shapes."""
 
 from __future__ import annotations

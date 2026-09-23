@@ -1,3 +1,4 @@
+# pyright: reportMissingTypeStubs=false, reportUnknownArgumentType=false, reportUnknownMemberType=false, reportUnknownVariableType=false
 """Graduated 0.17 portable families on Polars (string-advanced + window/1).
 
 Requires:

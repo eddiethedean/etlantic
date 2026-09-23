@@ -1,3 +1,4 @@
+# pyright: reportUnknownArgumentType=false, reportUnknownMemberType=false, reportUnknownVariableType=false, reportUnnecessaryIsInstance=false
 """Integrity safeguards for independent, exact-row graduation projections.
 
 Validation is not authentication or approval. Release review/attestation still

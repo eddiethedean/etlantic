@@ -1,3 +1,4 @@
+# pyright: reportUnknownVariableType=false, reportUnnecessaryComparison=false
 """Direct-execution scheduler boundary (etlantic.scheduler/1).
 
 Built-in ``LocalScheduler`` is the zero-service default. Optional plugins such

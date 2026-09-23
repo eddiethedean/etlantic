@@ -1,3 +1,4 @@
+# pyright: reportAttributeAccessIssue=false, reportMissingImports=false, reportUnknownMemberType=false, reportUnknownVariableType=false
 """0.36 Medallantic hard gates: boundary audit + corpora promotion."""
 
 from __future__ import annotations

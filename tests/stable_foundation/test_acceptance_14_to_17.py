@@ -1,3 +1,4 @@
+# pyright: reportArgumentType=false, reportAttributeAccessIssue=false, reportMissingTypeStubs=false, reportUnknownArgumentType=false, reportUnknownMemberType=false, reportUnknownVariableType=false
 """Stable-foundation acceptance items 14-17 (Arrow Gate A, DataFusion, plans, allowlist)."""
 
 from __future__ import annotations

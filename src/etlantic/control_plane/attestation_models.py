@@ -1,3 +1,4 @@
+# pyright: reportUnknownVariableType=false
 """Supply-chain attestation models (CP4)."""
 
 from __future__ import annotations

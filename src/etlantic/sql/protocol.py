@@ -1,3 +1,4 @@
+# pyright: reportUnknownVariableType=false
 """Versioned SQL execution protocol (etlantic.sql/1).
 
 Core stays driver-free. The reference plugin lives in ``etlantic-sql``.

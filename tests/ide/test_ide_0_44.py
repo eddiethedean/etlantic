@@ -1,3 +1,4 @@
+# pyright: reportUnknownVariableType=false
 """Tests for ETLantic 0.44 IDE protocol, analysis, trust, and SARIF locations."""
 
 from __future__ import annotations

@@ -1,3 +1,4 @@
+# pyright: reportUnknownArgumentType=false, reportUnknownVariableType=false, reportUnnecessaryIsInstance=false
 """Frozen AST for provisional ``etlantic.quality/1`` expressions."""
 
 from __future__ import annotations

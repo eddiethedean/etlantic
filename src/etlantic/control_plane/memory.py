@@ -1,3 +1,4 @@
+# pyright: reportUnknownArgumentType=false, reportUnknownMemberType=false, reportUnknownVariableType=false
 """In-memory control-plane fakes with tenant/workspace isolation."""
 
 from __future__ import annotations

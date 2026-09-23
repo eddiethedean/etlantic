@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+# pyright: reportUnknownVariableType=false
 """True old/new reader-writer compatibility harness (036-C02).
 
 Default mode exercises current-tree fixtures plus semantic comparison and

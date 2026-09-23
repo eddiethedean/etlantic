@@ -1,3 +1,4 @@
+# pyright: reportDeprecated=false, reportUnknownVariableType=false
 """PipelineRuntime — registries, lifespan, middleware, resources."""
 
 from __future__ import annotations

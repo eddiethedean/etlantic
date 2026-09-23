@@ -1,3 +1,4 @@
+# pyright: reportUnknownArgumentType=false, reportUnknownMemberType=false, reportUnknownVariableType=false
 """Pure-Python portable evaluator for the built-in local engine."""
 
 from __future__ import annotations

@@ -1,3 +1,4 @@
+# pyright: reportMissingParameterType=false, reportUnknownArgumentType=false, reportUnknownParameterType=false
 """Fixture-only 0.48 evaluation corpus (live paid-model eval skipped)."""
 
 from __future__ import annotations

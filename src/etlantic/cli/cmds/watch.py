@@ -1,3 +1,4 @@
+# pyright: reportPrivateUsage=false, reportUnknownArgumentType=false, reportUnknownMemberType=false, reportUnknownVariableType=false, reportUnusedFunction=false
 """Watch-mode CLI: revalidate on file changes without executing (0.44)."""
 
 from __future__ import annotations

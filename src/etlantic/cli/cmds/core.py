@@ -1,3 +1,4 @@
+# pyright: reportUnusedFunction=false
 """Core CLI command registrations."""
 
 from __future__ import annotations

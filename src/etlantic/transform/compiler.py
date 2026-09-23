@@ -1,3 +1,4 @@
+# pyright: reportUnknownArgumentType=false, reportUnknownMemberType=false, reportUnknownVariableType=false, reportUnnecessaryComparison=false, reportUnnecessaryIsInstance=false
 """Portable transform compiler protocol (`etlantic.transform-compiler/1`)."""
 
 from __future__ import annotations

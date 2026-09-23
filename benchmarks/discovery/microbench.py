@@ -1,3 +1,4 @@
+# pyright: reportUnknownArgumentType=false, reportUnknownMemberType=false, reportUnknownVariableType=false
 """Plugin discovery microbenchmark (metadata-only vs runtime groups)."""
 
 from __future__ import annotations

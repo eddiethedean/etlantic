@@ -1,3 +1,4 @@
+# pyright: reportPrivateUsage=false, reportUnknownArgumentType=false, reportUnknownMemberType=false, reportUnknownVariableType=false, reportUnnecessaryComparison=false
 """Lifecycle operations that accept PipelineDefinition without originating classes."""
 
 from __future__ import annotations

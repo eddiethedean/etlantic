@@ -1,3 +1,4 @@
+# pyright: reportUnusedFunction=false
 """etlantic context — bounded redacted context bundles."""
 
 from __future__ import annotations

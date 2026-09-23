@@ -1,3 +1,4 @@
+# pyright: reportUnknownVariableType=false
 """Artifact references and materialization strategies for PipelinePlan."""
 
 from __future__ import annotations

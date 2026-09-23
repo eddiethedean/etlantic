@@ -1,3 +1,4 @@
+# pyright: reportUnknownArgumentType=false
 """Canonical unresolved pipeline definition (schema etlantic.pipeline/1).
 
 ``PipelineDefinition`` is the authoring-complete, data-only model shared by

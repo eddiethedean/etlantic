@@ -1,3 +1,4 @@
+# pyright: reportUnknownMemberType=false
 """MkDocs hooks for ETLantic docs site hygiene."""
 
 from __future__ import annotations

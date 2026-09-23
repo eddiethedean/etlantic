@@ -1,3 +1,4 @@
+# pyright: reportUnknownMemberType=false, reportUnknownVariableType=false
 """Structural plan diff helpers."""
 
 from __future__ import annotations

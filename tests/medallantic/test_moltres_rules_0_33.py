@@ -1,3 +1,4 @@
+# pyright: reportMissingImports=false, reportUnknownArgumentType=false, reportUnknownMemberType=false, reportUnknownVariableType=false
 """0.33 Moltres native rule coverage."""
 
 from __future__ import annotations

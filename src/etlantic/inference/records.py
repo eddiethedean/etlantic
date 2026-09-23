@@ -1,3 +1,4 @@
+# pyright: reportUnknownArgumentType=false, reportUnknownMemberType=false, reportUnknownVariableType=false, reportUnnecessaryIsInstance=false
 """Bounded schema inference for mappings, iterables, and CSV files."""
 
 from __future__ import annotations

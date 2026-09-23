@@ -1,3 +1,4 @@
+# pyright: reportArgumentType=false
 """Secret provider regression tests."""
 
 from __future__ import annotations

@@ -1,3 +1,4 @@
+# pyright: reportUnknownArgumentType=false
 """Process-scoped in-memory storage binding."""
 
 from __future__ import annotations

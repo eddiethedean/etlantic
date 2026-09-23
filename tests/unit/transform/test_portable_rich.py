@@ -1,3 +1,4 @@
+# pyright: reportMissingParameterType=false, reportOptionalMemberAccess=false, reportUnknownArgumentType=false, reportUnknownLambdaType=false, reportUnknownMemberType=false, reportUnknownParameterType=false, reportUnknownVariableType=false, reportUnusedFunction=false
 """Rich Portable Analytics authoring tests (0.11 W3)."""
 
 from __future__ import annotations

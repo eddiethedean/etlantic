@@ -1,3 +1,4 @@
+# pyright: reportAttributeAccessIssue=false, reportMissingImports=false, reportMissingTypeArgument=false, reportMissingTypeStubs=false, reportUnknownArgumentType=false, reportUnknownMemberType=false, reportUnknownVariableType=false
 """Private Pandas relational mode-matrix tests (0.14a)."""
 
 from __future__ import annotations

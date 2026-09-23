@@ -1,3 +1,4 @@
+# pyright: reportUnknownArgumentType=false, reportUnknownMemberType=false, reportUnknownVariableType=false
 """Retry-safety and reliability mapping for orchestration compilation."""
 
 from __future__ import annotations

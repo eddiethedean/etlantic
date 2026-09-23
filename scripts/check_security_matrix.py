@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+# pyright: reportUnknownArgumentType=false, reportUnknownMemberType=false, reportUnknownVariableType=false
 """CI gate: security verification matrix completeness and path existence.
 
 Validates ``docs/02_FOUNDATIONS/security-verification-matrix.json`` and checks

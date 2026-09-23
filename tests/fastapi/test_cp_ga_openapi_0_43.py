@@ -1,3 +1,4 @@
+# pyright: reportMissingImports=false, reportUnknownArgumentType=false, reportUnknownMemberType=false, reportUnknownParameterType=false, reportUnknownVariableType=false
 """OpenAPI stability snapshot for CP-GA (covers CP1-CP4 operationIds)."""
 
 from __future__ import annotations

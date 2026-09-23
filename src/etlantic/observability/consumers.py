@@ -1,3 +1,4 @@
+# pyright: reportUnknownArgumentType=false, reportUnknownMemberType=false, reportUnknownVariableType=false
 """Event consumer protocol for derived analytics (etlantic.event_consumer/1)."""
 
 from __future__ import annotations

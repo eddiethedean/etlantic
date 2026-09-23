@@ -1,3 +1,4 @@
+# pyright: reportUnknownArgumentType=false, reportUnknownMemberType=false
 """Human/machine optimization explanation artifacts."""
 
 from __future__ import annotations

@@ -1,3 +1,4 @@
+# pyright: reportUnknownVariableType=false
 """Versioned policy decision envelopes (CP4 / ADR-019)."""
 
 from __future__ import annotations

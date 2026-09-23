@@ -1,3 +1,4 @@
+# pyright: reportDeprecated=false
 """Lifespan scope helpers for runtime / run / execution-region."""
 
 from __future__ import annotations

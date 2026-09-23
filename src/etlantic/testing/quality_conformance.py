@@ -1,3 +1,4 @@
+# pyright: reportUnknownMemberType=false, reportUnknownVariableType=false
 """Engine-independent portable quality conformance suite (0.30)."""
 
 from __future__ import annotations

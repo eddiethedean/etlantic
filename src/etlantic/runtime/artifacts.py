@@ -1,3 +1,4 @@
+# pyright: reportPrivateUsage=false, reportUnknownVariableType=false
 """In-run artifact store realizing plan ArtifactStrategy."""
 
 from __future__ import annotations

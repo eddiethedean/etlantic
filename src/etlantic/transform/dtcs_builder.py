@@ -1,3 +1,4 @@
+# pyright: reportUnknownArgumentType=false, reportUnknownMemberType=false, reportUnknownVariableType=false, reportUnnecessaryIsInstance=false, reportUnusedFunction=false
 """Lower FrameExpr trees to DTCS COM plans and portable envelopes."""
 
 from __future__ import annotations

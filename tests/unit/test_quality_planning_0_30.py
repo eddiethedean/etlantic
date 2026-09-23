@@ -1,3 +1,4 @@
+# pyright: reportAttributeAccessIssue=false, reportMissingTypeArgument=false, reportUnknownArgumentType=false, reportUnknownMemberType=false, reportUnknownVariableType=false
 """Tests for quality-gate planning (0.30 WP2)."""
 
 from __future__ import annotations

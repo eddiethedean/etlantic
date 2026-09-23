@@ -1,3 +1,4 @@
+# pyright: reportMissingImports=false, reportUnknownArgumentType=false, reportUnknownMemberType=false, reportUnknownVariableType=false
 """Optional notebook / IPython display helpers (0.44)."""
 
 from __future__ import annotations

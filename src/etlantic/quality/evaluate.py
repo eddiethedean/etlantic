@@ -1,3 +1,4 @@
+# pyright: reportUnknownArgumentType=false, reportUnknownMemberType=false, reportUnknownVariableType=false
 """Evaluate portable quality rules against row mappings (engine-neutral)."""
 
 from __future__ import annotations

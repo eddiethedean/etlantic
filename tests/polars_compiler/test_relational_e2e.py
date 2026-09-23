@@ -1,3 +1,4 @@
+# pyright: reportAttributeAccessIssue=false, reportMissingParameterType=false, reportMissingTypeStubs=false, reportOptionalMemberAccess=false, reportUnknownArgumentType=false, reportUnknownMemberType=false, reportUnknownParameterType=false, reportUnknownVariableType=false, reportUnusedFunction=false
 """Private Polars relational compiler e2e tests (0.13a)."""
 
 from __future__ import annotations

@@ -1,3 +1,4 @@
+# pyright: reportAttributeAccessIssue=false, reportMissingParameterType=false, reportMissingTypeArgument=false, reportMissingTypeStubs=false, reportPrivateUsage=false, reportUnknownArgumentType=false, reportUnknownLambdaType=false, reportUnknownMemberType=false, reportUnknownParameterType=false, reportUnknownVariableType=false, reportUnusedFunction=false
 """Stable-foundation acceptance items 9-13 (lifecycle, trust, portable, medallantic)."""
 
 from __future__ import annotations

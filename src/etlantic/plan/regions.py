@@ -1,3 +1,4 @@
+# pyright: reportUnknownVariableType=false
 """Execution regions and materialization boundaries."""
 
 from __future__ import annotations

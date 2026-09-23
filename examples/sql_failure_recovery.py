@@ -1,3 +1,4 @@
+# pyright: reportMissingTypeStubs=false, reportUnknownMemberType=false, reportUnknownVariableType=false
 """Failure recovery: unsupported merge fails closed before mutation."""
 
 from __future__ import annotations

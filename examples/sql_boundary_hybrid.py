@@ -1,3 +1,4 @@
+# pyright: reportMissingTypeStubs=false, reportUnknownMemberType=false, reportUnknownVariableType=false
 """Hybrid SQL↔Python boundary example (planned materialization)."""
 
 from __future__ import annotations

@@ -1,3 +1,4 @@
+# pyright: reportUnknownArgumentType=false, reportUnknownVariableType=false
 """Versioned execution contracts for adaptive physical units.
 
 The records in this module deliberately separate wire-safe execution summaries

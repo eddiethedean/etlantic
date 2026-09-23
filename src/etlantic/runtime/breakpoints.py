@@ -1,3 +1,4 @@
+# pyright: reportUnknownVariableType=false
 """IDE/debug breakpoint helpers over the lifecycle EventBus."""
 
 from __future__ import annotations

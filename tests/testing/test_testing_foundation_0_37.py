@@ -1,3 +1,4 @@
+# pyright: reportAttributeAccessIssue=false, reportMissingImports=false, reportMissingTypeStubs=false, reportOptionalMemberAccess=false, reportPrivateUsage=false, reportUnknownMemberType=false, reportUnknownVariableType=false
 """0.37 testing-foundation graduation evidence.
 
 ADOPTION_ECOSYSTEM / EXIT_GATE_0_37 gates covered here:

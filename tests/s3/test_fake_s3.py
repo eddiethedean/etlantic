@@ -1,3 +1,4 @@
+# pyright: reportAttributeAccessIssue=false, reportMissingImports=false, reportMissingTypeArgument=false, reportMissingTypeStubs=false, reportUnknownArgumentType=false, reportUnknownMemberType=false, reportUnknownParameterType=false, reportUnknownVariableType=false
 """Fake-only S3 connector tests (no network)."""
 
 from __future__ import annotations

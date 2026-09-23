@@ -1,3 +1,4 @@
+# pyright: reportUnknownVariableType=false
 """Production envelope conformance helpers (0.34)."""
 
 from __future__ import annotations

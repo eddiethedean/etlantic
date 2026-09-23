@@ -1,3 +1,4 @@
+# pyright: reportUnknownVariableType=false
 """External artifact transport and size policies for orchestration."""
 
 from __future__ import annotations

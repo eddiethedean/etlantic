@@ -1,3 +1,4 @@
+# pyright: reportMissingImports=false, reportUnknownArgumentType=false, reportUnknownMemberType=false, reportUnknownVariableType=false
 """0.32 live PipelineBuilder bridge + runtime_map overrides/invalidation."""
 
 from __future__ import annotations

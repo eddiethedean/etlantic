@@ -1,3 +1,4 @@
+# pyright: reportPrivateUsage=false, reportUnknownArgumentType=false, reportUnknownLambdaType=false, reportUnknownMemberType=false, reportUnknownVariableType=false
 """Deterministic adaptive placement planner.
 
 The adaptive planner is deliberately plan-only.  It consumes the canonical

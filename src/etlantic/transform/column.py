@@ -1,3 +1,4 @@
+# pyright: reportUnknownArgumentType=false, reportUnknownVariableType=false
 """Immutable symbolic column expressions for portable authoring."""
 
 from __future__ import annotations

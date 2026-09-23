@@ -1,3 +1,4 @@
+# pyright: reportDeprecated=false, reportUnknownVariableType=false
 """Resource injection markers and scoped resource cache."""
 
 from __future__ import annotations

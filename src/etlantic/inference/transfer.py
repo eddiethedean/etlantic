@@ -1,3 +1,4 @@
+# pyright: reportUnknownArgumentType=false, reportUnknownMemberType=false, reportUnknownVariableType=false, reportUnnecessaryIsInstance=false
 """Pure normalized schema transfer over portable ``FrameExpr`` actions."""
 
 from __future__ import annotations

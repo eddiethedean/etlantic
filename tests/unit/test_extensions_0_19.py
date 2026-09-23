@@ -1,3 +1,4 @@
+# pyright: reportMissingTypeArgument=false, reportUnknownArgumentType=false, reportUnknownVariableType=false
 """Extension metadata budget helpers (0.19)."""
 
 from __future__ import annotations

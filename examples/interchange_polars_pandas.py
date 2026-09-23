@@ -1,3 +1,4 @@
+# pyright: reportMissingTypeStubs=false, reportUnknownArgumentType=false, reportUnknownMemberType=false, reportUnknownVariableType=false
 """Gate A demo: Polars → Pandas boundary with versioned etlantic.interchange/1.
 
 Requires:

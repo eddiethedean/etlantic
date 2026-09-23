@@ -1,3 +1,4 @@
+# pyright: reportMissingImports=false, reportUnknownVariableType=false
 """Sparkless shim for differential corpus (default CI path)."""
 
 from __future__ import annotations

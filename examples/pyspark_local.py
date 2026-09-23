@@ -1,3 +1,4 @@
+# pyright: reportMissingTypeStubs=false, reportUnknownArgumentType=false, reportUnknownMemberType=false, reportUnknownVariableType=false
 """Local PySpark batch pipeline (ETLantic 0.34.0).
 
 Requires:

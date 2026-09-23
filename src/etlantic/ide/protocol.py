@@ -1,3 +1,4 @@
+# pyright: reportUnknownArgumentType=false, reportUnknownMemberType=false, reportUnknownVariableType=false
 """Editor-neutral protocol payloads for developer intelligence (0.44)."""
 
 from __future__ import annotations

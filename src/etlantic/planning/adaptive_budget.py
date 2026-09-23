@@ -1,3 +1,4 @@
+# pyright: reportDeprecated=false, reportUnknownArgumentType=false, reportUnknownVariableType=false
 """Deterministic ownership accounting for adaptive planning and projections.
 
 Sizes are compact canonical UTF-8 sizes, never Python object sizes or RSS.

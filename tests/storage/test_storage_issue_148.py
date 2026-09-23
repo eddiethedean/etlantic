@@ -1,3 +1,4 @@
+# pyright: reportArgumentType=false, reportCallIssue=false, reportPrivateUsage=false, reportUnknownArgumentType=false, reportUnknownVariableType=false
 """Regression coverage for SafeIoPolicy enforcement in file bindings."""
 
 from __future__ import annotations

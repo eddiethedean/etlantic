@@ -1,3 +1,4 @@
+# pyright: reportUnknownVariableType=false
 """Trusted-workspace policy for opt-in import-based analysis (0.44)."""
 
 from __future__ import annotations

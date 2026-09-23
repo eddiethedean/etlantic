@@ -1,3 +1,4 @@
+# pyright: reportUnknownArgumentType=false
 """Thread-safe CP3 reference store used for conformance and local development.
 
 It models atomic acceptance plus outbox insert under one lock. Production

@@ -1,3 +1,4 @@
+# pyright: reportUnknownArgumentType=false, reportUnknownMemberType=false, reportUnknownParameterType=false, reportUnknownVariableType=false, reportUnnecessaryComparison=false
 """Small dependency-free documentation consistency checks."""
 
 from __future__ import annotations

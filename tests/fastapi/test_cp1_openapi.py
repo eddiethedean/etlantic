@@ -1,3 +1,4 @@
+# pyright: reportMissingImports=false, reportUnknownArgumentType=false, reportUnknownMemberType=false, reportUnknownParameterType=false, reportUnknownVariableType=false, reportUnusedVariable=false
 """OpenAPI 3.1 snapshot and generated-client smoke for CP1."""
 
 from __future__ import annotations

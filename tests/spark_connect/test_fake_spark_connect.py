@@ -1,3 +1,4 @@
+# pyright: reportAttributeAccessIssue=false, reportMissingTypeStubs=false, reportUnknownMemberType=false, reportUnknownVariableType=false
 """Fake Spark Connect provider tests (live Databricks/EMR skipped)."""
 
 from __future__ import annotations

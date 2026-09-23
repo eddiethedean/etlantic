@@ -1,3 +1,4 @@
+# pyright: reportDeprecated=false
 """Public failure-injection helpers for plugin and resilience conformance.
 
 Part of the stable ``etlantic.testing`` foundation (0.37). Injection fires only

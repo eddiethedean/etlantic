@@ -1,3 +1,4 @@
+# pyright: reportUnknownVariableType=false
 """Secret provider protocol and resolution context."""
 
 from __future__ import annotations

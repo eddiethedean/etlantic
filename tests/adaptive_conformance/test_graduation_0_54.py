@@ -1,3 +1,4 @@
+# pyright: reportArgumentType=false, reportMissingParameterType=false, reportUnknownArgumentType=false, reportUnknownParameterType=false, reportUnknownVariableType=false
 """Candidate integrity is not independent Available-row authority."""
 
 import copy

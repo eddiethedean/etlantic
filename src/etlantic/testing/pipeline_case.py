@@ -1,3 +1,4 @@
+# pyright: reportPrivateUsage=false, reportUnknownArgumentType=false, reportUnknownMemberType=false, reportUnknownVariableType=false
 """Application-pipeline testing foundation (ETLantic 0.37).
 
 Stable foundation: typed cases, fakes, plan/report snapshots, and a

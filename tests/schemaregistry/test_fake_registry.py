@@ -1,3 +1,4 @@
+# pyright: reportMissingImports=false, reportUnknownMemberType=false, reportUnknownVariableType=false
 """Fake-only schema-registry adapter tests (no Confluent HTTP)."""
 
 from __future__ import annotations

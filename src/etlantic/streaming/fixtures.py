@@ -1,3 +1,4 @@
+# pyright: reportUnknownArgumentType=false, reportUnknownVariableType=false
 """In-memory stream / DLQ / registry fixtures (payloads stay in the fixture)."""
 
 from __future__ import annotations

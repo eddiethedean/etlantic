@@ -1,3 +1,4 @@
+# pyright: reportPrivateUsage=false, reportUnknownVariableType=false
 """Run history provider protocol (etlantic.run_history/1)."""
 
 from __future__ import annotations

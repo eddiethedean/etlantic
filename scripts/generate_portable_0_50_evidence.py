@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+# pyright: reportPrivateUsage=false, reportUnknownArgumentType=false, reportUnknownMemberType=false, reportUnknownVariableType=false
 """Generate bounded, reproducible 0.50 portable qualification evidence.
 
 The generator deliberately records only capability metadata, fingerprints,

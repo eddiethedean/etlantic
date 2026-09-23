@@ -1,3 +1,4 @@
+# pyright: reportUnknownVariableType=false
 """In-memory quota provider with weighted RR under shared pressure (CP4)."""
 
 from __future__ import annotations

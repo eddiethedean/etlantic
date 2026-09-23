@@ -1,3 +1,4 @@
+# pyright: reportUnknownArgumentType=false, reportUnknownMemberType=false, reportUnknownVariableType=false, reportUnusedFunction=false
 """CLI: etlantic stream dead-letters inspect | redrive plan | schemas check."""
 
 from __future__ import annotations

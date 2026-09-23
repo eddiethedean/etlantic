@@ -1,3 +1,4 @@
+# pyright: reportUnknownArgumentType=false, reportUnknownVariableType=false
 """Static plugin manifests inspectable without importing entry points (0.20)."""
 
 from __future__ import annotations

@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+# pyright: reportUnknownArgumentType=false, reportUnknownMemberType=false, reportUnknownVariableType=false
 """Run and verify the phase 0.55 inference evidence campaign.
 
 The checked-in manifest describes the qualification decision. This command

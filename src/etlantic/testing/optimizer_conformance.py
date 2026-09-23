@@ -1,3 +1,4 @@
+# pyright: reportUnknownArgumentType=false, reportUnknownMemberType=false
 """Optimizer pass conformance suite (0.45)."""
 
 from __future__ import annotations

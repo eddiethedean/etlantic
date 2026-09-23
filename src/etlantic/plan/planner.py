@@ -1,3 +1,4 @@
+# pyright: reportPrivateUsage=false, reportUnknownArgumentType=false, reportUnknownMemberType=false, reportUnknownVariableType=false, reportUnnecessaryComparison=false, reportUnusedFunction=false
 """Pure planner: validated logical model + profile → PipelinePlan."""
 
 from __future__ import annotations

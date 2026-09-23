@@ -1,3 +1,4 @@
+# pyright: reportMissingParameterType=false, reportUnknownArgumentType=false, reportUnknownParameterType=false
 """Tests for 0.34 observability and run history."""
 
 from __future__ import annotations

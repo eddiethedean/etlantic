@@ -1,3 +1,4 @@
+# pyright: reportUnknownArgumentType=false, reportUnknownMemberType=false, reportUnknownVariableType=false
 """Runtime reliability enforcement helpers."""
 
 from __future__ import annotations

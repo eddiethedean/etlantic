@@ -1,3 +1,4 @@
+# pyright: reportAttributeAccessIssue=false, reportMissingTypeStubs=false, reportUnknownArgumentType=false, reportUnknownMemberType=false, reportUnknownVariableType=false
 """Experimental FakeMcpServer method-authority tests (live client skipped)."""
 
 from __future__ import annotations

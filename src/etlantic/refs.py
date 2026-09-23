@@ -1,3 +1,4 @@
+# pyright: reportUnknownVariableType=false
 """Typed output references for pipeline wiring."""
 
 from __future__ import annotations

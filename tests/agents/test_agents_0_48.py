@@ -1,3 +1,4 @@
+# pyright: reportMissingTypeArgument=false, reportPrivateUsage=false, reportUnknownArgumentType=false, reportUnknownVariableType=false
 """0.48 agent guidance, context, proposal, and catalog tests."""
 
 from __future__ import annotations

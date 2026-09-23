@@ -1,3 +1,4 @@
+# pyright: reportUnknownArgumentType=false, reportUnknownMemberType=false, reportUnknownVariableType=false
 """JSON-safe effective parameter authority for requested adaptive plans."""
 
 from __future__ import annotations

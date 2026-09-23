@@ -1,3 +1,4 @@
+# pyright: reportUnknownVariableType=false
 """Run-scoped publication barrier coordinating sink commit and source ledger."""
 
 from __future__ import annotations

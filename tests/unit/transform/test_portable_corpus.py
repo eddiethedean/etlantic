@@ -1,3 +1,4 @@
+# pyright: reportMissingParameterType=false, reportMissingTypeArgument=false, reportUnknownArgumentType=false, reportUnknownLambdaType=false, reportUnknownMemberType=false, reportUnknownParameterType=false, reportUnknownVariableType=false, reportUnusedFunction=false
 """Per-profile golden corpus and negative-budget tests (0.11 W5)."""
 
 from __future__ import annotations

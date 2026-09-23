@@ -1,3 +1,4 @@
+# pyright: reportUnknownArgumentType=false, reportUnknownMemberType=false
 """In-memory CustomerPipeline demo (SDK seed + run).
 
 This is not the docs Quickstart. For the canonical first success, use:

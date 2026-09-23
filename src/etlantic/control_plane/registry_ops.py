@@ -1,3 +1,4 @@
+# pyright: reportPrivateUsage=false, reportUnknownArgumentType=false, reportUnknownMemberType=false, reportUnknownVariableType=false
 """Registry revision search/pagination and retention hooks (CP2 / 040-O).
 
 Search returns **metadata only** (no revision content bodies / source rows).

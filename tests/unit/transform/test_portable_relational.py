@@ -1,3 +1,4 @@
+# pyright: reportMissingParameterType=false, reportOptionalMemberAccess=false, reportUnknownMemberType=false, reportUnknownParameterType=false, reportUnknownVariableType=false, reportUnusedFunction=false
 """Relational portable authoring tests (0.11 W2)."""
 
 from __future__ import annotations

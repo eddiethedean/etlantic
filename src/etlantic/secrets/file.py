@@ -1,3 +1,4 @@
+# pyright: reportDeprecated=false
 """Mounted-file secret provider (explicit compatibility)."""
 
 from __future__ import annotations

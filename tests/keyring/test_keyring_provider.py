@@ -1,3 +1,4 @@
+# pyright: reportMissingImports=false, reportUnknownMemberType=false, reportUnknownVariableType=false
 """Keyring secret provider tests."""
 
 from __future__ import annotations

@@ -1,3 +1,4 @@
+# pyright: reportUnknownVariableType=false
 """Multi-phase validation tests."""
 
 from __future__ import annotations

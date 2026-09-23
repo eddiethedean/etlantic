@@ -1,3 +1,4 @@
+# pyright: reportMissingTypeStubs=false, reportUnknownArgumentType=false, reportUnknownMemberType=false, reportUnknownVariableType=false
 """Run a portable kernel transform on Polars without a native implementation.
 
 Requires:

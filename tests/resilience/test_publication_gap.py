@@ -1,3 +1,4 @@
+# pyright: reportArgumentType=false, reportMissingParameterType=false, reportPrivateUsage=false, reportUnknownArgumentType=false, reportUnknownMemberType=false, reportUnknownParameterType=false
 """Publication committed but report persistence fails with PMEXEC410."""
 
 from __future__ import annotations

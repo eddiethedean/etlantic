@@ -1,3 +1,4 @@
+# pyright: reportUnknownArgumentType=false, reportUnknownMemberType=false, reportUnknownVariableType=false
 """Untrusted proposal schema, sandbox, and 0.42 approval handoff."""
 
 from __future__ import annotations

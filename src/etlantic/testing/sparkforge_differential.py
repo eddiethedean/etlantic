@@ -1,3 +1,4 @@
+# pyright: reportMissingImports=false, reportUnknownArgumentType=false, reportUnknownMemberType=false, reportUnknownVariableType=false
 """SparkForge differential conformance suite (ETLantic 0.32 / Medallantic M4).
 
 Compares **normalized semantics** (graph order, write intents, validation

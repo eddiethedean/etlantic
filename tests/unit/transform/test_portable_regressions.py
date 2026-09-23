@@ -1,3 +1,4 @@
+# pyright: reportMissingParameterType=false, reportUnknownArgumentType=false, reportUnknownMemberType=false, reportUnknownParameterType=false, reportUnknownVariableType=false, reportUnusedFunction=false
 """Regression tests for portable IR correctness bugs fixed in 0.11."""
 
 from __future__ import annotations

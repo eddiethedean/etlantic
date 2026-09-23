@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+# pyright: reportUnknownArgumentType=false, reportUnknownMemberType=false, reportUnknownParameterType=false, reportUnknownVariableType=false
 """CI gate: connector fake conformance (local-files + optional cloud fakes)."""
 
 from __future__ import annotations

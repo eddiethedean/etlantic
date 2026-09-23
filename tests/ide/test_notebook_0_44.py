@@ -1,3 +1,4 @@
+# pyright: reportArgumentType=false, reportPrivateUsage=false
 """Notebook session and display tests for 0.44."""
 
 from __future__ import annotations

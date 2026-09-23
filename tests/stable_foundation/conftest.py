@@ -1,3 +1,4 @@
+# pyright: reportMissingTypeArgument=false, reportUnknownParameterType=false, reportUnknownVariableType=false
 """Shared fixtures for the stable-foundation acceptance suite."""
 
 from __future__ import annotations

@@ -1,3 +1,4 @@
+# pyright: reportUnknownArgumentType=false, reportUnknownMemberType=false
 """Vendor-neutral ETLantic AI task catalog (`etlantic.ai_task/1`)."""
 
 from __future__ import annotations

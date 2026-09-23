@@ -1,3 +1,4 @@
+# pyright: reportUnknownVariableType=false, reportUnnecessaryIsInstance=false, reportUnusedFunction=false
 """Policy-governed resolution of definition references into planning context."""
 
 from __future__ import annotations

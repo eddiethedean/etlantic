@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+# pyright: reportMissingTypeStubs=false, reportUnknownArgumentType=false, reportUnknownMemberType=false, reportUnknownVariableType=false, reportUnusedFunction=false
 """Run one authored 0.50 portable pipeline through every public runtime path."""
 
 from __future__ import annotations

@@ -1,3 +1,4 @@
+# pyright: reportUnknownArgumentType=false, reportUnknownMemberType=false, reportUnknownVariableType=false
 """Cost providers and multi-objective candidate selection."""
 
 from __future__ import annotations

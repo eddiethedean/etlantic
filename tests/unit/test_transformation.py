@@ -1,3 +1,4 @@
+# pyright: reportAssignmentType=false, reportMissingParameterType=false, reportUnknownParameterType=false, reportUnknownVariableType=false
 """Unit tests for transformation ports and implementations."""
 
 from etlantic import Input, Output, Parameter, Transformation

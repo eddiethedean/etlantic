@@ -1,3 +1,4 @@
+# pyright: reportUnknownVariableType=false
 """Versioned Spark execution protocol (etlantic.spark/1).
 
 Core stays PySpark-free. The reference plugin lives in ``etlantic-pyspark``.

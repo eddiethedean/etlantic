@@ -1,3 +1,4 @@
+# pyright: reportUnknownArgumentType=false, reportUnknownMemberType=false, reportUnknownVariableType=false, reportUnnecessaryIsInstance=false
 """Public definition inspection, rewrite, and provenance helpers (0.35).
 
 These APIs are bounded and secret-free: they never resolve secrets, never

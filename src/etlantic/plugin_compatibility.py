@@ -1,3 +1,4 @@
+# pyright: reportUnknownVariableType=false
 """Plugin compatibility report for independently installed packages.
 
 ``etlantic plugin compatibility`` evaluates a plugin's static

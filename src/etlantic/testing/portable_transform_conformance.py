@@ -1,3 +1,4 @@
+# pyright: reportMissingImports=false, reportMissingTypeStubs=false, reportUnknownArgumentType=false, reportUnknownMemberType=false, reportUnknownVariableType=false
 """Public portable transform compiler conformance suite (0.14)."""
 
 from __future__ import annotations

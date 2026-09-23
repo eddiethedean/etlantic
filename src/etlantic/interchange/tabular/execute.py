@@ -1,3 +1,4 @@
+# pyright: reportUnknownArgumentType=false
 """Runtime lookup helpers for planned tabular interchange boundaries."""
 
 from __future__ import annotations

@@ -1,3 +1,4 @@
+# pyright: reportUnknownVariableType=false, reportUnnecessaryIsInstance=false
 """IDE command executor — public SDK paths only (0.44)."""
 
 from __future__ import annotations

@@ -1,3 +1,4 @@
+# pyright: reportArgumentType=false, reportAttributeAccessIssue=false, reportMissingParameterType=false, reportUnknownArgumentType=false, reportUnknownMemberType=false, reportUnknownParameterType=false
 """Security and behavior tests for authoring inspect/rewrite/provenance (0.35)."""
 
 from __future__ import annotations

@@ -1,3 +1,4 @@
+# pyright: reportCallIssue=false, reportPrivateUsage=false, reportUnknownVariableType=false
 """Regression tests for 0.1 P0 correctness bugs."""
 
 from __future__ import annotations

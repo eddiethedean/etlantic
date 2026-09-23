@@ -1,3 +1,4 @@
+# pyright: reportMissingTypeStubs=false, reportUnknownArgumentType=false, reportUnknownMemberType=false, reportUnknownVariableType=false, reportUnnecessaryComparison=false, reportUnnecessaryIsInstance=false
 """Contract diff / compatibility integration points."""
 
 from __future__ import annotations

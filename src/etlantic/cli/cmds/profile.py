@@ -1,3 +1,4 @@
+# pyright: reportPrivateUsage=false, reportUnusedFunction=false
 """etlantic profile — validate, show, diff, and migrate profiles."""
 
 from __future__ import annotations

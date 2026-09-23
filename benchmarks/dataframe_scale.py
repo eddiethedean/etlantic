@@ -1,3 +1,4 @@
+# pyright: reportMissingTypeStubs=false
 """Lightweight dataframe benchmark harness (correctness + timing)."""
 
 from __future__ import annotations

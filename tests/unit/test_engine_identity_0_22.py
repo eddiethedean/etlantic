@@ -1,3 +1,4 @@
+# pyright: reportPrivateUsage=false
 """0.22 WP1: capability-driven engine identity (no privileged name sets)."""
 
 from __future__ import annotations

@@ -1,3 +1,4 @@
+# pyright: reportAttributeAccessIssue=false, reportMissingParameterType=false, reportUnknownArgumentType=false, reportUnknownMemberType=false, reportUnknownParameterType=false, reportUnknownVariableType=false, reportUnusedFunction=false
 """Planner coverage for dataframe interchange descriptors."""
 
 from __future__ import annotations

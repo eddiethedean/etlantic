@@ -1,3 +1,4 @@
+# pyright: reportAttributeAccessIssue=false, reportMissingParameterType=false, reportUnknownArgumentType=false, reportUnknownMemberType=false, reportUnknownParameterType=false, reportUnknownVariableType=false
 """SQL plugin end-to-end tests (SQLite by default via ETLANTIC_SQL_URL)."""
 
 from __future__ import annotations

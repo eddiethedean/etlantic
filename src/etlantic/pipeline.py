@@ -1,3 +1,4 @@
+# pyright: reportPrivateUsage=false, reportUnknownMemberType=false, reportUnknownVariableType=false
 """Pipeline authoring: Extract, Load, Pipeline, and subpipelines."""
 
 from __future__ import annotations

@@ -1,3 +1,4 @@
+# pyright: reportAttributeAccessIssue=false, reportUnknownMemberType=false
 """PipelinePlan serialization round-trip tests."""
 
 from __future__ import annotations

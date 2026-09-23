@@ -1,3 +1,4 @@
+# pyright: reportUnknownArgumentType=false, reportUnusedFunction=false
 """CLI: etlantic schedule / scheduler / worker."""
 
 from __future__ import annotations

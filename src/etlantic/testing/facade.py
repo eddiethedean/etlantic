@@ -1,3 +1,4 @@
+# pyright: reportUnnecessaryIsInstance=false
 """Facade-package conformance kit (definition round-trip + graph equivalence)."""
 
 from __future__ import annotations

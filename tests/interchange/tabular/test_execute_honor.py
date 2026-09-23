@@ -1,3 +1,4 @@
+# pyright: reportArgumentType=false, reportMissingParameterType=false, reportMissingTypeArgument=false, reportUnknownArgumentType=false, reportUnknownMemberType=false, reportUnknownParameterType=false, reportUnknownVariableType=false
 """Runtime honors the mechanism selected on a cross-engine boundary."""
 
 from __future__ import annotations

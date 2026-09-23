@@ -1,3 +1,4 @@
+# pyright: reportUnnecessaryComparison=false
 """Incremental structural validate / plan preview (no execution)."""
 
 from __future__ import annotations

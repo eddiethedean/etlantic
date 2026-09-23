@@ -1,3 +1,4 @@
+# pyright: reportPrivateUsage=false, reportUnknownArgumentType=false, reportUnknownVariableType=false
 """Normalize class-authored pipelines into PipelineDefinition and back to LogicalGraph."""
 
 from __future__ import annotations

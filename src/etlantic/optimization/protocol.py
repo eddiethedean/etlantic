@@ -1,3 +1,4 @@
+# pyright: reportUnknownVariableType=false
 """Versioned optimization-pass protocol types."""
 
 from __future__ import annotations

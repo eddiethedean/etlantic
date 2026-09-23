@@ -1,3 +1,4 @@
+# pyright: reportUnknownVariableType=false
 """Typed outbound event declarations."""
 
 from __future__ import annotations

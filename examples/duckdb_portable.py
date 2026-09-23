@@ -1,3 +1,4 @@
+# pyright: reportMissingTypeStubs=false, reportUnknownArgumentType=false, reportUnknownMemberType=false, reportUnknownVariableType=false
 """Small runnable smoke example for the qualified DuckDB 0.49 surface."""
 
 # Optional DuckDB plugin exports are dynamic entry-point surfaces.

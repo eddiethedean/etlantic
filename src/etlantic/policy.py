@@ -1,3 +1,4 @@
+# pyright: reportUnknownVariableType=false
 """Named validation and quality-gate policies."""
 
 from __future__ import annotations

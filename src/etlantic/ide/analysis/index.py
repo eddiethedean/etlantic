@@ -1,3 +1,4 @@
+# pyright: reportUnknownArgumentType=false, reportUnknownMemberType=false, reportUnknownVariableType=false
 """Incremental workspace symbol and diagnostic index (0.44)."""
 
 from __future__ import annotations

@@ -1,3 +1,4 @@
+# pyright: reportMissingImports=false, reportPrivateUsage=false, reportUnknownArgumentType=false, reportUnknownMemberType=false, reportUnknownVariableType=false
 """OpenLineage outbound export tests (CP2 / 040-L) — fake transport only."""
 
 from __future__ import annotations

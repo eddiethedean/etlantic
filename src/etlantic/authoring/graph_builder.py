@@ -1,3 +1,4 @@
+# pyright: reportPrivateUsage=false
 """Pipeline graph construction (internal refactor surface)."""
 
 from __future__ import annotations

@@ -1,3 +1,4 @@
+# pyright: reportUnusedFunction=false
 """Public ExecutionScheduler conformance helpers (etlantic.scheduler/1)."""
 
 from __future__ import annotations

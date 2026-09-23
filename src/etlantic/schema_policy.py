@@ -1,3 +1,4 @@
+# pyright: reportUnknownVariableType=false
 """Schema drift policy decisions for local runtime."""
 
 from __future__ import annotations

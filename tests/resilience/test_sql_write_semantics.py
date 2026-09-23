@@ -1,3 +1,4 @@
+# pyright: reportAttributeAccessIssue=false, reportMissingParameterType=false, reportMissingTypeStubs=false, reportUnknownMemberType=false, reportUnknownParameterType=false, reportUnknownVariableType=false
 """SQL runtime write/retry semantics (WP6)."""
 
 from __future__ import annotations

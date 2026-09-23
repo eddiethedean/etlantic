@@ -1,3 +1,4 @@
+# pyright: reportMissingImports=false, reportUnknownArgumentType=false, reportUnknownMemberType=false, reportUnknownVariableType=false
 """SQL pipeline-builder differential suite (ETLantic 0.33 / Medallantic M5).
 
 Compares **normalized semantics** (graph order, write intents, validation

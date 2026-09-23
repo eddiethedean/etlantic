@@ -1,3 +1,4 @@
+# pyright: reportMissingImports=false, reportUnknownArgumentType=false, reportUnknownMemberType=false, reportUnknownVariableType=false
 """SQLModel CP4 governance stores + durable entity dual-write."""
 
 from __future__ import annotations

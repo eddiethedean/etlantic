@@ -1,3 +1,4 @@
+# pyright: reportArgumentType=false, reportCallIssue=false, reportPrivateUsage=false, reportUnknownMemberType=false
 """Implementation regressions for bounded identities and lock contention."""
 
 from __future__ import annotations

@@ -1,3 +1,4 @@
+# pyright: reportUnknownVariableType=false
 """Data-governance constraints attached to CP4 policy decisions."""
 
 from __future__ import annotations

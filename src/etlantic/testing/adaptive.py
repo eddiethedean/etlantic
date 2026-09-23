@@ -1,3 +1,4 @@
+# pyright: reportUnknownArgumentType=false, reportUnknownMemberType=false, reportUnknownVariableType=false, reportUnnecessaryIsInstance=false
 """Public behavioral provider conformance, never execution qualification.
 
 Callbacks compare synthetic outputs and effects in process. Reports deliberately

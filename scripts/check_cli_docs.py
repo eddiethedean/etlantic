@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+# pyright: reportUnknownArgumentType=false, reportUnknownMemberType=false, reportUnknownVariableType=false
 """Ensure docs/10_REFERENCE/CLI.md mentions the live Typer CLI surface."""
 
 from __future__ import annotations

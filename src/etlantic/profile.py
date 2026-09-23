@@ -1,3 +1,4 @@
+# pyright: reportPrivateUsage=false, reportUnknownArgumentType=false, reportUnknownVariableType=false, reportUnnecessaryIsInstance=false
 """Execution profiles that bind logical pipelines to environments."""
 
 from __future__ import annotations

@@ -1,3 +1,4 @@
+# pyright: reportUnknownArgumentType=false, reportUnknownVariableType=false
 """Helpers that freeze plan-owned nested mappings, lists, and sets.
 
 Not full object-graph immutability: dataclass instances and unknown objects

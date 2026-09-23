@@ -1,3 +1,4 @@
+# pyright: reportAttributeAccessIssue=false, reportUnknownArgumentType=false, reportUnknownMemberType=false, reportUnknownParameterType=false, reportUnknownVariableType=false
 """SparkForge adapter parity tests (IR fixtures — no SparkForge install required)."""
 
 from __future__ import annotations

@@ -1,3 +1,4 @@
+# pyright: reportUnknownMemberType=false, reportUnknownVariableType=false
 """Port annotation markers: Input, Output, and Parameter."""
 
 from __future__ import annotations

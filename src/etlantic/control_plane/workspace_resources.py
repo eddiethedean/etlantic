@@ -1,3 +1,4 @@
+# pyright: reportUnknownArgumentType=false, reportUnknownVariableType=false
 """Workspace resource records, protocol, and safe-root helpers (CP2 / 040-W).
 
 Stored records carry ``root_ref`` tokens only — never absolute filesystem

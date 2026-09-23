@@ -1,3 +1,4 @@
+# pyright: reportUnknownArgumentType=false, reportUnknownMemberType=false, reportUnknownVariableType=false
 """Plan-time statistics and evidence store for optimization passes."""
 
 from __future__ import annotations

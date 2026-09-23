@@ -1,3 +1,4 @@
+# pyright: reportUnknownVariableType=false
 """Authoring catalog for visual builders and service discovery."""
 
 from __future__ import annotations

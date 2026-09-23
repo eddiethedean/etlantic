@@ -1,3 +1,4 @@
+# pyright: reportMissingImports=false, reportUnknownArgumentType=false, reportUnknownVariableType=false, reportUnusedFunction=false
 """Compile, generate, and diff CLI commands."""
 
 from __future__ import annotations

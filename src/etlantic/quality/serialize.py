@@ -1,3 +1,4 @@
+# pyright: reportUnknownArgumentType=false, reportUnknownVariableType=false
 """Canonical serialization and fingerprinting for ``etlantic.quality/1``."""
 
 from __future__ import annotations

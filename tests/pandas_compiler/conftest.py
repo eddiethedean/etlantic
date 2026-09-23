@@ -1,3 +1,4 @@
+# pyright: reportMissingTypeStubs=false, reportUnusedImport=false
 """Skip Pandas compiler suite when pandas/numpy are not fully installed."""
 
 from __future__ import annotations

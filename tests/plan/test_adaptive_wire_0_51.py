@@ -1,3 +1,4 @@
+# pyright: reportArgumentType=false, reportPrivateUsage=false
 """Closed adaptive /2 wire-model tests."""
 
 from __future__ import annotations

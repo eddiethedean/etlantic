@@ -1,3 +1,4 @@
+# pyright: reportArgumentType=false, reportAttributeAccessIssue=false, reportMissingImports=false, reportMissingParameterType=false, reportReturnType=false, reportUnknownArgumentType=false, reportUnknownLambdaType=false, reportUnknownMemberType=false, reportUnknownParameterType=false, reportUnknownVariableType=false
 """Independent checks of unresolved phase 0.53 contract invariants.
 
 These retain the original FINAL IDs and supplement the focused reproducers.

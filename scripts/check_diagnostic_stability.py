@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+# pyright: reportUnnecessaryComparison=false
 """Ensure every shipped diagnostic code family has a published stability tier."""
 
 from __future__ import annotations

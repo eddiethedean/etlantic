@@ -1,3 +1,4 @@
+# pyright: reportUnknownMemberType=false, reportUnknownVariableType=false
 """In-memory delivery objectives, evaluation, and notify fakes (CP4)."""
 
 from __future__ import annotations

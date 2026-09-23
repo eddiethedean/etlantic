@@ -1,3 +1,4 @@
+# pyright: reportUnknownVariableType=false
 """In-memory governed erasure coordinator (CP4)."""
 
 from __future__ import annotations

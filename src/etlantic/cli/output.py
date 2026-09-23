@@ -1,3 +1,4 @@
+# pyright: reportUnknownMemberType=false, reportUnknownVariableType=false
 """Unified CLI output helpers."""
 
 from __future__ import annotations

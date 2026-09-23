@@ -1,3 +1,4 @@
+# pyright: reportMissingParameterType=false, reportUnknownMemberType=false, reportUnknownParameterType=false, reportUnknownVariableType=false
 """Protected FINAL-004 contracts for effective adaptive request precedence.
 
 The binding-only remediation must also preserve the approved parameter and

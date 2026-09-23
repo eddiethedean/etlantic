@@ -1,3 +1,4 @@
+# pyright: reportDeprecated=false, reportUnknownVariableType=false
 """Deterministic failure injection for resilience testing (0.23).
 
 Injection fires only when ``ETLANTIC_FAULT_INJECTION`` is set to a truthy

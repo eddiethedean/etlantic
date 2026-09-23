@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+# pyright: reportUnknownMemberType=false, reportUnknownVariableType=false
 """Bidirectional drift check for public surface inventory vs etlantic facade."""
 
 from __future__ import annotations

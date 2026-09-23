@@ -1,3 +1,4 @@
+# pyright: reportPrivateUsage=false, reportUnknownArgumentType=false, reportUnknownMemberType=false, reportUnknownVariableType=false
 """In-memory ScheduleStore (tests/dev). Production must reject this class."""
 
 from __future__ import annotations

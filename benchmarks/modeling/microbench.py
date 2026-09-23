@@ -1,3 +1,4 @@
+# pyright: reportUnknownArgumentType=false, reportUnknownMemberType=false, reportUnknownVariableType=false
 """Deterministic microbenchmarks for modeling, discovery, and planning."""
 
 from __future__ import annotations

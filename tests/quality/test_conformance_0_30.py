@@ -1,3 +1,4 @@
+# pyright: reportMissingTypeStubs=false, reportUnknownMemberType=false
 """Portable quality conformance and engine fail-closed tests."""
 
 from __future__ import annotations

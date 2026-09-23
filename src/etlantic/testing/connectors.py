@@ -1,3 +1,4 @@
+# pyright: reportUnknownArgumentType=false, reportUnknownVariableType=false
 """Public connector conformance suites (capability-selected fake cases)."""
 
 from __future__ import annotations

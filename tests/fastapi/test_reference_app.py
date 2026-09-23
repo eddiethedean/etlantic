@@ -1,3 +1,4 @@
+# pyright: reportMissingImports=false, reportUnknownMemberType=false, reportUnknownVariableType=false
 """CI-collectable FastAPI reference smoke (repo root on sys.path)."""
 
 from __future__ import annotations

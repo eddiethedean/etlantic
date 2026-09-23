@@ -1,3 +1,4 @@
+# pyright: reportMissingTypeStubs=false, reportUnknownVariableType=false
 """Executable public-only 0.54 Polars scan → Pandas development candidate."""
 
 from __future__ import annotations

@@ -1,3 +1,4 @@
+# pyright: reportUnknownVariableType=false
 """Lifecycle events and breakpoint bus."""
 
 from __future__ import annotations

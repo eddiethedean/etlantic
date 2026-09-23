@@ -1,3 +1,4 @@
+# pyright: reportUnknownVariableType=false
 """Outbound network / webhook / remote-reference policy (0.20)."""
 
 from __future__ import annotations

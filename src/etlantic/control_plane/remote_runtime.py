@@ -1,3 +1,4 @@
+# pyright: reportUnknownVariableType=false
 """In-process remote-runtime protocol (`etlantic.remote-runtime/1`)."""
 
 from __future__ import annotations

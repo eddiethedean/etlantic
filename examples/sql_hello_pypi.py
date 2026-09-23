@@ -1,3 +1,4 @@
+# pyright: reportMissingTypeStubs=false, reportUnknownMemberType=false, reportUnknownVariableType=false
 """Minimal SQL hello — PyPI path (SQLite in-memory by default).
 
 Paste companion for docs/06_EXECUTION/SQL_HELLO_PYPI.md.

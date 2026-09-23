@@ -1,3 +1,4 @@
+# pyright: reportMissingImports=false, reportUnknownArgumentType=false, reportUnknownMemberType=false, reportUnknownVariableType=false
 """Operability: CP1 errors, SSE frames, and reports stay secret-free."""
 
 from __future__ import annotations

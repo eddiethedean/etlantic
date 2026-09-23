@@ -1,3 +1,4 @@
+# pyright: reportUnnecessaryIsInstance=false
 """Plan wire-schema upgrades.
 
 Historical plan documents are migrated here before

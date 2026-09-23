@@ -1,3 +1,4 @@
+# pyright: reportUnknownVariableType=false
 """Approval request models (CP4 separation of duties)."""
 
 from __future__ import annotations

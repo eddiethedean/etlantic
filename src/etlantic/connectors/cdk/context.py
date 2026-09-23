@@ -1,3 +1,4 @@
+# pyright: reportUnknownArgumentType=false, reportUnknownVariableType=false, reportUnnecessaryIsInstance=false
 """Redacted runtime context: SecretRef only, never resolved secret values."""
 
 from __future__ import annotations

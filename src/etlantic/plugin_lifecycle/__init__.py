@@ -1,3 +1,4 @@
+# pyright: reportUnknownVariableType=false, reportUnusedFunction=false
 """Plugin lifecycle: discover → evaluate → authorize → load (0.20)."""
 
 from __future__ import annotations

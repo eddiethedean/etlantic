@@ -1,3 +1,4 @@
+# pyright: reportUnknownArgumentType=false
 """Immutable control-plane identity, scope, and key types (CP1 / 039-I).
 
 These models are FastAPI- and SQLModel-free. They carry server-derived

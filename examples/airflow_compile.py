@@ -1,3 +1,4 @@
+# pyright: reportMissingTypeStubs=false, reportUnknownArgumentType=false, reportUnknownVariableType=false
 """Compile a portable pipeline to an Airflow DAG module (ETLantic 0.34.0).
 
 Requires:

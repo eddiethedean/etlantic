@@ -1,3 +1,4 @@
+# pyright: reportMissingTypeStubs=false, reportUnknownArgumentType=false, reportUnknownMemberType=false, reportUnknownVariableType=false
 """SQL-to-SQL example: normalize customers inside the database.
 
 Requires ``etlantic-sql``. Uses ``ETLANTIC_SQL_URL`` (defaults to

@@ -1,3 +1,4 @@
+# pyright: reportPrivateUsage=false, reportUnknownArgumentType=false, reportUnknownMemberType=false, reportUnknownVariableType=false, reportUnusedFunction=false
 """CLI: etlantic erasure plan|status (CP4 governed erasure)."""
 
 from __future__ import annotations

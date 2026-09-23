@@ -1,3 +1,4 @@
+# pyright: reportUnknownArgumentType=false
 """Execute a transformation step through the dataframe protocol."""
 
 from __future__ import annotations

@@ -1,3 +1,4 @@
+# pyright: reportUnknownVariableType=false
 """Transport-neutral application service facade for authoring and lifecycle."""
 
 from __future__ import annotations

@@ -1,3 +1,4 @@
+# pyright: reportMissingParameterType=false, reportUnknownArgumentType=false, reportUnknownLambdaType=false, reportUnknownMemberType=false, reportUnknownParameterType=false, reportUnknownVariableType=false
 """Public-only provider fixtures and non-authoritative safe conformance results."""
 
 from __future__ import annotations

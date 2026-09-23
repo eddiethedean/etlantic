@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+# pyright: reportMissingImports=false, reportUnknownVariableType=false
 """CI/local gate: DurableWorkStore conformance (memory + optional SQLModel)."""
 
 from __future__ import annotations

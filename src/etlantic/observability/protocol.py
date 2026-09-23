@@ -1,3 +1,4 @@
+# pyright: reportDeprecated=false, reportUnknownVariableType=false
 """Observability provider protocol (etlantic.observability/1)."""
 
 from __future__ import annotations

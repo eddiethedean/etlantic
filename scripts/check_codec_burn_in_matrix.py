@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+# pyright: reportUnknownParameterType=false
 """CI gate: sibling burn-in fixtures stay loadable with locked content hashes.
 
 Covers plan, run_report, profile, capabilities, and interchange goldens under

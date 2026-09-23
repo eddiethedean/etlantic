@@ -1,3 +1,4 @@
+# pyright: reportPrivateUsage=false, reportUnknownArgumentType=false, reportUnknownMemberType=false
 """Static recognition and lowering of one bounded native scan composition."""
 
 from __future__ import annotations

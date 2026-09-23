@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+# pyright: reportMissingTypeStubs=false, reportUnknownArgumentType=false, reportUnknownMemberType=false, reportUnknownVariableType=false, reportUnnecessaryComparison=false
 """Fail-closed validation for the checked-in 0.50 portable contract artifacts."""
 
 from __future__ import annotations

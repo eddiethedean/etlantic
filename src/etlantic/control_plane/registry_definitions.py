@@ -1,3 +1,4 @@
+# pyright: reportUnknownArgumentType=false
 """DefinitionRepository adapter backed by a RegistryProvider (CP2 / 040-P).
 
 Stores definition documents as immutable registry revisions:

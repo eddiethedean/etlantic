@@ -1,3 +1,4 @@
+# pyright: reportMissingTypeArgument=false, reportUnknownArgumentType=false, reportUnknownParameterType=false, reportUnknownVariableType=false
 """Validate golden plan/report dicts against packaged JSON Schemas (0.19)."""
 
 from __future__ import annotations

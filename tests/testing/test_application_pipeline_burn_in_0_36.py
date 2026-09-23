@@ -1,3 +1,4 @@
+# pyright: reportMissingParameterType=false, reportMissingTypeArgument=false, reportPrivateUsage=false, reportUnknownArgumentType=false, reportUnknownParameterType=false, reportUnknownVariableType=false
 """0.36 application-pipeline burn-in corpus (contract freeze).
 
 Canonical cases use public ``etlantic.testing`` imports. The 0.37 stable

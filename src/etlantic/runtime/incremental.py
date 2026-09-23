@@ -1,3 +1,4 @@
+# pyright: reportUnknownArgumentType=false, reportUnknownMemberType=false, reportUnknownVariableType=false
 """Domain-neutral incremental strategies and atomic state stores (0.31)."""
 
 from __future__ import annotations

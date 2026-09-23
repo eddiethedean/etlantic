@@ -1,3 +1,4 @@
+# pyright: reportUnknownVariableType=false
 """Typed runtime contexts passed through middleware stacks."""
 
 from __future__ import annotations

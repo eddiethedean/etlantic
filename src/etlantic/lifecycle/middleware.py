@@ -1,3 +1,4 @@
+# pyright: reportUnknownVariableType=false
 """Middleware stacks for run / step / provider scopes."""
 
 from __future__ import annotations

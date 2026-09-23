@@ -1,3 +1,4 @@
+# pyright: reportMissingParameterType=false, reportUnknownArgumentType=false, reportUnknownParameterType=false, reportUnusedImport=false
 """Removed-surface coverage for Extract/Load/asset after 0.16 cleanup."""
 
 from __future__ import annotations

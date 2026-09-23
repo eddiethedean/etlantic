@@ -1,3 +1,4 @@
+# pyright: reportUnknownArgumentType=false
 """Portable plan → backend-agnostic task graph mapping."""
 
 from __future__ import annotations

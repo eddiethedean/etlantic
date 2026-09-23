@@ -1,3 +1,4 @@
+# pyright: reportAttributeAccessIssue=false, reportMissingTypeStubs=false, reportUnknownArgumentType=false, reportUnknownMemberType=false, reportUnknownVariableType=false
 """Fake Snowflake connector tests (no network / SDK)."""
 
 from __future__ import annotations

@@ -1,3 +1,4 @@
+# pyright: reportMissingTypeArgument=false, reportUnknownArgumentType=false, reportUnknownParameterType=false, reportUnknownVariableType=false
 """Storage binding unit tests."""
 
 from __future__ import annotations

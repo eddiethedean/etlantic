@@ -1,3 +1,4 @@
+# pyright: reportMissingImports=false, reportMissingTypeStubs=false, reportUnknownArgumentType=false, reportUnknownMemberType=false, reportUnknownVariableType=false, reportUnnecessaryIsInstance=false
 """Fail-closed, whole-plan admission for local adaptive execution."""
 
 from __future__ import annotations

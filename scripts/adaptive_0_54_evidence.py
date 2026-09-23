@@ -1,3 +1,4 @@
+# pyright: reportUnknownArgumentType=false, reportUnknownMemberType=false, reportUnknownVariableType=false
 """Closed, read-only validation of candidate observations and graduation data."""
 
 from __future__ import annotations

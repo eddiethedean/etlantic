@@ -1,3 +1,4 @@
+# pyright: reportMissingParameterType=false, reportPrivateUsage=false, reportUnknownArgumentType=false, reportUnknownMemberType=false, reportUnknownParameterType=false, reportUnknownVariableType=false
 """Tests for ETLantic 0.45 optimization SDK."""
 
 from __future__ import annotations

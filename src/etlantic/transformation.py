@@ -1,3 +1,4 @@
+# pyright: reportUnknownVariableType=false
 """Transformation contracts, steps, and implementation registration."""
 
 from __future__ import annotations

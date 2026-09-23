@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+# pyright: reportMissingImports=false, reportMissingTypeStubs=false, reportUnknownArgumentType=false, reportUnknownMemberType=false, reportUnknownVariableType=false
 """Generate and verify the deterministic DuckDB 0.49 evidence bundle.
 
 The bundle describes the qualified subset only.  It intentionally contains

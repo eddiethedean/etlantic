@@ -1,3 +1,4 @@
+# pyright: reportUnknownArgumentType=false, reportUnknownMemberType=false, reportUnknownVariableType=false
 """The deliberately small 0.53 adaptive execution support matrix."""
 
 from __future__ import annotations

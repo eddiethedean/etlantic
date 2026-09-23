@@ -1,3 +1,4 @@
+# pyright: reportIndexIssue=false, reportMissingImports=false, reportUnknownArgumentType=false, reportUnknownMemberType=false, reportUnknownVariableType=false, reportUnusedFunction=false
 """Medallantic 0.31 transform_ref + lifecycle tests."""
 
 from __future__ import annotations

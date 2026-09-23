@@ -1,3 +1,4 @@
+# pyright: reportUnknownVariableType=false
 """Public connector request / plan / session / evidence models."""
 
 from __future__ import annotations

@@ -1,3 +1,4 @@
+# pyright: reportPrivateUsage=false
 """Authorization policy classes for plugin lifecycle."""
 
 from __future__ import annotations

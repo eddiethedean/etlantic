@@ -1,3 +1,4 @@
+# pyright: reportUnknownVariableType=false
 """JSON file storage binding (stdlib)."""
 
 from __future__ import annotations

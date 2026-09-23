@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+# pyright: reportMissingImports=false, reportUnknownVariableType=false
 """CI/local gate: two-tenant / two-workspace registry isolation + profile matrix.
 
 Extends conformance with an isolation matrix over memory (and SQLModel when

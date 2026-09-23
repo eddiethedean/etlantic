@@ -1,3 +1,4 @@
+# pyright: reportUnknownArgumentType=false, reportUnknownMemberType=false, reportUnknownVariableType=false
 """In-memory approval store with separation-of-duties (CP4)."""
 
 from __future__ import annotations

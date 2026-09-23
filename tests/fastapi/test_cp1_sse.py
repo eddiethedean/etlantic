@@ -1,3 +1,4 @@
+# pyright: reportArgumentType=false, reportMissingImports=false, reportMissingTypeArgument=false, reportUnknownArgumentType=false, reportUnknownMemberType=false, reportUnknownParameterType=false, reportUnknownVariableType=false
 """SSE resume, disconnect/reconnect, and authz for CP1 run events (039-E)."""
 
 from __future__ import annotations

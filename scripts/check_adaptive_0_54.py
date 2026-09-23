@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+# pyright: reportUnknownMemberType=false, reportUnknownVariableType=false
 """Run local candidate checks and retain fresh, payload-free observations.
 
 This checker never changes qualification authority or a graduation decision.

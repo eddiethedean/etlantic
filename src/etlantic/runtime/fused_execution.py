@@ -1,3 +1,4 @@
+# pyright: reportMissingImports=false, reportUnknownMemberType=false, reportUnknownVariableType=false
 """One admitted source/filter/project invocation with owned native lifetime."""
 
 from __future__ import annotations

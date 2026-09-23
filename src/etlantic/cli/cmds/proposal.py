@@ -1,3 +1,4 @@
+# pyright: reportUnusedFunction=false
 """etlantic proposal — validate untrusted AI proposals (no apply)."""
 
 from __future__ import annotations

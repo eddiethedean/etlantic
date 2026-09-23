@@ -1,3 +1,4 @@
+# pyright: reportMissingParameterType=false, reportUnknownMemberType=false, reportUnknownParameterType=false
 """Workspace and durable report CLI tests."""
 
 from __future__ import annotations

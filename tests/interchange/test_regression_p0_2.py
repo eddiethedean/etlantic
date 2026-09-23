@@ -1,3 +1,4 @@
+# pyright: reportAssignmentType=false, reportUnknownArgumentType=false, reportUnknownLambdaType=false
 """Regression tests for 0.2 P0/P1 correctness bugs."""
 
 from __future__ import annotations

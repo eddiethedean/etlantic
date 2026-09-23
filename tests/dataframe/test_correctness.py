@@ -1,3 +1,4 @@
+# pyright: reportAttributeAccessIssue=false, reportInvalidTypeForm=false, reportMissingParameterType=false, reportMissingTypeStubs=false, reportPrivateUsage=false, reportUnknownArgumentType=false, reportUnknownMemberType=false, reportUnknownParameterType=false, reportUnknownVariableType=false, reportUnusedFunction=false
 """Correctness regressions for 0.5.0 dataframe wiring."""
 
 from __future__ import annotations

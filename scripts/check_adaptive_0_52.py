@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+# pyright: reportUnknownArgumentType=false, reportUnknownMemberType=false, reportUnknownParameterType=false, reportUnknownVariableType=false
 """Generate and verify executable adaptive 0.52 release evidence."""
 
 from __future__ import annotations

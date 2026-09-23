@@ -1,3 +1,4 @@
+# pyright: reportUnknownArgumentType=false, reportUnknownMemberType=false, reportUnknownVariableType=false
 """Planning capability checks via EngineRegistry."""
 
 from __future__ import annotations

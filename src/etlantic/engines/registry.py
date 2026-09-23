@@ -1,3 +1,4 @@
+# pyright: reportUnknownArgumentType=false, reportUnknownVariableType=false
 """Central engine family registry and priority resolution."""
 
 from __future__ import annotations

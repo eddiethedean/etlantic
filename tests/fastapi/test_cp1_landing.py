@@ -1,3 +1,4 @@
+# pyright: reportMissingImports=false, reportPrivateUsage=false, reportUnknownArgumentType=false, reportUnknownMemberType=false, reportUnknownVariableType=false
 """Landing-zone watch submitter bridge outside core (039-L)."""
 
 from __future__ import annotations

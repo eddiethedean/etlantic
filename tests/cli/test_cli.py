@@ -1,3 +1,4 @@
+# pyright: reportPrivateUsage=false, reportUnknownArgumentType=false, reportUnknownVariableType=false
 """CLI smoke and workflow tests."""
 
 from __future__ import annotations

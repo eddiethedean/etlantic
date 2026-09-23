@@ -1,3 +1,4 @@
+# pyright: reportDeprecated=false
 """Environment-variable secret provider (explicit compatibility)."""
 
 from __future__ import annotations

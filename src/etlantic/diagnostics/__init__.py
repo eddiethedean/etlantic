@@ -1,3 +1,4 @@
+# pyright: reportUnknownVariableType=false
 """Structured diagnostics and validation reports."""
 
 from __future__ import annotations

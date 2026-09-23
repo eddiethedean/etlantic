@@ -1,3 +1,4 @@
+# pyright: reportMissingImports=false, reportPrivateUsage=false, reportUnknownVariableType=false
 """CP4 quotas, governance, erasure, audit, objectives, attestations."""
 
 from __future__ import annotations

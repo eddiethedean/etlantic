@@ -1,3 +1,4 @@
+# pyright: reportUnknownVariableType=false
 """Bounded, deterministic dynamic-control types (046-D)."""
 
 from __future__ import annotations

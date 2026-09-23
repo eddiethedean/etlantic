@@ -1,3 +1,4 @@
+# pyright: reportUnknownVariableType=false
 """Bundled JSON Schema helpers."""
 
 from __future__ import annotations

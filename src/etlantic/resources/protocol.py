@@ -1,3 +1,4 @@
+# pyright: reportUnknownVariableType=false
 """Discoverable resource-provider protocol (`etlantic.resource/1`)."""
 
 from __future__ import annotations

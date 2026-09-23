@@ -1,3 +1,4 @@
+# pyright: reportOptionalMemberAccess=false, reportUnknownMemberType=false
 """FINAL-004 implementation regressions for data-only portable authoring."""
 
 from __future__ import annotations

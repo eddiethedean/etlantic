@@ -1,3 +1,4 @@
+# pyright: reportUnknownVariableType=false
 """Bounded in-memory secret cache with TTL and revocation."""
 
 from __future__ import annotations

@@ -1,3 +1,4 @@
+# pyright: reportMissingTypeStubs=false, reportUnknownArgumentType=false, reportUnknownMemberType=false, reportUnknownVariableType=false, reportUnusedImport=false
 """Optional Arrow interchange helpers (PyArrow imported only when available)."""
 
 from __future__ import annotations

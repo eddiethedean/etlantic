@@ -1,3 +1,4 @@
+# pyright: reportArgumentType=false
 """DPCS control-node fragments round-trip."""
 
 from __future__ import annotations

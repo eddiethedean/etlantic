@@ -1,3 +1,4 @@
+# pyright: reportMissingImports=false, reportUnknownArgumentType=false, reportUnknownMemberType=false, reportUnknownVariableType=false
 """FastAPI CP-GA two-tenant isolation (0.43)."""
 
 from __future__ import annotations

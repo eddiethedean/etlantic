@@ -1,3 +1,4 @@
+# pyright: reportArgumentType=false, reportCallIssue=false
 """WP5: etlantic plugin compatibility report (fixture manifests + CLI)."""
 
 from __future__ import annotations

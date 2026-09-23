@@ -1,3 +1,4 @@
+# pyright: reportMissingTypeArgument=false, reportUnknownArgumentType=false, reportUnknownParameterType=false, reportUnknownVariableType=false
 """Cross-artifact quadruple-minor codec burn-in matrix."""
 
 from __future__ import annotations

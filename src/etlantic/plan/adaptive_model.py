@@ -1,3 +1,4 @@
+# pyright: reportPrivateUsage=false, reportUnknownArgumentType=false, reportUnknownLambdaType=false, reportUnknownVariableType=false, reportUnnecessaryIsInstance=false
 """Closed adaptive planning IR (schema ``etlantic.plan/2``).
 
 This module contains representation and integrity checks only.  It deliberately

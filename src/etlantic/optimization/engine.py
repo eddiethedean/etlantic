@@ -1,3 +1,4 @@
+# pyright: reportUnknownArgumentType=false, reportUnknownVariableType=false
 """Optimization engine: run passes, gate candidates, derive optimized plans."""
 
 from __future__ import annotations

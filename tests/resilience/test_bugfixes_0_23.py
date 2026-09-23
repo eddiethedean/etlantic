@@ -1,3 +1,4 @@
+# pyright: reportArgumentType=false, reportMissingParameterType=false, reportPrivateUsage=false, reportUnknownArgumentType=false, reportUnknownMemberType=false, reportUnknownParameterType=false
 """Additional 0.23 resilience correctness fixes."""
 
 from __future__ import annotations

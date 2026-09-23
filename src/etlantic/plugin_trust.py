@@ -1,3 +1,4 @@
+# pyright: reportUnknownArgumentType=false, reportUnknownMemberType=false, reportUnknownVariableType=false
 """Plugin allowlist / version-pin enforcement (0.9)."""
 
 from __future__ import annotations

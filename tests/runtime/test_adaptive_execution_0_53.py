@@ -1,3 +1,4 @@
+# pyright: reportMissingParameterType=false, reportPrivateUsage=false, reportUnknownMemberType=false, reportUnknownParameterType=false, reportUnknownVariableType=false
 """Executable local adaptive physical-DAG behavior for phase 0.53."""
 
 from __future__ import annotations

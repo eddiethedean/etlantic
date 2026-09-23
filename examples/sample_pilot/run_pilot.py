@@ -1,3 +1,4 @@
+# pyright: reportMissingTypeStubs=false, reportUnknownVariableType=false
 """Validate, plan, and run the production-shaped pilot."""
 
 from __future__ import annotations

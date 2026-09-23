@@ -1,3 +1,4 @@
+# pyright: reportUnknownArgumentType=false, reportUnknownMemberType=false, reportUnknownVariableType=false
 """Adapters that present an executable adaptive plan to the local host.
 
 The adaptive wire model intentionally stays independent from the historical

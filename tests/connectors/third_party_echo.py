@@ -1,3 +1,4 @@
+# pyright: reportArgumentType=false, reportIndexIssue=false, reportReturnType=false
 """In-repo fake third-party source connector (public imports only).
 
 Simulates an independently governed connector that would register via
