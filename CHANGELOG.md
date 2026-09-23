@@ -16,7 +16,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   validation behavior; public route and handler composition seams added (#144).
 - Inference target observations use stable path or provider-binding identities
   across absent, empty, and populated states; output proposals and durable
-  bindings retain the identity without serializing raw paths (#168).
+  bindings retain the identity without serializing raw paths. Unbound targets
+  fail closed, and conflicting identity/address pairs are diagnosed (#168).
 
 ## [0.54.0] - Unreleased implementation candidate
 

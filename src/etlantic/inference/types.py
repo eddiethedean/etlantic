@@ -491,9 +491,12 @@ class TargetObservation:
     @property
     def identity(self) -> str | None:
         """Stable target identity when an inspected schema provides one."""
+        if self.metadata.get("identity_unresolved") is True:
+            return None
+        schema_identity = self.schema.identity if self.schema is not None else None
         return (
-            self.schema.identity
-            if self.schema is not None
+            schema_identity
+            if schema_identity is not None
             else self.metadata.get("identity")
         )
 

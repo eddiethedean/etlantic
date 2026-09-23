@@ -10,10 +10,12 @@ import json
 import math
 import re
 import stat as _stat
+from collections import OrderedDict
 from collections.abc import Callable, Mapping
 from contextlib import suppress
 from decimal import Decimal, DecimalException
 from pathlib import Path
+from threading import Lock
 from typing import Any, cast
 from urllib.parse import unquote, urlsplit
 
@@ -26,7 +28,7 @@ from etlantic.schema_drift import (
 )
 
 from .durable import _safe_file_identity
-from .records import _path_identity, infer_csv, infer_json, infer_records
+from .records import infer_csv, infer_json, infer_records
 from .types import (
     TARGET_EXISTENCE_STATES,
     FieldConstraint,
@@ -108,6 +110,41 @@ _TARGET_BINDING_KEYS = frozenset(
     }
 )
 _TARGET_URI = re.compile(r"^[A-Za-z][A-Za-z0-9+.-]*://")
+_TARGET_BINDING_NESTED_KEYS = frozenset({"binding", "resource", "target"})
+_TARGET_BINDING_ADDRESS_KEYS = _TARGET_BINDING_KEYS - {"provider"}
+# Cache only fingerprints, never raw bindings, for process-local collision checks.
+_TARGET_IDENTITY_BINDINGS: OrderedDict[str, str] = OrderedDict()
+_TARGET_IDENTITY_BINDINGS_LOCK = Lock()
+_TARGET_IDENTITY_BINDINGS_LIMIT = 4096
+
+
+class _TargetIdentityCollision(ValueError):
+    def __init__(self, identity: str) -> None:
+        super().__init__(identity)
+        self.identity = identity
+
+
+def _identity_diagnostic(code: str, message: str) -> Diagnostic:
+    return Diagnostic(
+        code,
+        Severity.ERROR,
+        message,
+        phase="inference",
+    )
+
+
+def _register_target_identity(identity: str, binding_fingerprint: str | None) -> None:
+    """Reject reuse of one identity for a different observed binding."""
+    if binding_fingerprint is None:
+        return
+    with _TARGET_IDENTITY_BINDINGS_LOCK:
+        previous = _TARGET_IDENTITY_BINDINGS.get(identity)
+        if previous is not None and previous != binding_fingerprint:
+            raise _TargetIdentityCollision(identity)
+        _TARGET_IDENTITY_BINDINGS[identity] = binding_fingerprint
+        _TARGET_IDENTITY_BINDINGS.move_to_end(identity)
+        if len(_TARGET_IDENTITY_BINDINGS) > _TARGET_IDENTITY_BINDINGS_LIMIT:
+            _TARGET_IDENTITY_BINDINGS.popitem(last=False)
 
 
 def _target_binding_value(key: str, value: Any) -> str | int | float | bool | None:
@@ -152,14 +189,38 @@ def _target_binding_value(key: str, value: Any) -> str | int | float | bool | No
 def _target_binding_fingerprint(binding: Mapping[str, Any]) -> str | None:
     """Hash only stable, non-secret address fields from a target binding."""
     normalized: dict[str, str | int | float | bool] = {}
-    for raw_key, value in binding.items():
-        key = str(raw_key).casefold().replace("-", "_")
-        if key not in _TARGET_BINDING_KEYS:
-            continue
-        normalized_value = _target_binding_value(key, value)
-        if normalized_value is not None:
-            normalized[key] = normalized_value
-    if not normalized:
+    has_address = False
+
+    def collect(values: Mapping[str, Any], *, prefix: str = "", depth: int = 0) -> None:
+        nonlocal has_address
+        if depth > 4:
+            return
+        try:
+            items = cast(Any, values.items())
+            for raw_key, value in items:
+                key = str(raw_key).casefold().replace("-", "_")
+                if (
+                    key not in _TARGET_BINDING_KEYS
+                    and key not in _TARGET_BINDING_NESTED_KEYS
+                ):
+                    continue
+                qualified_key = f"{prefix}{key}"
+                normalized_value = _target_binding_value(key, value)
+                if normalized_value is not None:
+                    normalized[qualified_key] = normalized_value
+                    if key in _TARGET_BINDING_ADDRESS_KEYS:
+                        has_address = True
+                elif key in _TARGET_BINDING_NESTED_KEYS and isinstance(value, Mapping):
+                    collect(
+                        cast(Mapping[str, Any], value),
+                        prefix=f"{qualified_key}.",
+                        depth=depth + 1,
+                    )
+        except Exception:
+            return
+
+    collect(binding)
+    if not normalized or not has_address:
         return None
     encoded = json.dumps(normalized, sort_keys=True, separators=(",", ":"))
     digest = hashlib.sha256(encoded.encode("utf-8")).hexdigest()[:20]
@@ -169,22 +230,93 @@ def _target_binding_fingerprint(binding: Mapping[str, Any]) -> str | None:
 def _explicit_binding_identity(binding: Mapping[str, Any]) -> str | None:
     """Return a caller/provider identity carried by a bounded binding map."""
     for key in ("identity", "target_identity", "target_id", "resource_id"):
-        value = binding.get(key)
+        try:
+            value = binding.get(key)
+        except Exception:
+            value = None
         if isinstance(value, str) and value.strip():
             return _safe_file_identity(value.strip())
-    for key in ("binding", "target"):
-        nested = binding.get(key)
+    for key in ("binding", "resource", "target"):
+        try:
+            nested = binding.get(key)
+        except Exception:
+            nested = None
         if isinstance(nested, Mapping):
+            nested_mapping = cast(Mapping[str, Any], nested)
             for nested_key in (
                 "identity",
                 "target_identity",
                 "target_id",
                 "resource_id",
             ):
-                value = nested.get(nested_key)
+                try:
+                    value = nested_mapping.get(nested_key)
+                except Exception:
+                    value = None
                 if isinstance(value, str) and value.strip():
                     return _safe_file_identity(value.strip())
     return None
+
+
+def _target_binding_fingerprint_for_target(
+    target: Any, binding: Mapping[str, Any] | None = None
+) -> str | None:
+    if binding is not None:
+        fingerprint = _target_binding_fingerprint(binding)
+        if fingerprint is not None:
+            return fingerprint
+
+    if isinstance(target, Path):
+        return _target_binding_fingerprint({"path": target})
+    if isinstance(target, str):
+        if _TARGET_URI.match(target):
+            try:
+                parsed = urlsplit(target)
+            except ValueError:
+                return None
+            if parsed.scheme.casefold() == "file" and parsed.netloc.casefold() in {
+                "",
+                "localhost",
+            }:
+                return _target_binding_fingerprint({"path": Path(unquote(parsed.path))})
+            return _target_binding_fingerprint({"uri": target})
+        return _target_binding_fingerprint({"path": target})
+    if isinstance(target, TargetObservation):
+        return _target_binding_fingerprint(target.metadata)
+    if isinstance(target, Mapping):
+        target_mapping = cast(Mapping[str, Any], target)
+        fingerprint = _target_binding_fingerprint(target_mapping)
+        if fingerprint is not None:
+            return fingerprint
+        for key in _TARGET_BINDING_NESTED_KEYS:
+            try:
+                nested = target_mapping.get(key)
+            except Exception:
+                continue
+            if isinstance(nested, Mapping):
+                fingerprint = _target_binding_fingerprint(
+                    cast(Mapping[str, Any], nested)
+                )
+                if fingerprint is not None:
+                    return fingerprint
+        return None
+    try:
+        nested = getattr(target, "binding", None)
+    except Exception:
+        nested = None
+    if isinstance(nested, Mapping):
+        fingerprint = _target_binding_fingerprint(cast(Mapping[str, Any], nested))
+        if fingerprint is not None:
+            return fingerprint
+    attributes: dict[str, Any] = {}
+    for key in _TARGET_BINDING_KEYS - {"schema"}:
+        try:
+            value = getattr(target, key, _MISSING)
+        except Exception:
+            continue
+        if value is not _MISSING:
+            attributes[key] = value
+    return _target_binding_fingerprint(attributes)
 
 
 def _target_identity(
@@ -192,32 +324,46 @@ def _target_identity(
     identity: str | None = None,
     *,
     binding: Mapping[str, Any] | None = None,
-) -> str:
+) -> str | None:
     """Resolve a stable, privacy-preserving identity for an inspected target.
 
     Explicit caller or provider identities take precedence. Local paths and
     provider bindings without an explicit identity use a deterministic digest;
     raw paths, URI credentials, query strings, and fragments never enter the
-    returned identity.
+    returned identity. Objects with no usable identity or binding stay
+    unresolved instead of sharing a type-wide identity.
     """
+    binding_fingerprint = _target_binding_fingerprint_for_target(target, binding)
+
+    def accept(candidate: str) -> str:
+        resolved = _safe_file_identity(candidate)
+        _register_target_identity(resolved, binding_fingerprint)
+        return resolved
+
     if identity is not None and str(identity).strip():
-        return _safe_file_identity(str(identity).strip())
+        return accept(str(identity).strip())
     if binding is not None:
         candidate_identity = _explicit_binding_identity(binding)
         if candidate_identity is not None:
-            return candidate_identity
+            return accept(candidate_identity)
 
     if isinstance(target, TargetObservation):
         schema_identity = target.schema.identity if target.schema is not None else None
         metadata_identity = target.metadata.get("identity")
+        if (
+            isinstance(metadata_identity, str)
+            and metadata_identity.strip()
+            and target.metadata.get("identity_unresolved") is not True
+        ):
+            return accept(metadata_identity.strip())
         for candidate in (metadata_identity, schema_identity):
             if isinstance(candidate, str) and candidate.strip():
                 normalized = _safe_file_identity(candidate.strip())
                 if normalized not in {"target", "<path-redacted>"}:
-                    return normalized
+                    return accept(normalized)
 
     if isinstance(target, NormalizedSchema):
-        return _safe_file_identity(target.identity)
+        return accept(target.identity) if target.identity.strip() else None
 
     if isinstance(target, (str, Path)):
         text = str(target)
@@ -230,24 +376,27 @@ def _target_identity(
                 parsed is not None
                 and parsed.scheme.casefold() == "file"
                 and parsed.netloc.casefold() in {"", "localhost"}
+                and binding_fingerprint is not None
             ):
-                try:
-                    return _path_identity("target", Path(unquote(parsed.path)))
-                except (OSError, RuntimeError, ValueError):
-                    pass
+                return accept(binding_fingerprint)
             normalized_uri = _target_binding_value("uri", text)
             if normalized_uri is not None:
-                return _target_binding_fingerprint({"uri": normalized_uri}) or "target"
+                fingerprint = _target_binding_fingerprint({"uri": normalized_uri})
+                if fingerprint is not None:
+                    return accept(fingerprint)
+        if binding_fingerprint is not None:
+            return accept(binding_fingerprint)
         try:
-            return _path_identity("target", target)
-        except (OSError, RuntimeError, ValueError):
             digest = hashlib.sha256(text.encode("utf-8")).hexdigest()[:20]
-            return f"target:{digest}"
+            return accept(f"target:{digest}")
+        except (OSError, RuntimeError, ValueError):
+            return None
 
     for key in ("identity", "target_identity", "target_id", "resource_id"):
         try:
+            target_mapping = cast(Mapping[str, Any], target)
             candidate = (
-                target.get(key, _MISSING)
+                target_mapping.get(key, _MISSING)
                 if isinstance(target, Mapping)
                 else getattr(target, key, _MISSING)
             )
@@ -257,52 +406,34 @@ def _target_identity(
             "target",
             "<path-redacted>",
         }:
-            return _safe_file_identity(candidate.strip())
-
-    if binding is not None:
-        fingerprint = _target_binding_fingerprint(binding)
-        if fingerprint is not None:
-            return fingerprint
+            return accept(candidate.strip())
 
     if isinstance(target, Mapping):
-        candidate_identity = _explicit_binding_identity(target)
+        candidate_identity = _explicit_binding_identity(cast(Mapping[str, Any], target))
         if candidate_identity is not None:
-            return candidate_identity
-        fingerprint = _target_binding_fingerprint(target)
-        if fingerprint is not None:
-            return fingerprint
-        nested = target.get("binding")
-        if isinstance(nested, Mapping):
-            fingerprint = _target_binding_fingerprint(nested)
-            if fingerprint is not None:
-                return fingerprint
+            return accept(candidate_identity)
     else:
+        try:
+            attributes = vars(target)
+        except (TypeError, AttributeError):
+            attributes = {}
+        schema = attributes.get("schema")
+        if isinstance(schema, NormalizedSchema) and schema.identity.strip():
+            return accept(schema.identity)
         try:
             nested = getattr(target, "binding", None)
         except Exception:
             nested = None
         if isinstance(nested, Mapping):
-            candidate_identity = _explicit_binding_identity(nested)
+            candidate_identity = _explicit_binding_identity(
+                cast(Mapping[str, Any], nested)
+            )
             if candidate_identity is not None:
-                return candidate_identity
-            fingerprint = _target_binding_fingerprint(nested)
-            if fingerprint is not None:
-                return fingerprint
-        attributes: dict[str, Any] = {}
-        for key in _TARGET_BINDING_KEYS:
-            try:
-                value = getattr(target, key, _MISSING)
-            except Exception:
-                continue
-            if value is not _MISSING:
-                attributes[key] = value
-        fingerprint = _target_binding_fingerprint(attributes)
-        if fingerprint is not None:
-            return fingerprint
+                return accept(candidate_identity)
 
-    adapter = f"{type(target).__module__}.{type(target).__qualname__}"
-    digest = hashlib.sha256(adapter.encode("utf-8")).hexdigest()[:20]
-    return f"target:{digest}"
+    if binding_fingerprint is not None:
+        return accept(binding_fingerprint)
+    return None
 
 
 def _unknown_target(
@@ -498,8 +629,33 @@ def _normalize_target_observation(
     observation: TargetObservation, *, identity: str | None = None
 ) -> TargetObservation:
     """Validate schema fields carried by a provider-created observation."""
-    resolved_identity = _target_identity(observation, identity)
-    metadata = {**observation.metadata, "identity": resolved_identity}
+    try:
+        resolved_identity = _target_identity(observation, identity)
+    except _TargetIdentityCollision as collision:
+        return _target_identity_collision_observation(
+            collision.identity, inspector=observation.inspector
+        )
+    identity_missing = resolved_identity is None
+    resolved_identity = resolved_identity or "target"
+    metadata = dict(observation.metadata)
+    if identity_missing:
+        metadata.pop("identity", None)
+        metadata["identity_unresolved"] = True
+    else:
+        metadata["identity"] = resolved_identity
+        metadata.pop("identity_unresolved", None)
+    diagnostics = observation.diagnostics
+    if identity_missing and not any(
+        getattr(item, "code", None) == "INFER_TARGET_IDENTITY_UNKNOWN"
+        for item in diagnostics
+    ):
+        diagnostics = (
+            *diagnostics,
+            _identity_diagnostic(
+                "INFER_TARGET_IDENTITY_UNKNOWN",
+                "Target binding has no stable identity; provide an identity or address",
+            ),
+        )
     if observation.schema is None:
         if observation.exists == "present":
             metadata.setdefault("empty", True)
@@ -508,14 +664,14 @@ def _normalize_target_observation(
             observation.exists,
             observation.revision,
             observation.inspector,
-            observation.diagnostics,
+            diagnostics,
             metadata,
         )
     try:
         schema = _validated_normalized_schema(observation.schema)
     except (AttributeError, KeyError, TypeError, ValueError):
         diagnostics = (
-            *observation.diagnostics,
+            *diagnostics,
             Diagnostic(
                 "INFER_TARGET_UNSUPPORTED",
                 Severity.WARNING,
@@ -540,7 +696,7 @@ def _normalize_target_observation(
         observation.exists,
         observation.revision,
         observation.inspector,
-        (*observation.diagnostics, *_unknown_type_diagnostics(schema)),
+        (*diagnostics, *_unknown_type_diagnostics(schema)),
         metadata,
     )
 
@@ -664,6 +820,78 @@ def _provider_state_observation(
     )
 
 
+def _target_identity_collision_observation(
+    identity: str, *, inspector: str | None
+) -> TargetObservation:
+    return TargetObservation(
+        None,
+        "unknown",
+        None,
+        inspector,
+        (
+            _identity_diagnostic(
+                "INFER_TARGET_IDENTITY_COLLISION",
+                "Target identity is already bound to a different target address",
+            ),
+        ),
+        {"identity": _safe_file_identity(identity)},
+    )
+
+
+def _mark_target_identity_unknown(
+    observation: TargetObservation,
+) -> TargetObservation:
+    metadata = dict(observation.metadata)
+    if metadata.get("identity") == "target":
+        metadata.pop("identity", None)
+    metadata["identity_unresolved"] = True
+    diagnostics = observation.diagnostics
+    if not any(
+        getattr(item, "code", None) == "INFER_TARGET_IDENTITY_UNKNOWN"
+        for item in diagnostics
+    ):
+        diagnostics = (
+            *diagnostics,
+            _identity_diagnostic(
+                "INFER_TARGET_IDENTITY_UNKNOWN",
+                "Target binding has no stable identity; provide an identity or address",
+            ),
+        )
+    return TargetObservation(
+        observation.schema,
+        observation.exists,
+        observation.revision,
+        observation.inspector,
+        diagnostics,
+        metadata,
+    )
+
+
+def _register_observation_identity(
+    target: Any,
+    observation: TargetObservation,
+    *,
+    binding: Mapping[str, Any] | None = None,
+) -> TargetObservation:
+    identity = observation.identity
+    if not isinstance(identity, str) or identity.strip() in {
+        "",
+        "target",
+        "<path-redacted>",
+    }:
+        return observation
+    try:
+        _register_target_identity(
+            _safe_file_identity(identity.strip()),
+            _target_binding_fingerprint_for_target(target, binding),
+        )
+    except _TargetIdentityCollision as collision:
+        return _target_identity_collision_observation(
+            collision.identity, inspector=observation.inspector
+        )
+    return observation
+
+
 def _provider_payload_value(payload: Any, key: str, default: Any = _MISSING) -> Any:
     if isinstance(payload, Mapping):
         return payload.get(key, default)
@@ -702,6 +930,15 @@ def _normalize_provider_payload(
         schema_identity = _safe_file_identity(schema.identity)
         if schema_identity in {"", "target"}:
             schema_identity = identity
+        if schema_identity == "target" and identity == "target":
+            return TargetObservation(
+                schema,
+                "present",
+                None,
+                inspector,
+                _unknown_type_diagnostics(schema),
+                metadata=dict(schema.metadata),
+            )
         schema = NormalizedSchema(schema_identity, schema.fields, schema.metadata)
         metadata = {**schema.metadata, "identity": schema_identity}
         metadata["empty"] = not bool(schema.fields)
@@ -891,7 +1128,35 @@ def inspect_target(
     """Inspect an existing target when its adapter exposes a schema."""
     if isinstance(target, TargetObservation):
         return _normalize_target_observation(target, identity=identity)
-    identity = _target_identity(target, identity)
+    try:
+        resolved_identity = _target_identity(target, identity)
+    except _TargetIdentityCollision as collision:
+        return _target_identity_collision_observation(
+            collision.identity, inspector=type(target).__name__
+        )
+    unresolved = resolved_identity is None
+    observation = _inspect_target_with_identity(
+        target,
+        identity=resolved_identity or "target",
+        max_diagnostics=max_diagnostics,
+    )
+    observation = _register_observation_identity(target, observation)
+    collision_detected = any(
+        getattr(item, "code", None) == "INFER_TARGET_IDENTITY_COLLISION"
+        for item in observation.diagnostics
+    )
+    identity_from_observation = isinstance(observation.identity, str) and (
+        observation.identity.strip() not in {"", "target", "<path-redacted>"}
+    )
+    if not unresolved or collision_detected or identity_from_observation:
+        return observation
+    return _mark_target_identity_unknown(observation)
+
+
+def _inspect_target_with_identity(
+    target: Any, *, identity: str, max_diagnostics: int = 100
+) -> TargetObservation:
+    """Inspect a target after resolving or assigning a diagnostic placeholder ID."""
     if isinstance(target, NormalizedSchema):
         try:
             schema = _validated_normalized_schema(target)
@@ -1183,7 +1448,42 @@ async def inspect_target_async(
         return _normalize_target_observation(
             target, identity=identity or binding_identity
         )
-    identity = _target_identity(target, identity, binding=binding)
+    try:
+        resolved_identity = _target_identity(target, identity, binding=binding)
+    except _TargetIdentityCollision as collision:
+        return _target_identity_collision_observation(
+            collision.identity, inspector=type(target).__name__
+        )
+    unresolved = resolved_identity is None
+    observation = await _inspect_target_async_with_identity(
+        target,
+        identity=resolved_identity or "target",
+        binding=binding,
+        context=context,
+        max_diagnostics=max_diagnostics,
+    )
+    observation = _register_observation_identity(target, observation, binding=binding)
+    collision_detected = any(
+        getattr(item, "code", None) == "INFER_TARGET_IDENTITY_COLLISION"
+        for item in observation.diagnostics
+    )
+    identity_from_observation = isinstance(observation.identity, str) and (
+        observation.identity.strip() not in {"", "target", "<path-redacted>"}
+    )
+    if not unresolved or collision_detected or identity_from_observation:
+        return observation
+    return _mark_target_identity_unknown(observation)
+
+
+async def _inspect_target_async_with_identity(
+    target: Any,
+    *,
+    identity: str,
+    binding: Mapping[str, Any] | None = None,
+    context: Mapping[str, Any] | None = None,
+    max_diagnostics: int = 100,
+) -> TargetObservation:
+    """Inspect an async adapter after identity resolution."""
     if isinstance(target, (NormalizedSchema, str, Path, bytes, Mapping)):
         return inspect_target(
             target, identity=identity, max_diagnostics=max_diagnostics

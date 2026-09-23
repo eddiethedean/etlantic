@@ -513,7 +513,11 @@ class InferredDataset:
             target_binding_payload
             or target_binding(
                 observation,
-                identity=f"target:{self.name}",
+                identity=(
+                    observation.identity
+                    if observation is not None and observation.identity is not None
+                    else "target:unresolved"
+                ),
                 requirements=target_requirements,
                 write_mode=target_write_mode,
             )
@@ -1311,8 +1315,23 @@ class InferredDataset:
     ) -> OutputProposal:
         """Return an explicit create proposal for an absent target."""
         observation = inspect_target(target, identity=identity)
-        proposal_identity = identity or observation.identity or f"target:{self.name}"
+        proposal_identity = identity or observation.identity
         diagnostics = list(observation.diagnostics)
+        if proposal_identity is None and not any(
+            getattr(item, "code", None) == "INFER_TARGET_IDENTITY_UNKNOWN"
+            for item in diagnostics
+        ):
+            proposal_identity = "target:unresolved"
+            diagnostics.append(
+                Diagnostic(
+                    "INFER_TARGET_IDENTITY_UNKNOWN",
+                    Severity.ERROR,
+                    "Output proposal requires a stable target identity",
+                    phase="inference",
+                )
+            )
+        elif proposal_identity is None:
+            proposal_identity = "target:unresolved"
         if observation.exists == "present":
             diagnostics.append(
                 Diagnostic(
