@@ -376,7 +376,7 @@ pythonVersion = "3.11"
 typeCheckingMode = "strict"
 # Check every first-party Python surface, including tests. Dynamic plugin and
 # fixture boundaries use explicit file-level exceptions where needed. The
-# exception inventory is locked by scripts/check_pyright_suppressions.py.
+# inventory is locked and strict-scanned without file directives by the checks.
 include = [
     "src",
     "packages/*/src",
