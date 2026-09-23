@@ -374,8 +374,23 @@ docstring-code-format = true
 [tool.pyright]
 pythonVersion = "3.11"
 typeCheckingMode = "strict"
-# Keep strict checking enabled while allowing intentionally dynamic plugin
-# boundaries and optional third-party libraries without local stubs.
+# Check every first-party Python surface, including tests. Dynamic plugin and
+# fixture boundaries are scoped below by execution environment.
+include = [
+    "src",
+    "packages/*/src",
+    "scripts",
+    "examples",
+    "benchmarks",
+    "docs",
+    "tests",
+]
+
+# Optional plugins, third-party stubs, and legacy fixture protocols are
+# intentionally dynamic. Keep their exceptions local to repository surfaces;
+# the root profile above remains strict by default.
+[[tool.pyright.executionEnvironments]]
+root = "src"
 reportUnknownArgumentType = "none"
 reportUnknownLambdaType = "none"
 reportUnknownMemberType = "none"
@@ -392,14 +407,134 @@ reportUntypedFunctionDecorator = "none"
 reportUnsupportedDunderAll = "none"
 reportUnusedFunction = "none"
 reportUnusedImport = "none"
-# Check every first-party runtime, package, example, benchmark, and docs-tooling
-# Python surface. Tests remain pytest-owned because their fixture-heavy runtime
-# patterns are intentionally outside the shipped API boundary.
-include = [
-    "src",
-    "packages/*/src",
-    "scripts",
-    "examples",
-    "benchmarks",
-    "docs",
-]
+
+[[tool.pyright.executionEnvironments]]
+root = "packages"
+reportUnknownArgumentType = "none"
+reportUnknownLambdaType = "none"
+reportUnknownMemberType = "none"
+reportUnknownParameterType = "none"
+reportUnknownVariableType = "none"
+reportDeprecated = "none"
+reportMissingImports = "none"
+reportMissingTypeStubs = "none"
+reportPrivateUsage = "none"
+reportUnnecessaryComparison = "none"
+reportUnnecessaryIsInstance = "none"
+reportUntypedBaseClass = "none"
+reportUntypedFunctionDecorator = "none"
+reportUnsupportedDunderAll = "none"
+reportUnusedFunction = "none"
+reportUnusedImport = "none"
+
+[[tool.pyright.executionEnvironments]]
+root = "scripts"
+reportUnknownArgumentType = "none"
+reportUnknownLambdaType = "none"
+reportUnknownMemberType = "none"
+reportUnknownParameterType = "none"
+reportUnknownVariableType = "none"
+reportDeprecated = "none"
+reportMissingImports = "none"
+reportMissingTypeStubs = "none"
+reportPrivateUsage = "none"
+reportUnnecessaryComparison = "none"
+reportUnnecessaryIsInstance = "none"
+reportUntypedBaseClass = "none"
+reportUntypedFunctionDecorator = "none"
+reportUnsupportedDunderAll = "none"
+reportUnusedFunction = "none"
+reportUnusedImport = "none"
+
+[[tool.pyright.executionEnvironments]]
+root = "examples"
+reportUnknownArgumentType = "none"
+reportUnknownLambdaType = "none"
+reportUnknownMemberType = "none"
+reportUnknownParameterType = "none"
+reportUnknownVariableType = "none"
+reportDeprecated = "none"
+reportMissingImports = "none"
+reportMissingTypeStubs = "none"
+reportPrivateUsage = "none"
+reportUnnecessaryComparison = "none"
+reportUnnecessaryIsInstance = "none"
+reportUntypedBaseClass = "none"
+reportUntypedFunctionDecorator = "none"
+reportUnsupportedDunderAll = "none"
+reportUnusedFunction = "none"
+reportUnusedImport = "none"
+
+[[tool.pyright.executionEnvironments]]
+root = "benchmarks"
+reportUnknownArgumentType = "none"
+reportUnknownLambdaType = "none"
+reportUnknownMemberType = "none"
+reportUnknownParameterType = "none"
+reportUnknownVariableType = "none"
+reportDeprecated = "none"
+reportMissingImports = "none"
+reportMissingTypeStubs = "none"
+reportPrivateUsage = "none"
+reportUnnecessaryComparison = "none"
+reportUnnecessaryIsInstance = "none"
+reportUntypedBaseClass = "none"
+reportUntypedFunctionDecorator = "none"
+reportUnsupportedDunderAll = "none"
+reportUnusedFunction = "none"
+reportUnusedImport = "none"
+
+[[tool.pyright.executionEnvironments]]
+root = "docs"
+reportUnknownArgumentType = "none"
+reportUnknownLambdaType = "none"
+reportUnknownMemberType = "none"
+reportUnknownParameterType = "none"
+reportUnknownVariableType = "none"
+reportDeprecated = "none"
+reportMissingImports = "none"
+reportMissingTypeStubs = "none"
+reportPrivateUsage = "none"
+reportUnnecessaryComparison = "none"
+reportUnnecessaryIsInstance = "none"
+reportUntypedBaseClass = "none"
+reportUntypedFunctionDecorator = "none"
+reportUnsupportedDunderAll = "none"
+reportUnusedFunction = "none"
+reportUnusedImport = "none"
+
+[[tool.pyright.executionEnvironments]]
+root = "tests"
+reportUnknownArgumentType = "none"
+reportUnknownLambdaType = "none"
+reportUnknownMemberType = "none"
+reportUnknownParameterType = "none"
+reportUnknownVariableType = "none"
+reportDeprecated = "none"
+reportMissingImports = "none"
+reportMissingTypeStubs = "none"
+reportPrivateUsage = "none"
+reportUnnecessaryComparison = "none"
+reportUnnecessaryIsInstance = "none"
+reportUntypedBaseClass = "none"
+reportUntypedFunctionDecorator = "none"
+reportUnsupportedDunderAll = "none"
+reportUnusedFunction = "none"
+reportUnusedImport = "none"
+reportMissingParameterType = "none"
+reportArgumentType = "none"
+reportIndexIssue = "none"
+reportOperatorIssue = "none"
+reportCallIssue = "none"
+reportAttributeAccessIssue = "none"
+reportMissingTypeArgument = "none"
+reportFunctionMemberAccess = "none"
+reportReturnType = "none"
+reportInvalidTypeForm = "none"
+reportPossiblyUnboundVariable = "none"
+reportOptionalMemberAccess = "none"
+reportOptionalSubscript = "none"
+reportAssignmentType = "none"
+reportOptionalOperand = "none"
+reportIncompatibleMethodOverride = "none"
+reportUnusedVariable = "none"
