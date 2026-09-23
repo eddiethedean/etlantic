@@ -359,7 +359,7 @@ def _target_identity(
         for candidate in (metadata_identity, schema_identity):
             if isinstance(candidate, str) and candidate.strip():
                 normalized = _safe_file_identity(candidate.strip())
-                if normalized not in {"target", "<path-redacted>"}:
+                if normalized != "<path-redacted>":
                     return accept(normalized)
 
     if isinstance(target, NormalizedSchema):
@@ -645,17 +645,6 @@ def _normalize_target_observation(
         metadata["identity"] = resolved_identity
         metadata.pop("identity_unresolved", None)
     diagnostics = observation.diagnostics
-    if identity_missing and not any(
-        getattr(item, "code", None) == "INFER_TARGET_IDENTITY_UNKNOWN"
-        for item in diagnostics
-    ):
-        diagnostics = (
-            *diagnostics,
-            _identity_diagnostic(
-                "INFER_TARGET_IDENTITY_UNKNOWN",
-                "Target binding has no stable identity; provide an identity or address",
-            ),
-        )
     if observation.schema is None:
         if observation.exists == "present":
             metadata.setdefault("empty", True)
@@ -845,24 +834,12 @@ def _mark_target_identity_unknown(
     if metadata.get("identity") == "target":
         metadata.pop("identity", None)
     metadata["identity_unresolved"] = True
-    diagnostics = observation.diagnostics
-    if not any(
-        getattr(item, "code", None) == "INFER_TARGET_IDENTITY_UNKNOWN"
-        for item in diagnostics
-    ):
-        diagnostics = (
-            *diagnostics,
-            _identity_diagnostic(
-                "INFER_TARGET_IDENTITY_UNKNOWN",
-                "Target binding has no stable identity; provide an identity or address",
-            ),
-        )
     return TargetObservation(
         observation.schema,
         observation.exists,
         observation.revision,
         observation.inspector,
-        diagnostics,
+        observation.diagnostics,
         metadata,
     )
 
@@ -1148,7 +1125,12 @@ def inspect_target(
     identity_from_observation = isinstance(observation.identity, str) and (
         observation.identity.strip() not in {"", "target", "<path-redacted>"}
     )
-    if not unresolved or collision_detected or identity_from_observation:
+    if (
+        not unresolved
+        or collision_detected
+        or identity_from_observation
+        or isinstance(target, Mapping)
+    ):
         return observation
     return _mark_target_identity_unknown(observation)
 
@@ -1470,7 +1452,12 @@ async def inspect_target_async(
     identity_from_observation = isinstance(observation.identity, str) and (
         observation.identity.strip() not in {"", "target", "<path-redacted>"}
     )
-    if not unresolved or collision_detected or identity_from_observation:
+    if (
+        not unresolved
+        or collision_detected
+        or identity_from_observation
+        or isinstance(target, Mapping)
+    ):
         return observation
     return _mark_target_identity_unknown(observation)
 

@@ -599,6 +599,14 @@ class InferredDataset:
                 "inference diagnostics contain errors; durable export is not "
                 f"qualified ({', '.join(error_codes) or 'unknown diagnostic'})"
             )
+        if (
+            self._result.target_observation is not None
+            and self._target_binding.get("identity") == "target:unresolved"
+        ):
+            raise ValueError(
+                "INFER_TARGET_IDENTITY_UNKNOWN: durable target bindings require "
+                "a stable identity or address"
+            )
         self._check_target_revision()
         validate_target_binding(self._target_binding, check_capabilities=False)
         if source_kind == "file" and not _allow_unresolved_source:
