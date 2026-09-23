@@ -1,27 +1,44 @@
 #!/usr/bin/env python3
-"""Run a strict Pyright scan that cannot be masked by file directives."""
+"""Run a strict Pyright scan that cannot be masked by suppressions."""
 
 from __future__ import annotations
 
 import hashlib
+import io
 import json
 import shutil
 import subprocess
 import tempfile
+import tokenize
 from pathlib import Path
 from typing import Any
 
 # Filled from the current repository after the shadow scan is generated. Any
 # diagnostic change must be reviewed explicitly, including newly hidden errors.
-EXPECTED_DIGEST = "fbd40ea00ff0a78e5af96d2d7df96c77fa083e2b4447e7b2256bdfdb562d309d"
+EXPECTED_DIGEST = "4dad7cb890b921e4c12f85663551953e6c9cbfe4a1c0dddeeb795a92faca488a"
 
 
-def _without_file_directives(path: Path) -> None:
+def _is_suppression(comment: str) -> bool:
+    stripped = comment.lstrip()
+    return stripped.startswith("# pyright:") or stripped.startswith("# type: ignore")
+
+
+def _without_suppressions(path: Path) -> None:
     text = path.read_text(encoding="utf-8")
-    filtered = "\n".join(
-        line for line in text.splitlines() if not line.startswith("# pyright:")
-    )
-    path.write_text(filtered + "\n", encoding="utf-8")
+    lines = text.splitlines(keepends=True)
+    tokens = tokenize.generate_tokens(io.StringIO(text).readline)
+    for token in tokens:
+        if token.type != tokenize.COMMENT or not _is_suppression(token.string):
+            continue
+        start_line, start_column = token.start
+        end_line, end_column = token.end
+        if start_line != end_line:
+            continue
+        line = lines[start_line - 1]
+        lines[start_line - 1] = (
+            line[:start_column] + " " * (end_column - start_column) + line[end_column:]
+        )
+    path.write_text("".join(lines), encoding="utf-8")
 
 
 def _diagnostic_fingerprints(payload: dict[str, Any], root: Path) -> tuple[str, ...]:
@@ -67,7 +84,7 @@ def main() -> int:
             ),
         )
         for path in shadow.rglob("*.py"):
-            _without_file_directives(path)
+            _without_suppressions(path)
         result = subprocess.run(
             [pyright, "--outputjson", "--project", str(shadow / "pyproject.toml")],
             cwd=root,

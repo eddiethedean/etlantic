@@ -71,8 +71,8 @@ def register_discovered_plugins(
                 engine=info.name or name,
                 capabilities=PluginCapabilities(
                     engine=info.name or name,
-                    orchestration=True,
-                    orch_scheduling=info.direct_execution,
+                    dataframe=False,
+                    eager=False,
                     extras=frozenset(
                         {
                             "direct_execution" if info.direct_execution else "",

@@ -4,25 +4,59 @@
 from __future__ import annotations
 
 import hashlib
-import subprocess
+import io
+import tokenize
 from pathlib import Path
 
-# File-level exceptions are temporary compatibility boundaries.  Locking their
-# exact inventory prevents a new blanket suppression from silently widening the
+# Pyright/type-ignore comments are temporary compatibility boundaries. Locking
+# their exact inventory prevents a new suppression from silently widening the
 # strict-checking escape hatch; intentional changes must update this digest in
 # the same review.
-EXPECTED_DIGEST = "03fe9a3af281ba12c85cce3e181cb3e6e08d2d9e64a99669d5b83768c4092554"
+EXPECTED_DIGEST = "4c5aef2b9e53bc4ef37321da5f2f40ccaf1d4dc9c0ee3a51f78f84a69f053fc3"
+
+_IGNORED_DIRECTORIES = frozenset(
+    {
+        ".git",
+        ".venv",
+        "venv",
+        "dist",
+        "build",
+        "site",
+        ".pytest_cache",
+        ".ruff_cache",
+        ".mypy_cache",
+        "__pycache__",
+    }
+)
+
+
+def _is_suppression(comment: str) -> bool:
+    stripped = comment.lstrip()
+    return stripped.startswith("# pyright:") or stripped.startswith("# type: ignore")
 
 
 def _inventory(root: Path) -> tuple[str, ...]:
-    result = subprocess.run(
-        ["rg", "-n", "^# pyright:", "--glob", "*.py"],
-        cwd=root,
-        check=True,
-        capture_output=True,
-        text=True,
-    )
-    return tuple(sorted(line for line in result.stdout.splitlines() if line))
+    inventory: list[str] = []
+    for path in sorted(root.rglob("*.py")):
+        if _IGNORED_DIRECTORIES.intersection(path.relative_to(root).parts):
+            continue
+        source = path.read_text(encoding="utf-8")
+        lines = source.splitlines()
+        try:
+            tokens = tokenize.generate_tokens(io.StringIO(source).readline)
+            for token in tokens:
+                if token.type != tokenize.COMMENT or not _is_suppression(token.string):
+                    continue
+                line_number = token.start[0]
+                inventory.append(
+                    f"{path.relative_to(root).as_posix()}:{line_number}:"
+                    f"{lines[line_number - 1]}"
+                )
+        except tokenize.TokenError:
+            # Pyright will report malformed Python separately; preserve any
+            # suppressions tokenized before the syntax error for this gate.
+            continue
+    return tuple(sorted(inventory))
 
 
 def main() -> int:
@@ -32,15 +66,13 @@ def main() -> int:
     digest = hashlib.sha256(payload).hexdigest()
     if digest != EXPECTED_DIGEST:
         print(
-            "Pyright file-level exception inventory changed. Review the "
+            "Pyright suppression inventory changed. Review the "
             "suppressions and update EXPECTED_DIGEST intentionally."
         )
         print(f"expected={EXPECTED_DIGEST}")
         print(f"actual={digest}")
         return 1
-    print(
-        f"Pyright file-level exception inventory verified ({len(inventory)} entries)."
-    )
+    print(f"Pyright suppression inventory verified ({len(inventory)} entries).")
     return 0
 
 
