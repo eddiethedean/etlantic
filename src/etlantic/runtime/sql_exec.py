@@ -1,3 +1,4 @@
+# pyright: reportUnknownArgumentType=false, reportUnknownVariableType=false, reportUnnecessaryIsInstance=false
 """Execute transformation steps through the SQL protocol."""
 
 from __future__ import annotations

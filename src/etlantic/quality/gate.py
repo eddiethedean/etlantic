@@ -1,3 +1,4 @@
+# pyright: reportMissingTypeStubs=false, reportUnknownArgumentType=false, reportUnknownMemberType=false, reportUnknownVariableType=false
 """Quality-gate Transformation factory with accepted/rejected ports."""
 
 from __future__ import annotations

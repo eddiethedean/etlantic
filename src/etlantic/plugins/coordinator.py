@@ -1,3 +1,4 @@
+# pyright: reportPrivateUsage=false, reportUnknownVariableType=false
 """Centralized profile-scoped plugin discovery."""
 
 from __future__ import annotations

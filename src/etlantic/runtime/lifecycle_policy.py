@@ -1,3 +1,4 @@
+# pyright: reportUnknownVariableType=false
 """Lifecycle policy composition helpers (domain-neutral; facades supply defaults)."""
 
 from __future__ import annotations

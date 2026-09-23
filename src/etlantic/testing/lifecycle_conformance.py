@@ -81,10 +81,12 @@ def run_lifecycle_conformance_suite() -> list[dict[str, Any]]:
             }
         )
     transition = store.commit("orders", "200", reason="materialized:out")
+    committed = store.get("orders")
+    assert committed is not None
     results.append(
         {
             "case": "commit_after_materialization",
-            "ok": transition.to_status == "200" and store.get("orders").value == "200",
+            "ok": transition.to_status == "200" and committed.value == "200",
         }
     )
 

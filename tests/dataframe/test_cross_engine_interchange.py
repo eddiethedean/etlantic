@@ -1,3 +1,4 @@
+# pyright: reportArgumentType=false, reportMissingParameterType=false, reportUnknownArgumentType=false, reportUnknownMemberType=false, reportUnknownParameterType=false, reportUnknownVariableType=false, reportUnusedFunction=false
 """Optional Polars-to-Pandas runtime interchange integration test."""
 
 from __future__ import annotations

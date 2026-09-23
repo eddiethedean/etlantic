@@ -1,3 +1,4 @@
+# pyright: reportUnknownArgumentType=false, reportUnknownMemberType=false
 """DPCS fragments for explicit control / stream-time nodes."""
 
 from __future__ import annotations

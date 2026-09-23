@@ -1,3 +1,4 @@
+# pyright: reportAttributeAccessIssue=false, reportMissingTypeStubs=false, reportPrivateUsage=false, reportUnknownVariableType=false
 """Regression coverage for the frozen portable Decimal contract."""
 
 from __future__ import annotations

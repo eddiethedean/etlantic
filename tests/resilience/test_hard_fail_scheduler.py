@@ -1,3 +1,4 @@
+# pyright: reportUnusedFunction=false
 """Hard-fail scheduler abandons unrelated pending steps."""
 
 from __future__ import annotations

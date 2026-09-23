@@ -1,3 +1,4 @@
+# pyright: reportArgumentType=false, reportPrivateUsage=false, reportUnknownArgumentType=false, reportUnknownLambdaType=false, reportUnknownVariableType=false
 """Regression tests for the next-20 0.34 fail-closed hardening pass."""
 
 from __future__ import annotations

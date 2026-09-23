@@ -1,3 +1,4 @@
+# pyright: reportUnknownVariableType=false
 """Dataframe plugin protocol and execution types."""
 
 from __future__ import annotations

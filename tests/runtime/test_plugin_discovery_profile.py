@@ -1,3 +1,4 @@
+# pyright: reportMissingTypeArgument=false, reportUnknownArgumentType=false, reportUnknownLambdaType=false, reportUnknownParameterType=false, reportUnknownVariableType=false, reportUnusedFunction=false
 """Integration tests: profile-aware plugin discovery on real entry paths."""
 
 from __future__ import annotations

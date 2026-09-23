@@ -22,6 +22,7 @@ class AuditEvidenceStore(Protocol):
         record_id: str | None = None,
     ) -> AuditRecord:
         """Append a hash-chained audit record (redacted metadata only)."""
+        ...
 
     def list(
         self, ctx: ControlPlaneContext, *, limit: int = 100, after_id: str | None = None
@@ -29,11 +30,13 @@ class AuditEvidenceStore(Protocol):
 
     def verify_chain(self, ctx: ControlPlaneContext) -> bool:
         """Return True when the scoped chain hashes are intact."""
+        ...
 
     def export(self, ctx: ControlPlaneContext, *, limit: int = 1000) -> AuditExport: ...
 
     def restore(self, ctx: ControlPlaneContext, *, export: AuditExport) -> int:
         """Restore an export into an empty scoped chain; fail if tip mismatch."""
+        ...
 
 
 __all__ = ["AuditEvidenceStore"]

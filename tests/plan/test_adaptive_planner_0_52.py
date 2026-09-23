@@ -1,3 +1,4 @@
+# pyright: reportAttributeAccessIssue=false, reportPrivateUsage=false, reportUnknownArgumentType=false, reportUnknownMemberType=false, reportUnknownVariableType=false
 """Adaptive placement planner behavior for 0.52."""
 
 from __future__ import annotations

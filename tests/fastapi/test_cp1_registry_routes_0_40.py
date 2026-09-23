@@ -1,3 +1,4 @@
+# pyright: reportAttributeAccessIssue=false, reportFunctionMemberAccess=false, reportMissingImports=false, reportUnknownArgumentType=false, reportUnknownMemberType=false, reportUnknownVariableType=false
 """CP2 registry FastAPI routes + registry-backed definitions (0.40 / 040-P)."""
 
 from __future__ import annotations

@@ -1,3 +1,4 @@
+# pyright: reportMissingParameterType=false, reportUnknownMemberType=false, reportUnknownParameterType=false, reportUnknownVariableType=false, reportUnusedFunction=false
 """Kernel portable authoring tests (0.11 W1)."""
 
 from __future__ import annotations

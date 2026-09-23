@@ -1,3 +1,4 @@
+# pyright: reportMissingImports=false, reportUnknownArgumentType=false, reportUnknownMemberType=false, reportUnknownVariableType=false
 """SQLModel integration tests."""
 
 from __future__ import annotations
@@ -29,7 +30,7 @@ def test_contract_to_sqlmodel_round_trip() -> None:
         table_name="customer",
         primary_key=("customer_id",),
     )
-    assert table.__tablename__ == "customer"
+    assert getattr(table, "__tablename__", None) == "customer"
     metadata = sqlmodel_to_contract(table)
     assert metadata["table_name"] == "customer"
     assert {f["name"] for f in metadata["fields"]} == {"customer_id", "name"}

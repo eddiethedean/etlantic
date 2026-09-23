@@ -1,3 +1,4 @@
+# pyright: reportMissingParameterType=false, reportUnknownParameterType=false, reportUnknownVariableType=false, reportUnusedFunction=false
 """Core dataframe protocol unit tests (engine-free)."""
 
 from __future__ import annotations

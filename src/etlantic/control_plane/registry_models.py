@@ -1,3 +1,4 @@
+# pyright: reportUnknownArgumentType=false, reportUnknownVariableType=false
 """Immutable registry directory and revision models (CP2 / 040-T, 040-R).
 
 These models are FastAPI- and SQLModel-free. They extend ADR-016 refs with

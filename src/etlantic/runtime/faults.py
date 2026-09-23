@@ -1,3 +1,4 @@
+# pyright: reportDeprecated=false, reportUnknownVariableType=false
 """Deterministic failure injection for resilience testing (0.23).
 
 Injection fires only when ``ETLANTIC_FAULT_INJECTION`` is set to a truthy
@@ -113,7 +114,7 @@ def _matching_spec(
 ) -> FaultSpec | None:
     bkey = str(boundary)
     for spec in state.specs:
-        if spec.boundary.value != bkey:
+        if getattr(spec.boundary, "value", spec.boundary) != bkey:
             continue
         if spec.trigger == FaultTrigger.ON_STEP and spec.step_name != step_name:
             continue

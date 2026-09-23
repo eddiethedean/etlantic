@@ -1,3 +1,4 @@
+# pyright: reportMissingImports=false, reportUnknownArgumentType=false, reportUnknownMemberType=false, reportUnknownVariableType=false
 """FastAPI schedule routes, authz, and non-enumeration (0.47)."""
 
 from __future__ import annotations

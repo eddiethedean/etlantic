@@ -1,9 +1,11 @@
+# pyright: reportPrivateUsage=false, reportUnknownMemberType=false, reportUnknownVariableType=false
 """Pipeline authoring: Extract, Load, Pipeline, and subpipelines."""
 
 from __future__ import annotations
 
 import inspect
 import itertools
+from collections.abc import Mapping
 from dataclasses import dataclass, field
 from types import MappingProxyType
 from typing import TYPE_CHECKING, Any, ClassVar, TypeVar
@@ -753,7 +755,7 @@ class Pipeline(metaclass=_PipelineMeta):
         return SubpipelineInstance(pipeline_cls=cls, bindings=dict(bindings))
 
 
-def _step_quality_metadata(transform: type[Any]) -> MappingProxyType:
+def _step_quality_metadata(transform: type[Any]) -> Mapping[str, Any]:
     """Copy embedded quality expression onto node metadata for planning."""
     from etlantic.quality.gate import (
         QUALITY_METADATA_KEY,

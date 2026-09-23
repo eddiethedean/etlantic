@@ -1,3 +1,4 @@
+# pyright: reportMissingImports=false, reportMissingTypeArgument=false, reportUnknownArgumentType=false, reportUnknownMemberType=false, reportUnknownParameterType=false, reportUnknownVariableType=false
 """Golden before/after definition fingerprints for SparkForge IR migration (M7)."""
 
 from __future__ import annotations

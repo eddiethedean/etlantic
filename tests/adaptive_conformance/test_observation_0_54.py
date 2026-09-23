@@ -1,3 +1,4 @@
+# pyright: reportMissingParameterType=false, reportUnknownParameterType=false
 """Observation status handling must not retain provider or failure payloads."""
 
 from types import SimpleNamespace

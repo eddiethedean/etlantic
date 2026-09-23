@@ -1,3 +1,4 @@
+# pyright: reportUnknownArgumentType=false, reportUnknownMemberType=false, reportUnknownVariableType=false
 """Plan-time statistics and evidence store for optimization passes."""
 
 from __future__ import annotations
@@ -63,14 +64,13 @@ class EvidenceRecord:
 
     @classmethod
     def from_dict(cls, data: dict[str, Any]) -> EvidenceRecord:
+        raw_confidence = data.get("confidence")
         record = cls(
             evidence_id=str(data["evidence_id"]),
             kind=str(data.get("kind") or "generic"),
             subject=str(data.get("subject") or ""),
             value=data.get("value"),
-            confidence=float(
-                data.get("confidence") if data.get("confidence") is not None else 1.0
-            ),
+            confidence=float(raw_confidence if raw_confidence is not None else 1.0),
             provenance=str(data.get("provenance") or "static"),
             collected_at=data.get("collected_at"),
             expires_at=data.get("expires_at"),

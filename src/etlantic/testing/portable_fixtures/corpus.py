@@ -1,3 +1,4 @@
+# pyright: reportUnknownArgumentType=false, reportUnknownVariableType=false
 """Mandatory portable transform fixtures keyed by capability claims."""
 
 from __future__ import annotations

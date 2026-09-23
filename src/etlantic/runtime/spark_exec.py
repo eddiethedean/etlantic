@@ -1,3 +1,4 @@
+# pyright: reportUnknownArgumentType=false, reportUnknownMemberType=false, reportUnknownVariableType=false
 """Execute transformation steps through the Spark protocol."""
 
 from __future__ import annotations

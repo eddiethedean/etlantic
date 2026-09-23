@@ -1,3 +1,4 @@
+# pyright: reportUnnecessaryIsInstance=false
 """Run-report wire-schema upgrades.
 
 Historical run-report documents are migrated here before

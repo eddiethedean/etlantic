@@ -1,3 +1,4 @@
+# pyright: reportMissingParameterType=false, reportUnknownMemberType=false, reportUnknownParameterType=false
 """Init and doctor CLI tests."""
 
 from __future__ import annotations

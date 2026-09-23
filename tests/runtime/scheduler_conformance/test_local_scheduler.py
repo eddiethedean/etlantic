@@ -1,3 +1,4 @@
+# pyright: reportUnusedFunction=false
 """Private LocalScheduler conformance corpus (0.15 companion)."""
 
 from __future__ import annotations

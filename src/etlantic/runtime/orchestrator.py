@@ -1,3 +1,4 @@
+# pyright: reportPrivateUsage=false, reportUnknownArgumentType=false, reportUnknownMemberType=false, reportUnknownVariableType=false, reportUnnecessaryIsInstance=false
 """Local orchestrator: execute a PipelinePlan in-process."""
 
 from __future__ import annotations
@@ -1258,6 +1259,7 @@ class LocalOrchestrator:
                 if not callable(cleanup):
                     continue
                 try:
+                    receipts: Any = ()
                     with anyio.move_on_after(
                         self.request.cancellation.abandon_after_seconds, shield=True
                     ) as scope:
@@ -1533,7 +1535,7 @@ class LocalOrchestrator:
                     }
                     self._unknown_publications.append(publication_obligation)
                 try:
-                    result = await cast(Any, executor.execute)(context)
+                    result = await executor.execute(context)
                     cleanup_record[2] = result
                     validate_unit_result(result, protocol_unit)
                     if publication_obligation is not None:
@@ -1572,7 +1574,7 @@ class LocalOrchestrator:
                                     self.request.cancellation.abandon_after_seconds,
                                     shield=True,
                                 ) as scope:
-                                    await cast(Any, cancel)(context)
+                                    await maybe_await(cancel, context)
                                 if scope.cancel_called:
                                     self._cleanup_obligations.append(
                                         {
@@ -1592,7 +1594,6 @@ class LocalOrchestrator:
                                     }
                                 )
                     raise
-                result = cast(Any, result)
                 await check_attempt_deadline()
                 if result.status != "succeeded":
                     # A physical executor can return a terminal failed unit
@@ -2049,6 +2050,8 @@ class LocalOrchestrator:
                     from etlantic.runtime.physical_operations import execute_boundary
 
                     descriptor = unit.metadata["etlantic.requirement"]
+                    route = ""
+                    port = "result"
                     if kind == "collection":
                         edge = unit.metadata.get("etlantic.edge_ports")
                         if not isinstance(edge, (list, tuple)) or len(edge) != 4:
@@ -4701,6 +4704,7 @@ class LocalOrchestrator:
             # Finalize only when every required sink has committed.
             await self._finalize_landing_after_commit(receipt)
             return
+        publication_id = ""
         try:
             publication_unit = next(
                 (

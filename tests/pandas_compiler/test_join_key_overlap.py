@@ -1,3 +1,4 @@
+# pyright: reportMissingImports=false, reportMissingTypeArgument=false, reportMissingTypeStubs=false, reportUnknownArgumentType=false, reportUnknownMemberType=false, reportUnknownParameterType=false, reportUnknownVariableType=false
 """Regression: unequal-key joins must not drop left data columns."""
 
 from __future__ import annotations

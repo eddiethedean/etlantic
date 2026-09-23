@@ -1,3 +1,4 @@
+# pyright: reportUnknownArgumentType=false, reportUnknownVariableType=false
 """Minimal storage binding protocol for local runtime I/O."""
 
 from __future__ import annotations

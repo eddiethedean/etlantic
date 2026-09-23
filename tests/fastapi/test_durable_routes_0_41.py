@@ -1,3 +1,4 @@
+# pyright: reportMissingImports=false, reportPrivateUsage=false, reportUnknownArgumentType=false, reportUnknownMemberType=false, reportUnknownVariableType=false
 """CP3 durable FastAPI routes + dual-write submit (0.41)."""
 
 from __future__ import annotations

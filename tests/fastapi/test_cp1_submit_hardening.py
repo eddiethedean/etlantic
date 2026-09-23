@@ -1,3 +1,4 @@
+# pyright: reportMissingImports=false, reportUnknownArgumentType=false, reportUnknownMemberType=false, reportUnknownParameterType=false, reportUnknownVariableType=false
 """CP1 submit hardening: event gating, definition_id force, scoped poll (0.39)."""
 
 from __future__ import annotations

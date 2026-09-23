@@ -1,3 +1,4 @@
+# pyright: reportMissingImports=false, reportPrivateUsage=false, reportUnknownMemberType=false, reportUnknownVariableType=false
 """CP-GA qualification campaigns (0.43) — deterministic in-process evidence."""
 
 from __future__ import annotations

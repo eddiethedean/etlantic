@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+# pyright: reportUnknownArgumentType=false, reportUnknownMemberType=false, reportUnknownVariableType=false
 """Compare stable microbenchmarks against committed baselines (0.23)."""
 
 from __future__ import annotations

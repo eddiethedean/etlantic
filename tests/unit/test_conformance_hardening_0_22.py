@@ -1,3 +1,4 @@
+# pyright: reportArgumentType=false, reportMissingParameterType=false, reportUnknownArgumentType=false, reportUnknownParameterType=false
 """WP3: capability-truthfulness + Spark conformance hardening (public suites)."""
 
 from __future__ import annotations

@@ -1,5 +1,10 @@
 """ETLantic CLI (validate / plan / inspect / run / report)."""
 
+# Typer currently vendors a private Click type surface, so its override of
+# Click's command resolver is structurally incompatible in Pyright's stubs.
+# The runtime implementation remains checked through the public CLI tests.
+# pyright: reportIncompatibleMethodOverride=false, reportReturnType=false, reportArgumentType=false
+
 from __future__ import annotations
 
 import click

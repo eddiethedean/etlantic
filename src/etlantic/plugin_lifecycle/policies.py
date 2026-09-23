@@ -1,3 +1,4 @@
+# pyright: reportPrivateUsage=false
 """Authorization policy classes for plugin lifecycle."""
 
 from __future__ import annotations
@@ -23,11 +24,11 @@ class AuthorizationPolicy(Protocol):
 
     def authorize(
         self,
-        discovered: list,
+        discovered: list[Any],
         profile: Profile | None,
         *,
         run_id: str = "plan",
-    ) -> tuple[list, list[Diagnostic], list[SecurityEvent]]: ...
+    ) -> tuple[list[Any], list[Diagnostic], list[SecurityEvent]]: ...
 
 
 def _with_auth(item: Any, authorization: str) -> Any:
@@ -77,14 +78,14 @@ class BaseAuthorizationPolicy:
 
     def authorize(
         self,
-        discovered: list,
+        discovered: list[Any],
         profile: Profile | None,
         *,
         run_id: str = "plan",
-    ) -> tuple[list, list[Diagnostic], list[SecurityEvent]]:
+    ) -> tuple[list[Any], list[Diagnostic], list[SecurityEvent]]:
         diagnostics: list[Diagnostic] = []
         events: list[SecurityEvent] = []
-        authorized: list = []
+        authorized: list[Any] = []
 
         if profile is None:
             for item in discovered:

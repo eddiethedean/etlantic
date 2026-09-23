@@ -1,3 +1,4 @@
+# pyright: reportMissingImports=false, reportUnknownArgumentType=false, reportUnknownMemberType=false, reportUnknownVariableType=false
 """SQL pipeline-builder differential suite (ETLantic 0.33 / Medallantic M5).
 
 Compares **normalized semantics** (graph order, write intents, validation
@@ -105,6 +106,7 @@ def run_sql_builder_differential_suite(
         from medallantic.adapt import adapt_pipeline as _adapt
 
         adapt_pipeline = _adapt
+    assert adapt_pipeline is not None
     from medallantic.ir import SparkForgePipelineSpec
 
     corpus = list(fixtures) if fixtures is not None else default_sql_builder_fixtures()

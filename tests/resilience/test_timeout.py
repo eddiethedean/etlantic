@@ -1,3 +1,4 @@
+# pyright: reportArgumentType=false, reportMissingParameterType=false, reportPrivateUsage=false, reportUnknownArgumentType=false, reportUnknownParameterType=false
 """WP4: timeout produces one terminal report."""
 
 from __future__ import annotations

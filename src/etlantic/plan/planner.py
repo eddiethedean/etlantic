@@ -1,3 +1,4 @@
+# pyright: reportPrivateUsage=false, reportUnknownArgumentType=false, reportUnknownMemberType=false, reportUnknownVariableType=false, reportUnnecessaryComparison=false, reportUnusedFunction=false
 """Pure planner: validated logical model + profile → PipelinePlan."""
 
 from __future__ import annotations
@@ -294,6 +295,7 @@ def plan_pipeline_with_report(
     )
     if request is not None and ctx.profile.execution_strategy != "adaptive":
         return None, _adaptive_request_required_report()
+    report = ValidationReport.from_diagnostics([])
     try:
         if ctx.profile.execution_strategy == "adaptive":
             from etlantic.planning.adaptive import (

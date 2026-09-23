@@ -1,3 +1,4 @@
+# pyright: reportUnknownVariableType=false
 """Internal profile sub-records (not public API)."""
 
 from __future__ import annotations

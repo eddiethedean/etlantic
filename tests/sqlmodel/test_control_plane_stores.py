@@ -1,3 +1,4 @@
+# pyright: reportMissingImports=false, reportMissingParameterType=false, reportUnknownArgumentType=false, reportUnknownMemberType=false, reportUnknownParameterType=false, reportUnknownVariableType=false
 """SQLModel control-plane store restart and multi-worker tests."""
 
 from __future__ import annotations

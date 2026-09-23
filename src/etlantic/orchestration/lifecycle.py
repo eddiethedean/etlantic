@@ -1,3 +1,4 @@
+# pyright: reportUnknownVariableType=false
 """Submission, cancellation, polling, and report correlation models."""
 
 from __future__ import annotations

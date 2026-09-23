@@ -1,7 +1,10 @@
+# pyright: reportMissingTypeStubs=false, reportUnknownMemberType=false, reportUnknownVariableType=false
 """Hybrid SQL↔Python boundary example (planned materialization)."""
 
 from __future__ import annotations
 
+# Optional SQL plugin exports are dynamic entry-point surfaces.
+# pyright: reportAttributeAccessIssue=false
 import os
 
 from sqlalchemy import text

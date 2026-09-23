@@ -1,3 +1,4 @@
+# pyright: reportUnknownArgumentType=false, reportUnknownMemberType=false, reportUnknownVariableType=false
 """Schema-registry provider protocol and in-memory implementation (046-G)."""
 
 from __future__ import annotations

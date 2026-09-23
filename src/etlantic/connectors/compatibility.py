@@ -1,3 +1,4 @@
+# pyright: reportUnknownArgumentType=false, reportUnknownMemberType=false, reportUnknownVariableType=false
 """Compatibility adapter for existing StorageBinding implementations."""
 
 from __future__ import annotations

@@ -1,3 +1,4 @@
+# pyright: reportUnknownArgumentType=false, reportUnknownVariableType=false
 """Bounded, redacted, provenance-linked context bundles."""
 
 from __future__ import annotations

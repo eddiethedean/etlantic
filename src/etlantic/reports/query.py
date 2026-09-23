@@ -1,3 +1,4 @@
+# pyright: reportUnknownArgumentType=false, reportUnknownVariableType=false
 """Secret-free query helpers over run reports and history."""
 
 from __future__ import annotations

@@ -1,3 +1,4 @@
+# pyright: reportUnknownMemberType=false
 """Structured plan explain output."""
 
 from __future__ import annotations

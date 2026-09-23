@@ -1,3 +1,4 @@
+# pyright: reportUnknownVariableType=false
 """Versioned control-plane error envelopes (Problem Details-shaped, no FastAPI)."""
 
 from __future__ import annotations

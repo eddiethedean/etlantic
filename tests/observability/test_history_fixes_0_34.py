@@ -1,3 +1,4 @@
+# pyright: reportMissingParameterType=false, reportPrivateUsage=false, reportUnknownArgumentType=false, reportUnknownMemberType=false, reportUnknownParameterType=false, reportUnknownVariableType=false
 """Regression tests for 0.34 run history and observability fixes."""
 
 from __future__ import annotations

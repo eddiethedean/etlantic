@@ -1,3 +1,4 @@
+# pyright: reportUnsupportedDunderAll=false
 """ETLantic — typed, contract-driven data pipeline modeling.
 
 Recommended application and tutorial import style (0.22+)::

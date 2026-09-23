@@ -1,3 +1,4 @@
+# pyright: reportPrivateUsage=false
 """CP3 state-machine conformance for the provider-neutral reference store."""
 
 from __future__ import annotations

@@ -1,3 +1,4 @@
+# pyright: reportArgumentType=false, reportAttributeAccessIssue=false, reportIndexIssue=false, reportMissingParameterType=false, reportMissingTypeStubs=false, reportPrivateUsage=false, reportUnknownArgumentType=false, reportUnknownMemberType=false, reportUnknownParameterType=false, reportUnknownVariableType=false
 """Exact candidate negative boundaries, parity, ownership and resource proofs."""
 
 import json
@@ -371,8 +372,6 @@ def test_snapshot_cleanup_failure_retains_owner_and_blocks_sink(tmp_path, monkey
     import gc
     import weakref
 
-    from etlantic_polars import parquet_storage
-
     _seed(tmp_path)
     replacement = tmp_path / "replacement.parquet"
     pl.DataFrame({"key": [99], "enabled": [False], "unused": [0]}).write_parquet(
@@ -399,7 +398,7 @@ def test_snapshot_cleanup_failure_retains_owner_and_blocks_sink(tmp_path, monkey
         collected.append(True)
         return result
 
-    monkeypatch.setattr(parquet_storage.pl, "scan_parquet", scan)
+    monkeypatch.setattr(pl, "scan_parquet", scan)
     monkeypatch.setattr(pl.LazyFrame, "collect", collect)
 
     async def exercise():

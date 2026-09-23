@@ -1,3 +1,4 @@
+# pyright: reportUnknownArgumentType=false, reportUnknownMemberType=false, reportUnknownVariableType=false
 """Domain-neutral incremental strategies and atomic state stores (0.31)."""
 
 from __future__ import annotations
@@ -150,9 +151,11 @@ class StateStore(Protocol):
 
     def get(self, subject_id: str) -> StateCursor | None:
         """Return the committed cursor for ``subject_id``, if any."""
+        ...
 
     def propose(self, subject_id: str, value: str | None) -> StateCursor:
         """Stage a candidate value without committing."""
+        ...
 
     def commit(
         self,
@@ -162,6 +165,7 @@ class StateStore(Protocol):
         reason: str | None = None,
     ) -> StateTransitionResult:
         """Atomically commit a new cursor value."""
+        ...
 
     def rollback(self, subject_id: str) -> None:
         """Discard any staged candidate for ``subject_id``."""

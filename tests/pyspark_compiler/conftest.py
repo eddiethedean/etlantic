@@ -1,3 +1,4 @@
+# pyright: reportMissingImports=false, reportUnknownVariableType=false
 """Route PySpark imports to sparkless for JVM-free portable compiler tests."""
 
 from __future__ import annotations

@@ -1,3 +1,4 @@
+# pyright: reportMissingTypeStubs=false, reportUnknownArgumentType=false, reportUnknownVariableType=false
 """Compile a portable pipeline to an Airflow DAG module (ETLantic 0.34.0).
 
 Requires:
@@ -15,7 +16,10 @@ Run with:
 
 from __future__ import annotations
 
+# Airflow plugin factories are optional and dynamically exported.
+# pyright: reportAttributeAccessIssue=false
 from pathlib import Path
+from typing import Any, cast
 
 from etlantic import (
     Data,
@@ -51,7 +55,7 @@ class NormalizeCustomers(Transformation):
 
 
 @NormalizeCustomers.portable
-def normalize(customers):
+def normalize(customers: Any) -> Any:
     return customers.select(
         "customer_id",
         F.concat_ws(" ", F.col("first_name"), F.col("last_name")).alias("full_name"),
@@ -104,7 +108,7 @@ def main() -> None:
         context=PlanningContext.create(airflow_profile, registry=runtime.registry),
     )
     artifact = compile_plan(
-        plan, target="airflow", profile=airflow_profile, plugin=plugin
+        cast(Any, plan), target="airflow", profile=airflow_profile, plugin=plugin
     )
     out = Path("examples") / "_generated_customer_airflow_dag.py"
     artifact.write(out)

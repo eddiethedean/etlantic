@@ -29,7 +29,8 @@ async def run_sync_in_worker(
         return func(*args, **kwargs)
 
     async def _run() -> T:
-        return await anyio.to_thread.run_sync(
+        to_thread: Any = anyio.to_thread
+        return await to_thread.run_sync(
             _call,
             abandon_on_cancel=abandon_on_cancel,
         )

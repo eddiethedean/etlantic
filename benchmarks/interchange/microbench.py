@@ -1,3 +1,4 @@
+# pyright: reportUnknownArgumentType=false, reportUnknownMemberType=false, reportUnknownVariableType=false
 """Cross-engine interchange planning microbenchmark."""
 
 from __future__ import annotations

@@ -1,3 +1,4 @@
+# pyright: reportUnknownVariableType=false
 """Spark session provider protocol (secrets resolved only at acquire)."""
 
 from __future__ import annotations

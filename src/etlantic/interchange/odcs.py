@@ -1,3 +1,4 @@
+# pyright: reportUnknownArgumentType=false, reportUnnecessaryIsInstance=false
 """ODCS load/save facades over ContractModel ``DataContract``."""
 
 from __future__ import annotations

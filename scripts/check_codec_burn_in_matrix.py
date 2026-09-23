@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+# pyright: reportUnknownParameterType=false
 """CI gate: sibling burn-in fixtures stay loadable with locked content hashes.
 
 Covers plan, run_report, profile, capabilities, and interchange goldens under
@@ -8,6 +9,8 @@ fixtures remain under ``check_pipeline_codec_burn_in.py``).
 
 from __future__ import annotations
 
+# Matrix fixtures are intentionally heterogeneous wire dictionaries.
+# pyright: reportMissingTypeArgument=false
 import hashlib
 import json
 import sys

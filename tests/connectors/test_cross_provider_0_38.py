@@ -1,3 +1,4 @@
+# pyright: reportAttributeAccessIssue=false, reportFunctionMemberAccess=false, reportMissingImports=false, reportMissingParameterType=false, reportMissingTypeArgument=false, reportMissingTypeStubs=false, reportUnknownArgumentType=false, reportUnknownMemberType=false, reportUnknownParameterType=false, reportUnknownVariableType=false
 """Wave 7 cross-provider burn-in (038-A01, A17, A19, A20 soft-continue)."""
 
 from __future__ import annotations

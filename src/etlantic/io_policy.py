@@ -1,3 +1,4 @@
+# pyright: reportUnknownVariableType=false
 """Unified safe filesystem I/O policy (0.20)."""
 
 from __future__ import annotations

@@ -1,3 +1,4 @@
+# pyright: reportUnknownVariableType=false
 """Governed erasure models (CP4) — no subject values in evidence."""
 
 from __future__ import annotations

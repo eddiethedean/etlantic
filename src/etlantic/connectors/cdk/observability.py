@@ -1,3 +1,4 @@
+# pyright: reportUnknownArgumentType=false, reportUnknownVariableType=false
 """Bounded connector observability event helpers (no rows / no secrets)."""
 
 from __future__ import annotations

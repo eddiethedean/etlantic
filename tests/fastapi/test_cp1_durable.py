@@ -1,3 +1,4 @@
+# pyright: reportMissingImports=false, reportMissingTypeArgument=false, reportUnknownArgumentType=false, reportUnknownMemberType=false, reportUnknownParameterType=false, reportUnknownVariableType=false
 """Durable submit, observe, and multi-worker idempotency for CP1."""
 
 from __future__ import annotations

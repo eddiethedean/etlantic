@@ -1,3 +1,4 @@
+# pyright: reportUnknownArgumentType=false, reportUnknownVariableType=false, reportUnusedFunction=false
 """etlantic doctor — read-only environment and project checks."""
 
 from __future__ import annotations

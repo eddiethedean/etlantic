@@ -1,3 +1,4 @@
+# pyright: reportPrivateUsage=false, reportUnknownArgumentType=false, reportUnknownMemberType=false, reportUnknownVariableType=false
 """Symbolic DataFrame expressions for portable authoring."""
 
 from __future__ import annotations

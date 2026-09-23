@@ -1,3 +1,4 @@
+# pyright: reportPrivateUsage=false, reportUnknownMemberType=false
 """Regression tests for 0.3 deep-dive interchange fixes."""
 
 from __future__ import annotations

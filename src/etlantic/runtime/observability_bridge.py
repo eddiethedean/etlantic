@@ -1,3 +1,4 @@
+# pyright: reportUnknownVariableType=false
 """Bridge EventBus emissions to observability providers and event consumers."""
 
 from __future__ import annotations

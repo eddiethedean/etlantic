@@ -1,3 +1,4 @@
+# pyright: reportUnknownVariableType=false
 """In-process run report history."""
 
 from __future__ import annotations

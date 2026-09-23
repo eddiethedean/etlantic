@@ -10,6 +10,7 @@ from etlantic.control_plane.durable_protocols import DurableWorkStore
 from etlantic.control_plane.models import ControlPlaneContext
 from etlantic.control_plane.schedule_models import (
     FiringRecord,
+    FiringStatus,
     ScheduleRecord,
     ScheduleSpec,
 )
@@ -107,7 +108,7 @@ class ScheduleStore(Protocol):
         durable: DurableWorkStore | None = None,
         next_fire_at: str | None = None,
         require_leader_lease: bool = True,
-        skip_status: str | None = None,
+        skip_status: FiringStatus | None = None,
     ) -> tuple[FiringRecord, bool]: ...
 
     def list_firings(

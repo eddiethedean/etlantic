@@ -1,3 +1,4 @@
+# pyright: reportUnknownArgumentType=false, reportUnknownMemberType=false
 """Built-in reference optimization passes (045-R)."""
 
 from __future__ import annotations

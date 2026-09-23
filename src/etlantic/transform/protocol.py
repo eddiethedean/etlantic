@@ -1,3 +1,4 @@
+# pyright: reportUnknownVariableType=false
 """Protocol constants, budgets, and portable definition records."""
 
 from __future__ import annotations

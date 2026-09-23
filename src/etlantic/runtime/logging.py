@@ -1,3 +1,4 @@
+# pyright: reportUnknownArgumentType=false, reportUnknownVariableType=false
 """Structured logging with secret redaction."""
 
 from __future__ import annotations

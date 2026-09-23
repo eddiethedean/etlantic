@@ -1,3 +1,4 @@
+# pyright: reportMissingTypeStubs=false, reportUnknownArgumentType=false, reportUnknownMemberType=false, reportUnknownVariableType=false
 """Graduated 0.17 portable families on Polars (string-advanced + window/1).
 
 Requires:
@@ -13,6 +14,8 @@ from __future__ import annotations
 
 from typing import Any
 
+# Optional dataframe plugin factories and runtime reports are dynamic by design.
+# pyright: reportAttributeAccessIssue=false
 from etlantic import (
     Data,
     Extract,
@@ -49,7 +52,7 @@ class RankRows(Transformation):
 
 
 @RankRows.portable
-def rank_rows(rows):
+def rank_rows(rows: Any) -> Any:
     w = Window.orderBy(F.col("score").desc())
     return (
         rows.withColumn("name", F.trim(F.col("name")))

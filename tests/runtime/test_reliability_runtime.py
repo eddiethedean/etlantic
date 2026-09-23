@@ -1,3 +1,4 @@
+# pyright: reportOptionalOperand=false, reportUnknownArgumentType=false, reportUnknownMemberType=false, reportUnusedFunction=false
 """Reliability runtime helper and Pipeline.run e2e tests."""
 
 from __future__ import annotations

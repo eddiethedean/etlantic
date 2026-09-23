@@ -1,3 +1,4 @@
+# pyright: reportUnknownVariableType=false
 """In-memory deterministic policy provider (CP4 conformance reference)."""
 
 from __future__ import annotations

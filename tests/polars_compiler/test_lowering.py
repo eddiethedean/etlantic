@@ -1,3 +1,4 @@
+# pyright: reportMissingImports=false, reportUnknownArgumentType=false, reportUnknownMemberType=false, reportUnknownVariableType=false
 """Unit tests for Polars DTCS expression lowering."""
 
 from __future__ import annotations

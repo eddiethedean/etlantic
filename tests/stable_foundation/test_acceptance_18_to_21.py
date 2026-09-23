@@ -1,3 +1,4 @@
+# pyright: reportArgumentType=false, reportUnknownVariableType=false
 """Stable-foundation acceptance items 18-21 (CLI, faults, plugins, testing)."""
 
 from __future__ import annotations

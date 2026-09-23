@@ -1,3 +1,4 @@
+# pyright: reportMissingImports=false, reportUnknownMemberType=false, reportUnknownVariableType=false
 """SQL keyed deduplicate must fail closed (no silent full-row DISTINCT)."""
 
 from __future__ import annotations

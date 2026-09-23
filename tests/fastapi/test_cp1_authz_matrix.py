@@ -1,3 +1,4 @@
+# pyright: reportMissingImports=false, reportUnknownArgumentType=false, reportUnknownMemberType=false, reportUnknownVariableType=false
 """Two-tenant authz / non-enumeration matrix for CP1 read routes."""
 
 from __future__ import annotations

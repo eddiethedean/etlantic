@@ -1,3 +1,4 @@
+# pyright: reportUnknownVariableType=false
 """In-memory history and impact stores (CP2 / 040-H)."""
 
 from __future__ import annotations

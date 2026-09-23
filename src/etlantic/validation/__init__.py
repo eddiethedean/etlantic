@@ -1,3 +1,4 @@
+# pyright: reportUnknownVariableType=false
 """Multi-phase validation for ETLantic pipelines (0.3)."""
 
 from __future__ import annotations

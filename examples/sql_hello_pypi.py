@@ -1,3 +1,4 @@
+# pyright: reportMissingTypeStubs=false, reportUnknownMemberType=false, reportUnknownVariableType=false
 """Minimal SQL hello — PyPI path (SQLite in-memory by default).
 
 Paste companion for docs/06_EXECUTION/SQL_HELLO_PYPI.md.
@@ -6,6 +7,8 @@ Requires ``etlantic-sql``. Uses ``ETLANTIC_SQL_URL`` (defaults to in-memory SQLi
 
 from __future__ import annotations
 
+# Optional SQL plugin exports are dynamic entry-point surfaces.
+# pyright: reportAttributeAccessIssue=false
 import os
 
 from sqlalchemy import text

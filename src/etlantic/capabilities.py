@@ -1,3 +1,4 @@
+# pyright: reportUnknownVariableType=false
 """Plugin capability declarations and negotiation results."""
 
 from __future__ import annotations

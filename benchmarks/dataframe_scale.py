@@ -1,9 +1,11 @@
+# pyright: reportMissingTypeStubs=false
 """Lightweight dataframe benchmark harness (correctness + timing)."""
 
 from __future__ import annotations
 
 import time
 from dataclasses import dataclass
+from typing import Any
 
 from etlantic import (
     Data,
@@ -30,7 +32,7 @@ class Scale(Transformation):
 
 
 @Scale.implementation("polars")
-def scale_polars(rows):
+def scale_polars(rows: Any) -> Any:
     import polars as pl
 
     frame = rows if hasattr(rows, "with_columns") else pl.DataFrame(rows)
@@ -38,7 +40,7 @@ def scale_polars(rows):
 
 
 @Scale.implementation("pandas")
-def scale_pandas(rows):
+def scale_pandas(rows: Any) -> Any:
     import pandas as pd
 
     frame = rows if hasattr(rows, "assign") else pd.DataFrame(rows)

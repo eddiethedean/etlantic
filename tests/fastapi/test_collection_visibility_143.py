@@ -1,3 +1,4 @@
+# pyright: reportArgumentType=false, reportMissingImports=false, reportMissingParameterType=false, reportPossiblyUnboundVariable=false, reportUnknownArgumentType=false, reportUnknownMemberType=false, reportUnknownParameterType=false, reportUnknownVariableType=false
 """Concrete list denials, scoped providers, limits and fail-closed responses."""
 
 import importlib

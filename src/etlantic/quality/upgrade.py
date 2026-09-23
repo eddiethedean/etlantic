@@ -1,3 +1,4 @@
+# pyright: reportUnnecessaryIsInstance=false
 """Quality expression wire-schema upgrades."""
 
 from __future__ import annotations

@@ -1,3 +1,4 @@
+# pyright: reportUnknownArgumentType=false, reportUnknownVariableType=false
 """CP3 durable-work records.
 
 These provider-neutral records deliberately carry only opaque identities,

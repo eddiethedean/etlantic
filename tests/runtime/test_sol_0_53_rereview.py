@@ -1,3 +1,4 @@
+# pyright: reportUnknownArgumentType=false, reportUnknownLambdaType=false, reportUnknownMemberType=false, reportUnknownVariableType=false
 """Protected Sol regression contracts for phase 0.53 release blockers.
 
 Keep original FINAL identifiers: these verify the same previously reported

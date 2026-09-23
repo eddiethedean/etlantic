@@ -1,3 +1,4 @@
+# pyright: reportUnknownArgumentType=false, reportUnnecessaryIsInstance=false
 """Bounded lambda authoring helpers for higher-order complex-value functions."""
 
 from __future__ import annotations

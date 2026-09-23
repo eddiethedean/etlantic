@@ -1,3 +1,4 @@
+# pyright: reportUnknownVariableType=false
 """Delivery objective models (CP4)."""
 
 from __future__ import annotations

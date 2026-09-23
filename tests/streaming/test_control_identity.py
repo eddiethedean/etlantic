@@ -1,3 +1,4 @@
+# pyright: reportIncompatibleMethodOverride=false
 """Deterministic expansion identity and bounds (046-D)."""
 
 from __future__ import annotations

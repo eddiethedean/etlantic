@@ -1,3 +1,4 @@
+# pyright: reportAttributeAccessIssue=false, reportUnknownArgumentType=false, reportUnknownMemberType=false, reportUnknownVariableType=false
 """PipelinePlan planner acceptance tests for 0.3."""
 
 from __future__ import annotations

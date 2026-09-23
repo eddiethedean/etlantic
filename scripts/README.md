@@ -6,7 +6,8 @@ Maintainer and CI helpers under `scripts/`. Prefer the paths documented in
 
 | Script | Purpose | CI |
 |---|---|---|
-| `test_core.sh` | Marker-aware core pytest (excludes optional plugin markers) | Checks (via docs/CONTRIBUTING parity) |
+| `check_pyright.sh` | Repository-wide strict Pyright gate, shadow scan, and locked exception inventory | Checks |
+| `test_core.sh` | Strict Pyright plus marker-aware core pytest (excludes optional plugin markers) | Checks (via docs/CONTRIBUTING parity) |
 | `check_docs.py` | Version stamps, banned phrases, trust-example gate, docstring gate | Checks |
 | `check_runnable_docs.py` | Invoked by `check_docs.py` for runnable-doc invariants | Checks |
 | `check_pipeline_codec_burn_in.py` | `etlantic.pipeline/1` golden burn-in (`v0_24`–`v0_27`) | Checks |
@@ -32,7 +33,7 @@ uv run python scripts/check_docs.py
 uv run python scripts/build_docs.py
 
 # Core CI-equivalent (see CONTRIBUTING for the full list)
-./scripts/test_core.sh
+./scripts/test_core.sh  # includes the repository-wide strict Pyright gate
 uv run python scripts/check_docs.py
 uv run python scripts/check_pipeline_codec_burn_in.py
 uv run python scripts/check_codec_burn_in_matrix.py

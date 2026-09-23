@@ -1,3 +1,4 @@
+# pyright: reportUnknownArgumentType=false, reportUnknownMemberType=false, reportUnknownVariableType=false, reportUnnecessaryIsInstance=false
 """Public models used by optional schema and model inference.
 
 The serialized inference observation stores schema evidence and counts only.

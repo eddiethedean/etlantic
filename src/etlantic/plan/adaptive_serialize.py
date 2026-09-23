@@ -1,3 +1,4 @@
+# pyright: reportUnknownArgumentType=false, reportUnknownVariableType=false
 """Canonical serialization and fingerprinting for adaptive plans."""
 
 from __future__ import annotations

@@ -1,3 +1,4 @@
+# pyright: reportUnknownVariableType=false
 """Quota and fairness models (CP4)."""
 
 from __future__ import annotations

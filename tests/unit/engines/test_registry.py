@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from etlantic.engines import get_engine_registry
+from etlantic.engines import EngineRegistry, get_engine_registry
 from etlantic.profile import Profile
 
 
@@ -35,3 +35,9 @@ def test_is_dataframe_engine_aliases() -> None:
     assert registry.is_dataframe_engine("polars")
     assert registry.is_dataframe_engine("pandas")
     assert not registry.is_dataframe_engine("sql")
+
+
+def test_empty_custom_families_use_builtin_fallback() -> None:
+    registry = EngineRegistry(families=())
+
+    assert registry.resolve_family("polars") is not None

@@ -1,3 +1,4 @@
+# pyright: reportPrivateUsage=false, reportUnknownArgumentType=false, reportUnknownMemberType=false, reportUnknownVariableType=false
 """In-memory registry provider with tenant isolation (CP2 / 040-T, 040-R)."""
 
 from __future__ import annotations

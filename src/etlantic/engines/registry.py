@@ -1,9 +1,10 @@
+# pyright: reportUnknownArgumentType=false, reportUnknownVariableType=false
 """Central engine family registry and priority resolution."""
 
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Any
+from typing import Any, cast
 
 from etlantic.engines.family import ExecutionFamily
 from etlantic.engines.protocol import EngineFamily
@@ -103,7 +104,11 @@ class EngineRegistry:
     """Resolve engine families and profile-primary engines."""
 
     def __init__(self, families: tuple[EngineFamily, ...] | None = None) -> None:
-        self._families = families or _BUILTIN_FAMILIES
+        # Preserve the public fallback contract: an omitted or empty custom
+        # family collection uses the built-in family registry.
+        self._families: tuple[EngineFamily, ...] = families or cast(
+            tuple[EngineFamily, ...], _BUILTIN_FAMILIES
+        )
 
     def resolve_family(
         self,
@@ -115,11 +120,11 @@ class EngineRegistry:
         capabilities = caps_map.get(engine)
         if capabilities is not None:
             if _capability_flag(capabilities, "spark"):
-                return _SPARK
+                return cast(EngineFamily, _SPARK)
             if _capability_flag(capabilities, "sql"):
-                return _SQL
+                return cast(EngineFamily, _SQL)
             if _capability_flag(capabilities, "dataframe"):
-                return _DATAFRAME
+                return cast(EngineFamily, _DATAFRAME)
         for family in self._families:
             if family.matches(engine):
                 return family
@@ -170,11 +175,13 @@ class EngineRegistry:
 
     def primary_family(self, profile: Profile) -> EngineFamily:
         if profile.spark_engine:
-            return _SPARK
+            return cast(EngineFamily, _SPARK)
         if profile.sql_engine:
-            return _SQL
+            return cast(EngineFamily, _SQL)
         return (
-            _DATAFRAME if (profile.dataframe_engine or "local") != "local" else _LOCAL
+            cast(EngineFamily, _DATAFRAME)
+            if (profile.dataframe_engine or "local") != "local"
+            else cast(EngineFamily, _LOCAL)
         )
 
     def primary_engine(self, profile: Profile) -> str:

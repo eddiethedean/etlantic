@@ -1,3 +1,4 @@
+# pyright: reportUnnecessaryComparison=false, reportUnusedFunction=false
 """CLI command implementations for ETLantic 0.9 surfaces."""
 
 from __future__ import annotations

@@ -1,3 +1,4 @@
+# pyright: reportAttributeAccessIssue=false, reportMissingParameterType=false, reportMissingTypeStubs=false, reportOptionalMemberAccess=false, reportUnknownMemberType=false, reportUnknownParameterType=false, reportUnknownVariableType=false, reportUnusedFunction=false
 """Private PySpark portable compiler e2e tests (0.13b, sparkless by default)."""
 
 from __future__ import annotations

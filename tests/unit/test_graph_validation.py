@@ -1,3 +1,4 @@
+# pyright: reportPrivateUsage=false
 """Graph validation and Mermaid tests."""
 
 from etlantic import Extract, Input, Load, Output, Pipeline, Transformation

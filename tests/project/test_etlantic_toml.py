@@ -1,3 +1,4 @@
+# pyright: reportMissingParameterType=false, reportUnknownMemberType=false, reportUnknownParameterType=false
 """Project configuration tests."""
 
 from __future__ import annotations

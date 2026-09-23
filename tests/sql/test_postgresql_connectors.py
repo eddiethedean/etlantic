@@ -1,3 +1,4 @@
+# pyright: reportMissingImports=false, reportUnknownArgumentType=false, reportUnknownMemberType=false, reportUnknownVariableType=false
 """PostgreSQL connector fake tests (sqlite; no live Postgres)."""
 
 from __future__ import annotations

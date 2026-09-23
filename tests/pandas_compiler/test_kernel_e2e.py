@@ -1,3 +1,4 @@
+# pyright: reportAssignmentType=false, reportAttributeAccessIssue=false, reportMissingParameterType=false, reportMissingTypeStubs=false, reportUnknownMemberType=false, reportUnknownParameterType=false, reportUnknownVariableType=false, reportUnusedFunction=false
 """Private Pandas kernel compiler e2e tests (0.14a)."""
 
 from __future__ import annotations

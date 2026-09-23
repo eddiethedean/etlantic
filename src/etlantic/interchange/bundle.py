@@ -1,3 +1,4 @@
+# pyright: reportUnknownVariableType=false, reportUnnecessaryIsInstance=false
 """Deterministic contract bundles and discovery."""
 
 from __future__ import annotations

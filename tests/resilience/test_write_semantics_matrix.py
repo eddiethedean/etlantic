@@ -1,3 +1,4 @@
+# pyright: reportUnusedFunction=false
 """WP6: write-mode retry safety and adversarial I/O matrix."""
 
 from __future__ import annotations

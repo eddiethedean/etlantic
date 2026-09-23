@@ -1,3 +1,4 @@
+# pyright: reportUnknownArgumentType=false, reportUnknownMemberType=false, reportUnknownVariableType=false
 """Evaluate portable quality rules against row mappings (engine-neutral)."""
 
 from __future__ import annotations
@@ -49,6 +50,8 @@ def evaluate_rule(rule: QualityRule, row: dict[str, Any]) -> str | None:
         op = str(node.get("op") or "")
         expected = node.get("value")
         if _is_missing(value):
+            return f"{field} is null"
+        if value is None:
             return f"{field} is null"
         try:
             ok = {
@@ -103,6 +106,8 @@ def evaluate_rule(rule: QualityRule, row: dict[str, Any]) -> str | None:
 
     if kind == "length":
         if _is_missing(value):
+            return f"{field} is null"
+        if value is None:
             return f"{field} is null"
         length = len(value) if hasattr(value, "__len__") else None
         if length is None:

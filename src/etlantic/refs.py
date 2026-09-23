@@ -1,9 +1,10 @@
+# pyright: reportUnknownVariableType=false
 """Typed output references for pipeline wiring."""
 
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Any, Generic, TypeVar
+from typing import Any, Generic, TypeVar, cast
 
 T = TypeVar("T")
 
@@ -61,5 +62,5 @@ def as_output_ref(value: Any, *, default_port: str = "result") -> OutputRef[Any]
     # Extract and Step expose .as_output_ref()
     converter = getattr(value, "as_output_ref", None)
     if callable(converter):
-        return converter(default_port=default_port)
+        return cast(OutputRef[Any], converter(default_port=default_port))
     return None

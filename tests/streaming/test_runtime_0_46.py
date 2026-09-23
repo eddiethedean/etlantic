@@ -1,3 +1,4 @@
+# pyright: reportMissingParameterType=false, reportPrivateUsage=false, reportUnknownArgumentType=false, reportUnknownMemberType=false, reportUnknownParameterType=false, reportUnknownVariableType=false
 """Wave 2: optimizer rewrite reject, compiler reject, crash/restart fixtures."""
 
 from __future__ import annotations

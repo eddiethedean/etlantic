@@ -1,3 +1,4 @@
+# pyright: reportUnknownArgumentType=false, reportUnknownVariableType=false
 """Schedule and firing records (`etlantic.schedule/1`, `etlantic.firing/1`)."""
 
 from __future__ import annotations

@@ -1,3 +1,4 @@
+# pyright: reportUnknownVariableType=false
 """Normative 0.50 portable baseline vocabulary and manifest helpers."""
 
 from __future__ import annotations

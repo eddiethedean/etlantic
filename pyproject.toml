@@ -373,22 +373,17 @@ docstring-code-format = true
 
 [tool.pyright]
 pythonVersion = "3.11"
-typeCheckingMode = "basic"
+typeCheckingMode = "strict"
+# Check every first-party Python surface, including tests. Dynamic plugin and
+# fixture boundaries use explicit file-level exceptions where needed. The
+# inventory is locked and strict-scanned without file directives by the checks.
 include = [
-    "src/etlantic/transform",
-    "src/etlantic/plan/planner.py",
-    "src/etlantic/runtime/dataframe_exec.py",
-    "src/etlantic/runtime/sql_exec.py",
-    "src/etlantic/runtime/spark_exec.py",
-    "src/etlantic/runtime/execute.py",
-    "src/etlantic/runtime/orchestrator.py",
-    "packages/etlantic-polars/src/etlantic_polars/compiler.py",
-    "packages/etlantic-pandas/src/etlantic_pandas/compiler.py",
-    "packages/etlantic-sql/src/etlantic_sql/transform_compiler.py",
-    "packages/etlantic-pyspark/src/etlantic_pyspark/compiler.py",
-    "packages/etlantic-datafusion/src/etlantic_datafusion/compiler.py",
-    "packages/etlantic-duckdb/src/etlantic_duckdb/transform_compiler.py",
-    "scripts/check_portable_0_50.py",
-    "scripts/generate_portable_0_50_evidence.py",
-    "scripts/run_portable_0_50_canonical.py",
+    "src",
+    "packages/*/src",
+    "scripts",
+    "examples",
+    "benchmarks",
+    "docs",
+    "tests",
 ]
+exclude = ["tests/typing"]

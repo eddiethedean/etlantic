@@ -1,3 +1,4 @@
+# pyright: reportUnknownVariableType=false
 """Versioned optimization-pass protocol types."""
 
 from __future__ import annotations
@@ -206,8 +207,10 @@ class OptimizationPass(Protocol):
     @property
     def metadata(self) -> PassMetadata:
         """Return versioned pass identity."""
+        ...
 
     def propose(
         self, context: OptimizationContext
     ) -> tuple[OptimizationCandidate, ...]:
         """Propose zero or more candidates for the baseline plan."""
+        ...

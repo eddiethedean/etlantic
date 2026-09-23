@@ -1,5 +1,7 @@
 """Transformations for the sample project."""
 
+from typing import Any
+
 from etlantic import Input, Output, Transformation
 from etlantic.transform import functions as F
 
@@ -12,7 +14,7 @@ class NormalizeCustomers(Transformation):
 
 
 @NormalizeCustomers.portable
-def normalize_customers(customers):
+def normalize_customers(customers: Any) -> Any:
     return customers.select(
         "customer_id",
         F.concat_ws(" ", F.col("first_name"), F.col("last_name")).alias("full_name"),

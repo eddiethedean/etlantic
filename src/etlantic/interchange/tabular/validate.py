@@ -1,3 +1,4 @@
+# pyright: reportUnknownArgumentType=false, reportUnknownVariableType=false, reportUnnecessaryIsInstance=false
 """Fail-closed validation for versioned interchange descriptors."""
 
 from __future__ import annotations

@@ -1,3 +1,4 @@
+# pyright: reportUnknownVariableType=false
 """Stable identity helpers for pipelines, nodes, ports, and contracts."""
 
 from __future__ import annotations

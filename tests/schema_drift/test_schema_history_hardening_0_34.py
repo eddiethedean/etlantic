@@ -1,3 +1,4 @@
+# pyright: reportMissingParameterType=false, reportMissingTypeArgument=false, reportOptionalMemberAccess=false, reportUnknownArgumentType=false, reportUnknownParameterType=false
 """Schema history row-payload and subject-path collision regressions."""
 
 from __future__ import annotations

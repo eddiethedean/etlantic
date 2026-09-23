@@ -44,10 +44,14 @@ def run_cp4_governance_conformance_suite(
     attestations: Any | None = None,
 ) -> None:
     """Exercise erasure, audit integrity, objectives, and attestations."""
-    erasure = erasure or MemoryErasureStore()
-    audit = audit or MemoryAuditEvidenceStore()
-    objectives = objectives or MemoryObjectiveStore()
-    attestations = attestations or MemoryAttestationStore.for_tests()
+    if erasure is None:
+        erasure = MemoryErasureStore()
+    if audit is None:
+        audit = MemoryAuditEvidenceStore()
+    if objectives is None:
+        objectives = MemoryObjectiveStore()
+    if attestations is None:
+        attestations = MemoryAttestationStore.for_tests()
     ctx = _ctx()
 
     # Erasure — legal hold and no false completion.

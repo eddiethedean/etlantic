@@ -1,3 +1,4 @@
+# pyright: reportUnknownArgumentType=false, reportUnknownMemberType=false
 """In-memory CustomerPipeline demo (SDK seed + run).
 
 This is not the docs Quickstart. For the canonical first success, use:
@@ -8,6 +9,8 @@ Run this companion with:
 
     uv run python examples/memory_customers.py
 """
+
+from typing import Any
 
 from etlantic import (
     Data,
@@ -20,6 +23,9 @@ from etlantic import (
     Profile,
     Transformation,
 )
+
+# The local runtime report is intentionally backend-shaped in this example.
+# pyright: reportAttributeAccessIssue=false
 from etlantic.transform import functions as F
 
 
@@ -40,7 +46,7 @@ class NormalizeCustomers(Transformation):
 
 
 @NormalizeCustomers.portable
-def normalize_customers(customers):
+def normalize_customers(customers: Any) -> Any:
     return customers.select(
         "customer_id",
         F.concat_ws(" ", F.col("first_name"), F.col("last_name")).alias("full_name"),

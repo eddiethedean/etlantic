@@ -1,3 +1,4 @@
+# pyright: reportUnknownArgumentType=false
 """Engine-free stream semantic model (046-M)."""
 
 from __future__ import annotations

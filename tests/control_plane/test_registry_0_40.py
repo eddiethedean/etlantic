@@ -1,3 +1,4 @@
+# pyright: reportPrivateUsage=false
 """CP2 registry directory, revision, alias, and promotion tests (0.40)."""
 
 from __future__ import annotations

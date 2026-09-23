@@ -1,3 +1,4 @@
+# pyright: reportMissingImports=false, reportUnknownArgumentType=false, reportUnknownMemberType=false, reportUnknownVariableType=false
 """FastAPI 0.48 context and proposal-validate routes."""
 
 from __future__ import annotations

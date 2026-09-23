@@ -1,3 +1,4 @@
+# pyright: reportMissingTypeStubs=false, reportUnknownArgumentType=false, reportUnknownMemberType=false, reportUnknownVariableType=false, reportUnnecessaryComparison=false, reportUnnecessaryIsInstance=false
 """Contract diff / compatibility integration points."""
 
 from __future__ import annotations
@@ -16,6 +17,8 @@ from etlantic.interchange.diagnostics import map_toolkit_diagnostics
 from etlantic.interchange.dpcs import pipeline_to_dpcs
 from etlantic.interchange.dtcs import DtcsError, transformation_to_dtcs
 from etlantic.interchange.security import read_text_bounded
+
+_dpcs_api: Any = dpcs
 
 _COMPATIBLE_DPCS_CATEGORIES = frozenset(
     {
@@ -149,7 +152,7 @@ def diff_pipelines(
     try:
         left = _as_dpcs_yaml(previous)
         right = _as_dpcs_yaml(current)
-        result = dpcs.compare_contract_yaml(left, right)
+        result = _dpcs_api.compare_contract_yaml(left, right)
     except (ValueError, TypeError, KeyError) as exc:
         return ValidationReport.from_diagnostics(
             [

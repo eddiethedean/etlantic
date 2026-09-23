@@ -1,3 +1,4 @@
+# pyright: reportUnknownArgumentType=false, reportUnknownVariableType=false
 """Contract ↔ Spark schema mapping helpers (lossy/unknown never guessed)."""
 
 from __future__ import annotations

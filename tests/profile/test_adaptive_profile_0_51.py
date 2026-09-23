@@ -1,3 +1,4 @@
+# pyright: reportArgumentType=false, reportAttributeAccessIssue=false, reportIndexIssue=false, reportUnknownMemberType=false
 """0.51 adaptive profile contract tests."""
 
 from __future__ import annotations

@@ -1,3 +1,4 @@
+# pyright: reportMissingTypeArgument=false, reportUnknownParameterType=false
 """Regression coverage for 0.24.0 top bugfixes."""
 
 from __future__ import annotations

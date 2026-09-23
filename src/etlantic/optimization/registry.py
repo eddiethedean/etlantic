@@ -1,3 +1,4 @@
+# pyright: reportUnnecessaryIsInstance=false
 """Optimization pass discovery, allowlisting, and deterministic ordering."""
 
 from __future__ import annotations

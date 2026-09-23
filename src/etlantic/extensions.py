@@ -1,3 +1,4 @@
+# pyright: reportUnknownArgumentType=false, reportUnknownVariableType=false, reportUnnecessaryIsInstance=false, reportUnusedFunction=false
 """Extension metadata namespaces and size budgets.
 
 Plugin and core extension keys should use a reserved prefix so plan, profile,

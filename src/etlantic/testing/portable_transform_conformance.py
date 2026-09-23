@@ -1,3 +1,4 @@
+# pyright: reportMissingImports=false, reportMissingTypeStubs=false, reportUnknownArgumentType=false, reportUnknownMemberType=false, reportUnknownVariableType=false
 """Public portable transform compiler conformance suite (0.14)."""
 
 from __future__ import annotations
@@ -5,7 +6,7 @@ from __future__ import annotations
 import asyncio
 import math
 from collections.abc import Callable, Mapping, Sequence
-from typing import Any
+from typing import Any, cast
 
 from etlantic.testing.portable_fixtures.corpus import (
     FIXTURES,
@@ -110,11 +111,12 @@ def default_frame_factory(engine: str) -> FrameFactory:
 
         return _pandas
     if engine in {"pyspark", "spark"}:
+        import etlantic_pyspark
         from etlantic.spark.provider import ResourceContext, SparkSessionRequest
-        from etlantic_pyspark import create_provider
         from etlantic_pyspark.sparkless_shim import install
 
         install()
+        create_provider = cast(Any, etlantic_pyspark).create_provider
         provider = create_provider()
         ctx = ResourceContext(run_id="conformance", pipeline_id="c", plan_id="p")
         handle = provider.acquire(

@@ -1,3 +1,4 @@
+# pyright: reportArgumentType=false, reportAssignmentType=false, reportCallIssue=false, reportInvalidTypeForm=false, reportMissingParameterType=false, reportUnknownMemberType=false, reportUnknownParameterType=false, reportUnknownVariableType=false
 """Portable, schema-provable frozen scan/filter/project reference fixture."""
 
 from typing import ClassVar

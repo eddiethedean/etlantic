@@ -1,3 +1,4 @@
+# pyright: reportUnknownArgumentType=false, reportUnknownVariableType=false
 """Shadow comparison of baseline vs optimized plans."""
 
 from __future__ import annotations

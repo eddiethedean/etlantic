@@ -1,3 +1,4 @@
+# pyright: reportMissingImports=false, reportOptionalMemberAccess=false, reportUnknownMemberType=false, reportUnknownVariableType=false
 """Isolation-profile matrix evidence tests (CP2 / 040-O exit).
 
 Profiles (ADR-017):

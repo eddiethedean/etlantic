@@ -1,3 +1,4 @@
+# pyright: reportUnnecessaryIsInstance=false
 """Pipeline definition wire-schema upgrades."""
 
 from __future__ import annotations

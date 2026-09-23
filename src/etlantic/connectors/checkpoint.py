@@ -1,3 +1,4 @@
+# pyright: reportDeprecated=false, reportUnknownArgumentType=false, reportUnknownMemberType=false, reportUnnecessaryComparison=false
 """Landing checkpoint load/save and local exclusive lease."""
 
 from __future__ import annotations

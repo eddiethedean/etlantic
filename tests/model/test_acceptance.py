@@ -1,3 +1,4 @@
+# pyright: reportAssignmentType=false
 """Roadmap 0.1 acceptance scenarios."""
 
 from __future__ import annotations

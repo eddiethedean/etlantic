@@ -1,3 +1,4 @@
+# pyright: reportUnknownVariableType=false
 """Plugin compatibility report for independently installed packages.
 
 ``etlantic plugin compatibility`` evaluates a plugin's static
@@ -460,7 +461,7 @@ def _etlantic_requirement_from_dist(dist_name: str) -> tuple[str | None, str | N
         dist = distribution(dist_name)
     except PackageNotFoundError:
         return None, None
-    python_requires = dist.metadata.get("Requires-Python")
+    python_requires = dist.metadata["Requires-Python"]
     core_requires: str | None = None
     for raw in dist.requires or ():
         try:

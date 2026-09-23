@@ -1,8 +1,11 @@
 #!/usr/bin/env python3
+# pyright: reportUnknownArgumentType=false, reportUnknownMemberType=false, reportUnknownParameterType=false, reportUnknownVariableType=false
 """Generate and verify executable adaptive 0.52 release evidence."""
 
 from __future__ import annotations
 
+# This historical checker validates untyped wire payloads.
+# pyright: reportMissingTypeArgument=false, reportOptionalMemberAccess=false
 import argparse
 import ast
 import hashlib

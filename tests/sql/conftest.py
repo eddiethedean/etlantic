@@ -1,3 +1,4 @@
+# pyright: reportAttributeAccessIssue=false, reportMissingTypeStubs=false, reportUnknownParameterType=false, reportUnknownVariableType=false
 """Shared SQL pytest fixtures — honor ETLANTIC_SQL_URL when set."""
 
 from __future__ import annotations

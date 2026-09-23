@@ -1,3 +1,4 @@
+# pyright: reportUnknownArgumentType=false, reportUnknownLambdaType=false, reportUnknownMemberType=false, reportUnknownVariableType=false
 """Schema drift models: normalized schema, observations, changes, impact (0.3)."""
 
 from __future__ import annotations

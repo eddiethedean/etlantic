@@ -1,3 +1,4 @@
+# pyright: reportDeprecated=false, reportUnknownVariableType=false
 """Resource injection markers and scoped resource cache."""
 
 from __future__ import annotations
@@ -95,7 +96,8 @@ class ResourceManager:
                 cleanup = _cleanup_async
             elif hasattr(value, "__enter__") and hasattr(value, "__exit__"):
                 sync_cm = value
-                value = await anyio.to_thread.run_sync(sync_cm.__enter__)
+                to_thread: Any = anyio.to_thread
+                value = await to_thread.run_sync(lambda: sync_cm.__enter__())
 
                 def _cleanup_sync() -> None:
                     sync_cm.__exit__(None, None, None)
@@ -128,7 +130,7 @@ class ResourceManager:
         if errors:
             if len(errors) == 1:
                 raise errors[0]
-            raise ExceptionGroup("resource cleanup failures", errors)
+            raise BaseExceptionGroup("resource cleanup failures", errors)
 
     @asynccontextmanager
     async def scope(self, scope: str, scope_key: str = "") -> AsyncIterator[None]:

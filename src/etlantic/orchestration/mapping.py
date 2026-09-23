@@ -1,6 +1,9 @@
+# pyright: reportUnknownArgumentType=false
 """Portable plan → backend-agnostic task graph mapping."""
 
 from __future__ import annotations
+
+from typing import Any
 
 from etlantic.orchestration.artifacts import (
     ArtifactTransportPolicy,
@@ -112,7 +115,7 @@ def map_plan_to_tasks(
             deps[edge.consumer_node].append(edge.producer_node)
 
     # Artifact outputs by node.
-    artifacts_by_node: dict[str, list] = {name: [] for name in node_names}
+    artifacts_by_node: dict[str, list[Any]] = {name: [] for name in node_names}
     for resolution in plan.output_resolutions:
         if resolution.node_name not in artifacts_by_node:
             continue

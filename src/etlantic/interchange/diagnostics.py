@@ -1,3 +1,4 @@
+# pyright: reportUnknownArgumentType=false, reportUnknownMemberType=false, reportUnknownVariableType=false
 """Map foreign toolkit validation reports into ETLantic diagnostics."""
 
 from __future__ import annotations

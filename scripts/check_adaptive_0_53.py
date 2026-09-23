@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+# pyright: reportUnknownArgumentType=false, reportUnknownMemberType=false, reportUnknownVariableType=false
 """Execute and verify source-bound, non-skipped adaptive qualification evidence."""
 
 from __future__ import annotations
@@ -240,7 +241,7 @@ def main() -> int:
             (args.output / "qualification.stdout.txt").write_bytes(safe_stdout.encode())
             (args.output / "qualification.stderr.txt").write_bytes(safe_stderr.encode())
             (args.output / "qualification.xml").write_bytes(safe_junit)
-        elif not _verify_committed_evidence(record, record["source_revision"]):
+        elif not _verify_committed_evidence(record, str(record["source_revision"])):
             print(
                 "committed adaptive qualification evidence is missing, stale, skipped or unsubstantiated"
             )

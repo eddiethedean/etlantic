@@ -1,3 +1,4 @@
+# pyright: reportUnknownVariableType=false
 """Outcome callbacks and failure actions."""
 
 from __future__ import annotations

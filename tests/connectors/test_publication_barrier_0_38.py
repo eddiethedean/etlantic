@@ -1,3 +1,4 @@
+# pyright: reportPrivateUsage=false
 """PublicationBarrier multi-sink + unknown-hold regressions (0.38)."""
 
 from __future__ import annotations

@@ -1,3 +1,4 @@
+# pyright: reportUnknownVariableType=false
 """Catalog / schema mutation authorization (domain-neutral).
 
 Production profiles fail closed unless an explicit allowlist authorizes

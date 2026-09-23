@@ -1,3 +1,4 @@
+# pyright: reportUnknownArgumentType=false, reportUnknownMemberType=false, reportUnknownVariableType=false
 """CLI empty production allowlist emits one PMPLUG401 and exit 11."""
 
 from __future__ import annotations

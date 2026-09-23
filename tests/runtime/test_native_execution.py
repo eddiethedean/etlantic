@@ -1,3 +1,4 @@
+# pyright: reportAttributeAccessIssue=false, reportMissingImports=false, reportUnknownMemberType=false, reportUnknownVariableType=false
 """Implementation-side checks of native work draining and cancellation."""
 
 from __future__ import annotations

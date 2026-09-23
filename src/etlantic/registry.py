@@ -1,3 +1,4 @@
+# pyright: reportPrivateUsage=false, reportUnknownArgumentType=false, reportUnknownVariableType=false
 """Scoped registries for plugins, implementations, bindings, and providers.
 
 Registries belong to a PlanningContext instance (ADR-004), never process globals.

@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+# pyright: reportMissingImports=false, reportUnknownVariableType=false
 """CI/local gate: registry provider promote/suspend conformance (memory + optional SQLModel).
 
 Prefer this stub over extending the public CLI surface until ``etlantic registry``

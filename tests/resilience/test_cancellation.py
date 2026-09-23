@@ -1,3 +1,4 @@
+# pyright: reportArgumentType=false, reportMissingParameterType=false, reportUnknownArgumentType=false, reportUnknownMemberType=false, reportUnknownParameterType=false, reportUnusedFunction=false
 """WP4: cancellation produces one terminal report without duplicate writes."""
 
 from __future__ import annotations

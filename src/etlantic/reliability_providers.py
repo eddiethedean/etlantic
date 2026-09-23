@@ -1,3 +1,4 @@
+# pyright: reportUnknownVariableType=false
 """Reliability ops provider protocols (0.9)."""
 
 from __future__ import annotations

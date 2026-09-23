@@ -1,3 +1,4 @@
+# pyright: reportDeprecated=false, reportUnknownVariableType=false
 """Observability provider protocol (etlantic.observability/1)."""
 
 from __future__ import annotations
@@ -6,6 +7,7 @@ import json
 import logging
 import sys
 from collections.abc import AsyncIterator, Mapping
+from contextlib import AbstractAsyncContextManager
 from dataclasses import dataclass, field
 from typing import Any, Protocol, runtime_checkable
 
@@ -99,7 +101,9 @@ class ObservabilityProvider(Protocol):
     @property
     def descriptor(self) -> ObservabilityProviderDescriptor: ...
 
-    def lifespan(self, context: ObservabilityContext) -> AsyncIterator[None]: ...
+    def lifespan(
+        self, context: ObservabilityContext
+    ) -> AbstractAsyncContextManager[None]: ...
 
     async def emit_event(self, event: LifecycleEvent | SecurityEvent) -> None: ...
 
@@ -138,7 +142,9 @@ class JsonConsoleObservabilityProvider:
             ),
         )
 
-    def lifespan(self, context: ObservabilityContext) -> AsyncIterator[None]:
+    def lifespan(
+        self, context: ObservabilityContext
+    ) -> AbstractAsyncContextManager[None]:
         from contextlib import asynccontextmanager
 
         @asynccontextmanager
@@ -218,7 +224,9 @@ class OpenTelemetryAdapter:
             ),
         )
 
-    def lifespan(self, context: ObservabilityContext) -> AsyncIterator[None]:
+    def lifespan(
+        self, context: ObservabilityContext
+    ) -> AbstractAsyncContextManager[None]:
         from contextlib import asynccontextmanager
 
         @asynccontextmanager

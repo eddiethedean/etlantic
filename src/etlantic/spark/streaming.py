@@ -1,3 +1,4 @@
+# pyright: reportUnknownVariableType=false
 """Structured Streaming foundation types (experimental).
 
 See :data:`~etlantic.spark.STREAMING_STABILITY` for stability expectations.

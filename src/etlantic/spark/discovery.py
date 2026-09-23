@@ -14,7 +14,7 @@ SPARK_PLUGIN_ENTRY_POINT = "etlantic.spark_plugins"
 SPARK_PROVIDER_ENTRY_POINT = "etlantic.spark_providers"
 
 
-def _fail_closed_loaded(result):
+def _fail_closed_loaded(result: Any) -> Any:
     from etlantic.plugin_trust import loaded_plugins_after_trust
 
     return loaded_plugins_after_trust(result)

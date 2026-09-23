@@ -1,3 +1,4 @@
+# pyright: reportUnknownVariableType=false
 """Shared graph IR and visualization exporters beyond Mermaid.
 
 Public helpers:

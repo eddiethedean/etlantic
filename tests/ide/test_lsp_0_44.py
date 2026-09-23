@@ -1,3 +1,4 @@
+# pyright: reportMissingImports=false, reportPrivateUsage=false, reportUnknownMemberType=false, reportUnknownVariableType=false
 """LSP conformance helpers and create_server smoke tests."""
 
 from __future__ import annotations

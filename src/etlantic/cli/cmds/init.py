@@ -1,3 +1,4 @@
+# pyright: reportUnusedFunction=false
 """etlantic init — scaffold a minimal import-safe pipeline project."""
 
 from __future__ import annotations

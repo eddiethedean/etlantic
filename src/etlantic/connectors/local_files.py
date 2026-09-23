@@ -1,3 +1,4 @@
+# pyright: reportUnknownArgumentType=false, reportUnknownVariableType=false
 """Local landing-zone source connector (stdlib CSV directory/glob)."""
 
 from __future__ import annotations

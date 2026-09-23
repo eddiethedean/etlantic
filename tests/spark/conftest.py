@@ -1,3 +1,4 @@
+# pyright: reportMissingImports=false, reportUnknownVariableType=false
 """Route PySpark imports to sparkless for JVM-free Spark tests.
 
 By default, Spark suite tests run against sparkless. Set

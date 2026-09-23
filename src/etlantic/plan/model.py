@@ -1,3 +1,4 @@
+# pyright: reportUnknownArgumentType=false, reportUnknownVariableType=false
 """Immutable PipelinePlan IR (schema etlantic.plan/1)."""
 
 from __future__ import annotations

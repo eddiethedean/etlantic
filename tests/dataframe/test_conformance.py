@@ -1,3 +1,4 @@
+# pyright: reportAttributeAccessIssue=false, reportMissingTypeStubs=false, reportUnknownArgumentType=false, reportUnknownVariableType=false
 """Conformance kit smoke tests for installed dataframe plugins."""
 
 from __future__ import annotations

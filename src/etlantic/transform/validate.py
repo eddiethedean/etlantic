@@ -1,3 +1,4 @@
+# pyright: reportUnknownArgumentType=false, reportUnknownVariableType=false
 """Portable definition validation and PMXFORM diagnostics."""
 
 from __future__ import annotations

@@ -1,3 +1,4 @@
+# pyright: reportMissingParameterType=false, reportPrivateUsage=false, reportUnknownArgumentType=false, reportUnknownMemberType=false, reportUnknownParameterType=false
 """Reference identity invariance under order and hash randomization."""
 
 import os

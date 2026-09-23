@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from typing import Any
+from typing import Any, cast
 
 import typer
 
@@ -88,7 +88,7 @@ class CliContext:
     def runtime(self) -> PipelineRuntime:
         if self._runtime is None:
             store = self.report_store()
-            self._runtime = PipelineRuntime(reports=store)
+            self._runtime = PipelineRuntime(reports=cast(ReportStore, store))
             history = self.run_history()
             if history is not None:
                 self._runtime.register_run_history_provider("file", history)

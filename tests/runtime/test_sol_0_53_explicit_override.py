@@ -1,3 +1,4 @@
+# pyright: reportMissingParameterType=false, reportUnknownParameterType=false
 """Protected FINAL-004 compatibility contract for explicit request overrides."""
 
 from __future__ import annotations

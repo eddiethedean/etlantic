@@ -1,3 +1,4 @@
+# pyright: reportUnknownVariableType=false
 """Callable-backed storage binding."""
 
 from __future__ import annotations

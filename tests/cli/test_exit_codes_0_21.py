@@ -1,3 +1,4 @@
+# pyright: reportMissingParameterType=false, reportUnknownMemberType=false, reportUnknownParameterType=false
 """CLI regression tests for 0.21 wiring (workspace, preview, exit codes)."""
 
 from __future__ import annotations

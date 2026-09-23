@@ -1,3 +1,4 @@
+# pyright: reportPrivateUsage=false, reportUnknownArgumentType=false, reportUnknownVariableType=false, reportUnnecessaryIsInstance=false
 """Versioned physical-unit records used only by adaptive plan ``/2``."""
 
 from __future__ import annotations

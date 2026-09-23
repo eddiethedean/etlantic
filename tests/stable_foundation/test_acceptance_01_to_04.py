@@ -1,3 +1,4 @@
+# pyright: reportUnusedFunction=false
 """Stable-foundation acceptance items 1-4 (contracts, results, selective run)."""
 
 from __future__ import annotations

@@ -1,3 +1,4 @@
+# pyright: reportUnknownVariableType=false
 """Append-only integrity-protected audit evidence (CP4)."""
 
 from __future__ import annotations

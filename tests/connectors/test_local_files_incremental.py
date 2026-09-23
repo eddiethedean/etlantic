@@ -1,3 +1,4 @@
+# pyright: reportMissingParameterType=false, reportMissingTypeArgument=false, reportUnknownArgumentType=false, reportUnknownMemberType=false, reportUnknownParameterType=false, reportUnknownVariableType=false
 """Local-files incremental ledger + commit-barrier tests."""
 
 from __future__ import annotations

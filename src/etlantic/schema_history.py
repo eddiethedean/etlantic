@@ -1,3 +1,4 @@
+# pyright: reportUnknownArgumentType=false, reportUnknownMemberType=false, reportUnknownVariableType=false
 """File-backed schema history provider (no source rows)."""
 
 from __future__ import annotations

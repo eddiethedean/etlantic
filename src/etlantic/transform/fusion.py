@@ -1,3 +1,4 @@
+# pyright: reportUnknownArgumentType=false, reportUnknownMemberType=false, reportUnknownVariableType=false, reportUnnecessaryIsInstance=false
 """Immutable data-only descriptors for the bounded Polars scan composition.
 
 Descriptors prove syntax and wiring, not execution qualification or maturity.

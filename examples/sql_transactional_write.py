@@ -1,7 +1,10 @@
+# pyright: reportMissingTypeStubs=false, reportUnknownArgumentType=false, reportUnknownMemberType=false, reportUnknownVariableType=false
 """Transactional replace / insert-select write example."""
 
 from __future__ import annotations
 
+# Optional SQL plugin exports are dynamic entry-point surfaces.
+# pyright: reportAttributeAccessIssue=false
 import os
 
 from sqlalchemy import text

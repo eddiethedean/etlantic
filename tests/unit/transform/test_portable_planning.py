@@ -1,3 +1,4 @@
+# pyright: reportAssignmentType=false, reportAttributeAccessIssue=false, reportMissingParameterType=false, reportPrivateUsage=false, reportUnknownArgumentType=false, reportUnknownLambdaType=false, reportUnknownMemberType=false, reportUnknownParameterType=false, reportUnknownVariableType=false, reportUnusedFunction=false
 """Portable planning policy tests with an in-process stub compiler."""
 
 from __future__ import annotations

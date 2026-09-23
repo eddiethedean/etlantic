@@ -1,3 +1,4 @@
+# pyright: reportMissingTypeStubs=false, reportUnknownArgumentType=false, reportUnknownMemberType=false, reportUnknownVariableType=false
 """SQL-to-SQL example: normalize customers inside the database.
 
 Requires ``etlantic-sql``. Uses ``ETLANTIC_SQL_URL`` (defaults to
@@ -6,6 +7,8 @@ in-memory SQLite for local demos).
 
 from __future__ import annotations
 
+# Optional SQL plugin exports are dynamic entry-point surfaces.
+# pyright: reportAttributeAccessIssue=false
 import os
 
 from sqlalchemy import text

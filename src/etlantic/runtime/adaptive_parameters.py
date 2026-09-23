@@ -1,3 +1,4 @@
+# pyright: reportUnknownArgumentType=false, reportUnknownMemberType=false, reportUnknownVariableType=false
 """JSON-safe effective parameter authority for requested adaptive plans."""
 
 from __future__ import annotations
@@ -5,14 +6,15 @@ from __future__ import annotations
 import json
 import math
 from types import MappingProxyType
+from typing import Any
 
 
-def canonical_parameters(value):
+def canonical_parameters(value: Any) -> str:
     remaining = 10000
     text_remaining = 1024 * 1024
     active = set()
 
-    def safe(item, depth=0):
+    def safe(item: Any, depth: int = 0) -> Any:
         nonlocal remaining, text_remaining
         remaining -= 1
         if remaining < 0 or depth > 32:
@@ -31,12 +33,12 @@ def canonical_parameters(value):
             return item
         if type(item) is float and math.isfinite(item):
             return item
-        if type(item) in {dict, MappingProxyType, list, tuple}:
+        if isinstance(item, (dict, MappingProxyType, list, tuple)):
             if id(item) in active or len(item) > remaining:
                 raise ValueError("Adaptive parameter bounds exceeded")
             active.add(id(item))
             try:
-                if type(item) in {dict, MappingProxyType}:
+                if isinstance(item, (dict, MappingProxyType)):
                     if any(type(key) is not str or len(key) > 4096 for key in item):
                         raise ValueError("Invalid adaptive parameter keys")
                     text_remaining -= sum(len(key) * 6 for key in item)
@@ -56,7 +58,7 @@ def canonical_parameters(value):
     return encoded
 
 
-def capture_parameters(graph, request):
+def capture_parameters(graph: Any, request: Any) -> dict[str, Any]:
     canonical_parameters(request.parameter_overrides)
     captured = {}
     for node in graph.nodes:
@@ -84,7 +86,7 @@ def capture_parameters(graph, request):
     return json.loads(canonical_parameters(captured))
 
 
-def validate_parameters(graph, request, captured):
+def validate_parameters(graph: Any, request: Any, captured: Any) -> dict[str, Any]:
     canonical_parameters(request.parameter_overrides)
     expected = {
         n.name: {p.name for p in n.parameters} for n in graph.nodes if n.parameters

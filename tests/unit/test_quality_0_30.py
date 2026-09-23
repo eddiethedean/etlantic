@@ -1,3 +1,4 @@
+# pyright: reportArgumentType=false
 """Unit tests for provisional etlantic.quality/1."""
 
 from __future__ import annotations

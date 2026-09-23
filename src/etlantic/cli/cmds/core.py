@@ -1,3 +1,4 @@
+# pyright: reportUnusedFunction=false
 """Core CLI command registrations."""
 
 from __future__ import annotations
@@ -8,6 +9,7 @@ from datetime import datetime
 from pathlib import Path
 from typing import Any, cast
 
+import click
 import typer
 
 from etlantic.cli import exit_codes as ec
@@ -142,7 +144,7 @@ def register_core_commands(
         if getattr(resolved, "execution_strategy", "explicit") == "adaptive":
             # `/2` is planning-only in 0.52.  Reject before mutation prompts,
             # plugin bootstrap, target import, or runtime construction.
-            raise typer.ClickException(
+            raise click.ClickException(
                 "PMADP500: adaptive etlantic.plan/2 execution is not available in 0.52"
             )
         write_intent = "no_write" if no_write else "execute_and_persist"

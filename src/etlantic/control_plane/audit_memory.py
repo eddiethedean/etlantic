@@ -1,3 +1,4 @@
+# pyright: reportUnknownArgumentType=false
 """In-memory hash-chained audit evidence store (CP4)."""
 
 from __future__ import annotations

@@ -1,3 +1,4 @@
+# pyright: reportUnknownArgumentType=false, reportUnknownMemberType=false, reportUnknownVariableType=false
 """Adapters that present an executable adaptive plan to the local host.
 
 The adaptive wire model intentionally stays independent from the historical
@@ -155,22 +156,28 @@ def pipeline_plan_for_adaptive(
         ),
         execution.get("parameters"),
     )
+
+    def _apply_captured_parameters(node: Any) -> Any:
+        if not node.parameters:
+            return node
+        captured_for_node = captured.get(node.name)
+        if not isinstance(captured_for_node, Mapping):
+            raise ValueError("Adaptive parameter capture is missing a node")
+        return replace(
+            node,
+            parameters=tuple(
+                replace(
+                    parameter,
+                    value=mutable_copy(captured_for_node[parameter.name]),
+                    has_value=True,
+                )
+                for parameter in node.parameters
+            ),
+        )
+
     logical_graph = replace(
         logical_graph,
-        nodes=tuple(
-            replace(
-                node,
-                parameters=tuple(
-                    replace(
-                        parameter,
-                        value=mutable_copy(captured[node.name][parameter.name]),
-                        has_value=True,
-                    )
-                    for parameter in node.parameters
-                ),
-            )
-            for node in logical_graph.nodes
-        ),
+        nodes=tuple(_apply_captured_parameters(node) for node in logical_graph.nodes),
     )
     if pipeline_cls is None or contract_pins is not None:
 

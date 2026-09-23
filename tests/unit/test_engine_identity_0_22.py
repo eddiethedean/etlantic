@@ -1,6 +1,10 @@
+# pyright: reportPrivateUsage=false
 """0.22 WP1: capability-driven engine identity (no privileged name sets)."""
 
 from __future__ import annotations
+
+from types import SimpleNamespace
+from typing import cast
 
 from etlantic.capabilities import PluginCapabilities
 from etlantic.engines import ExecutionFamily, get_engine_registry
@@ -10,6 +14,9 @@ from etlantic.plugins.coordinator import (
     should_discover_sql_plugins,
     should_include_transform_compilers,
 )
+from etlantic.registry import RegistryBundle
+from etlantic.runtime.scheduler import ExecutionScheduler
+from etlantic.runtime.scheduler_discovery import register_discovered_plugins
 
 
 def test_synthetic_dataframe_capability_via_registry() -> None:
@@ -36,6 +43,31 @@ def test_unknown_engine_without_capabilities_is_not_dataframe() -> None:
     assert not registry.is_dataframe_engine("acme_unknown")
     assert not registry.is_dataframe_engine("acme_unknown", engines={})
     assert registry.resolve_execution_family("acme_unknown") is None
+
+
+def test_scheduler_registration_does_not_claim_dataframe_execution() -> None:
+    scheduler = cast(
+        ExecutionScheduler,
+        SimpleNamespace(
+            info=SimpleNamespace(
+                name="acme_scheduler",
+                version="1.0.0",
+                direct_execution=True,
+                external_compilation=False,
+                scheduler_protocol="etlantic.scheduler/1",
+            )
+        ),
+    )
+    registry = RegistryBundle()
+
+    register_discovered_plugins(registry, plugins={"acme_scheduler": scheduler})
+
+    assert not registry.engines["acme_scheduler"].dataframe
+    assert not get_engine_registry().is_dataframe_engine("acme_scheduler", registry)
+    assert (
+        get_engine_registry().resolve_execution_family("acme_scheduler", registry)
+        is ExecutionFamily.SCHEDULER
+    )
 
 
 def test_discover_planning_predicates_for_third_party_dataframe() -> None:

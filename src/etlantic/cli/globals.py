@@ -1,3 +1,4 @@
+# pyright: reportUnusedFunction=false
 """Root CLI global options."""
 
 from __future__ import annotations

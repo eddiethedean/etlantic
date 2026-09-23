@@ -1,3 +1,4 @@
+# pyright: reportUnknownArgumentType=false, reportUnknownVariableType=false
 """Static plugin manifests inspectable without importing entry points (0.20)."""
 
 from __future__ import annotations
@@ -244,7 +245,7 @@ def read_distribution_manifest_text(dist: Distribution) -> str | None:
         except Exception:
             located = None
         if located is not None:
-            path = Path(located)
+            path = Path(str(located))
             if path.is_file():
                 return path.read_text(encoding="utf-8")
     if dist.files:

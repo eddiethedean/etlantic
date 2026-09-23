@@ -1,3 +1,4 @@
+# pyright: reportPrivateUsage=false, reportUnknownArgumentType=false, reportUnknownMemberType=false, reportUnknownVariableType=false
 """Application-pipeline testing foundation (ETLantic 0.37).
 
 Stable foundation: typed cases, fakes, plan/report snapshots, and a
@@ -196,7 +197,13 @@ class FakeSecretProvider:
         name = reference.name
         if name not in self._values:
             raise LookupError(f"FakeSecretProvider has no fixture value for {name!r}")
-        return SecretValue(name=name, value=self._values[name])
+        return SecretValue(
+            _value=self._values[name],
+            provider=reference.provider,
+            name=name,
+            key=reference.key,
+            version=reference.version,
+        )
 
 
 @dataclass(frozen=True, slots=True)

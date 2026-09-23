@@ -1,3 +1,4 @@
+# pyright: reportMissingTypeStubs=false, reportUnknownArgumentType=false, reportUnknownMemberType=false, reportUnknownVariableType=false
 """Run a portable kernel transform on Pandas without a native implementation.
 
 Requires:
@@ -17,6 +18,8 @@ from __future__ import annotations
 
 from typing import Any
 
+# Optional dataframe plugin factories and runtime reports are dynamic by design.
+# pyright: reportAttributeAccessIssue=false
 from etlantic import (
     Data,
     Extract,
@@ -49,12 +52,12 @@ class Customer(Data):
 
 class NormalizeCustomers(Transformation):
     customers: Input[RawCustomer]
-    minimum_age: Parameter[int] = 18
+    minimum_age: Parameter[int] = 18  # pyright: ignore[reportAssignmentType]
     result: Output[Customer]
 
 
 @NormalizeCustomers.portable
-def normalize(customers, minimum_age):
+def normalize(customers: Any, minimum_age: Any) -> Any:
     return (
         customers.filter(F.col("age") >= minimum_age)
         .withColumn("email", F.lower(F.col("email")))

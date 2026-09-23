@@ -1,3 +1,4 @@
+# pyright: reportUnknownArgumentType=false, reportUnknownMemberType=false, reportUnknownVariableType=false
 """Closed, read-only validation of candidate observations and graduation data."""
 
 from __future__ import annotations
@@ -78,7 +79,14 @@ def bounded_digest(path: Path) -> str:
     return digest(_read_bytes(path))
 
 
-def validate_category(record, catalogue, parent, *, name, source):
+def validate_category(
+    record: Any,
+    catalogue: Any,
+    parent: Any,
+    *,
+    name: str,
+    source: str,
+) -> None:
     _closed(record, {"schema", "phase", "source", "category", "cases", "result"})
     outcomes = {case["id"]: case["status"] for case in parent["cases"]}
     expected = [
@@ -187,7 +195,8 @@ def validate_observation(
     times = []
     for field in ("started_at", "finished_at"):
         parsed = datetime.fromisoformat(record[field])
-        if parsed.utcoffset() is None or parsed.utcoffset().total_seconds() != 0:
+        offset = parsed.utcoffset()
+        if offset is None or offset.total_seconds() != 0:
             raise ValueError("Adaptive observation requires actual UTC time")
         times.append(parsed)
     if times[1] < times[0]:

@@ -1,3 +1,4 @@
+# pyright: reportArgumentType=false, reportPrivateUsage=false
 """Regression coverage for CSV append header alignment."""
 
 from __future__ import annotations

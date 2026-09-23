@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+# pyright: reportArgumentType=false, reportMissingImports=false, reportUnknownMemberType=false, reportUnknownVariableType=false
 """Example: continuous landing-zone watch as a durable submitter (outside core).
 
 Continuous directory watching is **not** a third Extract kind and must not live
@@ -18,6 +19,7 @@ import argparse
 import sys
 import threading
 from pathlib import Path
+from typing import Any
 
 try:
     import httpx
@@ -46,9 +48,9 @@ def main() -> int:
 
     def submit_run(
         definition_id: str,
-        payload: dict,
+        payload: dict[str, Any],
         idempotency_key: str,
-    ) -> dict:
+    ) -> dict[str, Any]:
         resp = httpx.post(
             f"{args.base_url.rstrip('/')}/v1/definitions/{definition_id}/runs",
             headers={

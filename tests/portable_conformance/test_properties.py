@@ -1,3 +1,4 @@
+# pyright: reportAttributeAccessIssue=false, reportMissingTypeStubs=false, reportUnknownMemberType=false, reportUnknownVariableType=false
 """Hypothesis property tests for portable IR semantics (0.14)."""
 
 from __future__ import annotations

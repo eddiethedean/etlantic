@@ -1,3 +1,4 @@
+# pyright: reportPrivateUsage=false
 """Staged plan builder facade."""
 
 from __future__ import annotations

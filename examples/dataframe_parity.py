@@ -16,6 +16,8 @@ Run with:
 
 from __future__ import annotations
 
+from typing import Any
+
 from etlantic import (
     Data,
     Extract,
@@ -48,7 +50,7 @@ class NormalizeCustomers(Transformation):
 
 
 @NormalizeCustomers.portable
-def normalize(customers):
+def normalize(customers: Any) -> Any:
     return customers.select(
         "customer_id",
         F.concat_ws(" ", F.col("first_name"), F.col("last_name")).alias("full_name"),

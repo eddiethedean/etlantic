@@ -1,3 +1,4 @@
+# pyright: reportAttributeAccessIssue=false, reportMissingTypeStubs=false, reportOptionalMemberAccess=false, reportUnknownMemberType=false, reportUnknownVariableType=false
 """DataFusion portable baseline smoke tests."""
 
 from __future__ import annotations

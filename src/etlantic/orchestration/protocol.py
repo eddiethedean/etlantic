@@ -1,3 +1,4 @@
+# pyright: reportUnknownVariableType=false
 """Versioned orchestrator compilation protocol (``etlantic.orchestration/1``)."""
 
 from __future__ import annotations

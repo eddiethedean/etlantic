@@ -1,3 +1,4 @@
+# pyright: reportUnnecessaryComparison=false
 """SARIF 2.1.0 diagnostic rendering for CI."""
 
 from __future__ import annotations

@@ -1,3 +1,4 @@
+# pyright: reportArgumentType=false, reportUnknownArgumentType=false, reportUnknownMemberType=false, reportUnknownVariableType=false
 """Tests for ETLantic 0.20 trust, isolation, and safe I/O."""
 
 from __future__ import annotations

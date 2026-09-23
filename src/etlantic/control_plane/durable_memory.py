@@ -1,3 +1,4 @@
+# pyright: reportUnknownArgumentType=false
 """Thread-safe CP3 reference store used for conformance and local development.
 
 It models atomic acceptance plus outbox insert under one lock. Production
@@ -159,7 +160,7 @@ class MemoryDurableWorkStore:
             if self.admission_limit is not None:
                 in_flight = sum(
                     1
-                    for (t, w, _), row in self._submissions.items()
+                    for (t, _workspace, _), row in self._submissions.items()
                     if t == ctx.tenant.tenant_id and row.status in _NON_TERMINAL
                 )
                 if in_flight >= self.admission_limit:

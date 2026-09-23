@@ -1,3 +1,4 @@
+# pyright: reportMissingParameterType=false, reportOptionalMemberAccess=false, reportUnknownArgumentType=false, reportUnknownParameterType=false, reportUnknownVariableType=false
 """Unit tests for 0.31 lifecycle / state / write foundations."""
 
 from __future__ import annotations

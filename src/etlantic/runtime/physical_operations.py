@@ -1,3 +1,4 @@
+# pyright: reportUnknownArgumentType=false, reportUnknownMemberType=false, reportUnknownVariableType=false
 """Closed, bounded local physical boundary operations for adaptive execution."""
 
 from __future__ import annotations

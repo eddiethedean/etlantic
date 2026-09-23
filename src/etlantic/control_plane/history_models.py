@@ -1,3 +1,4 @@
+# pyright: reportUnknownArgumentType=false, reportUnknownVariableType=false
 """Metadata-only history and impact models (CP2 / 040-H).
 
 Observations store fingerprints and secret-free metadata only — never source

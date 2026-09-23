@@ -1,3 +1,4 @@
+# pyright: reportUnknownArgumentType=false, reportUnknownMemberType=false, reportUnknownVariableType=false
 """Canonical serialization and fingerprinting for PipelinePlan."""
 
 from __future__ import annotations

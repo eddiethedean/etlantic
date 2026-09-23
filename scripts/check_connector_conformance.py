@@ -1,8 +1,11 @@
 #!/usr/bin/env python3
+# pyright: reportUnknownArgumentType=false, reportUnknownMemberType=false, reportUnknownParameterType=false, reportUnknownVariableType=false
 """CI gate: connector fake conformance (local-files + optional cloud fakes)."""
 
 from __future__ import annotations
 
+# Connector fixtures intentionally use heterogeneous wire dictionaries.
+# pyright: reportMissingTypeArgument=false
 import argparse
 import importlib
 import sys

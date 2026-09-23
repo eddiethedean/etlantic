@@ -1,3 +1,4 @@
+# pyright: reportAssignmentType=false, reportAttributeAccessIssue=false, reportMissingParameterType=false, reportMissingTypeArgument=false, reportPrivateUsage=false, reportUnknownArgumentType=false, reportUnknownMemberType=false, reportUnknownParameterType=false, reportUnknownVariableType=false
 """Focused admission regressions; no remote proof or approval records."""
 
 from collections.abc import Mapping

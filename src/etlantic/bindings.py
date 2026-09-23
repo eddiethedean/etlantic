@@ -1,3 +1,4 @@
+# pyright: reportUnknownArgumentType=false, reportUnknownVariableType=false
 """Asset descriptor parsing for declarative profile bindings."""
 
 from __future__ import annotations

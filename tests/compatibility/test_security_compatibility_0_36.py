@@ -1,3 +1,4 @@
+# pyright: reportMissingTypeArgument=false, reportUnknownArgumentType=false, reportUnknownMemberType=false, reportUnknownVariableType=false
 """0.36 security + compatibility adversarial gates (036-A*)."""
 
 from __future__ import annotations
