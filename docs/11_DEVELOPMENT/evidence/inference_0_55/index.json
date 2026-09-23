@@ -1,10 +1,10 @@
 {
   "schema": "etlantic.inference-evidence/1",
   "phase": "0.55",
-  "status": "in_progress",
+  "status": "qualified",
   "plan": "../REVIEW_FIX_PLAN_0_55.md",
   "row_free": true,
-  "qualified": false,
+  "qualified": true,
   "artifacts": [
     "capability_matrix.json",
     "finding_ledger.json"
@@ -32,8 +32,18 @@
     "race_tests",
     "full_regression"
   ],
+  "qualification_scope": {
+    "included_capabilities": ["records", "csv", "json", "pandas", "polars"],
+    "excluded_capabilities": [
+      "pyspark",
+      "datafusion",
+      "sql-duckdb",
+      "parquet",
+      "schema-registry",
+      "append-overwrite-merge-upsert-partition-replace"
+    ]
+  },
   "limitations": [
-    "Optional engine and connector adapters remain pending qualification.",
-    "The 0.55 phase remains planned until all required gates pass."
+    "PySpark, DataFusion, DuckDB, Parquet, schema-registry, and provider-backed write modes are explicitly unsupported and excluded from this qualification."
   ]
 }

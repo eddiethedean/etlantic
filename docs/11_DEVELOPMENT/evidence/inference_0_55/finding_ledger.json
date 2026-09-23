@@ -1,107 +1,107 @@
 {
   "schema": "etlantic.inference-finding-ledger/1",
   "phase": "0.55",
-  "status": "in_progress",
+  "status": "qualified",
   "findings": [
     {
       "id": "P0-durable-definition",
       "priority": "P0",
-      "status": "implemented-pending-gate",
+      "status": "verified",
       "code": "src/etlantic/inference/facade.py",
       "test": "tests/inference/test_review_fixes.py::test_definition_contains_each_portable_transformation_step",
       "gate": "durable_definition",
-      "implementation_commit": "71207e8fc90f2369735427baa7c2a2bed58b1fef",
-      "evidence_artifact": "docs/11_DEVELOPMENT/evidence/inference_0_55/finding_ledger.json"
+      "implementation_commit": "1a569e7631182f736b4405ed40f4439ee965419e",
+      "evidence_artifact": "gates/durable_definition.json"
     },
     {
       "id": "P0-target-guided-observation",
       "priority": "P0",
-      "status": "implemented-pending-gate",
+      "status": "verified",
       "code": "src/etlantic/inference/targets.py",
       "test": "tests/inference/test_review_fixes.py::test_backward_solver_retains_qualified_source_constraint",
       "gate": "lineage_solver",
-      "implementation_commit": "71207e8fc90f2369735427baa7c2a2bed58b1fef",
-      "evidence_artifact": "docs/11_DEVELOPMENT/evidence/inference_0_55/finding_ledger.json"
+      "implementation_commit": "1a569e7631182f736b4405ed40f4439ee965419e",
+      "evidence_artifact": "gates/lineage_solver.json"
     },
     {
       "id": "P1-wire-redaction",
       "priority": "P1",
-      "status": "implemented-pending-gate",
+      "status": "verified",
       "code": "src/etlantic/schema_drift.py",
       "test": "tests/inference/test_review_fixes.py::test_provider_metadata_is_json_safe_and_python_types_are_normalized",
       "gate": "wire_security",
-      "implementation_commit": "71207e8fc90f2369735427baa7c2a2bed58b1fef",
-      "evidence_artifact": "docs/11_DEVELOPMENT/evidence/inference_0_55/finding_ledger.json"
+      "implementation_commit": "1a569e7631182f736b4405ed40f4439ee965419e",
+      "evidence_artifact": "gates/wire_security.json"
     },
     {
       "id": "P1-bounded-adapters",
       "priority": "P1",
-      "status": "implemented-pending-gate",
+      "status": "verified",
       "code": "src/etlantic/inference/sources.py",
       "test": "tests/inference/test_review_fixes.py::test_local_provider_conversion_without_head_fails_closed",
       "gate": "bounded_materialization",
-      "implementation_commit": "71207e8fc90f2369735427baa7c2a2bed58b1fef",
-      "evidence_artifact": "docs/11_DEVELOPMENT/evidence/inference_0_55/finding_ledger.json"
+      "implementation_commit": "1a569e7631182f736b4405ed40f4439ee965419e",
+      "evidence_artifact": "gates/bounded_materialization.json"
     },
     {
       "id": "P1-target-compatibility",
       "priority": "P1",
-      "status": "implemented-pending-gate",
+      "status": "verified",
       "code": "src/etlantic/inference/targets.py",
       "test": "tests/inference/test_review_fixes.py::test_target_capabilities_and_revision_are_retained_for_writes",
       "gate": "target_revision",
       "implementation_commit": "71207e8fc90f2369735427baa7c2a2bed58b1fef",
-      "evidence_artifact": "docs/11_DEVELOPMENT/evidence/inference_0_55/finding_ledger.json"
+      "evidence_artifact": "gates/target_revision.json"
     },
     {
       "id": "P0-target-observation-durability",
       "priority": "P0",
-      "status": "implemented-pending-gate",
+      "status": "verified",
       "code": "src/etlantic/inference/types.py",
       "test": "tests/inference/test_review_fixes.py::test_target_observation_round_trips_into_durable_definitions",
       "gate": "durable_definition",
-      "implementation_commit": "71207e8fc90f2369735427baa7c2a2bed58b1fef",
-      "evidence_artifact": "docs/11_DEVELOPMENT/evidence/inference_0_55/finding_ledger.json"
+      "implementation_commit": "1a569e7631182f736b4405ed40f4439ee965419e",
+      "evidence_artifact": "gates/durable_definition.json"
     },
     {
       "id": "P1-preview-evaluator-parity",
       "priority": "P1",
-      "status": "implemented-pending-gate",
+      "status": "verified",
       "code": "src/etlantic/inference/facade.py",
       "test": "tests/inference/test_review_fixes.py::test_preview_evaluator_covers_numeric_and_conversion_functions",
       "gate": "differential_fixtures",
-      "implementation_commit": "71207e8fc90f2369735427baa7c2a2bed58b1fef",
-      "evidence_artifact": "docs/11_DEVELOPMENT/evidence/inference_0_55/finding_ledger.json"
+      "implementation_commit": "1a569e7631182f736b4405ed40f4439ee965419e",
+      "evidence_artifact": "gates/differential_fixtures.json"
     },
     {
       "id": "P1-storage-materialization",
       "priority": "P1",
-      "status": "implemented-pending-gate",
+      "status": "verified",
       "code": "src/etlantic/storage/protocol.py",
       "test": "tests/inference/test_review_fixes.py::test_storage_materialization_is_bounded_by_default",
       "gate": "bounded_materialization",
-      "implementation_commit": "71207e8fc90f2369735427baa7c2a2bed58b1fef",
-      "evidence_artifact": "docs/11_DEVELOPMENT/evidence/inference_0_55/finding_ledger.json"
+      "implementation_commit": "1a569e7631182f736b4405ed40f4439ee965419e",
+      "evidence_artifact": "gates/bounded_materialization.json"
     },
     {
       "id": "P1-evidence-scanner",
       "priority": "P1",
-      "status": "implemented-pending-gate",
+      "status": "verified",
       "code": "scripts/check_inference_0_55.py",
-      "test": "scripts/check_inference_0_55.py --run-focused",
+      "test": "tests/inference/test_evidence_checker_0_55.py::test_gate_campaign_records_are_row_free",
       "gate": "wire_security",
-      "implementation_commit": "71207e8fc90f2369735427baa7c2a2bed58b1fef",
-      "evidence_artifact": "docs/11_DEVELOPMENT/evidence/inference_0_55/finding_ledger.json"
+      "implementation_commit": "1a569e7631182f736b4405ed40f4439ee965419e",
+      "evidence_artifact": "gates/wire_security.json"
     },
     {
       "id": "P1-target-revision-explicit",
       "priority": "P1",
-      "status": "implemented-pending-gate",
+      "status": "verified",
       "code": "src/etlantic/inference/targets.py",
       "test": "tests/inference/test_review_fixes.py::test_schema_only_targets_do_not_invent_revisions",
       "gate": "target_revision",
       "implementation_commit": "71207e8fc90f2369735427baa7c2a2bed58b1fef",
-      "evidence_artifact": "docs/11_DEVELOPMENT/evidence/inference_0_55/finding_ledger.json"
+      "evidence_artifact": "gates/target_revision.json"
     }
   ]
 }

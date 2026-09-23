@@ -21,8 +21,10 @@ non-deterministic durable fingerprints, discarded dataframe previews,
 fail-open target diagnostics and append capability checks, and incomplete
 evidence qualification.
 
-The phase remains **planned**. No inferred-model capability becomes an
-availability claim until the evidence and release gates in this document pass.
+This plan tracks the full 0.55 scope. The evidence index may qualify only the
+capabilities listed in its `qualification_scope`; every excluded adapter or
+write mode remains explicitly unsupported. No broader availability claim is
+implied by a scoped qualification.
 
 ## 1. Review closure map
 
@@ -582,8 +584,9 @@ bindings, while an unbound or unsafe session is rejected before durable export.
 3. Generate fixture digests, package versions, unsupported cases, race
    results, differential results, and finding-ledger status under
    `evidence/inference_0_55/`.
-4. Keep `qualified: false` and all roadmap/capability claims planned until
-   every required gate is reproducible.
+4. Keep qualification limited to the explicitly supported matrix. Mark that
+   scope qualified only after every required gate is reproducible; excluded
+   capabilities remain unsupported until they have their own evidence.
 
 Checkpoint: the evidence index is sufficient to independently decide the
 0.55 exit without relying on source inspection or undocumented local state.
@@ -606,5 +609,6 @@ The review is closed when:
   are covered by regression tests;
 - wire payloads are versioned, primitive-only, row-free, and JSON safe;
 - normal ETLantic definition/validate/plan/generate flows work end to end;
-- the complete qualified source/target matrix has reproducible evidence; and
-- the 0.55 phase can be moved from planned only after F8 passes.
+- every included source/target capability has reproducible evidence, while
+  unsupported capabilities are explicitly excluded; and
+- the scoped 0.55 qualification can be marked qualified only after F8 passes.
