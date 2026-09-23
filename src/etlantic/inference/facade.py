@@ -516,7 +516,11 @@ class InferredDataset:
                 identity=(
                     observation.identity
                     if observation is not None and observation.identity is not None
-                    else "target:unresolved"
+                    else (
+                        "target:unresolved"
+                        if observation is not None
+                        else f"target:{self.name}"
+                    )
                 ),
                 requirements=target_requirements,
                 write_mode=target_write_mode,
