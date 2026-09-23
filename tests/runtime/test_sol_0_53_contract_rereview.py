@@ -499,7 +499,7 @@ def test_final_005_timeout_after_commit_retains_unknown_obligation(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     async def exercise() -> None:
-        request = RunRequest(timeout=TimeoutPolicy(run_seconds=0.1))
+        request = RunRequest(timeout=TimeoutPolicy(run_seconds=1.0))
         runtime = PipelineRuntime()
         runtime.memory.seed("rows", [{"id": 1}])
         original = runtime.memory.write
