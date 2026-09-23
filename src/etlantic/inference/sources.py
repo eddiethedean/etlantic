@@ -11,6 +11,7 @@ from typing import Any, cast
 
 from etlantic.diagnostics import Diagnostic, Severity
 from etlantic.schema_drift import (
+    NormalizedField,
     NormalizedSchema,
     normalize_logical_type,
     normalize_schema_from_fields,
@@ -343,6 +344,43 @@ def _schema_from_provider_result(
     )
 
 
+def _schema_from_column_metadata(
+    value: Any, *, identity: str
+) -> InferenceResult | None:
+    """Recover a schema from dataframe columns when no rows are available."""
+    columns = getattr(value, "columns", None)
+    dtypes = getattr(value, "dtypes", None)
+    if columns is None or dtypes is None:
+        return None
+    try:
+        names = list(columns)
+        dtype_values = (
+            list(dtypes.values()) if isinstance(dtypes, Mapping) else list(dtypes)
+        )
+    except (TypeError, ValueError):
+        return None
+    if not names or len(names) != len(dtype_values):
+        return None
+    try:
+        schema = normalize_schema_from_fields(
+            [
+                {
+                    "name": str(name),
+                    "logical_type": _provider_logical_type(dtype),
+                }
+                for name, dtype in zip(names, dtype_values, strict=True)
+            ],
+            identity=identity,
+            preserve_decimal=True,
+        )
+    except (TypeError, ValueError):
+        return None
+    return InferenceResult(
+        schema,
+        provenance={"source": "metadata", "method": "provider_columns"},
+    )
+
+
 def _attach_provider_preview(
     result: InferenceResult,
     value: Any,
@@ -354,9 +392,10 @@ def _attach_provider_preview(
     """Retain a bounded preview when metadata-first providers expose one.
 
     Schema inspection must stay metadata first, but user-facing dataframe
-    constructors promise a preview as well.  The preview is obtained only
-    through the same bounded head boundary and never changes the observed
-    provider schema.
+    constructors promise a preview as well. The preview is obtained only
+    through the same bounded head boundary. Provider logical types remain
+    authoritative while observed nullability is refined from the bounded
+    preview.
     """
     bounded = _bounded_materialization(value, limits)
     if bounded is None:
@@ -406,7 +445,24 @@ def _attach_provider_preview(
                 *result.diagnostics,
             )
         )
+    preview_fields = {field.name: field for field in preview.schema.fields}
+    merged_fields = tuple(
+        NormalizedField(
+            name=field.name,
+            logical_type=field.logical_type,
+            required=field.required and preview_fields.get(field.name, field).required,
+            nullable=field.nullable or preview_fields.get(field.name, field).nullable,
+            metadata=dict(field.metadata),
+        )
+        for field in result.schema.fields
+    )
+    observed_schema = NormalizedSchema(
+        identity=result.schema.identity,
+        fields=merged_fields,
+        metadata=dict(result.schema.metadata),
+    )
     return result.replace(
+        schema=observed_schema,
         rows=preview.rows,
         replay=preview.replay,
         diagnostics=(
@@ -783,13 +839,33 @@ def infer_source(
                 ),
                 provenance={"source": type(value).__name__},
             )
-        return infer_records(
+        result = infer_records(
             converted,
             hints=hints,
             limits=limits,
             identity=identity,
             retain_rows=True,
         )
+        if not converted and not result.schema.fields:
+            column_schema = _schema_from_column_metadata(value, identity=identity)
+            if column_schema is not None:
+                return column_schema.replace(
+                    diagnostics=(
+                        *column_schema.diagnostics,
+                        *result.diagnostics,
+                    )[: limits.max_diagnostics],
+                    provenance={
+                        **column_schema.provenance,
+                        **{
+                            key: item
+                            for key, item in result.provenance.items()
+                            if key != "source"
+                        },
+                    },
+                    rows=result.rows,
+                    replay=result.replay,
+                )
+        return result
     if isinstance(value, Mapping) or hasattr(value, "__iter__"):
         return infer_records(value, hints=hints, limits=limits, identity=identity)
     return InferenceResult(

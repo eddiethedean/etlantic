@@ -1,18 +1,18 @@
 {
   "schema": "etlantic.inference-capability-matrix/1",
   "phase": "0.55",
-  "status": "in_progress",
+  "status": "qualified",
   "entries": [
-    {"surface": "records", "kind": "source", "state": "implemented", "evidence": "focused-tests"},
-    {"surface": "csv", "kind": "source", "state": "implemented", "evidence": "focused-tests"},
-    {"surface": "json", "kind": "source", "state": "implemented", "evidence": "focused-tests"},
-    {"surface": "pandas", "kind": "source", "state": "bounded-adapter", "evidence": "focused-tests"},
-    {"surface": "polars", "kind": "source", "state": "bounded-adapter", "evidence": "focused-tests"},
-    {"surface": "pyspark", "kind": "source", "state": "pending-qualification", "evidence": null},
-    {"surface": "datafusion", "kind": "source", "state": "pending-qualification", "evidence": null},
-    {"surface": "sql-duckdb", "kind": "source", "state": "pending-qualification", "evidence": null},
-    {"surface": "parquet", "kind": "source-target", "state": "pending-qualification", "evidence": null},
-    {"surface": "schema-registry", "kind": "source-target", "state": "pending-qualification", "evidence": null},
-    {"surface": "append-overwrite-merge-upsert-partition-replace", "kind": "write-mode", "state": "implemented-with-fakes", "evidence": "focused-tests"}
+    {"surface": "records", "kind": "source", "state": "implemented", "evidence": "gates/bounded_materialization.json"},
+    {"surface": "csv", "kind": "source", "state": "implemented", "evidence": "gates/bounded_materialization.json"},
+    {"surface": "json", "kind": "source", "state": "implemented", "evidence": "gates/bounded_materialization.json"},
+    {"surface": "pandas", "kind": "source", "state": "bounded-adapter", "evidence": "gates/full_regression.json"},
+    {"surface": "polars", "kind": "source", "state": "bounded-adapter", "evidence": "gates/full_regression.json"},
+    {"surface": "pyspark", "kind": "source", "state": "unsupported", "evidence": "gates/optional_dependency_matrix.json", "reason": "provider-backed evidence is not present in the core phase campaign"},
+    {"surface": "datafusion", "kind": "source", "state": "unsupported", "evidence": "gates/optional_dependency_matrix.json", "reason": "provider-backed evidence is not present in the core phase campaign"},
+    {"surface": "sql-duckdb", "kind": "source", "state": "unsupported", "evidence": "gates/optional_dependency_matrix.json", "reason": "provider-backed evidence is not present in the core phase campaign"},
+    {"surface": "parquet", "kind": "source-target", "state": "unsupported", "evidence": "gates/optional_dependency_matrix.json", "reason": "provider-backed evidence is not present in the core phase campaign"},
+    {"surface": "schema-registry", "kind": "source-target", "state": "unsupported", "evidence": "gates/optional_dependency_matrix.json", "reason": "provider-backed evidence is not present in the core phase campaign"},
+    {"surface": "append-overwrite-merge-upsert-partition-replace", "kind": "write-mode", "state": "unsupported", "evidence": "gates/optional_dependency_matrix.json", "reason": "fake write adapters are not qualification evidence"}
   ]
 }

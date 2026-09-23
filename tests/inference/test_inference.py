@@ -218,6 +218,36 @@ def test_source_dispatch_accepts_inspect_schema_provider() -> None:
     assert result.provenance["method"] == "inspect_schema"
 
 
+def test_provider_preview_does_not_narrow_declared_field_flags() -> None:
+    class Source:
+        def inspect_schema(self):
+            return {
+                "fields": [
+                    {
+                        "name": "id",
+                        "type": "INTEGER",
+                        "required": False,
+                        "nullable": True,
+                    }
+                ]
+            }
+
+        def head(self, count):
+            return View()
+
+    class View:
+        __etlantic_bounded_view__ = True
+
+        def to_dicts(self):
+            return [{"id": 1}]
+
+    result = infer_source(Source(), identity="provider")
+    field = result.schema.fields[0]
+
+    assert field.required is False
+    assert field.nullable is True
+
+
 def test_provider_type_aliases_are_normalized() -> None:
     class Source:
         def __init__(self) -> None:
