@@ -9,7 +9,7 @@ wall-clock on a developer laptop / CI runner — not SLOs.
 
 | Suite | Typical command | Duration | Needs Java? |
 |---|---|---|---|
-| Core pytest | `./scripts/test_core.sh` | ~1–3 min | No |
+| Strict Pyright + core pytest | `./scripts/test_core.sh` | ~1–3 min | No |
 | Dataframes (Polars / Pandas) | `uv sync --group dataframes` then `pytest -m polars` / `-m pandas` | ~2–5 min each | No |
 | SQL | `uv sync --group sql` then `pytest -m sql` | ~2–5 min | No |
 | PySpark (sparkless) | `uv sync --group pyspark` then `pytest -m spark` | ~3–8 min | No (compat backend) |
@@ -21,12 +21,13 @@ matching marker suite before opening a PR.
 
 ## Run the current test suite
 
-Prefer the marker-aware core suite (matches CI baseline exclusions):
+Prefer the strict Pyright gate plus marker-aware core suite (matches the CI
+baseline exclusions):
 
 ```bash
-uv sync --locked
+uv sync --locked --all-groups
 ./scripts/test_core.sh
-# equivalent:
+# pytest portion equivalent:
 # uv run pytest -q -m "not medallantic and not polars and not pandas and not sql and not spark and not real_pyspark and not airflow and not prefect and not keyring and not sqlmodel and not datafusion"
 uv run ruff check .
 uv run ruff format --check .

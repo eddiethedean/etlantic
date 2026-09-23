@@ -104,11 +104,11 @@ or release packaging. Docs-only PRs do **not** need the full list.
 Baseline (core + docs):
 
 ```bash
-uv sync --locked
+uv sync --locked --all-groups
 uv run ruff check .
 uv run ruff format --check .
 ./scripts/test_core.sh
-# equivalent:
+# pytest portion equivalent:
 # uv run pytest -q -m "not medallantic and not polars and not pandas and not sql and not spark and not real_pyspark and not airflow and not prefect and not keyring and not sqlmodel and not datafusion"
 uv run pytest -q tests/authoring
 uv sync --extra fastapi
