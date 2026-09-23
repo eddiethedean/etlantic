@@ -9,6 +9,7 @@ used in plans, reports, and schema history.
 from __future__ import annotations
 
 from collections.abc import Iterable, Iterator, Mapping
+from contextlib import suppress
 from dataclasses import dataclass
 from dataclasses import field as dataclass_field
 from itertools import chain, islice
@@ -460,6 +461,31 @@ class TargetObservation:
             raise ValueError(
                 "target observation exists must be one of: present, absent, unknown"
             )
+        normalized_metadata: dict[str, Any] | None = None
+        if isinstance(self.metadata, Mapping):
+            with suppress(Exception):
+                normalized_metadata = dict(self.metadata)
+        if normalized_metadata is None:
+            object.__setattr__(
+                self,
+                "metadata",
+                {},
+            )
+            object.__setattr__(
+                self,
+                "diagnostics",
+                (
+                    *self.diagnostics,
+                    Diagnostic(
+                        "INFER_TARGET_UNSUPPORTED",
+                        Severity.WARNING,
+                        "Target observation metadata must be a mapping",
+                        phase="inference",
+                    ),
+                ),
+            )
+        else:
+            object.__setattr__(self, "metadata", normalized_metadata)
 
     @property
     def identity(self) -> str | None:
