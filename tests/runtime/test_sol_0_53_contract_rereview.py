@@ -8,6 +8,7 @@ from __future__ import annotations
 
 import asyncio
 import hashlib
+import importlib
 import importlib.util
 import json
 import subprocess
@@ -701,7 +702,7 @@ def test_final_007_native_member_deadline_fences_late_output(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     """Slow work in the admitted native compiler cannot turn timeout into success."""
-    import etlantic_polars.compiler as compiler_module
+    compiler_module: Any = importlib.import_module("etlantic_polars.compiler")
     from etlantic.runtime.request import CancellationPolicy
     from tests.runtime.physical.test_qualification_0_53 import Chain, setup
 
@@ -747,7 +748,7 @@ def test_final_007_native_run_timeout_drains_or_records_owner(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     """A terminal run cannot silently leave its native work in flight."""
-    import etlantic_polars.compiler as compiler_module
+    compiler_module: Any = importlib.import_module("etlantic_polars.compiler")
     from etlantic.runtime.request import CancellationPolicy
     from tests.runtime.physical.test_qualification_0_53 import Chain, setup
 
