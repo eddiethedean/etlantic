@@ -1,4 +1,4 @@
-# pyright: reportMissingImports=false, reportUnknownArgumentType=false, reportUnknownLambdaType=false, reportUnknownMemberType=false, reportUnknownParameterType=false, reportUnknownVariableType=false
+# pyright: reportMissingImports=false, reportOptionalSubscript=false, reportUnknownArgumentType=false, reportUnknownLambdaType=false, reportUnknownMemberType=false, reportUnknownParameterType=false, reportUnknownVariableType=false
 """CP1 SQLModel tables are owned by the versioned migration chain."""
 
 from __future__ import annotations

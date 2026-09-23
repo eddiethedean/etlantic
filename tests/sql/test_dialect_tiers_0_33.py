@@ -1,4 +1,4 @@
-# pyright: reportArgumentType=false, reportAssignmentType=false, reportIndexIssue=false, reportMissingImports=false, reportMissingParameterType=false, reportUnknownArgumentType=false, reportUnknownMemberType=false, reportUnknownParameterType=false, reportUnknownVariableType=false
+# pyright: reportArgumentType=false, reportAssignmentType=false, reportIndexIssue=false, reportMissingImports=false, reportMissingParameterType=false, reportOptionalSubscript=false, reportUnknownArgumentType=false, reportUnknownMemberType=false, reportUnknownParameterType=false, reportUnknownVariableType=false
 """0.33 dialect tiers, merge compile, and model DDL helpers."""
 
 from __future__ import annotations

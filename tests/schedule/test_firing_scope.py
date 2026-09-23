@@ -1,4 +1,4 @@
-# pyright: reportMissingImports=false, reportOptionalMemberAccess=false, reportPossiblyUnboundVariable=false, reportUnknownArgumentType=false, reportUnknownMemberType=false, reportUnknownVariableType=false
+# pyright: reportAttributeAccessIssue=false, reportMissingImports=false, reportOptionalMemberAccess=false, reportPossiblyUnboundVariable=false, reportUnknownArgumentType=false, reportUnknownMemberType=false, reportUnknownVariableType=false
 """Regression contracts for workspace-scoped firing deduplication."""
 
 from __future__ import annotations

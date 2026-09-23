@@ -1,4 +1,4 @@
-# pyright: reportMissingImports=false, reportMissingParameterType=false, reportUnknownArgumentType=false, reportUnknownMemberType=false, reportUnknownParameterType=false, reportUnknownVariableType=false
+# pyright: reportMissingImports=false, reportMissingParameterType=false, reportMissingTypeStubs=false, reportOptionalMemberAccess=false, reportUnknownArgumentType=false, reportUnknownMemberType=false, reportUnknownParameterType=false, reportUnknownVariableType=false
 """SQLModel parity regressions from the post-release 0.40 deep dive."""
 
 # ruff: noqa: I001

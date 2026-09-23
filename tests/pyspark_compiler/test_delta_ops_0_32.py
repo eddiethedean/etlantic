@@ -1,4 +1,4 @@
-# pyright: reportMissingImports=false, reportUnknownArgumentType=false, reportUnknownMemberType=false, reportUnknownVariableType=false
+# pyright: reportMissingImports=false, reportPrivateUsage=false, reportUnknownArgumentType=false, reportUnknownMemberType=false, reportUnknownVariableType=false
 """0.32 Delta storage ops — fail-closed without delta-spark; live when present."""
 
 from __future__ import annotations

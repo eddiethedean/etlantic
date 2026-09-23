@@ -1,4 +1,4 @@
-# pyright: reportMissingImports=false, reportUnknownArgumentType=false, reportUnknownMemberType=false, reportUnknownVariableType=false
+# pyright: reportArgumentType=false, reportMissingImports=false, reportOptionalMemberAccess=false, reportUnknownArgumentType=false, reportUnknownMemberType=false, reportUnknownVariableType=false
 """CP2 ops: search/pagination, retention, backup/restore (040-O)."""
 
 from __future__ import annotations

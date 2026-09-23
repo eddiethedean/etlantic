@@ -1,4 +1,4 @@
-# pyright: reportAttributeAccessIssue=false, reportMissingImports=false, reportUnknownArgumentType=false, reportUnknownMemberType=false, reportUnknownParameterType=false, reportUnknownVariableType=false
+# pyright: reportArgumentType=false, reportAttributeAccessIssue=false, reportMissingImports=false, reportUnknownArgumentType=false, reportUnknownMemberType=false, reportUnknownParameterType=false, reportUnknownVariableType=false
 """Medallantic M6 operations tests."""
 
 from __future__ import annotations

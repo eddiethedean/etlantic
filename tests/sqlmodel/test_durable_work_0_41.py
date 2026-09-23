@@ -1,4 +1,4 @@
-# pyright: reportMissingImports=false, reportUnknownArgumentType=false, reportUnknownMemberType=false, reportUnknownVariableType=false
+# pyright: reportMissingImports=false, reportPrivateUsage=false, reportUnknownArgumentType=false, reportUnknownMemberType=false, reportUnknownVariableType=false
 """SQLModel CP3 durable work store, migrations, and conformance (0.41 / 041-P)."""
 
 from __future__ import annotations

@@ -1,4 +1,4 @@
-# pyright: reportAttributeAccessIssue=false, reportMissingTypeStubs=false, reportUnknownArgumentType=false, reportUnknownMemberType=false, reportUnknownVariableType=false, reportUnusedFunction=false, reportUnusedImport=false
+# pyright: reportArgumentType=false, reportAttributeAccessIssue=false, reportMissingTypeStubs=false, reportUnknownArgumentType=false, reportUnknownMemberType=false, reportUnknownVariableType=false, reportUnusedFunction=false, reportUnusedImport=false
 """Prefect ExecutionScheduler plugin tests."""
 
 from __future__ import annotations

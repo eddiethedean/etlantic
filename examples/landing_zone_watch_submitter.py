@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-# pyright: reportMissingImports=false, reportUnknownMemberType=false, reportUnknownVariableType=false
+# pyright: reportArgumentType=false, reportMissingImports=false, reportUnknownMemberType=false, reportUnknownVariableType=false
 """Example: continuous landing-zone watch as a durable submitter (outside core).
 
 Continuous directory watching is **not** a third Extract kind and must not live

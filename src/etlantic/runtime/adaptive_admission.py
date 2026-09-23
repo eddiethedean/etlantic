@@ -859,12 +859,8 @@ def admit_adaptive_plan(
                 compiler = compiler_pins.get(fusion.members[0].logical_node)
                 from etlantic_polars.compiler import PolarsTransformCompiler
 
-                if type(compiler) is not PolarsTransformCompiler:
+                if compiler is None or type(compiler) is not PolarsTransformCompiler:
                     raise ValueError("Fusion requires the qualified compiler factory")
-                if compiler is None or not callable(
-                    getattr(compiler, "analyze_fusion", None)
-                ):
-                    raise ValueError("Fusion compiler unavailable")
                 for member in fusion.members:
                     implementation = descriptors.get(member.logical_node)
                     logical_node = plan.logical_graph.node_map()[member.logical_node]

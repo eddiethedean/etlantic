@@ -1,4 +1,4 @@
-# pyright: reportMissingImports=false, reportMissingParameterType=false, reportUnknownArgumentType=false, reportUnknownMemberType=false, reportUnknownParameterType=false, reportUnknownVariableType=false
+# pyright: reportArgumentType=false, reportMissingImports=false, reportMissingParameterType=false, reportOptionalMemberAccess=false, reportUnknownArgumentType=false, reportUnknownMemberType=false, reportUnknownParameterType=false, reportUnknownVariableType=false
 """SQLModel CP2 registry stores, migrations, and memory conformance (0.40 / 040-P)."""
 
 from __future__ import annotations

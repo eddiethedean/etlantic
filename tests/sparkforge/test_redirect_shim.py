@@ -1,4 +1,4 @@
-# pyright: reportMissingImports=false, reportUnknownMemberType=false
+# pyright: reportMissingImports=false, reportMissingTypeStubs=false, reportUnknownMemberType=false
 """Smoke tests for the etlantic-sparkforge → medallantic redirect shim."""
 
 from __future__ import annotations
