@@ -6,7 +6,7 @@ Maintainer and CI helpers under `scripts/`. Prefer the paths documented in
 
 | Script | Purpose | CI |
 |---|---|---|
-| `check_pyright.sh` | Repository-wide strict Pyright gate | Checks |
+| `check_pyright.sh` | Repository-wide strict Pyright gate plus locked exception inventory | Checks |
 | `test_core.sh` | Strict Pyright plus marker-aware core pytest (excludes optional plugin markers) | Checks (via docs/CONTRIBUTING parity) |
 | `check_docs.py` | Version stamps, banned phrases, trust-example gate, docstring gate | Checks |
 | `check_runnable_docs.py` | Invoked by `check_docs.py` for runnable-doc invariants | Checks |

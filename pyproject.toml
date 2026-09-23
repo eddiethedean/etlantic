@@ -375,7 +375,8 @@ docstring-code-format = true
 pythonVersion = "3.11"
 typeCheckingMode = "strict"
 # Check every first-party Python surface, including tests. Dynamic plugin and
-# fixture boundaries use narrow file-level exceptions where needed.
+# fixture boundaries use explicit file-level exceptions where needed. The
+# exception inventory is locked by scripts/check_pyright_suppressions.py.
 include = [
     "src",
     "packages/*/src",

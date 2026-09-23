@@ -104,10 +104,10 @@ class EngineRegistry:
     """Resolve engine families and profile-primary engines."""
 
     def __init__(self, families: tuple[EngineFamily, ...] | None = None) -> None:
-        self._families: tuple[EngineFamily, ...] = (
-            families
-            if families is not None
-            else cast(tuple[EngineFamily, ...], _BUILTIN_FAMILIES)
+        # Preserve the public fallback contract: an omitted or empty custom
+        # family collection uses the built-in family registry.
+        self._families: tuple[EngineFamily, ...] = families or cast(
+            tuple[EngineFamily, ...], _BUILTIN_FAMILIES
         )
 
     def resolve_family(
