@@ -9,6 +9,7 @@ never copied into the evidence bundle because it may contain provider data.
 
 Examples::
 
+    uv run python scripts/check_inference_0_55.py
     uv run python scripts/check_inference_0_55.py --run-focused
     uv run python scripts/check_inference_0_55.py --run-gates --output /tmp/etlantic-055
     uv run python scripts/check_inference_0_55.py --verify /tmp/etlantic-055
@@ -20,10 +21,12 @@ import argparse
 import hashlib
 import importlib.util
 import json
+import math
 import os
 import platform
 import subprocess
 import sys
+import tempfile
 from datetime import UTC, datetime
 from importlib.metadata import PackageNotFoundError, version
 from pathlib import Path
@@ -71,6 +74,19 @@ OPTIONAL_SURFACES = {
     "schema-registry": ("etlantic_schemaregistry",),
 }
 GATE_RESULT_MARKER = "ETLANTIC_GATE_RESULT="
+DEPENDENCY_NAMES = (
+    "etlantic",
+    "pandas",
+    "polars",
+    "pyarrow",
+    "pytest",
+    "pyspark",
+    "duckdb",
+    "datafusion",
+    "sqlmodel",
+    "ruff",
+    "pyright",
+)
 GATE_TESTS: dict[str, tuple[str, ...]] = {
     "wire_security": (
         "tests/inference/test_review_fixes.py::test_provider_metadata_is_json_safe_and_python_types_are_normalized",
@@ -101,7 +117,7 @@ GATE_TESTS: dict[str, tuple[str, ...]] = {
         "definition or binding or rebind",
     ),
     "differential_fixtures": (
-        "tests/portable_differential",
+        "tests/inference/test_differential_0_55.py",
         "tests/inference/test_review_fixes.py::test_preview_evaluator_covers_numeric_and_conversion_functions",
     ),
     "race_tests": (
@@ -234,21 +250,8 @@ def _finding_test_nodeid(finding: dict[str, Any]) -> str:
 
 
 def _installed_versions() -> dict[str, str | None]:
-    names = (
-        "etlantic",
-        "pandas",
-        "polars",
-        "pyarrow",
-        "pytest",
-        "pyspark",
-        "duckdb",
-        "datafusion",
-        "sqlmodel",
-        "ruff",
-        "pyright",
-    )
     found: dict[str, str | None] = {}
-    for name in names:
+    for name in DEPENDENCY_NAMES:
         try:
             found[name] = version(name)
         except PackageNotFoundError:
@@ -258,6 +261,27 @@ def _installed_versions() -> dict[str, str | None]:
 
 def _digest(value: bytes) -> str:
     return "sha256:" + hashlib.sha256(value).hexdigest()
+
+
+def _is_digest(value: Any) -> bool:
+    return (
+        isinstance(value, str)
+        and len(value) == 71
+        and value.startswith("sha256:")
+        and all(character in "0123456789abcdef" for character in value[7:])
+    )
+
+
+def _parse_timestamp(value: Any, *, label: str) -> datetime:
+    if not isinstance(value, str):
+        raise ValueError(f"{label} must be an ISO-8601 timestamp")
+    try:
+        parsed = datetime.fromisoformat(value)
+    except ValueError as exc:
+        raise ValueError(f"{label} must be an ISO-8601 timestamp") from exc
+    if parsed.tzinfo is None or parsed.utcoffset() is None:
+        raise ValueError(f"{label} must include a timezone")
+    return parsed
 
 
 def _check_generated_payloads() -> None:
@@ -631,6 +655,132 @@ def _gate_record(
     }
 
 
+def _validate_gate_record(
+    record: dict[str, Any],
+    gate: str,
+    evaluated_commit: str,
+    evaluated_tree: str,
+) -> None:
+    required = {
+        "schema",
+        "phase",
+        "gate",
+        "result",
+        "commit",
+        "tree",
+        "dirty",
+        "started_at",
+        "finished_at",
+        "duration_seconds",
+        "command",
+        "lock_sha256",
+        "finding_tests",
+        "test_counts",
+        "environment",
+        "returncode",
+        "stdout_bytes",
+        "stderr_bytes",
+        "stdout_sha256",
+        "stderr_sha256",
+    }
+    missing = required - set(record)
+    if missing:
+        raise ValueError(
+            f"gate result is missing required metadata for {gate}: {sorted(missing)}"
+        )
+    if record["schema"] != "etlantic.inference-gate-result/1":
+        raise ValueError(f"unknown result schema for gate: {gate}")
+    if (
+        record["phase"] != "0.55"
+        or record["gate"] != gate
+        or record["result"] != "pass"
+    ):
+        raise ValueError(f"gate did not pass: {gate}")
+    returncode = record["returncode"]
+    if (
+        not isinstance(returncode, int)
+        or isinstance(returncode, bool)
+        or returncode != 0
+    ):
+        raise ValueError(f"gate return code is invalid: {gate}")
+    if record["commit"] != evaluated_commit or record["tree"] != evaluated_tree:
+        raise ValueError(f"gate result is stale or mismatched: {gate}")
+    if not _is_commit(record["commit"]) or not _is_commit(record["tree"]):
+        raise ValueError(f"gate result has invalid git identities: {gate}")
+    if record["dirty"] is not False:
+        raise ValueError(f"gate result was produced from a dirty worktree: {gate}")
+    started = _parse_timestamp(record["started_at"], label=f"{gate}.started_at")
+    finished = _parse_timestamp(record["finished_at"], label=f"{gate}.finished_at")
+    if finished < started:
+        raise ValueError(f"gate timestamps are out of order: {gate}")
+    duration = record["duration_seconds"]
+    if (
+        not isinstance(duration, (int, float))
+        or isinstance(duration, bool)
+        or not math.isfinite(duration)
+        or duration < 0
+    ):
+        raise ValueError(f"gate duration is invalid: {gate}")
+    command = record["command"]
+    if (
+        not isinstance(command, list)
+        or not command
+        or not all(isinstance(item, str) and item for item in command)
+    ):
+        raise ValueError(f"gate command metadata is invalid: {gate}")
+    if command != _actual_command(gate):
+        raise ValueError(f"gate command does not match its declared action: {gate}")
+    if not _is_digest(record["lock_sha256"]):
+        raise ValueError(f"gate dependency lock digest is invalid: {gate}")
+    for field in ("stdout_bytes", "stderr_bytes"):
+        value = record[field]
+        if not isinstance(value, int) or isinstance(value, bool) or value < 0:
+            raise ValueError(f"gate {field} metadata is invalid: {gate}")
+    for field in ("stdout_sha256", "stderr_sha256"):
+        if not _is_digest(record[field]):
+            raise ValueError(f"gate {field} digest is invalid: {gate}")
+    counts = record["test_counts"]
+    count_keys = (
+        "collected_test_count",
+        "passed_test_count",
+        "failed_test_count",
+        "skipped_test_count",
+        "not_run_test_count",
+    )
+    if not isinstance(counts, dict) or any(
+        not isinstance(counts.get(key), int)
+        or isinstance(counts.get(key), bool)
+        or counts[key] < 0
+        for key in count_keys
+    ):
+        raise ValueError(f"gate test counts are invalid: {gate}")
+    if sum(counts[key] for key in count_keys[1:]) != counts[count_keys[0]]:
+        raise ValueError(f"gate test counts do not reconcile: {gate}")
+    finding_tests = record["finding_tests"]
+    if not isinstance(finding_tests, list):
+        raise ValueError(f"gate finding test metadata is invalid: {gate}")
+    for case in finding_tests:
+        if not isinstance(case, dict) or not all(
+            isinstance(case.get(key), str) and case[key]
+            for key in ("finding_id", "nodeid", "result")
+        ):
+            raise ValueError(f"gate finding test metadata is invalid: {gate}")
+    environment = record["environment"]
+    if not isinstance(environment, dict) or not all(
+        isinstance(environment.get(key), str) and environment[key]
+        for key in ("os", "architecture", "python")
+    ):
+        raise ValueError(f"gate environment metadata is invalid: {gate}")
+    dependencies = environment.get("dependencies")
+    if not isinstance(dependencies, dict) or set(dependencies) != set(DEPENDENCY_NAMES):
+        raise ValueError(f"gate dependency environment metadata is invalid: {gate}")
+    if any(
+        value is not None and not isinstance(value, str)
+        for value in dependencies.values()
+    ):
+        raise ValueError(f"gate dependency environment metadata is invalid: {gate}")
+
+
 def _write_json(path: Path, payload: dict[str, Any]) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(
@@ -691,6 +841,14 @@ def _verify_campaign(
         raise ValueError("unknown gate campaign schema")
     if campaign.get("phase") != "0.55" or campaign.get("required_gates") != list(GATES):
         raise ValueError("gate campaign does not cover the authoritative phase gates")
+    campaign_started = _parse_timestamp(
+        campaign.get("started_at"), label="campaign.started_at"
+    )
+    campaign_finished = _parse_timestamp(
+        campaign.get("finished_at"), label="campaign.finished_at"
+    )
+    if campaign_finished < campaign_started:
+        raise ValueError("gate campaign timestamps are out of order")
     evaluated_commit = campaign.get("evaluated_commit")
     evaluated_tree = campaign.get("evaluated_tree")
     current = _git_identity()
@@ -715,55 +873,7 @@ def _verify_campaign(
         if path_value != f"gates/{gate}.json":
             raise ValueError(f"invalid result path for gate: {gate}")
         record = _load(output / path_value)
-        if record.get("schema") != "etlantic.inference-gate-result/1":
-            raise ValueError(f"unknown result schema for gate: {gate}")
-        if (
-            record.get("phase") != "0.55"
-            or record.get("gate") != gate
-            or record.get("result") != "pass"
-            or record.get("returncode") != 0
-        ):
-            raise ValueError(f"gate did not pass: {gate}")
-        if record.get("command") != _actual_command(gate):
-            raise ValueError(f"gate command does not match its declared action: {gate}")
-        counts = record.get("test_counts")
-        count_keys = (
-            "collected_test_count",
-            "passed_test_count",
-            "failed_test_count",
-            "skipped_test_count",
-            "not_run_test_count",
-        )
-        if not isinstance(counts, dict) or any(
-            not isinstance(counts.get(key), int)
-            or isinstance(counts.get(key), bool)
-            or counts[key] < 0
-            for key in count_keys
-        ):
-            raise ValueError(f"gate test counts are invalid: {gate}")
-        if sum(counts[key] for key in count_keys[1:]) != counts[count_keys[0]]:
-            raise ValueError(f"gate test counts do not reconcile: {gate}")
-        duration = record.get("duration_seconds")
-        if (
-            not isinstance(duration, (int, float))
-            or isinstance(duration, bool)
-            or duration < 0
-        ):
-            raise ValueError(f"gate duration is invalid: {gate}")
-        lock_digest = record.get("lock_sha256")
-        if (
-            not isinstance(lock_digest, str)
-            or len(lock_digest) != 71
-            or not lock_digest.startswith("sha256:")
-        ):
-            raise ValueError(f"gate dependency lock digest is invalid: {gate}")
-        if (
-            record.get("commit") != evaluated_commit
-            or record.get("tree") != evaluated_tree
-        ):
-            raise ValueError(f"gate result is stale or mismatched: {gate}")
-        if record.get("dirty") is not False:
-            raise ValueError(f"gate result was produced from a dirty worktree: {gate}")
+        _validate_gate_record(record, gate, evaluated_commit, evaluated_tree)
         gate_records[gate] = record
     for entry in matrix.get("entries", []):
         artifact = entry["evidence"]
@@ -853,14 +963,22 @@ def main() -> int:
                 )
             )
             return 0 if index["qualified"] else 1
-        checked_in = EVIDENCE / "gates"
-        if not checked_in.is_dir():
-            raise ValueError(
-                "required gate campaign is missing; run --run-gates and preserve its output"
+        with tempfile.TemporaryDirectory(prefix="etlantic-inference-0-55-") as temp:
+            output = Path(temp)
+            code, campaign = _run_campaign(output)
+            if code:
+                print(
+                    json.dumps({"phase": "0.55", "status": "gate-campaign", **campaign})
+                )
+                return code
+            _verify_campaign(output, index, matrix, ledger)
+        status = "qualified" if index["qualified"] else "gates-valid-phase-unqualified"
+        print(
+            json.dumps(
+                {"phase": "0.55", "status": status, "qualified": index["qualified"]}
             )
-        _verify_campaign(checked_in.parent, index, matrix, ledger)
-        print(json.dumps({"phase": "0.55", "status": "qualified", "qualified": True}))
-        return 0
+        )
+        return 0 if index["qualified"] else 1
     except (
         OSError,
         subprocess.CalledProcessError,

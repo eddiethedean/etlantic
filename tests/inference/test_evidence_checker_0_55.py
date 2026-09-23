@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import sys
 from pathlib import Path
 
 import pytest
@@ -11,6 +12,8 @@ def _campaign_fixture(root: Path, *, commit: str, tree: str) -> None:
     gates = root / "gates"
     gates.mkdir()
     results: dict[str, str] = {}
+    started_at = "2026-01-01T00:00:00+00:00"
+    finished_at = "2026-01-01T00:00:01+00:00"
     for gate in checker.GATES:
         result_path = gates / f"{gate}.json"
         result_path.write_text(
@@ -32,6 +35,20 @@ def _campaign_fixture(root: Path, *, commit: str, tree: str) -> None:
                     "duration_seconds": 0.1,
                     "lock_sha256": "sha256:" + "a" * 64,
                     "finding_tests": [],
+                    "environment": {
+                        "os": "test",
+                        "architecture": "test",
+                        "python": "3.11.0",
+                        "dependencies": {
+                            name: "test" for name in checker.DEPENDENCY_NAMES
+                        },
+                    },
+                    "started_at": started_at,
+                    "finished_at": finished_at,
+                    "stdout_bytes": 0,
+                    "stderr_bytes": 0,
+                    "stdout_sha256": "sha256:" + "b" * 64,
+                    "stderr_sha256": "sha256:" + "c" * 64,
                     "commit": commit,
                     "tree": tree,
                     "dirty": False,
@@ -48,6 +65,8 @@ def _campaign_fixture(root: Path, *, commit: str, tree: str) -> None:
                 "evaluated_commit": commit,
                 "evaluated_tree": tree,
                 "dirty": False,
+                "started_at": started_at,
+                "finished_at": finished_at,
                 "required_gates": list(checker.GATES),
                 "results": results,
                 "result": "pass",
@@ -130,6 +149,51 @@ def test_gate_campaign_records_are_row_free(tmp_path) -> None:
 
     for path in tmp_path.rglob("*.json"):
         checker._load(path)
+
+
+@pytest.mark.parametrize(
+    "missing",
+    ["environment", "started_at", "finished_at", "stdout_bytes", "stdout_sha256"],
+)
+def test_gate_verification_requires_complete_result_metadata(
+    tmp_path, monkeypatch, missing
+) -> None:
+    commit = "a" * 40
+    tree = "b" * 40
+    _campaign_fixture(tmp_path, commit=commit, tree=tree)
+    path = tmp_path / "gates" / "wire_security.json"
+    record = json.loads(path.read_text(encoding="utf-8"))
+    record.pop(missing)
+    path.write_text(json.dumps(record), encoding="utf-8")
+    monkeypatch.setattr(
+        checker,
+        "_git_identity",
+        lambda: {"commit": commit, "tree": tree, "dirty": False},
+    )
+    monkeypatch.setattr(checker, "_validate_manifest", lambda *_: None)
+
+    with pytest.raises(ValueError, match="missing required metadata"):
+        checker._verify_campaign(tmp_path, {}, {}, {})
+
+
+def test_default_checker_runs_and_verifies_a_fresh_campaign(monkeypatch) -> None:
+    run_paths: list[Path] = []
+    verify_paths: list[Path] = []
+
+    def fake_run(output: Path) -> tuple[int, dict[str, object]]:
+        run_paths.append(output)
+        return 0, {"result": "pass"}
+
+    def fake_verify(output: Path, *_: object) -> None:
+        verify_paths.append(output)
+
+    monkeypatch.setattr(sys, "argv", ["check_inference_0_55.py"])
+    monkeypatch.setattr(checker, "_run_campaign", fake_run)
+    monkeypatch.setattr(checker, "_verify_campaign", fake_verify)
+
+    assert checker.main() == 0
+    assert len(run_paths) == 1
+    assert verify_paths == run_paths
 
 
 def test_finding_commit_must_change_the_referenced_code() -> None:
