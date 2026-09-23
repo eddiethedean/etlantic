@@ -353,17 +353,25 @@ def _target_identity(
         if (
             isinstance(metadata_identity, str)
             and metadata_identity.strip()
+            and metadata_identity.strip() not in {"target", "<path-redacted>"}
             and target.metadata.get("identity_unresolved") is not True
         ):
             return accept(metadata_identity.strip())
-        for candidate in (metadata_identity, schema_identity):
-            if isinstance(candidate, str) and candidate.strip():
-                normalized = _safe_file_identity(candidate.strip())
-                if normalized != "<path-redacted>":
-                    return accept(normalized)
+        if target.metadata.get("identity_unresolved") is not True:
+            for candidate in (metadata_identity, schema_identity):
+                if (
+                    isinstance(candidate, str)
+                    and candidate.strip()
+                    and candidate.strip() not in {"target", "<path-redacted>"}
+                ):
+                    return accept(candidate.strip())
 
     if isinstance(target, NormalizedSchema):
-        return accept(target.identity) if target.identity.strip() else None
+        return (
+            accept(target.identity)
+            if target.identity.strip() not in {"target", "<path-redacted>"}
+            else None
+        )
 
     if isinstance(target, (str, Path)):
         text = str(target)
@@ -884,13 +892,15 @@ def _normalize_provider_payload(
     direct_mapping: bool = False,
     fallback_exists: str | None = None,
     provider_exists: tuple[str | None, Diagnostic | None] | None = None,
+    caller_identity: str | None = None,
 ) -> TargetObservation | None:
     """Normalize every provider response through the same tri-state path."""
     if isinstance(payload, TargetObservation):
         payload_identity = payload.identity
-        fallback_identity = (
+        fallback_identity = caller_identity or (
             identity
-            if payload_identity is None or str(payload_identity).strip() == "target"
+            if payload_identity is None
+            or str(payload_identity).strip() in {"", "target"}
             else None
         )
         return _normalize_target_observation(payload, identity=fallback_identity)
@@ -904,8 +914,12 @@ def _normalize_provider_payload(
                 inspector=inspector,
                 message="Target fields are malformed",
             )
-        schema_identity = _safe_file_identity(schema.identity)
-        if schema_identity in {"", "target"}:
+        schema_identity = (
+            _safe_file_identity(caller_identity)
+            if caller_identity is not None
+            else _safe_file_identity(schema.identity)
+        )
+        if caller_identity is None and schema_identity in {"", "target"}:
             schema_identity = identity
         if schema_identity == "target" and identity == "target":
             return TargetObservation(
@@ -983,7 +997,11 @@ def _normalize_provider_payload(
             "identity": _safe_file_identity(identity),
         }
     else:
-        target_identity = _provider_payload_value(payload, "identity", identity)
+        target_identity = (
+            caller_identity
+            if caller_identity is not None
+            else _provider_payload_value(payload, "identity", identity)
+        )
         if (
             target_identity is _MISSING
             or target_identity is None
@@ -1084,6 +1102,7 @@ async def _normalize_provider_payload_async(
     direct_mapping: bool = False,
     fallback_exists: str | None = None,
     provider_exists: tuple[str | None, Diagnostic | None] | None = None,
+    caller_identity: str | None = None,
 ) -> TargetObservation | None:
     """Normalize a provider response after awaiting its existence state."""
     if provider_exists is None:
@@ -1096,6 +1115,7 @@ async def _normalize_provider_payload_async(
         direct_mapping=direct_mapping,
         fallback_exists=fallback_exists,
         provider_exists=provider_exists,
+        caller_identity=caller_identity,
     )
 
 
@@ -1116,6 +1136,11 @@ def inspect_target(
         target,
         identity=resolved_identity or "target",
         max_diagnostics=max_diagnostics,
+        caller_identity=(
+            str(identity).strip()
+            if identity is not None and str(identity).strip()
+            else None
+        ),
     )
     observation = _register_observation_identity(target, observation)
     collision_detected = any(
@@ -1125,18 +1150,17 @@ def inspect_target(
     identity_from_observation = isinstance(observation.identity, str) and (
         observation.identity.strip() not in {"", "target", "<path-redacted>"}
     )
-    if (
-        not unresolved
-        or collision_detected
-        or identity_from_observation
-        or isinstance(target, Mapping)
-    ):
+    if not unresolved or collision_detected or identity_from_observation:
         return observation
     return _mark_target_identity_unknown(observation)
 
 
 def _inspect_target_with_identity(
-    target: Any, *, identity: str, max_diagnostics: int = 100
+    target: Any,
+    *,
+    identity: str,
+    max_diagnostics: int = 100,
+    caller_identity: str | None = None,
 ) -> TargetObservation:
     """Inspect a target after resolving or assigning a diagnostic placeholder ID."""
     if isinstance(target, NormalizedSchema):
@@ -1169,6 +1193,7 @@ def _inspect_target_with_identity(
                 inspector="mapping",
                 max_diagnostics=max_diagnostics,
                 direct_mapping=True,
+                caller_identity=caller_identity,
             )
         except Exception:
             return _unknown_target(
@@ -1326,6 +1351,7 @@ def _inspect_target_with_identity(
                 max_diagnostics=max_diagnostics,
                 direct_mapping=True,
                 fallback_exists=adapter_exists,
+                caller_identity=caller_identity,
             )
             if observation is not None:
                 if observation.schema is not None:
@@ -1389,6 +1415,7 @@ def _inspect_target_with_identity(
             provider_exists=(adapter_exists, adapter_diagnostic)
             if payload is target
             else None,
+            caller_identity=caller_identity,
         )
     except Exception:
         return _unknown_target(
@@ -1424,11 +1451,17 @@ async def inspect_target_async(
 ) -> TargetObservation:
     """Inspect synchronous or asynchronous target adapters safely."""
     if isinstance(target, TargetObservation):
-        binding_identity = (
-            _explicit_binding_identity(binding) if binding is not None else None
-        )
-        return _normalize_target_observation(
-            target, identity=identity or binding_identity
+        try:
+            resolved_identity = _target_identity(target, identity, binding=binding)
+        except _TargetIdentityCollision as collision:
+            return _target_identity_collision_observation(
+                collision.identity, inspector=target.inspector
+            )
+        observation = _normalize_target_observation(target, identity=resolved_identity)
+        return (
+            observation
+            if resolved_identity is not None
+            else _mark_target_identity_unknown(observation)
         )
     try:
         resolved_identity = _target_identity(target, identity, binding=binding)
@@ -1443,6 +1476,11 @@ async def inspect_target_async(
         binding=binding,
         context=context,
         max_diagnostics=max_diagnostics,
+        caller_identity=(
+            str(identity).strip()
+            if identity is not None and str(identity).strip()
+            else None
+        ),
     )
     observation = _register_observation_identity(target, observation, binding=binding)
     collision_detected = any(
@@ -1452,12 +1490,7 @@ async def inspect_target_async(
     identity_from_observation = isinstance(observation.identity, str) and (
         observation.identity.strip() not in {"", "target", "<path-redacted>"}
     )
-    if (
-        not unresolved
-        or collision_detected
-        or identity_from_observation
-        or isinstance(target, Mapping)
-    ):
+    if not unresolved or collision_detected or identity_from_observation:
         return observation
     return _mark_target_identity_unknown(observation)
 
@@ -1469,11 +1502,15 @@ async def _inspect_target_async_with_identity(
     binding: Mapping[str, Any] | None = None,
     context: Mapping[str, Any] | None = None,
     max_diagnostics: int = 100,
+    caller_identity: str | None = None,
 ) -> TargetObservation:
     """Inspect an async adapter after identity resolution."""
     if isinstance(target, (NormalizedSchema, str, Path, bytes, Mapping)):
-        return inspect_target(
-            target, identity=identity, max_diagnostics=max_diagnostics
+        return _inspect_target_with_identity(
+            target,
+            identity=identity,
+            max_diagnostics=max_diagnostics,
+            caller_identity=caller_identity,
         )
     try:
         adapter_exists, adapter_diagnostic = await _provider_exists_async(target)
@@ -1525,6 +1562,7 @@ async def _inspect_target_async_with_identity(
                     max_diagnostics=max_diagnostics,
                     direct_mapping=True,
                     fallback_exists=adapter_exists,
+                    caller_identity=caller_identity,
                 )
                 if observation is not None:
                     if observation.schema is not None:
@@ -1560,6 +1598,7 @@ async def _inspect_target_async_with_identity(
                     max_diagnostics=max_diagnostics,
                     fallback_exists=adapter_exists,
                     provider_exists=(adapter_exists, adapter_diagnostic),
+                    caller_identity=caller_identity,
                 )
             except Exception:
                 return _unknown_target(
@@ -1608,6 +1647,7 @@ async def _inspect_target_async_with_identity(
                 max_diagnostics=max_diagnostics,
                 direct_mapping=True,
                 fallback_exists=adapter_exists,
+                caller_identity=caller_identity,
             )
             if observation is not None:
                 if observation.schema is not None:
@@ -1653,6 +1693,7 @@ async def _inspect_target_async_with_identity(
             max_diagnostics=max_diagnostics,
             direct_mapping=True,
             fallback_exists=adapter_exists,
+            caller_identity=caller_identity,
         )
         if observation is not None:
             if observation.schema is not None:
@@ -1698,6 +1739,7 @@ async def _inspect_target_async_with_identity(
                 max_diagnostics=max_diagnostics,
                 direct_mapping=True,
                 fallback_exists=adapter_exists,
+                caller_identity=caller_identity,
             )
             if observation is not None:
                 if observation.schema is not None:
@@ -1728,6 +1770,7 @@ async def _inspect_target_async_with_identity(
                 max_diagnostics=max_diagnostics,
                 direct_mapping=True,
                 fallback_exists=adapter_exists,
+                caller_identity=caller_identity,
             )
             if observation is not None:
                 if observation.schema is not None:
