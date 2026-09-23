@@ -300,6 +300,25 @@ def test_malformed_target_wire_metadata_fails_closed(schema_payload) -> None:
     assert check_write_compatibility(source, observation).status == "conflict"
 
 
+def test_malformed_schema_less_target_metadata_fails_closed_and_serializes() -> None:
+    observation = etl.TargetObservation(None, "unknown", metadata="malformed")
+
+    assert observation.identity is None
+    assert observation.metadata == {}
+    assert "INFER_TARGET_UNSUPPORTED" in {
+        diagnostic.code for diagnostic in observation.diagnostics
+    }
+    serialized = observation.to_dict()
+    assert serialized["metadata"] == {}
+
+    dataset = etl.from_records_for_target([{"id": 1}], observation)
+    assert "INFER_TARGET_UNKNOWN" in {
+        diagnostic.code for diagnostic in dataset.diagnostics
+    }
+    with pytest.raises(ValueError, match="inference diagnostics contain errors"):
+        dataset.definition()
+
+
 def test_provider_existence_probe_failures_fail_closed() -> None:
     class Result:
         def __init__(self):
