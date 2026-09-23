@@ -6,6 +6,7 @@ import csv
 import datetime as _dt
 import hashlib
 import json
+import math
 import re
 import sys
 import time
@@ -114,6 +115,8 @@ def _csv_field_limit(max_bytes: int | None):
 
 def _type_of(value: Any) -> str:
     if value is None:
+        return "null"
+    if isinstance(value, float) and math.isnan(value):
         return "null"
     if isinstance(value, bool):
         return "boolean"
@@ -386,6 +389,8 @@ def infer_records(
                     "null": 0,
                     "missing": 0,
                 }
+            if isinstance(value, float) and math.isnan(value):
+                value = None
             row[raw_name] = value
             entry = stats[raw_name]
             entry["observed"] += 1

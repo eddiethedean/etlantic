@@ -73,6 +73,10 @@ OPTIONAL_SURFACES = {
     "parquet": ("pyarrow",),
     "schema-registry": ("etlantic_schemaregistry",),
 }
+QUALIFIED_PROVIDER_SURFACES = {
+    "pandas": ("pandas",),
+    "polars": ("polars",),
+}
 GATE_RESULT_MARKER = "ETLANTIC_GATE_RESULT="
 DEPENDENCY_NAMES = (
     "etlantic",
@@ -488,6 +492,24 @@ def _check_optional_dependency_gate(matrix: dict[str, Any]) -> None:
             continue
         if not any(importlib.util.find_spec(module) is not None for module in modules):
             raise ValueError(f"advertised optional surface is unavailable: {surface}")
+    for surface, modules in QUALIFIED_PROVIDER_SURFACES.items():
+        entry = entries.get(surface)
+        if entry is None:
+            raise ValueError(
+                f"qualified provider surface is missing from the capability matrix: {surface}"
+            )
+        if entry["state"] == "unsupported":
+            continue
+        available = False
+        for module in modules:
+            try:
+                importlib.import_module(module)
+            except Exception:
+                continue
+            available = True
+            break
+        if not available:
+            raise ValueError(f"advertised qualified surface is unavailable: {surface}")
 
 
 def _actual_command(gate: str) -> list[str]:

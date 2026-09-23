@@ -93,6 +93,21 @@ def test_pending_capability_rows_are_rejected() -> None:
         checker._validate_capability_matrix(matrix)
 
 
+def test_qualified_dataframe_dependencies_are_required(monkeypatch) -> None:
+    matrix = checker._load(checker.EVIDENCE / "capability_matrix.json")
+    original_import = checker.importlib.import_module
+
+    def blocked_import(name: str):
+        if name == "pandas":
+            raise ImportError("pandas unavailable")
+        return original_import(name)
+
+    monkeypatch.setattr(checker.importlib, "import_module", blocked_import)
+
+    with pytest.raises(ValueError, match="qualified surface is unavailable: pandas"):
+        checker._check_optional_dependency_gate(matrix)
+
+
 def test_checked_in_qualification_manifest_is_consistent() -> None:
     index = checker._load(checker.EVIDENCE / "index.json")
     matrix = checker._load(checker.EVIDENCE / "capability_matrix.json")

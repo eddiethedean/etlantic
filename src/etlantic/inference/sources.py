@@ -11,6 +11,7 @@ from typing import Any, cast
 
 from etlantic.diagnostics import Diagnostic, Severity
 from etlantic.schema_drift import (
+    NormalizedField,
     NormalizedSchema,
     normalize_logical_type,
     normalize_schema_from_fields,
@@ -354,9 +355,10 @@ def _attach_provider_preview(
     """Retain a bounded preview when metadata-first providers expose one.
 
     Schema inspection must stay metadata first, but user-facing dataframe
-    constructors promise a preview as well.  The preview is obtained only
-    through the same bounded head boundary and never changes the observed
-    provider schema.
+    constructors promise a preview as well. The preview is obtained only
+    through the same bounded head boundary. Provider logical types remain
+    authoritative while observed nullability is refined from the bounded
+    preview.
     """
     bounded = _bounded_materialization(value, limits)
     if bounded is None:
@@ -406,7 +408,24 @@ def _attach_provider_preview(
                 *result.diagnostics,
             )
         )
+    preview_fields = {field.name: field for field in preview.schema.fields}
+    merged_fields = tuple(
+        NormalizedField(
+            name=field.name,
+            logical_type=field.logical_type,
+            required=preview_fields.get(field.name, field).required,
+            nullable=preview_fields.get(field.name, field).nullable,
+            metadata=dict(field.metadata),
+        )
+        for field in result.schema.fields
+    )
+    observed_schema = NormalizedSchema(
+        identity=result.schema.identity,
+        fields=merged_fields,
+        metadata=dict(result.schema.metadata),
+    )
     return result.replace(
+        schema=observed_schema,
         rows=preview.rows,
         replay=preview.replay,
         diagnostics=(

@@ -20,6 +20,14 @@ ROWS = [
     {"id": 1, "amount": 2.5, "active": True, "name": "Ada"},
     {"id": 2, "amount": 3.5, "active": False, "name": "Grace"},
 ]
+NULLABLE_ROWS = [
+    {"id": 1, "amount": 2.5},
+    {"id": 2, "amount": None},
+]
+MIXED_ROWS = [
+    {"id": 1, "amount": 2.5},
+    {"id": 2, "amount": "3.5"},
+]
 
 
 def _schema_signature(value: Any) -> list[tuple[Any, ...]]:
@@ -35,11 +43,16 @@ def _lineage_signature(value: Any) -> str:
     )
 
 
-def test_source_inference_matches_across_records_pandas_and_polars() -> None:
+@pytest.mark.parametrize(
+    "rows", [[], NULLABLE_ROWS, MIXED_ROWS], ids=["empty", "nullable", "mixed"]
+)
+def test_source_inference_matches_across_records_pandas_and_polars(
+    rows: list[dict[str, Any]],
+) -> None:
     results = [
-        etl.infer_records(ROWS, identity="differential-source"),
-        etl.infer_source(pd.DataFrame(ROWS), identity="differential-source"),
-        etl.infer_source(pl.DataFrame(ROWS), identity="differential-source"),
+        etl.infer_records(rows, identity="differential-source"),
+        etl.infer_source(pd.DataFrame(rows), identity="differential-source"),
+        etl.infer_source(pl.DataFrame(rows), identity="differential-source"),
     ]
 
     assert all(
