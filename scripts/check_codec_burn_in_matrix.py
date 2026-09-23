@@ -8,6 +8,8 @@ fixtures remain under ``check_pipeline_codec_burn_in.py``).
 
 from __future__ import annotations
 
+# Matrix fixtures are intentionally heterogeneous wire dictionaries.
+# pyright: reportMissingTypeArgument=false
 import hashlib
 import json
 import sys

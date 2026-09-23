@@ -35,6 +35,8 @@ from etlantic.model import LogicalGraph, NodeKind
 from etlantic.pipeline import Extract, Load
 from etlantic.refs import OutputRef
 
+_dpcs_api: Any = dpcs
+
 
 class DpcsError(ETLanticError):
     """Raised when DPCS generation or loading fails."""
@@ -260,7 +262,7 @@ def pipeline_from_dpcs(
                 if resolved.parent.name == "pipelines"
                 else resolved.parent
             )
-        doc = dict(dpcs.parse_yaml_str(text))
+        doc = dict(_dpcs_api.parse_yaml_str(text))
 
     version_report = check_dpcs_version(doc.get("dpcsVersion"), path=("dpcs",))
     if not version_report.valid:
@@ -317,10 +319,10 @@ def pipeline_from_dpcs(
     }
     annotations: dict[str, Any] = {}
 
-    for name, source in source_nodes.items():
-        namespace[name] = source
-        if source.contract_type is not None:
-            annotations[name] = Extract[source.contract_type]  # type: ignore[index]
+    for name, source_node in source_nodes.items():
+        namespace[name] = source_node
+        if source_node.contract_type is not None:
+            annotations[name] = Extract[source_node.contract_type]  # type: ignore[index]
 
     for step in doc.get("steps") or []:
         step_id = str(step["id"])
@@ -368,7 +370,7 @@ def validate_dpcs_document(
 ) -> ValidationReport:
     """Validate a DPCS document via the dpcs toolkit and version policy."""
     version_report = check_dpcs_version(doc.get("dpcsVersion"), path=("dpcs",))
-    toolkit = dpcs.validate_yaml(_stable_yaml(doc))
+    toolkit = _dpcs_api.validate_yaml(_stable_yaml(doc))
     toolkit_report = map_toolkit_diagnostics(
         toolkit.get("diagnostics"),
         default_code="PMGEN214",

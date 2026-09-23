@@ -17,6 +17,8 @@ from __future__ import annotations
 
 from typing import Any
 
+# Plugin result objects are intentionally backend-specific in this example.
+# pyright: reportAttributeAccessIssue=false
 from etlantic import (
     Data,
     Extract,
@@ -47,7 +49,7 @@ class PolarsIdentity(Transformation):
 
 
 @PolarsIdentity.implementation("polars")
-def polars_identity(rows):
+def polars_identity(rows: Any) -> Any:
     import polars as pl
 
     frame = rows if hasattr(rows, "with_columns") else pl.DataFrame(rows)
@@ -60,7 +62,7 @@ class PandasIdentity(Transformation):
 
 
 @PandasIdentity.implementation("pandas")
-def pandas_identity(rows):
+def pandas_identity(rows: Any) -> Any:
     import pandas as pd
 
     frame = rows if isinstance(rows, pd.DataFrame) else pd.DataFrame(rows)

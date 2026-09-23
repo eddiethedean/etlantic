@@ -247,7 +247,7 @@ def lower_fusion(dag: PhysicalDAG, descriptor: FusionDescriptor) -> PhysicalDAG:
             ],
             "etlantic.logical_predecessors": [],
         }
-        envelope = {
+        envelope: dict[str, Any] = {
             "kind": PhysicalUnitKind.COMPUTE,
             "target_identity": source.target_identity,
             "logical_nodes": members,

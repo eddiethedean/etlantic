@@ -286,6 +286,8 @@ class NotebookSession:
             raise ValueError("No pipeline bound")
         self.bind_pipeline(target)
         plan = plan_pipeline_like(target, profile=self.profile)
+        if not isinstance(plan, PipelinePlan):
+            raise ValueError("Notebook sessions require a static PipelinePlan")
         self._plan = plan
         self._model_identity = _identity_fingerprint(target)
         self.remember("last_plan", plan)

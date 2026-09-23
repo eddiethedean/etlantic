@@ -54,6 +54,7 @@ class CostProvider(Protocol):
     @property
     def provider_id(self) -> str:
         """Stable provider identity."""
+        ...
 
     def score(
         self,
@@ -63,6 +64,7 @@ class CostProvider(Protocol):
         evidence: EvidenceStore,
     ) -> CostScore:
         """Estimate cost / benefit for a candidate."""
+        ...
 
 
 class RuleCostProvider:

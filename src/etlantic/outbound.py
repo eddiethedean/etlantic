@@ -198,8 +198,8 @@ def evaluate_outbound_url(
             )
             for info in infos:
                 addr = info[4][0]
-                resolved.append(addr)
-                blocked = _is_blocked_address(addr, policy)
+                resolved.append(str(addr))
+                blocked = _is_blocked_address(str(addr), policy)
                 if blocked:
                     return _deny(blocked)
         except socket.gaierror:

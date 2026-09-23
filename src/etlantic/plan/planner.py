@@ -294,6 +294,7 @@ def plan_pipeline_with_report(
     )
     if request is not None and ctx.profile.execution_strategy != "adaptive":
         return None, _adaptive_request_required_report()
+    report = ValidationReport.from_diagnostics([])
     try:
         if ctx.profile.execution_strategy == "adaptive":
             from etlantic.planning.adaptive import (

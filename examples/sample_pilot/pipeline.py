@@ -6,6 +6,8 @@ PyPI-only users: follow docs/09_EXAMPLES/PRODUCTION_SAMPLE.md instead.
 
 from __future__ import annotations
 
+from typing import Any
+
 from etlantic import Data, Extract, Input, Load, Output, Pipeline, Transformation
 
 
@@ -20,7 +22,7 @@ class Identity(Transformation):
 
 
 @Identity.portable
-def identity(rows):
+def identity(rows: Any) -> Any:
     return rows
 
 

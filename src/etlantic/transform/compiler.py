@@ -196,7 +196,7 @@ class TransformCompilerInfo:
     environment: Mapping[str, str] | None = None
 
     def to_dict(self) -> dict[str, Any]:
-        payload = {
+        payload: dict[str, Any] = {
             "name": self.name,
             "version": self.version,
             "engine": self.engine,
@@ -235,7 +235,7 @@ class TransformSupportFinding:
     evidence_fingerprint: str | None = None
 
     def to_dict(self) -> dict[str, Any]:
-        payload = {
+        payload: dict[str, Any] = {
             "code": self.code,
             "requirement": self.requirement,
             "reason": self.reason,
@@ -316,7 +316,7 @@ class TransformSupportReport:
     requirement_findings: tuple[TransformSupportFinding, ...] = ()
 
     def to_dict(self) -> dict[str, Any]:
-        payload = {
+        payload: dict[str, Any] = {
             "supported": self.supported,
             "findings": [f.to_dict() for f in self.findings],
         }

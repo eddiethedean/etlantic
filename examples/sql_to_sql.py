@@ -6,6 +6,8 @@ in-memory SQLite for local demos).
 
 from __future__ import annotations
 
+# Optional SQL plugin exports are dynamic entry-point surfaces.
+# pyright: reportAttributeAccessIssue=false
 import os
 
 from sqlalchemy import text

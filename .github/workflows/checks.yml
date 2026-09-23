@@ -39,11 +39,11 @@ jobs:
       - name: Ruff format
         run: uv run ruff format --check .
 
-      - name: Sync optional compiler dependencies for Pyright
+      - name: Sync all workspace dependencies for Pyright
         if: matrix.os == 'ubuntu-latest' && matrix.python-version == '3.11'
-        run: uv sync --locked --group sqlmodel --group dataframes --group sql --group pyspark --group datafusion --group duckdb
+        run: uv sync --locked --all-groups
 
-      - name: Pyright (0.51 release surface)
+      - name: Pyright (strict repository source)
         if: matrix.os == 'ubuntu-latest' && matrix.python-version == '3.11'
         run: uv run pyright
 

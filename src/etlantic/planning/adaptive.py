@@ -373,7 +373,7 @@ def _build_adaptive_plan(
     objective = _objective(selected, decisions, candidates, inventory)
 
     profile = context.profile
-    metadata = {
+    metadata: dict[str, Any] = {
         "etlantic.planner": "etlantic.planning.adaptive",
         "etlantic.planner_version": "0.54"
         if fusion is not None
@@ -807,8 +807,8 @@ def _resolved_components(
     target: Any, context: PlanningContext
 ) -> tuple[dict[str, Any], ...]:
     """Collect deterministic, redacted facts for each target reference."""
-    refs = {
-        component: getattr(target, component)
+    refs: dict[str, str] = {
+        component: str(getattr(target, component))
         for component in ("engine", "compiler", "executor", "connector", "resource")
         if getattr(target, component) is not None
     }
@@ -1931,7 +1931,7 @@ def _regions(
     for members in ordered_groups:
         members = sorted(members, key=names.index)
         fused = fusion is not None and tuple(members) == fusion.logical_nodes
-        fusion_evidence = fusion.fingerprint if fused else "none"
+        fusion_evidence = fusion.fingerprint if fusion is not None and fused else "none"
         target_id = by_node[members[0]]
         target = target_by_id[target_id]
         boundary_facts = {
@@ -2105,7 +2105,7 @@ def _physical_dag(
     for node in graph.nodes:
         target = target_map[decision_map[node.name].target_id]
         compute_inputs, compute_outputs = contracts(node)
-        compute_metadata = {
+        compute_metadata: dict[str, Any] = {
             "etlantic.engine": target.engine,
             "etlantic.region": region_by_node.get(node.name),
             "etlantic.logical_predecessors": sorted(
@@ -2114,7 +2114,7 @@ def _physical_dag(
                 if edge.consumer_node == node.name
             ),
         }
-        compute_envelope = envelope(node, target)
+        compute_envelope: dict[str, Any] = envelope(node, target)
         uid = generated_unit_identity(
             kind=PhysicalUnitKind.COMPUTE,
             target_identity=_target_identity(target),
@@ -2132,6 +2132,7 @@ def _physical_dag(
     for edge in graph.edges:
         producer = decision_map[edge.producer_node]
         consumer = decision_map[edge.consumer_node]
+        transfer_id: str | None = None
         if producer.target_id == consumer.target_id:
             dependencies[edge.consumer_node].append(
                 PhysicalDependency(compute_ids[edge.producer_node])
@@ -2262,7 +2263,7 @@ def _physical_dag(
         destination = target_map[consumer.target_id]
         boundary_dependency = (
             transfer_id
-            if producer.target_id != consumer.target_id
+            if producer.target_id != consumer.target_id and transfer_id is not None
             else compute_ids[edge.producer_node]
         )
         if bool(
@@ -2270,7 +2271,7 @@ def _physical_dag(
                 getattr(graph.node_map()[edge.consumer_node], "metadata", {}) or {}
             ).get("etlantic.collection_required")
         ):
-            collection_spec = {
+            collection_spec: dict[str, Any] = {
                 "kind": PhysicalUnitKind.COLLECTION,
                 "target_identity": _target_identity(destination),
                 "dependencies": (PhysicalDependency(boundary_dependency),),
@@ -2334,7 +2335,7 @@ def _physical_dag(
         ):
             if not node_metadata.get(flag):
                 continue
-            boundary_spec = {
+            boundary_spec: dict[str, Any] = {
                 "kind": kind,
                 "target_identity": _target_identity(target),
                 "dependencies": (PhysicalDependency(tail),),
@@ -2360,7 +2361,7 @@ def _physical_dag(
             tail = uid
         node_tails[node.name] = tail
         if node.kind is NodeKind.SINK:
-            publication_spec = {
+            publication_spec: dict[str, Any] = {
                 "kind": PhysicalUnitKind.PUBLICATION,
                 "target_identity": _target_identity(target),
                 "dependencies": (PhysicalDependency(tail, "lifecycle"),),

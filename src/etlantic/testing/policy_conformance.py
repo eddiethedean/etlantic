@@ -43,9 +43,12 @@ def run_policy_conformance_suite(
     quotas: Any | None = None,
 ) -> None:
     """Exercise policy, approval SoD, and quota fail-closed invariants."""
-    policy = policy or MemoryPolicyProvider()
-    approvals = approvals or MemoryApprovalStore()
-    quotas = quotas or MemoryQuotaProvider()
+    if policy is None:
+        policy = MemoryPolicyProvider()
+    if approvals is None:
+        approvals = MemoryApprovalStore()
+    if quotas is None:
+        quotas = MemoryQuotaProvider()
 
     ctx = _ctx()
     decision = policy.decide(ctx, hook="pre_plan", plan_fingerprint="plan-1")

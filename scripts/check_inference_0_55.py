@@ -878,6 +878,8 @@ def _verify_campaign(
     current = _git_identity()
     if not _is_commit(evaluated_commit) or not _is_commit(evaluated_tree):
         raise ValueError("gate campaign is not pinned to immutable git identities")
+    assert isinstance(evaluated_commit, str)
+    assert isinstance(evaluated_tree, str)
     if current["dirty"]:
         raise ValueError("current worktree is dirty; gate evidence cannot be verified")
     if evaluated_commit != current["commit"] or evaluated_tree != current["tree"]:

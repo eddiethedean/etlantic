@@ -5,6 +5,7 @@ from __future__ import annotations
 import warnings
 from typing import Any
 
+from etlantic.capabilities import PluginCapabilities
 from etlantic.plugin_lifecycle import discover_evaluate_authorize_load
 from etlantic.profile import Profile
 from etlantic.registry import PluginDescriptor, RegistryBundle
@@ -68,10 +69,18 @@ def register_discovered_plugins(
                 kind="scheduler",
                 version=info.version,
                 engine=info.name or name,
-                capabilities={
-                    "direct_execution": info.direct_execution,
-                    "external_compilation": info.external_compilation,
-                },
+                capabilities=PluginCapabilities(
+                    engine=info.name or name,
+                    orchestration=True,
+                    orch_scheduling=info.direct_execution,
+                    extras=frozenset(
+                        {
+                            "direct_execution" if info.direct_execution else "",
+                            "external_compilation" if info.external_compilation else "",
+                        }
+                        - {""}
+                    ),
+                ),
                 metadata=descriptor_metadata_for_plugin(
                     plugin,
                     info,

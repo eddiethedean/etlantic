@@ -8,6 +8,8 @@ database URLs, parameter values, plans with executable bodies, or host paths.
 
 from __future__ import annotations
 
+# Evidence payloads are intentionally schema-driven mappings.
+# pyright: reportAttributeAccessIssue=false
 import argparse
 import asyncio
 import contextlib

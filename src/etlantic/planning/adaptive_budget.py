@@ -45,11 +45,11 @@ def wire_view(value: Any) -> Any:
     return value
 
 
-class _RedactedMapping(Mapping):
-    def __init__(self, value: Mapping) -> None:
+class _RedactedMapping(Mapping[Any, Any]):
+    def __init__(self, value: Mapping[Any, Any]) -> None:
         self.value = value
 
-    def __iter__(self) -> Iterator:
+    def __iter__(self) -> Iterator[Any]:
         return iter(self.value)
 
     def __len__(self) -> int:
@@ -59,8 +59,8 @@ class _RedactedMapping(Mapping):
         return redacted_view(self.value[key])
 
 
-class _RedactedSequence(Sequence):
-    def __init__(self, value: Sequence) -> None:
+class _RedactedSequence(Sequence[Any]):
+    def __init__(self, value: Sequence[Any]) -> None:
         self.value = value
 
     def __len__(self) -> int:

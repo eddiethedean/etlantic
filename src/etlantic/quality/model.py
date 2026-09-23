@@ -2,7 +2,8 @@
 
 from __future__ import annotations
 
-from dataclasses import dataclass, field
+from dataclasses import dataclass
+from dataclasses import field as dataclass_field
 from typing import Any
 
 QUALITY_SCHEMA = "etlantic.quality/1"
@@ -53,7 +54,7 @@ class QualityRule:
 
     kind: str
     field: str
-    node: dict[str, Any] = field(default_factory=dict)
+    node: dict[str, Any] = dataclass_field(default_factory=dict)
     required: bool = True
     rule_id: str | None = None
 
@@ -128,9 +129,9 @@ class QualityExpression:
 
     schema: str = QUALITY_SCHEMA
     expression_id: str = "quality"
-    ruleset: QualityRuleset = field(default_factory=QualityRuleset)
+    ruleset: QualityRuleset = dataclass_field(default_factory=QualityRuleset)
     fingerprint: str | None = None
-    metadata: dict[str, Any] = field(default_factory=dict)
+    metadata: dict[str, Any] = dataclass_field(default_factory=dict)
 
     def to_dict(self) -> dict[str, Any]:
         """Serialize the expression document."""

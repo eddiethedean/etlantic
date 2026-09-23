@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from typing import Any
+
 # Archive / maintainer history: keep buildable via ARCHIVE_INDEX, exclude from search.
 _SEARCH_EXCLUDE_PREFIXES = (
     "11_DEVELOPMENT/MIGRATION_",
@@ -39,7 +41,7 @@ def _should_exclude_from_search(src_uri: str) -> bool:
     return any(src_uri.startswith(prefix) for prefix in _SEARCH_EXCLUDE_PREFIXES)
 
 
-def on_page_markdown(markdown, page, config, files):
+def on_page_markdown(markdown: str, page: Any, config: Any, files: Any) -> str:
     """Mark archive / historical pages so Material search skips them."""
     path = page.file.src_uri
     if _should_exclude_from_search(path):

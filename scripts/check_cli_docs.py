@@ -3,6 +3,8 @@
 
 from __future__ import annotations
 
+# Typer's private Click compatibility layer is intentionally dynamic here.
+# pyright: reportAttributeAccessIssue=false, reportArgumentType=false
 import sys
 from pathlib import Path
 

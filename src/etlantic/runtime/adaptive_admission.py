@@ -90,7 +90,7 @@ def _validate_request(request: RunRequest) -> None:
         )
 
 
-def _validate_required_boundaries(plan):
+def _validate_required_boundaries(plan: Any) -> None:
     """Require lowering's exact marker coverage and prohibit data-path bypasses."""
     dag = plan.physical_dag
     from etlantic.runtime.adaptive_parameters import canonical_parameters
@@ -106,7 +106,7 @@ def _validate_required_boundaries(plan):
             ) and dependency.unit_id in forward:
                 forward[dependency.unit_id].add(unit.identity)
 
-    def reaches(start, end, excluded=None):
+    def reaches(start: Any, end: Any, excluded: Any = None) -> bool:
         pending, seen = [start], set()
         while pending:
             uid = pending.pop()
@@ -555,6 +555,7 @@ def admit_adaptive_plan(
     binding_pins: dict[str, Any] = {}
     io_policy_pins: dict[str, Any] = {}
     qualified_storage_pins: dict[str, Any] = {}
+    executor_pins: dict[str, Any] = {}
     if runtime is not None:
         registry = getattr(runtime, "registry", None)
         from importlib.metadata import version
@@ -665,16 +666,26 @@ def admit_adaptive_plan(
             if provider == "polars-parquet":
                 from pathlib import Path
 
-                from etlantic_polars import PolarsParquetStorage
+                import etlantic_polars
+
+                parquet_storage_type: Any = getattr(
+                    etlantic_polars, "PolarsParquetStorage", None
+                )
 
                 fusion = next(
                     (f for f in fused_descriptors if f.source_node == node.name), None
                 )
+                configuration = getattr(storage, "configuration", None)
+                if not callable(configuration):
+                    raise _reject(
+                        "Adaptive parquet storage configuration is unavailable",
+                        "PMADP501",
+                    )
                 if (
                     fusion is None
-                    or type(storage) is not PolarsParquetStorage
-                    or storage.configuration()
-                    != mutable_copy(fusion.source_binding["config"])
+                    or parquet_storage_type is None
+                    or type(storage) is not parquet_storage_type
+                    or configuration() != mutable_copy(fusion.source_binding["config"])
                     or descriptor.to_dict() != mutable_copy(fusion.source_binding)
                     or descriptor.provider_version != version("etlantic-polars")
                     or safe_policy is None
@@ -717,7 +728,6 @@ def admit_adaptive_plan(
         # It must run for every selected unit before the caller enters a
         # runtime session or permits any data effect.
         executors = getattr(runtime, "physical_executors", {}) or {}
-        executor_pins: dict[str, Any] = {}
         for unit in dag.units:
             target = target_by_identity.get(unit.target_identity) or target_by_id.get(
                 unit.target_identity
@@ -760,11 +770,19 @@ def admit_adaptive_plan(
                 )
             if not set(info.evidence_refs).intersection(row.evidence_refs):
                 raise _reject("Adaptive executor has no qualified evidence", "PMADP501")
-            if "etlantic.plan/2" not in tuple(getattr(info, "plan_versions", ())):
+            plan_versions = tuple(
+                str(protocol_version)
+                for protocol_version in (getattr(info, "plan_versions", ()) or ())
+            )
+            if "etlantic.plan/2" not in plan_versions:
                 raise _reject("Adaptive executor does not support plan/2", "PMADP501")
-            if "etlantic.physical_unit/1" not in tuple(
-                getattr(info, "unit_protocol_versions", ())
-            ):
+            unit_protocol_versions = tuple(
+                str(protocol_version)
+                for protocol_version in (
+                    getattr(info, "unit_protocol_versions", ()) or ()
+                )
+            )
+            if "etlantic.physical_unit/1" not in unit_protocol_versions:
                 raise _reject(
                     "Adaptive executor does not support physical-unit/1", "PMADP501"
                 )

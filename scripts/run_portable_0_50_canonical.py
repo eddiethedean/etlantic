@@ -8,6 +8,8 @@ import hashlib
 import json
 from typing import Any, cast
 
+# Optional engine plugin factories are dynamic entry-point surfaces.
+# pyright: reportAttributeAccessIssue=false
 from etlantic import (
     Data,
     Extract,
@@ -53,7 +55,7 @@ class _CanonicalTransform(Transformation):
 
 
 @_CanonicalTransform.portable
-def _canonical_transform(orders, customers, bonus):
+def _canonical_transform(orders: Any, customers: Any, bonus: Any) -> Any:
     """The one engine-neutral body qualified by the 0.50 campaign."""
     prepared = (
         orders.filter(F.col("amount") > 0)

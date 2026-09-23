@@ -105,6 +105,7 @@ def run_sparkforge_differential_suite(
         from medallantic.adapt import adapt_pipeline as _adapt
 
         adapt_pipeline = _adapt
+    assert adapt_pipeline is not None
     from medallantic.ir import SparkForgePipelineSpec
 
     corpus = list(fixtures) if fixtures is not None else default_sparkforge_fixtures()
@@ -184,7 +185,10 @@ def run_sparkforge_differential_suite(
             required = fixture.plugin_capabilities or tuple(
                 fixture.ir.get("metadata", {}).get("plugin_capabilities") or ()
             )
-            caps = set(adapted.profile.required_spark_capabilities or ())
+            caps: set[str] = {
+                str(capability)
+                for capability in (adapted.profile.required_spark_capabilities or ())
+            }
             delta_ops = list(
                 fixture.ir.get("metadata", {}).get("delta_operations") or ()
             )

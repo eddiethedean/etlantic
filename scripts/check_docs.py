@@ -2,6 +2,9 @@
 
 from __future__ import annotations
 
+# The checker introspects optional documentation tooling and heterogeneous
+# frontmatter; those boundaries are intentionally dynamic.
+# pyright: reportMissingTypeArgument=false, reportPossiblyUnboundVariable=false, reportOptionalMemberAccess=false, reportArgumentType=false
 import ast
 import json
 import re

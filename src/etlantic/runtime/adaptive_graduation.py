@@ -87,8 +87,12 @@ def validate_graduation(
         if type(item) is not str or not item or len(item) > 4096:
             raise ValueError("Graduation requires independent decision ownership")
     if not pending:
-        timestamp = datetime.fromisoformat(value["date"])
-        if timestamp.utcoffset() is None or timestamp.utcoffset().total_seconds() != 0:
+        decision_date = value["date"]
+        if not isinstance(decision_date, str):
+            raise ValueError("Graduation decision must be UTC dated")
+        timestamp = datetime.fromisoformat(decision_date)
+        offset = timestamp.utcoffset()
+        if offset is None or offset.total_seconds() != 0:
             raise ValueError("Graduation decision must be UTC dated")
         if value["reviewer"] == value["release_owner"]:
             raise ValueError("Graduation reviewer must be independent")

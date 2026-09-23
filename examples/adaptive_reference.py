@@ -7,8 +7,10 @@ import json
 import tempfile
 from dataclasses import replace
 from pathlib import Path
-from typing import ClassVar
+from typing import Any, ClassVar, cast
 
+# Optional plugin entry points intentionally expose a dynamic public surface.
+# pyright: reportAttributeAccessIssue=false
 import anyio
 import polars as pl
 from pydantic import ConfigDict
@@ -49,12 +51,12 @@ class Result(etl.Data):
 
 class Filter(etl.Transformation):
     source: etl.Input[Raw]
-    key: etl.Parameter[int] = 1
+    key: etl.Parameter[int] = 1  # pyright: ignore[reportAssignmentType]
     result: etl.Output[Raw]
 
 
 @Filter.portable
-def filter_rows(source, key):
+def filter_rows(source: Any, key: Any) -> Any:
     return source.filter(F.col("key") == key)
 
 
@@ -64,7 +66,7 @@ class Project(etl.Transformation):
 
 
 @Project.portable
-def project(source):
+def project(source: Any) -> Any:
     return source.select("key", "enabled")
 
 
@@ -74,7 +76,7 @@ class Consumer(etl.Transformation):
 
 
 @Consumer.portable
-def consume(source):
+def consume(source: Any) -> Any:
     return source.select("key")
 
 
@@ -109,7 +111,7 @@ class Reference(etl.Pipeline):
         )
 
 
-def content_digest(value):
+def content_digest(value: Any) -> str:
     return hashlib.sha256(
         json.dumps(
             value, sort_keys=True, separators=(",", ":"), ensure_ascii=False
@@ -121,7 +123,7 @@ def candidate(root: Path):
     runtime = etl.PipelineRuntime()
     runtime.register_dataframe_plugin("polars", create_plugin())
     runtime.register_dataframe_plugin("pandas", pandas_plugin())
-    source = create_parquet_storage()
+    source = cast(Any, create_parquet_storage())
     runtime.register_storage("polars-parquet", source)
     runtime.registry.register_binding(
         BindingDescriptor(

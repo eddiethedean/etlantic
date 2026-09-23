@@ -3,6 +3,8 @@
 
 from __future__ import annotations
 
+# Optional compiler plugin exports are dynamic entry-point surfaces.
+# pyright: reportAttributeAccessIssue=false, reportUnnecessaryContains=false
 import hashlib
 import json
 import re

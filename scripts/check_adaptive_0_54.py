@@ -291,6 +291,7 @@ def main() -> int:
                     handle.write(json.dumps(index, sort_keys=True, indent=2) + "\n")
             else:
                 destination = arguments.verify_index
+            assert destination is not None
             verify_index(destination, catalogue, source=source_revision())
         except (OSError, ValueError, KeyError, TypeError):
             print("0.54 evidence index: failed integrity/completeness validation")

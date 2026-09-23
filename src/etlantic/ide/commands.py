@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from pathlib import Path
-from typing import Any
+from typing import Any, cast
 
 from etlantic.ide.protocol import DiagnosticPayload, IdeCommand, IdeResult
 from etlantic.ide.trust import TrustedWorkspacePolicy, deny_untrusted
@@ -250,7 +250,9 @@ def _cmd_optimize(args: dict[str, Any], *, policy: TrustedWorkspacePolicy) -> Id
 
     result = optimize_plan(plan, profile=opt_profile, policy=opt_policy)  # type: ignore[arg-type]
     explanation = explain_optimization(result)
-    shadow = compare_shadow(plan, result.optimized_plan, result=result)
+    shadow = compare_shadow(
+        cast(Any, plan), cast(Any, result.optimized_plan), result=result
+    )
     trust_error = any(
         str(getattr(getattr(d, "severity", None), "value", getattr(d, "severity", "")))
         == "error"

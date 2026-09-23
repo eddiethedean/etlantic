@@ -29,6 +29,7 @@ class NotificationProvider(Protocol):
         body: Mapping[str, Any],
     ) -> bool:
         """Deliver a redacted notification payload; never include secrets."""
+        ...
 
 
 @runtime_checkable
@@ -54,6 +55,7 @@ class ObjectiveStore(Protocol):
         completed: bool = False,
     ) -> ObjectiveEvaluation:
         """Evaluate deadlines; dedupe repeated breach/recovery transitions."""
+        ...
 
     def acknowledge(
         self,
@@ -73,6 +75,7 @@ class ObjectiveStore(Protocol):
         provider: NotificationProvider,
     ) -> ObjectiveNotification:
         """Route only to authorized destinations; deny otherwise."""
+        ...
 
     def list_evaluations(
         self, ctx: ControlPlaneContext, *, objective_id: str, limit: int = 100

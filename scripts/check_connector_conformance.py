@@ -3,6 +3,8 @@
 
 from __future__ import annotations
 
+# Connector fixtures intentionally use heterogeneous wire dictionaries.
+# pyright: reportMissingTypeArgument=false
 import argparse
 import importlib
 import sys

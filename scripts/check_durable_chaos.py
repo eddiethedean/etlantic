@@ -5,8 +5,10 @@ from __future__ import annotations
 
 import argparse
 import json
+from collections.abc import Callable
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
+from typing import Any
 
 
 def _ctx(tenant: str = "tenant-a", workspace: str = "workspace-a"):
@@ -28,7 +30,7 @@ def _ctx(tenant: str = "tenant-a", workspace: str = "workspace-a"):
     )
 
 
-def _run_chaos(store_factory) -> list[dict[str, object]]:
+def _run_chaos(store_factory: Callable[[], Any]) -> list[dict[str, object]]:
     from etlantic.control_plane import ControlPlaneError, EffectRecord, PreviewWorkspace
 
     results: list[dict[str, object]] = []

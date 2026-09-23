@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+# Optional Polars plugin exports are dynamic entry-point surfaces.
+# pyright: reportAttributeAccessIssue=false
 import os
 import sys
 from pathlib import Path

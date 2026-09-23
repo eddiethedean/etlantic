@@ -105,6 +105,7 @@ def run_sql_builder_differential_suite(
         from medallantic.adapt import adapt_pipeline as _adapt
 
         adapt_pipeline = _adapt
+    assert adapt_pipeline is not None
     from medallantic.ir import SparkForgePipelineSpec
 
     corpus = list(fixtures) if fixtures is not None else default_sql_builder_fixtures()

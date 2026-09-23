@@ -5,6 +5,7 @@ from __future__ import annotations
 from typing import Any
 
 from etlantic.control_plane.schedule_trust import resource_provider_allowed
+from etlantic.diagnostics import Diagnostic
 from etlantic.plugin_lifecycle import discover_evaluate_authorize_load
 from etlantic.profile import Profile
 from etlantic.resources.protocol import ResourceProvider
@@ -12,7 +13,7 @@ from etlantic.resources.protocol import ResourceProvider
 RESOURCE_PROVIDER_ENTRY_POINT = "etlantic.resource_providers"
 
 
-def _fail_closed_loaded(result):
+def _fail_closed_loaded(result: Any) -> Any:
     from etlantic.plugin_trust import loaded_plugins_after_trust
 
     return loaded_plugins_after_trust(result)
@@ -32,7 +33,7 @@ def discover_resource_providers(
             getattr(getattr(plugin, "info", None), "name", None) or item.name
         ),
     )
-    diagnostics = list(result.diagnostics)
+    diagnostics: list[Diagnostic] = list(result.diagnostics)
     loaded: dict[str, Any] = dict(_fail_closed_loaded(result))
     if profile is not None and loaded:
         for name, plugin in list(loaded.items()):

@@ -10,7 +10,7 @@ from collections.abc import Callable, Mapping
 from contextlib import suppress
 from decimal import Decimal, DecimalException
 from pathlib import Path
-from typing import Any
+from typing import Any, cast
 
 from etlantic.diagnostics import Diagnostic, Severity
 from etlantic.schema_drift import (
@@ -169,10 +169,10 @@ def _schema_from_inspection(identity: str, fields: Any) -> NormalizedSchema:
         raise TypeError("target fields must be a mapping or sequence")
     values = list(fields)
     if all(isinstance(field, NormalizedField) for field in values):
-        names = [field.name for field in values]
+        names: set[str] = {field.name for field in values}
         if any(not isinstance(name, str) or not name for name in names):
             raise ValueError("target field names must be non-empty strings")
-        if len(names) != len(set(names)):
+        if len(names) != len(values):
             raise ValueError("target field names must be unique")
         if any(
             not isinstance(flag, bool)
@@ -1005,6 +1005,12 @@ async def inspect_target_async(
                     )
                 return observation
             return _unknown_target(
+                identity=identity,
+                inspector=type(target).__name__,
+            )
+        if not callable(schema_method):
+            return _unknown_target(
+                "INFER_TARGET_UNSUPPORTED",
                 identity=identity,
                 inspector=type(target).__name__,
             )
@@ -2188,9 +2194,11 @@ def check_write_compatibility(
     )
     if target_schema is not None:
         try:
-            target_schema = _validated_normalized_schema(target_schema)
+            target_schema = _validated_normalized_schema(
+                cast(NormalizedSchema, target_schema)
+            )
         except (AttributeError, KeyError, TypeError, ValueError):
-            diagnostics = (
+            base_diagnostics = (
                 tuple(target_observation.diagnostics)
                 if target_observation is not None
                 else ()
@@ -2199,7 +2207,7 @@ def check_write_compatibility(
                 False,
                 mode=mode,
                 diagnostics=(
-                    *diagnostics,
+                    *base_diagnostics,
                     Diagnostic(
                         "INFER_TARGET_UNSUPPORTED",
                         Severity.ERROR,
@@ -2210,7 +2218,7 @@ def check_write_compatibility(
             )
         unknown_type_diagnostics = _unknown_type_diagnostics(target_schema)
         if unknown_type_diagnostics:
-            diagnostics = (
+            base_diagnostics = (
                 tuple(target_observation.diagnostics)
                 if target_observation is not None
                 else ()
@@ -2218,8 +2226,10 @@ def check_write_compatibility(
             return WriteCompatibility(
                 False,
                 mode=mode,
-                diagnostics=(*diagnostics, *unknown_type_diagnostics),
+                diagnostics=(*base_diagnostics, *unknown_type_diagnostics),
             )
+        assert target_schema is not None
+        assert isinstance(target_schema, NormalizedSchema)
         target = target_schema
     if target_observation is not None:
         if target_observation.exists != "present":
@@ -2317,6 +2327,7 @@ def check_write_compatibility(
                     ),
                 ),
             )
+        assert isinstance(target_schema, NormalizedSchema)
         target = target_schema
         observation_metadata = dict(target_observation.metadata)
         observed_revision = target_observation.revision

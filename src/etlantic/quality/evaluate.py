@@ -50,6 +50,8 @@ def evaluate_rule(rule: QualityRule, row: dict[str, Any]) -> str | None:
         expected = node.get("value")
         if _is_missing(value):
             return f"{field} is null"
+        if value is None:
+            return f"{field} is null"
         try:
             ok = {
                 "eq": value == expected,
@@ -103,6 +105,8 @@ def evaluate_rule(rule: QualityRule, row: dict[str, Any]) -> str | None:
 
     if kind == "length":
         if _is_missing(value):
+            return f"{field} is null"
+        if value is None:
             return f"{field} is null"
         length = len(value) if hasattr(value, "__len__") else None
         if length is None:

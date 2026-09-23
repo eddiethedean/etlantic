@@ -7,6 +7,10 @@ Run with:
 
 from __future__ import annotations
 
+from typing import Any
+
+# Prefect is an optional dynamic plugin surface in this example.
+# pyright: reportAttributeAccessIssue=false
 from etlantic import (
     Data,
     Extract,
@@ -38,7 +42,7 @@ class NormalizeCustomers(Transformation):
 
 
 @NormalizeCustomers.portable
-def normalize_customers(customers):
+def normalize_customers(customers: Any) -> Any:
     return customers.select(
         "customer_id",
         F.concat_ws(" ", F.col("first_name"), F.col("last_name")).alias("full_name"),

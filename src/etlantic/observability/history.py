@@ -186,7 +186,7 @@ class InMemoryRunHistoryProvider:
         self,
         event: LifecycleEvent | SecurityEvent | RunHistoryRecord,
     ) -> None:
-        payload = (
+        payload: dict[str, Any] = (
             event.to_dict() if hasattr(event, "to_dict") else dict(event)  # type: ignore[arg-type]
         )
         run_id = str(payload.get("run_id") or "")
@@ -329,6 +329,8 @@ class FileRunHistoryProvider:
         return self.root / run_id
 
     def _load_existing(self) -> None:
+        policy = self.policy
+        assert policy is not None
         for path in sorted(self.root.iterdir()):
             if not path.is_dir():
                 continue
@@ -337,7 +339,7 @@ class FileRunHistoryProvider:
             if meta_path.exists():
                 try:
                     _resolved, text, _ = read_text_safe(
-                        meta_path, self.policy, run_id="history-load"
+                        meta_path, policy, run_id="history-load"
                     )
                     meta = json.loads(text)
                     self._memory.create_run(
@@ -358,7 +360,7 @@ class FileRunHistoryProvider:
             if events_path.exists():
                 try:
                     _resolved, text, _ = read_text_safe(
-                        events_path, self.policy, run_id="history-load"
+                        events_path, policy, run_id="history-load"
                     )
                     for line in text.splitlines():
                         if not line.strip():
@@ -376,7 +378,7 @@ class FileRunHistoryProvider:
             if report_path.exists():
                 try:
                     _resolved, text, _ = read_text_safe(
-                        report_path, self.policy, run_id="history-load"
+                        report_path, policy, run_id="history-load"
                     )
                     self._memory._reports[run_id] = json.loads(text)
                 except Exception as exc:
@@ -467,7 +469,7 @@ class FileRunHistoryProvider:
                 run_id=report.run_id,
             )
             meta_path = run_dir / "meta.json"
-            meta = dict(self._memory._runs.get(report.run_id, {}))
+            meta: dict[str, Any] = dict(self._memory._runs.get(report.run_id, {}))
             if not meta:
                 meta = {
                     "run_id": report.run_id,

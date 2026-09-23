@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from pathlib import Path
-from typing import Any
+from typing import Any, cast
 
 import typer
 
@@ -18,6 +18,7 @@ from etlantic.interchange.diff import (
     diff_transformations,
 )
 from etlantic.orchestration.compile import OrchestrationCompilationError, compile_plan
+from etlantic.plan.model import PipelinePlan
 from etlantic.plan.planner import plan_pipeline_with_report
 from etlantic.registry import PlanningContext
 
@@ -97,7 +98,7 @@ def register_compile_commands(app: typer.Typer, context_factory: Any) -> None:
             raise typer.Exit(ec.PLANNING_FAILURE)
         try:
             artifact = compile_plan(
-                plan,
+                cast(PipelinePlan, plan),
                 target=orch_target,
                 profile=resolved,
                 allow_adhoc_profile=allow_adhoc_profile,
@@ -336,7 +337,7 @@ def register_compile_commands(app: typer.Typer, context_factory: Any) -> None:
             resolved_kind = kind
 
         if resolved_kind == "data":
-            report = diff_data_contracts(prev_obj, curr_obj)
+            report = diff_data_contracts(cast(Any, prev_obj), cast(Any, curr_obj))
         elif resolved_kind == "transformation":
             report = diff_transformations(prev_obj, curr_obj)
         else:

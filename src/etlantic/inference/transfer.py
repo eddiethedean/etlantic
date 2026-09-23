@@ -25,6 +25,13 @@ def _merge(left: str, right: str) -> str:
     return "unknown"
 
 
+def _sequence(value: Any) -> list[Any]:
+    """Return only JSON-array-like values from untrusted action parameters."""
+    if isinstance(value, (list, tuple)):
+        return list(value)
+    return []
+
+
 def _expression_refs(node: Any) -> tuple[str, ...]:
     """Collect field references without evaluating the expression."""
     if not isinstance(node, Mapping):
@@ -298,12 +305,12 @@ def forward_schema(
         if name in {"dtcs:filter", "dtcs:sort", "dtcs:limit", "dtcs:distinct"}:
             for entry in lineage.values():
                 entry["operations"] = [
-                    *entry.get("operations", ()),
+                    *_sequence(entry.get("operations")),
                     {"operation": name},
                 ]
             continue
         if name == "dtcs:drop_fields":
-            drop = set(params.get("fields", ()))
+            drop = set(_sequence(params.get("fields")))
             fields = [field for field in fields if field.name not in drop]
             lineage = {
                 field_name: entry
@@ -312,6 +319,8 @@ def forward_schema(
             }
         elif name == "dtcs:rename_fields":
             mapping = params.get("mapping", {})
+            if not isinstance(mapping, Mapping):
+                mapping = {}
             renamed: list[NormalizedField] = []
             next_lineage: dict[str, dict[str, Any]] = {}
             for field in fields:
@@ -319,7 +328,7 @@ def forward_schema(
                 entry = dict(lineage.get(field.name, {}))
                 entry["field"] = output_name
                 entry["operations"] = [
-                    *entry.get("operations", ()),
+                    *_sequence(entry.get("operations")),
                     {"operation": "rename", "from": field.name, "to": output_name},
                 ]
                 if output_name in next_lineage:
@@ -348,7 +357,7 @@ def forward_schema(
         elif name == "dtcs:project":
             projected: list[NormalizedField] = []
             next_lineage: dict[str, dict[str, Any]] = {}
-            for item in params.get("fields", ()):
+            for item in _sequence(params.get("fields")):
                 if isinstance(item, str):
                     source = next(
                         (field for field in fields if field.name == item), None
@@ -357,7 +366,7 @@ def forward_schema(
                         entry = dict(lineage.get(source.name, {}))
                         entry["field"] = item
                         entry["operations"] = [
-                            *entry.get("operations", ()),
+                            *_sequence(entry.get("operations")),
                             {"operation": "project", "field": item},
                         ]
                         next_lineage[item] = entry
@@ -543,13 +552,13 @@ def forward_schema(
         "version": 1,
         "fields": {
             name: {
-                "source_nodes": list(entry.get("source_nodes", ()))
+                "source_nodes": _sequence(entry.get("source_nodes"))
                 or ([entry.get("source_node")] if entry.get("source_node") else []),
-                "source_fields": list(entry.get("source_fields", ())),
-                "qualified_source_fields": list(
-                    entry.get("qualified_source_fields", ())
+                "source_fields": _sequence(entry.get("source_fields")),
+                "qualified_source_fields": _sequence(
+                    entry.get("qualified_source_fields")
                 ),
-                "operations": list(entry.get("operations", ())),
+                "operations": _sequence(entry.get("operations")),
                 "invertible": bool(entry.get("invertible", False)),
             }
             for name, entry in lineage.items()

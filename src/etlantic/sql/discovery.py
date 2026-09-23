@@ -12,7 +12,7 @@ from etlantic.sql.protocol import SqlPlugin
 SQL_PLUGIN_ENTRY_POINT = "etlantic.sql_plugins"
 
 
-def _fail_closed_loaded(result):
+def _fail_closed_loaded(result: Any) -> Any:
     from etlantic.plugin_trust import loaded_plugins_after_trust
 
     return loaded_plugins_after_trust(result)

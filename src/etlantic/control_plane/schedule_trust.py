@@ -5,6 +5,7 @@ from __future__ import annotations
 from collections.abc import Mapping
 
 from etlantic.control_plane.schedule_diagnostics import res_diagnostic, svc_diagnostic
+from etlantic.diagnostics import Diagnostic
 from etlantic.plugin_trust import is_production_profile
 from etlantic.profile import Profile, resolve_profile
 
@@ -15,7 +16,7 @@ def resource_provider_allowed(
     *,
     version: str | None = None,
     selected: bool = True,
-) -> tuple[bool, object | None]:
+) -> tuple[bool, Diagnostic | None]:
     """Return whether ``package_name`` may load as a resource provider.
 
     Production requires a non-empty ``resource_provider_allowlist`` entry with a

@@ -8,6 +8,8 @@ paths, or executable objects.
 
 from __future__ import annotations
 
+# Optional DuckDB plugin exports are dynamic entry-point surfaces.
+# pyright: reportAttributeAccessIssue=false
 import argparse
 import hashlib
 import json

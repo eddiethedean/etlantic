@@ -12,6 +12,7 @@ from __future__ import annotations
 import csv
 import json
 from pathlib import Path
+from typing import Any
 
 from etlantic import (
     Data,
@@ -38,7 +39,7 @@ class Normalize(Transformation):
 
 
 @Normalize.portable
-def normalize(rows):
+def normalize(rows: Any) -> Any:
     return rows
 
 

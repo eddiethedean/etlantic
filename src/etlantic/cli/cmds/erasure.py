@@ -218,7 +218,7 @@ def register_erasure_commands(app: typer.Typer) -> None:
             plan = store.plan(ctx, request_id=req.request_id, providers=providers)
         except Exception as exc:
             typer.echo(str(exc), err=True)
-            raise typer.Exit(ec.VALIDATION_FAILED) from exc
+            raise typer.Exit(ec.INVALID_MODEL) from exc
         # Reload request (status may have advanced to planned/blocked).
         req = store.get_request(ctx, request_id=req.request_id)
         if store_path is not None:
@@ -235,7 +235,7 @@ def register_erasure_commands(app: typer.Typer) -> None:
         else:
             typer.echo(json.dumps(payload, indent=2, sort_keys=True))
         if req.status == "blocked":
-            raise typer.Exit(ec.VALIDATION_FAILED)
+            raise typer.Exit(ec.INVALID_MODEL)
 
     @erasure_app.command("status")
     def erasure_status_cmd(
@@ -262,7 +262,7 @@ def register_erasure_commands(app: typer.Typer) -> None:
             req = store.get_request(ctx, request_id=request_id)
         except Exception as exc:
             typer.echo(str(exc), err=True)
-            raise typer.Exit(ec.VALIDATION_FAILED) from exc
+            raise typer.Exit(ec.INVALID_MODEL) from exc
         if fmt != "json":
             typer.echo(f"{req.request_id} status={req.status} hold={req.legal_hold}")
         else:

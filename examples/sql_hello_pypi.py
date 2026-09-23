@@ -6,6 +6,8 @@ Requires ``etlantic-sql``. Uses ``ETLANTIC_SQL_URL`` (defaults to in-memory SQLi
 
 from __future__ import annotations
 
+# Optional SQL plugin exports are dynamic entry-point surfaces.
+# pyright: reportAttributeAccessIssue=false
 import os
 
 from sqlalchemy import text

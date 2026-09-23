@@ -217,7 +217,7 @@ def _schema_from_provider_result(
         fields = getattr(result, "fields", None)
         if fields is None and isinstance(getattr(result, "names", None), (list, tuple)):
             try:
-                fields = tuple(cast(Any, result))
+                fields = tuple(result)
             except TypeError:
                 fields = None
     if fields is None:

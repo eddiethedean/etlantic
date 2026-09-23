@@ -12,7 +12,7 @@ from etlantic.registry import PluginDescriptor, RegistryBundle
 ORCHESTRATOR_PLUGIN_ENTRY_POINT = "etlantic.orchestrator_plugins"
 
 
-def _fail_closed_loaded(result):
+def _fail_closed_loaded(result: Any) -> Any:
     from etlantic.plugin_trust import loaded_plugins_after_trust
 
     return loaded_plugins_after_trust(result)

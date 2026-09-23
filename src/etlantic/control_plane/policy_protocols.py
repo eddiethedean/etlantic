@@ -21,6 +21,7 @@ class PolicyProvider(Protocol):
         self, ctx: ControlPlaneContext, *, bundle_id: str | None = None
     ) -> PolicyBundle:
         """Return the active (or named) policy bundle for the scope."""
+        ...
 
     def decide(
         self,
@@ -34,6 +35,7 @@ class PolicyProvider(Protocol):
         bundle_id: str | None = None,
     ) -> PolicyDecision:
         """Produce an explicit decision for ``hook``."""
+        ...
 
     def require_available(self, ctx: ControlPlaneContext) -> None:
         """Fail closed when the provider cannot serve protected operations."""

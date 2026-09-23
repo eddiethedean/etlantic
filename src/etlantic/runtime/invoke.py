@@ -13,7 +13,8 @@ async def maybe_await(func: Callable[..., Any], *args: Any, **kwargs: Any) -> An
     """Invoke ``func``, awaiting if it returns an awaitable / is async."""
     if inspect.iscoroutinefunction(func):
         return await func(*args, **kwargs)
-    result = await anyio.to_thread.run_sync(lambda: func(*args, **kwargs))
+    to_thread: Any = anyio.to_thread
+    result = await to_thread.run_sync(lambda: func(*args, **kwargs))
     if inspect.isawaitable(result):
         return await result
     return result

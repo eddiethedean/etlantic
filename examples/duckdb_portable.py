@@ -1,5 +1,8 @@
 """Small runnable smoke example for the qualified DuckDB 0.49 surface."""
 
+# Optional DuckDB plugin exports are dynamic entry-point surfaces.
+# pyright: reportAttributeAccessIssue=false
+
 from etlantic_duckdb import create_plugin
 
 from etlantic.sql.protocol import RelationRef, SqlExecutionContext

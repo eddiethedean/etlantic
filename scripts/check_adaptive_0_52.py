@@ -3,6 +3,8 @@
 
 from __future__ import annotations
 
+# This historical checker validates untyped wire payloads.
+# pyright: reportMissingTypeArgument=false, reportOptionalMemberAccess=false
 import argparse
 import ast
 import hashlib

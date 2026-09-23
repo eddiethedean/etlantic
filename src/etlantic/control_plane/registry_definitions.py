@@ -13,7 +13,7 @@ import uuid
 from collections.abc import Mapping, Sequence
 from copy import deepcopy
 from dataclasses import dataclass
-from typing import Any
+from typing import Any, cast
 
 from etlantic.control_plane.errors import ControlPlaneError
 from etlantic.control_plane.models import ControlPlaneContext
@@ -64,7 +64,9 @@ class RegistryDefinitionRepository:
     def list(self, ctx: ControlPlaneContext) -> Sequence[str]:
         list_logical = getattr(self.registry.revisions, "list_logical", None)
         if callable(list_logical):
-            identities = list_logical(ctx, kind=DEFINITION_KIND)
+            identities = cast(
+                Sequence[LogicalIdentity], list_logical(ctx, kind=DEFINITION_KIND)
+            )
             return sorted(i.logical_id for i in identities)
         # Fallback: probe known put path is unavailable without list_logical.
         return ()

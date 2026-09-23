@@ -79,7 +79,7 @@ class MemoryObjectiveStore:
         self._evaluations: dict[tuple[str, str, str], ObjectiveEvaluation] = {}
         self._by_objective: dict[tuple[str, str, str], list[str]] = {}
         self._notifications: dict[tuple[str, str, str], ObjectiveNotification] = {}
-        self._dedupe: set[tuple[str, str, str, str]] = set()
+        self._dedupe: set[tuple[str, str, str]] = set()
         self._lock = threading.RLock()
 
     def upsert_objective(

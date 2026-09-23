@@ -2,7 +2,8 @@
 
 from __future__ import annotations
 
-from collections.abc import AsyncIterator, Mapping
+from collections.abc import Mapping
+from contextlib import AbstractAsyncContextManager
 from dataclasses import dataclass, field
 from typing import Any, Protocol, runtime_checkable
 
@@ -86,4 +87,6 @@ class SecretProvider(Protocol):
         context: SecretResolutionContext,
     ) -> SecretValue: ...
 
-    async def lifespan(self, context: ProviderContext) -> AsyncIterator[None]: ...
+    def lifespan(
+        self, context: ProviderContext
+    ) -> AbstractAsyncContextManager[None]: ...

@@ -5,8 +5,10 @@ from __future__ import annotations
 import json
 import sys
 import time
+from collections.abc import Callable
 from dataclasses import dataclass
 from pathlib import Path
+from typing import Any
 
 ROOT = Path(__file__).resolve().parents[2]
 if str(ROOT) not in sys.path:
@@ -25,7 +27,7 @@ class ScenarioResult:
     iterations: int
 
 
-def _median_seconds(fn, *, iterations: int = 5) -> float:
+def _median_seconds(fn: Callable[[], Any], *, iterations: int = 5) -> float:
     samples = []
     for _ in range(iterations):
         started = time.perf_counter()
