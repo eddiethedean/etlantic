@@ -434,6 +434,7 @@ def forward_schema(
         elif name == "dtcs:with_fields":
             current = {field.name: field for field in fields}
             next_lineage = dict(lineage)
+            assigned_names: set[str] = set()
             for item in params.get("assignments", ()):
                 if not isinstance(item, Mapping):
                     continue
@@ -446,16 +447,19 @@ def forward_schema(
                 current[field_name] = NormalizedField(
                     field_name, logical, not nullable, nullable, {"inferred": True}
                 )
-                if field_name in next_lineage:
+                if field_name in assigned_names or (
+                    field_name in next_lineage and field_name not in lineage
+                ):
                     transfer_diagnostics.append(
                         Diagnostic(
                             "INFER_LINEAGE_COLLISION",
                             Severity.ERROR,
-                            f"Assignment overwrites field {field_name!r}",
+                            f"Assignments produce duplicate field {field_name!r}",
                             path=(field_name,),
                             phase="inference",
                         )
                     )
+                assigned_names.add(field_name)
                 next_lineage[field_name] = _lineage_expression(
                     item.get("expression", {}), lineage, "with_fields"
                 )
@@ -569,9 +573,21 @@ def forward_schema(
         metadata["inference_diagnostics"] = [
             diagnostic.to_dict() for diagnostic in bounded_diagnostics
         ]
+    schema_field_order = getattr(frame, "schema_fields", None)
+    if isinstance(schema_field_order, (list, tuple)):
+        by_name = {field.name: field for field in fields}
+        ordered_names = [
+            str(name) for name in schema_field_order if str(name) in by_name
+        ]
+        ordered_fields = [by_name[name] for name in ordered_names]
+        present = set(ordered_names)
+        ordered_fields.extend(field for field in fields if field.name not in present)
+        fields = ordered_fields
+    else:
+        fields = sorted(fields, key=lambda field: field.name)
     return NormalizedSchema(
         input_schema.identity,
-        tuple(sorted(fields, key=lambda field: field.name)),
+        tuple(fields),
         metadata,
     )
 
