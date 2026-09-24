@@ -303,7 +303,26 @@ def forward_schema(
     for action in getattr(frame, "actions", ()):
         name = action.action
         params = action.parameters
-        if name in {"dtcs:filter", "dtcs:sort", "dtcs:limit", "dtcs:distinct"}:
+        if name == "dtcs:filter":
+            available_fields = {field.name for field in fields}
+            for field_name in _expression_refs(params.get("predicate", {})):
+                if field_name not in available_fields:
+                    transfer_diagnostics.append(
+                        Diagnostic(
+                            "INFER_LINEAGE_MISSING",
+                            Severity.ERROR,
+                            f"Filter predicate references missing field {field_name!r}",
+                            path=(field_name,),
+                            phase="inference",
+                        )
+                    )
+            for entry in lineage.values():
+                entry["operations"] = [
+                    *_sequence(entry.get("operations")),
+                    {"operation": name},
+                ]
+            continue
+        if name in {"dtcs:sort", "dtcs:limit", "dtcs:distinct"}:
             for entry in lineage.values():
                 entry["operations"] = [
                     *_sequence(entry.get("operations")),
