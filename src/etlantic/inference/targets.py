@@ -1965,20 +1965,7 @@ def infer_records_for_target(
             ),
             observation.metadata,
         )
-    result = _backfill_observation(source, observation)
-    if retain_rows:
-        return result
-    return InferenceResult(
-        result.schema,
-        result.diagnostics,
-        result.evidence,
-        {**result.provenance, "retained_rows": False},
-        (),
-        result.replay,
-        result.observed_schema,
-        result.target_hypothesis,
-        result.target_observation,
-    )
+    return _backfill_observation(source, observation, retain_rows=retain_rows)
 
 
 async def infer_records_for_target_async(
@@ -2071,20 +2058,7 @@ async def infer_records_for_target_async(
             ),
             observation.metadata,
         )
-    result = _backfill_observation(source, observation)
-    if retain_rows:
-        return result
-    return InferenceResult(
-        result.schema,
-        result.diagnostics,
-        result.evidence,
-        {**result.provenance, "retained_rows": False},
-        (),
-        result.replay,
-        result.observed_schema,
-        result.target_hypothesis,
-        result.target_observation,
-    )
+    return _backfill_observation(source, observation, retain_rows=retain_rows)
 
 
 @dataclass(frozen=True, slots=True)
@@ -2191,7 +2165,10 @@ def _convert_target_row(
 
 
 def _backfill_observation(
-    source: InferenceResult, observation: TargetObservation
+    source: InferenceResult,
+    observation: TargetObservation,
+    *,
+    retain_rows: bool = True,
 ) -> InferenceResult:
     if observation.exists != "present":
         state = observation.exists
@@ -2217,8 +2194,9 @@ def _backfill_observation(
                 **source.provenance,
                 "target_exists": state,
                 "target_validation": "not_performed",
+                "retained_rows": bool(retain_rows),
             },
-            source.rows,
+            source.rows if retain_rows else (),
             source.replay,
             source.observed_schema,
             source.target_hypothesis,
@@ -2240,8 +2218,9 @@ def _backfill_observation(
                 **source.provenance,
                 "target_exists": observation.exists,
                 "target_validation": "stale",
+                "retained_rows": bool(retain_rows),
             },
-            source.rows,
+            source.rows if retain_rows else (),
             source.replay,
             source.observed_schema,
             source.target_hypothesis,
@@ -2260,8 +2239,9 @@ def _backfill_observation(
                 **source.provenance,
                 "target_exists": observation.exists,
                 "target_validation": "failed",
+                "retained_rows": bool(retain_rows),
             },
-            source.rows,
+            source.rows if retain_rows else (),
             source.replay,
             source.observed_schema,
             source.target_hypothesis,
@@ -2276,8 +2256,9 @@ def _backfill_observation(
                 **source.provenance,
                 "target_exists": observation.exists,
                 "target_validation": "not_performed",
+                "retained_rows": bool(retain_rows),
             },
-            source.rows,
+            source.rows if retain_rows else (),
             source.replay,
             source.observed_schema,
             source.target_hypothesis,
@@ -2412,6 +2393,7 @@ def _backfill_observation(
         "target_exists": observation.exists,
         "target_validation": validation_state,
         "target_validation_fields": sorted(cast_fields),
+        "retained_rows": bool(retain_rows),
     }
     if replay_lifecycle is not None:
         replay_status: dict[str, Any] = {
@@ -2434,7 +2416,7 @@ def _backfill_observation(
         diagnostics,
         source.evidence,
         provenance,
-        tuple(rows),
+        tuple(rows) if retain_rows else (),
         replay,
         source.observed_schema or source.schema,
         resolved_schema,

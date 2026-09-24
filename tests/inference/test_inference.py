@@ -356,6 +356,50 @@ def test_target_backfill_marks_unvalidated_replay_and_fails_lazily() -> None:
         dataset.replay.take()
 
 
+def test_nonretained_target_replay_failure_updates_public_result() -> None:
+    target = normalize_schema_from_fields(
+        [{"name": "id", "logical_type": "integer"}], identity="target"
+    )
+    result = etl.infer_records_for_target(
+        ({"id": value} for value in ("1", "bad")),
+        target,
+        limits=InferenceLimits(max_rows=1),
+        retain_rows=False,
+    )
+    assert result.rows == ()
+    assert result.provenance["target_validation"] == "prefix_only"
+    with pytest.raises(etl.InferenceReplayError) as error:
+        list(result.replay.take())
+    assert error.value.row_index == 1
+    assert result.provenance["target_validation"] == "failed"
+    assert result.provenance["replay_status"]["state"] == "failed"
+    assert "INFER_RUNTIME_CONVERSION" in {d.code for d in result.diagnostics}
+
+
+def test_async_nonretained_target_replay_failure_updates_public_result() -> None:
+    target = normalize_schema_from_fields(
+        [{"name": "id", "logical_type": "integer"}], identity="target"
+    )
+
+    async def run() -> etl.InferenceResult:
+        return await etl.infer_records_for_target_async(
+            ({"id": value} for value in ("1", "bad")),
+            target,
+            limits=InferenceLimits(max_rows=1),
+            retain_rows=False,
+        )
+
+    result = asyncio.run(run())
+    assert result.rows == ()
+    assert result.provenance["target_validation"] == "prefix_only"
+    with pytest.raises(etl.InferenceReplayError) as error:
+        list(result.replay.take())
+    assert error.value.row_index == 1
+    assert result.provenance["target_validation"] == "failed"
+    assert result.provenance["replay_status"]["state"] == "failed"
+    assert "INFER_RUNTIME_CONVERSION" in {d.code for d in result.diagnostics}
+
+
 def test_target_backfill_marks_replay_complete_after_valid_remainder() -> None:
     target = normalize_schema_from_fields(
         [{"name": "id", "logical_type": "integer"}], identity="target"
