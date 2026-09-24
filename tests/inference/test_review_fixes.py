@@ -2726,3 +2726,124 @@ def test_nested_filter_call_references_are_diagnosed() -> None:
     dataset = etl.from_records([{"id": 1}]).filter(col("missing").isNull())
 
     assert "INFER_LINEAGE_MISSING" in {item.code for item in dataset.diagnostics}
+
+
+def test_arbitrary_record_values_remain_unknown_and_wire_safe() -> None:
+    class ProviderValue:
+        def __repr__(self) -> str:
+            return "ProviderValue(secret=source-value)"
+
+    result = infer_records(
+        [{"payload": ProviderValue()}], identity="provider-values", retain_rows=True
+    )
+
+    assert result.schema.fields[0].logical_type == "unknown"
+    assert "INFER_UNKNOWN_TYPE" in {item.code for item in result.diagnostics}
+    serialized = json.dumps(result.to_observation().to_dict(), sort_keys=True)
+    assert "source-value" not in serialized
+    assert "object at" not in serialized
+    assert result.rows[0]["payload"] is not None
+
+
+@pytest.mark.parametrize(
+    "rows",
+    [
+        [{"optional": None}, {"optional": None}],
+        [{"other": 1}, {"optional": None}],
+    ],
+)
+def test_null_and_missing_record_evidence_stays_unknown(
+    rows: list[dict[str, object]],
+) -> None:
+    result = infer_records(rows, identity="uncertain-values")
+
+    field = next(field for field in result.schema.fields if field.name == "optional")
+    assert field.logical_type == "unknown"
+    assert field.required is False
+    assert field.nullable is True
+    assert "INFER_UNKNOWN_TYPE" in {item.code for item in result.diagnostics}
+
+
+def test_explicit_hints_resolve_unknown_record_evidence() -> None:
+    class ProviderValue:
+        pass
+
+    result = infer_records(
+        [{"optional": None}, {"optional": ProviderValue()}],
+        hints={"optional": "object"},
+        identity="hinted-values",
+    )
+
+    assert result.schema.fields[0].logical_type == "object"
+    assert "INFER_UNKNOWN_TYPE" not in {item.code for item in result.diagnostics}
+
+
+def test_approved_provider_value_names_normalize_without_optional_imports() -> None:
+    NumpyInt64 = type("int64", (), {"__module__": "numpy"})
+    PandasTimestamp = type("Timestamp", (), {"__module__": "pandas"})
+    result = infer_records(
+        [{"count": NumpyInt64(), "created_at": PandasTimestamp()}],
+        identity="provider-scalars",
+    )
+
+    fields = {field.name: field.logical_type for field in result.schema.fields}
+    assert fields == {"count": "integer", "created_at": "datetime"}
+    assert not result.diagnostics
+
+
+def test_unknown_values_do_not_promote_to_string_or_stringify_preview() -> None:
+    class ProviderValue:
+        pass
+
+    result = infer_records(
+        [{"payload": ProviderValue()}, {"payload": "text"}],
+        identity="mixed-unsupported",
+        retain_rows=True,
+    )
+
+    assert result.schema.fields[0].logical_type == "unknown"
+    assert result.rows[0]["payload"].__class__ is ProviderValue
+    assert result.rows[1]["payload"] == "text"
+    assert "INFER_UNKNOWN_TYPE" in {item.code for item in result.diagnostics}
+    assert "INFER_MIXED_TYPE" in {item.code for item in result.diagnostics}
+
+
+def test_header_only_csv_fields_are_unknown_and_diagnosed(tmp_path: Path) -> None:
+    path = tmp_path / "header-only.csv"
+    path.write_text("id,name\n", encoding="utf-8")
+
+    result = etl.infer_csv(path)
+
+    assert [field.logical_type for field in result.schema.fields] == [
+        "unknown",
+        "unknown",
+    ]
+    assert {
+        diagnostic.path[0]
+        for diagnostic in result.diagnostics
+        if diagnostic.code == "INFER_UNKNOWN_TYPE"
+    } == {"id", "name"}
+
+
+def test_header_only_csv_hints_resolve_missing_field_types(tmp_path: Path) -> None:
+    path = tmp_path / "hinted-header.csv"
+    path.write_text("id,name\n", encoding="utf-8")
+
+    result = etl.infer_csv(path, hints={"id": "integer"})
+
+    fields = {field.name: field for field in result.schema.fields}
+    assert fields["id"].logical_type == "integer"
+    assert fields["name"].logical_type == "unknown"
+    assert result.diagnostics[-1].path == ("name",)
+
+
+def test_unknown_source_type_cannot_prove_target_compatibility() -> None:
+    source = NormalizedSchema("source", (NormalizedField("payload", "unknown"),))
+    target = NormalizedSchema("target", (NormalizedField("payload", "string"),))
+
+    compatibility = check_write_compatibility(source, target)
+
+    assert compatibility.compatible is False
+    assert "INFER_WRITE_INCOMPATIBLE" in {
+        diagnostic.code for diagnostic in compatibility.diagnostics
+    }

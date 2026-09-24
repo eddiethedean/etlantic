@@ -5,7 +5,7 @@
   "passed_scenarios": 6,
   "planner_version": "0.52",
   "public_schema": "etlantic.plan/2",
-  "repository_revision": "sha256:4e25c722c8b2bcbf4429cfc18c429e414984f9e6abd5f2d86da3b8b970d0877f",
+  "repository_revision": "sha256:375ad3471e567af679fe35caf73eec548155a17a2396df7fa797fe55611c35c0",
   "result": "pass",
   "scenario_count": 6,
   "scenarios": [

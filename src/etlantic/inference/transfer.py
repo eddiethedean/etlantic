@@ -15,6 +15,8 @@ from etlantic.schema_drift import NormalizedField, NormalizedSchema, json_safe_m
 def _merge(left: str, right: str) -> str:
     if left == right:
         return left
+    if "unknown" in {left, right}:
+        return "unknown"
     if {left, right} <= {"integer", "number"}:
         return "number"
     if {left, right} <= {"integer", "decimal"}:

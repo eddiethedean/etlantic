@@ -617,13 +617,18 @@ def _canonicalize_logical_type(name: str) -> str:
     name = name.removesuffix("type()").removesuffix("type")
     aliases = {
         "int": "integer",
+        "int_": "integer",
         "integer": "integer",
+        "uint": "integer",
+        "uint_": "integer",
         "str": "string",
+        "str_": "string",
         "string": "string",
         "varchar": "string",
         "char": "string",
         "text": "string",
         "bool": "boolean",
+        "bool_": "boolean",
         "boolean": "boolean",
         "tinyint": "integer",
         "smallint": "integer",
@@ -638,6 +643,7 @@ def _canonicalize_logical_type(name: str) -> str:
         "uint32": "integer",
         "uint64": "integer",
         "float": "number",
+        "float_": "number",
         "number": "number",
         "real": "number",
         "float16": "number",
@@ -653,9 +659,20 @@ def _canonicalize_logical_type(name: str) -> str:
         "date": "date",
         "null": "null",
         "none": "null",
+        "na": "null",
+        "nat": "null",
+        "nulltype": "null",
+        "nonetype": "null",
+        "bytes": "binary",
+        "bytes_": "binary",
+        "bytearray": "binary",
+        "memoryview": "binary",
+        "binary": "binary",
         "dict": "object",
         "object": "object",
         "mapping": "object",
+        "map": "object",
+        "struct": "object",
         "list": "array",
         "tuple": "array",
         "array": "array",
@@ -698,6 +715,10 @@ def normalize_logical_type(value: Any, *, preserve_decimal: bool = False) -> str
             )
     raw = raw.replace("typing.", "").strip().lower()
     raw = raw.rsplit(".", 1)[-1]
+    # Scalar and dtype wrappers are provider implementation details around the
+    # same logical value. Strip only these known suffixes; arbitrary class
+    # names still fall through as unknown rather than becoming strings.
+    raw = raw.removesuffix("scalar").removesuffix("dtype")
     # Provider-qualified spellings such as ``int64[pyarrow]`` and
     # ``timestamp[us, tz=UTC]`` carry physical parameters that do not change
     # the logical inference type.  Normalize the common primitive prefix
