@@ -13,6 +13,7 @@ import stat as _stat
 from collections import OrderedDict
 from collections.abc import Callable, Mapping
 from contextlib import suppress
+from dataclasses import dataclass
 from decimal import Decimal, DecimalException
 from pathlib import Path
 from threading import Lock
@@ -33,9 +34,11 @@ from .types import (
     TARGET_EXISTENCE_STATES,
     FieldConstraint,
     InferenceLimits,
+    InferenceReplayError,
     InferenceResult,
     TargetObservation,
     WriteCompatibility,
+    _ReplayLifecycle,
 )
 
 _LOSSLESS_CASTS = {
@@ -1962,20 +1965,7 @@ def infer_records_for_target(
             ),
             observation.metadata,
         )
-    result = _backfill_observation(source, observation)
-    if retain_rows:
-        return result
-    return InferenceResult(
-        result.schema,
-        result.diagnostics,
-        result.evidence,
-        {**result.provenance, "retained_rows": False},
-        (),
-        result.replay,
-        result.observed_schema,
-        result.target_hypothesis,
-        result.target_observation,
-    )
+    return _backfill_observation(source, observation, retain_rows=retain_rows)
 
 
 async def infer_records_for_target_async(
@@ -2068,24 +2058,117 @@ async def infer_records_for_target_async(
             ),
             observation.metadata,
         )
-    result = _backfill_observation(source, observation)
-    if retain_rows:
-        return result
-    return InferenceResult(
-        result.schema,
-        result.diagnostics,
-        result.evidence,
-        {**result.provenance, "retained_rows": False},
-        (),
-        result.replay,
-        result.observed_schema,
-        result.target_hypothesis,
-        result.target_observation,
+    return _backfill_observation(source, observation, retain_rows=retain_rows)
+
+
+@dataclass(frozen=True, slots=True)
+class _TargetConversionOutcome:
+    """Row conversion result shared by prefix validation and replay."""
+
+    row: Any
+    diagnostics: tuple[Diagnostic, ...] = ()
+    failed_fields: frozenset[str] = frozenset()
+
+
+def _target_conversion_diagnostic(
+    *,
+    field_name: str,
+    source_type: str,
+    target_type: str,
+    target_identity: str | None,
+    target_revision: str | None,
+    row_index: int,
+    unsafe: bool,
+) -> Diagnostic:
+    return Diagnostic(
+        "INFER_RUNTIME_CONVERSION",
+        Severity.ERROR,
+        (
+            f"Field {field_name!r} cannot be safely converted to {target_type!r}"
+            if unsafe
+            else f"Field {field_name!r} could not be converted to {target_type!r}"
+        ),
+        path=(field_name,),
+        metadata={
+            "source_logical_type": source_type,
+            "target_logical_type": target_type,
+            "target_identity": target_identity,
+            "target_revision": target_revision,
+            "row_index": row_index,
+        },
+        phase="inference",
+    )
+
+
+def _convert_target_row(
+    row: Any,
+    *,
+    source_fields: Mapping[str, NormalizedField],
+    target_fields: Mapping[str, NormalizedField],
+    target_identity: str | None,
+    target_revision: str | None,
+    row_index: int,
+) -> _TargetConversionOutcome:
+    """Apply the target cast policy without retaining any source values."""
+    if not isinstance(row, Mapping):
+        return _TargetConversionOutcome(row)
+
+    converted = dict(row)
+    diagnostics: list[Diagnostic] = []
+    failed_fields: set[str] = set()
+    for name, value in list(converted.items()):
+        source_field = source_fields.get(name)
+        target_field = target_fields.get(name)
+        if (
+            source_field is None
+            or target_field is None
+            or value is None
+            or source_field.logical_type == target_field.logical_type
+        ):
+            continue
+        source_type = source_field.logical_type
+        target_type = target_field.logical_type
+        if (source_type, target_type) not in _LOSSLESS_CASTS:
+            failed_fields.add(name)
+            diagnostics.append(
+                _target_conversion_diagnostic(
+                    field_name=name,
+                    source_type=source_type,
+                    target_type=target_type,
+                    target_identity=target_identity,
+                    target_revision=target_revision,
+                    row_index=row_index,
+                    unsafe=True,
+                )
+            )
+            continue
+        try:
+            converted[name] = _coerce_value(value, target_type)
+        except (TypeError, ValueError, OverflowError, DecimalException):
+            failed_fields.add(name)
+            diagnostics.append(
+                _target_conversion_diagnostic(
+                    field_name=name,
+                    source_type=source_type,
+                    target_type=target_type,
+                    target_identity=target_identity,
+                    target_revision=target_revision,
+                    row_index=row_index,
+                    unsafe=False,
+                )
+            )
+    return _TargetConversionOutcome(
+        converted,
+        tuple(diagnostics),
+        frozenset(failed_fields),
     )
 
 
 def _backfill_observation(
-    source: InferenceResult, observation: TargetObservation
+    source: InferenceResult,
+    observation: TargetObservation,
+    *,
+    retain_rows: bool = True,
 ) -> InferenceResult:
     if observation.exists != "present":
         state = observation.exists
@@ -2111,58 +2194,9 @@ def _backfill_observation(
                 **source.provenance,
                 "target_exists": state,
                 "target_validation": "not_performed",
+                "retained_rows": bool(retain_rows),
             },
-            source.rows,
-            source.replay,
-            source.observed_schema,
-            source.target_hypothesis,
-            observation,
-        )
-    # Any target-side diagnostic means the target state is not qualified for
-    # constraint propagation.  A warning is still a provider assertion that
-    # the inspected schema may be incomplete or stale, so accepting it would
-    # turn partial target evidence into a durable source fact.
-    if observation.diagnostics:
-        return InferenceResult(
-            source.schema,
-            tuple(source.diagnostics) + tuple(observation.diagnostics),
-            source.evidence,
-            {
-                **source.provenance,
-                "target_exists": observation.exists,
-                "target_validation": "failed",
-            },
-            source.rows,
-            source.replay,
-            source.observed_schema,
-            source.target_hypothesis,
-            observation,
-        )
-    inspection_errors = tuple(
-        diagnostic
-        for diagnostic in observation.diagnostics
-        if getattr(
-            getattr(diagnostic, "severity", None),
-            "value",
-            getattr(diagnostic, "severity", None),
-        )
-        == Severity.ERROR.value
-        or (
-            isinstance(diagnostic, Mapping)
-            and str(diagnostic.get("severity", "")).lower() == "error"
-        )
-    )
-    if inspection_errors:
-        return InferenceResult(
-            source.schema,
-            tuple(source.diagnostics) + tuple(observation.diagnostics),
-            source.evidence,
-            {
-                **source.provenance,
-                "target_exists": observation.exists,
-                "target_validation": "failed",
-            },
-            source.rows,
+            source.rows if retain_rows else (),
             source.replay,
             source.observed_schema,
             source.target_hypothesis,
@@ -2184,8 +2218,30 @@ def _backfill_observation(
                 **source.provenance,
                 "target_exists": observation.exists,
                 "target_validation": "stale",
+                "retained_rows": bool(retain_rows),
             },
-            source.rows,
+            source.rows if retain_rows else (),
+            source.replay,
+            source.observed_schema,
+            source.target_hypothesis,
+            observation,
+        )
+    # Any target-side diagnostic means the target state is not qualified for
+    # constraint propagation.  A warning is still a provider assertion that
+    # the inspected schema may be incomplete or stale, so accepting it would
+    # turn partial target evidence into a durable source fact.
+    if observation.diagnostics:
+        return InferenceResult(
+            source.schema,
+            tuple(source.diagnostics) + tuple(observation.diagnostics),
+            source.evidence,
+            {
+                **source.provenance,
+                "target_exists": observation.exists,
+                "target_validation": "failed",
+                "retained_rows": bool(retain_rows),
+            },
+            source.rows if retain_rows else (),
             source.replay,
             source.observed_schema,
             source.target_hypothesis,
@@ -2200,8 +2256,9 @@ def _backfill_observation(
                 **source.provenance,
                 "target_exists": observation.exists,
                 "target_validation": "not_performed",
+                "retained_rows": bool(retain_rows),
             },
-            source.rows,
+            source.rows if retain_rows else (),
             source.replay,
             source.observed_schema,
             source.target_hypothesis,
@@ -2211,45 +2268,24 @@ def _backfill_observation(
     rows = list(source.rows)
     runtime_diagnostics: list[Diagnostic] = []
     failed_fields: set[str] = set()
+    source_fields = {field.name: field for field in source.schema.fields}
+    target_fields = {field.name: field for field in observation.schema.fields}
+    target_identity = observation.identity
+    target_revision = observation.revision
     if rows:
-        source_fields = {field.name: field for field in source.schema.fields}
-        target_fields = {field.name: field for field in observation.schema.fields}
-        for row in rows:
-            for name, value in list(row.items()):
-                source_field = source_fields.get(name)
-                target_field = target_fields.get(name)
-                if source_field is None or target_field is None or value is None:
-                    continue
-                if source_field.logical_type == target_field.logical_type:
-                    continue
-                if (
-                    source_field.logical_type,
-                    target_field.logical_type,
-                ) not in _LOSSLESS_CASTS:
-                    failed_fields.add(name)
-                    runtime_diagnostics.append(
-                        Diagnostic(
-                            "INFER_RUNTIME_CONVERSION",
-                            Severity.ERROR,
-                            f"Field {name!r} cannot be safely converted to {target_field.logical_type!r}",
-                            path=(name,),
-                            phase="inference",
-                        )
-                    )
-                    continue
-                try:
-                    row[name] = _coerce_value(value, target_field.logical_type)
-                except (TypeError, ValueError, OverflowError, DecimalException):
-                    failed_fields.add(name)
-                    runtime_diagnostics.append(
-                        Diagnostic(
-                            "INFER_RUNTIME_CONVERSION",
-                            Severity.ERROR,
-                            f"Field {name!r} could not be converted to {target_field.logical_type!r}",
-                            path=(name,),
-                            phase="inference",
-                        )
-                    )
+        for row_index, row in enumerate(rows):
+            outcome = _convert_target_row(
+                row,
+                source_fields=source_fields,
+                target_fields=target_fields,
+                target_identity=target_identity,
+                target_revision=target_revision,
+                row_index=row_index,
+            )
+            if isinstance(outcome.row, Mapping):
+                rows[row_index] = dict(outcome.row)
+            runtime_diagnostics.extend(outcome.diagnostics)
+            failed_fields.update(outcome.failed_fields)
     resolved_schema = backfilled.schema
     cast_fields = {
         source_field.name: target_field.logical_type
@@ -2288,48 +2324,40 @@ def _backfill_observation(
                 )
     replay = source.replay
     validation_state = "not_required"
-    if cast_fields and rows and replay is None:
+    if failed_fields:
+        validation_state = "failed"
+    elif cast_fields and rows and replay is None:
         validation_state = "complete"
     elif cast_fields and replay is not None:
         validation_state = "prefix_only"
     elif cast_fields:
         validation_state = "not_performed"
-    if replay is not None:
-        source_fields = {field.name: field for field in source.schema.fields}
-        target_fields = {field.name: field for field in observation.schema.fields}
+    replay_lifecycle: _ReplayLifecycle | None = None
+    if replay is not None and (cast_fields or failed_fields):
+        replay_lifecycle = _ReplayLifecycle()
+        replay_row_index = 0
 
         def replay_convert(row: Any) -> Any:
-            if not isinstance(row, Mapping):
-                return row
-            converted = dict(row)
-            for name, value in list(converted.items()):
-                source_field = source_fields.get(name)
-                target_field = target_fields.get(name)
-                if (
-                    source_field is None
-                    or target_field is None
-                    or value is None
-                    or source_field.logical_type == target_field.logical_type
-                ):
-                    continue
-                if (
-                    source_field.logical_type,
-                    target_field.logical_type,
-                ) not in _LOSSLESS_CASTS:
-                    raise ValueError(
-                        f"Field {name!r} cannot be safely converted to target type "
-                        f"{target_field.logical_type!r}"
-                    )
-                try:
-                    converted[name] = _coerce_value(value, target_field.logical_type)
-                except (TypeError, ValueError, OverflowError, DecimalException):
-                    raise ValueError(
-                        f"Field {name!r} contains a value that cannot be converted "
-                        f"to target type {target_field.logical_type!r}"
-                    ) from None
-            return converted
+            nonlocal replay_row_index
+            row_index = replay_row_index
+            replay_row_index += 1
+            outcome = _convert_target_row(
+                row,
+                source_fields=source_fields,
+                target_fields=target_fields,
+                target_identity=target_identity,
+                target_revision=target_revision,
+                row_index=row_index,
+            )
+            if outcome.diagnostics:
+                raise InferenceReplayError(
+                    outcome.diagnostics[0],
+                    row_index,
+                    diagnostics=outcome.diagnostics,
+                )
+            return outcome.row
 
-        replay = replay.map(replay_convert)
+        replay = replay.map(replay_convert, _lifecycle=replay_lifecycle)
     all_diagnostics = (
         tuple(source.diagnostics)
         + tuple(backfilled.diagnostics)
@@ -2358,23 +2386,84 @@ def _backfill_observation(
         if isinstance(source.provenance.get("limits", {}), Mapping)
         else 100
     )
-    return InferenceResult(
+    diagnostics = tuple(unique_diagnostics[: max(1, max_diagnostics)])
+    provenance = {
+        **source.provenance,
+        **backfilled.provenance,
+        "target_exists": observation.exists,
+        "target_validation": validation_state,
+        "target_validation_fields": sorted(cast_fields),
+        "retained_rows": bool(retain_rows),
+    }
+    if replay_lifecycle is not None:
+        replay_status: dict[str, Any] = {
+            "state": validation_state,
+            "target_identity": target_identity,
+            "target_revision": target_revision,
+            "validated_prefix_rows": len(rows),
+        }
+        conversion_diagnostics = [
+            diagnostic.to_dict()
+            for diagnostic in runtime_diagnostics
+            if diagnostic.code == "INFER_RUNTIME_CONVERSION"
+        ]
+        if conversion_diagnostics:
+            replay_status["diagnostics"] = conversion_diagnostics
+        provenance["replay_status"] = replay_status
+
+    result = InferenceResult(
         resolved_schema,
-        tuple(unique_diagnostics[: max(1, max_diagnostics)]),
+        diagnostics,
         source.evidence,
-        {
-            **source.provenance,
-            **backfilled.provenance,
-            "target_exists": observation.exists,
-            "target_validation": validation_state,
-            "target_validation_fields": sorted(cast_fields),
-        },
-        tuple(rows),
+        provenance,
+        tuple(rows) if retain_rows else (),
         replay,
         source.observed_schema or source.schema,
         resolved_schema,
         observation,
     )
+    if replay_lifecycle is not None:
+        replay_status = result.provenance["replay_status"]
+
+        def on_replay_failure(error: InferenceReplayError) -> None:
+            replay_status.update(
+                {
+                    "state": "failed",
+                    "row_index": error.row_index,
+                    "diagnostics": [
+                        diagnostic.to_dict() for diagnostic in error.diagnostics
+                    ],
+                }
+            )
+            result.provenance["target_validation"] = "failed"
+            existing = list(result.diagnostics)
+            existing_keys = {
+                (
+                    diagnostic.code,
+                    tuple(diagnostic.path),
+                    diagnostic.message,
+                )
+                for diagnostic in existing
+                if isinstance(diagnostic, Diagnostic)
+            }
+            for diagnostic in error.diagnostics:
+                key = (diagnostic.code, tuple(diagnostic.path), diagnostic.message)
+                if key not in existing_keys:
+                    existing.append(diagnostic)
+                    existing_keys.add(key)
+            result.diagnostics = tuple(existing[: max(1, max_diagnostics)])
+
+        def on_replay_complete() -> None:
+            if validation_state != "failed":
+                replay_status["state"] = "complete"
+                replay_status["validated_rows"] = replay_row_index
+                result.provenance["target_validation"] = "complete"
+
+        replay_lifecycle.bind(
+            on_complete=on_replay_complete,
+            on_failure=on_replay_failure,
+        )
+    return result
 
 
 def _coerce_value(value: Any, logical_type: str) -> Any:

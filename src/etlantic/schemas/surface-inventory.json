@@ -29,6 +29,7 @@
     "SecretRef",
     "compile_plan",
     "FieldConstraint",
+    "InferenceReplayError",
     "InferenceLimits",
     "InferenceObservation",
     "InferenceResult",

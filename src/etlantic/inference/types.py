@@ -9,7 +9,7 @@ used in plans, reports, and schema history.
 
 from __future__ import annotations
 
-from collections.abc import Iterable, Iterator, Mapping
+from collections.abc import Callable, Iterable, Iterator, Mapping
 from contextlib import suppress
 from dataclasses import dataclass
 from dataclasses import field as dataclass_field
@@ -154,6 +154,70 @@ class InferenceLimits:
         )
 
 
+class InferenceReplayError(ValueError):
+    """Raised when target conversion fails while consuming a replay.
+
+    Replay conversion is fail-closed: iteration stops at the first invalid
+    row.  The structured diagnostic is available on ``diagnostic`` and the
+    zero-based position in the replay stream is available on ``row_index``.
+    The exception message intentionally contains no source value.
+    """
+
+    def __init__(
+        self,
+        diagnostic: Diagnostic,
+        row_index: int,
+        *,
+        diagnostics: Iterable[Diagnostic] = (),
+    ) -> None:
+        self.diagnostic = diagnostic
+        self.diagnostics = tuple(diagnostics) or (diagnostic,)
+        self.row_index = row_index
+        super().__init__(
+            f"{diagnostic.code}: target replay conversion failed at row {row_index}"
+        )
+
+
+class _ReplayLifecycle:
+    """Coordinate durable status callbacks across derived replay handles."""
+
+    __slots__ = (
+        "_completed",
+        "_failed",
+        "_on_complete",
+        "_on_failure",
+    )
+
+    def __init__(self) -> None:
+        self._completed = False
+        self._failed = False
+        self._on_complete: Callable[[], None] | None = None
+        self._on_failure: Callable[[InferenceReplayError], None] | None = None
+
+    def bind(
+        self,
+        *,
+        on_complete: Callable[[], None],
+        on_failure: Callable[[InferenceReplayError], None],
+    ) -> None:
+        self._on_complete = on_complete
+        self._on_failure = on_failure
+
+    def fail(self, error: InferenceReplayError) -> None:
+        if self._failed or self._completed:
+            return
+        self._failed = True
+        if self._on_failure is not None:
+            self._on_failure(error)
+
+    def complete(self) -> None:
+        if self._failed or self._completed:
+            return
+        self._completed = True
+        if self._on_complete is not None:
+            self._on_complete()
+
+
 @dataclass(frozen=True, slots=True)
 class SchemaEvidence:
     """Aggregate evidence supporting a field inference."""
@@ -270,14 +334,26 @@ class InferenceObservation:
 
 
 class ReplayHandle:
-    """Single-use replay stream for a bounded inference prefix."""
+    """Single-use replay stream for a bounded inference prefix.
 
-    __slots__ = ("_prefix", "_remainder", "_used")
+    Derived handles share a private lifecycle so a target conversion can
+    report completion or a structured failure exactly once, even when callers
+    compose ``map``, ``filter``, and ``limit``.
+    """
 
-    def __init__(self, prefix: Iterable[dict[str, Any]], remainder: Iterator[Any]):
+    __slots__ = ("_lifecycle", "_prefix", "_remainder", "_used")
+
+    def __init__(
+        self,
+        prefix: Iterable[dict[str, Any]],
+        remainder: Iterator[Any],
+        *,
+        _lifecycle: _ReplayLifecycle | None = None,
+    ):
         self._prefix = tuple(dict(row) for row in prefix)
         self._remainder = remainder
         self._used = False
+        self._lifecycle = _lifecycle
 
     def take(self) -> Iterator[Any]:
         """Return the inspected prefix followed by the untouched remainder."""
@@ -286,14 +362,38 @@ class ReplayHandle:
         self._used = True
         return chain(iter(self._prefix), self._remainder)
 
-    def map(self, transform: Any) -> ReplayHandle:
+    def map(
+        self,
+        transform: Any,
+        *,
+        _lifecycle: _ReplayLifecycle | None = None,
+    ) -> ReplayHandle:
         """Return a replay with ``transform`` applied lazily to every row."""
         if self._used:
             raise RuntimeError("inference replay has already been consumed")
         stream = self.take()
+        lifecycle = _lifecycle or self._lifecycle
+
+        if lifecycle is None:
+            mapped: Iterator[Any] = (transform(row) for row in stream)
+        else:
+
+            def mapped_stream() -> Iterator[Any]:
+                try:
+                    for row in stream:
+                        yield transform(row)
+                except InferenceReplayError as error:
+                    lifecycle.fail(error)
+                    raise
+                else:
+                    lifecycle.complete()
+
+            mapped = mapped_stream()
+
         return ReplayHandle(
             (),
-            (transform(row) for row in stream),
+            mapped,
+            _lifecycle=lifecycle,
         )
 
     def filter(self, predicate: Any) -> ReplayHandle:
@@ -301,13 +401,21 @@ class ReplayHandle:
         if self._used:
             raise RuntimeError("inference replay has already been consumed")
         stream = self.take()
-        return ReplayHandle((), (row for row in stream if predicate(row)))
+        return ReplayHandle(
+            (),
+            (row for row in stream if predicate(row)),
+            _lifecycle=self._lifecycle,
+        )
 
     def limit(self, count: int) -> ReplayHandle:
         """Return a replay bounded to the first ``count`` rows."""
         if self._used:
             raise RuntimeError("inference replay has already been consumed")
-        return ReplayHandle((), islice(self.take(), max(0, count)))
+        return ReplayHandle(
+            (),
+            islice(self.take(), max(0, count)),
+            _lifecycle=self._lifecycle,
+        )
 
 
 class InferenceResult:

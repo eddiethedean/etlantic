@@ -21,6 +21,9 @@ from etlantic.inference import (
     InferenceObservation as InferenceObservation,
 )
 from etlantic.inference import (
+    InferenceReplayError as InferenceReplayError,
+)
+from etlantic.inference import (
     InferenceResult as InferenceResult,
 )
 from etlantic.inference import (
