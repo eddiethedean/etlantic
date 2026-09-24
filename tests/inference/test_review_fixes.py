@@ -2682,3 +2682,47 @@ def test_path_like_source_and_target_identities_are_redacted(tmp_path) -> None:
         [{"id": 1}], target, name="safe_target"
     ).definition()
     assert target_identity not in json.dumps(target_definition.to_dict())
+
+
+def test_missing_filter_reference_is_diagnosed() -> None:
+    dataset = etl.from_records([{"id": 1}, {"id": 2}]).filter(col("missing") == 1)
+
+    diagnostics = [
+        item for item in dataset.diagnostics if item.code == "INFER_LINEAGE_MISSING"
+    ]
+
+    assert len(diagnostics) == 1
+    assert diagnostics[0].path == ("missing",)
+    assert dataset.collect() == []
+
+
+def test_filter_reference_is_validated_after_schema_changes() -> None:
+    dataset = (
+        etl.from_records([{"id": 1, "name": "Ada"}])
+        .rename({"id": "user_id"})
+        .drop("name")
+    )
+
+    valid = dataset.filter(col("user_id") == 1)
+    invalid = dataset.filter((col("user_id") == 1) & (col("name") == "Ada"))
+
+    assert "INFER_LINEAGE_MISSING" not in {item.code for item in valid.diagnostics}
+    assert "INFER_LINEAGE_MISSING" in {item.code for item in invalid.diagnostics}
+
+
+def test_duplicate_missing_filter_references_are_deduplicated() -> None:
+    dataset = etl.from_records([{"id": 1}]).filter(
+        (col("missing") == 1) | (col("missing") == 2)
+    )
+
+    diagnostics = [
+        item for item in dataset.diagnostics if item.code == "INFER_LINEAGE_MISSING"
+    ]
+
+    assert len(diagnostics) == 1
+
+
+def test_nested_filter_call_references_are_diagnosed() -> None:
+    dataset = etl.from_records([{"id": 1}]).filter(col("missing").isNull())
+
+    assert "INFER_LINEAGE_MISSING" in {item.code for item in dataset.diagnostics}
