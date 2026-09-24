@@ -1138,6 +1138,15 @@ def test_cumulative_schema_transfer_replays_from_root_schema() -> None:
     assert transformed.schema.metadata["lineage_fingerprint"]
 
 
+def test_projection_preserves_requested_field_order() -> None:
+    dataset = etl.from_records([{"z": 1, "a": 2}])
+
+    projected = dataset.select("z", "a")
+
+    assert [field.name for field in projected.schema.fields] == ["z", "a"]
+    assert projected.to_records() == [{"z": 1, "a": 2}]
+
+
 def test_with_column_replacement_updates_lineage_without_collision() -> None:
     dataset = etl.from_records([{"id": 1, "name": "Ada"}])
 

@@ -22,10 +22,21 @@ class Right(Data):
     email: str = ""
 
 
+class Reverse(Data):
+    z: int
+    a: str
+
+
 def test_equivalent_models_same_fingerprint() -> None:
     a = normalize_schema_from_model(Left)
     b = normalize_schema_from_model(Left)
     assert a.fingerprint() == b.fingerprint()
+
+
+def test_model_normalization_preserves_declaration_order() -> None:
+    schema = normalize_schema_from_model(Reverse)
+
+    assert [field.name for field in schema.fields] == ["z", "a"]
 
 
 def test_operational_diff_detects_add_and_nullability() -> None:

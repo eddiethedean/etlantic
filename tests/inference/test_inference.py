@@ -35,6 +35,33 @@ def test_records_inference_promotes_across_all_rows_and_tracks_missing() -> None
     assert "rows" not in result.to_dict(include_rows=True)
 
 
+def test_records_inference_preserves_first_seen_field_order() -> None:
+    result = infer_records([{"z": 1, "a": 2}])
+
+    assert [field.name for field in result.schema.fields] == ["z", "a"]
+
+
+def test_schema_field_order_round_trips_without_changing_fingerprint() -> None:
+    left = normalize_schema_from_fields(
+        [
+            {"name": "z", "logical_type": "integer"},
+            {"name": "a", "logical_type": "string"},
+        ],
+        identity="ordered",
+    )
+    right = normalize_schema_from_fields(
+        [
+            {"name": "a", "logical_type": "string"},
+            {"name": "z", "logical_type": "integer"},
+        ],
+        identity="ordered",
+    )
+
+    restored = NormalizedSchema.from_dict(left.to_dict())
+    assert [field.name for field in restored.fields] == ["z", "a"]
+    assert left.fingerprint() == right.fingerprint()
+
+
 def test_records_inference_is_bounded() -> None:
     result = infer_records(
         ({"id": i} for i in range(10)), limits=InferenceLimits(max_rows=2)
@@ -75,8 +102,8 @@ def test_csv_inference_parses_common_scalars(tmp_path) -> None:
     path.write_text("id,active\n1,true\n2,false\n", encoding="utf-8")
     dataset = etl.read_csv(str(path), name="events")
     assert [field.logical_type for field in dataset.schema.fields] == [
-        "boolean",
         "integer",
+        "boolean",
     ]
     assert dataset.preview() == [{"id": 1, "active": True}, {"id": 2, "active": False}]
 

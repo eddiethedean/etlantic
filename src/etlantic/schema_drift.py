@@ -458,7 +458,7 @@ def normalize_schema_from_model(
         )
     return NormalizedSchema(
         identity=identity or f"schema:{model.__module__}.{model.__qualname__}",
-        fields=tuple(sorted(fields, key=lambda f: f.name)),
+        fields=tuple(fields),
     )
 
 
@@ -470,27 +470,21 @@ def normalize_schema_from_fields(
 ) -> NormalizedSchema:
     """Normalize a list of field mappings (operational observation path)."""
     normalized = tuple(
-        sorted(
-            (
-                NormalizedField(
-                    name=str(f["name"]),
-                    logical_type=normalize_logical_type(
-                        f.get("logical_type") or f.get("type") or "unknown",
-                        preserve_decimal=preserve_decimal,
-                    ),
-                    required=bool(f.get("required", True)),
-                    nullable=bool(f.get("nullable", False)),
-                    metadata={
-                        str(k): _json_safe(v, key=str(k))
-                        for k, v in f.items()
-                        if k
-                        not in {"name", "logical_type", "type", "required", "nullable"}
-                    },
-                )
-                for f in fields
+        NormalizedField(
+            name=str(f["name"]),
+            logical_type=normalize_logical_type(
+                f.get("logical_type") or f.get("type") or "unknown",
+                preserve_decimal=preserve_decimal,
             ),
-            key=lambda x: x.name,
+            required=bool(f.get("required", True)),
+            nullable=bool(f.get("nullable", False)),
+            metadata={
+                str(k): _json_safe(v, key=str(k))
+                for k, v in f.items()
+                if k not in {"name", "logical_type", "type", "required", "nullable"}
+            },
         )
+        for f in fields
     )
     return NormalizedSchema(identity=identity, fields=normalized)
 

@@ -605,7 +605,10 @@ def forward_schema(
         ordered_fields.extend(field for field in fields if field.name not in present)
         fields = ordered_fields
     else:
-        fields = sorted(fields, key=lambda field: field.name)
+        # Preserve the input contract order when the frame does not carry an
+        # explicit projection/order hint. Fingerprints canonicalize field
+        # order separately, so this does not weaken deterministic identity.
+        fields = list(fields)
     return NormalizedSchema(
         input_schema.identity,
         tuple(fields),
