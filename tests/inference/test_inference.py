@@ -368,6 +368,7 @@ def test_nonretained_target_replay_failure_updates_public_result() -> None:
     )
     assert result.rows == ()
     assert result.provenance["target_validation"] == "prefix_only"
+    assert result.replay is not None
     with pytest.raises(etl.InferenceReplayError) as error:
         list(result.replay.take())
     assert error.value.row_index == 1
@@ -392,6 +393,7 @@ def test_async_nonretained_target_replay_failure_updates_public_result() -> None
     result = asyncio.run(run())
     assert result.rows == ()
     assert result.provenance["target_validation"] == "prefix_only"
+    assert result.replay is not None
     with pytest.raises(etl.InferenceReplayError) as error:
         list(result.replay.take())
     assert error.value.row_index == 1
