@@ -788,7 +788,8 @@ def infer_csv(
                     path=(name,),
                 )
                 for name in fieldnames
-                if header_hints[name] is None
+                if result.provenance.get("rows_observed") == 0
+                and header_hints[name] is None
             ]
             diagnostics = tuple(
                 (row_diagnostics + list(result.diagnostics) + header_diagnostics)[

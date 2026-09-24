@@ -2825,6 +2825,23 @@ def test_header_only_csv_fields_are_unknown_and_diagnosed(tmp_path: Path) -> Non
     } == {"id", "name"}
 
 
+def test_csv_with_observed_values_does_not_emit_header_only_diagnostics(
+    tmp_path: Path,
+) -> None:
+    path = tmp_path / "observed.csv"
+    path.write_text("id,name\n1,Ada\n", encoding="utf-8")
+
+    result = etl.infer_csv(path)
+
+    assert [(field.name, field.logical_type) for field in result.schema.fields] == [
+        ("id", "integer"),
+        ("name", "string"),
+    ]
+    assert "INFER_UNKNOWN_TYPE" not in {
+        diagnostic.code for diagnostic in result.diagnostics
+    }
+
+
 def test_header_only_csv_hints_resolve_missing_field_types(tmp_path: Path) -> None:
     path = tmp_path / "hinted-header.csv"
     path.write_text("id,name\n", encoding="utf-8")
