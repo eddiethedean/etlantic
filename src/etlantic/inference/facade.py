@@ -54,6 +54,7 @@ from .sources import infer_source
 from .targets import (
     _backfill_observation,
     _coerce_value,
+    _safe_target_identity,
     check_write_compatibility,
     infer_records_for_target,
     inspect_target,
@@ -1327,7 +1328,9 @@ class InferredDataset:
     ) -> OutputProposal:
         """Return an explicit create proposal for an absent target."""
         observation = inspect_target(target, identity=identity)
-        proposal_identity = identity or observation.identity
+        proposal_identity = (
+            _safe_target_identity(identity) if identity else observation.identity
+        )
         diagnostics = list(observation.diagnostics)
         if proposal_identity is None and not any(
             getattr(item, "code", None) == "INFER_TARGET_IDENTITY_UNKNOWN"
@@ -1448,13 +1451,18 @@ def from_records_for_target(
     name: str = "records",
     hints: Mapping[str, Any] | None = None,
     limits: InferenceLimits | None = None,
+    target_identity: str | None = None,
     expected_revision: str | None = None,
     revision_reader: Callable[[], Any] | None = None,
     source_factory: Callable[[], Any] | None = None,
     source_key: str | None = None,
     write_mode: str = "append",
 ) -> InferredDataset:
-    """Create a data first handle using an existing target as a type constraint."""
+    """Create a data-first handle using a target as a type constraint.
+
+    ``target_identity`` is required for durable export when the target payload
+    does not carry a stable identity or address.
+    """
     safe_name = _safe_file_identity(name)
     result = infer_records_for_target(
         records,
@@ -1462,6 +1470,7 @@ def from_records_for_target(
         hints=hints,
         limits=limits,
         identity=safe_name,
+        target_identity=target_identity,
         retain_rows=True,
         expected_revision=expected_revision,
         revision_reader=revision_reader,

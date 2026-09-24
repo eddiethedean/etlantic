@@ -18,6 +18,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   across absent, empty, and populated states; output proposals and durable
   bindings retain the identity without serializing raw paths. Unbound targets
   fail closed, and conflicting identity/address pairs are diagnosed (#168).
+- Durable target inference accepts an explicit `target_identity` for unbound
+  observations, preserves present/empty sequence and zero-byte file states,
+  redacts arbitrary URI credentials and query data, and keeps unresolved
+  identity markers stable across wire round trips.
 
 ## [0.54.0] - Unreleased implementation candidate
 

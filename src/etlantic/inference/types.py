@@ -528,7 +528,8 @@ class TargetObservation:
             raise ValueError(f"unsupported target observation version: {version}")
         schema_payload = payload.get("schema")
         metadata = _wire_mapping(payload.get("metadata") or {})
-        if payload.get("identity") is not None:
+        identity_unresolved = metadata.get("identity_unresolved") is True
+        if payload.get("identity") is not None and not identity_unresolved:
             metadata.setdefault("identity", str(payload["identity"]))
         diagnostics = [
             _diagnostic_from_dict(item) for item in (payload.get("diagnostics") or ())
@@ -552,7 +553,10 @@ class TargetObservation:
             if not isinstance(schema_payload, dict):
                 malformed_schema = True
             else:
-                if schema_payload.get("identity") is not None:
+                if (
+                    schema_payload.get("identity") is not None
+                    and not identity_unresolved
+                ):
                     metadata.setdefault("identity", str(schema_payload["identity"]))
                 fields_payload = schema_payload.get("fields")
                 field_names = (

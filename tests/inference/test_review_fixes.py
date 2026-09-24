@@ -59,6 +59,94 @@ def test_provider_metadata_is_json_safe_and_python_types_are_normalized() -> Non
     json.dumps(observation.to_dict())
 
 
+def test_arbitrary_uri_target_identities_are_redacted() -> None:
+    class Provider:
+        def inspect_schema(self):
+            return {
+                "identity": "https://alice:secret@example.com/targets/orders?sig=private#fragment",
+                "fields": [{"name": "id", "type": "integer"}],
+            }
+
+    observation = inspect_target(Provider())
+    serialized = json.dumps(observation.to_dict(), sort_keys=True)
+
+    assert observation.identity is not None
+    assert observation.identity.startswith("target:")
+    assert "alice:secret" not in serialized
+    assert "sig=private" not in serialized
+    assert "#fragment" not in serialized
+
+
+def test_output_proposal_redacts_caller_uri_identity(tmp_path) -> None:
+    identity = "https://alice:secret@example.com/targets/orders?sig=private#fragment"
+    proposal = etl.from_records([{"id": 1}], name="proposal").propose_output(
+        tmp_path / "missing-target",
+        identity=identity,
+    )
+
+    serialized = json.dumps(proposal.to_dict(), sort_keys=True)
+    assert proposal.identity.startswith("target:")
+    assert identity not in serialized
+    assert "alice:secret" not in serialized
+    assert "sig=private" not in serialized
+
+
+def test_provider_payload_bindings_participate_in_identity_collision() -> None:
+    identity = "provider-payload-collision-regression"
+
+    class Provider:
+        def __init__(self, uri: str) -> None:
+            self.uri = uri
+
+        def inspect_schema(self):
+            return {
+                "identity": identity,
+                "uri": self.uri,
+                "fields": [{"name": "id", "type": "integer"}],
+            }
+
+    first = inspect_target(Provider("s3://bucket/orders-a"))
+    second = inspect_target(Provider("s3://bucket/orders-b"))
+
+    assert first.identity == identity
+    assert second.exists == "unknown"
+    assert "INFER_TARGET_IDENTITY_COLLISION" in {
+        diagnostic.code for diagnostic in second.diagnostics
+    }
+
+
+def test_empty_sequence_targets_are_present_and_empty() -> None:
+    observation = inspect_target([])
+
+    assert observation.exists == "present"
+    assert observation.schema is None
+    assert observation.metadata["empty"] is True
+
+
+@pytest.mark.parametrize("suffix", [".csv", ".json"])
+def test_zero_byte_file_targets_are_present_and_empty(tmp_path, suffix: str) -> None:
+    path = tmp_path / f"empty{suffix}"
+    path.write_bytes(b"")
+
+    observation = inspect_target(path)
+
+    assert observation.exists == "present"
+    assert observation.schema is None
+    assert observation.metadata["empty"] is True
+
+
+def test_unresolved_target_identity_survives_wire_round_trip() -> None:
+    observation = inspect_target({"fields": [{"name": "id", "type": "integer"}]})
+    restored = etl.TargetObservation.from_dict(observation.to_dict())
+
+    assert observation.identity is None
+    assert restored.identity is None
+    assert restored.metadata["identity_unresolved"] is True
+    assert restored.schema is not None
+    assert "identity_unresolved" not in restored.schema.metadata
+    assert restored.to_dict() == observation.to_dict()
+
+
 def test_malformed_target_payloads_fail_closed_and_empty_is_explicit() -> None:
     assert inspect_target({"fields": [1]}).exists == "unknown"
     assert inspect_target({"fields": "abc"}).exists == "unknown"
@@ -1085,7 +1173,10 @@ def test_provided_target_revision_is_preserved_during_definition_export() -> Non
         metadata={"capabilities": {"write_modes": ["append"]}},
     )
     dataset = etl.from_records_for_target(
-        [{"id": 1}], observation, name="revisioned_target"
+        [{"id": 1}],
+        observation,
+        name="revisioned_target",
+        target_identity="revisioned-target",
     )
 
     definition = dataset.definition()
@@ -1252,6 +1343,7 @@ def test_target_observation_round_trips_into_durable_definitions() -> None:
             "fields": [{"name": "id", "type": "integer"}],
         },
         name="users",
+        target_identity="users-target",
     )
     observation = dataset.observation.to_dict()
     restored = InferenceObservation.from_dict(observation)
@@ -1293,6 +1385,7 @@ def test_target_diagnostics_block_schema_less_publication() -> None:
             "diagnostics": [{"code": "DENIED", "severity": "warning"}],
         },
         name="orders",
+        target_identity="orders-target",
     )
 
     with pytest.raises(ValueError, match="INFER_TARGET_WRITE_UNQUALIFIED"):
@@ -1304,6 +1397,7 @@ def test_schema_less_present_target_blocks_publication_without_diagnostics() -> 
         [{"id": 7}],
         {"exists": "present", "fields": []},
         name="orders",
+        target_identity="orders-target",
     )
 
     with pytest.raises(ValueError, match="INFER_TARGET_WRITE_UNQUALIFIED"):
@@ -1317,7 +1411,9 @@ def test_provided_target_diagnostics_are_not_dropped_before_publication() -> Non
         inspector="provided",
         diagnostics=(Diagnostic("DENIED", Severity.WARNING, "target unavailable"),),
     )
-    dataset = etl.from_records_for_target([{"id": 7}], target, name="orders")
+    dataset = etl.from_records_for_target(
+        [{"id": 7}], target, name="orders", target_identity="orders-target"
+    )
 
     with pytest.raises(ValueError, match="INFER_TARGET_WRITE_UNQUALIFIED"):
         dataset.definition()
@@ -1330,7 +1426,9 @@ def test_malformed_provided_target_metadata_fails_closed_before_publication() ->
         inspector="provided",
         metadata="malformed",
     )
-    dataset = etl.from_records_for_target([{"id": 7}], target, name="orders")
+    dataset = etl.from_records_for_target(
+        [{"id": 7}], target, name="orders", target_identity="orders-target"
+    )
 
     with pytest.raises(ValueError, match="INFER_TARGET_WRITE_UNQUALIFIED"):
         dataset.definition()
@@ -1346,6 +1444,7 @@ def test_revision_reader_rejects_missing_revision() -> None:
             "fields": [{"name": "id", "type": "integer"}],
         },
         name="orders",
+        target_identity="orders-target",
         revision_reader=lambda: None,
     )
 
@@ -1520,6 +1619,7 @@ def test_target_guidance_does_not_replace_observed_source_contract() -> None:
             "fields": [{"name": "id", "type": "integer"}],
         },
         name="orders",
+        target_identity="orders-target",
     )
 
     definition = dataset.definition()
@@ -1578,6 +1678,7 @@ def test_inferred_definition_round_trips_and_plans_without_runtime_source() -> N
             "fields": [{"name": "id", "type": "integer"}],
         },
         name="orders",
+        target_identity="orders-target",
     )
     restored = etl.authoring.pipeline_from_dict(dataset.definition().to_dict())
     report = etl.authoring.validate_pipeline_like(restored)
@@ -2151,6 +2252,7 @@ def test_target_revision_is_rechecked_before_definition() -> None:
         [{"id": "1"}],
         {"revision": "r1", "fields": [{"name": "id", "type": "integer"}]},
         name="revisioned_target",
+        target_identity="revisioned-target",
         revision_reader=lambda: state["revision"],
     )
     state["revision"] = "r2"
@@ -2171,6 +2273,7 @@ def test_target_revision_change_during_definition_is_rejected(monkeypatch) -> No
             "fields": [{"name": "id", "type": "integer"}],
         },
         name="revision_race",
+        target_identity="revision-race-target",
         revision_reader=lambda: state["revision"],
     )
     check_compatibility = inference_facade.check_write_compatibility
@@ -2261,6 +2364,7 @@ def test_target_backfill_exports_an_explicit_cast_boundary() -> None:
             "fields": [{"name": "id", "type": "integer"}],
         },
         name="orders",
+        target_identity="orders-target",
     )
 
     definition = dataset.definition()
@@ -2279,6 +2383,7 @@ def test_target_write_mode_must_be_advertised() -> None:
             "fields": [{"name": "id", "type": "integer"}],
         },
         name="orders",
+        target_identity="orders-target",
     )
 
     with pytest.raises(ValueError, match="INFER_TARGET_WRITE_UNQUALIFIED"):
@@ -2293,6 +2398,7 @@ def test_target_write_mode_must_be_advertised() -> None:
             "fields": [{"name": "id", "type": "integer"}],
         },
         name="orders",
+        target_identity="orders-target",
         write_mode="merge",
     )
     assert (
@@ -2305,6 +2411,7 @@ def test_invalid_target_write_mode_fails_without_a_target_schema() -> None:
         [{"id": 1}],
         {"exists": "present", "fields": []},
         name="orders",
+        target_identity="orders-target",
         write_mode="garbage",
     )
 
@@ -2428,6 +2535,7 @@ def test_definition_rejects_a_final_target_cast_after_transformations() -> None:
             "fields": [{"name": "id", "type": "integer"}],
         },
         name="orders",
+        target_identity="orders-target",
     ).select(col("id").cast("string").alias("id"))
 
     with pytest.raises(
