@@ -22,6 +22,7 @@ from etlantic.diagnostics import Diagnostic, Severity
 from etlantic.schema_drift import (
     NormalizedField,
     NormalizedSchema,
+    normalize_logical_type,
     normalize_schema_from_fields,
 )
 
@@ -30,6 +31,33 @@ from .types import InferenceLimits, InferenceResult, ReplayHandle, SchemaEvidenc
 _INT = re.compile(r"^[+-]?\d+$")
 _NUMBER = re.compile(r"^[+-]?(?:\d+\.\d*|\d*\.\d+|\d+)(?:[eE][+-]?\d+)?$")
 _DATE_ONLY = re.compile(r"^\d{4}-\d{2}-\d{2}$")
+_KNOWN_LOGICAL_TYPES = frozenset(
+    {
+        "null",
+        "boolean",
+        "integer",
+        "number",
+        "decimal",
+        "string",
+        "binary",
+        "date",
+        "datetime",
+        "object",
+        "array",
+    }
+)
+_APPROVED_PROVIDER_MODULES = frozenset(
+    {
+        "arrow",
+        "datafusion",
+        "duckdb",
+        "numpy",
+        "pandas",
+        "polars",
+        "pyarrow",
+        "pyspark",
+    }
+)
 
 
 def _path_identity(kind: str, path: str | Path) -> str:
@@ -119,6 +147,27 @@ def _type_of(value: Any) -> str:
         return "null"
     if isinstance(value, float) and math.isnan(value):
         return "null"
+    module = type(value).__module__.split(".", 1)[0].casefold()
+    provider_type = (
+        normalize_logical_type(type(value), preserve_decimal=True)
+        if module in _APPROVED_PROVIDER_MODULES
+        else "unknown"
+    )
+    if provider_type in _KNOWN_LOGICAL_TYPES:
+        if provider_type == "number":
+            try:
+                if math.isnan(value):
+                    return "null"
+            except (TypeError, ValueError, OverflowError):
+                pass
+        elif provider_type in {"date", "datetime"}:
+            try:
+                if value != value:
+                    return "null"
+            except Exception:
+                pass
+        if provider_type == "null":
+            return "null"
     if isinstance(value, bool):
         return "boolean"
     if isinstance(value, int):
@@ -133,11 +182,25 @@ def _type_of(value: Any) -> str:
         return "date"
     if isinstance(value, (bytes, bytearray, memoryview)):
         return "binary"
+    if isinstance(value, str):
+        return "string"
     if isinstance(value, Mapping):
         return "object"
     if isinstance(value, (list, tuple, set, frozenset)):
         return "array"
-    return "string"
+    if provider_type in _KNOWN_LOGICAL_TYPES:
+        return provider_type
+    return "unknown"
+
+
+def _qualified_type_name(value: Any) -> str:
+    """Return a stable type token without invoking provider value reprs."""
+    value_type: type[Any] = type(value)
+    module = getattr(value_type, "__module__", "")
+    qualname = getattr(value_type, "__qualname__", value_type.__name__)
+    if isinstance(module, str) and module and isinstance(qualname, str) and qualname:
+        return f"{module}.{qualname}"
+    return str(qualname) if isinstance(qualname, str) else "unknown"
 
 
 def _parse_csv_value(value: str | None, null_values: set[str] | None = None) -> Any:
@@ -177,6 +240,8 @@ def _promote(types: set[str]) -> tuple[str, bool]:
     non_null = types - {"null"}
     if not non_null:
         return "unknown", False
+    if "unknown" in non_null:
+        return "unknown", len(non_null) > 1
     if len(non_null) == 1:
         return next(iter(non_null)), False
     if non_null <= {"integer", "number"}:
@@ -386,18 +451,23 @@ def infer_records(
                 names.append(raw_name)
                 stats[raw_name] = {
                     "types": set(),
+                    "unknown_types": set(),
                     "observed": 0,
                     "null": 0,
                     "missing": 0,
                 }
             if isinstance(value, float) and math.isnan(value):
                 value = None
-            row[raw_name] = value
             entry = stats[raw_name]
             entry["observed"] += 1
             logical = _type_of(value)
+            if logical == "null":
+                value = None
+            row[raw_name] = value
             entry["types"].add(logical)
-            if value is None:
+            if logical == "unknown":
+                entry["unknown_types"].add(_qualified_type_name(value))
+            if logical == "null":
                 entry["null"] += 1
         rows.append(row)
     for name in names:
@@ -471,12 +541,23 @@ def infer_records(
             else:
                 logical = hint
         if logical == "unknown":
-            logical = "string"
+            unknown_types = tuple(sorted(entry["unknown_types"]))
+            if unknown_types:
+                type_summary = ", ".join(unknown_types[:3])
+                if len(unknown_types) > 3:
+                    type_summary += ", ..."
+                message = (
+                    f"Field {name!r} contains unsupported value type(s): {type_summary}"
+                )
+            elif set(entry["types"]) == {"null"}:
+                message = f"Field {name!r} contains only null values"
+            else:
+                message = f"Field {name!r} has no observed typed values"
             _append_diag(
                 diagnostics,
                 _diag(
                     "INFER_UNKNOWN_TYPE",
-                    f"Field {name!r} contains only null values",
+                    message,
                     path=(name,),
                 ),
                 limits.max_diagnostics,
@@ -506,13 +587,18 @@ def infer_records(
         if logical == "decimal":
             decimal_fields.add(name)
         nullable = entry["null"] > 0 or entry["missing"] > 0
+        field_metadata: dict[str, Any] = {"inferred": True}
+        if logical == "unknown" and not entry["unknown_types"]:
+            field_metadata["inference_evidence"] = (
+                "null_only" if set(entry["types"]) == {"null"} else "no_observed_values"
+            )
         fields.append(
             NormalizedField(
                 name=name,
                 logical_type=logical,
                 required=not nullable,
                 nullable=nullable,
-                metadata={"inferred": True},
+                metadata=field_metadata,
             )
         )
         evidence.append(
@@ -692,8 +778,23 @@ def infer_csv(
                 identity=identity or _path_identity("csv", path),
                 retain_rows=retain_rows,
             )
+            header_hints = {
+                name: _hint_type((hints or {}).get(name)) for name in fieldnames
+            }
+            header_diagnostics = [
+                _diag(
+                    "INFER_UNKNOWN_TYPE",
+                    f"Field {name!r} has no observed typed values",
+                    path=(name,),
+                )
+                for name in fieldnames
+                if result.provenance.get("rows_observed") == 0
+                and header_hints[name] is None
+            ]
             diagnostics = tuple(
-                (row_diagnostics + list(result.diagnostics))[: limits.max_diagnostics]
+                (row_diagnostics + list(result.diagnostics) + header_diagnostics)[
+                    : limits.max_diagnostics
+                ]
             )
             if not result.schema.fields and result.provenance.get("rows_observed") == 0:
                 result = InferenceResult(
@@ -701,10 +802,15 @@ def infer_csv(
                         [
                             {
                                 "name": name,
-                                "logical_type": "unknown",
+                                "logical_type": header_hints[name] or "unknown",
                                 "required": False,
                                 "nullable": True,
                                 "header_only": True,
+                                **(
+                                    {"inference_evidence": "no_observed_values"}
+                                    if header_hints[name] is None
+                                    else {}
+                                ),
                             }
                             for name in fieldnames
                         ],
