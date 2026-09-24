@@ -630,7 +630,7 @@ def infer_records(
                     row[name] = Decimal(str(value))
     schema = NormalizedSchema(
         identity=identity,
-        fields=tuple(sorted(fields, key=lambda field: field.name)),
+        fields=tuple(fields),
     )
     provenance = {
         "source": "records",
