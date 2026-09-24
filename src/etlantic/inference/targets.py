@@ -2572,7 +2572,15 @@ def backfill_schema(
                     }
                 )
                 continue
-            compatible = (source_field.logical_type, target_field.logical_type) in {
+            target_guided_unknown = (
+                source_field.logical_type == "unknown"
+                and source_field.metadata.get("inference_evidence")
+                in {"null_only", "no_observed_values"}
+            )
+            compatible = target_guided_unknown or (
+                source_field.logical_type,
+                target_field.logical_type,
+            ) in {
                 ("string", "integer"),
                 ("string", "number"),
                 ("string", "decimal"),

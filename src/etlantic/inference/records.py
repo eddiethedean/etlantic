@@ -547,8 +547,7 @@ def infer_records(
                 if len(unknown_types) > 3:
                     type_summary += ", ..."
                 message = (
-                    f"Field {name!r} contains unsupported value type(s): "
-                    f"{type_summary}"
+                    f"Field {name!r} contains unsupported value type(s): {type_summary}"
                 )
             elif set(entry["types"]) == {"null"}:
                 message = f"Field {name!r} contains only null values"
@@ -588,13 +587,18 @@ def infer_records(
         if logical == "decimal":
             decimal_fields.add(name)
         nullable = entry["null"] > 0 or entry["missing"] > 0
+        field_metadata: dict[str, Any] = {"inferred": True}
+        if logical == "unknown" and not entry["unknown_types"]:
+            field_metadata["inference_evidence"] = (
+                "null_only" if set(entry["types"]) == {"null"} else "no_observed_values"
+            )
         fields.append(
             NormalizedField(
                 name=name,
                 logical_type=logical,
                 required=not nullable,
                 nullable=nullable,
-                metadata={"inferred": True},
+                metadata=field_metadata,
             )
         )
         evidence.append(
@@ -787,11 +791,9 @@ def infer_csv(
                 if header_hints[name] is None
             ]
             diagnostics = tuple(
-                (
-                    row_diagnostics
-                    + list(result.diagnostics)
-                    + header_diagnostics
-                )[: limits.max_diagnostics]
+                (row_diagnostics + list(result.diagnostics) + header_diagnostics)[
+                    : limits.max_diagnostics
+                ]
             )
             if not result.schema.fields and result.provenance.get("rows_observed") == 0:
                 result = InferenceResult(
@@ -803,6 +805,11 @@ def infer_csv(
                                 "required": False,
                                 "nullable": True,
                                 "header_only": True,
+                                **(
+                                    {"inference_evidence": "no_observed_values"}
+                                    if header_hints[name] is None
+                                    else {}
+                                ),
                             }
                             for name in fieldnames
                         ],

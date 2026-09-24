@@ -88,6 +88,7 @@ _SAFE_METADATA_KEYS = {
     "null_values",
     "missing_values",
     "type_counts",
+    "inference_evidence",
     "limitations",
     "inferred",
     "inference_diagnostics",

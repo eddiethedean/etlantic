@@ -2837,6 +2837,24 @@ def test_header_only_csv_hints_resolve_missing_field_types(tmp_path: Path) -> No
     assert result.diagnostics[-1].path == ("name",)
 
 
+def test_header_only_source_can_use_nullable_target_as_hypothesis(
+    tmp_path: Path,
+) -> None:
+    path = tmp_path / "targeted-header.csv"
+    path.write_text("payload\n", encoding="utf-8")
+    source = etl.infer_csv(path).schema
+    target = NormalizedSchema(
+        "target",
+        (NormalizedField("payload", "string", required=False, nullable=True),),
+    )
+
+    backfilled = etl.inference.backfill_schema(source, target)
+
+    assert source.fields[0].metadata["inference_evidence"] == "no_observed_values"
+    assert backfilled.schema.fields[0].logical_type == "string"
+    assert backfilled.schema.fields[0].metadata["observed_type"] == "unknown"
+
+
 def test_unknown_source_type_cannot_prove_target_compatibility() -> None:
     source = NormalizedSchema("source", (NormalizedField("payload", "unknown"),))
     target = NormalizedSchema("target", (NormalizedField("payload", "string"),))
@@ -2846,4 +2864,41 @@ def test_unknown_source_type_cannot_prove_target_compatibility() -> None:
     assert compatibility.compatible is False
     assert "INFER_WRITE_INCOMPATIBLE" in {
         diagnostic.code for diagnostic in compatibility.diagnostics
+    }
+
+
+def test_all_null_source_can_use_nullable_target_as_hypothesis() -> None:
+    source = infer_records([{"payload": None}], identity="all-null").schema
+    target = NormalizedSchema(
+        "target",
+        (NormalizedField("payload", "string", required=False, nullable=True),),
+    )
+
+    backfilled = etl.inference.backfill_schema(source, target)
+
+    assert source.fields[0].metadata["inference_evidence"] == "null_only"
+    assert backfilled.observed_schema == source
+    assert backfilled.schema.fields[0].logical_type == "string"
+    assert backfilled.schema.fields[0].metadata["observed_type"] == "unknown"
+    assert "INFER_BACKWARD_CONFLICT" not in {
+        diagnostic.code for diagnostic in backfilled.diagnostics
+    }
+
+
+def test_unsupported_source_value_cannot_use_target_as_type_evidence() -> None:
+    class ProviderValue:
+        pass
+
+    source = infer_records([{"payload": ProviderValue()}], identity="provider").schema
+    target = NormalizedSchema(
+        "target",
+        (NormalizedField("payload", "string", required=False, nullable=True),),
+    )
+
+    backfilled = etl.inference.backfill_schema(source, target)
+
+    assert source.fields[0].metadata.get("inference_evidence") is None
+    assert backfilled.schema.fields[0].logical_type == "unknown"
+    assert "INFER_BACKWARD_CONFLICT" in {
+        diagnostic.code for diagnostic in backfilled.diagnostics
     }
