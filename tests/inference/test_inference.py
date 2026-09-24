@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import asyncio
 from dataclasses import asdict
+from datetime import date
 from decimal import Decimal
 
 import pytest
@@ -163,7 +164,7 @@ def test_target_backfill_validates_when_rows_are_not_retained() -> None:
         [{"id": "not-an-int"}], target, retain_rows=False
     )
     assert result.rows == ()
-    assert result.provenance["target_validation"] == "complete"
+    assert result.provenance["target_validation"] == "failed"
     assert "INFER_RUNTIME_CONVERSION" in {d.code for d in result.diagnostics}
 
 
@@ -343,8 +344,148 @@ def test_target_backfill_marks_unvalidated_replay_and_fails_lazily() -> None:
     assert dataset.provenance["target_validation"] == "prefix_only"
     assert dataset.provenance["target_validation_fields"] == ["id"]
     assert dataset.replay is not None
-    with pytest.raises(ValueError, match="target type"):
+    with pytest.raises(etl.InferenceReplayError) as error:
         list(dataset.replay.take())
+    assert error.value.row_index == 1
+    assert error.value.diagnostic.code == "INFER_RUNTIME_CONVERSION"
+    assert "bad" not in str(error.value)
+    assert "bad" not in str(error.value.diagnostic.to_dict())
+    assert dataset.provenance["target_validation"] == "failed"
+    assert dataset.provenance["replay_status"]["state"] == "failed"
+    with pytest.raises(RuntimeError, match="already been consumed"):
+        dataset.replay.take()
+
+
+def test_target_backfill_marks_replay_complete_after_valid_remainder() -> None:
+    target = normalize_schema_from_fields(
+        [{"name": "id", "logical_type": "integer"}], identity="target"
+    )
+    dataset = etl.from_records_for_target(
+        ({"id": value} for value in ("1", "2")),
+        target,
+        limits=InferenceLimits(max_rows=1),
+    )
+    assert dataset.provenance["replay_status"]["state"] == "prefix_only"
+    assert list(dataset.replay.take()) == [{"id": 1}, {"id": 2}]
+    assert dataset.provenance["target_validation"] == "complete"
+    assert dataset.provenance["replay_status"]["state"] == "complete"
+
+
+def test_target_replay_failure_is_revision_bound_and_wire_safe() -> None:
+    target_schema = NormalizedSchema(
+        "sink",
+        (NormalizedField("id", "integer"),),
+    )
+    target = etl.TargetObservation(
+        target_schema,
+        "present",
+        revision="r7",
+        metadata={"identity": "sink"},
+    )
+    dataset = etl.from_records_for_target(
+        ({"id": value} for value in ("1", "bad")),
+        target,
+        limits=InferenceLimits(max_rows=1),
+    )
+    with pytest.raises(etl.InferenceReplayError):
+        list(dataset.replay.take())
+    status = dataset.provenance["replay_status"]
+    assert status["target_identity"] == "sink"
+    assert status["target_revision"] == "r7"
+    assert status["row_index"] == 1
+    payload = dataset.observation.to_dict()
+    assert "bad" not in str(payload)
+    restored = etl.InferenceObservation.from_dict(payload)
+    assert restored.provenance["replay_status"]["state"] == "failed"
+    assert restored.provenance["replay_status"]["target_revision"] == "r7"
+
+
+def test_target_replay_fails_closed_for_incompatible_object_values() -> None:
+    target = normalize_schema_from_fields(
+        [{"name": "payload", "logical_type": "number"}], identity="target"
+    )
+    dataset = etl.from_records_for_target(
+        ({"payload": value} for value in ({"nested": True}, {"nested": False})),
+        target,
+        limits=InferenceLimits(max_rows=1),
+    )
+    assert dataset.provenance["target_validation"] == "failed"
+    with pytest.raises(etl.InferenceReplayError) as error:
+        list(dataset.replay.take())
+    assert error.value.diagnostic.metadata["source_logical_type"] == "object"
+    assert error.value.diagnostic.metadata["target_logical_type"] == "number"
+    assert "nested" not in str(error.value.diagnostic.to_dict())
+
+
+def test_target_replay_reports_all_invalid_fields_on_first_bad_row() -> None:
+    target = normalize_schema_from_fields(
+        [
+            {"name": "id", "logical_type": "integer"},
+            {"name": "amount", "logical_type": "number"},
+        ],
+        identity="target",
+    )
+    dataset = etl.from_records_for_target(
+        (
+            {"id": row_id, "amount": amount}
+            for row_id, amount in (("1", "2.5"), ("bad", "wat"))
+        ),
+        target,
+        limits=InferenceLimits(max_rows=1),
+    )
+    with pytest.raises(etl.InferenceReplayError) as error:
+        list(dataset.replay.take())
+    assert {item.path for item in error.value.diagnostics} == {("id",), ("amount",)}
+    assert "bad" not in str(dataset.provenance["replay_status"])
+    assert "wat" not in str(dataset.provenance["replay_status"])
+
+
+def test_target_replay_reuses_decimal_and_date_conversion_policy() -> None:
+    target = normalize_schema_from_fields(
+        [
+            {"name": "amount", "logical_type": "number"},
+            {"name": "day", "logical_type": "datetime"},
+        ],
+        identity="target",
+    )
+    dataset = etl.from_records_for_target(
+        (
+            {"amount": amount, "day": day}
+            for amount, day in (
+                (Decimal("1.25"), date(2024, 1, 1)),
+                (Decimal("2.50"), date(2024, 1, 2)),
+            )
+        ),
+        target,
+        limits=InferenceLimits(max_rows=1),
+    )
+    rows = list(dataset.replay.take())
+    assert rows[0]["amount"] == 1.25
+    assert rows[0]["day"].isoformat() == "2024-01-01T00:00:00"
+    assert rows[1]["amount"] == 2.5
+    assert rows[1]["day"].isoformat() == "2024-01-02T00:00:00"
+    assert dataset.provenance["replay_status"]["state"] == "complete"
+
+
+def test_target_replay_preserves_revision_mismatch_without_casting() -> None:
+    target_schema = NormalizedSchema(
+        "sink",
+        (NormalizedField("id", "integer"),),
+    )
+    target = etl.TargetObservation(
+        target_schema,
+        "present",
+        revision="r1",
+        metadata={"identity": "sink"},
+    )
+    result = etl.infer_records_for_target(
+        ({"id": value} for value in ("1", "2")),
+        target,
+        limits=InferenceLimits(max_rows=1),
+        expected_revision="r2",
+    )
+    assert result.provenance["target_validation"] == "stale"
+    assert list(result.replay.take()) == [{"id": "1"}, {"id": "2"}]
 
 
 def test_storage_records_accepts_generator_of_mappings() -> None:
