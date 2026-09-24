@@ -1138,6 +1138,42 @@ def test_cumulative_schema_transfer_replays_from_root_schema() -> None:
     assert transformed.schema.metadata["lineage_fingerprint"]
 
 
+def test_with_column_replacement_updates_lineage_without_collision() -> None:
+    dataset = etl.from_records([{"id": 1, "name": "Ada"}])
+
+    replaced = dataset.withColumn("id", col("id") + 1)
+
+    assert replaced.collect() == [{"id": 2, "name": "Ada"}]
+    assert [field.name for field in replaced.schema.fields] == ["id", "name"]
+    assert "INFER_LINEAGE_COLLISION" not in {
+        diagnostic.code for diagnostic in replaced.diagnostics
+    }
+    assert replaced.schema.metadata["lineage"]["id"]["source_fields"] == ["id"]
+    assert replaced.schema.metadata["lineage"]["id"]["operations"] == ["with_fields"]
+
+
+def test_with_column_appends_new_fields_and_duplicate_assignments_collide() -> None:
+    dataset = etl.from_records([{"id": 1, "name": "Ada"}])
+    appended = dataset.withColumn("age", 37)
+
+    assert [field.name for field in appended.schema.fields] == ["id", "name", "age"]
+
+    duplicate_frame = dataset.frame._extend(
+        action="dtcs:with_fields",
+        parameters={
+            "assignments": [
+                {"name": "new", "expression": {"kind": "literal", "value": 1}},
+                {"name": "new", "expression": {"kind": "literal", "value": 2}},
+            ]
+        },
+    )
+    duplicate_schema = etl.forward_schema(duplicate_frame, dataset.schema)
+
+    assert "INFER_LINEAGE_COLLISION" in {
+        item["code"] for item in duplicate_schema.metadata["inference_diagnostics"]
+    }
+
+
 def test_mapping_record_is_inferred_as_records_not_schema() -> None:
     result = etl.infer_source({"id": 1, "name": "Ada"})
     assert [field.name for field in result.schema.fields] == ["id", "name"]
