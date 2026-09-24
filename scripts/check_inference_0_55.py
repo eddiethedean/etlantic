@@ -304,6 +304,7 @@ def _check_generated_payloads() -> None:
             "fields": [{"name": "id", "type": "integer"}],
         },
         name="evidence-fixture",
+        target_identity="evidence-fixture-target",
     )
     for name, payload in (
         ("inference observation", result.to_dict()),

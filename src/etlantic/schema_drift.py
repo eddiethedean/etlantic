@@ -53,6 +53,7 @@ _SAFE_METADATA_KEYS = {
     "phase",
     "path",
     "identity",
+    "identity_unresolved",
     "revision",
     "source",
     "method",

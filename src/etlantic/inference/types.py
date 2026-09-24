@@ -491,9 +491,12 @@ class TargetObservation:
     @property
     def identity(self) -> str | None:
         """Stable target identity when an inspected schema provides one."""
+        if self.metadata.get("identity_unresolved") is True:
+            return None
+        schema_identity = self.schema.identity if self.schema is not None else None
         return (
-            self.schema.identity
-            if self.schema is not None
+            schema_identity
+            if schema_identity is not None
             else self.metadata.get("identity")
         )
 
@@ -525,7 +528,8 @@ class TargetObservation:
             raise ValueError(f"unsupported target observation version: {version}")
         schema_payload = payload.get("schema")
         metadata = _wire_mapping(payload.get("metadata") or {})
-        if payload.get("identity") is not None:
+        identity_unresolved = metadata.get("identity_unresolved") is True
+        if payload.get("identity") is not None and not identity_unresolved:
             metadata.setdefault("identity", str(payload["identity"]))
         diagnostics = [
             _diagnostic_from_dict(item) for item in (payload.get("diagnostics") or ())
@@ -549,7 +553,10 @@ class TargetObservation:
             if not isinstance(schema_payload, dict):
                 malformed_schema = True
             else:
-                if schema_payload.get("identity") is not None:
+                if (
+                    schema_payload.get("identity") is not None
+                    and not identity_unresolved
+                ):
                     metadata.setdefault("identity", str(schema_payload["identity"]))
                 fields_payload = schema_payload.get("fields")
                 field_names = (

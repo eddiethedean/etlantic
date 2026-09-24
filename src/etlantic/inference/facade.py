@@ -54,6 +54,7 @@ from .sources import infer_source
 from .targets import (
     _backfill_observation,
     _coerce_value,
+    _safe_target_identity,
     check_write_compatibility,
     infer_records_for_target,
     inspect_target,
@@ -513,7 +514,15 @@ class InferredDataset:
             target_binding_payload
             or target_binding(
                 observation,
-                identity=f"target:{self.name}",
+                identity=(
+                    observation.identity
+                    if observation is not None and observation.identity is not None
+                    else (
+                        "target:unresolved"
+                        if observation is not None
+                        else f"target:{self.name}"
+                    )
+                ),
                 requirements=target_requirements,
                 write_mode=target_write_mode,
             )
@@ -594,6 +603,14 @@ class InferredDataset:
             raise ValueError(
                 "inference diagnostics contain errors; durable export is not "
                 f"qualified ({', '.join(error_codes) or 'unknown diagnostic'})"
+            )
+        if (
+            self._result.target_observation is not None
+            and self._target_binding.get("identity") == "target:unresolved"
+        ):
+            raise ValueError(
+                "INFER_TARGET_IDENTITY_UNKNOWN: durable target bindings require "
+                "a stable identity or address"
             )
         self._check_target_revision()
         validate_target_binding(self._target_binding, check_capabilities=False)
@@ -1310,9 +1327,26 @@ class InferredDataset:
         create_intent: bool = False,
     ) -> OutputProposal:
         """Return an explicit create proposal for an absent target."""
-        observation = inspect_target(target, identity=identity or f"target:{self.name}")
-        proposal_identity = identity or observation.identity or f"target:{self.name}"
+        observation = inspect_target(target, identity=identity)
+        proposal_identity = (
+            _safe_target_identity(identity) if identity else observation.identity
+        )
         diagnostics = list(observation.diagnostics)
+        if proposal_identity is None and not any(
+            getattr(item, "code", None) == "INFER_TARGET_IDENTITY_UNKNOWN"
+            for item in diagnostics
+        ):
+            proposal_identity = "target:unresolved"
+            diagnostics.append(
+                Diagnostic(
+                    "INFER_TARGET_IDENTITY_UNKNOWN",
+                    Severity.ERROR,
+                    "Output proposal requires a stable target identity",
+                    phase="inference",
+                )
+            )
+        elif proposal_identity is None:
+            proposal_identity = "target:unresolved"
         if observation.exists == "present":
             diagnostics.append(
                 Diagnostic(
@@ -1417,13 +1451,18 @@ def from_records_for_target(
     name: str = "records",
     hints: Mapping[str, Any] | None = None,
     limits: InferenceLimits | None = None,
+    target_identity: str | None = None,
     expected_revision: str | None = None,
     revision_reader: Callable[[], Any] | None = None,
     source_factory: Callable[[], Any] | None = None,
     source_key: str | None = None,
     write_mode: str = "append",
 ) -> InferredDataset:
-    """Create a data first handle using an existing target as a type constraint."""
+    """Create a data-first handle using a target as a type constraint.
+
+    ``target_identity`` is required for durable export when the target payload
+    does not carry a stable identity or address.
+    """
     safe_name = _safe_file_identity(name)
     result = infer_records_for_target(
         records,
@@ -1431,6 +1470,7 @@ def from_records_for_target(
         hints=hints,
         limits=limits,
         identity=safe_name,
+        target_identity=target_identity,
         retain_rows=True,
         expected_revision=expected_revision,
         revision_reader=revision_reader,

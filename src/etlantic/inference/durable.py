@@ -58,6 +58,7 @@ _ABSOLUTE_PATH_FRAGMENT = re.compile(
     r"(?:^|[^A-Za-z0-9/:])(?:[A-Za-z]:[\\/]|/(?!/)|~[\\/])"
 )
 _PATH_URI_FRAGMENT = re.compile(r"(?:^|[^A-Za-z0-9])(?:file|s3|gs|az)://")
+_ANY_URI = re.compile(r"^[A-Za-z][A-Za-z0-9+.-]*://")
 
 
 def _safe_file_identity(identity: str) -> str:
@@ -65,6 +66,7 @@ def _safe_file_identity(identity: str) -> str:
     if (
         os.path.isabs(value)
         or value.startswith(("/", "~/", "file://", "s3://", "gs://", "az://"))
+        or _ANY_URI.match(value) is not None
         or _ABSOLUTE_PATH_FRAGMENT.search(value)
         or _PATH_URI_FRAGMENT.search(value)
     ):
