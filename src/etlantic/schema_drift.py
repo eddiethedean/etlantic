@@ -7,6 +7,7 @@ import csv
 import hashlib
 import json
 import math
+import ntpath
 import os
 import re
 from collections.abc import Iterable, Mapping
@@ -255,12 +256,15 @@ def _metadata_key_kind(key: str) -> str | None:
 
 def _looks_like_path(value: str) -> bool:
     """Return whether a string appears to contain a local or URI path."""
-    if os.path.isabs(value) or value.startswith(
+    if os.path.isabs(value) or ntpath.isabs(value) or value.startswith(
         ("~/", "file://", "s3://", "gs://", "az://")
     ):
         return True
     # Avoid leaking common temporary/home path fragments embedded in messages.
-    return bool(re.search(r"(?:^|[\s=])/(?:Users|home|tmp|var|Volumes)/", value))
+    return bool(
+        re.search(r"(?:^|[\s=])/(?:Users|home|tmp|var|Volumes)/", value)
+        or re.search(r"(?:^|[\s=])(?:[A-Za-z]:[\\/]|\\\\[^\\/\s]+[\\/])", value)
+    )
 
 
 def _wire_identity(value: str) -> str:

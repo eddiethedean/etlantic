@@ -138,6 +138,26 @@ def test_wire_identity_is_private_collision_resistant_and_fingerprintable() -> N
     assert left.fingerprint() != right.fingerprint()
 
 
+@pytest.mark.parametrize(
+    "identity",
+    [
+        r"C:\Users\alice\private\events.csv",
+        "C:/Users/alice/private/events.csv",
+        r"\\server\share\events.csv",
+    ],
+)
+def test_windows_path_identity_is_private_on_every_host(identity: str) -> None:
+    schema = NormalizedSchema(identity, (NormalizedField("id", "integer"),))
+    wire = schema.to_dict()
+
+    assert wire["identity"].startswith("path-sha256:")
+    assert identity not in repr(wire)
+    assert NormalizedSchema.from_dict(wire).fingerprint() == schema.fingerprint()
+    assert json_safe_metadata({"message": f"failed while reading {identity}"}) == {
+        "message": "<path-redacted>"
+    }
+
+
 def test_lineage_and_parser_control_metadata_round_trip_as_typed_values() -> None:
     schema = NormalizedSchema(
         "events",
