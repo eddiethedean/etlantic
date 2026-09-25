@@ -44,7 +44,7 @@ def test_csv_raw_byte_budget_counts_physical_reads(tmp_path: Path) -> None:
 def test_csv_exact_raw_byte_boundary_is_not_reported_as_limited(tmp_path: Path) -> None:
     path = tmp_path / "exact.csv"
     content = "id\n1\n2\n"
-    path.write_text(content)
+    path.write_bytes(content.encode())
 
     result = etl.infer_csv(
         path,
@@ -106,10 +106,7 @@ def test_csv_replay_preserves_parser_options_and_finishes_after_return(
     tmp_path: Path,
 ) -> None:
     path = tmp_path / "multiline.csv"
-    path.write_text(
-        'id;note\r\n1;"hello\r\nworld"\r\n2;next\r\n',
-        encoding="utf-16",
-    )
+    path.write_bytes('id;note\r\n1;"hello\r\nworld"\r\n2;next\r\n'.encode("utf-16"))
     options = {
         "encoding": "utf-16",
         "delimiter": ";",
