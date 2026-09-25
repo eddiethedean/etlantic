@@ -143,6 +143,7 @@ def test_wire_identity_is_private_collision_resistant_and_fingerprintable() -> N
     [
         r"C:\Users\alice\private\events.csv",
         "C:/Users/alice/private/events.csv",
+        r"\Users\alice\private\events.csv",
         r"\\server\share\events.csv",
     ],
 )
@@ -258,6 +259,7 @@ def test_provider_capability_sequences_are_allowlisted() -> None:
     [
         {"parser_options": {"unknown_option": True}},
         {"parser_options": {"strict": "yes"}},
+        {"parser_options": {"delimiter": None}},
         {"parser_options": {"delimiter": "/Users/alice/secret"}},
         {"capabilities": {"provider_payload": "untrusted"}},
         {"capabilities": ["PRIVATE_TOKEN"]},

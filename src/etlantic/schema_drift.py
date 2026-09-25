@@ -262,7 +262,10 @@ def _looks_like_path(value: str) -> bool:
     # Avoid leaking common temporary/home path fragments embedded in messages.
     return bool(
         re.search(r"(?:^|[\s=])/(?:Users|home|tmp|var|Volumes)/", value)
-        or re.search(r"(?:^|[\s=])(?:[A-Za-z]:[\\/]|\\\\[^\\/\s]+[\\/])", value)
+        or re.search(
+            r"(?:^|[\s=])(?:[A-Za-z]:[\\/]|\\[^\\/\s]+[\\/]|\\\\[^\\/\s]+[\\/])",
+            value,
+        )
     )
 
 
@@ -307,6 +310,8 @@ def _safe_parser_options(value: Any) -> dict[str, Any]:
             if type(item) is not int or item not in _CSV_QUOTING_MODES:
                 raise ValueError("parser option quoting must be a CSV quoting mode")
         elif key in {"delimiter", "quotechar", "escapechar"}:
+            if key == "delimiter" and item is None:
+                raise ValueError("parser option delimiter must be one safe character")
             if item is not None and (
                 not isinstance(item, str) or len(item) != 1 or _looks_like_path(item)
             ):
