@@ -145,6 +145,26 @@ def test_csv_timeout_retains_a_safe_replay(tmp_path: Path) -> None:
     assert list(result.replay.take()) == [{"id": 1}, {"id": 2}]
 
 
+def test_csv_replay_keeps_relative_source_when_working_directory_changes(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    path = tmp_path / "relative.csv"
+    path.write_text("id\n1\n2\n")
+    other_directory = tmp_path / "other"
+    other_directory.mkdir()
+
+    monkeypatch.chdir(tmp_path)
+    result = etl.infer_csv(
+        Path("relative.csv"),
+        limits=etl.InferenceLimits(max_rows=1),
+    )
+    assert result.replay is not None
+
+    monkeypatch.chdir(other_directory)
+    assert list(result.replay.take()) == [{"id": 1}, {"id": 2}]
+    assert result.provenance["replay_status"]["state"] == "complete"
+
+
 @pytest.mark.parametrize("change", ["delete", "modify"])
 def test_csv_replay_reports_deleted_or_changed_source(
     tmp_path: Path, change: str

@@ -758,7 +758,9 @@ def infer_csv(
 ) -> InferenceResult:
     """Infer a CSV schema, parsing common scalar spellings before inference."""
     limits = limits or InferenceLimits()
-    csv_path = Path(path).expanduser()
+    # Replay reopens the source after this call returns, so pin relative paths
+    # to the directory in which inference began.
+    csv_path = Path(path).expanduser().resolve()
     source_identity = identity or _path_identity("csv", path)
     try:
         if options is not None and not isinstance(options, Mapping):
