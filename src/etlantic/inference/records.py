@@ -1076,11 +1076,6 @@ def infer_csv(
 
                 replay_status["state"] = "in_progress"
                 try:
-                    if _csv_source_signature(csv_path.stat()) != source_signature:
-                        raise fail(
-                            "INFER_CSV_REPLAY_SOURCE",
-                            "CSV source changed or disappeared before replay",
-                        )
                     with csv_path.open("rb") as replay_source:
                         if (
                             _csv_source_signature(os.fstat(replay_source.fileno()))
