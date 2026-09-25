@@ -1295,6 +1295,13 @@ def test_invalid_csv_options_are_diagnosed(tmp_path) -> None:
     assert "INFER_CSV_OPTIONS" in {item.code for item in result.diagnostics}
 
 
+def test_unsupported_csv_parser_option_is_diagnosed(tmp_path) -> None:
+    path = tmp_path / "rows.csv"
+    path.write_text("id\n1\n", encoding="utf-8")
+    result = etl.infer_csv(path, options={"dialect": "excel"})
+    assert "INFER_CSV_OPTIONS" in {item.code for item in result.diagnostics}
+
+
 def test_jsonl_byte_limit_precedes_oversized_line_parse(tmp_path) -> None:
     path = tmp_path / "rows.jsonl"
     path.write_text('{"value":"this line is too large"}\n', encoding="utf-8")
