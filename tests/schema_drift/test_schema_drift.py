@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import csv
+
 import pytest
 
 from etlantic import Data
@@ -186,6 +188,51 @@ def test_lineage_and_parser_control_metadata_round_trip_as_typed_values() -> Non
     }
 
 
+def test_csv_quoting_modes_available_on_this_python_round_trip() -> None:
+    for name in (
+        "QUOTE_MINIMAL",
+        "QUOTE_ALL",
+        "QUOTE_NONNUMERIC",
+        "QUOTE_NONE",
+        "QUOTE_NOTNULL",
+        "QUOTE_STRINGS",
+    ):
+        if hasattr(csv, name):
+            mode = getattr(csv, name)
+            assert json_safe_metadata({"parser_options": {"quoting": mode}}) == {
+                "parser_options": {"quoting": mode}
+            }
+
+
+def test_control_field_names_do_not_expand_global_metadata_allowlist() -> None:
+    safe = json_safe_metadata(
+        {
+            "provider_metadata": {
+                "encoding": "PRIVATE_TOKEN",
+                "strict": "PRIVATE_TOKEN",
+                "invertible": "not-a-boolean",
+            }
+        }
+    )
+    assert safe == {
+        "provider_metadata": {
+            "encoding": "<redacted>",
+            "strict": "<redacted>",
+            "invertible": "<redacted>",
+        }
+    }
+    with pytest.raises(ValueError, match="lineage metadata"):
+        json_safe_metadata({"provider_metadata": {"lineage_graph": "PRIVATE_TOKEN"}})
+
+
+def test_provider_capability_sequences_are_allowlisted() -> None:
+    assert json_safe_metadata({"capabilities": ["append", "create"]}) == {
+        "capabilities": ["append", "create"]
+    }
+    with pytest.raises(ValueError, match="unsupported operation"):
+        json_safe_metadata({"capabilities": ["PRIVATE_TOKEN"]})
+
+
 @pytest.mark.parametrize(
     "metadata",
     [
@@ -193,6 +240,7 @@ def test_lineage_and_parser_control_metadata_round_trip_as_typed_values() -> Non
         {"parser_options": {"strict": "yes"}},
         {"parser_options": {"delimiter": "/Users/alice/secret"}},
         {"capabilities": {"provider_payload": "untrusted"}},
+        {"capabilities": ["PRIVATE_TOKEN"]},
         {"lineage_graph": {"version": 1, "fields": {"id": {"secret": "x"}}}},
     ],
 )

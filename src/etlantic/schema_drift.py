@@ -3,6 +3,7 @@
 
 from __future__ import annotations
 
+import csv
 import hashlib
 import json
 import math
@@ -124,17 +125,6 @@ _SAFE_METADATA_KEYS = {
     "lineage",
     "lineage_version",
     "lineage_fingerprint",
-    "lineage_graph",
-    "invertible",
-    "parser_options",
-    "encoding",
-    "delimiter",
-    "quotechar",
-    "escapechar",
-    "doublequote",
-    "strict",
-    "skipinitialspace",
-    "quoting",
     "graph",
     "backward_constraints",
     "backfill_explanations",
@@ -177,6 +167,18 @@ _CSV_PARSER_OPTION_KEYS = {
     "skipinitialspace",
     "quoting",
 }
+_CSV_QUOTING_MODES = frozenset(
+    getattr(csv, name)
+    for name in (
+        "QUOTE_MINIMAL",
+        "QUOTE_ALL",
+        "QUOTE_NONNUMERIC",
+        "QUOTE_NONE",
+        "QUOTE_NOTNULL",
+        "QUOTE_STRINGS",
+    )
+    if hasattr(csv, name)
+)
 _LINEAGE_ENTRY_KEYS = {
     "field",
     "source_node",
@@ -287,7 +289,7 @@ def _safe_parser_options(value: Any) -> dict[str, Any]:
             if type(item) is not bool:
                 raise ValueError(f"parser option {key} must be boolean")
         elif key == "quoting":
-            if type(item) is not int or item not in {0, 1, 2, 3}:
+            if type(item) is not int or item not in _CSV_QUOTING_MODES:
                 raise ValueError("parser option quoting must be a CSV quoting mode")
         elif key in {"delimiter", "quotechar", "escapechar"}:
             if item is not None and (
@@ -305,31 +307,53 @@ def _safe_parser_options(value: Any) -> dict[str, Any]:
     return safe
 
 
-def _safe_capabilities(value: Any) -> dict[str, Any]:
-    capabilities = _bounded_mapping(value, "provider capabilities")
-    if set(capabilities) - _PROVIDER_CAPABILITY_KEYS:
-        raise ValueError("provider capabilities contain unsupported keys")
-    safe: dict[str, Any] = {}
-    for raw_key, item in capabilities.items():
-        key = str(raw_key)
-        if key in {"write_modes", "modes", "operations"}:
-            if not isinstance(item, (list, tuple, set, frozenset)) or len(item) > 64:
-                raise ValueError(f"provider capability {key} must be a bounded list")
-            values = sorted(item) if isinstance(item, (set, frozenset)) else item
-            allowed_modes = (
-                _PROVIDER_WRITE_MODES if key == "write_modes" else _PROVIDER_OPERATIONS
-            )
-            if any(
-                not isinstance(mode, str) or mode not in allowed_modes
-                for mode in values
-            ):
-                raise ValueError(f"provider capability {key} contains an invalid mode")
-            safe[key] = list(values)
-        elif key == "create" and type(item) is bool:
-            safe[key] = item
-        else:
-            raise ValueError(f"provider capability {key} must be boolean")
-    return safe
+def _safe_capabilities(value: Any) -> dict[str, Any] | list[str] | None:
+    if value is None:
+        return None
+    if isinstance(value, Mapping):
+        capabilities = _bounded_mapping(value, "provider capabilities")
+        if set(capabilities) - _PROVIDER_CAPABILITY_KEYS:
+            raise ValueError("provider capabilities contain unsupported keys")
+        safe: dict[str, Any] = {}
+        for raw_key, item in capabilities.items():
+            key = str(raw_key)
+            if key in {"write_modes", "modes", "operations"}:
+                if (
+                    not isinstance(item, (list, tuple, set, frozenset))
+                    or len(item) > 64
+                ):
+                    raise ValueError(
+                        f"provider capability {key} must be a bounded list"
+                    )
+                if any(not isinstance(mode, str) for mode in item):
+                    raise ValueError(
+                        f"provider capability {key} contains an invalid mode"
+                    )
+                values = sorted(item) if isinstance(item, (set, frozenset)) else item
+                allowed_modes = (
+                    _PROVIDER_WRITE_MODES
+                    if key == "write_modes"
+                    else _PROVIDER_OPERATIONS
+                )
+                if any(mode not in allowed_modes for mode in values):
+                    raise ValueError(
+                        f"provider capability {key} contains an invalid mode"
+                    )
+                safe[key] = list(values)
+            elif key == "create" and type(item) is bool:
+                safe[key] = item
+            else:
+                raise ValueError(f"provider capability {key} must be boolean")
+        return safe
+    if isinstance(value, (list, tuple, set, frozenset)):
+        if len(value) > 64 or any(
+            not isinstance(item, str) or item not in _PROVIDER_OPERATIONS
+            for item in value
+        ):
+            raise ValueError("provider capabilities contain an unsupported operation")
+        values = sorted(value) if isinstance(value, (set, frozenset)) else value
+        return list(values)
+    raise ValueError("provider capabilities must be a bounded map or operation list")
 
 
 def _safe_lineage_entry(value: Any, allowed_keys: set[str]) -> dict[str, Any]:
@@ -441,11 +465,9 @@ def _json_safe(
         normalized_key = re.sub(r"[^a-z0-9_]", "", key.casefold())
         if normalized_key == "parser_options":
             return _safe_parser_options(value)
-        if normalized_key == "capabilities" and isinstance(value, Mapping):
+        if normalized_key == "capabilities":
             return _safe_capabilities(value)
-        if normalized_key in {"lineage", "lineage_graph"} and isinstance(
-            value, Mapping
-        ):
+        if normalized_key in {"lineage", "lineage_graph"} and value is not None:
             return _safe_lineage(value, graph=normalized_key == "lineage_graph")
         key_kind = _metadata_key_kind(key)
         if key_kind in {"secret", "row"}:
