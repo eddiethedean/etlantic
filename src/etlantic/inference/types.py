@@ -103,19 +103,34 @@ def _diagnostic_from_dict(value: Any) -> Any:
 
 @dataclass(frozen=True, slots=True)
 class InferenceLimits:
-    """Bounds for an inference pass."""
+    """Bounds for inference and materialization.
+
+    ``max_bytes`` bounds source bytes for file-backed readers (CSV accounts
+    physical bytes returned by its binary reader). ``max_materialized_bytes``
+    bounds estimated decoded/in-memory data; when omitted, in-memory record
+    inference retains the historical behavior of using ``max_bytes`` for that
+    estimate. CSV defaults its materialization estimate to the standard
+    64 MiB inference budget. ``max_field_size`` is a separate per-field parser
+    guard used by CSV.
+    """
 
     max_rows: int = 10_000
     max_fields: int = 1_000
     max_diagnostics: int = 100
     max_bytes: int | None = 64 * 1024 * 1024
     timeout_seconds: float | None = 30.0
+    max_materialized_bytes: int | None = None
+    max_field_size: int | None = 64 * 1024 * 1024
 
     def __post_init__(self) -> None:
         if self.max_rows < 0 or self.max_fields < 1 or self.max_diagnostics < 1:
             raise ValueError("inference limits must be positive (max_rows may be zero)")
         if self.max_bytes is not None and self.max_bytes < 1:
             raise ValueError("max_bytes must be positive when provided")
+        if self.max_materialized_bytes is not None and self.max_materialized_bytes < 1:
+            raise ValueError("max_materialized_bytes must be positive when provided")
+        if self.max_field_size is not None and self.max_field_size < 1:
+            raise ValueError("max_field_size must be positive when provided")
         if self.timeout_seconds is not None and self.timeout_seconds <= 0:
             raise ValueError("timeout_seconds must be positive when provided")
 
@@ -127,6 +142,8 @@ class InferenceLimits:
             "max_diagnostics": self.max_diagnostics,
             "max_bytes": self.max_bytes,
             "timeout_seconds": self.timeout_seconds,
+            "max_materialized_bytes": self.max_materialized_bytes,
+            "max_field_size": self.max_field_size,
         }
 
     @classmethod
@@ -151,14 +168,24 @@ class InferenceLimits:
                 if payload.get("timeout_seconds") is not None
                 else None
             ),
+            max_materialized_bytes=(
+                int(payload["max_materialized_bytes"])
+                if payload.get("max_materialized_bytes") is not None
+                else None
+            ),
+            max_field_size=(
+                int(payload["max_field_size"])
+                if payload.get("max_field_size") is not None
+                else None
+            ),
         )
 
 
 class InferenceReplayError(ValueError):
-    """Raised when target conversion fails while consuming a replay.
+    """Raised when inference replay fails while consuming a replay.
 
-    Replay conversion is fail-closed: iteration stops at the first invalid
-    row.  The structured diagnostic is available on ``diagnostic`` and the
+    Replay is fail-closed: iteration stops at the first invalid row or source
+    failure. The structured diagnostic is available on ``diagnostic`` and the
     zero-based position in the replay stream is available on ``row_index``.
     The exception message intentionally contains no source value.
     """
@@ -174,7 +201,7 @@ class InferenceReplayError(ValueError):
         self.diagnostics = tuple(diagnostics) or (diagnostic,)
         self.row_index = row_index
         super().__init__(
-            f"{diagnostic.code}: target replay conversion failed at row {row_index}"
+            f"{diagnostic.code}: inference replay failed at row {row_index}"
         )
 
 

@@ -3,11 +3,14 @@
 
 from __future__ import annotations
 
+import codecs
 import csv
 import datetime as _dt
 import hashlib
+import io
 import json
 import math
+import os
 import re
 import sys
 import time
@@ -26,7 +29,13 @@ from etlantic.schema_drift import (
     normalize_schema_from_fields,
 )
 
-from .types import InferenceLimits, InferenceResult, ReplayHandle, SchemaEvidence
+from .types import (
+    InferenceLimits,
+    InferenceReplayError,
+    InferenceResult,
+    ReplayHandle,
+    SchemaEvidence,
+)
 
 _INT = re.compile(r"^[+-]?\d+$")
 _NUMBER = re.compile(r"^[+-]?(?:\d+\.\d*|\d*\.\d+|\d+)(?:[eE][+-]?\d+)?$")
@@ -105,6 +114,62 @@ def _guarded_iterator(
         )
 
 
+class _CSVByteLimitReached(Exception):
+    """Internal signal that the CSV raw-byte budget stopped the reader."""
+
+
+class _BoundedCSVRaw(io.RawIOBase):
+    """Count bytes returned by a CSV source and enforce its raw-read budget."""
+
+    def __init__(self, source: Any, max_bytes: int | None):
+        super().__init__()
+        self._source = source
+        self._max_bytes = max_bytes
+        self.bytes_observed = 0
+
+    def readable(self) -> bool:
+        return True
+
+    def _has_remaining_bytes(self) -> bool:
+        try:
+            return self._source.tell() < os.fstat(self._source.fileno()).st_size
+        except (OSError, AttributeError):
+            return False
+
+    def readinto(self, buffer: Any) -> int:
+        if self.closed:
+            raise ValueError("I/O operation on closed CSV source")
+        requested = len(buffer)
+        if requested == 0:
+            return 0
+        if self._max_bytes is not None:
+            remaining = self._max_bytes - self.bytes_observed
+            if remaining <= 0:
+                if self._has_remaining_bytes():
+                    raise _CSVByteLimitReached
+                return 0
+            requested = min(requested, remaining)
+        data = self._source.read(requested)
+        size = len(data)
+        if size:
+            buffer[:size] = data
+            self.bytes_observed += size
+        return size
+
+
+def _csv_source_signature(
+    stat_result: os.stat_result,
+) -> tuple[int, int, int, int, int]:
+    """Identify a source version without serializing its path or contents."""
+    return (
+        stat_result.st_dev,
+        stat_result.st_ino,
+        stat_result.st_size,
+        stat_result.st_mtime_ns,
+        stat_result.st_ctime_ns,
+    )
+
+
 def _csv_row(
     row: Mapping[str | None, Any],
     *,
@@ -131,12 +196,12 @@ def _csv_row(
 
 
 @contextmanager
-def _csv_field_limit(max_bytes: int | None):
+def _csv_field_limit(max_field_size: int | None):
     """Bound csv's internal field buffer and restore its process-global setting."""
     previous = csv.field_size_limit()
     try:
-        if max_bytes is not None:
-            csv.field_size_limit(max(1, min(previous, max_bytes)))
+        if max_field_size is not None:
+            csv.field_size_limit(max(1, min(previous, max_field_size)))
         yield
     finally:
         csv.field_size_limit(previous)
@@ -377,6 +442,11 @@ def infer_records(
     replay_remainder: Iterable[Any] | None = None
     started_at = time.monotonic()
     bytes_observed = 0
+    materialized_limit = (
+        limits.max_materialized_bytes
+        if limits.max_materialized_bytes is not None
+        else limits.max_bytes
+    )
     for index, item in enumerate(iterator):
         if index >= limits.max_rows:
             sampled = True
@@ -398,11 +468,11 @@ def infer_records(
             break
         item_bytes = _estimate_size(item)
         if (
-            limits.max_bytes is not None
-            and bytes_observed + item_bytes > limits.max_bytes
+            materialized_limit is not None
+            and bytes_observed + item_bytes > materialized_limit
         ):
             sampled = True
-            sampled_reason = "bytes"
+            sampled_reason = "materialized_bytes"
             replay_remainder = chain((item,), iterator)
             _append_diag(
                 diagnostics,
@@ -639,6 +709,12 @@ def infer_records(
         "rows_observed": len(rows),
         "retained_rows": bool(retain_rows),
         "bytes_observed": bytes_observed,
+        "materialized_bytes_observed": bytes_observed,
+        "raw_bytes_observed": None,
+        "raw_byte_limit_applies": False,
+        "effective_materialized_bytes_limit": materialized_limit,
+        "limit_reason": sampled_reason,
+        "limit_reasons": [sampled_reason] if sampled_reason else [],
     }
     replay = (
         ReplayHandle(rows, iter(replay_remainder))
@@ -682,12 +758,17 @@ def infer_csv(
 ) -> InferenceResult:
     """Infer a CSV schema, parsing common scalar spellings before inference."""
     limits = limits or InferenceLimits()
+    csv_path = Path(path).expanduser()
+    source_identity = identity or _path_identity("csv", path)
     try:
         if options is not None and not isinstance(options, Mapping):
             raise TypeError("CSV options must be a mapping")
         opts = dict(options or {})
         null_values = {str(value) for value in opts.pop("null_values", {""})}
         encoding = opts.pop("encoding", "utf-8")
+        if not isinstance(encoding, str) or not encoding:
+            raise ValueError("CSV encoding must be a non-empty string")
+        codecs.lookup(encoding)
         supported_options = {
             "delimiter",
             "quotechar",
@@ -699,9 +780,10 @@ def infer_csv(
         }
         if set(opts) - supported_options:
             raise ValueError("CSV options contain unsupported parser settings")
-    except (TypeError, ValueError):
+        csv.reader((), **opts)
+    except (TypeError, ValueError, LookupError, csv.Error):
         return InferenceResult(
-            NormalizedSchema(identity or _path_identity("csv", path), fields=()),
+            NormalizedSchema(identity=source_identity, fields=()),
             (
                 _diag(
                     "INFER_CSV_OPTIONS",
@@ -709,7 +791,12 @@ def infer_csv(
                     severity=Severity.ERROR,
                 ),
             ),
-            provenance={"source": "csv", "limits": limits.to_dict()},
+            provenance={
+                "source": "csv",
+                "source_identity": source_identity,
+                "limits": limits.to_dict(),
+                "replay_status": {"state": "not_required"},
+            },
         )
     parser_options = {"encoding": encoding}
     parser_options.update(
@@ -727,149 +814,443 @@ def infer_csv(
             if key in opts
         }
     )
+    materialized_limit = (
+        limits.max_materialized_bytes
+        if limits.max_materialized_bytes is not None
+        else InferenceLimits().max_bytes
+    )
+    record_limits = InferenceLimits(
+        max_rows=limits.max_rows,
+        max_fields=limits.max_fields,
+        max_diagnostics=limits.max_diagnostics,
+        max_bytes=None,
+        timeout_seconds=limits.timeout_seconds,
+        max_materialized_bytes=materialized_limit,
+        max_field_size=limits.max_field_size,
+    )
+    bounded_reader: _BoundedCSVRaw | None = None
+    source_signature: tuple[int, int, int, int, int] | None = None
+    fieldnames: list[str] = []
+    row_diagnostics: list[Diagnostic] = []
+    parser_diagnostics: list[Diagnostic] = []
+    result: InferenceResult | None = None
+    reader_state = {"raw_limit_hit": False, "field_limit_hit": False}
     try:
         with (
-            _csv_field_limit(limits.max_bytes),
-            Path(path).open("r", newline="", encoding=encoding) as handle,
+            _csv_field_limit(limits.max_field_size),
+            csv_path.open("rb") as raw_source,
         ):
-            reader = csv.DictReader(handle, **opts)
-            if reader.fieldnames is None:
-                return InferenceResult(
-                    NormalizedSchema(
-                        identity or _path_identity("csv", path), fields=()
-                    ),
-                    (
-                        _diag(
-                            "INFER_CSV_HEADER",
-                            "CSV has no header",
-                            severity=Severity.ERROR,
+            source_signature = _csv_source_signature(os.fstat(raw_source.fileno()))
+            bounded_reader = _BoundedCSVRaw(raw_source, limits.max_bytes)
+            buffered = io.BufferedReader(bounded_reader)
+            with io.TextIOWrapper(buffered, encoding=encoding, newline="") as handle:
+                reader = csv.DictReader(handle, **opts)
+                raw_fieldnames = reader.fieldnames
+                if raw_fieldnames is None:
+                    return InferenceResult(
+                        NormalizedSchema(identity=source_identity, fields=()),
+                        (
+                            _diag(
+                                "INFER_CSV_HEADER",
+                                "CSV has no header",
+                                severity=Severity.ERROR,
+                            ),
                         ),
-                    ),
-                    provenance={
-                        "source": "csv",
-                        "limits": limits.to_dict(),
-                        "parser_options": parser_options,
-                    },
-                )
-            fieldnames = list(reader.fieldnames)
-            if any(not name for name in fieldnames) or len(set(fieldnames)) != len(
-                fieldnames
-            ):
-                return InferenceResult(
-                    NormalizedSchema(
-                        identity or _path_identity("csv", path), fields=()
-                    ),
-                    (
-                        _diag(
-                            "INFER_CSV_HEADER",
-                            "CSV header contains empty or duplicate field names",
-                            severity=Severity.ERROR,
+                        provenance={
+                            "source": "csv",
+                            "source_identity": source_identity,
+                            "limits": limits.to_dict(),
+                            "parser_options": parser_options,
+                            "raw_bytes_observed": bounded_reader.bytes_observed,
+                            "materialized_bytes_observed": 0,
+                            "bytes_observed": 0,
+                            "limit_reason": None,
+                            "replay_status": {"state": "not_required"},
+                        },
+                    )
+                fieldnames = list(raw_fieldnames)
+                if any(not name for name in fieldnames) or len(set(fieldnames)) != len(
+                    fieldnames
+                ):
+                    return InferenceResult(
+                        NormalizedSchema(identity=source_identity, fields=()),
+                        (
+                            _diag(
+                                "INFER_CSV_HEADER",
+                                "CSV header contains empty or duplicate field names",
+                                severity=Severity.ERROR,
+                            ),
                         ),
-                    ),
-                    provenance={
-                        "source": "csv",
-                        "limits": limits.to_dict(),
-                        "parser_options": parser_options,
-                    },
+                        provenance={
+                            "source": "csv",
+                            "source_identity": source_identity,
+                            "limits": limits.to_dict(),
+                            "parser_options": parser_options,
+                            "raw_bytes_observed": bounded_reader.bytes_observed,
+                            "materialized_bytes_observed": 0,
+                            "bytes_observed": 0,
+                            "limit_reason": None,
+                            "replay_status": {"state": "not_required"},
+                        },
+                    )
+
+                def rows() -> Iterable[dict[str, Any]]:
+                    try:
+                        for row in reader:
+                            yield _csv_row(
+                                row,
+                                fieldnames=fieldnames,
+                                null_values=null_values,
+                                diagnostics=row_diagnostics,
+                                max_diagnostics=limits.max_diagnostics,
+                            )
+                    except _CSVByteLimitReached:
+                        reader_state["raw_limit_hit"] = True
+                    except csv.Error as exc:
+                        field_limit_hit = (
+                            "field larger than field limit" in str(exc).casefold()
+                        )
+                        reader_state["field_limit_hit"] = field_limit_hit
+                        diagnostic = _diag(
+                            "INFER_CSV_FIELD_LIMIT"
+                            if field_limit_hit
+                            else "INFER_CSV_PARSE",
+                            "CSV field exceeds the configured per-field limit"
+                            if field_limit_hit
+                            else "Unable to parse CSV records",
+                            severity=Severity.ERROR,
+                        )
+                        _append_diag(
+                            parser_diagnostics,
+                            diagnostic,
+                            limits.max_diagnostics,
+                        )
+                    except (OSError, UnicodeError, LookupError) as exc:
+                        _append_diag(
+                            parser_diagnostics,
+                            _diag(
+                                "INFER_CSV_PARSE",
+                                f"Unable to parse CSV records: {type(exc).__name__}",
+                                severity=Severity.ERROR,
+                            ),
+                            limits.max_diagnostics,
+                        )
+
+                result = infer_records(
+                    rows(),
+                    hints=hints,
+                    limits=record_limits,
+                    identity=source_identity,
+                    retain_rows=retain_rows,
                 )
 
-            row_diagnostics: list[Diagnostic] = []
-            rows = (
-                _csv_row(
-                    row,
-                    fieldnames=fieldnames,
-                    null_values=null_values,
-                    diagnostics=row_diagnostics,
-                    max_diagnostics=limits.max_diagnostics,
+                file_size = os.fstat(raw_source.fileno()).st_size
+                raw_limit_hit = bool(reader_state["raw_limit_hit"])
+                raw_limit_hit = raw_limit_hit or (
+                    limits.max_bytes is not None
+                    and bounded_reader.bytes_observed >= limits.max_bytes
+                    and file_size > limits.max_bytes
                 )
-                for row in reader
-            )
-            result = infer_records(
-                rows,
-                hints=hints,
-                limits=limits,
-                identity=identity or _path_identity("csv", path),
-                retain_rows=retain_rows,
-            )
-            header_hints = {
-                name: _hint_type((hints or {}).get(name)) for name in fieldnames
-            }
-            header_diagnostics = [
+
+        assert (
+            result is not None
+            and bounded_reader is not None
+            and source_signature is not None
+        )
+        sampled = bool(result.provenance.get("sampled", False))
+        limit_reasons: list[str] = [
+            str(reason) for reason in result.provenance.get("limit_reasons", ())
+        ]
+        if reader_state["field_limit_hit"]:
+            sampled = True
+            limit_reasons.append("field_size")
+        if raw_limit_hit:
+            sampled = True
+            limit_reasons.append("raw_bytes")
+            _append_diag(
+                parser_diagnostics,
                 _diag(
-                    "INFER_UNKNOWN_TYPE",
-                    f"Field {name!r} has no observed typed values",
-                    path=(name,),
-                )
-                for name in fieldnames
-                if result.provenance.get("rows_observed") == 0
-                and header_hints[name] is None
-            ]
-            diagnostics = tuple(
-                (row_diagnostics + list(result.diagnostics) + header_diagnostics)[
-                    : limits.max_diagnostics
-                ]
+                    "INFER_CSV_BYTE_LIMIT",
+                    "CSV raw input byte limit reached",
+                ),
+                limits.max_diagnostics,
             )
-            if not result.schema.fields and result.provenance.get("rows_observed") == 0:
-                result = InferenceResult(
-                    normalize_schema_from_fields(
-                        [
-                            {
-                                "name": name,
-                                "logical_type": header_hints[name] or "unknown",
-                                "required": False,
-                                "nullable": True,
-                                "header_only": True,
-                                **(
-                                    {"inference_evidence": "no_observed_values"}
-                                    if header_hints[name] is None
-                                    else {}
-                                ),
-                            }
-                            for name in fieldnames
-                        ],
-                        identity=identity or _path_identity("csv", path),
-                    ),
-                    diagnostics,
-                    result.evidence,
+
+        if len(set(limit_reasons)) > 1:
+            limit_reason = "multiple"
+        elif limit_reasons:
+            limit_reason = limit_reasons[0]
+        else:
+            limit_reason = None
+
+        materialized_bytes = int(
+            result.provenance.get(
+                "materialized_bytes_observed",
+                result.provenance.get("bytes_observed", 0),
+            )
+        )
+        header_hints = {
+            name: _hint_type((hints or {}).get(name)) for name in fieldnames
+        }
+        header_diagnostics = [
+            _diag(
+                "INFER_UNKNOWN_TYPE",
+                f"Field {name!r} has no observed typed values",
+                path=(name,),
+            )
+            for name in fieldnames
+            if result.provenance.get("rows_observed") == 0
+            and header_hints[name] is None
+        ]
+        diagnostics = tuple(
+            (
+                row_diagnostics
+                + parser_diagnostics
+                + list(result.diagnostics)
+                + header_diagnostics
+            )[: limits.max_diagnostics]
+        )
+        schema = result.schema
+        if not result.schema.fields and result.provenance.get("rows_observed") == 0:
+            schema = normalize_schema_from_fields(
+                [
                     {
-                        **result.provenance,
-                        "source": "csv",
+                        "name": name,
+                        "logical_type": header_hints[name] or "unknown",
+                        "required": False,
+                        "nullable": True,
                         "header_only": True,
-                        "limits": limits.to_dict(),
-                        "parser_options": parser_options,
-                    },
-                    result.rows,
-                    result.replay,
-                )
-            else:
-                result = InferenceResult(
-                    result.schema,
-                    diagnostics,
-                    result.evidence,
-                    {
-                        **result.provenance,
-                        "source": "csv",
-                        "limits": limits.to_dict(),
-                        "parser_options": parser_options,
-                    },
-                    result.rows,
-                    result.replay,
-                )
-            return result
-    except (OSError, csv.Error, UnicodeError, TypeError, ValueError) as exc:
+                        **(
+                            {"inference_evidence": "no_observed_values"}
+                            if header_hints[name] is None
+                            else {}
+                        ),
+                    }
+                    for name in fieldnames
+                ],
+                identity=source_identity,
+            )
+
+        replay_status: dict[str, Any] = {
+            "state": "pending" if sampled else "not_required",
+            "rows_observed": 0,
+            "raw_bytes_observed": 0,
+        }
+        replay: ReplayHandle | None = None
+        if sampled:
+            mixed_fields = {
+                str(diagnostic.path[0])
+                for diagnostic in result.diagnostics
+                if getattr(diagnostic, "code", None) == "INFER_MIXED_TYPE"
+                and getattr(diagnostic, "path", ())
+            }
+            decimal_fields = {
+                field.name
+                for field in result.schema.fields
+                if field.logical_type == "decimal"
+            }
+
+            def replay_rows() -> Iterable[dict[str, Any]]:
+                row_index = 0
+                replay_reader: _BoundedCSVRaw | None = None
+
+                def fail(code: str, message: str) -> InferenceReplayError:
+                    diagnostic = _diag(
+                        code,
+                        message,
+                        severity=Severity.ERROR,
+                    )
+                    replay_status.update(
+                        {
+                            "state": "failed",
+                            "rows_observed": row_index,
+                            "diagnostic": diagnostic.to_dict(),
+                            "raw_bytes_observed": (
+                                replay_reader.bytes_observed
+                                if replay_reader is not None
+                                else 0
+                            ),
+                        }
+                    )
+                    return InferenceReplayError(diagnostic, row_index)
+
+                replay_status["state"] = "in_progress"
+                try:
+                    if _csv_source_signature(csv_path.stat()) != source_signature:
+                        raise fail(
+                            "INFER_CSV_REPLAY_SOURCE",
+                            "CSV source changed or disappeared before replay",
+                        )
+                    with csv_path.open("rb") as replay_source:
+                        if (
+                            _csv_source_signature(os.fstat(replay_source.fileno()))
+                            != source_signature
+                        ):
+                            raise fail(
+                                "INFER_CSV_REPLAY_SOURCE",
+                                "CSV source changed or disappeared before replay",
+                            )
+                        replay_reader = _BoundedCSVRaw(replay_source, None)
+                        with (
+                            _csv_field_limit(limits.max_field_size),
+                            io.TextIOWrapper(
+                                io.BufferedReader(replay_reader),
+                                encoding=encoding,
+                                newline="",
+                            ) as replay_handle,
+                        ):
+                            replay_parser = csv.DictReader(replay_handle, **opts)
+                            if list(replay_parser.fieldnames or ()) != fieldnames:
+                                raise fail(
+                                    "INFER_CSV_REPLAY_SOURCE",
+                                    "CSV header changed before replay",
+                                )
+                            for raw_row in replay_parser:
+                                replay_row = _csv_row(
+                                    raw_row,
+                                    fieldnames=fieldnames,
+                                    null_values=null_values,
+                                    diagnostics=[],
+                                    max_diagnostics=limits.max_diagnostics,
+                                )
+                                for name in mixed_fields:
+                                    if (
+                                        name in replay_row
+                                        and replay_row[name] is not None
+                                    ):
+                                        replay_row[name] = str(replay_row[name])
+                                for name in decimal_fields:
+                                    value = replay_row.get(name)
+                                    if isinstance(
+                                        value, (int, float)
+                                    ) and not isinstance(value, bool):
+                                        replay_row[name] = Decimal(str(value))
+                                row_index += 1
+                                replay_status.update(
+                                    {
+                                        "state": "in_progress",
+                                        "rows_observed": row_index,
+                                        "raw_bytes_observed": replay_reader.bytes_observed,
+                                    }
+                                )
+                                yield replay_row
+                    replay_status.update(
+                        {
+                            "state": "complete",
+                            "rows_observed": row_index,
+                            "raw_bytes_observed": replay_reader.bytes_observed,
+                        }
+                    )
+                except InferenceReplayError:
+                    raise
+                except csv.Error as exc:
+                    field_limit_hit = (
+                        "field larger than field limit" in str(exc).casefold()
+                    )
+                    raise fail(
+                        "INFER_CSV_FIELD_LIMIT"
+                        if field_limit_hit
+                        else "INFER_CSV_REPLAY_PARSE",
+                        "CSV field exceeds the configured per-field limit"
+                        if field_limit_hit
+                        else "Unable to parse CSV during replay",
+                    ) from None
+                except (OSError, UnicodeError, LookupError, TypeError, ValueError):
+                    raise fail(
+                        "INFER_CSV_REPLAY_SOURCE",
+                        "CSV source could not be reopened or parsed for replay",
+                    ) from None
+
+            replay = ReplayHandle((), iter(replay_rows()))
+
+        effective_limits = limits.to_dict()
+        effective_limits["max_materialized_bytes"] = materialized_limit
+        provenance = {
+            **result.provenance,
+            "source": "csv",
+            "source_identity": source_identity,
+            "limits": effective_limits,
+            "parser_options": parser_options,
+            "sampled": sampled,
+            "limit_reason": limit_reason,
+            "limit_reasons": list(dict.fromkeys(limit_reasons)),
+            "rows_observed": result.provenance.get("rows_observed", 0),
+            "bytes_observed": materialized_bytes,
+            "materialized_bytes_observed": materialized_bytes,
+            "raw_bytes_observed": bounded_reader.bytes_observed,
+            "byte_accounting": {
+                "raw_bytes": "physical bytes returned by the bounded binary reader",
+                "materialized_bytes": "estimated decoded Python record size",
+            },
+            "replay_status": replay_status,
+        }
         return InferenceResult(
-            NormalizedSchema(identity or _path_identity("csv", path), fields=()),
+            schema,
+            diagnostics,
+            result.evidence,
+            provenance,
+            result.rows,
+            replay,
+        )
+    except _CSVByteLimitReached:
+        raw_bytes = bounded_reader.bytes_observed if bounded_reader else 0
+        diagnostic = _diag("INFER_CSV_BYTE_LIMIT", "CSV raw input byte limit reached")
+        return InferenceResult(
+            NormalizedSchema(identity=source_identity, fields=()),
+            (diagnostic,),
+            provenance={
+                "source": "csv",
+                "source_identity": source_identity,
+                "limits": limits.to_dict(),
+                "parser_options": parser_options,
+                "sampled": True,
+                "limit_reason": "raw_bytes",
+                "limit_reasons": ["raw_bytes"],
+                "bytes_observed": 0,
+                "materialized_bytes_observed": 0,
+                "raw_bytes_observed": raw_bytes,
+                "replay_status": {"state": "not_available"},
+            },
+        )
+    except (
+        OSError,
+        csv.Error,
+        UnicodeError,
+        LookupError,
+        TypeError,
+        ValueError,
+    ) as exc:
+        field_limit_hit = isinstance(exc, csv.Error) and (
+            "field larger than field limit" in str(exc).casefold()
+        )
+        code = "INFER_CSV_FIELD_LIMIT" if field_limit_hit else "INFER_CSV_PARSE"
+        message = (
+            "CSV field exceeds the configured per-field limit"
+            if field_limit_hit
+            else f"Unable to parse CSV: {type(exc).__name__}"
+        )
+        return InferenceResult(
+            NormalizedSchema(identity=source_identity, fields=()),
             (
                 _diag(
-                    "INFER_CSV_PARSE",
-                    f"Unable to parse CSV: {type(exc).__name__}",
+                    code,
+                    message,
                     severity=Severity.ERROR,
                 ),
             ),
             provenance={
                 "source": "csv",
+                "source_identity": source_identity,
                 "limits": limits.to_dict(),
                 "parser_options": parser_options,
+                "sampled": field_limit_hit,
+                "limit_reason": "field_size" if field_limit_hit else None,
+                "bytes_observed": 0,
+                "materialized_bytes_observed": 0,
+                "raw_bytes_observed": (
+                    bounded_reader.bytes_observed if bounded_reader else 0
+                ),
+                "replay_status": {"state": "not_available"},
             },
         )
 
