@@ -62,9 +62,7 @@ def _bounded_view(data: Any, max_rows: int | None) -> Any:
         raise _BoundedViewError("provider head returned the unbounded source")
     row_count = _bounded_length(bounded)
     if row_count is not None and row_count > max_rows + 1:
-        raise _BoundedViewError(
-            "provider head returned more than the bounded row view"
-        )
+        raise _BoundedViewError("provider head returned more than the bounded row view")
     if row_count is None and not _has_bounded_provider_contract(bounded):
         raise _BoundedViewError("provider head did not prove a bounded view")
     return bounded
