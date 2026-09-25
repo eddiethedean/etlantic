@@ -209,6 +209,33 @@ def test_lineage_and_parser_control_metadata_round_trip_as_typed_values() -> Non
     }
 
 
+def test_lineage_set_fields_are_canonical_and_set_operations_are_rejected() -> None:
+    safe = json_safe_metadata(
+        {
+            "lineage": {
+                "id": {
+                    "source_fields": {"gamma", "alpha", "beta"},
+                    "qualified_source_fields": frozenset(
+                        {"events.gamma", "events.alpha", "events.beta"}
+                    ),
+                    "source_nodes": {"node-c", "node-a", "node-b"},
+                }
+            }
+        }
+    )
+
+    assert safe["lineage"]["id"]["source_fields"] == ["alpha", "beta", "gamma"]
+    assert safe["lineage"]["id"]["qualified_source_fields"] == [
+        "events.alpha",
+        "events.beta",
+        "events.gamma",
+    ]
+    assert safe["lineage"]["id"]["source_nodes"] == ["node-a", "node-b", "node-c"]
+
+    with pytest.raises(ValueError, match="operations must be ordered"):
+        json_safe_metadata({"lineage": {"id": {"operations": {"trim", "lower"}}}})
+
+
 def test_csv_quoting_modes_available_on_this_python_round_trip() -> None:
     for name in (
         "QUOTE_MINIMAL",

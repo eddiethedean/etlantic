@@ -407,6 +407,8 @@ def _safe_lineage_entry(value: Any, allowed_keys: set[str]) -> dict[str, Any]:
                 for name, kind in sorted(types.items(), key=lambda pair: str(pair[0]))
             }
         elif key == "operations":
+            if isinstance(item, (set, frozenset)):
+                raise ValueError("lineage operations must be ordered")
             operation_values = _bounded_sequence(item, "lineage operations", 256)
             operations: list[Any] = []
             for operation in operation_values:
@@ -441,11 +443,14 @@ def _safe_lineage_entry(value: Any, allowed_keys: set[str]) -> dict[str, Any]:
             parts = _bounded_sequence(item, f"lineage {key}", 256)
             if any(not isinstance(part, str) for part in parts):
                 raise ValueError(f"lineage {key} must be a bounded string list")
+            string_parts = cast(list[str], parts)
+            if isinstance(item, (set, frozenset)):
+                string_parts.sort()
             safe[key] = [
-                _wire_identity(cast(str, part))
+                _wire_identity(part)
                 if key == "source_nodes"
-                else _json_safe(cast(str, part), key=key)
-                for part in parts
+                else _json_safe(part, key=key)
+                for part in string_parts
             ]
     return safe
 
