@@ -101,12 +101,15 @@ def test_unmarked_custom_head_view_is_rejected() -> None:
         as_records(Provider(), None, max_rows=2)
 
 
-def test_provider_conversion_failure_is_stable_and_does_not_leak_error() -> None:
+@pytest.mark.parametrize("error_type", [RuntimeError, ValueError])
+def test_provider_conversion_failure_is_stable_and_does_not_leak_error(
+    error_type: type[Exception],
+) -> None:
     class View:
         __etlantic_bounded_view__ = True
 
         def to_dicts(self):
-            raise RuntimeError("provider secret and source rows")
+            raise error_type("provider secret and source rows")
 
     class Provider:
         def head(self, count: int):

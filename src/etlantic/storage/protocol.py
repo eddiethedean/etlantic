@@ -13,6 +13,10 @@ _KNOWN_BOUNDED_PROVIDER_MODULES = frozenset(
 )
 
 
+class _BoundedViewError(ValueError):
+    """Internal validation failure for an unproven provider view."""
+
+
 def _bounded_length(value: Any) -> int | None:
     try:
         return len(value)
@@ -43,24 +47,26 @@ def _require_materialization_limit(max_rows: int | None) -> int:
 def _bounded_view(data: Any, max_rows: int | None) -> Any:
     """Require an explicit bounded view before eager provider conversion."""
     if max_rows is None:
-        raise ValueError(
+        raise _BoundedViewError(
             "provider conversion requires a finite max_rows bound; refusing "
             "unbounded materialization"
         )
     head = getattr(data, "head", None)
     if not callable(head):
-        raise ValueError("provider conversion requires a bounded head view")
+        raise _BoundedViewError("provider conversion requires a bounded head view")
     try:
         bounded = head(max_rows + 1)
     except Exception:
-        raise ValueError("provider bounded head view failed") from None
+        raise _BoundedViewError("provider bounded head view failed") from None
     if bounded is data:
-        raise ValueError("provider head returned the unbounded source")
+        raise _BoundedViewError("provider head returned the unbounded source")
     row_count = _bounded_length(bounded)
     if row_count is not None and row_count > max_rows + 1:
-        raise ValueError("provider head returned more than the bounded row view")
+        raise _BoundedViewError(
+            "provider head returned more than the bounded row view"
+        )
     if row_count is None and not _has_bounded_provider_contract(bounded):
-        raise ValueError("provider head did not prove a bounded view")
+        raise _BoundedViewError("provider head did not prove a bounded view")
     return bounded
 
 
@@ -124,7 +130,7 @@ def as_records(
                 items = list(islice(converted, max_rows + 1))
             else:
                 items = [converted]
-        except ValueError:
+        except _BoundedViewError:
             raise
         except Exception:
             raise ValueError(
@@ -139,7 +145,7 @@ def as_records(
                 items = list(islice(converted, max_rows + 1))
             else:
                 items = [converted]
-        except ValueError:
+        except _BoundedViewError:
             raise
         except Exception:
             raise ValueError(
