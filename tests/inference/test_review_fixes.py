@@ -1295,7 +1295,7 @@ def test_invalid_csv_options_are_diagnosed(tmp_path) -> None:
     assert "INFER_CSV_OPTIONS" in {item.code for item in result.diagnostics}
 
 
-def test_unsupported_csv_parser_option_is_diagnosed(tmp_path) -> None:
+def test_unsupported_csv_parser_option_is_diagnosed(tmp_path: Path) -> None:
     path = tmp_path / "rows.csv"
     path.write_text("id\n1\n", encoding="utf-8")
     result = etl.infer_csv(path, options={"dialect": "excel"})

@@ -9,11 +9,11 @@ import json
 import math
 import os
 import re
-from collections.abc import Mapping
+from collections.abc import Iterable, Mapping
 from dataclasses import dataclass, field
 from datetime import date, datetime
 from enum import StrEnum
-from typing import Any
+from typing import Any, cast
 
 from etlantic.contracts import Data, is_data_contract_type
 
@@ -272,9 +272,21 @@ def _wire_identity(value: str) -> str:
 
 
 def _bounded_mapping(value: Any, label: str) -> Mapping[str, Any]:
-    if not isinstance(value, Mapping) or len(value) > 256:
+    if not isinstance(value, Mapping):
         raise ValueError(f"{label} must be a bounded mapping")
-    return value
+    mapping = cast(Mapping[str, Any], value)
+    if len(mapping) > 256:
+        raise ValueError(f"{label} must be a bounded mapping")
+    return mapping
+
+
+def _bounded_sequence(value: Any, label: str, maximum: int) -> list[Any]:
+    if not isinstance(value, (list, tuple, set, frozenset)):
+        raise ValueError(f"{label} must be a bounded sequence")
+    values = list(cast(Iterable[Any], value))
+    if len(values) > maximum:
+        raise ValueError(f"{label} must be a bounded sequence")
+    return values
 
 
 def _safe_parser_options(value: Any) -> dict[str, Any]:
@@ -318,41 +330,44 @@ def _safe_capabilities(value: Any) -> dict[str, Any] | list[str] | None:
         for raw_key, item in capabilities.items():
             key = str(raw_key)
             if key in {"write_modes", "modes", "operations"}:
-                if (
-                    not isinstance(item, (list, tuple, set, frozenset))
-                    or len(item) > 64
-                ):
-                    raise ValueError(
-                        f"provider capability {key} must be a bounded list"
-                    )
-                if any(not isinstance(mode, str) for mode in item):
+                values = _bounded_sequence(item, f"provider capability {key}", 64)
+                if any(not isinstance(mode, str) for mode in values):
                     raise ValueError(
                         f"provider capability {key} contains an invalid mode"
                     )
-                values = sorted(item) if isinstance(item, (set, frozenset)) else item
+                string_values = cast(list[str], values)
                 allowed_modes = (
                     _PROVIDER_WRITE_MODES
                     if key == "write_modes"
                     else _PROVIDER_OPERATIONS
                 )
-                if any(mode not in allowed_modes for mode in values):
+                if any(mode not in allowed_modes for mode in string_values):
                     raise ValueError(
                         f"provider capability {key} contains an invalid mode"
                     )
-                safe[key] = list(values)
+                safe[key] = (
+                    sorted(string_values)
+                    if isinstance(item, (set, frozenset))
+                    else string_values
+                )
             elif key == "create" and type(item) is bool:
                 safe[key] = item
             else:
                 raise ValueError(f"provider capability {key} must be boolean")
         return safe
     if isinstance(value, (list, tuple, set, frozenset)):
-        if len(value) > 64 or any(
+        values = _bounded_sequence(value, "provider capabilities", 64)
+        if any(
             not isinstance(item, str) or item not in _PROVIDER_OPERATIONS
-            for item in value
+            for item in values
         ):
             raise ValueError("provider capabilities contain an unsupported operation")
-        values = sorted(value) if isinstance(value, (set, frozenset)) else value
-        return list(values)
+        string_values = cast(list[str], values)
+        return (
+            sorted(string_values)
+            if isinstance(value, (set, frozenset))
+            else string_values
+        )
     raise ValueError("provider capabilities must be a bounded map or operation list")
 
 
@@ -384,43 +399,45 @@ def _safe_lineage_entry(value: Any, allowed_keys: set[str]) -> dict[str, Any]:
                 for name, kind in sorted(types.items(), key=lambda pair: str(pair[0]))
             }
         elif key == "operations":
-            if not isinstance(item, (list, tuple)) or len(item) > 256:
-                raise ValueError("lineage operations must be a bounded list")
+            operation_values = _bounded_sequence(item, "lineage operations", 256)
             operations: list[Any] = []
-            for operation in item:
+            for operation in operation_values:
                 if isinstance(operation, str):
                     operations.append(_json_safe(operation, key="operation"))
-                elif (
-                    isinstance(operation, Mapping)
-                    and set(operation) in ({"operation"}, {"operation", "field"})
-                    and isinstance(operation["operation"], str)
-                    and (
-                        "field" not in operation or isinstance(operation["field"], str)
-                    )
-                ):
+                elif isinstance(operation, Mapping):
+                    operation_map = _bounded_mapping(operation, "lineage operation")
+                    if (
+                        set(operation_map)
+                        not in ({"operation"}, {"operation", "field"})
+                        or not isinstance(operation_map.get("operation"), str)
+                        or (
+                            "field" in operation_map
+                            and not isinstance(operation_map["field"], str)
+                        )
+                    ):
+                        raise ValueError("lineage operations contain an invalid entry")
                     safe_operation = {
-                        "operation": _json_safe(operation["operation"], key="operation")
+                        "operation": _json_safe(
+                            operation_map["operation"], key="operation"
+                        )
                     }
-                    if "field" in operation:
+                    if "field" in operation_map:
                         safe_operation["field"] = _json_safe(
-                            operation["field"], key="field"
+                            operation_map["field"], key="field"
                         )
                     operations.append(safe_operation)
                 else:
                     raise ValueError("lineage operations contain an invalid entry")
             safe[key] = operations
         else:
-            if (
-                not isinstance(item, (list, tuple))
-                or len(item) > 256
-                or any(not isinstance(part, str) for part in item)
-            ):
+            parts = _bounded_sequence(item, f"lineage {key}", 256)
+            if any(not isinstance(part, str) for part in parts):
                 raise ValueError(f"lineage {key} must be a bounded string list")
             safe[key] = [
-                _wire_identity(part)
+                _wire_identity(cast(str, part))
                 if key == "source_nodes"
-                else _json_safe(part, key=key)
-                for part in item
+                else _json_safe(cast(str, part), key=key)
+                for part in parts
             ]
     return safe
 
