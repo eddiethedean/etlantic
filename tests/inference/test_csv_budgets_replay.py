@@ -157,7 +157,8 @@ def test_csv_replay_reports_deleted_or_changed_source(
     if change == "delete":
         path.unlink()
     else:
-        path.write_text("id\n1\n9\n")
+        # A size change is observable even on filesystems with coarse timestamps.
+        path.write_text("id\n1\n9\nextra\n")
 
     with pytest.raises(etl.InferenceReplayError) as error:
         list(result.replay.take())
