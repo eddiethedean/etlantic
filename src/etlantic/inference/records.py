@@ -760,8 +760,27 @@ def infer_csv(
     limits = limits or InferenceLimits()
     # Replay reopens the source after this call returns, so pin relative paths
     # to the directory in which inference began.
-    csv_path = Path(path).expanduser().resolve()
-    source_identity = identity or _path_identity("csv", path)
+    source_identity = identity or "csv:unresolved"
+    try:
+        csv_path = Path(path).expanduser().resolve()
+        source_identity = identity or _path_identity("csv", csv_path)
+    except (OSError, RuntimeError, TypeError, ValueError) as exc:
+        return InferenceResult(
+            NormalizedSchema(identity=source_identity, fields=()),
+            (
+                _diag(
+                    "INFER_CSV_PARSE",
+                    f"Unable to parse CSV: {type(exc).__name__}",
+                    severity=Severity.ERROR,
+                ),
+            ),
+            provenance={
+                "source": "csv",
+                "source_identity": source_identity,
+                "limits": limits.to_dict(),
+                "replay_status": {"state": "not_available"},
+            },
+        )
     try:
         if options is not None and not isinstance(options, Mapping):
             raise TypeError("CSV options must be a mapping")
@@ -1091,21 +1110,25 @@ def infer_csv(
                                 "CSV source changed or disappeared before replay",
                             )
                         replay_reader = _BoundedCSVRaw(replay_source, None)
-                        with (
-                            _csv_field_limit(limits.max_field_size),
-                            io.TextIOWrapper(
-                                io.BufferedReader(replay_reader),
-                                encoding=encoding,
-                                newline="",
-                            ) as replay_handle,
-                        ):
+                        with io.TextIOWrapper(
+                            io.BufferedReader(replay_reader),
+                            encoding=encoding,
+                            newline="",
+                        ) as replay_handle:
                             replay_parser = csv.DictReader(replay_handle, **opts)
-                            if list(replay_parser.fieldnames or ()) != fieldnames:
+                            with _csv_field_limit(limits.max_field_size):
+                                replay_fieldnames = list(replay_parser.fieldnames or ())
+                            if replay_fieldnames != fieldnames:
                                 raise fail(
                                     "INFER_CSV_REPLAY_SOURCE",
                                     "CSV header changed before replay",
                                 )
-                            for raw_row in replay_parser:
+                            while True:
+                                try:
+                                    with _csv_field_limit(limits.max_field_size):
+                                        raw_row = next(replay_parser)
+                                except StopIteration:
+                                    break
                                 replay_row = _csv_row(
                                     raw_row,
                                     fieldnames=fieldnames,

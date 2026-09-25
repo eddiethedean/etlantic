@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import csv
 import json
 from pathlib import Path
 
@@ -18,6 +19,30 @@ def test_inference_limits_round_trip_separate_byte_budgets() -> None:
     )
 
     assert etl.InferenceLimits.from_dict(limits.to_dict()) == limits
+
+
+def test_legacy_inference_limits_use_default_csv_field_size() -> None:
+    limits = etl.InferenceLimits.from_dict(
+        {
+            "version": 1,
+            "max_rows": 10,
+            "max_fields": 20,
+            "max_diagnostics": 5,
+            "max_bytes": 1024,
+            "timeout_seconds": 1.0,
+        }
+    )
+
+    assert limits.max_field_size == etl.InferenceLimits().max_field_size
+    assert (
+        etl.InferenceLimits.from_dict(
+            {
+                "version": 1,
+                "max_field_size": None,
+            }
+        ).max_field_size
+        is None
+    )
 
 
 def test_csv_raw_byte_budget_counts_physical_reads(tmp_path: Path) -> None:
@@ -228,6 +253,25 @@ def test_csv_replay_is_single_use_and_serialization_stays_row_free(
     assert "hidden" not in serialized
 
 
+def test_partial_csv_replay_restores_process_field_limit(tmp_path: Path) -> None:
+    path = tmp_path / "partial-replay.csv"
+    path.write_text("id\n1\n2\n")
+    previous_limit = csv.field_size_limit()
+
+    try:
+        csv.field_size_limit(1024)
+        result = etl.infer_csv(
+            path,
+            limits=etl.InferenceLimits(max_rows=1, max_field_size=8),
+        )
+        assert result.replay is not None
+
+        assert list(result.replay.limit(1).take()) == [{"id": 1}]
+        assert csv.field_size_limit() == 1024
+    finally:
+        csv.field_size_limit(previous_limit)
+
+
 def test_invalid_csv_encoding_and_parser_options_are_diagnosed(
     tmp_path: Path,
 ) -> None:
@@ -239,3 +283,16 @@ def test_invalid_csv_encoding_and_parser_options_are_diagnosed(
 
     assert "INFER_CSV_OPTIONS" in {item.code for item in bad_encoding.diagnostics}
     assert "INFER_CSV_OPTIONS" in {item.code for item in bad_delimiter.diagnostics}
+
+
+def test_csv_path_resolution_failure_is_diagnosed(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    def fail_resolve(self: Path, strict: bool = False) -> Path:
+        raise RuntimeError("symlink loop")
+
+    monkeypatch.setattr(Path, "resolve", fail_resolve)
+
+    result = etl.infer_csv(tmp_path / "unresolvable.csv")
+
+    assert "INFER_CSV_PARSE" in {item.code for item in result.diagnostics}

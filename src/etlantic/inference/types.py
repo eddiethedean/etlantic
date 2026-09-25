@@ -176,7 +176,9 @@ class InferenceLimits:
             max_field_size=(
                 int(payload["max_field_size"])
                 if payload.get("max_field_size") is not None
-                else None
+                else (
+                    defaults.max_field_size if "max_field_size" not in payload else None
+                )
             ),
         )
 
