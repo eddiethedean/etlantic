@@ -8,18 +8,65 @@ from itertools import islice
 from typing import Any, Protocol, runtime_checkable
 
 DEFAULT_MATERIALIZATION_ROWS = 10_000
+_KNOWN_BOUNDED_PROVIDER_MODULES = frozenset(
+    {"datafusion", "duckdb", "_duckdb", "pandas", "polars", "pyarrow"}
+)
+
+
+class _BoundedViewError(ValueError):
+    """Internal validation failure for an unproven provider view."""
+
+
+def _bounded_length(value: Any) -> int | None:
+    try:
+        return len(value)
+    except (TypeError, ValueError, OverflowError):
+        return None
+
+
+def _has_bounded_provider_contract(value: Any) -> bool:
+    if bool(getattr(value, "__etlantic_bounded_view__", False)):
+        return True
+    module = type(value).__module__.split(".", 1)[0].casefold()
+    return module in _KNOWN_BOUNDED_PROVIDER_MODULES
+
+
+def _require_materialization_limit(max_rows: int | None) -> int:
+    if max_rows is None:
+        raise ValueError(
+            "record materialization requires a finite max_rows bound; "
+            "unbounded provider conversion is not supported"
+        )
+    if isinstance(max_rows, bool):
+        raise ValueError("max_rows must be an integer")
+    if max_rows < 0:
+        raise ValueError("max_rows must be non-negative")
+    return max_rows
 
 
 def _bounded_view(data: Any, max_rows: int | None) -> Any:
     """Require an explicit bounded view before eager provider conversion."""
     if max_rows is None:
-        return data
+        raise _BoundedViewError(
+            "provider conversion requires a finite max_rows bound; refusing "
+            "unbounded materialization"
+        )
     head = getattr(data, "head", None)
     if not callable(head):
-        raise ValueError("provider conversion requires a bounded head view")
-    bounded = head(max_rows + 1)
+        raise _BoundedViewError("provider conversion requires a bounded head view")
+    try:
+        bounded = head(max_rows + 1)
+    except Exception:
+        raise _BoundedViewError("provider bounded head view failed") from None
     if bounded is data:
-        raise ValueError("provider head returned the unbounded source")
+        raise _BoundedViewError("provider head returned the unbounded source")
+    row_count = _bounded_length(bounded)
+    if row_count is not None and row_count > max_rows + 1:
+        raise _BoundedViewError(
+            "provider head returned more than the bounded row view"
+        )
+    if row_count is None and not _has_bounded_provider_contract(bounded):
+        raise _BoundedViewError("provider head did not prove a bounded view")
     return bounded
 
 
@@ -55,9 +102,15 @@ def as_records(
     *,
     max_rows: int | None = DEFAULT_MATERIALIZATION_ROWS,
 ) -> list[Any]:
-    """Normalize data to a list of contract instances or mappings."""
-    if max_rows is not None and max_rows < 0:
-        raise ValueError("max_rows must be non-negative")
+    """Normalize data to a bounded list of contract instances or mappings.
+
+    ``max_rows`` is an inference and runtime safety boundary.  Passing
+    ``None`` is intentionally rejected because provider and iterable
+    conversion would otherwise require eagerly materializing an unbounded
+    source.  Providers must return a bounded ``head`` view, or mark that view
+    with ``__etlantic_bounded_view__ = True``.
+    """
+    max_rows = _require_materialization_limit(max_rows)
     if data is None:
         return []
     if isinstance(data, list):
@@ -69,30 +122,34 @@ def as_records(
         # a declared materialization boundary.  Normalize that view before
         # validating a public Data contract rather than treating the frame
         # object itself as one record.
-        converted = _bounded_view(data, max_rows).to_dicts()
-        items = (
-            list(islice(converted, max_rows + 1))
-            if max_rows is not None and isinstance(converted, Iterable)
-            else (list(converted) if isinstance(converted, Iterable) else [converted])
-        )
+        try:
+            converted = _bounded_view(data, max_rows).to_dicts()
+            if isinstance(converted, Mapping):
+                items = [converted]
+            elif isinstance(converted, Iterable):
+                items = list(islice(converted, max_rows + 1))
+            else:
+                items = [converted]
+        except _BoundedViewError:
+            raise
+        except Exception:
+            raise ValueError(
+                "provider conversion failed; refusing to retain provider object"
+            ) from None
     elif hasattr(data, "to_dict") and callable(data.to_dict):
         try:
             converted = _bounded_view(data, max_rows).to_dict(orient="records")
-            items = (
-                list(islice(converted, max_rows + 1))
-                if max_rows is not None
-                and isinstance(converted, Iterable)
-                and not isinstance(converted, Mapping)
-                else (
-                    list(converted)
-                    if isinstance(converted, Iterable)
-                    and not isinstance(converted, Mapping)
-                    else [converted]
-                )
-            )
-        except TypeError:
+            if isinstance(converted, Mapping):
+                items = [converted]
+            elif isinstance(converted, Iterable):
+                items = list(islice(converted, max_rows + 1))
+            else:
+                items = [converted]
+        except _BoundedViewError:
+            raise
+        except Exception:
             raise ValueError(
-                "provider to_dict conversion failed; refusing to retain provider object"
+                "provider conversion failed; refusing to retain provider object"
             ) from None
     elif isinstance(data, Mapping):
         items = [data]
@@ -100,10 +157,10 @@ def as_records(
         # Generic iterables of dictionaries are the portable records boundary.
         # Materialize exactly once so generators remain usable by inference and
         # by subsequent contract validation.
-        items = list(islice(data, max_rows + 1)) if max_rows is not None else list(data)
+        items = list(islice(data, max_rows + 1))
     else:
         items = [data]
-    if max_rows is not None and len(items) > max_rows:
+    if len(items) > max_rows:
         raise ValueError(f"record materialization exceeded max_rows={max_rows}")
     if contract_type is None:
         return items
