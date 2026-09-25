@@ -136,6 +136,65 @@ def test_csv_field_size_limit_can_exceed_process_default_and_is_restored(
         csv.field_size_limit(previous_limit)
 
 
+def test_csv_unset_field_size_limit_ignores_process_default_and_is_restored(
+    tmp_path: Path,
+) -> None:
+    path = tmp_path / "large-unbounded-field.csv"
+    path.write_text("value\n" + "x" * 200_000 + "\n")
+    previous_limit = csv.field_size_limit()
+
+    try:
+        csv.field_size_limit(64)
+        result = etl.infer_csv(
+            path,
+            limits=etl.InferenceLimits(
+                max_bytes=300_000,
+                max_materialized_bytes=300_000,
+                max_field_size=None,
+            ),
+        )
+
+        assert result.schema.fields[0].logical_type == "string"
+        assert "INFER_CSV_FIELD_LIMIT" not in {item.code for item in result.diagnostics}
+        assert csv.field_size_limit() == 64
+    finally:
+        csv.field_size_limit(previous_limit)
+
+
+def test_csv_max_fields_caps_header_only_schemas(tmp_path: Path) -> None:
+    path = tmp_path / "wide-header.csv"
+    path.write_text("first,second\n")
+
+    result = etl.infer_csv(
+        path,
+        limits=etl.InferenceLimits(max_fields=1),
+        retain_rows=True,
+    )
+
+    assert [field.name for field in result.schema.fields] == ["first"]
+    assert "INFER_LIMIT" in {item.code for item in result.diagnostics}
+    assert result.provenance["limit_reason"] == "fields"
+    assert result.provenance["limit_reasons"] == ["fields"]
+
+
+def test_csv_max_fields_caps_rows_and_replay_but_checks_full_header(
+    tmp_path: Path,
+) -> None:
+    path = tmp_path / "wide-rows.csv"
+    path.write_text("first,second\na,b\nc,d\n")
+
+    result = etl.infer_csv(
+        path,
+        limits=etl.InferenceLimits(max_fields=1, max_rows=1),
+        retain_rows=True,
+    )
+
+    assert [field.name for field in result.schema.fields] == ["first"]
+    assert result.rows == ({"first": "a"},)
+    assert result.replay is not None
+    assert list(result.replay.take()) == [{"first": "a"}, {"first": "c"}]
+
+
 def test_concurrent_csv_inference_serializes_process_global_field_limit(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:

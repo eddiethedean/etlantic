@@ -111,7 +111,8 @@ class InferenceLimits:
     inference retains the historical behavior of using ``max_bytes`` for that
     estimate. CSV defaults its materialization estimate to the standard
     64 MiB inference budget. ``max_field_size`` is a separate per-field parser
-    guard used by CSV.
+    guard used by CSV; ``None`` removes that inference-specific cap, subject to
+    the parser's platform maximum.
     """
 
     max_rows: int = 10_000

@@ -205,11 +205,14 @@ def _csv_field_limit(max_field_size: int | None):
     with _CSV_FIELD_LIMIT_LOCK:
         previous = csv.field_size_limit()
         try:
-            if max_field_size is not None:
-                # Honor the inference limit even when it is larger than csv's
-                # process default. Clamp only to the largest size accepted by
-                # the platform's C-backed csv parser.
-                csv.field_size_limit(min(max_field_size, sys.maxsize))
+            # ``None`` means no inference-specific field cap. Use the largest
+            # size accepted by the C-backed parser instead of inheriting an
+            # unrelated process-global default.
+            csv.field_size_limit(
+                sys.maxsize
+                if max_field_size is None
+                else min(max_field_size, sys.maxsize)
+            )
             yield
         finally:
             csv.field_size_limit(previous)
@@ -861,10 +864,12 @@ def infer_csv(
     bounded_reader: _BoundedCSVRaw | None = None
     source_signature: tuple[int, int, int, int, int] | None = None
     fieldnames: list[str] = []
+    source_fieldnames: list[str] = []
     row_diagnostics: list[Diagnostic] = []
     parser_diagnostics: list[Diagnostic] = []
     result: InferenceResult | None = None
     reader_state = {"raw_limit_hit": False, "field_limit_hit": False}
+    header_field_limit_hit = False
     try:
         with csv_path.open("rb") as raw_source:
             source_signature = _csv_source_signature(os.fstat(raw_source.fileno()))
@@ -897,7 +902,18 @@ def infer_csv(
                             "replay_status": {"state": "not_required"},
                         },
                     )
-                fieldnames = list(raw_fieldnames)
+                source_fieldnames = list(raw_fieldnames)
+                header_field_limit_hit = len(source_fieldnames) > limits.max_fields
+                fieldnames = source_fieldnames[: limits.max_fields]
+                if header_field_limit_hit:
+                    _append_diag(
+                        parser_diagnostics,
+                        _diag(
+                            "INFER_LIMIT",
+                            "Maximum inferred field count reached",
+                        ),
+                        limits.max_diagnostics,
+                    )
                 if any(not name for name in fieldnames) or len(set(fieldnames)) != len(
                     fieldnames
                 ):
@@ -996,6 +1012,8 @@ def infer_csv(
         limit_reasons: list[str] = [
             str(reason) for reason in result.provenance.get("limit_reasons", ())
         ]
+        if header_field_limit_hit:
+            limit_reasons.append("fields")
         if reader_state["field_limit_hit"]:
             sampled = True
             limit_reasons.append("field_size")
@@ -1143,7 +1161,7 @@ def infer_csv(
                             replay_parser = csv.DictReader(replay_handle, **opts)
                             with _csv_field_limit(limits.max_field_size):
                                 replay_fieldnames = list(replay_parser.fieldnames or ())
-                            if replay_fieldnames != fieldnames:
+                            if replay_fieldnames != source_fieldnames:
                                 raise fail(
                                     "INFER_CSV_REPLAY_SOURCE",
                                     "CSV header changed before replay",
