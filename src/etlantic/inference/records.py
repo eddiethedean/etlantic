@@ -201,7 +201,10 @@ def _csv_field_limit(max_field_size: int | None):
     previous = csv.field_size_limit()
     try:
         if max_field_size is not None:
-            csv.field_size_limit(max(1, min(previous, max_field_size)))
+            # Honor the inference limit even when it is larger than csv's
+            # process default.  Clamp only to the largest size accepted by
+            # the platform's C-backed csv parser.
+            csv.field_size_limit(min(max_field_size, sys.maxsize))
         yield
     finally:
         csv.field_size_limit(previous)
@@ -1062,11 +1065,25 @@ def infer_csv(
         }
         replay: ReplayHandle | None = None
         if sampled:
+            string_fields = {
+                field.name
+                for field in result.schema.fields
+                if field.logical_type == "string"
+            }
+            # Diagnostics are deliberately capped, so they cannot be the
+            # source of truth for replay normalization decisions.
             mixed_fields = {
-                str(diagnostic.path[0])
-                for diagnostic in result.diagnostics
-                if getattr(diagnostic, "code", None) == "INFER_MIXED_TYPE"
-                and getattr(diagnostic, "path", ())
+                evidence.field
+                for evidence in result.evidence
+                if evidence.field in string_fields
+                and len(
+                    {
+                        type_name
+                        for type_name, count in evidence.type_counts.items()
+                        if type_name != "null" and count > 0
+                    }
+                )
+                > 1
             }
             decimal_fields = {
                 field.name

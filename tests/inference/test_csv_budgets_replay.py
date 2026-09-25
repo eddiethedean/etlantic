@@ -109,6 +109,31 @@ def test_csv_field_size_has_a_distinct_diagnostic(tmp_path: Path) -> None:
     assert result.provenance["limit_reason"] == "field_size"
 
 
+def test_csv_field_size_limit_can_exceed_process_default_and_is_restored(
+    tmp_path: Path,
+) -> None:
+    path = tmp_path / "large-but-allowed-field.csv"
+    path.write_text("value\n" + "x" * 200_000 + "\n")
+    previous_limit = csv.field_size_limit()
+
+    try:
+        csv.field_size_limit(64)
+        result = etl.infer_csv(
+            path,
+            limits=etl.InferenceLimits(
+                max_bytes=300_000,
+                max_materialized_bytes=300_000,
+                max_field_size=250_000,
+            ),
+        )
+
+        assert result.schema.fields[0].logical_type == "string"
+        assert "INFER_CSV_FIELD_LIMIT" not in {item.code for item in result.diagnostics}
+        assert csv.field_size_limit() == 64
+    finally:
+        csv.field_size_limit(previous_limit)
+
+
 def test_csv_materialized_budget_is_separate_from_raw_budget(tmp_path: Path) -> None:
     path = tmp_path / "materialized.csv"
     path.write_text("id,payload\n1,small\n2,small\n")
@@ -183,6 +208,31 @@ def test_csv_timeout_retains_a_safe_replay(tmp_path: Path) -> None:
     assert result.provenance["limit_reason"] == "time"
     assert result.replay is not None
     assert list(result.replay.take()) == [{"id": 1}, {"id": 2}]
+
+
+def test_csv_replay_normalizes_mixed_fields_when_diagnostics_are_capped(
+    tmp_path: Path,
+) -> None:
+    path = tmp_path / "mixed-capped-diagnostics.csv"
+    path.write_text("first,second\n1,10\ntrue,true\n2,20\nfalse,false\n")
+
+    result = etl.infer_csv(
+        path,
+        limits=etl.InferenceLimits(max_rows=2, max_diagnostics=1),
+    )
+
+    assert [field.logical_type for field in result.schema.fields] == [
+        "string",
+        "string",
+    ]
+    assert [diagnostic.code for diagnostic in result.diagnostics] == ["INFER_LIMIT"]
+    assert result.replay is not None
+    assert list(result.replay.take()) == [
+        {"first": "1", "second": "10"},
+        {"first": "True", "second": "True"},
+        {"first": "2", "second": "20"},
+        {"first": "False", "second": "False"},
+    ]
 
 
 def test_csv_replay_keeps_relative_source_when_working_directory_changes(
