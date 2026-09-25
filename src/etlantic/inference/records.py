@@ -205,13 +205,13 @@ def _csv_field_limit(max_field_size: int | None):
     with _CSV_FIELD_LIMIT_LOCK:
         previous = csv.field_size_limit()
         try:
-            # ``None`` means no inference-specific field cap. Use the largest
-            # size accepted by the C-backed parser instead of inheriting an
+            # The CSV parser uses C ``long`` (32-bit on Windows). ``None``
+            # removes the inference-specific cap without inheriting an
             # unrelated process-global default.
             csv.field_size_limit(
-                sys.maxsize
+                (sys.maxsize if os.name != "nt" else 2**31 - 1)
                 if max_field_size is None
-                else min(max_field_size, sys.maxsize)
+                else min(max_field_size, sys.maxsize if os.name != "nt" else 2**31 - 1)
             )
             yield
         finally:
