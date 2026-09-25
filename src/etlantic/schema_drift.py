@@ -3,16 +3,17 @@
 
 from __future__ import annotations
 
+import csv
 import hashlib
 import json
 import math
 import os
 import re
-from collections.abc import Mapping
+from collections.abc import Iterable, Mapping
 from dataclasses import dataclass, field
 from datetime import date, datetime
 from enum import StrEnum
-from typing import Any
+from typing import Any, cast
 
 from etlantic.contracts import Data, is_data_contract_type
 
@@ -156,6 +157,55 @@ _STRUCTURAL_MAP_KEYS = {
     "limits",
 }
 
+_CSV_PARSER_OPTION_KEYS = {
+    "encoding",
+    "delimiter",
+    "quotechar",
+    "escapechar",
+    "doublequote",
+    "strict",
+    "skipinitialspace",
+    "quoting",
+}
+_CSV_QUOTING_MODES = frozenset(
+    getattr(csv, name)
+    for name in (
+        "QUOTE_MINIMAL",
+        "QUOTE_ALL",
+        "QUOTE_NONNUMERIC",
+        "QUOTE_NONE",
+        "QUOTE_NOTNULL",
+        "QUOTE_STRINGS",
+    )
+    if hasattr(csv, name)
+)
+_LINEAGE_ENTRY_KEYS = {
+    "field",
+    "source_node",
+    "source_nodes",
+    "source_fields",
+    "qualified_source_fields",
+    "source_types",
+    "operations",
+    "invertible",
+}
+_LINEAGE_GRAPH_KEYS = {"version", "fields"}
+_LINEAGE_GRAPH_FIELD_KEYS = {
+    "source_nodes",
+    "source_fields",
+    "qualified_source_fields",
+    "operations",
+    "invertible",
+}
+_PROVIDER_CAPABILITY_KEYS = {
+    "write_modes",
+    "modes",
+    "operations",
+    "create",
+}
+_PROVIDER_WRITE_MODES = {"append", "overwrite", "merge", "upsert", "partition_replace"}
+_PROVIDER_OPERATIONS = _PROVIDER_WRITE_MODES | {"create"}
+
 
 def _metadata_key_kind(key: str) -> str | None:
     """Classify metadata keys before values are traversed.
@@ -210,7 +260,227 @@ def _looks_like_path(value: str) -> bool:
     ):
         return True
     # Avoid leaking common temporary/home path fragments embedded in messages.
-    return bool(re.search(r"(?:^|[\s=])/(?:Users|home|tmp|var|Volumes)/", value))
+    return bool(
+        re.search(r"(?:^|[\s=])/(?:Users|home|tmp|var|Volumes)/", value)
+        or re.search(
+            r"(?:^|[\s=])(?:[A-Za-z]:[\\/]|\\[^\\/\s]+[\\/]|\\\\[^\\/\s]+[\\/])",
+            value,
+        )
+    )
+
+
+def _wire_identity(value: str) -> str:
+    """Return a stable, path-private identity used by both wire and hashes."""
+    if not _looks_like_path(value):
+        return value
+    digest = hashlib.sha256(value.encode("utf-8")).hexdigest()
+    return f"path-sha256:{digest}"
+
+
+def _bounded_mapping(value: Any, label: str) -> Mapping[str, Any]:
+    if not isinstance(value, Mapping):
+        raise ValueError(f"{label} must be a bounded mapping")
+    mapping = cast(Mapping[str, Any], value)
+    if len(mapping) > 256:
+        raise ValueError(f"{label} must be a bounded mapping")
+    return mapping
+
+
+def _bounded_sequence(value: Any, label: str, maximum: int) -> list[Any]:
+    if not isinstance(value, (list, tuple, set, frozenset)):
+        raise ValueError(f"{label} must be a bounded sequence")
+    values = list(cast(Iterable[Any], value))
+    if len(values) > maximum:
+        raise ValueError(f"{label} must be a bounded sequence")
+    return values
+
+
+def _safe_parser_options(value: Any) -> dict[str, Any]:
+    options = _bounded_mapping(value, "parser_options")
+    unknown = set(options) - _CSV_PARSER_OPTION_KEYS
+    if unknown:
+        raise ValueError("parser_options contains unsupported keys")
+    safe: dict[str, Any] = {}
+    for raw_key, item in options.items():
+        key = str(raw_key)
+        if key in {"doublequote", "strict", "skipinitialspace"}:
+            if type(item) is not bool:
+                raise ValueError(f"parser option {key} must be boolean")
+        elif key == "quoting":
+            if type(item) is not int or item not in _CSV_QUOTING_MODES:
+                raise ValueError("parser option quoting must be a CSV quoting mode")
+        elif key in {"delimiter", "quotechar", "escapechar"}:
+            if key == "delimiter" and item is None:
+                raise ValueError("parser option delimiter must be one safe character")
+            if item is not None and (
+                not isinstance(item, str) or len(item) != 1 or _looks_like_path(item)
+            ):
+                raise ValueError(f"parser option {key} must be one safe character")
+        elif key == "encoding" and (
+            not isinstance(item, str)
+            or not item
+            or len(item) > 64
+            or _looks_like_path(item)
+        ):
+            raise ValueError("parser option encoding must be a safe name")
+        safe[key] = item
+    return safe
+
+
+def _safe_capabilities(value: Any) -> dict[str, Any] | list[str] | None:
+    if value is None:
+        return None
+    if isinstance(value, Mapping):
+        capabilities = _bounded_mapping(value, "provider capabilities")
+        if set(capabilities) - _PROVIDER_CAPABILITY_KEYS:
+            raise ValueError("provider capabilities contain unsupported keys")
+        safe: dict[str, Any] = {}
+        for raw_key, item in capabilities.items():
+            key = str(raw_key)
+            if key in {"write_modes", "modes", "operations"}:
+                values = _bounded_sequence(item, f"provider capability {key}", 64)
+                if any(not isinstance(mode, str) for mode in values):
+                    raise ValueError(
+                        f"provider capability {key} contains an invalid mode"
+                    )
+                string_values = cast(list[str], values)
+                allowed_modes = (
+                    _PROVIDER_WRITE_MODES
+                    if key == "write_modes"
+                    else _PROVIDER_OPERATIONS
+                )
+                if any(mode not in allowed_modes for mode in string_values):
+                    raise ValueError(
+                        f"provider capability {key} contains an invalid mode"
+                    )
+                safe[key] = (
+                    sorted(string_values)
+                    if isinstance(item, (set, frozenset))
+                    else string_values
+                )
+            elif key == "create" and type(item) is bool:
+                safe[key] = item
+            else:
+                raise ValueError(f"provider capability {key} must be boolean")
+        return safe
+    if isinstance(value, (list, tuple, set, frozenset)):
+        values = _bounded_sequence(value, "provider capabilities", 64)
+        if any(
+            not isinstance(item, str) or item not in _PROVIDER_OPERATIONS
+            for item in values
+        ):
+            raise ValueError("provider capabilities contain an unsupported operation")
+        string_values = cast(list[str], values)
+        return (
+            sorted(string_values)
+            if isinstance(value, (set, frozenset))
+            else string_values
+        )
+    raise ValueError("provider capabilities must be a bounded map or operation list")
+
+
+def _safe_lineage_entry(value: Any, allowed_keys: set[str]) -> dict[str, Any]:
+    entry = _bounded_mapping(value, "lineage entry")
+    if set(entry) - allowed_keys:
+        raise ValueError("lineage entry contains unsupported keys")
+    safe: dict[str, Any] = {}
+    for raw_key, item in entry.items():
+        key = str(raw_key)
+        if key == "invertible":
+            if type(item) is not bool:
+                raise ValueError("lineage invertible must be boolean")
+            safe[key] = item
+        elif key in {"field", "source_node"}:
+            if item is not None and not isinstance(item, str):
+                raise ValueError(f"lineage {key} must be a string")
+            safe[key] = (
+                _wire_identity(item)
+                if key == "source_node" and item
+                else _json_safe(item, key=key)
+            )
+        elif key == "source_types":
+            types = _bounded_mapping(item, "lineage source_types")
+            if any(not isinstance(kind, str) for kind in types.values()):
+                raise ValueError("lineage source_types must map names to types")
+            safe[key] = {
+                _json_safe(str(name), key="field"): _json_safe(kind, key="logical_type")
+                for name, kind in sorted(types.items(), key=lambda pair: str(pair[0]))
+            }
+        elif key == "operations":
+            if isinstance(item, (set, frozenset)):
+                raise ValueError("lineage operations must be ordered")
+            operation_values = _bounded_sequence(item, "lineage operations", 256)
+            operations: list[Any] = []
+            for operation in operation_values:
+                if isinstance(operation, str):
+                    operations.append(_json_safe(operation, key="operation"))
+                elif isinstance(operation, Mapping):
+                    operation_map = _bounded_mapping(operation, "lineage operation")
+                    if (
+                        set(operation_map)
+                        not in ({"operation"}, {"operation", "field"})
+                        or not isinstance(operation_map.get("operation"), str)
+                        or (
+                            "field" in operation_map
+                            and not isinstance(operation_map["field"], str)
+                        )
+                    ):
+                        raise ValueError("lineage operations contain an invalid entry")
+                    safe_operation = {
+                        "operation": _json_safe(
+                            operation_map["operation"], key="operation"
+                        )
+                    }
+                    if "field" in operation_map:
+                        safe_operation["field"] = _json_safe(
+                            operation_map["field"], key="field"
+                        )
+                    operations.append(safe_operation)
+                else:
+                    raise ValueError("lineage operations contain an invalid entry")
+            safe[key] = operations
+        else:
+            parts = _bounded_sequence(item, f"lineage {key}", 256)
+            if any(not isinstance(part, str) for part in parts):
+                raise ValueError(f"lineage {key} must be a bounded string list")
+            string_parts = cast(list[str], parts)
+            if isinstance(item, (set, frozenset)):
+                string_parts.sort()
+            safe[key] = [
+                _wire_identity(part)
+                if key == "source_nodes"
+                else _json_safe(part, key=key)
+                for part in string_parts
+            ]
+    return safe
+
+
+def _safe_lineage(value: Any, *, graph: bool) -> dict[str, Any]:
+    lineage = _bounded_mapping(value, "lineage metadata")
+    if graph:
+        if set(lineage) - _LINEAGE_GRAPH_KEYS:
+            raise ValueError("lineage graph contains unsupported keys")
+        result: dict[str, Any] = {}
+        if "version" in lineage:
+            version = lineage["version"]
+            if type(version) is not int or version < 1:
+                raise ValueError("lineage graph version must be a positive integer")
+            result["version"] = version
+        if "fields" in lineage:
+            fields = _bounded_mapping(lineage["fields"], "lineage graph fields")
+            result["fields"] = {
+                _json_safe(str(name), key="field"): _safe_lineage_entry(
+                    item, _LINEAGE_GRAPH_FIELD_KEYS
+                )
+                for name, item in sorted(fields.items(), key=lambda pair: str(pair[0]))
+            }
+        return result
+    return {
+        _json_safe(str(name), key="field"): _safe_lineage_entry(
+            item, _LINEAGE_ENTRY_KEYS
+        )
+        for name, item in sorted(lineage.items(), key=lambda pair: str(pair[0]))
+    }
 
 
 def _json_safe(
@@ -222,10 +492,16 @@ def _json_safe(
 ) -> Any:
     """Bound metadata to JSON primitives without retaining provider objects."""
     if key is not None:
+        normalized_key = re.sub(r"[^a-z0-9_]", "", key.casefold())
+        if normalized_key == "parser_options":
+            return _safe_parser_options(value)
+        if normalized_key == "capabilities":
+            return _safe_capabilities(value)
+        if normalized_key in {"lineage", "lineage_graph"} and value is not None:
+            return _safe_lineage(value, graph=normalized_key == "lineage_graph")
         key_kind = _metadata_key_kind(key)
         if key_kind in {"secret", "row"}:
             return "<redacted>"
-        normalized_key = re.sub(r"[^a-z0-9_]", "", key.casefold())
         if normalized_key not in _SAFE_METADATA_KEYS and not allow_unknown_primitive:
             if isinstance(value, (str, int, float, bool, bytes, date, datetime)):
                 return "<redacted>"
@@ -309,7 +585,7 @@ class NormalizedSchema:
     def fingerprint(self) -> str:
         """Deterministic fingerprint of logical schema (ignores physical metadata)."""
         payload = {
-            "identity": self.identity,
+            "identity": _wire_identity(self.identity),
             "fields": [
                 {
                     "name": f.name,
@@ -327,7 +603,7 @@ class NormalizedSchema:
         """Serialize schema."""
         return {
             "version": 1,
-            "identity": _json_safe(self.identity, key="identity"),
+            "identity": _wire_identity(self.identity),
             "fields": [f.to_dict() for f in self.fields],
             "fingerprint": self.fingerprint(),
             "metadata": _json_safe(self.metadata),

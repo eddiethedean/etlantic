@@ -688,6 +688,17 @@ def infer_csv(
         opts = dict(options or {})
         null_values = {str(value) for value in opts.pop("null_values", {""})}
         encoding = opts.pop("encoding", "utf-8")
+        supported_options = {
+            "delimiter",
+            "quotechar",
+            "escapechar",
+            "doublequote",
+            "strict",
+            "skipinitialspace",
+            "quoting",
+        }
+        if set(opts) - supported_options:
+            raise ValueError("CSV options contain unsupported parser settings")
     except (TypeError, ValueError):
         return InferenceResult(
             NormalizedSchema(identity or _path_identity("csv", path), fields=()),
@@ -710,6 +721,8 @@ def infer_csv(
                 "escapechar",
                 "doublequote",
                 "strict",
+                "skipinitialspace",
+                "quoting",
             )
             if key in opts
         }

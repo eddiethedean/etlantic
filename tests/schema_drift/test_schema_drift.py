@@ -2,10 +2,17 @@
 
 from __future__ import annotations
 
+import csv
+
+import pytest
+
 from etlantic import Data
 from etlantic.schema_drift import (
     DriftImpact,
+    NormalizedField,
+    NormalizedSchema,
     diff_normalized_schemas,
+    json_safe_metadata,
     normalize_schema_from_fields,
     normalize_schema_from_model,
 )
@@ -112,3 +119,180 @@ def test_field_list_normalization_ignores_physical_metadata_in_fingerprint() -> 
         identity="s",
     )
     assert a.fingerprint() == b.fingerprint()
+
+
+def test_wire_identity_is_private_collision_resistant_and_fingerprintable() -> None:
+    field = NormalizedField("id", "integer")
+    left = NormalizedSchema("/Users/alice/data/events.csv", (field,))
+    right = NormalizedSchema("/Users/bob/data/events.csv", (field,))
+
+    left_wire = left.to_dict()
+    right_wire = right.to_dict()
+
+    assert "/Users/" not in left_wire["identity"]
+    assert left_wire["identity"].startswith("path-sha256:")
+    assert left_wire["identity"] != right_wire["identity"]
+    assert (
+        left_wire["fingerprint"] == NormalizedSchema.from_dict(left_wire).fingerprint()
+    )
+    assert left.fingerprint() != right.fingerprint()
+
+
+@pytest.mark.parametrize(
+    "identity",
+    [
+        r"C:\Users\alice\private\events.csv",
+        "C:/Users/alice/private/events.csv",
+        r"\Users\alice\private\events.csv",
+        r"\\server\share\events.csv",
+    ],
+)
+def test_windows_path_identity_is_private_on_every_host(identity: str) -> None:
+    schema = NormalizedSchema(identity, (NormalizedField("id", "integer"),))
+    wire = schema.to_dict()
+
+    assert wire["identity"].startswith("path-sha256:")
+    assert identity not in repr(wire)
+    assert NormalizedSchema.from_dict(wire).fingerprint() == schema.fingerprint()
+    assert json_safe_metadata({"message": f"failed while reading {identity}"}) == {
+        "message": "<path-redacted>"
+    }
+
+
+def test_lineage_and_parser_control_metadata_round_trip_as_typed_values() -> None:
+    schema = NormalizedSchema(
+        "events",
+        (NormalizedField("id", "integer"),),
+        metadata={
+            "lineage_graph": {
+                "version": 1,
+                "fields": {
+                    "id": {
+                        "source_nodes": ["events"],
+                        "source_fields": ["id"],
+                        "qualified_source_fields": ["events.id"],
+                        "operations": [],
+                        "invertible": True,
+                    }
+                },
+            },
+            "lineage": {
+                "id": {
+                    "field": "id",
+                    "source_node": "events",
+                    "source_fields": ["id"],
+                    "qualified_source_fields": ["events.id"],
+                    "source_types": {"id": "integer"},
+                    "operations": [],
+                    "invertible": True,
+                }
+            },
+            "parser_options": {
+                "encoding": "utf-8",
+                "delimiter": "|",
+                "quotechar": '"',
+                "strict": True,
+                "skipinitialspace": False,
+            },
+            "capabilities": {"write_modes": ["append"], "create": True},
+        },
+    )
+
+    restored = NormalizedSchema.from_dict(schema.to_dict())
+    assert restored.metadata["lineage_graph"]["fields"]["id"]["invertible"] is True
+    assert restored.metadata["lineage"]["id"]["invertible"] is True
+    assert restored.metadata["parser_options"]["delimiter"] == "|"
+    assert restored.metadata["parser_options"]["strict"] is True
+    assert restored.metadata["capabilities"] == {
+        "write_modes": ["append"],
+        "create": True,
+    }
+
+
+def test_lineage_set_fields_are_canonical_and_set_operations_are_rejected() -> None:
+    safe = json_safe_metadata(
+        {
+            "lineage": {
+                "id": {
+                    "source_fields": {"gamma", "alpha", "beta"},
+                    "qualified_source_fields": frozenset(
+                        {"events.gamma", "events.alpha", "events.beta"}
+                    ),
+                    "source_nodes": {"node-c", "node-a", "node-b"},
+                }
+            }
+        }
+    )
+
+    assert safe["lineage"]["id"]["source_fields"] == ["alpha", "beta", "gamma"]
+    assert safe["lineage"]["id"]["qualified_source_fields"] == [
+        "events.alpha",
+        "events.beta",
+        "events.gamma",
+    ]
+    assert safe["lineage"]["id"]["source_nodes"] == ["node-a", "node-b", "node-c"]
+
+    with pytest.raises(ValueError, match="operations must be ordered"):
+        json_safe_metadata({"lineage": {"id": {"operations": {"trim", "lower"}}}})
+
+
+def test_csv_quoting_modes_available_on_this_python_round_trip() -> None:
+    for name in (
+        "QUOTE_MINIMAL",
+        "QUOTE_ALL",
+        "QUOTE_NONNUMERIC",
+        "QUOTE_NONE",
+        "QUOTE_NOTNULL",
+        "QUOTE_STRINGS",
+    ):
+        if hasattr(csv, name):
+            mode = getattr(csv, name)
+            assert json_safe_metadata({"parser_options": {"quoting": mode}}) == {
+                "parser_options": {"quoting": mode}
+            }
+
+
+def test_control_field_names_do_not_expand_global_metadata_allowlist() -> None:
+    safe = json_safe_metadata(
+        {
+            "provider_metadata": {
+                "encoding": "PRIVATE_TOKEN",
+                "strict": "PRIVATE_TOKEN",
+                "invertible": "not-a-boolean",
+            }
+        }
+    )
+    assert safe == {
+        "provider_metadata": {
+            "encoding": "<redacted>",
+            "strict": "<redacted>",
+            "invertible": "<redacted>",
+        }
+    }
+    with pytest.raises(ValueError, match="lineage metadata"):
+        json_safe_metadata({"provider_metadata": {"lineage_graph": "PRIVATE_TOKEN"}})
+
+
+def test_provider_capability_sequences_are_allowlisted() -> None:
+    assert json_safe_metadata({"capabilities": ["append", "create"]}) == {
+        "capabilities": ["append", "create"]
+    }
+    with pytest.raises(ValueError, match="unsupported operation"):
+        json_safe_metadata({"capabilities": ["PRIVATE_TOKEN"]})
+
+
+@pytest.mark.parametrize(
+    "metadata",
+    [
+        {"parser_options": {"unknown_option": True}},
+        {"parser_options": {"strict": "yes"}},
+        {"parser_options": {"delimiter": None}},
+        {"parser_options": {"delimiter": "/Users/alice/secret"}},
+        {"capabilities": {"provider_payload": "untrusted"}},
+        {"capabilities": ["PRIVATE_TOKEN"]},
+        {"lineage_graph": {"version": 1, "fields": {"id": {"secret": "x"}}}},
+    ],
+)
+def test_unsupported_control_metadata_is_rejected(metadata: dict[str, object]) -> None:
+    with pytest.raises(ValueError):
+        json_safe_metadata(metadata)
