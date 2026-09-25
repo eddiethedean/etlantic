@@ -4,6 +4,8 @@ from __future__ import annotations
 
 import csv
 import json
+import queue
+import threading
 from pathlib import Path
 
 import pytest
@@ -132,6 +134,71 @@ def test_csv_field_size_limit_can_exceed_process_default_and_is_restored(
         assert csv.field_size_limit() == 64
     finally:
         csv.field_size_limit(previous_limit)
+
+
+def test_concurrent_csv_inference_serializes_process_global_field_limit(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    paths = [tmp_path / "small-limit.csv", tmp_path / "large-limit.csv"]
+    for path in paths:
+        path.write_text("value\nok\n")
+
+    original_field_size_limit = csv.field_size_limit
+    first_setting = threading.Event()
+    release_first = threading.Event()
+    second_setting = threading.Event()
+    second_started = threading.Event()
+    completed: queue.Queue[None] = queue.Queue()
+    errors: queue.Queue[BaseException] = queue.Queue()
+
+    def tracked_field_size_limit(limit: int | None = None) -> int:
+        if limit is None:
+            return original_field_size_limit()
+        previous = original_field_size_limit(limit)
+        if limit == 64 and not first_setting.is_set():
+            first_setting.set()
+            if not release_first.wait(timeout=5):
+                raise AssertionError("timed out waiting to release first CSV parser")
+        elif limit == 250_000:
+            second_setting.set()
+        return previous
+
+    monkeypatch.setattr(csv, "field_size_limit", tracked_field_size_limit)
+
+    def infer(path: Path, field_limit: int, started: threading.Event | None) -> None:
+        try:
+            if started is not None:
+                started.set()
+            etl.infer_csv(
+                path,
+                limits=etl.InferenceLimits(max_field_size=field_limit),
+            )
+        except BaseException as exc:
+            errors.put(exc)
+        else:
+            completed.put(None)
+
+    first = threading.Thread(target=infer, args=(paths[0], 64, None))
+    second = threading.Thread(target=infer, args=(paths[1], 250_000, second_started))
+    first.start()
+    try:
+        assert first_setting.wait(timeout=5)
+        second.start()
+        assert second_started.wait(timeout=5)
+        assert not second_setting.wait(timeout=0.5), (
+            "overlapping inference changed csv's process-global field limit"
+        )
+    finally:
+        release_first.set()
+        first.join(timeout=5)
+        second.join(timeout=5)
+
+    assert not first.is_alive()
+    assert not second.is_alive()
+    assert second_setting.is_set()
+    assert completed.get(timeout=5) is None
+    assert completed.get(timeout=5) is None
+    assert errors.empty()
 
 
 def test_csv_materialized_budget_is_separate_from_raw_budget(tmp_path: Path) -> None:

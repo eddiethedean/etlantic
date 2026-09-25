@@ -13,6 +13,7 @@ import math
 import os
 import re
 import sys
+import threading
 import time
 from collections.abc import Iterable, Mapping
 from contextlib import contextmanager
@@ -40,6 +41,7 @@ from .types import (
 _INT = re.compile(r"^[+-]?\d+$")
 _NUMBER = re.compile(r"^[+-]?(?:\d+\.\d*|\d*\.\d+|\d+)(?:[eE][+-]?\d+)?$")
 _DATE_ONLY = re.compile(r"^\d{4}-\d{2}-\d{2}$")
+_CSV_FIELD_LIMIT_LOCK = threading.RLock()
 _KNOWN_LOGICAL_TYPES = frozenset(
     {
         "null",
@@ -197,17 +199,20 @@ def _csv_row(
 
 @contextmanager
 def _csv_field_limit(max_field_size: int | None):
-    """Bound csv's internal field buffer and restore its process-global setting."""
-    previous = csv.field_size_limit()
-    try:
-        if max_field_size is not None:
-            # Honor the inference limit even when it is larger than csv's
-            # process default.  Clamp only to the largest size accepted by
-            # the platform's C-backed csv parser.
-            csv.field_size_limit(min(max_field_size, sys.maxsize))
-        yield
-    finally:
-        csv.field_size_limit(previous)
+    """Bound csv's global field buffer while serializing parser access."""
+    # csv.field_size_limit is interpreter-global, so parser contexts must not
+    # overlap or restore another inference's setting.
+    with _CSV_FIELD_LIMIT_LOCK:
+        previous = csv.field_size_limit()
+        try:
+            if max_field_size is not None:
+                # Honor the inference limit even when it is larger than csv's
+                # process default. Clamp only to the largest size accepted by
+                # the platform's C-backed csv parser.
+                csv.field_size_limit(min(max_field_size, sys.maxsize))
+            yield
+        finally:
+            csv.field_size_limit(previous)
 
 
 def _type_of(value: Any) -> str:
@@ -861,16 +866,14 @@ def infer_csv(
     result: InferenceResult | None = None
     reader_state = {"raw_limit_hit": False, "field_limit_hit": False}
     try:
-        with (
-            _csv_field_limit(limits.max_field_size),
-            csv_path.open("rb") as raw_source,
-        ):
+        with csv_path.open("rb") as raw_source:
             source_signature = _csv_source_signature(os.fstat(raw_source.fileno()))
             bounded_reader = _BoundedCSVRaw(raw_source, limits.max_bytes)
             buffered = io.BufferedReader(bounded_reader)
             with io.TextIOWrapper(buffered, encoding=encoding, newline="") as handle:
                 reader = csv.DictReader(handle, **opts)
-                raw_fieldnames = reader.fieldnames
+                with _csv_field_limit(limits.max_field_size):
+                    raw_fieldnames = reader.fieldnames
                 if raw_fieldnames is None:
                     return InferenceResult(
                         NormalizedSchema(identity=source_identity, fields=()),
@@ -923,7 +926,12 @@ def infer_csv(
 
                 def rows() -> Iterable[dict[str, Any]]:
                     try:
-                        for row in reader:
+                        while True:
+                            try:
+                                with _csv_field_limit(limits.max_field_size):
+                                    row = next(reader)
+                            except StopIteration:
+                                break
                             yield _csv_row(
                                 row,
                                 fieldnames=fieldnames,
