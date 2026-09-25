@@ -32,6 +32,7 @@ def test_csv_raw_byte_budget_counts_physical_reads(tmp_path: Path) -> None:
 
     assert path.stat().st_size > limit
     assert 0 < result.provenance["raw_bytes_observed"] <= limit
+    assert result.provenance["raw_byte_limit_applies"] is True
     assert result.provenance["sampled"] is True
     assert "raw_bytes" in result.provenance["limit_reasons"]
     assert "INFER_CSV_BYTE_LIMIT" in {item.code for item in result.diagnostics}
@@ -52,8 +53,22 @@ def test_csv_exact_raw_byte_boundary_is_not_reported_as_limited(tmp_path: Path) 
     )
 
     assert result.provenance["raw_bytes_observed"] == len(content.encode())
+    assert result.provenance["raw_byte_limit_applies"] is True
     assert result.provenance["sampled"] is False
     assert "INFER_CSV_BYTE_LIMIT" not in {item.code for item in result.diagnostics}
+
+
+def test_csv_raw_byte_limit_flag_is_false_when_unbounded(tmp_path: Path) -> None:
+    path = tmp_path / "unbounded.csv"
+    path.write_text("id\n1\n")
+
+    result = etl.infer_csv(
+        path,
+        limits=etl.InferenceLimits(max_bytes=None),
+    )
+
+    assert result.provenance["raw_bytes_observed"] == path.stat().st_size
+    assert result.provenance["raw_byte_limit_applies"] is False
 
 
 def test_csv_field_size_has_a_distinct_diagnostic(tmp_path: Path) -> None:

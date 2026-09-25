@@ -797,6 +797,7 @@ def infer_csv(
                 "source": "csv",
                 "source_identity": source_identity,
                 "limits": limits.to_dict(),
+                "raw_byte_limit_applies": False,
                 "replay_status": {"state": "not_required"},
             },
         )
@@ -863,6 +864,7 @@ def infer_csv(
                             "source_identity": source_identity,
                             "limits": limits.to_dict(),
                             "parser_options": parser_options,
+                            "raw_byte_limit_applies": limits.max_bytes is not None,
                             "raw_bytes_observed": bounded_reader.bytes_observed,
                             "materialized_bytes_observed": 0,
                             "bytes_observed": 0,
@@ -888,6 +890,7 @@ def infer_csv(
                             "source_identity": source_identity,
                             "limits": limits.to_dict(),
                             "parser_options": parser_options,
+                            "raw_byte_limit_applies": limits.max_bytes is not None,
                             "raw_bytes_observed": bounded_reader.bytes_observed,
                             "materialized_bytes_observed": 0,
                             "bytes_observed": 0,
@@ -1175,6 +1178,7 @@ def infer_csv(
             "bytes_observed": materialized_bytes,
             "materialized_bytes_observed": materialized_bytes,
             "raw_bytes_observed": bounded_reader.bytes_observed,
+            "raw_byte_limit_applies": limits.max_bytes is not None,
             "byte_accounting": {
                 "raw_bytes": "physical bytes returned by the bounded binary reader",
                 "materialized_bytes": "estimated decoded Python record size",
@@ -1206,6 +1210,7 @@ def infer_csv(
                 "bytes_observed": 0,
                 "materialized_bytes_observed": 0,
                 "raw_bytes_observed": raw_bytes,
+                "raw_byte_limit_applies": limits.max_bytes is not None,
                 "replay_status": {"state": "not_available"},
             },
         )
@@ -1246,6 +1251,9 @@ def infer_csv(
                 "materialized_bytes_observed": 0,
                 "raw_bytes_observed": (
                     bounded_reader.bytes_observed if bounded_reader else 0
+                ),
+                "raw_byte_limit_applies": (
+                    bounded_reader is not None and limits.max_bytes is not None
                 ),
                 "replay_status": {"state": "not_available"},
             },
