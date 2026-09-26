@@ -1,4 +1,3 @@
-# pyright: reportUnknownArgumentType=false, reportUnknownMemberType=false, reportUnknownVariableType=false
 """Shared scalar expression evaluation for preview and local execution."""
 
 from __future__ import annotations
@@ -9,7 +8,7 @@ import operator
 import re
 from collections.abc import Callable, Mapping
 from decimal import Decimal, DecimalException
-from typing import Any
+from typing import Any, cast
 
 from etlantic.transform.portable_baseline import normalize_operator
 from etlantic.transform.protocol import INVALID, MISSING
@@ -25,6 +24,60 @@ class ExpressionEvaluationError(ValueError):
 
 ExpressionErrorHandler = Callable[[ExpressionEvaluationError], None]
 
+_INTEGER_MIN = -(2**63)
+_INTEGER_MAX = 2**63 - 1
+_CAST_TYPES = frozenset(
+    {"integer", "number", "decimal", "binary", "boolean", "string", "date", "datetime"}
+)
+_SCALAR_FUNCTIONS = frozenset(
+    {
+        "coalesce",
+        "if_null",
+        "is_null",
+        "is_not_null",
+        "is_missing",
+        "is_invalid",
+        "null_if",
+        "case_when",
+        "cast",
+        "try_cast",
+        "to_integer",
+        "to_decimal",
+        "to_string",
+        "lower",
+        "upper",
+        "concat",
+        "concat_ws",
+        "substr",
+        "substring",
+        "replace",
+        "contains",
+        "in",
+        "starts_with",
+        "ends_with",
+        "regex_extract",
+        "regex_replace",
+        "trim",
+        "ltrim",
+        "rtrim",
+        "normalize_whitespace",
+        "length",
+        "abs",
+        "round",
+        "floor",
+        "ceil",
+        "power",
+        "sqrt",
+        "least",
+        "greatest",
+        "current_date",
+        "current_timestamp",
+    }
+)
+_AGGREGATE_FUNCTIONS = frozenset(
+    {"sum", "average", "min", "max", "count", "count_all", "count_distinct"}
+)
+
 
 def coerce_value(value: Any, logical_type: str) -> Any:
     """Convert a scalar using the inference and portable preview policy."""
@@ -35,7 +88,10 @@ def coerce_value(value: Any, logical_type: str) -> Any:
             raise ValueError("integer conversion would lose the fractional part")
         if isinstance(value, Decimal) and value != value.to_integral_value():
             raise ValueError("integer conversion would lose the fractional part")
-        return int(value)
+        converted = int(value)
+        if not _INTEGER_MIN <= converted <= _INTEGER_MAX:
+            raise OverflowError("integer conversion is outside the signed 64-bit range")
+        return converted
     if logical_type == "number":
         converted = float(value)
         if not math.isfinite(converted):
@@ -103,14 +159,13 @@ def _issue(
 
 def _literal(node: Mapping[str, Any], on_error: ExpressionErrorHandler | None) -> Any:
     value = node.get("value")
-    if not isinstance(value, Mapping) or "type" not in value:
-        return (
-            value.get("value")
-            if isinstance(value, Mapping) and "value" in value
-            else value
-        )
-    logical_type = str(value.get("type", "")).lower()
-    raw = value.get("value")
+    if not isinstance(value, Mapping):
+        return value
+    literal_value = cast(Mapping[str, Any], value)
+    if "type" not in literal_value:
+        return literal_value.get("value", literal_value)
+    logical_type = str(literal_value.get("type", "")).lower()
+    raw = literal_value.get("value")
     if logical_type == "missing":
         return MISSING
     if logical_type == "invalid":
@@ -188,22 +243,25 @@ def evaluate_expression(
     parameters = params or {}
     if not isinstance(node, Mapping):
         return node
-    kind = node.get("kind")
+    expression = cast(Mapping[str, Any], node)
+    kind = expression.get("kind")
     if kind == "fieldRef":
-        target = str(node.get("target"))
+        target = str(expression.get("target"))
         return (
             parameters.get(target)
-            if node.get("scope") == "parameter"
+            if expression.get("scope") == "parameter"
             else row.get(target)
         )
     if kind == "literal":
-        return _literal(node, on_error)
+        return _literal(expression, on_error)
     if kind == "binary":
-        left = evaluate_expression(node.get("left"), row, parameters, on_error=on_error)
-        right = evaluate_expression(
-            node.get("right"), row, parameters, on_error=on_error
+        left = evaluate_expression(
+            expression.get("left"), row, parameters, on_error=on_error
         )
-        op = normalize_operator(str(node.get("op")))
+        right = evaluate_expression(
+            expression.get("right"), row, parameters, on_error=on_error
+        )
+        op = normalize_operator(str(expression.get("op")))
         if op == "null_safe_eq":
             return left == right
         if op in {"and", "or"}:
@@ -217,6 +275,23 @@ def evaluate_expression(
                     cause=exc,
                 )
                 return None
+        operations: dict[str, Callable[[Any, Any], Any]] = {
+            "add": operator.add,
+            "subtract": operator.sub,
+            "multiply": operator.mul,
+            "divide": lambda left, right: left / right,
+            "modulo": operator.mod,
+            "eq": operator.eq,
+            "not_eq": operator.ne,
+            "lt": operator.lt,
+            "lte": operator.le,
+            "gt": operator.gt,
+            "gte": operator.ge,
+        }
+        operation = operations.get(op)
+        if op != "in" and operation is None:
+            _issue("unsupported", f"unsupported binary operator: {op}", on_error)
+            return None
         if (
             left is None
             or right is None
@@ -226,29 +301,13 @@ def evaluate_expression(
             or right is INVALID
         ):
             return None
-        operations: dict[str, Callable[[Any, Any], Any]] = {
-            "add": operator.add,
-            "subtract": operator.sub,
-            "multiply": operator.mul,
-            "divide": operator.truediv,
-            "modulo": operator.mod,
-            "eq": operator.eq,
-            "not_eq": operator.ne,
-            "lt": operator.lt,
-            "lte": operator.le,
-            "gt": operator.gt,
-            "gte": operator.ge,
-        }
         if op == "in":
             return (
                 left in right
                 if isinstance(right, (list, tuple, set, frozenset))
                 else False
             )
-        operation = operations.get(op)
-        if operation is None:
-            _issue("unsupported", f"unsupported binary operator: {op}", on_error)
-            return None
+        assert operation is not None
         try:
             return operation(left, right)
         except (
@@ -267,9 +326,12 @@ def evaluate_expression(
             return None
     if kind == "unary":
         value = evaluate_expression(
-            node.get("expr", node.get("operand")), row, parameters, on_error=on_error
+            expression.get("expr", expression.get("operand")),
+            row,
+            parameters,
+            on_error=on_error,
         )
-        op = normalize_operator(str(node.get("op")))
+        op = normalize_operator(str(expression.get("op")))
         if op == "not":
             if value is None or value is MISSING or value is INVALID:
                 return None
@@ -304,12 +366,47 @@ def evaluate_expression(
         _issue("unsupported", f"unsupported unary operator: {op}", on_error)
         return None
     if kind == "call":
-        callee = str(node.get("callee"))
+        callee = str(expression.get("callee"))
         args = [
             evaluate_expression(item, row, parameters, on_error=on_error)
-            for item in node.get("args", ())
+            for item in expression.get("args", ())
         ]
         name = callee.removeprefix("dtcs:")
+        if name not in _SCALAR_FUNCTIONS:
+            if name in _AGGREGATE_FUNCTIONS:
+                message = (
+                    f"aggregate function is not valid in scalar expression: {callee}"
+                )
+            else:
+                message = f"Preview evaluator does not support expression {callee!r}"
+            _issue("unsupported", message, on_error)
+            return None
+
+        cast_target: str | None = None
+        if name in {"cast", "try_cast"}:
+            cast_target = str(args[1] if len(args) > 1 else "string").lower()
+            aliases = {
+                "int": "integer",
+                "int64": "integer",
+                "long": "integer",
+                "float": "number",
+                "float64": "number",
+                "double": "number",
+                "numeric": "decimal",
+                "bool": "boolean",
+                "str": "string",
+                "utf8": "string",
+                "bytes": "binary",
+                "timestamp": "datetime",
+            }
+            cast_target = aliases.get(cast_target, cast_target)
+            if cast_target not in _CAST_TYPES:
+                _issue(
+                    "unsupported",
+                    f"unsupported conversion target: {cast_target!r}",
+                    on_error,
+                )
+                return None
         null_aware = {
             "coalesce",
             "if_null",
@@ -343,18 +440,7 @@ def evaluate_expression(
                         return args[index + 1]
                 return args[-1]
             if name in {"cast", "try_cast"} and args:
-                target = str(args[1] if len(args) > 1 else "string").lower()
-                aliases = {
-                    "int": "integer",
-                    "long": "integer",
-                    "float": "number",
-                    "double": "number",
-                    "numeric": "decimal",
-                    "bool": "boolean",
-                    "str": "string",
-                    "bytes": "binary",
-                }
-                target = aliases.get(target, target)
+                target = cast_target or "string"
                 try:
                     return coerce_value(args[0], target)
                 except (
@@ -455,7 +541,7 @@ def evaluate_expression(
             if name == "ceil" and args:
                 return math.ceil(args[0])
             if name == "power" and len(args) >= 2:
-                return pow(args[0], args[1])
+                return cast(Any, pow(args[0], args[1]))
             if name == "sqrt" and args:
                 return math.sqrt(args[0])
             if name in {"least", "greatest"} and args:
@@ -480,26 +566,7 @@ def evaluate_expression(
                 cause=exc,
             )
             return None
-        if name in {
-            "sum",
-            "average",
-            "min",
-            "max",
-            "count",
-            "count_all",
-            "count_distinct",
-        }:
-            _issue(
-                "unsupported",
-                f"aggregate function is not valid in scalar expression: {callee}",
-                on_error,
-            )
-            return None
-        _issue(
-            "unsupported",
-            f"Preview evaluator does not support expression {callee!r}",
-            on_error,
-        )
+        _issue("unsupported", f"invalid arguments for expression {callee!r}", on_error)
         return None
     _issue("unsupported", f"unsupported expression kind: {kind}", on_error)
     return None
