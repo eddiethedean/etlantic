@@ -8,6 +8,7 @@ import json
 from collections.abc import Mapping, Sequence
 from typing import Any, cast
 
+from etlantic.transform._evaluation import evaluate_expression
 from etlantic.transform.capabilities import (
     match_requirements,
     merge_requirements,
@@ -30,7 +31,6 @@ from etlantic.transform.compiler import (
     host_pushdown_findings,
     requirement_records_from_mapping,
 )
-from etlantic.transform.evaluation import evaluate_expression
 from etlantic.transform.portable_baseline import (
     BASELINE_FUNCTIONS,
     BASELINE_OPERATORS,

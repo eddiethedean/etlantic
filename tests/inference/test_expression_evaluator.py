@@ -9,11 +9,11 @@ from typing import Any
 import pytest
 
 import etlantic as etl
-from etlantic.transform.column import ColumnExpr
-from etlantic.transform.evaluation import (
+from etlantic.transform._evaluation import (
     ExpressionEvaluationError,
     evaluate_expression,
 )
+from etlantic.transform.column import ColumnExpr
 from etlantic.transform.functions import col, to_integer
 
 
@@ -174,6 +174,22 @@ def test_filter_uses_true_only_and_reports_invalid_conversion() -> None:
     assert "INFER_RUNTIME_CONVERSION" in {
         diagnostic.code for diagnostic in filtered.diagnostics
     }
+
+
+def test_preview_filter_preserves_numpy_boolean_scalars() -> None:
+    np = pytest.importorskip("numpy")
+    dataset = etl.from_records(
+        [
+            {"flag": np.bool_(True), "value": np.int64(1)},
+            {"flag": np.bool_(False), "value": np.int64(0)},
+        ]
+    )
+
+    direct = dataset.filter(col("flag"))
+    compound = dataset.filter(col("flag") & (col("value") > 0))
+
+    assert [bool(row["flag"]) for row in direct.preview()] == [True]
+    assert [bool(row["flag"]) for row in compound.preview()] == [True]
 
 
 def test_runtime_errors_survive_a_full_diagnostic_budget_and_block_export() -> None:
