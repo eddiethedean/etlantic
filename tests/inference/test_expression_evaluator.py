@@ -9,11 +9,11 @@ from typing import Any
 import pytest
 
 import etlantic as etl
-from etlantic.transform._evaluation import (
+from etlantic.transform.column import ColumnExpr
+from etlantic.transform.evaluation import (
     ExpressionEvaluationError,
     evaluate_expression,
 )
-from etlantic.transform.column import ColumnExpr
 from etlantic.transform.functions import col, to_integer
 
 

@@ -26,7 +26,7 @@ from etlantic.schema_drift import (
     normalize_logical_type,
     normalize_schema_from_fields,
 )
-from etlantic.transform._evaluation import coerce_value
+from etlantic.transform.evaluation import coerce_value
 
 from .durable import _safe_file_identity
 from .records import infer_csv, infer_json, infer_records

@@ -30,12 +30,12 @@ from etlantic.authoring.definition import (
 from etlantic.contracts import Data
 from etlantic.diagnostics import Diagnostic, Severity
 from etlantic.schema_drift import NormalizedSchema
-from etlantic.transform._evaluation import (
+from etlantic.transform.column import ColumnExpr, coerce_column
+from etlantic.transform.dataframe import FrameAction, FrameExpr
+from etlantic.transform.evaluation import (
     ExpressionEvaluationError,
     evaluate_expression,
 )
-from etlantic.transform.column import ColumnExpr, coerce_column
-from etlantic.transform.dataframe import FrameAction, FrameExpr
 
 from .durable import (
     _retain_file_source,
