@@ -1315,9 +1315,12 @@ def test_jsonl_byte_limit_precedes_oversized_line_parse(tmp_path) -> None:
 def test_csv_field_limit_precedes_oversized_field_parse(tmp_path) -> None:
     path = tmp_path / "rows.csv"
     path.write_text("value\nthis value is too large\n", encoding="utf-8")
-    result = etl.infer_csv(path, limits=etl.InferenceLimits(max_rows=10, max_bytes=8))
+    result = etl.infer_csv(
+        path,
+        limits=etl.InferenceLimits(max_rows=10, max_bytes=1024, max_field_size=8),
+    )
     assert result.schema.fields[0].metadata["header_only"] is True
-    assert "INFER_SOURCE_UNSUPPORTED" in {item.code for item in result.diagnostics}
+    assert "INFER_CSV_FIELD_LIMIT" in {item.code for item in result.diagnostics}
 
 
 def test_datafusion_schema_is_metadata_first_when_installed() -> None:
