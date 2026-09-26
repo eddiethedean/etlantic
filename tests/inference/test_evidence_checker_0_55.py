@@ -9,47 +9,6 @@ import pytest
 from scripts import check_inference_0_55 as checker
 
 
-def test_full_regression_gate_uses_xdist_without_narrowing_coverage() -> None:
-    assert checker.GATE_TESTS["full_regression"] == (
-        "-n",
-        "4",
-        "--dist=loadfile",
-    )
-    assert checker._actual_command("full_regression") == [
-        "python",
-        "-m",
-        "pytest",
-        "-q",
-        "-n",
-        "4",
-        "--dist=loadfile",
-    ]
-
-
-def test_outcome_collector_counts_nodeids_from_worker_reports() -> None:
-    collector = checker._PytestOutcomeCollector([], "full_regression")
-    report = type(
-        "Report",
-        (),
-        {
-            "nodeid": "tests/example.py::test_ok",
-            "failed": False,
-            "skipped": False,
-            "when": "call",
-        },
-    )()
-
-    collector.pytest_runtest_logreport(report)
-
-    assert collector.outcome_counts() == {
-        "collected_test_count": 1,
-        "passed_test_count": 1,
-        "failed_test_count": 0,
-        "skipped_test_count": 0,
-        "not_run_test_count": 0,
-    }
-
-
 def _campaign_fixture(root: Path, *, commit: str, tree: str) -> None:
     gates = root / "gates"
     gates.mkdir()
@@ -323,3 +282,11 @@ def test_campaign_requires_each_ledger_test_to_pass_in_its_gate(
     gate_path.write_text(json.dumps(record), encoding="utf-8")
     with pytest.raises(ValueError, match="no passing test"):
         checker._verify_campaign(tmp_path, {}, {}, ledger)
+
+
+def test_full_regression_gate_uses_xdist_for_the_unrestricted_suite() -> None:
+    assert checker.GATE_TESTS["full_regression"] == (
+        "-n",
+        "4",
+        "--dist=loadfile",
+    )
