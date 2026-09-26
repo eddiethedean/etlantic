@@ -131,7 +131,7 @@ GATE_TESTS: dict[str, tuple[str, ...]] = {
         "-k",
         "race or concurrent or revision or publication",
     ),
-    "full_regression": (),
+    "full_regression": ("-n", "4", "--dist=loadfile"),
 }
 
 
@@ -517,8 +517,6 @@ def _check_optional_dependency_gate(matrix: dict[str, Any]) -> None:
 def _actual_command(gate: str) -> list[str]:
     if gate in {"wire_security", "optional_dependency_matrix"}:
         return ["python", "scripts/check_inference_0_55.py", "--gate", gate]
-    if gate == "full_regression":
-        return ["python", "-m", "pytest", "-q"]
     return ["python", "-m", "pytest", "-q", *GATE_TESTS[gate]]
 
 
@@ -547,6 +545,9 @@ class _PytestOutcomeCollector:
         self.collected = {item.nodeid for item in session.items}
 
     def pytest_runtest_logreport(self, report: Any) -> None:
+        # With pytest-xdist the controller receives worker reports but has no
+        # collected items of its own, so count node IDs as reports arrive too.
+        self.collected.add(report.nodeid)
         if report.failed:
             self._failed.add(report.nodeid)
         elif report.skipped:
