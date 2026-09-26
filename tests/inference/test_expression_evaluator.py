@@ -14,7 +14,7 @@ from etlantic.transform.evaluation import (
     ExpressionEvaluationError,
     evaluate_expression,
 )
-from etlantic.transform.functions import col, to_integer
+from etlantic.transform.functions import col, concat_ws, to_integer
 
 
 def _literal(value: object) -> dict[str, object]:
@@ -145,6 +145,51 @@ def test_null_safe_equality_remains_distinct_from_equality() -> None:
     assert null_safe_equal is True
     assert errors == []
     assert null_safe_errors == []
+
+
+def test_in_uses_sql_null_semantics_for_nullable_candidates() -> None:
+    matched, matched_errors = _evaluate(
+        _call("dtcs:in", _literal("a"), _literal("a"), _literal(None))
+    )
+    unmatched, unmatched_errors = _evaluate(
+        _call("dtcs:in", _literal("b"), _literal("a"), _literal(None))
+    )
+    no_null_match, no_null_errors = _evaluate(
+        _call("dtcs:in", _literal("b"), _literal("a"))
+    )
+
+    assert matched is True
+    assert unmatched is None
+    assert no_null_match is False
+    assert matched_errors == unmatched_errors == no_null_errors == []
+
+    dataset = etl.from_records([{"value": "a"}, {"value": "b"}, {"value": None}])
+    assert dataset.filter(col("value").isin("a", None)).preview() == [{"value": "a"}]
+
+
+def test_concat_ws_skips_null_values_but_propagates_null_separator() -> None:
+    joined, errors = _evaluate(
+        _call(
+            "dtcs:concat_ws",
+            _literal("-"),
+            _literal("a"),
+            _literal(None),
+            _literal("b"),
+        )
+    )
+    null_separator, null_separator_errors = _evaluate(
+        _call("dtcs:concat_ws", _literal(None), _literal("a"), _literal("b"))
+    )
+
+    assert joined == "a-b"
+    assert errors == []
+    assert null_separator is None
+    assert null_separator_errors == []
+
+    dataset = etl.from_records([{"first": "a", "middle": None, "last": "b"}])
+    assert dataset.withColumn(
+        "joined", concat_ws("-", col("first"), col("middle"), col("last"))
+    ).preview() == [{"first": "a", "middle": None, "last": "b", "joined": "a-b"}]
 
 
 def test_unsupported_expressions_are_diagnosed_even_with_null_arguments() -> None:

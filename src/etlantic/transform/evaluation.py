@@ -452,6 +452,8 @@ def evaluate_expression(
             "null_if",
             "is_missing",
             "is_invalid",
+            "concat_ws",
+            "in",
         }
         if name not in null_aware and any(value is None for value in args):
             return None
@@ -542,6 +544,21 @@ def evaluate_expression(
                 return str(args[0]).join(
                     str(value) for value in args[1:] if value is not None
                 )
+            if name == "in" and args:
+                value, candidates = args[0], args[1:]
+                if value is None or value is MISSING or value is INVALID:
+                    return None
+                has_unknown_candidate = False
+                for candidate in candidates:
+                    if (
+                        candidate is None
+                        or candidate is MISSING
+                        or candidate is INVALID
+                    ):
+                        has_unknown_candidate = True
+                    elif value == candidate:
+                        return True
+                return None if has_unknown_candidate else False
             if name in {"substr", "substring"} and args:
                 start = int(args[1]) if len(args) > 1 else 0
                 length = int(args[2]) if len(args) > 2 else None
@@ -554,8 +571,6 @@ def evaluate_expression(
                 return str(args[0]).replace(str(args[1]), str(args[2]))
             if name == "contains" and len(args) >= 2:
                 return args[1] in args[0]
-            if name == "in" and args:
-                return args[0] in args[1:]
             if name == "starts_with" and len(args) >= 2:
                 return str(args[0]).startswith(str(args[1]))
             if name == "ends_with" and len(args) >= 2:
