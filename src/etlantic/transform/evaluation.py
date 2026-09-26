@@ -79,6 +79,18 @@ _AGGREGATE_FUNCTIONS = frozenset(
 )
 
 
+def _checked_integer_result(value: Any, operation: str) -> Any:
+    if (
+        isinstance(value, int)
+        and not isinstance(value, bool)
+        and not _INTEGER_MIN <= value <= _INTEGER_MAX
+    ):
+        raise OverflowError(
+            f"{operation} result is outside the signed 64-bit integer range"
+        )
+    return value
+
+
 def coerce_value(value: Any, logical_type: str) -> Any:
     """Convert a scalar using the inference and portable preview policy."""
     if logical_type == "integer":
@@ -174,7 +186,7 @@ def _literal(node: Mapping[str, Any], on_error: ExpressionErrorHandler | None) -
         return None
     try:
         if logical_type in {"int", "integer", "long"}:
-            return int(raw)
+            return coerce_value(raw, "integer")
         if logical_type in {"float", "number", "double"}:
             return float(raw)
         if logical_type in {"decimal", "numeric"}:
@@ -208,22 +220,26 @@ def _literal(node: Mapping[str, Any], on_error: ExpressionErrorHandler | None) -
 
 
 def _sql_and(left: Any, right: Any) -> bool | None:
+    if (left is not None and not isinstance(left, bool)) or (
+        right is not None and not isinstance(right, bool)
+    ):
+        raise TypeError("and operands must be boolean or null")
     if left is False or right is False:
         return False
     if left is None or right is None:
         return None
-    if not isinstance(left, bool) or not isinstance(right, bool):
-        raise TypeError("and operands must be boolean or null")
     return left and right
 
 
 def _sql_or(left: Any, right: Any) -> bool | None:
+    if (left is not None and not isinstance(left, bool)) or (
+        right is not None and not isinstance(right, bool)
+    ):
+        raise TypeError("or operands must be boolean or null")
     if left is True or right is True:
         return True
     if left is None or right is None:
         return None
-    if not isinstance(left, bool) or not isinstance(right, bool):
-        raise TypeError("or operands must be boolean or null")
     return left or right
 
 
@@ -309,7 +325,10 @@ def evaluate_expression(
             )
         assert operation is not None
         try:
-            return operation(left, right)
+            value = operation(left, right)
+            if op in {"add", "subtract", "multiply", "modulo"}:
+                return _checked_integer_result(value, f"integer {op}")
+            return value
         except (
             TypeError,
             ValueError,
@@ -348,7 +367,7 @@ def evaluate_expression(
             if value is None or value is MISSING or value is INVALID:
                 return None
             try:
-                return -value
+                return _checked_integer_result(-value, "integer negate")
             except (
                 TypeError,
                 ValueError,
@@ -533,19 +552,27 @@ def evaluate_expression(
             if name == "length" and args:
                 return len(args[0])
             if name == "abs" and args:
-                return abs(args[0])
+                return _checked_integer_result(abs(args[0]), "integer abs")
             if name == "round" and args:
-                return round(args[0], int(args[1]) if len(args) > 1 else 0)
+                return _checked_integer_result(
+                    round(args[0], int(args[1]) if len(args) > 1 else 0),
+                    "integer round",
+                )
             if name == "floor" and args:
-                return math.floor(args[0])
+                return _checked_integer_result(math.floor(args[0]), "integer floor")
             if name == "ceil" and args:
-                return math.ceil(args[0])
+                return _checked_integer_result(math.ceil(args[0]), "integer ceil")
             if name == "power" and len(args) >= 2:
-                return cast(Any, pow(args[0], args[1]))
+                return _checked_integer_result(
+                    cast(Any, pow(args[0], args[1])), "integer power"
+                )
             if name == "sqrt" and args:
                 return math.sqrt(args[0])
             if name in {"least", "greatest"} and args:
-                return min(args) if name == "least" else max(args)
+                return _checked_integer_result(
+                    min(args) if name == "least" else max(args),
+                    f"integer {name}",
+                )
             if name == "current_date":
                 return dt.date.today()
             if name == "current_timestamp":
