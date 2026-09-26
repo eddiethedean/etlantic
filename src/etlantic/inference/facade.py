@@ -728,16 +728,15 @@ class InferredDataset:
                         phase="inference",
                     )
                 )
-        all_diagnostics = (
-            self._result.diagnostics
+        all_diagnostics: tuple[Any, ...] = (
+            extra_diagnostics  # prioritize current runtime errors within budget
+            + self._result.diagnostics
             + observed.diagnostics
             + transfer_diagnostics
-            + extra_diagnostics
             + tuple(runtime_diagnostics)
         )
         max_diagnostics = self._max_diagnostics()
-        error_diagnostics: list[Any] = []
-        other_diagnostics: list[Any] = []
+        bounded_diagnostics: list[Any] = []
         seen_diagnostics: set[tuple[str, tuple[str, ...], str]] = set()
         for diagnostic in all_diagnostics:
             if isinstance(diagnostic, Diagnostic):
@@ -753,19 +752,9 @@ class InferredDataset:
             if key in seen_diagnostics:
                 continue
             seen_diagnostics.add(key)
-            severity = (
-                diagnostic.get("severity")
-                if isinstance(diagnostic, Mapping)
-                else getattr(diagnostic, "severity", None)
-            )
-            severity = getattr(severity, "value", severity)
-            if str(severity).lower() == Severity.ERROR.value:
-                error_diagnostics.append(diagnostic)
-            else:
-                other_diagnostics.append(diagnostic)
-        bounded_diagnostics = (error_diagnostics + other_diagnostics)[
-            : max(1, max_diagnostics)
-        ]
+            if len(bounded_diagnostics) >= max(1, max_diagnostics):
+                break
+            bounded_diagnostics.append(diagnostic)
         evidence_items: list[Any] = []
         seen_evidence: set[tuple[str, str]] = set()
         max_evidence = int(
