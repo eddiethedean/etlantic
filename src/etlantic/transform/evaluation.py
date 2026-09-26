@@ -455,7 +455,20 @@ def evaluate_expression(
                 return None if args[0] == args[1] else args[0]
             if name == "case_when" and args:
                 for index in range(0, max(0, len(args) - 1), 2):
-                    if args[index] is True:
+                    condition = args[index]
+                    if condition is None:
+                        continue
+                    if not isinstance(condition, bool):
+                        _issue(
+                            "runtime",
+                            "Preview evaluation failed for expression 'case_when'",
+                            on_error,
+                            cause=TypeError(
+                                "case_when conditions must be boolean or null"
+                            ),
+                        )
+                        return None
+                    if condition:
                         return args[index + 1]
                 return args[-1]
             if name in {"cast", "try_cast"} and args:
