@@ -871,7 +871,10 @@ def infer_csv(
     reader_state = {"raw_limit_hit": False, "field_limit_hit": False}
     header_field_limit_hit = False
     try:
-        with csv_path.open("rb") as raw_source:
+        # The bounded wrapper must sit directly above the OS file object;
+        # wrapping a buffered file here would allow its private buffer to read
+        # past the raw-byte budget before the wrapper can account for it.
+        with csv_path.open("rb", buffering=0) as raw_source:
             source_signature = _csv_source_signature(os.fstat(raw_source.fileno()))
             bounded_reader = _BoundedCSVRaw(raw_source, limits.max_bytes)
             buffered = io.BufferedReader(bounded_reader)
@@ -903,20 +906,9 @@ def infer_csv(
                         },
                     )
                 source_fieldnames = list(raw_fieldnames)
-                header_field_limit_hit = len(source_fieldnames) > limits.max_fields
-                fieldnames = source_fieldnames[: limits.max_fields]
-                if header_field_limit_hit:
-                    _append_diag(
-                        parser_diagnostics,
-                        _diag(
-                            "INFER_LIMIT",
-                            "Maximum inferred field count reached",
-                        ),
-                        limits.max_diagnostics,
-                    )
-                if any(not name for name in fieldnames) or len(set(fieldnames)) != len(
-                    fieldnames
-                ):
+                if any(not name for name in source_fieldnames) or len(
+                    set(source_fieldnames)
+                ) != len(source_fieldnames):
                     return InferenceResult(
                         NormalizedSchema(identity=source_identity, fields=()),
                         (
@@ -938,6 +930,17 @@ def infer_csv(
                             "limit_reason": None,
                             "replay_status": {"state": "not_required"},
                         },
+                    )
+                header_field_limit_hit = len(source_fieldnames) > limits.max_fields
+                fieldnames = source_fieldnames[: limits.max_fields]
+                if header_field_limit_hit:
+                    _append_diag(
+                        parser_diagnostics,
+                        _diag(
+                            "INFER_LIMIT",
+                            "Maximum inferred field count reached",
+                        ),
+                        limits.max_diagnostics,
                     )
 
                 def rows() -> Iterable[dict[str, Any]]:

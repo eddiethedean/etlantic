@@ -4,9 +4,11 @@ from __future__ import annotations
 
 import csv
 import json
+import os
 import queue
 import threading
 from pathlib import Path
+from typing import Any, BinaryIO, cast
 
 import pytest
 
@@ -67,6 +69,72 @@ def test_csv_raw_byte_budget_counts_physical_reads(tmp_path: Path) -> None:
         result.provenance["materialized_bytes_observed"]
         == result.provenance["bytes_observed"]
     )
+
+
+def test_csv_raw_byte_budget_bounds_underlying_file_reads(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    path = tmp_path / "underlying-read.csv"
+    path.write_text("id,payload\n1,small\n")
+    limit = 1
+    original_open = Path.open
+
+    class TrackingFile:
+        def __init__(self, source: BinaryIO) -> None:
+            self.source = source
+            self.max_os_offset = 0
+
+        def read(self, size: int = -1) -> bytes:
+            data = self.source.read(size)
+            self.max_os_offset = max(
+                self.max_os_offset,
+                os.lseek(self.source.fileno(), 0, os.SEEK_CUR),
+            )
+            return data
+
+        def __getattr__(self, name: str) -> Any:
+            return getattr(self.source, name)
+
+        def __enter__(self) -> TrackingFile:
+            return self
+
+        def __exit__(self, *_args: Any) -> None:
+            self.source.close()
+
+    tracked_sources: list[TrackingFile] = []
+
+    def tracking_open(
+        self: Path,
+        mode: str = "r",
+        buffering: int = -1,
+        encoding: str | None = None,
+        errors: str | None = None,
+        newline: str | None = None,
+    ) -> BinaryIO | TrackingFile:
+        source = cast(
+            BinaryIO,
+            original_open(
+                self,
+                mode,
+                buffering=buffering,
+                encoding=encoding,
+                errors=errors,
+                newline=newline,
+            ),
+        )
+        if self == path and mode == "rb":
+            tracked = TrackingFile(source)
+            tracked_sources.append(tracked)
+            return tracked
+        return source
+
+    monkeypatch.setattr(Path, "open", tracking_open)
+
+    result = etl.infer_csv(path, limits=etl.InferenceLimits(max_bytes=limit))
+
+    assert result.provenance["raw_bytes_observed"] == limit
+    assert len(tracked_sources) == 1
+    assert tracked_sources[0].max_os_offset <= limit
 
 
 def test_csv_exact_raw_byte_boundary_is_not_reported_as_limited(tmp_path: Path) -> None:
@@ -175,6 +243,19 @@ def test_csv_max_fields_caps_header_only_schemas(tmp_path: Path) -> None:
     assert "INFER_LIMIT" in {item.code for item in result.diagnostics}
     assert result.provenance["limit_reason"] == "fields"
     assert result.provenance["limit_reasons"] == ["fields"]
+
+
+@pytest.mark.parametrize("header", ["keep,dup,dup\n", "keep,other,\n"])
+def test_csv_validates_full_header_before_max_fields_truncation(
+    tmp_path: Path, header: str
+) -> None:
+    path = tmp_path / "invalid-truncated-header.csv"
+    path.write_text(header + "1,2,3\n")
+
+    result = etl.infer_csv(path, limits=etl.InferenceLimits(max_fields=1))
+
+    assert result.schema.fields == ()
+    assert "INFER_CSV_HEADER" in {item.code for item in result.diagnostics}
 
 
 def test_csv_max_fields_caps_rows_and_replay_but_checks_full_header(
