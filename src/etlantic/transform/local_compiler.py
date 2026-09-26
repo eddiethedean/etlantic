@@ -5,9 +5,7 @@ from __future__ import annotations
 
 import hashlib
 import json
-import math
 from collections.abc import Mapping, Sequence
-from decimal import Decimal
 from typing import Any, cast
 
 from etlantic.transform.capabilities import (
@@ -32,6 +30,7 @@ from etlantic.transform.compiler import (
     host_pushdown_findings,
     requirement_records_from_mapping,
 )
+from etlantic.transform.evaluation import evaluate_expression
 from etlantic.transform.portable_baseline import (
     BASELINE_FUNCTIONS,
     BASELINE_OPERATORS,
@@ -39,12 +38,9 @@ from etlantic.transform.portable_baseline import (
     KERNEL_ACTIONS,
     RELATIONAL_ACTIONS,
     normalize_action,
-    normalize_operator,
 )
 from etlantic.transform.protocol import (
-    INVALID,
     KERNEL_PROFILE_V1,
-    MISSING,
     RELATIONAL_PROFILE_V1,
 )
 
@@ -231,173 +227,8 @@ def _rows(value: Any) -> list[dict[str, Any]]:
 
 
 def _eval(node: Any, row: Mapping[str, Any], params: Mapping[str, Any]) -> Any:
-    if not isinstance(node, Mapping):
-        return node
-    k = node.get("kind")
-    if k == "fieldRef":
-        return (
-            params.get(str(node.get("target")))
-            if node.get("scope") == "parameter"
-            else row.get(str(node.get("target")))
-        )
-    if k == "literal":
-        value = node.get("value")
-        if isinstance(value, Mapping):
-            kind = value.get("type")
-            if kind == "missing":
-                return MISSING
-            if kind == "invalid":
-                return INVALID
-            if kind == "decimal":
-                payload = value.get("value")
-                if payload is None:
-                    raise ValueError("decimal literal requires a value")
-                return Decimal(str(payload))
-            return value.get("value")
-        return value
-    if k == "unary":
-        v = _eval(node.get("operand"), row, params)
-        op = normalize_operator(str(node.get("op")))
-        if op == "negate":
-            return None if v is None else -v
-        if op == "not":
-            return None if v is None else not bool(v)
-        raise ValueError(f"unsupported unary operator: {op}")
-    if k == "binary":
-        a, b = (
-            _eval(node.get("left"), row, params),
-            _eval(node.get("right"), row, params),
-        )
-        op = normalize_operator(str(node.get("op")))
-        if op == "null_safe_eq":
-            return a == b
-        if op in {"and", "or"}:
-            if op == "and":
-                return (
-                    False
-                    if a is False or b is False
-                    else None
-                    if a is None or b is None
-                    else bool(a and b)
-                )
-            return (
-                True
-                if a is True or b is True
-                else None
-                if a is None or b is None
-                else bool(a or b)
-            )
-        if (
-            a is None
-            or b is None
-            or a is MISSING
-            or b is MISSING
-            or a is INVALID
-            or b is INVALID
-        ):
-            return None
-        operations = {
-            "eq": lambda: a == b,
-            "not_eq": lambda: a != b,
-            "gt": lambda: a > b,
-            "gte": lambda: a >= b,
-            "lt": lambda: a < b,
-            "lte": lambda: a <= b,
-            "add": lambda: a + b,
-            "subtract": lambda: a - b,
-            "multiply": lambda: a * b,
-            "divide": lambda: a / b,
-            "modulo": lambda: a % b,
-        }
-        if op == "in":
-            return a in b if isinstance(b, (list, tuple, set, frozenset)) else False
-        if op not in operations:
-            raise ValueError(f"unsupported binary operator: {op}")
-        return operations[op]()
-    if k == "call":
-        n = node.get("callee")
-        a = [_eval(x, row, params) for x in node.get("args") or []]
-        # The portable baseline uses SQL-style null propagation for scalar
-        # functions.  Null-aware functions are the explicit exceptions.
-        if n not in {
-            "dtcs:coalesce",
-            "dtcs:if_null",
-            "dtcs:is_null",
-            "dtcs:case_when",
-            "dtcs:null_if",
-        } and any(value is None for value in a):
-            return None
-        if n == "dtcs:lower":
-            return str(a[0]).lower() if a[0] is not None else None
-        if n == "dtcs:upper":
-            return str(a[0]).upper() if a[0] is not None else None
-        if n in {"dtcs:coalesce", "dtcs:if_null"}:
-            return next((x for x in a if x is not None), None)
-        if n == "dtcs:is_null":
-            return a[0] is None
-        if n == "dtcs:contains":
-            return a[1] in a[0]
-        if n == "dtcs:starts_with":
-            return str(a[0]).startswith(str(a[1]))
-        if n == "dtcs:ends_with":
-            return str(a[0]).endswith(str(a[1]))
-        if n == "dtcs:length":
-            return len(a[0]) if a[0] is not None else None
-        if n == "dtcs:concat":
-            return "".join(str(x) for x in a if x is not None)
-        if n == "dtcs:concat_ws":
-            return str(a[0]).join(str(x) for x in a[1:] if x is not None)
-        if n == "dtcs:replace":
-            return None if a[0] is None else str(a[0]).replace(str(a[1]), str(a[2]))
-        if n == "dtcs:substr":
-            return (
-                str(a[0])[int(a[1]) : int(a[1]) + int(a[2])]
-                if len(a) > 2
-                else str(a[0])[int(a[1]) :]
-            )
-        if n == "dtcs:in":
-            return a[0] in a[1:]
-        if n == "dtcs:case_when":
-            for i in range(0, len(a) - 1, 2):
-                if a[i]:
-                    return a[i + 1]
-            return a[-1] if a else None
-        if n == "dtcs:null_if":
-            return None if a[0] == a[1] else a[0]
-        if n == "dtcs:abs":
-            return abs(a[0]) if a and a[0] is not None else None
-        if n == "dtcs:round":
-            return round(a[0]) if len(a) == 1 else round(a[0], int(a[1]))
-        if n == "dtcs:floor":
-            return math.floor(a[0]) if a and a[0] is not None else None
-        if n == "dtcs:ceil":
-            return math.ceil(a[0]) if a and a[0] is not None else None
-        if n == "dtcs:power":
-            return (
-                pow(a[0], a[1])
-                if len(a) > 1 and a[0] is not None and a[1] is not None
-                else None
-            )
-        if n == "dtcs:sqrt":
-            return math.sqrt(a[0]) if a and a[0] is not None else None
-        if n == "dtcs:least":
-            return min(a)
-        if n == "dtcs:greatest":
-            return max(a)
-        if n in {
-            "dtcs:sum",
-            "dtcs:average",
-            "dtcs:min",
-            "dtcs:max",
-            "dtcs:count",
-            "dtcs:count_all",
-            "dtcs:count_distinct",
-        }:
-            raise ValueError(
-                f"aggregate function is not valid in scalar expression: {n}"
-            )
-        raise ValueError(f"unsupported function: {n}")
-    raise ValueError(f"unsupported expression kind: {k}")
+    """Compatibility wrapper around the shared portable expression evaluator."""
+    return evaluate_expression(node, row, params)
 
 
 def _apply(

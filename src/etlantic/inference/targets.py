@@ -3,7 +3,6 @@
 
 from __future__ import annotations
 
-import datetime as _dt
 import hashlib
 import inspect as _inspect
 import json
@@ -14,7 +13,7 @@ from collections import OrderedDict
 from collections.abc import Callable, Mapping
 from contextlib import suppress
 from dataclasses import dataclass
-from decimal import Decimal, DecimalException
+from decimal import DecimalException
 from pathlib import Path
 from threading import Lock
 from typing import Any, cast
@@ -27,6 +26,7 @@ from etlantic.schema_drift import (
     normalize_logical_type,
     normalize_schema_from_fields,
 )
+from etlantic.transform.evaluation import coerce_value
 
 from .durable import _safe_file_identity
 from .records import infer_csv, infer_json, infer_records
@@ -2467,61 +2467,7 @@ def _backfill_observation(
 
 
 def _coerce_value(value: Any, logical_type: str) -> Any:
-    if logical_type == "integer":
-        if isinstance(value, bool):
-            raise ValueError("boolean is not an integer value")
-        if isinstance(value, float) and not value.is_integer():
-            raise ValueError("integer conversion would lose the fractional part")
-        if isinstance(value, Decimal) and value != value.to_integral_value():
-            raise ValueError("integer conversion would lose the fractional part")
-        return int(value)
-    if logical_type == "number":
-        converted = float(value)
-        if not math.isfinite(converted):
-            raise ValueError("number conversion produced a non-finite value")
-        if isinstance(value, (Decimal, int)):
-            if Decimal(str(converted)) != Decimal(value):
-                raise ValueError("number conversion would lose precision")
-        elif isinstance(value, str):
-            try:
-                original = Decimal(value.strip())
-            except (ArithmeticError, ValueError):
-                if not value.strip():
-                    raise ValueError("invalid number spelling") from None
-            else:
-                if Decimal(str(converted)) != original:
-                    raise ValueError("number conversion would lose precision")
-        return converted
-    if logical_type == "decimal":
-        return value if isinstance(value, Decimal) else Decimal(str(value))
-    if logical_type == "binary":
-        if isinstance(value, bytes):
-            return value
-        if isinstance(value, str):
-            return value.encode()
-        return bytes(value)
-    if logical_type == "boolean":
-        if isinstance(value, str):
-            lowered = value.strip().lower()
-            if lowered in {"true", "1", "yes"}:
-                return True
-            if lowered in {"false", "0", "no"}:
-                return False
-            raise ValueError("invalid boolean spelling")
-        return bool(value)
-    if logical_type == "string":
-        return str(value)
-    if logical_type == "date":
-        return (
-            value if isinstance(value, _dt.date) else _dt.date.fromisoformat(str(value))
-        )
-    if logical_type == "datetime":
-        return (
-            value
-            if isinstance(value, _dt.datetime)
-            else _dt.datetime.fromisoformat(str(value))
-        )
-    raise TypeError(f"unsupported conversion to {logical_type}")
+    return coerce_value(value, logical_type)
 
 
 def backfill_schema(

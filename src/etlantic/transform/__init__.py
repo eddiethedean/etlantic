@@ -23,6 +23,11 @@ from etlantic.transform.compiler import (
 from etlantic.transform.complex import array, create_map, element_at, size, struct
 from etlantic.transform.dataframe import FrameExpr, GroupedData, input_frame
 from etlantic.transform.dtcs_builder import build_portable_definition, invoke_portable
+from etlantic.transform.evaluation import (
+    ExpressionEvaluationError,
+    coerce_value,
+    evaluate_expression,
+)
 from etlantic.transform.fusion import (
     FusionDescriptor,
     FusionMember,
@@ -59,6 +64,7 @@ __all__ = [
     "SUPPORT_STATES",
     "ColumnExpr",
     "CompiledTransform",
+    "ExpressionEvaluationError",
     "FrameExpr",
     "FusionDescriptor",
     "FusionMember",
@@ -84,8 +90,10 @@ __all__ = [
     "array",
     "baseline_manifest",
     "build_portable_definition",
+    "coerce_value",
     "create_map",
     "element_at",
+    "evaluate_expression",
     "exists",
     "forall",
     "functions",
