@@ -300,3 +300,13 @@ def test_conversion_diagnostics_round_trip_without_preview_rows() -> None:
 
     assert "INFER_RUNTIME_CONVERSION" in payload
     assert private_value not in payload
+
+
+def test_preview_integer_overflow_from_numpy_scalar_is_diagnosed() -> None:
+    np = pytest.importorskip("numpy")
+    dataset = etl.from_records([{"value": np.int64(2**63 - 1)}]).withColumn(
+        "overflow", col("value") + 1
+    )
+
+    assert dataset.preview() == [{"value": np.int64(2**63 - 1), "overflow": None}]
+    assert "INFER_RUNTIME_EVALUATION" in {item.code for item in dataset.diagnostics}

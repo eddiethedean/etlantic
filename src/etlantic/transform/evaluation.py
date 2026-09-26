@@ -8,6 +8,7 @@ import operator
 import re
 from collections.abc import Callable, Mapping
 from decimal import Decimal, DecimalException
+from numbers import Integral
 from typing import Any, cast
 
 from etlantic.transform.portable_baseline import normalize_operator
@@ -91,16 +92,16 @@ def _checked_integer_result(value: Any, operation: str) -> Any:
     return value
 
 
-def _normalize_boolean(value: Any) -> Any:
-    """Convert supported provider boolean scalars to Python ``bool`` values."""
+def _normalize_scalar(value: Any) -> Any:
+    """Convert NumPy scalar values before applying Python operator semantics."""
     value_type = cast(type[Any], type(value))
-    if (
-        isinstance(value, bool)
-        or value_type.__module__.split(".", 1)[0] != "numpy"
-        or value_type.__name__ not in {"bool", "bool_"}
-    ):
+    if value_type.__module__.split(".", 1)[0] != "numpy":
         return value
-    return bool(value)
+    if value_type.__name__ in {"bool", "bool_"}:
+        return bool(value)
+    if isinstance(value, Integral):
+        return int(value)
+    return value
 
 
 def coerce_value(value: Any, logical_type: str) -> Any:
@@ -232,8 +233,8 @@ def _literal(node: Mapping[str, Any], on_error: ExpressionErrorHandler | None) -
 
 
 def _sql_and(left: Any, right: Any) -> bool | None:
-    left = _normalize_boolean(left)
-    right = _normalize_boolean(right)
+    left = _normalize_scalar(left)
+    right = _normalize_scalar(right)
     if (left is not None and not isinstance(left, bool)) or (
         right is not None and not isinstance(right, bool)
     ):
@@ -246,8 +247,8 @@ def _sql_and(left: Any, right: Any) -> bool | None:
 
 
 def _sql_or(left: Any, right: Any) -> bool | None:
-    left = _normalize_boolean(left)
-    right = _normalize_boolean(right)
+    left = _normalize_scalar(left)
+    right = _normalize_scalar(right)
     if (left is not None and not isinstance(left, bool)) or (
         right is not None and not isinstance(right, bool)
     ):
@@ -274,7 +275,7 @@ def evaluate_expression(
     """
     parameters = params or {}
     if not isinstance(node, Mapping):
-        return _normalize_boolean(node)
+        return _normalize_scalar(node)
     expression = cast(Mapping[str, Any], node)
     kind = expression.get("kind")
     if kind == "fieldRef":
@@ -284,9 +285,9 @@ def evaluate_expression(
             if expression.get("scope") == "parameter"
             else row.get(target)
         )
-        return _normalize_boolean(value)
+        return _normalize_scalar(value)
     if kind == "literal":
-        return _normalize_boolean(_literal(expression, on_error))
+        return _normalize_scalar(_literal(expression, on_error))
     if kind == "binary":
         left = evaluate_expression(
             expression.get("left"), row, parameters, on_error=on_error
@@ -296,7 +297,7 @@ def evaluate_expression(
         )
         op = normalize_operator(str(expression.get("op")))
         if op == "null_safe_eq":
-            return _normalize_boolean(left == right)
+            return _normalize_scalar(left == right)
         if op in {"and", "or"}:
             try:
                 return _sql_and(left, right) if op == "and" else _sql_or(left, right)
@@ -345,7 +346,7 @@ def evaluate_expression(
             value = operation(left, right)
             if op in {"add", "subtract", "multiply", "modulo"}:
                 return _checked_integer_result(value, f"integer {op}")
-            return _normalize_boolean(value)
+            return _normalize_scalar(value)
         except (
             TypeError,
             ValueError,
