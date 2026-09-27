@@ -508,29 +508,74 @@ def _with_target_diagnostic(
 def _diagnostics_from_payload(
     value: Any, *, max_diagnostics: int = 100
 ) -> tuple[Diagnostic, ...]:
-    """Normalize provider diagnostics without retaining arbitrary objects."""
-    if not isinstance(value, (list, tuple)):
+    """Normalize bounded inspector findings; malformed input remains a finding."""
+
+    def malformed() -> Diagnostic:
+        return Diagnostic(
+            "INFER_TARGET_UNSUPPORTED",
+            Severity.ERROR,
+            "Target inspection diagnostic is malformed",
+            phase="inference",
+        )
+
+    if value is _MISSING:
         return ()
+    if not isinstance(value, (list, tuple)):
+        return (malformed(),)
     diagnostics: list[Diagnostic] = []
-    for item in value:
+    for item in cast(list[Any] | tuple[Any, ...], value[: max(1, max_diagnostics)]):
         if isinstance(item, Diagnostic):
-            diagnostics.append(item)
+            raw_diagnostic = cast(Any, item)
+            raw_path: Any = getattr(raw_diagnostic, "path", None)
+            if (
+                isinstance(raw_diagnostic.code, str)
+                and bool(raw_diagnostic.code)
+                and isinstance(raw_diagnostic.severity, Severity)
+                and isinstance(raw_diagnostic.message, str)
+                and isinstance(raw_path, tuple)
+                and all(
+                    isinstance(path, str) for path in cast(tuple[Any, ...], raw_path)
+                )
+            ):
+                diagnostics.append(item)
+            else:
+                diagnostics.append(malformed())
             continue
         if not isinstance(item, Mapping):
+            diagnostics.append(malformed())
             continue
         try:
+            payload = cast(Mapping[str, Any], item)
+            code = payload.get("code")
+            severity = payload.get("severity")
+            message = payload.get("message")
+            path = payload.get("path", ())
+            if (
+                (code is not None and (not isinstance(code, str) or not code))
+                or (severity is not None and not isinstance(severity, (str, Severity)))
+                or (message is not None and not isinstance(message, str))
+                or not isinstance(path, (list, tuple))
+            ):
+                raise ValueError("malformed target diagnostic")
+            path_parts: list[str] = []
+            for part in cast(list[Any] | tuple[Any, ...], path):
+                if not isinstance(part, str):
+                    raise ValueError("malformed target diagnostic path")
+                path_parts.append(part)
             diagnostics.append(
                 Diagnostic(
-                    str(item.get("code") or "INFER_TARGET_UNKNOWN"),
-                    Severity(str(item.get("severity") or "warning").lower()),
-                    str(item.get("message") or "Target inspection diagnostic"),
-                    tuple(str(path) for path in item.get("path", ())),
+                    code or "INFER_TARGET_UNKNOWN",
+                    Severity(str(severity or "warning").lower()),
+                    message or "Target inspection diagnostic",
+                    tuple(path_parts),
                     phase="inference",
                 )
             )
-        except (TypeError, ValueError):
-            continue
-    return tuple(diagnostics[:max_diagnostics])
+        except Exception:
+            # Provider mappings can raise while reading keys. Keep a bounded
+            # finding instead of letting their contents enter diagnostics.
+            diagnostics.append(malformed())
+    return tuple(diagnostics)
 
 
 def _schema_from_inspection(identity: str, fields: Any) -> NormalizedSchema:
@@ -1142,7 +1187,7 @@ def _normalize_provider_payload(
         explicit_exists,
         str(revision) if revision is not None else None,
         inspector,
-        tuple(diagnostics[:max_diagnostics]),
+        tuple(diagnostics[: max(1, max_diagnostics)]),
         metadata,
     )
 
@@ -2933,8 +2978,17 @@ def check_write_compatibility(
     mode: str = "append",
     expected_revision: str | None = None,
 ) -> WriteCompatibility:
-    """Check a source against every target field and target constraint."""
+    """Check a source against every target field and target constraint.
+
+    Any inspector diagnostic, regardless of severity, leaves compatibility
+    unqualified. Malformed diagnostic input is normalized to an error.
+    """
     target_observation = target if isinstance(target, TargetObservation) else None
+    target_diagnostics = (
+        _diagnostics_from_payload(target_observation.diagnostics)
+        if target_observation is not None
+        else ()
+    )
     observation_metadata: dict[str, Any] = {}
     observed_revision: str | None = None
     target_schema = (
@@ -2946,16 +3000,11 @@ def check_write_compatibility(
                 cast(NormalizedSchema, target_schema)
             )
         except (AttributeError, KeyError, TypeError, ValueError):
-            base_diagnostics = (
-                tuple(target_observation.diagnostics)
-                if target_observation is not None
-                else ()
-            )
             return WriteCompatibility(
                 False,
                 mode=mode,
                 diagnostics=(
-                    *base_diagnostics,
+                    *target_diagnostics,
                     Diagnostic(
                         "INFER_TARGET_UNSUPPORTED",
                         Severity.ERROR,
@@ -2966,15 +3015,10 @@ def check_write_compatibility(
             )
         unknown_type_diagnostics = _unknown_type_diagnostics(target_schema)
         if unknown_type_diagnostics:
-            base_diagnostics = (
-                tuple(target_observation.diagnostics)
-                if target_observation is not None
-                else ()
-            )
             return WriteCompatibility(
                 False,
                 mode=mode,
-                diagnostics=(*base_diagnostics, *unknown_type_diagnostics),
+                diagnostics=(*target_diagnostics, *unknown_type_diagnostics),
             )
         assert target_schema is not None
         assert isinstance(target_schema, NormalizedSchema)
@@ -2982,7 +3026,7 @@ def check_write_compatibility(
     if target_observation is not None:
         if target_observation.exists != "present":
             state = target_observation.exists
-            diagnostics = list(target_observation.diagnostics)
+            diagnostics = list(target_diagnostics)
             diagnostics.append(
                 Diagnostic(
                     "INFER_TARGET_ABSENT"
@@ -3002,47 +3046,16 @@ def check_write_compatibility(
                 mode=mode,
                 diagnostics=tuple(diagnostics),
             )
-        # A schema accompanied by an inspector error is not a qualified
-        # observation.  Do not let a useful-looking partial payload turn into
-        # a proven write result.
-        if target_observation.diagnostics:
+        if target_diagnostics:
             return WriteCompatibility(
                 False,
                 mode=mode,
                 diagnostics=(
-                    *target_observation.diagnostics,
+                    *target_diagnostics,
                     Diagnostic(
                         "INFER_TARGET_UNKNOWN",
                         Severity.ERROR,
                         "Target inspection reported diagnostics; compatibility is unqualified",
-                        phase="inference",
-                    ),
-                ),
-            )
-        inspector_errors = tuple(
-            diagnostic
-            for diagnostic in target_observation.diagnostics
-            if getattr(
-                getattr(diagnostic, "severity", None),
-                "value",
-                getattr(diagnostic, "severity", None),
-            )
-            == Severity.ERROR.value
-            or (
-                isinstance(diagnostic, Mapping)
-                and str(diagnostic.get("severity", "")).lower() == "error"
-            )
-        )
-        if inspector_errors:
-            return WriteCompatibility(
-                False,
-                mode=mode,
-                diagnostics=(
-                    *target_observation.diagnostics,
-                    Diagnostic(
-                        "INFER_TARGET_UNKNOWN",
-                        Severity.ERROR,
-                        "Target inspection reported an error; compatibility is unqualified",
                         phase="inference",
                     ),
                 ),
@@ -3052,7 +3065,7 @@ def check_write_compatibility(
                 False,
                 mode=mode,
                 diagnostics=(
-                    *target_observation.diagnostics,
+                    *target_diagnostics,
                     Diagnostic(
                         "INFER_TARGET_UNKNOWN",
                         Severity.ERROR,
@@ -3066,7 +3079,7 @@ def check_write_compatibility(
                 False,
                 mode=mode,
                 diagnostics=(
-                    *target_observation.diagnostics,
+                    *target_diagnostics,
                     Diagnostic(
                         "INFER_TARGET_UNSUPPORTED",
                         Severity.ERROR,
