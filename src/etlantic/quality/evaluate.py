@@ -3,10 +3,20 @@
 
 from __future__ import annotations
 
+import operator
 import re
 from typing import Any
 
 from etlantic.quality.model import QualityRule, QualityRuleset
+
+_COMPARE_OPERATORS = {
+    "eq": operator.eq,
+    "ne": operator.ne,
+    "lt": operator.lt,
+    "le": operator.le,
+    "gt": operator.gt,
+    "ge": operator.ge,
+}
 
 
 def _as_mapping(row: Any) -> dict[str, Any]:
@@ -48,24 +58,18 @@ def evaluate_rule(rule: QualityRule, row: dict[str, Any]) -> str | None:
 
     if kind == "compare":
         op = str(node.get("op") or "")
-        expected = node.get("value")
+        expected: Any = node.get("value")
         if _is_missing(value):
             return f"{field} is null"
         if value is None:
             return f"{field} is null"
+        compare = _COMPARE_OPERATORS.get(op)
+        if compare is None:
+            return f"{field} unsupported compare op {op!r}"
         try:
-            ok = {
-                "eq": value == expected,
-                "ne": value != expected,
-                "lt": value < expected,
-                "le": value <= expected,
-                "gt": value > expected,
-                "ge": value >= expected,
-            }.get(op)
+            ok = compare(value, expected)
         except TypeError:
             return f"{field} compare {op!r} type error"
-        if ok is None:
-            return f"{field} unsupported compare op {op!r}"
         return None if ok else f"{field} failed {op} {expected!r}"
 
     if kind == "membership":
