@@ -605,12 +605,15 @@ def test_target_replay_accepts_omitted_fields_with_falsey_defaults(
             ),
         ),
     )
+    rows: list[dict[str, object]] = [{}, {}]
     dataset = etl.from_records_for_target(
-        iter(({}, {})), target, limits=InferenceLimits(max_rows=1)
+        iter(rows), target, limits=InferenceLimits(max_rows=1)
     )
 
     assert dataset.provenance["target_validation"] == "prefix_only"
-    assert list(dataset.replay.take()) == [{}, {}]
+    replay = dataset.replay
+    assert replay is not None
+    assert list(replay.take()) == [{}, {}]
     assert dataset.provenance["target_validation"] == "complete"
 
 
