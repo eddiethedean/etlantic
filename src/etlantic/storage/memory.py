@@ -52,7 +52,7 @@ class MemoryStorage:
                 code="PMEXEC456",
             )
         existing = self._store.get(key)
-        if mode in {"skip_if_exists", "skip"} and key in self._store:
+        if mode in {"skip_if_exists", "skip"} and existing is not None:
             return {
                 "binding": binding,
                 "location": key,
