@@ -6,15 +6,13 @@ from __future__ import annotations
 import datetime as _dt
 import hashlib
 import json
-import math
-import operator
 import re
 import time
 import weakref
 from collections.abc import Callable, Mapping
 from copy import deepcopy
 from dataclasses import replace
-from decimal import Decimal, DecimalException
+from decimal import Decimal
 from typing import Any
 
 from pydantic import Field, create_model
@@ -34,6 +32,10 @@ from etlantic.diagnostics import Diagnostic, Severity
 from etlantic.schema_drift import NormalizedSchema
 from etlantic.transform.column import ColumnExpr, coerce_column
 from etlantic.transform.dataframe import FrameAction, FrameExpr
+from etlantic.transform.evaluation import (
+    ExpressionEvaluationError,
+    evaluate_expression,
+)
 
 from .durable import (
     _retain_file_source,
@@ -53,7 +55,6 @@ from .records import _estimate_size, _path_identity, infer_csv, infer_records
 from .sources import infer_source
 from .targets import (
     _backfill_observation,
-    _coerce_value,
     _safe_target_identity,
     check_write_compatibility,
     infer_records_for_target,
@@ -163,319 +164,39 @@ def _target_cast_action(
     )
 
 
-def _literal(node: Mapping[str, Any]) -> Any:
-    value = node.get("value")
-    if not isinstance(value, Mapping) or "type" not in value:
-        return (
-            value.get("value")
-            if isinstance(value, Mapping) and "value" in value
-            else value
-        )
-    logical_type = str(value.get("type", "")).lower()
-    raw = value.get("value")
-    if raw is None:
-        return None
-    try:
-        if logical_type in {"int", "integer", "long"}:
-            return int(raw)
-        if logical_type in {"float", "number", "double"}:
-            return float(raw)
-        if logical_type in {"decimal", "numeric"}:
-            return Decimal(str(raw))
-        if logical_type in {"bool", "boolean"}:
-            if isinstance(raw, str):
-                lowered = raw.strip().lower()
-                if lowered in {"true", "1", "yes"}:
-                    return True
-                if lowered in {"false", "0", "no"}:
-                    return False
-                return None
-            return bool(raw)
-        if logical_type == "date":
-            return _dt.date.fromisoformat(str(raw))
-        if logical_type == "datetime":
-            return _dt.datetime.fromisoformat(str(raw))
-        if logical_type in {"binary", "bytes"}:
-            return bytes.fromhex(raw) if isinstance(raw, str) else bytes(raw)
-        if logical_type in {"null", "none"}:
-            return None
-    except (TypeError, ValueError, OverflowError):
-        return None
-    return raw
-
-
-def _sql_and(left: Any, right: Any) -> bool | None:
-    if left is False or right is False:
-        return False
-    if left is None or right is None:
-        return None
-    return bool(left and right)
-
-
-def _sql_or(left: Any, right: Any) -> bool | None:
-    if left is True or right is True:
-        return True
-    if left is None or right is None:
-        return None
-    return bool(left or right)
-
-
 def _eval(
     node: Any,
     row: Mapping[str, Any],
     diagnostics: list[Diagnostic] | None = None,
+    *,
+    max_diagnostics: int = 100,
 ) -> Any:
-    if not isinstance(node, Mapping):
-        return node
-    kind = node.get("kind")
-    if kind == "fieldRef":
-        return row.get(str(node.get("target")))
-    if kind == "literal":
-        return _literal(node)
-    if kind == "binary":
-        left, right = (
-            _eval(node.get("left"), row, diagnostics),
-            _eval(node.get("right"), row, diagnostics),
-        )
-        op = str(node.get("op"))
-        if op in {"eq", "not_eq", "lt", "lte", "gt", "gte"} and (
-            left is None or right is None
+    """Evaluate a preview expression through the shared scalar policy."""
+    limit = max(1, max_diagnostics)
+
+    def record(error: ExpressionEvaluationError) -> None:
+        if diagnostics is None:
+            return
+        code = {
+            "conversion": "INFER_RUNTIME_CONVERSION",
+            "unsupported": "INFER_EVALUATION_UNSUPPORTED",
+        }.get(error.code, "INFER_RUNTIME_EVALUATION")
+        message = str(error)
+        key = (code, (), message)
+        if len(diagnostics) >= limit or any(
+            (item.code, tuple(item.path), item.message) == key for item in diagnostics
         ):
-            return None
-        if op == "and":
-            return _sql_and(left, right)
-        if op == "or":
-            return _sql_or(left, right)
-        ops: dict[str, Callable[[Any, Any], Any]] = {
-            "add": operator.add,
-            "subtract": operator.sub,
-            "multiply": operator.mul,
-            "divide": operator.truediv,
-            "modulo": operator.mod,
-            "eq": operator.eq,
-            "not_eq": operator.ne,
-            "lt": operator.lt,
-            "lte": operator.le,
-            "gt": operator.gt,
-            "gte": operator.ge,
-            "null_safe_eq": lambda a, b: a == b,
-        }
-        try:
-            return ops[op](left, right)
-        except (KeyError, TypeError, ZeroDivisionError, DecimalException):
-            return None
-    if kind == "unary":
-        value = _eval(node.get("expr"), row, diagnostics)
-        if node.get("op") == "not":
-            return None if value is None else not bool(value)
-        if node.get("op") == "negate":
-            try:
-                return -value
-            except TypeError:
-                return None
-    if kind == "call":
-        callee = str(node.get("callee"))
-        args = [_eval(item, row, diagnostics) for item in node.get("args", ())]
-        if callee in {"dtcs:is_null", "is_null"}:
-            return args[0] is None
-        if callee in {"dtcs:is_not_null", "is_not_null"}:
-            return args[0] is not None
-        if callee in {"dtcs:coalesce", "coalesce"}:
-            return next((value for value in args if value is not None), None)
-        if callee in {"dtcs:if_null", "if_null"} and len(args) >= 2:
-            return args[1] if args[0] is None else args[0]
-        if callee in {"dtcs:null_if", "null_if"} and len(args) >= 2:
-            return None if args[0] == args[1] else args[0]
-        if callee in {"dtcs:case_when", "case_when"} and args:
-            # ``when`` lowers to condition/value pairs followed by an else.
-            for index in range(0, max(0, len(args) - 1), 2):
-                if bool(args[index]):
-                    return args[index + 1]
-            return args[-1]
-        if callee in {"dtcs:cast", "dtcs:try_cast"} and args:
-            target_value = (
-                _literal(node.get("args", ())[1])
-                if len(node.get("args", ())) > 1
-                and isinstance(node.get("args", ())[1], Mapping)
-                else (args[1] if len(args) > 1 else "string")
-            )
-            target = str(target_value).lower()
-            try:
-                target_aliases = {
-                    "int": "integer",
-                    "long": "integer",
-                    "float": "number",
-                    "double": "number",
-                    "numeric": "decimal",
-                    "bool": "boolean",
-                    "str": "string",
-                    "bytes": "binary",
-                }
-                return _coerce_value(args[0], target_aliases.get(target, target))
-            except (TypeError, ValueError, OverflowError, DecimalException):
-                if callee == "dtcs:cast" and diagnostics is not None:
-                    diagnostics.append(
-                        Diagnostic(
-                            "INFER_RUNTIME_CONVERSION",
-                            Severity.ERROR,
-                            f"Preview value cannot be safely cast to {target!r}",
-                            phase="inference",
-                        )
-                    )
-                return None
-        if callee in {"dtcs:to_string", "to_string"} and args:
-            return None if args[0] is None else str(args[0])
-        if callee in {"dtcs:to_integer", "to_integer"} and args:
-            try:
-                return _coerce_value(args[0], "integer")
-            except (TypeError, ValueError, OverflowError, DecimalException):
-                return None
-        if callee in {"dtcs:to_decimal", "to_decimal"} and args:
-            try:
-                return _coerce_value(args[0], "decimal")
-            except (TypeError, ValueError, OverflowError, DecimalException):
-                return None
-        if callee.endswith("lower") and args:
-            if args[0] is None:
-                return None
-            return str(args[0]).lower()
-        if callee.endswith("upper") and args:
-            if args[0] is None:
-                return None
-            return str(args[0]).upper()
-        if callee in {"dtcs:concat", "concat"}:
-            return (
-                None
-                if any(value is None for value in args)
-                else "".join(str(value) for value in args)
-            )
-        if callee in {"dtcs:concat_ws", "concat_ws"} and args:
-            if args[0] is None:
-                return None
-            return str(args[0]).join(
-                str(value) for value in args[1:] if value is not None
-            )
-        if callee in {"dtcs:substr", "dtcs:substring"} and args:
-            if args[0] is None:
-                return None
-            start = int(args[1]) if len(args) > 1 else 0
-            length = int(args[2]) if len(args) > 2 else None
-            return (
-                str(args[0])[start:]
-                if length is None
-                else str(args[0])[start : start + length]
-            )
-        if callee in {"dtcs:replace", "replace"} and len(args) >= 3:
-            return (
-                None
-                if args[0] is None
-                else str(args[0]).replace(str(args[1]), str(args[2]))
-            )
-        if callee in {"dtcs:regex_extract", "regex_extract"} and len(args) >= 2:
-            if args[0] is None or args[1] is None:
-                return None
-            try:
-                match = re.search(str(args[1]), str(args[0]))
-                if match is None:
-                    return None
-                group = int(args[2]) if len(args) > 2 and args[2] is not None else 0
-                return match.group(group)
-            except (IndexError, re.error, TypeError, ValueError):
-                return None
-        if callee in {"dtcs:regex_replace", "regex_replace"} and len(args) >= 3:
-            if args[0] is None or args[1] is None or args[2] is None:
-                return None
-            try:
-                return re.sub(str(args[1]), str(args[2]), str(args[0]))
-            except (re.error, TypeError, ValueError):
-                return None
-        if (
-            callee
-            in {
-                "dtcs:trim",
-                "dtcs:ltrim",
-                "dtcs:rtrim",
-                "dtcs:normalize_whitespace",
-            }
-            and args
-        ):
-            if args[0] is None:
-                return None
-            value = str(args[0])
-            if callee.endswith("ltrim"):
-                return value.lstrip()
-            if callee.endswith("rtrim"):
-                return value.rstrip()
-            return (
-                " ".join(value.split())
-                if callee.endswith("normalize_whitespace")
-                else value.strip()
-            )
-        if callee in {"dtcs:length", "length"} and args:
-            return len(args[0]) if args[0] is not None else None
-        if callee in {"dtcs:abs", "abs"} and args:
-            try:
-                return None if args[0] is None else abs(args[0])
-            except (TypeError, ValueError, OverflowError):
-                return None
-        if callee in {"dtcs:round", "round"} and args:
-            try:
-                return (
-                    None
-                    if args[0] is None
-                    else round(
-                        args[0],
-                        int(args[1]) if len(args) > 1 and args[1] is not None else 0,
-                    )
-                )
-            except (TypeError, ValueError, OverflowError):
-                return None
-        if callee in {"dtcs:floor", "floor"} and args:
-            try:
-                return None if args[0] is None else math.floor(args[0])
-            except (TypeError, ValueError, OverflowError):
-                return None
-        if callee in {"dtcs:ceil", "ceil"} and args:
-            try:
-                return None if args[0] is None else math.ceil(args[0])
-            except (TypeError, ValueError, OverflowError):
-                return None
-        if callee in {"dtcs:power", "power"} and len(args) >= 2:
-            try:
-                return (
-                    None
-                    if args[0] is None or args[1] is None
-                    else pow(args[0], args[1])
-                )
-            except (TypeError, ValueError, OverflowError):
-                return None
-        if callee in {"dtcs:sqrt", "sqrt"} and args:
-            try:
-                return None if args[0] is None else math.sqrt(args[0])
-            except (TypeError, ValueError, OverflowError):
-                return None
-        if callee in {"dtcs:least", "least", "dtcs:greatest", "greatest"} and args:
-            if any(value is None for value in args):
-                return None
-            try:
-                return min(args) if callee.endswith("least") else max(args)
-            except (TypeError, ValueError):
-                return None
-        if callee in {"dtcs:current_date", "current_date"}:
-            return _dt.date.today()
-        if callee in {"dtcs:current_timestamp", "current_timestamp"}:
-            return _dt.datetime.now(_dt.UTC)
-    if diagnostics is not None and kind == "call":
-        callee = str(node.get("callee"))
+            return
         diagnostics.append(
             Diagnostic(
-                "INFER_EVALUATION_UNSUPPORTED",
+                code,
                 Severity.ERROR,
-                f"Preview evaluator does not support expression {callee!r}",
+                message,
                 phase="inference",
             )
         )
-    return None
+
+    return evaluate_expression(node, row, on_error=record)
 
 
 class InferredDataset:
@@ -966,6 +687,12 @@ class InferredDataset:
         """Return the validated authoring definition used by plan consumers."""
         return self.definition()
 
+    def _max_diagnostics(self) -> int:
+        limits = self.provenance.get("limits", {})
+        if not isinstance(limits, Mapping):
+            return 100
+        return max(1, int(limits.get("max_diagnostics", 100)))
+
     def _new(
         self,
         rows: list[dict[str, Any]],
@@ -1001,18 +728,14 @@ class InferredDataset:
                         phase="inference",
                     )
                 )
-        all_diagnostics = (
-            self._result.diagnostics
+        all_diagnostics: tuple[Any, ...] = (
+            extra_diagnostics  # prioritize current runtime errors within budget
+            + self._result.diagnostics
             + observed.diagnostics
             + transfer_diagnostics
-            + extra_diagnostics
             + tuple(runtime_diagnostics)
         )
-        max_diagnostics = int(
-            self.provenance.get("limits", {}).get("max_diagnostics", 100)
-            if isinstance(self.provenance.get("limits", {}), Mapping)
-            else 100
-        )
+        max_diagnostics = self._max_diagnostics()
         bounded_diagnostics: list[Any] = []
         seen_diagnostics: set[tuple[str, tuple[str, ...], str]] = set()
         for diagnostic in all_diagnostics:
@@ -1082,19 +805,32 @@ class InferredDataset:
         expr = coerce_column(condition)
         frame = self._frame.filter(expr)
         evaluation_diagnostics: list[Diagnostic] = []
+        max_diagnostics = self._max_diagnostics()
         replay = None
         if self._result.replay is not None:
             replay = self._result.replay.filter(
                 lambda row: (
                     isinstance(row, Mapping)
-                    and bool(_eval(expr.node, row, evaluation_diagnostics))
+                    and _eval(
+                        expr.node,
+                        row,
+                        evaluation_diagnostics,
+                        max_diagnostics=max_diagnostics,
+                    )
+                    is True
                 )
             )
         return self._new(
             [
                 row
                 for row in self._result.rows
-                if bool(_eval(expr.node, row, evaluation_diagnostics))
+                if _eval(
+                    expr.node,
+                    row,
+                    evaluation_diagnostics,
+                    max_diagnostics=max_diagnostics,
+                )
+                is True
             ],
             frame,
             forward_schema(
@@ -1111,6 +847,7 @@ class InferredDataset:
     def select(self, *columns: Any) -> InferredDataset:
         fields: list[tuple[str, Any]] = []
         evaluation_diagnostics: list[Diagnostic] = []
+        max_diagnostics = self._max_diagnostics()
         for column in columns:
             if isinstance(column, str):
                 fields.append((column, {"kind": "fieldRef", "target": column}))
@@ -1118,7 +855,15 @@ class InferredDataset:
                 expr = coerce_column(column)
                 fields.append((expr.alias_name or f"_col_{len(fields)}", expr.node))
         rows = [
-            {name: _eval(node, row, evaluation_diagnostics) for name, node in fields}
+            {
+                name: _eval(
+                    node,
+                    row,
+                    evaluation_diagnostics,
+                    max_diagnostics=max_diagnostics,
+                )
+                for name, node in fields
+            }
             for row in self._result.rows
         ]
         frame = self._frame.project(*columns)
@@ -1127,7 +872,12 @@ class InferredDataset:
             replay = self._result.replay.map(
                 lambda row: (
                     {
-                        name: _eval(node, row, evaluation_diagnostics)
+                        name: _eval(
+                            node,
+                            row,
+                            evaluation_diagnostics,
+                            max_diagnostics=max_diagnostics,
+                        )
                         for name, node in fields
                     }
                     if isinstance(row, Mapping)
@@ -1153,8 +903,17 @@ class InferredDataset:
     def withColumn(self, name: str, value: Any) -> InferredDataset:
         expr = coerce_column(value)
         evaluation_diagnostics: list[Diagnostic] = []
+        max_diagnostics = self._max_diagnostics()
         rows = [
-            {**row, name: _eval(expr.node, row, evaluation_diagnostics)}
+            {
+                **row,
+                name: _eval(
+                    expr.node,
+                    row,
+                    evaluation_diagnostics,
+                    max_diagnostics=max_diagnostics,
+                ),
+            }
             for row in self._result.rows
         ]
         frame = self._frame.withColumn(name, expr)
@@ -1162,7 +921,15 @@ class InferredDataset:
         if self._result.replay is not None:
             replay = self._result.replay.map(
                 lambda row: (
-                    {**row, name: _eval(expr.node, row, evaluation_diagnostics)}
+                    {
+                        **row,
+                        name: _eval(
+                            expr.node,
+                            row,
+                            evaluation_diagnostics,
+                            max_diagnostics=max_diagnostics,
+                        ),
+                    }
                     if isinstance(row, Mapping)
                     else row
                 )

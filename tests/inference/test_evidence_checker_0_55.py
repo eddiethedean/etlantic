@@ -282,3 +282,11 @@ def test_campaign_requires_each_ledger_test_to_pass_in_its_gate(
     gate_path.write_text(json.dumps(record), encoding="utf-8")
     with pytest.raises(ValueError, match="no passing test"):
         checker._verify_campaign(tmp_path, {}, {}, ledger)
+
+
+def test_full_regression_gate_uses_xdist_for_the_unrestricted_suite() -> None:
+    assert checker.GATE_TESTS["full_regression"] == (
+        "-n",
+        "4",
+        "--dist=loadfile",
+    )

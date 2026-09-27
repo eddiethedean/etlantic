@@ -131,7 +131,7 @@ GATE_TESTS: dict[str, tuple[str, ...]] = {
         "-k",
         "race or concurrent or revision or publication",
     ),
-    "full_regression": (),
+    "full_regression": ("-n", "4", "--dist=loadfile"),
 }
 
 
@@ -518,7 +518,7 @@ def _actual_command(gate: str) -> list[str]:
     if gate in {"wire_security", "optional_dependency_matrix"}:
         return ["python", "scripts/check_inference_0_55.py", "--gate", gate]
     if gate == "full_regression":
-        return ["python", "-m", "pytest", "-q"]
+        return ["python", "-m", "pytest", "-q", *GATE_TESTS[gate]]
     return ["python", "-m", "pytest", "-q", *GATE_TESTS[gate]]
 
 
@@ -572,16 +572,16 @@ class _PytestOutcomeCollector:
         return results
 
     def outcome_counts(self) -> dict[str, int]:
-        failed = len(self._failed)
-        skipped = len(self._skipped - self._failed)
+        failed, skipped = len(self._failed), len(self._skipped - self._failed)
         passed = len(set(self.outcomes) - self._failed - self._skipped)
+        collected = self.collected or self._failed.union(self._skipped, self.outcomes)
         return {
-            "collected_test_count": len(self.collected),
+            "collected_test_count": len(collected),
             "passed_test_count": passed,
             "failed_test_count": failed,
             "skipped_test_count": skipped,
             "not_run_test_count": max(
-                0, len(self.collected) - passed - failed - skipped
+                0, len(collected) - sum((passed, failed, skipped))
             ),
         }
 
