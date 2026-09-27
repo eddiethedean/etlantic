@@ -1117,6 +1117,29 @@ class InferredDataset:
         if self._result.provenance.get("sampled") is not True:
             return compatibility
 
+        validation_state = self._result.provenance.get("target_validation")
+        if same_target and validation_state == "complete":
+            return compatibility
+
+        replay = self._result.replay
+        if (
+            not same_target
+            or validation_state != "prefix_only"
+            or replay is None
+            or not replay.available
+        ):
+            diagnostic = Diagnostic(
+                "INFER_TARGET_UNKNOWN",
+                Severity.ERROR,
+                "Sampled source cannot enforce all-values constraints for the requested target schema",
+                phase="inference",
+            )
+            return replace(
+                compatibility,
+                compatible=False,
+                diagnostics=(*compatibility.diagnostics, diagnostic),
+            )
+
         validation_obligations: list[dict[str, Any]] = []
         for field in target_schema.fields:
             # The sampled prefix cannot prove that an otherwise absent target
@@ -1149,20 +1172,6 @@ class InferredDataset:
         )
 
         obligations = (*compatibility.obligations, *validation_obligations)
-        if self._result.replay is None:
-            diagnostic = Diagnostic(
-                "INFER_TARGET_UNKNOWN",
-                Severity.ERROR,
-                "Sampled source has no replay stream for all-values target validation",
-                phase="inference",
-            )
-            return replace(
-                compatibility,
-                compatible=False,
-                diagnostics=(*compatibility.diagnostics, diagnostic),
-                obligations=obligations,
-            )
-
         return replace(compatibility, obligations=obligations)
 
     def propose_output(

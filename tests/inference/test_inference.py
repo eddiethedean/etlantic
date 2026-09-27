@@ -29,7 +29,8 @@ def test_records_inference_promotes_across_all_rows_and_tracks_missing() -> None
     result = infer_records(row for row in [{"id": 1}, {"id": 2.5, "name": "a"}])
     fields = {field.name: field for field in result.schema.fields}
     assert fields["id"].logical_type == "number"
-    assert fields["name"].nullable is True
+    assert fields["name"].required is False
+    assert fields["name"].nullable is False
     assert result.provenance["rows_observed"] == 2
     assert "rows" not in result.to_dict()
     assert "rows" not in result.to_dict(include_rows=True)
@@ -41,6 +42,20 @@ def test_records_inference_separates_required_presence_from_nullability() -> Non
     field = result.schema.fields[0]
     assert field.required is True
     assert field.nullable is True
+
+
+def test_records_inference_missing_field_is_optional_but_not_nullable() -> None:
+    result = infer_records([{"id": 1}, {}])
+
+    field = result.schema.fields[0]
+    assert field.required is False
+    assert field.nullable is False
+    assert result.evidence[0].null_values == 0
+    assert result.evidence[0].missing_values == 1
+    model = etl.model_from_schema(result.schema)
+    model.model_validate({})
+    with pytest.raises(ValidationError):
+        model.model_validate({"id": None})
 
 
 def test_records_inference_preserves_first_seen_field_order() -> None:
@@ -491,6 +506,80 @@ def test_target_replay_rejects_late_required_and_nullability_violations(
     assert "None" not in str(error.value)
 
 
+def test_check_write_fails_closed_without_replay_bound_to_requested_target() -> None:
+    strict_target = NormalizedSchema(
+        "strict",
+        (NormalizedField("id", "integer", required=True, nullable=False),),
+    )
+    raw_dataset = etl.from_records(
+        iter(({"id": 1}, {"id": None})),
+        limits=InferenceLimits(max_rows=1),
+    )
+
+    raw_compatibility = raw_dataset.check_write(strict_target)
+
+    assert raw_compatibility.status == "conflict"
+    assert "INFER_TARGET_UNKNOWN" in {
+        diagnostic.code for diagnostic in raw_compatibility.diagnostics
+    }
+
+    bound_target_with_default = NormalizedSchema(
+        "bound",
+        (
+            NormalizedField(
+                "id",
+                "integer",
+                required=True,
+                nullable=False,
+                metadata={"default": 0},
+            ),
+        ),
+    )
+    requested_target_without_default = NormalizedSchema(
+        "requested",
+        (NormalizedField("id", "integer", required=True, nullable=False),),
+    )
+    bound_dataset = etl.from_records_for_target(
+        iter(({"id": 1}, {})),
+        bound_target_with_default,
+        limits=InferenceLimits(max_rows=1),
+    )
+
+    requested_compatibility = bound_dataset.check_write(
+        requested_target_without_default
+    )
+
+    assert requested_compatibility.status == "conflict"
+    assert "INFER_TARGET_UNKNOWN" in {
+        diagnostic.code for diagnostic in requested_compatibility.diagnostics
+    }
+    assert list(bound_dataset.replay.take()) == [{"id": 1}, {}]
+    assert bound_dataset.provenance["target_validation"] == "complete"
+
+
+def test_check_write_fails_closed_after_sampled_replay_is_partially_consumed() -> None:
+    target = NormalizedSchema(
+        "target",
+        (NormalizedField("id", "integer", required=True, nullable=False),),
+    )
+    dataset = etl.from_records_for_target(
+        iter(({"id": 1}, {"id": 2})),
+        target,
+        limits=InferenceLimits(max_rows=1),
+    )
+    replay = dataset.replay
+    assert replay is not None
+    replay_iterator = replay.take()
+
+    assert next(replay_iterator) == {"id": 1}
+    compatibility = dataset.check_write(target)
+
+    assert compatibility.status == "conflict"
+    assert "INFER_TARGET_UNKNOWN" in {
+        diagnostic.code for diagnostic in compatibility.diagnostics
+    }
+
+
 def test_target_replay_rejects_late_type_drift_when_inferred_and_target_types_match() -> (
     None
 ):
@@ -668,7 +757,7 @@ def test_target_replay_accepts_null_for_required_nullable_field() -> None:
 
     assert list(dataset.replay.take()) == [{"id": 1}, {"id": None}]
     assert dataset.provenance["target_validation"] == "complete"
-    assert dataset.check_write(target).status != "conflict"
+    assert dataset.check_write(target).status == "proven"
 
 
 def test_required_nullable_target_accepts_null_in_inference_prefix() -> None:

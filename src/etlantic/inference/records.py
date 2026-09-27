@@ -667,7 +667,7 @@ def infer_records(
             )
         if logical == "decimal":
             decimal_fields.add(name)
-        nullable = entry["null"] > 0 or entry["missing"] > 0
+        nullable = entry["null"] > 0
         field_metadata: dict[str, Any] = {"inferred": True}
         if logical == "unknown" and not entry["unknown_types"]:
             field_metadata["inference_evidence"] = (
