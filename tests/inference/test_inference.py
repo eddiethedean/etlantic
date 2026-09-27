@@ -444,6 +444,79 @@ def test_target_backfill_marks_replay_complete_after_valid_remainder() -> None:
     assert dataset.provenance["replay_status"]["state"] == "complete"
 
 
+@pytest.mark.parametrize(
+    ("late_row", "constraint"),
+    [
+        ({"id": None}, "nullability"),
+        ({}, "required_presence"),
+    ],
+)
+def test_target_replay_rejects_late_required_and_nullability_violations(
+    late_row: dict[str, object], constraint: str
+) -> None:
+    target = NormalizedSchema(
+        "target",
+        (NormalizedField("id", "integer", required=True, nullable=False),),
+    )
+    dataset = etl.from_records_for_target(
+        iter(({"id": 1}, late_row)),
+        target,
+        limits=InferenceLimits(max_rows=1),
+        target_identity="target:users",
+    )
+
+    assert dataset.provenance["target_validation"] == "prefix_only"
+    compatibility = dataset.check_write(target)
+    assert compatibility.status == "conditional"
+    assert compatibility.obligations
+
+    with pytest.raises(etl.InferenceReplayError) as error:
+        list(dataset.replay.take())
+
+    assert error.value.row_index == 1
+    assert error.value.diagnostic.code == "INFER_RUNTIME_CONSTRAINT"
+    assert error.value.diagnostic.metadata["constraint"] == constraint
+    assert dataset.provenance["target_validation"] == "failed"
+    assert dataset.check_write(target).status == "conflict"
+    assert "None" not in str(error.value)
+
+
+def test_target_replay_rejects_late_type_drift_when_inferred_and_target_types_match() -> None:
+    target = NormalizedSchema(
+        "target",
+        (NormalizedField("id", "integer", required=True, nullable=False),),
+    )
+    dataset = etl.from_records_for_target(
+        iter(({"id": 1}, {"id": "not-an-integer"})),
+        target,
+        limits=InferenceLimits(max_rows=1),
+    )
+
+    assert dataset.provenance["target_validation"] == "prefix_only"
+    with pytest.raises(etl.InferenceReplayError) as error:
+        list(dataset.replay.take())
+
+    assert error.value.row_index == 1
+    assert error.value.diagnostic.code == "INFER_RUNTIME_CONVERSION"
+    assert "not-an-integer" not in str(error.value)
+    assert dataset.provenance["target_validation"] == "failed"
+
+
+def test_target_replay_accepts_null_for_required_nullable_field() -> None:
+    target = NormalizedSchema(
+        "target",
+        (NormalizedField("id", "integer", required=True, nullable=True),),
+    )
+    dataset = etl.from_records_for_target(
+        iter(({"id": 1}, {"id": None})),
+        target,
+        limits=InferenceLimits(max_rows=1),
+    )
+
+    assert list(dataset.replay.take()) == [{"id": 1}, {"id": None}]
+    assert dataset.provenance["target_validation"] == "complete"
+
+
 def test_target_replay_failure_is_revision_bound_and_wire_safe() -> None:
     target_schema = NormalizedSchema(
         "sink",

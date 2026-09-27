@@ -56,12 +56,19 @@ from .sources import infer_source
 from .targets import (
     _backfill_observation,
     _safe_target_identity,
+    _target_field_has_omission_value,
     check_write_compatibility,
     infer_records_for_target,
     inspect_target,
 )
 from .transfer import forward_schema
-from .types import InferenceLimits, InferenceResult, OutputProposal, TargetObservation
+from .types import (
+    InferenceLimits,
+    InferenceResult,
+    OutputProposal,
+    TargetObservation,
+    WriteCompatibility,
+)
 
 _PY_TYPES = {
     "boolean": bool,
@@ -1083,8 +1090,76 @@ class InferredDataset:
             target_revision_reader=self._target_revision_reader,
         )
 
-    def check_write(self, target_schema: NormalizedSchema, *, mode: str = "append"):
-        return check_write_compatibility(self.schema, target_schema, mode=mode)
+    def check_write(
+        self, target_schema: NormalizedSchema, *, mode: str = "append"
+    ) -> WriteCompatibility:
+        compatibility = check_write_compatibility(
+            self.schema, target_schema, mode=mode
+        )
+        if self._result.provenance.get("sampled") is not True:
+            return compatibility
+
+        source_fields = {field.name for field in self.schema.fields}
+        validation_obligations: list[dict[str, Any]] = []
+        for field in target_schema.fields:
+            constraints: list[str] = []
+            if field.name in source_fields:
+                constraints.append("target_type")
+            if field.required and not _target_field_has_omission_value(field):
+                constraints.append("required_presence")
+            if not field.nullable:
+                constraints.append("nullability")
+            if constraints:
+                validation_obligations.append(
+                    {
+                        "field": field.name,
+                        "validation": "all_values",
+                        "constraints": constraints,
+                        "on_failure": "error",
+                    }
+                )
+
+        if not validation_obligations:
+            return compatibility
+
+        obligations = (*compatibility.obligations, *validation_obligations)
+        if self._result.replay is None:
+            diagnostic = Diagnostic(
+                "INFER_TARGET_UNKNOWN",
+                Severity.ERROR,
+                "Sampled source has no replay stream for all-values target validation",
+                phase="inference",
+            )
+            return replace(
+                compatibility,
+                compatible=False,
+                diagnostics=(*compatibility.diagnostics, diagnostic),
+                obligations=obligations,
+            )
+
+        observation = self._result.target_observation
+        same_target = (
+            observation is not None
+            and observation.schema is not None
+            and observation.schema.fields == target_schema.fields
+        )
+        if (
+            same_target
+            and self._result.provenance.get("target_validation") == "failed"
+        ):
+            runtime_diagnostics = tuple(
+                diagnostic
+                for diagnostic in self.diagnostics
+                if isinstance(diagnostic, Diagnostic)
+                and diagnostic.code.startswith("INFER_RUNTIME_")
+            )
+            return replace(
+                compatibility,
+                compatible=False,
+                diagnostics=(*compatibility.diagnostics, *runtime_diagnostics),
+                obligations=obligations,
+            )
+        return replace(compatibility, obligations=obligations)
 
     def propose_output(
         self,
