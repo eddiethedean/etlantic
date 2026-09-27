@@ -1093,9 +1093,7 @@ class InferredDataset:
     def check_write(
         self, target_schema: NormalizedSchema, *, mode: str = "append"
     ) -> WriteCompatibility:
-        compatibility = check_write_compatibility(
-            self.schema, target_schema, mode=mode
-        )
+        compatibility = check_write_compatibility(self.schema, target_schema, mode=mode)
         if self._result.provenance.get("sampled") is not True:
             return compatibility
 
@@ -1143,10 +1141,7 @@ class InferredDataset:
             and observation.schema is not None
             and observation.schema.fields == target_schema.fields
         )
-        if (
-            same_target
-            and self._result.provenance.get("target_validation") == "failed"
-        ):
+        if same_target and self._result.provenance.get("target_validation") == "failed":
             runtime_diagnostics = tuple(
                 diagnostic
                 for diagnostic in self.diagnostics

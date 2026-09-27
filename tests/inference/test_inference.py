@@ -481,7 +481,9 @@ def test_target_replay_rejects_late_required_and_nullability_violations(
     assert "None" not in str(error.value)
 
 
-def test_target_replay_rejects_late_type_drift_when_inferred_and_target_types_match() -> None:
+def test_target_replay_rejects_late_type_drift_when_inferred_and_target_types_match() -> (
+    None
+):
     target = NormalizedSchema(
         "target",
         (NormalizedField("id", "integer", required=True, nullable=False),),
@@ -500,6 +502,34 @@ def test_target_replay_rejects_late_type_drift_when_inferred_and_target_types_ma
     assert error.value.diagnostic.code == "INFER_RUNTIME_CONVERSION"
     assert "not-an-integer" not in str(error.value)
     assert dataset.provenance["target_validation"] == "failed"
+
+
+def test_target_replay_checks_type_for_optional_nullable_fields() -> None:
+    target = NormalizedSchema(
+        "target",
+        (NormalizedField("value", "integer", required=False, nullable=True),),
+    )
+    dataset = etl.from_records_for_target(
+        iter(({"value": 1}, {"value": "not-an-integer"})),
+        target,
+        limits=InferenceLimits(max_rows=1),
+    )
+
+    assert dataset.provenance["target_validation"] == "prefix_only"
+    compatibility = dataset.check_write(target)
+    assert compatibility.status == "conditional"
+    assert any(
+        obligation["field"] == "value" and "target_type" in obligation["constraints"]
+        for obligation in compatibility.obligations
+    )
+
+    with pytest.raises(etl.InferenceReplayError) as error:
+        list(dataset.replay.take())
+
+    assert error.value.row_index == 1
+    assert error.value.diagnostic.code == "INFER_RUNTIME_CONVERSION"
+    assert dataset.provenance["target_validation"] == "failed"
+    assert dataset.check_write(target).status == "conflict"
 
 
 def test_target_replay_accepts_null_for_required_nullable_field() -> None:

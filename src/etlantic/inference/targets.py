@@ -2437,10 +2437,9 @@ def _backfill_observation(
         )
     replay = source.replay
     validation_fields = set(cast_fields)
+    validation_fields.update(name for name in source_fields if name in target_fields)
     for target_field in observation.schema.fields:
-        if target_field.required and not _target_field_has_omission_value(
-            target_field
-        ):
+        if target_field.required and not _target_field_has_omission_value(target_field):
             validation_fields.add(target_field.name)
         if not target_field.nullable:
             validation_fields.add(target_field.name)
@@ -2536,8 +2535,7 @@ def _backfill_observation(
             "validated_prefix_rows": len(rows),
         }
         validation_diagnostics = [
-            diagnostic.to_dict()
-            for diagnostic in runtime_diagnostics
+            diagnostic.to_dict() for diagnostic in runtime_diagnostics
         ]
         if validation_diagnostics:
             replay_status["diagnostics"] = validation_diagnostics
