@@ -48,25 +48,9 @@ jobs:
         run: ./scripts/check_pyright.sh
 
       - name: Pytest (core)
-        # The Ubuntu 3.11 evidence campaign below runs the unrestricted suite.
+        # The Ubuntu 3.11 inference evidence job runs the unrestricted suite.
         if: matrix.os != 'ubuntu-latest' || matrix.python-version != '3.11'
         run: uv run pytest -q -m "not medallantic and not polars and not pandas and not sql and not spark and not real_pyspark and not airflow and not prefect and not keyring and not sqlmodel and not datafusion"
-
-      - name: Phase 0.55 inference evidence campaign
-        if: matrix.os == 'ubuntu-latest' && matrix.python-version == '3.11'
-        run: uv run python scripts/check_inference_0_55.py --run-gates --output "${{ runner.temp }}/adaptive-inference-0.55"
-
-      - name: Verify phase 0.55 inference evidence
-        if: matrix.os == 'ubuntu-latest' && matrix.python-version == '3.11'
-        run: uv run python scripts/check_inference_0_55.py --verify "${{ runner.temp }}/adaptive-inference-0.55"
-
-      - name: Preserve phase 0.55 inference evidence
-        if: always() && matrix.os == 'ubuntu-latest' && matrix.python-version == '3.11'
-        uses: actions/upload-artifact@v4
-        with:
-          name: inference-0.55-evidence
-          path: ${{ runner.temp }}/adaptive-inference-0.55/
-          if-no-files-found: error
 
       - name: Pipeline codec burn-in
         if: matrix.os == 'ubuntu-latest' && matrix.python-version == '3.11'
@@ -107,19 +91,8 @@ jobs:
       - name: Adaptive 0.53 environment qualification
         run: uv run --no-sync python scripts/check_adaptive_0_53.py --write --output "${{ runner.temp }}/adaptive-0.53-proof"
 
-      - name: Adaptive 0.54 environment observation
-        run: uv run --no-sync python scripts/check_adaptive_0_54.py --write --output "${{ runner.temp }}/adaptive-0.54-proof"
-
       - name: Execute public bounded reference
         run: uv run --no-sync python examples/adaptive_reference.py
-
-      - name: Preserve fresh adaptive observation including failures
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: adaptive-0.54-${{ matrix.os }}-python-${{ matrix.python-version }}
-          path: ${{ runner.temp }}/adaptive-0.54-proof/
-          if-no-files-found: error
 
       - name: Preserve adaptive environment proof
         if: always()
@@ -127,7 +100,7 @@ jobs:
         with:
           name: adaptive-0.53-${{ matrix.os }}-python-${{ matrix.python-version }}
           path: ${{ runner.temp }}/adaptive-0.53-proof/
-
+          if-no-files-found: error
 
       - name: Release readiness check
         if: matrix.os == 'ubuntu-latest' && matrix.python-version == '3.11'
@@ -233,9 +206,82 @@ jobs:
         if: matrix.os == 'ubuntu-latest' && matrix.python-version == '3.11'
         run: uv run python scripts/build_docs.py
 
+  inference-evidence:
+    name: Phase 0.55 inference evidence
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v9.0.0
+        with:
+          version: "0.12.0"
+          python-version: "3.11"
+          enable-cache: true
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Sync all workspace dependencies
+        run: uv sync --locked --all-groups
+
+      - name: Phase 0.55 inference evidence campaign
+        run: uv run python scripts/check_inference_0_55.py --run-gates --output "${{ runner.temp }}/adaptive-inference-0.55"
+
+      - name: Verify phase 0.55 inference evidence
+        run: uv run python scripts/check_inference_0_55.py --verify "${{ runner.temp }}/adaptive-inference-0.55"
+
+      - name: Preserve phase 0.55 inference evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: inference-0.55-evidence
+          path: ${{ runner.temp }}/adaptive-inference-0.55/
+          if-no-files-found: error
+
+  adaptive-observation:
+    name: Adaptive 0.54 observation (${{ matrix.os }}, ${{ matrix.python-version }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+        python-version: ["3.11", "3.12", "3.13"]
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v9.0.0
+        with:
+          version: "0.12.0"
+          python-version: ${{ matrix.python-version }}
+          enable-cache: true
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Sync dependencies
+        run: uv sync --locked ${{ (matrix.os == 'ubuntu-latest' && matrix.python-version == '3.11') && '--all-groups' || '' }}
+
+      - name: Install exact adaptive qualification backends
+        run: |
+          uv sync --locked --inexact --group dataframes
+          uv pip install "polars==1.42.1" "pandas==2.3.3" "pyarrow==25.0.0"
+
+      - name: Adaptive 0.54 environment observation
+        run: uv run --no-sync python scripts/check_adaptive_0_54.py --write --output "${{ runner.temp }}/adaptive-0.54-proof"
+
+      - name: Preserve fresh adaptive observation including failures
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: adaptive-0.54-${{ matrix.os }}-python-${{ matrix.python-version }}
+          path: ${{ runner.temp }}/adaptive-0.54-proof/
+          if-no-files-found: error
+
   adaptive-evidence:
     name: Verify observed adaptive 0.54 matrix
-    needs: checks
+    needs: adaptive-observation
     if: always()
     runs-on: ubuntu-latest
     steps:

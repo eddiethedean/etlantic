@@ -187,7 +187,7 @@ def workflow():
 
 def test_ci_proofs_are_outside_checkout_and_do_not_dirty_git(tmp_path):
     jobs = workflow()["jobs"]
-    steps = jobs["checks"]["steps"] + jobs["adaptive-evidence"]["steps"]
+    steps = [step for job in jobs.values() for step in job["steps"]]
     for step in steps:
         command = step.get("run", "")
         if "--output" in command or "--aggregate" in command:
