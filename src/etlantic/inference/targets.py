@@ -2179,9 +2179,11 @@ def _target_constraint_diagnostic(
 
 def _target_field_has_omission_value(field: NormalizedField) -> bool:
     """Whether the target declares a value for an omitted required field."""
+    if "default" in field.metadata:
+        return True
     return any(
         field.metadata.get(key)
-        for key in ("default", "has_default", "generated", "identity", "auto_increment")
+        for key in ("has_default", "generated", "identity", "auto_increment")
     )
 
 
@@ -2912,16 +2914,7 @@ def backfill_schema(
     for target_field in target.fields:
         if target_field.name in source_names or not target_field.required:
             continue
-        if any(
-            target_field.metadata.get(key)
-            for key in (
-                "default",
-                "has_default",
-                "generated",
-                "identity",
-                "auto_increment",
-            )
-        ):
+        if _target_field_has_omission_value(target_field):
             continue
         diagnostics.append(
             Diagnostic(
@@ -3260,17 +3253,7 @@ def check_write_compatibility(
     for field in target.fields:
         if field.name in source_fields or not field.required:
             continue
-        metadata = field.metadata
-        if any(
-            metadata.get(key)
-            for key in (
-                "default",
-                "has_default",
-                "generated",
-                "identity",
-                "auto_increment",
-            )
-        ):
+        if _target_field_has_omission_value(field):
             continue
         incompatible.append(field.name)
         diagnostics.append(

@@ -1094,6 +1094,26 @@ class InferredDataset:
         self, target_schema: NormalizedSchema, *, mode: str = "append"
     ) -> WriteCompatibility:
         compatibility = check_write_compatibility(self.schema, target_schema, mode=mode)
+
+        observation = self._result.target_observation
+        same_target = (
+            observation is not None
+            and observation.schema is not None
+            and observation.schema.fields == target_schema.fields
+        )
+        if same_target and self._result.provenance.get("target_validation") == "failed":
+            runtime_diagnostics = tuple(
+                diagnostic
+                for diagnostic in self.diagnostics
+                if isinstance(diagnostic, Diagnostic)
+                and diagnostic.code.startswith("INFER_RUNTIME_")
+            )
+            return replace(
+                compatibility,
+                compatible=False,
+                diagnostics=(*compatibility.diagnostics, *runtime_diagnostics),
+            )
+
         if self._result.provenance.get("sampled") is not True:
             return compatibility
 
@@ -1135,25 +1155,6 @@ class InferredDataset:
                 obligations=obligations,
             )
 
-        observation = self._result.target_observation
-        same_target = (
-            observation is not None
-            and observation.schema is not None
-            and observation.schema.fields == target_schema.fields
-        )
-        if same_target and self._result.provenance.get("target_validation") == "failed":
-            runtime_diagnostics = tuple(
-                diagnostic
-                for diagnostic in self.diagnostics
-                if isinstance(diagnostic, Diagnostic)
-                and diagnostic.code.startswith("INFER_RUNTIME_")
-            )
-            return replace(
-                compatibility,
-                compatible=False,
-                diagnostics=(*compatibility.diagnostics, *runtime_diagnostics),
-                obligations=obligations,
-            )
         return replace(compatibility, obligations=obligations)
 
     def propose_output(

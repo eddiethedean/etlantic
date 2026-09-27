@@ -35,6 +35,14 @@ def test_records_inference_promotes_across_all_rows_and_tracks_missing() -> None
     assert "rows" not in result.to_dict(include_rows=True)
 
 
+def test_records_inference_separates_required_presence_from_nullability() -> None:
+    result = infer_records([{"id": None}, {"id": 1}])
+
+    field = result.schema.fields[0]
+    assert field.required is True
+    assert field.nullable is True
+
+
 def test_records_inference_preserves_first_seen_field_order() -> None:
     result = infer_records([{"z": 1, "a": 2}])
 
@@ -544,6 +552,65 @@ def test_target_replay_accepts_null_for_required_nullable_field() -> None:
     )
 
     assert list(dataset.replay.take()) == [{"id": 1}, {"id": None}]
+    assert dataset.provenance["target_validation"] == "complete"
+    assert dataset.check_write(target).status != "conflict"
+
+
+def test_required_nullable_target_accepts_null_in_inference_prefix() -> None:
+    target = NormalizedSchema(
+        "target",
+        (NormalizedField("id", "integer", required=True, nullable=True),),
+    )
+    dataset = etl.from_records_for_target([{"id": None}, {"id": 1}], target)
+
+    field = dataset.schema.fields[0]
+    assert field.required is True
+    assert field.nullable is True
+    assert dataset.provenance["target_validation"] == "complete"
+    assert dataset.check_write(target).status == "proven"
+
+
+def test_check_write_conflicts_when_full_observation_found_bad_cast() -> None:
+    target = NormalizedSchema(
+        "target",
+        (NormalizedField("id", "integer", required=True, nullable=False),),
+    )
+    dataset = etl.from_records_for_target([{"id": "1"}, {"id": "bad"}], target)
+
+    assert dataset.provenance["sampled"] is False
+    assert dataset.provenance["target_validation"] == "failed"
+    compatibility = dataset.check_write(target)
+    assert compatibility.status == "conflict"
+    assert "INFER_RUNTIME_CONVERSION" in {
+        diagnostic.code for diagnostic in compatibility.diagnostics
+    }
+
+
+@pytest.mark.parametrize(
+    ("logical_type", "default"),
+    [("boolean", False), ("integer", 0), ("string", "")],
+)
+def test_target_replay_accepts_omitted_fields_with_falsey_defaults(
+    logical_type: str, default: object
+) -> None:
+    target = NormalizedSchema(
+        "target",
+        (
+            NormalizedField(
+                "value",
+                logical_type,
+                required=True,
+                nullable=False,
+                metadata={"default": default},
+            ),
+        ),
+    )
+    dataset = etl.from_records_for_target(
+        iter(({}, {})), target, limits=InferenceLimits(max_rows=1)
+    )
+
+    assert dataset.provenance["target_validation"] == "prefix_only"
+    assert list(dataset.replay.take()) == [{}, {}]
     assert dataset.provenance["target_validation"] == "complete"
 
 

@@ -677,7 +677,7 @@ def infer_records(
             NormalizedField(
                 name=name,
                 logical_type=logical,
-                required=not nullable,
+                required=entry["missing"] == 0,
                 nullable=nullable,
                 metadata=field_metadata,
             )
