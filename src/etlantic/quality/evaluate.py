@@ -5,7 +5,7 @@ from __future__ import annotations
 
 import operator
 import re
-from typing import Any
+from typing import Any, cast
 
 from etlantic.quality.model import QualityRule, QualityRuleset
 
@@ -196,19 +196,19 @@ def split_by_quality(
             else:
                 soft_reasons.append(reason)
 
+        # Normalize each shared field set once before applying rule severity.
+        canonical_keys, duplicate_fields, uniqueness_errors = _prepare_uniqueness_keys(
+            row, uniqueness_specs, seen_keys
+        )
+        # Optional uniqueness failures remain soft warnings.
         for fields, required in uniqueness_specs:
-            key_vals = tuple(row.get(f) for f in fields)
-            # SQL UNIQUE allows multiple NULLs; skip tracking when any key is missing.
-            if any(_is_missing(v) for v in key_vals):
-                continue
-            bucket = seen_keys[fields]
-            if key_vals in bucket:
+            if fields in uniqueness_errors:
+                message = _uniqueness_failure_message(fields, uniqueness_errors[fields])
+            elif fields in duplicate_fields:
                 message = f"duplicate key on {','.join(fields)}"
-                if required:
-                    reasons.append(message)
-                else:
-                    soft_reasons.append(message)
-            # Defer recording until the row is accepted (below).
+            else:
+                continue
+            (reasons if required else soft_reasons).append(message)
 
         if soft_reasons:
             diagnostics.append(
@@ -236,10 +236,160 @@ def split_by_quality(
         else:
             # Only accepted rows consume uniqueness keys.
             for fields, _required in uniqueness_specs:
-                key_vals = tuple(row.get(f) for f in fields)
-                if any(_is_missing(v) for v in key_vals):
+                key = canonical_keys.get(fields)
+                if key is None:
                     continue
-                seen_keys[fields].add(key_vals)
+                seen_keys[fields].add(key)
             valid.append(item)
 
     return valid, invalid, diagnostics
+
+
+class _UnsupportedUniquenessValue(ValueError):
+    """A uniqueness value cannot be converted to a stable set key."""
+
+
+def _canonical_uniqueness_value(
+    value: Any,
+    *,
+    path: str,
+    active_containers: set[int] | None = None,
+) -> tuple[Any, ...]:
+    """Return a type-aware, hashable key for a supported field value."""
+    if active_containers is None:
+        active_containers = set()
+
+    value_type: type[Any] = cast(type[Any], type(value))
+    if value is None:
+        return ("none",)
+    if value_type is bool:
+        return ("bool", value)
+    if value_type is int:
+        return ("int", value)
+    if value_type is float:
+        # Keep Python float equality; float.hex distinguishes signed zero.
+        return ("float", 0.0 if value == 0.0 else value)
+    if value_type is str:
+        return ("str", value)
+    if value_type is bytes:
+        return ("bytes", value)
+
+    if isinstance(value, (list, tuple, dict)):
+        container: object = cast(object, value)
+        identity: int = id(container)
+        if identity in active_containers:
+            raise _UnsupportedUniquenessValue(
+                f"{path} contains a cyclic {value_type.__name__}"
+            )
+        active_containers.add(identity)
+        try:
+            if isinstance(value, list):
+                list_items: list[Any] = cast(list[Any], value)
+                return (
+                    "list",
+                    tuple(
+                        _canonical_uniqueness_value(
+                            item,
+                            path=f"{path}[{index}]",
+                            active_containers=active_containers,
+                        )
+                        for index, item in enumerate(list_items)
+                    ),
+                )
+            if isinstance(value, tuple):
+                tuple_items: tuple[Any, ...] = cast(tuple[Any, ...], value)
+                return (
+                    "tuple",
+                    tuple(
+                        _canonical_uniqueness_value(
+                            item,
+                            path=f"{path}[{index}]",
+                            active_containers=active_containers,
+                        )
+                        for index, item in enumerate(tuple_items)
+                    ),
+                )
+
+            dict_items: dict[Any, Any] = cast(dict[Any, Any], value)
+            entries = [
+                (
+                    _canonical_uniqueness_value(
+                        key,
+                        path=f"{path} key",
+                        active_containers=active_containers,
+                    ),
+                    _canonical_uniqueness_value(
+                        item,
+                        path=f"{path} value",
+                        active_containers=active_containers,
+                    ),
+                )
+                for key, item in dict_items.items()
+            ]
+            # Dict insertion order does not affect structural uniqueness.
+            return ("dict", frozenset(entries))
+        except _UnsupportedUniquenessValue:
+            raise
+        except Exception as exc:
+            raise _UnsupportedUniquenessValue(
+                f"{path} could not be normalized ({value_type.__name__})"
+            ) from exc
+        finally:
+            active_containers.remove(identity)
+
+    # Preserve support for hashable scalar types such as dates, decimals, and
+    # UUIDs, while keeping them distinct from other Python types with equal values.
+    try:
+        hash(value)
+    except Exception as exc:
+        raise _UnsupportedUniquenessValue(
+            f"{path} has unsupported unhashable type {value_type.__name__}"
+        ) from exc
+    return ("scalar", value_type, value)
+
+
+def _prepare_uniqueness_keys(
+    row: dict[str, Any],
+    uniqueness_specs: list[tuple[tuple[str, ...], bool]],
+    seen_keys: dict[tuple[str, ...], set[tuple[Any, ...]]],
+) -> tuple[
+    dict[tuple[str, ...], tuple[Any, ...]],
+    set[tuple[str, ...]],
+    dict[tuple[str, ...], str],
+]:
+    """Normalize row keys and compare them with keys from accepted rows."""
+    canonical_keys: dict[tuple[str, ...], tuple[Any, ...]] = {}
+    duplicate_fields: set[tuple[str, ...]] = set()
+    errors: dict[tuple[str, ...], str] = {}
+    for fields, _required in uniqueness_specs:
+        if fields in canonical_keys or fields in errors:
+            continue
+        values = tuple(row.get(field) for field in fields)
+        if any(_is_missing(value) for value in values):
+            continue
+        try:
+            key = tuple(
+                _canonical_uniqueness_value(value, path=f"field {field!r}")
+                for field, value in zip(fields, values, strict=True)
+            )
+            hash(key)
+        except _UnsupportedUniquenessValue as exc:
+            errors[fields] = str(exc)
+            continue
+        except TypeError:
+            errors[fields] = "key values cannot be hashed safely"
+            continue
+
+        canonical_keys[fields] = key
+        try:
+            if key in seen_keys[fields]:
+                duplicate_fields.add(fields)
+        except TypeError:
+            canonical_keys.pop(fields)
+            errors[fields] = "key values cannot be compared safely"
+    return canonical_keys, duplicate_fields, errors
+
+
+def _uniqueness_failure_message(fields: tuple[str, ...], error: str) -> str:
+    """Format a clear row diagnostic for an unsupported uniqueness key."""
+    return f"uniqueness key on {','.join(fields)} cannot be evaluated: {error}"
