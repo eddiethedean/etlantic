@@ -267,8 +267,8 @@ def _canonical_uniqueness_value(
     if value_type is int:
         return ("int", value)
     if value_type is float:
-        # float.hex() is stable for finite values and also handles infinities/NaN.
-        return ("float", value.hex())
+        # Keep Python float equality; float.hex distinguishes signed zero.
+        return ("float", 0.0 if value == 0.0 else value)
     if value_type is str:
         return ("str", value)
     if value_type is bytes:

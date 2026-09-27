@@ -99,3 +99,19 @@ def test_uniqueness_key_is_type_aware_for_equal_python_scalars() -> None:
     assert len(valid) == 2
     assert invalid == []
     assert diagnostics == []
+
+
+def test_signed_zero_is_duplicate_for_scalar_and_nested_float_values() -> None:
+    rules = QualityRuleset(rules=(rule_uniqueness("scalar"), rule_uniqueness("nested")))
+    rows = [
+        {"scalar": 0.0, "nested": [0.0]},
+        {"scalar": -0.0, "nested": [-0.0]},
+    ]
+
+    valid, invalid, diagnostics = split_by_quality(rows, rules)
+
+    assert valid == [rows[0]]
+    assert invalid == [rows[1]]
+    assert diagnostics[0]["row_index"] == 1
+    assert "duplicate key on scalar" in diagnostics[0]["message"]
+    assert "duplicate key on nested" in diagnostics[0]["message"]
