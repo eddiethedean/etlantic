@@ -1117,12 +1117,12 @@ class InferredDataset:
         if self._result.provenance.get("sampled") is not True:
             return compatibility
 
-        source_fields = {field.name for field in self.schema.fields}
         validation_obligations: list[dict[str, Any]] = []
         for field in target_schema.fields:
-            constraints: list[str] = []
-            if field.name in source_fields:
-                constraints.append("target_type")
+            # The sampled prefix cannot prove that an otherwise absent target
+            # field will not appear later, so every declared target type is an
+            # all-values replay obligation.
+            constraints: list[str] = ["target_type"]
             if field.required and not _target_field_has_omission_value(field):
                 constraints.append("required_presence")
             if not field.nullable:
@@ -1137,8 +1137,16 @@ class InferredDataset:
                     }
                 )
 
-        if not validation_obligations:
-            return compatibility
+        # Also fence the row's field set: a late field outside the target
+        # schema is incompatible even when the target schema is empty.
+        validation_obligations.append(
+            {
+                "field": "*",
+                "validation": "all_values",
+                "constraints": ["no_unexpected_fields"],
+                "on_failure": "error",
+            }
+        )
 
         obligations = (*compatibility.obligations, *validation_obligations)
         if self._result.replay is None:

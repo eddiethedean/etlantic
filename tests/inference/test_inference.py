@@ -379,8 +379,10 @@ def test_target_backfill_marks_unvalidated_replay_and_fails_lazily() -> None:
     assert dataset.provenance["target_validation"] == "prefix_only"
     assert dataset.provenance["target_validation_fields"] == ["id"]
     assert dataset.replay is not None
+    replay = dataset.replay
+    assert replay is not None
     with pytest.raises(etl.InferenceReplayError) as error:
-        list(dataset.replay.take())
+        list(replay.take())
     assert error.value.row_index == 1
     assert error.value.diagnostic.code == "INFER_RUNTIME_CONVERSION"
     assert "bad" not in str(error.value)
@@ -531,11 +533,124 @@ def test_target_replay_checks_type_for_optional_nullable_fields() -> None:
         for obligation in compatibility.obligations
     )
 
+    replay = dataset.replay
+    assert replay is not None
     with pytest.raises(etl.InferenceReplayError) as error:
-        list(dataset.replay.take())
+        list(replay.take())
 
     assert error.value.row_index == 1
     assert error.value.diagnostic.code == "INFER_RUNTIME_CONVERSION"
+    assert dataset.provenance["target_validation"] == "failed"
+    assert dataset.check_write(target).status == "conflict"
+
+
+def test_target_replay_checks_optional_field_first_seen_after_sample() -> None:
+    target = NormalizedSchema(
+        "target",
+        (NormalizedField("value", "string", required=False, nullable=True),),
+    )
+    rows: list[dict[str, object]] = [{}, {"value": 7}]
+    dataset = etl.from_records_for_target(
+        iter(rows), target, limits=InferenceLimits(max_rows=1)
+    )
+
+    assert dataset.provenance["target_validation"] == "prefix_only"
+    compatibility = dataset.check_write(target)
+    assert compatibility.status == "conditional"
+    assert any(
+        obligation["field"] == "value" and "target_type" in obligation["constraints"]
+        for obligation in compatibility.obligations
+    )
+
+    replay = dataset.replay
+    assert replay is not None
+    with pytest.raises(etl.InferenceReplayError) as error:
+        list(replay.take())
+
+    assert error.value.row_index == 1
+    assert error.value.diagnostic.code == "INFER_RUNTIME_CONVERSION"
+    assert dataset.provenance["target_validation"] == "failed"
+
+
+def test_target_replay_rejects_fields_outside_target_schema() -> None:
+    target = NormalizedSchema(
+        "target",
+        (NormalizedField("id", "integer", required=True, nullable=False),),
+    )
+    rows: list[dict[str, object]] = [
+        {"id": 1},
+        {"id": 2, "extra": "private-value"},
+    ]
+    dataset = etl.from_records_for_target(
+        iter(rows), target, limits=InferenceLimits(max_rows=1)
+    )
+
+    assert dataset.check_write(target).status == "conditional"
+    replay = dataset.replay
+    assert replay is not None
+    with pytest.raises(etl.InferenceReplayError) as error:
+        list(replay.take())
+
+    assert error.value.row_index == 1
+    assert error.value.diagnostic.code == "INFER_RUNTIME_CONSTRAINT"
+    assert error.value.diagnostic.metadata["constraint"] == "unexpected_field"
+    assert "private-value" not in str(error.value)
+    assert dataset.provenance["target_validation"] == "failed"
+    assert dataset.check_write(target).status == "conflict"
+
+
+@pytest.mark.parametrize(
+    ("nullable", "expected_constraint"),
+    [(True, None), (False, "nullability")],
+)
+def test_target_replay_treats_nan_as_null_for_nullability(
+    nullable: bool, expected_constraint: str | None
+) -> None:
+    target = NormalizedSchema(
+        "target",
+        (NormalizedField("value", "number", required=True, nullable=nullable),),
+    )
+    dataset = etl.from_records_for_target(
+        iter(({"value": 1.0}, {"value": float("nan")})),
+        target,
+        limits=InferenceLimits(max_rows=1),
+    )
+    replay = dataset.replay
+    assert replay is not None
+
+    if nullable:
+        replayed = list(replay.take())
+        assert replayed[1]["value"] != replayed[1]["value"]
+        assert dataset.provenance["target_validation"] == "complete"
+    else:
+        with pytest.raises(etl.InferenceReplayError) as error:
+            list(replay.take())
+        assert error.value.diagnostic.code == "INFER_RUNTIME_CONSTRAINT"
+        assert error.value.diagnostic.metadata["constraint"] == expected_constraint
+        assert dataset.provenance["target_validation"] == "failed"
+
+
+@pytest.mark.parametrize(
+    ("logical_type", "default", "nullable"),
+    [("integer", None, False), ("integer", "not-an-integer", False)],
+)
+def test_invalid_target_default_does_not_allow_missing_required_field(
+    logical_type: str, default: object, nullable: bool
+) -> None:
+    target = NormalizedSchema(
+        "target",
+        (
+            NormalizedField(
+                "value",
+                logical_type,
+                required=True,
+                nullable=nullable,
+                metadata={"default": default},
+            ),
+        ),
+    )
+    dataset = etl.from_records_for_target([{}], target)
+
     assert dataset.provenance["target_validation"] == "failed"
     assert dataset.check_write(target).status == "conflict"
 

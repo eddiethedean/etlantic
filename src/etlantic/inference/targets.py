@@ -2180,6 +2180,18 @@ def _target_constraint_diagnostic(
 def _target_field_has_omission_value(field: NormalizedField) -> bool:
     """Whether the target declares a value for an omitted required field."""
     if "default" in field.metadata:
+        default = field.metadata["default"]
+        default_type = _runtime_logical_type(default)
+        if default_type == "null":
+            return field.nullable
+        if default_type == field.logical_type:
+            return True
+        if (default_type, field.logical_type) not in _LOSSLESS_CASTS:
+            return False
+        try:
+            _coerce_value(default, field.logical_type)
+        except (TypeError, ValueError, OverflowError, DecimalException):
+            return False
         return True
     return any(
         field.metadata.get(key)
@@ -2207,10 +2219,29 @@ def _convert_target_row(
         )
         return _TargetConversionOutcome(row, (diagnostic,))
 
-    converted = dict(row)
+    converted: dict[Any, Any] = dict(cast(Mapping[Any, Any], row))
     diagnostics: list[Diagnostic] = []
     failed_fields: set[str] = set()
     conversion_failed_fields: set[str] = set()
+    for raw_name in converted:
+        if raw_name in target_fields:
+            continue
+        field_name = (
+            raw_name if isinstance(raw_name, str) and raw_name else "<invalid>"
+        )
+        diagnostics.append(
+            _target_constraint_diagnostic(
+                field_name=field_name,
+                constraint="unexpected_field",
+                message=f"Source field {field_name!r} is not present in target schema",
+                target_identity=target_identity,
+                target_revision=target_revision,
+                row_index=row_index,
+            )
+        )
+        failed_fields.add(field_name)
+        break
+
     for name, target_field in target_fields.items():
         if name not in converted:
             if target_field.required and not _target_field_has_omission_value(
@@ -2229,7 +2260,8 @@ def _convert_target_row(
                 failed_fields.add(name)
             continue
         value = converted[name]
-        if value is None:
+        source_type = _runtime_logical_type(value)
+        if source_type == "null":
             if not target_field.nullable:
                 diagnostics.append(
                     _target_constraint_diagnostic(
@@ -2244,7 +2276,6 @@ def _convert_target_row(
                 failed_fields.add(name)
             continue
 
-        source_type = _runtime_logical_type(value)
         target_type = target_field.logical_type
         if source_type == target_type:
             continue
@@ -2419,6 +2450,7 @@ def _backfill_observation(
         and target_field.logical_type != source_field.logical_type
         and (source_field.logical_type, target_field.logical_type) in _LOSSLESS_CASTS
     }
+    source_sampled = source.provenance.get("sampled") is True
     if failed_fields:
         source_fields = {field.name: field for field in source.schema.fields}
         resolved_schema = NormalizedSchema(
@@ -2439,21 +2471,26 @@ def _backfill_observation(
         )
     replay = source.replay
     validation_fields = set(cast_fields)
-    validation_fields.update(name for name in source_fields if name in target_fields)
+    if source_sampled:
+        validation_fields.update(target_fields)
+    else:
+        validation_fields.update(name for name in source_fields if name in target_fields)
     for target_field in observation.schema.fields:
         if target_field.required and not _target_field_has_omission_value(target_field):
             validation_fields.add(target_field.name)
         if not target_field.nullable:
             validation_fields.add(target_field.name)
     validation_state = "not_required"
-    source_sampled = source.provenance.get("sampled") is True
     if failed_fields or any(
+        diagnostic.severity == Severity.ERROR
+        for diagnostic in runtime_diagnostics
+    ) or any(
         diagnostic.severity == Severity.ERROR
         for diagnostic in backfilled.diagnostics
         if isinstance(diagnostic, Diagnostic)
     ):
         validation_state = "failed"
-    elif validation_fields and source_sampled and replay is None:
+    elif source_sampled and replay is None:
         validation_state = "failed"
         runtime_diagnostics.append(
             Diagnostic(
@@ -2465,10 +2502,10 @@ def _backfill_observation(
         )
     elif validation_fields and replay is None:
         validation_state = "complete"
-    elif validation_fields and replay is not None:
+    elif (validation_fields or source_sampled) and replay is not None:
         validation_state = "prefix_only"
     replay_lifecycle: _ReplayLifecycle | None = None
-    if replay is not None and validation_fields:
+    if replay is not None and (validation_fields or source_sampled):
         replay_lifecycle = _ReplayLifecycle()
         replay_row_index = 0
 
