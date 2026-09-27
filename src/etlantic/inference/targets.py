@@ -523,15 +523,19 @@ def _diagnostics_from_payload(
     if not isinstance(value, (list, tuple)):
         return (malformed(),)
     diagnostics: list[Diagnostic] = []
-    for item in value[: max(1, max_diagnostics)]:
+    for item in cast(list[Any] | tuple[Any, ...], value[: max(1, max_diagnostics)]):
         if isinstance(item, Diagnostic):
+            raw_diagnostic = cast(Any, item)
+            raw_path: Any = getattr(raw_diagnostic, "path", None)
             if (
-                isinstance(item.code, str)
-                and bool(item.code)
-                and isinstance(item.severity, Severity)
-                and isinstance(item.message, str)
-                and isinstance(item.path, tuple)
-                and all(isinstance(path, str) for path in item.path)
+                isinstance(raw_diagnostic.code, str)
+                and bool(raw_diagnostic.code)
+                and isinstance(raw_diagnostic.severity, Severity)
+                and isinstance(raw_diagnostic.message, str)
+                and isinstance(raw_path, tuple)
+                and all(
+                    isinstance(path, str) for path in cast(tuple[Any, ...], raw_path)
+                )
             ):
                 diagnostics.append(item)
             else:
@@ -541,24 +545,29 @@ def _diagnostics_from_payload(
             diagnostics.append(malformed())
             continue
         try:
-            code = item.get("code")
-            severity = item.get("severity")
-            message = item.get("message")
-            path = item.get("path", ())
+            payload = cast(Mapping[str, Any], item)
+            code = payload.get("code")
+            severity = payload.get("severity")
+            message = payload.get("message")
+            path = payload.get("path", ())
             if (
                 (code is not None and (not isinstance(code, str) or not code))
                 or (severity is not None and not isinstance(severity, (str, Severity)))
                 or (message is not None and not isinstance(message, str))
                 or not isinstance(path, (list, tuple))
-                or any(not isinstance(part, str) for part in path)
             ):
                 raise ValueError("malformed target diagnostic")
+            path_parts: list[str] = []
+            for part in cast(list[Any] | tuple[Any, ...], path):
+                if not isinstance(part, str):
+                    raise ValueError("malformed target diagnostic path")
+                path_parts.append(part)
             diagnostics.append(
                 Diagnostic(
                     code or "INFER_TARGET_UNKNOWN",
                     Severity(str(severity or "warning").lower()),
                     message or "Target inspection diagnostic",
-                    tuple(path),
+                    tuple(path_parts),
                     phase="inference",
                 )
             )
