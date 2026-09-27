@@ -327,8 +327,7 @@ def _canonical_uniqueness_value(
                 for key, item in dict_items.items()
             ]
             # Dict insertion order does not affect structural uniqueness.
-            entries.sort(key=lambda entry: repr(entry[0]))
-            return ("dict", tuple(entries))
+            return ("dict", frozenset(entries))
         except _UnsupportedUniquenessValue:
             raise
         except Exception as exc:

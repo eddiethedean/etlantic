@@ -6,6 +6,20 @@ from etlantic.quality.evaluate import split_by_quality
 from etlantic.quality.model import QualityRuleset, rule_not_null, rule_uniqueness
 
 
+class _SameReprKey:
+    def __init__(self, value: str) -> None:
+        self.value: str = value
+
+    def __hash__(self) -> int:
+        return hash(self.value)
+
+    def __eq__(self, other: object) -> bool:
+        return isinstance(other, _SameReprKey) and self.value == other.value
+
+    def __repr__(self) -> str:
+        return "same-key"
+
+
 def test_uniqueness_handles_list_and_object_values() -> None:
     rules = QualityRuleset(rules=(rule_uniqueness("value"),))
 
@@ -38,6 +52,21 @@ def test_dict_key_order_and_composite_structured_keys_are_canonical() -> None:
     valid, invalid, diagnostics = split_by_quality(rows, rules)
 
     assert valid == [rows[0], rows[2]]
+    assert invalid == [rows[1]]
+    assert diagnostics[0]["row_index"] == 1
+
+
+def test_dict_key_order_is_canonical_when_distinct_keys_share_repr() -> None:
+    first_key = _SameReprKey("first")
+    second_key = _SameReprKey("second")
+    first_value = {first_key: "one", second_key: "two"}
+    second_value = {second_key: "two", first_key: "one"}
+    rules = QualityRuleset(rules=(rule_uniqueness("value"),))
+    rows = [{"value": first_value}, {"value": second_value}]
+
+    valid, invalid, diagnostics = split_by_quality(rows, rules)
+
+    assert valid == [rows[0]]
     assert invalid == [rows[1]]
     assert diagnostics[0]["row_index"] == 1
 
