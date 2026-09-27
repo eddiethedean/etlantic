@@ -2226,9 +2226,7 @@ def _convert_target_row(
     for raw_name in converted:
         if raw_name in target_fields:
             continue
-        field_name = (
-            raw_name if isinstance(raw_name, str) and raw_name else "<invalid>"
-        )
+        field_name = raw_name if isinstance(raw_name, str) and raw_name else "<invalid>"
         diagnostics.append(
             _target_constraint_diagnostic(
                 field_name=field_name,
@@ -2474,20 +2472,25 @@ def _backfill_observation(
     if source_sampled:
         validation_fields.update(target_fields)
     else:
-        validation_fields.update(name for name in source_fields if name in target_fields)
+        validation_fields.update(
+            name for name in source_fields if name in target_fields
+        )
     for target_field in observation.schema.fields:
         if target_field.required and not _target_field_has_omission_value(target_field):
             validation_fields.add(target_field.name)
         if not target_field.nullable:
             validation_fields.add(target_field.name)
     validation_state = "not_required"
-    if failed_fields or any(
-        diagnostic.severity == Severity.ERROR
-        for diagnostic in runtime_diagnostics
-    ) or any(
-        diagnostic.severity == Severity.ERROR
-        for diagnostic in backfilled.diagnostics
-        if isinstance(diagnostic, Diagnostic)
+    if (
+        failed_fields
+        or any(
+            diagnostic.severity == Severity.ERROR for diagnostic in runtime_diagnostics
+        )
+        or any(
+            diagnostic.severity == Severity.ERROR
+            for diagnostic in backfilled.diagnostics
+            if isinstance(diagnostic, Diagnostic)
+        )
     ):
         validation_state = "failed"
     elif source_sampled and replay is None:
