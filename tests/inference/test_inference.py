@@ -1184,3 +1184,23 @@ def test_check_write_conflicts_for_stale_target_observation() -> None:
     assert "INFER_TARGET_STALE" in {
         diagnostic.code for diagnostic in compatibility.diagnostics
     }
+
+
+def test_check_write_conflicts_when_source_inference_has_invalid_record() -> None:
+    target = NormalizedSchema(
+        "target",
+        (NormalizedField("id", "integer", required=True, nullable=False),),
+    )
+    dataset = etl.from_records_for_target([{"id": 1}, "not-a-record"], target)
+
+    assert dataset.provenance["target_validation"] == "failed"
+    assert "INFER_INVALID_KEY" in {
+        diagnostic.code for diagnostic in dataset.diagnostics
+    }
+
+    compatibility = dataset.check_write(target)
+
+    assert compatibility.status == "conflict"
+    assert "INFER_INVALID_KEY" in {
+        diagnostic.code for diagnostic in compatibility.diagnostics
+    }

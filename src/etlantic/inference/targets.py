@@ -2488,7 +2488,7 @@ def _backfill_observation(
         )
         or any(
             diagnostic.severity == Severity.ERROR
-            for diagnostic in backfilled.diagnostics
+            for diagnostic in source.diagnostics + backfilled.diagnostics
             if isinstance(diagnostic, Diagnostic)
         )
     ):

@@ -1107,7 +1107,7 @@ class InferredDataset:
                 diagnostic
                 for diagnostic in self.diagnostics
                 if isinstance(diagnostic, Diagnostic)
-                and diagnostic.code.startswith(("INFER_RUNTIME_", "INFER_TARGET_"))
+                and diagnostic.severity == Severity.ERROR
             )
             return replace(
                 compatibility,
