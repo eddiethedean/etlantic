@@ -1389,6 +1389,132 @@ def test_target_inspector_error_fails_closed_even_with_schema() -> None:
     assert "INFER_TARGET_UNKNOWN" in {item.code for item in result.diagnostics}
 
 
+@pytest.mark.parametrize("severity", [Severity.INFO, Severity.WARNING, Severity.ERROR])
+def test_target_diagnostics_share_one_fail_closed_path(severity: Severity) -> None:
+    source = NormalizedSchema("source", (NormalizedField("id", "integer"),))
+    target = NormalizedSchema("target", (NormalizedField("id", "integer"),))
+    diagnostic = Diagnostic(
+        "INSPECTOR_FLAG",
+        severity,
+        "Inspection is incomplete",
+        path=("id",),
+        phase="inference",
+    )
+    mapping = {
+        "code": diagnostic.code,
+        "severity": severity.value.upper(),
+        "message": diagnostic.message,
+        "path": ["id"],
+    }
+    for finding in (diagnostic, mapping):
+        observation = etl.TargetObservation(
+            target,
+            "present",
+            "r1",
+            "test",
+            (finding,),
+            {"capabilities": {"write_modes": ["append"]}},
+        )
+        result = check_write_compatibility(source, observation, expected_revision="r1")
+
+        assert result.compatible is False
+        assert [item.code for item in result.diagnostics] == [
+            "INSPECTOR_FLAG",
+            "INFER_TARGET_UNKNOWN",
+        ]
+        assert result.diagnostics[0].severity == severity
+        assert result.diagnostics[0].path == ("id",)
+        assert (
+            result.diagnostics[1].message
+            == "Target inspection reported diagnostics; compatibility is unqualified"
+        )
+        assert etl.WriteCompatibility.from_dict(result.to_dict()).to_dict() == (
+            result.to_dict()
+        )
+
+
+def test_malformed_target_diagnostics_cannot_prove_compatibility() -> None:
+    class ProviderObject:
+        def __str__(self) -> str:
+            return "secret-source-row"
+
+    source = NormalizedSchema("source", (NormalizedField("id", "integer"),))
+    target = NormalizedSchema("target", (NormalizedField("id", "integer"),))
+    for finding in (
+        ProviderObject(),
+        {"code": ProviderObject(), "severity": "warning"},
+        {"code": "BROKEN", "severity": "fatal"},
+        {"code": "BROKEN", "path": "id"},
+        {"code": "BROKEN", "message": ProviderObject()},
+    ):
+        observation = etl.TargetObservation(
+            target,
+            "present",
+            diagnostics=(finding,),
+            metadata={"capabilities": {"write_modes": ["append"]}},
+        )
+        result = check_write_compatibility(source, observation)
+
+        assert result.compatible is False
+        assert [item.code for item in result.diagnostics] == [
+            "INFER_TARGET_UNSUPPORTED",
+            "INFER_TARGET_UNKNOWN",
+        ]
+        assert "secret-source-row" not in json.dumps(result.to_dict())
+        assert etl.WriteCompatibility.from_dict(result.to_dict()).to_dict() == (
+            result.to_dict()
+        )
+
+    inspected = inspect_target(
+        {
+            "exists": "present",
+            "fields": [{"name": "id", "type": "integer"}],
+            "capabilities": {"write_modes": ["append"]},
+            "diagnostics": {"code": "BROKEN"},
+        },
+        max_diagnostics=0,
+    )
+    assert check_write_compatibility(source, inspected).compatible is False
+    assert inspected.diagnostics[0].code == "INFER_TARGET_UNSUPPORTED"
+
+
+def test_present_target_without_diagnostics_keeps_revision_aware_result() -> None:
+    source = NormalizedSchema("source", (NormalizedField("id", "integer"),))
+    target = NormalizedSchema("target", (NormalizedField("id", "integer"),))
+    observation = etl.TargetObservation(
+        target,
+        "present",
+        "r1",
+        "test",
+        metadata={"capabilities": {"write_modes": ["append"]}},
+    )
+
+    compatible = check_write_compatibility(source, observation, expected_revision="r1")
+    stale = check_write_compatibility(source, observation, expected_revision="r2")
+
+    assert compatible.status == "proven"
+    assert compatible.diagnostics == ()
+    assert etl.WriteCompatibility.from_dict(compatible.to_dict()).to_dict() == (
+        compatible.to_dict()
+    )
+    assert stale.status == "conflict"
+    assert [item.code for item in stale.diagnostics] == ["INFER_TARGET_STALE"]
+
+
+@pytest.mark.parametrize(
+    ("state", "code"),
+    [("absent", "INFER_TARGET_ABSENT"), ("unknown", "INFER_TARGET_UNKNOWN")],
+)
+def test_unavailable_target_state_stays_unqualified(state: str, code: str) -> None:
+    source = NormalizedSchema("source", (NormalizedField("id", "integer"),))
+    observation = etl.TargetObservation(None, state, inspector="test")
+
+    result = check_write_compatibility(source, observation)
+
+    assert result.compatible is False
+    assert [item.code for item in result.diagnostics] == [code]
+
+
 def test_target_observation_round_trips_into_durable_definitions() -> None:
     dataset = etl.from_records_for_target(
         [{"id": "7"}],
@@ -2765,20 +2891,20 @@ def test_arbitrary_record_values_remain_unknown_and_wire_safe() -> None:
 
 
 @pytest.mark.parametrize(
-    "rows",
+    ("rows", "required"),
     [
-        [{"optional": None}, {"optional": None}],
-        [{"other": 1}, {"optional": None}],
+        ([{"optional": None}, {"optional": None}], True),
+        ([{"other": 1}, {"optional": None}], False),
     ],
 )
 def test_null_and_missing_record_evidence_stays_unknown(
-    rows: list[dict[str, object]],
+    rows: list[dict[str, object]], required: bool
 ) -> None:
     result = infer_records(rows, identity="uncertain-values")
 
     field = next(field for field in result.schema.fields if field.name == "optional")
     assert field.logical_type == "unknown"
-    assert field.required is False
+    assert field.required is required
     assert field.nullable is True
     assert "INFER_UNKNOWN_TYPE" in {item.code for item in result.diagnostics}
 

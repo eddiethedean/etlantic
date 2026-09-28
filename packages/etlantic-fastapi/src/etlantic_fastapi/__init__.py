@@ -1,6 +1,6 @@
 """Thin FastAPI adapter: control-plane API (CP1) + non-CP reference app.
 
-Package version is **0.39.0** (CP1 gate-ready).
+The package version is exposed as ``__version__``.
 """
 
 from __future__ import annotations

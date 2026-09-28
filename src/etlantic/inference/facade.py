@@ -13,7 +13,7 @@ from collections.abc import Callable, Mapping
 from copy import deepcopy
 from dataclasses import replace
 from decimal import Decimal
-from typing import Any
+from typing import Any, cast
 
 from pydantic import Field, create_model
 
@@ -56,12 +56,19 @@ from .sources import infer_source
 from .targets import (
     _backfill_observation,
     _safe_target_identity,
+    _target_field_has_omission_value,
     check_write_compatibility,
     infer_records_for_target,
     inspect_target,
 )
 from .transfer import forward_schema
-from .types import InferenceLimits, InferenceResult, OutputProposal, TargetObservation
+from .types import (
+    InferenceLimits,
+    InferenceResult,
+    OutputProposal,
+    TargetObservation,
+    WriteCompatibility,
+)
 
 _PY_TYPES = {
     "boolean": bool,
@@ -164,6 +171,32 @@ def _target_cast_action(
     )
 
 
+class _EvaluationDiagnostics(list[Diagnostic]):
+    """Bounded runtime diagnostics that can refresh their owning result."""
+
+    def __init__(self) -> None:
+        super().__init__()
+        self._on_change: Callable[[], None] | None = None
+        self._subscribers: list[Callable[[], None]] = []
+
+    def bind(self, on_change: Callable[[], None]) -> None:
+        self._on_change = on_change
+
+    def subscribe(self, on_change: Callable[[], None]) -> None:
+        if on_change not in self._subscribers:
+            self._subscribers.append(on_change)
+
+    def notify_subscribers(self) -> None:
+        for subscriber in tuple(self._subscribers):
+            subscriber()
+
+    def append(self, diagnostic: Diagnostic) -> None:
+        super().append(diagnostic)
+        if self._on_change is not None:
+            self._on_change()
+        self.notify_subscribers()
+
+
 def _eval(
     node: Any,
     row: Mapping[str, Any],
@@ -214,8 +247,10 @@ class InferredDataset:
         target_revision_reader: Callable[[], Any] | None = None,
         target_write_mode: str = "append",
         source_owner: Any | None = None,
+        diagnostic_tracker: _EvaluationDiagnostics | None = None,
     ):
         self._result = result
+        self._diagnostic_tracker = diagnostic_tracker
         self._root_schema = root_schema or result.schema
         self._source_binding = dict(source_binding or records_binding(name))
         self._source_owner = source_owner
@@ -344,7 +379,11 @@ class InferredDataset:
         can_reopen_source = (
             source_kind == "file" or has_registered_factory or _allow_unresolved_source
         )
-        if self.replay is not None and not can_reopen_source:
+        if (
+            self.replay is not None
+            and not can_reopen_source
+            and bool(self.provenance.get("sampled", False))
+        ):
             raise ValueError(
                 "durable inference definitions require a reopenable source binding; "
                 "the inspected source is a one-shot bounded stream"
@@ -357,6 +396,11 @@ class InferredDataset:
             raise ValueError(
                 "INFER_SOURCE_UNRESOLVABLE: register a source factory before "
                 "exporting a records definition"
+            )
+        if self.replay is not None and not can_reopen_source:
+            raise ValueError(
+                "durable inference definitions require a reopenable source binding; "
+                "the inspected source is a one-shot bounded stream"
             )
         # Target backfill is a write-boundary hypothesis.  It must never
         # replace the observed source contract used by the serialized graph.
@@ -699,7 +743,7 @@ class InferredDataset:
         frame: FrameExpr,
         schema: NormalizedSchema | None = None,
         replay: Any | None = None,
-        extra_diagnostics: tuple[Diagnostic, ...] = (),
+        extra_diagnostics: tuple[Diagnostic, ...] | _EvaluationDiagnostics = (),
     ) -> InferredDataset:
         observed = infer_records(
             rows, identity=self._root_schema.identity, retain_rows=True
@@ -728,33 +772,36 @@ class InferredDataset:
                         phase="inference",
                     )
                 )
-        all_diagnostics: tuple[Any, ...] = (
-            extra_diagnostics  # prioritize current runtime errors within budget
-            + self._result.diagnostics
-            + observed.diagnostics
-            + transfer_diagnostics
-            + tuple(runtime_diagnostics)
+        static_diagnostics: tuple[Any, ...] = (
+            observed.diagnostics + transfer_diagnostics + tuple(runtime_diagnostics)
         )
         max_diagnostics = self._max_diagnostics()
-        bounded_diagnostics: list[Any] = []
-        seen_diagnostics: set[tuple[str, tuple[str, ...], str]] = set()
-        for diagnostic in all_diagnostics:
-            if isinstance(diagnostic, Diagnostic):
-                key = (diagnostic.code, tuple(diagnostic.path), diagnostic.message)
-            elif isinstance(diagnostic, Mapping):
-                key = (
-                    str(diagnostic.get("code", "")),
-                    tuple(str(item) for item in diagnostic.get("path", ())),
-                    str(diagnostic.get("message", "")),
-                )
-            else:
-                key = (str(diagnostic), (), "")
-            if key in seen_diagnostics:
-                continue
-            seen_diagnostics.add(key)
-            if len(bounded_diagnostics) >= max(1, max_diagnostics):
-                break
-            bounded_diagnostics.append(diagnostic)
+
+        def bounded_diagnostics(
+            primary: tuple[Any, ...], secondary: tuple[Any, ...]
+        ) -> tuple[Any, ...]:
+            bounded: list[Any] = []
+            seen: set[tuple[str, tuple[str, ...], str]] = set()
+            for diagnostic in (*primary, *secondary):
+                if isinstance(diagnostic, Diagnostic):
+                    key = (diagnostic.code, tuple(diagnostic.path), diagnostic.message)
+                elif isinstance(diagnostic, Mapping):
+                    key = (
+                        str(diagnostic.get("code", "")),
+                        tuple(str(item) for item in diagnostic.get("path", ())),
+                        str(diagnostic.get("message", "")),
+                    )
+                else:
+                    key = (str(diagnostic), (), "")
+                if key in seen:
+                    continue
+                seen.add(key)
+                if len(bounded) >= max(1, max_diagnostics):
+                    break
+                bounded.append(diagnostic)
+            return tuple(bounded)
+
+        current_evaluation_diagnostics = tuple(extra_diagnostics)
         evidence_items: list[Any] = []
         seen_evidence: set[tuple[str, str]] = set()
         max_evidence = int(
@@ -772,7 +819,10 @@ class InferredDataset:
             evidence_items.append(item)
         result = InferenceResult(
             final_schema,
-            tuple(bounded_diagnostics),
+            bounded_diagnostics(
+                current_evaluation_diagnostics,
+                self._result.diagnostics + static_diagnostics,
+            ),
             tuple(evidence_items),
             {
                 **observed.provenance,
@@ -790,6 +840,26 @@ class InferredDataset:
             self._result.target_hypothesis,
             self._result.target_observation,
         )
+
+        def refresh_diagnostics() -> None:
+            result.diagnostics = bounded_diagnostics(
+                tuple(extra_diagnostics),
+                self._result.diagnostics + static_diagnostics,
+            )
+
+        diagnostic_tracker = (
+            extra_diagnostics
+            if isinstance(extra_diagnostics, _EvaluationDiagnostics)
+            else _EvaluationDiagnostics()
+        )
+
+        def refresh_after_parent_change() -> None:
+            refresh_diagnostics()
+            diagnostic_tracker.notify_subscribers()
+
+        diagnostic_tracker.bind(refresh_diagnostics)
+        if self._diagnostic_tracker is not None:
+            self._diagnostic_tracker.subscribe(refresh_after_parent_change)
         return InferredDataset(
             result,
             name=self.name,
@@ -799,12 +869,13 @@ class InferredDataset:
             target_binding_payload=self._target_binding,
             target_revision_reader=self._target_revision_reader,
             source_owner=self._source_owner,
+            diagnostic_tracker=diagnostic_tracker,
         )
 
     def filter(self, condition: ColumnExpr) -> InferredDataset:
         expr = coerce_column(condition)
         frame = self._frame.filter(expr)
-        evaluation_diagnostics: list[Diagnostic] = []
+        evaluation_diagnostics = _EvaluationDiagnostics()
         max_diagnostics = self._max_diagnostics()
         replay = None
         if self._result.replay is not None:
@@ -841,12 +912,12 @@ class InferredDataset:
                 ),
             ),
             replay,
-            tuple(evaluation_diagnostics),
+            evaluation_diagnostics,
         )
 
     def select(self, *columns: Any) -> InferredDataset:
         fields: list[tuple[str, Any]] = []
-        evaluation_diagnostics: list[Diagnostic] = []
+        evaluation_diagnostics = _EvaluationDiagnostics()
         max_diagnostics = self._max_diagnostics()
         for column in columns:
             if isinstance(column, str):
@@ -895,14 +966,14 @@ class InferredDataset:
                 ),
             ),
             replay,
-            tuple(evaluation_diagnostics),
+            evaluation_diagnostics,
         )
 
     project = select
 
     def withColumn(self, name: str, value: Any) -> InferredDataset:
         expr = coerce_column(value)
-        evaluation_diagnostics: list[Diagnostic] = []
+        evaluation_diagnostics = _EvaluationDiagnostics()
         max_diagnostics = self._max_diagnostics()
         rows = [
             {
@@ -945,7 +1016,7 @@ class InferredDataset:
                 ),
             ),
             replay,
-            tuple(evaluation_diagnostics),
+            evaluation_diagnostics,
         )
 
     def drop(self, *columns: str) -> InferredDataset:
@@ -1083,8 +1154,91 @@ class InferredDataset:
             target_revision_reader=self._target_revision_reader,
         )
 
-    def check_write(self, target_schema: NormalizedSchema, *, mode: str = "append"):
-        return check_write_compatibility(self.schema, target_schema, mode=mode)
+    def check_write(
+        self, target_schema: NormalizedSchema, *, mode: str = "append"
+    ) -> WriteCompatibility:
+        compatibility = check_write_compatibility(self.schema, target_schema, mode=mode)
+        if _source_inference_failed(self):
+            return _early_write_compatibility(compatibility, self)
+
+        observation = self._result.target_observation
+        same_target = (
+            observation is not None
+            and observation.schema is not None
+            and observation.schema.fields == target_schema.fields
+        )
+        validation_state = self._result.provenance.get("target_validation")
+        if same_target and validation_state in {"failed", "stale"}:
+            validation_diagnostics = tuple(
+                diagnostic
+                for diagnostic in self.diagnostics
+                if isinstance(diagnostic, Diagnostic)
+                and diagnostic.severity == Severity.ERROR
+            )
+            return replace(
+                compatibility,
+                compatible=False,
+                diagnostics=(*compatibility.diagnostics, *validation_diagnostics),
+            )
+
+        if self._result.provenance.get("sampled") is not True:
+            return _early_write_compatibility(compatibility, self)
+
+        if same_target and validation_state == "complete":
+            return compatibility
+
+        replay = self._result.replay
+        if (
+            not same_target
+            or validation_state != "prefix_only"
+            or replay is None
+            or not replay.available
+        ):
+            diagnostic = Diagnostic(
+                "INFER_TARGET_UNKNOWN",
+                Severity.ERROR,
+                "Sampled source cannot enforce all-values constraints for the requested target schema",
+                phase="inference",
+            )
+            return replace(
+                compatibility,
+                compatible=False,
+                diagnostics=(*compatibility.diagnostics, diagnostic),
+            )
+
+        validation_obligations: list[dict[str, Any]] = []
+        for field in target_schema.fields:
+            # The sampled prefix cannot prove that an otherwise absent target
+            # field will not appear later, so every declared target type is an
+            # all-values replay obligation.
+            constraints: list[str] = ["target_type"]
+            if field.required and not _target_field_has_omission_value(field):
+                constraints.append("required_presence")
+            if not field.nullable:
+                constraints.append("nullability")
+            if constraints:
+                validation_obligations.append(
+                    {
+                        "field": field.name,
+                        "validation": "all_values",
+                        "constraints": constraints,
+                        "on_failure": "error",
+                    }
+                )
+
+        # Also fence the row's field set: a late field outside the target
+        # schema is incompatible even when the target schema is empty.
+        validation_obligations.append(
+            {
+                "field": "*",
+                "validation": "all_values",
+                "constraints": ["no_unexpected_fields"],
+                "on_failure": "error",
+            }
+        )
+
+        obligations = (*compatibility.obligations, *validation_obligations)
+        return replace(compatibility, obligations=obligations)
 
     def propose_output(
         self,
@@ -1588,4 +1742,51 @@ def from_polars(
         infer_source(frame, identity=safe_name, hints=hints, limits=limits),
         name=safe_name,
         source_binding=provider_binding(safe_name, "polars"),
+    )
+
+
+def _early_write_compatibility(
+    compatibility: WriteCompatibility, dataset: InferredDataset
+) -> WriteCompatibility:
+    source_diagnostics = tuple(
+        diagnostic
+        for diagnostic in dataset.diagnostics
+        if _is_error_diagnostic(diagnostic)
+    )
+    if not _source_inference_failed(dataset):
+        return compatibility
+    if not source_diagnostics:
+        source_diagnostics = (_source_inference_error(),)
+    return replace(
+        compatibility,
+        compatible=False,
+        diagnostics=(*compatibility.diagnostics, *source_diagnostics),
+    )
+
+
+def _source_inference_failed(dataset: InferredDataset) -> bool:
+    provenance = dataset.provenance
+    return (
+        provenance.get("source_validation") == "failed"
+        or provenance.get("inspection") == "failed"
+        or any(_is_error_diagnostic(item) for item in dataset.diagnostics)
+    )
+
+
+def _is_error_diagnostic(diagnostic: Any) -> bool:
+    if isinstance(diagnostic, Diagnostic):
+        severity: Any = diagnostic.severity
+    elif isinstance(diagnostic, Mapping):
+        severity = cast(Mapping[str, Any], diagnostic).get("severity")
+    else:
+        severity = getattr(diagnostic, "severity", None)
+    return getattr(severity, "value", severity) == Severity.ERROR.value
+
+
+def _source_inference_error() -> Diagnostic:
+    return Diagnostic(
+        "INFER_SOURCE_INVALID",
+        Severity.ERROR,
+        "Source inference failed beyond the retained diagnostic limit",
+        phase="inference",
     )

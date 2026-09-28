@@ -291,7 +291,9 @@ lineage and never relabel observed source evidence.
 1. Add provider capability declarations and required-field semantics for
    append, overwrite, merge, upsert, and partition replacement. Do not treat
    the mode as metadata only. An undeclared mode must fail closed for every
-   provider, including append and overwrite.
+   provider, including append and overwrite. Schema-only `NormalizedSchema`
+   targets retain only the documented legacy `append` exception; every other
+   mode needs explicit capability evidence.
 2. Validate target required fields, nullability, keys, generated/default
    columns, partition requirements, and runtime conversion obligations for all
    source fields and rows represented by the write contract.

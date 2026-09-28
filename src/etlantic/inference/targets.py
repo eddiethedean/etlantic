@@ -29,7 +29,14 @@ from etlantic.schema_drift import (
 from etlantic.transform.evaluation import coerce_value
 
 from .durable import _safe_file_identity
-from .records import infer_csv, infer_json, infer_records
+from .records import (
+    _type_of as _runtime_logical_type,
+)
+from .records import (
+    infer_csv,
+    infer_json,
+    infer_records,
+)
 from .types import (
     TARGET_EXISTENCE_STATES,
     FieldConstraint,
@@ -508,29 +515,74 @@ def _with_target_diagnostic(
 def _diagnostics_from_payload(
     value: Any, *, max_diagnostics: int = 100
 ) -> tuple[Diagnostic, ...]:
-    """Normalize provider diagnostics without retaining arbitrary objects."""
-    if not isinstance(value, (list, tuple)):
+    """Normalize bounded inspector findings; malformed input remains a finding."""
+
+    def malformed() -> Diagnostic:
+        return Diagnostic(
+            "INFER_TARGET_UNSUPPORTED",
+            Severity.ERROR,
+            "Target inspection diagnostic is malformed",
+            phase="inference",
+        )
+
+    if value is _MISSING:
         return ()
+    if not isinstance(value, (list, tuple)):
+        return (malformed(),)
     diagnostics: list[Diagnostic] = []
-    for item in value:
+    for item in cast(list[Any] | tuple[Any, ...], value[: max(1, max_diagnostics)]):
         if isinstance(item, Diagnostic):
-            diagnostics.append(item)
+            raw_diagnostic = cast(Any, item)
+            raw_path: Any = getattr(raw_diagnostic, "path", None)
+            if (
+                isinstance(raw_diagnostic.code, str)
+                and bool(raw_diagnostic.code)
+                and isinstance(raw_diagnostic.severity, Severity)
+                and isinstance(raw_diagnostic.message, str)
+                and isinstance(raw_path, tuple)
+                and all(
+                    isinstance(path, str) for path in cast(tuple[Any, ...], raw_path)
+                )
+            ):
+                diagnostics.append(item)
+            else:
+                diagnostics.append(malformed())
             continue
         if not isinstance(item, Mapping):
+            diagnostics.append(malformed())
             continue
         try:
+            payload = cast(Mapping[str, Any], item)
+            code = payload.get("code")
+            severity = payload.get("severity")
+            message = payload.get("message")
+            path = payload.get("path", ())
+            if (
+                (code is not None and (not isinstance(code, str) or not code))
+                or (severity is not None and not isinstance(severity, (str, Severity)))
+                or (message is not None and not isinstance(message, str))
+                or not isinstance(path, (list, tuple))
+            ):
+                raise ValueError("malformed target diagnostic")
+            path_parts: list[str] = []
+            for part in cast(list[Any] | tuple[Any, ...], path):
+                if not isinstance(part, str):
+                    raise ValueError("malformed target diagnostic path")
+                path_parts.append(part)
             diagnostics.append(
                 Diagnostic(
-                    str(item.get("code") or "INFER_TARGET_UNKNOWN"),
-                    Severity(str(item.get("severity") or "warning").lower()),
-                    str(item.get("message") or "Target inspection diagnostic"),
-                    tuple(str(path) for path in item.get("path", ())),
+                    code or "INFER_TARGET_UNKNOWN",
+                    Severity(str(severity or "warning").lower()),
+                    message or "Target inspection diagnostic",
+                    tuple(path_parts),
                     phase="inference",
                 )
             )
-        except (TypeError, ValueError):
-            continue
-    return tuple(diagnostics[:max_diagnostics])
+        except Exception:
+            # Provider mappings can raise while reading keys. Keep a bounded
+            # finding instead of letting their contents enter diagnostics.
+            diagnostics.append(malformed())
+    return tuple(diagnostics)
 
 
 def _schema_from_inspection(identity: str, fields: Any) -> NormalizedSchema:
@@ -1142,7 +1194,7 @@ def _normalize_provider_payload(
         explicit_exists,
         str(revision) if revision is not None else None,
         inspector,
-        tuple(diagnostics[:max_diagnostics]),
+        tuple(diagnostics[: max(1, max_diagnostics)]),
         metadata,
     )
 
@@ -2068,6 +2120,7 @@ class _TargetConversionOutcome:
     row: Any
     diagnostics: tuple[Diagnostic, ...] = ()
     failed_fields: frozenset[str] = frozenset()
+    conversion_failed_fields: frozenset[str] = frozenset()
 
 
 def _target_conversion_diagnostic(
@@ -2100,36 +2153,133 @@ def _target_conversion_diagnostic(
     )
 
 
+def _target_constraint_diagnostic(
+    *,
+    field_name: str,
+    constraint: str,
+    message: str,
+    target_identity: str | None,
+    target_revision: str | None,
+    row_index: int,
+) -> Diagnostic:
+    return Diagnostic(
+        "INFER_RUNTIME_CONSTRAINT",
+        Severity.ERROR,
+        message,
+        path=(field_name,) if field_name else (),
+        metadata={
+            "constraint": constraint,
+            "target_identity": target_identity,
+            "target_revision": target_revision,
+            "row_index": row_index,
+        },
+        phase="inference",
+    )
+
+
+def _target_field_has_omission_value(field: NormalizedField) -> bool:
+    """Whether the target declares a value for an omitted required field."""
+    if "default" in field.metadata:
+        default = field.metadata["default"]
+        default_type = _runtime_logical_type(default)
+        if default_type == "null":
+            return field.nullable
+        if default_type == field.logical_type:
+            return True
+        if (default_type, field.logical_type) not in _LOSSLESS_CASTS:
+            return False
+        try:
+            _coerce_value(default, field.logical_type)
+        except (TypeError, ValueError, OverflowError, DecimalException):
+            return False
+        return True
+    return any(
+        field.metadata.get(key)
+        for key in ("has_default", "generated", "identity", "auto_increment")
+    )
+
+
 def _convert_target_row(
     row: Any,
     *,
-    source_fields: Mapping[str, NormalizedField],
     target_fields: Mapping[str, NormalizedField],
     target_identity: str | None,
     target_revision: str | None,
     row_index: int,
 ) -> _TargetConversionOutcome:
-    """Apply the target cast policy without retaining any source values."""
+    """Validate target row constraints and apply safe casts without retaining values."""
     if not isinstance(row, Mapping):
-        return _TargetConversionOutcome(row)
+        diagnostic = _target_constraint_diagnostic(
+            field_name="",
+            constraint="record_shape",
+            message="Replayed source row is not a mapping",
+            target_identity=target_identity,
+            target_revision=target_revision,
+            row_index=row_index,
+        )
+        return _TargetConversionOutcome(row, (diagnostic,))
 
-    converted = dict(row)
+    converted: dict[Any, Any] = dict(cast(Mapping[Any, Any], row))
     diagnostics: list[Diagnostic] = []
     failed_fields: set[str] = set()
-    for name, value in list(converted.items()):
-        source_field = source_fields.get(name)
-        target_field = target_fields.get(name)
-        if (
-            source_field is None
-            or target_field is None
-            or value is None
-            or source_field.logical_type == target_field.logical_type
-        ):
+    conversion_failed_fields: set[str] = set()
+    for raw_name in converted:
+        if raw_name in target_fields:
             continue
-        source_type = source_field.logical_type
+        field_name = raw_name if isinstance(raw_name, str) and raw_name else "<invalid>"
+        diagnostics.append(
+            _target_constraint_diagnostic(
+                field_name=field_name,
+                constraint="unexpected_field",
+                message=f"Source field {field_name!r} is not present in target schema",
+                target_identity=target_identity,
+                target_revision=target_revision,
+                row_index=row_index,
+            )
+        )
+        failed_fields.add(field_name)
+        break
+
+    for name, target_field in target_fields.items():
+        if name not in converted:
+            if target_field.required and not _target_field_has_omission_value(
+                target_field
+            ):
+                diagnostics.append(
+                    _target_constraint_diagnostic(
+                        field_name=name,
+                        constraint="required_presence",
+                        message=f"Required target field {name!r} is missing from source row",
+                        target_identity=target_identity,
+                        target_revision=target_revision,
+                        row_index=row_index,
+                    )
+                )
+                failed_fields.add(name)
+            continue
+        value = converted[name]
+        source_type = _runtime_logical_type(value)
+        if source_type == "null":
+            if not target_field.nullable:
+                diagnostics.append(
+                    _target_constraint_diagnostic(
+                        field_name=name,
+                        constraint="nullability",
+                        message=f"Non-nullable target field {name!r} is null in source row",
+                        target_identity=target_identity,
+                        target_revision=target_revision,
+                        row_index=row_index,
+                    )
+                )
+                failed_fields.add(name)
+            continue
+
         target_type = target_field.logical_type
+        if source_type == target_type:
+            continue
         if (source_type, target_type) not in _LOSSLESS_CASTS:
             failed_fields.add(name)
+            conversion_failed_fields.add(name)
             diagnostics.append(
                 _target_conversion_diagnostic(
                     field_name=name,
@@ -2146,6 +2296,7 @@ def _convert_target_row(
             converted[name] = _coerce_value(value, target_type)
         except (TypeError, ValueError, OverflowError, DecimalException):
             failed_fields.add(name)
+            conversion_failed_fields.add(name)
             diagnostics.append(
                 _target_conversion_diagnostic(
                     field_name=name,
@@ -2161,6 +2312,7 @@ def _convert_target_row(
         converted,
         tuple(diagnostics),
         frozenset(failed_fields),
+        frozenset(conversion_failed_fields),
     )
 
 
@@ -2268,6 +2420,7 @@ def _backfill_observation(
     rows = list(source.rows)
     runtime_diagnostics: list[Diagnostic] = []
     failed_fields: set[str] = set()
+    conversion_failed_fields: set[str] = set()
     source_fields = {field.name: field for field in source.schema.fields}
     target_fields = {field.name: field for field in observation.schema.fields}
     target_identity = observation.identity
@@ -2276,7 +2429,6 @@ def _backfill_observation(
         for row_index, row in enumerate(rows):
             outcome = _convert_target_row(
                 row,
-                source_fields=source_fields,
                 target_fields=target_fields,
                 target_identity=target_identity,
                 target_revision=target_revision,
@@ -2286,6 +2438,7 @@ def _backfill_observation(
                 rows[row_index] = dict(outcome.row)
             runtime_diagnostics.extend(outcome.diagnostics)
             failed_fields.update(outcome.failed_fields)
+            conversion_failed_fields.update(outcome.conversion_failed_fields)
     resolved_schema = backfilled.schema
     cast_fields = {
         source_field.name: target_field.logical_type
@@ -2295,6 +2448,7 @@ def _backfill_observation(
         and target_field.logical_type != source_field.logical_type
         and (source_field.logical_type, target_field.logical_type) in _LOSSLESS_CASTS
     }
+    source_sampled = source.provenance.get("sampled") is True
     if failed_fields:
         source_fields = {field.name: field for field in source.schema.fields}
         resolved_schema = NormalizedSchema(
@@ -2307,33 +2461,55 @@ def _backfill_observation(
             ),
             metadata={
                 **backfilled.schema.metadata,
-                "runtime_conversion_failed": sorted(failed_fields),
+                "runtime_conversion_failed": sorted(conversion_failed_fields),
+                "runtime_validation_failed": sorted(
+                    failed_fields - conversion_failed_fields
+                ),
             },
         )
-    if rows:
-        for field in resolved_schema.fields:
-            if field.required and any(row.get(field.name) is None for row in rows):
-                runtime_diagnostics.append(
-                    Diagnostic(
-                        "INFER_RUNTIME_EVALUATION",
-                        Severity.ERROR,
-                        f"Required field {field.name!r} evaluated to null",
-                        path=(field.name,),
-                        phase="inference",
-                    )
-                )
     replay = source.replay
+    validation_fields = set(cast_fields)
+    if source_sampled:
+        validation_fields.update(target_fields)
+    else:
+        validation_fields.update(
+            name for name in source_fields if name in target_fields
+        )
+    for target_field in observation.schema.fields:
+        if target_field.required and not _target_field_has_omission_value(target_field):
+            validation_fields.add(target_field.name)
+        if not target_field.nullable:
+            validation_fields.add(target_field.name)
     validation_state = "not_required"
-    if failed_fields:
+    if (
+        source.provenance.get("source_validation") == "failed"
+        or failed_fields
+        or any(
+            diagnostic.severity == Severity.ERROR for diagnostic in runtime_diagnostics
+        )
+        or any(
+            diagnostic.severity == Severity.ERROR
+            for diagnostic in source.diagnostics + backfilled.diagnostics
+            if isinstance(diagnostic, Diagnostic)
+        )
+    ):
         validation_state = "failed"
-    elif cast_fields and rows and replay is None:
+    elif source_sampled and replay is None:
+        validation_state = "failed"
+        runtime_diagnostics.append(
+            Diagnostic(
+                "INFER_TARGET_UNKNOWN",
+                Severity.ERROR,
+                "Sampled source has no replay stream for all-values target validation",
+                phase="inference",
+            )
+        )
+    elif validation_fields and replay is None:
         validation_state = "complete"
-    elif cast_fields and replay is not None:
+    elif (validation_fields or source_sampled) and replay is not None:
         validation_state = "prefix_only"
-    elif cast_fields:
-        validation_state = "not_performed"
     replay_lifecycle: _ReplayLifecycle | None = None
-    if replay is not None and (cast_fields or failed_fields):
+    if replay is not None and (validation_fields or source_sampled):
         replay_lifecycle = _ReplayLifecycle()
         replay_row_index = 0
 
@@ -2343,7 +2519,6 @@ def _backfill_observation(
             replay_row_index += 1
             outcome = _convert_target_row(
                 row,
-                source_fields=source_fields,
                 target_fields=target_fields,
                 target_identity=target_identity,
                 target_revision=target_revision,
@@ -2392,7 +2567,7 @@ def _backfill_observation(
         **backfilled.provenance,
         "target_exists": observation.exists,
         "target_validation": validation_state,
-        "target_validation_fields": sorted(cast_fields),
+        "target_validation_fields": sorted(validation_fields),
         "retained_rows": bool(retain_rows),
     }
     if replay_lifecycle is not None:
@@ -2402,13 +2577,11 @@ def _backfill_observation(
             "target_revision": target_revision,
             "validated_prefix_rows": len(rows),
         }
-        conversion_diagnostics = [
-            diagnostic.to_dict()
-            for diagnostic in runtime_diagnostics
-            if diagnostic.code == "INFER_RUNTIME_CONVERSION"
+        validation_diagnostics = [
+            diagnostic.to_dict() for diagnostic in runtime_diagnostics
         ]
-        if conversion_diagnostics:
-            replay_status["diagnostics"] = conversion_diagnostics
+        if validation_diagnostics:
+            replay_status["diagnostics"] = validation_diagnostics
         provenance["replay_status"] = replay_status
 
     result = InferenceResult(
@@ -2436,6 +2609,11 @@ def _backfill_observation(
                 }
             )
             result.provenance["target_validation"] = "failed"
+            if any(
+                diagnostic.code == "INFER_SOURCE_UNSUPPORTED"
+                for diagnostic in error.diagnostics
+            ):
+                result.provenance["source_validation"] = "failed"
             existing = list(result.diagnostics)
             existing_keys = {
                 (
@@ -2454,7 +2632,10 @@ def _backfill_observation(
             result.diagnostics = tuple(existing[: max(1, max_diagnostics)])
 
         def on_replay_complete() -> None:
-            if validation_state != "failed":
+            if (
+                validation_state != "failed"
+                and result.provenance.get("source_validation") != "failed"
+            ):
                 replay_status["state"] = "complete"
                 replay_status["validated_rows"] = replay_row_index
                 result.provenance["target_validation"] = "complete"
@@ -2782,16 +2963,7 @@ def backfill_schema(
     for target_field in target.fields:
         if target_field.name in source_names or not target_field.required:
             continue
-        if any(
-            target_field.metadata.get(key)
-            for key in (
-                "default",
-                "has_default",
-                "generated",
-                "identity",
-                "auto_increment",
-            )
-        ):
+        if _target_field_has_omission_value(target_field):
             continue
         diagnostics.append(
             Diagnostic(
@@ -2933,8 +3105,17 @@ def check_write_compatibility(
     mode: str = "append",
     expected_revision: str | None = None,
 ) -> WriteCompatibility:
-    """Check a source against every target field and target constraint."""
+    """Check a source against every target field and target constraint.
+
+    Any inspector diagnostic, regardless of severity, leaves compatibility
+    unqualified. Malformed diagnostic input is normalized to an error.
+    """
     target_observation = target if isinstance(target, TargetObservation) else None
+    target_diagnostics = (
+        _diagnostics_from_payload(target_observation.diagnostics)
+        if target_observation is not None
+        else ()
+    )
     observation_metadata: dict[str, Any] = {}
     observed_revision: str | None = None
     target_schema = (
@@ -2946,16 +3127,11 @@ def check_write_compatibility(
                 cast(NormalizedSchema, target_schema)
             )
         except (AttributeError, KeyError, TypeError, ValueError):
-            base_diagnostics = (
-                tuple(target_observation.diagnostics)
-                if target_observation is not None
-                else ()
-            )
             return WriteCompatibility(
                 False,
                 mode=mode,
                 diagnostics=(
-                    *base_diagnostics,
+                    *target_diagnostics,
                     Diagnostic(
                         "INFER_TARGET_UNSUPPORTED",
                         Severity.ERROR,
@@ -2966,15 +3142,10 @@ def check_write_compatibility(
             )
         unknown_type_diagnostics = _unknown_type_diagnostics(target_schema)
         if unknown_type_diagnostics:
-            base_diagnostics = (
-                tuple(target_observation.diagnostics)
-                if target_observation is not None
-                else ()
-            )
             return WriteCompatibility(
                 False,
                 mode=mode,
-                diagnostics=(*base_diagnostics, *unknown_type_diagnostics),
+                diagnostics=(*target_diagnostics, *unknown_type_diagnostics),
             )
         assert target_schema is not None
         assert isinstance(target_schema, NormalizedSchema)
@@ -2982,7 +3153,7 @@ def check_write_compatibility(
     if target_observation is not None:
         if target_observation.exists != "present":
             state = target_observation.exists
-            diagnostics = list(target_observation.diagnostics)
+            diagnostics = list(target_diagnostics)
             diagnostics.append(
                 Diagnostic(
                     "INFER_TARGET_ABSENT"
@@ -3002,47 +3173,16 @@ def check_write_compatibility(
                 mode=mode,
                 diagnostics=tuple(diagnostics),
             )
-        # A schema accompanied by an inspector error is not a qualified
-        # observation.  Do not let a useful-looking partial payload turn into
-        # a proven write result.
-        if target_observation.diagnostics:
+        if target_diagnostics:
             return WriteCompatibility(
                 False,
                 mode=mode,
                 diagnostics=(
-                    *target_observation.diagnostics,
+                    *target_diagnostics,
                     Diagnostic(
                         "INFER_TARGET_UNKNOWN",
                         Severity.ERROR,
                         "Target inspection reported diagnostics; compatibility is unqualified",
-                        phase="inference",
-                    ),
-                ),
-            )
-        inspector_errors = tuple(
-            diagnostic
-            for diagnostic in target_observation.diagnostics
-            if getattr(
-                getattr(diagnostic, "severity", None),
-                "value",
-                getattr(diagnostic, "severity", None),
-            )
-            == Severity.ERROR.value
-            or (
-                isinstance(diagnostic, Mapping)
-                and str(diagnostic.get("severity", "")).lower() == "error"
-            )
-        )
-        if inspector_errors:
-            return WriteCompatibility(
-                False,
-                mode=mode,
-                diagnostics=(
-                    *target_observation.diagnostics,
-                    Diagnostic(
-                        "INFER_TARGET_UNKNOWN",
-                        Severity.ERROR,
-                        "Target inspection reported an error; compatibility is unqualified",
                         phase="inference",
                     ),
                 ),
@@ -3052,7 +3192,7 @@ def check_write_compatibility(
                 False,
                 mode=mode,
                 diagnostics=(
-                    *target_observation.diagnostics,
+                    *target_diagnostics,
                     Diagnostic(
                         "INFER_TARGET_UNKNOWN",
                         Severity.ERROR,
@@ -3066,7 +3206,7 @@ def check_write_compatibility(
                 False,
                 mode=mode,
                 diagnostics=(
-                    *target_observation.diagnostics,
+                    *target_diagnostics,
                     Diagnostic(
                         "INFER_TARGET_UNSUPPORTED",
                         Severity.ERROR,
@@ -3121,7 +3261,11 @@ def check_write_compatibility(
                 )
             )
             continue
-        if target_field.required and not field.required:
+        if (
+            target_field.required
+            and not field.required
+            and not _target_field_has_omission_value(target_field)
+        ):
             incompatible.append(field.name)
             diagnostics.append(
                 Diagnostic(
@@ -3162,17 +3306,7 @@ def check_write_compatibility(
     for field in target.fields:
         if field.name in source_fields or not field.required:
             continue
-        metadata = field.metadata
-        if any(
-            metadata.get(key)
-            for key in (
-                "default",
-                "has_default",
-                "generated",
-                "identity",
-                "auto_increment",
-            )
-        ):
+        if _target_field_has_omission_value(field):
             continue
         incompatible.append(field.name)
         diagnostics.append(
@@ -3261,6 +3395,25 @@ def check_write_compatibility(
                 "INFER_WRITE_MODE_UNSUPPORTED",
                 Severity.ERROR,
                 f"Target does not advertise write mode {mode!r}",
+                phase="inference",
+            )
+        )
+    elif "capabilities" in target_metadata:
+        diagnostics.append(
+            Diagnostic(
+                "INFER_WRITE_MODE_UNSUPPORTED",
+                Severity.ERROR,
+                "Target capability declaration is malformed",
+                phase="inference",
+            )
+        )
+    elif mode in modes and mode != "append":
+        diagnostics.append(
+            Diagnostic(
+                "INFER_WRITE_MODE_UNSUPPORTED",
+                Severity.ERROR,
+                f"Schema-only targets do not advertise write mode {mode!r}; "
+                "only legacy append is allowed without capability evidence",
                 phase="inference",
             )
         )
