@@ -1101,23 +1101,23 @@ class InferredDataset:
             and observation.schema is not None
             and observation.schema.fields == target_schema.fields
         )
-        if same_target and self._result.provenance.get("target_validation") == "failed":
-            runtime_diagnostics = tuple(
+        validation_state = self._result.provenance.get("target_validation")
+        if same_target and validation_state in {"failed", "stale"}:
+            validation_diagnostics = tuple(
                 diagnostic
                 for diagnostic in self.diagnostics
                 if isinstance(diagnostic, Diagnostic)
-                and diagnostic.code.startswith("INFER_RUNTIME_")
+                and diagnostic.code.startswith(("INFER_RUNTIME_", "INFER_TARGET_"))
             )
             return replace(
                 compatibility,
                 compatible=False,
-                diagnostics=(*compatibility.diagnostics, *runtime_diagnostics),
+                diagnostics=(*compatibility.diagnostics, *validation_diagnostics),
             )
 
         if self._result.provenance.get("sampled") is not True:
             return compatibility
 
-        validation_state = self._result.provenance.get("target_validation")
         if same_target and validation_state == "complete":
             return compatibility
 

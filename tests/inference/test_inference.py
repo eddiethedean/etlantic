@@ -1156,3 +1156,31 @@ def test_target_and_write_compatibility_wire_round_trip() -> None:
     restored = etl.WriteCompatibility.from_dict(compatibility.to_dict())
     assert restored.mode == "merge"
     assert restored.casts == {"id": "number"}
+
+
+def test_check_write_conflicts_for_stale_target_observation() -> None:
+    target_schema = NormalizedSchema(
+        "sink",
+        (NormalizedField("id", "integer"),),
+    )
+    target = etl.TargetObservation(
+        target_schema,
+        "present",
+        revision="r1",
+        metadata={"identity": "sink"},
+    )
+    dataset = etl.from_records_for_target(
+        [{"id": 1}, {"id": 2}],
+        target,
+        expected_revision="r2",
+    )
+
+    assert dataset.provenance["sampled"] is False
+    assert dataset.provenance["target_validation"] == "stale"
+
+    compatibility = dataset.check_write(target_schema)
+
+    assert compatibility.status == "conflict"
+    assert "INFER_TARGET_STALE" in {
+        diagnostic.code for diagnostic in compatibility.diagnostics
+    }
