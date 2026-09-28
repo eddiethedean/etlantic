@@ -3,7 +3,7 @@
 
 import asyncio
 import json
-from collections.abc import Mapping
+from collections.abc import ItemsView, Iterator, Mapping
 from decimal import Decimal
 
 import etlantic as etl
@@ -27,26 +27,25 @@ def test_nested_provider_values_and_identity_are_redacted_on_wire() -> None:
 
 
 def test_record_size_estimation_stops_at_the_materialized_byte_budget() -> None:
-    class Wide(Mapping):
-        def __init__(self, width):
+    class Wide(Mapping[str, int]):
+        def __init__(self, width: int) -> None:
             self.width = width
             self.reads = 0
             self.item_visits = 0
 
-        def __len__(self):
+        def __len__(self) -> int:
             return self.width
 
-        def __iter__(self):
+        def __iter__(self) -> Iterator[str]:
             return (str(index) for index in range(self.width))
 
-        def __getitem__(self, key):
+        def __getitem__(self, key: str) -> int:
             self.reads += 1
             return 1
 
-        def items(self):
-            for index in range(self.width):
-                self.item_visits += 1
-                yield str(index), 1
+        def items(self) -> ItemsView[str, int]:
+            self.item_visits += 1
+            return ItemsView(self)
 
     row = Wide(10_000)
     result = etl.infer_records(
@@ -65,18 +64,18 @@ def test_record_size_estimation_stops_at_the_materialized_byte_budget() -> None:
 
 
 def test_record_field_traversal_is_capped_and_nested_cycles_are_safe() -> None:
-    class Wide(Mapping):
-        def __init__(self, width):
+    class Wide(Mapping[str, int]):
+        def __init__(self, width: int) -> None:
             self.width = width
             self.reads = 0
 
-        def __len__(self):
+        def __len__(self) -> int:
             return self.width
 
-        def __iter__(self):
+        def __iter__(self) -> Iterator[str]:
             return (str(index) for index in range(self.width))
 
-        def __getitem__(self, key):
+        def __getitem__(self, key: str) -> int:
             self.reads += 1
             return 1
 
@@ -95,7 +94,9 @@ def test_record_field_traversal_is_capped_and_nested_cycles_are_safe() -> None:
         limits=etl.InferenceLimits(max_fields=1),
         retain_rows=True,
     )
-    assert list(replayed.replay.take()) == replay_source
+    replay = replayed.replay
+    assert replay is not None
+    assert list(replay.take()) == replay_source
 
     cyclic = {"payload": []}
     cyclic["payload"].append(cyclic)
@@ -104,14 +105,14 @@ def test_record_field_traversal_is_capped_and_nested_cycles_are_safe() -> None:
 
 
 def test_record_size_estimation_redacts_provider_failures_and_bounds_depth() -> None:
-    class Broken(Mapping):
-        def __len__(self):
+    class Broken(Mapping[str, int]):
+        def __len__(self) -> int:
             return 1
 
-        def __iter__(self):
+        def __iter__(self) -> Iterator[str]:
             raise RuntimeError("private provider detail")
 
-        def __getitem__(self, key):
+        def __getitem__(self, key: str) -> int:
             raise AssertionError("field access should not follow iterator failure")
 
     failed = etl.infer_records([Broken()])
