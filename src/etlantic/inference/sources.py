@@ -21,6 +21,7 @@ from etlantic.schema_drift import (
 
 from .records import (
     _estimate_size,
+    _EstimateTimeout,
     estimate_materialized_row,
     infer_csv,
     infer_json,
@@ -52,6 +53,10 @@ class _MaterializedLimitReached(RuntimeError):
     """A provider preview cannot be converted within the materialized-byte cap."""
 
 
+class _InferenceTimeout(RuntimeError):
+    """The shared inference deadline expired during provider inspection."""
+
+
 @dataclass(frozen=True, slots=True)
 class _BoundedView:
     value: Any
@@ -59,6 +64,21 @@ class _BoundedView:
     source_rows: int | None
     preview_rows: int | None
     estimated_bytes: int | None
+
+
+def _effective_deadline(
+    limits: InferenceLimits, deadline: float | None
+) -> float | None:
+    if deadline is not None:
+        return deadline
+    if limits.timeout_seconds is None:
+        return None
+    return time.monotonic() + limits.timeout_seconds
+
+
+def _check_deadline(deadline: float | None) -> None:
+    if deadline is not None and time.monotonic() >= deadline:
+        raise _InferenceTimeout
 
 
 def _bounded_row_count(value: Any) -> int | None:
@@ -103,7 +123,12 @@ def _provider_materialized_limit(limits: InferenceLimits) -> int | None:
     )
 
 
-def _provider_size_estimate(value: Any, *, byte_limit: int | None) -> int | None:
+def _provider_size_estimate(
+    value: Any,
+    *,
+    byte_limit: int | None,
+    deadline: float | None,
+) -> int | None:
     """Use provider metadata to prove the view fits before converting its rows."""
     for attr in ("estimated_size", "nbytes", "byte_size", "memory_usage"):
         try:
@@ -131,7 +156,10 @@ def _provider_size_estimate(value: Any, *, byte_limit: int | None) -> int | None
                 rows,
                 max_bytes=byte_limit,
                 max_items=10_000,
+                deadline=deadline,
             )
+    except _EstimateTimeout:
+        raise _InferenceTimeout from None
     except Exception:
         if byte_limit is not None:
             return byte_limit + 1
@@ -139,14 +167,20 @@ def _provider_size_estimate(value: Any, *, byte_limit: int | None) -> int | None
 
 
 def _bounded_materialization(
-    value: Any, limits: InferenceLimits
+    value: Any,
+    limits: InferenceLimits,
+    *,
+    deadline: float | None = None,
 ) -> _BoundedView | None:
     """Return a bounded provider view and proof metadata before row conversion."""
+    deadline = _effective_deadline(limits, deadline)
+    _check_deadline(deadline)
     head = getattr(value, "head", None)
+    _check_deadline(deadline)
     if not callable(head):
         return None
-    started = time.monotonic()
     source_rows = _bounded_row_count(value)
+    _check_deadline(deadline)
     module = type(value).__module__.split(".", 1)[0].casefold()
     probe_count = limits.max_rows
     if source_rows is None and module in {"pandas", "polars", "pyarrow", "duckdb"}:
@@ -154,25 +188,25 @@ def _bounded_materialization(
     try:
         bounded = head(probe_count)
     except Exception:
+        _check_deadline(deadline)
         return None
-    if (
-        limits.timeout_seconds is not None
-        and time.monotonic() - started >= limits.timeout_seconds
-    ):
-        return None
+    _check_deadline(deadline)
     # A provider that returns itself from ``head`` has not established a
     # bounded materialization boundary.  Calling its conversion method could
     # still consume the complete source.
     if bounded is value:
         return None
     row_count = _bounded_row_count(bounded)
+    _check_deadline(deadline)
     truncated = source_rows > limits.max_rows if source_rows is not None else False
     if row_count is not None and row_count > limits.max_rows:
         truncated = True
         try:
             bounded = head(limits.max_rows)
         except Exception:
+            _check_deadline(deadline)
             return None
+        _check_deadline(deadline)
         if bounded is value:
             return None
         row_count = _bounded_row_count(bounded)
@@ -195,18 +229,16 @@ def _bounded_materialization(
         }:
             return None
     materialized_limit = _provider_materialized_limit(limits)
-    estimate = _provider_size_estimate(bounded, byte_limit=materialized_limit)
+    estimate = _provider_size_estimate(
+        bounded, byte_limit=materialized_limit, deadline=deadline
+    )
+    _check_deadline(deadline)
     if (
         materialized_limit is not None
         and estimate is not None
         and estimate > materialized_limit
     ):
         raise _MaterializedLimitReached
-    if (
-        limits.timeout_seconds is not None
-        and time.monotonic() - started >= limits.timeout_seconds
-    ):
-        return None
     return _BoundedView(
         bounded,
         truncated,
@@ -269,7 +301,11 @@ def _provider_provenance(
                 "sampled": True,
                 "limit_reason": limit_reason,
                 "limit_reasons": [limit_reason],
-                "limitations": ["provider_materialized_bytes_limit"],
+                "limitations": [
+                    "provider_timeout"
+                    if limit_reason == "time"
+                    else "provider_materialized_bytes_limit"
+                ],
             }
         )
     return provenance
@@ -411,6 +447,7 @@ def _infer_provider_records(
     hints: Mapping[str, Any] | None,
     identity: str,
     method: str,
+    deadline: float | None = None,
     extra_diagnostics: tuple[Diagnostic, ...] = (),
 ) -> InferenceResult:
     result = infer_records(
@@ -419,6 +456,7 @@ def _infer_provider_records(
         limits=limits,
         identity=identity,
         retain_rows=True,
+        _deadline=deadline,
     )
     sampled = preview.truncated or result.provenance.get("sampled") is True
     schema = _provider_schema_from_preview(
@@ -447,9 +485,15 @@ def _infer_provider_records(
     )
 
 
-def _provider_records(bounded: Any, limits: InferenceLimits) -> list[Any]:
+def _provider_records(
+    bounded: Any,
+    limits: InferenceLimits,
+    *,
+    deadline: float | None = None,
+) -> list[Any]:
     """Stream a bounded provider view and retain rows only within the byte cap."""
-    started = time.monotonic()
+    deadline = _effective_deadline(limits, deadline)
+    _check_deadline(deadline)
     module = type(bounded).__module__.split(".", 1)[0].casefold()
     row_iterator: Iterable[Any]
     if isinstance(bounded, Mapping):
@@ -541,17 +585,17 @@ def _provider_records(bounded: Any, limits: InferenceLimits) -> list[Any]:
             # converted table before inference can account for its byte size.
             raise _UnboundedProvider("provider exposes only materializing converters")
 
+    _check_deadline(deadline)
     materialized_limit = _provider_materialized_limit(limits)
-    deadline = (
-        started + limits.timeout_seconds if limits.timeout_seconds is not None else None
-    )
     records: list[Any] = []
     bytes_observed = 0
     try:
         iterator = iter(cast(Iterable[Any], row_iterator))
     except Exception:
         raise _UnboundedProvider("provider rows are not iterable") from None
+    _check_deadline(deadline)
     for record in iterator:
+        _check_deadline(deadline)
         if len(records) >= limits.max_rows:
             raise _UnboundedProvider("provider conversion exceeded max_rows")
         if not isinstance(record, Mapping):
@@ -564,6 +608,8 @@ def _provider_records(bounded: Any, limits: InferenceLimits) -> list[Any]:
                     byte_limit=materialized_limit,
                     deadline=deadline,
                 )
+            except _EstimateTimeout:
+                raise _InferenceTimeout from None
             except Exception:
                 raise _UnboundedProvider(
                     "provider row size could not be bounded"
@@ -572,11 +618,8 @@ def _provider_records(bounded: Any, limits: InferenceLimits) -> list[Any]:
                 raise _MaterializedLimitReached
             bytes_observed += record_bytes
         records.append(record)
-        if (
-            limits.timeout_seconds is not None
-            and time.monotonic() - started >= limits.timeout_seconds
-        ):
-            raise _UnboundedProvider("provider conversion exceeded the time budget")
+        _check_deadline(deadline)
+    _check_deadline(deadline)
     return records
 
 
@@ -826,6 +869,7 @@ def _attach_provider_preview(
     limits: InferenceLimits,
     hints: Mapping[str, Any] | None,
     identity: str,
+    deadline: float | None = None,
 ) -> InferenceResult:
     """Retain a bounded preview when metadata-first providers expose one.
 
@@ -835,9 +879,25 @@ def _attach_provider_preview(
     authoritative while observed nullability is refined from the bounded
     preview.
     """
+    deadline = _effective_deadline(limits, deadline)
     method = str(result.provenance.get("method") or "provider_schema")
     try:
-        bounded_preview = _bounded_materialization(value, limits)
+        bounded_preview = _bounded_materialization(value, limits, deadline=deadline)
+    except _InferenceTimeout:
+        return result.replace(
+            diagnostics=(
+                Diagnostic(
+                    "INFER_LIMIT",
+                    Severity.ERROR,
+                    "Provider inference time limit reached",
+                    phase="inference",
+                ),
+                *result.diagnostics,
+            )[: limits.max_diagnostics],
+            provenance=_provider_provenance(
+                result, value, limits, method, None, limit_reason="time"
+            ),
+        )
     except _MaterializedLimitReached:
         return result.replace(
             diagnostics=(
@@ -876,13 +936,34 @@ def _attach_provider_preview(
             provenance=_provider_provenance(result, value, limits, method, None)
         )
     try:
-        records = _provider_records(bounded_preview.value, limits)
+        records = _provider_records(bounded_preview.value, limits, deadline=deadline)
         preview = infer_records(
             records,
             hints=hints,
             limits=limits,
             identity=identity,
             retain_rows=True,
+            _deadline=deadline,
+        )
+    except _InferenceTimeout:
+        return result.replace(
+            diagnostics=(
+                Diagnostic(
+                    "INFER_LIMIT",
+                    Severity.ERROR,
+                    "Provider inference time limit reached",
+                    phase="inference",
+                ),
+                *result.diagnostics,
+            )[: limits.max_diagnostics],
+            provenance=_provider_provenance(
+                result,
+                value,
+                limits,
+                method,
+                bounded_preview,
+                limit_reason="time",
+            ),
         )
     except _MaterializedLimitReached:
         return result.replace(
@@ -991,6 +1072,7 @@ def infer_source(
     identity: str = "source",
     hints: Mapping[str, Any] | None = None,
     limits: InferenceLimits | None = None,
+    _deadline: float | None = None,
 ) -> InferenceResult:
     """Infer a source using metadata first and bounded records as a fallback.
 
@@ -998,12 +1080,19 @@ def infer_source(
     importing an optional engine is never required by this function.
     """
     limits = limits or InferenceLimits()
+    deadline = _effective_deadline(limits, _deadline)
     if isinstance(value, NormalizedSchema):
         return _schema_result(value)
     direct_schema = None
     if isinstance(value, Mapping):
         if not _looks_like_schema_mapping(value):
-            result = infer_records(value, hints=hints, limits=limits, identity=identity)
+            result = infer_records(
+                value,
+                hints=hints,
+                limits=limits,
+                identity=identity,
+                _deadline=deadline,
+            )
             if value and all(isinstance(raw, str) for raw in value.values()):
                 result = result.replace(
                     diagnostics=(
@@ -1050,6 +1139,7 @@ def infer_source(
             limits=limits,
             hints=hints,
             identity=identity,
+            deadline=deadline,
         )
     if isinstance(value, (str, Path)):
         suffix = str(value).lower()
@@ -1106,7 +1196,12 @@ def infer_source(
             )
             if result is not None:
                 return _attach_provider_preview(
-                    result, value, limits=limits, hints=hints, identity=identity
+                    result,
+                    value,
+                    limits=limits,
+                    hints=hints,
+                    identity=identity,
+                    deadline=deadline,
                 )
         except Exception:
             return InferenceResult(
@@ -1160,7 +1255,12 @@ def infer_source(
             )
             if result is not None:
                 return _attach_provider_preview(
-                    result, value, limits=limits, hints=hints, identity=identity
+                    result,
+                    value,
+                    limits=limits,
+                    hints=hints,
+                    identity=identity,
+                    deadline=deadline,
                 )
             return InferenceResult(
                 NormalizedSchema(identity=identity, fields=()),
@@ -1188,6 +1288,7 @@ def infer_source(
                     limits=limits,
                     hints=hints,
                     identity=identity,
+                    deadline=deadline,
                 )
         fields: list[dict[str, Any]] = []
         if isinstance(schema, Mapping):
@@ -1242,12 +1343,23 @@ def infer_source(
                 limits=limits,
                 hints=hints,
                 identity=identity,
+                deadline=deadline,
             )
     to_dicts = getattr(value, "to_dicts", None)
     if callable(to_dicts):
         method = "to_dicts"
         try:
-            bounded_preview = _bounded_materialization(value, limits)
+            bounded_preview = _bounded_materialization(value, limits, deadline=deadline)
+        except _InferenceTimeout:
+            return _provider_failure(
+                identity,
+                value,
+                limits,
+                method,
+                "INFER_LIMIT",
+                "Provider inference time limit reached",
+                limit_reason="time",
+            )
         except _MaterializedLimitReached:
             return _provider_failure(
                 identity,
@@ -1268,7 +1380,19 @@ def infer_source(
                 "Source exposes records but no provably bounded materialization",
             )
         try:
-            records = _provider_records(bounded_preview.value, limits)
+            records = _provider_records(
+                bounded_preview.value, limits, deadline=deadline
+            )
+        except _InferenceTimeout:
+            return _provider_failure(
+                identity,
+                value,
+                limits,
+                method,
+                "INFER_LIMIT",
+                "Provider inference time limit reached",
+                limit_reason="time",
+            )
         except _MaterializedLimitReached:
             return _provider_failure(
                 identity,
@@ -1305,6 +1429,7 @@ def infer_source(
             hints=hints,
             identity=identity,
             method=method,
+            deadline=deadline,
             extra_diagnostics=(schema_diagnostic,)
             if schema_diagnostic is not None
             else (),
@@ -1313,7 +1438,17 @@ def infer_source(
     if callable(to_dict):
         method = "to_dict"
         try:
-            bounded_preview = _bounded_materialization(value, limits)
+            bounded_preview = _bounded_materialization(value, limits, deadline=deadline)
+        except _InferenceTimeout:
+            return _provider_failure(
+                identity,
+                value,
+                limits,
+                method,
+                "INFER_LIMIT",
+                "Provider inference time limit reached",
+                limit_reason="time",
+            )
         except _MaterializedLimitReached:
             return _provider_failure(
                 identity,
@@ -1334,7 +1469,19 @@ def infer_source(
                 "Source exposes records but no provably bounded materialization",
             )
         try:
-            converted = _provider_records(bounded_preview.value, limits)
+            converted = _provider_records(
+                bounded_preview.value, limits, deadline=deadline
+            )
+        except _InferenceTimeout:
+            return _provider_failure(
+                identity,
+                value,
+                limits,
+                method,
+                "INFER_LIMIT",
+                "Provider inference time limit reached",
+                limit_reason="time",
+            )
         except _MaterializedLimitReached:
             return _provider_failure(
                 identity,
@@ -1369,6 +1516,7 @@ def infer_source(
             limits=limits,
             identity=identity,
             retain_rows=True,
+            _deadline=deadline,
         )
         if not converted and not result.schema.fields:
             column_schema = _schema_from_column_metadata(value, identity=identity)
@@ -1402,9 +1550,16 @@ def infer_source(
             hints=hints,
             identity=identity,
             method=method,
+            deadline=deadline,
         )
     if isinstance(value, Mapping) or hasattr(value, "__iter__"):
-        return infer_records(value, hints=hints, limits=limits, identity=identity)
+        return infer_records(
+            value,
+            hints=hints,
+            limits=limits,
+            identity=identity,
+            _deadline=deadline,
+        )
     return InferenceResult(
         NormalizedSchema(identity=identity, fields=()),
         (
@@ -1428,6 +1583,7 @@ async def infer_source_async(
 ) -> InferenceResult:
     """Infer a source while allowing connector schema inspection to be awaited."""
     limits = limits or InferenceLimits()
+    deadline = _effective_deadline(limits, None)
     inspect_schema = getattr(value, "inspect_schema", None)
     if callable(inspect_schema):
         try:
@@ -1442,7 +1598,12 @@ async def infer_source_async(
             )
             if result is not None:
                 return _attach_provider_preview(
-                    result, value, limits=limits, hints=hints, identity=identity
+                    result,
+                    value,
+                    limits=limits,
+                    hints=hints,
+                    identity=identity,
+                    deadline=deadline,
                 )
         except Exception:
             return _source_failure(identity, type(value).__name__)
@@ -1464,7 +1625,12 @@ async def infer_source_async(
                 )
                 if result is not None:
                     return _attach_provider_preview(
-                        result, value, limits=limits, hints=hints, identity=identity
+                        result,
+                        value,
+                        limits=limits,
+                        hints=hints,
+                        identity=identity,
+                        deadline=deadline,
                     )
             if isinstance(schema, Mapping):
                 fields = [
@@ -1484,4 +1650,10 @@ async def infer_source_async(
                 )
         except Exception:
             return _source_failure(identity, type(value).__name__)
-    return infer_source(value, identity=identity, hints=hints, limits=limits)
+    return infer_source(
+        value,
+        identity=identity,
+        hints=hints,
+        limits=limits,
+        _deadline=deadline,
+    )

@@ -3,6 +3,7 @@
 
 import asyncio
 import json
+import time
 from collections.abc import ItemsView, Iterator, Mapping, Sequence
 from decimal import Decimal
 from pathlib import Path
@@ -103,6 +104,68 @@ def test_record_field_traversal_is_capped_and_nested_cycles_are_safe() -> None:
     cyclic["payload"].append(cyclic)
     result = etl.infer_records([cyclic])
     assert result.schema.fields[0].logical_type == "array"
+
+
+def test_global_field_limit_replays_the_row_that_introduces_a_new_field() -> None:
+    records = [{"a": 1, "b": 2}, {"c": 3, "a": 4}]
+
+    result = etl.infer_records(
+        records,
+        limits=etl.InferenceLimits(max_fields=2),
+        retain_rows=True,
+    )
+
+    assert result.provenance["limit_reason"] == "fields"
+    assert result.replay is not None
+    assert list(result.replay.take()) == records
+
+
+def test_json_whitespace_is_charged_to_raw_not_materialized_bytes(
+    tmp_path: Path,
+) -> None:
+    jsonl = tmp_path / "whitespace.jsonl"
+    jsonl.write_text(" " * 100 + '{"id": 1}\n', encoding="utf-8")
+    array = tmp_path / "whitespace.json"
+    array.write_text('[{"id"' + " " * 100 + ": 1}]", encoding="utf-8")
+    limits = etl.InferenceLimits(max_bytes=1_000, max_materialized_bytes=64)
+
+    results = [
+        etl.infer_json(jsonl, lines=True, limits=limits, retain_rows=True),
+        etl.infer_json(array, limits=limits, retain_rows=True),
+    ]
+
+    for result in results:
+        assert [field.name for field in result.schema.fields] == ["id"]
+        assert result.rows == ({"id": 1},)
+        assert result.provenance["limit_reason"] is None
+        assert result.provenance["materialized_bytes_observed"] <= 64
+
+
+def test_provider_stages_share_one_inference_deadline() -> None:
+    class View:
+        __etlantic_bounded_view__ = True
+
+        def __iter__(self):
+            time.sleep(0.07)
+            yield {"id": 1}
+
+    class Provider:
+        def head(self, count: int) -> View:
+            assert count == 2
+            time.sleep(0.07)
+            return View()
+
+        def to_dicts(self):
+            raise AssertionError("the bounded view must be iterated directly")
+
+    result = etl.infer_source(
+        Provider(),
+        limits=etl.InferenceLimits(max_rows=2, timeout_seconds=0.1),
+    )
+
+    assert "INFER_LIMIT" in {item.code for item in result.diagnostics}
+    assert result.provenance["sampled"] is True
+    assert result.provenance["limit_reason"] == "time"
 
 
 def test_record_size_estimation_redacts_provider_failures_and_bounds_depth() -> None:

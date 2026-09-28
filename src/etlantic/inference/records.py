@@ -542,6 +542,7 @@ def infer_records(
     limits: InferenceLimits | None = None,
     identity: str = "records",
     retain_rows: bool = False,
+    _deadline: float | None = None,
 ) -> InferenceResult:
     """Infer a normalized schema from an iterable of dictionaries.
 
@@ -582,11 +583,14 @@ def infer_records(
     replay_remainder: Iterable[Any] | None = None
     replay_prefix_count = 0
     incomplete_rows = 0
-    started_at = time.monotonic()
     deadline = (
-        started_at + limits.timeout_seconds
-        if limits.timeout_seconds is not None
-        else None
+        _deadline
+        if _deadline is not None
+        else (
+            time.monotonic() + limits.timeout_seconds
+            if limits.timeout_seconds is not None
+            else None
+        )
     )
     bytes_observed = 0
     materialized_limit = (
@@ -600,10 +604,7 @@ def infer_records(
             sampled_reason = "rows"
             replay_remainder = chain((item,), iterator)
             break
-        if limits.timeout_seconds is not None and (
-            limits.timeout_seconds <= 1e-9
-            or time.monotonic() - started_at >= limits.timeout_seconds
-        ):
+        if deadline is not None and time.monotonic() >= deadline:
             sampled = True
             sampled_reason = "time"
             replay_remainder = chain((item,), iterator)
@@ -778,6 +779,8 @@ def infer_records(
                 if len(names) >= limits.max_fields:
                     sampled = True
                     sampled_reason = sampled_reason or "fields"
+                    replay_remainder = chain((item,), iterator)
+                    incomplete_row = True
                     _append_diag(
                         diagnostics,
                         _diag(
@@ -1658,8 +1661,6 @@ def _read_json_array(
                     chunk_size,
                     max(1, limits.max_bytes - bytes_observed + 1),
                 )
-            remaining_materialized = materialized_limit - materialized_bytes
-            chunk_size = min(chunk_size, max(1, remaining_materialized + 1))
             chunk = handle.read(chunk_size)
             if not chunk:
                 eof = True
@@ -1759,22 +1760,6 @@ def _read_json_array(
             try:
                 value, consumed = decoder.raw_decode(buffer)
             except json.JSONDecodeError:
-                if (
-                    len(buffer.encode("utf-8"))
-                    > materialized_limit - materialized_bytes
-                ):
-                    sampled = True
-                    stopped = True
-                    limit_reason = "materialized_bytes"
-                    _append_diag(
-                        diagnostics,
-                        _diag(
-                            "INFER_LIMIT",
-                            "JSON inference materialized-byte limit reached",
-                        ),
-                        limits.max_diagnostics,
-                    )
-                    break
                 if eof or not refill():
                     _append_diag(
                         diagnostics,
@@ -1937,10 +1922,7 @@ def _infer_jsonl_bounded(
                     if limits.max_bytes is not None
                     else None
                 )
-                materialized_remaining = materialized_limit - materialized_bytes
-                read_size = materialized_remaining + 1
-                if remaining is not None:
-                    read_size = min(read_size, remaining + 1)
+                read_size = remaining + 1 if remaining is not None else -1
                 raw = handle.readline(read_size)
                 if not raw:
                     loop_completed = False
@@ -1955,19 +1937,6 @@ def _infer_jsonl_bounded(
                     )
                     break
                 bytes_observed += len(raw)
-                if len(raw) > materialized_limit - materialized_bytes:
-                    sampled = True
-                    loop_completed = False
-                    limit_reason = "materialized_bytes"
-                    _append_diag(
-                        diagnostics,
-                        _diag(
-                            "INFER_LIMIT",
-                            "JSONL inference materialized-byte limit reached",
-                        ),
-                        limits.max_diagnostics,
-                    )
-                    break
                 try:
                     line = raw.decode("utf-8")
                 except UnicodeDecodeError:
