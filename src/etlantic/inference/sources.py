@@ -6,9 +6,8 @@ from __future__ import annotations
 import inspect as _inspect
 import math
 import time
-from collections.abc import Mapping
+from collections.abc import Iterable, Mapping
 from dataclasses import dataclass
-from itertools import islice
 from pathlib import Path
 from typing import Any, cast
 
@@ -20,7 +19,13 @@ from etlantic.schema_drift import (
     normalize_schema_from_fields,
 )
 
-from .records import _estimate_size, infer_csv, infer_json, infer_records
+from .records import (
+    _estimate_size,
+    estimate_materialized_row,
+    infer_csv,
+    infer_json,
+    infer_records,
+)
 from .types import InferenceLimits, InferenceResult, SchemaEvidence
 
 _KNOWN_LOGICAL_TYPES = {
@@ -191,11 +196,12 @@ def _bounded_materialization(
             return None
     materialized_limit = _provider_materialized_limit(limits)
     estimate = _provider_size_estimate(bounded, byte_limit=materialized_limit)
-    if materialized_limit is not None:
-        if estimate is None and limits.max_materialized_bytes is not None:
-            raise _MaterializedLimitReached
-        if estimate is not None and estimate > materialized_limit:
-            raise _MaterializedLimitReached
+    if (
+        materialized_limit is not None
+        and estimate is not None
+        and estimate > materialized_limit
+    ):
+        raise _MaterializedLimitReached
     if (
         limits.timeout_seconds is not None
         and time.monotonic() - started >= limits.timeout_seconds
@@ -225,12 +231,15 @@ def _provider_provenance(
     preview: _BoundedView | None,
     *,
     limit_reason: str | None = None,
+    inference_sampled: bool = False,
 ) -> dict[str, Any]:
     limitations: list[str] = []
     if preview is None:
         limitations.append("bounded_preview_unavailable")
     elif preview.truncated:
         limitations.append("provider_preview_truncated_or_unverified")
+    elif result.provenance.get("sampled") is True or inference_sampled:
+        limitations.append("provider_preview_limited")
     provenance = {
         **result.provenance,
         "source": _provider_name(value),
@@ -238,7 +247,9 @@ def _provider_provenance(
         "method": method,
         "inspection_method": method,
         "limits": limits.to_dict(),
-        "sampled": bool(preview.truncated) if preview is not None else False,
+        "sampled": (bool(preview.truncated) if preview is not None else False)
+        or bool(result.provenance.get("sampled", False))
+        or inference_sampled,
         "limitations": limitations,
         "effective_materialized_bytes_limit": _provider_materialized_limit(limits),
         **(
@@ -328,17 +339,34 @@ def _provider_schema_from_preview(
     required_fields: tuple[str, ...] = (),
     nullable_fields: tuple[str, ...] = (),
 ) -> NormalizedSchema:
+    preview_fields = {field.name: field for field in preview_schema.fields}
     if provisional:
-        required = set(required_fields) if not conservative else set()
-        nullable = set(nullable_fields) if not conservative else set()
+        required = set(required_fields)
+        nullable = set(nullable_fields)
         return NormalizedSchema(
             identity=schema.identity,
             fields=tuple(
                 NormalizedField(
                     name=field.name,
                     logical_type=field.logical_type,
-                    required=field.required if field.name in required else False,
-                    nullable=field.nullable if field.name in nullable else True,
+                    required=(
+                        field.required and preview_fields[field.name].required
+                        if (
+                            field.name in required
+                            and field.name in preview_fields
+                            and not conservative
+                        )
+                        else False
+                    ),
+                    nullable=(
+                        field.nullable or preview_fields[field.name].nullable
+                        if (
+                            field.name in nullable
+                            and field.name in preview_fields
+                            and not conservative
+                        )
+                        else True
+                    ),
                     metadata=dict(field.metadata),
                 )
                 for field in schema.fields
@@ -349,7 +377,6 @@ def _provider_schema_from_preview(
         return schema
     if conservative:
         return schema
-    preview_fields = {field.name: field for field in preview_schema.fields}
     fields = tuple(
         NormalizedField(
             name=field.name,
@@ -393,10 +420,11 @@ def _infer_provider_records(
         identity=identity,
         retain_rows=True,
     )
+    sampled = preview.truncated or result.provenance.get("sampled") is True
     schema = _provider_schema_from_preview(
         result.schema,
         result.schema,
-        provisional=preview.truncated,
+        provisional=sampled,
         conservative=True,
     )
     provenance = _provider_provenance(result, value, limits, method, preview)
@@ -410,7 +438,7 @@ def _infer_provider_records(
     )
     return result.replace(
         schema=schema,
-        evidence=_mark_provider_evidence(result.evidence, truncated=preview.truncated),
+        evidence=_mark_provider_evidence(result.evidence, truncated=sampled),
         diagnostics=(
             *extra_diagnostics,
             *result.diagnostics,
@@ -420,34 +448,136 @@ def _infer_provider_records(
 
 
 def _provider_records(bounded: Any, limits: InferenceLimits) -> list[Any]:
-    """Convert a proven bounded provider view without retaining extra rows."""
+    """Stream a bounded provider view and retain rows only within the byte cap."""
     started = time.monotonic()
-    to_dicts = getattr(bounded, "to_dicts", None)
-    to_dict = getattr(bounded, "to_dict", None)
-    if callable(to_dicts):
-        records = to_dicts()
-    elif callable(to_dict):
-        try:
-            records = to_dict(orient="records")
-        except TypeError:
-            records = to_dict()
-    else:
-        raise _UnboundedProvider("bounded provider view has no record conversion")
-    if (
-        limits.timeout_seconds is not None
-        and time.monotonic() - started >= limits.timeout_seconds
+    module = type(bounded).__module__.split(".", 1)[0].casefold()
+    row_iterator: Iterable[Any]
+    if isinstance(bounded, Mapping):
+        row_iterator = cast(Iterable[Any], (bounded,))
+    elif callable(getattr(bounded, "iter_rows", None)):
+        row_iterator = bounded.iter_rows(named=True)
+    elif module == "pandas":
+        columns = tuple(str(name) for name in bounded.columns)
+        if len(set(columns)) != len(columns):
+            raise _UnboundedProvider("provider columns are not unique")
+        row_iterator = (
+            dict(zip(columns, values, strict=True))
+            for values in bounded.itertuples(index=False, name=None)
+        )
+    elif module == "pyarrow":
+        row_count = _bounded_row_count(bounded)
+        slice_rows = getattr(bounded, "slice", None)
+        if row_count is None or not callable(slice_rows):
+            raise _UnboundedProvider("provider has no bounded row iterator")
+
+        def arrow_rows() -> Iterable[Any]:
+            for index in range(row_count):
+                row_values = cast(
+                    list[Any], cast(Any, slice_rows(index, 1)).to_pylist()
+                )
+                if len(row_values) != 1:
+                    raise _UnboundedProvider("provider row conversion is unbounded")
+                yield row_values[0]
+
+        row_iterator = arrow_rows()
+    elif module == "datafusion":
+        execute_stream = getattr(bounded, "execute_stream", None)
+        if not callable(execute_stream):
+            raise _UnboundedProvider("provider has no bounded row stream")
+        stream = cast(Iterable[Any], execute_stream())
+
+        def datafusion_rows() -> Iterable[Any]:
+            for batch in stream:
+                to_pyarrow = getattr(batch, "to_pyarrow", None)
+                if not callable(to_pyarrow):
+                    raise _UnboundedProvider("provider batch conversion is unsupported")
+                arrow_batch = to_pyarrow()
+                row_count = _bounded_row_count(arrow_batch)
+                slice_rows = getattr(arrow_batch, "slice", None)
+                if row_count is None or not callable(slice_rows):
+                    raise _UnboundedProvider("provider batch conversion is unbounded")
+                for index in range(row_count):
+                    row_values = cast(
+                        list[Any], cast(Any, slice_rows(index, 1)).to_pylist()
+                    )
+                    if len(row_values) != 1:
+                        raise _UnboundedProvider("provider row conversion is unbounded")
+                    yield row_values[0]
+
+        row_iterator = datafusion_rows()
+    elif callable(getattr(bounded, "fetchmany", None)) and isinstance(
+        getattr(bounded, "columns", None), (list, tuple)
     ):
-        raise _UnboundedProvider("provider conversion exceeded the time budget")
-    if isinstance(records, Mapping):
-        records = [records]
-    elif not isinstance(records, (list, tuple)):
-        try:
-            records = list(islice(cast(Any, records), limits.max_rows + 1))
-        except TypeError as exc:
-            raise _UnboundedProvider("provider records are not iterable") from exc
-    if len(records) > limits.max_rows:
-        raise _UnboundedProvider("provider conversion exceeded max_rows")
-    return list(records)
+        columns = tuple(str(name) for name in bounded.columns)
+        fetchmany = bounded.fetchmany
+
+        def fetched_rows() -> Iterable[Any]:
+            while True:
+                batch = fetchmany(1)
+                if not batch:
+                    break
+                if len(batch) != 1:
+                    raise _UnboundedProvider("provider ignored the bounded fetch size")
+                row = batch[0]
+                if isinstance(row, Mapping):
+                    yield row
+                else:
+                    yield dict(zip(columns, row, strict=True))
+
+        row_iterator = fetched_rows()
+    else:
+        rows = getattr(bounded, "rows", None)
+        if rows is not None:
+            row_iterator = cast(Iterable[Any], rows)
+        elif getattr(bounded, "__etlantic_bounded_view__", False):
+            try:
+                row_iterator = iter(bounded)
+            except Exception:
+                raise _UnboundedProvider(
+                    "bounded provider view has no row iterator"
+                ) from None
+        else:
+            # ``to_dicts`` and ``to_dict`` typically allocate the complete
+            # converted table before inference can account for its byte size.
+            raise _UnboundedProvider("provider exposes only materializing converters")
+
+    materialized_limit = _provider_materialized_limit(limits)
+    deadline = (
+        started + limits.timeout_seconds if limits.timeout_seconds is not None else None
+    )
+    records: list[Any] = []
+    bytes_observed = 0
+    try:
+        iterator = iter(cast(Iterable[Any], row_iterator))
+    except Exception:
+        raise _UnboundedProvider("provider rows are not iterable") from None
+    for record in iterator:
+        if len(records) >= limits.max_rows:
+            raise _UnboundedProvider("provider conversion exceeded max_rows")
+        if not isinstance(record, Mapping):
+            raise _UnboundedProvider("provider row is not a mapping")
+        if materialized_limit is not None:
+            try:
+                record_bytes = estimate_materialized_row(
+                    record,
+                    bytes_observed=bytes_observed,
+                    byte_limit=materialized_limit,
+                    deadline=deadline,
+                )
+            except Exception:
+                raise _UnboundedProvider(
+                    "provider row size could not be bounded"
+                ) from None
+            if record_bytes is None:
+                raise _MaterializedLimitReached
+            bytes_observed += record_bytes
+        records.append(record)
+        if (
+            limits.timeout_seconds is not None
+            and time.monotonic() - started >= limits.timeout_seconds
+        ):
+            raise _UnboundedProvider("provider conversion exceeded the time budget")
+    return records
 
 
 def _looks_like_schema_mapping(value: Mapping[str, Any]) -> bool:
@@ -754,6 +884,26 @@ def _attach_provider_preview(
             identity=identity,
             retain_rows=True,
         )
+    except _MaterializedLimitReached:
+        return result.replace(
+            diagnostics=(
+                Diagnostic(
+                    "INFER_LIMIT",
+                    Severity.ERROR,
+                    "Provider materialized-byte limit reached",
+                    phase="inference",
+                ),
+                *result.diagnostics,
+            )[: limits.max_diagnostics],
+            provenance=_provider_provenance(
+                result,
+                value,
+                limits,
+                method,
+                bounded_preview,
+                limit_reason="materialized_bytes",
+            ),
+        )
     except _UnboundedProvider:
         return result.replace(
             diagnostics=(
@@ -784,15 +934,32 @@ def _attach_provider_preview(
                 result, value, limits, method, bounded_preview
             ),
         )
+    preview_sampled = bool(preview.provenance.get("sampled", False))
     observed_schema = _provider_schema_from_preview(
         result.schema,
         preview.schema,
-        provisional=bounded_preview.truncated,
+        provisional=bounded_preview.truncated or preview_sampled,
         conservative=False,
         required_fields=tuple(result.provenance.get("provider_required_fields", ())),
         nullable_fields=tuple(result.provenance.get("provider_nullable_fields", ())),
     )
-    provenance = _provider_provenance(result, value, limits, method, bounded_preview)
+    provenance = _provider_provenance(
+        result,
+        value,
+        limits,
+        method,
+        bounded_preview,
+        inference_sampled=preview_sampled,
+    )
+    if preview_sampled:
+        preview_limit_reason = preview.provenance.get("limit_reason")
+        if preview_limit_reason is not None:
+            provenance["limit_reason"] = preview_limit_reason
+        limit_reasons = [
+            *provenance.get("limit_reasons", ()),
+            *preview.provenance.get("limit_reasons", ()),
+        ]
+        provenance["limit_reasons"] = list(dict.fromkeys(limit_reasons))
     provenance.update(
         {
             "preview_rows_observed": preview.provenance.get(
@@ -807,7 +974,8 @@ def _attach_provider_preview(
         rows=preview.rows,
         replay=preview.replay,
         evidence=_mark_provider_evidence(
-            preview.evidence, truncated=bounded_preview.truncated
+            preview.evidence,
+            truncated=bounded_preview.truncated or preview_sampled,
         ),
         diagnostics=(
             *result.diagnostics,
@@ -1101,6 +1269,16 @@ def infer_source(
             )
         try:
             records = _provider_records(bounded_preview.value, limits)
+        except _MaterializedLimitReached:
+            return _provider_failure(
+                identity,
+                value,
+                limits,
+                method,
+                "INFER_LIMIT",
+                "Provider materialized-byte limit reached",
+                limit_reason="materialized_bytes",
+            )
         except _UnboundedProvider:
             return _provider_failure(
                 identity,
@@ -1157,6 +1335,16 @@ def infer_source(
             )
         try:
             converted = _provider_records(bounded_preview.value, limits)
+        except _MaterializedLimitReached:
+            return _provider_failure(
+                identity,
+                value,
+                limits,
+                method,
+                "INFER_LIMIT",
+                "Provider materialized-byte limit reached",
+                limit_reason="materialized_bytes",
+            )
         except _UnboundedProvider:
             return _provider_failure(
                 identity,

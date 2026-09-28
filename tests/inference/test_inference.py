@@ -290,8 +290,8 @@ def test_provider_preview_does_not_narrow_declared_field_flags() -> None:
     class View:
         __etlantic_bounded_view__ = True
 
-        def to_dicts(self):
-            return [{"id": 1}]
+        def __init__(self):
+            self.rows = [{"id": 1}]
 
     result = infer_source(Source(), identity="provider")
     field = result.schema.fields[0]

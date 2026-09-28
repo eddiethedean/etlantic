@@ -509,6 +509,32 @@ def _estimate_size(
     return total
 
 
+def estimate_materialized_row(
+    value: Any,
+    *,
+    bytes_observed: int,
+    byte_limit: int | None,
+    deadline: float | None = None,
+) -> int | None:
+    """Estimate one complete retained row against the remaining byte budget."""
+    try:
+        return _estimate_size(
+            value,
+            max_bytes=(byte_limit - bytes_observed if byte_limit is not None else None),
+            max_items=10_000,
+            max_fields=None,
+            deadline=deadline,
+        )
+    except _EstimateLimitExceeded:
+        return None
+
+
+def _json_materialized_limit(limits: InferenceLimits) -> int:
+    if limits.max_materialized_bytes is not None:
+        return limits.max_materialized_bytes
+    return InferenceLimits().max_bytes or 64 * 1024 * 1024
+
+
 def infer_records(
     records: Iterable[Mapping[str, Any]] | Mapping[str, Any],
     *,
@@ -1097,11 +1123,7 @@ def infer_csv(
             if key in opts
         }
     )
-    materialized_limit = (
-        limits.max_materialized_bytes
-        if limits.max_materialized_bytes is not None
-        else InferenceLimits().max_bytes
-    )
+    materialized_limit = _json_materialized_limit(limits)
     record_limits = InferenceLimits(
         max_rows=limits.max_rows,
         max_fields=limits.max_fields,
@@ -1592,15 +1614,23 @@ def infer_csv(
 
 def _read_json_array(
     path: str | Path, limits: InferenceLimits
-) -> tuple[list[Mapping[str, Any]], list[Diagnostic], bool, int]:
+) -> tuple[list[Mapping[str, Any]], list[Diagnostic], bool, int, str | None]:
     """Read a JSON array incrementally under the inference budgets."""
+    materialized_limit = _json_materialized_limit(limits)
     decoder = json.JSONDecoder()
     rows: list[Mapping[str, Any]] = []
     diagnostics: list[Diagnostic] = []
     buffer = ""
     bytes_observed = 0
     started_at = time.monotonic()
+    deadline = (
+        started_at + limits.timeout_seconds
+        if limits.timeout_seconds is not None
+        else None
+    )
     sampled = False
+    limit_reason: str | None = None
+    materialized_bytes = 0
     eof = False
     stopped = False
     items_seen = 0
@@ -1628,6 +1658,8 @@ def _read_json_array(
                     chunk_size,
                     max(1, limits.max_bytes - bytes_observed + 1),
                 )
+            remaining_materialized = materialized_limit - materialized_bytes
+            chunk_size = min(chunk_size, max(1, remaining_materialized + 1))
             chunk = handle.read(chunk_size)
             if not chunk:
                 eof = True
@@ -1657,7 +1689,7 @@ def _read_json_array(
                     return False
 
         if not refill():
-            return rows, diagnostics, sampled, bytes_observed
+            return rows, diagnostics, sampled, bytes_observed, limit_reason
         buffer = buffer.lstrip()
         if not buffer.startswith("["):
             _append_diag(
@@ -1669,7 +1701,7 @@ def _read_json_array(
                 ),
                 limits.max_diagnostics,
             )
-            return rows, diagnostics, sampled, bytes_observed
+            return rows, diagnostics, sampled, bytes_observed, limit_reason
         buffer = buffer[1:]
 
         while True:
@@ -1727,6 +1759,22 @@ def _read_json_array(
             try:
                 value, consumed = decoder.raw_decode(buffer)
             except json.JSONDecodeError:
+                if (
+                    len(buffer.encode("utf-8"))
+                    > materialized_limit - materialized_bytes
+                ):
+                    sampled = True
+                    stopped = True
+                    limit_reason = "materialized_bytes"
+                    _append_diag(
+                        diagnostics,
+                        _diag(
+                            "INFER_LIMIT",
+                            "JSON inference materialized-byte limit reached",
+                        ),
+                        limits.max_diagnostics,
+                    )
+                    break
                 if eof or not refill():
                     _append_diag(
                         diagnostics,
@@ -1743,7 +1791,51 @@ def _read_json_array(
             items_seen += 1
             after_comma = False
             if isinstance(value, Mapping):
+                try:
+                    row_bytes = estimate_materialized_row(
+                        value,
+                        bytes_observed=materialized_bytes,
+                        byte_limit=materialized_limit,
+                        deadline=deadline,
+                    )
+                except _EstimateTimeout:
+                    sampled = True
+                    stopped = True
+                    limit_reason = "time"
+                    _append_diag(
+                        diagnostics,
+                        _diag("INFER_LIMIT", "JSON inference time limit reached"),
+                        limits.max_diagnostics,
+                    )
+                    break
+                except _EstimateTraversalExceeded:
+                    sampled = True
+                    stopped = True
+                    limit_reason = "traversal"
+                    _append_diag(
+                        diagnostics,
+                        _diag(
+                            "INFER_LIMIT",
+                            "JSON inference row exceeded the traversal bound",
+                        ),
+                        limits.max_diagnostics,
+                    )
+                    break
+                if row_bytes is None:
+                    sampled = True
+                    stopped = True
+                    limit_reason = "materialized_bytes"
+                    _append_diag(
+                        diagnostics,
+                        _diag(
+                            "INFER_LIMIT",
+                            "JSON inference materialized-byte limit reached",
+                        ),
+                        limits.max_diagnostics,
+                    )
+                    break
                 rows.append(value)
+                materialized_bytes += row_bytes
             else:
                 _append_diag(
                     diagnostics,
@@ -1798,7 +1890,7 @@ def _read_json_array(
                     limits.max_diagnostics,
                 )
                 break
-    return rows, diagnostics, sampled, bytes_observed
+    return rows, diagnostics, sampled, bytes_observed, limit_reason
 
 
 def _infer_jsonl_bounded(
@@ -1810,16 +1902,19 @@ def _infer_jsonl_bounded(
     retain_rows: bool,
 ) -> InferenceResult:
     """Read JSON Lines through a byte-bounded binary boundary."""
-    materialized_limit = (
-        limits.max_materialized_bytes
-        if limits.max_materialized_bytes is not None
-        else InferenceLimits().max_bytes
-    )
+    materialized_limit = _json_materialized_limit(limits)
     rows: list[Mapping[str, Any]] = []
     diagnostics: list[Diagnostic] = []
     bytes_observed = 0
+    materialized_bytes = 0
     sampled = False
+    limit_reason: str | None = None
     started_at = time.monotonic()
+    deadline = (
+        started_at + limits.timeout_seconds
+        if limits.timeout_seconds is not None
+        else None
+    )
     try:
         with Path(path).open("rb") as handle:
             line_number = 0
@@ -1842,7 +1937,10 @@ def _infer_jsonl_bounded(
                     if limits.max_bytes is not None
                     else None
                 )
-                read_size = remaining + 1 if remaining is not None else -1
+                materialized_remaining = materialized_limit - materialized_bytes
+                read_size = materialized_remaining + 1
+                if remaining is not None:
+                    read_size = min(read_size, remaining + 1)
                 raw = handle.readline(read_size)
                 if not raw:
                     loop_completed = False
@@ -1857,6 +1955,19 @@ def _infer_jsonl_bounded(
                     )
                     break
                 bytes_observed += len(raw)
+                if len(raw) > materialized_limit - materialized_bytes:
+                    sampled = True
+                    loop_completed = False
+                    limit_reason = "materialized_bytes"
+                    _append_diag(
+                        diagnostics,
+                        _diag(
+                            "INFER_LIMIT",
+                            "JSONL inference materialized-byte limit reached",
+                        ),
+                        limits.max_diagnostics,
+                    )
+                    break
                 try:
                     line = raw.decode("utf-8")
                 except UnicodeDecodeError:
@@ -1896,7 +2007,51 @@ def _infer_jsonl_bounded(
                         limits.max_diagnostics,
                     )
                     continue
+                try:
+                    row_bytes = estimate_materialized_row(
+                        value,
+                        bytes_observed=materialized_bytes,
+                        byte_limit=materialized_limit,
+                        deadline=deadline,
+                    )
+                except _EstimateTimeout:
+                    sampled = True
+                    loop_completed = False
+                    limit_reason = "time"
+                    _append_diag(
+                        diagnostics,
+                        _diag("INFER_LIMIT", "JSONL inference time limit reached"),
+                        limits.max_diagnostics,
+                    )
+                    break
+                except _EstimateTraversalExceeded:
+                    sampled = True
+                    loop_completed = False
+                    limit_reason = "traversal"
+                    _append_diag(
+                        diagnostics,
+                        _diag(
+                            "INFER_LIMIT",
+                            "JSONL inference row exceeded the traversal bound",
+                        ),
+                        limits.max_diagnostics,
+                    )
+                    break
+                if row_bytes is None:
+                    sampled = True
+                    loop_completed = False
+                    limit_reason = "materialized_bytes"
+                    _append_diag(
+                        diagnostics,
+                        _diag(
+                            "INFER_LIMIT",
+                            "JSONL inference materialized-byte limit reached",
+                        ),
+                        limits.max_diagnostics,
+                    )
+                    break
                 rows.append(value)
+                materialized_bytes += row_bytes
             if loop_completed and line_number >= limits.max_rows:
                 probe = handle.readline(1)
                 if probe:
@@ -1945,10 +2100,18 @@ def _infer_jsonl_bounded(
             "source": "jsonl",
             "limits": limits.to_dict(),
             "sampled": sampled or bool(result.provenance.get("sampled", False)),
-            "limit_reason": result.provenance.get("limit_reason"),
-            "limit_reasons": list(result.provenance.get("limit_reasons", ())),
+            "limit_reason": limit_reason or result.provenance.get("limit_reason"),
+            "limit_reasons": list(
+                dict.fromkeys(
+                    (
+                        *result.provenance.get("limit_reasons", ()),
+                        *((limit_reason,) if limit_reason is not None else ()),
+                    )
+                )
+            ),
             "bytes_observed": bytes_observed,
             "raw_bytes_observed": bytes_observed,
+            "materialized_bytes_observed": materialized_bytes,
             "effective_materialized_bytes_limit": materialized_limit,
         },
         result.rows,
@@ -2094,7 +2257,9 @@ def infer_json(
                     result.rows,
                     result.replay,
                 )
-        rows, diagnostics, sampled, bytes_observed = _read_json_array(path, limits)
+        rows, diagnostics, sampled, bytes_observed, reader_limit_reason = (
+            _read_json_array(path, limits)
+        )
         result = infer_records(
             rows,
             hints=hints,
@@ -2118,10 +2283,25 @@ def infer_json(
                 "source": "json",
                 "limits": limits.to_dict(),
                 "sampled": sampled or bool(result.provenance.get("sampled", False)),
-                "limit_reason": result.provenance.get("limit_reason"),
-                "limit_reasons": list(result.provenance.get("limit_reasons", ())),
+                "limit_reason": reader_limit_reason
+                or result.provenance.get("limit_reason"),
+                "limit_reasons": list(
+                    dict.fromkeys(
+                        (
+                            *result.provenance.get("limit_reasons", ()),
+                            *(
+                                (reader_limit_reason,)
+                                if reader_limit_reason is not None
+                                else ()
+                            ),
+                        )
+                    )
+                ),
                 "bytes_observed": bytes_observed,
                 "raw_bytes_observed": bytes_observed,
+                "materialized_bytes_observed": result.provenance.get(
+                    "materialized_bytes_observed", 0
+                ),
                 "effective_materialized_bytes_limit": materialized_limit,
             },
             result.rows,

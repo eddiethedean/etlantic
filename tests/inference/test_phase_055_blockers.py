@@ -3,8 +3,9 @@
 
 import asyncio
 import json
-from collections.abc import ItemsView, Iterator, Mapping
+from collections.abc import ItemsView, Iterator, Mapping, Sequence
 from decimal import Decimal
+from pathlib import Path
 
 import etlantic as etl
 from etlantic.inference.facade import _eval
@@ -145,8 +146,8 @@ def test_async_provider_preview_matches_sync_bounded_preview() -> None:
     class View:
         __etlantic_bounded_view__ = True
 
-        def to_dicts(self):
-            return [{"id": 1}, {"id": 2}]
+        def __init__(self):
+            self.rows = [{"id": 1}, {"id": 2}]
 
     class Provider:
         async def inspect_schema(self):
@@ -279,6 +280,119 @@ def test_provider_materialization_limit_is_checked_before_record_conversion() ->
     assert result.provenance["effective_materialized_bytes_limit"] == 1
     assert result.provenance["sampled"] is True
     assert result.provenance["limit_reason"] == "materialized_bytes"
+
+
+def test_provider_stream_is_accounted_before_rows_are_retained() -> None:
+    yielded: list[str] = []
+
+    class View:
+        __etlantic_bounded_view__ = True
+        estimated_size = 1
+
+        def iter_rows(self, *, named: bool):
+            assert named is True
+            yielded.append("large")
+            yield {"value": "x" * 200}
+            raise AssertionError("conversion should stop at the first oversized row")
+
+    class Provider:
+        def head(self, count: int):
+            return View()
+
+        def to_dicts(self):
+            raise AssertionError("materializing conversion must not be called")
+
+    result = etl.infer_source(
+        Provider(),
+        limits=etl.InferenceLimits(max_bytes=1_000, max_materialized_bytes=64),
+    )
+
+    assert yielded == ["large"]
+    assert result.provenance["sampled"] is True
+    assert result.provenance["limit_reason"] == "materialized_bytes"
+    assert "INFER_LIMIT" in {item.code for item in result.diagnostics}
+
+
+def test_provider_preview_refines_explicit_nullability_on_a_sample() -> None:
+    class View:
+        __etlantic_bounded_view__ = True
+
+        def __init__(self, rows: Sequence[Mapping[str, object]]) -> None:
+            self.rows = list(rows)
+
+    class Provider:
+        def __init__(self):
+            self.schema = {
+                "fields": [
+                    {
+                        "name": "value",
+                        "type": "string",
+                        "required": True,
+                        "nullable": False,
+                    }
+                ]
+            }
+            self.rows = [{"value": None}, {"value": "later"}]
+
+        def __len__(self) -> int:
+            return len(self.rows)
+
+        def head(self, count: int) -> View:
+            return View(self.rows[:count])
+
+    result = etl.infer_source(Provider(), limits=etl.InferenceLimits(max_rows=1))
+
+    assert result.provenance["sampled"] is True
+    assert result.schema.fields[0].nullable is True
+
+
+def test_provider_metadata_preserves_sampling_from_preview_inference() -> None:
+    class View:
+        __etlantic_bounded_view__ = True
+
+        def __init__(self) -> None:
+            self.rows = [{"id": 1, "extra": 2}]
+
+    class Provider:
+        def __init__(self) -> None:
+            self.schema = {
+                "fields": [
+                    {"name": "id", "type": "integer"},
+                    {"name": "extra", "type": "integer"},
+                ]
+            }
+
+        def __len__(self) -> int:
+            return 1
+
+        def head(self, count: int) -> View:
+            return View()
+
+    result = etl.infer_source(
+        Provider(), limits=etl.InferenceLimits(max_rows=10, max_fields=1)
+    )
+
+    assert result.provenance["sampled"] is True
+    assert all(not field.required and field.nullable for field in result.schema.fields)
+
+
+def test_json_materialization_limit_is_enforced_while_reading(tmp_path: Path) -> None:
+    jsonl = tmp_path / "rows.jsonl"
+    jsonl.write_text('{"id": 1}\n{"payload": "' + "x" * 200 + '"}\n')
+    array = tmp_path / "rows.json"
+    array.write_text('[{"id": 1}, {"payload": "' + "x" * 200 + '"}]')
+
+    limits = etl.InferenceLimits(max_bytes=1_000, max_materialized_bytes=64)
+    results = [
+        etl.infer_json(jsonl, lines=True, limits=limits, retain_rows=True),
+        etl.infer_json(array, limits=limits, retain_rows=True),
+    ]
+
+    for result in results:
+        assert result.provenance["sampled"] is True
+        assert result.provenance["limit_reason"] == "materialized_bytes"
+        assert result.provenance["materialized_bytes_observed"] <= 64
+        assert len(result.rows) == 1
 
 
 def test_mixed_decimal_and_float_use_lossless_decimal_policy() -> None:
