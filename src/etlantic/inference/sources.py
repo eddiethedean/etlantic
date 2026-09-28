@@ -98,11 +98,11 @@ async def _await_with_deadline(value: Any, deadline: float | None) -> Any:
         raise
     if deadline is None:
         return await value
-    remaining = deadline - time.monotonic()
+    task = asyncio.ensure_future(value)
     try:
-        return await asyncio.wait_for(value, timeout=remaining)
+        return await asyncio.wait_for(task, timeout=deadline - time.monotonic())
     except TimeoutError:
-        if time.monotonic() >= deadline:
+        if task.cancelled() or time.monotonic() >= deadline:
             raise _InferenceTimeout from None
         raise
 

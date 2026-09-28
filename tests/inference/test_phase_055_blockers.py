@@ -531,3 +531,18 @@ def test_mixed_decimal_and_float_use_lossless_decimal_policy() -> None:
     )
     assert result.schema.fields[0].logical_type == "decimal"
     assert all(isinstance(row["x"], Decimal) for row in result.rows)
+
+
+def test_async_provider_timeout_is_not_misreported_as_an_inference_limit() -> None:
+    class Provider:
+        async def inspect_schema(self):
+            raise TimeoutError("connector request timed out")
+
+    result = asyncio.run(
+        etl.infer_source_async(
+            Provider(), limits=etl.InferenceLimits(timeout_seconds=1)
+        )
+    )
+
+    assert "INFER_SOURCE_UNKNOWN" in {item.code for item in result.diagnostics}
+    assert "INFER_LIMIT" not in {item.code for item in result.diagnostics}
