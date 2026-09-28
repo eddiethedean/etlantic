@@ -109,10 +109,14 @@ def test_truncated_pandas_and_polars_previews_are_provisional() -> None:
         }
         assert result.provenance["limits"]["max_rows"] == 1
         assert result.provenance["sampled"] is True
-        assert "provider_preview_truncated_or_unverified" in result.provenance[
-            "limitations"
-        ]
-        assert all(field.required is False and field.nullable is True for field in result.schema.fields)
+        assert (
+            "provider_preview_truncated_or_unverified"
+            in result.provenance["limitations"]
+        )
+        assert all(
+            field.required is False and field.nullable is True
+            for field in result.schema.fields
+        )
         assert all(evidence.sampled for evidence in result.evidence)
         assert {field.name for field in result.schema.fields} == {"id", "late"}
 

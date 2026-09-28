@@ -357,8 +357,7 @@ def _provider_schema_from_preview(
             required=(
                 False
                 if conservative
-                else field.required
-                and preview_fields.get(field.name, field).required
+                else field.required and preview_fields.get(field.name, field).required
             ),
             nullable=(
                 True
@@ -411,9 +410,7 @@ def _infer_provider_records(
     )
     return result.replace(
         schema=schema,
-        evidence=_mark_provider_evidence(
-            result.evidence, truncated=preview.truncated
-        ),
+        evidence=_mark_provider_evidence(result.evidence, truncated=preview.truncated),
         diagnostics=(
             *extra_diagnostics,
             *result.diagnostics,
@@ -743,9 +740,7 @@ def _attach_provider_preview(
                     ),
                     *result.diagnostics,
                 ),
-                provenance=_provider_provenance(
-                    result, value, limits, method, None
-                ),
+                provenance=_provider_provenance(result, value, limits, method, None),
             )
         return result.replace(
             provenance=_provider_provenance(result, value, limits, method, None)

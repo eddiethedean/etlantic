@@ -970,9 +970,7 @@ def test_json_sources_enforce_materialized_byte_limit(tmp_path, lines: bool) -> 
     suffix = ".jsonl" if lines else ".json"
     path = tmp_path / f"bounded{suffix}"
     path.write_text(
-        '{"value":"abcdefghij"}\n'
-        if lines
-        else '[{"value":"abcdefghij"}]',
+        '{"value":"abcdefghij"}\n' if lines else '[{"value":"abcdefghij"}]',
         encoding="utf-8",
     )
 

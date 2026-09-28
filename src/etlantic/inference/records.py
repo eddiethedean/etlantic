@@ -611,7 +611,9 @@ def infer_records(
             break
         except (_EstimateTraversalExceeded, _EstimateTimeout) as exc:
             sampled = True
-            sampled_reason = "time" if isinstance(exc, _EstimateTimeout) else "traversal"
+            sampled_reason = (
+                "time" if isinstance(exc, _EstimateTimeout) else "traversal"
+            )
             replay_remainder = chain((item,), iterator)
             _append_diag(
                 diagnostics,
@@ -627,8 +629,7 @@ def infer_records(
         except _EstimateProviderFailure as exc:
             diagnostic = _diag(
                 "INFER_SOURCE_UNSUPPORTED",
-                "Record provider failed during size estimation: "
-                f"{exc.exception_type}",
+                f"Record provider failed during size estimation: {exc.exception_type}",
                 severity=Severity.ERROR,
             )
             _append_diag(diagnostics, diagnostic, limits.max_diagnostics)
