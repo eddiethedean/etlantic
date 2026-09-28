@@ -178,7 +178,7 @@ def test_preview_conversion_filter_matches_polars_portable_execution() -> None:
     engine_result = bundle.valid["result"]
 
     assert preview.preview() == engine_result.to_dicts() == [{"raw": "10"}]
-    assert _schema_signature(preview) == [("raw", "string", True, False)]
+    assert _schema_signature(preview) == [("raw", "string", True, True)]
     assert engine_result.schema["raw"] == pl.String
     assert not any(
         getattr(item.severity, "value", item.severity) == "error"

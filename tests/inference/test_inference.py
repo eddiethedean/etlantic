@@ -29,10 +29,33 @@ def test_records_inference_promotes_across_all_rows_and_tracks_missing() -> None
     result = infer_records(row for row in [{"id": 1}, {"id": 2.5, "name": "a"}])
     fields = {field.name: field for field in result.schema.fields}
     assert fields["id"].logical_type == "number"
-    assert fields["name"].nullable is True
+    assert fields["name"].required is False
+    assert fields["name"].nullable is False
     assert result.provenance["rows_observed"] == 2
     assert "rows" not in result.to_dict()
     assert "rows" not in result.to_dict(include_rows=True)
+
+
+def test_records_inference_separates_required_presence_from_nullability() -> None:
+    result = infer_records([{"id": None}, {"id": 1}])
+
+    field = result.schema.fields[0]
+    assert field.required is True
+    assert field.nullable is True
+
+
+def test_records_inference_missing_field_is_optional_but_not_nullable() -> None:
+    result = infer_records([{"id": 1}, {}])
+
+    field = result.schema.fields[0]
+    assert field.required is False
+    assert field.nullable is False
+    assert result.evidence[0].null_values == 0
+    assert result.evidence[0].missing_values == 1
+    model = etl.model_from_schema(result.schema)
+    model.model_validate({})
+    with pytest.raises(ValidationError):
+        model.model_validate({"id": None})
 
 
 def test_records_inference_preserves_first_seen_field_order() -> None:
@@ -371,8 +394,10 @@ def test_target_backfill_marks_unvalidated_replay_and_fails_lazily() -> None:
     assert dataset.provenance["target_validation"] == "prefix_only"
     assert dataset.provenance["target_validation_fields"] == ["id"]
     assert dataset.replay is not None
+    replay = dataset.replay
+    assert replay is not None
     with pytest.raises(etl.InferenceReplayError) as error:
-        list(dataset.replay.take())
+        list(replay.take())
     assert error.value.row_index == 1
     assert error.value.diagnostic.code == "INFER_RUNTIME_CONVERSION"
     assert "bad" not in str(error.value)
@@ -442,6 +467,358 @@ def test_target_backfill_marks_replay_complete_after_valid_remainder() -> None:
     assert list(dataset.replay.take()) == [{"id": 1}, {"id": 2}]
     assert dataset.provenance["target_validation"] == "complete"
     assert dataset.provenance["replay_status"]["state"] == "complete"
+
+
+@pytest.mark.parametrize(
+    ("late_row", "constraint"),
+    [
+        ({"id": None}, "nullability"),
+        ({}, "required_presence"),
+    ],
+)
+def test_target_replay_rejects_late_required_and_nullability_violations(
+    late_row: dict[str, object], constraint: str
+) -> None:
+    target = NormalizedSchema(
+        "target",
+        (NormalizedField("id", "integer", required=True, nullable=False),),
+    )
+    dataset = etl.from_records_for_target(
+        iter(({"id": 1}, late_row)),
+        target,
+        limits=InferenceLimits(max_rows=1),
+        target_identity="target:users",
+    )
+
+    assert dataset.provenance["target_validation"] == "prefix_only"
+    compatibility = dataset.check_write(target)
+    assert compatibility.status == "conditional"
+    assert compatibility.obligations
+
+    with pytest.raises(etl.InferenceReplayError) as error:
+        list(dataset.replay.take())
+
+    assert error.value.row_index == 1
+    assert error.value.diagnostic.code == "INFER_RUNTIME_CONSTRAINT"
+    assert error.value.diagnostic.metadata["constraint"] == constraint
+    assert dataset.provenance["target_validation"] == "failed"
+    assert dataset.check_write(target).status == "conflict"
+    assert "None" not in str(error.value)
+
+
+def test_check_write_fails_closed_without_replay_bound_to_requested_target() -> None:
+    strict_target = NormalizedSchema(
+        "strict",
+        (NormalizedField("id", "integer", required=True, nullable=False),),
+    )
+    raw_dataset = etl.from_records(
+        iter(({"id": 1}, {"id": None})),
+        limits=InferenceLimits(max_rows=1),
+    )
+
+    raw_compatibility = raw_dataset.check_write(strict_target)
+
+    assert raw_compatibility.status == "conflict"
+    assert "INFER_TARGET_UNKNOWN" in {
+        diagnostic.code for diagnostic in raw_compatibility.diagnostics
+    }
+
+    bound_target_with_default = NormalizedSchema(
+        "bound",
+        (
+            NormalizedField(
+                "id",
+                "integer",
+                required=True,
+                nullable=False,
+                metadata={"default": 0},
+            ),
+        ),
+    )
+    requested_target_without_default = NormalizedSchema(
+        "requested",
+        (NormalizedField("id", "integer", required=True, nullable=False),),
+    )
+    bound_dataset = etl.from_records_for_target(
+        iter(({"id": 1}, {})),
+        bound_target_with_default,
+        limits=InferenceLimits(max_rows=1),
+    )
+
+    requested_compatibility = bound_dataset.check_write(
+        requested_target_without_default
+    )
+
+    assert requested_compatibility.status == "conflict"
+    assert "INFER_TARGET_UNKNOWN" in {
+        diagnostic.code for diagnostic in requested_compatibility.diagnostics
+    }
+    assert list(bound_dataset.replay.take()) == [{"id": 1}, {}]
+    assert bound_dataset.provenance["target_validation"] == "complete"
+
+
+def test_check_write_fails_closed_after_sampled_replay_is_partially_consumed() -> None:
+    target = NormalizedSchema(
+        "target",
+        (NormalizedField("id", "integer", required=True, nullable=False),),
+    )
+    dataset = etl.from_records_for_target(
+        iter(({"id": 1}, {"id": 2})),
+        target,
+        limits=InferenceLimits(max_rows=1),
+    )
+    replay = dataset.replay
+    assert replay is not None
+    replay_iterator = replay.take()
+
+    assert next(replay_iterator) == {"id": 1}
+    compatibility = dataset.check_write(target)
+
+    assert compatibility.status == "conflict"
+    assert "INFER_TARGET_UNKNOWN" in {
+        diagnostic.code for diagnostic in compatibility.diagnostics
+    }
+
+
+def test_target_replay_rejects_late_type_drift_when_inferred_and_target_types_match() -> (
+    None
+):
+    target = NormalizedSchema(
+        "target",
+        (NormalizedField("id", "integer", required=True, nullable=False),),
+    )
+    dataset = etl.from_records_for_target(
+        iter(({"id": 1}, {"id": "not-an-integer"})),
+        target,
+        limits=InferenceLimits(max_rows=1),
+    )
+
+    assert dataset.provenance["target_validation"] == "prefix_only"
+    with pytest.raises(etl.InferenceReplayError) as error:
+        list(dataset.replay.take())
+
+    assert error.value.row_index == 1
+    assert error.value.diagnostic.code == "INFER_RUNTIME_CONVERSION"
+    assert "not-an-integer" not in str(error.value)
+    assert dataset.provenance["target_validation"] == "failed"
+
+
+def test_target_replay_checks_type_for_optional_nullable_fields() -> None:
+    target = NormalizedSchema(
+        "target",
+        (NormalizedField("value", "integer", required=False, nullable=True),),
+    )
+    dataset = etl.from_records_for_target(
+        iter(({"value": 1}, {"value": "not-an-integer"})),
+        target,
+        limits=InferenceLimits(max_rows=1),
+    )
+
+    assert dataset.provenance["target_validation"] == "prefix_only"
+    compatibility = dataset.check_write(target)
+    assert compatibility.status == "conditional"
+    assert any(
+        obligation["field"] == "value" and "target_type" in obligation["constraints"]
+        for obligation in compatibility.obligations
+    )
+
+    replay = dataset.replay
+    assert replay is not None
+    with pytest.raises(etl.InferenceReplayError) as error:
+        list(replay.take())
+
+    assert error.value.row_index == 1
+    assert error.value.diagnostic.code == "INFER_RUNTIME_CONVERSION"
+    assert dataset.provenance["target_validation"] == "failed"
+    assert dataset.check_write(target).status == "conflict"
+
+
+def test_target_replay_checks_optional_field_first_seen_after_sample() -> None:
+    target = NormalizedSchema(
+        "target",
+        (NormalizedField("value", "string", required=False, nullable=True),),
+    )
+    rows: list[dict[str, object]] = [{}, {"value": 7}]
+    dataset = etl.from_records_for_target(
+        iter(rows), target, limits=InferenceLimits(max_rows=1)
+    )
+
+    assert dataset.provenance["target_validation"] == "prefix_only"
+    compatibility = dataset.check_write(target)
+    assert compatibility.status == "conditional"
+    assert any(
+        obligation["field"] == "value" and "target_type" in obligation["constraints"]
+        for obligation in compatibility.obligations
+    )
+
+    replay = dataset.replay
+    assert replay is not None
+    with pytest.raises(etl.InferenceReplayError) as error:
+        list(replay.take())
+
+    assert error.value.row_index == 1
+    assert error.value.diagnostic.code == "INFER_RUNTIME_CONVERSION"
+    assert dataset.provenance["target_validation"] == "failed"
+
+
+def test_target_replay_rejects_fields_outside_target_schema() -> None:
+    target = NormalizedSchema(
+        "target",
+        (NormalizedField("id", "integer", required=True, nullable=False),),
+    )
+    rows: list[dict[str, object]] = [
+        {"id": 1},
+        {"id": 2, "extra": "private-value"},
+    ]
+    dataset = etl.from_records_for_target(
+        iter(rows), target, limits=InferenceLimits(max_rows=1)
+    )
+
+    assert dataset.check_write(target).status == "conditional"
+    replay = dataset.replay
+    assert replay is not None
+    with pytest.raises(etl.InferenceReplayError) as error:
+        list(replay.take())
+
+    assert error.value.row_index == 1
+    assert error.value.diagnostic.code == "INFER_RUNTIME_CONSTRAINT"
+    assert error.value.diagnostic.metadata["constraint"] == "unexpected_field"
+    assert "private-value" not in str(error.value)
+    assert dataset.provenance["target_validation"] == "failed"
+    assert dataset.check_write(target).status == "conflict"
+
+
+@pytest.mark.parametrize(
+    ("nullable", "expected_constraint"),
+    [(True, None), (False, "nullability")],
+)
+def test_target_replay_treats_nan_as_null_for_nullability(
+    nullable: bool, expected_constraint: str | None
+) -> None:
+    target = NormalizedSchema(
+        "target",
+        (NormalizedField("value", "number", required=True, nullable=nullable),),
+    )
+    dataset = etl.from_records_for_target(
+        iter(({"value": 1.0}, {"value": float("nan")})),
+        target,
+        limits=InferenceLimits(max_rows=1),
+    )
+    replay = dataset.replay
+    assert replay is not None
+
+    if nullable:
+        replayed = list(replay.take())
+        assert replayed[1]["value"] != replayed[1]["value"]
+        assert dataset.provenance["target_validation"] == "complete"
+    else:
+        with pytest.raises(etl.InferenceReplayError) as error:
+            list(replay.take())
+        assert error.value.diagnostic.code == "INFER_RUNTIME_CONSTRAINT"
+        assert error.value.diagnostic.metadata["constraint"] == expected_constraint
+        assert dataset.provenance["target_validation"] == "failed"
+
+
+@pytest.mark.parametrize(
+    ("logical_type", "default", "nullable"),
+    [("integer", None, False), ("integer", "not-an-integer", False)],
+)
+def test_invalid_target_default_does_not_allow_missing_required_field(
+    logical_type: str, default: object, nullable: bool
+) -> None:
+    target = NormalizedSchema(
+        "target",
+        (
+            NormalizedField(
+                "value",
+                logical_type,
+                required=True,
+                nullable=nullable,
+                metadata={"default": default},
+            ),
+        ),
+    )
+    dataset = etl.from_records_for_target([{}], target)
+
+    assert dataset.provenance["target_validation"] == "failed"
+    assert dataset.check_write(target).status == "conflict"
+
+
+def test_target_replay_accepts_null_for_required_nullable_field() -> None:
+    target = NormalizedSchema(
+        "target",
+        (NormalizedField("id", "integer", required=True, nullable=True),),
+    )
+    dataset = etl.from_records_for_target(
+        iter(({"id": 1}, {"id": None})),
+        target,
+        limits=InferenceLimits(max_rows=1),
+    )
+
+    assert list(dataset.replay.take()) == [{"id": 1}, {"id": None}]
+    assert dataset.provenance["target_validation"] == "complete"
+    assert dataset.check_write(target).status == "proven"
+
+
+def test_required_nullable_target_accepts_null_in_inference_prefix() -> None:
+    target = NormalizedSchema(
+        "target",
+        (NormalizedField("id", "integer", required=True, nullable=True),),
+    )
+    dataset = etl.from_records_for_target([{"id": None}, {"id": 1}], target)
+
+    field = dataset.schema.fields[0]
+    assert field.required is True
+    assert field.nullable is True
+    assert dataset.provenance["target_validation"] == "complete"
+    assert dataset.check_write(target).status == "proven"
+
+
+def test_check_write_conflicts_when_full_observation_found_bad_cast() -> None:
+    target = NormalizedSchema(
+        "target",
+        (NormalizedField("id", "integer", required=True, nullable=False),),
+    )
+    dataset = etl.from_records_for_target([{"id": "1"}, {"id": "bad"}], target)
+
+    assert dataset.provenance["sampled"] is False
+    assert dataset.provenance["target_validation"] == "failed"
+    compatibility = dataset.check_write(target)
+    assert compatibility.status == "conflict"
+    assert "INFER_RUNTIME_CONVERSION" in {
+        diagnostic.code for diagnostic in compatibility.diagnostics
+    }
+
+
+@pytest.mark.parametrize(
+    ("logical_type", "default"),
+    [("boolean", False), ("integer", 0), ("string", "")],
+)
+def test_target_replay_accepts_omitted_fields_with_falsey_defaults(
+    logical_type: str, default: object
+) -> None:
+    target = NormalizedSchema(
+        "target",
+        (
+            NormalizedField(
+                "value",
+                logical_type,
+                required=True,
+                nullable=False,
+                metadata={"default": default},
+            ),
+        ),
+    )
+    rows: list[dict[str, object]] = [{}, {}]
+    dataset = etl.from_records_for_target(
+        iter(rows), target, limits=InferenceLimits(max_rows=1)
+    )
+
+    assert dataset.provenance["target_validation"] == "prefix_only"
+    replay = dataset.replay
+    assert replay is not None
+    assert list(replay.take()) == [{}, {}]
+    assert dataset.provenance["target_validation"] == "complete"
 
 
 def test_target_replay_failure_is_revision_bound_and_wire_safe() -> None:
@@ -779,3 +1156,212 @@ def test_target_and_write_compatibility_wire_round_trip() -> None:
     restored = etl.WriteCompatibility.from_dict(compatibility.to_dict())
     assert restored.mode == "merge"
     assert restored.casts == {"id": "number"}
+
+
+def test_check_write_conflicts_for_stale_target_observation() -> None:
+    target_schema = NormalizedSchema(
+        "sink",
+        (NormalizedField("id", "integer"),),
+    )
+    target = etl.TargetObservation(
+        target_schema,
+        "present",
+        revision="r1",
+        metadata={"identity": "sink"},
+    )
+    dataset = etl.from_records_for_target(
+        [{"id": 1}, {"id": 2}],
+        target,
+        expected_revision="r2",
+    )
+
+    assert dataset.provenance["sampled"] is False
+    assert dataset.provenance["target_validation"] == "stale"
+
+    compatibility = dataset.check_write(target_schema)
+
+    assert compatibility.status == "conflict"
+    assert "INFER_TARGET_STALE" in {
+        diagnostic.code for diagnostic in compatibility.diagnostics
+    }
+
+
+def test_check_write_conflicts_when_source_inference_has_invalid_record() -> None:
+    target = NormalizedSchema(
+        "target",
+        (NormalizedField("id", "integer", required=True, nullable=False),),
+    )
+    dataset = etl.from_records_for_target([{"id": 1}, "not-a-record"], target)
+
+    assert dataset.provenance["target_validation"] == "failed"
+    assert "INFER_INVALID_KEY" in {
+        diagnostic.code for diagnostic in dataset.diagnostics
+    }
+
+    compatibility = dataset.check_write(target)
+
+    assert compatibility.status == "conflict"
+    assert "INFER_INVALID_KEY" in {
+        diagnostic.code for diagnostic in compatibility.diagnostics
+    }
+
+
+@pytest.mark.parametrize("target_bound", [False, True])
+def test_check_write_preserves_source_inference_errors_for_a_different_target(
+    target_bound: bool,
+) -> None:
+    observed_target = NormalizedSchema(
+        "observed",
+        (NormalizedField("id", "integer", required=True, nullable=False),),
+    )
+    requested_target = NormalizedSchema(
+        "requested",
+        (NormalizedField("id", "integer", required=True, nullable=True),),
+    )
+    records = [{"id": 1}, "not-a-record"]
+    dataset = (
+        etl.from_records_for_target(records, observed_target)
+        if target_bound
+        else etl.from_records(records)
+    )
+
+    compatibility = dataset.check_write(requested_target)
+
+    assert compatibility.status == "conflict"
+    assert "INFER_INVALID_KEY" in {
+        diagnostic.code for diagnostic in compatibility.diagnostics
+    }
+
+
+def test_check_write_fails_closed_when_source_error_exceeds_diagnostic_limit() -> None:
+    dataset = etl.from_records(
+        [{"": 1}, "not-a-record"],
+        limits=InferenceLimits(max_diagnostics=1),
+    )
+
+    assert dataset.provenance["source_validation"] == "failed"
+    assert len(dataset.diagnostics) == 1
+    assert dataset.diagnostics[0].severity.value == "warning"
+
+    compatibility = dataset.check_write(dataset.schema)
+
+    assert compatibility.status == "conflict"
+    assert "INFER_SOURCE_INVALID" in {
+        diagnostic.code for diagnostic in compatibility.diagnostics
+    }
+
+
+def test_csv_parser_failure_survives_a_full_diagnostic_limit(tmp_path) -> None:
+    path = tmp_path / "malformed.csv"
+    path.write_text('id,name\n1,Ada,extra\n"unterminated\n', encoding="utf-8")
+
+    dataset = etl.read_csv(
+        str(path),
+        options={"strict": True},
+        limits=InferenceLimits(max_diagnostics=1),
+    )
+
+    assert len(dataset.diagnostics) == 1
+    assert dataset.diagnostics[0].code == "INFER_CSV_ROW"
+    assert dataset.provenance["source_validation"] == "failed"
+
+    compatibility = dataset.check_write(dataset.schema)
+
+    assert compatibility.status == "conflict"
+    assert "INFER_SOURCE_INVALID" in {
+        diagnostic.code for diagnostic in compatibility.diagnostics
+    }
+
+
+def test_check_write_fails_closed_when_provider_schema_inspection_fails() -> None:
+    class BrokenSource:
+        def schema(self) -> dict[str, str]:
+            raise RuntimeError("private provider detail")
+
+    dataset = etl.from_polars(BrokenSource())
+    target = NormalizedSchema(
+        "target",
+        (NormalizedField("optional", "integer", required=False, nullable=True),),
+    )
+
+    compatibility = dataset.check_write(target)
+
+    assert compatibility.status == "conflict"
+    assert "INFER_SOURCE_UNKNOWN" in {
+        diagnostic.code for diagnostic in compatibility.diagnostics
+    }
+    assert "private provider detail" not in str(compatibility.to_dict())
+
+
+def test_target_replay_keeps_source_failure_after_capped_diagnostic() -> None:
+    target = NormalizedSchema(
+        "target",
+        (NormalizedField("id", "integer", required=True, nullable=False),),
+    )
+    dataset = etl.from_records_for_target(
+        [{"id": 1, "": 0}, "not-a-record", {"id": 2}],
+        target,
+        limits=InferenceLimits(max_rows=2, max_diagnostics=1),
+    )
+
+    assert dataset.provenance["source_validation"] == "failed"
+    assert dataset.provenance["target_validation"] == "failed"
+    assert len(dataset.diagnostics) == 1
+    assert dataset.check_write(target).status == "conflict"
+    assert "INFER_SOURCE_INVALID" in {
+        diagnostic.code for diagnostic in dataset.check_write(target).diagnostics
+    }
+
+    replay = dataset.replay
+    assert replay is not None
+    assert list(replay.take()) == [{"id": 1}, {"id": 2}]
+    assert dataset.provenance["source_validation"] == "failed"
+    assert dataset.provenance["target_validation"] == "failed"
+    assert dataset.check_write(target).status == "conflict"
+
+
+def test_check_write_fails_closed_when_source_iterator_errors_during_replay() -> None:
+    def records():
+        yield {"id": 1}
+        yield {"id": 2}
+        raise RuntimeError("private provider detail")
+
+    target = NormalizedSchema(
+        "target",
+        (NormalizedField("id", "integer", required=True, nullable=False),),
+    )
+    dataset = etl.from_records_for_target(
+        records(), target, limits=InferenceLimits(max_rows=1)
+    )
+    replay = dataset.replay
+    assert replay is not None
+
+    with pytest.raises(etl.InferenceReplayError) as error:
+        list(replay.take())
+
+    assert error.value.row_index == 2
+    assert error.value.diagnostic.code == "INFER_SOURCE_UNSUPPORTED"
+    assert "private provider detail" not in str(error.value)
+    assert dataset.provenance["source_validation"] == "failed"
+    assert dataset.provenance["target_validation"] == "failed"
+    assert dataset.check_write(target).status == "conflict"
+
+
+def test_check_write_allows_optional_source_field_with_target_default() -> None:
+    dataset = etl.from_records([{"id": 1}, {}])
+    target = NormalizedSchema(
+        "target",
+        (
+            NormalizedField(
+                "id",
+                "integer",
+                required=True,
+                nullable=False,
+                metadata={"default": 0},
+            ),
+        ),
+    )
+
+    compatibility = dataset.check_write(target)
+
+    assert compatibility.status == "proven"

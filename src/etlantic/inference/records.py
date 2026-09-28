@@ -94,7 +94,7 @@ def _append_diag(
     diagnostics: list[Diagnostic], diagnostic: Diagnostic, limit: int
 ) -> None:
     """Keep diagnostic collection bounded while retaining the first findings."""
-    if len(diagnostics) < limit:
+    if _should_append_diag(diagnostics, diagnostic, limit):
         diagnostics.append(diagnostic)
 
 
@@ -102,18 +102,24 @@ def _guarded_iterator(
     iterator: Iterable[Any], diagnostics: list[Diagnostic], limit: int
 ) -> Iterable[Any]:
     """Turn provider iterator failures into bounded inference diagnostics."""
+    row_index = 0
     try:
-        yield from iterator
+        for row in iterator:
+            yield row
+            row_index += 1
     except Exception as exc:
+        diagnostic = _diag(
+            "INFER_SOURCE_UNSUPPORTED",
+            f"Record provider failed during iteration: {type(exc).__name__}",
+            severity=Severity.ERROR,
+        )
         _append_diag(
             diagnostics,
-            _diag(
-                "INFER_SOURCE_UNSUPPORTED",
-                f"Record provider failed during iteration: {type(exc).__name__}",
-                severity=Severity.ERROR,
-            ),
+            diagnostic,
             limit,
         )
+        if isinstance(diagnostics, _TrackedDiagnostics) and diagnostics.replay_active:
+            raise InferenceReplayError(diagnostic, row_index) from None
 
 
 class _CSVByteLimitReached(Exception):
@@ -421,7 +427,7 @@ def infer_records(
     need a schema can set ``retain_rows=False``.
     """
     limits = limits or InferenceLimits()
-    diagnostics: list[Diagnostic] = []
+    diagnostics: _TrackedDiagnostics = _TrackedDiagnostics()
     rows: list[dict[str, Any]] = []
     if isinstance(records, Mapping):
         iterator: Iterable[Any] = [records]
@@ -444,7 +450,7 @@ def infer_records(
         return InferenceResult(
             NormalizedSchema(identity=identity, fields=()),
             tuple(diagnostics),
-            provenance={"source": "records", "limits": limits.to_dict()},
+            provenance={**_records_provenance(diagnostics), "limits": limits.to_dict()},
         )
     names: list[str] = []
     stats: dict[str, dict[str, Any]] = {}
@@ -551,6 +557,8 @@ def infer_records(
             if logical == "null":
                 entry["null"] += 1
         rows.append(row)
+    if replay_remainder is not None:
+        diagnostics.replay_active = True
     for name in names:
         stats[name]["missing"] = len(rows) - stats[name]["observed"]
         if stats[name]["missing"]:
@@ -667,7 +675,7 @@ def infer_records(
             )
         if logical == "decimal":
             decimal_fields.add(name)
-        nullable = entry["null"] > 0 or entry["missing"] > 0
+        nullable = entry["null"] > 0
         field_metadata: dict[str, Any] = {"inferred": True}
         if logical == "unknown" and not entry["unknown_types"]:
             field_metadata["inference_evidence"] = (
@@ -677,7 +685,7 @@ def infer_records(
             NormalizedField(
                 name=name,
                 logical_type=logical,
-                required=not nullable,
+                required=entry["missing"] == 0,
                 nullable=nullable,
                 metadata=field_metadata,
             )
@@ -714,7 +722,7 @@ def infer_records(
         fields=tuple(fields),
     )
     provenance = {
-        "source": "records",
+        **_records_provenance(diagnostics),
         "limits": limits.to_dict(),
         "sampled": sampled,
         "rows_observed": len(rows),
@@ -868,7 +876,11 @@ def infer_csv(
     row_diagnostics: list[Diagnostic] = []
     parser_diagnostics: list[Diagnostic] = []
     result: InferenceResult | None = None
-    reader_state = {"raw_limit_hit": False, "field_limit_hit": False}
+    reader_state = {
+        "raw_limit_hit": False,
+        "field_limit_hit": False,
+        "source_validation_failed": False,
+    }
     header_field_limit_hit = False
     try:
         # The bounded wrapper must sit directly above the OS file object;
@@ -961,6 +973,7 @@ def infer_csv(
                     except _CSVByteLimitReached:
                         reader_state["raw_limit_hit"] = True
                     except csv.Error as exc:
+                        reader_state["source_validation_failed"] = True
                         field_limit_hit = (
                             "field larger than field limit" in str(exc).casefold()
                         )
@@ -980,6 +993,7 @@ def infer_csv(
                             limits.max_diagnostics,
                         )
                     except (OSError, UnicodeError, LookupError) as exc:
+                        reader_state["source_validation_failed"] = True
                         _append_diag(
                             parser_diagnostics,
                             _diag(
@@ -1248,6 +1262,11 @@ def infer_csv(
             "materialized_bytes_observed": materialized_bytes,
             "raw_bytes_observed": bounded_reader.bytes_observed,
             "raw_byte_limit_applies": limits.max_bytes is not None,
+            "source_validation": (
+                "failed"
+                if reader_state["source_validation_failed"]
+                else result.provenance.get("source_validation", "complete")
+            ),
             "byte_accounting": {
                 "raw_bytes": "physical bytes returned by the bounded binary reader",
                 "materialized_bytes": "estimated decoded Python record size",
@@ -1846,3 +1865,28 @@ def infer_json(
             ),
             provenance={"source": "json", "limits": limits.to_dict()},
         )
+
+
+def _records_provenance(diagnostics: _TrackedDiagnostics) -> dict[str, Any]:
+    return {
+        "source": "records",
+        "source_validation": ("failed" if diagnostics.error_seen else "complete"),
+    }
+
+
+class _TrackedDiagnostics(list[Diagnostic]):
+    def __init__(self) -> None:
+        super().__init__()
+        self.error_seen = False
+        self.replay_active = False
+
+
+def _should_append_diag(
+    diagnostics: list[Diagnostic], diagnostic: Diagnostic, limit: int
+) -> bool:
+    if (
+        isinstance(diagnostics, _TrackedDiagnostics)
+        and diagnostic.severity == Severity.ERROR
+    ):
+        diagnostics.error_seen = True
+    return len(diagnostics) < limit

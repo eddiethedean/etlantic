@@ -13,7 +13,7 @@ from collections.abc import Callable, Mapping
 from copy import deepcopy
 from dataclasses import replace
 from decimal import Decimal
-from typing import Any
+from typing import Any, cast
 
 from pydantic import Field, create_model
 
@@ -56,12 +56,19 @@ from .sources import infer_source
 from .targets import (
     _backfill_observation,
     _safe_target_identity,
+    _target_field_has_omission_value,
     check_write_compatibility,
     infer_records_for_target,
     inspect_target,
 )
 from .transfer import forward_schema
-from .types import InferenceLimits, InferenceResult, OutputProposal, TargetObservation
+from .types import (
+    InferenceLimits,
+    InferenceResult,
+    OutputProposal,
+    TargetObservation,
+    WriteCompatibility,
+)
 
 _PY_TYPES = {
     "boolean": bool,
@@ -1083,8 +1090,91 @@ class InferredDataset:
             target_revision_reader=self._target_revision_reader,
         )
 
-    def check_write(self, target_schema: NormalizedSchema, *, mode: str = "append"):
-        return check_write_compatibility(self.schema, target_schema, mode=mode)
+    def check_write(
+        self, target_schema: NormalizedSchema, *, mode: str = "append"
+    ) -> WriteCompatibility:
+        compatibility = check_write_compatibility(self.schema, target_schema, mode=mode)
+        if _source_inference_failed(self):
+            return _early_write_compatibility(compatibility, self)
+
+        observation = self._result.target_observation
+        same_target = (
+            observation is not None
+            and observation.schema is not None
+            and observation.schema.fields == target_schema.fields
+        )
+        validation_state = self._result.provenance.get("target_validation")
+        if same_target and validation_state in {"failed", "stale"}:
+            validation_diagnostics = tuple(
+                diagnostic
+                for diagnostic in self.diagnostics
+                if isinstance(diagnostic, Diagnostic)
+                and diagnostic.severity == Severity.ERROR
+            )
+            return replace(
+                compatibility,
+                compatible=False,
+                diagnostics=(*compatibility.diagnostics, *validation_diagnostics),
+            )
+
+        if self._result.provenance.get("sampled") is not True:
+            return _early_write_compatibility(compatibility, self)
+
+        if same_target and validation_state == "complete":
+            return compatibility
+
+        replay = self._result.replay
+        if (
+            not same_target
+            or validation_state != "prefix_only"
+            or replay is None
+            or not replay.available
+        ):
+            diagnostic = Diagnostic(
+                "INFER_TARGET_UNKNOWN",
+                Severity.ERROR,
+                "Sampled source cannot enforce all-values constraints for the requested target schema",
+                phase="inference",
+            )
+            return replace(
+                compatibility,
+                compatible=False,
+                diagnostics=(*compatibility.diagnostics, diagnostic),
+            )
+
+        validation_obligations: list[dict[str, Any]] = []
+        for field in target_schema.fields:
+            # The sampled prefix cannot prove that an otherwise absent target
+            # field will not appear later, so every declared target type is an
+            # all-values replay obligation.
+            constraints: list[str] = ["target_type"]
+            if field.required and not _target_field_has_omission_value(field):
+                constraints.append("required_presence")
+            if not field.nullable:
+                constraints.append("nullability")
+            if constraints:
+                validation_obligations.append(
+                    {
+                        "field": field.name,
+                        "validation": "all_values",
+                        "constraints": constraints,
+                        "on_failure": "error",
+                    }
+                )
+
+        # Also fence the row's field set: a late field outside the target
+        # schema is incompatible even when the target schema is empty.
+        validation_obligations.append(
+            {
+                "field": "*",
+                "validation": "all_values",
+                "constraints": ["no_unexpected_fields"],
+                "on_failure": "error",
+            }
+        )
+
+        obligations = (*compatibility.obligations, *validation_obligations)
+        return replace(compatibility, obligations=obligations)
 
     def propose_output(
         self,
@@ -1588,4 +1678,51 @@ def from_polars(
         infer_source(frame, identity=safe_name, hints=hints, limits=limits),
         name=safe_name,
         source_binding=provider_binding(safe_name, "polars"),
+    )
+
+
+def _early_write_compatibility(
+    compatibility: WriteCompatibility, dataset: InferredDataset
+) -> WriteCompatibility:
+    source_diagnostics = tuple(
+        diagnostic
+        for diagnostic in dataset.diagnostics
+        if _is_error_diagnostic(diagnostic)
+    )
+    if not _source_inference_failed(dataset):
+        return compatibility
+    if not source_diagnostics:
+        source_diagnostics = (_source_inference_error(),)
+    return replace(
+        compatibility,
+        compatible=False,
+        diagnostics=(*compatibility.diagnostics, *source_diagnostics),
+    )
+
+
+def _source_inference_failed(dataset: InferredDataset) -> bool:
+    provenance = dataset.provenance
+    return (
+        provenance.get("source_validation") == "failed"
+        or provenance.get("inspection") == "failed"
+        or any(_is_error_diagnostic(item) for item in dataset.diagnostics)
+    )
+
+
+def _is_error_diagnostic(diagnostic: Any) -> bool:
+    if isinstance(diagnostic, Diagnostic):
+        severity: Any = diagnostic.severity
+    elif isinstance(diagnostic, Mapping):
+        severity = cast(Mapping[str, Any], diagnostic).get("severity")
+    else:
+        severity = getattr(diagnostic, "severity", None)
+    return getattr(severity, "value", severity) == Severity.ERROR.value
+
+
+def _source_inference_error() -> Diagnostic:
+    return Diagnostic(
+        "INFER_SOURCE_INVALID",
+        Severity.ERROR,
+        "Source inference failed beyond the retained diagnostic limit",
+        phase="inference",
     )

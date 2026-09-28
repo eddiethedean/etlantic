@@ -2891,20 +2891,20 @@ def test_arbitrary_record_values_remain_unknown_and_wire_safe() -> None:
 
 
 @pytest.mark.parametrize(
-    "rows",
+    ("rows", "required"),
     [
-        [{"optional": None}, {"optional": None}],
-        [{"other": 1}, {"optional": None}],
+        ([{"optional": None}, {"optional": None}], True),
+        ([{"other": 1}, {"optional": None}], False),
     ],
 )
 def test_null_and_missing_record_evidence_stays_unknown(
-    rows: list[dict[str, object]],
+    rows: list[dict[str, object]], required: bool
 ) -> None:
     result = infer_records(rows, identity="uncertain-values")
 
     field = next(field for field in result.schema.fields if field.name == "optional")
     assert field.logical_type == "unknown"
-    assert field.required is False
+    assert field.required is required
     assert field.nullable is True
     assert "INFER_UNKNOWN_TYPE" in {item.code for item in result.diagnostics}
 

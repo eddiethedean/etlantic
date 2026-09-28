@@ -392,6 +392,11 @@ class ReplayHandle:
         self._used = True
         return chain(iter(self._prefix), self._remainder)
 
+    @property
+    def available(self) -> bool:
+        """Whether this single-use replay can still be consumed."""
+        return not self._used
+
     def map(
         self,
         transform: Any,
@@ -865,7 +870,7 @@ class WriteCompatibility:
         """Wire-friendly tri-state compatibility status."""
         if not self.compatible or self.incompatible_fields:
             return "conflict"
-        if self.casts:
+        if self.casts or self.obligations:
             return "conditional"
         return "proven"
 
