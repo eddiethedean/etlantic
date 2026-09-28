@@ -353,8 +353,8 @@ def test_provider_preview_does_not_narrow_declared_field_flags() -> None:
     class View:
         __etlantic_bounded_view__ = True
 
-        def to_dicts(self):
-            return [{"id": 1}]
+        def __init__(self):
+            self.rows = [{"id": 1}]
 
     result = infer_source(Source(), identity="provider")
     field = result.schema.fields[0]
@@ -1026,6 +1026,30 @@ def test_json_array_inference_respects_row_limit(tmp_path) -> None:
     result = etl.infer_json(path, limits=InferenceLimits(max_rows=1))
     assert result.provenance["rows_observed"] == 1
     assert "INFER_LIMIT" in {diagnostic.code for diagnostic in result.diagnostics}
+
+
+@pytest.mark.parametrize("lines", [False, True], ids=["json", "jsonl"])
+def test_json_sources_enforce_materialized_byte_limit(tmp_path, lines: bool) -> None:
+    suffix = ".jsonl" if lines else ".json"
+    path = tmp_path / f"bounded{suffix}"
+    path.write_text(
+        '{"value":"abcdefghij"}\n' if lines else '[{"value":"abcdefghij"}]',
+        encoding="utf-8",
+    )
+
+    result = etl.infer_json(
+        path,
+        lines=lines,
+        limits=InferenceLimits(max_materialized_bytes=1),
+        retain_rows=True,
+    )
+
+    assert result.rows == ()
+    assert result.provenance["effective_materialized_bytes_limit"] == 1
+    assert result.provenance["materialized_bytes_observed"] == 0
+    assert result.provenance["raw_bytes_observed"] > 0
+    assert result.provenance["sampled"] is True
+    assert result.provenance["limit_reason"] == "materialized_bytes"
 
 
 def test_model_preserves_required_nullable_field() -> None:

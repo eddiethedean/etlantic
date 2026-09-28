@@ -89,6 +89,51 @@ def test_typed_empty_dataframes_preserve_declared_columns() -> None:
     ]
 
 
+def test_truncated_pandas_and_polars_previews_are_provisional() -> None:
+    rows = [{"id": 1, "late": "present"}, {"id": 2, "late": None}]
+    limits = etl.InferenceLimits(max_rows=1)
+    providers = (
+        (pd.DataFrame(rows), "pandas"),
+        (pl.DataFrame(rows), "polars"),
+    )
+
+    for frame, provider_name in providers:
+        result = etl.infer_source(frame, limits=limits)
+
+        assert result.provenance["provider_name"] == provider_name
+        assert result.provenance["inspection_method"] in {
+            "provider_schema",
+            "to_dict",
+            "to_dicts",
+            "schema",
+        }
+        assert result.provenance["limits"]["max_rows"] == 1
+        assert result.provenance["sampled"] is True
+        assert (
+            "provider_preview_truncated_or_unverified"
+            in result.provenance["limitations"]
+        )
+        assert all(
+            field.required is False and field.nullable is True
+            for field in result.schema.fields
+        )
+        assert all(evidence.sampled for evidence in result.evidence)
+        assert {field.name for field in result.schema.fields} == {"id", "late"}
+
+
+def test_pandas_and_polars_honor_materialized_byte_limits_before_conversion() -> None:
+    rows = [{"id": 1, "payload": "x" * 32}]
+    limits = etl.InferenceLimits(max_bytes=1_000_000, max_materialized_bytes=1)
+
+    for frame in (pd.DataFrame(rows), pl.DataFrame(rows)):
+        result = etl.infer_source(frame, limits=limits)
+
+        assert "INFER_LIMIT" in {item.code for item in result.diagnostics}
+        assert result.provenance["effective_materialized_bytes_limit"] == 1
+        assert result.provenance["limit_reason"] == "materialized_bytes"
+        assert result.provenance["sampled"] is True
+
+
 def test_lineage_transfer_matches_across_records_pandas_and_polars() -> None:
     datasets = [
         etl.from_records(ROWS, name="differential-source"),
