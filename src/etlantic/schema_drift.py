@@ -96,6 +96,9 @@ _SAFE_METADATA_KEYS = {
     "target_observation",
     "observed_values",
     "null_values",
+    "null_policy",
+    "count",
+    "digest",
     "missing_values",
     "type_counts",
     "inference_evidence",
@@ -155,6 +158,7 @@ _STRUCTURAL_MAP_KEYS = {
     "graph",
     "capabilities",
     "limits",
+    "null_policy",
 }
 
 _CSV_PARSER_OPTION_KEYS = {
@@ -416,24 +420,38 @@ def _safe_lineage_entry(value: Any, allowed_keys: set[str]) -> dict[str, Any]:
                     operations.append(_json_safe(operation, key="operation"))
                 elif isinstance(operation, Mapping):
                     operation_map = _bounded_mapping(operation, "lineage operation")
-                    if (
-                        set(operation_map)
-                        not in ({"operation"}, {"operation", "field"})
-                        or not isinstance(operation_map.get("operation"), str)
-                        or (
-                            "field" in operation_map
-                            and not isinstance(operation_map["field"], str)
-                        )
-                    ):
+                    operation_name = operation_map.get("operation")
+                    keys = set(operation_map)
+                    is_named_operation = keys in (
+                        {"operation"},
+                        {"operation", "field"},
+                    ) and isinstance(operation_name, str) and operation_name != "rename" and (
+                        "field" not in operation_map
+                        or isinstance(operation_map["field"], str)
+                    )
+                    is_rename_operation = (
+                        keys == {"operation", "from", "to"}
+                        and operation_name == "rename"
+                        and isinstance(operation_map.get("from"), str)
+                        and isinstance(operation_map.get("to"), str)
+                    )
+                    if not (is_named_operation or is_rename_operation):
                         raise ValueError("lineage operations contain an invalid entry")
                     safe_operation = {
                         "operation": _json_safe(
-                            operation_map["operation"], key="operation"
+                            operation_name, key="operation"
                         )
                     }
                     if "field" in operation_map:
                         safe_operation["field"] = _json_safe(
                             operation_map["field"], key="field"
+                        )
+                    if is_rename_operation:
+                        safe_operation["from"] = _json_safe(
+                            operation_map["from"], key="field"
+                        )
+                        safe_operation["to"] = _json_safe(
+                            operation_map["to"], key="field"
                         )
                     operations.append(safe_operation)
                 else:

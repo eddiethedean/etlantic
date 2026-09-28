@@ -236,6 +236,42 @@ def test_lineage_set_fields_are_canonical_and_set_operations_are_rejected() -> N
         json_safe_metadata({"lineage": {"id": {"operations": {"trim", "lower"}}}})
 
 
+def test_rename_lineage_operations_round_trip_source_and_destination() -> None:
+    schema = NormalizedSchema(
+        "users",
+        (NormalizedField("user_id", "integer"),),
+        metadata={
+            "lineage": {
+                "user_id": {
+                    "field": "user_id",
+                    "source_fields": ["id"],
+                    "operations": [
+                        {"operation": "rename", "from": "id", "to": "user_id"}
+                    ],
+                    "invertible": True,
+                }
+            }
+        },
+    )
+
+    restored = NormalizedSchema.from_dict(schema.to_dict())
+
+    assert restored.metadata["lineage"]["user_id"]["operations"] == [
+        {"operation": "rename", "from": "id", "to": "user_id"}
+    ]
+
+    with pytest.raises(ValueError, match="invalid entry"):
+        json_safe_metadata(
+            {
+                "lineage": {
+                    "user_id": {
+                        "operations": [{"operation": "rename", "field": "user_id"}]
+                    }
+                }
+            }
+        )
+
+
 def test_csv_quoting_modes_available_on_this_python_round_trip() -> None:
     for name in (
         "QUOTE_MINIMAL",
