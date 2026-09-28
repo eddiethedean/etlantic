@@ -94,7 +94,7 @@ def _append_diag(
     diagnostics: list[Diagnostic], diagnostic: Diagnostic, limit: int
 ) -> None:
     """Keep diagnostic collection bounded while retaining the first findings."""
-    if len(diagnostics) < limit:
+    if _should_append_diag(diagnostics, diagnostic, limit):
         diagnostics.append(diagnostic)
 
 
@@ -421,7 +421,7 @@ def infer_records(
     need a schema can set ``retain_rows=False``.
     """
     limits = limits or InferenceLimits()
-    diagnostics: list[Diagnostic] = []
+    diagnostics: _TrackedDiagnostics = _TrackedDiagnostics()
     rows: list[dict[str, Any]] = []
     if isinstance(records, Mapping):
         iterator: Iterable[Any] = [records]
@@ -1848,12 +1848,25 @@ def infer_json(
         )
 
 
-def _records_provenance(diagnostics: list[Diagnostic]) -> dict[str, Any]:
+def _records_provenance(diagnostics: _TrackedDiagnostics) -> dict[str, Any]:
     return {
         "source": "records",
-        "source_validation": (
-            "failed"
-            if any(diagnostic.severity == Severity.ERROR for diagnostic in diagnostics)
-            else "complete"
-        ),
+        "source_validation": ("failed" if diagnostics.error_seen else "complete"),
     }
+
+
+class _TrackedDiagnostics(list[Diagnostic]):
+    def __init__(self) -> None:
+        super().__init__()
+        self.error_seen = False
+
+
+def _should_append_diag(
+    diagnostics: list[Diagnostic], diagnostic: Diagnostic, limit: int
+) -> bool:
+    if (
+        isinstance(diagnostics, _TrackedDiagnostics)
+        and diagnostic.severity == Severity.ERROR
+    ):
+        diagnostics.error_seen = True
+    return len(diagnostics) < limit

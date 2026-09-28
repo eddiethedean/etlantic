@@ -1231,3 +1231,21 @@ def test_check_write_preserves_source_inference_errors_for_a_different_target(
     assert "INFER_INVALID_KEY" in {
         diagnostic.code for diagnostic in compatibility.diagnostics
     }
+
+
+def test_check_write_fails_closed_when_source_error_exceeds_diagnostic_limit() -> None:
+    dataset = etl.from_records(
+        [{"": 1}, "not-a-record"],
+        limits=InferenceLimits(max_diagnostics=1),
+    )
+
+    assert dataset.provenance["source_validation"] == "failed"
+    assert len(dataset.diagnostics) == 1
+    assert dataset.diagnostics[0].severity.value == "warning"
+
+    compatibility = dataset.check_write(dataset.schema)
+
+    assert compatibility.status == "conflict"
+    assert "INFER_SOURCE_INVALID" in {
+        diagnostic.code for diagnostic in compatibility.diagnostics
+    }

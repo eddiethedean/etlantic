@@ -1690,9 +1690,18 @@ def _early_write_compatibility(
         diagnostic
         for diagnostic in dataset.diagnostics
         if isinstance(diagnostic, Diagnostic) and diagnostic.severity == Severity.ERROR
-    )
+    ) or (_source_inference_error(),)
     return replace(
         compatibility,
         compatible=False,
         diagnostics=(*compatibility.diagnostics, *source_diagnostics),
+    )
+
+
+def _source_inference_error() -> Diagnostic:
+    return Diagnostic(
+        "INFER_SOURCE_INVALID",
+        Severity.ERROR,
+        "Source inference failed beyond the retained diagnostic limit",
+        phase="inference",
     )
