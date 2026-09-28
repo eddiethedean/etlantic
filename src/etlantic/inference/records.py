@@ -583,15 +583,14 @@ def infer_records(
     replay_remainder: Iterable[Any] | None = None
     replay_prefix_count = 0
     incomplete_rows = 0
-    deadline = (
-        _deadline
-        if _deadline is not None
-        else (
-            time.monotonic() + limits.timeout_seconds
-            if limits.timeout_seconds is not None
-            else None
-        )
-    )
+    if _deadline is not None:
+        deadline = _deadline
+    elif limits.timeout_seconds is None:
+        deadline = None
+    elif limits.timeout_seconds <= 1e-9:
+        deadline = float("-inf")
+    else:
+        deadline = time.monotonic() + limits.timeout_seconds
     bytes_observed = 0
     materialized_limit = (
         limits.max_materialized_bytes

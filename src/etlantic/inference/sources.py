@@ -72,6 +72,8 @@ def _effective_deadline(
         return deadline
     if limits.timeout_seconds is None:
         return None
+    if limits.timeout_seconds <= 1e-9:
+        return float("-inf")
     return time.monotonic() + limits.timeout_seconds
 
 
