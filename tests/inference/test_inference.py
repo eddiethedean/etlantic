@@ -12,6 +12,7 @@ from pydantic import ValidationError
 import etlantic as etl
 from etlantic.inference import (
     InferenceLimits,
+    InferenceObservation,
     backfill_schema,
     check_write_compatibility,
     infer_records,
@@ -22,7 +23,7 @@ from etlantic.schema_drift import (
     NormalizedSchema,
     normalize_schema_from_fields,
 )
-from etlantic.transform.functions import col, lit
+from etlantic.transform.functions import col, lit, to_integer
 
 
 def test_records_inference_promotes_across_all_rows_and_tracks_missing() -> None:
@@ -94,6 +95,95 @@ def test_records_inference_is_bounded() -> None:
     assert "INFER_LIMIT" in {diagnostic.code for diagnostic in result.diagnostics}
 
 
+def test_direct_inference_replays_finite_one_shot_inputs() -> None:
+    empty = infer_records(row for row in ())
+    assert empty.replay is not None
+    assert list(empty.replay.take()) == []
+
+    finite = infer_records({"id": index} for index in range(2))
+    assert finite.rows == ()
+    assert finite.replay is not None
+    assert list(finite.replay.take()) == [{"id": 0}, {"id": 1}]
+    with pytest.raises(RuntimeError, match="already been consumed"):
+        finite.replay.take()
+
+    exact_boundary = infer_records(
+        ({"id": index} for index in range(2)), limits=InferenceLimits(max_rows=2)
+    )
+    assert exact_boundary.replay is not None
+    assert list(exact_boundary.replay.take()) == [{"id": 0}, {"id": 1}]
+
+    truncated = infer_records(
+        ({"id": index} for index in range(3)), limits=InferenceLimits(max_rows=2)
+    )
+    assert truncated.replay is not None
+    assert list(truncated.replay.take()) == [{"id": 0}, {"id": 1}, {"id": 2}]
+    assert infer_records([{"id": 1}]).replay is None
+
+
+def test_direct_inference_replay_preserves_a_finite_source_failure() -> None:
+    def records():
+        yield {"id": 1}
+        raise RuntimeError("private provider detail")
+
+    result = infer_records(records())
+    assert result.replay is not None
+    replay = result.replay.take()
+    assert next(replay) == {"id": 1}
+    with pytest.raises(etl.InferenceReplayError) as error:
+        next(replay)
+    assert error.value.row_index == 1
+    assert error.value.diagnostic.code == "INFER_SOURCE_UNSUPPORTED"
+    assert "private provider detail" not in str(error.value)
+
+
+def test_direct_inference_replay_preserves_a_late_source_failure() -> None:
+    def records():
+        yield {"id": 0}
+        yield {"id": 1}
+        raise RuntimeError("private provider detail")
+
+    result = infer_records(records(), limits=InferenceLimits(max_rows=1))
+    assert result.replay is not None
+    replay = result.replay.take()
+    assert next(replay) == {"id": 0}
+    assert next(replay) == {"id": 1}
+    with pytest.raises(etl.InferenceReplayError) as error:
+        next(replay)
+    assert error.value.row_index == 2
+    assert "private provider detail" not in str(error.value)
+
+
+@pytest.mark.parametrize("operation", ["select", "withColumn", "filter"])
+def test_lazy_replay_evaluation_diagnostics_update_dataset(operation: str) -> None:
+    dataset = etl.from_records(
+        ({"value": value} for value in ["1", "oops"]),
+        limits=InferenceLimits(max_rows=1, max_diagnostics=1),
+    )
+    if operation == "select":
+        transformed = dataset.select(to_integer(col("value")).alias("number"))
+    elif operation == "withColumn":
+        transformed = dataset.withColumn("number", to_integer(col("value")))
+    else:
+        transformed = dataset.filter(to_integer(col("value")) > lit(0))
+
+    assert "INFER_RUNTIME_CONVERSION" not in {
+        diagnostic.code for diagnostic in transformed.diagnostics
+    }
+    assert transformed.replay is not None
+    replayed = list(transformed.replay.take())
+    assert (
+        ("number" in replayed[-1] and replayed[-1]["number"] is None)
+        if operation != "filter"
+        else replayed == [{"value": "1"}]
+    )
+    assert "INFER_RUNTIME_CONVERSION" in {
+        diagnostic.code for diagnostic in transformed.diagnostics
+    }
+    assert len(transformed.diagnostics) == 1
+    assert "oops" not in str(transformed.observation.to_dict())
+
+
 def test_inference_result_serialization_cannot_walk_runtime_rows() -> None:
     result = infer_records([{"secret": "value"}], retain_rows=True)
     with pytest.raises(TypeError):
@@ -139,6 +229,29 @@ def test_csv_date_only_values_are_dates(tmp_path) -> None:
     assert result.rows[0]["day"].isoformat() == "2024-01-01"
 
 
+def test_csv_custom_null_policy_does_not_leak_markers_or_fingerprints(tmp_path) -> None:
+    path = tmp_path / "nulls.csv"
+    path.write_text("value\nPRIVATE_TOKEN\n", encoding="utf-8")
+
+    first = etl.infer_csv(
+        path, options={"null_values": ["PRIVATE_TOKEN"]}, retain_rows=True
+    )
+    second = etl.infer_csv(
+        path, options={"null_values": ["OTHER_PRIVATE_TOKEN"]}, retain_rows=True
+    )
+    first_wire = first.to_observation().to_dict()
+    second_wire = second.to_observation().to_dict()
+
+    policy = first_wire["provenance"]["null_policy"]
+    assert policy == {"mode": "custom", "count": 1}
+    assert second_wire["provenance"]["null_policy"] == policy
+    assert "PRIVATE_TOKEN" not in repr(first_wire)
+    assert "OTHER_PRIVATE_TOKEN" not in repr(second_wire)
+
+    restored = InferenceObservation.from_dict(first_wire)
+    assert restored.provenance["null_policy"] == policy
+
+
 def test_hints_are_validated_and_do_not_override_conflicting_values() -> None:
     result = infer_records([{"id": 1}], hints={"id": "string", "other": "bogus"})
     assert result.schema.fields[0].logical_type == "integer"
@@ -159,6 +272,45 @@ def test_data_first_transformations_refresh_model() -> None:
     assert transformed.schema.fields[0].logical_type == "integer"
     assert transformed.collect() == [{"next_id": 2}, {"next_id": 3}]
     assert transformed.model.model_fields["next_id"].annotation is int
+
+
+def test_renamed_records_schema_observation_and_definition_are_wire_safe() -> None:
+    dataset = etl.from_records([{"id": 1, "name": "Ada"}], name="users").rename(
+        {"id": "user_id"}
+    )
+
+    restored_schema = NormalizedSchema.from_dict(dataset.schema.to_dict())
+    lineage = restored_schema.metadata["lineage"]["user_id"]
+    assert lineage["source_fields"] == ["id"]
+    assert lineage["operations"] == [
+        {"operation": "rename", "from": "id", "to": "user_id"}
+    ]
+
+    observation = InferenceObservation.from_dict(dataset.observation.to_dict())
+    assert observation.schema.metadata["lineage"]["user_id"]["operations"] == [
+        {"operation": "rename", "from": "id", "to": "user_id"}
+    ]
+    definition = dataset.definition().to_dict()
+    assert "Ada" not in repr(definition)
+
+
+def test_chained_rename_project_rename_lineage_is_serializable() -> None:
+    dataset = (
+        etl.from_records([{"id": 1, "name": "Ada"}], name="users")
+        .rename({"id": "user_id"})
+        .select("user_id", "name")
+        .rename({"user_id": "id"})
+    )
+
+    restored = NormalizedSchema.from_dict(dataset.schema.to_dict())
+
+    assert [field.name for field in restored.fields] == ["id", "name"]
+    assert restored.metadata["lineage"]["id"]["operations"] == [
+        {"operation": "rename", "from": "id", "to": "user_id"},
+        {"operation": "project", "field": "user_id"},
+        {"operation": "rename", "from": "user_id", "to": "id"},
+    ]
+    assert dataset.definition().to_dict()
 
 
 def test_existing_target_backfills_source_type() -> None:
@@ -290,8 +442,8 @@ def test_provider_preview_does_not_narrow_declared_field_flags() -> None:
     class View:
         __etlantic_bounded_view__ = True
 
-        def to_dicts(self):
-            return [{"id": 1}]
+        def __init__(self):
+            self.rows = [{"id": 1}]
 
     result = infer_source(Source(), identity="provider")
     field = result.schema.fields[0]
@@ -963,6 +1115,30 @@ def test_json_array_inference_respects_row_limit(tmp_path) -> None:
     result = etl.infer_json(path, limits=InferenceLimits(max_rows=1))
     assert result.provenance["rows_observed"] == 1
     assert "INFER_LIMIT" in {diagnostic.code for diagnostic in result.diagnostics}
+
+
+@pytest.mark.parametrize("lines", [False, True], ids=["json", "jsonl"])
+def test_json_sources_enforce_materialized_byte_limit(tmp_path, lines: bool) -> None:
+    suffix = ".jsonl" if lines else ".json"
+    path = tmp_path / f"bounded{suffix}"
+    path.write_text(
+        '{"value":"abcdefghij"}\n' if lines else '[{"value":"abcdefghij"}]',
+        encoding="utf-8",
+    )
+
+    result = etl.infer_json(
+        path,
+        lines=lines,
+        limits=InferenceLimits(max_materialized_bytes=1),
+        retain_rows=True,
+    )
+
+    assert result.rows == ()
+    assert result.provenance["effective_materialized_bytes_limit"] == 1
+    assert result.provenance["materialized_bytes_observed"] == 0
+    assert result.provenance["raw_bytes_observed"] > 0
+    assert result.provenance["sampled"] is True
+    assert result.provenance["limit_reason"] == "materialized_bytes"
 
 
 def test_model_preserves_required_nullable_field() -> None:
