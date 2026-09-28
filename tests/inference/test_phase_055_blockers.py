@@ -227,6 +227,73 @@ def test_async_provider_preview_matches_sync_bounded_preview() -> None:
     assert result.provenance["preview_available"] is True
 
 
+def test_async_inspect_schema_obeys_the_shared_inference_deadline() -> None:
+    cancelled: list[bool] = []
+
+    class Provider:
+        async def inspect_schema(self):
+            try:
+                await asyncio.sleep(1)
+            finally:
+                cancelled.append(True)
+
+    result = asyncio.run(
+        etl.infer_source_async(
+            Provider(), limits=etl.InferenceLimits(timeout_seconds=0.02)
+        )
+    )
+
+    assert cancelled == [True]
+    assert "INFER_LIMIT" in {item.code for item in result.diagnostics}
+    assert result.provenance["limit_reason"] == "time"
+
+
+def test_async_schema_obeys_the_shared_inference_deadline() -> None:
+    cancelled: list[bool] = []
+
+    class Provider:
+        async def schema(self):
+            try:
+                await asyncio.sleep(1)
+            finally:
+                cancelled.append(True)
+
+    result = asyncio.run(
+        etl.infer_source_async(
+            Provider(), limits=etl.InferenceLimits(timeout_seconds=0.02)
+        )
+    )
+
+    assert cancelled == [True]
+    assert "INFER_LIMIT" in {item.code for item in result.diagnostics}
+    assert result.provenance["limit_reason"] == "time"
+
+
+def test_unknown_provider_source_size_keeps_preview_provisional() -> None:
+    class View:
+        __etlantic_bounded_view__ = True
+
+        def __init__(self) -> None:
+            self.rows = [{"id": 1}]
+
+    class Provider:
+        def inspect_schema(self):
+            return {"fields": [{"name": "id", "type": "integer"}]}
+
+        def head(self, count: int) -> View:
+            assert count == 10
+            return View()
+
+    result = etl.infer_source(Provider(), limits=etl.InferenceLimits(max_rows=10))
+
+    assert result.provenance["sampled"] is True
+    assert (
+        "provider_preview_truncated_or_unverified" in result.provenance["limitations"]
+    )
+    assert result.schema.fields[0].required is False
+    assert result.schema.fields[0].nullable is True
+
+
 def test_target_diagnostics_and_provider_identity_are_bounded_and_retained() -> None:
     class Provider:
         def inspect_schema(self):

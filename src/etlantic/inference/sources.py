@@ -3,6 +3,7 @@
 
 from __future__ import annotations
 
+import asyncio
 import inspect as _inspect
 import math
 import time
@@ -80,6 +81,30 @@ def _effective_deadline(
 def _check_deadline(deadline: float | None) -> None:
     if deadline is not None and time.monotonic() >= deadline:
         raise _InferenceTimeout
+
+
+async def _await_with_deadline(value: Any, deadline: float | None) -> Any:
+    """Await provider inspection without allowing it to outlive inference."""
+    try:
+        _check_deadline(deadline)
+    except _InferenceTimeout:
+        for method_name in ("cancel", "close"):
+            try:
+                cleanup = getattr(value, method_name, None)
+                if callable(cleanup):
+                    cleanup()
+            except Exception:
+                pass
+        raise
+    if deadline is None:
+        return await value
+    remaining = deadline - time.monotonic()
+    try:
+        return await asyncio.wait_for(value, timeout=remaining)
+    except TimeoutError:
+        if time.monotonic() >= deadline:
+            raise _InferenceTimeout from None
+        raise
 
 
 def _bounded_row_count(value: Any) -> int | None:
@@ -198,7 +223,10 @@ def _bounded_materialization(
         return None
     row_count = _bounded_row_count(bounded)
     _check_deadline(deadline)
-    truncated = source_rows > limits.max_rows if source_rows is not None else False
+    # A bounded head view proves that materialization is capped, not that the
+    # source was exhausted. Unknown source size therefore remains provisional
+    # even when the preview happens to contain fewer than max_rows.
+    truncated = source_rows is None or source_rows > limits.max_rows
     if row_count is not None and row_count > limits.max_rows:
         truncated = True
         try:
@@ -212,12 +240,6 @@ def _bounded_materialization(
         row_count = _bounded_row_count(bounded)
         if row_count is not None and row_count > limits.max_rows:
             return None
-    elif source_rows is None and row_count is None:
-        truncated = True
-    elif source_rows is None and row_count == limits.max_rows:
-        # Without a source count, a full head cannot prove whether additional
-        # rows exist. Keep the result provisional at the exact boundary.
-        truncated = True
     if row_count is None:
         module = type(bounded).__module__.split(".", 1)[0].casefold()
         if not getattr(bounded, "__etlantic_bounded_view__", False) and module not in {
@@ -1583,12 +1605,25 @@ async def infer_source_async(
     """Infer a source while allowing connector schema inspection to be awaited."""
     limits = limits or InferenceLimits()
     deadline = _effective_deadline(limits, None)
-    inspect_schema = getattr(value, "inspect_schema", None)
+    try:
+        inspect_schema = getattr(value, "inspect_schema", None)
+        _check_deadline(deadline)
+    except _InferenceTimeout:
+        return _provider_failure(
+            identity,
+            value,
+            limits,
+            "inspect_schema",
+            "INFER_LIMIT",
+            "Provider inference time limit reached",
+            limit_reason="time",
+        )
     if callable(inspect_schema):
         try:
             inspected = inspect_schema()
             if _inspect.isawaitable(inspected):
-                inspected = await inspected
+                inspected = await _await_with_deadline(inspected, deadline)
+            _check_deadline(deadline)
             result = _schema_from_provider_result(
                 inspected,
                 identity=identity,
@@ -1604,16 +1639,39 @@ async def infer_source_async(
                     identity=identity,
                     deadline=deadline,
                 )
+        except _InferenceTimeout:
+            return _provider_failure(
+                identity,
+                value,
+                limits,
+                "inspect_schema",
+                "INFER_LIMIT",
+                "Provider inference time limit reached",
+                limit_reason="time",
+            )
         except Exception:
             return _source_failure(identity, type(value).__name__)
-    schema = getattr(value, "schema", None)
+    try:
+        schema = getattr(value, "schema", None)
+        _check_deadline(deadline)
+    except _InferenceTimeout:
+        return _provider_failure(
+            identity,
+            value,
+            limits,
+            "schema",
+            "INFER_LIMIT",
+            "Provider inference time limit reached",
+            limit_reason="time",
+        )
     if isinstance(schema, NormalizedSchema):
         return _schema_result(schema)
     if callable(schema):
         try:
             schema = schema()
             if _inspect.isawaitable(schema):
-                schema = await schema
+                schema = await _await_with_deadline(schema, deadline)
+            _check_deadline(deadline)
             fields: list[dict[str, Any]] = []
             if isinstance(schema, Mapping) and "fields" in schema:
                 result = _schema_from_provider_result(
@@ -1622,6 +1680,7 @@ async def infer_source_async(
                     method="schema",
                     max_diagnostics=limits.max_diagnostics,
                 )
+                _check_deadline(deadline)
                 if result is not None:
                     return _attach_provider_preview(
                         result,
@@ -1642,11 +1701,21 @@ async def infer_source_async(
                     for name, dtype in schema.items()
                 ]
             if fields:
-                return _schema_result(
-                    normalize_schema_from_fields(
-                        fields, identity=identity, preserve_decimal=True
-                    )
+                normalized = normalize_schema_from_fields(
+                    fields, identity=identity, preserve_decimal=True
                 )
+                _check_deadline(deadline)
+                return _schema_result(normalized)
+        except _InferenceTimeout:
+            return _provider_failure(
+                identity,
+                value,
+                limits,
+                "schema",
+                "INFER_LIMIT",
+                "Provider inference time limit reached",
+                limit_reason="time",
+            )
         except Exception:
             return _source_failure(identity, type(value).__name__)
     return infer_source(
