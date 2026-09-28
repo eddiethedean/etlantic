@@ -247,10 +247,10 @@ class InferredDataset:
         target_revision_reader: Callable[[], Any] | None = None,
         target_write_mode: str = "append",
         source_owner: Any | None = None,
-        diagnostic_trackers: tuple[_EvaluationDiagnostics, ...] = (),
+        diagnostic_tracker: _EvaluationDiagnostics | None = None,
     ):
         self._result = result
-        self._diagnostic_trackers = diagnostic_trackers
+        self._diagnostic_tracker = diagnostic_tracker
         self._root_schema = root_schema or result.schema
         self._source_binding = dict(source_binding or records_binding(name))
         self._source_owner = source_owner
@@ -847,13 +847,19 @@ class InferredDataset:
                 self._result.diagnostics + static_diagnostics,
             )
 
-        for tracker in self._diagnostic_trackers:
-            tracker.subscribe(refresh_diagnostics)
-        if isinstance(extra_diagnostics, _EvaluationDiagnostics):
-            extra_diagnostics.bind(refresh_diagnostics)
-        diagnostic_trackers = self._diagnostic_trackers
-        if isinstance(extra_diagnostics, _EvaluationDiagnostics):
-            diagnostic_trackers += (extra_diagnostics,)
+        diagnostic_tracker = (
+            extra_diagnostics
+            if isinstance(extra_diagnostics, _EvaluationDiagnostics)
+            else _EvaluationDiagnostics()
+        )
+
+        def refresh_after_parent_change() -> None:
+            refresh_diagnostics()
+            diagnostic_tracker.notify_subscribers()
+
+        diagnostic_tracker.bind(refresh_diagnostics)
+        if self._diagnostic_tracker is not None:
+            self._diagnostic_tracker.subscribe(refresh_after_parent_change)
         return InferredDataset(
             result,
             name=self.name,
@@ -863,7 +869,7 @@ class InferredDataset:
             target_binding_payload=self._target_binding,
             target_revision_reader=self._target_revision_reader,
             source_owner=self._source_owner,
-            diagnostic_trackers=diagnostic_trackers,
+            diagnostic_tracker=diagnostic_tracker,
         )
 
     def filter(self, condition: ColumnExpr) -> InferredDataset:
