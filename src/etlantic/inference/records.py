@@ -392,24 +392,121 @@ def _hint_type(hint: Any) -> str | None:
     return mapping.get(hint)
 
 
-def _estimate_size(value: Any, *, depth: int = 0) -> int:
-    """Estimate bounded input bytes without serializing or emitting values."""
-    if depth > 4:
-        return sys.getsizeof(value)
-    if value is None:
-        return 4
-    if isinstance(value, str):
-        return len(value.encode("utf-8"))
-    if isinstance(value, (bytes, bytearray, memoryview)):
-        return len(value)
-    if isinstance(value, Mapping):
-        return sum(
-            _estimate_size(key, depth=depth + 1) + _estimate_size(item, depth=depth + 1)
-            for key, item in value.items()
-        )
-    if isinstance(value, (list, tuple, set, frozenset)):
-        return sum(_estimate_size(item, depth=depth + 1) for item in value)
-    return sys.getsizeof(value)
+class _EstimateLimitExceeded(Exception):
+    """A row exceeded its remaining materialization budget."""
+
+
+class _EstimateTraversalExceeded(Exception):
+    """A row exceeded the defensive size-estimation traversal bounds."""
+
+
+class _EstimateProviderFailure(Exception):
+    """A provider mapping failed while its size was being estimated."""
+
+    def __init__(self, exception_type: str) -> None:
+        self.exception_type = exception_type
+
+
+class _EstimateTimeout(Exception):
+    """A row exceeded the inference time budget while being estimated."""
+
+
+def _estimate_size(
+    value: Any,
+    *,
+    depth: int = 0,
+    max_bytes: int | None = None,
+    max_items: int = 10_000,
+    max_depth: int = 8,
+    max_fields: int | None = None,
+    deadline: float | None = None,
+) -> int:
+    """Estimate row size with early byte, depth, item, and time bounds."""
+    total = 0
+    items_seen = 0
+    active: set[int] = set()
+
+    def add(size: int) -> None:
+        nonlocal total
+        size = max(0, size)
+        if max_bytes is not None and size > max_bytes - total:
+            raise _EstimateLimitExceeded
+        total += size
+
+    def visit(item: Any, item_depth: int) -> None:
+        nonlocal items_seen
+        if deadline is not None and time.monotonic() >= deadline:
+            raise _EstimateTimeout
+        if item is None:
+            add(4)
+            return
+        if isinstance(item, str):
+            # Four bytes per code point is a safe upper estimate without
+            # allocating a second, potentially very large UTF-8 buffer.
+            add(len(item) if item.isascii() else len(item) * 4)
+            return
+        if isinstance(item, (bytes, bytearray, memoryview)):
+            add(len(item))
+            return
+        if not isinstance(item, (Mapping, list, tuple, set, frozenset)):
+            try:
+                add(sys.getsizeof(item))
+            except (
+                _EstimateLimitExceeded,
+                _EstimateTraversalExceeded,
+                _EstimateTimeout,
+            ):
+                raise
+            except Exception as exc:
+                raise _EstimateProviderFailure(type(exc).__name__) from None
+            return
+        if item_depth > max_depth:
+            raise _EstimateTraversalExceeded
+        item_identity = id(item)
+        if item_identity in active:
+            add(8)
+            return
+        active.add(item_identity)
+        try:
+            try:
+                iterator = iter(item)
+            except Exception as exc:
+                raise _EstimateProviderFailure(type(exc).__name__) from None
+            mapping_items = 0
+            while True:
+                if (
+                    item is value
+                    and item_depth == depth
+                    and max_fields is not None
+                    and mapping_items >= max_fields
+                ):
+                    break
+                if deadline is not None and time.monotonic() >= deadline:
+                    raise _EstimateTimeout
+                try:
+                    child = next(iterator)
+                except StopIteration:
+                    break
+                except Exception as exc:
+                    raise _EstimateProviderFailure(type(exc).__name__) from None
+                if items_seen >= max_items:
+                    raise _EstimateTraversalExceeded
+                items_seen += 1
+                if isinstance(item, Mapping):
+                    mapping_items += 1
+                    try:
+                        child_value = item[child]
+                    except Exception as exc:
+                        raise _EstimateProviderFailure(type(exc).__name__) from None
+                    visit(child, item_depth + 1)
+                    visit(child_value, item_depth + 1)
+                else:
+                    visit(child, item_depth + 1)
+        finally:
+            active.remove(item_identity)
+
+    visit(value, depth)
+    return total
 
 
 def infer_records(
@@ -457,7 +554,14 @@ def infer_records(
     sampled = False
     sampled_reason: str | None = None
     replay_remainder: Iterable[Any] | None = None
+    replay_prefix_count = 0
+    incomplete_rows = 0
     started_at = time.monotonic()
+    deadline = (
+        started_at + limits.timeout_seconds
+        if limits.timeout_seconds is not None
+        else None
+    )
     bytes_observed = 0
     materialized_limit = (
         limits.max_materialized_bytes
@@ -483,7 +587,53 @@ def infer_records(
                 limits.max_diagnostics,
             )
             break
-        item_bytes = _estimate_size(item)
+        try:
+            item_bytes = _estimate_size(
+                item,
+                max_bytes=(
+                    materialized_limit - bytes_observed
+                    if materialized_limit is not None
+                    else None
+                ),
+                max_items=min(10_000, max(64, limits.max_fields * 4)),
+                max_fields=limits.max_fields,
+                deadline=deadline,
+            )
+        except _EstimateLimitExceeded:
+            sampled = True
+            sampled_reason = "materialized_bytes"
+            replay_remainder = chain((item,), iterator)
+            _append_diag(
+                diagnostics,
+                _diag("INFER_LIMIT", "Inference byte limit reached"),
+                limits.max_diagnostics,
+            )
+            break
+        except (_EstimateTraversalExceeded, _EstimateTimeout) as exc:
+            sampled = True
+            sampled_reason = "time" if isinstance(exc, _EstimateTimeout) else "traversal"
+            replay_remainder = chain((item,), iterator)
+            _append_diag(
+                diagnostics,
+                _diag(
+                    "INFER_LIMIT",
+                    "Inference time limit reached"
+                    if isinstance(exc, _EstimateTimeout)
+                    else "Maximum record traversal reached",
+                ),
+                limits.max_diagnostics,
+            )
+            break
+        except _EstimateProviderFailure as exc:
+            diagnostic = _diag(
+                "INFER_SOURCE_UNSUPPORTED",
+                "Record provider failed during size estimation: "
+                f"{exc.exception_type}",
+                severity=Severity.ERROR,
+            )
+            _append_diag(diagnostics, diagnostic, limits.max_diagnostics)
+            replay_remainder = chain((item,), iterator)
+            break
         if (
             materialized_limit is not None
             and bytes_observed + item_bytes > materialized_limit
@@ -511,7 +661,65 @@ def infer_records(
             )
             continue
         row: dict[str, Any] = {}
-        for raw_name, value in item.items():
+        incomplete_row = False
+        try:
+            item_iterator = iter(item)
+        except Exception as exc:
+            _append_diag(
+                diagnostics,
+                _diag(
+                    "INFER_SOURCE_UNSUPPORTED",
+                    "Record provider failed during field traversal: "
+                    f"{type(exc).__name__}",
+                    severity=Severity.ERROR,
+                ),
+                limits.max_diagnostics,
+            )
+            break
+        field_index = 0
+        field_traversal_failed = False
+        while True:
+            if deadline is not None and time.monotonic() >= deadline:
+                sampled = True
+                sampled_reason = "time"
+                replay_remainder = chain((item,), iterator)
+                incomplete_row = True
+                _append_diag(
+                    diagnostics,
+                    _diag("INFER_LIMIT", "Inference time limit reached"),
+                    limits.max_diagnostics,
+                )
+                break
+            try:
+                raw_name = next(item_iterator)
+            except StopIteration:
+                break
+            except Exception as exc:
+                _append_diag(
+                    diagnostics,
+                    _diag(
+                        "INFER_SOURCE_UNSUPPORTED",
+                        "Record provider failed during field traversal: "
+                        f"{type(exc).__name__}",
+                        severity=Severity.ERROR,
+                    ),
+                    limits.max_diagnostics,
+                )
+                field_traversal_failed = True
+                incomplete_row = True
+                break
+            if field_index >= limits.max_fields:
+                sampled = True
+                sampled_reason = sampled_reason or "fields"
+                replay_remainder = chain((item,), iterator)
+                incomplete_row = True
+                _append_diag(
+                    diagnostics,
+                    _diag("INFER_LIMIT", "Maximum inferred field count reached"),
+                    limits.max_diagnostics,
+                )
+                break
+            field_index += 1
             if not isinstance(raw_name, str) or not raw_name:
                 _append_diag(
                     diagnostics,
@@ -523,8 +731,26 @@ def infer_records(
                     limits.max_diagnostics,
                 )
                 continue
+            try:
+                value = item[raw_name]
+            except Exception as exc:
+                _append_diag(
+                    diagnostics,
+                    _diag(
+                        "INFER_SOURCE_UNSUPPORTED",
+                        "Record provider failed during field traversal: "
+                        f"{type(exc).__name__}",
+                        severity=Severity.ERROR,
+                    ),
+                    limits.max_diagnostics,
+                )
+                field_traversal_failed = True
+                incomplete_row = True
+                break
             if raw_name not in stats:
                 if len(names) >= limits.max_fields:
+                    sampled = True
+                    sampled_reason = sampled_reason or "fields"
                     _append_diag(
                         diagnostics,
                         _diag(
@@ -534,7 +760,7 @@ def infer_records(
                         ),
                         limits.max_diagnostics,
                     )
-                    continue
+                    break
                 names.append(raw_name)
                 stats[raw_name] = {
                     "types": set(),
@@ -557,10 +783,20 @@ def infer_records(
             if logical == "null":
                 entry["null"] += 1
         rows.append(row)
+        if incomplete_row:
+            incomplete_rows += 1
+        else:
+            replay_prefix_count += 1
+        if field_traversal_failed:
+            replay_remainder = replay_remainder or chain((item,), iterator)
+            break
     if replay_remainder is not None:
         diagnostics.replay_active = True
     for name in names:
-        stats[name]["missing"] = len(rows) - stats[name]["observed"]
+        stats[name]["missing"] = max(
+            0,
+            len(rows) - stats[name]["observed"] - incomplete_rows,
+        )
         if stats[name]["missing"]:
             _append_diag(
                 diagnostics,
@@ -736,7 +972,7 @@ def infer_records(
         "limit_reasons": [sampled_reason] if sampled_reason else [],
     }
     replay = (
-        ReplayHandle(rows, iter(replay_remainder))
+        ReplayHandle(rows[:replay_prefix_count], iter(replay_remainder))
         if replay_remainder is not None
         else None
     )
@@ -1568,6 +1804,11 @@ def _infer_jsonl_bounded(
     retain_rows: bool,
 ) -> InferenceResult:
     """Read JSON Lines through a byte-bounded binary boundary."""
+    materialized_limit = (
+        limits.max_materialized_bytes
+        if limits.max_materialized_bytes is not None
+        else InferenceLimits().max_bytes
+    )
     rows: list[Mapping[str, Any]] = []
     diagnostics: list[Diagnostic] = []
     bytes_observed = 0
@@ -1684,6 +1925,7 @@ def _infer_jsonl_bounded(
             max_diagnostics=limits.max_diagnostics,
             max_bytes=None,
             timeout_seconds=limits.timeout_seconds,
+            max_materialized_bytes=materialized_limit,
         ),
         identity=identity,
         retain_rows=retain_rows,
@@ -1696,8 +1938,12 @@ def _infer_jsonl_bounded(
             **result.provenance,
             "source": "jsonl",
             "limits": limits.to_dict(),
-            "sampled": sampled,
+            "sampled": sampled or bool(result.provenance.get("sampled", False)),
+            "limit_reason": result.provenance.get("limit_reason"),
+            "limit_reasons": list(result.provenance.get("limit_reasons", ())),
             "bytes_observed": bytes_observed,
+            "raw_bytes_observed": bytes_observed,
+            "effective_materialized_bytes_limit": materialized_limit,
         },
         result.rows,
         result.replay,
@@ -1716,6 +1962,11 @@ def infer_json(
     """Infer a bounded JSON array or JSON Lines source."""
     source_id = identity or _path_identity("json", path)
     limits = limits or InferenceLimits()
+    materialized_limit = (
+        limits.max_materialized_bytes
+        if limits.max_materialized_bytes is not None
+        else InferenceLimits().max_bytes
+    )
     if lines:
         return _infer_jsonl_bounded(
             path,
@@ -1796,6 +2047,9 @@ def infer_json(
                         max_rows=max(len(rows), 1),
                         max_fields=limits.max_fields,
                         max_diagnostics=limits.max_diagnostics,
+                        max_bytes=None,
+                        timeout_seconds=limits.timeout_seconds,
+                        max_materialized_bytes=materialized_limit,
                     ),
                     identity=source_id,
                     retain_rows=retain_rows,
@@ -1821,8 +2075,15 @@ def infer_json(
                         **result.provenance,
                         "source": "jsonl",
                         "limits": limits.to_dict(),
-                        "sampled": sampled,
+                        "sampled": sampled
+                        or bool(result.provenance.get("sampled", False)),
+                        "limit_reason": result.provenance.get("limit_reason"),
+                        "limit_reasons": list(
+                            result.provenance.get("limit_reasons", ())
+                        ),
                         "bytes_observed": bytes_observed,
+                        "raw_bytes_observed": bytes_observed,
+                        "effective_materialized_bytes_limit": materialized_limit,
                     },
                     result.rows,
                     result.replay,
@@ -1835,6 +2096,9 @@ def infer_json(
                 max_rows=max(len(rows), 1),
                 max_fields=limits.max_fields,
                 max_diagnostics=limits.max_diagnostics,
+                max_bytes=None,
+                timeout_seconds=limits.timeout_seconds,
+                max_materialized_bytes=materialized_limit,
             ),
             identity=source_id,
             retain_rows=retain_rows,
@@ -1847,8 +2111,12 @@ def infer_json(
                 **result.provenance,
                 "source": "json",
                 "limits": limits.to_dict(),
-                "sampled": sampled,
+                "sampled": sampled or bool(result.provenance.get("sampled", False)),
+                "limit_reason": result.provenance.get("limit_reason"),
+                "limit_reasons": list(result.provenance.get("limit_reasons", ())),
                 "bytes_observed": bytes_observed,
+                "raw_bytes_observed": bytes_observed,
+                "effective_materialized_bytes_limit": materialized_limit,
             },
             result.rows,
             result.replay,

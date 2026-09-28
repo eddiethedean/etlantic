@@ -3,6 +3,7 @@
 
 import asyncio
 import json
+from collections.abc import Mapping
 from decimal import Decimal
 
 import etlantic as etl
@@ -23,6 +24,102 @@ def test_nested_provider_values_and_identity_are_redacted_on_wire() -> None:
     encoded = json.dumps(payload, sort_keys=True)
     assert "alice@example.com" not in encoded
     assert "/Users/alice" not in encoded
+
+
+def test_record_size_estimation_stops_at_the_materialized_byte_budget() -> None:
+    class Wide(Mapping):
+        def __init__(self, width):
+            self.width = width
+            self.reads = 0
+            self.item_visits = 0
+
+        def __len__(self):
+            return self.width
+
+        def __iter__(self):
+            return (str(index) for index in range(self.width))
+
+        def __getitem__(self, key):
+            self.reads += 1
+            return 1
+
+        def items(self):
+            for index in range(self.width):
+                self.item_visits += 1
+                yield str(index), 1
+
+    row = Wide(10_000)
+    result = etl.infer_records(
+        [row],
+        limits=etl.InferenceLimits(
+            max_rows=1,
+            max_fields=1,
+            max_materialized_bytes=1,
+        ),
+    )
+
+    assert row.reads == 1
+    assert row.item_visits == 0
+    assert result.provenance["limit_reason"] == "materialized_bytes"
+    assert "INFER_LIMIT" in {item.code for item in result.diagnostics}
+
+
+def test_record_field_traversal_is_capped_and_nested_cycles_are_safe() -> None:
+    class Wide(Mapping):
+        def __init__(self, width):
+            self.width = width
+            self.reads = 0
+
+        def __len__(self):
+            return self.width
+
+        def __iter__(self):
+            return (str(index) for index in range(self.width))
+
+        def __getitem__(self, key):
+            self.reads += 1
+            return 1
+
+    wide = Wide(10_000)
+    bounded = etl.infer_records(
+        [wide],
+        limits=etl.InferenceLimits(max_rows=1, max_fields=1, max_bytes=10_000),
+    )
+    assert [field.name for field in bounded.schema.fields] == ["0"]
+    assert wide.reads <= 2
+    assert bounded.provenance["limit_reason"] == "fields"
+
+    cyclic = {"payload": []}
+    cyclic["payload"].append(cyclic)
+    result = etl.infer_records([cyclic])
+    assert result.schema.fields[0].logical_type == "array"
+
+
+def test_record_size_estimation_redacts_provider_failures_and_bounds_depth() -> None:
+    class Broken(Mapping):
+        def __len__(self):
+            return 1
+
+        def __iter__(self):
+            raise RuntimeError("private provider detail")
+
+        def __getitem__(self, key):
+            raise AssertionError("field access should not follow iterator failure")
+
+    failed = etl.infer_records([Broken()])
+    assert "INFER_SOURCE_UNSUPPORTED" in {item.code for item in failed.diagnostics}
+    assert "private provider detail" not in repr(failed.diagnostics)
+    assert failed.provenance["source_validation"] == "failed"
+
+    nested = 1
+    for _ in range(20):
+        nested = [nested]
+    bounded = etl.infer_records(
+        [{"value": nested}],
+        limits=etl.InferenceLimits(max_rows=1, max_fields=1, max_bytes=1_000_000),
+    )
+    assert bounded.provenance["limit_reason"] == "traversal"
+    assert "INFER_LIMIT" in {item.code for item in bounded.diagnostics}
 
 
 def test_provider_schema_with_non_field_items_fails_closed() -> None:
@@ -143,6 +240,36 @@ def test_exact_jsonl_boundary_is_not_marked_sampled(tmp_path) -> None:
     result = etl.infer_json(path, lines=True, limits=etl.InferenceLimits(max_rows=2))
     assert result.provenance["sampled"] is False
     assert "INFER_LIMIT" not in {item.code for item in result.diagnostics}
+
+
+def test_provider_materialization_limit_is_checked_before_record_conversion() -> None:
+    conversions = []
+
+    class View:
+        __etlantic_bounded_view__ = True
+        estimated_size = 128
+
+        def to_dicts(self):
+            conversions.append(True)
+            return [{"value": "large"}]
+
+    class Provider:
+        def head(self, count):
+            return View()
+
+        def to_dicts(self):
+            raise AssertionError("the source conversion hook must not be called")
+
+    result = etl.infer_source(
+        Provider(),
+        limits=etl.InferenceLimits(max_bytes=1_000, max_materialized_bytes=1),
+    )
+
+    assert conversions == []
+    assert "INFER_LIMIT" in {item.code for item in result.diagnostics}
+    assert result.provenance["effective_materialized_bytes_limit"] == 1
+    assert result.provenance["sampled"] is True
+    assert result.provenance["limit_reason"] == "materialized_bytes"
 
 
 def test_mixed_decimal_and_float_use_lossless_decimal_policy() -> None:

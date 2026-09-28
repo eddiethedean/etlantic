@@ -4,8 +4,10 @@
 from __future__ import annotations
 
 import inspect as _inspect
+import math
 import time
 from collections.abc import Mapping
+from dataclasses import dataclass
 from itertools import islice
 from pathlib import Path
 from typing import Any, cast
@@ -19,7 +21,7 @@ from etlantic.schema_drift import (
 )
 
 from .records import _estimate_size, infer_csv, infer_json, infer_records
-from .types import InferenceLimits, InferenceResult
+from .types import InferenceLimits, InferenceResult, SchemaEvidence
 
 _KNOWN_LOGICAL_TYPES = {
     "unknown",
@@ -41,17 +43,33 @@ class _UnboundedProvider(RuntimeError):
     """Provider conversion cannot prove the configured materialization bound."""
 
 
+class _MaterializedLimitReached(RuntimeError):
+    """A provider preview cannot be converted within the materialized-byte cap."""
+
+
+@dataclass(frozen=True, slots=True)
+class _BoundedView:
+    value: Any
+    truncated: bool
+    source_rows: int | None
+    preview_rows: int | None
+    estimated_bytes: int | None
+
+
 def _bounded_row_count(value: Any) -> int | None:
     try:
         return max(0, len(value))
-    except (TypeError, ValueError, OverflowError):
+    except Exception:
         pass
-    rows = getattr(value, "rows", None)
+    try:
+        rows = getattr(value, "rows", None)
+    except Exception:
+        return None
     if rows is None:
         return None
     try:
         return max(0, len(rows))
-    except (TypeError, ValueError, OverflowError):
+    except Exception:
         return None
 
 
@@ -63,18 +81,73 @@ def _provider_logical_type(value: Any) -> str:
 def _schema_result(schema: NormalizedSchema) -> InferenceResult:
     return InferenceResult(
         schema,
-        provenance={"source": "metadata", "method": "provider_schema"},
+        provenance={
+            "source": "metadata",
+            "method": "provider_schema",
+            "provider_required_fields": [field.name for field in schema.fields],
+            "provider_nullable_fields": [field.name for field in schema.fields],
+        },
     )
 
 
-def _bounded_materialization(value: Any, limits: InferenceLimits) -> Any | None:
-    """Return a bounded provider view, or ``None`` when it cannot be bounded."""
+def _provider_materialized_limit(limits: InferenceLimits) -> int | None:
+    return (
+        limits.max_materialized_bytes
+        if limits.max_materialized_bytes is not None
+        else limits.max_bytes
+    )
+
+
+def _provider_size_estimate(value: Any, *, byte_limit: int | None) -> int | None:
+    """Use provider metadata to prove the view fits before converting its rows."""
+    for attr in ("estimated_size", "nbytes", "byte_size", "memory_usage"):
+        try:
+            candidate = getattr(value, attr, None)
+            estimate = (
+                candidate(index=True)
+                if attr == "memory_usage" and callable(candidate)
+                else (candidate() if callable(candidate) else candidate)
+            )
+            if attr == "memory_usage":
+                sum_method = getattr(estimate, "sum", None)
+                if callable(sum_method):
+                    estimate = sum_method()
+            item_method = getattr(estimate, "item", None)
+            if callable(item_method):
+                estimate = item_method()
+            if isinstance(estimate, (int, float)) and math.isfinite(estimate):
+                return max(0, int(estimate))
+        except Exception:
+            continue
+    try:
+        rows = getattr(value, "rows", None)
+        if rows is not None:
+            return _estimate_size(
+                rows,
+                max_bytes=byte_limit,
+                max_items=10_000,
+            )
+    except Exception:
+        if byte_limit is not None:
+            return byte_limit + 1
+    return None
+
+
+def _bounded_materialization(
+    value: Any, limits: InferenceLimits
+) -> _BoundedView | None:
+    """Return a bounded provider view and proof metadata before row conversion."""
     head = getattr(value, "head", None)
     if not callable(head):
         return None
     started = time.monotonic()
+    source_rows = _bounded_row_count(value)
+    module = type(value).__module__.split(".", 1)[0].casefold()
+    probe_count = limits.max_rows
+    if source_rows is None and module in {"pandas", "polars", "pyarrow", "duckdb"}:
+        probe_count += 1
     try:
-        bounded = head(limits.max_rows)
+        bounded = head(probe_count)
     except Exception:
         return None
     if (
@@ -88,8 +161,24 @@ def _bounded_materialization(value: Any, limits: InferenceLimits) -> Any | None:
     if bounded is value:
         return None
     row_count = _bounded_row_count(bounded)
+    truncated = source_rows > limits.max_rows if source_rows is not None else False
     if row_count is not None and row_count > limits.max_rows:
-        return None
+        truncated = True
+        try:
+            bounded = head(limits.max_rows)
+        except Exception:
+            return None
+        if bounded is value:
+            return None
+        row_count = _bounded_row_count(bounded)
+        if row_count is not None and row_count > limits.max_rows:
+            return None
+    elif source_rows is None and row_count is None:
+        truncated = True
+    elif source_rows is None and row_count == limits.max_rows:
+        # Without a source count, a full head cannot prove whether additional
+        # rows exist. Keep the result provisional at the exact boundary.
+        truncated = True
     if row_count is None:
         module = type(bounded).__module__.split(".", 1)[0].casefold()
         if not getattr(bounded, "__etlantic_bounded_view__", False) and module not in {
@@ -100,37 +189,237 @@ def _bounded_materialization(value: Any, limits: InferenceLimits) -> Any | None:
             "datafusion",
         }:
             return None
-    if limits.max_bytes is not None:
-        estimate: Any = None
-        for attr in ("estimated_size", "nbytes", "byte_size", "memory_usage"):
-            candidate = getattr(bounded, attr, None)
-            try:
-                estimate = (
-                    candidate(index=True)
-                    if attr == "memory_usage" and callable(candidate)
-                    else (candidate() if callable(candidate) else candidate)
+    materialized_limit = _provider_materialized_limit(limits)
+    estimate = _provider_size_estimate(bounded, byte_limit=materialized_limit)
+    if materialized_limit is not None:
+        if estimate is None and limits.max_materialized_bytes is not None:
+            raise _MaterializedLimitReached
+        if estimate is not None and estimate > materialized_limit:
+            raise _MaterializedLimitReached
+    if (
+        limits.timeout_seconds is not None
+        and time.monotonic() - started >= limits.timeout_seconds
+    ):
+        return None
+    return _BoundedView(
+        bounded,
+        truncated,
+        source_rows,
+        row_count,
+        estimate,
+    )
+
+
+def _provider_name(value: Any) -> str:
+    module = type(value).__module__.split(".", 1)[0].casefold()
+    if module in {"pandas", "polars", "pyarrow", "duckdb", "datafusion"}:
+        return module
+    return type(value).__name__
+
+
+def _provider_provenance(
+    result: InferenceResult,
+    value: Any,
+    limits: InferenceLimits,
+    method: str,
+    preview: _BoundedView | None,
+    *,
+    limit_reason: str | None = None,
+) -> dict[str, Any]:
+    limitations: list[str] = []
+    if preview is None:
+        limitations.append("bounded_preview_unavailable")
+    elif preview.truncated:
+        limitations.append("provider_preview_truncated_or_unverified")
+    provenance = {
+        **result.provenance,
+        "source": _provider_name(value),
+        "provider_name": _provider_name(value),
+        "method": method,
+        "inspection_method": method,
+        "limits": limits.to_dict(),
+        "sampled": bool(preview.truncated) if preview is not None else False,
+        "limitations": limitations,
+        "effective_materialized_bytes_limit": _provider_materialized_limit(limits),
+        **(
+            {"preview_rows_observed": preview.preview_rows}
+            if preview is not None and preview.preview_rows is not None
+            else {}
+        ),
+        **(
+            {"preview_estimated_bytes": preview.estimated_bytes}
+            if preview is not None and preview.estimated_bytes is not None
+            else {}
+        ),
+    }
+    if limit_reason is not None:
+        provenance.update(
+            {
+                "sampled": True,
+                "limit_reason": limit_reason,
+                "limit_reasons": [limit_reason],
+                "limitations": ["provider_materialized_bytes_limit"],
+            }
+        )
+    return provenance
+
+
+def _provider_failure(
+    identity: str,
+    value: Any,
+    limits: InferenceLimits,
+    method: str,
+    code: str,
+    message: str,
+    *,
+    limit_reason: str | None = None,
+) -> InferenceResult:
+    result = InferenceResult(
+        NormalizedSchema(identity=identity, fields=()),
+        (
+            Diagnostic(
+                code,
+                Severity.ERROR,
+                message,
+                phase="inference",
+            ),
+        ),
+        provenance={"source": _provider_name(value)},
+    )
+    provenance = _provider_provenance(
+        result, value, limits, method, None, limit_reason=limit_reason
+    )
+    return result.replace(provenance=provenance)
+
+
+def _mark_provider_evidence(
+    evidence: tuple[SchemaEvidence, ...], *, truncated: bool
+) -> tuple[SchemaEvidence, ...]:
+    if not truncated:
+        return evidence
+    return tuple(
+        SchemaEvidence(
+            field=item.field,
+            observed_values=item.observed_values,
+            null_values=item.null_values,
+            missing_values=item.missing_values,
+            type_counts=dict(item.type_counts),
+            sampled=True,
+            method=item.method,
+            confidence=min(item.confidence, 0.7)
+            if item.confidence is not None
+            else 0.7,
+            limitations=tuple(
+                dict.fromkeys(
+                    (*item.limitations, "provider_preview_truncated_or_unverified")
                 )
-                if attr == "memory_usage" and hasattr(estimate, "sum"):
-                    estimate = estimate.sum()
-            except Exception:
-                estimate = None
-            item_method = getattr(estimate, "item", None)
-            if isinstance(estimate, (int, float)) or callable(item_method):
-                try:
-                    estimate = float(
-                        cast(Any, item_method() if callable(item_method) else estimate)
-                    )
-                except (TypeError, ValueError):
-                    estimate = None
-                break
-        if estimate is None and hasattr(bounded, "rows"):
-            try:
-                estimate = _estimate_size(cast(Any, bounded).rows)
-            except Exception:
-                estimate = None
-        if isinstance(estimate, (int, float)) and estimate > limits.max_bytes:
-            return None
-    return bounded
+            ),
+        )
+        for item in evidence
+    )
+
+
+def _provider_schema_from_preview(
+    schema: NormalizedSchema,
+    preview_schema: NormalizedSchema,
+    *,
+    provisional: bool,
+    conservative: bool,
+    required_fields: tuple[str, ...] = (),
+    nullable_fields: tuple[str, ...] = (),
+) -> NormalizedSchema:
+    if provisional:
+        required = set(required_fields) if not conservative else set()
+        nullable = set(nullable_fields) if not conservative else set()
+        return NormalizedSchema(
+            identity=schema.identity,
+            fields=tuple(
+                NormalizedField(
+                    name=field.name,
+                    logical_type=field.logical_type,
+                    required=field.required if field.name in required else False,
+                    nullable=field.nullable if field.name in nullable else True,
+                    metadata=dict(field.metadata),
+                )
+                for field in schema.fields
+            ),
+            metadata=dict(schema.metadata),
+        )
+    if conservative:
+        return schema
+    if conservative:
+        return schema
+    preview_fields = {field.name: field for field in preview_schema.fields}
+    fields = tuple(
+        NormalizedField(
+            name=field.name,
+            logical_type=field.logical_type,
+            required=(
+                False
+                if conservative
+                else field.required
+                and preview_fields.get(field.name, field).required
+            ),
+            nullable=(
+                True
+                if conservative
+                else field.nullable or preview_fields.get(field.name, field).nullable
+            ),
+            metadata=dict(field.metadata),
+        )
+        for field in schema.fields
+    )
+    return NormalizedSchema(
+        identity=schema.identity,
+        fields=fields,
+        metadata=dict(schema.metadata),
+    )
+
+
+def _infer_provider_records(
+    records: list[Any],
+    value: Any,
+    preview: _BoundedView,
+    *,
+    limits: InferenceLimits,
+    hints: Mapping[str, Any] | None,
+    identity: str,
+    method: str,
+    extra_diagnostics: tuple[Diagnostic, ...] = (),
+) -> InferenceResult:
+    result = infer_records(
+        records,
+        hints=hints,
+        limits=limits,
+        identity=identity,
+        retain_rows=True,
+    )
+    schema = _provider_schema_from_preview(
+        result.schema,
+        result.schema,
+        provisional=preview.truncated,
+        conservative=True,
+    )
+    provenance = _provider_provenance(result, value, limits, method, preview)
+    provenance.update(
+        {
+            "preview_bytes_observed": result.provenance.get(
+                "materialized_bytes_observed", 0
+            ),
+            "preview_available": True,
+        }
+    )
+    return result.replace(
+        schema=schema,
+        evidence=_mark_provider_evidence(
+            result.evidence, truncated=preview.truncated
+        ),
+        diagnostics=(
+            *extra_diagnostics,
+            *result.diagnostics,
+        )[: limits.max_diagnostics],
+        provenance=provenance,
+    )
 
 
 def _provider_records(bounded: Any, limits: InferenceLimits) -> list[Any]:
@@ -205,7 +494,13 @@ def _schema_from_provider_result(
     """Normalize a provider schema payload without importing its package."""
     if isinstance(result, NormalizedSchema):
         return InferenceResult(
-            result, provenance={"source": "metadata", "method": method}
+            result,
+            provenance={
+                "source": "metadata",
+                "method": method,
+                "provider_required_fields": [field.name for field in result.fields],
+                "provider_nullable_fields": [field.name for field in result.fields],
+            },
         )
     if isinstance(result, Mapping):
         fields = result.get("fields")
@@ -223,6 +518,8 @@ def _schema_from_provider_result(
                 fields = None
     if fields is None:
         return None
+    provider_required_fields: list[str] = []
+    provider_nullable_fields: list[str] = []
     if isinstance(fields, Mapping):
         field_items = [
             {
@@ -252,6 +549,10 @@ def _schema_from_provider_result(
                         provenance={"source": "metadata", "method": method},
                     )
                 item["logical_type"] = _provider_logical_type(item["logical_type"])
+                if "required" in item:
+                    provider_required_fields.append(str(item["name"]))
+                if "nullable" in item:
+                    provider_nullable_fields.append(str(item["name"]))
                 field_items.append(item)
             else:
                 field_type = getattr(field, "logical_type", None)
@@ -278,6 +579,10 @@ def _schema_from_provider_result(
                         "nullable": bool(getattr(field, "nullable", True)),
                     }
                 )
+                if hasattr(field, "required"):
+                    provider_required_fields.append(str(field_name))
+                if hasattr(field, "nullable"):
+                    provider_nullable_fields.append(str(field_name))
     else:
         return InferenceResult(
             NormalizedSchema(identity=identity, fields=()),
@@ -341,7 +646,12 @@ def _schema_from_provider_result(
     return InferenceResult(
         schema,
         tuple(diagnostics_list[:max_diagnostics]),
-        provenance={"source": "metadata", "method": method},
+        provenance={
+            "source": "metadata",
+            "method": method,
+            "provider_required_fields": provider_required_fields,
+            "provider_nullable_fields": provider_nullable_fields,
+        },
     )
 
 
@@ -398,8 +708,30 @@ def _attach_provider_preview(
     authoritative while observed nullability is refined from the bounded
     preview.
     """
-    bounded = _bounded_materialization(value, limits)
-    if bounded is None:
+    method = str(result.provenance.get("method") or "provider_schema")
+    try:
+        bounded_preview = _bounded_materialization(value, limits)
+    except _MaterializedLimitReached:
+        return result.replace(
+            diagnostics=(
+                Diagnostic(
+                    "INFER_LIMIT",
+                    Severity.ERROR,
+                    "Provider materialized-byte limit reached",
+                    phase="inference",
+                ),
+                *result.diagnostics,
+            ),
+            provenance=_provider_provenance(
+                result,
+                value,
+                limits,
+                method,
+                None,
+                limit_reason="materialized_bytes",
+            ),
+        )
+    if bounded_preview is None:
         if callable(getattr(value, "head", None)):
             return result.replace(
                 diagnostics=(
@@ -410,11 +742,16 @@ def _attach_provider_preview(
                         phase="inference",
                     ),
                     *result.diagnostics,
-                )
+                ),
+                provenance=_provider_provenance(
+                    result, value, limits, method, None
+                ),
             )
-        return result
+        return result.replace(
+            provenance=_provider_provenance(result, value, limits, method, None)
+        )
     try:
-        records = _provider_records(bounded, limits)
+        records = _provider_records(bounded_preview.value, limits)
         preview = infer_records(
             records,
             hints=hints,
@@ -432,7 +769,10 @@ def _attach_provider_preview(
                     phase="inference",
                 ),
                 *result.diagnostics,
-            )
+            ),
+            provenance=_provider_provenance(
+                result, value, limits, method, bounded_preview
+            ),
         )
     except Exception:
         return result.replace(
@@ -444,40 +784,41 @@ def _attach_provider_preview(
                     phase="inference",
                 ),
                 *result.diagnostics,
-            )
+            ),
+            provenance=_provider_provenance(
+                result, value, limits, method, bounded_preview
+            ),
         )
-    preview_fields = {field.name: field for field in preview.schema.fields}
-    merged_fields = tuple(
-        NormalizedField(
-            name=field.name,
-            logical_type=field.logical_type,
-            required=field.required and preview_fields.get(field.name, field).required,
-            nullable=field.nullable or preview_fields.get(field.name, field).nullable,
-            metadata=dict(field.metadata),
-        )
-        for field in result.schema.fields
+    observed_schema = _provider_schema_from_preview(
+        result.schema,
+        preview.schema,
+        provisional=bounded_preview.truncated,
+        conservative=False,
+        required_fields=tuple(result.provenance.get("provider_required_fields", ())),
+        nullable_fields=tuple(result.provenance.get("provider_nullable_fields", ())),
     )
-    observed_schema = NormalizedSchema(
-        identity=result.schema.identity,
-        fields=merged_fields,
-        metadata=dict(result.schema.metadata),
-    )
-    return result.replace(
-        schema=observed_schema,
-        rows=preview.rows,
-        replay=preview.replay,
-        diagnostics=(
-            *result.diagnostics,
-            *preview.diagnostics,
-        )[: limits.max_diagnostics],
-        provenance={
-            **result.provenance,
+    provenance = _provider_provenance(result, value, limits, method, bounded_preview)
+    provenance.update(
+        {
             "preview_rows_observed": preview.provenance.get(
                 "rows_observed", len(preview.rows)
             ),
             "preview_bytes_observed": preview.provenance.get("bytes_observed", 0),
             "preview_available": True,
-        },
+        }
+    )
+    return result.replace(
+        schema=observed_schema,
+        rows=preview.rows,
+        replay=preview.replay,
+        evidence=_mark_provider_evidence(
+            preview.evidence, truncated=bounded_preview.truncated
+        ),
+        diagnostics=(
+            *result.diagnostics,
+            *preview.diagnostics,
+        )[: limits.max_diagnostics],
+        provenance=provenance,
     )
 
 
@@ -741,104 +1082,103 @@ def infer_source(
             )
     to_dicts = getattr(value, "to_dicts", None)
     if callable(to_dicts):
-        bounded = _bounded_materialization(value, limits)
-        if bounded is None:
-            return InferenceResult(
-                NormalizedSchema(identity=identity, fields=()),
-                (
-                    Diagnostic(
-                        "INFER_SOURCE_UNBOUNDED",
-                        Severity.ERROR,
-                        "Source exposes records but no bounded head operation",
-                        phase="inference",
-                    ),
-                ),
-                provenance={"source": type(value).__name__},
+        method = "to_dicts"
+        try:
+            bounded_preview = _bounded_materialization(value, limits)
+        except _MaterializedLimitReached:
+            return _provider_failure(
+                identity,
+                value,
+                limits,
+                method,
+                "INFER_LIMIT",
+                "Provider materialized-byte limit reached",
+                limit_reason="materialized_bytes",
+            )
+        if bounded_preview is None:
+            return _provider_failure(
+                identity,
+                value,
+                limits,
+                method,
+                "INFER_SOURCE_UNBOUNDED",
+                "Source exposes records but no provably bounded materialization",
             )
         try:
-            records = _provider_records(bounded, limits)
+            records = _provider_records(bounded_preview.value, limits)
         except _UnboundedProvider:
-            return InferenceResult(
-                NormalizedSchema(identity=identity, fields=()),
-                (
-                    Diagnostic(
-                        "INFER_SOURCE_UNBOUNDED",
-                        Severity.ERROR,
-                        "Provider conversion could not prove the configured bounds",
-                        phase="inference",
-                    ),
-                ),
-                provenance={"source": type(value).__name__},
+            return _provider_failure(
+                identity,
+                value,
+                limits,
+                method,
+                "INFER_SOURCE_UNBOUNDED",
+                "Provider conversion could not prove the configured bounds",
             )
         except Exception:
-            return InferenceResult(
-                NormalizedSchema(identity=identity, fields=()),
-                (
-                    Diagnostic(
-                        "INFER_SOURCE_UNSUPPORTED",
-                        Severity.ERROR,
-                        "Bounded provider conversion failed",
-                        phase="inference",
-                    ),
-                ),
-                provenance={"source": type(value).__name__},
+            return _provider_failure(
+                identity,
+                value,
+                limits,
+                method,
+                "INFER_SOURCE_UNSUPPORTED",
+                "Bounded provider conversion failed",
             )
-        result = infer_records(
-            records, hints=hints, limits=limits, identity=identity, retain_rows=True
+        return _infer_provider_records(
+            records,
+            value,
+            bounded_preview,
+            limits=limits,
+            hints=hints,
+            identity=identity,
+            method=method,
+            extra_diagnostics=(schema_diagnostic,)
+            if schema_diagnostic is not None
+            else (),
         )
-        if schema_diagnostic is not None:
-            result = InferenceResult(
-                result.schema,
-                (schema_diagnostic, *result.diagnostics),
-                result.evidence,
-                result.provenance,
-                result.rows,
-                result.replay,
-            )
-        return result
     to_dict = getattr(value, "to_dict", None)
     if callable(to_dict):
-        bounded = _bounded_materialization(value, limits)
-        if bounded is None:
-            return InferenceResult(
-                NormalizedSchema(identity=identity, fields=()),
-                (
-                    Diagnostic(
-                        "INFER_SOURCE_UNBOUNDED",
-                        Severity.ERROR,
-                        "Source exposes records but no bounded head operation",
-                        phase="inference",
-                    ),
-                ),
-                provenance={"source": type(value).__name__},
+        method = "to_dict"
+        try:
+            bounded_preview = _bounded_materialization(value, limits)
+        except _MaterializedLimitReached:
+            return _provider_failure(
+                identity,
+                value,
+                limits,
+                method,
+                "INFER_LIMIT",
+                "Provider materialized-byte limit reached",
+                limit_reason="materialized_bytes",
+            )
+        if bounded_preview is None:
+            return _provider_failure(
+                identity,
+                value,
+                limits,
+                method,
+                "INFER_SOURCE_UNBOUNDED",
+                "Source exposes records but no provably bounded materialization",
             )
         try:
-            converted = _provider_records(bounded, limits)
+            converted = _provider_records(bounded_preview.value, limits)
         except _UnboundedProvider:
-            return InferenceResult(
-                NormalizedSchema(identity=identity, fields=()),
-                (
-                    Diagnostic(
-                        "INFER_SOURCE_UNBOUNDED",
-                        Severity.ERROR,
-                        "Provider conversion could not prove the configured bounds",
-                        phase="inference",
-                    ),
-                ),
-                provenance={"source": type(value).__name__},
+            return _provider_failure(
+                identity,
+                value,
+                limits,
+                method,
+                "INFER_SOURCE_UNBOUNDED",
+                "Provider conversion could not prove the configured bounds",
             )
         except Exception:
-            return InferenceResult(
-                NormalizedSchema(identity=identity, fields=()),
-                (
-                    Diagnostic(
-                        "INFER_SOURCE_UNSUPPORTED",
-                        Severity.ERROR,
-                        "Bounded provider conversion failed",
-                        phase="inference",
-                    ),
-                ),
-                provenance={"source": type(value).__name__},
+            return _provider_failure(
+                identity,
+                value,
+                limits,
+                method,
+                "INFER_SOURCE_UNSUPPORTED",
+                "Bounded provider conversion failed",
             )
         result = infer_records(
             converted,
@@ -850,7 +1190,7 @@ def infer_source(
         if not converted and not result.schema.fields:
             column_schema = _schema_from_column_metadata(value, identity=identity)
             if column_schema is not None:
-                return column_schema.replace(
+                result = column_schema.replace(
                     diagnostics=(
                         *column_schema.diagnostics,
                         *result.diagnostics,
@@ -866,7 +1206,20 @@ def infer_source(
                     rows=result.rows,
                     replay=result.replay,
                 )
-        return result
+                return result.replace(
+                    provenance=_provider_provenance(
+                        result, value, limits, method, bounded_preview
+                    )
+                )
+        return _infer_provider_records(
+            converted,
+            value,
+            bounded_preview,
+            limits=limits,
+            hints=hints,
+            identity=identity,
+            method=method,
+        )
     if isinstance(value, Mapping) or hasattr(value, "__iter__"):
         return infer_records(value, hints=hints, limits=limits, identity=identity)
     return InferenceResult(
