@@ -3398,6 +3398,25 @@ def check_write_compatibility(
                 phase="inference",
             )
         )
+    elif "capabilities" in target_metadata:
+        diagnostics.append(
+            Diagnostic(
+                "INFER_WRITE_MODE_UNSUPPORTED",
+                Severity.ERROR,
+                "Target capability declaration is malformed",
+                phase="inference",
+            )
+        )
+    elif mode in modes and mode != "append":
+        diagnostics.append(
+            Diagnostic(
+                "INFER_WRITE_MODE_UNSUPPORTED",
+                Severity.ERROR,
+                f"Schema-only targets do not advertise write mode {mode!r}; "
+                "only legacy append is allowed without capability evidence",
+                phase="inference",
+            )
+        )
     obligations_list: list[dict[str, Any]] = []
     for name, target_type in sorted(casts.items()):
         obligation = {
