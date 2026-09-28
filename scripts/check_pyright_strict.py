@@ -20,7 +20,7 @@ EXPECTED_DIGESTS = {
     # Pyright's import/type surface differs by host platform because the
     # synchronized dependency set includes platform-specific distributions.
     "Darwin": "ecd1940441bbc98636a2d892241fe0c389dcc618efc97fe0ebb0a3b0754bb284",
-    "Linux": "0d4eb8f96eb20a4ff916c96c9583d5fa550d1e758d95dc738fb4180149b689b6",
+    "Linux": "ecd1940441bbc98636a2d892241fe0c389dcc618efc97fe0ebb0a3b0754bb284",
 }
 
 
