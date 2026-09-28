@@ -13,7 +13,7 @@ from collections.abc import Callable, Mapping
 from copy import deepcopy
 from dataclasses import replace
 from decimal import Decimal
-from typing import Any
+from typing import Any, cast
 
 from pydantic import Field, create_model
 
@@ -1094,6 +1094,8 @@ class InferredDataset:
         self, target_schema: NormalizedSchema, *, mode: str = "append"
     ) -> WriteCompatibility:
         compatibility = check_write_compatibility(self.schema, target_schema, mode=mode)
+        if _source_inference_failed(self):
+            return _early_write_compatibility(compatibility, self)
 
         observation = self._result.target_observation
         same_target = (
@@ -1682,20 +1684,39 @@ def from_polars(
 def _early_write_compatibility(
     compatibility: WriteCompatibility, dataset: InferredDataset
 ) -> WriteCompatibility:
-    provenance = dataset.provenance
-    source_validation_failed = provenance.get("source_validation") == "failed"
-    if not source_validation_failed:
-        return compatibility
     source_diagnostics = tuple(
         diagnostic
         for diagnostic in dataset.diagnostics
-        if isinstance(diagnostic, Diagnostic) and diagnostic.severity == Severity.ERROR
-    ) or (_source_inference_error(),)
+        if _is_error_diagnostic(diagnostic)
+    )
+    if not _source_inference_failed(dataset):
+        return compatibility
+    if not source_diagnostics:
+        source_diagnostics = (_source_inference_error(),)
     return replace(
         compatibility,
         compatible=False,
         diagnostics=(*compatibility.diagnostics, *source_diagnostics),
     )
+
+
+def _source_inference_failed(dataset: InferredDataset) -> bool:
+    provenance = dataset.provenance
+    return (
+        provenance.get("source_validation") == "failed"
+        or provenance.get("inspection") == "failed"
+        or any(_is_error_diagnostic(item) for item in dataset.diagnostics)
+    )
+
+
+def _is_error_diagnostic(diagnostic: Any) -> bool:
+    if isinstance(diagnostic, Diagnostic):
+        severity: Any = diagnostic.severity
+    elif isinstance(diagnostic, Mapping):
+        severity = cast(Mapping[str, Any], diagnostic).get("severity")
+    else:
+        severity = getattr(diagnostic, "severity", None)
+    return getattr(severity, "value", severity) == Severity.ERROR.value
 
 
 def _source_inference_error() -> Diagnostic:

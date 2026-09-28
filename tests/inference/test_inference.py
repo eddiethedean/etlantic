@@ -1251,6 +1251,53 @@ def test_check_write_fails_closed_when_source_error_exceeds_diagnostic_limit() -
     }
 
 
+def test_check_write_fails_closed_when_provider_schema_inspection_fails() -> None:
+    class BrokenSource:
+        def schema(self) -> dict[str, str]:
+            raise RuntimeError("private provider detail")
+
+    dataset = etl.from_polars(BrokenSource())
+    target = NormalizedSchema(
+        "target",
+        (NormalizedField("optional", "integer", required=False, nullable=True),),
+    )
+
+    compatibility = dataset.check_write(target)
+
+    assert compatibility.status == "conflict"
+    assert "INFER_SOURCE_UNKNOWN" in {
+        diagnostic.code for diagnostic in compatibility.diagnostics
+    }
+    assert "private provider detail" not in str(compatibility.to_dict())
+
+
+def test_target_replay_keeps_source_failure_after_capped_diagnostic() -> None:
+    target = NormalizedSchema(
+        "target",
+        (NormalizedField("id", "integer", required=True, nullable=False),),
+    )
+    dataset = etl.from_records_for_target(
+        [{"id": 1, "": 0}, "not-a-record", {"id": 2}],
+        target,
+        limits=InferenceLimits(max_rows=2, max_diagnostics=1),
+    )
+
+    assert dataset.provenance["source_validation"] == "failed"
+    assert dataset.provenance["target_validation"] == "failed"
+    assert len(dataset.diagnostics) == 1
+    assert dataset.check_write(target).status == "conflict"
+    assert "INFER_SOURCE_INVALID" in {
+        diagnostic.code for diagnostic in dataset.check_write(target).diagnostics
+    }
+
+    replay = dataset.replay
+    assert replay is not None
+    assert list(replay.take()) == [{"id": 1}, {"id": 2}]
+    assert dataset.provenance["source_validation"] == "failed"
+    assert dataset.provenance["target_validation"] == "failed"
+    assert dataset.check_write(target).status == "conflict"
+
+
 def test_check_write_fails_closed_when_source_iterator_errors_during_replay() -> None:
     def records():
         yield {"id": 1}

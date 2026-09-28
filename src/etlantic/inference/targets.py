@@ -2482,7 +2482,8 @@ def _backfill_observation(
             validation_fields.add(target_field.name)
     validation_state = "not_required"
     if (
-        failed_fields
+        source.provenance.get("source_validation") == "failed"
+        or failed_fields
         or any(
             diagnostic.severity == Severity.ERROR for diagnostic in runtime_diagnostics
         )
@@ -2631,7 +2632,10 @@ def _backfill_observation(
             result.diagnostics = tuple(existing[: max(1, max_diagnostics)])
 
         def on_replay_complete() -> None:
-            if validation_state != "failed":
+            if (
+                validation_state != "failed"
+                and result.provenance.get("source_validation") != "failed"
+            ):
                 replay_status["state"] = "complete"
                 replay_status["validated_rows"] = replay_row_index
                 result.provenance["target_validation"] = "complete"
