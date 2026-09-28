@@ -1641,13 +1641,14 @@ def _read_json_array(
     with Path(path).open("r", encoding="utf-8") as handle:
 
         def refill() -> bool:
-            nonlocal buffer, bytes_observed, eof, sampled, stopped
+            nonlocal buffer, bytes_observed, eof, limit_reason, sampled, stopped
             if (
                 limits.timeout_seconds is not None
                 and time.monotonic() - started_at >= limits.timeout_seconds
             ):
                 sampled = True
                 stopped = True
+                limit_reason = "time"
                 _append_diag(
                     diagnostics,
                     _diag("INFER_LIMIT", "JSON inference time limit reached"),
@@ -1669,6 +1670,7 @@ def _read_json_array(
             if limits.max_bytes is not None and bytes_observed > limits.max_bytes:
                 sampled = True
                 stopped = True
+                limit_reason = "raw_bytes"
                 _append_diag(
                     diagnostics,
                     _diag("INFER_LIMIT", "JSON source byte limit reached"),
@@ -1710,6 +1712,7 @@ def _read_json_array(
                 and time.monotonic() - started_at >= limits.timeout_seconds
             ):
                 sampled = True
+                limit_reason = "time"
                 _append_diag(
                     diagnostics,
                     _diag("INFER_LIMIT", "JSON inference time limit reached"),
@@ -1747,6 +1750,7 @@ def _read_json_array(
                 break
             if items_seen >= limits.max_rows:
                 sampled = True
+                limit_reason = "rows"
                 _append_diag(
                     diagnostics,
                     _diag(
@@ -1910,6 +1914,7 @@ def _infer_jsonl_bounded(
                 ):
                     sampled = True
                     loop_completed = False
+                    limit_reason = "time"
                     _append_diag(
                         diagnostics,
                         _diag("INFER_LIMIT", "JSONL inference time limit reached"),
@@ -1929,6 +1934,7 @@ def _infer_jsonl_bounded(
                 if remaining is not None and len(raw) > remaining:
                     sampled = True
                     loop_completed = False
+                    limit_reason = "raw_bytes"
                     _append_diag(
                         diagnostics,
                         _diag("INFER_LIMIT", "JSONL inference byte limit reached"),
@@ -2024,6 +2030,7 @@ def _infer_jsonl_bounded(
                 probe = handle.readline(1)
                 if probe:
                     sampled = True
+                    limit_reason = "rows"
                     _append_diag(
                         diagnostics,
                         _diag("INFER_LIMIT", "JSONL inference row limit reached"),

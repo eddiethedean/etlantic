@@ -141,6 +141,29 @@ def test_json_whitespace_is_charged_to_raw_not_materialized_bytes(
         assert result.provenance["materialized_bytes_observed"] <= 64
 
 
+def test_json_sources_report_row_and_raw_byte_limit_reasons(
+    tmp_path: Path,
+) -> None:
+    cases = (
+        (etl.InferenceLimits(max_rows=1, max_bytes=1_000), "rows"),
+        (etl.InferenceLimits(max_rows=10, max_bytes=4), "raw_bytes"),
+    )
+    for lines in (False, True):
+        suffix = ".jsonl" if lines else ".json"
+        path = tmp_path / f"bounded{suffix}"
+        path.write_text(
+            '{"id": 1}\n{"id": 2}\n' if lines else '[{"id": 1}, {"id": 2}]',
+            encoding="utf-8",
+        )
+        for limits, expected_reason in cases:
+            result = etl.infer_json(path, lines=lines, limits=limits)
+
+            assert result.provenance["sampled"] is True
+            assert result.provenance["limit_reason"] == expected_reason
+            assert expected_reason in result.provenance["limit_reasons"]
+            assert "INFER_LIMIT" in {item.code for item in result.diagnostics}
+
+
 def test_provider_stages_share_one_inference_deadline() -> None:
     class View:
         __etlantic_bounded_view__ = True
