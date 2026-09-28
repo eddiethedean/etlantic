@@ -22,7 +22,7 @@ from etlantic.schema_drift import (
     NormalizedSchema,
     normalize_schema_from_fields,
 )
-from etlantic.transform.functions import col, lit
+from etlantic.transform.functions import col, lit, to_integer
 
 
 def test_records_inference_promotes_across_all_rows_and_tracks_missing() -> None:
@@ -92,6 +92,95 @@ def test_records_inference_is_bounded() -> None:
     assert result.rows == ()
     assert list(result.replay.take()) == [{"id": i} for i in range(10)]
     assert "INFER_LIMIT" in {diagnostic.code for diagnostic in result.diagnostics}
+
+
+def test_direct_inference_replays_finite_one_shot_inputs() -> None:
+    empty = infer_records(row for row in ())
+    assert empty.replay is not None
+    assert list(empty.replay.take()) == []
+
+    finite = infer_records({"id": index} for index in range(2))
+    assert finite.rows == ()
+    assert finite.replay is not None
+    assert list(finite.replay.take()) == [{"id": 0}, {"id": 1}]
+    with pytest.raises(RuntimeError, match="already been consumed"):
+        finite.replay.take()
+
+    exact_boundary = infer_records(
+        ({"id": index} for index in range(2)), limits=InferenceLimits(max_rows=2)
+    )
+    assert exact_boundary.replay is not None
+    assert list(exact_boundary.replay.take()) == [{"id": 0}, {"id": 1}]
+
+    truncated = infer_records(
+        ({"id": index} for index in range(3)), limits=InferenceLimits(max_rows=2)
+    )
+    assert truncated.replay is not None
+    assert list(truncated.replay.take()) == [{"id": 0}, {"id": 1}, {"id": 2}]
+    assert infer_records([{"id": 1}]).replay is None
+
+
+def test_direct_inference_replay_preserves_a_finite_source_failure() -> None:
+    def records():
+        yield {"id": 1}
+        raise RuntimeError("private provider detail")
+
+    result = infer_records(records())
+    assert result.replay is not None
+    replay = result.replay.take()
+    assert next(replay) == {"id": 1}
+    with pytest.raises(etl.InferenceReplayError) as error:
+        next(replay)
+    assert error.value.row_index == 1
+    assert error.value.diagnostic.code == "INFER_SOURCE_UNSUPPORTED"
+    assert "private provider detail" not in str(error.value)
+
+
+def test_direct_inference_replay_preserves_a_late_source_failure() -> None:
+    def records():
+        yield {"id": 0}
+        yield {"id": 1}
+        raise RuntimeError("private provider detail")
+
+    result = infer_records(records(), limits=InferenceLimits(max_rows=1))
+    assert result.replay is not None
+    replay = result.replay.take()
+    assert next(replay) == {"id": 0}
+    assert next(replay) == {"id": 1}
+    with pytest.raises(etl.InferenceReplayError) as error:
+        next(replay)
+    assert error.value.row_index == 2
+    assert "private provider detail" not in str(error.value)
+
+
+@pytest.mark.parametrize("operation", ["select", "withColumn", "filter"])
+def test_lazy_replay_evaluation_diagnostics_update_dataset(operation: str) -> None:
+    dataset = etl.from_records(
+        ({"value": value} for value in ["1", "oops"]),
+        limits=InferenceLimits(max_rows=1, max_diagnostics=1),
+    )
+    if operation == "select":
+        transformed = dataset.select(to_integer(col("value")).alias("number"))
+    elif operation == "withColumn":
+        transformed = dataset.withColumn("number", to_integer(col("value")))
+    else:
+        transformed = dataset.filter(to_integer(col("value")) > lit(0))
+
+    assert "INFER_RUNTIME_CONVERSION" not in {
+        diagnostic.code for diagnostic in transformed.diagnostics
+    }
+    assert transformed.replay is not None
+    replayed = list(transformed.replay.take())
+    assert (
+        ("number" in replayed[-1] and replayed[-1]["number"] is None)
+        if operation != "filter"
+        else replayed == [{"value": "1"}]
+    )
+    assert "INFER_RUNTIME_CONVERSION" in {
+        diagnostic.code for diagnostic in transformed.diagnostics
+    }
+    assert len(transformed.diagnostics) == 1
+    assert "oops" not in str(transformed.observation.to_dict())
 
 
 def test_inference_result_serialization_cannot_walk_runtime_rows() -> None:

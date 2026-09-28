@@ -171,6 +171,22 @@ def _target_cast_action(
     )
 
 
+class _EvaluationDiagnostics(list[Diagnostic]):
+    """Bounded runtime diagnostics that can refresh their owning result."""
+
+    def __init__(self) -> None:
+        super().__init__()
+        self._on_change: Callable[[], None] | None = None
+
+    def bind(self, on_change: Callable[[], None]) -> None:
+        self._on_change = on_change
+
+    def append(self, diagnostic: Diagnostic) -> None:
+        super().append(diagnostic)
+        if self._on_change is not None:
+            self._on_change()
+
+
 def _eval(
     node: Any,
     row: Mapping[str, Any],
@@ -351,7 +367,11 @@ class InferredDataset:
         can_reopen_source = (
             source_kind == "file" or has_registered_factory or _allow_unresolved_source
         )
-        if self.replay is not None and not can_reopen_source:
+        if (
+            self.replay is not None
+            and not can_reopen_source
+            and bool(self.provenance.get("sampled", False))
+        ):
             raise ValueError(
                 "durable inference definitions require a reopenable source binding; "
                 "the inspected source is a one-shot bounded stream"
@@ -364,6 +384,11 @@ class InferredDataset:
             raise ValueError(
                 "INFER_SOURCE_UNRESOLVABLE: register a source factory before "
                 "exporting a records definition"
+            )
+        if self.replay is not None and not can_reopen_source:
+            raise ValueError(
+                "durable inference definitions require a reopenable source binding; "
+                "the inspected source is a one-shot bounded stream"
             )
         # Target backfill is a write-boundary hypothesis.  It must never
         # replace the observed source contract used by the serialized graph.
@@ -706,7 +731,7 @@ class InferredDataset:
         frame: FrameExpr,
         schema: NormalizedSchema | None = None,
         replay: Any | None = None,
-        extra_diagnostics: tuple[Diagnostic, ...] = (),
+        extra_diagnostics: tuple[Diagnostic, ...] | _EvaluationDiagnostics = (),
     ) -> InferredDataset:
         observed = infer_records(
             rows, identity=self._root_schema.identity, retain_rows=True
@@ -735,33 +760,39 @@ class InferredDataset:
                         phase="inference",
                     )
                 )
-        all_diagnostics: tuple[Any, ...] = (
-            extra_diagnostics  # prioritize current runtime errors within budget
-            + self._result.diagnostics
+        base_diagnostics: tuple[Any, ...] = (
+            self._result.diagnostics
             + observed.diagnostics
             + transfer_diagnostics
             + tuple(runtime_diagnostics)
         )
         max_diagnostics = self._max_diagnostics()
-        bounded_diagnostics: list[Any] = []
-        seen_diagnostics: set[tuple[str, tuple[str, ...], str]] = set()
-        for diagnostic in all_diagnostics:
-            if isinstance(diagnostic, Diagnostic):
-                key = (diagnostic.code, tuple(diagnostic.path), diagnostic.message)
-            elif isinstance(diagnostic, Mapping):
-                key = (
-                    str(diagnostic.get("code", "")),
-                    tuple(str(item) for item in diagnostic.get("path", ())),
-                    str(diagnostic.get("message", "")),
-                )
-            else:
-                key = (str(diagnostic), (), "")
-            if key in seen_diagnostics:
-                continue
-            seen_diagnostics.add(key)
-            if len(bounded_diagnostics) >= max(1, max_diagnostics):
-                break
-            bounded_diagnostics.append(diagnostic)
+
+        def bounded_diagnostics(
+            primary: tuple[Any, ...], secondary: tuple[Any, ...]
+        ) -> tuple[Any, ...]:
+            bounded: list[Any] = []
+            seen: set[tuple[str, tuple[str, ...], str]] = set()
+            for diagnostic in (*primary, *secondary):
+                if isinstance(diagnostic, Diagnostic):
+                    key = (diagnostic.code, tuple(diagnostic.path), diagnostic.message)
+                elif isinstance(diagnostic, Mapping):
+                    key = (
+                        str(diagnostic.get("code", "")),
+                        tuple(str(item) for item in diagnostic.get("path", ())),
+                        str(diagnostic.get("message", "")),
+                    )
+                else:
+                    key = (str(diagnostic), (), "")
+                if key in seen:
+                    continue
+                seen.add(key)
+                if len(bounded) >= max(1, max_diagnostics):
+                    break
+                bounded.append(diagnostic)
+            return tuple(bounded)
+
+        current_evaluation_diagnostics = tuple(extra_diagnostics)
         evidence_items: list[Any] = []
         seen_evidence: set[tuple[str, str]] = set()
         max_evidence = int(
@@ -779,7 +810,7 @@ class InferredDataset:
             evidence_items.append(item)
         result = InferenceResult(
             final_schema,
-            tuple(bounded_diagnostics),
+            bounded_diagnostics(current_evaluation_diagnostics, base_diagnostics),
             tuple(evidence_items),
             {
                 **observed.provenance,
@@ -797,6 +828,14 @@ class InferredDataset:
             self._result.target_hypothesis,
             self._result.target_observation,
         )
+        if isinstance(extra_diagnostics, _EvaluationDiagnostics):
+            extra_diagnostics.bind(
+                lambda: setattr(
+                    result,
+                    "diagnostics",
+                    bounded_diagnostics(tuple(extra_diagnostics), base_diagnostics),
+                )
+            )
         return InferredDataset(
             result,
             name=self.name,
@@ -811,7 +850,7 @@ class InferredDataset:
     def filter(self, condition: ColumnExpr) -> InferredDataset:
         expr = coerce_column(condition)
         frame = self._frame.filter(expr)
-        evaluation_diagnostics: list[Diagnostic] = []
+        evaluation_diagnostics = _EvaluationDiagnostics()
         max_diagnostics = self._max_diagnostics()
         replay = None
         if self._result.replay is not None:
@@ -848,12 +887,12 @@ class InferredDataset:
                 ),
             ),
             replay,
-            tuple(evaluation_diagnostics),
+            evaluation_diagnostics,
         )
 
     def select(self, *columns: Any) -> InferredDataset:
         fields: list[tuple[str, Any]] = []
-        evaluation_diagnostics: list[Diagnostic] = []
+        evaluation_diagnostics = _EvaluationDiagnostics()
         max_diagnostics = self._max_diagnostics()
         for column in columns:
             if isinstance(column, str):
@@ -902,14 +941,14 @@ class InferredDataset:
                 ),
             ),
             replay,
-            tuple(evaluation_diagnostics),
+            evaluation_diagnostics,
         )
 
     project = select
 
     def withColumn(self, name: str, value: Any) -> InferredDataset:
         expr = coerce_column(value)
-        evaluation_diagnostics: list[Diagnostic] = []
+        evaluation_diagnostics = _EvaluationDiagnostics()
         max_diagnostics = self._max_diagnostics()
         rows = [
             {
@@ -952,7 +991,7 @@ class InferredDataset:
                 ),
             ),
             replay,
-            tuple(evaluation_diagnostics),
+            evaluation_diagnostics,
         )
 
     def drop(self, *columns: str) -> InferredDataset:
