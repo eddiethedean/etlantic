@@ -15,7 +15,7 @@ import re
 import sys
 import threading
 import time
-from collections.abc import Iterable, Mapping
+from collections.abc import Iterable, Iterator, Mapping
 from contextlib import contextmanager
 from decimal import Decimal
 from itertools import chain
@@ -118,8 +118,11 @@ def _guarded_iterator(
             diagnostic,
             limit,
         )
+        replay_error = InferenceReplayError(diagnostic, row_index)
+        if isinstance(diagnostics, _TrackedDiagnostics):
+            diagnostics.source_failure = replay_error
         if isinstance(diagnostics, _TrackedDiagnostics) and diagnostics.replay_active:
-            raise InferenceReplayError(diagnostic, row_index) from None
+            raise replay_error from None
 
 
 class _CSVByteLimitReached(Exception):
@@ -554,13 +557,14 @@ def infer_records(
     diagnostics: _TrackedDiagnostics = _TrackedDiagnostics()
     rows: list[dict[str, Any]] = []
     if isinstance(records, Mapping):
-        iterator: Iterable[Any] = [records]
+        source: Iterable[Any] = [records]
+        one_shot = False
     else:
-        iterator = records
+        source = records
     try:
-        iterator = _guarded_iterator(
-            iter(iterator), diagnostics, limits.max_diagnostics
-        )
+        raw_iterator = iter(source)
+        one_shot = not isinstance(records, Mapping) and raw_iterator is source
+        iterator = _guarded_iterator(raw_iterator, diagnostics, limits.max_diagnostics)
     except TypeError:
         _append_diag(
             diagnostics,
@@ -824,7 +828,7 @@ def infer_records(
             # before it could be safely included in the retained prefix. Stop
             # sampling here so later source rows remain in the replay iterator.
             break
-    if replay_remainder is not None:
+    if replay_remainder is not None or one_shot:
         diagnostics.replay_active = True
     for name in names:
         stats[name]["missing"] = max(
@@ -1005,11 +1009,17 @@ def infer_records(
         "limit_reason": sampled_reason,
         "limit_reasons": [sampled_reason] if sampled_reason else [],
     }
-    replay = (
-        ReplayHandle(rows[:replay_prefix_count], iter(replay_remainder))
-        if replay_remainder is not None
-        else None
-    )
+    replay: ReplayHandle | None = None
+    if replay_remainder is not None or one_shot:
+
+        def replay_tail() -> Iterator[Any]:
+            if replay_remainder is not None:
+                yield from replay_remainder
+            source_failure = diagnostics.source_failure
+            if source_failure is not None:
+                raise source_failure
+
+        replay = ReplayHandle(rows[:replay_prefix_count], iter(replay_tail()))
     if replay is not None and (mixed_fields or decimal_fields):
 
         def normalize_replay_row(row: Any) -> Any:
@@ -2318,6 +2328,7 @@ class _TrackedDiagnostics(list[Diagnostic]):
         super().__init__()
         self.error_seen = False
         self.replay_active = False
+        self.source_failure: InferenceReplayError | None = None
 
 
 def _should_append_diag(
