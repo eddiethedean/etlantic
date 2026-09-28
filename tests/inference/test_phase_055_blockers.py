@@ -145,7 +145,7 @@ def test_provider_stages_share_one_inference_deadline() -> None:
     class View:
         __etlantic_bounded_view__ = True
 
-        def __iter__(self):
+        def __iter__(self) -> Iterator[Mapping[str, int]]:
             time.sleep(0.07)
             yield {"id": 1}
 
@@ -155,7 +155,7 @@ def test_provider_stages_share_one_inference_deadline() -> None:
             time.sleep(0.07)
             return View()
 
-        def to_dicts(self):
+        def to_dicts(self) -> list[Mapping[str, int]]:
             raise AssertionError("the bounded view must be iterated directly")
 
     result = etl.infer_source(

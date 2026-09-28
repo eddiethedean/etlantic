@@ -21,7 +21,6 @@ from etlantic.schema_drift import (
 
 from .records import (
     _estimate_size,
-    _EstimateTimeout,
     estimate_materialized_row,
     infer_csv,
     infer_json,
@@ -158,9 +157,8 @@ def _provider_size_estimate(
                 max_items=10_000,
                 deadline=deadline,
             )
-    except _EstimateTimeout:
-        raise _InferenceTimeout from None
     except Exception:
+        _check_deadline(deadline)
         if byte_limit is not None:
             return byte_limit + 1
     return None
@@ -608,9 +606,8 @@ def _provider_records(
                     byte_limit=materialized_limit,
                     deadline=deadline,
                 )
-            except _EstimateTimeout:
-                raise _InferenceTimeout from None
             except Exception:
+                _check_deadline(deadline)
                 raise _UnboundedProvider(
                     "provider row size could not be bounded"
                 ) from None

@@ -20,7 +20,7 @@ from contextlib import contextmanager
 from decimal import Decimal
 from itertools import chain
 from pathlib import Path
-from typing import Any
+from typing import Any, cast
 
 from etlantic.diagnostics import Diagnostic, Severity
 from etlantic.schema_drift import (
@@ -779,7 +779,7 @@ def infer_records(
                 if len(names) >= limits.max_fields:
                     sampled = True
                     sampled_reason = sampled_reason or "fields"
-                    replay_remainder = chain((item,), iterator)
+                    replay_remainder = chain((cast(Mapping[str, Any], item),), iterator)
                     incomplete_row = True
                     _append_diag(
                         diagnostics,
