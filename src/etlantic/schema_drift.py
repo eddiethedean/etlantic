@@ -97,8 +97,6 @@ _SAFE_METADATA_KEYS = {
     "observed_values",
     "null_values",
     "null_policy",
-    "count",
-    "digest",
     "missing_values",
     "type_counts",
     "inference_evidence",
@@ -158,7 +156,6 @@ _STRUCTURAL_MAP_KEYS = {
     "graph",
     "capabilities",
     "limits",
-    "null_policy",
 }
 
 _CSV_PARSER_OPTION_KEYS = {
@@ -328,6 +325,31 @@ def _safe_parser_options(value: Any) -> dict[str, Any]:
         ):
             raise ValueError("parser option encoding must be a safe name")
         safe[key] = item
+    return safe
+
+
+def _safe_null_policy(value: Any) -> dict[str, Any]:
+    """Allow only the aggregate null-policy fields used by CSV inference."""
+    policy = _bounded_mapping(value, "null_policy")
+    if set(policy) - {"mode", "count", "digest"}:
+        raise ValueError("null_policy contains unsupported keys")
+    mode = policy.get("mode")
+    count = policy.get("count")
+    if not isinstance(mode, str) or mode not in {"default", "custom"}:
+        raise ValueError("null_policy mode is invalid")
+    if type(count) is not int or count < 0:
+        raise ValueError("null_policy count must be a non-negative integer")
+    safe: dict[str, Any] = {"mode": mode, "count": count}
+    digest = policy.get("digest")
+    if mode == "custom":
+        if (
+            not isinstance(digest, str)
+            or re.fullmatch(r"sha256:[0-9a-f]{64}", digest) is None
+        ):
+            raise ValueError("custom null_policy requires a SHA-256 digest")
+        safe["digest"] = digest
+    elif "digest" in policy:
+        raise ValueError("default null_policy cannot contain a digest")
     return safe
 
 
@@ -517,6 +539,8 @@ def _json_safe(
         normalized_key = re.sub(r"[^a-z0-9_]", "", key.casefold())
         if normalized_key == "parser_options":
             return _safe_parser_options(value)
+        if normalized_key == "null_policy":
+            return _safe_null_policy(value)
         if normalized_key == "capabilities":
             return _safe_capabilities(value)
         if normalized_key in {"lineage", "lineage_graph"} and value is not None:

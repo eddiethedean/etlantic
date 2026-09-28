@@ -317,6 +317,27 @@ def test_provider_capability_sequences_are_allowlisted() -> None:
         json_safe_metadata({"capabilities": ["PRIVATE_TOKEN"]})
 
 
+def test_null_policy_is_validated_without_allowing_arbitrary_children() -> None:
+    policy = {
+        "mode": "custom",
+        "count": 1,
+        "digest": "sha256:" + "a" * 64,
+    }
+    assert json_safe_metadata({"null_policy": policy}) == {"null_policy": policy}
+    assert json_safe_metadata(
+        {"count": "PRIVATE_TOKEN", "digest": "PRIVATE_TOKEN"}
+    ) == {
+        "count": "<redacted>",
+        "digest": "<redacted>",
+    }
+    with pytest.raises(ValueError, match="unsupported keys"):
+        json_safe_metadata({"null_policy": {**policy, "extra": "PRIVATE_TOKEN"}})
+    with pytest.raises(ValueError, match="SHA-256"):
+        json_safe_metadata(
+            {"null_policy": {"mode": "custom", "count": 1, "digest": "secret"}}
+        )
+
+
 @pytest.mark.parametrize(
     "metadata",
     [
