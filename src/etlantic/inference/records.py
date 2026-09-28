@@ -804,6 +804,7 @@ def infer_csv(
         if options is not None and not isinstance(options, Mapping):
             raise TypeError("CSV options must be a mapping")
         opts = dict(options or {})
+        custom_null_values = "null_values" in opts
         null_values = {str(value) for value in opts.pop("null_values", {""})}
         encoding = opts.pop("encoding", "utf-8")
         if not isinstance(encoding, str) or not encoding:
@@ -855,6 +856,10 @@ def infer_csv(
             if key in opts
         }
     )
+    null_policy: dict[str, Any] = {
+        "mode": "custom" if custom_null_values else "default",
+        "count": len(null_values),
+    }
     materialized_limit = (
         limits.max_materialized_bytes
         if limits.max_materialized_bytes is not None
@@ -909,6 +914,7 @@ def infer_csv(
                             "source_identity": source_identity,
                             "limits": limits.to_dict(),
                             "parser_options": parser_options,
+                            "null_policy": null_policy,
                             "raw_byte_limit_applies": limits.max_bytes is not None,
                             "raw_bytes_observed": bounded_reader.bytes_observed,
                             "materialized_bytes_observed": 0,
@@ -935,6 +941,7 @@ def infer_csv(
                             "source_identity": source_identity,
                             "limits": limits.to_dict(),
                             "parser_options": parser_options,
+                            "null_policy": null_policy,
                             "raw_byte_limit_applies": limits.max_bytes is not None,
                             "raw_bytes_observed": bounded_reader.bytes_observed,
                             "materialized_bytes_observed": 0,
@@ -1254,6 +1261,7 @@ def infer_csv(
             "source_identity": source_identity,
             "limits": effective_limits,
             "parser_options": parser_options,
+            "null_policy": null_policy,
             "sampled": sampled,
             "limit_reason": limit_reason,
             "limit_reasons": list(dict.fromkeys(limit_reasons)),
@@ -1292,6 +1300,7 @@ def infer_csv(
                 "source_identity": source_identity,
                 "limits": limits.to_dict(),
                 "parser_options": parser_options,
+                "null_policy": null_policy,
                 "sampled": True,
                 "limit_reason": "raw_bytes",
                 "limit_reasons": ["raw_bytes"],
@@ -1333,6 +1342,7 @@ def infer_csv(
                 "source_identity": source_identity,
                 "limits": limits.to_dict(),
                 "parser_options": parser_options,
+                "null_policy": null_policy,
                 "sampled": field_limit_hit,
                 "limit_reason": "field_size" if field_limit_hit else None,
                 "bytes_observed": 0,

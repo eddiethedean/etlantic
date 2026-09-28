@@ -12,6 +12,7 @@ from pydantic import ValidationError
 import etlantic as etl
 from etlantic.inference import (
     InferenceLimits,
+    InferenceObservation,
     backfill_schema,
     check_write_compatibility,
     infer_records,
@@ -139,6 +140,29 @@ def test_csv_date_only_values_are_dates(tmp_path) -> None:
     assert result.rows[0]["day"].isoformat() == "2024-01-01"
 
 
+def test_csv_custom_null_policy_does_not_leak_markers_or_fingerprints(tmp_path) -> None:
+    path = tmp_path / "nulls.csv"
+    path.write_text("value\nPRIVATE_TOKEN\n", encoding="utf-8")
+
+    first = etl.infer_csv(
+        path, options={"null_values": ["PRIVATE_TOKEN"]}, retain_rows=True
+    )
+    second = etl.infer_csv(
+        path, options={"null_values": ["OTHER_PRIVATE_TOKEN"]}, retain_rows=True
+    )
+    first_wire = first.to_observation().to_dict()
+    second_wire = second.to_observation().to_dict()
+
+    policy = first_wire["provenance"]["null_policy"]
+    assert policy == {"mode": "custom", "count": 1}
+    assert second_wire["provenance"]["null_policy"] == policy
+    assert "PRIVATE_TOKEN" not in repr(first_wire)
+    assert "OTHER_PRIVATE_TOKEN" not in repr(second_wire)
+
+    restored = InferenceObservation.from_dict(first_wire)
+    assert restored.provenance["null_policy"] == policy
+
+
 def test_hints_are_validated_and_do_not_override_conflicting_values() -> None:
     result = infer_records([{"id": 1}], hints={"id": "string", "other": "bogus"})
     assert result.schema.fields[0].logical_type == "integer"
@@ -159,6 +183,45 @@ def test_data_first_transformations_refresh_model() -> None:
     assert transformed.schema.fields[0].logical_type == "integer"
     assert transformed.collect() == [{"next_id": 2}, {"next_id": 3}]
     assert transformed.model.model_fields["next_id"].annotation is int
+
+
+def test_renamed_records_schema_observation_and_definition_are_wire_safe() -> None:
+    dataset = etl.from_records([{"id": 1, "name": "Ada"}], name="users").rename(
+        {"id": "user_id"}
+    )
+
+    restored_schema = NormalizedSchema.from_dict(dataset.schema.to_dict())
+    lineage = restored_schema.metadata["lineage"]["user_id"]
+    assert lineage["source_fields"] == ["id"]
+    assert lineage["operations"] == [
+        {"operation": "rename", "from": "id", "to": "user_id"}
+    ]
+
+    observation = InferenceObservation.from_dict(dataset.observation.to_dict())
+    assert observation.schema.metadata["lineage"]["user_id"]["operations"] == [
+        {"operation": "rename", "from": "id", "to": "user_id"}
+    ]
+    definition = dataset.definition().to_dict()
+    assert "Ada" not in repr(definition)
+
+
+def test_chained_rename_project_rename_lineage_is_serializable() -> None:
+    dataset = (
+        etl.from_records([{"id": 1, "name": "Ada"}], name="users")
+        .rename({"id": "user_id"})
+        .select("user_id", "name")
+        .rename({"user_id": "id"})
+    )
+
+    restored = NormalizedSchema.from_dict(dataset.schema.to_dict())
+
+    assert [field.name for field in restored.fields] == ["id", "name"]
+    assert restored.metadata["lineage"]["id"]["operations"] == [
+        {"operation": "rename", "from": "id", "to": "user_id"},
+        {"operation": "project", "field": "user_id"},
+        {"operation": "rename", "from": "user_id", "to": "id"},
+    ]
+    assert dataset.definition().to_dict()
 
 
 def test_existing_target_backfills_source_type() -> None:
