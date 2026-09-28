@@ -2608,6 +2608,11 @@ def _backfill_observation(
                 }
             )
             result.provenance["target_validation"] = "failed"
+            if any(
+                diagnostic.code == "INFER_SOURCE_UNSUPPORTED"
+                for diagnostic in error.diagnostics
+            ):
+                result.provenance["source_validation"] = "failed"
             existing = list(result.diagnostics)
             existing_keys = {
                 (
@@ -3252,7 +3257,11 @@ def check_write_compatibility(
                 )
             )
             continue
-        if target_field.required and not field.required:
+        if (
+            target_field.required
+            and not field.required
+            and not _target_field_has_omission_value(target_field)
+        ):
             incompatible.append(field.name)
             diagnostics.append(
                 Diagnostic(

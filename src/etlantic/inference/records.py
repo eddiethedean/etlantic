@@ -102,18 +102,24 @@ def _guarded_iterator(
     iterator: Iterable[Any], diagnostics: list[Diagnostic], limit: int
 ) -> Iterable[Any]:
     """Turn provider iterator failures into bounded inference diagnostics."""
+    row_index = 0
     try:
-        yield from iterator
+        for row in iterator:
+            yield row
+            row_index += 1
     except Exception as exc:
+        diagnostic = _diag(
+            "INFER_SOURCE_UNSUPPORTED",
+            f"Record provider failed during iteration: {type(exc).__name__}",
+            severity=Severity.ERROR,
+        )
         _append_diag(
             diagnostics,
-            _diag(
-                "INFER_SOURCE_UNSUPPORTED",
-                f"Record provider failed during iteration: {type(exc).__name__}",
-                severity=Severity.ERROR,
-            ),
+            diagnostic,
             limit,
         )
+        if isinstance(diagnostics, _TrackedDiagnostics) and diagnostics.replay_active:
+            raise InferenceReplayError(diagnostic, row_index) from None
 
 
 class _CSVByteLimitReached(Exception):
@@ -551,6 +557,8 @@ def infer_records(
             if logical == "null":
                 entry["null"] += 1
         rows.append(row)
+    if replay_remainder is not None:
+        diagnostics.replay_active = True
     for name in names:
         stats[name]["missing"] = len(rows) - stats[name]["observed"]
         if stats[name]["missing"]:
@@ -1859,6 +1867,7 @@ class _TrackedDiagnostics(list[Diagnostic]):
     def __init__(self) -> None:
         super().__init__()
         self.error_seen = False
+        self.replay_active = False
 
 
 def _should_append_diag(

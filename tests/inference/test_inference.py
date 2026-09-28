@@ -1249,3 +1249,50 @@ def test_check_write_fails_closed_when_source_error_exceeds_diagnostic_limit() -
     assert "INFER_SOURCE_INVALID" in {
         diagnostic.code for diagnostic in compatibility.diagnostics
     }
+
+
+def test_check_write_fails_closed_when_source_iterator_errors_during_replay() -> None:
+    def records():
+        yield {"id": 1}
+        yield {"id": 2}
+        raise RuntimeError("private provider detail")
+
+    target = NormalizedSchema(
+        "target",
+        (NormalizedField("id", "integer", required=True, nullable=False),),
+    )
+    dataset = etl.from_records_for_target(
+        records(), target, limits=InferenceLimits(max_rows=1)
+    )
+    replay = dataset.replay
+    assert replay is not None
+
+    with pytest.raises(etl.InferenceReplayError) as error:
+        list(replay.take())
+
+    assert error.value.row_index == 2
+    assert error.value.diagnostic.code == "INFER_SOURCE_UNSUPPORTED"
+    assert "private provider detail" not in str(error.value)
+    assert dataset.provenance["source_validation"] == "failed"
+    assert dataset.provenance["target_validation"] == "failed"
+    assert dataset.check_write(target).status == "conflict"
+
+
+def test_check_write_allows_optional_source_field_with_target_default() -> None:
+    dataset = etl.from_records([{"id": 1}, {}])
+    target = NormalizedSchema(
+        "target",
+        (
+            NormalizedField(
+                "id",
+                "integer",
+                required=True,
+                nullable=False,
+                metadata={"default": 0},
+            ),
+        ),
+    )
+
+    compatibility = dataset.check_write(target)
+
+    assert compatibility.status == "proven"
