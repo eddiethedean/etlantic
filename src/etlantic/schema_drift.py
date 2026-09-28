@@ -341,15 +341,17 @@ def _safe_null_policy(value: Any) -> dict[str, Any]:
         raise ValueError("null_policy count must be a non-negative integer")
     safe: dict[str, Any] = {"mode": mode, "count": count}
     digest = policy.get("digest")
-    if mode == "custom":
+    if "digest" in policy:
+        if mode != "custom":
+            raise ValueError("default null_policy cannot contain a digest")
         if (
             not isinstance(digest, str)
             or re.fullmatch(r"sha256:[0-9a-f]{64}", digest) is None
         ):
-            raise ValueError("custom null_policy requires a SHA-256 digest")
-        safe["digest"] = digest
-    elif "digest" in policy:
-        raise ValueError("default null_policy cannot contain a digest")
+            raise ValueError("custom null_policy digest must be a SHA-256 digest")
+        # Older observations may contain a deterministic hash of custom null
+        # markers. Validate its shape for compatibility, but never propagate it:
+        # low-entropy markers can be recovered with a dictionary attack.
     return safe
 
 

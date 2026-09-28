@@ -860,14 +860,6 @@ def infer_csv(
         "mode": "custom" if custom_null_values else "default",
         "count": len(null_values),
     }
-    if custom_null_values:
-        policy_payload = json.dumps(
-            sorted(null_values), ensure_ascii=True, separators=(",", ":")
-        ).encode("ascii")
-        policy_digest = hashlib.sha256(
-            b"etlantic.csv.null-policy.v1\0" + policy_payload
-        ).hexdigest()
-        null_policy["digest"] = f"sha256:{policy_digest}"
     materialized_limit = (
         limits.max_materialized_bytes
         if limits.max_materialized_bytes is not None

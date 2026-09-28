@@ -140,7 +140,7 @@ def test_csv_date_only_values_are_dates(tmp_path) -> None:
     assert result.rows[0]["day"].isoformat() == "2024-01-01"
 
 
-def test_csv_custom_null_policy_is_distinguishable_and_does_not_leak(tmp_path) -> None:
+def test_csv_custom_null_policy_does_not_leak_markers_or_fingerprints(tmp_path) -> None:
     path = tmp_path / "nulls.csv"
     path.write_text("value\nPRIVATE_TOKEN\n", encoding="utf-8")
 
@@ -154,10 +154,8 @@ def test_csv_custom_null_policy_is_distinguishable_and_does_not_leak(tmp_path) -
     second_wire = second.to_observation().to_dict()
 
     policy = first_wire["provenance"]["null_policy"]
-    assert policy["mode"] == "custom"
-    assert policy["count"] == 1
-    assert policy["digest"].startswith("sha256:")
-    assert policy["digest"] != second_wire["provenance"]["null_policy"]["digest"]
+    assert policy == {"mode": "custom", "count": 1}
+    assert second_wire["provenance"]["null_policy"] == policy
     assert "PRIVATE_TOKEN" not in repr(first_wire)
     assert "OTHER_PRIVATE_TOKEN" not in repr(second_wire)
 
