@@ -876,7 +876,11 @@ def infer_csv(
     row_diagnostics: list[Diagnostic] = []
     parser_diagnostics: list[Diagnostic] = []
     result: InferenceResult | None = None
-    reader_state = {"raw_limit_hit": False, "field_limit_hit": False}
+    reader_state = {
+        "raw_limit_hit": False,
+        "field_limit_hit": False,
+        "source_validation_failed": False,
+    }
     header_field_limit_hit = False
     try:
         # The bounded wrapper must sit directly above the OS file object;
@@ -969,6 +973,7 @@ def infer_csv(
                     except _CSVByteLimitReached:
                         reader_state["raw_limit_hit"] = True
                     except csv.Error as exc:
+                        reader_state["source_validation_failed"] = True
                         field_limit_hit = (
                             "field larger than field limit" in str(exc).casefold()
                         )
@@ -988,6 +993,7 @@ def infer_csv(
                             limits.max_diagnostics,
                         )
                     except (OSError, UnicodeError, LookupError) as exc:
+                        reader_state["source_validation_failed"] = True
                         _append_diag(
                             parser_diagnostics,
                             _diag(
@@ -1256,6 +1262,11 @@ def infer_csv(
             "materialized_bytes_observed": materialized_bytes,
             "raw_bytes_observed": bounded_reader.bytes_observed,
             "raw_byte_limit_applies": limits.max_bytes is not None,
+            "source_validation": (
+                "failed"
+                if reader_state["source_validation_failed"]
+                else result.provenance.get("source_validation", "complete")
+            ),
             "byte_accounting": {
                 "raw_bytes": "physical bytes returned by the bounded binary reader",
                 "materialized_bytes": "estimated decoded Python record size",

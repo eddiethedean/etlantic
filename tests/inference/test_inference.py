@@ -1251,6 +1251,28 @@ def test_check_write_fails_closed_when_source_error_exceeds_diagnostic_limit() -
     }
 
 
+def test_csv_parser_failure_survives_a_full_diagnostic_limit(tmp_path) -> None:
+    path = tmp_path / "malformed.csv"
+    path.write_text('id,name\n1,Ada,extra\n"unterminated\n', encoding="utf-8")
+
+    dataset = etl.read_csv(
+        str(path),
+        options={"strict": True},
+        limits=InferenceLimits(max_diagnostics=1),
+    )
+
+    assert len(dataset.diagnostics) == 1
+    assert dataset.diagnostics[0].code == "INFER_CSV_ROW"
+    assert dataset.provenance["source_validation"] == "failed"
+
+    compatibility = dataset.check_write(dataset.schema)
+
+    assert compatibility.status == "conflict"
+    assert "INFER_SOURCE_INVALID" in {
+        diagnostic.code for diagnostic in compatibility.diagnostics
+    }
+
+
 def test_check_write_fails_closed_when_provider_schema_inspection_fails() -> None:
     class BrokenSource:
         def schema(self) -> dict[str, str]:
