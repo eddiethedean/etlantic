@@ -107,6 +107,7 @@ _SAFE_METADATA_KEYS = {
     "target_observation",
     "observed_values",
     "null_values",
+    "null_policy",
     "missing_values",
     "type_counts",
     "inference_evidence",
@@ -338,6 +339,33 @@ def _safe_parser_options(value: Any) -> dict[str, Any]:
     return safe
 
 
+def _safe_null_policy(value: Any) -> dict[str, Any]:
+    """Allow only the aggregate null-policy fields used by CSV inference."""
+    policy = _bounded_mapping(value, "null_policy")
+    if set(policy) - {"mode", "count", "digest"}:
+        raise ValueError("null_policy contains unsupported keys")
+    mode = policy.get("mode")
+    count = policy.get("count")
+    if not isinstance(mode, str) or mode not in {"default", "custom"}:
+        raise ValueError("null_policy mode is invalid")
+    if type(count) is not int or count < 0:
+        raise ValueError("null_policy count must be a non-negative integer")
+    safe: dict[str, Any] = {"mode": mode, "count": count}
+    digest = policy.get("digest")
+    if "digest" in policy:
+        if mode != "custom":
+            raise ValueError("default null_policy cannot contain a digest")
+        if (
+            not isinstance(digest, str)
+            or re.fullmatch(r"sha256:[0-9a-f]{64}", digest) is None
+        ):
+            raise ValueError("custom null_policy digest must be a SHA-256 digest")
+        # Older observations may contain a deterministic hash of custom null
+        # markers. Validate its shape for compatibility, but never propagate it:
+        # low-entropy markers can be recovered with a dictionary attack.
+    return safe
+
+
 def _safe_capabilities(value: Any) -> dict[str, Any] | list[str] | None:
     if value is None:
         return None
@@ -427,24 +455,42 @@ def _safe_lineage_entry(value: Any, allowed_keys: set[str]) -> dict[str, Any]:
                     operations.append(_json_safe(operation, key="operation"))
                 elif isinstance(operation, Mapping):
                     operation_map = _bounded_mapping(operation, "lineage operation")
-                    if (
-                        set(operation_map)
-                        not in ({"operation"}, {"operation", "field"})
-                        or not isinstance(operation_map.get("operation"), str)
-                        or (
-                            "field" in operation_map
-                            and not isinstance(operation_map["field"], str)
+                    operation_name = operation_map.get("operation")
+                    keys = set(operation_map)
+                    is_named_operation = (
+                        keys
+                        in (
+                            {"operation"},
+                            {"operation", "field"},
                         )
-                    ):
+                        and isinstance(operation_name, str)
+                        and operation_name != "rename"
+                        and (
+                            "field" not in operation_map
+                            or isinstance(operation_map["field"], str)
+                        )
+                    )
+                    is_rename_operation = (
+                        keys == {"operation", "from", "to"}
+                        and operation_name == "rename"
+                        and isinstance(operation_map.get("from"), str)
+                        and isinstance(operation_map.get("to"), str)
+                    )
+                    if not (is_named_operation or is_rename_operation):
                         raise ValueError("lineage operations contain an invalid entry")
                     safe_operation = {
-                        "operation": _json_safe(
-                            operation_map["operation"], key="operation"
-                        )
+                        "operation": _json_safe(operation_name, key="operation")
                     }
                     if "field" in operation_map:
                         safe_operation["field"] = _json_safe(
                             operation_map["field"], key="field"
+                        )
+                    if is_rename_operation:
+                        safe_operation["from"] = _json_safe(
+                            operation_map["from"], key="field"
+                        )
+                        safe_operation["to"] = _json_safe(
+                            operation_map["to"], key="field"
                         )
                     operations.append(safe_operation)
                 else:
@@ -506,6 +552,8 @@ def _json_safe(
         normalized_key = re.sub(r"[^a-z0-9_]", "", key.casefold())
         if normalized_key == "parser_options":
             return _safe_parser_options(value)
+        if normalized_key == "null_policy":
+            return _safe_null_policy(value)
         if normalized_key == "capabilities":
             return _safe_capabilities(value)
         if normalized_key in {"lineage", "lineage_graph"} and value is not None:
