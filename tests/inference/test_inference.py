@@ -1175,6 +1175,68 @@ def test_write_compatibility_checks_missing_and_nullable_target_fields() -> None
     assert {"id", "created_at"} <= set(result.incompatible_fields)
 
 
+@pytest.mark.parametrize(
+    "mode", ["append", "overwrite", "merge", "upsert", "partition_replace"]
+)
+@pytest.mark.parametrize("observed", [False, True], ids=["schema", "observation"])
+@pytest.mark.parametrize("capable", [False, True], ids=["undeclared", "declared"])
+def test_write_mode_capability_matrix(mode: str, observed: bool, capable: bool) -> None:
+    source = NormalizedSchema(
+        "source", (NormalizedField("id", "integer", required=True, nullable=False),)
+    )
+    capability_metadata = (
+        {
+            "capabilities": {"write_modes": [mode]},
+            "keys": ["id"],
+            "partitions": ["id"],
+        }
+        if capable
+        else {}
+    )
+    target_schema = NormalizedSchema(
+        "target",
+        (NormalizedField("id", "integer", required=True, nullable=False),),
+        {} if observed else capability_metadata,
+    )
+    target: NormalizedSchema | etl.TargetObservation = (
+        etl.TargetObservation(
+            target_schema,
+            "present",
+            inspector="provider",
+            metadata=capability_metadata,
+        )
+        if observed
+        else target_schema
+    )
+
+    compatibility = check_write_compatibility(source, target, mode=mode)
+    expected_compatible = capable or (not observed and mode == "append")
+
+    assert compatibility.compatible is expected_compatible
+    if not expected_compatible:
+        assert "INFER_WRITE_MODE_UNSUPPORTED" in {
+            diagnostic.code for diagnostic in compatibility.diagnostics
+        }
+
+
+def test_durable_definition_rejects_undeclared_overwrite_after_observation_normalization() -> (
+    None
+):
+    target_schema = NormalizedSchema(
+        "sink", (NormalizedField("id", "integer", required=True, nullable=False),)
+    )
+    dataset = etl.from_records_for_target(
+        [{"id": 1}],
+        etl.TargetObservation(target_schema, "present", inspector="provider"),
+        name="source",
+        target_identity="sink",
+        write_mode="overwrite",
+    )
+
+    with pytest.raises(ValueError, match="INFER_TARGET_WRITE_UNQUALIFIED"):
+        dataset.definition()
+
+
 def test_backfill_from_converts_preview_rows() -> None:
     target = normalize_schema_from_fields(
         [{"name": "id", "logical_type": "integer"}], identity="target"
