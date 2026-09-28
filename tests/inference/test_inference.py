@@ -188,9 +188,9 @@ def test_data_first_transformations_refresh_model() -> None:
 
 
 def test_renamed_records_schema_observation_and_definition_are_wire_safe() -> None:
-    dataset = etl.from_records(
-        [{"id": 1, "name": "Ada"}], name="users"
-    ).rename({"id": "user_id"})
+    dataset = etl.from_records([{"id": 1, "name": "Ada"}], name="users").rename(
+        {"id": "user_id"}
+    )
 
     restored_schema = NormalizedSchema.from_dict(dataset.schema.to_dict())
     lineage = restored_schema.metadata["lineage"]["user_id"]

@@ -422,12 +422,18 @@ def _safe_lineage_entry(value: Any, allowed_keys: set[str]) -> dict[str, Any]:
                     operation_map = _bounded_mapping(operation, "lineage operation")
                     operation_name = operation_map.get("operation")
                     keys = set(operation_map)
-                    is_named_operation = keys in (
-                        {"operation"},
-                        {"operation", "field"},
-                    ) and isinstance(operation_name, str) and operation_name != "rename" and (
-                        "field" not in operation_map
-                        or isinstance(operation_map["field"], str)
+                    is_named_operation = (
+                        keys
+                        in (
+                            {"operation"},
+                            {"operation", "field"},
+                        )
+                        and isinstance(operation_name, str)
+                        and operation_name != "rename"
+                        and (
+                            "field" not in operation_map
+                            or isinstance(operation_map["field"], str)
+                        )
                     )
                     is_rename_operation = (
                         keys == {"operation", "from", "to"}
@@ -438,9 +444,7 @@ def _safe_lineage_entry(value: Any, allowed_keys: set[str]) -> dict[str, Any]:
                     if not (is_named_operation or is_rename_operation):
                         raise ValueError("lineage operations contain an invalid entry")
                     safe_operation = {
-                        "operation": _json_safe(
-                            operation_name, key="operation"
-                        )
+                        "operation": _json_safe(operation_name, key="operation")
                     }
                     if "field" in operation_map:
                         safe_operation["field"] = _json_safe(
