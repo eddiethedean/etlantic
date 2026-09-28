@@ -1204,3 +1204,30 @@ def test_check_write_conflicts_when_source_inference_has_invalid_record() -> Non
     assert "INFER_INVALID_KEY" in {
         diagnostic.code for diagnostic in compatibility.diagnostics
     }
+
+
+@pytest.mark.parametrize("target_bound", [False, True])
+def test_check_write_preserves_source_inference_errors_for_a_different_target(
+    target_bound: bool,
+) -> None:
+    observed_target = NormalizedSchema(
+        "observed",
+        (NormalizedField("id", "integer", required=True, nullable=False),),
+    )
+    requested_target = NormalizedSchema(
+        "requested",
+        (NormalizedField("id", "integer", required=True, nullable=True),),
+    )
+    records = [{"id": 1}, "not-a-record"]
+    dataset = (
+        etl.from_records_for_target(records, observed_target)
+        if target_bound
+        else etl.from_records(records)
+    )
+
+    compatibility = dataset.check_write(requested_target)
+
+    assert compatibility.status == "conflict"
+    assert "INFER_INVALID_KEY" in {
+        diagnostic.code for diagnostic in compatibility.diagnostics
+    }

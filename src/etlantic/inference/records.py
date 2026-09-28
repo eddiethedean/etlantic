@@ -444,7 +444,7 @@ def infer_records(
         return InferenceResult(
             NormalizedSchema(identity=identity, fields=()),
             tuple(diagnostics),
-            provenance={"source": "records", "limits": limits.to_dict()},
+            provenance={**_records_provenance(diagnostics), "limits": limits.to_dict()},
         )
     names: list[str] = []
     stats: dict[str, dict[str, Any]] = {}
@@ -714,7 +714,7 @@ def infer_records(
         fields=tuple(fields),
     )
     provenance = {
-        "source": "records",
+        **_records_provenance(diagnostics),
         "limits": limits.to_dict(),
         "sampled": sampled,
         "rows_observed": len(rows),
@@ -1846,3 +1846,14 @@ def infer_json(
             ),
             provenance={"source": "json", "limits": limits.to_dict()},
         )
+
+
+def _records_provenance(diagnostics: list[Diagnostic]) -> dict[str, Any]:
+    return {
+        "source": "records",
+        "source_validation": (
+            "failed"
+            if any(diagnostic.severity == Severity.ERROR for diagnostic in diagnostics)
+            else "complete"
+        ),
+    }

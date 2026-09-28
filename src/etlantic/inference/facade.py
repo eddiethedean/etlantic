@@ -1116,7 +1116,7 @@ class InferredDataset:
             )
 
         if self._result.provenance.get("sampled") is not True:
-            return compatibility
+            return _early_write_compatibility(compatibility, self)
 
         if same_target and validation_state == "complete":
             return compatibility
@@ -1676,4 +1676,23 @@ def from_polars(
         infer_source(frame, identity=safe_name, hints=hints, limits=limits),
         name=safe_name,
         source_binding=provider_binding(safe_name, "polars"),
+    )
+
+
+def _early_write_compatibility(
+    compatibility: WriteCompatibility, dataset: InferredDataset
+) -> WriteCompatibility:
+    provenance = dataset.provenance
+    source_validation_failed = provenance.get("source_validation") == "failed"
+    if not source_validation_failed:
+        return compatibility
+    source_diagnostics = tuple(
+        diagnostic
+        for diagnostic in dataset.diagnostics
+        if isinstance(diagnostic, Diagnostic) and diagnostic.severity == Severity.ERROR
+    )
+    return replace(
+        compatibility,
+        compatible=False,
+        diagnostics=(*compatibility.diagnostics, *source_diagnostics),
     )
