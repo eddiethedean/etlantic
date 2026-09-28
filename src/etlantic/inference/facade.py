@@ -177,14 +177,24 @@ class _EvaluationDiagnostics(list[Diagnostic]):
     def __init__(self) -> None:
         super().__init__()
         self._on_change: Callable[[], None] | None = None
+        self._subscribers: list[Callable[[], None]] = []
 
     def bind(self, on_change: Callable[[], None]) -> None:
         self._on_change = on_change
+
+    def subscribe(self, on_change: Callable[[], None]) -> None:
+        if on_change not in self._subscribers:
+            self._subscribers.append(on_change)
+
+    def notify_subscribers(self) -> None:
+        for subscriber in tuple(self._subscribers):
+            subscriber()
 
     def append(self, diagnostic: Diagnostic) -> None:
         super().append(diagnostic)
         if self._on_change is not None:
             self._on_change()
+        self.notify_subscribers()
 
 
 def _eval(
@@ -237,8 +247,10 @@ class InferredDataset:
         target_revision_reader: Callable[[], Any] | None = None,
         target_write_mode: str = "append",
         source_owner: Any | None = None,
+        diagnostic_trackers: tuple[_EvaluationDiagnostics, ...] = (),
     ):
         self._result = result
+        self._diagnostic_trackers = diagnostic_trackers
         self._root_schema = root_schema or result.schema
         self._source_binding = dict(source_binding or records_binding(name))
         self._source_owner = source_owner
@@ -760,11 +772,8 @@ class InferredDataset:
                         phase="inference",
                     )
                 )
-        base_diagnostics: tuple[Any, ...] = (
-            self._result.diagnostics
-            + observed.diagnostics
-            + transfer_diagnostics
-            + tuple(runtime_diagnostics)
+        static_diagnostics: tuple[Any, ...] = (
+            observed.diagnostics + transfer_diagnostics + tuple(runtime_diagnostics)
         )
         max_diagnostics = self._max_diagnostics()
 
@@ -810,7 +819,10 @@ class InferredDataset:
             evidence_items.append(item)
         result = InferenceResult(
             final_schema,
-            bounded_diagnostics(current_evaluation_diagnostics, base_diagnostics),
+            bounded_diagnostics(
+                current_evaluation_diagnostics,
+                self._result.diagnostics + static_diagnostics,
+            ),
             tuple(evidence_items),
             {
                 **observed.provenance,
@@ -828,14 +840,20 @@ class InferredDataset:
             self._result.target_hypothesis,
             self._result.target_observation,
         )
-        if isinstance(extra_diagnostics, _EvaluationDiagnostics):
-            extra_diagnostics.bind(
-                lambda: setattr(
-                    result,
-                    "diagnostics",
-                    bounded_diagnostics(tuple(extra_diagnostics), base_diagnostics),
-                )
+
+        def refresh_diagnostics() -> None:
+            result.diagnostics = bounded_diagnostics(
+                tuple(extra_diagnostics),
+                self._result.diagnostics + static_diagnostics,
             )
+
+        for tracker in self._diagnostic_trackers:
+            tracker.subscribe(refresh_diagnostics)
+        if isinstance(extra_diagnostics, _EvaluationDiagnostics):
+            extra_diagnostics.bind(refresh_diagnostics)
+        diagnostic_trackers = self._diagnostic_trackers
+        if isinstance(extra_diagnostics, _EvaluationDiagnostics):
+            diagnostic_trackers += (extra_diagnostics,)
         return InferredDataset(
             result,
             name=self.name,
@@ -845,6 +863,7 @@ class InferredDataset:
             target_binding_payload=self._target_binding,
             target_revision_reader=self._target_revision_reader,
             source_owner=self._source_owner,
+            diagnostic_trackers=diagnostic_trackers,
         )
 
     def filter(self, condition: ColumnExpr) -> InferredDataset:

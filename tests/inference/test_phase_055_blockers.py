@@ -10,7 +10,7 @@ from etlantic.inference.facade import _eval
 from etlantic.inference.targets import infer_records_for_target, inspect_target
 from etlantic.schema_drift import json_safe_metadata
 from etlantic.storage.protocol import records_to_dicts
-from etlantic.transform.functions import col
+from etlantic.transform.functions import col, to_integer
 
 
 def test_nested_provider_values_and_identity_are_redacted_on_wire() -> None:
@@ -122,6 +122,20 @@ def test_decimal_cast_failure_is_reported_not_raised() -> None:
         "converted", col("x").cast("decimal")
     )
     assert "INFER_RUNTIME_CONVERSION" in {item.code for item in dataset.diagnostics}
+
+
+def test_late_replay_diagnostics_propagate_through_chained_transforms() -> None:
+    dataset = etl.from_records(
+        ({"value": value} for value in ("1", "invalid")),
+        limits=etl.InferenceLimits(max_rows=1),
+    )
+    first = dataset.select(to_integer(col("value")).alias("number"))
+    second = first.select("number")
+
+    assert second.replay is not None
+    assert list(second.replay.take()) == [{"number": 1}, {"number": None}]
+    assert "INFER_RUNTIME_CONVERSION" in {item.code for item in first.diagnostics}
+    assert "INFER_RUNTIME_CONVERSION" in {item.code for item in second.diagnostics}
 
 
 def test_storage_rejects_provider_object_after_conversion_error() -> None:
