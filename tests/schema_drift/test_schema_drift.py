@@ -324,9 +324,7 @@ def test_null_policy_is_validated_without_allowing_arbitrary_children() -> None:
         **policy,
         "digest": "sha256:" + "a" * 64,
     }
-    assert json_safe_metadata({"null_policy": legacy_policy}) == {
-        "null_policy": policy
-    }
+    assert json_safe_metadata({"null_policy": legacy_policy}) == {"null_policy": policy}
     assert json_safe_metadata(
         {"count": "PRIVATE_TOKEN", "digest": "PRIVATE_TOKEN"}
     ) == {
