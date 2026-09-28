@@ -791,6 +791,11 @@ def infer_records(
         if field_traversal_failed:
             replay_remainder = replay_remainder or chain((item,), iterator)
             break
+        if incomplete_row:
+            # The current row is replayed whole because field traversal stopped
+            # before it could be safely included in the retained prefix. Stop
+            # sampling here so later source rows remain in the replay iterator.
+            break
     if replay_remainder is not None:
         diagnostics.replay_active = True
     for name in names:

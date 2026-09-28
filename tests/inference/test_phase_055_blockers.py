@@ -89,6 +89,14 @@ def test_record_field_traversal_is_capped_and_nested_cycles_are_safe() -> None:
     assert wide.reads <= 2
     assert bounded.provenance["limit_reason"] == "fields"
 
+    replay_source = [{"a": 1, "extra": 2}, {"a": 3}]
+    replayed = etl.infer_records(
+        replay_source,
+        limits=etl.InferenceLimits(max_fields=1),
+        retain_rows=True,
+    )
+    assert list(replayed.replay.take()) == replay_source
+
     cyclic = {"payload": []}
     cyclic["payload"].append(cyclic)
     result = etl.infer_records([cyclic])
