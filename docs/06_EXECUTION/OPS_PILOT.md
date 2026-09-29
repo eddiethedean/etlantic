@@ -1,6 +1,6 @@
 # Ops Pilot Guide
 
-> **Status: ETLantic 0.55.0 Beta release candidate; publication pending for the documented
+> **Status: ETLantic 0.55.0 Beta release for the documented
 > single-tenant reference deployment.** This is not a multi-tenant deployment
 > product and is not unrestricted enterprise production. The future boundary
 > is defined by the

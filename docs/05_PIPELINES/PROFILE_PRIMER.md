@@ -1,6 +1,6 @@
 # Profile primer
 
-> **Status: ETLantic 0.55.0 Beta release candidate; publication pending.** Bind a portable pipeline to an environment.
+> **Status: ETLantic 0.55.0 Beta release.** Bind a portable pipeline to an environment.
 
 Profiles bind a portable pipeline to a concrete environment: engines, assets,
 trust policy, and validation strictness. This page helps you pick the right

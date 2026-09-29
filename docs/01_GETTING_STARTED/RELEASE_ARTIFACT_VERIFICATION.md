@@ -1,26 +1,26 @@
 ---
 title: Release artifact verification for 0.55.0
-status: candidate
+status: published
 current_minor: "0.55"
 ---
 
 # Release artifact verification for 0.55.0
 
-> **Status: 0.55.0 Beta release candidate; no 0.55.0 artifacts are published
-> yet.** Verify the assets only after the release workflow completes.
+> **Status: ETLantic 0.55.0 is published.** The GitHub release contains the
+> per-artifact manifest `release-artifacts.json` (48 package archives) and
+> `sbom-warning.txt`; it does not contain a CycloneDX SBOM.
 
 The release workflow is configured to build the core and first-party
 distributions, publish a per-artifact SHA-256 manifest, and attest build
-provenance. CycloneDX SBOM generation is optional. The actual release assets
-determine which SBOM statement applies; this candidate document does not
-predict that result.
+provenance. CycloneDX SBOM generation is optional. The published release
+contains `sbom-warning.txt`, not a CycloneDX SBOM.
 
-## After publication
+## Verify published assets
 
 1. Open the [v0.55.0 GitHub Release](https://github.com/eddiethedean/etlantic/releases/tag/v0.55.0)
-   and download the wheel, `release-artifacts.json`, and its checksum.
-2. Verify the checksum against the published manifest and verify build
-   provenance for the downloaded wheel:
+   and download a wheel and `release-artifacts.json`.
+2. Compare the wheel's SHA-256 digest with its entry in the manifest, then
+   verify build provenance for the downloaded wheel:
 
    ```bash
    gh attestation verify path/to/etlantic-0.55.0-*.whl \
@@ -28,10 +28,10 @@ predict that result.
      --repo etlantic
    ```
 
-3. Confirm whether that release contains `etlantic-environment.cdx.json` or
-   `sbom-warning.txt`; record only the asset that was actually published.
+3. The release contains `sbom-warning.txt`; no CycloneDX SBOM asset was
+   published.
 4. Prefer exact pins such as `etlantic==0.55.0` and matching first-party
    plugins in lockfiles.
 
-Update this page with the actual asset names and verification result after the
-release workflow has completed.
+The release asset list and per-artifact digests are recorded in the GitHub
+release manifest.

@@ -1,13 +1,13 @@
 # Performance envelope
 
-> **Status: ETLantic 0.55.0 Beta release candidate; publication pending.** Coordination microbenchmarks only—
+> **Status: ETLantic 0.55.0 Beta release.** Coordination microbenchmarks only—
 > not warehouse throughput or SLA claims.
 
 ## Residual evaluation lead
 
-| Topic | 0.55 candidate |
+| Topic | 0.55 release |
 |---|---|
-| Maturity | Beta release candidate; publication pending |
+| Maturity | Beta release |
 | Support | Community; **no SLA** |
 | Scale claim | Measured **framework overhead** + CP-GA capacity envelopes only |
 | Engine sizing | Adopter-owned (measure Polars/Pandas/SQL/Spark yourself) |

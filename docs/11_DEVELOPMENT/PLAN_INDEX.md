@@ -1,13 +1,13 @@
 # Planning Hub
 
-> **Status: ETLantic 0.55.0 is the Beta release candidate; 0.54.0 remains the latest published package until tagging.**
+> **Status: ETLantic 0.55.0 is the published Beta release and current supported line.**
 > Inferred-model authoring is qualified only for the scoped Experimental surface in the 0.55 exit gate. Adaptive execution remains Experimental and graduation remains pending.
 > Human-governed AI context/proposal surfaces are Available; MCP extra is
 > Experimental. Streaming and bounded dynamic control are Supported in core; Kafka and
 > schema-registry extras are Experimental. Developer Intelligence (LSP / IDE /
 > notebooks) is Available; CP-GA production multi-tenant remains Supported
 > only for isolation profiles graduated in 0.43. `shared-service` remains
-> Experimental.**
+> Experimental.
 
 ETLantic's planning documents describe intended outcomes, dependencies, and
 release gates. They are **not** a substitute for current product documentation.
@@ -68,8 +68,8 @@ is available and its release gate has passed.
 
 ## Portfolio at a glance
 
-Status is relative to the **0.55.0 release candidate**.
-See the [0.55 scoped exit gate](EXIT_GATE_0_55.md) for candidate evidence.
+Status is relative to the **published 0.55.0 release**.
+See the [0.55 scoped exit gate](EXIT_GATE_0_55.md) for qualification evidence.
 Prior scheduler/federation evidence remains in **0.47**; Streaming evidence remains in **0.46**; Optimization SDK evidence remains
 in **0.45**; Developer Intelligence remains in **0.44**; CP-GA evidence remains
 in **0.43**; CP4 evidence remains in **0.42**; CP3 evidence remains in **0.41**;
@@ -78,14 +78,14 @@ evidence remains in **0.38**.
 
 | Plan | Status | Current boundary | Next horizon or gate |
 |---|---|---|---|
-| [Main roadmap](https://github.com/eddiethedean/etlantic/blob/main/ROADMAP.md) | Current sequence | 0.55 inferred-authoring candidate; 0.54 latest published; 0.56 complete application backend planned | [ROADMAP](https://github.com/eddiethedean/etlantic/blob/main/ROADMAP.md) §§ 0.55–0.60 |
+| [Main roadmap](https://github.com/eddiethedean/etlantic/blob/main/ROADMAP.md) | Current sequence | 0.55 inferred authoring published; 0.56 complete application backend planned | [ROADMAP](https://github.com/eddiethedean/etlantic/blob/main/ROADMAP.md) §§ 0.55–0.60 |
 | [0.49 implementation plan](IMPLEMENTATION_PLAN_0_49.md) | Implemented qualified subset | Optional DuckDB engine package, embedded runtime, dialect/compiler subset, security policy, and qualification evidence; advanced matrix/release evidence remains tracked in the exit gate | [Exit gate 0.49](EXIT_GATE_0_49.md) · [findings ledger](FINDINGS_0_49.md) · [epic #110](https://github.com/eddiethedean/etlantic/issues/110) |
 | [0.50 implementation plan](IMPLEMENTATION_PLAN_0_50.md) | Published; technical qualification complete | Frozen seven-engine baseline, pushdown conformance, and requirement-level evidence generated for 0.51 consumption | [Exit gate 0.50](EXIT_GATE_0_50.md) · [evidence index](evidence/portable_0_50/portable_evidence_index_0_50.json) |
 | [0.51 implementation plan](IMPLEMENTATION_PLAN_0_51.md) | Foundation published; adaptive qualification pending | Profile policy, report metadata migration, and closed `/2` wire model are implemented; candidate discovery, solver, and runtime remain unavailable | [ADR-025](adr/ADR-025-ADAPTIVE-EXECUTION-AND-PHYSICAL-DAG.md) · [Exit gate 0.51](EXIT_GATE_0_51.md) · [epic #30](https://github.com/eddiethedean/etlantic/issues/30) |
 | [0.52 implementation plan](IMPLEMENTATION_PLAN_0_52.md) | Published 0.52.0 | Trusted inventory, candidate matrix, exact placement, physical lowering, and explain/diff; execution remains unavailable | [Exit gate 0.52](EXIT_GATE_0_52.md) · [Generated evidence](evidence/adaptive_0_51/FINDINGS.md) |
 | [0.53 implementation plan](IMPLEMENTATION_PLAN_0_53.md) | Planned | Whole-DAG admission and fixture-qualified local physical execution; availability remains gated | Adaptive program Phases 8–9 / I2 |
 | [0.54 implementation plan](IMPLEMENTATION_PLAN_0_54.md) | Published 0.54.0; adaptive graduation pending | Public conformance, differential/security qualification, and exact-matrix graduation | Adaptive program Phase 10 / I3 |
-| [0.55 inferred model authoring plan](IMPLEMENTATION_PLAN_0_55.md) · [execution plan](EXECUTION_PLAN_0_55.md) · [remediation plan](INFERENCE_REMEDIATION_PLAN_0_55.md) · [full review fix plan](REVIEW_FIX_PLAN_0_55.md) | Scoped qualification complete; candidate | Experimental source inference, portable transfer, target inspection, and SQLite reference write modes; other adapters retain their documented limits | [Exit gate 0.55](EXIT_GATE_0_55.md) · [evidence index](evidence/inference_0_55/index.json) |
+| [0.55 inferred model authoring plan](IMPLEMENTATION_PLAN_0_55.md) · [execution plan](EXECUTION_PLAN_0_55.md) · [remediation plan](INFERENCE_REMEDIATION_PLAN_0_55.md) · [full review fix plan](REVIEW_FIX_PLAN_0_55.md) | Scoped qualification complete; 0.55.0 published | Experimental source inference, portable transfer, target inspection, and SQLite reference write modes; other adapters retain their documented limits | [Exit gate 0.55](EXIT_GATE_0_55.md) · [evidence index](evidence/inference_0_55/index.json) |
 | [0.56 complete application backend](IMPLEMENTATION_PLAN_0_56.md) · [execution plan](EXECUTION_PLAN_0_56.md) · [source review](FINDINGS_0_56.md) | Planned; follows 0.55 | Twelve backend integration/coverage gaps, full developer control, real workers/results/actions and live PostgreSQL/Foundry/CSV | Gates A–F and AC056-001–044; no shipped claim |
 | [ADR-025: Adaptive execution and physical DAG](adr/ADR-025-ADAPTIVE-EXECUTION-AND-PHYSICAL-DAG.md) | Accepted | `/1` preservation, opt-in `/2`, portable-only candidates, physical-DAG authority, and fail-closed consumers | 0.51 Phase 0 |
 | [0.48 implementation plan](IMPLEMENTATION_PLAN_0_48.md) | Gate-ready milestone | Human-governed AI proposals; reuse 0.42 approvals | [EXIT_GATE_0_48](EXIT_GATE_0_48.md) |

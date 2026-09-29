@@ -1,6 +1,6 @@
 # Migration from other tools
 
-> **Status: Available in ETLantic 0.53.0 (Beta release candidate).** Honest scope for evaluators who
+> **Status: Available in ETLantic 0.53.0 (published Beta release).** Honest scope for evaluators who
 > already run Airflow, dbt, or Dagster. There is **no automated migrator in
 > 0.36**; bounded brownfield import and compiler bridges are planned for
 > [0.57](../11_DEVELOPMENT/ADOPTION_ECOSYSTEM_PLAN.md#brownfield-adoption-bridges).

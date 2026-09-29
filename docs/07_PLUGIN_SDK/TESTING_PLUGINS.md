@@ -1,6 +1,6 @@
 # Testing Plugins
 
-> **Status: ETLantic 0.55.0 Beta release candidate; publication pending** via `etlantic.testing`.
+> **Status: ETLantic 0.55.0 Beta release** via `etlantic.testing`.
 
 Testing helpers provide conformance suites so third-party plugins can prove
 they implement the public protocols correctly.

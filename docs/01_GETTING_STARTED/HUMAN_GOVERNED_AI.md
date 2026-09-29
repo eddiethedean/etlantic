@@ -1,6 +1,6 @@
 # Human-governed AI
 
-> **Status: ETLantic 0.55.0 Beta release candidate; publication pending.** Budget ~15 minutes after
+> **Status: ETLantic 0.55.0 Beta release.** Budget ~15 minutes after
 > [Quickstart](QUICKSTART.md). PyPI only — no MCP extra and no clone.
 
 Treat every proposal as untrusted. This tutorial **validates** a proposal; it

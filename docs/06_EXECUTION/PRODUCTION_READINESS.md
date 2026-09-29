@@ -1,12 +1,12 @@
 # Production Readiness and Deployment Boundaries
 
-> **Status: ETLantic 0.55.0 Beta release candidate; publication pending.**
+> **Status: ETLantic 0.55.0 Beta release.**
 
 ## Residual evaluation lead
 
-| Topic | 0.55 candidate |
+| Topic | 0.55 release |
 |---|---|
-| Maturity | **Beta release candidate; publication pending** |
+| Maturity | **Beta release** |
 | Suitable for | Documented single-tenant pilots; Supported multi-tenant profiles |
 | Support | Community; **no SLA** |
 | Not included as GA | Unbounded scale; formal enterprise SLA; `shared-service` without real RLS |
@@ -98,9 +98,9 @@ reference controls are shipped:
   release digests, and GitHub attestations (CycloneDX SBOM is optional;
   confirm SBOM or `sbom-warning.txt` at tag time)
 
-## Shipped / adopter-owned / residual (0.55 candidate)
+## Shipped / adopter-owned / residual (0.55 release)
 
-| Concern | 0.55 candidate status |
+| Concern | 0.55 release status |
 |---|---|
 | Typed validate/plan/run | **Shipped** |
 | Programmatic / JSON authoring (`PipelineDefinition`) | **Shipped** |

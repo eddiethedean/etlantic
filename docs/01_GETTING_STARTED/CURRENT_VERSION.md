@@ -1,15 +1,13 @@
 ---
 title: ETLantic 0.55 User Guide
-status: candidate
+status: published
 since: "0.55.0"
 current_minor: "0.55"
 ---
 
 # ETLantic 0.55 User Guide
 
-> **Status: 0.55.0 Beta release candidate; publication pending.** ETLantic
-> 0.54.0 remains the latest published package until the 0.55.0 tag is
-> released.
+> **Status: ETLantic 0.55.0 is the published Beta release.**
 
 ETLantic 0.55 continues the documented Beta envelope for controlled
 single-tenant pilots and Supported control-plane isolation profiles. It adds

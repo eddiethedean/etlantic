@@ -1,6 +1,6 @@
 # Runtime configuration (shipped)
 
-> **Status: ETLantic 0.55.0 Beta release candidate; publication pending.** Configure profiles, bindings, and
+> **Status: ETLantic 0.55.0 Beta release.** Configure profiles, bindings, and
 > engines in Python or JSON. Optional `etlantic.toml` may set `default_profile`
 > and named profile references. Only the environment variables listed here are
 > read by shipped code.

@@ -1,8 +1,8 @@
 # What's new in 0.53
 
-> **Status: Available in ETLantic 0.53.0 (Beta release candidate); adaptive execution is Experimental.**
+> **Status: Available in ETLantic 0.53.0 (published Beta release); adaptive execution is Experimental.**
 
-ETLantic 0.53.0 is a Beta release candidate. Local adaptive physical-DAG
+ETLantic 0.53.0 is a published Beta release. Local adaptive physical-DAG
 execution is **Experimental**, with packaged fixture-qualified support for
 Local, Polars, Pandas and both single-cut Polars/Pandas directions.
 

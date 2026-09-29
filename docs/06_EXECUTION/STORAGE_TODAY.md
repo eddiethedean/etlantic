@@ -1,6 +1,6 @@
 # Storage Today
 
-> **Status: ETLantic 0.55.0 Beta release candidate; publication pending.** Decision tree for what ships today.
+> **Status: ETLantic 0.55.0 Beta release.** Decision tree for what ships today.
 > Landing-zone `local-files` is a **source connector**, not an extension of
 > `CsvStorage`.
 

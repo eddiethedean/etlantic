@@ -1,6 +1,6 @@
 # Upgrade Hub
 
-> **Status: ETLantic 0.55.0 Beta release candidate; publication pending.**
+> **Status: ETLantic 0.55.0 Beta release.**
 
 !!! warning "Upgraders only"
     New users: start at the [docs home green path](../README.md) or
@@ -9,15 +9,14 @@
 Upgrade between ETLantic 0.x releases using the guides below. Always pin core
 and first-party plugins to the **same minor** after upgrading.
 
-The current target is the 0.55.0 release candidate. Until publication, 0.54.0
-is the latest PyPI release. Older paths below must finish with the 0.53 → 0.54
+The current target is the published 0.55.0 release. Older paths below must finish with the 0.53 → 0.54
 and 0.54 → 0.55 migrations.
 
 Historical release notes: [Earlier releases](EARLIER_RELEASES.md).
 
 ## Current target
 
-**ETLantic 0.55.0** (Beta release candidate) — choose your guide:
+**ETLantic 0.55.0** (published Beta release) — choose your guide:
 
 | From version | Ordered path to 0.55 |
 |---|---|
@@ -309,7 +308,7 @@ before opting into the Experimental inferred-model authoring API.
 
 | Do | Don't |
 |---|---|
-| Pin core and first-party plugins to `0.55.0` after publication | Mix plugin minor lines |
+| Pin core and first-party plugins to `0.55.0` | Mix plugin minor lines |
 | Keep existing `Data` / `Transformation` / `Pipeline` profiles unchanged | Rewrite pipelines that do not use the new authoring facade |
 | Review inferred-model diagnostics, provenance, and scope limits before using previews | Treat inferred schemas or provider observations as authoritative writes |
 | Use explicit execution profiles until adaptive support is requalified for 0.55 | Carry the exact-version adaptive qualification from 0.54 into 0.55 |

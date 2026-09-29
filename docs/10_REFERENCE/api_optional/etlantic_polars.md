@@ -13,7 +13,7 @@ ordinary reads remain separate from the exact scan/filter/project fusion
 candidate. No general connector pushdown is claimed. See the
 [bounded reference and registration guide](../../11_DEVELOPMENT/ADAPTIVE_0_54_USAGE.md).
 
-> **Status: ETLantic 0.55.0 Beta release candidate; publication pending.** Polars dataframe plugin + portable compiler.
+> **Status: ETLantic 0.55.0 Beta release.** Polars dataframe plugin + portable compiler.
 > Install narrative: package README. Hub: [Optional packages API](../API_OPTIONAL_PACKAGES.md).
 
 ## Setup

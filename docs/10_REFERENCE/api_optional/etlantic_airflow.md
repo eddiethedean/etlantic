@@ -7,7 +7,7 @@ audience: developer
 
 # etlantic-airflow API
 
-> **Status: ETLantic 0.55.0 Beta release candidate; publication pending.** Airflow DAG compiler.
+> **Status: ETLantic 0.55.0 Beta release.** Airflow DAG compiler.
 > Install narrative: package README. Hub: [Optional packages API](../API_OPTIONAL_PACKAGES.md).
 
 ## Setup

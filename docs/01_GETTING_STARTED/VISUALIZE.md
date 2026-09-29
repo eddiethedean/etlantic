@@ -1,6 +1,6 @@
 # Visualize a pipeline
 
-> **Status: ETLantic 0.55.0 Beta release candidate; publication pending.** After [Quickstart](QUICKSTART.md).
+> **Status: ETLantic 0.55.0 Beta release.** After [Quickstart](QUICKSTART.md).
 
 ## Python
 

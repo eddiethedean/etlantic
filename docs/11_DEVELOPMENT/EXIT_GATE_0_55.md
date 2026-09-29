@@ -6,7 +6,7 @@ current_minor: "0.55"
 
 # ETLantic 0.55 Exit Gate — Inferred Model Authoring
 
-**Decision: gate-ready for the scoped 0.55.0 Beta release candidate.** This
+**Decision: gate-ready for the scoped 0.55.0 Beta release.** This
 decision qualifies only the capabilities recorded in the machine-readable
 [inference evidence index](evidence/inference_0_55/index.json). It does not
 promote inferred-model authoring beyond Experimental.

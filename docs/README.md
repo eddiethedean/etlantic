@@ -9,7 +9,7 @@ audience: adopter
 
 <div class="etlantic-hero">
   <div class="etlantic-hero__content">
-    <span class="etlantic-hero__eyebrow">ETLantic 0.55 · Beta release candidate</span>
+    <span class="etlantic-hero__eyebrow">ETLantic 0.55 · Beta release</span>
     <h1>One typed pipeline model. Many execution backends.</h1>
     <p>Define contracts and topology in Python, validate them before execution,
     then produce deterministic plans for local engines, backend plugins, or
@@ -62,7 +62,7 @@ audience: adopter
 
 ## Choose your path
 
-> **Status: ETLantic 0.55.0 Beta release candidate. The latest published release remains 0.54.0 until the 0.55.0 tag is published.**
+> **Status: ETLantic 0.55.0 is the published Beta release and the current supported line.**
 
 
 <div class="etlantic-path-grid">
@@ -109,8 +109,7 @@ audience: adopter
 Install from PyPI first: `pip install etlantic`. The commands below pin
 `etlantic==0.55.0` so this version of the documentation and the installed API
 stay aligned. The complete [Quickstart](01_GETTING_STARTED/QUICKSTART.md)
-is for the 0.55.0 release and will install after publication; until then use
-0.54.0 for the current published package. The guide continues with an
+installs 0.55.0 from PyPI. The guide continues with an
 intentional validation failure after the first successful run.
 
 === "macOS / Linux"
@@ -248,6 +247,6 @@ before a pilot.
 | Author with the public Python facade | [Python SDK in 10 minutes](01_GETTING_STARTED/SDK_10_MINUTES.md) |
 | Configure CI validation | [CI integration](06_EXECUTION/CI_INTEGRATION.md) |
 | Diagnose a failure | [Troubleshooting](01_GETTING_STARTED/TROUBLESHOOTING.md) |
-| Review the current release candidate | [What's new in 0.55](01_GETTING_STARTED/WHATS_NEW_0_55.md) |
+| Review the current release | [What's new in 0.55](01_GETTING_STARTED/WHATS_NEW_0_55.md) |
 | Review future direction | [Planning Hub](11_DEVELOPMENT/PLAN_INDEX.md) |
 | Contribute to ETLantic | [Contributor guide](11_DEVELOPMENT/CONTRIBUTING.md) |

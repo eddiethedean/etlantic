@@ -1,6 +1,6 @@
 # Landing-Zone File Connector
 
-> **Status: ETLantic 0.55.0 Beta release candidate; publication pending (Preview).** Built-in `local-files`
+> **Status: ETLantic 0.55.0 Beta release (Preview).** Built-in `local-files`
 > source connector for directory/glob CSV landing zones in snapshot and
 > incremental modes. Continuous directory watching is **not** in core — compose
 > a submitter outside `src/etlantic/` (0.39+).

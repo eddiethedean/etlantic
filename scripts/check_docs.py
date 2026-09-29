@@ -90,6 +90,15 @@ def load_release_facts() -> dict:
     return data
 
 
+def has_current_release_status(text: str) -> bool:
+    """Return whether a page's status banner matches the current release facts."""
+    facts = load_release_facts()
+    status = f"ETLantic {facts['current_version']} {facts['maturity']} release"
+    if facts.get("publication_status") != "published":
+        status += " candidate; publication pending"
+    return status in text
+
+
 def versioned_readthedocs_url(page: Path, *, docs_base_url: str) -> str:
     """Return immutable RTD URL for a docs page under the release slug."""
     base = docs_base_url.rstrip("/") + "/"
@@ -1908,7 +1917,7 @@ def main() -> None:
                 if (
                     "**Status: Available" not in text
                     and "Status: Available" not in text
-                    and "release candidate; publication pending" not in text
+                    and not has_current_release_status(text)
                 ):
                     raise SystemExit(f"{path} runnable guide missing Available status")
             continue
@@ -1924,7 +1933,7 @@ def main() -> None:
             and "Design study—" not in text
             and "Experimental design study—" not in text
             and "Available in ETLantic" not in text
-            and "release candidate; publication pending" not in text
+            and not has_current_release_status(text)
         ):
             raise SystemExit(f"{path} missing Future design / design-study admonition")
 
@@ -2144,7 +2153,7 @@ def main() -> None:
     major_minor = ".".join(package_version.split(".")[:2])
     if (
         f"Available in ETLantic {major_minor}" not in api_ref
-        and "release candidate; publication pending" not in api_ref
+        and not has_current_release_status(api_ref)
     ):
         raise SystemExit(
             f"API_REFERENCE.md must claim Available in ETLantic {major_minor}"

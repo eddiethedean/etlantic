@@ -7,7 +7,7 @@ audience: developer
 
 # etlantic-keyring API
 
-> **Status: ETLantic 0.55.0 Beta release candidate; publication pending.** OS keyring secret provider.
+> **Status: ETLantic 0.55.0 Beta release.** OS keyring secret provider.
 > Install narrative: package README. Hub: [Optional packages API](../API_OPTIONAL_PACKAGES.md).
 
 ## Setup

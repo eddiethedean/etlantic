@@ -1,6 +1,6 @@
 # Enterprise Evaluation Guide
 
-> **Status: ETLantic 0.55.0 Beta release candidate; publication pending.** Deep diligence packet. Start with the
+> **Status: ETLantic 0.55.0 Beta release.** Deep diligence packet. Start with the
 > one-page [Evaluator Brief](EVALUATOR.md) for residual risk and the capability
 > matrix; use this page to assemble review links and artifacts.
 
@@ -33,7 +33,7 @@
 
 ### 2. Run the green path
 
-1. [Installation](INSTALLATION.md) — `pip install etlantic==0.55.0` after publication
+1. [Installation](INSTALLATION.md) — `pip install etlantic==0.55.0`
 2. [Quickstart](QUICKSTART.md) — `python -m etlantic init`, validate, plan, run
 3. [First Pipeline](FIRST_PIPELINE.md) — evolve the generated project
 4. [Engine selection](ENGINE_SELECTION.md) — pick one engine tutorial
@@ -75,7 +75,7 @@ and fill `assets` for your pipeline bindings before production-profile testing.
 
 | Artifact | Location |
 |---|---|
-| Version pins | Pin `etlantic==0.55.0` and matching plugin minors after publication |
+| Version pins | Pin `etlantic==0.55.0` and matching plugin minors |
 | Changelog | [CHANGELOG](../CHANGELOG.md) |
 | Upgrade path | [Upgrade hub](UPGRADE.md), [Migration 0.38 → 0.39](../11_DEVELOPMENT/MIGRATION_0_38_TO_0_39.md) |
 | API stability | [Deprecation policy](../11_DEVELOPMENT/DEPRECATION_POLICY.md), [Surface inventory](../10_REFERENCE/SURFACE_INVENTORY.md) |
@@ -84,7 +84,7 @@ and fill `assets` for your pipeline bindings before production-profile testing.
 
 ### Verify release attestations
 
-After publication, verify a GitHub Release asset (example: wheel from the `v0.55.0` release):
+Verify a GitHub Release asset (example: wheel from the `v0.55.0` release):
 
 ```bash
 # Download the wheel from the GitHub Release, then:

@@ -1,14 +1,14 @@
 # Deployment
 
-> **Status: ETLantic 0.55.0 Beta release candidate; publication pending.** This guide describes the bounded,
+> **Status: ETLantic 0.55.0 Beta release.** This guide describes the bounded,
 > single-tenant reference deployment. It is not the
 > [planned multi-tenant control plane](../11_DEVELOPMENT/MULTI_TENANT_CONTROL_PLANE_PLAN.md).
 
 ## Residual evaluation lead
 
-| Topic | 0.55 candidate |
+| Topic | 0.55 release |
 |---|---|
-| Maturity | Beta release candidate; publication pending |
+| Maturity | Beta release |
 | Topology | Single trusted process / worker per runtime (reference); multi-tenant via Supported CP-GA profiles |
 | Multi-worker / multi-tenant control plane | Production multi-tenant for Supported profiles (`isolated-deployment`, `dedicated-schema`); `shared-service` Experimental |
 | SLA | None (community support) |

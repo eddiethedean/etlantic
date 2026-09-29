@@ -1,6 +1,6 @@
 # Plugin SDK Overview
 
-> **Status: ETLantic 0.55.0 Beta release candidate; publication pending** for the shipped protocols below.
+> **Status: ETLantic 0.55.0 Beta release** for the shipped protocols below.
 > Future protocols are listed only in the appendix—do not treat them as APIs.
 
 For the package-from-zero workflow, start with

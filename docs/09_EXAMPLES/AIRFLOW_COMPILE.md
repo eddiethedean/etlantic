@@ -1,6 +1,6 @@
 # Airflow Compile (runnable)
 
-> **Status: ETLantic 0.55.0 Beta release candidate; publication pending.** Uses `etlantic-airflow` and
+> **Status: ETLantic 0.55.0 Beta release.** Uses `etlantic-airflow` and
 > `examples/airflow_compile.py`.
 
 Compile an ETLantic `PipelinePlan` into an Airflow DAG artifact without

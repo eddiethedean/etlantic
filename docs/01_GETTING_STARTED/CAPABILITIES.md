@@ -1,18 +1,17 @@
 # Current Capabilities and Limitations
 
-> **Status: ETLantic 0.55.0 Beta release candidate; publication pending.** This page records
-> the published 0.54 envelope plus the scoped Experimental 0.55 qualification
+> **Status: ETLantic 0.55.0 Beta release.** This page records
+> the published 0.55 envelope, including the scoped Experimental qualification
 > for controlled single-tenant pilots and Supported isolation profiles.
 
 !!! tip "Adopter brief"
     Read **What works today** and **Limits** first. Residual gaps and CI
     starter JSON are further down for evaluators.
 
-## What works today (0.55 candidate)
+## What works today (0.55)
 
-ETLantic 0.55.0 is the **Beta release candidate** for documented, controlled,
-single-tenant pilots. Until publication, install `etlantic==0.55.0` from
-PyPI. You can embed an
+ETLantic 0.55.0 is the current **Beta release** for documented, controlled,
+single-tenant pilots. Install `etlantic==0.55.0` from PyPI. You can embed an
 HTTP control plane with **Supported** isolation profiles
 (`isolated-deployment`, `dedicated-schema`). There is no hosted multi-tenant
 SaaS and no SLA. It validates and
@@ -272,7 +271,7 @@ See also [Experimental surfaces](EXPERIMENTAL_SURFACES.md).
 | Baseline portable execution across first-party engines | **Published and technically qualified** for 0.50: the frozen seven-engine baseline across Local, Polars, Pandas, SQL, PySpark, DataFusion, and DuckDB passed the recorded real-backend campaign and pushdown contract. See the [implementation plan](../11_DEVELOPMENT/IMPLEMENTATION_PLAN_0_50.md), [evidence gate](../11_DEVELOPMENT/EXIT_GATE_0_50.md), and [evidence index](../11_DEVELOPMENT/evidence/portable_0_50/portable_evidence_index_0_50.json). |
 | Adaptive Profile, physical-DAG planning and local execution | **Experimental, fixture-qualified in 0.53** — Local, Polars, Pandas and both single-cut directions; exact admission and packaged support rows required. See the [0.53 exit gate](../11_DEVELOPMENT/EXIT_GATE_0_53.md) and [evidence](../11_DEVELOPMENT/evidence/adaptive_0_53/README.md). |
 | Local adaptive physical-DAG execution | **Experimental in 0.54** — thirteen historical shapes plus one exact placement-bound Polars scan/filter/project → Pandas signature; no general fusion or production claim. These exact package-version rows do not qualify 0.55, which fails closed pending fresh evidence. See [0.54 usage](../11_DEVELOPMENT/ADAPTIVE_0_54_USAGE.md) and the [0.55 exit gate](../11_DEVELOPMENT/EXIT_GATE_0_55.md). |
-| Adaptive provider conformance and graduation safeguards | Public sync/async conformance and local evidence integrity tooling implemented; **graduation pending**. The 0.55 release does not claim adaptive execution until a package-version-matched candidate is qualified. See the [0.54 gate](../11_DEVELOPMENT/EXIT_GATE_0_54.md) and [0.55 gate](../11_DEVELOPMENT/EXIT_GATE_0_55.md). |
+| Adaptive provider conformance and graduation safeguards | Public sync/async conformance and local evidence integrity tooling implemented; **graduation pending**. The 0.55 release does not claim adaptive execution until package-version-matched evidence is qualified. See the [0.54 gate](../11_DEVELOPMENT/EXIT_GATE_0_54.md) and [0.55 gate](../11_DEVELOPMENT/EXIT_GATE_0_55.md). |
 | Data-first authoring and inferred data models | **Experimental, scoped qualification in 0.55** for bounded records, CSV, JSON, Pandas, and Polars inference; portable transfer; metadata-only provider inspection; and transactional SQLite write-mode checks. See the [0.55 exit gate](../11_DEVELOPMENT/EXIT_GATE_0_55.md) and [evidence index](../11_DEVELOPMENT/evidence/inference_0_55/index.json). |
 | Bounded dynamic mapping/reduction and explicit conditional/failure/compensation branches | **Supported** (core) in 0.46 — [exit gate](../11_DEVELOPMENT/EXIT_GATE_0_46.md) / [ADR-022](../11_DEVELOPMENT/adr/ADR-022-DYNAMIC-CONTROL-AND-STREAMING.md) |
 | Streaming poison-record/DLQ policy and schema-registry interoperability | **Supported** core policy/protocol in 0.46; Kafka (`etlantic-kafka`) and Confluent adapter (`etlantic-schemaregistry`) remain **Experimental** — never Available-in-core |

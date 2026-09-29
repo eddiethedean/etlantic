@@ -1,7 +1,6 @@
 # Support
 
-ETLantic **0.55.0** is the Beta release candidate; **0.54.0** remains the
-latest published Beta release until the 0.55.0 tag is published. The 0.55 line
+ETLantic **0.55.0** is the current Beta release. The 0.55 line
 targets documented single-tenant pilots and retains **Supported** isolation
 profiles (`isolated-deployment`, `dedicated-schema`). There is no hosted
 multi-tenant SaaS. Community support has **no formal SLA** or guaranteed
@@ -9,8 +8,7 @@ response time.
 
 ## What we support
 
-- Bug reports against the latest published minor line (`0.54.x`) until 0.55.0
-  is published; then use the `0.55.x` line
+- Bug reports against the latest published minor line (`0.55.x`)
 - Questions about documented Available APIs
 - Security reports via [SECURITY.md](SECURITY.md) (private disclosure)
 

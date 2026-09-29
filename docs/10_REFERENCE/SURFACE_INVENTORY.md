@@ -1,7 +1,7 @@
-# Public Surface Inventory (0.55 candidate)
+# Public Surface Inventory (0.55)
 
-> **Status: ETLantic 0.55.0 Beta release candidate; publication pending.** Canonical public surface for the
-> **0.55 reference envelope (release candidate; publication pending)**.
+> **Status: ETLantic 0.55.0 Beta release.** Canonical public surface for the
+> **Published 0.55 reference envelope**.
 
 Machine-readable companion: [`surface-inventory.json`](https://github.com/eddiethedean/etlantic/blob/main/src/etlantic/schemas/surface-inventory.json)
 (also packaged under `etlantic.schemas`). Keep this page aligned with that file.
@@ -10,7 +10,7 @@ Stability classes:
 
 | Class | Meaning |
 |---|---|
-| `stable` | Supported within the documented 0.55 reference envelope (release candidate; publication pending) |
+| `stable` | Supported within the documented 0.55 reference envelope |
 | `provisional` | Public but may change with migration notes before a later foundation claim |
 | `experimental` | May change or be removed without a stable-foundation obligation |
 | `compatibility` | Historical class for 0.x root aliases; demoted aliases were **removed in 0.37.0** (hard error). Prefer owning modules |

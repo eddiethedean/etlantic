@@ -1,5 +1,5 @@
 ---
-status: candidate
+status: published
 since: "0.55.0"
 current_minor: "0.55"
 audience: adopter
@@ -7,8 +7,7 @@ audience: adopter
 
 # What's new in 0.55
 
-> **Status: ETLantic 0.55.0 Beta release candidate; publication pending.** The
-> latest published package remains 0.54.0 until the 0.55.0 tag is released.
+> **Status: ETLantic 0.55.0 is the published Beta release.**
 
 ETLantic 0.55 adds an Experimental, evidence-qualified subset of data-first
 authoring. Users can infer a bounded schema from records, CSV, JSON, Pandas,
@@ -44,7 +43,7 @@ replay and write modes need their own qualification.
 
 The 0.54 adaptive execution evidence is pinned to exact package versions and
 does not qualify 0.55. Adaptive execution remains fail-closed in this release
-until a 0.55 candidate passes its version-matched qualification gate.
+until version-matched 0.55 adaptive evidence passes its qualification gate.
 
 No target is mutated during inspection, planning, or proposal. Target
 constraints remain separate from observed source facts, and source rows,
@@ -54,6 +53,6 @@ or schema history.
 ## Upgrade impact
 
 No migration is required for existing class-authored pipelines. Core and
-first-party packages use the lockstep `0.55.0` line; install matching versions
-after publication. See [Migration 0.54 → 0.55](../11_DEVELOPMENT/MIGRATION_0_54_TO_0_55.md)
+first-party packages use the published lockstep `0.55.0` line; install matching
+versions. See [Migration 0.54 → 0.55](../11_DEVELOPMENT/MIGRATION_0_54_TO_0_55.md)
 for adoption guidance.

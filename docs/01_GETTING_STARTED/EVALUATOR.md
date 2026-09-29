@@ -1,6 +1,6 @@
 # Evaluator Brief
 
-> **Status: ETLantic 0.55.0 Beta release candidate; publication pending; adaptive graduation remains pending.**
+> **Status: ETLantic 0.55.0 Beta release; adaptive graduation remains pending.**
 
 A one-page answer for enterprise evaluators and technical decision-makers.
 
@@ -14,10 +14,10 @@ A one-page answer for enterprise evaluators and technical decision-makers.
 
 | Topic | 0.55 |
 |---|---|
-| Maturity | **Beta release candidate**; PyPI publication pending |
+| Maturity | Published **Beta release** |
 | Suitable for | Documented single-tenant pilots; Supported multi-tenant profiles |
 | Support | Community; **no formal SLA** |
-| LTS | No LTS; `0.54.x` remains the current published line until 0.55.0 is released |
+| LTS | No LTS; `0.55.x` is the current published line |
 | Not included as GA | Unbounded scale; formal enterprise SLA; `shared-service` without real RLS |
 
 ## What ETLantic is
@@ -103,9 +103,8 @@ For the bounded reference topology and required controls, read
 
 ## Bounded production support (do not skip)
 
-ETLantic **0.55.0** is a **Beta release candidate** for documented single-tenant
-pilots and Supported multi-tenant profiles. 0.54.0 remains the latest
-published package until 0.55.0 is released. Shipped trust controls do not
+ETLantic **0.55.0** is the current **Beta release** for documented single-tenant
+pilots and Supported multi-tenant profiles. Shipped trust controls do not
 make an arbitrary shared-service topology safe.
 
 The [Multi-Tenant Control Plane Plan](../11_DEVELOPMENT/MULTI_TENANT_CONTROL_PLANE_PLAN.md)
@@ -152,7 +151,7 @@ How to read status labels in deeper chapters:
 | Concern | Status in 0.55 |
 |---|---|
 | License | MIT (core and official plugins) |
-| Supported versions / EOL | Current published Beta line is 0.54.x until 0.55.0 publication; see [SECURITY.md](https://github.com/eddiethedean/etlantic/blob/main/SECURITY.md) |
+| Supported versions / EOL | Current published Beta line is 0.55.x; see [SECURITY.md](https://github.com/eddiethedean/etlantic/blob/main/SECURITY.md) |
 | Compliance attestations (SOC2, GDPR cert) | Adopter-owned — not provided |
 | Identity / RBAC / SSO | Out of scope — use process and network isolation |
 | HA / DR / RPO / RTO | Adopter-owned topology |

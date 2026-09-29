@@ -1,6 +1,6 @@
 # How-to guides
 
-> **Status: ETLantic 0.55.0 Beta release candidate; publication pending.** Task-oriented pages. Prefer these
+> **Status: ETLantic 0.55.0 Beta release.** Task-oriented pages. Prefer these
 > after [Quickstart](QUICKSTART.md) success.
 
 | Goal | Guide | Prereq |

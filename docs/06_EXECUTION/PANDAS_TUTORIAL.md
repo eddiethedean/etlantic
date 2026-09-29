@@ -1,6 +1,6 @@
 # Execute with Pandas
 
-> **Status: ETLantic 0.55.0 Beta release candidate; publication pending.** Prefer the **PyPI path** after
+> **Status: ETLantic 0.55.0 Beta release.** Prefer the **PyPI path** after
 > Quickstart. The clone companion is optional.
 
 !!! tip "PyPI vs clone"

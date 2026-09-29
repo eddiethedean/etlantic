@@ -1,19 +1,19 @@
 ---
 title: Migration from ETLantic 0.54 to 0.55
-status: candidate
+status: published
 current_minor: "0.55"
 ---
 
 # Migration from 0.54 to 0.55
 
-> **Status: ETLantic 0.55.0 Beta release candidate; publication pending.**
+> **Status: ETLantic 0.55.0 Beta release.**
 
 ## Existing pipelines
 
 Class-authored `Data`, `Transformation`, and `Pipeline` definitions remain the
 default API. Existing 0.54 pipelines do not need to be rewritten to upgrade.
-Install core and any first-party plugins from the same `0.55.0` line after the
-release is published. Plugin requirements now use
+Install core and any first-party plugins from the published `0.55.0` line.
+Plugin requirements now use
 `etlantic>=0.55.0,<0.56`.
 
 ## Optional data-first authoring

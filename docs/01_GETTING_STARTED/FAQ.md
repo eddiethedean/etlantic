@@ -1,6 +1,6 @@
 # Frequently Asked Questions
 
-> **Status: ETLantic 0.55.0 Beta release candidate; publication pending.**
+> **Status: ETLantic 0.55.0 Beta release.**
 
 Practical questions for ETLantic **0.55.0**. Philosophy and contract taxonomy
 live under [Foundations](../02_FOUNDATIONS/README.md).
@@ -70,8 +70,7 @@ Use `SecretRef` — never put values in plans. Follow the
 
 ## Is ETLantic 0.55 production-supported?
 
-ETLantic **0.55.0** is a **Beta release candidate**; 0.54.0 remains the latest
-published release until 0.55.0 is published. The candidate targets documented
+ETLantic **0.55.0** is the current **Beta release**. It targets documented
 single-tenant pilots. You can embed an HTTP control plane
 (`etlantic-fastapi`) with **Supported** isolation profiles
 (`isolated-deployment`, `dedicated-schema`). There is no hosted multi-tenant

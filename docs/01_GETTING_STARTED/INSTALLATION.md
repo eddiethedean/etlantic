@@ -1,10 +1,10 @@
 # Installing ETLantic 0.55.0
 
-> **Status: ETLantic 0.55.0 Beta release candidate; publication pending.**
+> **Status: ETLantic 0.55.0 Beta release.**
 
 ETLantic **0.55.0** supports Python 3.11–3.13. Its PyPI page is
-[available here](https://pypi.org/project/etlantic/0.55.0/) after publication.
-Until then, 0.54.0 remains the latest published package.
+[available here](https://pypi.org/project/etlantic/0.55.0/). It is the
+current published package.
 
 !!! tip "PyPI user vs contributor clone"
     | Audience | Path |
@@ -25,7 +25,7 @@ reproducible evaluation.
 
 ### pip
 
-The pinned PyPI commands below install `0.55.0` after publication.
+The pinned PyPI commands below install the published `0.55.0` release.
 
 ```bash
 python -m venv .venv

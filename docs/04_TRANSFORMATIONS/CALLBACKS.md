@@ -1,6 +1,6 @@
 # Callbacks
 
-> **Status: ETLantic 0.55.0 Beta release candidate; publication pending** for the shipped lifecycle callback
+> **Status: ETLantic 0.55.0 Beta release** for the shipped lifecycle callback
 > surface. Broader invalid-data quarantine APIs remain future design.
 
 Callbacks let applications respond to pipeline lifecycle outcomes without

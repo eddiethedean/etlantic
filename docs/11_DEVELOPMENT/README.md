@@ -1,9 +1,9 @@
 # Development
 
-Current release candidate: [0.55 migration](MIGRATION_0_54_TO_0_55.md),
+Current release: [0.55 migration](MIGRATION_0_54_TO_0_55.md),
 [scoped exit gate](EXIT_GATE_0_55.md), and
-[inference evidence](evidence/inference_0_55/index.json). The candidate is not
-published; 0.54.0 remains the latest PyPI release until tagging.
+[inference evidence](evidence/inference_0_55/index.json). Version 0.55.0 is
+published on PyPI and is the current supported line.
 
 Earlier release: [0.54 migration](MIGRATION_0_53_TO_0_54.md),
 [exit gate](EXIT_GATE_0_54.md), and [implementation report](IMPLEMENTATION_REPORT_0_54.md).

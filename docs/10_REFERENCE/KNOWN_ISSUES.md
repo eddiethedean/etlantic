@@ -1,9 +1,8 @@
 # Known Limitations
 
-> **Status: ETLantic 0.55.0 Beta release candidate; adaptive execution remains Experimental.**
+> **Status: ETLantic 0.55.0 Beta release; adaptive execution remains Experimental.**
 
-ETLantic **0.55.x** is the Beta release-candidate line; 0.54.x remains the
-latest published line until 0.55.0 is released. Prior baselines are suitable for documented
+ETLantic **0.55.x** is the current published Beta line. Prior baselines are suitable for documented
 single-tenant reference deployments and Supported multi-tenant profiles.
 0.x releases may still introduce breaking API changes between minor versions.
 **CP-GA** graduated production multi-tenant for `isolated-deployment` /
@@ -12,7 +11,7 @@ single-tenant reference deployments and Supported multi-tenant profiles.
 
 | ID | Component | Affected | Symptom | Workaround | Status |
 |---|---|---|---|---|---|
-| DOC-001 | Release maturity | All adopters | Breaking API changes possible between 0.x minors | Pin `etlantic==0.55.0` and matching plugins after publication; follow Upgrade hub | Open (Beta) |
+| DOC-001 | Release maturity | All adopters | Breaking API changes possible between 0.x minors | Pin `etlantic==0.55.0` and matching plugins; follow Upgrade hub | Open (Beta) |
 | DOC-026 | Control plane | Multi-tenant hosts | Treating CP1–CP4 alone as GA isolation | Use Supported profiles only; see [cp_ga_support_matrix_0_43.json](../11_DEVELOPMENT/cp_ga_support_matrix_0_43.json) | By design |
 | DOC-002 | Portable transforms | Polars / PySpark vs Pandas / SQL | Advanced portable families graduate unevenly across engines | Use [Portable compiler matrix](PORTABLE_COMPILER_MATRIX.md); keep Pandas/SQL on kernel + relational `/1` | Partial |
 | DOC-003 | Portable window | Window frames | Explicit `rowsBetween` / `rangeBetween` fail closed; `first_value` / `last_value` use ordered partition semantics | Avoid frame clauses until claimed; watch `portable-window/2` | Open |

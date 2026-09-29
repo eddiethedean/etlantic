@@ -1,9 +1,8 @@
 # Earlier release notes
 
-> **Status: Historical release notes for the 0.55.0 Beta release candidate.**
-> Current candidate: [What's new in 0.55](WHATS_NEW_0_55.md). The latest
-> published line remains 0.54 until 0.55.0 is released. Full
-> history: [Changelog](../CHANGELOG.md).
+> **Status: Published release index; current release is 0.55.0.**
+> Current release: [What's new in 0.55](WHATS_NEW_0_55.md). Earlier release
+> notes follow. Full history: [Changelog](../CHANGELOG.md).
 
 | Release | Notes |
 |---|---|

@@ -1,6 +1,6 @@
 # API — Plan and Runtime
 
-> **Status: ETLantic 0.55.0 Beta release candidate; publication pending.**
+> **Status: ETLantic 0.55.0 Beta release.**
 
 > Generated from package source. Hub: [Python API Reference](API_REFERENCE.md).
 

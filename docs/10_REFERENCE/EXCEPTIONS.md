@@ -1,6 +1,6 @@
 # Exceptions Reference
 
-> **Status: ETLantic 0.55.0 Beta release candidate; publication pending.** This page documents exceptions
+> **Status: ETLantic 0.55.0 Beta release.** This page documents exceptions
 > exported by the installed package. Broader proposed exception trees on older
 > design pages are not authoritative.
 
