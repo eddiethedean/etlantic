@@ -1,7 +1,7 @@
 # Planning Hub
 
-> **Status: ETLantic 0.54.0 is the published Beta release for bounded adaptive conformance and execution.**
-> Adaptive execution remains Experimental and graduation remains pending.
+> **Status: ETLantic 0.55.0 is the Beta release candidate; 0.54.0 remains the latest published package until tagging.**
+> Inferred-model authoring is qualified only for the scoped Experimental surface in the 0.55 exit gate. Adaptive execution remains Experimental and graduation remains pending.
 > Human-governed AI context/proposal surfaces are Available; MCP extra is
 > Experimental. Streaming and bounded dynamic control are Supported in core; Kafka and
 > schema-registry extras are Experimental. Developer Intelligence (LSP / IDE /
@@ -13,7 +13,7 @@ ETLantic's planning documents describe intended outcomes, dependencies, and
 release gates. They are **not** a substitute for current product documentation.
 
 !!! important "Use the right source of truth"
-    - To learn what **ETLantic 0.54 can do now**, use
+    - To learn what **ETLantic 0.55 can do now**, use
       [Capabilities](../01_GETTING_STARTED/CAPABILITIES.md), the
       [CLI reference](../10_REFERENCE/CLI.md), and the
       [Python API reference](../10_REFERENCE/API_REFERENCE.md).
@@ -65,7 +65,7 @@ is available and its release gate has passed.
 
 ## Portfolio at a glance
 
-Status is relative to the published **0.54** adaptive release.
+Status is relative to the **0.55.0 release candidate**.
 See [what ETLantic 0.53 can do now](../01_GETTING_STARTED/WHATS_NEW_0_52.md).
 Prior scheduler/federation evidence remains in **0.47**; Streaming evidence remains in **0.46**; Optimization SDK evidence remains
 in **0.45**; Developer Intelligence remains in **0.44**; CP-GA evidence remains
@@ -82,7 +82,7 @@ evidence remains in **0.38**.
 | [0.52 implementation plan](IMPLEMENTATION_PLAN_0_52.md) | Published 0.52.0 | Trusted inventory, candidate matrix, exact placement, physical lowering, and explain/diff; execution remains unavailable | [Exit gate 0.52](EXIT_GATE_0_52.md) · [Generated evidence](evidence/adaptive_0_51/FINDINGS.md) |
 | [0.53 implementation plan](IMPLEMENTATION_PLAN_0_53.md) | Planned | Whole-DAG admission and fixture-qualified local physical execution; availability remains gated | Adaptive program Phases 8–9 / I2 |
 | [0.54 implementation plan](IMPLEMENTATION_PLAN_0_54.md) | Published 0.54.0; adaptive graduation pending | Public conformance, differential/security qualification, and exact-matrix graduation | Adaptive program Phase 10 / I3 |
-| [0.55 inferred model authoring plan](IMPLEMENTATION_PLAN_0_55.md) · [execution plan](EXECUTION_PLAN_0_55.md) · [remediation plan](INFERENCE_REMEDIATION_PLAN_0_55.md) · [full review fix plan](REVIEW_FIX_PLAN_0_55.md) | Planned next phase | Qualified source inspection, bounded records inference, forward and target-guided backward schema propagation, existing-target models and new-target proposals, reviewed durable export; no 0.54 availability claim | Source/target inspection and bidirectional type propagation qualification |
+| [0.55 inferred model authoring plan](IMPLEMENTATION_PLAN_0_55.md) · [execution plan](EXECUTION_PLAN_0_55.md) · [remediation plan](INFERENCE_REMEDIATION_PLAN_0_55.md) · [full review fix plan](REVIEW_FIX_PLAN_0_55.md) | Scoped qualification complete; candidate | Experimental source inference, portable transfer, target inspection, and SQLite reference write modes; other adapters retain their documented limits | [Exit gate 0.55](EXIT_GATE_0_55.md) · [evidence index](evidence/inference_0_55/index.json) |
 | [ADR-025: Adaptive execution and physical DAG](adr/ADR-025-ADAPTIVE-EXECUTION-AND-PHYSICAL-DAG.md) | Accepted | `/1` preservation, opt-in `/2`, portable-only candidates, physical-DAG authority, and fail-closed consumers | 0.51 Phase 0 |
 | [0.48 implementation plan](IMPLEMENTATION_PLAN_0_48.md) | Gate-ready milestone | Human-governed AI proposals; reuse 0.42 approvals | [EXIT_GATE_0_48](EXIT_GATE_0_48.md) |
 | [ADR-024: Human-governed AI](adr/ADR-024-HUMAN-GOVERNED-AI.md) | Accepted | Proposals untrusted; read-only default; no vendor SDK in core | 0.48 |

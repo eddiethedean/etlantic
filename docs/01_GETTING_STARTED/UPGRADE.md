@@ -1,6 +1,6 @@
 # Upgrade Hub
 
-> **Status: Available in ETLantic 0.54.0 (published Beta).**
+> **Status: ETLantic 0.55.0 Beta release candidate; publication pending.**
 
 !!! warning "Upgraders only"
     New users: start at the [docs home green path](../README.md) or
@@ -9,19 +9,21 @@
 Upgrade between ETLantic 0.x releases using the guides below. Always pin core
 and first-party plugins to the **same minor** after upgrading.
 
-Every older path below ends by applying the [0.52 → 0.53 migration](../11_DEVELOPMENT/MIGRATION_0_52_TO_0_53.md).
+The current target is the 0.55.0 release candidate. Until publication, 0.54.0
+is the latest PyPI release. Older paths below must finish with the 0.53 → 0.54
+and 0.54 → 0.55 migrations.
 
 Historical release notes: [Earlier releases](EARLIER_RELEASES.md).
 
 ## Current target
 
-**ETLantic 0.54.0** (published Beta) — choose your guide:
+**ETLantic 0.55.0** (Beta release candidate) — choose your guide:
 
-| From version | Ordered path to 0.54 |
+| From version | Ordered path to 0.55 |
 |---|---|
-| 0.54.x | Already current |
-| 0.53.x | [Migration 0.53 → 0.54](../11_DEVELOPMENT/MIGRATION_0_53_TO_0_54.md) |
-| 0.52.x | [Migration 0.52 → 0.53](../11_DEVELOPMENT/MIGRATION_0_52_TO_0_53.md) |
+| 0.54.x | [Migration 0.54 → 0.55](../11_DEVELOPMENT/MIGRATION_0_54_TO_0_55.md) |
+| 0.53.x | [Migration 0.53 → 0.54](../11_DEVELOPMENT/MIGRATION_0_53_TO_0_54.md), then [0.54 → 0.55](../11_DEVELOPMENT/MIGRATION_0_54_TO_0_55.md) |
+| 0.52.x | [Migration 0.52 → 0.53](../11_DEVELOPMENT/MIGRATION_0_52_TO_0_53.md), then 0.53 → 0.54 → 0.55 |
 | 0.51.x | [Migration 0.51 → 0.52](../11_DEVELOPMENT/MIGRATION_0_51_TO_0_52.md), then 0.52 → 0.53 |
 | 0.50.x | [Migration 0.50 → 0.51](../11_DEVELOPMENT/MIGRATION_0_50_TO_0_51.md), then 0.51 → 0.52 → 0.53 |
 | 0.49.x | [Migration 0.49 → 0.50](../11_DEVELOPMENT/MIGRATION_0_49_TO_0_50.md) |
@@ -299,11 +301,24 @@ See [Migration 0.29 → 0.30](../11_DEVELOPMENT/MIGRATION_0_29_TO_0_30.md).
 See [Migration 0.30 → 0.31](../11_DEVELOPMENT/MIGRATION_0_30_TO_0_31.md).
 
 
+## 0.55 configuration cheat sheet
+
+There are no required profile or wire-schema changes for existing pipelines.
+Read [Migration 0.54 → 0.55](../11_DEVELOPMENT/MIGRATION_0_54_TO_0_55.md)
+before opting into the Experimental inferred-model authoring API.
+
+| Do | Don't |
+|---|---|
+| Pin core and first-party plugins to `0.55.0` after publication | Mix plugin minor lines |
+| Keep existing `Data` / `Transformation` / `Pipeline` profiles unchanged | Rewrite pipelines that do not use the new authoring facade |
+| Review inferred-model diagnostics, provenance, and scope limits before using previews | Treat inferred schemas or provider observations as authoritative writes |
+| Use explicit execution profiles until adaptive support is requalified for 0.55 | Carry the exact-version adaptive qualification from 0.54 into 0.55 |
+
 ## 0.54 configuration cheat sheet
 
-Apply [Migration 0.53 → 0.54](../11_DEVELOPMENT/MIGRATION_0_53_TO_0_54.md)
-after the historical paths below. The 0.54 release is published; adaptive
-remains Experimental and is not independently graduated.
+Apply [Migration 0.53 → 0.54](../11_DEVELOPMENT/MIGRATION_0_53_TO_0_54.md).
+The 0.54 release is published; adaptive remains Experimental and is not
+independently graduated.
 
 | Do | Don't |
 |---|---|
@@ -311,7 +326,7 @@ remains Experimental and is not independently graduated.
 | Opt into Experimental local adaptive execution with ordered targets, `portable_transform_policy="require"` and exact qualified support rows | Expect arbitrary topologies, other engines, durable/remote execution or external compilation |
 | Keep explicit Profiles as the default; replan historical adaptive documents before local execution | Downgrade or relabel stored `/2` documents |
 
-See [Migration 0.52 → 0.53](../11_DEVELOPMENT/MIGRATION_0_52_TO_0_53.md).
+See [Migration 0.53 → 0.54](../11_DEVELOPMENT/MIGRATION_0_53_TO_0_54.md).
 
 ## 0.51 configuration cheat sheet
 

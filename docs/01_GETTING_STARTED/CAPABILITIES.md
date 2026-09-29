@@ -1,17 +1,18 @@
 # Current Capabilities and Limitations
 
-> **Status: Available in ETLantic 0.54.0 (published Beta).** What is implemented and technically
-> qualified for controlled single-tenant pilots and Supported multi-tenant
-> profiles.
+> **Status: ETLantic 0.55.0 Beta release candidate; publication pending.** This page records
+> the published 0.54 envelope plus the scoped Experimental 0.55 qualification
+> for controlled single-tenant pilots and Supported isolation profiles.
 
 !!! tip "Adopter brief"
     Read **What works today** and **Limits** first. Residual gaps and CI
     starter JSON are further down for evaluators.
 
-## What works today (0.54)
+## What works today (0.55 candidate)
 
-ETLantic 0.54.0 is the **published Beta release** for documented, controlled,
-single-tenant pilots (install `etlantic==0.54.0` from PyPI). You can embed an
+ETLantic 0.55.0 is the **Beta release candidate** for documented, controlled,
+single-tenant pilots. Until publication, install `etlantic==0.55.0` from
+PyPI. You can embed an
 HTTP control plane with **Supported** isolation profiles
 (`isolated-deployment`, `dedicated-schema`). There is no hosted multi-tenant
 SaaS and no SLA. It validates and
@@ -99,7 +100,7 @@ Public surface classes:
     `pip install etlantic` does **not** install `examples/`. Use Quickstart
     paste paths. Checkout demos require a clone.
 
-## Available in 0.54
+## Inherited from the published 0.54 baseline
 
 ### Human-governed AI
 
@@ -270,11 +271,11 @@ See also [Experimental surfaces](EXPERIMENTAL_SURFACES.md).
 | Embedded DuckDB engine package | **Available (qualified subset)** in 0.49: optional `etlantic-duckdb` package with native embedded runtime, dialect/compiler subset, security policy, and qualification evidence — see [implementation plan](../11_DEVELOPMENT/IMPLEMENTATION_PLAN_0_49.md), [exit gate](../11_DEVELOPMENT/EXIT_GATE_0_49.md), and [What's new in 0.49](WHATS_NEW_0_49.md) |
 | Baseline portable execution across first-party engines | **Published and technically qualified** for 0.50: the frozen seven-engine baseline across Local, Polars, Pandas, SQL, PySpark, DataFusion, and DuckDB passed the recorded real-backend campaign and pushdown contract. See the [implementation plan](../11_DEVELOPMENT/IMPLEMENTATION_PLAN_0_50.md), [evidence gate](../11_DEVELOPMENT/EXIT_GATE_0_50.md), and [evidence index](../11_DEVELOPMENT/evidence/portable_0_50/portable_evidence_index_0_50.json). |
 | Adaptive Profile, physical-DAG planning and local execution | **Experimental, fixture-qualified in 0.53** — Local, Polars, Pandas and both single-cut directions; exact admission and packaged support rows required. See the [0.53 exit gate](../11_DEVELOPMENT/EXIT_GATE_0_53.md) and [evidence](../11_DEVELOPMENT/evidence/adaptive_0_53/README.md). |
-| Local adaptive physical-DAG execution | **Experimental in 0.54** — thirteen historical shapes plus one exact placement-bound Polars scan/filter/project → Pandas signature; no general fusion or production claim. See [Experimental usage](../11_DEVELOPMENT/ADAPTIVE_0_54_USAGE.md). |
-| Adaptive provider conformance and graduation safeguards | Public sync/async conformance and local evidence integrity tooling implemented; **graduation pending**, remote matrix/review follow-ups. See [0.54 gate](../11_DEVELOPMENT/EXIT_GATE_0_54.md). |
+| Local adaptive physical-DAG execution | **Experimental in 0.54** — thirteen historical shapes plus one exact placement-bound Polars scan/filter/project → Pandas signature; no general fusion or production claim. These exact package-version rows do not qualify 0.55, which fails closed pending fresh evidence. See [0.54 usage](../11_DEVELOPMENT/ADAPTIVE_0_54_USAGE.md) and the [0.55 exit gate](../11_DEVELOPMENT/EXIT_GATE_0_55.md). |
+| Adaptive provider conformance and graduation safeguards | Public sync/async conformance and local evidence integrity tooling implemented; **graduation pending**. The 0.55 release does not claim adaptive execution until a package-version-matched candidate is qualified. See the [0.54 gate](../11_DEVELOPMENT/EXIT_GATE_0_54.md) and [0.55 gate](../11_DEVELOPMENT/EXIT_GATE_0_55.md). |
+| Data-first authoring and inferred data models | **Experimental, scoped qualification in 0.55** for bounded records, CSV, JSON, Pandas, and Polars inference; portable transfer; metadata-only provider inspection; and transactional SQLite write-mode checks. See the [0.55 exit gate](../11_DEVELOPMENT/EXIT_GATE_0_55.md) and [evidence index](../11_DEVELOPMENT/evidence/inference_0_55/index.json). |
 | Bounded dynamic mapping/reduction and explicit conditional/failure/compensation branches | **Supported** (core) in 0.46 — [exit gate](../11_DEVELOPMENT/EXIT_GATE_0_46.md) / [ADR-022](../11_DEVELOPMENT/adr/ADR-022-DYNAMIC-CONTROL-AND-STREAMING.md) |
 | Streaming poison-record/DLQ policy and schema-registry interoperability | **Supported** core policy/protocol in 0.46; Kafka (`etlantic-kafka`) and Confluent adapter (`etlantic-schemaregistry`) remain **Experimental** — never Available-in-core |
-| Data-first authoring and inferred data models | **Experimental, qualified subset in 0.55** for records, CSV, JSON, and bounded Pandas/Polars adapters. PySpark, DataFusion, DuckDB/SQL, Parquet, schema-registry targets, and provider-backed write modes remain unsupported; see the [qualification scope](../11_DEVELOPMENT/evidence/inference_0_55/index.json) and [plan](../11_DEVELOPMENT/IMPLEMENTATION_PLAN_0_55.md). |
 | Dagster / expanded Prefect / Argo compilers | Planned brownfield bridges in 0.56 |
 | Read-only-first operator console | Planned first-class for 0.57 |
 | AWS/Azure/GCP/Vault secret-provider packs | Planned as optional providers in 0.58 |
@@ -301,7 +302,7 @@ Never put secrets in plans, reports, or CI logs.
 
 **Pip users:** create `profiles/prod.json` yourself. Start from the JSON
 below, then **trim `plugin_allowlist` to the engines you actually install**
-(the sample uses Polars — install `etlantic-polars==0.54.0` first).
+(the sample uses Polars — install `etlantic-polars==0.55.0` first).
 
 ```json
 {
@@ -314,7 +315,7 @@ below, then **trim `plugin_allowlist` to the engines you actually install**
   "validation_policy": "strict",
   "allow_trusted_sql": false,
   "plugin_allowlist": {
-    "etlantic-polars": "==0.54.0"
+    "etlantic-polars": "==0.55.0"
   },
   "assets": {},
   "secrets": {},
@@ -330,17 +331,17 @@ python -m etlantic plan path/to/pipeline.py:MyPipeline --profile ./profiles/prod
 ```
 
 ```bash
-pip install 'etlantic==0.54.0'
-pip install 'etlantic[lsp]==0.54.0'            # optional language server
-pip install 'etlantic-polars==0.54.0'          # optional
-pip install 'etlantic-pandas==0.54.0'          # optional
-pip install 'etlantic-sql==0.54.0'             # optional
-pip install 'etlantic-pyspark==0.54.0'         # optional
-pip install 'etlantic-airflow==0.54.0'         # optional
-pip install 'etlantic-prefect==0.54.0'         # optional
-pip install 'etlantic-keyring==0.54.0'         # optional
-pip install 'etlantic-sqlmodel==0.54.0'        # optional
-pip install 'medallantic==0.54.0'              # optional
+pip install 'etlantic==0.55.0'
+pip install 'etlantic[lsp]==0.55.0'            # optional language server
+pip install 'etlantic-polars==0.55.0'          # optional
+pip install 'etlantic-pandas==0.55.0'          # optional
+pip install 'etlantic-sql==0.55.0'             # optional
+pip install 'etlantic-pyspark==0.55.0'         # optional
+pip install 'etlantic-airflow==0.55.0'         # optional
+pip install 'etlantic-prefect==0.55.0'         # optional
+pip install 'etlantic-keyring==0.55.0'         # optional
+pip install 'etlantic-sqlmodel==0.55.0'        # optional
+pip install 'medallantic==0.55.0'              # optional
 ```
 
 See [Installation](INSTALLATION.md), [Evaluator brief](EVALUATOR.md), and

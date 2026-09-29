@@ -17,6 +17,10 @@ pl = pytest.importorskip("polars")
 pytest.importorskip("pandas")
 pytest.importorskip("pyarrow")
 
+from tests.runtime.adaptive_candidate_guard import (
+    ADAPTIVE_CANDIDATE_MATCHES_PACKAGE,
+    ADAPTIVE_CANDIDATE_MISMATCH_REASON,
+)
 from tests.runtime.physical.test_fusion_0_54 import _seed, setup
 
 from etlantic.exceptions import PipelineCancelledError
@@ -29,7 +33,14 @@ from etlantic.runtime.scheduler import LocalScheduler
 from etlantic_polars import create_parquet_storage, create_transform_compiler
 from etlantic_polars.compiler import PolarsTransformCompiler
 
-pytestmark = [pytest.mark.polars, pytest.mark.pandas]
+pytestmark = [
+    pytest.mark.polars,
+    pytest.mark.pandas,
+    pytest.mark.skipif(
+        not ADAPTIVE_CANDIDATE_MATCHES_PACKAGE,
+        reason=ADAPTIVE_CANDIDATE_MISMATCH_REASON,
+    ),
+]
 
 
 @pytest.mark.parametrize(

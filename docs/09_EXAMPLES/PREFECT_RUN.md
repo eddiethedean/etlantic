@@ -1,11 +1,11 @@
 # Prefect Direct Execution
 
-> **Status: Available in ETLantic 0.54.0 (published Beta).** This guide runs the shipped Prefect
+> **Status: ETLantic 0.55.0 Beta release candidate; publication pending.** This guide runs the shipped Prefect
 > scheduler locally through `etlantic-prefect`.
 
 !!! warning "Clone required"
     `examples/prefect_run.py` is **not** on the PyPI wheel. Use a git checkout
-    (prefer the `v0.54.0` tag) plus `uv sync --group prefect`.
+    (prefer the `v0.55.0` tag) plus `uv sync --group prefect`.
 
 ## Install and run
 
@@ -19,7 +19,7 @@ uv run python examples/prefect_run.py
 For an application install, keep core and plugin on the same minor line:
 
 ```bash
-pip install 'etlantic==0.54.0' 'etlantic-prefect==0.54.0'
+pip install 'etlantic==0.55.0' 'etlantic-prefect==0.55.0'
 ```
 
 The example creates a process-local `PipelineRuntime`, seeds an in-memory

@@ -14,7 +14,9 @@ and qualified executor lifecycle/port ownership.
 
 Run `uv sync --locked --group dataframes`, then install the exact qualified
 backends with `uv pip install "polars==1.42.1" "pandas==2.3.3" "pyarrow==25.0.0"`.
-Core and first-party plugin distributions are 0.53.0 for this release candidate.
+The committed qualification record was observed with ETLantic 0.54.0. CI reruns
+this historical campaign only when the core package is exactly 0.54.0; newer
+core versions skip it because skipped scenarios cannot qualify support.
 Installation alone grants no qualification.
 
 Use `--write` to record observed results (including failures); it does not grant
@@ -31,8 +33,9 @@ logical/port shapes, contiguous target assignments and qualified dependency
 versions. Compute units are currently unfused; a fused realization requires its
 own passing signature and is rejected by these rows.
 
-CI executes qualification on Linux, macOS and Windows with Python 3.11, 3.12 and
-3.13, retaining separate environment proof artifacts. Those jobs must actually
-pass before any environment qualification claim; a single local environment proof does not
-stand in for the remaining CI environments. All functionality remains
-Experimental pending the independent 0.54 qualification decision.
+When the core version is 0.54.0, CI executes qualification on Linux, macOS and
+Windows with Python 3.11, 3.12 and 3.13, retaining separate environment proof
+artifacts. Those jobs must actually pass before any environment qualification
+claim; a single local environment proof does not stand in for the remaining CI
+environments. All functionality remains Experimental pending the independent
+0.54 qualification decision.

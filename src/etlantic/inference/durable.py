@@ -18,6 +18,7 @@ from typing import Any
 from etlantic.authoring.definition import NodeDefinition, PipelineDefinition
 from etlantic.authoring.serialize import pipeline_fingerprint
 from etlantic.plan.freeze import mutable_copy
+from etlantic.schema_drift import revision_fingerprint_from_wire
 
 from .types import InferenceLimits, TargetObservation, _wire_value
 
@@ -501,7 +502,10 @@ def target_binding(
         "version": BINDING_VERSION,
         "kind": "target",
         "identity": _safe_file_identity(str(observed_identity or identity)),
-        "revision": observation.revision if observation is not None else None,
+        "revision": _wire_value(
+            observation.revision if observation is not None else None,
+            key="revision",
+        ),
         "write_mode": str(write_mode),
         "requirements": _safe_binding_requirements(requirements),
         "observed": is_observed,
@@ -740,7 +744,7 @@ def rebind_definition(
             "version": BINDING_VERSION,
             "kind": "target",
             "identity": _safe_file_identity(str(raw_target["identity"])),
-            "revision": raw_target.get("revision"),
+            "revision": revision_fingerprint_from_wire(raw_target.get("revision")),
             "write_mode": str(raw_target.get("write_mode", "append")),
             "requirements": _safe_binding_requirements(
                 raw_target.get("requirements")

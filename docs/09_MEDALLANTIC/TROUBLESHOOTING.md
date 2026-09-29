@@ -6,8 +6,8 @@ Install matching ETLantic and Medallantic minors:
 
 ```bash
 python -m pip install --upgrade \
-  'etlantic==0.54.0' \
-  'medallantic==0.54.0'
+  'etlantic==0.55.0' \
+  'medallantic==0.55.0'
 ```
 
 ## Unknown source or cycle

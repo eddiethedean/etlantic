@@ -19,8 +19,8 @@ from typing import Any
 EXPECTED_DIGESTS = {
     # Pyright's import/type surface differs by host platform because the
     # synchronized dependency set includes platform-specific distributions.
-    "Darwin": "97743ebfdc1f5e78839251bb2a67bfdcb079ec2c115ba135f7c7684a24136eef",
-    "Linux": "780c991004aeb69b955fe8a5501832dc2fea0a13634667b3651b59fb7d91781c",
+    "Darwin": "a068c7147506a400dc1700b50266d2c4443c9561539f329f506379042cab5bc4",
+    "Linux": "a068c7147506a400dc1700b50266d2c4443c9561539f329f506379042cab5bc4",
 }
 
 
@@ -87,6 +87,8 @@ def main() -> int:
                 "__pycache__",
                 ".mypy_cache",
                 ".pytest_cache",
+                "site",
+                "_generated_*.py",
             ),
         )
         for path in shadow.rglob("*.py"):

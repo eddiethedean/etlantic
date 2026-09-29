@@ -1,12 +1,12 @@
 # Development
 
-Current release: [0.54 migration](MIGRATION_0_53_TO_0_54.md),
-[local exit gate](EXIT_GATE_0_54.md), and
-[implementation report](IMPLEMENTATION_REPORT_0_54.md). Independent review and
-graduation remain pending.
+Current release candidate: [0.55 migration](MIGRATION_0_54_TO_0_55.md),
+[scoped exit gate](EXIT_GATE_0_55.md), and
+[inference evidence](evidence/inference_0_55/index.json). The candidate is not
+published; 0.54.0 remains the latest PyPI release until tagging.
 
-Next planned phase: [0.55 inferred model authoring](IMPLEMENTATION_PLAN_0_55.md),
-with the [0.55 execution plan](EXECUTION_PLAN_0_55.md).
+Earlier release: [0.54 migration](MIGRATION_0_53_TO_0_54.md),
+[exit gate](EXIT_GATE_0_54.md), and [implementation report](IMPLEMENTATION_REPORT_0_54.md).
 The former brownfield, console, provider, and TransformationModel phases now
 follow as 0.56–0.59.
 

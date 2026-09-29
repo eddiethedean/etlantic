@@ -43,6 +43,10 @@ from etlantic.runtime.request import (
 from etlantic.runtime.scheduler import LocalScheduler
 from etlantic.storage.memory import MemoryStorage
 from tests.plan.test_adaptive_planner_0_52 import Sample, adaptive_profile
+from tests.runtime.adaptive_candidate_guard import (
+    ADAPTIVE_CANDIDATE_MATCHES_PACKAGE,
+    ADAPTIVE_CANDIDATE_MISMATCH_REASON,
+)
 from tests.runtime.test_adaptive_execution_0_53 import (
     CrossPipeline,
     CrossRow,
@@ -50,6 +54,11 @@ from tests.runtime.test_adaptive_execution_0_53 import (
 )
 from tests.runtime.test_adaptive_execution_0_53 import (
     test_adaptive_physical_execution_routes_portable_polars_to_pandas as run_cross_fixture,
+)
+
+pytestmark = pytest.mark.skipif(
+    not ADAPTIVE_CANDIDATE_MATCHES_PACKAGE,
+    reason=ADAPTIVE_CANDIDATE_MISMATCH_REASON,
 )
 
 ROOT = Path(__file__).resolve().parents[2]

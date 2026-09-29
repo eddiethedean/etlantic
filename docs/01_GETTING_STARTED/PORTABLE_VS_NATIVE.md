@@ -1,6 +1,6 @@
 # Portable vs Native Implementations
 
-> **Status: Available in ETLantic 0.54.0 (published Beta).**
+> **Status: ETLantic 0.55.0 Beta release candidate; publication pending.**
 
 ## Decision guide
 

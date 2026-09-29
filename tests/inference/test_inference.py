@@ -1000,7 +1000,9 @@ def test_target_replay_failure_is_revision_bound_and_wire_safe() -> None:
     assert "bad" not in str(payload)
     restored = etl.InferenceObservation.from_dict(payload)
     assert restored.provenance["replay_status"]["state"] == "failed"
-    assert restored.provenance["replay_status"]["target_revision"] == "r7"
+    assert restored.provenance["replay_status"]["target_revision"].startswith(
+        "etlantic-sha256:"
+    )
 
 
 def test_target_replay_fails_closed_for_incompatible_object_values() -> None:

@@ -1,14 +1,14 @@
 # Deployment
 
-> **Status: Available in ETLantic 0.54.0 (published Beta).** This guide describes the bounded,
+> **Status: ETLantic 0.55.0 Beta release candidate; publication pending.** This guide describes the bounded,
 > single-tenant reference deployment. It is not the
 > [planned multi-tenant control plane](../11_DEVELOPMENT/MULTI_TENANT_CONTROL_PLANE_PLAN.md).
 
 ## Residual evaluation lead
 
-| Topic | 0.54 |
+| Topic | 0.55 candidate |
 |---|---|
-| Maturity | Beta (PyPI) |
+| Maturity | Beta release candidate; publication pending |
 | Topology | Single trusted process / worker per runtime (reference); multi-tenant via Supported CP-GA profiles |
 | Multi-worker / multi-tenant control plane | Production multi-tenant for Supported profiles (`isolated-deployment`, `dedicated-schema`); `shared-service` Experimental |
 | SLA | None (community support) |
@@ -43,7 +43,7 @@ the 0.47 evidence; live Kind is skip `047-K-01`. Capacity envelope:
 
 ### A. Single process (local / container)
 
-1. Pin `etlantic==0.54.0` and matching plugins in a lockfile.
+1. Pin `etlantic==0.55.0` and matching plugins in a lockfile.
 2. Mount or bake `profiles/production.json` with `security_mode="production"`
    and a non-empty `plugin_allowlist`.
 3. Resolve secrets from env / files / keyring at runtime only.
@@ -67,7 +67,7 @@ Checklist: [Airflow tutorial](AIRFLOW_TUTORIAL.md),
 
 ### C. Prefect local MVP
 
-1. Install `etlantic-prefect==0.54.0`.
+1. Install `etlantic-prefect==0.55.0`.
 2. Set `Profile(orchestrator="prefect")` and call `Pipeline.run` / `arun`.
 3. Prefect consumes the resolved plan (direct execution). Deployment/serve
    flows remain future—do not assume them from this package.

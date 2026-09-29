@@ -11,7 +11,7 @@ changes remain possible, but they must not be silent. See
 
 | Surface | Current promise |
 |---|---|
-| Documented 0.54 public imports | Supported for the 0.54.x line |
+| Documented 0.55 public imports | Supported for the 0.55.x line after publication |
 | Versioned plugin protocols | Compatible within their documented protocol version |
 | Pipeline Plan schema | Governed by its schema version (`etlantic.plan/1`) |
 | Experimental APIs | May change in any 0.x release |

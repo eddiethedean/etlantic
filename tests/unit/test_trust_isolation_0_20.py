@@ -8,6 +8,7 @@ from pathlib import Path
 
 import pytest
 
+import etlantic.io_policy as io_policy
 from etlantic.capability_probe import CapabilityProbeResult
 from etlantic.dataframe.discovery import discover_dataframe_plugins
 from etlantic.diagnostics import Diagnostic, Severity
@@ -276,6 +277,38 @@ def test_safe_io_atomic_write_and_lock(tmp_path: Path) -> None:
     assert result.digest and result.digest.startswith("sha256:")
     _path, text, _ = read_text_safe(target, policy)
     assert "ok" in text
+
+
+def test_safe_io_atomic_replace_retries_transient_windows_lock(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    root = tmp_path / "root"
+    root.mkdir()
+    policy = SafeIoPolicy.for_root(root)
+    target = root / "report.json"
+    target.write_text('{"previous": true}\n', encoding="utf-8")
+    original_replace = io_policy.os.replace
+    calls = 0
+
+    def replace_with_transient_lock(source: str, destination: str | Path) -> None:
+        nonlocal calls
+        calls += 1
+        if calls == 1:
+
+            class WindowsSharingViolation(PermissionError):
+                winerror: int
+
+            error = WindowsSharingViolation(5, "Access is denied", str(destination))
+            error.winerror = 5
+            raise error
+        original_replace(source, destination)
+
+    monkeypatch.setattr(io_policy.os, "replace", replace_with_transient_lock)
+
+    write_text_safe(target, '{"current": true}\n', policy)
+
+    assert calls == 2
+    assert json.loads(target.read_text(encoding="utf-8")) == {"current": True}
 
 
 def test_safe_io_rejects_overwrite_when_configured(tmp_path: Path) -> None:

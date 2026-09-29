@@ -56,25 +56,79 @@ class SQLiteTableTarget:
         if self.exists() != "present":
             return {"exists": "absent", "identity": self.identity}
         rows = self.connection.execute(
-            f"PRAGMA table_info({_quoted(self.table)})"
+            f"PRAGMA table_xinfo({_quoted(self.table)})"
         ).fetchall()
         if not rows:
             raise ValueError("SQLite target has no inspectable fields")
-        keys = [
-            name for _, name, _, _, _, pk in sorted(rows, key=lambda row: row[5]) if pk
-        ]
+        primary_key_rows = [row for row in rows if row[5]]
+        try:
+            table_list = self.connection.execute("PRAGMA table_list").fetchall()
+        except sqlite3.OperationalError:
+            table_list = []
+        table_entry = next(
+            (
+                row
+                for row in table_list
+                if len(row) >= 5 and row[1] == self.table and row[2] == "table"
+            ),
+            None,
+        )
+        if table_entry is not None:
+            without_rowid = bool(table_entry[4])
+        else:
+            definition = self.connection.execute(
+                "SELECT sql FROM sqlite_master WHERE type='table' AND name=?",
+                (self.table,),
+            ).fetchone()
+            definition_sql = str(definition[0]) if definition and definition[0] else ""
+            without_rowid = (
+                definition_sql.lstrip().upper().startswith("CREATE VIRTUAL TABLE")
+                or re.search(r"\bWITHOUT\s+ROWID\b", definition_sql, re.IGNORECASE)
+                is not None
+            )
+        primary_key_indexes = self.connection.execute(
+            f"PRAGMA index_list({_quoted(self.table)})"
+        ).fetchall()
+        has_primary_key_index = any(
+            (len(index) >= 4 and index[3] == "pk")
+            or (
+                len(index) < 4
+                and isinstance(index[1], str)
+                and index[1].startswith("sqlite_autoindex_")
+            )
+            for index in primary_key_indexes
+        )
+        rowid_primary_key = (
+            len(primary_key_rows) == 1
+            and str(primary_key_rows[0][2]).strip().upper() == "INTEGER"
+            and not without_rowid
+            and not has_primary_key_index
+        )
+        rowid_primary_key_name = (
+            str(primary_key_rows[0][1]) if rowid_primary_key else None
+        )
+        keys = [row[1] for row in sorted(rows, key=lambda item: item[5]) if row[5]]
         names = [str(row[1]) for row in rows]
         if any(name not in names for name in self.partitions):
             raise ValueError("SQLite target partition field is missing")
-        fields = [
-            {
-                "name": str(name),
-                "type": str(dtype),
-                "required": True,
-                "nullable": not bool(not_null or pk),
+        fields: list[dict[str, Any]] = []
+        for row in rows:
+            _, name, dtype, not_null, default_value, pk, hidden = row
+            generated = hidden in {2, 3}
+            field_metadata = {
+                "has_default": default_value is not None,
+                "generated": generated,
+                "auto_increment": str(name) == rowid_primary_key_name,
             }
-            for _, name, dtype, not_null, _, pk in rows
-        ]
+            fields.append(
+                {
+                    "name": str(name),
+                    "type": str(dtype),
+                    "required": bool(not_null or pk),
+                    "nullable": not bool(not_null or pk),
+                    **field_metadata,
+                }
+            )
         modes = ["append", "overwrite"]
         if keys:
             modes.extend(("merge", "upsert"))
@@ -128,15 +182,56 @@ class SQLiteTableTarget:
             raise ValueError(
                 "INFER_WRITE_INCOMPATIBLE: SQLite write contract is incompatible"
             )
-        columns = [field.name for field in observation.schema.fields]
-        if any(set(row) != set(columns) for row in records):
+        target_fields = {field.name: field for field in observation.schema.fields}
+        row_fields = set(records[0])
+        if any(set(row) != row_fields for row in records):
             raise ValueError(
-                "INFER_WRITE_INCOMPATIBLE: SQLite rows must contain every field"
+                "INFER_WRITE_INCOMPATIBLE: SQLite rows must have matching fields"
+            )
+        if any(
+            name not in target_fields
+            or target_fields[name].metadata.get("generated") is True
+            for name in row_fields
+        ):
+            raise ValueError(
+                "INFER_WRITE_INCOMPATIBLE: SQLite input contains an unknown or generated field"
+            )
+        columns = [
+            field.name
+            for field in observation.schema.fields
+            if field.name in row_fields
+        ]
+        target_metadata = observation.metadata
+        if mode in {"merge", "upsert"}:
+            raw_keys = target_metadata.get("keys")
+            raw_key_items = (
+                cast(list[Any] | tuple[Any, ...], raw_keys)
+                if isinstance(raw_keys, (list, tuple))
+                else ()
+            )
+            keys: list[str] = [key for key in raw_key_items if isinstance(key, str)]
+            if (
+                not keys
+                or len(keys) != len(raw_key_items)
+                or not set(keys).issubset(row_fields)
+            ):
+                raise ValueError(
+                    "INFER_WRITE_INCOMPATIBLE: SQLite merge input must contain every key"
+                )
+        if mode == "partition_replace" and not set(self.partitions).issubset(
+            row_fields
+        ):
+            raise ValueError(
+                "INFER_WRITE_INCOMPATIBLE: SQLite partition input must contain every partition field"
             )
         table = _quoted(self.table)
         names = ", ".join(_quoted(column) for column in columns)
         placeholders = ", ".join("?" for _ in columns)
-        insert = f"INSERT INTO {table} ({names}) VALUES ({placeholders})"
+        insert = (
+            f"INSERT INTO {table} ({names}) VALUES ({placeholders})"
+            if columns
+            else f"INSERT INTO {table} DEFAULT VALUES"
+        )
         values = [tuple(row[column] for column in columns) for row in records]
         try:
             self.connection.execute("BEGIN IMMEDIATE")

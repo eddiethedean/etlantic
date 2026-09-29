@@ -2,7 +2,7 @@
   "capabilities": [
     "k8s"
   ],
-  "digest": "sha256:96a1f0ec300a8434bbedee25af0211437f8956dcd3563a42bc3f33ceea8acad4",
+  "digest": "sha256:8d04133cb49438c2e97a833af84ffeb74f37bc0a374a3e4ef048acee0621ce25",
   "entries": [
     {
       "capabilities": [
@@ -23,5 +23,5 @@
     "publisher": "etlantic"
   },
   "schema": "etlantic.plugin_manifest/1",
-  "version": "0.54.0"
+  "version": "0.55.0"
 }

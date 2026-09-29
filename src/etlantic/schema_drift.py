@@ -217,6 +217,70 @@ _PROVIDER_CAPABILITY_KEYS = {
 }
 _PROVIDER_WRITE_MODES = {"append", "overwrite", "merge", "upsert", "partition_replace"}
 _PROVIDER_OPERATIONS = _PROVIDER_WRITE_MODES | {"create"}
+_REVISION_FINGERPRINT_PREFIX = "etlantic-sha256:"
+_REVISION_FINGERPRINT_PATTERN = re.compile(
+    rf"{re.escape(_REVISION_FINGERPRINT_PREFIX)}[0-9a-f]{{64}}"
+)
+
+
+class _RevisionFingerprint(str):
+    """A revision token known to have come from the sanitized wire format."""
+
+
+def revision_fingerprint_from_wire(value: Any) -> str | None:
+    """Restore an already-redacted revision token from a serialized document."""
+    if value is None:
+        return None
+    text = str(value)
+    if _REVISION_FINGERPRINT_PATTERN.fullmatch(text):
+        return _RevisionFingerprint(text)
+    return revision_fingerprint(value)
+
+
+def restore_wire_revision_fingerprints(value: Any, *, key: str | None = None) -> Any:
+    """Tag fingerprint-shaped revision strings before normal metadata ingress."""
+    if key is not None and re.sub(r"[^a-z0-9_]", "", key.casefold()) in {
+        "revision",
+        "target_revision",
+    }:
+        return revision_fingerprint_from_wire(value)
+    if isinstance(value, Mapping):
+        mapping = cast(Mapping[Any, Any], value)
+        return {
+            str(mapping_key): restore_wire_revision_fingerprints(
+                item, key=str(mapping_key)
+            )
+            for mapping_key, item in mapping.items()
+        }
+    if isinstance(value, (list, tuple)):
+        items = cast(list[Any] | tuple[Any, ...], value)
+        return [restore_wire_revision_fingerprints(item) for item in items]
+    return value
+
+
+def revision_fingerprint(value: Any) -> str | None:
+    """Return a stable, non-reversible wire token for a target revision."""
+    if value is None:
+        return None
+    if isinstance(value, _RevisionFingerprint):
+        return value
+    text = str(value)
+    digest = hashlib.sha256(text.encode("utf-8")).hexdigest()
+    return _RevisionFingerprint(f"{_REVISION_FINGERPRINT_PREFIX}{digest}")
+
+
+def revisions_equal(
+    left: Any, right: Any, *, right_is_fingerprint: bool = False
+) -> bool:
+    """Compare revisions, optionally treating the right side as a wire token."""
+    if left is None or right is None:
+        return left is None and right is None
+    right_fingerprint = (
+        revision_fingerprint_from_wire(right)
+        if right_is_fingerprint
+        else revision_fingerprint(right)
+    )
+    return revision_fingerprint(left) == right_fingerprint
 
 
 def _metadata_key_kind(key: str) -> str | None:
@@ -550,6 +614,10 @@ def _json_safe(
     """Bound metadata to JSON primitives without retaining provider objects."""
     if key is not None:
         normalized_key = re.sub(r"[^a-z0-9_]", "", key.casefold())
+        if normalized_key in {"revision", "target_revision"}:
+            return revision_fingerprint(value)
+        if normalized_key in {"has_default", "generated", "auto_increment"}:
+            return value if type(value) is bool else "<redacted>"
         if normalized_key == "parser_options":
             return _safe_parser_options(value)
         if normalized_key == "null_policy":
@@ -680,7 +748,9 @@ class NormalizedSchema:
                 logical_type=str(item.get("logical_type") or "unknown"),
                 required=bool(item.get("required", True)),
                 nullable=bool(item.get("nullable", False)),
-                metadata=_json_safe(item.get("metadata") or {}),
+                metadata=_json_safe(
+                    restore_wire_revision_fingerprints(item.get("metadata") or {})
+                ),
             )
             for item in (data.get("fields") or ())
             if isinstance(item, dict)
@@ -688,7 +758,9 @@ class NormalizedSchema:
         return cls(
             identity=str(data.get("identity") or ""),
             fields=fields,
-            metadata=_json_safe(data.get("metadata") or {}),
+            metadata=_json_safe(
+                restore_wire_revision_fingerprints(data.get("metadata") or {})
+            ),
         )
 
 

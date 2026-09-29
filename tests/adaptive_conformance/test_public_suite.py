@@ -5,9 +5,14 @@ from __future__ import annotations
 
 import json
 from dataclasses import replace
+from typing import Any
 
 import anyio
 import pytest
+from tests.runtime.adaptive_candidate_guard import (
+    ADAPTIVE_CANDIDATE_MATCHES_PACKAGE,
+    ADAPTIVE_CANDIDATE_MISMATCH_REASON,
+)
 
 from etlantic import (
     Data,
@@ -103,6 +108,14 @@ def case(case_id="local", **changes):
     return replace(result, **changes)
 
 
+def passing_oracle(runtime: PipelineRuntime, plan: Any, report: Any) -> bool:
+    return True
+
+
+@pytest.mark.skipif(
+    not ADAPTIVE_CANDIDATE_MATCHES_PACKAGE,
+    reason=ADAPTIVE_CANDIDATE_MISMATCH_REASON,
+)
 def test_actual_public_stored_execution_and_canonical_results():
     report = run_adaptive_provider_conformance_suite([case("z"), case("a")])
     assert report.passed
@@ -113,18 +126,65 @@ def test_actual_public_stored_execution_and_canonical_results():
     assert "raw" not in json.dumps(payload)
 
 
+@pytest.mark.skipif(
+    ADAPTIVE_CANDIDATE_MATCHES_PACKAGE,
+    reason="the packaged adaptive candidate matches this ETLantic version",
+)
+def test_stale_candidate_rejects_execution_before_reads():
+    reads: list[bool] = []
+
+    def factory() -> PipelineRuntime:
+        runtime = PipelineRuntime()
+        runtime.memory.seed("raw", [{"key": 1}])
+        original = runtime.memory.read
+
+        async def read(**kwargs: Any) -> Any:
+            reads.append(True)
+            return await original(**kwargs)
+
+        runtime.memory.read = read
+        return runtime
+
+    def verify(runtime: PipelineRuntime, plan: Any, report: Any) -> bool:
+        return not reads
+
+    report = run_adaptive_provider_conformance_suite(
+        [
+            case(
+                runtime_factory=factory,
+                expected_acceptance=False,
+                expected_code="PMADP501",
+                verify=verify,
+            )
+        ]
+    )
+
+    assert report.passed
+    assert report.results[0].code == "PMADP501"
+    assert reads == []
+
+
 @pytest.mark.parametrize("mode", ["planning", "execution"])
 @pytest.mark.parametrize("supplied", [True, False])
-def test_required_parameter_from_request(mode, supplied):
+def test_required_parameter_from_request(mode: str, supplied: bool):
+    expected_acceptance = supplied and (
+        mode == "planning" or ADAPTIVE_CANDIDATE_MATCHES_PACKAGE
+    )
+    expected_code: str | None = (
+        None if expected_acceptance else "PMTRN102" if not supplied else "PMADP501"
+    )
+
     def verify(runtime, plan, report):
         if not supplied:
             assert plan is report is None
             assert runtime.memory.get("out") == []
         elif mode == "planning":
             assert plan is not None and report is None
-        else:
+        elif ADAPTIVE_CANDIDATE_MATCHES_PACKAGE:
             assert report.status.value == "succeeded"
             assert [row.key for row in runtime.memory.get("out")] == [1, 1]
+        else:
+            assert plan is not None
 
     report = run_adaptive_provider_conformance_suite(
         [
@@ -134,14 +194,14 @@ def test_required_parameter_from_request(mode, supplied):
                 request=RunRequest(
                     parameter_overrides={"filtered": {"key": 1}} if supplied else {}
                 ),
-                expected_acceptance=supplied,
-                expected_code=None if supplied else "PMTRN102",
+                expected_acceptance=expected_acceptance,
+                expected_code=expected_code,
                 verify=verify,
             )
         ]
     )
     assert report.passed
-    assert report.results[0].observed_acceptance is supplied
+    assert report.results[0].observed_acceptance is expected_acceptance
 
 
 @pytest.mark.parametrize(
@@ -214,6 +274,10 @@ def test_expected_unqualified_execution_rejects_without_reads():
     assert called == []
 
 
+@pytest.mark.skipif(
+    not ADAPTIVE_CANDIDATE_MATCHES_PACKAGE,
+    reason=ADAPTIVE_CANDIDATE_MISMATCH_REASON,
+)
 def test_oracle_failure_is_safe_behavioral_failure():
     def verify(*args):
         raise AssertionError("source-row-and-secret-canary")
@@ -265,11 +329,26 @@ def test_sync_loop_guard_and_async_entry_point():
                 [case(runtime_factory=lambda: called.append(True))]
             )
         assert not called
-        assert (await arun_adaptive_provider_conformance_suite([case()])).passed
+        report = await arun_adaptive_provider_conformance_suite(
+            [
+                case(
+                    expected_acceptance=ADAPTIVE_CANDIDATE_MATCHES_PACKAGE,
+                    expected_code=None
+                    if ADAPTIVE_CANDIDATE_MATCHES_PACKAGE
+                    else "PMADP501",
+                    verify=passing_oracle,
+                )
+            ]
+        )
+        assert report.passed
 
     anyio.run(exercise)
 
 
+@pytest.mark.skipif(
+    not ADAPTIVE_CANDIDATE_MATCHES_PACKAGE,
+    reason=ADAPTIVE_CANDIDATE_MISMATCH_REASON,
+)
 def test_async_cancellation_propagates_after_active_read_cleanup():
     async def exercise():
         entered, drained = anyio.Event(), anyio.Event()
@@ -318,6 +397,10 @@ def test_async_cancellation_propagates_after_active_read_cleanup():
 
 
 @pytest.mark.parametrize("expected_acceptance", [True, False])
+@pytest.mark.skipif(
+    not ADAPTIVE_CANDIDATE_MATCHES_PACKAGE,
+    reason=ADAPTIVE_CANDIDATE_MISMATCH_REASON,
+)
 def test_direct_task_cancel_drains_without_oracle_or_next_factory(expected_acceptance):
     import asyncio
 

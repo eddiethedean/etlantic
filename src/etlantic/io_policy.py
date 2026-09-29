@@ -30,6 +30,9 @@ if TYPE_CHECKING:
 SymlinkPolicy = Literal["reject", "follow_within_root"]
 OverwritePolicy = Literal["reject", "allow", "atomic_replace"]
 
+_WINDOWS_REPLACE_RETRYABLE_ERRORS = frozenset({5, 32, 33})
+_WINDOWS_REPLACE_RETRY_TIMEOUT_SECONDS = 1.0
+
 
 def _security_event(**kwargs: Any) -> Any:
     from etlantic.runtime.events import SecurityEvent
@@ -613,6 +616,24 @@ def _release_lock(lock: Path) -> None:
         lock.unlink(missing_ok=True)
 
 
+def _replace_with_retry(source: str, destination: Path) -> None:
+    """Retry brief Windows sharing violations during atomic replacement."""
+    deadline = time.monotonic() + _WINDOWS_REPLACE_RETRY_TIMEOUT_SECONDS
+    delay = 0.01
+    while True:
+        try:
+            os.replace(source, destination)
+            return
+        except PermissionError as exc:
+            if getattr(exc, "winerror", None) not in _WINDOWS_REPLACE_RETRYABLE_ERRORS:
+                raise
+            remaining = deadline - time.monotonic()
+            if remaining <= 0:
+                raise
+            time.sleep(min(delay, remaining))
+            delay = min(delay * 2, 0.05)
+
+
 def write_text_safe(
     path: str | Path,
     text: str,
@@ -661,7 +682,7 @@ def write_text_safe(
                     handle.write(payload)
                     handle.flush()
                     os.fsync(handle.fileno())
-                os.replace(tmp_name, resolved)
+                _replace_with_retry(tmp_name, resolved)
             except Exception:
                 with contextlib.suppress(OSError):
                     os.unlink(tmp_name)

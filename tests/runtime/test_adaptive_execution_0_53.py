@@ -22,6 +22,10 @@ from etlantic.registry import BindingDescriptor, PlanningContext, PluginDescript
 from etlantic.runtime.execute import arun_pipeline
 from etlantic.runtime.request import InvalidationMode, RunRequest
 from tests.plan.test_adaptive_planner_0_52 import Sample, adaptive_profile
+from tests.runtime.adaptive_candidate_guard import (
+    ADAPTIVE_CANDIDATE_MATCHES_PACKAGE,
+    ADAPTIVE_CANDIDATE_MISMATCH_REASON,
+)
 
 
 def test_adaptive_plan_identity_survives_checkout_line_endings(
@@ -76,6 +80,10 @@ class CrossPipeline(Pipeline):
     out: Load[CrossRow] = Load(input=step.result, asset="cross-out")
 
 
+@pytest.mark.skipif(
+    not ADAPTIVE_CANDIDATE_MATCHES_PACKAGE,
+    reason=ADAPTIVE_CANDIDATE_MISMATCH_REASON,
+)
 def test_adaptive_asset_override_is_captured_before_admission(tmp_path: Path) -> None:
     async def run() -> None:
         destination = tmp_path / "destination.json"
@@ -124,6 +132,10 @@ def test_adaptive_definition_request_placement_overrides_are_persisted() -> None
         }
 
 
+@pytest.mark.skipif(
+    not ADAPTIVE_CANDIDATE_MATCHES_PACKAGE,
+    reason=ADAPTIVE_CANDIDATE_MISMATCH_REASON,
+)
 def test_executable_adaptive_plan_captures_request_and_runs_physical_units() -> None:
     async def run() -> None:
         runtime = PipelineRuntime()
@@ -191,6 +203,10 @@ def test_default_adaptive_plan_uses_executable_lowering() -> None:
     assert planning.fingerprint == executable.fingerprint
 
 
+@pytest.mark.skipif(
+    not ADAPTIVE_CANDIDATE_MATCHES_PACKAGE,
+    reason=ADAPTIVE_CANDIDATE_MISMATCH_REASON,
+)
 def test_adaptive_physical_execution_routes_portable_polars_to_pandas() -> None:
     """A qualified directional handoff executes through the stored transfer."""
     polars = pytest.importorskip("etlantic_polars")

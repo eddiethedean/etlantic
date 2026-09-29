@@ -9,7 +9,7 @@ import json
 import re
 import time
 import weakref
-from collections.abc import Callable, Mapping
+from collections.abc import Callable, Iterable, Mapping
 from copy import deepcopy
 from dataclasses import replace
 from decimal import Decimal
@@ -29,7 +29,7 @@ from etlantic.authoring.definition import (
 )
 from etlantic.contracts import Data
 from etlantic.diagnostics import Diagnostic, Severity
-from etlantic.schema_drift import NormalizedSchema
+from etlantic.schema_drift import NormalizedSchema, revisions_equal
 from etlantic.transform.column import ColumnExpr, coerce_column
 from etlantic.transform.dataframe import FrameAction, FrameExpr
 from etlantic.transform.evaluation import (
@@ -238,31 +238,65 @@ def _multi_preview(
     action: FrameAction,
     *,
     max_rows: int,
+    max_materialized_bytes: int | None,
     left_fields: tuple[str, ...],
     right_fields: tuple[str, ...],
     output_fields: tuple[str, ...],
-) -> list[dict[str, Any]]:
+) -> tuple[list[dict[str, Any]], bool]:
     """Evaluate only already retained rows under a strict preview work cap."""
     if max_rows <= 0:
-        return []
+        return [], bool(left or right)
     params = action.parameters
+    output: list[dict[str, Any]] = []
+    bytes_observed = 0
+
+    def append(row: dict[str, Any]) -> bool:
+        nonlocal bytes_observed
+        try:
+            item_bytes = _estimate_size(
+                row,
+                max_bytes=(
+                    max_materialized_bytes - bytes_observed
+                    if max_materialized_bytes is not None
+                    else None
+                ),
+            )
+        except Exception:
+            return False
+        if (
+            max_materialized_bytes is not None
+            and bytes_observed + item_bytes > max_materialized_bytes
+        ):
+            return False
+        output.append(row)
+        bytes_observed += item_bytes
+        return True
+
     if action.action == "dtcs:union":
         if params.get("mode") == "byPosition":
             names = list(output_fields)
-            output = [dict(row) for row in left[:max_rows]]
-            output.extend(
-                dict(zip(names, row.values(), strict=True))
-                for row in right[: max_rows - len(output)]
-                if len(row) == len(names)
-            )
-            return output
+            for row in left:
+                if len(output) >= max_rows:
+                    return output, True
+                if not append(dict(row)):
+                    return output, True
+            for row in right:
+                if len(output) >= max_rows:
+                    return output, True
+                if len(row) == len(names) and not append(
+                    dict(zip(names, row.values(), strict=True))
+                ):
+                    return output, True
+            return output, False
         names = list(output_fields)
-        return [
-            {name: row.get(name) for name in names}
-            for row in (*left, *right)[:max_rows]
-        ]
+        for row in (*left, *right):
+            if len(output) >= max_rows:
+                return output, True
+            if not append({name: row.get(name) for name in names}):
+                return output, True
+        return output, False
     if action.action != "dtcs:join" or len(left) * len(right) > 100_000:
-        return []
+        return [], True
     how = str(params.get("type", "inner")).lower()
     if how == "outer":
         how = "full"
@@ -272,7 +306,6 @@ def _multi_preview(
     right_keys = [right_keys] if isinstance(right_keys, str) else list(right_keys)
     left_names = set(left_fields)
     right_names = set(right_fields)
-    output: list[dict[str, Any]] = []
     matched_right: set[int] = set()
 
     def matches(left_row: Mapping[str, Any], right_row: Mapping[str, Any]) -> bool:
@@ -290,36 +323,40 @@ def _multi_preview(
         return True
 
     for left_row in left:
-        matches_for_left = [
-            (index, right_row)
-            for index, right_row in enumerate(right)
-            if matches(left_row, right_row)
-        ]
-        if (how == "semi" and matches_for_left) or (
-            how == "anti" and not matches_for_left
-        ):
-            output.append(dict(left_row))
-        elif how not in {"semi", "anti"}:
-            for index, right_row in matches_for_left:
-                matched_right.add(index)
-                output.append({**left_row, **right_row})
-                if len(output) >= max_rows:
-                    return output
-            if how in {"left", "full"} and not matches_for_left:
-                output.append(
+        has_match = False
+        for index, right_row in enumerate(right):
+            if not matches(left_row, right_row):
+                continue
+            has_match = True
+            if how in {"semi", "anti"}:
+                break
+            matched_right.add(index)
+            if len(output) >= max_rows or not append({**left_row, **right_row}):
+                return output, True
+        if (how == "semi" and has_match) or (how == "anti" and not has_match):
+            if len(output) >= max_rows or not append(dict(left_row)):
+                return output, True
+        elif (
+            how in {"left", "full"}
+            and not has_match
+            and (
+                len(output) >= max_rows
+                or not append(
                     {**left_row, **{name: None for name in right_names - left_names}}
                 )
-        if len(output) >= max_rows:
-            return output
+            )
+        ):
+            return output, True
     if how in {"right", "full"}:
         for index, right_row in enumerate(right):
-            if index not in matched_right:
-                output.append(
+            if index not in matched_right and (
+                len(output) >= max_rows
+                or not append(
                     {**{name: None for name in left_names - right_names}, **right_row}
                 )
-                if len(output) >= max_rows:
-                    break
-    return output
+            ):
+                return output, True
+    return output, False
 
 
 class InferredDataset:
@@ -511,6 +548,11 @@ class InferredDataset:
         # Target backfill is a write-boundary hypothesis.  It must never
         # replace the observed source contract used by the serialized graph.
         source_schema = self._result.observed_schema or self._root_schema
+        if any(field.logical_type == "unknown" for field in source_schema.fields):
+            raise ValueError(
+                "INFER_SOURCE_SCHEMA_UNKNOWN: durable export requires observed "
+                "or explicitly hinted source field types"
+            )
         if any(
             action.action
             in {
@@ -1101,7 +1143,7 @@ class InferredDataset:
                 "INFER_TARGET_REVISION_UNKNOWN: target revision could not be "
                 "rechecked before publication"
             ) from exc
-        if (str(current) if current is not None else None) != str(expected):
+        if not revisions_equal(current, expected, right_is_fingerprint=True):
             raise ValueError(
                 "INFER_TARGET_STALE: target revision changed after schema inspection"
             )
@@ -1118,15 +1160,25 @@ class InferredDataset:
 
     def _new(
         self,
-        rows: list[dict[str, Any]],
+        rows: Iterable[dict[str, Any]],
         frame: FrameExpr,
         schema: NormalizedSchema | None = None,
         replay: Any | None = None,
         extra_diagnostics: tuple[Diagnostic, ...] | _EvaluationDiagnostics = (),
     ) -> InferredDataset:
-        observed = infer_records(
-            rows, identity=self._root_schema.identity, retain_rows=True
+        raw_limits = self.provenance.get("limits")
+        limits = (
+            InferenceLimits.from_dict(dict(raw_limits))
+            if isinstance(raw_limits, Mapping)
+            else InferenceLimits()
         )
+        observed = infer_records(
+            rows,
+            identity=self._root_schema.identity,
+            limits=limits,
+            retain_rows=True,
+        )
+        preview_rows = observed.rows
         final_schema = schema or observed.schema
         transfer_diagnostics = tuple(
             Diagnostic(
@@ -1141,7 +1193,7 @@ class InferredDataset:
         )
         runtime_diagnostics: list[Diagnostic] = []
         for field in final_schema.fields:
-            if field.required and any(field.name not in row for row in rows):
+            if field.required and any(field.name not in row for row in preview_rows):
                 runtime_diagnostics.append(
                     Diagnostic(
                         "INFER_RUNTIME_EVALUATION",
@@ -1152,7 +1204,7 @@ class InferredDataset:
                     )
                 )
             if not field.nullable and any(
-                field.name in row and row[field.name] is None for row in rows
+                field.name in row and row[field.name] is None for row in preview_rows
             ):
                 runtime_diagnostics.append(
                     Diagnostic(
@@ -1219,7 +1271,7 @@ class InferredDataset:
                 **observed.provenance,
                 **self.provenance,
                 "preview_rows_observed": observed.provenance.get(
-                    "rows_observed", len(rows)
+                    "rows_observed", len(preview_rows)
                 ),
                 "preview_bytes_observed": observed.provenance.get("bytes_observed", 0),
                 "sampled": bool(self.provenance.get("sampled", False))
@@ -1285,7 +1337,7 @@ class InferredDataset:
                 )
             )
         return self._new(
-            [
+            (
                 row
                 for row in self._result.rows
                 if _eval(
@@ -1295,7 +1347,7 @@ class InferredDataset:
                     max_diagnostics=max_diagnostics,
                 )
                 is True
-            ],
+            ),
             frame,
             forward_schema(
                 frame,
@@ -1318,7 +1370,7 @@ class InferredDataset:
             else:
                 expr = coerce_column(column)
                 fields.append((expr.alias_name or f"_col_{len(fields)}", expr.node))
-        rows = [
+        rows = (
             {
                 name: _eval(
                     node,
@@ -1329,7 +1381,7 @@ class InferredDataset:
                 for name, node in fields
             }
             for row in self._result.rows
-        ]
+        )
         frame = self._frame.project(*columns)
         replay = None
         if self._result.replay is not None:
@@ -1368,7 +1420,7 @@ class InferredDataset:
         expr = coerce_column(value)
         evaluation_diagnostics = _EvaluationDiagnostics()
         max_diagnostics = self._max_diagnostics()
-        rows = [
+        rows = (
             {
                 **row,
                 name: _eval(
@@ -1379,7 +1431,7 @@ class InferredDataset:
                 ),
             }
             for row in self._result.rows
-        ]
+        )
         frame = self._frame.withColumn(name, expr)
         replay = None
         if self._result.replay is not None:
@@ -1425,10 +1477,10 @@ class InferredDataset:
                 )
             )
         return self._new(
-            [
+            (
                 {k: v for k, v in row.items() if k not in remove}
                 for row in self._result.rows
-            ],
+            ),
             frame,
             forward_schema(
                 frame,
@@ -1506,28 +1558,75 @@ class InferredDataset:
             if isinstance(item, Mapping)
         )
         output_name = f"{self.name}_{other.name}_{action.action.split(':')[-1]}"
-        preview = _multi_preview(
+        left_limits_raw = self.provenance.get("limits")
+        right_limits_raw = other.provenance.get("limits")
+        left_limits = (
+            InferenceLimits.from_dict(dict(left_limits_raw))
+            if isinstance(left_limits_raw, Mapping)
+            else InferenceLimits()
+        )
+        right_limits = (
+            InferenceLimits.from_dict(dict(right_limits_raw))
+            if isinstance(right_limits_raw, Mapping)
+            else InferenceLimits()
+        )
+        max_rows = min(left_limits.max_rows, right_limits.max_rows)
+        materialized_limits = [
+            limit.max_materialized_bytes
+            if limit.max_materialized_bytes is not None
+            else limit.max_bytes
+            for limit in (left_limits, right_limits)
+        ]
+        finite_materialized_limits = [
+            limit for limit in materialized_limits if limit is not None
+        ]
+        max_materialized_bytes = (
+            min(finite_materialized_limits) if finite_materialized_limits else None
+        )
+        preview, preview_limited = _multi_preview(
             self._result.rows,
             other._result.rows,
             action,
-            max_rows=min(
-                int(self.provenance.get("limits", {}).get("max_rows", 10_000)),
-                int(other.provenance.get("limits", {}).get("max_rows", 10_000)),
-            ),
+            max_rows=max_rows,
+            max_materialized_bytes=max_materialized_bytes,
             left_fields=tuple(field.name for field in self.schema.fields),
             right_fields=tuple(field.name for field in other.schema.fields),
             output_fields=tuple(field.name for field in schema.fields),
         )
+        preview_bytes_observed = sum(_estimate_size(row) for row in preview)
+        preview_diagnostics = (
+            (
+                Diagnostic(
+                    "INFER_LIMIT",
+                    Severity.WARNING,
+                    "Multi-input preview reached a configured inference limit",
+                    phase="inference",
+                ),
+            )
+            if preview_limited
+            else ()
+        )
+        combined_limits = replace(
+            left_limits,
+            max_rows=max_rows,
+            max_fields=min(left_limits.max_fields, right_limits.max_fields),
+            max_diagnostics=min(
+                left_limits.max_diagnostics, right_limits.max_diagnostics
+            ),
+            max_materialized_bytes=max_materialized_bytes,
+        )
         result = InferenceResult(
             schema,
-            (*self.diagnostics, *other.diagnostics, *diagnostics),
+            (*self.diagnostics, *other.diagnostics, *diagnostics, *preview_diagnostics),
             provenance={
                 "source": "multi_input",
                 "method": action.action,
                 "sampled": self.provenance.get("sampled") is True
-                or other.provenance.get("sampled") is True,
-                "limits": self.provenance.get("limits", InferenceLimits().to_dict()),
+                or other.provenance.get("sampled") is True
+                or preview_limited,
+                "limits": combined_limits.to_dict(),
                 "preview_rows_observed": len(preview),
+                "preview_bytes_observed": preview_bytes_observed,
             },
             rows=preview,
             observed_schema=schema,
@@ -1557,10 +1656,10 @@ class InferredDataset:
                 )
             )
         return self._new(
-            [
+            (
                 {mapping.get(k, k): v for k, v in row.items()}
                 for row in self._result.rows
-            ],
+            ),
             frame,
             forward_schema(
                 frame,

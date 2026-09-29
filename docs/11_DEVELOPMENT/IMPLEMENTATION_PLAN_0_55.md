@@ -1,14 +1,15 @@
 ---
 title: ETLantic 0.55 Implementation Plan
 description: Optional data-first authoring with forward and target-guided inference for portable sources, transformations, and write targets.
-plan_status: planned
-plan_last_reviewed: 0.54.0
+plan_status: qualified
+plan_last_reviewed: 0.55.0
 ---
 
 # ETLantic 0.55 Implementation Plan — Inferred Model Authoring
 
-> **Status:** planned next phase after 0.54. None of the API examples below is
-> available in 0.54. The [roadmap](https://github.com/eddiethedean/etlantic/blob/main/ROADMAP.md) owns phase order; the
+> **Status:** scoped 0.55 qualification is complete for the Experimental
+> surfaces in the [0.55 exit gate](EXIT_GATE_0_55.md). The API examples below
+> are not available in the published 0.54 package. The [roadmap](https://github.com/eddiethedean/etlantic/blob/main/ROADMAP.md) owns phase order; the
 > [capabilities page](../01_GETTING_STARTED/CAPABILITIES.md) owns shipped claims.
 > The [execution plan](EXECUTION_PLAN_0_55.md) owns implementation order,
 > code boundaries, fixtures, and merge gates.

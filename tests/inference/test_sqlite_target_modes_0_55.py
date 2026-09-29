@@ -65,3 +65,92 @@ def test_sqlite_target_executes_all_declared_write_modes() -> None:
             expected_revision=stale,
         )
     assert connection.execute("SELECT COUNT(*) FROM orders").fetchone()[0] == 1
+
+
+def test_sqlite_target_allows_omitted_defaulted_columns() -> None:
+    sql = pytest.importorskip("etlantic_sql")
+    connection = sqlite3.connect(":memory:")
+    connection.execute(
+        "CREATE TABLE events (id INTEGER PRIMARY KEY, value TEXT NOT NULL, "
+        "created_at TEXT NOT NULL DEFAULT 'PRIVATE_DEFAULT_VALUE_99')"
+    )
+    connection.commit()
+    target = sql.SQLiteTableTarget(connection, "events", "events-test")
+
+    observation = etl.inspect_target(target)
+    assert observation.schema is not None
+    created_at = next(
+        field for field in observation.schema.fields if field.name == "created_at"
+    )
+    assert created_at.metadata["has_default"] is True
+    assert "PRIVATE_DEFAULT_VALUE_99" not in str(observation.to_dict())
+    compatibility = etl.check_write_compatibility(
+        etl.infer_records([{"id": 1, "value": "ok"}]).schema,
+        observation,
+    )
+    assert compatibility.compatible
+
+    assert (
+        target.write_records(
+            [{"id": 1, "value": "ok"}],
+            mode="append",
+            expected_revision=observation.revision,
+        )
+        == 1
+    )
+    assert connection.execute(
+        "SELECT id, value, created_at FROM events"
+    ).fetchone() == (1, "ok", "PRIVATE_DEFAULT_VALUE_99")
+
+
+def test_sqlite_target_recognizes_omitted_rowid_primary_key() -> None:
+    sql = pytest.importorskip("etlantic_sql")
+    connection = sqlite3.connect(":memory:")
+    connection.execute(
+        "CREATE TABLE events (id INTEGER PRIMARY KEY, value TEXT NOT NULL)"
+    )
+    connection.commit()
+    target = sql.SQLiteTableTarget(connection, "events", "events-rowid-test")
+
+    observation = etl.inspect_target(target)
+    assert observation.schema is not None
+    id_field = next(field for field in observation.schema.fields if field.name == "id")
+    assert id_field.metadata["auto_increment"] is True
+    compatibility = etl.check_write_compatibility(
+        etl.infer_records([{"value": "ok"}]).schema,
+        observation,
+    )
+    assert compatibility.compatible
+
+    assert (
+        target.write_records(
+            [{"value": "ok"}],
+            mode="append",
+            expected_revision=observation.revision,
+        )
+        == 1
+    )
+    assert connection.execute("SELECT id, value FROM events").fetchone() == (1, "ok")
+
+
+def test_sqlite_target_does_not_mark_non_rowid_primary_keys_as_generated() -> None:
+    sql = pytest.importorskip("etlantic_sql")
+    connection = sqlite3.connect(":memory:")
+    connection.execute("CREATE TABLE int_key (id INT PRIMARY KEY, value TEXT NOT NULL)")
+    connection.execute(
+        "CREATE TABLE no_rowid (id INTEGER PRIMARY KEY, value TEXT NOT NULL) WITHOUT ROWID"
+    )
+    connection.execute(
+        "CREATE TABLE desc_key (id INTEGER PRIMARY KEY DESC, value TEXT NOT NULL)"
+    )
+    connection.commit()
+
+    for table in ("int_key", "no_rowid", "desc_key"):
+        observation = etl.inspect_target(
+            sql.SQLiteTableTarget(connection, table, f"{table}-test")
+        )
+        assert observation.schema is not None
+        id_field = next(
+            field for field in observation.schema.fields if field.name == "id"
+        )
+        assert id_field.metadata["auto_increment"] is False

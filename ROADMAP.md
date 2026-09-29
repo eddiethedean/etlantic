@@ -6,13 +6,12 @@
 > [Capabilities](docs/01_GETTING_STARTED/CAPABILITIES.md) for what ships now.
 > Review this header for every release or sequence change.
 
-**Current release:** ETLantic **0.54.0** (published Beta) —
-Experimental, fixture-qualified local adaptive physical-DAG execution for
-Local, Polars, Pandas and both single-cut Polars/Pandas directions. Explicit
-execution remains the default and retains the seven-engine portable baseline.
-Unsupported combinations and consumers fail closed before effects. Broader
-qualification includes fourteen Experimental rows and the bounded Polars scan/filter/project reference. Graduation remains pending; local implementation completion does not imply independent review or adaptive graduation. See the
-[0.54 exit gate](docs/11_DEVELOPMENT/EXIT_GATE_0_54.md).
+**Current release candidate:** ETLantic **0.55.0** (Beta; not yet published).
+The scoped inferred-model authoring surface is qualified and remains
+Experimental. Adaptive execution also remains Experimental; its independent
+graduation is still pending. The latest published package remains 0.54.0 until
+the 0.55.0 tag is released. See the [0.55 exit gate](docs/11_DEVELOPMENT/EXIT_GATE_0_55.md)
+and [0.54 exit gate](docs/11_DEVELOPMENT/EXIT_GATE_0_54.md).
 Prior **0.49** qualified optional DuckDB; prior **0.48** human-governed AI
 context/proposals and Experimental `etlantic-mcp`
 fakes; prior **0.47** scheduler/runner service and remote
@@ -23,7 +22,7 @@ through **0.37** (stable foundation) are shipped.
 
 | Horizon | Release | Outcome | Status |
 |---|---:|---|---|
-| Current | 0.54 | Adaptive conformance and bounded scan/filter/project implementation | Published / shipped evidence |
+| Current | 0.55 | Scoped Experimental inferred-model authoring qualification | Gate-ready for tag/publish |
 | Previous | 0.53 | Experimental fixture-qualified local adaptive physical-DAG execution | Historical candidate |
 | Previous | 0.52 | Deterministic adaptive planning and plan-only physical lowering | Published / shipped evidence |
 | Previous | 0.50 | Seven-engine portable baseline with 0.50.1 compatibility fixes | Published / shipped evidence |
