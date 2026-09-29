@@ -2,12 +2,12 @@
 
 from __future__ import annotations
 
-import time
 from collections.abc import Iterator
 from typing import Any
 
 import pytest
 
+from etlantic.storage import protocol as storage_protocol
 from etlantic.storage.protocol import as_records, records_to_dicts
 
 
@@ -174,13 +174,25 @@ def test_streaming_provider_rows_stop_at_byte_limit() -> None:
     assert consumed == 1
 
 
-def test_streaming_provider_rows_obey_cooperative_timeout() -> None:
+def test_streaming_provider_rows_obey_cooperative_timeout(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    now = 0.0
+
+    class Clock:
+        @staticmethod
+        def monotonic() -> float:
+            return now
+
+    monkeypatch.setattr(storage_protocol, "time", Clock)
+
     class View:
         __etlantic_bounded_view__ = True
 
         def iter_rows(self, *, named: bool):
             assert named is True
-            time.sleep(0.01)
+            nonlocal now
+            now = 0.002
             yield {"id": 1}
 
     class Provider:
