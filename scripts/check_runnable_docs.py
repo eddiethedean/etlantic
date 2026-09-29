@@ -12,11 +12,11 @@ ROOT = Path(__file__).parents[1]
 RELEASE_FACTS = json.loads(
     (ROOT / "docs" / "release-facts.json").read_text(encoding="utf-8")
 )
-RELEASE_STATUS = (
+release_status = (
     f"ETLantic {RELEASE_FACTS['current_version']} {RELEASE_FACTS['maturity']} release"
 )
 if RELEASE_FACTS.get("publication_status") != "published":
-    RELEASE_STATUS += " candidate; publication pending"
+    release_status += " candidate; publication pending"
 
 EXPECTED_OUTPUT = re.compile(r"(?ms)^## Expected output\s*$\n(?P<body>.*?)(?=^## |\Z)")
 OUTPUT_FENCE = re.compile(r"(?ms)^```(?:console|json|text|yaml)\s*$.*?^```\s*$")
@@ -139,7 +139,7 @@ def main() -> None:
                     f"Illustrative page must say so explicitly: {entry.page}"
                 )
             continue
-        if "Status: Available" not in text and RELEASE_STATUS not in text:
+        if "Status: Available" not in text and release_status not in text:
             raise SystemExit(f"Runnable page lacks Available status: {entry.page}")
         if source.name not in text:
             raise SystemExit(
