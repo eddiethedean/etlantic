@@ -1,8 +1,8 @@
 # Reference
 
-> **Status: Available in ETLantic 0.54.0 (published Beta).**
+> **Status: ETLantic 0.55.0 Beta release candidate; publication pending.**
 
-This section separates ETLantic **0.54** Experimental behavior from proposed
+This section separates ETLantic **0.55** Experimental behavior from proposed
 0.x interfaces.
 
 ## Shipped

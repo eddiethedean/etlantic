@@ -23,6 +23,10 @@ from etlantic.profile import PlacementTarget, Profile
 from etlantic.registry import PlanningContext, PluginDescriptor, builtin_stub_registry
 from etlantic.runtime.execute import arun_pipeline
 from etlantic.runtime.request import RunRequest, RunSelection
+from tests.runtime.adaptive_candidate_guard import (
+    ADAPTIVE_CANDIDATE_MATCHES_PACKAGE,
+    ADAPTIVE_CANDIDATE_MISMATCH_REASON,
+)
 
 
 class Row(Data):
@@ -91,6 +95,10 @@ def test_explicit_report_path_rejects_request_for_classes_and_definitions(
         assert report.codes() == ("PMADP522",)
 
 
+@pytest.mark.skipif(
+    not ADAPTIVE_CANDIDATE_MATCHES_PACKAGE,
+    reason=ADAPTIVE_CANDIDATE_MISMATCH_REASON,
+)
 def test_adaptive_execution_uses_default_request() -> None:
     async def run() -> None:
         report = await arun_pipeline(Sample, profile=adaptive_profile())

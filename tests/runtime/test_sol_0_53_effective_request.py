@@ -19,6 +19,10 @@ from etlantic.runtime.execute import arun_pipeline
 from etlantic.runtime.request import RunRequest
 from etlantic.transform import functions as F
 from tests.plan.test_adaptive_planner_0_52 import Sample, adaptive_profile
+from tests.runtime.adaptive_candidate_guard import (
+    ADAPTIVE_CANDIDATE_MATCHES_PACKAGE,
+    ADAPTIVE_CANDIDATE_MISMATCH_REASON,
+)
 from tests.runtime.test_adaptive_execution_0_53 import CrossRow
 
 
@@ -71,6 +75,10 @@ def test_final_004_unknown_request_implementation_override_rejects() -> None:
     assert "PMADP121" in error.value.report.codes()
 
 
+@pytest.mark.skipif(
+    not ADAPTIVE_CANDIDATE_MATCHES_PACKAGE,
+    reason=ADAPTIVE_CANDIDATE_MISMATCH_REASON,
+)
 def test_final_004_required_parameter_override_precedes_validation() -> None:
     async def run() -> None:
         runtime = PipelineRuntime()

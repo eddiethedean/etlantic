@@ -1,17 +1,17 @@
 ---
 title: ETLantic 0.55 Full Review Fix Plan
 description: Ordered closure plan for the remaining 0.55 inferred model authoring review findings.
-plan_status: planned
-plan_last_reviewed: 0.55.0-blocker-review
+plan_status: complete
+plan_last_reviewed: 0.55.0
 ---
 
 # ETLantic 0.55 Full Review Fix Plan
 
-This is the implementation plan for the findings from the full 0.55 phase
-review. It supplements the [0.55 execution plan](EXECUTION_PLAN_0_55.md) and
-the broader [inference remediation plan](INFERENCE_REMEDIATION_PLAN_0_55.md).
-It is the current checklist for closing the remaining release blockers and
-hardening gaps.
+This records closure of the findings from the full 0.55 phase review. It
+supplements the [0.55 execution plan](EXECUTION_PLAN_0_55.md) and the broader
+[inference remediation plan](INFERENCE_REMEDIATION_PLAN_0_55.md). Every finding
+in the committed ledger is verified; the scoped release boundary is in the
+[0.55 exit gate](EXIT_GATE_0_55.md).
 
 This revision incorporates the full 0.55 review findings: transformation
 actions being dropped from durable definitions, cumulative-frame lineage

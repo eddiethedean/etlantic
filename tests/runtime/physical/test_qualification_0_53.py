@@ -10,6 +10,10 @@ from typing import Any
 
 import anyio
 import pytest
+from tests.runtime.adaptive_candidate_guard import (
+    ADAPTIVE_CANDIDATE_MATCHES_PACKAGE,
+    ADAPTIVE_CANDIDATE_MISMATCH_REASON,
+)
 
 from etlantic import (
     Data,
@@ -32,7 +36,14 @@ from etlantic.runtime.physical_operations import OPERATION_SCHEMA
 from etlantic.runtime.request import RetryPolicy, RunRequest, RunSelection
 from etlantic.runtime.scheduler import LocalScheduler
 
-pytestmark = [pytest.mark.polars, pytest.mark.pandas]
+pytestmark = [
+    pytest.mark.polars,
+    pytest.mark.pandas,
+    pytest.mark.skipif(
+        not ADAPTIVE_CANDIDATE_MATCHES_PACKAGE,
+        reason=ADAPTIVE_CANDIDATE_MISMATCH_REASON,
+    ),
+]
 
 
 class Row(Data):

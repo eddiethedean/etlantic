@@ -8,7 +8,7 @@ Pin matching minor versions:
 medallantic 0.37.x  ↔  etlantic 0.37.x
 ```
 
-The current package requires `etlantic>=0.54.0,<0.55`. Engine plugins are
+The current package requires `etlantic>=0.55.0,<0.56`. Engine plugins are
 installed and pinned separately.
 
 ## Engine intent

@@ -13,6 +13,10 @@ pytest.importorskip("pyarrow")
 pytest.importorskip("pandas")
 
 import polars as pl
+from tests.runtime.adaptive_candidate_guard import (
+    ADAPTIVE_CANDIDATE_MATCHES_PACKAGE,
+    ADAPTIVE_CANDIDATE_MISMATCH_REASON,
+)
 from tests.runtime.physical.fusion_fixture_0_54 import (
     MULTILINE_COLUMN,
     MultilineReference,
@@ -34,7 +38,14 @@ from etlantic.runtime.scheduler import LocalScheduler
 from etlantic.transform.fusion import FusionDescriptor, compose_fusion_definition
 from etlantic_polars import create_parquet_storage
 
-pytestmark = [pytest.mark.polars, pytest.mark.pandas]
+pytestmark = [
+    pytest.mark.polars,
+    pytest.mark.pandas,
+    pytest.mark.skipif(
+        not ADAPTIVE_CANDIDATE_MATCHES_PACKAGE,
+        reason=ADAPTIVE_CANDIDATE_MISMATCH_REASON,
+    ),
+]
 
 
 @pytest.mark.parametrize(

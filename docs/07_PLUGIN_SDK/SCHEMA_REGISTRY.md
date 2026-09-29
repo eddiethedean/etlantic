@@ -23,7 +23,7 @@ pins fail closed (`PMREG140`). Example:
 ```json
 {
   "schema_registry_allowlist": {
-    "etlantic-schemaregistry": "==0.54.0"
+    "etlantic-schemaregistry": "==0.55.0"
   }
 }
 ```

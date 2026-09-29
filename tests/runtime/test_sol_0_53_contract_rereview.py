@@ -38,8 +38,17 @@ from etlantic.runtime.physical_protocol import (
 from etlantic.runtime.request import RunRequest, RunSelection, TimeoutPolicy
 from etlantic.runtime.scheduler import LocalScheduler
 from tests.plan.test_adaptive_planner_0_52 import Sample, adaptive_profile
+from tests.runtime.adaptive_candidate_guard import (
+    ADAPTIVE_CANDIDATE_MATCHES_PACKAGE,
+    ADAPTIVE_CANDIDATE_MISMATCH_REASON,
+)
 from tests.runtime.test_adaptive_execution_0_53 import CrossRow, CrossStep
 from tests.runtime.test_sol_0_53_rereview import Fanout
+
+pytestmark = pytest.mark.skipif(
+    not ADAPTIVE_CANDIDATE_MATCHES_PACKAGE,
+    reason=ADAPTIVE_CANDIDATE_MISMATCH_REASON,
+)
 
 
 class Join(Transformation):

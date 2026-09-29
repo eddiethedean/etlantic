@@ -16,6 +16,10 @@ pytest.importorskip("pyarrow")
 
 import polars as pl
 from pydantic_core import core_schema
+from tests.runtime.adaptive_candidate_guard import (
+    ADAPTIVE_CANDIDATE_MATCHES_PACKAGE,
+    ADAPTIVE_CANDIDATE_MISMATCH_REASON,
+)
 from tests.runtime.physical.fusion_fixture_0_54 import Raw, Reference
 from tests.runtime.physical.test_fusion_0_54 import _seed, setup
 
@@ -28,7 +32,14 @@ from etlantic.transform.fusion import FusionDescriptor
 from etlantic_polars import create_parquet_storage
 from etlantic_polars.fusion import inspect_fusion_query
 
-pytestmark = [pytest.mark.polars, pytest.mark.pandas]
+pytestmark = [
+    pytest.mark.polars,
+    pytest.mark.pandas,
+    pytest.mark.skipif(
+        not ADAPTIVE_CANDIDATE_MATCHES_PACKAGE,
+        reason=ADAPTIVE_CANDIDATE_MISMATCH_REASON,
+    ),
+]
 
 
 class PostInitRaw(Raw):

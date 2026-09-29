@@ -14,6 +14,10 @@ pytest.importorskip("pandas")
 pytest.importorskip("pyarrow")
 
 import polars as pl
+from tests.runtime.adaptive_candidate_guard import (
+    ADAPTIVE_CANDIDATE_MATCHES_PACKAGE,
+    ADAPTIVE_CANDIDATE_MISMATCH_REASON,
+)
 from tests.runtime.physical.fusion_fixture_0_54 import Reference
 
 from etlantic import PipelineRuntime, Profile, __version__
@@ -35,7 +39,14 @@ from etlantic_polars import (
     create_transform_compiler,
 )
 
-pytestmark = [pytest.mark.polars, pytest.mark.pandas]
+pytestmark = [
+    pytest.mark.polars,
+    pytest.mark.pandas,
+    pytest.mark.skipif(
+        not ADAPTIVE_CANDIDATE_MATCHES_PACKAGE,
+        reason=ADAPTIVE_CANDIDATE_MISMATCH_REASON,
+    ),
+]
 
 
 def setup(tmp_path, request=None, *, pipeline=Reference):

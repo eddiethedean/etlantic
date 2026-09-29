@@ -1,12 +1,12 @@
 # Support Policy (maintainers)
 
-> **Status: Available in ETLantic 0.54.0 (published Beta).**
+> **Status: ETLantic 0.55.0 Beta release candidate; publication pending.**
 
 > **Canonical adopter policy:** root
 > [`SUPPORT.md`](https://github.com/eddiethedean/etlantic/blob/main/SUPPORT.md).
 > Keep this page as maintainer extras only; do not duplicate pin/envelope text.
 
-ETLantic **0.54.x** is the current **published Beta** line. Community support is
+ETLantic **0.54.x** is the latest **published Beta** line until 0.55.0 publication. Community support is
 best-effort with **no formal SLA**.
 
 ## Where to ask
@@ -21,7 +21,7 @@ Remove credentials, customer data, internal hostnames, and production plans.
 
 ## Maintainer notes
 
-- The current published minor line (`0.54.x`) receives best-effort correctness
+- The latest published line (`0.54.x`) receives best-effort correctness
   and security fixes. Older 0.x lines are not actively maintained.
 - Supported isolation profiles (`isolated-deployment`, `dedicated-schema`)
   graduated in 0.43. There is no hosted multi-tenant SaaS. See

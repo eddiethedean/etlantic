@@ -1,6 +1,6 @@
 # Your First Pipeline
 
-> **Status: Available in ETLantic 0.54.0 (published Beta).** Extends the project from
+> **Status: ETLantic 0.55.0 Beta release candidate; publication pending.** Extends the project from
 > [Quickstart](QUICKSTART.md). Local Python + JSON assets only.
 
 !!! tip "PyPI vs clone"
@@ -13,7 +13,7 @@ directory—do not reinstall. Otherwise install from PyPI, then scaffold:
 
 ```bash
 # Only if you do not already have a Quickstart project:
-python -m pip install 'etlantic==0.54.0'
+python -m pip install 'etlantic==0.55.0'
 mkdir my-pipeline && cd my-pipeline
 python -m etlantic init --with-toml
 ```

@@ -7,6 +7,26 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.55.0] - Unreleased implementation candidate
+
+### Added
+
+- Data-first authoring for bounded records, CSV, JSON, Pandas, and Polars
+  sources, with normalized schemas, provenance, diagnostics, and explicit
+  previews.
+- Portable schema transfer through qualified transformations, read-only
+  target inspection, write-compatibility checks, and explicit output-model
+  proposals.
+- Versioned, row-free inference observations and durable definitions for
+  rebindable sources; bounded replay for one-shot inputs.
+- Scoped qualification evidence for the 0.55 inferred-model feature set.
+
+### Changed
+
+- Core and first-party package metadata move to the lockstep 0.55.0 line;
+  official plugin requirements use `etlantic>=0.55.0,<0.56`.
+- Existing class-authored pipeline APIs remain the default authoring path.
+
 ### Fixed
 
 - Control-plane collections honor concrete item denials before serialization
@@ -23,7 +43,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   redacts arbitrary URI credentials and query data, and keeps unresolved
   identity markers stable across wire round trips.
 
-## [0.54.0] - Unreleased implementation candidate
+### Safety boundary
+
+- Inferred-model authoring remains Experimental. Qualification covers only the
+  surfaces and modes listed in the 0.55 evidence index; metadata-only adapters,
+  read-only schema documents, and the SQLite reference write target retain
+  their documented limits.
+- No source rows, sampled values, credentials, or absolute source paths are
+  added to durable inference artifacts.
+
+## [0.54.0] - 2026-09-19
 
 ### Added
 
@@ -48,7 +77,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Require exact candidate pins and semantically verified, row-bound evidence;
   normalize source ordering and relative evidence paths across platforms.
 
-[0.54.0]: https://github.com/eddiethedean/etlantic/compare/v0.53.0...HEAD
+[0.55.0]: https://github.com/eddiethedean/etlantic/compare/v0.54.0...HEAD
+[0.54.0]: https://github.com/eddiethedean/etlantic/releases/tag/v0.54.0
 
 ## [0.53.0] - 2026-09-15
 

@@ -1,11 +1,13 @@
 # Earlier release notes
 
-> **Status: Available in ETLantic 0.54.0 (published Beta).** Historical “What's new” pages for
-> prior minors. Current line: [What's new in 0.53](WHATS_NEW_0_53.md). Full
+> **Status: Historical release notes for the 0.55.0 Beta release candidate.**
+> Current candidate: [What's new in 0.55](WHATS_NEW_0_55.md). The latest
+> published line remains 0.54 until 0.55.0 is released. Full
 > history: [Changelog](../CHANGELOG.md).
 
 | Release | Notes |
 |---|---|
+| 0.54 | [What's new in 0.54](WHATS_NEW_0_54.md) |
 | 0.47 | [What's new in 0.47](WHATS_NEW_0_47.md) |
 | 0.46 | [What's new in 0.46](WHATS_NEW_0_46.md) |
 | 0.45 | [What's new in 0.45](WHATS_NEW_0_45.md) |

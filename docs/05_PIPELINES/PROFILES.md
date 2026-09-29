@@ -1,6 +1,6 @@
 # Profiles
 
-> **Status: Available in ETLantic 0.54.0 (published Beta).** Field reference. Start with the
+> **Status: ETLantic 0.55.0 Beta release candidate; publication pending.** Field reference. Start with the
 > [Profiles hub](PROFILES_HUB.md) for the adopter path.
 
 A **Profile** defines how a validated Pipeline Plan is bound to a specific
@@ -86,7 +86,7 @@ production = Profile(
     security_domain="production",
     dataframe_engine="polars",
     plugin_allowlist={
-        "etlantic-polars": "==0.54.0",
+        "etlantic-polars": "==0.55.0",
     },
 )
 
@@ -95,7 +95,7 @@ sql_prod = Profile(
     security_mode="production",
     sql_engine="sql",
     plugin_allowlist={
-        "etlantic-sql": "==0.54.0",
+        "etlantic-sql": "==0.55.0",
     },
 )
 ```

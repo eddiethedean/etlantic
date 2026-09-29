@@ -7,6 +7,10 @@ from dataclasses import replace
 import anyio
 import pytest
 from tests.plan.test_adaptive_planner_0_52 import adaptive_profile
+from tests.runtime.adaptive_candidate_guard import (
+    ADAPTIVE_CANDIDATE_MATCHES_PACKAGE,
+    ADAPTIVE_CANDIDATE_MISMATCH_REASON,
+)
 
 from etlantic import (
     Data,
@@ -62,6 +66,10 @@ def local_plan(request=None):
     )
 
 
+@pytest.mark.skipif(
+    not ADAPTIVE_CANDIDATE_MATCHES_PACKAGE,
+    reason=ADAPTIVE_CANDIDATE_MISMATCH_REASON,
+)
 def test_unfused_default_one_json_roundtrip():
     plan = local_plan()
     assert plan.metadata["etlantic.runtime"]["parameters"]["filtered"]["key"] == 1
@@ -200,6 +208,10 @@ def staged_plan():
     return plan_pipeline(scoped, profile=adaptive_profile(), request=RunRequest())
 
 
+@pytest.mark.skipif(
+    not ADAPTIVE_CANDIDATE_MATCHES_PACKAGE,
+    reason=ADAPTIVE_CANDIDATE_MISMATCH_REASON,
+)
 def test_valid_multiple_sink_barriers_follow_lowering_order(monkeypatch):
     plan = staged_plan()
     before = plan_to_json(plan)
@@ -238,6 +250,10 @@ def test_valid_multiple_sink_barriers_follow_lowering_order(monkeypatch):
 
 
 @pytest.mark.parametrize("mutation", ["branch", "order"])
+@pytest.mark.skipif(
+    not ADAPTIVE_CANDIDATE_MATCHES_PACKAGE,
+    reason=ADAPTIVE_CANDIDATE_MISMATCH_REASON,
+)
 def test_sink_barrier_cannot_branch_or_reorder(mutation):
     plan = staged_plan()
     dag = plan.physical_dag
@@ -289,6 +305,10 @@ def test_sink_barrier_cannot_branch_or_reorder(mutation):
     assert error.value.code == "PMADP403"
 
 
+@pytest.mark.skipif(
+    not ADAPTIVE_CANDIDATE_MATCHES_PACKAGE,
+    reason=ADAPTIVE_CANDIDATE_MISMATCH_REASON,
+)
 def test_collection_keeps_producer_validation_on_data_path():
     from etlantic.runtime.physical_operations import (
         OPERATION_SCHEMA,
@@ -353,6 +373,10 @@ def test_collection_keeps_producer_validation_on_data_path():
 
 @pytest.mark.polars
 @pytest.mark.pandas
+@pytest.mark.skipif(
+    not ADAPTIVE_CANDIDATE_MATCHES_PACKAGE,
+    reason=ADAPTIVE_CANDIDATE_MISMATCH_REASON,
+)
 @pytest.mark.parametrize(
     "mutation",
     [

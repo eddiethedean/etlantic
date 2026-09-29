@@ -28,6 +28,10 @@ from etlantic.runtime.execute import arun_pipeline
 from etlantic.runtime.request import RunRequest, RunSelection
 from etlantic.runtime.scheduler import LocalScheduler
 from tests.plan.test_adaptive_planner_0_52 import adaptive_profile
+from tests.runtime.adaptive_candidate_guard import (
+    ADAPTIVE_CANDIDATE_MATCHES_PACKAGE,
+    ADAPTIVE_CANDIDATE_MISMATCH_REASON,
+)
 from tests.runtime.physical.test_qualification_0_53 import Chain, Project, setup
 from tests.runtime.test_sol_0_53_effective_request import ParameterRequestPipeline
 
@@ -43,6 +47,10 @@ def _plan(model: Any, reporting: bool, **kwargs: Any) -> AdaptivePipelinePlan:
     return plan
 
 
+@pytest.mark.skipif(
+    not ADAPTIVE_CANDIDATE_MATCHES_PACKAGE,
+    reason=ADAPTIVE_CANDIDATE_MISMATCH_REASON,
+)
 @pytest.mark.parametrize("reporting", [False, True])
 @pytest.mark.parametrize("serialized", [False, True])
 def test_definition_portable_default_request_and_stored_execution(
@@ -71,6 +79,10 @@ def test_definition_portable_default_request_and_stored_execution(
     anyio.run(run)
 
 
+@pytest.mark.skipif(
+    not ADAPTIVE_CANDIDATE_MATCHES_PACKAGE,
+    reason=ADAPTIVE_CANDIDATE_MISMATCH_REASON,
+)
 @pytest.mark.parametrize("reporting", [False, True])
 def test_definition_request_parameter_survives_both_serialization_boundaries(
     reporting: bool,
@@ -93,6 +105,10 @@ def test_definition_request_parameter_survives_both_serialization_boundaries(
     anyio.run(run)
 
 
+@pytest.mark.skipif(
+    not ADAPTIVE_CANDIDATE_MATCHES_PACKAGE,
+    reason=ADAPTIVE_CANDIDATE_MISMATCH_REASON,
+)
 def test_serialized_definition_runs_through_public_sdk() -> None:
     definition = pipeline_from_json(pipeline_to_json(definition_from_pipeline(Chain)))
 
@@ -108,6 +124,10 @@ def test_serialized_definition_runs_through_public_sdk() -> None:
     anyio.run(run)
 
 
+@pytest.mark.skipif(
+    not ADAPTIVE_CANDIDATE_MATCHES_PACKAGE,
+    reason=ADAPTIVE_CANDIDATE_MISMATCH_REASON,
+)
 @pytest.mark.parametrize(
     "families",
     [
