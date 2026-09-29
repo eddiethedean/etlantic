@@ -395,6 +395,31 @@ def _hint_type(hint: Any) -> str | None:
     return mapping.get(hint)
 
 
+def _csv_hint_matches(value: Any, hint: str) -> bool:
+    """Check whether a replayed CSV scalar matches a header-only type hint."""
+    if hint == "boolean":
+        return type(value) is bool
+    if hint == "integer":
+        return type(value) is int
+    if hint == "number":
+        return type(value) in (int, float)
+    if hint == "decimal":
+        return isinstance(value, Decimal)
+    if hint == "string":
+        return isinstance(value, str)
+    if hint == "binary":
+        return isinstance(value, bytes)
+    if hint == "date":
+        return isinstance(value, _dt.date) and not isinstance(value, _dt.datetime)
+    if hint == "datetime":
+        return isinstance(value, _dt.datetime)
+    if hint == "object":
+        return isinstance(value, Mapping)
+    if hint == "array":
+        return isinstance(value, (list, tuple))
+    return False
+
+
 class _EstimateLimitExceeded(Exception):
     """A row exceeded its remaining materialization budget."""
 
@@ -1368,6 +1393,9 @@ def infer_csv(
         header_hints = {
             name: _hint_type((hints or {}).get(name)) for name in fieldnames
         }
+        header_only = (
+            not result.schema.fields and result.provenance.get("rows_observed") == 0
+        )
         header_diagnostics = [
             _diag(
                 "INFER_UNKNOWN_TYPE",
@@ -1387,7 +1415,7 @@ def infer_csv(
             )[: limits.max_diagnostics]
         )
         schema = result.schema
-        if not result.schema.fields and result.provenance.get("rows_observed") == 0:
+        if header_only:
             schema = normalize_schema_from_fields(
                 [
                     {
@@ -1415,9 +1443,7 @@ def infer_csv(
         replay: ReplayHandle | None = None
         if sampled:
             string_fields = {
-                field.name
-                for field in result.schema.fields
-                if field.logical_type == "string"
+                field.name for field in schema.fields if field.logical_type == "string"
             }
             # Diagnostics are deliberately capped, so they cannot be the
             # source of truth for replay normalization decisions.
@@ -1434,14 +1460,22 @@ def infer_csv(
                 )
                 > 1
             }
+            # A header-only schema has no sampled evidence, but its hints
+            # still define how every replayed value should be represented.
+            mixed_fields.update(
+                name
+                for name, hint in header_hints.items()
+                if header_only and hint == "string"
+            )
             decimal_fields = {
-                field.name
-                for field in result.schema.fields
-                if field.logical_type == "decimal"
+                field.name for field in schema.fields if field.logical_type == "decimal"
+            }
+            number_fields = {
+                field.name for field in schema.fields if field.logical_type == "number"
             }
             datetime_fields = {
                 field.name
-                for field in result.schema.fields
+                for field in schema.fields
                 if field.logical_type == "datetime"
             }
 
@@ -1519,6 +1553,30 @@ def infer_csv(
                                         value, (int, float)
                                     ) and not isinstance(value, bool):
                                         replay_row[name] = Decimal(str(value))
+                                for name in number_fields:
+                                    value = replay_row.get(name)
+                                    if isinstance(value, Decimal):
+                                        try:
+                                            number_value = float(value)
+                                        except (OverflowError, ValueError):
+                                            raise fail(
+                                                "INFER_CSV_ROW",
+                                                "CSV value is outside the finite range "
+                                                "for its number hint",
+                                            ) from None
+                                        if not math.isfinite(number_value):
+                                            raise fail(
+                                                "INFER_CSV_ROW",
+                                                "CSV value is outside the finite range "
+                                                "for its number hint",
+                                            )
+                                        if Decimal(str(number_value)) != value:
+                                            raise fail(
+                                                "INFER_CSV_ROW",
+                                                "CSV value cannot be represented exactly "
+                                                "by its number hint",
+                                            )
+                                        replay_row[name] = number_value
                                 for name in datetime_fields:
                                     value = replay_row.get(name)
                                     if isinstance(value, _dt.date) and not isinstance(
@@ -1527,6 +1585,23 @@ def infer_csv(
                                         replay_row[name] = _dt.datetime.combine(
                                             value, _dt.time()
                                         )
+                                if header_only:
+                                    for name, hint in header_hints.items():
+                                        if hint is None or replay_row.get(name) is None:
+                                            continue
+                                        value = replay_row[name]
+                                        if (
+                                            hint == "integer"
+                                            and isinstance(value, Decimal)
+                                            and value == value.to_integral_value()
+                                        ):
+                                            value = int(value)
+                                            replay_row[name] = value
+                                        if not _csv_hint_matches(value, hint):
+                                            raise fail(
+                                                "INFER_CSV_ROW",
+                                                f"CSV value cannot be represented by its {hint} hint",
+                                            )
                                 row_index += 1
                                 replay_status.update(
                                     {

@@ -300,7 +300,7 @@ class InferenceLimits:
                 raise ValueError(f"{name} must be an integer")
             return value
 
-        raw_timeout = payload.get("timeout_seconds")
+        raw_timeout = payload.get("timeout_seconds", defaults.timeout_seconds)
         if raw_timeout is not None and type(raw_timeout) not in (int, float):
             raise ValueError("timeout_seconds must be numeric")
         return cls(
@@ -309,7 +309,7 @@ class InferenceLimits:
             max_diagnostics=cast(
                 int, integer_limit("max_diagnostics", defaults.max_diagnostics)
             ),
-            max_bytes=integer_limit("max_bytes"),
+            max_bytes=integer_limit("max_bytes", defaults.max_bytes),
             timeout_seconds=raw_timeout,
             max_materialized_bytes=integer_limit("max_materialized_bytes"),
             max_field_size=integer_limit(

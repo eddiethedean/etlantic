@@ -19,8 +19,8 @@ from typing import Any
 EXPECTED_DIGESTS = {
     # Pyright's import/type surface differs by host platform because the
     # synchronized dependency set includes platform-specific distributions.
-    "Darwin": "82fd521e83b68ab01798fa09eeb43e24b9afb16c9299f7293ad769e3d8cb0f2b",
-    "Linux": "82fd521e83b68ab01798fa09eeb43e24b9afb16c9299f7293ad769e3d8cb0f2b",
+    "Darwin": "394488aa9b78294de00432217977d09215d1cf296aa7b1238e97240e6221b762",
+    "Linux": "394488aa9b78294de00432217977d09215d1cf296aa7b1238e97240e6221b762",
 }
 
 
@@ -87,6 +87,13 @@ def main() -> int:
                 "__pycache__",
                 ".mypy_cache",
                 ".pytest_cache",
+                ".ruff_cache",
+                ".hypothesis",
+                ".etlantic",
+                "dist",
+                "build",
+                "node_modules",
+                ".DS_Store",
                 "site",
                 "_generated_*.py",
             ),

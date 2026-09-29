@@ -71,10 +71,12 @@ from .types import (
     WriteCompatibility,
 )
 
-_PY_TYPES = {
+_PY_TYPES: dict[str, Any] = {
     "boolean": bool,
     "integer": int,
-    "number": float,
+    # Put float first so schema introspection retains the logical "number"
+    # type, while Pydantic's smart union still preserves integer inputs.
+    "number": float | int,
     "decimal": Decimal,
     "binary": bytes,
     "string": str,
@@ -310,6 +312,8 @@ def _multi_preview(
     if action.action == "dtcs:union":
         if params.get("mode") == "byPosition":
             names = list(output_fields)
+            if len(left_fields) != len(names) or len(right_fields) != len(names):
+                return [], False
             for row in left:
                 if len(output) >= max_rows:
                     return output, True
@@ -325,16 +329,15 @@ def _multi_preview(
             for row in right:
                 if len(output) >= max_rows:
                     return output, True
-                if len(right_fields) == len(names):
-                    aligned = dict(
-                        zip(
-                            names,
-                            (row.get(field) for field in right_fields),
-                            strict=True,
-                        )
+                aligned = dict(
+                    zip(
+                        names,
+                        (row.get(field) for field in right_fields),
+                        strict=True,
                     )
-                    if not append(aligned):
-                        return output, True
+                )
+                if not append(aligned):
+                    return output, True
             return output, False
         names = list(output_fields)
         for row in (*left, *right):
@@ -353,8 +356,38 @@ def _multi_preview(
     left_keys = [left_keys] if isinstance(left_keys, str) else list(left_keys)
     right_keys = [right_keys] if isinstance(right_keys, str) else list(right_keys)
     left_names = set(left_fields)
-    right_names = set(right_fields)
+    shared_keys = {
+        str(left_key)
+        for left_key, right_key in zip(left_keys, right_keys, strict=False)
+        if left_key == right_key
+    }
     matched_right: set[int] = set()
+
+    def joined_row(
+        left_row: Mapping[str, Any] | None,
+        right_row: Mapping[str, Any] | None,
+    ) -> dict[str, Any]:
+        # combine_schemas keeps left fields when non-key names collide.
+        # Build preview rows in that same order and with that same ownership,
+        # including nulls for the absent side of outer joins.
+        aligned: dict[str, Any] = {}
+        for name in output_fields:
+            if left_row is None:
+                if name in shared_keys and right_row is not None and name in right_row:
+                    aligned[name] = right_row[name]
+                elif name in left_names:
+                    aligned[name] = None
+                elif right_row is not None and name in right_row:
+                    aligned[name] = right_row[name]
+                continue
+            if name in left_names:
+                if name in left_row:
+                    aligned[name] = left_row[name]
+            elif right_row is None:
+                aligned[name] = None
+            elif name in right_row:
+                aligned[name] = right_row[name]
+        return aligned
 
     def matches(left_row: Mapping[str, Any], right_row: Mapping[str, Any]) -> bool:
         if how == "cross":
@@ -379,7 +412,7 @@ def _multi_preview(
             if how in {"semi", "anti"}:
                 break
             matched_right.add(index)
-            if len(output) >= max_rows or not append({**left_row, **right_row}):
+            if len(output) >= max_rows or not append(joined_row(left_row, right_row)):
                 return output, True
         if (how == "semi" and has_match) or (how == "anti" and not has_match):
             if len(output) >= max_rows or not append(dict(left_row)):
@@ -387,21 +420,13 @@ def _multi_preview(
         elif (
             how in {"left", "full"}
             and not has_match
-            and (
-                len(output) >= max_rows
-                or not append(
-                    {**left_row, **{name: None for name in right_names - left_names}}
-                )
-            )
+            and (len(output) >= max_rows or not append(joined_row(left_row, None)))
         ):
             return output, True
     if how in {"right", "full"}:
         for index, right_row in enumerate(right):
             if index not in matched_right and (
-                len(output) >= max_rows
-                or not append(
-                    {**{name: None for name in left_names - right_names}, **right_row}
-                )
+                len(output) >= max_rows or not append(joined_row(None, right_row))
             ):
                 return output, True
     return output, False

@@ -3,12 +3,14 @@
 
 from __future__ import annotations
 
+import asyncio
 import hashlib
 import inspect as _inspect
 import json
 import math
 import re
 import stat as _stat
+import time
 from collections import OrderedDict
 from collections.abc import Callable, Iterable, Mapping
 from contextlib import suppress
@@ -902,17 +904,51 @@ def _provider_exists(
     )
 
 
+def _async_callable(value: Any) -> bool:
+    if _inspect.iscoroutinefunction(value):
+        return True
+    try:
+        call = type(value).__call__
+    except Exception:
+        return False
+    return _inspect.iscoroutinefunction(call)
+
+
+async def _call_provider_async(
+    value: Callable[..., Any], *args: Any, **kwargs: Any
+) -> Any:
+    """Invoke synchronous provider hooks off-loop and await async results."""
+    if _async_callable(value):
+        result = value(*args, **kwargs)
+    else:
+        result = await asyncio.to_thread(value, *args, **kwargs)
+    if _inspect.isawaitable(result):
+        return await result
+    return result
+
+
+async def _provider_attribute_async(
+    payload: Any, name: str, default: Any = _MISSING
+) -> Any:
+    """Read provider attributes without blocking the event loop on properties."""
+    value = await asyncio.to_thread(getattr, payload, name, default)
+    if _inspect.isawaitable(value):
+        return await value
+    return value
+
+
 async def _provider_exists_async(
     payload: Any,
 ) -> tuple[str | None, Diagnostic | None]:
     """Read an explicit provider existence state in an async context."""
     try:
         if isinstance(payload, Mapping):
-            raw = payload.get("exists", _MISSING)
+            mapping = cast(Mapping[str, Any], payload)
+            raw: Any = await asyncio.to_thread(mapping.get, "exists", _MISSING)
         else:
-            raw = getattr(payload, "exists", _MISSING)
-            if callable(raw):
-                raw = raw()
+            raw = await _provider_attribute_async(payload, "exists", _MISSING)
+        if callable(raw):
+            raw = await _call_provider_async(raw)
         if _inspect.isawaitable(raw):
             raw = await raw
     except Exception:
@@ -1307,7 +1343,8 @@ async def _normalize_provider_payload_async(
     """Normalize a provider response after awaiting its existence state."""
     if provider_exists is None:
         provider_exists = await _provider_exists_async(payload)
-    return _normalize_provider_payload(
+    return await asyncio.to_thread(
+        _normalize_provider_payload,
         payload,
         identity=identity,
         inspector=inspector,
@@ -1680,41 +1717,107 @@ async def inspect_target_async(
     binding: Mapping[str, Any] | None = None,
     context: Mapping[str, Any] | None = None,
     max_diagnostics: int = 100,
+    timeout_seconds: float | None = 30.0,
 ) -> TargetObservation:
-    """Inspect synchronous or asynchronous target adapters safely."""
+    """Inspect target adapters safely, bounding asynchronous inspection work."""
+    if timeout_seconds is not None:
+        if type(timeout_seconds) not in (int, float):
+            raise ValueError("timeout_seconds must be non-negative and finite")
+        try:
+            timeout_is_finite = math.isfinite(timeout_seconds)
+        except OverflowError:
+            timeout_is_finite = False
+        if not timeout_is_finite or timeout_seconds < 0:
+            raise ValueError("timeout_seconds must be non-negative and finite")
     if isinstance(target, TargetObservation):
         try:
-            resolved_identity = _target_identity(target, identity, binding=binding)
+            if timeout_seconds is not None and timeout_seconds <= 0:
+                raise TimeoutError
+            started_at = time.monotonic()
+            async with asyncio.timeout(timeout_seconds):
+                resolved_identity = await asyncio.to_thread(
+                    _target_identity, target, identity, binding=binding
+                )
+                observation = await asyncio.to_thread(
+                    _normalize_target_observation, target, identity=resolved_identity
+                )
+            if (
+                timeout_seconds is not None
+                and time.monotonic() - started_at >= timeout_seconds
+            ):
+                raise TimeoutError
         except _TargetIdentityCollision as collision:
             return _target_identity_collision_observation(
                 collision.identity, inspector=target.inspector
             )
-        observation = _normalize_target_observation(target, identity=resolved_identity)
+        except TimeoutError:
+            return _unknown_target(
+                "INFER_LIMIT",
+                identity=(
+                    str(identity).strip()
+                    if identity is not None and str(identity).strip()
+                    else "target"
+                ),
+                inspector=target.inspector,
+                message="Target inspection time limit reached",
+            )
         return (
             observation
             if resolved_identity is not None
             else _mark_target_identity_unknown(observation)
         )
+    resolved_identity: str | None = None
+    unresolved = True
+    target_id = (
+        str(identity).strip()
+        if identity is not None and str(identity).strip()
+        else "target"
+    )
+    inspector = type(target).__name__
     try:
-        resolved_identity = _target_identity(target, identity, binding=binding)
+        if timeout_seconds is not None and timeout_seconds <= 0:
+            raise TimeoutError
+        started_at = time.monotonic()
+        async with asyncio.timeout(timeout_seconds):
+            resolved_identity = await asyncio.to_thread(
+                _target_identity, target, identity, binding=binding
+            )
+            unresolved = resolved_identity is None
+            target_id = resolved_identity or target_id
+            observation = await _inspect_target_async_with_identity(
+                target,
+                identity=target_id,
+                binding=binding,
+                context=context,
+                max_diagnostics=max_diagnostics,
+                caller_identity=(
+                    str(identity).strip()
+                    if identity is not None and str(identity).strip()
+                    else None
+                ),
+            )
+            observation = await asyncio.to_thread(
+                _register_observation_identity,
+                target,
+                observation,
+                binding=binding,
+            )
+        if (
+            timeout_seconds is not None
+            and time.monotonic() - started_at >= timeout_seconds
+        ):
+            raise TimeoutError
     except _TargetIdentityCollision as collision:
         return _target_identity_collision_observation(
-            collision.identity, inspector=type(target).__name__
+            collision.identity, inspector=inspector
         )
-    unresolved = resolved_identity is None
-    observation = await _inspect_target_async_with_identity(
-        target,
-        identity=resolved_identity or "target",
-        binding=binding,
-        context=context,
-        max_diagnostics=max_diagnostics,
-        caller_identity=(
-            str(identity).strip()
-            if identity is not None and str(identity).strip()
-            else None
-        ),
-    )
-    observation = _register_observation_identity(target, observation, binding=binding)
+    except TimeoutError:
+        observation = _unknown_target(
+            "INFER_LIMIT",
+            identity=target_id,
+            inspector=inspector,
+            message="Target inspection time limit reached",
+        )
     collision_detected = any(
         getattr(item, "code", None) == "INFER_TARGET_IDENTITY_COLLISION"
         for item in observation.diagnostics
@@ -1738,7 +1841,8 @@ async def _inspect_target_async_with_identity(
 ) -> TargetObservation:
     """Inspect an async adapter after identity resolution."""
     if isinstance(target, (NormalizedSchema, str, Path, bytes, Mapping, list, tuple)):
-        return _inspect_target_with_identity(
+        return await asyncio.to_thread(
+            _inspect_target_with_identity,
             target,
             identity=identity,
             max_diagnostics=max_diagnostics,
@@ -1758,14 +1862,14 @@ async def _inspect_target_async_with_identity(
             diagnostic=adapter_diagnostic,
         )
     try:
-        inspect_schema = getattr(target, "inspect_schema", None)
+        inspect_schema = await _provider_attribute_async(target, "inspect_schema", None)
     except Exception:
         return _unknown_target(
             "INFER_TARGET_UNKNOWN", identity=identity, inspector=type(target).__name__
         )
     if not callable(inspect_schema):
         try:
-            schema_method = getattr(target, "schema", _MISSING)
+            schema_method = await _provider_attribute_async(target, "schema", _MISSING)
         except Exception:
             return _unknown_target(
                 "INFER_TARGET_UNKNOWN",
@@ -1863,9 +1967,7 @@ async def _inspect_target_async_with_identity(
                 inspector=type(target).__name__,
             )
         try:
-            schema_attr = schema_method()
-            if _inspect.isawaitable(schema_attr):
-                schema_attr = await schema_attr
+            schema_attr = await _call_provider_async(schema_method)
             if schema_attr is None:
                 return _unknown_target(
                     "INFER_TARGET_UNSUPPORTED",
@@ -1912,10 +2014,20 @@ async def _inspect_target_async_with_identity(
     if context is not None:
         kwargs["context"] = context
     try:
-        try:
-            result = inspect_schema(**kwargs)
-        except TypeError:
-            result = inspect_schema()
+        if _async_callable(inspect_schema):
+            try:
+                result = inspect_schema(**kwargs)
+            except TypeError:
+                result = inspect_schema()
+        else:
+
+            def invoke_inspector() -> Any:
+                try:
+                    return inspect_schema(**kwargs)
+                except TypeError:
+                    return inspect_schema()
+
+            result = await asyncio.to_thread(invoke_inspector)
         if _inspect.isawaitable(result):
             result = await result
         observation = await _normalize_provider_payload_async(
@@ -1948,16 +2060,14 @@ async def _inspect_target_async_with_identity(
             inspector=type(target).__name__,
         )
     try:
-        schema_attr = getattr(target, "schema", _MISSING)
+        schema_attr = await _provider_attribute_async(target, "schema", _MISSING)
     except Exception:
         return _unknown_target(
             "INFER_TARGET_UNKNOWN", identity=identity, inspector=type(target).__name__
         )
     if callable(schema_attr):
         try:
-            schema_attr = schema_attr()
-            if _inspect.isawaitable(schema_attr):
-                schema_attr = await schema_attr
+            schema_attr = await _call_provider_async(schema_attr)
             if schema_attr is None:
                 return _unknown_target(
                     "INFER_TARGET_UNSUPPORTED",
@@ -2143,10 +2253,20 @@ async def infer_records_for_target_async(
     ``target_identity`` supplies a stable identity for an otherwise unbound
     target when the result must be exported durably.
     """
-    source = infer_records(
-        records, hints=hints, limits=limits, identity=identity, retain_rows=True
-    )
     limits = limits or InferenceLimits()
+    deadline = (
+        time.monotonic() + limits.timeout_seconds
+        if limits.timeout_seconds is not None
+        else None
+    )
+    source = infer_records(
+        records,
+        hints=hints,
+        limits=limits,
+        identity=identity,
+        retain_rows=True,
+        _deadline=deadline,
+    )
     observation = (
         _normalize_target_observation(target, identity=target_identity)
         if isinstance(target, TargetObservation)
@@ -2156,13 +2276,50 @@ async def infer_records_for_target_async(
             binding=binding,
             context=context,
             max_diagnostics=limits.max_diagnostics,
+            timeout_seconds=(
+                None if deadline is None else max(0.0, deadline - time.monotonic())
+            ),
         )
     )
     if revision_reader is not None:
         try:
-            current_revision = revision_reader()
-            if hasattr(current_revision, "__await__"):
-                current_revision = await current_revision
+            if deadline is not None and time.monotonic() >= deadline:
+                raise TimeoutError
+            if _async_callable(revision_reader) or deadline is None:
+                current_revision = revision_reader()
+            else:
+                remaining = deadline - time.monotonic()
+                if remaining <= 0:
+                    raise TimeoutError
+                async with asyncio.timeout(remaining):
+                    current_revision = await asyncio.to_thread(revision_reader)
+            if _inspect.isawaitable(current_revision):
+                remaining = None if deadline is None else deadline - time.monotonic()
+                if remaining is None:
+                    current_revision = await current_revision
+                elif remaining <= 0:
+                    cancel = getattr(current_revision, "cancel", None)
+                    close = getattr(current_revision, "close", None)
+                    if callable(cancel):
+                        cancel()
+                    elif callable(close):
+                        close()
+                    raise TimeoutError
+                else:
+                    async with asyncio.timeout(remaining):
+                        current_revision = await current_revision
+            if deadline is not None and time.monotonic() >= deadline:
+                raise TimeoutError
+        except TimeoutError:
+            observation = _with_target_diagnostic(
+                observation,
+                Diagnostic(
+                    "INFER_LIMIT",
+                    Severity.ERROR,
+                    "Target revision recheck exceeded the inference time limit",
+                    phase="inference",
+                ),
+            )
         except Exception:
             observation = _with_target_diagnostic(
                 observation,
@@ -2337,6 +2494,7 @@ def _convert_target_row(
     target_identity: str | None,
     target_revision: str | None,
     row_index: int,
+    max_diagnostics: int = 100,
 ) -> _TargetConversionOutcome:
     """Validate target row constraints and apply safe casts without retaining values."""
     if not isinstance(row, Mapping):
@@ -2354,11 +2512,16 @@ def _convert_target_row(
     diagnostics: list[Diagnostic] = []
     failed_fields: set[str] = set()
     conversion_failed_fields: set[str] = set()
+
+    def record(diagnostic: Diagnostic) -> None:
+        if len(diagnostics) < max_diagnostics:
+            diagnostics.append(diagnostic)
+
     for raw_name in converted:
         if raw_name in target_fields:
             continue
         field_name = raw_name if isinstance(raw_name, str) and raw_name else "<invalid>"
-        diagnostics.append(
+        record(
             _target_constraint_diagnostic(
                 field_name=field_name,
                 constraint="unexpected_field",
@@ -2376,7 +2539,7 @@ def _convert_target_row(
             if target_field.required and not _target_field_has_omission_value(
                 target_field
             ):
-                diagnostics.append(
+                record(
                     _target_constraint_diagnostic(
                         field_name=name,
                         constraint="required_presence",
@@ -2392,7 +2555,7 @@ def _convert_target_row(
         source_type = _runtime_logical_type(value)
         if source_type == "null":
             if not target_field.nullable:
-                diagnostics.append(
+                record(
                     _target_constraint_diagnostic(
                         field_name=name,
                         constraint="nullability",
@@ -2411,7 +2574,7 @@ def _convert_target_row(
         if (source_type, target_type) not in _LOSSLESS_CASTS:
             failed_fields.add(name)
             conversion_failed_fields.add(name)
-            diagnostics.append(
+            record(
                 _target_conversion_diagnostic(
                     field_name=name,
                     source_type=source_type,
@@ -2428,7 +2591,7 @@ def _convert_target_row(
         except (TypeError, ValueError, OverflowError, DecimalException):
             failed_fields.add(name)
             conversion_failed_fields.add(name)
-            diagnostics.append(
+            record(
                 _target_conversion_diagnostic(
                     field_name=name,
                     source_type=source_type,
@@ -2552,6 +2715,13 @@ def _backfill_observation(
     runtime_diagnostics: list[Diagnostic] = []
     failed_fields: set[str] = set()
     conversion_failed_fields: set[str] = set()
+    limits_payload = source.provenance.get("limits", {})
+    max_diagnostics_value: Any = (
+        cast(Mapping[str, Any], limits_payload).get("max_diagnostics", 100)
+        if isinstance(limits_payload, Mapping)
+        else 100
+    )
+    max_diagnostics = max(1, int(max_diagnostics_value))
     source_fields = {field.name: field for field in source.schema.fields}
     target_fields = {field.name: field for field in observation.schema.fields}
     target_identity = observation.identity
@@ -2564,10 +2734,15 @@ def _backfill_observation(
                 target_identity=target_identity,
                 target_revision=target_revision,
                 row_index=row_index,
+                max_diagnostics=max_diagnostics,
             )
             if isinstance(outcome.row, Mapping):
                 rows[row_index] = dict(outcome.row)
-            runtime_diagnostics.extend(outcome.diagnostics)
+            runtime_diagnostics.extend(
+                outcome.diagnostics[
+                    : max(0, max_diagnostics - len(runtime_diagnostics))
+                ]
+            )
             failed_fields.update(outcome.failed_fields)
             conversion_failed_fields.update(outcome.conversion_failed_fields)
     resolved_schema = backfilled.schema
@@ -2654,6 +2829,7 @@ def _backfill_observation(
                 target_identity=target_identity,
                 target_revision=target_revision,
                 row_index=row_index,
+                max_diagnostics=max_diagnostics,
             )
             if outcome.diagnostics:
                 raise InferenceReplayError(
@@ -2676,10 +2852,11 @@ def _backfill_observation(
         if isinstance(diagnostic, Diagnostic):
             key = (diagnostic.code, tuple(diagnostic.path), diagnostic.message)
         elif isinstance(diagnostic, Mapping):
+            diagnostic_mapping = cast(Mapping[str, Any], diagnostic)
             key = (
-                diagnostic.get("code"),
-                tuple(diagnostic.get("path", ())),
-                diagnostic.get("message"),
+                diagnostic_mapping.get("code"),
+                tuple(diagnostic_mapping.get("path", ())),
+                diagnostic_mapping.get("message"),
             )
         else:
             key = (str(diagnostic),)
@@ -2687,11 +2864,6 @@ def _backfill_observation(
             continue
         seen_diagnostics.add(key)
         unique_diagnostics.append(diagnostic)
-    max_diagnostics = int(
-        source.provenance.get("limits", {}).get("max_diagnostics", 100)
-        if isinstance(source.provenance.get("limits", {}), Mapping)
-        else 100
-    )
     diagnostics = tuple(unique_diagnostics[: max(1, max_diagnostics)])
     provenance = {
         **source.provenance,

@@ -42,6 +42,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   observations, preserves present/empty sequence and zero-byte file states,
   redacts arbitrary URI credentials and query data, and keeps unresolved
   identity markers stable across wire round trips.
+- CSV header-only hints are enforced during replay, numeric values must remain
+  finite and exact, and numeric annotations retain the public `number` schema
+  type. Join and union previews now follow resolved field alignment and
+  ownership.
+- Async target inspection and revision rechecks share the inference deadline;
+  target conversion diagnostics respect configured limits. Partial
+  `InferenceLimits` payloads retain defaults for omitted timeout and byte
+  limits.
 
 ### Safety boundary
 
