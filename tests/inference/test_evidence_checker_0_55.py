@@ -96,12 +96,12 @@ def test_pending_capability_rows_are_rejected() -> None:
 
 def test_qualified_dataframe_dependencies_are_required(monkeypatch) -> None:
     matrix = checker._load(checker.EVIDENCE / "capability_matrix.json")
-    original_import = checker.importlib.import_module
+    monkeypatch.setattr(checker.importlib.util, "find_spec", lambda _name: object())
 
     def blocked_import(name: str):
         if name == "pandas":
             raise ImportError("pandas unavailable")
-        return original_import(name)
+        return object()
 
     monkeypatch.setattr(checker.importlib, "import_module", blocked_import)
 
@@ -111,12 +111,12 @@ def test_qualified_dataframe_dependencies_are_required(monkeypatch) -> None:
 
 def test_differential_gate_requires_qualified_dependencies(monkeypatch) -> None:
     matrix = checker._load(checker.EVIDENCE / "capability_matrix.json")
-    original_import = checker.importlib.import_module
+    monkeypatch.setattr(checker.importlib.util, "find_spec", lambda _name: object())
 
     def blocked_import(name: str):
         if name == "pandas":
             raise ImportError("pandas unavailable")
-        return original_import(name)
+        return object()
 
     monkeypatch.setattr(checker.importlib, "import_module", blocked_import)
 
