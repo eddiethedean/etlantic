@@ -103,7 +103,8 @@ jobs:
         if: steps.adaptive_core_version.outputs.core_version == '0.54.0'
         run: uv run --no-sync python scripts/check_adaptive_0_53.py --write --output "${{ runner.temp }}/adaptive-0.53-proof"
 
-      - name: Execute public bounded reference
+      - name: Execute public 0.54 bounded reference
+        if: steps.adaptive_core_version.outputs.core_version == '0.54.0'
         run: uv run --no-sync python examples/adaptive_reference.py
 
       - name: Preserve adaptive environment proof
