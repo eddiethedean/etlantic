@@ -17,7 +17,11 @@ from itertools import chain, islice
 from typing import Any, Literal
 
 from etlantic.diagnostics import Diagnostic, Severity
-from etlantic.schema_drift import NormalizedSchema, json_safe_metadata
+from etlantic.schema_drift import (
+    NormalizedSchema,
+    json_safe_metadata,
+    restore_wire_revision_fingerprints,
+)
 
 TargetExistence = Literal["present", "absent", "unknown"]
 TARGET_EXISTENCE_STATES = frozenset(("present", "absent", "unknown"))
@@ -52,23 +56,129 @@ def _wire_value(value: Any, *, key: str | None = None, depth: int = 0) -> Any:
 
 
 def _diagnostic_dict(value: Any) -> dict[str, Any]:
+    typed_diagnostic = isinstance(value, Diagnostic)
     if hasattr(value, "to_dict"):
         value = value.to_dict()
     if isinstance(value, Mapping):
+        if not typed_diagnostic:
+            return provider_diagnostic(
+                value, default_code="INFER_UNKNOWN_DIAGNOSTIC"
+            ).to_dict()
         payload = _wire_value(value)
-        return (
-            dict(payload)
-            if isinstance(payload, dict)
-            else {
+        if not isinstance(payload, dict):
+            return {
                 "code": "INFER_UNKNOWN_DIAGNOSTIC",
                 "message": "Diagnostic payload was not a mapping",
             }
+        return dict(payload)
+    return {
+        "code": "INFER_UNKNOWN_DIAGNOSTIC",
+        "message": "Diagnostic payload was not a mapping",
+    }
+
+
+_SAFE_PROVIDER_DIAGNOSTIC_CODES = frozenset(
+    {
+        "INFER_BACKWARD_CONFLICT",
+        "INFER_BACKWARD_NONCONVERGENT",
+        "INFER_BACKWARD_UNSUPPORTED",
+        "INFER_CSV_BYTE_LIMIT",
+        "INFER_CSV_FIELD_LIMIT",
+        "INFER_CSV_HEADER",
+        "INFER_CSV_OPTIONS",
+        "INFER_CSV_PARSE",
+        "INFER_CSV_REPLAY_PARSE",
+        "INFER_CSV_REPLAY_SOURCE",
+        "INFER_CSV_ROW",
+        "INFER_EMPTY",
+        "INFER_EVALUATION_UNSUPPORTED",
+        "INFER_HINT_CONFLICT",
+        "INFER_HINT_UNOBSERVED",
+        "INFER_HINT_UNSUPPORTED",
+        "INFER_INVALID_KEY",
+        "INFER_JSON_PARSE",
+        "INFER_JSON_ROW",
+        "INFER_LIMIT",
+        "INFER_LINEAGE_COLLISION",
+        "INFER_LINEAGE_MISSING",
+        "INFER_MISSING_FIELD",
+        "INFER_MIXED_TYPE",
+        "INFER_NESTED_UNSUPPORTED",
+        "INFER_RUNTIME_CONSTRAINT",
+        "INFER_RUNTIME_CONVERSION",
+        "INFER_RUNTIME_EVALUATION",
+        "INFER_SOURCE_AMBIGUOUS",
+        "INFER_SOURCE_ASYNC_SCHEMA",
+        "INFER_SOURCE_BINDING",
+        "INFER_SOURCE_INVALID",
+        "INFER_SOURCE_REBIND",
+        "INFER_SOURCE_SCHEMA_MISMATCH",
+        "INFER_SOURCE_SCHEMA_UNKNOWN",
+        "INFER_SOURCE_SCHEMA_UNVERIFIED",
+        "INFER_SOURCE_UNBOUNDED",
+        "INFER_SOURCE_UNKNOWN",
+        "INFER_SOURCE_UNRESOLVABLE",
+        "INFER_SOURCE_UNSUPPORTED",
+        "INFER_TARGET_ABSENT",
+        "INFER_TARGET_BINDING",
+        "INFER_TARGET_CONFLICT",
+        "INFER_TARGET_CREATE_UNSUPPORTED",
+        "INFER_TARGET_IDENTITY_COLLISION",
+        "INFER_TARGET_IDENTITY_UNKNOWN",
+        "INFER_TARGET_REVISION_UNKNOWN",
+        "INFER_TARGET_STALE",
+        "INFER_TARGET_UNKNOWN",
+        "INFER_TARGET_UNSUPPORTED",
+        "INFER_TARGET_WRITE_UNQUALIFIED",
+        "INFER_UNKNOWN_DIAGNOSTIC",
+        "INFER_UNKNOWN_TYPE",
+        "INFER_WRITE_INCOMPATIBLE",
+        "INFER_WRITE_MODE_UNSUPPORTED",
+        "PROVIDER_NAME",
+        "PROVIDER_READ_FAILED",
+        "PROVIDER_ROW_WARNING",
+    }
+)
+
+
+def provider_diagnostic(value: Any, *, default_code: str) -> Diagnostic:
+    """Keep provider diagnostic status while dropping untrusted text and paths."""
+    code: Any = None
+    severity: Any = Severity.WARNING
+    if isinstance(value, Diagnostic):
+        code = value.code
+        severity = value.severity
+    elif isinstance(value, Mapping):
+        try:
+            code = value.get("code")
+            severity = value.get("severity", Severity.WARNING)
+        except Exception:
+            code = None
+            severity = Severity.ERROR
+
+    safe_code = (
+        code
+        if isinstance(code, str) and code in _SAFE_PROVIDER_DIAGNOSTIC_CODES
+        else default_code
+    )
+    try:
+        safe_severity = (
+            severity
+            if isinstance(severity, Severity)
+            else Severity(str(getattr(severity, "value", severity)).lower())
         )
-    return {"code": "INFER_UNKNOWN_DIAGNOSTIC", "message": _wire_value(str(value))}
+    except ValueError:
+        safe_severity = Severity.ERROR
+    return Diagnostic(
+        safe_code,
+        safe_severity,
+        "Provider diagnostic details were omitted",
+        phase="inference",
+    )
 
 
 def _wire_mapping(value: Any, *, key: str | None = None) -> dict[str, Any]:
-    safe = _wire_value(value, key=key)
+    safe = _wire_value(restore_wire_revision_fingerprints(value, key=key), key=key)
     return dict(safe) if isinstance(safe, Mapping) else {}
 
 
@@ -657,7 +767,7 @@ class TargetObservation:
             "schema": schema.to_dict() if schema is not None else None,
             "identity": _wire_value(self.identity, key="identity"),
             "exists": self.exists,
-            "revision": self.revision,
+            "revision": _wire_value(self.revision, key="revision"),
             "inspector": _wire_value(self.inspector, key="inspector"),
             "diagnostics": [_diagnostic_dict(d) for d in self.diagnostics],
             "metadata": _wire_value(metadata),
@@ -758,7 +868,7 @@ class TargetObservation:
         return cls(
             restored_schema,
             exists,
-            str(payload["revision"]) if payload.get("revision") is not None else None,
+            payload.get("revision"),
             payload.get("inspector"),
             tuple(diagnostics),
             metadata,

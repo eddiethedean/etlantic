@@ -30,7 +30,12 @@ from .records import (
     infer_json,
     infer_records,
 )
-from .types import InferenceLimits, InferenceResult, SchemaEvidence
+from .types import (
+    InferenceLimits,
+    InferenceResult,
+    SchemaEvidence,
+    provider_diagnostic,
+)
 
 _KNOWN_LOGICAL_TYPES = {
     "unknown",
@@ -813,7 +818,7 @@ def _schema_from_provider_result(
         raw_diagnostics = result.get("diagnostics", ())
         if isinstance(raw_diagnostics, (list, tuple)):
             diagnostics_list.extend(
-                item
+                provider_diagnostic(item, default_code="INFER_SOURCE_UNSUPPORTED")
                 for item in raw_diagnostics
                 if isinstance(item, (Diagnostic, Mapping))
             )

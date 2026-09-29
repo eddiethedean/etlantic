@@ -25,11 +25,17 @@ from etlantic.inference import (
     unregister_file_source,
     validate_source_binding_against_definition,
 )
-from etlantic.schema_drift import NormalizedField, NormalizedSchema
+from etlantic.schema_drift import (
+    NormalizedField,
+    NormalizedSchema,
+    revision_fingerprint,
+    revisions_equal,
+)
 from etlantic.storage.protocol import records_to_dicts
 from etlantic.transform.functions import (
     ceil,
     col,
+    concat,
     floor,
     power,
     sqrt,
@@ -1226,7 +1232,11 @@ def test_provided_target_revision_is_preserved_during_definition_export() -> Non
 
     definition = dataset.definition()
 
-    assert definition.nodes[-1].bindings["target"]["revision"] == "r1"
+    assert (
+        definition.nodes[-1]
+        .bindings["target"]["revision"]
+        .startswith("etlantic-sha256:")
+    )
 
 
 def test_wire_diagnostic_round_trip_rehydrates_diagnostic() -> None:
@@ -1532,9 +1542,10 @@ def test_target_observation_round_trips_into_durable_definitions() -> None:
     observation = dataset.observation.to_dict()
     restored = InferenceObservation.from_dict(observation)
     assert restored.target_observation is not None
-    assert restored.target_observation.revision == "r1"
+    assert restored.target_observation.revision.startswith("etlantic-sha256:")
     definition = dataset.definition().to_dict()
-    assert "r1" in json.dumps(definition, sort_keys=True)
+    assert "etlantic-sha256:" in json.dumps(definition, sort_keys=True)
+    assert '"revision": "r1"' not in json.dumps(definition, sort_keys=True)
     assert "merge" in json.dumps(definition, sort_keys=True)
 
 
@@ -1809,7 +1820,11 @@ def test_target_guidance_does_not_replace_observed_source_contract() -> None:
     definition = dataset.definition()
     source_field = definition.contracts[0].fields[0]
     assert source_field.type == "string"
-    assert definition.nodes[-1].bindings["target"]["revision"] == "r1"
+    assert (
+        definition.nodes[-1]
+        .bindings["target"]["revision"]
+        .startswith("etlantic-sha256:")
+    )
     assert (
         definition.nodes[-1].bindings["target"]["requirements"]["fields"][0][
             "logical_type"
@@ -3159,3 +3174,232 @@ def test_unsupported_source_value_cannot_use_target_as_type_evidence() -> None:
     assert "INFER_BACKWARD_CONFLICT" in {
         diagnostic.code for diagnostic in backfilled.diagnostics
     }
+
+
+def test_unknown_source_types_cannot_be_exported_as_durable_contracts() -> None:
+    dataset = etl.from_records([{"payload": None}], name="unknown_contract")
+
+    with pytest.raises(ValueError, match="INFER_SOURCE_SCHEMA_UNKNOWN"):
+        dataset.definition()
+
+
+def test_provider_diagnostic_text_is_omitted_from_inference_artifacts() -> None:
+    private_value = "CUSTOM_PRIVATE_9182"
+
+    class SourceProvider:
+        def inspect_schema(self):
+            return {
+                "fields": [{"name": "id", "type": "integer"}],
+                "diagnostics": [
+                    {
+                        "code": "PROVIDER_ROW_WARNING",
+                        "severity": "warning",
+                        "message": f"bad row value {private_value}",
+                    }
+                ],
+            }
+
+    source_result = etl.infer_source(SourceProvider())
+    source_wire = json.dumps(source_result.to_dict(), sort_keys=True)
+
+    class TargetProvider:
+        def inspect_schema(self):
+            return {
+                "identity": "private-diagnostic-target",
+                "exists": "present",
+                "fields": [{"name": "id", "type": "integer"}],
+                "diagnostics": [
+                    {
+                        "code": "PROVIDER_ROW_WARNING",
+                        "severity": "warning",
+                        "message": f"bad row value {private_value}",
+                    }
+                ],
+            }
+
+    target_wire = json.dumps(inspect_target(TargetProvider()).to_dict(), sort_keys=True)
+    raw_diagnostic_wire = json.dumps(
+        infer_records([{"id": 1}])
+        .replace(
+            diagnostics=(
+                {
+                    "code": private_value,
+                    "severity": "warning",
+                    "message": private_value,
+                },
+            )
+        )
+        .to_dict(),
+        sort_keys=True,
+    )
+
+    assert private_value not in source_wire
+    assert private_value not in target_wire
+    assert private_value not in raw_diagnostic_wire
+    assert "Provider diagnostic details were omitted" in source_wire
+    assert "Provider diagnostic details were omitted" in target_wire
+
+
+def test_typed_provider_target_diagnostics_are_redacted_and_codes_are_allowlisted() -> (
+    None
+):
+    private_value = "PROVIDER_0123456789ABCDEF0123456789ABCDEF"
+    private_message = "raw provider detail PRIVATE_VALUE_8372"
+    schema = NormalizedSchema(
+        "typed-provider-target",
+        (NormalizedField("id", "integer"),),
+    )
+    provider_observation = etl.TargetObservation(
+        schema,
+        "present",
+        diagnostics=(
+            Diagnostic(
+                private_value,
+                Severity.WARNING,
+                private_message,
+                path=(private_value,),
+                phase="provider-internal",
+            ),
+        ),
+    )
+
+    class Provider:
+        def inspect_schema(self):
+            return provider_observation
+
+    serialized = json.dumps(inspect_target(Provider()).to_dict(), sort_keys=True)
+
+    assert private_value not in serialized
+    assert private_message not in serialized
+    assert '"code": "INFER_TARGET_UNSUPPORTED"' in serialized
+    assert '"path": []' in serialized
+
+
+def test_provider_revision_is_fingerprinted_without_breaking_revision_fences() -> None:
+    private_revision = "PRIVATE_REVISION_TOKEN_4521"
+
+    class TargetProvider:
+        def inspect_schema(self):
+            return {
+                "identity": "revision-safe-target",
+                "revision": private_revision,
+                "capabilities": {"write_modes": ["append"]},
+                "fields": [{"name": "id", "type": "integer"}],
+            }
+
+    target = TargetProvider()
+    observation = inspect_target(target)
+    serialized_observation = json.dumps(observation.to_dict(), sort_keys=True)
+    dataset = etl.from_records_for_target(
+        [{"id": 1}], target, name="revision_safe_records"
+    )
+    definition = dataset.definition().to_dict()
+    serialized_definition = json.dumps(definition, sort_keys=True)
+
+    assert observation.revision == private_revision
+    assert private_revision not in serialized_observation
+    assert private_revision not in serialized_definition
+    assert "etlantic-sha256:" in serialized_observation
+    assert "etlantic-sha256:" in serialized_definition
+    restored_definition = etl.authoring.pipeline_from_dict(definition)
+    restored_target = restored_definition.nodes[-1].bindings["target"]
+    rebound = etl.rebind_definition(restored_definition, target=restored_target)
+
+    assert (
+        rebound.nodes[-1].bindings["target"]["revision"]
+        == definition["nodes"][-1]["bindings"]["target"]["revision"]
+    )
+
+
+def test_raw_revision_cannot_masquerade_as_a_wire_fingerprint() -> None:
+    raw_marker = "etlantic-sha256:" + "a" * 64
+    expected_revision = "the-original-revision"
+    expected_fingerprint = revision_fingerprint(expected_revision)
+
+    assert revision_fingerprint(raw_marker) != raw_marker
+    assert revisions_equal(expected_revision, expected_fingerprint)
+    assert not revisions_equal(
+        raw_marker, expected_fingerprint, right_is_fingerprint=True
+    )
+
+    observation = etl.TargetObservation(
+        NormalizedSchema("revision-roundtrip", (NormalizedField("id", "integer"),)),
+        "present",
+        revision=expected_revision,
+        metadata={"identity": "revision-roundtrip"},
+    )
+    wire = observation.to_dict()
+    restored = etl.TargetObservation.from_dict(json.loads(json.dumps(wire)))
+
+    assert restored.to_dict() == wire
+    assert revisions_equal(expected_revision, restored.revision)
+
+
+def test_transformed_preview_reuses_materialization_byte_limit() -> None:
+    limits = etl.InferenceLimits(max_bytes=None, max_materialized_bytes=256)
+    dataset = etl.from_records(
+        [{"value": "x" * 40}], name="bounded_preview", limits=limits
+    )
+
+    transformed = dataset.withColumn("wide", concat(*[col("value") for _ in range(20)]))
+
+    assert transformed.collect() == []
+    assert transformed.provenance["preview_bytes_observed"] <= 256
+    assert transformed.provenance["sampled"] is True
+    assert "INFER_LIMIT" in {item.code for item in transformed.diagnostics}
+
+
+def test_multi_input_preview_obeys_shared_materialization_byte_limit() -> None:
+    limits = etl.InferenceLimits(max_bytes=None, max_materialized_bytes=90)
+    left = etl.from_records(
+        [{"value": "a" * 20} for _ in range(2)], name="preview_left", limits=limits
+    )
+    right = etl.from_records(
+        [{"value": "b" * 20} for _ in range(2)], name="preview_right", limits=limits
+    )
+
+    combined = left.unionByName(right)
+
+    assert combined.provenance["preview_bytes_observed"] <= 90
+    assert combined.provenance["sampled"] is True
+    assert "INFER_LIMIT" in {item.code for item in combined.diagnostics}
+
+
+def test_join_preview_is_not_sampled_when_exactly_at_row_limit() -> None:
+    limits = etl.InferenceLimits(max_rows=2, max_bytes=None)
+    left = etl.from_records(
+        [{"id": 1, "left_value": "a"}, {"id": 2, "left_value": "b"}],
+        name="exact_join_left",
+        limits=limits,
+    )
+    right = etl.from_records(
+        [{"id": 1, "right_value": "x"}, {"id": 2, "right_value": "y"}],
+        name="exact_join_right",
+        limits=limits,
+    )
+
+    joined = left.join(right, on="id")
+
+    assert len(joined.collect()) == 2
+    assert joined.provenance["sampled"] is False
+    assert "INFER_LIMIT" not in {item.code for item in joined.diagnostics}
+
+
+def test_join_preview_marks_sampled_when_a_result_exceeds_row_limit() -> None:
+    limits = etl.InferenceLimits(max_rows=2, max_bytes=None)
+    left = etl.from_records(
+        [{"id": 1, "left_value": "a"}, {"id": 1, "left_value": "b"}],
+        name="over_join_left",
+        limits=limits,
+    )
+    right = etl.from_records(
+        [{"id": 1, "right_value": "x"}, {"id": 1, "right_value": "y"}],
+        name="over_join_right",
+        limits=limits,
+    )
+
+    joined = left.join(right, on="id")
+
+    assert len(joined.collect()) == 2
+    assert joined.provenance["sampled"] is True
+    assert "INFER_LIMIT" in {item.code for item in joined.diagnostics}

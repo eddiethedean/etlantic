@@ -25,6 +25,7 @@ from etlantic.schema_drift import (
     NormalizedSchema,
     normalize_logical_type,
     normalize_schema_from_fields,
+    revisions_equal,
 )
 from etlantic.transform.evaluation import coerce_value
 
@@ -47,6 +48,7 @@ from .types import (
     TargetObservation,
     WriteCompatibility,
     _ReplayLifecycle,
+    provider_diagnostic,
 )
 
 _LOSSLESS_CASTS = {
@@ -573,7 +575,9 @@ def _diagnostics_from_payload(
             diagnostics.append(
                 Diagnostic(
                     code or "INFER_TARGET_UNKNOWN",
-                    Severity(str(severity or "warning").lower()),
+                    Severity(
+                        str(getattr(severity, "value", severity) or "warning").lower()
+                    ),
                     message or "Target inspection diagnostic",
                     tuple(path_parts),
                     phase="inference",
@@ -692,7 +696,7 @@ def _attach_target_metadata(
     """Keep provider capabilities and revision attached to the observed schema."""
     merged = {**schema.metadata, **dict(metadata)}
     if revision is not None:
-        merged["revision"] = str(revision)
+        merged["revision"] = revision
     return NormalizedSchema(schema.identity, schema.fields, merged)
 
 
@@ -727,7 +731,10 @@ def _normalize_target_observation(
     else:
         metadata["identity"] = resolved_identity
         metadata.pop("identity_unresolved", None)
-    diagnostics = observation.diagnostics
+    diagnostics = tuple(
+        provider_diagnostic(item, default_code="INFER_TARGET_UNSUPPORTED")
+        for item in observation.diagnostics
+    )
     if observation.schema is None:
         if observation.exists == "present":
             metadata.setdefault("empty", True)
@@ -1136,9 +1143,9 @@ def _normalize_provider_payload(
         diagnostics.append(exists_diagnostic)
     payload_diagnostics = _provider_payload_value(payload, "diagnostics")
     diagnostics.extend(
-        _diagnostics_from_payload(
-            payload_diagnostics,
-            max_diagnostics=max_diagnostics,
+        provider_diagnostic(item, default_code="INFER_TARGET_UNSUPPORTED")
+        for item in _diagnostics_from_payload(
+            payload_diagnostics, max_diagnostics=max_diagnostics
         )
     )
 
@@ -1994,7 +2001,7 @@ def infer_records_for_target(
                         phase="inference",
                     ),
                 )
-            elif current_revision != observation.revision:
+            elif not revisions_equal(current_revision, observation.revision):
                 observation = _with_target_diagnostic(
                     observation,
                     Diagnostic(
@@ -2004,7 +2011,9 @@ def infer_records_for_target(
                         phase="inference",
                     ),
                 )
-    if expected_revision is not None and observation.revision != expected_revision:
+    if expected_revision is not None and not revisions_equal(
+        observation.revision, expected_revision
+    ):
         observation = TargetObservation(
             observation.schema,
             observation.exists,
@@ -2087,7 +2096,7 @@ async def infer_records_for_target_async(
                         phase="inference",
                     ),
                 )
-            elif current_revision != observation.revision:
+            elif not revisions_equal(current_revision, observation.revision):
                 observation = _with_target_diagnostic(
                     observation,
                     Diagnostic(
@@ -2097,7 +2106,9 @@ async def infer_records_for_target_async(
                         phase="inference",
                     ),
                 )
-    if expected_revision is not None and observation.revision != expected_revision:
+    if expected_revision is not None and not revisions_equal(
+        observation.revision, expected_revision
+    ):
         observation = TargetObservation(
             observation.schema,
             observation.exists,
@@ -3241,7 +3252,9 @@ def check_write_compatibility(
             )
         )
     target_revision = observed_revision or target_metadata.get("revision")
-    if expected_revision is not None and target_revision != expected_revision:
+    if expected_revision is not None and not revisions_equal(
+        target_revision, expected_revision
+    ):
         diagnostics.append(
             Diagnostic(
                 "INFER_TARGET_STALE",
