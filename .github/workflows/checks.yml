@@ -88,14 +88,26 @@ jobs:
           uv sync --locked --inexact --group dataframes
           uv pip install "polars==1.42.1" "pandas==2.3.3" "pyarrow==25.0.0"
 
+      - name: Read core version for historical adaptive qualification
+        id: adaptive_core_version
+        shell: bash
+        run: |
+          core_version="$(sed -n 's/^__version__ = \"\(.*\)\"/\1/p' src/etlantic/_version.py)"
+          if [ -z "$core_version" ]; then
+            echo "Could not read the core package version" >&2
+            exit 1
+          fi
+          echo "core_version=$core_version" >> "$GITHUB_OUTPUT"
+
       - name: Adaptive 0.53 environment qualification
+        if: steps.adaptive_core_version.outputs.core_version == '0.54.0'
         run: uv run --no-sync python scripts/check_adaptive_0_53.py --write --output "${{ runner.temp }}/adaptive-0.53-proof"
 
       - name: Execute public bounded reference
         run: uv run --no-sync python examples/adaptive_reference.py
 
       - name: Preserve adaptive environment proof
-        if: always()
+        if: always() && steps.adaptive_core_version.outputs.core_version == '0.54.0'
         uses: actions/upload-artifact@v4
         with:
           name: adaptive-0.53-${{ matrix.os }}-python-${{ matrix.python-version }}
