@@ -90,15 +90,6 @@ def load_release_facts() -> dict:
     return data
 
 
-def has_current_release_status(text: str) -> bool:
-    """Return whether a page's status banner matches the current release facts."""
-    facts = load_release_facts()
-    status = f"ETLantic {facts['current_version']} {facts['maturity']} release"
-    if facts.get("publication_status") != "published":
-        status += " candidate; publication pending"
-    return status in text
-
-
 def versioned_readthedocs_url(page: Path, *, docs_base_url: str) -> str:
     """Return immutable RTD URL for a docs page under the release slug."""
     base = docs_base_url.rstrip("/") + "/"
@@ -3164,6 +3155,17 @@ def main() -> None:
         raise SystemExit("check_external_links.py failed")
 
     print(f"Documentation consistency checks passed for {package_version}.")
+
+
+def has_current_release_status(text: str) -> bool:
+    """Return whether a page's status banner matches the current release facts."""
+    from typing import cast
+
+    facts = cast(dict[str, object], load_release_facts())
+    status = f"ETLantic {facts['current_version']} {facts['maturity']} release"
+    if facts.get("publication_status") != "published":
+        status += " candidate; publication pending"
+    return status in text
 
 
 if __name__ == "__main__":
