@@ -12,6 +12,10 @@ import pytest
 from anyio.to_thread import current_default_thread_limiter, run_sync
 
 from etlantic.runtime.native_execution import NativeExecution
+from tests.runtime.adaptive_candidate_guard import (
+    ADAPTIVE_CANDIDATE_MATCHES_PACKAGE,
+    ADAPTIVE_CANDIDATE_MISMATCH_REASON,
+)
 
 
 @pytest.mark.parametrize("abandon_after", [None, 0.5])
@@ -62,6 +66,10 @@ def test_cancelled_native_work_drains_before_return(
 @pytest.mark.polars
 @pytest.mark.pandas
 @pytest.mark.parametrize("member", ["raw", "first", "out"])
+@pytest.mark.skipif(
+    not ADAPTIVE_CANDIDATE_MATCHES_PACKAGE,
+    reason=ADAPTIVE_CANDIDATE_MISMATCH_REASON,
+)
 def test_complete_member_timeout_discards_private_outputs(member: str) -> None:
     import time
 
@@ -103,6 +111,10 @@ def test_complete_member_timeout_discards_private_outputs(member: str) -> None:
 
 @pytest.mark.polars
 @pytest.mark.pandas
+@pytest.mark.skipif(
+    not ADAPTIVE_CANDIDATE_MATCHES_PACKAGE,
+    reason=ADAPTIVE_CANDIDATE_MISMATCH_REASON,
+)
 def test_external_cancellation_after_member_body_discards_output() -> None:
     from etlantic.exceptions import PipelineCancelledError
     from etlantic.runtime.artifacts import ArtifactStore
@@ -245,6 +257,10 @@ def test_cancelled_queued_native_work_never_starts() -> None:
 
 @pytest.mark.polars
 @pytest.mark.pandas
+@pytest.mark.skipif(
+    not ADAPTIVE_CANDIDATE_MATCHES_PACKAGE,
+    reason=ADAPTIVE_CANDIDATE_MISMATCH_REASON,
+)
 def test_external_native_cancellation_retains_terminal_owner(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
@@ -316,6 +332,10 @@ def test_external_native_cancellation_retains_terminal_owner(
 
 @pytest.mark.polars
 @pytest.mark.pandas
+@pytest.mark.skipif(
+    not ADAPTIVE_CANDIDATE_MATCHES_PACKAGE,
+    reason=ADAPTIVE_CANDIDATE_MISMATCH_REASON,
+)
 def test_deadline_during_output_validation_fences_registration(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
@@ -361,6 +381,10 @@ def test_deadline_during_output_validation_fences_registration(
 
 @pytest.mark.polars
 @pytest.mark.pandas
+@pytest.mark.skipif(
+    not ADAPTIVE_CANDIDATE_MATCHES_PACKAGE,
+    reason=ADAPTIVE_CANDIDATE_MISMATCH_REASON,
+)
 def test_run_deadline_fences_synchronous_physical_transfer(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:

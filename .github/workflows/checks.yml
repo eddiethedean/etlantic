@@ -239,8 +239,27 @@ jobs:
           path: ${{ runner.temp }}/adaptive-inference-0.55/
           if-no-files-found: error
 
+  adaptive_version:
+    name: Adaptive observation version gate
+    runs-on: ubuntu-latest
+    outputs:
+      core_version: ${{ steps.version.outputs.core_version }}
+    steps:
+      - uses: actions/checkout@v7
+      - id: version
+        shell: bash
+        run: |
+          core_version="$(sed -n 's/^__version__ = \"\(.*\)\"/\1/p' src/etlantic/_version.py)"
+          if [ -z "$core_version" ]; then
+            echo "Could not read the core package version" >&2
+            exit 1
+          fi
+          echo "core_version=$core_version" >> "$GITHUB_OUTPUT"
+
   adaptive-observation:
     name: Adaptive 0.54 observation (${{ matrix.os }}, ${{ matrix.python-version }})
+    needs: adaptive_version
+    if: needs.adaptive_version.outputs.core_version == '0.54.0'
     runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
@@ -281,8 +300,8 @@ jobs:
 
   adaptive-evidence:
     name: Verify observed adaptive 0.54 matrix
-    needs: adaptive-observation
-    if: always()
+    needs: [adaptive_version, adaptive-observation]
+    if: always() && needs.adaptive_version.outputs.core_version == '0.54.0'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7

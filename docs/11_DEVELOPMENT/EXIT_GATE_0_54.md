@@ -22,9 +22,12 @@ wrong pins, escaping paths, duplicate cases/cells, hashes or source mismatches
 return nonzero.
 
 Actual Linux/macOS/Windows × Python 3.11/3.12/3.13 observations are required only
-for a cross-platform qualification claim, not this handoff. CI is wired to upload
-failed observations and aggregate after all matrix jobs. No remote observation,
-reviewer, release owner or go decision is fabricated locally.
+for a cross-platform qualification claim, not this handoff. CI collects the
+matrix only when the checked-out core is exactly 0.54.0; later package versions
+skip it because they cannot provide evidence for the 0.54 candidate pins. The
+0.55 release candidate keeps adaptive execution closed until a matching bundle
+is qualified. No remote observation, reviewer, release owner or go decision is
+fabricated locally.
 
 The [implementation report](IMPLEMENTATION_REPORT_0_54.md) records actual checks,
 remaining findings and applicable limitations. Next: **Sol — Production Code Review**.
