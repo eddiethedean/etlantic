@@ -19,7 +19,19 @@
     "P1-preview-evaluator-parity",
     "P1-storage-materialization",
     "P1-evidence-scanner",
-    "P1-target-revision-explicit"
+    "P1-target-revision-explicit",
+    "P1-sampled-file-replay",
+    "P1-nullable-required-transfer",
+    "P1-arithmetic-type-transfer",
+    "P1-unknown-record-hints",
+    "P1-target-revision-auto-recheck",
+    "P1-datafusion-metadata",
+    "P1-sparkless-metadata",
+    "P1-parquet-footer",
+    "P1-schema-registry-read-only",
+    "P1-multi-input-durable-graph",
+    "P1-sqlite-write-modes",
+    "P1-aggregate-type-transfer"
   ],
   "required_gates": [
     "wire_security",

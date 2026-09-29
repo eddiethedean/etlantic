@@ -102,6 +102,126 @@
       "gate": "target_revision",
       "implementation_commit": "71207e8fc90f2369735427baa7c2a2bed58b1fef",
       "evidence_artifact": "gates/target_revision.json"
+    },
+    {
+      "id": "P1-sampled-file-replay",
+      "priority": "P1",
+      "status": "verified",
+      "code": "src/etlantic/inference/facade.py",
+      "test": "tests/inference/test_review_fixes.py::test_sampled_csv_with_a_file_binding_cannot_be_exported",
+      "gate": "durable_definition",
+      "implementation_commit": "528eb2ef93aecd6ae37e2de9927944be81fa5444",
+      "evidence_artifact": "gates/durable_definition.json"
+    },
+    {
+      "id": "P1-nullable-required-transfer",
+      "priority": "P1",
+      "status": "verified",
+      "code": "src/etlantic/inference/transfer.py",
+      "test": "tests/inference/test_review_fixes.py::test_nullable_required_fields_remain_present_after_transformation",
+      "gate": "differential_fixtures",
+      "implementation_commit": "528eb2ef93aecd6ae37e2de9927944be81fa5444",
+      "evidence_artifact": "gates/differential_fixtures.json"
+    },
+    {
+      "id": "P1-arithmetic-type-transfer",
+      "priority": "P1",
+      "status": "verified",
+      "code": "src/etlantic/inference/transfer.py",
+      "test": "tests/inference/test_review_fixes.py::test_boolean_arithmetic_cannot_export_a_boolean_contract",
+      "gate": "differential_fixtures",
+      "implementation_commit": "528eb2ef93aecd6ae37e2de9927944be81fa5444",
+      "evidence_artifact": "gates/differential_fixtures.json"
+    },
+    {
+      "id": "P1-unknown-record-hints",
+      "priority": "P1",
+      "status": "verified",
+      "code": "src/etlantic/inference/records.py",
+      "test": "tests/inference/test_review_fixes.py::test_unknown_record_hint_is_diagnosed",
+      "gate": "differential_fixtures",
+      "implementation_commit": "528eb2ef93aecd6ae37e2de9927944be81fa5444",
+      "evidence_artifact": "gates/differential_fixtures.json"
+    },
+    {
+      "id": "P1-target-revision-auto-recheck",
+      "priority": "P1",
+      "status": "verified",
+      "code": "src/etlantic/inference/facade.py",
+      "test": "tests/inference/test_review_fixes.py::test_provider_target_revision_is_rechecked_automatically",
+      "gate": "target_revision",
+      "implementation_commit": "528eb2ef93aecd6ae37e2de9927944be81fa5444",
+      "evidence_artifact": "gates/target_revision.json"
+    },
+    {
+      "id": "P1-datafusion-metadata",
+      "priority": "P1",
+      "status": "verified",
+      "code": "src/etlantic/inference/sources.py",
+      "test": "tests/inference/test_differential_0_55.py::test_datafusion_frame_inference_uses_arrow_schema_without_rows",
+      "gate": "differential_fixtures",
+      "implementation_commit": "528eb2ef93aecd6ae37e2de9927944be81fa5444",
+      "evidence_artifact": "gates/differential_fixtures.json"
+    },
+    {
+      "id": "P1-sparkless-metadata",
+      "priority": "P1",
+      "status": "verified",
+      "code": "src/etlantic/inference/sources.py",
+      "test": "tests/inference/test_differential_0_55.py::test_pyspark_frame_inference_uses_struct_metadata",
+      "gate": "differential_fixtures",
+      "implementation_commit": "528eb2ef93aecd6ae37e2de9927944be81fa5444",
+      "evidence_artifact": "gates/differential_fixtures.json"
+    },
+    {
+      "id": "P1-parquet-footer",
+      "priority": "P1",
+      "status": "verified",
+      "code": "src/etlantic/inference/sources.py",
+      "test": "tests/inference/test_differential_0_55.py::test_parquet_footer_inference_and_durable_binding",
+      "gate": "differential_fixtures",
+      "implementation_commit": "528eb2ef93aecd6ae37e2de9927944be81fa5444",
+      "evidence_artifact": "gates/differential_fixtures.json"
+    },
+    {
+      "id": "P1-schema-registry-read-only",
+      "priority": "P1",
+      "status": "verified",
+      "code": "src/etlantic/inference/schema_documents.py",
+      "test": "tests/inference/test_registry_http_0_55.py::test_registry_subject_fetch_is_bounded_and_row_free",
+      "gate": "differential_fixtures",
+      "implementation_commit": "528eb2ef93aecd6ae37e2de9927944be81fa5444",
+      "evidence_artifact": "gates/differential_fixtures.json"
+    },
+    {
+      "id": "P1-multi-input-durable-graph",
+      "priority": "P1",
+      "status": "verified",
+      "code": "src/etlantic/inference/facade.py",
+      "test": "tests/inference/test_differential_0_55.py::test_multi_input_join_and_union_have_both_bound_sources",
+      "gate": "durable_definition",
+      "implementation_commit": "528eb2ef93aecd6ae37e2de9927944be81fa5444",
+      "evidence_artifact": "gates/durable_definition.json"
+    },
+    {
+      "id": "P1-sqlite-write-modes",
+      "priority": "P1",
+      "status": "verified",
+      "code": "packages/etlantic-sql/src/etlantic_sql/sqlite_target.py",
+      "test": "tests/inference/test_sqlite_target_modes_0_55.py::test_sqlite_target_executes_all_declared_write_modes",
+      "gate": "differential_fixtures",
+      "implementation_commit": "528eb2ef93aecd6ae37e2de9927944be81fa5444",
+      "evidence_artifact": "gates/differential_fixtures.json"
+    },
+    {
+      "id": "P1-aggregate-type-transfer",
+      "priority": "P1",
+      "status": "verified",
+      "code": "src/etlantic/inference/transfer.py",
+      "test": "tests/inference/test_differential_0_55.py::test_aggregate_schema_transfer_uses_function_signatures",
+      "gate": "differential_fixtures",
+      "implementation_commit": "528eb2ef93aecd6ae37e2de9927944be81fa5444",
+      "evidence_artifact": "gates/differential_fixtures.json"
     }
   ]
 }
