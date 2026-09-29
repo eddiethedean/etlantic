@@ -8,11 +8,12 @@
     {"surface": "json", "kind": "source", "state": "implemented", "evidence": "gates/bounded_materialization.json"},
     {"surface": "pandas", "kind": "source", "state": "bounded-adapter", "evidence": "gates/full_regression.json"},
     {"surface": "polars", "kind": "source", "state": "bounded-adapter", "evidence": "gates/full_regression.json"},
-    {"surface": "pyspark", "kind": "source", "state": "unsupported", "evidence": "gates/optional_dependency_matrix.json", "reason": "provider-backed evidence is not present in the core phase campaign"},
-    {"surface": "datafusion", "kind": "source", "state": "unsupported", "evidence": "gates/optional_dependency_matrix.json", "reason": "provider-backed evidence is not present in the core phase campaign"},
-    {"surface": "sql-duckdb", "kind": "source", "state": "unsupported", "evidence": "gates/optional_dependency_matrix.json", "reason": "provider-backed evidence is not present in the core phase campaign"},
-    {"surface": "parquet", "kind": "source-target", "state": "unsupported", "evidence": "gates/optional_dependency_matrix.json", "reason": "provider-backed evidence is not present in the core phase campaign"},
-    {"surface": "schema-registry", "kind": "source-target", "state": "unsupported", "evidence": "gates/optional_dependency_matrix.json", "reason": "provider-backed evidence is not present in the core phase campaign"},
-    {"surface": "append-overwrite-merge-upsert-partition-replace", "kind": "write-mode", "state": "unsupported", "evidence": "gates/optional_dependency_matrix.json", "reason": "fake write adapters are not qualification evidence"}
+    {"surface": "pyspark", "kind": "source", "state": "bounded-adapter", "evidence": "gates/differential_fixtures.json", "scope": "metadata-only frame inspection"},
+    {"surface": "datafusion", "kind": "source", "state": "bounded-adapter", "evidence": "gates/differential_fixtures.json", "scope": "metadata-only frame inspection"},
+    {"surface": "sql-duckdb", "kind": "source", "state": "bounded-adapter", "evidence": "gates/differential_fixtures.json", "scope": "metadata-only relation inspection"},
+    {"surface": "parquet", "kind": "source-target", "state": "bounded-adapter", "evidence": "gates/differential_fixtures.json", "scope": "bounded footer inspection and durable read-only source binding"},
+    {"surface": "schema-registry", "kind": "source-target", "state": "bounded-adapter", "evidence": "gates/differential_fixtures.json", "scope": "read-only JSON Schema and Avro subject inspection"},
+    {"surface": "join-union", "kind": "transform", "state": "implemented", "evidence": "gates/durable_definition.json", "scope": "two-input bound definitions with explicit collision rejection"},
+    {"surface": "append-overwrite-merge-upsert-partition-replace", "kind": "write-mode", "state": "bounded-adapter", "evidence": "gates/differential_fixtures.json", "scope": "transactional SQLite reference target"}
   ]
 }

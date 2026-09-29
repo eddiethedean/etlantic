@@ -35,6 +35,10 @@ def __getattr__(name: str) -> Any:
             if name == "SqlTransformCompiler"
             else create_transform_compiler
         )
+    if name == "SQLiteTableTarget":
+        from etlantic_sql.sqlite_target import SQLiteTableTarget
+
+        return SQLiteTableTarget
     raise AttributeError(f"module {__name__!r} has no attribute {name!r}")
 
 
@@ -44,6 +48,7 @@ __all__ = [
     "PostgresSourceConnector",
     "PostgresSqlPlugin",
     "PostgresStorageConnector",
+    "SQLiteTableTarget",
     "SqlTransformCompiler",
     "__version__",
     "create_plugin",

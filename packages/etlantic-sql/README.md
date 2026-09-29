@@ -52,6 +52,27 @@ SQLite and PostgreSQL are Tier A in 0.33. **MERGE / upsert** is advertised only
 for PostgreSQL (`sql_merge=True`, `INSERT … ON CONFLICT`); SQLite remains
 `sql_merge=False` and fails closed when merge is required.
 
+## Inference target mode reference (0.55)
+
+`SQLiteTableTarget` is a separate, explicit reference adapter for an existing
+SQLite table. It inspects declared columns, primary keys, and configured
+partition columns without reading rows. Its transactional `write_records`
+method executes append, overwrite, merge, upsert, and partition replacement
+only when the table advertises the requested mode and its revision still
+matches. This adapter does not change the SQL engine capability setting above.
+
+```python
+import sqlite3
+import etlantic as etl
+from etlantic_sql import SQLiteTableTarget
+
+connection = sqlite3.connect("orders.db")
+target = SQLiteTableTarget(
+    connection, "orders", identity="orders", partitions=("order_day",)
+)
+observation = etl.inspect_target(target)
+```
+
 ## Connector capability matrix (0.38 Experimental)
 
 Source/sink/storage entry points (`postgresql`) implement

@@ -111,7 +111,7 @@ _FILE_OPTION_KEYS = frozenset(
         "null_values",
     }
 )
-_SOURCE_FORMATS = frozenset({"csv", "tsv", "json", "jsonl"})
+_SOURCE_FORMATS = frozenset({"csv", "tsv", "json", "jsonl", "parquet"})
 _TARGET_WRITE_MODES = frozenset(
     {"append", "overwrite", "merge", "upsert", "partition_replace"}
 )
@@ -618,6 +618,7 @@ def rebind_definition(
     definition: PipelineDefinition,
     *,
     source: str | Path | Mapping[str, Any] | None = None,
+    sources: Mapping[str, str | Path | Mapping[str, Any]] | None = None,
     format: str | None = None,
     target: Mapping[str, Any] | None = None,
 ) -> PipelineDefinition:
@@ -629,6 +630,95 @@ def rebind_definition(
     """
     if not isinstance(definition, PipelineDefinition):
         raise TypeError("definition must be a PipelineDefinition")
+    source_nodes = [node for node in definition.nodes if node.kind == "source"]
+    if source is not None and sources is not None:
+        raise ValueError(
+            "INFER_SOURCE_REBIND: source and sources are mutually exclusive"
+        )
+    if source is not None and len(source_nodes) > 1:
+        raise ValueError(
+            "INFER_SOURCE_REBIND: multi-input definitions require per-node sources"
+        )
+    if sources is not None:
+        if not sources or set(sources) - {node.name for node in source_nodes}:
+            raise ValueError(
+                "INFER_SOURCE_REBIND: unknown or empty source-node mapping"
+            )
+        bindings: dict[str, dict[str, Any]] = {}
+        leases: list[_FileSourceLease] = []
+        for node in source_nodes:
+            if node.name not in sources:
+                continue
+            raw_source = sources[node.name]
+            template = node.bindings.get("source")
+            binding = _source_binding_for_rebind(
+                raw_source,
+                template=template if isinstance(template, Mapping) else None,
+            )
+            if binding.get("kind") == "file":
+                lease = _retain_file_source(str(binding["uri"]))
+                leases.append(lease)
+                if isinstance(binding, _FileBinding):
+                    binding.lease = lease
+            validate_source_binding_against_definition(
+                definition, binding, source_node=node
+            )
+            bindings[node.name] = binding
+        rebound_nodes = tuple(
+            replace(
+                node,
+                bindings={**node.bindings, "source": bindings[node.name]},
+                metadata=_update_binding_metadata(
+                    node.metadata, source_payload=bindings[node.name]
+                ),
+            )
+            if node.name in bindings
+            else node
+            for node in definition.nodes
+        )
+        original_bindings = {
+            node.name: node.bindings.get("source") for node in source_nodes
+        }
+        contracts = []
+        for contract in definition.contracts:
+            inference_metadata = contract.metadata.get("etlantic.inference")
+            current_binding = (
+                inference_metadata.get("source_binding")
+                if isinstance(inference_metadata, Mapping)
+                else None
+            )
+            replacement = next(
+                (
+                    bindings[name]
+                    for name, old in original_bindings.items()
+                    if name in bindings and current_binding == old
+                ),
+                None,
+            )
+            contracts.append(
+                replace(
+                    contract,
+                    metadata=_update_binding_metadata(
+                        contract.metadata, source_payload=replacement
+                    ),
+                )
+                if replacement is not None
+                else contract
+            )
+        updated = replace(
+            definition,
+            nodes=rebound_nodes,
+            contracts=tuple(contracts),
+            fingerprint=None,
+            runtime_source_leases=(
+                *definition.runtime_source_leases,
+                *leases,
+            ),
+        )
+        updated = updated.with_fingerprint(pipeline_fingerprint(updated))
+        return (
+            rebind_definition(updated, target=target) if target is not None else updated
+        )
     source_payload = (
         _source_binding_for_rebind(
             source,
@@ -818,6 +908,16 @@ def validate_source_binding_against_definition(
         raise ValueError("INFER_SOURCE_REBIND: definition has no source node")
     kind = binding.get("kind")
     if kind == "records":
+        observation = definition.provenance.get("observation", {})
+        if (
+            isinstance(observation, Mapping)
+            and isinstance(observation.get("provenance"), Mapping)
+            and observation["provenance"].get("sampled") is True
+        ):
+            raise ValueError(
+                "INFER_SOURCE_SCHEMA_UNVERIFIED: a truncated records observation "
+                "cannot establish a durable source contract"
+            )
         rebound_signature = _source_binding_schema(binding)
         if rebound_signature is None:
             raise ValueError(
@@ -850,6 +950,11 @@ def validate_source_binding_against_definition(
             raise ValueError(
                 "INFER_SOURCE_REBIND: rebound source could not be inspected safely"
             ) from exc
+        if dataset.provenance.get("sampled") is True:
+            raise ValueError(
+                "INFER_SOURCE_SCHEMA_UNVERIFIED: a truncated file observation "
+                "cannot establish a durable source contract"
+            )
     else:
         raise ValueError(
             "INFER_SOURCE_UNSUPPORTED: source binding requires an explicit rebind"
@@ -1199,7 +1304,7 @@ def reopen_source_binding(
     """Reopen a durable binding through the public inference facade."""
     resolved = resolve_source_binding(binding)
     if isinstance(resolved, ResolvedFileSource):
-        from .facade import read_csv, read_json
+        from .facade import read_csv, read_json, read_parquet
 
         source_name = name or str(binding.get("identity") or "source")
         resolved_hints = hints if hints is not None else resolved.hints or None
@@ -1216,6 +1321,14 @@ def reopen_source_binding(
                 options=options,
                 hints=resolved_hints,
                 limits=resolved_limits,
+            )
+        if resolved.format == "parquet":
+            if resolved_hints:
+                raise ValueError(
+                    "INFER_HINT_UNSUPPORTED: Parquet bindings do not accept row hints"
+                )
+            return read_parquet(
+                str(resolved.path), name=source_name, limits=resolved_limits
             )
         return read_json(
             str(resolved.path),

@@ -1017,6 +1017,8 @@ def _canonicalize_logical_type(name: str) -> str:
         "array": "array",
         "utf8": "string",
         "largeutf8": "string",
+        "string_view": "string",
+        "binary_view": "binary",
         "stringtype": "string",
         "longtype": "integer",
         "integertype": "integer",

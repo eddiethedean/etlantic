@@ -52,7 +52,7 @@ from .durable import (
     validate_target_binding,
 )
 from .records import _estimate_size, _path_identity, infer_csv, infer_records
-from .sources import infer_source
+from .sources import infer_parquet, infer_source
 from .targets import (
     _backfill_observation,
     _safe_target_identity,
@@ -61,7 +61,7 @@ from .targets import (
     infer_records_for_target,
     inspect_target,
 )
-from .transfer import forward_schema
+from .transfer import combine_schemas, forward_schema
 from .types import (
     InferenceLimits,
     InferenceResult,
@@ -232,6 +232,96 @@ def _eval(
     return evaluate_expression(node, row, on_error=record)
 
 
+def _multi_preview(
+    left: tuple[dict[str, Any], ...],
+    right: tuple[dict[str, Any], ...],
+    action: FrameAction,
+    *,
+    max_rows: int,
+    left_fields: tuple[str, ...],
+    right_fields: tuple[str, ...],
+    output_fields: tuple[str, ...],
+) -> list[dict[str, Any]]:
+    """Evaluate only already retained rows under a strict preview work cap."""
+    if max_rows <= 0:
+        return []
+    params = action.parameters
+    if action.action == "dtcs:union":
+        if params.get("mode") == "byPosition":
+            names = list(output_fields)
+            output = [dict(row) for row in left[:max_rows]]
+            output.extend(
+                dict(zip(names, row.values(), strict=True))
+                for row in right[: max_rows - len(output)]
+                if len(row) == len(names)
+            )
+            return output
+        names = list(output_fields)
+        return [
+            {name: row.get(name) for name in names}
+            for row in (*left, *right)[:max_rows]
+        ]
+    if action.action != "dtcs:join" or len(left) * len(right) > 100_000:
+        return []
+    how = str(params.get("type", "inner")).lower()
+    if how == "outer":
+        how = "full"
+    left_keys = params.get("leftKey", ())
+    right_keys = params.get("rightKey", left_keys)
+    left_keys = [left_keys] if isinstance(left_keys, str) else list(left_keys)
+    right_keys = [right_keys] if isinstance(right_keys, str) else list(right_keys)
+    left_names = set(left_fields)
+    right_names = set(right_fields)
+    output: list[dict[str, Any]] = []
+    matched_right: set[int] = set()
+
+    def matches(left_row: Mapping[str, Any], right_row: Mapping[str, Any]) -> bool:
+        if how == "cross":
+            return True
+        if len(left_keys) != len(right_keys) or not left_keys:
+            return False
+        for left_key, right_key in zip(left_keys, right_keys, strict=True):
+            a, b = left_row.get(str(left_key)), right_row.get(str(right_key))
+            if a is None or b is None:
+                if not (params.get("nullSafe") is True and a is None and b is None):
+                    return False
+            elif a != b:
+                return False
+        return True
+
+    for left_row in left:
+        matches_for_left = [
+            (index, right_row)
+            for index, right_row in enumerate(right)
+            if matches(left_row, right_row)
+        ]
+        if (how == "semi" and matches_for_left) or (
+            how == "anti" and not matches_for_left
+        ):
+            output.append(dict(left_row))
+        elif how not in {"semi", "anti"}:
+            for index, right_row in matches_for_left:
+                matched_right.add(index)
+                output.append({**left_row, **right_row})
+                if len(output) >= max_rows:
+                    return output
+            if how in {"left", "full"} and not matches_for_left:
+                output.append(
+                    {**left_row, **{name: None for name in right_names - left_names}}
+                )
+        if len(output) >= max_rows:
+            return output
+    if how in {"right", "full"}:
+        for index, right_row in enumerate(right):
+            if index not in matched_right:
+                output.append(
+                    {**{name: None for name in left_names - right_names}, **right_row}
+                )
+                if len(output) >= max_rows:
+                    break
+    return output
+
+
 class InferredDataset:
     """A bounded, replayable data first relation with an inferred model."""
 
@@ -248,12 +338,16 @@ class InferredDataset:
         target_write_mode: str = "append",
         source_owner: Any | None = None,
         diagnostic_tracker: _EvaluationDiagnostics | None = None,
+        parents: tuple[InferredDataset, InferredDataset] | None = None,
+        combine_action: FrameAction | None = None,
     ):
         self._result = result
         self._diagnostic_tracker = diagnostic_tracker
         self._root_schema = root_schema or result.schema
         self._source_binding = dict(source_binding or records_binding(name))
         self._source_owner = source_owner
+        self._parents = parents
+        self._combine_action = combine_action
         self.name = (
             _safe_file_identity(name)
             if self._source_binding.get("kind") in {"file", "provider", "records"}
@@ -332,6 +426,12 @@ class InferredDataset:
         self, *, _allow_unresolved_source: bool = False
     ) -> PipelineDefinition:
         """Build the normal row-free ETLantic authoring definition."""
+        if self._parents is not None:
+            if _allow_unresolved_source:
+                raise ValueError(
+                    "INFER_SOURCE_REBIND: multi-input sources must be bound individually"
+                )
+            return self._multi_definition()
         source_kind = self._source_binding.get("kind")
         if source_kind == "provider" and not _allow_unresolved_source:
             raise ValueError(
@@ -401,6 +501,12 @@ class InferredDataset:
             raise ValueError(
                 "durable inference definitions require a reopenable source binding; "
                 "the inspected source is a one-shot bounded stream"
+            )
+        if self.provenance.get("sampled") is True and not _allow_unresolved_source:
+            raise ValueError(
+                "INFER_SOURCE_SCHEMA_UNVERIFIED: a truncated source observation "
+                "cannot establish a durable source contract; inspect the full "
+                "source or rebind to a reviewed schema"
             )
         # Target backfill is a write-boundary hypothesis.  It must never
         # replace the observed source contract used by the serialized graph.
@@ -697,11 +803,284 @@ class InferredDataset:
         self, source: str, *, format: str | None = None
     ) -> PipelineDefinition:
         """Return a definition explicitly rebound to a local source."""
+        if (
+            self._source_binding.get("kind") == "file"
+            and self.provenance.get("sampled") is True
+        ):
+            raise ValueError(
+                "INFER_SOURCE_SCHEMA_UNVERIFIED: a truncated file observation "
+                "cannot be rebound using its unverified schema"
+            )
         return rebind_definition(
             self.definition(_allow_unresolved_source=True),
             source=source,
             format=format,
         )
+
+    def _multi_definition(self) -> PipelineDefinition:
+        """Serialize both parent graphs and every edge into one definition."""
+        parents = self._parents
+        combine_action = self._combine_action
+        if parents is None or combine_action is None:
+            raise ValueError("INFER_SOURCE_REBIND: multi-input graph is incomplete")
+        errors = [
+            item
+            for item in self.diagnostics
+            if getattr(getattr(item, "severity", None), "value", None) == "error"
+        ]
+        if errors:
+            codes = ", ".join(sorted({item.code for item in errors}))
+            raise ValueError(f"multi-input inference is not qualified ({codes})")
+        if self.provenance.get("sampled") is True:
+            raise ValueError(
+                "INFER_SOURCE_SCHEMA_UNVERIFIED: multi-input sources must be fully inspected"
+            )
+        left, right = (parent.definition() for parent in parents)
+        if left.pipeline_id == right.pipeline_id:
+            raise ValueError(
+                "INFER_LINEAGE_COLLISION: multi-input source identities collide"
+            )
+
+        def parent_graph(
+            definition: PipelineDefinition,
+        ) -> tuple[list[NodeDefinition], list[EdgeDefinition], str, str]:
+            sinks = [node for node in definition.nodes if node.kind == "sink"]
+            if len(sinks) != 1 or sinks[0].contract_id is None:
+                raise ValueError("INFER_SOURCE_REBIND: parent graph needs one sink")
+            terminal = [
+                edge for edge in definition.edges if edge.consumer_node == sinks[0].name
+            ]
+            if len(terminal) != 1:
+                raise ValueError(
+                    "INFER_SOURCE_REBIND: parent graph has no terminal edge"
+                )
+            return (
+                [node for node in definition.nodes if node.kind != "sink"],
+                [
+                    edge
+                    for edge in definition.edges
+                    if edge.consumer_node != sinks[0].name
+                ],
+                terminal[0].producer_node,
+                sinks[0].contract_id,
+            )
+
+        left_nodes, left_edges, left_producer, left_contract = parent_graph(left)
+        right_nodes, right_edges, right_producer, right_contract = parent_graph(right)
+        existing_node_names = [node.name for node in (*left_nodes, *right_nodes)]
+        existing_contract_ids = [
+            contract.identity for contract in (*left.contracts, *right.contracts)
+        ]
+        existing_transform_ids = [
+            transform.identity
+            for transform in (*left.transformations, *right.transformations)
+        ]
+        if (
+            len(set(existing_node_names)) != len(existing_node_names)
+            or len(set(existing_contract_ids)) != len(existing_contract_ids)
+            or len(set(existing_transform_ids)) != len(existing_transform_ids)
+        ):
+            raise ValueError("INFER_LINEAGE_COLLISION: parent graph identities collide")
+
+        def contract(schema: NormalizedSchema, suffix: str) -> ContractDefinition:
+            return ContractDefinition(
+                identity=f"contract:{self.name}:{suffix}",
+                name=f"{self.name}_{suffix}",
+                fields=tuple(
+                    FieldSpec(
+                        name=field.name,
+                        type=field.logical_type,
+                        nullable=field.nullable,
+                        required=field.required,
+                    )
+                    for field in schema.fields
+                ),
+            )
+
+        contracts = [*left.contracts, *right.contracts]
+        join_contract = contract(self._root_schema, "combined")
+        contracts.append(join_contract)
+        join_step_name = f"{self.name}_combine"
+        nodes = [*left_nodes, *right_nodes]
+        edges = [*left_edges, *right_edges]
+        transformations = [*left.transformations, *right.transformations]
+        join_plan = {
+            "action": combine_action.action,
+            "action_id": combine_action.action_id,
+            "target": combine_action.target,
+            "parameters": combine_action.parameters,
+            "path": combine_action.path,
+            "functions": sorted(combine_action.functions),
+            "profiles": sorted(combine_action.profiles),
+        }
+        transformations.append(
+            TransformationDefinition(
+                identity=combine_action.action_id,
+                name=combine_action.action,
+                portable_plan=join_plan,
+                ports=(
+                    PortDefinitionSpec("left", "input", left_contract),
+                    PortDefinitionSpec("right", "input", right_contract),
+                    PortDefinitionSpec("output", "output", join_contract.identity),
+                ),
+                implementation_refs=(
+                    ImplementationRef(
+                        engine="local",
+                        identity=f"portable:{combine_action.action_id}",
+                        kind="portable",
+                    ),
+                ),
+            )
+        )
+        nodes.append(
+            NodeDefinition(
+                name=join_step_name,
+                kind="step",
+                identity=f"step:{combine_action.action_id}",
+                contract_id=join_contract.identity,
+                transformation_id=combine_action.action_id,
+                transformation_name=combine_action.action,
+                inputs=(
+                    PortDefinitionSpec("left", "input", left_contract),
+                    PortDefinitionSpec("right", "input", right_contract),
+                ),
+                outputs=(
+                    PortDefinitionSpec("output", "output", join_contract.identity),
+                ),
+            )
+        )
+        edges.extend(
+            (
+                EdgeDefinition(
+                    left_producer,
+                    "output",
+                    join_step_name,
+                    "left",
+                    left_contract,
+                    left_contract,
+                ),
+                EdgeDefinition(
+                    right_producer,
+                    "output",
+                    join_step_name,
+                    "right",
+                    right_contract,
+                    right_contract,
+                ),
+            )
+        )
+        previous_name = join_step_name
+        previous_contract = join_contract.identity
+        for index, action in enumerate(self._frame.actions, start=1):
+            prefix = FrameExpr(
+                relation_id=action.action_id,
+                root_input=self._frame.root_input,
+                actions=self._frame.actions[:index],
+            )
+            output_schema = forward_schema(
+                prefix, self._root_schema, max_diagnostics=self._max_diagnostics()
+            )
+            output_contract = contract(output_schema, f"step_{index}")
+            contracts.append(output_contract)
+            step_name = f"{self.name}_step_{index}"
+            transformations.append(
+                TransformationDefinition(
+                    identity=action.action_id,
+                    name=action.action,
+                    portable_plan={
+                        "action": action.action,
+                        "action_id": action.action_id,
+                        "target": action.target,
+                        "parameters": action.parameters,
+                        "path": action.path,
+                        "functions": sorted(action.functions),
+                        "profiles": sorted(action.profiles),
+                    },
+                    ports=(
+                        PortDefinitionSpec("input", "input", previous_contract),
+                        PortDefinitionSpec(
+                            "output", "output", output_contract.identity
+                        ),
+                    ),
+                    implementation_refs=(
+                        ImplementationRef(
+                            engine="local",
+                            identity=f"portable:{action.action_id}",
+                            kind="portable",
+                        ),
+                    ),
+                )
+            )
+            nodes.append(
+                NodeDefinition(
+                    name=step_name,
+                    kind="step",
+                    identity=f"step:{action.action_id}",
+                    contract_id=output_contract.identity,
+                    transformation_id=action.action_id,
+                    transformation_name=action.action,
+                    inputs=(PortDefinitionSpec("input", "input", previous_contract),),
+                    outputs=(
+                        PortDefinitionSpec(
+                            "output", "output", output_contract.identity
+                        ),
+                    ),
+                )
+            )
+            edges.append(
+                EdgeDefinition(
+                    previous_name,
+                    "output",
+                    step_name,
+                    "input",
+                    previous_contract,
+                    previous_contract,
+                )
+            )
+            previous_name = step_name
+            previous_contract = output_contract.identity
+        sink_name = f"{self.name}_output"
+        nodes.append(
+            NodeDefinition(
+                name=sink_name,
+                kind="sink",
+                identity=f"sink:{self.name}",
+                contract_id=previous_contract,
+                inputs=(PortDefinitionSpec("input", "input", previous_contract),),
+                asset=self.name,
+                bindings={"target": self._target_binding},
+            )
+        )
+        edges.append(
+            EdgeDefinition(
+                previous_name,
+                "output",
+                sink_name,
+                "input",
+                previous_contract,
+                previous_contract,
+            )
+        )
+        definition = PipelineDefinition(
+            pipeline_id=f"inferred:{self.name}",
+            pipeline_name=self.name,
+            contracts=tuple(contracts),
+            transformations=tuple(transformations),
+            nodes=tuple(nodes),
+            edges=tuple(edges),
+            provenance={
+                "source": "etlantic.inference",
+                "observation": self.observation.to_dict(),
+            },
+            metadata={"etlantic.lineage": self.schema.metadata.get("lineage", {})},
+            runtime_source_leases=(
+                *left.runtime_source_leases,
+                *right.runtime_source_leases,
+            ),
+        )
+        from etlantic.authoring.serialize import pipeline_fingerprint
+
+        return definition.with_fingerprint(pipeline_fingerprint(definition))
 
     def _check_target_revision(self) -> None:
         reader = self._target_revision_reader
@@ -762,12 +1141,24 @@ class InferredDataset:
         )
         runtime_diagnostics: list[Diagnostic] = []
         for field in final_schema.fields:
-            if field.required and any(row.get(field.name) is None for row in rows):
+            if field.required and any(field.name not in row for row in rows):
                 runtime_diagnostics.append(
                     Diagnostic(
                         "INFER_RUNTIME_EVALUATION",
                         Severity.ERROR,
-                        f"Required field {field.name!r} evaluated to null",
+                        f"Required field {field.name!r} is missing",
+                        path=(field.name,),
+                        phase="inference",
+                    )
+                )
+            if not field.nullable and any(
+                field.name in row and row[field.name] is None for row in rows
+            ):
+                runtime_diagnostics.append(
+                    Diagnostic(
+                        "INFER_RUNTIME_EVALUATION",
+                        Severity.ERROR,
+                        f"Non-nullable field {field.name!r} evaluated to null",
                         path=(field.name,),
                         phase="inference",
                     )
@@ -870,6 +1261,8 @@ class InferredDataset:
             target_revision_reader=self._target_revision_reader,
             source_owner=self._source_owner,
             diagnostic_tracker=diagnostic_tracker,
+            parents=self._parents,
+            combine_action=self._combine_action,
         )
 
     def filter(self, condition: ColumnExpr) -> InferredDataset:
@@ -1054,27 +1447,103 @@ class InferredDataset:
         how: str = "inner",
         **kwargs: Any,
     ) -> InferredDataset:
-        """Reject unbound multi-input authoring explicitly.
-
-        The symbolic ``FrameExpr`` supports joins, but a durable inference
-        session must carry a binding and contract for each input.  Until the
-        facade receives that second binding, fail before constructing a
-        misleading single-source definition.
-        """
-        raise ValueError(
-            "multi-input inference joins require explicit source bindings; use FrameExpr.join"
-        )
+        """Combine two independently bound inferred sources."""
+        if not isinstance(other, InferredDataset):
+            raise TypeError("join requires another InferredDataset")
+        if self.name == other.name:
+            raise ValueError("INFER_LINEAGE_COLLISION: join inputs need distinct names")
+        if on is not None and not (
+            isinstance(on, str)
+            or (
+                isinstance(on, (list, tuple))
+                and all(isinstance(item, str) for item in on)
+            )
+        ):
+            raise ValueError("INFER_BACKWARD_UNSUPPORTED: join requires named keys")
+        combined_frame = self._frame.join(other._frame, on=on, how=how, **kwargs)
+        return self._combine(other, combined_frame.actions[-1])
 
     def union(self, other: InferredDataset) -> InferredDataset:
-        raise ValueError(
-            "multi-input inference unions require explicit source bindings; use FrameExpr.union"
-        )
+        if not isinstance(other, InferredDataset):
+            raise TypeError("union requires another InferredDataset")
+        if self.name == other.name:
+            raise ValueError(
+                "INFER_LINEAGE_COLLISION: union inputs need distinct names"
+            )
+        combined_frame = self._frame.union(other._frame)
+        return self._combine(other, combined_frame.actions[-1])
 
     def unionByName(
         self, other: InferredDataset, *, allowMissingColumns: bool = False
     ) -> InferredDataset:
-        del allowMissingColumns
-        return self.union(other)
+        if not isinstance(other, InferredDataset):
+            raise TypeError("unionByName requires another InferredDataset")
+        if self.name == other.name:
+            raise ValueError(
+                "INFER_LINEAGE_COLLISION: union inputs need distinct names"
+            )
+        combined_frame = self._frame.unionByName(
+            other._frame, allowMissingColumns=allowMissingColumns
+        )
+        return self._combine(other, combined_frame.actions[-1])
+
+    def _combine(self, other: InferredDataset, action: FrameAction) -> InferredDataset:
+        schema = combine_schemas(
+            self.schema,
+            other.schema,
+            action,
+            max_diagnostics=min(self._max_diagnostics(), other._max_diagnostics()),
+        )
+        diagnostics = tuple(
+            Diagnostic(
+                str(item.get("code", "INFER_BACKWARD_UNSUPPORTED")),
+                Severity(str(item.get("severity", "error"))),
+                str(item.get("message", "Multi-input schema transfer failed")),
+                tuple(item.get("path", ())),
+                phase="inference",
+            )
+            for item in schema.metadata.get("inference_diagnostics", ())
+            if isinstance(item, Mapping)
+        )
+        output_name = f"{self.name}_{other.name}_{action.action.split(':')[-1]}"
+        preview = _multi_preview(
+            self._result.rows,
+            other._result.rows,
+            action,
+            max_rows=min(
+                int(self.provenance.get("limits", {}).get("max_rows", 10_000)),
+                int(other.provenance.get("limits", {}).get("max_rows", 10_000)),
+            ),
+            left_fields=tuple(field.name for field in self.schema.fields),
+            right_fields=tuple(field.name for field in other.schema.fields),
+            output_fields=tuple(field.name for field in schema.fields),
+        )
+        result = InferenceResult(
+            schema,
+            (*self.diagnostics, *other.diagnostics, *diagnostics),
+            provenance={
+                "source": "multi_input",
+                "method": action.action,
+                "sampled": self.provenance.get("sampled") is True
+                or other.provenance.get("sampled") is True,
+                "limits": self.provenance.get("limits", InferenceLimits().to_dict()),
+                "preview_rows_observed": len(preview),
+            },
+            rows=preview,
+            observed_schema=schema,
+        )
+        return InferredDataset(
+            result,
+            name=output_name,
+            frame=FrameExpr(
+                relation_id=action.action_id,
+                root_input=action.action_id,
+                schema_fields=tuple(field.name for field in schema.fields),
+            ),
+            root_schema=schema,
+            parents=(self, other),
+            combine_action=action,
+        )
 
     def rename(self, mapping: dict[str, str]) -> InferredDataset:
         frame = self._frame.rename(mapping)
@@ -1124,6 +1593,11 @@ class InferredDataset:
         )
 
     def backfill_from(self, target_schema: NormalizedSchema) -> InferredDataset:
+        if self._parents is not None:
+            raise ValueError(
+                "INFER_BACKWARD_UNSUPPORTED: multi-input target backfill requires "
+                "an explicit post-combine cast"
+            )
         result = _backfill_observation(
             self._result,
             TargetObservation(
@@ -1396,6 +1870,18 @@ def from_records_for_target(
         expected_revision=expected_revision,
         revision_reader=revision_reader,
     )
+    if revision_reader is None and callable(getattr(target, "inspect_schema", None)):
+        # Preserve the provider as a read-only revision source for the final
+        # publication fence. A supplied observation or schema is a pinned
+        # snapshot and cannot be re-inspected automatically.
+        def provider_revision_reader() -> str | None:
+            observation = inspect_target(target, identity=target_identity)
+            if observation.exists != "present" or observation.diagnostics:
+                raise ValueError("target can no longer be inspected")
+            return observation.revision
+
+        revision_reader = provider_revision_reader
+
     snapshot = (
         _bounded_materialized_snapshot(records, limits)
         if source_factory is None and source_key is None
@@ -1707,6 +2193,29 @@ def read_json(
             identity=source_identity,
             retain_rows=True,
         ),
+        name=name,
+        source_binding=source_binding,
+        source_owner=_retain_file_source(source_binding["uri"], path),
+    )
+
+
+def read_parquet(
+    path: str,
+    *,
+    name: str = "parquet",
+    limits: InferenceLimits | None = None,
+) -> InferredDataset:
+    """Inspect a Parquet footer and retain a durable local file binding."""
+    source_identity = (
+        _path_identity("parquet", path)
+        if name == "parquet"
+        else _safe_file_identity(name)
+    )
+    source_binding = file_binding(
+        "parquet", path, identity=source_identity, limits=limits
+    )
+    return InferredDataset(
+        infer_parquet(path, identity=source_identity, limits=limits),
         name=name,
         source_binding=source_binding,
         source_owner=_retain_file_source(source_binding["uri"], path),
