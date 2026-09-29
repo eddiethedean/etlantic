@@ -4,8 +4,11 @@
 from __future__ import annotations
 
 import asyncio
+import importlib
 import inspect as _inspect
 import math
+import os
+import sys
 import time
 from collections.abc import Iterable, Mapping
 from dataclasses import dataclass
@@ -126,6 +129,12 @@ def _bounded_row_count(value: Any) -> int | None:
 
 def _provider_logical_type(value: Any) -> str:
     normalized = normalize_logical_type(value, preserve_decimal=True)
+    if normalized == "unknown" and type(value).__module__.startswith(
+        ("pyspark.sql.types", "sparkless.sql.types")
+    ):
+        # Spark and sparkless datatype instances can render differently;
+        # their public class name still identifies the declared scalar type.
+        normalized = normalize_logical_type(type(value), preserve_decimal=True)
     return normalized if normalized in _KNOWN_LOGICAL_TYPES else "unknown"
 
 
@@ -749,6 +758,8 @@ def _schema_from_provider_result(
                 field_type = getattr(field, "logical_type", None)
                 if field_type is None:
                     field_type = getattr(field, "type", None)
+                if field_type is None:
+                    field_type = getattr(field, "dataType", None)
                 field_name = getattr(field, "name", None)
                 if field_name is None or field_type is None:
                     return InferenceResult(
@@ -880,6 +891,201 @@ def _schema_from_column_metadata(
     return InferenceResult(
         schema,
         provenance={"source": "metadata", "method": "provider_columns"},
+    )
+
+
+def _duckdb_relation_schema(
+    value: Any,
+    *,
+    identity: str,
+    limits: InferenceLimits,
+    hints: Mapping[str, Any] | None,
+) -> InferenceResult | None:
+    """Inspect a DuckDB relation from catalog metadata without fetching rows."""
+    relation_type = type(value)
+    if relation_type.__name__ != "DuckDBPyRelation" or relation_type.__module__ not in {
+        "_duckdb",
+        "duckdb",
+    }:
+        return None
+    try:
+        columns = list(value.columns)
+        dtypes = list(value.types)
+        if len(columns) != len(dtypes) or len(columns) > limits.max_fields:
+            raise ValueError("relation fields exceed the inference limit")
+        fields = [
+            {
+                "name": name,
+                "logical_type": _provider_logical_type(dtype),
+                "required": True,
+                # Relation type metadata does not establish a NOT NULL claim.
+                "nullable": True,
+            }
+            for name, dtype in zip(columns, dtypes, strict=True)
+        ]
+        schema = normalize_schema_from_fields(
+            fields, identity=identity, preserve_decimal=True
+        )
+    except (AttributeError, TypeError, ValueError):
+        return _provider_failure(
+            identity,
+            value,
+            limits,
+            "relation_metadata",
+            "INFER_SOURCE_UNSUPPORTED",
+            "DuckDB relation metadata could not be normalized",
+        )
+    diagnostics = tuple(
+        Diagnostic(
+            "INFER_UNKNOWN_TYPE",
+            Severity.WARNING,
+            f"DuckDB type for field {field.name!r} is unknown",
+            path=(field.name,),
+            phase="inference",
+        )
+        for field in schema.fields
+        if field.logical_type == "unknown"
+    )
+    if hints:
+        diagnostics = (
+            *diagnostics,
+            Diagnostic(
+                "INFER_HINT_UNSUPPORTED",
+                Severity.ERROR,
+                "DuckDB metadata inspection does not accept row hints",
+                phase="inference",
+            ),
+        )
+    return InferenceResult(
+        schema,
+        diagnostics[: limits.max_diagnostics],
+        provenance={
+            "source": "duckdb",
+            "method": "relation_metadata",
+            "rows_observed": 0,
+            "sampled": False,
+            "limits": limits.to_dict(),
+        },
+    )
+
+
+def infer_parquet(
+    path: str | Path,
+    *,
+    identity: str = "parquet",
+    limits: InferenceLimits | None = None,
+) -> InferenceResult:
+    """Read only a bounded Parquet footer to infer its declared schema."""
+    limits = limits or InferenceLimits()
+    deadline = _effective_deadline(limits, None)
+    try:
+        source = Path(path).expanduser()
+        with source.open("rb") as stream:
+            before = os.fstat(stream.fileno())
+            size = before.st_size
+            if size < 8:
+                raise ValueError("Parquet footer is missing")
+            stream.seek(-8, 2)
+            trailer = stream.read(8)
+            if len(trailer) != 8 or trailer[4:] != b"PAR1":
+                raise ValueError("Parquet footer is malformed")
+            footer_bytes = int.from_bytes(trailer[:4], "little")
+            if footer_bytes < 1 or footer_bytes + 8 > size:
+                raise ValueError("Parquet footer length is invalid")
+            if limits.max_bytes is not None and footer_bytes + 8 > limits.max_bytes:
+                return _provider_failure(
+                    identity,
+                    source,
+                    limits,
+                    "parquet_footer",
+                    "INFER_LIMIT",
+                    "Parquet footer exceeds the metadata byte limit",
+                    limit_reason="bytes",
+                )
+            _check_deadline(deadline)
+            parquet = importlib.import_module("pyarrow.parquet")
+            _check_deadline(deadline)
+            file = parquet.ParquetFile(
+                stream,
+                arrow_extensions_enabled=False,
+                thrift_string_size_limit=limits.max_bytes,
+                thrift_container_size_limit=limits.max_fields * 8,
+            )
+            arrow_schema = file.schema_arrow
+            file.close()
+            after = os.fstat(stream.fileno())
+            if (
+                before.st_size != after.st_size
+                or before.st_mtime_ns != after.st_mtime_ns
+                or before.st_ctime_ns != after.st_ctime_ns
+            ):
+                raise ValueError("Parquet source changed during inspection")
+            _check_deadline(deadline)
+        if len(arrow_schema) > limits.max_fields:
+            raise ValueError("Parquet field count exceeds the inference limit")
+        schema = normalize_schema_from_fields(
+            [
+                {
+                    "name": field.name,
+                    "logical_type": _provider_logical_type(field.type),
+                    "required": True,
+                    "nullable": field.nullable,
+                }
+                for field in arrow_schema
+            ],
+            identity=identity,
+            preserve_decimal=True,
+        )
+    except (ImportError, ModuleNotFoundError):
+        return _provider_failure(
+            identity,
+            path,
+            limits,
+            "parquet_footer",
+            "INFER_SOURCE_UNSUPPORTED",
+            "Parquet schema inspection requires pyarrow",
+        )
+    except _InferenceTimeout:
+        return _provider_failure(
+            identity,
+            path,
+            limits,
+            "parquet_footer",
+            "INFER_LIMIT",
+            "Parquet metadata inspection timed out",
+            limit_reason="time",
+        )
+    except (OSError, TypeError, ValueError):
+        return _provider_failure(
+            identity,
+            path,
+            limits,
+            "parquet_footer",
+            "INFER_SOURCE_UNSUPPORTED",
+            "Parquet schema metadata could not be inspected safely",
+        )
+    diagnostics = tuple(
+        Diagnostic(
+            "INFER_UNKNOWN_TYPE",
+            Severity.WARNING,
+            f"Parquet type for field {field.name!r} is unknown",
+            path=(field.name,),
+            phase="inference",
+        )
+        for field in schema.fields
+        if field.logical_type == "unknown"
+    )
+    return InferenceResult(
+        schema,
+        diagnostics[: limits.max_diagnostics],
+        provenance={
+            "source": "parquet",
+            "method": "footer_schema",
+            "rows_observed": 0,
+            "footer_bytes": footer_bytes + 8,
+            "sampled": False,
+            "limits": limits.to_dict(),
+        },
     )
 
 
@@ -1104,6 +1310,11 @@ def infer_source(
     deadline = _effective_deadline(limits, _deadline)
     if isinstance(value, NormalizedSchema):
         return _schema_result(value)
+    relation_result = _duckdb_relation_schema(
+        value, identity=identity, limits=limits, hints=hints
+    )
+    if relation_result is not None:
+        return relation_result
     direct_schema = None
     if isinstance(value, Mapping):
         if not _looks_like_schema_mapping(value):
@@ -1177,6 +1388,21 @@ def infer_source(
             return infer_csv(
                 value, options=options, hints=hints, limits=limits, identity=identity
             )
+        if suffix.endswith(".parquet"):
+            result = infer_parquet(value, identity=identity, limits=limits)
+            if hints:
+                return result.replace(
+                    diagnostics=(
+                        *result.diagnostics,
+                        Diagnostic(
+                            "INFER_HINT_UNSUPPORTED",
+                            Severity.ERROR,
+                            "Parquet metadata inspection does not accept row hints",
+                            phase="inference",
+                        ),
+                    )[: limits.max_diagnostics]
+                )
+            return result
         return InferenceResult(
             NormalizedSchema(identity=identity, fields=()),
             (
@@ -1303,6 +1529,64 @@ def infer_source(
                 max_diagnostics=limits.max_diagnostics,
             )
             if provider_schema is not None:
+                provider_module = type(value).__module__
+                metadata_source = (
+                    "pyspark"
+                    if (
+                        type(value).__name__ == "DataFrame"
+                        and provider_module.startswith(
+                            ("pyspark.sql.", "sparkless.sql.")
+                        )
+                    )
+                    or (
+                        type(value).__name__ == "PyDataFrame"
+                        and bool(
+                            getattr(
+                                sys.modules.get("pyspark"),
+                                "_etlantic_sparkless_shim",
+                                False,
+                            )
+                        )
+                    )
+                    else "datafusion"
+                    if type(value).__name__ == "DataFrame"
+                    and provider_module.startswith("datafusion.")
+                    else None
+                )
+                if metadata_source is not None:
+                    # These schema objects provide the declared field types.
+                    # Collecting a preview executes a provider query and is
+                    # unnecessary for metadata inspection.
+                    extra_diagnostics = (
+                        (
+                            Diagnostic(
+                                "INFER_HINT_UNSUPPORTED",
+                                Severity.ERROR,
+                                f"{metadata_source} metadata inspection does not accept row hints",
+                                phase="inference",
+                            ),
+                        )
+                        if hints
+                        else ()
+                    )
+                    return provider_schema.replace(
+                        diagnostics=(
+                            *provider_schema.diagnostics,
+                            *extra_diagnostics,
+                        )[: limits.max_diagnostics],
+                        provenance={
+                            **provider_schema.provenance,
+                            "source": metadata_source,
+                            "method": (
+                                "spark_schema"
+                                if metadata_source == "pyspark"
+                                else "datafusion_schema"
+                            ),
+                            "rows_observed": 0,
+                            "sampled": False,
+                            "limits": limits.to_dict(),
+                        },
+                    )
                 return _attach_provider_preview(
                     provider_schema,
                     value,

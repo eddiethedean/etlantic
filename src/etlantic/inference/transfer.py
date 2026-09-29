@@ -182,14 +182,44 @@ def infer_expression(
     if kind == "binary":
         left, left_null = infer_expression(node.get("left", {}), schema, diagnostics)
         right, right_null = infer_expression(node.get("right", {}), schema, diagnostics)
-        if node.get("op") in {
+        op = node.get("op")
+        if op in {"add", "subtract", "multiply", "divide", "modulo"}:
+            numeric = {"integer", "number", "decimal"}
+            if op == "add" and left == right == "string":
+                return "string", left_null or right_null
+            if left in numeric and right in numeric:
+                if {left, right} == {"decimal", "number"}:
+                    # Python and several backends reject or round this mix;
+                    # require an explicit conversion policy before export.
+                    pass
+                elif op != "divide":
+                    return _merge(left, right), left_null or right_null
+                # Portable division of two integers produces a fractional
+                # value. Decimal operands retain decimal arithmetic.
+                else:
+                    return (
+                        "decimal" if "decimal" in {left, right} else "number",
+                        left_null or right_null,
+                    )
+            if diagnostics is not None:
+                diagnostics.append(
+                    Diagnostic(
+                        "INFER_BACKWARD_UNSUPPORTED",
+                        Severity.ERROR,
+                        f"Arithmetic operation {op!r} requires compatible numeric operands",
+                        phase="inference",
+                    )
+                )
+            return "unknown", True
+        if op == "null_safe_eq":
+            return "boolean", False
+        if op in {
             "eq",
             "not_eq",
             "lt",
             "lte",
             "gt",
             "gte",
-            "null_safe_eq",
             "and",
             "or",
         }:
@@ -290,6 +320,212 @@ def infer_expression(
             )
         )
     return "unknown", True
+
+
+def combine_schemas(
+    left: NormalizedSchema,
+    right: NormalizedSchema,
+    action: Any,
+    *,
+    max_diagnostics: int = 100,
+) -> NormalizedSchema:
+    """Transfer a two-input join or union without evaluating either source."""
+    name = str(action.action)
+    params = action.parameters
+    diagnostics: list[Diagnostic] = []
+
+    def error(code: str, message: str, field: str | None = None) -> None:
+        diagnostics.append(
+            Diagnostic(
+                code,
+                Severity.ERROR,
+                message,
+                path=(field,) if field else (),
+                phase="inference",
+            )
+        )
+
+    left_by_name = {field.name: field for field in left.fields}
+    right_by_name = {field.name: field for field in right.fields}
+    output: list[NormalizedField] = []
+    lineage: dict[str, dict[str, Any]] = {}
+    left_lineage = _initial_lineage(left)
+    right_lineage = _initial_lineage(right)
+
+    def add(field: NormalizedField, origin: dict[str, Any]) -> None:
+        output.append(field)
+        lineage[field.name] = {
+            **origin,
+            "field": field.name,
+            "operations": [*_sequence(origin.get("operations")), {"operation": name}],
+            "invertible": False,
+        }
+
+    if name == "dtcs:union":
+        mode = params.get("mode", "byPosition")
+        allow_missing = params.get("allowMissingColumns") is True
+        if mode not in {"byPosition", "byName"}:
+            error("INFER_BACKWARD_UNSUPPORTED", "Union alignment mode is unsupported")
+        if mode == "byPosition":
+            if allow_missing or len(left.fields) != len(right.fields):
+                error(
+                    "INFER_BACKWARD_UNSUPPORTED", "Positional union field counts differ"
+                )
+            pairs = list(zip(left.fields, right.fields, strict=False))
+        else:
+            if not allow_missing and set(left_by_name) != set(right_by_name):
+                error("INFER_BACKWARD_UNSUPPORTED", "Named union fields differ")
+            names = list(dict.fromkeys([*left_by_name, *right_by_name]))
+            pairs = [(left_by_name.get(key), right_by_name.get(key)) for key in names]
+        for left_field, right_field in pairs:
+            field = left_field or right_field
+            if field is None:
+                continue
+            if left_field is not None and right_field is not None:
+                logical = _merge(left_field.logical_type, right_field.logical_type)
+                if logical == "unknown" or (
+                    logical == "string"
+                    and left_field.logical_type != right_field.logical_type
+                ):
+                    error(
+                        "INFER_BACKWARD_UNSUPPORTED",
+                        f"Union field {field.name!r} has incompatible types",
+                        field.name,
+                    )
+                    logical = "unknown"
+                nullable = left_field.nullable or right_field.nullable
+                origin = left_lineage[left_field.name]
+                other_origin = right_lineage[right_field.name]
+                origin = {
+                    **origin,
+                    "source_fields": list(
+                        dict.fromkeys(
+                            [
+                                *_sequence(origin.get("source_fields")),
+                                *_sequence(other_origin.get("source_fields")),
+                            ]
+                        )
+                    ),
+                    "qualified_source_fields": list(
+                        dict.fromkeys(
+                            [
+                                *_sequence(origin.get("qualified_source_fields")),
+                                *_sequence(other_origin.get("qualified_source_fields")),
+                            ]
+                        )
+                    ),
+                }
+            else:
+                logical = field.logical_type
+                nullable = True
+                origin = (left_lineage if left_field else right_lineage)[field.name]
+            add(
+                NormalizedField(
+                    field.name, logical, True, nullable, {"inferred": True}
+                ),
+                origin,
+            )
+    elif name == "dtcs:join":
+        how = str(params.get("type", "inner")).lower()
+        if how == "outer":
+            how = "full"
+        if how not in {"inner", "left", "right", "full", "semi", "anti", "cross"}:
+            error("INFER_BACKWARD_UNSUPPORTED", "Join mode is unsupported")
+        if params.get("collisionPolicy", "fail") != "fail":
+            error("INFER_BACKWARD_UNSUPPORTED", "Join collision policy is unsupported")
+        if "predicate" in params:
+            error(
+                "INFER_BACKWARD_UNSUPPORTED",
+                "Join expression predicates are unsupported",
+            )
+        left_keys = params.get("leftKey", ())
+        right_keys = params.get("rightKey", left_keys)
+        left_keys = [left_keys] if isinstance(left_keys, str) else _sequence(left_keys)
+        right_keys = (
+            [right_keys] if isinstance(right_keys, str) else _sequence(right_keys)
+        )
+        if how != "cross" and (not left_keys or len(left_keys) != len(right_keys)):
+            error(
+                "INFER_LINEAGE_MISSING", "Join keys are missing or have different arity"
+            )
+        shared_keys: set[str] = set()
+        for left_key, right_key in zip(left_keys, right_keys, strict=False):
+            if left_key not in left_by_name or right_key not in right_by_name:
+                error("INFER_LINEAGE_MISSING", "Join key references a missing field")
+                continue
+            if (
+                left_by_name[left_key].logical_type
+                != right_by_name[right_key].logical_type
+            ):
+                error("INFER_BACKWARD_UNSUPPORTED", "Join key types differ")
+            if left_key == right_key:
+                shared_keys.add(left_key)
+        collisions = (set(left_by_name) & set(right_by_name)) - shared_keys
+        if collisions and how not in {"semi", "anti"}:
+            for field_name in sorted(collisions):
+                error(
+                    "INFER_LINEAGE_COLLISION",
+                    f"Join field {field_name!r} collides",
+                    field_name,
+                )
+        for field in left.fields:
+            add(
+                NormalizedField(
+                    field.name,
+                    field.logical_type,
+                    True,
+                    field.nullable or how in {"right", "full"},
+                    {"inferred": True},
+                ),
+                left_lineage[field.name],
+            )
+        if how not in {"semi", "anti"}:
+            for field in right.fields:
+                if field.name in shared_keys:
+                    continue
+                if field.name in left_by_name:
+                    continue
+                add(
+                    NormalizedField(
+                        field.name,
+                        field.logical_type,
+                        True,
+                        field.nullable or how in {"left", "full"},
+                        {"inferred": True},
+                    ),
+                    right_lineage[field.name],
+                )
+    else:
+        error(
+            "INFER_BACKWARD_UNSUPPORTED",
+            "Two-input schema transfer requires join or union",
+        )
+    metadata: dict[str, Any] = {
+        "lineage": lineage,
+        "lineage_version": 1,
+        "lineage_fingerprint": _lineage_fingerprint(lineage),
+        "lineage_graph": {
+            "version": 1,
+            "fields": {
+                field_name: {
+                    "source_nodes": _sequence(entry.get("source_nodes"))
+                    or ([entry.get("source_node")] if entry.get("source_node") else []),
+                    "source_fields": _sequence(entry.get("source_fields")),
+                    "qualified_source_fields": _sequence(
+                        entry.get("qualified_source_fields")
+                    ),
+                    "operations": _sequence(entry.get("operations")),
+                    "invertible": False,
+                }
+                for field_name, entry in lineage.items()
+            },
+        },
+    }
+    if diagnostics:
+        metadata["inference_diagnostics"] = [
+            item.to_dict() for item in diagnostics[: max(1, max_diagnostics)]
+        ]
+    return NormalizedSchema(str(action.action_id), tuple(output), metadata)
 
 
 def forward_schema(
@@ -445,7 +681,7 @@ def forward_schema(
                         NormalizedField(
                             output_name,
                             logical,
-                            not nullable,
+                            True,
                             nullable,
                             {"inferred": True},
                         )
@@ -466,7 +702,7 @@ def forward_schema(
                     transfer_diagnostics,
                 )
                 current[field_name] = NormalizedField(
-                    field_name, logical, not nullable, nullable, {"inferred": True}
+                    field_name, logical, True, nullable, {"inferred": True}
                 )
                 if field_name in assigned_names or (
                     field_name in next_lineage and field_name not in lineage
@@ -487,10 +723,173 @@ def forward_schema(
                 next_lineage[field_name]["field"] = field_name
             fields = list(current.values())
             lineage = next_lineage
+        elif name == "dtcs:aggregate":
+            input_fields = {field.name: field for field in fields}
+            input_view = NormalizedSchema(input_schema.identity, tuple(fields))
+            output_fields: list[NormalizedField] = []
+            next_lineage: dict[str, dict[str, Any]] = {}
+
+            def add_aggregate_field(
+                output_name: str,
+                logical_type: str,
+                nullable: bool,
+                expression: Any,
+                *,
+                direct: bool = False,
+                _fields: list[NormalizedField] = output_fields,
+                _next_lineage: dict[str, dict[str, Any]] = next_lineage,
+                _input_lineage: dict[str, dict[str, Any]] = lineage,
+            ) -> None:
+                if output_name in _next_lineage:
+                    transfer_diagnostics.append(
+                        Diagnostic(
+                            "INFER_LINEAGE_COLLISION",
+                            Severity.ERROR,
+                            f"Aggregation produces duplicate field {output_name!r}",
+                            path=(output_name,),
+                            phase="inference",
+                        )
+                    )
+                    return
+                _fields.append(
+                    NormalizedField(
+                        output_name,
+                        logical_type,
+                        True,
+                        nullable,
+                        {"inferred": True},
+                    )
+                )
+                entry = _lineage_expression(expression, _input_lineage, "aggregate")
+                entry["field"] = output_name
+                entry["invertible"] = direct and bool(entry.get("invertible"))
+                _next_lineage[output_name] = entry
+
+            for key in _sequence(params.get("groupBy")):
+                if isinstance(key, str):
+                    field = input_fields.get(key)
+                    if field is None:
+                        transfer_diagnostics.append(
+                            Diagnostic(
+                                "INFER_LINEAGE_MISSING",
+                                Severity.ERROR,
+                                f"Group key references missing field {key!r}",
+                                path=(key,),
+                                phase="inference",
+                            )
+                        )
+                        add_aggregate_field(
+                            key, "unknown", True, {"kind": "fieldRef", "target": key}
+                        )
+                    else:
+                        add_aggregate_field(
+                            key,
+                            field.logical_type,
+                            field.nullable,
+                            {"kind": "fieldRef", "target": key},
+                            direct=True,
+                        )
+                elif isinstance(key, Mapping):
+                    expression = key.get("expression", key)
+                    output_name = key.get("name")
+                    if not isinstance(output_name, str) or not output_name:
+                        transfer_diagnostics.append(
+                            Diagnostic(
+                                "INFER_BACKWARD_UNSUPPORTED",
+                                Severity.ERROR,
+                                "Computed group keys require an output name",
+                                phase="inference",
+                            )
+                        )
+                        continue
+                    logical, nullable = infer_expression(
+                        expression, input_view, transfer_diagnostics
+                    )
+                    add_aggregate_field(output_name, logical, nullable, expression)
+            for aggregate in _sequence(params.get("aggregates")):
+                if not isinstance(aggregate, Mapping):
+                    continue
+                expression = aggregate.get("expression")
+                function = (
+                    expression.get("callee")
+                    if isinstance(expression, Mapping)
+                    else None
+                )
+                output_name = aggregate.get("name") or (
+                    str(function).split(":")[-1] if function is not None else None
+                )
+                if not isinstance(output_name, str) or not output_name:
+                    transfer_diagnostics.append(
+                        Diagnostic(
+                            "INFER_BACKWARD_UNSUPPORTED",
+                            Severity.ERROR,
+                            "Aggregation requires a named expression",
+                            phase="inference",
+                        )
+                    )
+                    continue
+                args = (
+                    _sequence(expression.get("args"))
+                    if isinstance(expression, Mapping)
+                    else []
+                )
+                logical, nullable = "unknown", True
+                if function in {"dtcs:count", "dtcs:count_all", "dtcs:count_distinct"}:
+                    expected_args = 0 if function == "dtcs:count_all" else 1
+                    if len(args) == expected_args:
+                        if args:
+                            infer_expression(args[0], input_view, transfer_diagnostics)
+                        logical, nullable = "integer", False
+                    else:
+                        transfer_diagnostics.append(
+                            Diagnostic(
+                                "INFER_BACKWARD_UNSUPPORTED",
+                                Severity.ERROR,
+                                f"Aggregate {function!r} requires {expected_args} argument(s)",
+                                path=(output_name,),
+                                phase="inference",
+                            )
+                        )
+                elif (
+                    function in {"dtcs:sum", "dtcs:average", "dtcs:min", "dtcs:max"}
+                    and args
+                ):
+                    operand_type, _ = infer_expression(
+                        args[0], input_view, transfer_diagnostics
+                    )
+                    if function in {
+                        "dtcs:sum",
+                        "dtcs:average",
+                    } and operand_type not in {"integer", "number", "decimal"}:
+                        transfer_diagnostics.append(
+                            Diagnostic(
+                                "INFER_BACKWARD_UNSUPPORTED",
+                                Severity.ERROR,
+                                f"Aggregate {function!r} requires a numeric operand",
+                                path=(output_name,),
+                                phase="inference",
+                            )
+                        )
+                    elif function == "dtcs:average":
+                        logical = "decimal" if operand_type == "decimal" else "number"
+                    else:
+                        logical = operand_type
+                else:
+                    transfer_diagnostics.append(
+                        Diagnostic(
+                            "INFER_BACKWARD_UNSUPPORTED",
+                            Severity.ERROR,
+                            f"Aggregate {function!r} has no qualified type rule",
+                            path=(output_name,),
+                            phase="inference",
+                        )
+                    )
+                add_aggregate_field(output_name, logical, nullable, expression)
+            fields = output_fields
+            lineage = next_lineage
         elif name in {
             "dtcs:join",
             "dtcs:union",
-            "dtcs:aggregate",
             "dtcs:intersect",
             "dtcs:except",
             "dtcs:explode",

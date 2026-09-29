@@ -1332,6 +1332,9 @@ def test_datafusion_schema_is_metadata_first_when_installed() -> None:
         ("id", "integer"),
         ("name", "string"),
     ]
+    assert result.provenance["method"] == "datafusion_schema"
+    assert result.provenance["rows_observed"] == 0
+    assert result.provenance["sampled"] is False
 
 
 def test_identical_observations_are_byte_stable() -> None:
@@ -1948,7 +1951,8 @@ def test_file_binding_reopens_with_inference_hints_and_limits(tmp_path) -> None:
     sampled = etl.read_csv(path, limits=etl.InferenceLimits(max_rows=1))
 
     assert hinted.definition().contracts[0].fields[0].type == "number"
-    assert sampled.definition().contracts[0].fields[0].type == "integer"
+    with pytest.raises(ValueError, match="INFER_SOURCE_SCHEMA_UNVERIFIED"):
+        sampled.definition()
 
 
 def test_file_rebinding_preserves_inference_settings(tmp_path) -> None:
@@ -1960,13 +1964,13 @@ def test_file_rebinding_preserves_inference_settings(tmp_path) -> None:
     dataset = etl.read_csv(
         first,
         hints={"id": float},
-        limits=etl.InferenceLimits(max_rows=1),
+        limits=etl.InferenceLimits(max_rows=2),
     )
     rebound = dataset.rebind_source(str(second))
 
     binding = rebound.nodes[0].bindings["source"]
     assert binding["hints"] == {"id": "float"}
-    assert binding["limits"]["max_rows"] == 1
+    assert binding["limits"]["max_rows"] == 2
     assert etl.reopen_source_binding(binding).schema.fields[0].logical_type == "number"
 
 
@@ -2156,14 +2160,103 @@ def test_file_source_registry_can_be_released_explicitly(tmp_path) -> None:
         etl.resolve_source_binding(binding)
 
 
-def test_sampled_csv_with_a_file_binding_can_be_exported(tmp_path) -> None:
+def test_sampled_csv_with_a_file_binding_cannot_be_exported(tmp_path) -> None:
     path = tmp_path / "events.csv"
     path.write_text("id\n1\n2\n", encoding="utf-8")
 
-    definition = etl.read_csv(
-        str(path), limits=etl.InferenceLimits(max_rows=1)
-    ).definition()
-    assert definition.nodes[0].bindings["source"]["kind"] == "file"
+    dataset = etl.read_csv(str(path), limits=etl.InferenceLimits(max_rows=1))
+    with pytest.raises(ValueError, match="INFER_SOURCE_SCHEMA_UNVERIFIED"):
+        dataset.definition()
+
+
+def test_sampled_csv_late_type_change_cannot_be_exported(tmp_path) -> None:
+    path = tmp_path / "events.csv"
+    path.write_text("id\n1\nnot-an-integer\n", encoding="utf-8")
+    dataset = etl.read_csv(str(path), limits=etl.InferenceLimits(max_rows=1))
+
+    assert dataset.schema.fields[0].logical_type == "integer"
+    assert dataset.provenance["sampled"] is True
+    with pytest.raises(ValueError, match="INFER_SOURCE_SCHEMA_UNVERIFIED"):
+        dataset.definition()
+    with pytest.raises(ValueError, match="INFER_SOURCE_SCHEMA_UNVERIFIED"):
+        dataset.rebind_source(str(path))
+
+
+def test_integer_division_exports_fractional_type() -> None:
+    dataset = etl.from_records([{"a": 3, "b": 2}], name="division").withColumn(
+        "quotient", col("a") / col("b")
+    )
+
+    assert dataset.preview()[0]["quotient"] == 1.5
+    assert dataset.schema.fields[-1].logical_type == "number"
+    assert dataset.definition().contracts[-1].fields[-1].type == "number"
+
+
+def test_nullable_required_fields_remain_present_after_transformation() -> None:
+    dataset = etl.from_records(
+        [{"value": None}], hints={"value": "integer"}, name="nullable_required"
+    ).withColumn("copy", col("value"))
+
+    assert dataset.preview() == [{"value": None, "copy": None}]
+    assert [(field.required, field.nullable) for field in dataset.schema.fields] == [
+        (True, True),
+        (True, True),
+    ]
+    assert not any(d.severity == Severity.ERROR for d in dataset.diagnostics)
+    assert dataset.definition().contracts[-1].fields[-1].required is True
+
+
+def test_boolean_arithmetic_cannot_export_a_boolean_contract() -> None:
+    dataset = etl.from_records([{"a": True, "b": True}], name="boolean_math")
+    result = dataset.withColumn("sum", col("a") + col("b"))
+
+    assert result.preview()[0]["sum"] == 2
+    assert result.schema.fields[-1].logical_type == "unknown"
+    with pytest.raises(ValueError, match="INFER_BACKWARD_UNSUPPORTED"):
+        result.definition()
+
+
+def test_unknown_record_hint_is_diagnosed() -> None:
+    result = etl.infer_records([{"id": 1}], hints={"misspelled": "integer"})
+
+    assert not result.valid
+    assert "INFER_HINT_UNOBSERVED" in {d.code for d in result.diagnostics}
+    empty = etl.infer_records([], hints={"misspelled": "integer"})
+    assert "INFER_HINT_UNOBSERVED" in {d.code for d in empty.diagnostics}
+
+
+def test_legacy_sampled_file_definition_fails_binding_validation(tmp_path) -> None:
+    path = tmp_path / "legacy.csv"
+    path.write_text("id\n1\nnot-an-integer\n", encoding="utf-8")
+    dataset = etl.read_csv(str(path), limits=etl.InferenceLimits(max_rows=1))
+    # Model the row-free document emitted by earlier releases, before the
+    # creation-time sampled-source gate was added.
+    legacy = dataset.definition(_allow_unresolved_source=True)
+
+    with pytest.raises(ValueError, match="INFER_SOURCE_SCHEMA_UNVERIFIED"):
+        validate_source_binding_against_definition(
+            legacy, legacy.nodes[0].bindings["source"]
+        )
+
+
+def test_provider_target_revision_is_rechecked_automatically() -> None:
+    class Target:
+        revision = "v1"
+
+        def inspect_schema(self):
+            return {
+                "identity": "revisioned-provider",
+                "revision": self.revision,
+                "fields": [{"name": "id", "type": "integer"}],
+                "capabilities": {"write_modes": ["append"]},
+            }
+
+    target = Target()
+    dataset = etl.from_records_for_target([{"id": 1}], target, name="provider_revision")
+    target.revision = "v2"
+
+    with pytest.raises(ValueError, match="INFER_TARGET_STALE"):
+        dataset.definition()
 
 
 def test_sampled_one_shot_source_can_be_explicitly_rebound(tmp_path) -> None:
@@ -2252,7 +2345,9 @@ def test_reopened_generator_binding_isolated_from_override() -> None:
         reopened = etl.reopen_source_binding(
             binding, limits=etl.InferenceLimits(max_rows=1)
         )
-        reopened_key = reopened.definition().nodes[0].bindings["source"]["factory_key"]
+        reopened_key = reopened._source_binding["factory_key"]
+        with pytest.raises(ValueError, match="INFER_SOURCE_SCHEMA_UNVERIFIED"):
+            reopened.definition()
         assert reopened_key != key
         assert source_factory(key) is factory
     finally:

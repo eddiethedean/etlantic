@@ -5,6 +5,7 @@ from __future__ import annotations
 import os
 
 from etlantic.streaming.registry import InMemorySchemaRegistry
+from etlantic_schemaregistry.http import ConfluentHttpRegistry
 
 __version__ = "0.54.0"
 
@@ -36,6 +37,7 @@ def create_registry() -> FakeConfluentRegistry:
 
 
 __all__ = [
+    "ConfluentHttpRegistry",
     "FakeConfluentRegistry",
     "__version__",
     "create_registry",

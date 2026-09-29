@@ -16,7 +16,12 @@ from .durable import (
 )
 from .facade import model_from_schema
 from .records import infer_csv, infer_json, infer_records
-from .sources import infer_source, infer_source_async
+from .schema_documents import (
+    infer_registry_subject,
+    infer_schema_document,
+    inspect_schema_document_target,
+)
+from .sources import infer_parquet, infer_source, infer_source_async
 from .targets import (
     backfill_schema,
     check_write_compatibility,
@@ -59,11 +64,15 @@ __all__ = [
     "infer_expression",
     "infer_frame_schema",
     "infer_json",
+    "infer_parquet",
     "infer_records",
     "infer_records_for_target",
     "infer_records_for_target_async",
+    "infer_registry_subject",
+    "infer_schema_document",
     "infer_source",
     "infer_source_async",
+    "inspect_schema_document_target",
     "inspect_target",
     "inspect_target_async",
     "model_from_schema",

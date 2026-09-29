@@ -877,6 +877,18 @@ def infer_records(
             )
         else:
             validated_hints[str(hint_name)] = parsed_hint
+    for hint_name in validated_hints:
+        if hint_name not in stats:
+            _append_diag(
+                diagnostics,
+                _diag(
+                    "INFER_HINT_UNOBSERVED",
+                    f"Hint for field {hint_name!r} has no observed field",
+                    severity=Severity.WARNING if sampled else Severity.ERROR,
+                    path=(hint_name,),
+                ),
+                limits.max_diagnostics,
+            )
     fields: list[NormalizedField] = []
     evidence: list[SchemaEvidence] = []
     mixed_fields: set[str] = set()

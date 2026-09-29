@@ -77,6 +77,12 @@ OPTIONAL_SURFACES = {
 QUALIFIED_PROVIDER_SURFACES = {
     "pandas": ("pandas",),
     "polars": ("polars",),
+    "pyspark": ("pyspark",),
+    "datafusion": ("datafusion",),
+    "sql-duckdb": ("duckdb",),
+    "parquet": ("pyarrow.parquet",),
+    "schema-registry": ("etlantic_schemaregistry",),
+    "append-overwrite-merge-upsert-partition-replace": ("etlantic_sql",),
 }
 GATE_RESULT_MARKER = "ETLANTIC_GATE_RESULT="
 DEPENDENCY_NAMES = (
@@ -118,12 +124,18 @@ GATE_TESTS: dict[str, tuple[str, ...]] = {
     ),
     "durable_definition": (
         "tests/inference/test_review_fixes.py",
+        "tests/inference/test_differential_0_55.py",
         "-k",
-        "definition or binding or rebind",
+        "definition or binding or rebind or multi_input",
     ),
     "differential_fixtures": (
         "tests/inference/test_differential_0_55.py",
+        "tests/inference/test_registry_http_0_55.py",
+        "tests/inference/test_sqlite_target_modes_0_55.py",
         "tests/inference/test_review_fixes.py::test_preview_evaluator_covers_numeric_and_conversion_functions",
+        "tests/inference/test_review_fixes.py::test_nullable_required_fields_remain_present_after_transformation",
+        "tests/inference/test_review_fixes.py::test_boolean_arithmetic_cannot_export_a_boolean_contract",
+        "tests/inference/test_review_fixes.py::test_unknown_record_hint_is_diagnosed",
     ),
     "race_tests": (
         "tests/inference/test_phase_055_blockers.py",

@@ -33,17 +33,13 @@
     "full_regression"
   ],
   "qualification_scope": {
-    "included_capabilities": ["records", "csv", "json", "pandas", "polars"],
-    "excluded_capabilities": [
-      "pyspark",
-      "datafusion",
-      "sql-duckdb",
-      "parquet",
-      "schema-registry",
-      "append-overwrite-merge-upsert-partition-replace"
-    ]
+    "included_capabilities": ["records", "csv", "json", "pandas", "polars", "pyspark", "datafusion", "sql-duckdb", "parquet", "schema-registry", "join-union", "append-overwrite-merge-upsert-partition-replace"],
+    "excluded_capabilities": []
   },
   "limitations": [
-    "PySpark, DataFusion, DuckDB, Parquet, schema-registry, and provider-backed write modes are explicitly unsupported and excluded from this qualification."
+    "PySpark, DataFusion, and DuckDB qualification covers metadata-only source inspection; durable provider replay still requires explicit rebinding.",
+    "Parquet qualification covers bounded footer inspection and a read-only durable source binding; it does not grant Parquet write capability.",
+    "Schema-registry qualification covers read-only JSON Schema and Avro document inspection; Protobuf field inference and live service availability are outside this evidence campaign.",
+    "Write-mode qualification covers the transactional SQLite reference target. Other provider implementations require their own mode evidence."
   ]
 }

@@ -370,12 +370,13 @@ def test_target_backfill_validates_when_rows_are_not_retained() -> None:
     assert "INFER_RUNTIME_CONVERSION" in {d.code for d in result.diagnostics}
 
 
-def test_target_path_with_unsupported_extension_fails_closed(tmp_path) -> None:
+def test_target_path_with_malformed_parquet_fails_closed(tmp_path) -> None:
     path = tmp_path / "target.parquet"
     path.write_bytes(b"not a csv")
     observation = etl.inspect_target(path)
     assert observation.exists == "unknown"
-    assert observation.inspector is None
+    assert observation.inspector == "parquet"
+    assert "INFER_SOURCE_UNSUPPORTED" in {item.code for item in observation.diagnostics}
 
 
 def test_target_inspection_preserves_normalized_field_objects() -> None:
@@ -1366,7 +1367,7 @@ def test_target_backfill_stops_at_derived_lineage() -> None:
         "target", (NormalizedField("new_id", "integer", required=True, nullable=False),)
     )
     result = source.backfill_from(target)
-    assert result.schema.fields[0].logical_type == "string"
+    assert result.schema.fields[0].logical_type == "unknown"
     assert "INFER_BACKWARD_UNSUPPORTED" in {d.code for d in result.diagnostics}
 
 

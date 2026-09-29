@@ -37,6 +37,7 @@ from .records import (
     infer_json,
     infer_records,
 )
+from .sources import infer_parquet
 from .types import (
     TARGET_EXISTENCE_STATES,
     FieldConstraint,
@@ -1391,6 +1392,9 @@ def _inspect_target_with_identity(
                     identity=identity,
                 )
                 inspector = "csv"
+            elif suffix == ".parquet":
+                result = infer_parquet(path, identity=identity)
+                inspector = "parquet"
             else:
                 return _unknown_target("INFER_TARGET_UNSUPPORTED", identity=identity)
         except OSError:
