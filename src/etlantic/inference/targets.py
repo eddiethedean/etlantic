@@ -80,6 +80,9 @@ _KNOWN_LOGICAL_TYPES = {
 
 _TARGET_SCHEMA_MAX_FIELDS = InferenceLimits().max_fields
 _TARGET_SCHEMA_MAX_METADATA_KEYS = 256
+_MAX_BACKWARD_TARGETS = 256
+_MAX_BACKWARD_ITERATIONS = 64
+_MAX_BACKWARD_DIAGNOSTICS = 256
 
 
 class _TargetSchemaLimitError(ValueError):
@@ -3141,11 +3144,38 @@ def solve_backward_constraints(
     nonconvergent instead of returning an arbitrary final type.
     """
     current = InferenceResult(source)
-    target_items = (
-        tuple(targets)
-        if not isinstance(targets, (NormalizedSchema, TargetObservation))
-        else (targets,)
-    )
+    if isinstance(targets, (NormalizedSchema, TargetObservation)):
+        target_items = (targets,)
+    else:
+        try:
+            target_iterator = iter(targets)
+        except TypeError:
+            target_items = (targets,)
+        else:
+            try:
+                target_items = tuple(islice(target_iterator, _MAX_BACKWARD_TARGETS + 1))
+            except Exception:
+                diagnostic = Diagnostic(
+                    "INFER_TARGET_UNSUPPORTED",
+                    Severity.ERROR,
+                    "Target constraints could not be iterated safely",
+                    phase="inference",
+                )
+                return current.replace(diagnostics=(diagnostic,))
+            if len(target_items) > _MAX_BACKWARD_TARGETS:
+                diagnostic = Diagnostic(
+                    "INFER_LIMIT",
+                    Severity.ERROR,
+                    "Backward target constraint count exceeded the configured limit",
+                    phase="inference",
+                )
+                return current.replace(
+                    diagnostics=(diagnostic,),
+                    provenance={
+                        "source": "backward_constraints",
+                        "max_targets": _MAX_BACKWARD_TARGETS,
+                    },
+                )
     observations: list[TargetObservation] = []
     for item in target_items:
         if isinstance(item, TargetObservation):
@@ -3175,18 +3205,56 @@ def solve_backward_constraints(
         )
     seen: set[tuple[str, str]] = set()
     all_diagnostics: list[Any] = []
-    for _iteration in range(max(1, max_iterations)):
+    diagnostic_keys: set[tuple[str, tuple[str, ...], str]] = set()
+    diagnostic_limit_reached = False
+
+    def record_diagnostics(diagnostics: Iterable[Any]) -> None:
+        nonlocal diagnostic_limit_reached
+        for diagnostic in diagnostics:
+            key = (
+                getattr(diagnostic, "code", str(diagnostic)),
+                tuple(getattr(diagnostic, "path", ())),
+                getattr(diagnostic, "message", str(diagnostic)),
+            )
+            if key in diagnostic_keys:
+                continue
+            if len(all_diagnostics) >= _MAX_BACKWARD_DIAGNOSTICS - 1:
+                if not diagnostic_limit_reached:
+                    limit_diagnostic = Diagnostic(
+                        "INFER_LIMIT",
+                        Severity.ERROR,
+                        "Backward target diagnostics exceeded the configured limit",
+                        phase="inference",
+                    )
+                    all_diagnostics.append(limit_diagnostic)
+                    diagnostic_keys.add(
+                        (
+                            limit_diagnostic.code,
+                            tuple(limit_diagnostic.path),
+                            limit_diagnostic.message,
+                        )
+                    )
+                    diagnostic_limit_reached = True
+                return
+            all_diagnostics.append(diagnostic)
+            diagnostic_keys.add(key)
+
+    requested_iterations = max(1, max_iterations)
+    iteration_limit = min(requested_iterations, _MAX_BACKWARD_ITERATIONS)
+    for _iteration in range(iteration_limit):
         before = (
             current.schema.fingerprint(),
             repr(current.schema.metadata.get("backward_constraints", {})),
         )
         if before in seen:
-            all_diagnostics.append(
-                Diagnostic(
-                    "INFER_BACKWARD_NONCONVERGENT",
-                    Severity.ERROR,
-                    "Backward target constraints did not converge",
-                    phase="inference",
+            record_diagnostics(
+                (
+                    Diagnostic(
+                        "INFER_BACKWARD_NONCONVERGENT",
+                        Severity.ERROR,
+                        "Backward target constraints did not converge",
+                        phase="inference",
+                    ),
                 )
             )
             break
@@ -3194,9 +3262,9 @@ def solve_backward_constraints(
         changed = False
         for observation in observations:
             result = _backfill_observation(current, observation)
-            all_diagnostics.extend(result.diagnostics)
+            record_diagnostics(result.diagnostics)
             changed = changed or result.schema != current.schema
-            current = result
+            current = result.replace(diagnostics=())
         after = (
             current.schema.fingerprint(),
             repr(current.schema.metadata.get("backward_constraints", {})),
@@ -3204,26 +3272,28 @@ def solve_backward_constraints(
         if not changed or after == before:
             break
     else:
-        all_diagnostics.append(
-            Diagnostic(
-                "INFER_BACKWARD_NONCONVERGENT",
-                Severity.ERROR,
-                f"Backward target constraints exceeded {max_iterations} iterations",
-                phase="inference",
+        record_diagnostics(
+            (
+                Diagnostic(
+                    "INFER_BACKWARD_NONCONVERGENT",
+                    Severity.ERROR,
+                    f"Backward target constraints exceeded {iteration_limit} iterations",
+                    phase="inference",
+                ),
             )
         )
-    unique: list[Any] = []
-    keys: set[tuple[str, tuple[str, ...], str]] = set()
-    for diagnostic in all_diagnostics:
-        key = (
-            getattr(diagnostic, "code", str(diagnostic)),
-            tuple(getattr(diagnostic, "path", ())),
-            getattr(diagnostic, "message", str(diagnostic)),
-        )
-        if key not in keys:
-            keys.add(key)
-            unique.append(diagnostic)
-    return current.replace(diagnostics=tuple(unique))
+        if requested_iterations > iteration_limit:
+            record_diagnostics(
+                (
+                    Diagnostic(
+                        "INFER_LIMIT",
+                        Severity.ERROR,
+                        "Backward target constraint iteration limit was reached",
+                        phase="inference",
+                    ),
+                )
+            )
+    return current.replace(diagnostics=tuple(all_diagnostics))
 
 
 def check_write_compatibility(

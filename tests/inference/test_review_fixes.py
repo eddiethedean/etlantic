@@ -1008,13 +1008,24 @@ def test_date_datetime_promotion_and_decimal_compatibility() -> None:
     from decimal import Decimal
 
     result = infer_records(
-        [{"value": dt.date(2024, 1, 1)}, {"value": dt.datetime(2024, 1, 2)}]
+        [{"value": dt.date(2024, 1, 1)}, {"value": dt.datetime(2024, 1, 2)}],
+        retain_rows=True,
     )
     assert result.schema.fields[0].logical_type == "datetime"
+    assert result.rows[0]["value"] == dt.datetime(2024, 1, 1)
+    assert isinstance(result.rows[0]["value"], dt.datetime)
     source = NormalizedSchema("source", (NormalizedField("value", "decimal"),))
     target = NormalizedSchema("target", (NormalizedField("value", "number"),))
     assert check_write_compatibility(source, target).status == "conditional"
     assert Decimal("1.0000000000000000001")
+
+
+def test_snapshot_uses_materialized_byte_limit_over_raw_byte_limit() -> None:
+    from etlantic.inference.facade import _bounded_materialized_snapshot
+
+    limits = etl.InferenceLimits(max_bytes=1024, max_materialized_bytes=64)
+
+    assert _bounded_materialized_snapshot([{"value": "x" * 100}], limits) is None
 
 
 def test_path_identities_do_not_collide_on_same_filename(tmp_path) -> None:
@@ -2275,6 +2286,30 @@ def test_provider_target_revision_is_rechecked_automatically() -> None:
 
     with pytest.raises(ValueError, match="INFER_TARGET_STALE"):
         dataset.definition()
+
+    compatibility = dataset.check_write(
+        NormalizedSchema("revisioned-provider", (NormalizedField("id", "integer"),))
+    )
+    assert not compatibility.compatible
+    assert "INFER_TARGET_STALE" in {item.code for item in compatibility.diagnostics}
+
+
+def test_backward_constraints_bound_an_unbounded_target_iterable() -> None:
+    consumed = 0
+    source = NormalizedSchema("source", (NormalizedField("value", "unknown"),))
+
+    def targets():
+        nonlocal consumed
+        while True:
+            consumed += 1
+            yield NormalizedSchema(
+                f"target-{consumed}", (NormalizedField("value", "integer"),)
+            )
+
+    result = solve_backward_constraints(source, targets())
+
+    assert "INFER_LIMIT" in {item.code for item in result.diagnostics}
+    assert consumed == 257
 
 
 def test_sampled_one_shot_source_can_be_explicitly_rebound(tmp_path) -> None:

@@ -11,6 +11,9 @@ from typing import Any
 from etlantic.diagnostics import Diagnostic, Severity
 from etlantic.schema_drift import NormalizedField, NormalizedSchema, json_safe_metadata
 
+_MAX_LINEAGE_OPERATIONS = 256
+_LINEAGE_TRUNCATION_MARKER = {"operation": "history_truncated"}
+
 
 def _merge(left: str, right: str) -> str:
     if left == right:
@@ -22,10 +25,38 @@ def _merge(left: str, right: str) -> str:
     if {left, right} <= {"integer", "decimal"}:
         return "decimal"
     if {left, right} <= {"integer", "decimal", "number"}:
+        if "decimal" in {left, right} and "number" in {left, right}:
+            return "unknown"
         return "decimal"
     if "string" in {left, right}:
         return "string"
     return "unknown"
+
+
+def _merge_call_results(
+    left: str,
+    right: str,
+    diagnostics: list[Diagnostic] | None,
+    *,
+    function: str,
+) -> str:
+    merged = _merge(left, right)
+    if (
+        merged == "unknown"
+        and left in {"integer", "decimal", "number"}
+        and right in {"integer", "decimal", "number"}
+        and {left, right} == {"decimal", "number"}
+        and diagnostics is not None
+    ):
+        diagnostics.append(
+            Diagnostic(
+                "INFER_BACKWARD_UNSUPPORTED",
+                Severity.ERROR,
+                f"Expression {function!r} mixes decimal and number values without an explicit conversion",
+                phase="inference",
+            )
+        )
+    return merged
 
 
 def _sequence(value: Any) -> list[Any]:
@@ -33,6 +64,36 @@ def _sequence(value: Any) -> list[Any]:
     if isinstance(value, (list, tuple)):
         return list(value)
     return []
+
+
+def _is_lineage_truncation_marker(value: Any) -> bool:
+    return isinstance(value, Mapping) and value.get("operation") == "history_truncated"
+
+
+def _bounded_lineage(lineage: Mapping[str, Any]) -> dict[str, dict[str, Any]]:
+    """Bound operation history while retaining its beginning and latest steps."""
+    bounded: dict[str, dict[str, Any]] = {}
+    for field_name, raw_entry in lineage.items():
+        if not isinstance(raw_entry, Mapping):
+            continue
+        entry = dict(raw_entry)
+        operations = _sequence(entry.get("operations"))
+        if len(operations) > _MAX_LINEAGE_OPERATIONS:
+            retained = [
+                item for item in operations if not _is_lineage_truncation_marker(item)
+            ]
+            # The marker represents all omitted middle history. Reserve one
+            # slot for it and keep both the earliest provenance and newest work.
+            first_count = (_MAX_LINEAGE_OPERATIONS - 1) // 2
+            latest_count = _MAX_LINEAGE_OPERATIONS - first_count - 1
+            operations = [
+                *retained[:first_count],
+                dict(_LINEAGE_TRUNCATION_MARKER),
+                *retained[-latest_count:],
+            ]
+        entry["operations"] = operations
+        bounded[str(field_name)] = entry
+    return bounded
 
 
 def _expression_refs(node: Any) -> tuple[str, ...]:
@@ -249,13 +310,18 @@ def infer_expression(
             inferred = [infer_expression(arg, schema, diagnostics) for arg in args]
             logical = inferred[0][0]
             for value, _ in inferred[1:]:
-                logical = _merge(logical, value)
+                logical = _merge_call_results(
+                    logical, value, diagnostics, function=callee
+                )
             return logical, all(nullable for _, nullable in inferred)
         if callee in {"dtcs:if_null", "if_null"} and len(args) >= 2:
             inferred = [infer_expression(arg, schema, diagnostics) for arg in args[:2]]
-            return _merge(inferred[0][0], inferred[1][0]), inferred[0][1] and inferred[
-                1
-            ][1]
+            return (
+                _merge_call_results(
+                    inferred[0][0], inferred[1][0], diagnostics, function=callee
+                ),
+                inferred[0][1] and inferred[1][1],
+            )
         if callee in {"dtcs:null_if", "null_if"} and args:
             logical, nullable = infer_expression(args[0], schema, diagnostics)
             return logical, True if len(args) > 1 else nullable
@@ -266,7 +332,9 @@ def infer_expression(
             ]
             logical = inferred[0][0]
             for value, _ in inferred[1:]:
-                logical = _merge(logical, value)
+                logical = _merge_call_results(
+                    logical, value, diagnostics, function=callee
+                )
             return logical, any(nullable for _, nullable in inferred)
         scalar_types = {
             "dtcs:lower": "string",
@@ -393,7 +461,12 @@ def combine_schemas(
                         field.name,
                     )
                     logical = "unknown"
-                nullable = left_field.nullable or right_field.nullable
+                nullable = (
+                    left_field.nullable
+                    or right_field.nullable
+                    or not left_field.required
+                    or not right_field.required
+                )
                 origin = left_lineage[left_field.name]
                 other_origin = right_lineage[right_field.name]
                 origin = {
@@ -473,8 +546,8 @@ def combine_schemas(
                 NormalizedField(
                     field.name,
                     field.logical_type,
-                    True,
-                    field.nullable or how in {"right", "full"},
+                    field.required,
+                    field.nullable or not field.required or how in {"right", "full"},
                     {"inferred": True},
                 ),
                 left_lineage[field.name],
@@ -489,8 +562,8 @@ def combine_schemas(
                     NormalizedField(
                         field.name,
                         field.logical_type,
-                        True,
-                        field.nullable or how in {"left", "full"},
+                        field.required,
+                        field.nullable or not field.required or how in {"left", "full"},
                         {"inferred": True},
                     ),
                     right_lineage[field.name],
@@ -500,6 +573,7 @@ def combine_schemas(
             "INFER_BACKWARD_UNSUPPORTED",
             "Two-input schema transfer requires join or union",
         )
+    lineage = _bounded_lineage(lineage)
     metadata: dict[str, Any] = {
         "lineage": lineage,
         "lineage_version": 1,
@@ -689,7 +763,10 @@ def forward_schema(
             fields = projected
             lineage = next_lineage
         elif name == "dtcs:with_fields":
+            # All expressions in one with_fields action read the same input
+            # row. Keep their inference view fixed while building the output.
             current = {field.name: field for field in fields}
+            input_view = NormalizedSchema(input_schema.identity, tuple(fields))
             next_lineage = dict(lineage)
             assigned_names: set[str] = set()
             for item in params.get("assignments", ()):
@@ -698,7 +775,7 @@ def forward_schema(
                 field_name = str(item.get("name"))
                 logical, nullable = infer_expression(
                     item.get("expression", {}),
-                    NormalizedSchema(input_schema.identity, tuple(current.values())),
+                    input_view,
                     transfer_diagnostics,
                 )
                 current[field_name] = NormalizedField(
@@ -969,6 +1046,7 @@ def forward_schema(
         seen.add(key)
         if len(bounded_diagnostics) < max(1, max_diagnostics):
             bounded_diagnostics.append(diagnostic)
+    lineage = _bounded_lineage(lineage)
     metadata = dict(input_schema.metadata)
     metadata["lineage"] = lineage
     metadata["lineage_version"] = 1

@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import re
 from collections.abc import Mapping
 from typing import Any, cast
 
@@ -34,6 +35,7 @@ _AVRO_TYPES = {
     "array": "array",
     "map": "object",
 }
+_AVRO_FIELD_NAME = re.compile(r"^[A-Za-z_][A-Za-z0-9_]*$")
 
 
 def _exceeds_utf8_byte_limit(value: str, limit: int | None) -> bool:
@@ -300,16 +302,23 @@ def infer_schema_document(
                     identity, "INFER_LIMIT", "Schema document exceeds the field limit"
                 )
             entries: list[dict[str, Any]] = []
+            field_names: set[str] = set()
             for raw_field in cast(list[Any], raw_fields):
                 if not isinstance(raw_field, Mapping):
                     raise ValueError("Avro field is malformed")
                 field = cast(Mapping[str, Any], raw_field)
-                if not isinstance(field.get("name"), str):
+                name = field.get("name")
+                if (
+                    not isinstance(name, str)
+                    or _AVRO_FIELD_NAME.fullmatch(name) is None
+                    or name in field_names
+                ):
                     raise ValueError("Avro field is malformed")
+                field_names.add(name)
                 logical, nullable = _field_type(field.get("type"), avro=True)
                 entries.append(
                     {
-                        "name": field["name"],
+                        "name": name,
                         "logical_type": logical,
                         "required": True,
                         "nullable": nullable,

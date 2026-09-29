@@ -222,6 +222,7 @@ _REVISION_FINGERPRINT_PREFIX = "etlantic-sha256:"
 _REVISION_FINGERPRINT_PATTERN = re.compile(
     rf"{re.escape(_REVISION_FINGERPRINT_PREFIX)}[0-9a-f]{{64}}"
 )
+_URI_SCHEME = re.compile(r"[A-Za-z][A-Za-z0-9+.-]*://")
 
 
 class _RevisionFingerprint(str):
@@ -332,8 +333,10 @@ def _metadata_key_kind(key: str) -> str | None:
 
 def _looks_like_path(value: str) -> bool:
     """Return whether a string appears to contain a local or URI path."""
-    if os.path.isabs(value) or value.startswith(
-        ("~/", "file://", "s3://", "gs://", "az://")
+    if (
+        os.path.isabs(value)
+        or value.startswith(("~/", "file://", "s3://", "gs://", "az://"))
+        or _URI_SCHEME.search(value) is not None
     ):
         return True
     # Avoid leaking common temporary/home path fragments embedded in messages.
@@ -752,30 +755,61 @@ class NormalizedSchema:
         }
 
     @classmethod
-    def from_dict(cls, data: dict[str, Any]) -> NormalizedSchema:
+    def from_dict(cls, data: Any) -> NormalizedSchema:
         """Deserialize a normalized schema (fingerprint is recomputed)."""
-        version = int(data.get("version", 1))
+        if not isinstance(data, Mapping):
+            raise TypeError("normalized schema payload must be a mapping")
+        data = cast(Mapping[str, Any], data)
+        version = data.get("version", 1)
+        if type(version) is not int:
+            raise ValueError("normalized schema version must be an integer")
         if version != 1:
             raise ValueError(f"unsupported normalized schema version: {version}")
-        fields = tuple(
-            NormalizedField(
-                name=str(item["name"]),
-                logical_type=str(item.get("logical_type") or "unknown"),
-                required=bool(item.get("required", True)),
-                nullable=bool(item.get("nullable", False)),
-                metadata=_json_safe(
-                    restore_wire_revision_fingerprints(item.get("metadata") or {})
-                ),
+        raw_fields = data.get("fields", ())
+        if not isinstance(raw_fields, (list, tuple)):
+            raise ValueError("normalized schema fields must be a sequence")
+        fields: list[NormalizedField] = []
+        names: set[str] = set()
+        for item in raw_fields:
+            if not isinstance(item, Mapping):
+                raise ValueError("normalized schema field must be a mapping")
+            name = item.get("name")
+            logical_type = item.get("logical_type", "unknown")
+            if logical_type is None:
+                logical_type = "unknown"
+            required = item.get("required", True)
+            nullable = item.get("nullable", False)
+            metadata = item.get("metadata", {})
+            if not isinstance(name, str) or not name:
+                raise ValueError("normalized schema field name must be non-empty")
+            if name in names:
+                raise ValueError("normalized schema field names must be unique")
+            if not isinstance(logical_type, str) or not logical_type:
+                raise ValueError("normalized schema field type must be non-empty")
+            if type(required) is not bool or type(nullable) is not bool:
+                raise ValueError("normalized schema field flags must be booleans")
+            if not isinstance(metadata, Mapping):
+                raise ValueError("normalized schema field metadata must be a mapping")
+            names.add(name)
+            fields.append(
+                NormalizedField(
+                    name=name,
+                    logical_type=logical_type,
+                    required=required,
+                    nullable=nullable,
+                    metadata=_json_safe(restore_wire_revision_fingerprints(metadata)),
+                )
             )
-            for item in (data.get("fields") or ())
-            if isinstance(item, dict)
-        )
+        identity = data.get("identity", "")
+        if not isinstance(identity, str):
+            raise ValueError("normalized schema identity must be a string")
+        metadata = data.get("metadata", {})
+        if not isinstance(metadata, Mapping):
+            raise ValueError("normalized schema metadata must be a mapping")
         return cls(
-            identity=str(data.get("identity") or ""),
-            fields=fields,
-            metadata=_json_safe(
-                restore_wire_revision_fingerprints(data.get("metadata") or {})
-            ),
+            identity=identity,
+            fields=tuple(fields),
+            metadata=_json_safe(restore_wire_revision_fingerprints(metadata)),
         )
 
 

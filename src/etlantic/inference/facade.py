@@ -6,6 +6,7 @@ from __future__ import annotations
 import datetime as _dt
 import hashlib
 import json
+import keyword
 import re
 import time
 import weakref
@@ -84,6 +85,20 @@ _PY_TYPES = {
     "null": Any,
     "unknown": Any,
 }
+_MODEL_RESERVED_NAMES = frozenset(dir(Data)) | frozenset(
+    {
+        "__base__",
+        "__cls_kwargs__",
+        "__config__",
+        "__doc__",
+        "__module__",
+        "__root__",
+        "__validators__",
+        "model_config",
+        "model_fields",
+    }
+)
+_MODEL_RESERVED_PREFIXES = ("model_dump", "model_validate")
 
 
 def _model_name(name: str) -> str:
@@ -108,7 +123,22 @@ def model_from_schema(
             annotation = annotation | None
         default: Any = ... if field.required else None
         alias = field.name
-        safe = alias if alias.isidentifier() else re.sub(r"\W", "_", alias) or "field"
+        safe = alias
+        if (
+            not safe.isidentifier()
+            or keyword.iskeyword(safe)
+            or safe.startswith("_")
+            or safe.startswith(_MODEL_RESERVED_PREFIXES)
+            or safe in _MODEL_RESERVED_NAMES
+        ):
+            safe = re.sub(r"\W", "_", alias) or "field"
+            safe = safe.lstrip("_") or "field"
+            if not safe.isidentifier():
+                safe = f"field_{safe}"
+            if safe.startswith(_MODEL_RESERVED_PREFIXES):
+                safe = f"field_{safe}"
+            elif keyword.iskeyword(safe) or safe in _MODEL_RESERVED_NAMES:
+                safe = f"{safe}_field"
         if safe in used_names:
             base = safe
             suffix = 2
@@ -120,7 +150,12 @@ def model_from_schema(
             annotation,
             default if safe == alias else Field(default, alias=alias),
         )
-    return create_model(_model_name(name or schema.identity), __base__=Data, **fields)
+    model = create_model(_model_name(name or schema.identity), __base__=Data, **fields)
+    # Storage serialization omits defaults only for inferred models. This
+    # preserves the distinction between an absent optional field and an
+    # explicitly supplied null without changing ordinary Data model behavior.
+    type.__setattr__(model, "__etlantic_inferred_schema_model__", True)
+    return model
 
 
 def _target_cast_action(
@@ -278,7 +313,14 @@ def _multi_preview(
             for row in left:
                 if len(output) >= max_rows:
                     return output, True
-                if not append(dict(row)):
+                aligned = dict(
+                    zip(
+                        names,
+                        (row.get(field) for field in left_fields),
+                        strict=True,
+                    )
+                )
+                if not append(aligned):
                     return output, True
             for row in right:
                 if len(output) >= max_rows:
@@ -1744,8 +1786,38 @@ class InferredDataset:
         same_target = (
             observation is not None
             and observation.schema is not None
+            and (
+                observation.schema.identity == target_schema.identity
+                or target_schema.identity == "target"
+            )
             and observation.schema.fields == target_schema.fields
         )
+        if same_target and self._target_revision_reader is not None:
+            try:
+                self._check_target_revision()
+            except ValueError as exc:
+                code = (
+                    "INFER_TARGET_STALE"
+                    if str(exc).startswith("INFER_TARGET_STALE:")
+                    else "INFER_TARGET_REVISION_UNKNOWN"
+                )
+                message = (
+                    "Target revision changed after schema inspection"
+                    if code == "INFER_TARGET_STALE"
+                    else "Target revision could not be rechecked before compatibility"
+                )
+                diagnostic = Diagnostic(
+                    code,
+                    Severity.ERROR,
+                    message,
+                    phase="inference",
+                )
+                return replace(
+                    compatibility,
+                    compatible=False,
+                    diagnostics=(*compatibility.diagnostics, diagnostic),
+                )
+
         validation_state = self._result.provenance.get("target_validation")
         if same_target and validation_state in {"failed", "stale"}:
             validation_diagnostics = tuple(
@@ -2064,24 +2136,45 @@ def _bounded_materialized_snapshot(
     if effective_limits.max_rows < len(items):
         return None
     started_at = time.monotonic()
+    deadline = (
+        started_at + effective_limits.timeout_seconds
+        if effective_limits.timeout_seconds is not None
+        else None
+    )
+    materialized_limit = (
+        effective_limits.max_materialized_bytes
+        if effective_limits.max_materialized_bytes is not None
+        else effective_limits.max_bytes
+    )
     bytes_observed = 0
     snapshot: list[dict[str, Any]] = []
     try:
         for item in items:
-            if effective_limits.timeout_seconds is not None and (
-                time.monotonic() - started_at >= effective_limits.timeout_seconds
-            ):
+            if deadline is not None and time.monotonic() >= deadline:
                 return None
             if not isinstance(item, Mapping):
                 return None
-            item_bytes = _estimate_size(item)
-            if (
-                effective_limits.max_bytes is not None
-                and bytes_observed + item_bytes > effective_limits.max_bytes
-            ):
+            item_bytes = _estimate_size(
+                item,
+                max_bytes=(
+                    materialized_limit - bytes_observed
+                    if materialized_limit is not None
+                    else None
+                ),
+                # Schema inference may stop at max_fields, but a replay
+                # snapshot copies the complete row. Estimate every field so
+                # later fields cannot evade the materialization byte budget.
+                max_items=10_000,
+                max_fields=None,
+                deadline=deadline,
+            )
+            if deadline is not None and time.monotonic() >= deadline:
                 return None
             bytes_observed += item_bytes
-            snapshot.append(deepcopy(dict(item)))
+            copied = deepcopy(dict(item))
+            if deadline is not None and time.monotonic() >= deadline:
+                return None
+            snapshot.append(copied)
     except Exception:
         return None
     try:

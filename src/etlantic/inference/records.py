@@ -893,6 +893,7 @@ def infer_records(
     evidence: list[SchemaEvidence] = []
     mixed_fields: set[str] = set()
     decimal_fields: set[str] = set()
+    datetime_fields: set[str] = set()
     for name in names:
         entry = stats[name]
         logical, mixed = _promote(set(entry["types"]))
@@ -900,9 +901,7 @@ def infer_records(
         if hint:
             if logical == "unknown":
                 logical = hint
-            elif logical not in {hint} and not (
-                {logical, hint} <= {"integer", "number"}
-            ):
+            elif logical != hint and not (logical == "integer" and hint == "number"):
                 _append_diag(
                     diagnostics,
                     _diag(
@@ -961,6 +960,8 @@ def infer_records(
             )
         if logical == "decimal":
             decimal_fields.add(name)
+        if logical == "datetime":
+            datetime_fields.add(name)
         nullable = entry["null"] > 0
         field_metadata: dict[str, Any] = {"inferred": True}
         if logical == "unknown" and not entry["unknown_types"]:
@@ -1003,6 +1004,12 @@ def infer_records(
                 value = row.get(name)
                 if isinstance(value, (int, float)) and not isinstance(value, bool):
                     row[name] = Decimal(str(value))
+    if datetime_fields:
+        for row in rows:
+            for name in datetime_fields:
+                value = row.get(name)
+                if isinstance(value, _dt.date) and not isinstance(value, _dt.datetime):
+                    row[name] = _dt.datetime.combine(value, _dt.time())
     schema = NormalizedSchema(
         identity=identity,
         fields=tuple(fields),
@@ -1032,7 +1039,7 @@ def infer_records(
                 raise source_failure
 
         replay = ReplayHandle(rows[:replay_prefix_count], iter(replay_tail()))
-    if replay is not None and (mixed_fields or decimal_fields):
+    if replay is not None and (mixed_fields or decimal_fields or datetime_fields):
 
         def normalize_replay_row(row: Any) -> Any:
             if not isinstance(row, Mapping):
@@ -1045,6 +1052,10 @@ def infer_records(
                 value = normalized.get(name)
                 if isinstance(value, (int, float)) and not isinstance(value, bool):
                     normalized[name] = Decimal(str(value))
+            for name in datetime_fields:
+                value = normalized.get(name)
+                if isinstance(value, _dt.date) and not isinstance(value, _dt.datetime):
+                    normalized[name] = _dt.datetime.combine(value, _dt.time())
             return normalized
 
         replay = replay.map(normalize_replay_row)
@@ -1428,6 +1439,11 @@ def infer_csv(
                 for field in result.schema.fields
                 if field.logical_type == "decimal"
             }
+            datetime_fields = {
+                field.name
+                for field in result.schema.fields
+                if field.logical_type == "datetime"
+            }
 
             def replay_rows() -> Iterable[dict[str, Any]]:
                 row_index = 0
@@ -1503,6 +1519,14 @@ def infer_csv(
                                         value, (int, float)
                                     ) and not isinstance(value, bool):
                                         replay_row[name] = Decimal(str(value))
+                                for name in datetime_fields:
+                                    value = replay_row.get(name)
+                                    if isinstance(value, _dt.date) and not isinstance(
+                                        value, _dt.datetime
+                                    ):
+                                        replay_row[name] = _dt.datetime.combine(
+                                            value, _dt.time()
+                                        )
                                 row_index += 1
                                 replay_status.update(
                                     {

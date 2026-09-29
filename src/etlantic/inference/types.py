@@ -9,6 +9,7 @@ used in plans, reports, and schema history.
 
 from __future__ import annotations
 
+import math
 from collections.abc import Callable, Iterable, Iterator, Mapping
 from contextlib import suppress
 from dataclasses import dataclass
@@ -183,6 +184,15 @@ def _wire_mapping(value: Any, *, key: str | None = None) -> dict[str, Any]:
     return dict(cast(Mapping[str, Any], safe)) if isinstance(safe, Mapping) else {}
 
 
+def _wire_version(payload: Mapping[str, Any], model_name: str) -> int:
+    version = payload.get("version", 1)
+    if type(version) is not int:
+        raise ValueError(f"{model_name} version must be an integer")
+    if version != 1:
+        raise ValueError(f"unsupported {model_name} version: {version}")
+    return version
+
+
 def _diagnostic_from_dict(value: Any) -> Any:
     if isinstance(value, Diagnostic):
         return value
@@ -235,16 +245,37 @@ class InferenceLimits:
     max_field_size: int | None = 64 * 1024 * 1024
 
     def __post_init__(self) -> None:
-        if self.max_rows < 0 or self.max_fields < 1 or self.max_diagnostics < 1:
-            raise ValueError("inference limits must be positive (max_rows may be zero)")
-        if self.max_bytes is not None and self.max_bytes < 1:
-            raise ValueError("max_bytes must be positive when provided")
-        if self.max_materialized_bytes is not None and self.max_materialized_bytes < 1:
-            raise ValueError("max_materialized_bytes must be positive when provided")
-        if self.max_field_size is not None and self.max_field_size < 1:
-            raise ValueError("max_field_size must be positive when provided")
-        if self.timeout_seconds is not None and self.timeout_seconds <= 0:
-            raise ValueError("timeout_seconds must be positive when provided")
+        integer_limits = (
+            ("max_rows", self.max_rows, 0),
+            ("max_fields", self.max_fields, 1),
+            ("max_diagnostics", self.max_diagnostics, 1),
+        )
+        for name, value, minimum in integer_limits:
+            if type(value) is not int or value < minimum:
+                raise ValueError(
+                    f"{name} must be an integer greater than or equal to {minimum}"
+                )
+        optional_integer_limits = (
+            ("max_bytes", self.max_bytes),
+            ("max_materialized_bytes", self.max_materialized_bytes),
+            ("max_field_size", self.max_field_size),
+        )
+        for name, value in optional_integer_limits:
+            if value is not None and (type(value) is not int or value < 1):
+                raise ValueError(f"{name} must be a positive integer when provided")
+        if self.timeout_seconds is not None:
+            if type(self.timeout_seconds) not in (int, float):
+                raise ValueError(
+                    "timeout_seconds must be positive and finite when provided"
+                )
+            try:
+                finite = math.isfinite(self.timeout_seconds)
+            except OverflowError:
+                finite = False
+            if not finite or self.timeout_seconds <= 0:
+                raise ValueError(
+                    "timeout_seconds must be positive and finite when provided"
+                )
 
     def to_dict(self) -> dict[str, Any]:
         return {
@@ -260,37 +291,30 @@ class InferenceLimits:
 
     @classmethod
     def from_dict(cls, payload: dict[str, Any]) -> InferenceLimits:
-        version = int(payload.get("version", 1))
-        if version != 1:
-            raise ValueError(f"unsupported inference limits version: {version}")
+        _wire_version(payload, "inference limits")
         defaults = cls()
+
+        def integer_limit(name: str, default: int | None = None) -> int | None:
+            value = payload.get(name, default)
+            if value is not None and type(value) is not int:
+                raise ValueError(f"{name} must be an integer")
+            return value
+
+        raw_timeout = payload.get("timeout_seconds")
+        if raw_timeout is not None and type(raw_timeout) not in (int, float):
+            raise ValueError("timeout_seconds must be numeric")
         return cls(
-            max_rows=int(payload.get("max_rows", defaults.max_rows)),
-            max_fields=int(payload.get("max_fields", defaults.max_fields)),
-            max_diagnostics=int(
-                payload.get("max_diagnostics", defaults.max_diagnostics)
+            max_rows=cast(int, integer_limit("max_rows", defaults.max_rows)),
+            max_fields=cast(int, integer_limit("max_fields", defaults.max_fields)),
+            max_diagnostics=cast(
+                int, integer_limit("max_diagnostics", defaults.max_diagnostics)
             ),
-            max_bytes=(
-                int(payload["max_bytes"])
-                if payload.get("max_bytes") is not None
-                else None
-            ),
-            timeout_seconds=(
-                float(payload["timeout_seconds"])
-                if payload.get("timeout_seconds") is not None
-                else None
-            ),
-            max_materialized_bytes=(
-                int(payload["max_materialized_bytes"])
-                if payload.get("max_materialized_bytes") is not None
-                else None
-            ),
-            max_field_size=(
-                int(payload["max_field_size"])
-                if payload.get("max_field_size") is not None
-                else (
-                    defaults.max_field_size if "max_field_size" not in payload else None
-                )
+            max_bytes=integer_limit("max_bytes"),
+            timeout_seconds=raw_timeout,
+            max_materialized_bytes=integer_limit("max_materialized_bytes"),
+            max_field_size=integer_limit(
+                "max_field_size",
+                defaults.max_field_size if "max_field_size" not in payload else None,
             ),
         )
 
@@ -432,9 +456,7 @@ class InferenceObservation:
     @classmethod
     def from_dict(cls, payload: dict[str, Any]) -> InferenceObservation:
         payload = _wire_mapping(payload)
-        version = int(payload.get("version", 1))
-        if version != 1:
-            raise ValueError(f"unsupported inference observation version: {version}")
+        version = _wire_version(payload, "inference observation")
         schema_payload = payload.get("schema")
         if not isinstance(schema_payload, dict):
             raise ValueError("inference observation schema is required")
@@ -808,9 +830,7 @@ class TargetObservation:
     @classmethod
     def from_dict(cls, payload: dict[str, Any]) -> TargetObservation:
         payload = _wire_mapping(payload)
-        version = int(payload.get("version", 1))
-        if version != 1:
-            raise ValueError(f"unsupported target observation version: {version}")
+        _wire_version(payload, "target observation")
         schema_payload = payload.get("schema")
         metadata = _wire_mapping(payload.get("metadata") or {})
         identity_unresolved = metadata.get("identity_unresolved") is True
@@ -942,23 +962,33 @@ class OutputProposal:
 
     @classmethod
     def from_dict(cls, payload: dict[str, Any]) -> OutputProposal:
-        version = int(payload.get("version", 1))
-        if version != 1:
-            raise ValueError(f"unsupported output proposal version: {version}")
+        version = _wire_version(payload, "output proposal")
         schema = payload.get("schema")
         if not isinstance(schema, Mapping):
             raise ValueError("output proposal schema is required")
+        raw_identity = payload.get("identity")
+        if raw_identity is not None and not isinstance(raw_identity, str):
+            raise ValueError("output proposal identity must be a string")
+        create_required = payload.get("create_required", True)
+        create_intent = payload.get("create_intent", False)
+        if type(create_required) is not bool or type(create_intent) is not bool:
+            raise ValueError("output proposal create flags must be booleans")
+        raw_capabilities = payload.get("capabilities", ())
+        if not isinstance(raw_capabilities, (list, tuple)) or any(
+            not isinstance(item, str) for item in raw_capabilities
+        ):
+            raise ValueError("output proposal capabilities must be strings")
+        raw_diagnostics = payload.get("diagnostics", ())
+        if not isinstance(raw_diagnostics, (list, tuple)):
+            raise ValueError("output proposal diagnostics must be a sequence")
         return cls(
             NormalizedSchema.from_dict(dict(schema)),
-            str(payload.get("identity") or "proposal"),
-            bool(payload.get("create_required", True)),
-            tuple(str(item) for item in payload.get("capabilities", ())),
-            tuple(
-                _diagnostic_from_dict(item)
-                for item in (payload.get("diagnostics") or ())
-            ),
+            raw_identity or "proposal",
+            create_required,
+            tuple(raw_capabilities),
+            tuple(_diagnostic_from_dict(item) for item in raw_diagnostics),
             version,
-            bool(payload.get("create_intent", False)),
+            create_intent,
         )
 
 
@@ -984,9 +1014,7 @@ class FieldConstraint:
 
     @classmethod
     def from_dict(cls, payload: dict[str, Any]) -> FieldConstraint:
-        version = int(payload.get("version", 1))
-        if version != 1:
-            raise ValueError(f"unsupported field constraint version: {version}")
+        _wire_version(payload, "field constraint")
         return cls(
             str(payload.get("field", "")),
             str(payload.get("logical_type", "unknown")),
@@ -1030,11 +1058,12 @@ class WriteCompatibility:
 
     @classmethod
     def from_dict(cls, payload: dict[str, Any]) -> WriteCompatibility:
-        version = int(payload.get("version", 1))
-        if version != 1:
-            raise ValueError(f"unsupported write compatibility version: {version}")
+        _wire_version(payload, "write compatibility")
+        compatible = payload.get("compatible", False)
+        if type(compatible) is not bool:
+            raise ValueError("write compatibility flag must be a boolean")
         return cls(
-            bool(payload.get("compatible", False)),
+            compatible,
             _wire_mapping(payload.get("casts") or {}, key="casts"),
             tuple(str(item) for item in payload.get("incompatible_fields", ())),
             tuple(
