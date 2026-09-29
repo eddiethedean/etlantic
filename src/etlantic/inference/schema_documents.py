@@ -36,6 +36,134 @@ _AVRO_TYPES = {
 }
 
 
+def _exceeds_utf8_byte_limit(value: str, limit: int | None) -> bool:
+    """Count encoded bytes in bounded chunks instead of copying the full text."""
+    if limit is None:
+        return False
+    # UTF-8 uses at least one byte per code point, so this rejects oversized
+    # ASCII and Unicode inputs without scanning or allocating an encoded copy.
+    if len(value) > limit:
+        return True
+    encoded_bytes = 0
+    for start in range(0, len(value), 4096):
+        encoded_bytes += len(value[start : start + 4096].encode("utf-8"))
+        if encoded_bytes > limit:
+            return True
+    return False
+
+
+def _json_string_size(value: str, limit: int) -> int:
+    """Count a JSONEncoder-compatible escaped string without encoding a copy."""
+    size = 2  # surrounding quotes
+    if size > limit:
+        return size
+    for character in value:
+        codepoint = ord(character)
+        if character in {'"', "\\", "\b", "\t", "\n", "\f", "\r"}:
+            size += 2
+        elif codepoint < 0x20 or codepoint > 0x7F:
+            size += 12 if codepoint > 0xFFFF else 6
+        else:
+            size += 1
+        if size > limit:
+            return size
+    return size
+
+
+def _mapping_exceeds_serialization_limit(
+    document: Mapping[str, Any], limit: int | None
+) -> bool:
+    """Preflight a mapping before JSONEncoder can allocate large scalar chunks."""
+    if limit is None:
+        return False
+
+    encoded_bytes = 0
+    visited_values = 0
+    # Iterator frames keep wide arrays and objects from becoming pending lists.
+    stack: list[tuple[str, Any, int]] = [("value", document, 0)]
+
+    def add(size: int) -> bool:
+        nonlocal encoded_bytes
+        encoded_bytes += size
+        return encoded_bytes > limit
+
+    while stack:
+        kind, value, depth = stack.pop()
+        if depth > 512:
+            return True
+        if kind == "mapping":
+            mapping, iterator, first = value
+            try:
+                key = next(iterator)
+            except StopIteration:
+                continue
+            stack.append(("mapping", (mapping, iterator, False), depth))
+            if not first and add(1):  # comma
+                return True
+            if add(1):  # colon
+                return True
+            stack.append(("value", mapping[key], depth + 1))
+            stack.append(("key", key, depth + 1))
+            continue
+        if kind == "sequence":
+            iterator, first = value
+            try:
+                item = next(iterator)
+            except StopIteration:
+                continue
+            stack.append(("sequence", (iterator, False), depth))
+            if not first and add(1):  # comma
+                return True
+            stack.append(("value", item, depth + 1))
+            continue
+
+        visited_values += 1
+        if visited_values > limit:
+            return True
+        if isinstance(value, str):
+            size = _json_string_size(value, limit)
+            if size > limit or add(size):
+                return True
+            continue
+        if isinstance(value, Mapping):
+            try:
+                mapping = cast(Mapping[Any, Any], value)
+                if len(mapping) > limit:
+                    return True
+                iterator = iter(mapping)
+            except Exception:
+                # Let JSONEncoder produce its usual unsupported-payload error.
+                continue
+            if add(2):  # braces
+                return True
+            stack.append(("mapping", (mapping, iterator, True), depth))
+            continue
+        if isinstance(value, (list, tuple)):
+            sequence = cast(list[Any] | tuple[Any, ...], value)
+            if len(sequence) > limit:
+                return True
+            if add(2):  # brackets
+                return True
+            stack.append(("sequence", (iter(sequence), True), depth))
+            continue
+        if value is None or value is True:
+            size = 4
+        elif value is False:
+            size = 5
+        elif type(value) is int:
+            if value.bit_length() > limit * 4:
+                return True
+            size = len(str(value))
+        elif type(value) is float:
+            size = len(repr(value))
+        else:
+            # Unsupported values are rejected by JSONEncoder below.
+            size = 1
+        if add(size):
+            return True
+    return False
+
+
 def _failure(identity: str, code: str, message: str) -> InferenceResult:
     return InferenceResult(
         NormalizedSchema(identity, ()),
@@ -114,8 +242,7 @@ def infer_schema_document(
     try:
         payload: Mapping[str, Any]
         if isinstance(document, str):
-            encoded = document.encode("utf-8")
-            if limits.max_bytes is not None and len(encoded) > limits.max_bytes:
+            if _exceeds_utf8_byte_limit(document, limits.max_bytes):
                 return _failure(
                     identity, "INFER_LIMIT", "Schema document exceeds the byte limit"
                 )
@@ -126,13 +253,22 @@ def infer_schema_document(
             fingerprint_document = document
         else:
             payload = document
+            if _mapping_exceeds_serialization_limit(document, limits.max_bytes):
+                return _failure(
+                    identity,
+                    "INFER_LIMIT",
+                    "Schema document exceeds the byte limit",
+                )
             parts: list[str] = []
             encoded_bytes = 0
             encoder = json.JSONEncoder(
-                sort_keys=True, separators=(",", ":"), allow_nan=False
+                sort_keys=True,
+                separators=(",", ":"),
+                allow_nan=False,
+                ensure_ascii=True,
             )
             for part in encoder.iterencode(document):
-                encoded_bytes += len(part.encode("utf-8"))
+                encoded_bytes += len(part)
                 if limits.max_bytes is not None and encoded_bytes > limits.max_bytes:
                     return _failure(
                         identity,

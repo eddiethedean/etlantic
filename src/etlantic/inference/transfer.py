@@ -260,7 +260,7 @@ def infer_expression(
             logical, nullable = infer_expression(args[0], schema, diagnostics)
             return logical, True if len(args) > 1 else nullable
         if callee in {"dtcs:case_when", "case_when"} and args:
-            value_args = args[1::2][:-1] + args[-1:]
+            value_args = args[1:-1:2] + args[-1:]
             inferred = [
                 infer_expression(arg, schema, diagnostics) for arg in value_args
             ]
@@ -287,8 +287,8 @@ def infer_expression(
             "dtcs:to_integer": "integer",
             "dtcs:abs": "number",
             "dtcs:round": "number",
-            "dtcs:floor": "number",
-            "dtcs:ceil": "number",
+            "dtcs:floor": "integer",
+            "dtcs:ceil": "integer",
             "dtcs:power": "number",
             "dtcs:sqrt": "number",
             "dtcs:to_decimal": "decimal",

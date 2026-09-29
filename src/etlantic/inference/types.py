@@ -14,7 +14,7 @@ from contextlib import suppress
 from dataclasses import dataclass
 from dataclasses import field as dataclass_field
 from itertools import chain, islice
-from typing import Any, Literal
+from typing import Any, Literal, cast
 
 from etlantic.diagnostics import Diagnostic, Severity
 from etlantic.schema_drift import (
@@ -40,6 +40,7 @@ _TARGET_LOGICAL_TYPES = frozenset(
         "array",
     )
 )
+_TARGET_OBSERVATION_METADATA_MAX_KEYS = 256
 
 
 def _wire_value(value: Any, *, key: str | None = None, depth: int = 0) -> Any:
@@ -179,7 +180,7 @@ def provider_diagnostic(value: Any, *, default_code: str) -> Diagnostic:
 
 def _wire_mapping(value: Any, *, key: str | None = None) -> dict[str, Any]:
     safe = _wire_value(restore_wire_revision_fingerprints(value, key=key), key=key)
-    return dict(safe) if isinstance(safe, Mapping) else {}
+    return dict(cast(Mapping[str, Any], safe)) if isinstance(safe, Mapping) else {}
 
 
 def _diagnostic_from_dict(value: Any) -> Any:
@@ -716,9 +717,21 @@ class TargetObservation:
                 "target observation exists must be one of: present, absent, unknown"
             )
         normalized_metadata: dict[str, Any] | None = None
+        metadata_limit_hit = False
         if isinstance(self.metadata, Mapping):
+            metadata_source = cast(Mapping[str, Any], self.metadata)
             with suppress(Exception):
-                normalized_metadata = dict(self.metadata)
+                keys = list(
+                    islice(
+                        iter(metadata_source),
+                        _TARGET_OBSERVATION_METADATA_MAX_KEYS + 1,
+                    )
+                )
+                metadata_limit_hit = len(keys) > _TARGET_OBSERVATION_METADATA_MAX_KEYS
+                normalized_metadata = {
+                    key: metadata_source[key]
+                    for key in keys[:_TARGET_OBSERVATION_METADATA_MAX_KEYS]
+                }
         if normalized_metadata is None:
             object.__setattr__(
                 self,
@@ -740,6 +753,20 @@ class TargetObservation:
             )
         else:
             object.__setattr__(self, "metadata", normalized_metadata)
+            if metadata_limit_hit:
+                object.__setattr__(
+                    self,
+                    "diagnostics",
+                    (
+                        *self.diagnostics,
+                        Diagnostic(
+                            "INFER_LIMIT",
+                            Severity.ERROR,
+                            "Target observation metadata exceeds the metadata limit",
+                            phase="inference",
+                        ),
+                    ),
+                )
 
     @property
     def identity(self) -> str | None:
@@ -754,7 +781,12 @@ class TargetObservation:
         )
 
     def to_dict(self) -> dict[str, Any]:
-        metadata = dict(self.metadata)
+        safe_metadata = _wire_value(self.metadata)
+        metadata = (
+            dict(cast(Mapping[str, Any], safe_metadata))
+            if isinstance(safe_metadata, Mapping)
+            else {}
+        )
         schema = self.schema
         if self.exists != "present":
             if schema is not None:
@@ -770,7 +802,7 @@ class TargetObservation:
             "revision": _wire_value(self.revision, key="revision"),
             "inspector": _wire_value(self.inspector, key="inspector"),
             "diagnostics": [_diagnostic_dict(d) for d in self.diagnostics],
-            "metadata": _wire_value(metadata),
+            "metadata": metadata,
         }
 
     @classmethod

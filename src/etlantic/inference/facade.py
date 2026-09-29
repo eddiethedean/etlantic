@@ -283,10 +283,16 @@ def _multi_preview(
             for row in right:
                 if len(output) >= max_rows:
                     return output, True
-                if len(row) == len(names) and not append(
-                    dict(zip(names, row.values(), strict=True))
-                ):
-                    return output, True
+                if len(right_fields) == len(names):
+                    aligned = dict(
+                        zip(
+                            names,
+                            (row.get(field) for field in right_fields),
+                            strict=True,
+                        )
+                    )
+                    if not append(aligned):
+                        return output, True
             return output, False
         names = list(output_fields)
         for row in (*left, *right):

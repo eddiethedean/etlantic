@@ -1706,6 +1706,9 @@ def test_preview_evaluator_covers_numeric_and_conversion_functions() -> None:
     row = dataset.preview()[0]
     assert row["floor"] == 9
     assert row["ceil"] == 10
+    inferred_types = {field.name: field.logical_type for field in dataset.schema.fields}
+    assert inferred_types["floor"] == "integer"
+    assert inferred_types["ceil"] == "integer"
     assert row["power"] == 90.25
     assert row["sqrt"] == pytest.approx(3.0822, rel=1e-4)
     assert row["integer"] == 9

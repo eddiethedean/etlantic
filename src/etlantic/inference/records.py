@@ -1938,14 +1938,13 @@ def _infer_jsonl_bounded(
     try:
         with Path(path).open("rb") as handle:
             line_number = 0
-            loop_completed = True
-            for line_number in range(1, limits.max_rows + 1):
+            records_seen = 0
+            while True:
                 if (
                     limits.timeout_seconds is not None
                     and time.monotonic() - started_at >= limits.timeout_seconds
                 ):
                     sampled = True
-                    loop_completed = False
                     limit_reason = "time"
                     _append_diag(
                         diagnostics,
@@ -1961,11 +1960,9 @@ def _infer_jsonl_bounded(
                 read_size = remaining + 1 if remaining is not None else -1
                 raw = handle.readline(read_size)
                 if not raw:
-                    loop_completed = False
                     break
                 if remaining is not None and len(raw) > remaining:
                     sampled = True
-                    loop_completed = False
                     limit_reason = "raw_bytes"
                     _append_diag(
                         diagnostics,
@@ -1974,6 +1971,19 @@ def _infer_jsonl_bounded(
                     )
                     break
                 bytes_observed += len(raw)
+                line_number += 1
+                if not raw.strip():
+                    continue
+                if records_seen >= limits.max_rows:
+                    sampled = True
+                    limit_reason = "rows"
+                    _append_diag(
+                        diagnostics,
+                        _diag("INFER_LIMIT", "JSONL inference row limit reached"),
+                        limits.max_diagnostics,
+                    )
+                    break
+                records_seen += 1
                 try:
                     line = raw.decode("utf-8")
                 except UnicodeDecodeError:
@@ -1986,8 +1996,6 @@ def _infer_jsonl_bounded(
                         ),
                         limits.max_diagnostics,
                     )
-                    continue
-                if not line.strip():
                     continue
                 try:
                     value = json.loads(line)
@@ -2022,7 +2030,6 @@ def _infer_jsonl_bounded(
                     )
                 except _EstimateTimeout:
                     sampled = True
-                    loop_completed = False
                     limit_reason = "time"
                     _append_diag(
                         diagnostics,
@@ -2032,7 +2039,6 @@ def _infer_jsonl_bounded(
                     break
                 except _EstimateTraversalExceeded:
                     sampled = True
-                    loop_completed = False
                     limit_reason = "traversal"
                     _append_diag(
                         diagnostics,
@@ -2045,7 +2051,6 @@ def _infer_jsonl_bounded(
                     break
                 if row_bytes is None:
                     sampled = True
-                    loop_completed = False
                     limit_reason = "materialized_bytes"
                     _append_diag(
                         diagnostics,
@@ -2058,20 +2063,6 @@ def _infer_jsonl_bounded(
                     break
                 rows.append(value)
                 materialized_bytes += row_bytes
-            if loop_completed and line_number >= limits.max_rows:
-                probe = handle.readline(1)
-                if probe:
-                    sampled = True
-                    limit_reason = "rows"
-                    _append_diag(
-                        diagnostics,
-                        _diag("INFER_LIMIT", "JSONL inference row limit reached"),
-                        limits.max_diagnostics,
-                    )
-            else:
-                # The loop ended because the file was exhausted.  A full
-                # boundary sample is therefore not a sampled result.
-                pass
     except (OSError, UnicodeError) as exc:
         return InferenceResult(
             NormalizedSchema(identity=identity, fields=()),
