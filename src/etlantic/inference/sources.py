@@ -10,8 +10,10 @@ import math
 import os
 import sys
 import time
-from collections.abc import Iterable, Mapping
+from collections.abc import Iterable, Mapping, Sequence
+from contextlib import suppress
 from dataclasses import dataclass
+from itertools import islice
 from pathlib import Path
 from typing import Any, cast
 
@@ -51,6 +53,7 @@ _KNOWN_LOGICAL_TYPES = {
     "object",
     "array",
 }
+_NO_PROVIDER_FIELD = object()
 
 
 class _UnboundedProvider(RuntimeError):
@@ -143,16 +146,19 @@ def _provider_logical_type(value: Any) -> str:
     return normalized if normalized in _KNOWN_LOGICAL_TYPES else "unknown"
 
 
-def _schema_result(schema: NormalizedSchema) -> InferenceResult:
-    return InferenceResult(
-        schema,
-        provenance={
-            "source": "metadata",
-            "method": "provider_schema",
-            "provider_required_fields": [field.name for field in schema.fields],
-            "provider_nullable_fields": [field.name for field in schema.fields],
-        },
-    )
+def _bounded_provider_field(field: Mapping[str, Any]) -> dict[str, Any]:
+    """Copy the provider field shape without traversing unbounded metadata."""
+    standard_keys = ("name", "logical_type", "type", "required", "nullable")
+    item: dict[str, Any] = {}
+    for key in standard_keys:
+        with suppress(KeyError):
+            item[key] = field[key]
+    keys = list(islice(iter(field), 257))
+    if len(keys) <= 256:
+        for key in keys:
+            if key not in item:
+                item[key] = field[key]
+    return item
 
 
 def _provider_materialized_limit(limits: InferenceLimits) -> int | None:
@@ -693,27 +699,85 @@ def _source_failure(identity: str, source_name: str) -> InferenceResult:
     )
 
 
+def _malformed_provider_schema(identity: str, method: str) -> InferenceResult:
+    return InferenceResult(
+        NormalizedSchema(identity=identity, fields=()),
+        (
+            Diagnostic(
+                "INFER_SOURCE_UNSUPPORTED",
+                Severity.ERROR,
+                "Provider schema fields are malformed",
+                phase="inference",
+            ),
+        ),
+        provenance={"source": "metadata", "method": method, "inspection": "failed"},
+    )
+
+
 def _schema_from_provider_result(
-    result: Any, *, identity: str, method: str, max_diagnostics: int = 100
+    result: Any,
+    *,
+    identity: str,
+    method: str,
+    max_diagnostics: int = 100,
+    max_fields: int = 1000,
 ) -> InferenceResult | None:
     """Normalize a provider schema payload without importing its package."""
     if isinstance(result, NormalizedSchema):
+        if any(
+            type(field.required) is not bool or type(field.nullable) is not bool
+            for field in result.fields
+        ):
+            return _malformed_provider_schema(identity, method)
+        field_limit_hit = len(result.fields) > max_fields
+        schema = (
+            NormalizedSchema(
+                identity=result.identity,
+                fields=result.fields[:max_fields],
+                metadata=dict(result.metadata),
+            )
+            if field_limit_hit
+            else result
+        )
+        diagnostics = (
+            (
+                Diagnostic(
+                    "INFER_LIMIT",
+                    Severity.WARNING,
+                    "Maximum provider schema field count reached",
+                    phase="inference",
+                ),
+            )
+            if field_limit_hit
+            else ()
+        )
         return InferenceResult(
-            result,
+            schema,
+            diagnostics[:max_diagnostics],
             provenance={
                 "source": "metadata",
                 "method": method,
-                "provider_required_fields": [field.name for field in result.fields],
-                "provider_nullable_fields": [field.name for field in result.fields],
+                "provider_required_fields": [field.name for field in schema.fields],
+                "provider_nullable_fields": [field.name for field in schema.fields],
+                **(
+                    {
+                        "sampled": True,
+                        "limit_reason": "fields",
+                        "limit_reasons": ["fields"],
+                    }
+                    if field_limit_hit
+                    else {}
+                ),
             },
         )
     if isinstance(result, Mapping):
-        fields = result.get("fields")
-        if fields is None and isinstance(result.get("schema"), Mapping):
-            nested = result["schema"]
+        provider_result = cast(Mapping[str, Any], result)
+        fields = provider_result.get("fields")
+        if fields is None and isinstance(provider_result.get("schema"), Mapping):
+            nested = cast(Mapping[str, Any], provider_result["schema"])
             fields = nested.get("fields", nested)
         if fields is None:
-            fields = result
+            fields = provider_result
     else:
         fields = getattr(result, "fields", None)
         if fields is None and isinstance(getattr(result, "names", None), (list, tuple)):
@@ -725,19 +789,26 @@ def _schema_from_provider_result(
         return None
     provider_required_fields: list[str] = []
     provider_nullable_fields: list[str] = []
+    field_limit_hit = False
+    field_items: list[dict[str, Any]] = []
     if isinstance(fields, Mapping):
-        field_items = [
-            {
-                "name": str(name),
-                "logical_type": _provider_logical_type(logical_type),
-            }
-            for name, logical_type in fields.items()
-        ]
+        provider_fields = cast(Mapping[str, Any], fields)
+        field_names = iter(provider_fields)
+        for name in islice(field_names, max_fields):
+            field_items.append(
+                {
+                    "name": str(name),
+                    "logical_type": _provider_logical_type(provider_fields[name]),
+                }
+            )
+        field_limit_hit = (
+            next(field_names, _NO_PROVIDER_FIELD) is not _NO_PROVIDER_FIELD
+        )
     elif isinstance(fields, (list, tuple)):
-        field_items = []
-        for field in fields:
+        field_sequence = iter(cast(list[Any] | tuple[Any, ...], fields))
+        for field in islice(field_sequence, max_fields):
             if isinstance(field, Mapping):
-                item = dict(field)
+                item = _bounded_provider_field(cast(Mapping[str, Any], field))
                 if "logical_type" not in item and "type" in item:
                     item["logical_type"] = item["type"]
                 if not item.get("name") or item.get("logical_type") is None:
@@ -753,6 +824,11 @@ def _schema_from_provider_result(
                         ),
                         provenance={"source": "metadata", "method": method},
                     )
+                if any(
+                    flag in item and type(item[flag]) is not bool
+                    for flag in ("required", "nullable")
+                ):
+                    return _malformed_provider_schema(identity, method)
                 item["logical_type"] = _provider_logical_type(item["logical_type"])
                 if "required" in item:
                     provider_required_fields.append(str(item["name"]))
@@ -779,17 +855,28 @@ def _schema_from_provider_result(
                         ),
                         provenance={"source": "metadata", "method": method},
                     )
-                field_items.append(
-                    {
-                        "name": str(field_name),
-                        "logical_type": _provider_logical_type(field_type),
-                        "nullable": bool(getattr(field, "nullable", True)),
-                    }
-                )
+                field_item: dict[str, Any] = {
+                    "name": str(field_name),
+                    "logical_type": _provider_logical_type(field_type),
+                    "nullable": getattr(field, "nullable", True),
+                }
                 if hasattr(field, "required"):
+                    field_item["required"] = field.required
+                    if type(field_item["required"]) is not bool:
+                        return _malformed_provider_schema(identity, method)
+                if (
+                    hasattr(field, "nullable")
+                    and type(field_item["nullable"]) is not bool
+                ):
+                    return _malformed_provider_schema(identity, method)
+                field_items.append(field_item)
+                if "required" in field_item:
                     provider_required_fields.append(str(field_name))
                 if hasattr(field, "nullable"):
                     provider_nullable_fields.append(str(field_name))
+        field_limit_hit = (
+            next(field_sequence, _NO_PROVIDER_FIELD) is not _NO_PROVIDER_FIELD
+        )
     else:
         return InferenceResult(
             NormalizedSchema(identity=identity, fields=()),
@@ -815,13 +902,22 @@ def _schema_from_provider_result(
         return None
     diagnostics_list: list[Any] = []
     if isinstance(result, Mapping):
-        raw_diagnostics = result.get("diagnostics", ())
+        raw_diagnostics = cast(Mapping[str, Any], result).get("diagnostics", ())
         if isinstance(raw_diagnostics, (list, tuple)):
             diagnostics_list.extend(
                 provider_diagnostic(item, default_code="INFER_SOURCE_UNSUPPORTED")
-                for item in raw_diagnostics
+                for item in cast(Sequence[Any], raw_diagnostics)
                 if isinstance(item, (Diagnostic, Mapping))
             )
+    if field_limit_hit:
+        diagnostics_list.append(
+            Diagnostic(
+                "INFER_LIMIT",
+                Severity.WARNING,
+                "Maximum provider schema field count reached",
+                phase="inference",
+            )
+        )
     for item in field_items:
         if str(item.get("logical_type", "unknown")) == "unknown":
             diagnostics_list.append(
@@ -850,20 +946,29 @@ def _schema_from_provider_result(
             ),
             provenance={"source": "metadata", "method": method},
         )
+    provenance: dict[str, Any] = {
+        "source": "metadata",
+        "method": method,
+        "provider_required_fields": provider_required_fields,
+        "provider_nullable_fields": provider_nullable_fields,
+    }
+    if field_limit_hit:
+        provenance.update(
+            {
+                "sampled": True,
+                "limit_reason": "fields",
+                "limit_reasons": ["fields"],
+            }
+        )
     return InferenceResult(
         schema,
         tuple(diagnostics_list[:max_diagnostics]),
-        provenance={
-            "source": "metadata",
-            "method": method,
-            "provider_required_fields": provider_required_fields,
-            "provider_nullable_fields": provider_nullable_fields,
-        },
+        provenance=provenance,
     )
 
 
 def _schema_from_column_metadata(
-    value: Any, *, identity: str
+    value: Any, *, identity: str, limits: InferenceLimits
 ) -> InferenceResult | None:
     """Recover a schema from dataframe columns when no rows are available."""
     columns = getattr(value, "columns", None)
@@ -871,14 +976,26 @@ def _schema_from_column_metadata(
     if columns is None or dtypes is None:
         return None
     try:
-        names = list(columns)
-        dtype_values = (
-            list(dtypes.values()) if isinstance(dtypes, Mapping) else list(dtypes)
+        dtype_values: Iterable[Any] = (
+            cast(Mapping[str, Any], dtypes).values()
+            if isinstance(dtypes, Mapping)
+            else cast(Iterable[Any], dtypes)
+        )
+        pairs: list[tuple[Any, Any]] = list(
+            islice(
+                zip(
+                    iter(cast(Iterable[Any], columns)),
+                    iter(dtype_values),
+                    strict=True,
+                ),
+                limits.max_fields + 1,
+            )
         )
     except (TypeError, ValueError):
         return None
-    if not names or len(names) != len(dtype_values):
+    if not pairs:
         return None
+    field_limit_hit = len(pairs) > limits.max_fields
     try:
         schema = normalize_schema_from_fields(
             [
@@ -886,16 +1003,41 @@ def _schema_from_column_metadata(
                     "name": str(name),
                     "logical_type": _provider_logical_type(dtype),
                 }
-                for name, dtype in zip(names, dtype_values, strict=True)
+                for name, dtype in pairs[: limits.max_fields]
             ],
             identity=identity,
             preserve_decimal=True,
         )
     except (TypeError, ValueError):
         return None
+    diagnostics = (
+        (
+            Diagnostic(
+                "INFER_LIMIT",
+                Severity.WARNING,
+                "Maximum provider schema field count reached",
+                phase="inference",
+            ),
+        )
+        if field_limit_hit
+        else ()
+    )
     return InferenceResult(
         schema,
-        provenance={"source": "metadata", "method": "provider_columns"},
+        diagnostics[: limits.max_diagnostics],
+        provenance={
+            "source": "metadata",
+            "method": "provider_columns",
+            **(
+                {
+                    "sampled": True,
+                    "limit_reason": "fields",
+                    "limit_reasons": ["fields"],
+                }
+                if field_limit_hit
+                else {}
+            ),
+        },
     )
 
 
@@ -914,10 +1056,6 @@ def _duckdb_relation_schema(
     }:
         return None
     try:
-        columns = list(value.columns)
-        dtypes = list(value.types)
-        if len(columns) != len(dtypes) or len(columns) > limits.max_fields:
-            raise ValueError("relation fields exceed the inference limit")
         fields = [
             {
                 "name": name,
@@ -926,11 +1064,20 @@ def _duckdb_relation_schema(
                 # Relation type metadata does not establish a NOT NULL claim.
                 "nullable": True,
             }
-            for name, dtype in zip(columns, dtypes, strict=True)
+            for name, dtype in islice(
+                zip(iter(value.columns), iter(value.types), strict=True),
+                limits.max_fields + 1,
+            )
         ]
-        schema = normalize_schema_from_fields(
-            fields, identity=identity, preserve_decimal=True
+        provider_schema = _schema_from_provider_result(
+            {"fields": fields},
+            identity=identity,
+            method="relation_metadata",
+            max_diagnostics=limits.max_diagnostics,
+            max_fields=limits.max_fields,
         )
+        if provider_schema is None:
+            return None
     except (AttributeError, TypeError, ValueError):
         return _provider_failure(
             identity,
@@ -940,17 +1087,7 @@ def _duckdb_relation_schema(
             "INFER_SOURCE_UNSUPPORTED",
             "DuckDB relation metadata could not be normalized",
         )
-    diagnostics = tuple(
-        Diagnostic(
-            "INFER_UNKNOWN_TYPE",
-            Severity.WARNING,
-            f"DuckDB type for field {field.name!r} is unknown",
-            path=(field.name,),
-            phase="inference",
-        )
-        for field in schema.fields
-        if field.logical_type == "unknown"
-    )
+    diagnostics = provider_schema.diagnostics
     if hints:
         diagnostics = (
             *diagnostics,
@@ -962,13 +1099,14 @@ def _duckdb_relation_schema(
             ),
         )
     return InferenceResult(
-        schema,
+        provider_schema.schema,
         diagnostics[: limits.max_diagnostics],
         provenance={
+            **provider_schema.provenance,
             "source": "duckdb",
             "method": "relation_metadata",
             "rows_observed": 0,
-            "sampled": False,
+            "sampled": provider_schema.provenance.get("sampled") is True,
             "limits": limits.to_dict(),
         },
     )
@@ -1314,7 +1452,15 @@ def infer_source(
     limits = limits or InferenceLimits()
     deadline = _effective_deadline(limits, _deadline)
     if isinstance(value, NormalizedSchema):
-        return _schema_result(value)
+        result = _schema_from_provider_result(
+            value,
+            identity=identity,
+            method="provider_schema",
+            max_diagnostics=limits.max_diagnostics,
+            max_fields=limits.max_fields,
+        )
+        assert result is not None
+        return result
     relation_result = _duckdb_relation_schema(
         value, identity=identity, limits=limits, hints=hints
     )
@@ -1348,6 +1494,7 @@ def infer_source(
             identity=identity,
             method="provider_schema",
             max_diagnostics=limits.max_diagnostics,
+            max_fields=limits.max_fields,
         )
         if direct_schema is None and ("fields" in value or "schema" in value):
             return InferenceResult(
@@ -1368,6 +1515,7 @@ def infer_source(
             identity=identity,
             method="provider_schema",
             max_diagnostics=limits.max_diagnostics,
+            max_fields=limits.max_fields,
         )
     if direct_schema is not None:
         return _attach_provider_preview(
@@ -1445,6 +1593,7 @@ def infer_source(
                 identity=identity,
                 method="inspect_schema",
                 max_diagnostics=limits.max_diagnostics,
+                max_fields=limits.max_fields,
             )
             if result is not None:
                 return _attach_provider_preview(
@@ -1504,6 +1653,7 @@ def infer_source(
                 identity=identity,
                 method="schema",
                 max_diagnostics=limits.max_diagnostics,
+                max_fields=limits.max_fields,
             )
             if result is not None:
                 return _attach_provider_preview(
@@ -1532,6 +1682,7 @@ def infer_source(
                 identity=identity,
                 method="schema",
                 max_diagnostics=limits.max_diagnostics,
+                max_fields=limits.max_fields,
             )
             if provider_schema is not None:
                 provider_module = type(value).__module__
@@ -1588,7 +1739,8 @@ def infer_source(
                                 else "datafusion_schema"
                             ),
                             "rows_observed": 0,
-                            "sampled": False,
+                            "sampled": provider_schema.provenance.get("sampled")
+                            is True,
                             "limits": limits.to_dict(),
                         },
                     )
@@ -1600,61 +1752,63 @@ def infer_source(
                     identity=identity,
                     deadline=deadline,
                 )
-        fields: list[dict[str, Any]] = []
         if isinstance(schema, Mapping):
-            fields = [
-                {
-                    "name": str(name),
-                    "logical_type": _provider_logical_type(dtype),
-                }
-                for name, dtype in schema.items()
-            ]
-        elif hasattr(schema, "names") and isinstance(
-            getattr(schema, "names", None), (list, tuple)
-        ):
-            schema_fields = getattr(schema, "fields", ())
-            if not isinstance(schema_fields, (list, tuple)):
-                try:
-                    schema_fields = tuple(cast(Any, schema))
-                except TypeError:
-                    schema_fields = ()
-            for field in schema_fields:
-                fields.append(
-                    {
-                        "name": str(getattr(field, "name", "")),
-                        "logical_type": _provider_logical_type(
-                            getattr(field, "type", "unknown")
-                        ),
-                        "nullable": bool(getattr(field, "nullable", True)),
-                    }
-                )
-        if fields:
-            normalized = normalize_schema_from_fields(
-                fields, identity=identity, preserve_decimal=True
-            )
-            unknown_diagnostics = tuple(
-                Diagnostic(
-                    "INFER_UNKNOWN_TYPE",
-                    Severity.WARNING,
-                    f"Provider type for field {field.name!r} is unknown",
-                    path=(field.name,),
-                    phase="inference",
-                )
-                for field in normalized.fields
-                if field.logical_type == "unknown"
-            )
-            return _attach_provider_preview(
-                InferenceResult(
-                    normalized,
-                    unknown_diagnostics,
-                    provenance={"source": "metadata", "method": "provider_schema"},
-                ),
-                value,
-                limits=limits,
-                hints=hints,
+            result = _schema_from_provider_result(
+                schema,
                 identity=identity,
-                deadline=deadline,
+                method="provider_schema",
+                max_diagnostics=limits.max_diagnostics,
+                max_fields=limits.max_fields,
             )
+            if result is not None:
+                return _attach_provider_preview(
+                    result,
+                    value,
+                    limits=limits,
+                    hints=hints,
+                    identity=identity,
+                    deadline=deadline,
+                )
+        else:
+            fields: list[dict[str, Any]] = []
+            if hasattr(schema, "names") and isinstance(
+                getattr(schema, "names", None), (list, tuple)
+            ):
+                schema_fields = getattr(schema, "fields", ())
+                if not isinstance(schema_fields, (list, tuple)):
+                    try:
+                        schema_fields = iter(cast(Any, schema))
+                    except TypeError:
+                        schema_fields = ()
+                for field in islice(
+                    cast(Iterable[Any], schema_fields), limits.max_fields + 1
+                ):
+                    fields.append(
+                        {
+                            "name": str(getattr(field, "name", "")),
+                            "logical_type": _provider_logical_type(
+                                getattr(field, "type", "unknown")
+                            ),
+                            "nullable": bool(getattr(field, "nullable", True)),
+                        }
+                    )
+            if fields:
+                result = _schema_from_provider_result(
+                    fields,
+                    identity=identity,
+                    method="schema",
+                    max_diagnostics=limits.max_diagnostics,
+                    max_fields=limits.max_fields,
+                )
+                if result is not None:
+                    return _attach_provider_preview(
+                        result,
+                        value,
+                        limits=limits,
+                        hints=hints,
+                        identity=identity,
+                        deadline=deadline,
+                    )
     to_dicts = getattr(value, "to_dicts", None)
     if callable(to_dicts):
         method = "to_dicts"
@@ -1829,7 +1983,9 @@ def infer_source(
             _deadline=deadline,
         )
         if not converted and not result.schema.fields:
-            column_schema = _schema_from_column_metadata(value, identity=identity)
+            column_schema = _schema_from_column_metadata(
+                value, identity=identity, limits=limits
+            )
             if column_schema is not None:
                 result = column_schema.replace(
                     diagnostics=(
@@ -1918,6 +2074,7 @@ async def infer_source_async(
                 identity=identity,
                 method="inspect_schema",
                 max_diagnostics=limits.max_diagnostics,
+                max_fields=limits.max_fields,
             )
             if result is not None:
                 return _attach_provider_preview(
@@ -1954,20 +2111,39 @@ async def infer_source_async(
             limit_reason="time",
         )
     if isinstance(schema, NormalizedSchema):
-        return _schema_result(schema)
+        result = _schema_from_provider_result(
+            schema,
+            identity=identity,
+            method="provider_schema",
+            max_diagnostics=limits.max_diagnostics,
+            max_fields=limits.max_fields,
+        )
+        assert result is not None
+        return result
     if callable(schema):
         try:
             schema = schema()
             if _inspect.isawaitable(schema):
                 schema = await _await_with_deadline(schema, deadline)
             _check_deadline(deadline)
-            fields: list[dict[str, Any]] = []
+            if isinstance(schema, NormalizedSchema):
+                result = _schema_from_provider_result(
+                    schema,
+                    identity=identity,
+                    method="schema",
+                    max_diagnostics=limits.max_diagnostics,
+                    max_fields=limits.max_fields,
+                )
+                _check_deadline(deadline)
+                assert result is not None
+                return result
             if isinstance(schema, Mapping) and "fields" in schema:
                 result = _schema_from_provider_result(
                     schema,
                     identity=identity,
                     method="schema",
                     max_diagnostics=limits.max_diagnostics,
+                    max_fields=limits.max_fields,
                 )
                 _check_deadline(deadline)
                 if result is not None:
@@ -1980,21 +2156,16 @@ async def infer_source_async(
                         deadline=deadline,
                     )
             if isinstance(schema, Mapping):
-                fields = [
-                    {
-                        "name": str(name),
-                        "logical_type": normalize_logical_type(
-                            dtype, preserve_decimal=True
-                        ),
-                    }
-                    for name, dtype in schema.items()
-                ]
-            if fields:
-                normalized = normalize_schema_from_fields(
-                    fields, identity=identity, preserve_decimal=True
+                result = _schema_from_provider_result(
+                    schema,
+                    identity=identity,
+                    method="schema",
+                    max_diagnostics=limits.max_diagnostics,
+                    max_fields=limits.max_fields,
                 )
                 _check_deadline(deadline)
-                return _schema_result(normalized)
+                if result is not None:
+                    return result
         except _InferenceTimeout:
             return _provider_failure(
                 identity,

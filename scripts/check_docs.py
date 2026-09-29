@@ -527,10 +527,11 @@ def check_zero_x_roadmap_phases() -> None:
         "## 0.53 — Local Adaptive Physical-DAG Execution",
         "## 0.54 — Adaptive Conformance, Qualification, and Graduation",
         "## 0.55 — Optional Data-First Authoring and Inferred Data Models",
-        "## 0.56 — Brownfield Adoption Bridges",
-        "## 0.57 — Operator Console",
-        "## 0.58 — Managed Runtime and Enterprise Provider Packs",
-        "## 0.59 — TransformationModel Incubation",
+        "## 0.56 — Complete Application ETL Backend",
+        "## 0.57 — Brownfield Adoption Bridges",
+        "## 0.58 — Operator Console",
+        "## 0.59 — Managed Runtime and Enterprise Provider Packs",
+        "## 0.60 — TransformationModel Incubation",
     )
     for marker in required_markers:
         if marker not in roadmap:
@@ -572,18 +573,22 @@ def check_zero_x_roadmap_phases() -> None:
         ),
         "0.56": (
             "IMPLEMENTATION_PLAN_0_56.md",
-            "brownfield metadata bridges",
+            "Complete application ETL backend",
         ),
         "0.57": (
             "IMPLEMENTATION_PLAN_0_57.md",
-            "operator console",
+            "brownfield metadata bridges",
         ),
         "0.58": (
             "IMPLEMENTATION_PLAN_0_58.md",
-            "provider packs",
+            "operator console",
         ),
         "0.59": (
             "IMPLEMENTATION_PLAN_0_59.md",
+            "provider packs",
+        ),
+        "0.60": (
+            "IMPLEMENTATION_PLAN_0_60.md",
             "TransformationModel",
         ),
     }
@@ -596,7 +601,7 @@ def check_zero_x_roadmap_phases() -> None:
         phase_text = phase_path.read_text(encoding="utf-8")
         for marker in (
             f"title: ETLantic {phase} Implementation Plan",
-            f"# ETLantic {phase} Implementation Plan",
+            f"# ETLantic {phase}",
             theme,
         ):
             if marker not in phase_text:

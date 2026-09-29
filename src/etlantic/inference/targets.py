@@ -10,10 +10,11 @@ import math
 import re
 import stat as _stat
 from collections import OrderedDict
-from collections.abc import Callable, Mapping
+from collections.abc import Callable, Iterable, Mapping
 from contextlib import suppress
 from dataclasses import dataclass
 from decimal import DecimalException
+from itertools import islice
 from pathlib import Path
 from threading import Lock
 from typing import Any, cast
@@ -76,6 +77,20 @@ _KNOWN_LOGICAL_TYPES = {
     "object",
     "array",
 }
+
+_TARGET_SCHEMA_MAX_FIELDS = InferenceLimits().max_fields
+_TARGET_SCHEMA_MAX_METADATA_KEYS = 256
+
+
+class _TargetSchemaLimitError(ValueError):
+    """A provider target schema exceeds the bounded inspection limits."""
+
+
+def _bounded_target_mapping(value: Mapping[Any, Any], *, label: str) -> dict[Any, Any]:
+    keys = list(islice(iter(value), _TARGET_SCHEMA_MAX_METADATA_KEYS + 1))
+    if len(keys) > _TARGET_SCHEMA_MAX_METADATA_KEYS:
+        raise _TargetSchemaLimitError(f"{label} exceeds the metadata limit")
+    return {key: value[key] for key in keys}
 
 
 def _target_logical_type(value: Any) -> str:
@@ -204,13 +219,16 @@ def _target_binding_fingerprint(binding: Mapping[str, Any]) -> str | None:
     normalized: dict[str, str | int | float | bool] = {}
     has_address = False
 
-    def collect(values: Mapping[str, Any], *, prefix: str = "", depth: int = 0) -> None:
+    def collect(values: Mapping[str, Any], *, prefix: str = "", depth: int = 0) -> bool:
         nonlocal has_address
         if depth > 4:
-            return
+            return True
         try:
-            items = cast(Any, values.items())
-            for raw_key, value in items:
+            keys = list(islice(iter(values), _TARGET_SCHEMA_MAX_METADATA_KEYS + 1))
+            if len(keys) > _TARGET_SCHEMA_MAX_METADATA_KEYS:
+                return False
+            for raw_key in keys:
+                value = values[raw_key]
                 key = str(raw_key).casefold().replace("-", "_")
                 if (
                     key not in _TARGET_BINDING_KEYS
@@ -224,15 +242,18 @@ def _target_binding_fingerprint(binding: Mapping[str, Any]) -> str | None:
                     if key in _TARGET_BINDING_ADDRESS_KEYS:
                         has_address = True
                 elif key in _TARGET_BINDING_NESTED_KEYS and isinstance(value, Mapping):
-                    collect(
+                    if not collect(
                         cast(Mapping[str, Any], value),
                         prefix=f"{qualified_key}.",
                         depth=depth + 1,
-                    )
+                    ):
+                        return False
         except Exception:
-            return
+            return False
+        return True
 
-    collect(binding)
+    if not collect(binding):
+        return None
     if not normalized or not has_address:
         return None
     encoded = json.dumps(normalized, sort_keys=True, separators=(",", ":"))
@@ -593,22 +614,28 @@ def _diagnostics_from_payload(
 def _schema_from_inspection(identity: str, fields: Any) -> NormalizedSchema:
     identity = _safe_target_identity(identity)
     if isinstance(fields, Mapping):
+        field_mapping = cast(Mapping[str, Any], fields)
+        field_names: list[str] = list(
+            islice(iter(field_mapping), _TARGET_SCHEMA_MAX_FIELDS + 1)
+        )
+        if len(field_names) > _TARGET_SCHEMA_MAX_FIELDS:
+            raise _TargetSchemaLimitError("Target schema exceeds the field limit")
         fields = [
-            {"name": name, "logical_type": logical_type}
-            for name, logical_type in fields.items()
+            {"name": name, "logical_type": field_mapping[name]} for name in field_names
         ]
     elif fields is None:
         raise TypeError("target fields must be a mapping or sequence")
     elif hasattr(fields, "names") and isinstance(
         getattr(fields, "names", None), (list, tuple)
     ):
-        try:
-            fields = list(fields)
-        except TypeError:
-            raise TypeError("target schema is not iterable") from None
+        pass
     elif not isinstance(fields, (list, tuple)):
         raise TypeError("target fields must be a mapping or sequence")
-    values = list(fields)
+    values: list[Any] = list(
+        islice(iter(cast(Iterable[Any], fields)), _TARGET_SCHEMA_MAX_FIELDS + 1)
+    )
+    if len(values) > _TARGET_SCHEMA_MAX_FIELDS:
+        raise _TargetSchemaLimitError("Target schema exceeds the field limit")
     if all(isinstance(field, NormalizedField) for field in values):
         names: set[str] = {field.name for field in values}
         if any(not isinstance(name, str) or not name for name in names):
@@ -633,7 +660,10 @@ def _schema_from_inspection(identity: str, fields: Any) -> NormalizedSchema:
                     _target_logical_type(field.logical_type),
                     field.required,
                     field.nullable,
-                    dict(field.metadata),
+                    _bounded_target_mapping(
+                        cast(Mapping[Any, Any], field.metadata),
+                        label="Target field metadata",
+                    ),
                 )
             )
         return NormalizedSchema(identity=identity, fields=tuple(normalized_fields))
@@ -641,7 +671,9 @@ def _schema_from_inspection(identity: str, fields: Any) -> NormalizedSchema:
     names: set[str] = set()
     for field in values:
         if isinstance(field, Mapping):
-            item = dict(field)
+            item = _bounded_target_mapping(
+                cast(Mapping[Any, Any], field), label="Target field"
+            )
             if "logical_type" not in item and "type" in item:
                 item["logical_type"] = item["type"]
             field_name = item.get("name")
@@ -660,6 +692,12 @@ def _schema_from_inspection(identity: str, fields: Any) -> NormalizedSchema:
                     "target field required and nullable flags must be booleans"
                 )
             item["logical_type"] = _target_logical_type(item["logical_type"])
+            if "default" in item:
+                item["default_omission_safe"] = _target_default_is_omission_safe(
+                    item["default"],
+                    item["logical_type"],
+                    item.get("nullable", False),
+                )
             normalized.append(item)
             continue
         field_name = getattr(field, "name", None)
@@ -708,7 +746,9 @@ def _validated_normalized_schema(schema: NormalizedSchema) -> NormalizedSchema:
         raise TypeError("target schema metadata must be a mapping")
     normalized = _schema_from_inspection(schema.identity, schema.fields)
     return NormalizedSchema(
-        normalized.identity, normalized.fields, dict(schema.metadata)
+        normalized.identity,
+        normalized.fields,
+        _bounded_target_mapping(schema.metadata, label="Target schema metadata"),
     )
 
 
@@ -724,7 +764,24 @@ def _normalize_target_observation(
         )
     identity_missing = resolved_identity is None
     resolved_identity = resolved_identity or "target"
-    metadata = dict(observation.metadata)
+    try:
+        metadata = _bounded_target_mapping(
+            observation.metadata, label="Target observation metadata"
+        )
+    except _TargetSchemaLimitError:
+        return _unknown_target(
+            "INFER_LIMIT",
+            identity=resolved_identity,
+            inspector=observation.inspector,
+            message="Target observation metadata exceeds the metadata limit",
+        )
+    except Exception:
+        return _unknown_target(
+            "INFER_TARGET_UNSUPPORTED",
+            identity=resolved_identity,
+            inspector=observation.inspector,
+            message="Target observation metadata is malformed",
+        )
     if identity_missing:
         metadata.pop("identity", None)
         metadata["identity_unresolved"] = True
@@ -748,13 +805,18 @@ def _normalize_target_observation(
         )
     try:
         schema = _validated_normalized_schema(observation.schema)
-    except (AttributeError, KeyError, TypeError, ValueError):
+    except (AttributeError, KeyError, TypeError, ValueError) as exc:
+        limited = isinstance(exc, _TargetSchemaLimitError)
         diagnostics = (
             *diagnostics,
             Diagnostic(
-                "INFER_TARGET_UNSUPPORTED",
-                Severity.WARNING,
-                "Target fields are malformed",
+                "INFER_LIMIT" if limited else "INFER_TARGET_UNSUPPORTED",
+                Severity.ERROR if limited else Severity.WARNING,
+                (
+                    "Target schema exceeds the configured inference limits"
+                    if limited
+                    else "Target fields are malformed"
+                ),
                 phase="inference",
             ),
         )
@@ -1058,12 +1120,26 @@ def _normalize_provider_payload(
         schema_is_envelope = schema_payload is not _MISSING and not isinstance(
             schema_payload, (str, type)
         )
-        raw_schema_mapping = (
+        is_raw_schema_candidate = (
             "exists" not in payload
             and "fields" not in payload
             and not schema_is_envelope
-            and all(isinstance(value, (str, type)) for value in payload.values())
         )
+        if is_raw_schema_candidate:
+            target_payload = cast(Mapping[str, Any], payload)
+            field_names: list[str] = list(
+                islice(iter(target_payload), _TARGET_SCHEMA_MAX_FIELDS + 1)
+            )
+            if len(field_names) > _TARGET_SCHEMA_MAX_FIELDS:
+                return _unknown_target(
+                    "INFER_LIMIT",
+                    identity=identity,
+                    inspector=inspector,
+                    message="Target schema exceeds the configured inference limits",
+                )
+            raw_schema_mapping = all(
+                isinstance(target_payload[name], (str, type)) for name in field_names
+            )
         if raw_schema_mapping:
             # Raw schema mappings remain supported when they cannot be
             # confused with an existence-state envelope.
@@ -1151,17 +1227,24 @@ def _normalize_provider_payload(
 
     schema: NormalizedSchema | None = None
     schema_error: str | None = None
+    schema_error_code = "INFER_TARGET_UNSUPPORTED"
     if fields is not _MISSING:
         try:
             schema = _schema_from_inspection(target_identity, fields)
-        except (AttributeError, KeyError, TypeError, ValueError):
-            schema_error = "Target fields are malformed"
+        except (AttributeError, KeyError, TypeError, ValueError) as exc:
+            if isinstance(exc, _TargetSchemaLimitError):
+                schema_error_code = "INFER_LIMIT"
+                schema_error = "Target schema exceeds the configured inference limits"
+            else:
+                schema_error = "Target fields are malformed"
 
     if schema_error is not None:
         diagnostics.append(
             Diagnostic(
-                "INFER_TARGET_UNSUPPORTED",
-                Severity.WARNING,
+                schema_error_code,
+                Severity.ERROR
+                if schema_error_code == "INFER_LIMIT"
+                else Severity.WARNING,
                 schema_error,
                 phase="inference",
             )
@@ -1280,12 +1363,17 @@ def _inspect_target_with_identity(
     if isinstance(target, NormalizedSchema):
         try:
             schema = _validated_normalized_schema(target)
-        except (AttributeError, KeyError, TypeError, ValueError):
+        except (AttributeError, KeyError, TypeError, ValueError) as exc:
+            limited = isinstance(exc, _TargetSchemaLimitError)
             return _unknown_target(
-                "INFER_TARGET_UNSUPPORTED",
+                "INFER_LIMIT" if limited else "INFER_TARGET_UNSUPPORTED",
                 identity=target.identity,
                 inspector="normalized",
-                message="Target fields are malformed",
+                message=(
+                    "Target schema exceeds the configured inference limits"
+                    if limited
+                    else "Target fields are malformed"
+                ),
             )
         schema = NormalizedSchema(identity, schema.fields, schema.metadata)
         metadata = {**schema.metadata, "identity": identity}
@@ -2194,23 +2282,48 @@ def _target_constraint_diagnostic(
 
 def _target_field_has_omission_value(field: NormalizedField) -> bool:
     """Whether the target declares a value for an omitted required field."""
+    default_omission_safe = field.metadata.get("default_omission_safe")
+    if type(default_omission_safe) is bool:
+        return default_omission_safe
     if "default" in field.metadata:
         default = field.metadata["default"]
-        default_type = _runtime_logical_type(default)
-        if default_type == "null":
-            return field.nullable
-        if default_type == field.logical_type:
-            return True
-        if (default_type, field.logical_type) not in _LOSSLESS_CASTS:
+        # This is the wire sentinel used after a provider default is redacted.
+        # Without the safe marker above, its string type is not evidence about
+        # the original default's compatibility with the target column.
+        if default == "<redacted>":
             return False
-        try:
-            _coerce_value(default, field.logical_type)
-        except (TypeError, ValueError, OverflowError, DecimalException):
-            return False
-        return True
+        return _target_default_is_omission_safe(
+            default, field.logical_type, field.nullable
+        )
     return any(
-        field.metadata.get(key)
+        field.metadata.get(key) is True
         for key in ("has_default", "generated", "identity", "auto_increment")
+    )
+
+
+def _target_default_is_omission_safe(
+    default: Any, target_type: str, nullable: bool
+) -> bool:
+    default_type = _runtime_logical_type(default)
+    if default_type == "null":
+        return nullable
+    if default_type == target_type:
+        return True
+    if (default_type, target_type) not in _LOSSLESS_CASTS:
+        return False
+    try:
+        _coerce_value(default, target_type)
+    except (TypeError, ValueError, OverflowError, DecimalException):
+        return False
+    return True
+
+
+def _valid_target_constraint_names(value: Any) -> bool:
+    if not isinstance(value, (list, tuple)):
+        return False
+    names = cast(list[Any] | tuple[Any, ...], value)
+    return len(names) <= _TARGET_SCHEMA_MAX_FIELDS and all(
+        isinstance(name, str) and bool(name) for name in names
     )
 
 
@@ -3232,7 +3345,39 @@ def check_write_compatibility(
             )
         assert isinstance(target_schema, NormalizedSchema)
         target = target_schema
-        observation_metadata = dict(target_observation.metadata)
+        try:
+            observation_metadata = _bounded_target_mapping(
+                target_observation.metadata,
+                label="Target observation metadata",
+            )
+        except _TargetSchemaLimitError:
+            return WriteCompatibility(
+                False,
+                mode=mode,
+                diagnostics=(
+                    *target_diagnostics,
+                    Diagnostic(
+                        "INFER_LIMIT",
+                        Severity.ERROR,
+                        "Target observation metadata exceeds the metadata limit",
+                        phase="inference",
+                    ),
+                ),
+            )
+        except Exception:
+            return WriteCompatibility(
+                False,
+                mode=mode,
+                diagnostics=(
+                    *target_diagnostics,
+                    Diagnostic(
+                        "INFER_TARGET_UNSUPPORTED",
+                        Severity.ERROR,
+                        "Target observation metadata is malformed",
+                        phase="inference",
+                    ),
+                ),
+            )
         observed_revision = target_observation.revision
     assert isinstance(target, NormalizedSchema)
     target_metadata = {**target.metadata, **observation_metadata}
@@ -3340,12 +3485,23 @@ def check_write_compatibility(
     # target metadata, and absent declarations fail closed for these modes.
     if mode in {"merge", "upsert"}:
         keys = target_metadata.get("keys")
-        if not isinstance(keys, (list, tuple)):
+        if keys is None:
             keys = [
                 field.name
                 for field in target.fields
                 if field.metadata.get("key") or field.metadata.get("primary_key")
             ]
+        elif not _valid_target_constraint_names(keys):
+            keys = []
+            incompatible.append("<keys>")
+            diagnostics.append(
+                Diagnostic(
+                    "INFER_TARGET_UNSUPPORTED",
+                    Severity.ERROR,
+                    "Target key metadata is malformed",
+                    phase="inference",
+                )
+            )
         missing_keys = [key for key in keys if key not in source_fields]
         if not keys or missing_keys:
             incompatible.extend(str(key) for key in missing_keys or ["<keys>"])
@@ -3359,10 +3515,21 @@ def check_write_compatibility(
             )
     if mode == "partition_replace":
         partitions = target_metadata.get("partitions")
-        if not isinstance(partitions, (list, tuple)):
+        if partitions is None:
             partitions = [
                 field.name for field in target.fields if field.metadata.get("partition")
             ]
+        elif not _valid_target_constraint_names(partitions):
+            partitions = []
+            incompatible.append("<partitions>")
+            diagnostics.append(
+                Diagnostic(
+                    "INFER_TARGET_UNSUPPORTED",
+                    Severity.ERROR,
+                    "Target partition metadata is malformed",
+                    phase="inference",
+                )
+            )
         missing_partitions = [name for name in partitions if name not in source_fields]
         if not partitions or missing_partitions:
             incompatible.extend(

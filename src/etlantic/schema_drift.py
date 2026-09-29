@@ -13,6 +13,7 @@ from collections.abc import Iterable, Mapping
 from dataclasses import dataclass, field
 from datetime import date, datetime
 from enum import StrEnum
+from itertools import islice
 from typing import Any, cast
 
 from etlantic.contracts import Data, is_data_contract_type
@@ -616,7 +617,12 @@ def _json_safe(
         normalized_key = re.sub(r"[^a-z0-9_]", "", key.casefold())
         if normalized_key in {"revision", "target_revision"}:
             return revision_fingerprint(value)
-        if normalized_key in {"has_default", "generated", "auto_increment"}:
+        if normalized_key in {
+            "has_default",
+            "generated",
+            "auto_increment",
+            "default_omission_safe",
+        }:
             return value if type(value) is bool else "<redacted>"
         if normalized_key == "parser_options":
             return _safe_parser_options(value)
@@ -647,19 +653,28 @@ def _json_safe(
     if isinstance(value, bytes):
         return f"<bytes:{len(value)}>"
     if isinstance(value, Mapping):
+        metadata = cast(Mapping[Any, Any], value)
         allow_children = key in _STRUCTURAL_MAP_KEYS
+        keys: list[Any] = list(islice(iter(metadata), 257))
+        if len(keys) > 256:
+            return {}
         return {
             str(k): _json_safe(
-                v,
+                metadata[k],
                 key=str(k),
                 depth=depth + 1,
                 allow_unknown_primitive=allow_children,
             )
-            for k, v in sorted(value.items(), key=lambda item: str(item[0]))[:256]
+            for k in sorted(keys, key=lambda item: str(item))
         }
     if isinstance(value, (list, tuple, set, frozenset)):
-        values = list(value)
+        sequence = cast(Iterable[Any], value)
+        values: list[Any] = list(
+            islice(iter(sequence), 257 if isinstance(value, (set, frozenset)) else 256)
+        )
         if isinstance(value, (set, frozenset)):
+            if len(values) > 256:
+                return []
             values.sort(key=repr)
         return [_json_safe(v, depth=depth + 1) for v in values[:256]]
     return f"<{type(value).__module__}.{type(value).__qualname__}>"

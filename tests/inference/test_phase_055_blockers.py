@@ -7,13 +7,18 @@ import time
 from collections.abc import ItemsView, Iterator, Mapping, Sequence
 from decimal import Decimal
 from pathlib import Path
+from typing import Any, cast
+
+import pytest
 
 import etlantic as etl
+from etlantic.inference import schema_documents
+from etlantic.inference.durable import validate_target_binding
 from etlantic.inference.facade import _eval
 from etlantic.inference.targets import infer_records_for_target, inspect_target
-from etlantic.schema_drift import json_safe_metadata
+from etlantic.schema_drift import NormalizedField, NormalizedSchema, json_safe_metadata
 from etlantic.storage.protocol import records_to_dicts
-from etlantic.transform.functions import col, to_integer
+from etlantic.transform.functions import col, to_integer, when
 
 
 def test_nested_provider_values_and_identity_are_redacted_on_wire() -> None:
@@ -26,6 +31,31 @@ def test_nested_provider_values_and_identity_are_redacted_on_wire() -> None:
     encoded = json.dumps(payload, sort_keys=True)
     assert "alice@example.com" not in encoded
     assert "/Users/alice" not in encoded
+
+
+def test_metadata_serialization_bounds_mapping_traversal() -> None:
+    class Wide(Mapping[str, int]):
+        def __init__(self, width: int) -> None:
+            self.width = width
+            self.key_visits = 0
+            self.value_reads = 0
+
+        def __len__(self) -> int:
+            return self.width
+
+        def __iter__(self) -> Iterator[str]:
+            for index in range(self.width):
+                self.key_visits += 1
+                yield str(index)
+
+        def __getitem__(self, key: str) -> int:
+            self.value_reads += 1
+            return int(key)
+
+    wide = Wide(1_000)
+    assert json_safe_metadata(wide) == {}
+    assert wide.key_visits == 257
+    assert wide.value_reads == 0
 
 
 def test_record_size_estimation_stops_at_the_materialized_byte_budget() -> None:
@@ -228,6 +258,32 @@ def test_provider_schema_with_non_field_items_fails_closed() -> None:
     assert "INFER_SOURCE_UNSUPPORTED" in {item.code for item in result.diagnostics}
 
 
+@pytest.mark.parametrize("flag", ("required", "nullable"))
+def test_provider_schema_boolean_flags_are_validated(flag: str) -> None:
+    class Provider:
+        def inspect_schema(self):
+            return {"fields": [{"name": "id", "type": "integer", flag: "false"}]}
+
+    result = etl.infer_source(Provider())
+
+    assert not result.schema.fields
+    assert "INFER_SOURCE_UNSUPPORTED" in {item.code for item in result.diagnostics}
+
+
+def test_normalized_provider_schema_boolean_flags_are_validated() -> None:
+    class Provider:
+        def inspect_schema(self):
+            return NormalizedSchema(
+                "provider",
+                (NormalizedField("id", "integer", required=cast(bool, "false")),),
+            )
+
+    result = etl.infer_source(Provider())
+
+    assert not result.schema.fields
+    assert "INFER_SOURCE_UNSUPPORTED" in {item.code for item in result.diagnostics}
+
+
 def test_async_provider_preview_matches_sync_bounded_preview() -> None:
     class View:
         __etlantic_bounded_view__ = True
@@ -333,6 +389,216 @@ def test_target_diagnostics_and_provider_identity_are_bounded_and_retained() -> 
     assert len(observation.diagnostics) == 1
 
 
+@pytest.mark.parametrize(
+    "marker", ("has_default", "generated", "identity", "auto_increment")
+)
+def test_malformed_target_omission_markers_do_not_qualify_writes(marker: str) -> None:
+    target = inspect_target(
+        {
+            "identity": f"malformed-{marker}",
+            "exists": "present",
+            "capabilities": {"write_modes": ["append"]},
+            "fields": [
+                {
+                    "name": "id",
+                    "type": "integer",
+                    "required": True,
+                    "nullable": False,
+                    marker: "false",
+                }
+            ],
+        }
+    )
+    source = etl.infer_records([{"id": 1}, {}]).schema
+
+    compatibility = etl.check_write_compatibility(source, target)
+
+    assert not compatibility.compatible
+    assert "INFER_WRITE_INCOMPATIBLE" in {
+        item.code for item in compatibility.diagnostics
+    }
+
+
+def test_redacted_compatible_target_default_preserves_omission_safety() -> None:
+    source = etl.infer_records([{"id": 1}]).schema
+    target = inspect_target(
+        {
+            "identity": "default-target",
+            "exists": "present",
+            "capabilities": {"write_modes": ["append"]},
+            "fields": [
+                {
+                    "name": "id",
+                    "type": "integer",
+                    "required": True,
+                    "nullable": False,
+                },
+                {
+                    "name": "created_at",
+                    "type": "integer",
+                    "required": True,
+                    "nullable": False,
+                    "default": 42,
+                },
+            ],
+        }
+    )
+
+    assert target.schema is not None
+    created_at = target.schema.fields[1]
+    assert created_at.metadata["default"] == "<redacted>"
+    assert created_at.metadata["default_omission_safe"] is True
+    assert etl.check_write_compatibility(source, target).status == "proven"
+
+
+def test_redacted_incompatible_target_default_does_not_qualify_omission() -> None:
+    source = etl.infer_records([{"id": 1}]).schema
+    target = inspect_target(
+        {
+            "identity": "invalid-default-target",
+            "exists": "present",
+            "capabilities": {"write_modes": ["append"]},
+            "fields": [
+                {"name": "id", "type": "integer"},
+                {
+                    "name": "created_at",
+                    "type": "string",
+                    "required": True,
+                    "nullable": False,
+                    "default": 42,
+                },
+            ],
+        }
+    )
+
+    assert target.schema is not None
+    assert target.schema.fields[1].metadata["default_omission_safe"] is False
+    compatibility = etl.check_write_compatibility(source, target)
+    assert compatibility.status == "conflict"
+    assert "INFER_WRITE_INCOMPATIBLE" in {
+        item.code for item in compatibility.diagnostics
+    }
+
+
+@pytest.mark.parametrize(
+    ("metadata_key", "mode"),
+    (("keys", "merge"), ("partitions", "partition_replace")),
+)
+def test_malformed_target_constraints_fail_closed(metadata_key: str, mode: str) -> None:
+    source = etl.infer_records([{"id": 1}]).schema
+    target = inspect_target(
+        {
+            "identity": f"malformed-{metadata_key}",
+            "exists": "present",
+            metadata_key: [[]],
+            "capabilities": {"write_modes": [mode]},
+            "fields": [{"name": "id", "type": "integer"}],
+        }
+    )
+
+    compatibility = etl.check_write_compatibility(source, target, mode=mode)
+
+    assert not compatibility.compatible
+    assert "INFER_TARGET_UNSUPPORTED" in {
+        item.code for item in compatibility.diagnostics
+    }
+
+
+def test_target_observation_metadata_copy_and_compatibility_are_bounded() -> None:
+    class WideMetadata(Mapping[str, object]):
+        def __init__(self, width: int) -> None:
+            self.width = width
+            self.key_visits = 0
+
+        def __len__(self) -> int:
+            return self.width
+
+        def __iter__(self) -> Iterator[str]:
+            for index in range(self.width):
+                self.key_visits += 1
+                yield f"key_{index}"
+
+        def __getitem__(self, key: str) -> object:
+            return key
+
+    wide = WideMetadata(1_000)
+    schema = NormalizedSchema("target", (NormalizedField("id", "integer"),))
+    observation = etl.TargetObservation(
+        schema, "present", metadata=cast(dict[str, Any], wide)
+    )
+
+    assert wide.key_visits == 257
+    assert len(observation.metadata) == 256
+    assert "INFER_LIMIT" in {item.code for item in observation.diagnostics}
+
+    observation.metadata.update({f"extra_{index}": index for index in range(1_000)})
+    source = etl.infer_records([{"id": 1}]).schema
+    compatibility = etl.check_write_compatibility(source, observation)
+    assert not compatibility.compatible
+    assert "INFER_LIMIT" in {item.code for item in compatibility.diagnostics}
+
+
+def test_target_schema_field_count_is_bounded() -> None:
+    maximum = etl.InferenceLimits().max_fields
+    targets = (
+        inspect_target(
+            {
+                "identity": "wide-target",
+                "exists": "present",
+                "fields": [
+                    {"name": f"field_{index}", "type": "integer"}
+                    for index in range(maximum + 1)
+                ],
+            }
+        ),
+        inspect_target({f"field_{index}": "integer" for index in range(maximum + 1)}),
+    )
+
+    for target in targets:
+        assert target.schema is None
+        assert target.exists == "unknown"
+        assert "INFER_LIMIT" in {item.code for item in target.diagnostics}
+
+
+def test_target_field_metadata_copy_is_bounded() -> None:
+    class WideField(Mapping[str, object]):
+        def __init__(self) -> None:
+            self.entries: dict[str, object] = {
+                "name": "id",
+                "type": "integer",
+            }
+            self.entries.update({f"metadata_{index}": index for index in range(1_000)})
+            self.key_visits = 0
+            self.value_reads = 0
+
+        def __len__(self) -> int:
+            return len(self.entries)
+
+        def __iter__(self) -> Iterator[str]:
+            for key in self.entries:
+                self.key_visits += 1
+                yield key
+
+        def __getitem__(self, key: str) -> object:
+            self.value_reads += 1
+            return self.entries[key]
+
+    field = WideField()
+    target = inspect_target(
+        {
+            "identity": "wide-field-metadata-target",
+            "exists": "present",
+            "fields": [field],
+        }
+    )
+
+    assert target.schema is None
+    assert target.exists == "unknown"
+    assert "INFER_LIMIT" in {item.code for item in target.diagnostics}
+    assert field.key_visits <= 257
+    assert field.value_reads == 0
+
+
 def test_target_revision_reader_fences_stale_observation() -> None:
     result = infer_records_for_target(
         [{"id": 1}],
@@ -417,6 +683,156 @@ def test_exact_jsonl_boundary_is_not_marked_sampled(tmp_path) -> None:
     result = etl.infer_json(path, lines=True, limits=etl.InferenceLimits(max_rows=2))
     assert result.provenance["sampled"] is False
     assert "INFER_LIMIT" not in {item.code for item in result.diagnostics}
+
+
+def test_jsonl_row_limit_ignores_blank_lines(tmp_path: Path) -> None:
+    path = tmp_path / "events.jsonl"
+    path.write_text('\n{"id": 1}\n{"id": 2}\n\n', encoding="utf-8")
+
+    result = etl.infer_json(
+        path,
+        lines=True,
+        limits=etl.InferenceLimits(max_rows=2),
+        retain_rows=True,
+    )
+
+    assert result.rows == ({"id": 1}, {"id": 2})
+    assert result.provenance["sampled"] is False
+    assert "INFER_LIMIT" not in {item.code for item in result.diagnostics}
+
+
+def test_case_when_schema_includes_every_value_branch() -> None:
+    dataset = etl.from_records([{"flag": True, "text": "yes", "number": 1}]).select(
+        when(col("flag"), col("text")).otherwise(col("number")).alias("out")
+    )
+
+    assert dataset.schema.fields[0].logical_type == "string"
+    assert dataset.preview() == [{"out": "yes"}]
+
+
+def test_positional_union_preview_uses_right_schema_order() -> None:
+    left = etl.from_records([{"id": 1, "payload": "left"}], name="left")
+    right = etl.from_records(
+        [
+            {"payload": 101, "id": "first"},
+            {"id": 202, "payload": "second"},
+        ],
+        name="right",
+    )
+
+    result = left.union(right)
+
+    assert result.preview()[2] == {"id": "second", "payload": "202"}
+
+
+@pytest.mark.parametrize(
+    ("field_key", "invalid_value"),
+    [("nullable", "false"), ("required", "false")],
+)
+def test_durable_target_binding_rejects_string_boolean_fields(
+    field_key: str, invalid_value: str
+) -> None:
+    field = {
+        "name": "id",
+        "logical_type": "integer",
+        "required": True,
+        "nullable": False,
+    }
+    field[field_key] = invalid_value
+    binding = {
+        "version": 1,
+        "kind": "target",
+        "identity": "target",
+        "write_mode": "append",
+        "observed": True,
+        "requirements": {
+            "version": 1,
+            "identity": "target",
+            "fields": [field],
+            "metadata": {"capabilities": {"write_modes": ["append"]}},
+        },
+    }
+
+    with pytest.raises(ValueError, match="INFER_TARGET_BINDING"):
+        validate_target_binding(binding)
+
+
+@pytest.mark.parametrize(
+    "schema_payload",
+    [
+        {
+            "fields": [
+                {"name": "id", "type": "integer"},
+                {"name": "name", "type": "string"},
+                {"name": "active", "type": "boolean"},
+            ]
+        },
+        {"id": "integer", "name": "string", "active": "boolean"},
+    ],
+)
+def test_provider_schema_obeys_max_fields(schema_payload: Mapping[str, object]) -> None:
+    class Provider:
+        def inspect_schema(self):
+            return schema_payload
+
+    result = etl.infer_source(Provider(), limits=etl.InferenceLimits(max_fields=1))
+
+    assert [field.name for field in result.schema.fields] == ["id"]
+    assert result.provenance["sampled"] is True
+    assert result.provenance["limit_reason"] == "fields"
+    assert "INFER_LIMIT" in {item.code for item in result.diagnostics}
+
+
+def test_normalized_schema_obeys_max_fields() -> None:
+    source_schema = NormalizedSchema(
+        "wide",
+        (
+            NormalizedField("id", "integer"),
+            NormalizedField("name", "string"),
+        ),
+    )
+
+    result = etl.infer_source(source_schema, limits=etl.InferenceLimits(max_fields=1))
+
+    assert [field.name for field in result.schema.fields] == ["id"]
+    assert result.provenance["limit_reason"] == "fields"
+    assert "INFER_LIMIT" in {item.code for item in result.diagnostics}
+
+
+def test_provider_field_metadata_copy_is_bounded() -> None:
+    class WideField(Mapping[str, object]):
+        def __init__(self) -> None:
+            self.entries: dict[str, object] = {
+                "name": "id",
+                "type": "integer",
+            }
+            self.entries.update({f"metadata_{index}": index for index in range(1_000)})
+            self.key_visits = 0
+            self.value_reads = 0
+
+        def __len__(self) -> int:
+            return len(self.entries)
+
+        def __iter__(self) -> Iterator[str]:
+            for key in self.entries:
+                self.key_visits += 1
+                yield key
+
+        def __getitem__(self, key: str) -> object:
+            self.value_reads += 1
+            return self.entries[key]
+
+    field = WideField()
+
+    class Provider:
+        def inspect_schema(self):
+            return {"fields": [field]}
+
+    result = etl.infer_source(Provider(), limits=etl.InferenceLimits(max_fields=1))
+
+    assert [item.name for item in result.schema.fields] == ["id"]
+    assert field.key_visits <= 257
+    assert field.value_reads <= 5
 
 
 def test_provider_materialization_limit_is_checked_before_record_conversion() -> None:
@@ -560,6 +976,51 @@ def test_json_materialization_limit_is_enforced_while_reading(tmp_path: Path) ->
         assert result.provenance["limit_reason"] == "materialized_bytes"
         assert result.provenance["materialized_bytes_observed"] <= 64
         assert len(result.rows) == 1
+
+
+def test_schema_document_byte_limit_rejects_oversized_text_before_encoding() -> None:
+    class NoEncode(str):
+        def encode(self, *args: object, **kwargs: object) -> bytes:
+            raise AssertionError("oversized schema text must be rejected first")
+
+    result = etl.infer_schema_document(
+        NoEncode("x" * 1_000),
+        format="json_schema",
+        limits=etl.InferenceLimits(max_bytes=32),
+    )
+
+    assert "INFER_LIMIT" in {item.code for item in result.diagnostics}
+
+
+def test_schema_document_byte_limit_counts_utf8_bytes() -> None:
+    result = etl.infer_schema_document(
+        "é" * 16,
+        format="json_schema",
+        limits=etl.InferenceLimits(max_bytes=24),
+    )
+
+    assert "INFER_LIMIT" in {item.code for item in result.diagnostics}
+
+
+def test_schema_document_mapping_byte_limit_preflights_large_scalars(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    def reject_encoding(*args: object, **kwargs: object) -> object:
+        raise AssertionError("oversized schema mapping reached JSON encoding")
+
+    monkeypatch.setattr(
+        schema_documents.json.JSONEncoder, "iterencode", reject_encoding
+    )
+    result = etl.infer_schema_document(
+        {
+            "type": "object",
+            "properties": {"id": {"type": "integer", "description": "x" * 1_000_000}},
+        },
+        format="json_schema",
+        limits=etl.InferenceLimits(max_bytes=1_024),
+    )
+
+    assert "INFER_LIMIT" in {item.code for item in result.diagnostics}
 
 
 def test_mixed_decimal_and_float_use_lossless_decimal_policy() -> None:

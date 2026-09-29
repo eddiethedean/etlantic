@@ -13,7 +13,7 @@ from collections.abc import Callable, Mapping
 from dataclasses import replace
 from decimal import Decimal
 from pathlib import Path
-from typing import Any
+from typing import Any, cast
 
 from etlantic.authoring.definition import NodeDefinition, PipelineDefinition
 from etlantic.authoring.serialize import pipeline_fingerprint
@@ -613,8 +613,10 @@ def _file_binding_template(definition: PipelineDefinition) -> Mapping[str, Any] 
         if node.kind != "source":
             continue
         binding = node.bindings.get("source")
-        if isinstance(binding, Mapping) and binding.get("kind") == "file":
-            return binding
+        if isinstance(binding, Mapping):
+            source_binding = cast(Mapping[str, Any], binding)
+            if source_binding.get("kind") == "file":
+                return source_binding
     return None
 
 
@@ -687,7 +689,7 @@ def rebind_definition(
         for contract in definition.contracts:
             inference_metadata = contract.metadata.get("etlantic.inference")
             current_binding = (
-                inference_metadata.get("source_binding")
+                cast(Mapping[str, Any], inference_metadata).get("source_binding")
                 if isinstance(inference_metadata, Mapping)
                 else None
             )
@@ -1197,13 +1199,25 @@ def _validate_target_requirements(requirements: Mapping[str, Any]) -> None:
     ):
         raise ValueError("INFER_TARGET_BINDING: target schema identity is required")
     fields = requirements.get("fields")
-    if not isinstance(fields, (list, tuple)) or any(
-        not isinstance(field, Mapping)
-        or not isinstance(field.get("name"), str)
-        or not isinstance(field.get("logical_type"), str)
-        for field in fields
-    ):
+    if not isinstance(fields, (list, tuple)):
         raise ValueError("INFER_TARGET_BINDING: target schema fields are malformed")
+    for field in cast(list[Any] | tuple[Any, ...], fields):
+        if not isinstance(field, Mapping):
+            raise ValueError("INFER_TARGET_BINDING: target schema fields are malformed")
+        field_payload = cast(Mapping[str, Any], field)
+        if (
+            not isinstance(field_payload.get("name"), str)
+            or not isinstance(field_payload.get("logical_type"), str)
+            or (
+                "required" in field_payload
+                and type(field_payload.get("required")) is not bool
+            )
+            or (
+                "nullable" in field_payload
+                and type(field_payload.get("nullable")) is not bool
+            )
+        ):
+            raise ValueError("INFER_TARGET_BINDING: target schema fields are malformed")
     if requirements.get("fingerprint") is not None and not isinstance(
         requirements.get("fingerprint"), str
     ):
