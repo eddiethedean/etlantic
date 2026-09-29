@@ -7,7 +7,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-## [0.55.0] - Unreleased implementation candidate
+## [0.55.0] - 2026-09-29
 
 ### Added
 
@@ -51,6 +51,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `InferenceLimits` payloads retain defaults for omitted timeout and byte
   limits.
 
+### Upgrade notes
+
+- Existing class-authored pipelines need no rewrite. Keep core and first-party
+  packages on the same 0.55.0 version; the 0.54 adaptive execution qualification
+  does not carry forward to this line. See the
+  [0.54 to 0.55 migration guide](docs/11_DEVELOPMENT/MIGRATION_0_54_TO_0_55.md).
+
 ### Safety boundary
 
 - Inferred-model authoring remains Experimental. Qualification covers only the
@@ -85,7 +92,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Require exact candidate pins and semantically verified, row-bound evidence;
   normalize source ordering and relative evidence paths across platforms.
 
-[0.55.0]: https://github.com/eddiethedean/etlantic/compare/v0.54.0...HEAD
+[0.55.0]: https://github.com/eddiethedean/etlantic/compare/v0.54.0...v0.55.0
 [0.54.0]: https://github.com/eddiethedean/etlantic/releases/tag/v0.54.0
 
 ## [0.53.0] - 2026-09-15
