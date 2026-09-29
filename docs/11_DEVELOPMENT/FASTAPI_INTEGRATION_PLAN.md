@@ -28,6 +28,20 @@
 ETLantic's FastAPI integration exposes typed pipeline operations through an
 ordinary FastAPI application without making HTTP part of pipeline semantics.
 
+## Next application backend gate — 0.56
+
+The [0.55 source review](FINDINGS_0_56.md) distinguishes the existing HTTP host
+and store primitives from a complete managed ETL backend. The
+[0.56 implementation plan](IMPLEMENTATION_PLAN_0_56.md) owns public authorized
+services shared by HTTP and headless callers, immutable prepared submission,
+real runtime/result integration, isolated connector actions and the complete
+specification/run-control surface. HTTP delegates to those services and their
+schemas; it must not retain a separate planning or execution authority.
+
+Current stubs and the non-CP authoring demo remain accurately labelled until
+their respective replacement gates pass. Historical CP-GA evidence is not
+evidence that all 0.56 application workflows already work end to end.
+
 ETLantic 0.24 first establishes the authoring-complete `PipelineDefinition`,
 canonical `etlantic.pipeline/1` JSON, component catalog, immutable edit
 operations, OpenAPI-compatible service models, and a thin reference adapter.

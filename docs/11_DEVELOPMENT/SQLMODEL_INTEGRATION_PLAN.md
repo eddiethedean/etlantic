@@ -1,13 +1,14 @@
 # SQLModel Integration Plan
 
-> **Plan status: partially shipped; reference persistence remains planned;
-> CP1 optional stores are in progress under 0.39.**
+> **Plan status: partially shipped; application backend integration continues
+> in 0.56.**
 >
 > **Current 0.55 boundary:** The optional `etlantic-sqlmodel` package provides
-> the documented contract-to-SQLModel bridge. Sessions, Alembic workflows,
-> repository helpers, and durable multi-tenant control-plane providers remain
-> future work relative to production graduation. CP1 may add thin,
-> request-scoped reference stores; they are not the production isolation claim.
+> the contract-to-SQLModel bridge and control-plane persistence/migrations.
+> The [0.56 application backend plan](IMPLEMENTATION_PLAN_0_56.md) requires
+> prepared acceptance/handoff, runtime result projection and complete live
+> PostgreSQL concurrency, restart and migration evidence. Existing store
+> implementations do not by themselves establish that end-to-end claim.
 >
 > **Authority:** The
 > [optional-packages reference](../10_REFERENCE/OPTIONAL_PACKAGES.md) defines

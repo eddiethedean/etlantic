@@ -11,7 +11,10 @@
 > optional Prefect package provides the Python-native local MVP, and
 > `etlantic-airflow` provides external artifact compilation. Production
 > profiles must explicitly select and allowlist their orchestrator.
-> `etlantic schedule` / `scheduler serve` / `worker serve` are **not Available**.
+> `etlantic schedule` / `scheduler serve` / `worker serve` exist in the bounded
+> 0.47 service scope. Their complete prepared-submission and real managed-runtime
+> path is a [0.56 requirement](IMPLEMENTATION_PLAN_0_56.md), with current gaps
+> recorded in the [source review](FINDINGS_0_56.md).
 >
 > **Scope:** ETLantic core, `etlantic.orchestration`, and optional orchestrator
 > packages. See [Capabilities](../01_GETTING_STARTED/CAPABILITIES.md) and the
@@ -21,6 +24,13 @@
 > scheduler protocol changes, or conformance claims expand.
 
 ## Decision
+
+0.56 requires manual, scheduled and externally triggered work to use one
+authorized preparation/admission service. It also owns the real packaged worker,
+recovery, credential scope and result publication. Preserve the existing clock,
+DST, misfire, catch-up and overlap authorities when implementing this path.
+External orchestrators may coordinate business workflows through public
+commands; ETL execution and effect recovery remain backend-owned.
 
 ETLantic will keep a small built-in local scheduler as the default development,
 test, notebook, and embedded execution path. It will not embed Prefect,

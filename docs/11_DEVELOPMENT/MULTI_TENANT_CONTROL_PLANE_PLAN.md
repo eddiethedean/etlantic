@@ -25,6 +25,16 @@
 
 ## Decision
 
+The next integration gate is the
+[0.56 complete application backend](IMPLEMENTATION_PLAN_0_56.md), sequenced by
+its [execution plan](EXECUTION_PLAN_0_56.md). It reuses CP1–CP4 while completing
+per-operation authorized services, verified effective specifications, durable
+worker/result integration, isolated provider actions and executable run controls.
+Its [source review](FINDINGS_0_56.md) identifies the gaps separately from earlier
+component/profile graduation. All new paths must preserve this plan's identity,
+isolation, policy and non-enumeration contracts, including explicit denial
+disclosure policy. No new shared-service production claim is implied.
+
 ETLantic will treat a multi-tenant control plane as a first-class planned
 product surface, not as an indefinitely adopter-owned residual.
 

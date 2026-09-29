@@ -7,8 +7,10 @@ published; 0.54.0 remains the latest PyPI release until tagging.
 
 Earlier release: [0.54 migration](MIGRATION_0_53_TO_0_54.md),
 [exit gate](EXIT_GATE_0_54.md), and [implementation report](IMPLEMENTATION_REPORT_0_54.md).
-The former brownfield, console, provider, and TransformationModel phases now
-follow as 0.56–0.59.
+The new [0.56 complete application backend phase](IMPLEMENTATION_PLAN_0_56.md)
+closes the [reviewed backend gaps](FINDINGS_0_56.md) through
+[ordered execution gates](EXECUTION_PLAN_0_56.md). Brownfield, console, broader
+provider, and TransformationModel phases follow as 0.57–0.60.
 
 This section defines how ETLantic is designed, tested, contributed to, and
 released.
@@ -116,7 +118,7 @@ released.
 - [Exit gate 0.38](EXIT_GATE_0_38.md) (Done — connectivity)
 - [Findings ledger 0.38](FINDINGS_0_38.md)
 - [0.38 implementation plan](IMPLEMENTATION_PLAN_0_38.md)
-- [Forward implementation plans](FORWARD_IMPLEMENTATION_PLANS.md) (0.39–0.59 delivery contract)
+- [Forward implementation plans](FORWARD_IMPLEMENTATION_PLANS.md) (0.39–0.60 delivery contract)
 - [ADR-015: Connector protocols](adr/ADR-015-CONNECTOR-PROTOCOLS.md)
 - [Migration 0.36 → 0.37](MIGRATION_0_36_TO_0_37.md)
 - [Exit gate 0.37](EXIT_GATE_0_37.md) (Gate-ready — stable foundation)
