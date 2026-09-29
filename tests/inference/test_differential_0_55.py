@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import asyncio
 import json
+from pathlib import Path
 from typing import Any
 
 import pytest
@@ -329,7 +330,7 @@ def test_aggregate_schema_transfer_uses_function_signatures() -> None:
     assert result.metadata["lineage"]["total"]["invertible"] is False
 
 
-def test_parquet_footer_inference_and_durable_binding(tmp_path) -> None:
+def test_parquet_footer_inference_and_durable_binding(tmp_path: Path) -> None:
     arrow = pytest.importorskip("pyarrow")
     parquet = pytest.importorskip("pyarrow.parquet")
     path = tmp_path / "records.parquet"
@@ -483,7 +484,7 @@ def test_multi_input_join_and_union_have_both_bound_sources() -> None:
     assert validate_pipeline_like(union.definition()).valid
 
 
-def test_multi_input_rebind_requires_each_source_node(tmp_path) -> None:
+def test_multi_input_rebind_requires_each_source_node(tmp_path: Path) -> None:
     left = etl.from_records([{"id": 1, "left_value": 2}], name="bound_left")
     right = etl.from_records([{"id": 1, "right_value": 3}], name="bound_right")
     definition = left.join(right, on="id").definition()
