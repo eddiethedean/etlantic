@@ -35,6 +35,8 @@ CORE_METADATA_KEYS: frozenset[str] = frozenset(
         "plugin_version",
         "region",
         "region_engine",
+        "selected",
+        "sliced",
         "spark",
         "spark_fusion",
         "spark_protocol",
@@ -43,6 +45,8 @@ CORE_METADATA_KEYS: frozenset[str] = frozenset(
         "sql",
         "sql_fusion",
         "sql_protocol",
+        "sql_schema_mutations",
+        "sql_transaction_scopes",
         "streaming",
         "validation_policy",
     }

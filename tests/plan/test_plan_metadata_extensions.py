@@ -7,6 +7,7 @@ import copy
 import json
 import warnings
 from pathlib import Path
+from typing import Any
 
 import pytest
 
@@ -23,7 +24,7 @@ _BURN_IN_PLAN = (
 )
 
 
-def _load_burn_in_plan() -> dict:
+def _load_burn_in_plan() -> dict[str, Any]:
     return json.loads(_BURN_IN_PLAN.read_text(encoding="utf-8"))
 
 
@@ -57,6 +58,31 @@ def test_production_name_requires_security_mode_production() -> None:
     data["profile_snapshot"]["security_mode"] = ""
     with pytest.raises(ValueError, match=r"security_mode"):
         PipelinePlan.from_dict(data, verify=False)
+
+
+def test_first_party_plan_metadata_round_trips_in_production() -> None:
+    data = _load_burn_in_plan()
+    data["profile_snapshot"]["security_mode"] = "production"
+    data["logical_graph"]["metadata"].update({"selected": True, "sliced": False})
+    data["metadata"].update(
+        {
+            "sql_schema_mutations": [
+                {"identity": "boundary:publish", "reason": "sink_publication"}
+            ],
+            "sql_transaction_scopes": [
+                {"region": "region:sql", "scope": "region"}
+            ],
+        }
+    )
+
+    restored = PipelinePlan.from_dict(data, verify=False)
+
+    assert restored.metadata["sql_schema_mutations"][0]["identity"] == (
+        "boundary:publish"
+    )
+    assert restored.metadata["sql_transaction_scopes"][0]["scope"] == "region"
+    assert restored.logical_graph.metadata["selected"] is True
+    assert restored.logical_graph.metadata["sliced"] is False
 
 
 def test_region_metadata_rejects_oversized_payload() -> None:

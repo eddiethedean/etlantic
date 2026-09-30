@@ -1,0 +1,27 @@
+{
+  "consumer": {
+    "catalog_package": "etlantic-private-ac056037",
+    "catalog_package_version": "1.0.0",
+    "definition_id": "external-provider-pipeline",
+    "native_reference_preserved": true,
+    "output": "managed-output.csv",
+    "projection_preserved": true,
+    "provider_code_loaded_by_entry_point": true,
+    "status": "completed",
+    "submission_id": "sub-adebb49ed0ed4065"
+  },
+  "core_wheel": {
+    "filename": "etlantic-0.55.0-py3-none-any.whl",
+    "sha256": "c6cbb54fcb0068cb41c1b6d45baea1a797548d40c1b008a4fe946d5010bf52e9"
+  },
+  "independent_provider_wheel": {
+    "distribution": "etlantic-private-ac056037",
+    "filename": "etlantic_private_ac056037-1.0.0-py3-none-any.whl",
+    "sha256": "43e4c801102fb64d75568ead69ed10363344a152efa01ebff3b4d2d2ea072f4e",
+    "version": "1.0.0"
+  },
+  "installed_without_workspace_path": true,
+  "python": "3.11.15",
+  "qualification": "pass",
+  "schema": "etlantic.phase_0_56.private_provider_qualification/1"
+}

@@ -19,10 +19,10 @@ from typing import Any
 EXPECTED_DIGESTS = {
     # Pyright's import/type surface differs by host platform because the
     # synchronized dependency set includes platform-specific distributions.
-    # AC056-021/022 action contracts shifted source and test diagnostic line
-    # positions; the reviewed shadow diagnostic count remains 10,451.
-    "Darwin": "644a8b9493fa7899a4b185d34ff463b50f3cf17ffc712984a3cacdfdd5b3d3ee",
-    "Linux": "644a8b9493fa7899a4b185d34ff463b50f3cf17ffc712984a3cacdfdd5b3d3ee",
+    # AC056-037 typed the metadata fixture helper, removing 19 pre-existing
+    # unknown-type diagnostics; the clean consumer uses public owner modules.
+    "Darwin": "c3120bb2460598fdbd8746fc28abace7f65e13f2abd2d5f064ace9d1a4f83fbe",
+    "Linux": "c3120bb2460598fdbd8746fc28abace7f65e13f2abd2d5f064ace9d1a4f83fbe",
 }
 
 
