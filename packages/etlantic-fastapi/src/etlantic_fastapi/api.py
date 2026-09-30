@@ -17,6 +17,7 @@ from etlantic.control_plane import (
     ErasureStore,
     EventStore,
     HistoryStore,
+    InputResourceStore,
     ObjectiveStore,
     PolicyProvider,
     QuotaProvider,
@@ -74,6 +75,10 @@ class ETLanticAPI:
     registry: RegistryProvider | None = None
     # Optional CP3 durable work store for /v1/durable/* host routes.
     durable_work: DurableWorkStore | None = None
+    # Optional owner-scoped immutable input bytes and accepted-run leases.
+    input_resources: InputResourceStore | None = None
+    input_upload_ttl_seconds: int = 60 * 60
+    input_resource_retention_seconds: int = 90 * 24 * 60 * 60
     # Optional 0.47 schedule store for /v1/schedules* (501 without it).
     schedule_store: Any = None
     # Optional CP4 governance providers.
@@ -162,6 +167,8 @@ class ETLanticAPI:
             audit=self.audit,
             attestations=self.attestations,
             planning_context_factory=self.planning_context_factory,
+            input_resources=self.input_resources,
+            input_resource_retention_seconds=self.input_resource_retention_seconds,
         )
         return self
 

@@ -6,6 +6,8 @@ from __future__ import annotations
 import csv
 import fnmatch
 import hashlib
+import hmac
+import io
 import os
 import unicodedata
 from collections.abc import AsyncIterator, Mapping, Sequence
@@ -42,6 +44,7 @@ from etlantic.connectors.models import (
     SourcePlan,
     fingerprint_public_config,
 )
+from etlantic.control_plane.input_resources import InputResourceReference
 from etlantic.io_policy import SafeIoPolicy, resolve_under_policy
 from etlantic.storage.protocol import as_records
 
@@ -92,6 +95,39 @@ LOCAL_FILES_CONFIG_SCHEMA: dict[str, Any] = {
             "enum": list(CSV_DELIMITERS),
             "default": ",",
         },
+        "input_resource": {
+            "type": "object",
+            "additionalProperties": False,
+            "required": [
+                "schema",
+                "resource_id",
+                "version",
+                "sha256",
+                "byte_length",
+                "tenant_id",
+                "workspace_id",
+                "owner_id",
+                "media_type",
+                "format",
+                "finalized_at",
+            ],
+            "properties": {
+                "schema": {"const": "etlantic.control_plane.input_resource_ref/1"},
+                "resource_id": {"type": "string", "minLength": 1},
+                "version": {"type": "string", "minLength": 1},
+                "sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+                "byte_length": {"type": "integer", "minimum": 0},
+                "tenant_id": {"type": "string", "minLength": 1},
+                "workspace_id": {"type": "string", "minLength": 1},
+                "owner_id": {"type": "string", "minLength": 1},
+                "media_type": {
+                    "type": "string",
+                    "enum": ["text/csv", "application/csv"],
+                },
+                "format": {"type": "string", "const": "csv"},
+                "finalized_at": {"type": "string", "format": "date-time"},
+            },
+        },
     },
 }
 
@@ -139,6 +175,54 @@ class LocalFilesSourceConnector:
                 f"Unsupported local-files mode {mode!r}",
                 code="PMCONN701",
                 provider=PROVIDER_NAME,
+            )
+        if cfg.get("input_resource") is not None:
+            reference = _parse_input_reference(cfg["input_resource"])
+            if binding.get("location") not in (None, ""):
+                raise ConnectorConfigError(
+                    "Immutable input resources cannot use a physical location",
+                    code="PMCONN706",
+                    provider=PROVIDER_NAME,
+                )
+            if mode != "snapshot" or cfg.get("checkpoint"):
+                raise ConnectorConfigError(
+                    "Immutable input resources support snapshot mode only",
+                    code="PMCONN703",
+                    provider=PROVIDER_NAME,
+                )
+            if any(
+                key in cfg
+                for key in ("glob", "root", "root_ref", "consume", "checkpoint")
+            ):
+                raise ConnectorConfigError(
+                    "Immutable input resources cannot be combined with directory settings",
+                    code="PMCONN706",
+                    provider=PROVIDER_NAME,
+                )
+            fmt = _config_text(cfg, "format", "csv", code="PMCONN702")
+            if fmt != "csv" or reference.format != fmt:
+                raise ConnectorConfigError(
+                    "Input resource format does not match local-files CSV",
+                    code="PMCONN702",
+                    provider=PROVIDER_NAME,
+                )
+            encoding, delimiter = _csv_options(cfg)
+            return SourcePlan(
+                provider=PROVIDER_NAME,
+                protocol=SOURCE_PROTOCOL,
+                mode="snapshot",
+                identity_scheme="input_resource_sha256/1",
+                listing_intent={
+                    "format": fmt,
+                    "encoding": encoding,
+                    "delimiter": delimiter,
+                    "input_resource": reference.to_dict(),
+                },
+                required_capabilities=tuple(
+                    str(x) for x in (cfg.get("required_capabilities") or ())
+                ),
+                config_fingerprint=fingerprint_public_config(cfg),
+                root_ref=reference.resource_id,
             )
         glob_pat = _config_text(cfg, "glob", "*.csv", code="PMCONN750")
         _validate_glob(glob_pat, allow_recursive=self.allow_recursive_glob)
@@ -228,10 +312,20 @@ class LocalFilesSourceConnector:
         binding: Mapping[str, Any],
         context: Mapping[str, Any],
     ) -> AsyncIterator[ReadBatch]:
-        policy = _require_policy(context)
         cfg = _public_config(binding)
         _validate_public_config(cfg)
         intent = dict(plan.listing_intent)
+        raw_reference = intent.get("input_resource")
+        if raw_reference is not None:
+            reference = _parse_input_reference(raw_reference)
+            async for batch in self._read_immutable_input(
+                reference=reference,
+                intent=intent,
+                context=context,
+            ):
+                yield batch
+            return
+        policy = _require_policy(context)
         root_rel = str(
             intent.get("root") or cfg.get("root") or binding.get("root") or "."
         )
@@ -301,6 +395,70 @@ class LocalFilesSourceConnector:
             exhausted=True,
             identities=tuple(identities),
             metadata={"manifest_fingerprint": manifest.fingerprint},
+        )
+
+    async def _read_immutable_input(
+        self,
+        *,
+        reference: InputResourceReference,
+        intent: Mapping[str, Any],
+        context: Mapping[str, Any],
+    ) -> AsyncIterator[ReadBatch]:
+        if (
+            reference.byte_length > self.max_file_bytes
+            or reference.byte_length > self.max_total_bytes
+        ):
+            raise ConnectorReadError(
+                "Immutable CSV input exceeds the configured byte limit",
+                code="PMCONN776",
+                provider=PROVIDER_NAME,
+            )
+        resolver = context.get("input_resource_resolver")
+        if not callable(resolver):
+            raise ConnectorReadError(
+                "Managed immutable input resolver is unavailable",
+                code="PMCONN780",
+                provider=PROVIDER_NAME,
+            )
+        try:
+            content = resolver(reference)
+        except Exception:
+            raise ConnectorReadError(
+                "Authorized immutable input could not be resolved",
+                code="PMCONN780",
+                provider=PROVIDER_NAME,
+            ) from None
+        if (
+            not isinstance(content, bytes)
+            or len(content) != reference.byte_length
+            or not hmac.compare_digest(
+                hashlib.sha256(content).hexdigest(), reference.sha256
+            )
+        ):
+            raise ConnectorReadError(
+                "Immutable input failed version, length or checksum verification",
+                code="PMCONN781",
+                provider=PROVIDER_NAME,
+            )
+        records = _read_csv_payload(
+            content,
+            contract_type=context.get("contract_type"),
+            encoding=str(intent.get("encoding") or "utf-8"),
+            delimiter=str(intent.get("delimiter") or ","),
+            max_rows=self.max_rows,
+        )
+        yield ReadBatch(
+            records=tuple(records),
+            batch_index=0,
+            exhausted=True,
+            metadata={
+                "input_resource": {
+                    "resource_id": reference.resource_id,
+                    "version": reference.version,
+                    "sha256": reference.sha256,
+                    "byte_length": reference.byte_length,
+                }
+            },
         )
 
     async def propose_cursor(
@@ -524,6 +682,7 @@ def _public_config(binding: Mapping[str, Any]) -> dict[str, Any]:
         "empty_match",
         "encoding",
         "delimiter",
+        "input_resource",
         "required_capabilities",
     )
     if raw is not None and not isinstance(raw, Mapping):
@@ -594,6 +753,8 @@ def _validate_public_config(config: Mapping[str, Any]) -> None:
                 code="PMCONN706",
                 provider=PROVIDER_NAME,
             )
+    if "input_resource" in config:
+        _parse_input_reference(config["input_resource"])
 
 
 def _config_text(
@@ -639,6 +800,94 @@ def _csv_options(config: Mapping[str, Any]) -> tuple[str, str]:
             provider=PROVIDER_NAME,
         )
     return encoding, delimiter
+
+
+def _parse_input_reference(value: Any) -> InputResourceReference:
+    if not isinstance(value, Mapping):
+        raise ConnectorConfigError(
+            "local-files input_resource must be a finalized reference object",
+            code="PMCONN706",
+            provider=PROVIDER_NAME,
+        )
+    try:
+        return InputResourceReference.from_dict(cast(Mapping[str, Any], value))
+    except (KeyError, TypeError, ValueError):
+        raise ConnectorConfigError(
+            "local-files input_resource reference is invalid",
+            code="PMCONN706",
+            provider=PROVIDER_NAME,
+        ) from None
+
+
+def _read_csv_payload(
+    content: bytes,
+    *,
+    contract_type: type[Any] | None,
+    encoding: str,
+    delimiter: str,
+    max_rows: int,
+) -> list[Any]:
+    encoding, delimiter = _csv_options({"encoding": encoding, "delimiter": delimiter})
+    rows: list[dict[str, Any]] = []
+    try:
+        text = content.decode(encoding)
+        reader = csv.DictReader(
+            io.StringIO(text, newline=""), delimiter=delimiter, strict=True
+        )
+        if reader.fieldnames is None:
+            raise ConnectorReadError(
+                "CSV is missing a header",
+                code="PMCONN774",
+                provider=PROVIDER_NAME,
+            )
+        fields = [
+            unicodedata.normalize("NFC", str(field)) for field in reader.fieldnames
+        ]
+        if (
+            not fields
+            or any(not field.strip() for field in fields)
+            or len(set(fields)) != len(fields)
+        ):
+            raise ConnectorReadError(
+                "CSV header is malformed",
+                code="PMCONN778",
+                provider=PROVIDER_NAME,
+            )
+        reader.fieldnames = fields
+        for row in reader:
+            if None in row or any(value is None for value in row.values()):
+                raise ConnectorReadError(
+                    "CSV row width does not match its header",
+                    code="PMCONN778",
+                    provider=PROVIDER_NAME,
+                )
+            rows.append(dict(row))
+            if len(rows) > max_rows:
+                raise ConnectorReadError(
+                    f"Row budget exceeded (max_rows={max_rows})",
+                    code="PMCONN776",
+                    provider=PROVIDER_NAME,
+                )
+    except UnicodeDecodeError:
+        raise ConnectorReadError(
+            "CSV bytes do not match the selected encoding",
+            code="PMCONN777",
+            provider=PROVIDER_NAME,
+        ) from None
+    except csv.Error:
+        raise ConnectorReadError(
+            "CSV structure is malformed",
+            code="PMCONN777",
+            provider=PROVIDER_NAME,
+        ) from None
+    try:
+        return as_records(rows, contract_type)
+    except Exception:
+        raise ConnectorReadError(
+            "CSV values do not match the declared record contract",
+            code="PMCONN779",
+            provider=PROVIDER_NAME,
+        ) from None
 
 
 def _require_policy(context: Mapping[str, Any]) -> SafeIoPolicy:

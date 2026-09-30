@@ -106,6 +106,31 @@ Current index: 6 criteria passed, 36 pending, and 2 blocked of 44.
   transfer successfully. AC056-035 remains pending: directory/glob selection
   is not an owner-scoped immutable finalized-upload reference, and accepted-run
   leases, retention and orphan cleanup are still open.
+- Owner-scoped immutable CSV uploads and durable input leases, partial AC056-025/026/035:
+  `uv run pytest -q tests/control_plane/test_input_resources_0_56.py
+  tests/connectors/test_local_files_csv_0_56.py
+  tests/fastapi/test_managed_backend_0_56.py::test_managed_worker_executes_finalized_upload_and_lease_outlives_staging_ttl
+  tests/fastapi/test_managed_backend_0_56.py::test_managed_http_stages_finalizes_and_aborts_only_staged_input
+  tests/sqlmodel/test_cp1_migrations_0_51.py` — 46 passed, 5 PostgreSQL-only
+  cases skipped because `ETLANTIC_SQLMODEL_TEST_URL` is not configured. Migration
+  010 adds bounded relational staging storage and scoped durable leases. HTTP
+  staging streams up to the configured byte limit; finalization binds the
+  uploaded CSV to an immutable SHA-256/version/length/tenant/workspace/owner
+  reference. Managed planning checks the reference, acceptance acquires a
+  retention lease, and the worker resolves it through the trusted resource
+  store and verifies its scope and bytes before parsing. Tests cover restart,
+  tampered blobs and references, cross-owner denial, forbidden extra locator
+  fields and physical paths, unsupported media/formats, bounded orphan cleanup,
+  lease protection, expiry, staged-only abort and execution after staging TTL.
+  The real managed worker parsed a UTF-8 BOM/semicolon upload into typed rows
+  after its staging TTL and emitted a comma-delimited sink without placing row
+  values in the report. A rebuilt clean-wheel smoke on Python 3.14.3 applied
+  migration 010, constructed the standard backend, exposed the upload route in
+  OpenAPI, finalized an upload, read it after backend restart under a durable
+  lease, denied a cross-owner read and rejected same-length blob tampering.
+  PostgreSQL concurrent lease/cleanup qualification and the full
+  empty/malformed/oversize upload matrix through the managed worker remain
+  open, so AC056-025, AC056-026 and AC056-035 stay pending.
 - Versioned report-table and event-retention migration:
   `uv run pytest -q tests/sqlmodel/test_cp1_migrations_0_51.py`
   — the final PostgreSQL-backed rerun passed 17 SQLite and PostgreSQL cases,

@@ -4422,6 +4422,9 @@ class LocalOrchestrator:
                 "extract_id": node.name,
                 **self._trusted_scope_context(),
             }
+            input_resource_resolver = self.runtime.input_resource_resolver
+            if input_resource_resolver is not None:
+                context["input_resource_resolver"] = input_resource_resolver
             profile = getattr(self.runtime, "_active_profile", None)
             if profile is not None and getattr(profile, "safe_io", None):
                 from etlantic.io_policy import SafeIoPolicy
@@ -4680,12 +4683,9 @@ class LocalOrchestrator:
                     node_name=node_name,
                     stage=FailureStage.WRITE.value,
                 )
-                if (
-                    provider_name in self._connector_source_providers
-                    and (
-                        provider_name in self._unverified_connector_source_providers
-                        or not sink_identities
-                    )
+                if provider_name in self._connector_source_providers and (
+                    provider_name in self._unverified_connector_source_providers
+                    or not sink_identities
                 ):
                     raise NodeExecutionError(
                         "Same-provider source and sink overlap cannot be verified",

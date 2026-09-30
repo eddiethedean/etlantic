@@ -134,6 +134,16 @@ from etlantic.control_plane.history_models import (
     assert_history_metadata_only,
 )
 from etlantic.control_plane.history_protocols import HistoryStore, ImpactIndex
+from etlantic.control_plane.input_resources import (
+    INPUT_RESOURCE_REFERENCE_SCHEMA,
+    SUPPORTED_INPUT_FORMATS,
+    SUPPORTED_INPUT_MEDIA_TYPES,
+    InputResourceCleanupResult,
+    InputResourceReference,
+    InputResourceStore,
+    InputUploadReceipt,
+    MemoryInputResourceStore,
+)
 from etlantic.control_plane.memory import (
     MemoryAuthorizer,
     MemoryDefinitionRepository,
@@ -335,6 +345,7 @@ __all__ = [  # noqa: RUF022
     "GENESIS_HASH",
     "GOVERNANCE_CONSTRAINTS_SCHEMA",
     "IMPACT_EDGE_SCHEMA",
+    "INPUT_RESOURCE_REFERENCE_SCHEMA",
     "LEASE_RECORD_SCHEMA",
     "LOGICAL_IDENTITY_SCHEMA",
     "OBJECTIVE_EVALUATION_SCHEMA",
@@ -415,6 +426,10 @@ __all__ = [  # noqa: RUF022
     "GovernanceConstraints",
     "HistoryStore",
     "IdempotencyKey",
+    "InputResourceCleanupResult",
+    "InputResourceReference",
+    "InputResourceStore",
+    "InputUploadReceipt",
     "ImpactEdge",
     "ImpactIndex",
     "LeaseRecord",
@@ -431,6 +446,7 @@ __all__ = [  # noqa: RUF022
     "MemoryEventStore",
     "MemoryHistoryStore",
     "MemoryImpactIndex",
+    "MemoryInputResourceStore",
     "MemoryNotificationProvider",
     "MemoryObjectiveStore",
     "MemoryPolicyProvider",
@@ -490,6 +506,8 @@ __all__ = [  # noqa: RUF022
     "SubmissionRecord",
     "SubmissionStore",
     "SystemClock",
+    "SUPPORTED_INPUT_FORMATS",
+    "SUPPORTED_INPUT_MEDIA_TYPES",
     "TenantDirectory",
     "TenantRecord",
     "TenantRef",

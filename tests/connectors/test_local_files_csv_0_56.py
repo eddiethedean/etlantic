@@ -2,7 +2,9 @@
 
 from __future__ import annotations
 
+import hashlib
 from collections.abc import Mapping
+from datetime import UTC, datetime, timedelta
 from pathlib import Path
 from typing import Any
 
@@ -16,6 +18,18 @@ from etlantic.connectors.local_files import (
     read_csv_identities,
 )
 from etlantic.connectors.models import SourcePlan
+from etlantic.control_plane.input_resources import (
+    InputResourceReference,
+    MemoryInputResourceStore,
+)
+from etlantic.control_plane.models import (
+    ControlPlaneContext,
+    EnvironmentRef,
+    Principal,
+    SecurityDomain,
+    TenantRef,
+    WorkspaceRef,
+)
 from etlantic.io_policy import SafeIoPolicy
 
 
@@ -65,6 +79,172 @@ def _collect(
 
     plan, records = anyio.run(run)
     return plan, records, context
+
+
+def test_local_files_reads_finalized_input_reference_without_a_path_policy() -> None:
+    ctx = ControlPlaneContext(
+        principal=Principal("csv-upload-owner", kind="workload"),
+        tenant=TenantRef("csv-upload-tenant"),
+        workspace=WorkspaceRef("csv-upload-tenant", "csv-upload-workspace"),
+        environment=EnvironmentRef("test"),
+        security_domain=SecurityDomain("csv-upload-tests"),
+        resource_owner_id="csv-upload-owner",
+    )
+    store = MemoryInputResourceStore()
+    content = "\ufeffid;name\n42;Zoë\n".encode("utf-8")
+    staged = store.stage(
+        ctx,
+        content,
+        media_type="text/csv",
+        format="csv",
+        expires_at=datetime.now(UTC) + timedelta(hours=1),
+    )
+    reference = store.finalize(
+        ctx,
+        staged.upload_id,
+        expected_sha256=hashlib.sha256(content).hexdigest(),
+        expected_byte_length=len(content),
+    )
+    binding = {
+        "provider": "local-files",
+        "kind": "source",
+        "config": {
+            "input_resource": reference.to_dict(),
+            "encoding": "utf-8-sig",
+            "delimiter": ";",
+        },
+    }
+
+    def resolve(item: InputResourceReference) -> bytes:
+        return store.read(ctx, item)
+
+    context: dict[str, Any] = {
+        "contract_type": CsvRecord,
+        "input_resource_resolver": resolve,
+    }
+    connector = LocalFilesSourceConnector()
+
+    async def run() -> tuple[SourcePlan, list[Any]]:
+        plan = await connector.plan_read(binding=binding, context=context)
+        records: list[Any] = []
+        async for batch in connector.read_batches(
+            plan=plan,
+            binding=binding,
+            context=context,
+        ):
+            records.extend(batch.records)
+        return plan, records
+
+    plan, records = anyio.run(run)
+    assert plan.identity_scheme == "input_resource_sha256/1"
+    assert plan.listing_intent["input_resource"] == reference.to_dict()
+    assert [(record.id, record.name) for record in records] == [(42, "Zoë")]
+
+
+def test_local_files_rejects_tampered_or_unavailable_input_resolver() -> None:
+    ctx = ControlPlaneContext(
+        principal=Principal("csv-upload-owner", kind="workload"),
+        tenant=TenantRef("csv-upload-tenant"),
+        workspace=WorkspaceRef("csv-upload-tenant", "csv-upload-workspace"),
+        environment=EnvironmentRef("test"),
+        security_domain=SecurityDomain("csv-upload-tests"),
+        resource_owner_id="csv-upload-owner",
+    )
+    store = MemoryInputResourceStore()
+    content = b"id,name\n7,Lin\n"
+    staged = store.stage(
+        ctx,
+        content,
+        media_type="text/csv",
+        format="csv",
+        expires_at=datetime.now(UTC) + timedelta(hours=1),
+    )
+    reference = store.finalize(
+        ctx,
+        staged.upload_id,
+        expected_sha256=hashlib.sha256(content).hexdigest(),
+        expected_byte_length=len(content),
+    )
+    binding = {
+        "provider": "local-files",
+        "kind": "source",
+        "config": {"input_resource": reference.to_dict()},
+    }
+    connector = LocalFilesSourceConnector()
+
+    async def read(context: dict[str, Any]) -> None:
+        plan = await connector.plan_read(binding=binding, context=context)
+        async for _batch in connector.read_batches(
+            plan=plan, binding=binding, context=context
+        ):
+            pass
+
+    def corrupted(_reference: InputResourceReference) -> bytes:
+        return b"id,name\n8,Ada\n"
+
+    with pytest.raises(ConnectorReadError, match="resolver is unavailable"):
+        anyio.run(read, {"contract_type": CsvRecord})
+    with pytest.raises(ConnectorReadError, match="version, length or checksum"):
+        anyio.run(
+            read,
+            {
+                "contract_type": CsvRecord,
+                "input_resource_resolver": corrupted,
+            },
+        )
+
+
+def test_local_files_uploaded_reference_rejects_physical_locators() -> None:
+    ctx = ControlPlaneContext(
+        principal=Principal("csv-upload-owner", kind="workload"),
+        tenant=TenantRef("csv-upload-tenant"),
+        workspace=WorkspaceRef("csv-upload-tenant", "csv-upload-workspace"),
+        environment=EnvironmentRef("test"),
+        security_domain=SecurityDomain("csv-upload-tests"),
+        resource_owner_id="csv-upload-owner",
+    )
+    store = MemoryInputResourceStore()
+    content = b"id,name\n7,Lin\n"
+    staged = store.stage(
+        ctx,
+        content,
+        media_type="text/csv",
+        format="csv",
+        expires_at=datetime.now(UTC) + timedelta(hours=1),
+    )
+    reference = store.finalize(
+        ctx,
+        staged.upload_id,
+        expected_sha256=hashlib.sha256(content).hexdigest(),
+        expected_byte_length=len(content),
+    )
+    connector = LocalFilesSourceConnector()
+    config = {"input_resource": reference.to_dict()}
+
+    async def plan(binding: dict[str, Any]) -> None:
+        await connector.plan_read(binding=binding, context={})
+
+    with pytest.raises(ConnectorConfigError, match="physical location"):
+        anyio.run(
+            plan,
+            {
+                "provider": "local-files",
+                "kind": "source",
+                "location": "/etc/passwd",
+                "config": config,
+            },
+        )
+    with pytest.raises(ConnectorConfigError, match="reference is invalid"):
+        anyio.run(
+            plan,
+            {
+                "provider": "local-files",
+                "kind": "source",
+                "config": {
+                    "input_resource": {**reference.to_dict(), "path": "/etc/passwd"}
+                },
+            },
+        )
 
 
 def test_local_files_csv_encoding_and_delimiter_are_pinned_and_typed(

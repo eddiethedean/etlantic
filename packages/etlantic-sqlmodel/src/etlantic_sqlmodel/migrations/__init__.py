@@ -24,6 +24,7 @@ VERSIONS: Sequence[str] = (
     "007_managed_run_reports_0_56",
     "008_idempotent_run_events_0_56",
     "009_event_retention_tombstones_0_56",
+    "010_immutable_input_resources_0_56",
 )
 
 

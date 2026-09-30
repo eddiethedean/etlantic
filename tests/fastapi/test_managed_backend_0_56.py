@@ -2,7 +2,9 @@
 
 from __future__ import annotations
 
+import hashlib
 import json
+from datetime import UTC, datetime, timedelta
 from pathlib import Path
 from time import sleep
 from typing import Any, cast
@@ -78,7 +80,7 @@ def _context() -> ControlPlaneContext:
 def _migrated_url(tmp_path: Path) -> str:
     url = f"sqlite:///{tmp_path / 'managed.db'}"
     engine = sqlalchemy.create_engine(url)
-    assert upgrade(engine) == "009_event_retention_tombstones_0_56"
+    assert upgrade(engine) == "010_immutable_input_resources_0_56"
     engine.dispose()
     return url
 
@@ -332,6 +334,164 @@ def test_standard_worker_reads_configured_csv_and_does_not_retain_row_content(
         assert "Zoë" not in json.dumps(report, ensure_ascii=False)
     finally:
         backend.close()
+
+
+def test_managed_worker_executes_finalized_upload_and_lease_outlives_staging_ttl(
+    tmp_path: Path,
+) -> None:
+    database_url = _migrated_url(tmp_path)
+    ctx = _context()
+    target = tmp_path / "immutable-upload-output.csv"
+    content = "\ufeffid;name\n91;Gráce\n".encode("utf-8")
+    profile = Profile(
+        name="immutable-upload-worker",
+        security_mode="development",
+        plugin_allowlist={"etlantic": None},
+    )
+    reference: Any = None
+
+    def planning_context_factory(
+        _ctx: ControlPlaneContext, effective_profile: Any
+    ) -> PlanningContext:
+        planning = PlanningContext.create(profile=effective_profile)
+        planning.registry.register_binding(
+            BindingDescriptor(
+                binding="source",
+                provider="local-files",
+                kind="source",
+                config={
+                    "input_resource": reference.to_dict(),
+                    "encoding": "utf-8-sig",
+                    "delimiter": ";",
+                },
+            )
+        )
+        planning.registry.register_binding(
+            BindingDescriptor(
+                binding="result",
+                provider="csv",
+                location=str(target),
+                kind="sink",
+            )
+        )
+        return planning
+
+    authorizer = MemoryAuthorizer()
+    for action in ("definition.write", "run.submit", "input.read", "run.report"):
+        authorizer.grant(ctx, action)
+    backend = create_managed_backend(
+        ManagedBackendConfig(
+            database_url=database_url,
+            store_id="managed-immutable-upload",
+            profile=profile,
+            input_resource_retention_seconds=60 * 60 * 24 * 4,
+        ),
+        authorizer=authorizer,
+        context_factory=static_context_factory(
+            tenant_id=ctx.tenant.tenant_id,
+            workspace_id=ctx.workspace.workspace_id,
+            environment=ctx.environment.name,
+            security_domain=ctx.security_domain.domain_id,
+        ),
+        planning_context_factory=planning_context_factory,
+    )
+    try:
+        store = backend.input_resources
+        staged = store.stage(
+            ctx,
+            content,
+            media_type="text/csv",
+            format="csv",
+            expires_at=datetime.now(UTC) + timedelta(hours=1),
+        )
+        reference = store.finalize(
+            ctx,
+            staged.upload_id,
+            expected_sha256=hashlib.sha256(content).hexdigest(),
+            expected_byte_length=len(content),
+        )
+        service = backend.api.managed_service
+        assert service is not None
+        service.register_definition(
+            ctx,
+            "immutable-upload-pipe",
+            pipeline_to_dict(definition_from_pipeline(_ManagedCsvPipeline)),
+        )
+        receipt = service.submit_run(
+            ctx,
+            "immutable-upload-pipe",
+            idempotency_key="immutable-upload-run",
+        )
+        future = datetime.now(UTC) + timedelta(days=2)
+        assert store.read(ctx, reference, now=future) == content
+
+        assert (
+            backend.create_execution_host(owner_id="immutable-upload-worker").tick(ctx)
+            == 1
+        )
+        assert target.read_text(encoding="utf-8").splitlines() == [
+            "id,name",
+            "91,Gráce",
+        ]
+        report = service.get_run_report(ctx, str(receipt.resource_id))
+        assert report["status"] == "succeeded"
+        assert "Gráce" not in json.dumps(report)
+    finally:
+        backend.close()
+
+
+def test_managed_http_stages_finalizes_and_aborts_only_staged_input(
+    tmp_path: Path,
+) -> None:
+    ctx = _context()
+    authorizer = MemoryAuthorizer()
+    authorizer.grant(ctx, "input.upload")
+    authorizer.grant(ctx, "input.finalize")
+    authorizer.grant(ctx, "input.delete")
+    app = create_managed_app(
+        ManagedBackendConfig(
+            database_url=_migrated_url(tmp_path),
+            store_id="managed-http-upload",
+            input_upload_ttl_seconds=600,
+        ),
+        authorizer=authorizer,
+        context_factory=static_context_factory(
+            tenant_id=ctx.tenant.tenant_id,
+            workspace_id=ctx.workspace.workspace_id,
+            environment=ctx.environment.name,
+            security_domain=ctx.security_domain.domain_id,
+        ),
+    )
+    content = b"id,name\n11,Ada\n"
+    client_type = cast(Any, FastAPITestClient)
+    with client_type(app) as client:
+        headers = {
+            "X-Principal": ctx.principal.subject,
+            "Content-Type": "text/csv",
+        }
+        staged = client.post(
+            "/v1/input-resources?format=csv", headers=headers, content=content
+        )
+        assert staged.status_code == 202
+        upload_id = staged.json()["upload_id"]
+        finalized = client.post(
+            f"/v1/input-resources/{upload_id}/finalize",
+            headers={**headers, "Content-Type": "application/json"},
+            json={
+                "expected_sha256": hashlib.sha256(content).hexdigest(),
+                "expected_byte_length": len(content),
+            },
+        )
+        assert finalized.status_code == 200
+        assert finalized.json()["sha256"] == hashlib.sha256(content).hexdigest()
+        assert finalized.json()["byte_length"] == len(content)
+        aborted = client.delete(f"/v1/input-resources/{upload_id}", headers=headers)
+        assert aborted.status_code == 409
+        cross_owner = client.delete(
+            f"/v1/input-resources/{upload_id}",
+            headers={"X-Principal": "different-owner"},
+        )
+        assert cross_owner.status_code == 404
 
 
 def test_standard_backend_worker_persists_queryable_report_in_sqlmodel(

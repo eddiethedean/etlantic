@@ -7,6 +7,7 @@ import json
 from collections.abc import Callable, Mapping
 from contextlib import suppress
 from dataclasses import dataclass
+from datetime import UTC, datetime, timedelta
 from pathlib import Path
 from typing import Any, cast
 
@@ -23,6 +24,10 @@ from etlantic.control_plane.durable_models import SubmissionRecord
 from etlantic.control_plane.durable_protocols import DurableWorkStore
 from etlantic.control_plane.errors import ControlPlaneError
 from etlantic.control_plane.execution_envelope import ExecutionEnvelope
+from etlantic.control_plane.input_resources import (
+    InputResourceReference,
+    InputResourceStore,
+)
 from etlantic.control_plane.models import (
     AcceptReceipt,
     ControlPlaneContext,
@@ -82,6 +87,8 @@ class ManagedApplicationService:
     planning_context_factory: (
         Callable[[ControlPlaneContext, Any], PlanningContext] | None
     ) = None
+    input_resources: InputResourceStore | None = None
+    input_resource_retention_seconds: int = 90 * 24 * 60 * 60
 
     def register_definition(
         self,
@@ -261,6 +268,7 @@ class ManagedApplicationService:
             )
         verify_plan_fingerprint(plan)
         self._authorize_plan_resources(ctx, plan, action="definition.plan")
+        self._authorize_input_resources(ctx, plan)
         return {
             "ok": True,
             "definition_id": definition_id,
@@ -411,6 +419,12 @@ class ManagedApplicationService:
             )
         verify_plan_fingerprint(plan)
         self._authorize_plan_resources(ctx, plan, action="run.submit")
+        input_lease_id = self._protect_input_resources(
+            ctx,
+            plan,
+            operation="run.submit",
+            idempotency_key=idempotency_key,
+        )
         plugin_fingerprint = (
             hashlib.sha256(
                 json.dumps(
@@ -496,10 +510,11 @@ class ManagedApplicationService:
         except Exception as exc:
             if receipt_result.created:
                 try:
-                    _record, changed = self._cancel_cp1(
+                    record, changed = self._cancel_cp1(
                         ctx, receipt_result.receipt.resource_id
                     )
-                    _ = changed
+                    if changed or record.get("status") == "cancelled":
+                        self._release_input_lease(ctx, input_lease_id)
                 except Exception:
                     pass
             if isinstance(exc, ControlPlaneError):
@@ -962,6 +977,15 @@ class ManagedApplicationService:
             )
             return receipt_result.receipt
 
+        input_plan = PipelinePlan.from_dict(
+            mutable_copy(envelope.plan_document), verify=True
+        )
+        input_lease_id = self._protect_input_resources(
+            ctx,
+            input_plan,
+            operation=operation,
+            idempotency_key=idempotency_key,
+        )
         receipt_result = self.submissions.accept(
             ctx,
             idempotency_key=idempotency_key,
@@ -980,8 +1004,14 @@ class ManagedApplicationService:
             )
         except Exception as exc:
             if receipt_result.created:
-                with suppress(Exception):
-                    self._cancel_cp1(ctx, receipt_result.receipt.resource_id)
+                try:
+                    record, changed = self._cancel_cp1(
+                        ctx, receipt_result.receipt.resource_id
+                    )
+                    if changed or record.get("status") == "cancelled":
+                        self._release_input_lease(ctx, input_lease_id)
+                except Exception:
+                    pass
             if isinstance(exc, ControlPlaneError):
                 raise
             raise ControlPlaneError(
@@ -1403,6 +1433,79 @@ class ManagedApplicationService:
                 resource_in_caller_scope=False,
             )
 
+    def _authorize_input_resources(
+        self, ctx: ControlPlaneContext, plan: PipelinePlan
+    ) -> tuple[InputResourceReference, ...]:
+        references = _input_resource_references(plan)
+        if not references:
+            return ()
+        if self.input_resources is None:
+            raise ControlPlaneError(
+                "Immutable input resources are unavailable on this backend",
+                code="PMRES503",
+                status=503,
+                title="Service Unavailable",
+                type="etlantic.control_plane/unavailable",
+            )
+        for reference in references:
+            require_authorized(
+                self.authorizer,
+                ctx,
+                "input.read",
+                f"input-resource:{reference.resource_id}",
+                resource_in_caller_scope=False,
+            )
+            self.input_resources.verify_reference(ctx, reference)
+        return references
+
+    def _protect_input_resources(
+        self,
+        ctx: ControlPlaneContext,
+        plan: PipelinePlan,
+        *,
+        operation: str,
+        idempotency_key: str,
+    ) -> str | None:
+        references = self._authorize_input_resources(ctx, plan)
+        if not references:
+            return None
+        if (
+            type(self.input_resource_retention_seconds) is not int
+            or self.input_resource_retention_seconds < 1
+        ):
+            raise ControlPlaneError(
+                "Input resource retention policy is invalid",
+                code="PMRES500",
+                status=500,
+                title="Internal Server Error",
+            )
+        lease_id = _input_resource_lease_id(ctx, operation, idempotency_key)
+        retain_until = datetime.now(UTC) + timedelta(
+            seconds=self.input_resource_retention_seconds
+        )
+        if self.input_resources is None:
+            raise ControlPlaneError(
+                "Immutable input resources are unavailable on this backend",
+                code="PMRES503",
+                status=503,
+                title="Service Unavailable",
+                type="etlantic.control_plane/unavailable",
+            )
+        for reference in references:
+            self.input_resources.acquire_lease(
+                ctx,
+                reference,
+                lease_id=lease_id,
+                retain_until=retain_until,
+            )
+        return lease_id
+
+    def _release_input_lease(
+        self, ctx: ControlPlaneContext, lease_id: str | None
+    ) -> None:
+        if lease_id is not None and self.input_resources is not None:
+            self.input_resources.release_lease(ctx, lease_id=lease_id)
+
     @staticmethod
     def _acceptance_payload(envelope: ExecutionEnvelope) -> dict[str, Any]:
         return {
@@ -1585,3 +1688,51 @@ def _require_revision_selector(value: object) -> str:
             type="etlantic.control_plane/bad_request",
         )
     return value
+
+
+def _input_resource_references(
+    plan: PipelinePlan,
+) -> tuple[InputResourceReference, ...]:
+    references: dict[tuple[str, str], InputResourceReference] = {}
+    for descriptor in plan.bindings.values():
+        config: Mapping[str, object] = cast(Mapping[str, object], descriptor.config)
+        if "input_resource" not in config:
+            continue
+        value = config.get("input_resource")
+        if not isinstance(value, Mapping):
+            raise ControlPlaneError.conflict(
+                "Accepted input resource reference is invalid"
+            )
+        try:
+            reference = InputResourceReference.from_dict(
+                cast(Mapping[str, object], value)
+            )
+        except (KeyError, TypeError, ValueError) as exc:
+            raise ControlPlaneError.conflict(
+                "Accepted input resource reference is invalid"
+            ) from exc
+        key = (reference.resource_id, reference.version)
+        prior = references.get(key)
+        if prior is not None and prior != reference:
+            raise ControlPlaneError.conflict(
+                "Accepted input resource reference is ambiguous"
+            )
+        references[key] = reference
+    return tuple(references[key] for key in sorted(references))
+
+
+def _input_resource_lease_id(
+    ctx: ControlPlaneContext, operation: str, idempotency_key: str
+) -> str:
+    scope = {
+        "security_domain": ctx.security_domain.domain_id,
+        "tenant": ctx.tenant.tenant_id,
+        "workspace": ctx.workspace.workspace_id,
+        "owner": ctx.resource_owner_id or ctx.principal.subject,
+        "operation": operation,
+        "idempotency_key": idempotency_key,
+    }
+    digest = hashlib.sha256(
+        json.dumps(scope, sort_keys=True, separators=(",", ":")).encode("utf-8")
+    ).hexdigest()
+    return f"managed-input:{digest}"

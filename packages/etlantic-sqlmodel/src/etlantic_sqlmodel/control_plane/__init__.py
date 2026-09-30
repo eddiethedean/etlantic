@@ -25,6 +25,9 @@ from etlantic_sqlmodel.control_plane.durable_stores import (
     SQLModelDurableWorkStore,
     create_durable_tables,
 )
+from etlantic_sqlmodel.control_plane.input_resource_stores import (
+    SqlModelInputResourceStore,
+)
 from etlantic_sqlmodel.control_plane.models import (
     AliasRow,
     Cp4GovernanceSnapshotRow,
@@ -118,6 +121,7 @@ __all__ = [
     "ScheduleSnapshotRow",
     "SecurityDomainRow",
     "SqlModelEventStore",
+    "SqlModelInputResourceStore",
     "SqlModelRegistryProvider",
     "SqlModelRevisionRegistry",
     "SqlModelRunReportStore",

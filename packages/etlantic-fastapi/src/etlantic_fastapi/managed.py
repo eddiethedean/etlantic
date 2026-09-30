@@ -47,6 +47,9 @@ class ManagedBackendConfig:
     title: str = "ETLantic Control Plane"
     version: str | None = None
     event_retention_max_events_per_scope: int = 100_000
+    max_input_upload_bytes: int = 64 * 1024 * 1024
+    input_upload_ttl_seconds: int = 60 * 60
+    input_resource_retention_seconds: int = 90 * 24 * 60 * 60
 
     def __post_init__(self) -> None:
         if not self.database_url.strip():
@@ -60,6 +63,13 @@ class ManagedBackendConfig:
             raise ValueError(
                 "event_retention_max_events_per_scope must be a positive integer"
             )
+        for name, value in (
+            ("max_input_upload_bytes", self.max_input_upload_bytes),
+            ("input_upload_ttl_seconds", self.input_upload_ttl_seconds),
+            ("input_resource_retention_seconds", self.input_resource_retention_seconds),
+        ):
+            if type(value) is not int or value < 1:
+                raise ValueError(f"{name} must be a positive integer")
 
 
 @dataclass(slots=True)
@@ -69,6 +79,7 @@ class ManagedBackend:
     api: ETLanticAPI = field(repr=False)
     engine: Engine = field(repr=False)
     report_store_factory: Callable[[ControlPlaneContext], Any] = field(repr=False)
+    input_resources: Any = field(repr=False)
     execution_profile: Profile | None = field(default=None, repr=False)
     _closed: bool = field(default=False, init=False, repr=False)
 
@@ -111,6 +122,7 @@ class ManagedBackend:
                 report_store_factory=self.report_store_factory,
                 event_publisher=publish_event,
                 profile=self.execution_profile,
+                input_resource_store=self.input_resources,
             ),
         )
 
@@ -159,6 +171,9 @@ def create_managed_backend(
         stores = cast(Any, import_module("etlantic_sqlmodel.control_plane"))
         registry = stores.SqlModelRegistryProvider(engine)
         report_store_provider = stores.SqlModelRunReportStoreProvider(engine)
+        input_resources = stores.SqlModelInputResourceStore(
+            engine, max_upload_bytes=config.max_input_upload_bytes
+        )
         execution_profile = resolve_profile(config.profile, allow_adhoc_profile=False)
         api = ETLanticAPI(
             authorizer=authorizer,
@@ -175,6 +190,9 @@ def create_managed_backend(
             durable_work=stores.SQLModelDurableWorkStore(
                 engine, store_id=config.store_id
             ),
+            input_resources=input_resources,
+            input_upload_ttl_seconds=config.input_upload_ttl_seconds,
+            input_resource_retention_seconds=config.input_resource_retention_seconds,
             planning_context_factory=planning_context_factory,
             title=config.title,
         )
@@ -187,6 +205,7 @@ def create_managed_backend(
             api=api,
             engine=engine,
             report_store_factory=report_store_provider.for_context,
+            input_resources=input_resources,
             execution_profile=execution_profile,
         )
     except BaseException:

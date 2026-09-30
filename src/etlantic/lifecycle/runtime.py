@@ -111,6 +111,11 @@ class PipelineRuntime:
     trusted_execution_scope: TrustedExecutionScope | None = field(
         default=None, repr=False
     )
+    # Managed execution supplies an owner-scoped, digest-verifying resolver.
+    # It is a live worker dependency and is never serialized into plans.
+    input_resource_resolver: Callable[[Any], bytes] | None = field(
+        default=None, repr=False
+    )
     _observability_bridge: Any = field(default=None, repr=False)
 
     def __post_init__(self) -> None:

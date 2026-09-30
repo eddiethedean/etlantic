@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from collections.abc import Callable, Mapping
 from dataclasses import replace
+from datetime import UTC, datetime, timedelta
 from typing import TYPE_CHECKING, Any
 
 from starlette.responses import StreamingResponse
@@ -46,6 +47,7 @@ from etlantic_fastapi.schemas import (
     DurableReplayBody,
     DurableStartAttemptBody,
     HealthResponse,
+    InputResourceFinalizeBody,
     LineageStubResponse,
     PlanRequestBody,
     PlanResponse,
@@ -74,7 +76,7 @@ from etlantic_fastapi.sse import (
     resolve_resume_cursor,
     sse_streaming_response,
 )
-from fastapi import APIRouter, Depends, Header, Query, Response, status
+from fastapi import APIRouter, Depends, Header, Query, Request, Response, status
 
 if TYPE_CHECKING:
     from etlantic_fastapi.api import ETLanticAPI
@@ -133,6 +135,16 @@ def _resolve_run_submission_id(record: Any, run_id: str) -> str:
             )
         return submission_id
     return run_id
+
+
+def _input_too_large() -> ControlPlaneError:
+    return ControlPlaneError(
+        "Input upload exceeds the configured byte limit",
+        code="PMRES413",
+        status=413,
+        title="Payload Too Large",
+        type="etlantic.control_plane/payload_too_large",
+    )
 
 
 def _profile_meta(api: ETLanticAPI) -> tuple[Any, bool, dict[str, Any]]:
@@ -310,6 +322,169 @@ def build_control_plane_router(api: ETLanticAPI) -> APIRouter:
     """Build the CP1 router with stable OpenAPI operationIds."""
     router = APIRouter(route_class=RedactedValidationRoute)
     get_ctx = api.context_dependency
+
+    @router.post(
+        "/v1/input-resources",
+        operation_id="cp_stage_input_resource",
+        tags=["input-resources"],
+        status_code=status.HTTP_202_ACCEPTED,
+    )
+    async def stage_input_resource(
+        request: Request,
+        ctx: ControlPlaneContext = Depends(get_ctx),
+        format: str = Query(default="csv"),
+    ) -> dict[str, Any]:
+        require_authorized(
+            api.authorizer,
+            ctx,
+            "input.upload",
+            "input-resource:*",
+            resource_in_caller_scope=True,
+        )
+        store = api.input_resources
+        if store is None:
+            raise ControlPlaneError(
+                "Immutable input resources are unavailable",
+                code="PMRES501",
+                status=501,
+                title="Not Implemented",
+                type="etlantic.control_plane/not_implemented",
+            )
+        max_bytes = int(getattr(store, "max_upload_bytes", 64 * 1024 * 1024))
+        raw_length = request.headers.get("content-length")
+        if raw_length is not None:
+            try:
+                declared_length = int(raw_length)
+            except ValueError as exc:
+                raise ControlPlaneError(
+                    "Content-Length must be a non-negative integer",
+                    code="PMRES400",
+                    status=400,
+                    title="Bad Request",
+                    type="etlantic.control_plane/bad_request",
+                ) from exc
+            if declared_length < 0 or declared_length > max_bytes:
+                raise _input_too_large()
+        content = bytearray()
+        async for chunk in request.stream():
+            content.extend(chunk)
+            if len(content) > max_bytes:
+                raise _input_too_large()
+        if raw_length is not None and int(raw_length) != len(content):
+            raise ControlPlaneError(
+                "Content-Length does not match the received input bytes",
+                code="PMRES400",
+                status=400,
+                title="Bad Request",
+                type="etlantic.control_plane/bad_request",
+            )
+        media_type = (
+            request.headers.get("content-type", "").split(";", 1)[0].strip().lower()
+        )
+        receipt = store.stage(
+            ctx,
+            bytes(content),
+            media_type=media_type,
+            format=format,
+            expires_at=datetime.now(UTC)
+            + timedelta(seconds=api.input_upload_ttl_seconds),
+        )
+        return receipt.to_dict()
+
+    @router.post(
+        "/v1/input-resources/{upload_id}/finalize",
+        operation_id="cp_finalize_input_resource",
+        tags=["input-resources"],
+    )
+    def finalize_input_resource(
+        upload_id: str,
+        body: InputResourceFinalizeBody,
+        ctx: ControlPlaneContext = Depends(get_ctx),
+    ) -> dict[str, Any]:
+        require_authorized(
+            api.authorizer,
+            ctx,
+            "input.finalize",
+            f"input-resource:{upload_id}",
+            resource_in_caller_scope=False,
+        )
+        if api.input_resources is None:
+            raise ControlPlaneError(
+                "Immutable input resources are unavailable",
+                code="PMRES501",
+                status=501,
+                title="Not Implemented",
+                type="etlantic.control_plane/not_implemented",
+            )
+        reference = api.input_resources.finalize(
+            ctx,
+            upload_id,
+            expected_sha256=body.expected_sha256,
+            expected_byte_length=body.expected_byte_length,
+        )
+        return reference.to_dict()
+
+    @router.delete(
+        "/v1/input-resources/{upload_id}",
+        operation_id="cp_abort_input_resource",
+        tags=["input-resources"],
+        status_code=status.HTTP_204_NO_CONTENT,
+    )
+    def abort_input_resource(
+        upload_id: str,
+        ctx: ControlPlaneContext = Depends(get_ctx),
+    ) -> Response:
+        require_authorized(
+            api.authorizer,
+            ctx,
+            "input.delete",
+            f"input-resource:{upload_id}",
+            resource_in_caller_scope=False,
+        )
+        if api.input_resources is None:
+            raise ControlPlaneError(
+                "Immutable input resources are unavailable",
+                code="PMRES501",
+                status=501,
+                title="Not Implemented",
+                type="etlantic.control_plane/not_implemented",
+            )
+        api.input_resources.abort(ctx, upload_id)
+        return Response(status_code=status.HTTP_204_NO_CONTENT)
+
+    @router.post(
+        "/v1/input-resources/cleanup",
+        operation_id="cp_cleanup_input_resources",
+        tags=["input-resources"],
+    )
+    def cleanup_input_resources(
+        ctx: ControlPlaneContext = Depends(get_ctx),
+        limit: int = Query(default=100, ge=1, le=1000),
+    ) -> dict[str, Any]:
+        require_authorized(
+            api.authorizer,
+            ctx,
+            "input.cleanup",
+            "input-resource:*",
+            resource_in_caller_scope=True,
+        )
+        if api.input_resources is None:
+            raise ControlPlaneError(
+                "Immutable input resources are unavailable",
+                code="PMRES501",
+                status=501,
+                title="Not Implemented",
+                type="etlantic.control_plane/not_implemented",
+            )
+        result = api.input_resources.cleanup(
+            ctx,
+            now=datetime.now(UTC),
+            limit=limit,
+        )
+        return {
+            "deleted_count": len(result.deleted_upload_ids),
+            "remaining_candidates": result.remaining_candidates,
+        }
 
     @router.get(
         "/health",

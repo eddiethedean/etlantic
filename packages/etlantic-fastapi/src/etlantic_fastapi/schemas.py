@@ -92,6 +92,13 @@ class RunSubmitBody(BaseModel):
     payload: dict[str, Any] | None = None
 
 
+class InputResourceFinalizeBody(BaseModel):
+    expected_sha256: str
+    expected_byte_length: int = Field(ge=0)
+
+    model_config = {"extra": "forbid"}
+
+
 class RunStatusResponse(BaseModel):
     run_id: str
     submission_id: str

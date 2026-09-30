@@ -12,6 +12,10 @@ from threading import Event
 from typing import TYPE_CHECKING, Any
 
 from etlantic.control_plane.execution_envelope import ExecutionEnvelope
+from etlantic.control_plane.input_resources import (
+    InputResourceReference,
+    InputResourceStore,
+)
 from etlantic.control_plane.models import ControlPlaneContext
 from etlantic.exceptions import PipelineCancelledError
 from etlantic.lifecycle.runtime import PipelineRuntime
@@ -81,6 +85,7 @@ class ManagedExecutionAdapter:
         runtime_factory: Any = PipelineRuntime,
         secret_alias_authorizer: SecretAliasAuthorizer | None = None,
         profile: str | Profile | None = None,
+        input_resource_store: InputResourceStore | None = None,
     ) -> None:
         configured_root = report_root or os.environ.get("ETLANTIC_REPORT_DIR")
         self.report_root = Path(
@@ -91,6 +96,7 @@ class ManagedExecutionAdapter:
         self.runtime_factory = runtime_factory
         self.secret_alias_authorizer = secret_alias_authorizer
         self.profile = resolve_profile(profile) if profile is not None else None
+        self.input_resource_store = input_resource_store
 
     def __call__(
         self,
@@ -168,6 +174,9 @@ class ManagedExecutionAdapter:
         previous_secret_alias_authorizer = getattr(
             runtime, "secret_alias_authorizer", None
         )
+        previous_input_resource_resolver = getattr(
+            runtime, "input_resource_resolver", None
+        )
         trusted_scope = TrustedExecutionScope(
             principal_id=ctx.principal.subject,
             principal_kind=ctx.principal.kind,
@@ -185,6 +194,20 @@ class ManagedExecutionAdapter:
             else previous_secret_alias_authorizer
         )
         runtime.external_cancel_event = cancel_event
+        input_resource_store = self.input_resource_store
+        if input_resource_store is not None:
+
+            def resolve_input_resource(
+                reference: InputResourceReference | Mapping[str, object],
+            ) -> bytes:
+                immutable = (
+                    reference
+                    if isinstance(reference, InputResourceReference)
+                    else InputResourceReference.from_dict(reference)
+                )
+                return input_resource_store.read(ctx, immutable)
+
+            runtime.input_resource_resolver = resolve_input_resource
         try:
             try:
                 execution_profile = self._execution_profile(envelope, plan)
@@ -225,6 +248,7 @@ class ManagedExecutionAdapter:
             runtime.external_cancel_event = previous_cancel_event
             runtime.trusted_execution_scope = previous_trusted_scope
             runtime.secret_alias_authorizer = previous_secret_alias_authorizer
+            runtime.input_resource_resolver = previous_input_resource_resolver
 
         metadata = dict(report.metadata)
         metadata["etlantic.control_plane.execution"] = {
