@@ -15,13 +15,14 @@ import json
 from collections.abc import Callable, Mapping
 from dataclasses import asdict
 from datetime import UTC, datetime
-from typing import Any, TypeVar
+from typing import Any, TypeVar, cast
 
 from sqlalchemy import text
 from sqlalchemy.engine import Engine
 
 from etlantic.control_plane.durable_memory import MemoryDurableWorkStore
 from etlantic.control_plane.durable_models import (
+    ActionJobRecord,
     AttemptRecord,
     BaselineAcknowledgement,
     CheckpointRecord,
@@ -79,8 +80,14 @@ def _decode_key(text: str) -> tuple[str, ...]:
 def _dump_store(store: MemoryDurableWorkStore) -> dict[str, Any]:
     return {
         "admission_limit": store.admission_limit,
-        "submissions": {
-            _encode_key(k): asdict(v) for k, v in store._submissions.items()
+    "submissions": {
+        _encode_key(k): asdict(v) for k, v in store._submissions.items()
+    },
+        "action_jobs": {
+            _encode_key(k): asdict(v) for k, v in store._action_jobs.items()
+        },
+        "action_idempotency": {
+            _encode_key(k): v for k, v in store._action_idempotency.items()
         },
         "idempotency": {_encode_key(k): v for k, v in store._idempotency.items()},
         "outbox": {_encode_key(k): asdict(v) for k, v in store._outbox.items()},
@@ -103,6 +110,14 @@ def _load_store(payload: Mapping[str, Any]) -> MemoryDurableWorkStore:
     store._submissions = {
         _decode_key(k): SubmissionRecord(**v)  # type: ignore[arg-type]
         for k, v in dict(payload.get("submissions") or {}).items()
+    }
+    store._action_jobs = {
+        _decode_key(k): ActionJobRecord(**cast(dict[str, Any], v))
+        for k, v in dict(payload.get("action_jobs") or {}).items()
+    }
+    store._action_idempotency = {
+        _decode_key(k): v
+        for k, v in dict(payload.get("action_idempotency") or {}).items()
     }
     store._idempotency = {
         _decode_key(k): v for k, v in dict(payload.get("idempotency") or {}).items()
@@ -317,6 +332,23 @@ class SQLModelDurableWorkStore:
                 ctx, idempotency_key=idempotency_key, operation=operation
             )
         )
+
+    def accept_action_job(self, ctx: ControlPlaneContext, **kwargs: Any):
+        return self._txn(lambda m: m.accept_action_job(ctx, **kwargs))
+
+    def get_action_job(self, ctx: ControlPlaneContext, action_id: str):
+        return self._read_only(lambda m: m.get_action_job(ctx, action_id))
+
+    def list_action_jobs(self, ctx: ControlPlaneContext, **kwargs: Any):
+        return self._read_only(lambda m: m.list_action_jobs(ctx, **kwargs))
+
+    def claim_action_job(self, ctx: ControlPlaneContext, **kwargs: Any):
+        return self._txn(lambda m: m.claim_action_job(ctx, **kwargs))
+
+    def finish_action_job(
+        self, ctx: ControlPlaneContext, action_id: str, **kwargs: Any
+    ):
+        return self._txn(lambda m: m.finish_action_job(ctx, action_id, **kwargs))
 
     def list_attempts(self, ctx: ControlPlaneContext, submission_id: str):
         return self._read_only(lambda m: m.list_attempts(ctx, submission_id))

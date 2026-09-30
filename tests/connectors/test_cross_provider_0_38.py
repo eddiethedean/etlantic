@@ -278,19 +278,27 @@ def test_provider_plan_read_identity_scheme_only() -> None:
             create_snowflake_source,
         ):
             connector = factory()
-            binding = {
-                "provider": connector.info().provider,
-                "format": "csv",
-                "root_ref": "landing",
-                "mode": "snapshot",
-                "config": {
+            provider = connector.info().provider
+            assert provider is not None
+            config_by_provider = {
+                "local-files": {
+                    "format": "csv",
+                    "mode": "snapshot",
+                    "root_ref": "landing",
+                },
+                "s3": {
                     "bucket": "lake",
                     "prefix": "x",
                     "pointer_key": "x.commit",
-                    "table": "ORDERS",
-                    "root_ref": "landing",
-                    "mode": "snapshot",
                 },
+                "snowflake": {"table": "ORDERS"},
+            }
+            binding = {
+                "provider": provider,
+                "format": "csv",
+                "root_ref": "landing",
+                "mode": "snapshot",
+                "config": config_by_provider[provider],
             }
             plan = await connector.plan_read(
                 binding=binding, context={"run_id": "burnin"}

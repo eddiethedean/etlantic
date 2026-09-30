@@ -33,6 +33,9 @@ from etlantic_fastapi.schemas import (
     AliasResponse,
     ArtifactMeta,
     ArtifactsResponse,
+    ConnectorActionPageResponse,
+    ConnectorActionReceiptResponse,
+    ConnectorActionSubmitBody,
     DefinitionEditBody,
     DefinitionGetResponse,
     DefinitionListResponse,
@@ -575,6 +578,121 @@ def build_control_plane_router(api: ETLanticAPI) -> APIRouter:
         operation_id="cp_list_connector_catalog",
         tags=["catalog"],
     )
+
+    @router.post(
+        "/v1/connector-actions/{action}",
+        operation_id="cp_submit_connector_action",
+        response_model=ConnectorActionReceiptResponse,
+        status_code=status.HTTP_202_ACCEPTED,
+        tags=["connector-actions"],
+    )
+    def submit_connector_action(
+        action: str,
+        body: ConnectorActionSubmitBody,
+        response: Response,
+        ctx: ControlPlaneContext = Depends(get_ctx),
+        idempotency_key_header: str | None = Header(
+            default=None, alias="Idempotency-Key"
+        ),
+    ) -> ConnectorActionReceiptResponse:
+        if api.managed_service is None:
+            provider = body.payload.get("provider")
+            resource = (
+                f"connector:{provider}"
+                if isinstance(provider, str) and provider.strip()
+                else "connector:*"
+            )
+            require_authorized(
+                api.authorizer,
+                ctx,
+                action,
+                resource,
+                resource_in_caller_scope=True,
+            )
+            raise ControlPlaneError(
+                "Managed connector actions are not configured",
+                code="PMCP501",
+                status=501,
+                title="Not Implemented",
+            )
+        idempotency_key = idempotency_key_header or (
+            ctx.idempotency_key.value if ctx.idempotency_key else None
+        )
+        if not idempotency_key:
+            raise ControlPlaneError(
+                "Idempotency-Key is required for connector actions",
+                code="PMCP400",
+                status=400,
+                title="Bad Request",
+                type="etlantic.control_plane/bad_request",
+            )
+        receipt = api.managed_service.submit_connector_action(
+            ctx,
+            action,
+            body.payload,
+            idempotency_key=idempotency_key,
+            deadline_seconds=body.deadline_seconds,
+        )
+        response.status_code = status.HTTP_202_ACCEPTED
+        response.headers["Location"] = f"/v1/connector-actions/{receipt['action_id']}"
+        return ConnectorActionReceiptResponse.model_validate(receipt)
+
+    @router.get(
+        "/v1/connector-actions",
+        operation_id="cp_list_connector_actions",
+        response_model=ConnectorActionPageResponse,
+        tags=["connector-actions"],
+    )
+    def list_connector_actions(
+        cursor: str | None = Query(default=None, max_length=2048),
+        limit: int = Query(default=50, ge=1, le=100),
+        ctx: ControlPlaneContext = Depends(get_ctx),
+    ) -> ConnectorActionPageResponse:
+        if api.managed_service is None:
+            require_authorized(
+                api.authorizer,
+                ctx,
+                "connector.action.list",
+                "connector-action:*",
+                resource_in_caller_scope=True,
+            )
+            raise ControlPlaneError(
+                "Managed connector actions are not configured",
+                code="PMCP501",
+                status=501,
+                title="Not Implemented",
+            )
+        page = api.managed_service.list_connector_actions(
+            ctx, cursor=cursor, limit=limit
+        )
+        return ConnectorActionPageResponse.model_validate(page)
+
+    @router.get(
+        "/v1/connector-actions/{action_id}",
+        operation_id="cp_get_connector_action",
+        response_model=ConnectorActionReceiptResponse,
+        tags=["connector-actions"],
+    )
+    def get_connector_action(
+        action_id: str,
+        ctx: ControlPlaneContext = Depends(get_ctx),
+    ) -> ConnectorActionReceiptResponse:
+        if api.managed_service is None:
+            require_authorized(
+                api.authorizer,
+                ctx,
+                "connector.action.read",
+                f"connector-action:{action_id}",
+                resource_in_caller_scope=False,
+            )
+            raise ControlPlaneError(
+                "Managed connector actions are not configured",
+                code="PMCP501",
+                status=501,
+                title="Not Implemented",
+            )
+        receipt = api.managed_service.get_connector_action(ctx, action_id)
+        return ConnectorActionReceiptResponse.model_validate(receipt)
 
     @router.get(
         "/v1/definitions/{definition_id}",

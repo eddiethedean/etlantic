@@ -13,6 +13,18 @@ FastAPI and SQLModel remain optional adapters; this package imports neither.
 
 from __future__ import annotations
 
+from etlantic.control_plane.action_jobs import (
+    CatalogConnectorKind,
+    ConnectorActionKind,
+    ConnectorActionRequest,
+    ConnectorCatalogRequest,
+    ConnectorPreflightRequest,
+    ConnectorSchemaInspectionRequest,
+    ConnectorTestRequest,
+    connector_action_resources,
+    parse_connector_action_request,
+)
+
 # CP4 — policy, approvals, quotas, objectives, erasure, attestation, audit
 from etlantic.control_plane.approval_memory import MemoryApprovalStore
 from etlantic.control_plane.approval_models import (
@@ -55,6 +67,7 @@ from etlantic.control_plane.authz import (
 )
 from etlantic.control_plane.durable_memory import MemoryDurableWorkStore
 from etlantic.control_plane.durable_models import (
+    ACTION_JOB_SCHEMA,
     ATTEMPT_RECORD_SCHEMA,
     BASELINE_ACK_SCHEMA,
     CHECKPOINT_RECORD_SCHEMA,
@@ -70,6 +83,8 @@ from etlantic.control_plane.durable_models import (
     STATE_NAMESPACES,
     STATE_TRANSITION_EXPLANATION_SCHEMA,
     SUBMISSION_RECORD_SCHEMA,
+    ActionJobRecord,
+    ActionJobStatus,
     AttemptRecord,
     BaselineAcknowledgement,
     CheckpointRecord,
@@ -319,6 +334,7 @@ from etlantic.control_plane.workspace_resources import (
 
 __all__ = [  # noqa: RUF022
     "ACCEPT_RECEIPT_SCHEMA",
+    "ACTION_JOB_SCHEMA",
     "ALIAS_RECORD_SCHEMA",
     # CP4
     "APPROVAL_DECISION_SCHEMA",
@@ -379,6 +395,8 @@ __all__ = [  # noqa: RUF022
     "WORKSPACE_RESOURCE_RECORD_SCHEMA",
     "AcceptReceipt",
     "AcceptResult",
+    "ActionJobRecord",
+    "ActionJobStatus",
     "AliasRecord",
     "ApprovalDecisionRecord",
     "ApprovalRequest",
@@ -393,10 +411,17 @@ __all__ = [  # noqa: RUF022
     "AuthzDecision",
     "BaselineAcknowledgement",
     "CacheInvalidationEvent",
+    "CatalogConnectorKind",
     "CheckpointRecord",
     "ControlPlaneContext",
     "ControlPlaneError",
     "ControlPlaneEvent",
+    "ConnectorActionKind",
+    "ConnectorActionRequest",
+    "ConnectorCatalogRequest",
+    "ConnectorPreflightRequest",
+    "ConnectorSchemaInspectionRequest",
+    "ConnectorTestRequest",
     "CorrelationKey",
     "DefinitionResolution",
     "DefinitionRepository",
@@ -524,6 +549,7 @@ __all__ = [  # noqa: RUF022
     "assert_schedule_payload_clean",
     "assert_schedule_store_allowed",
     "authorized_get_definition",
+    "connector_action_resources",
     "catch_up_nominals",
     "compute_policy_fingerprint",
     "compute_record_hash",
@@ -546,6 +572,7 @@ __all__ = [  # noqa: RUF022
     "namespaced_checkpoint_id",
     "next_fire_after",
     "parse_cron",
+    "parse_connector_action_request",
     "raise_for_deny",
     "redact_control_plane_payload",
     "redact_control_plane_text",

@@ -27,6 +27,12 @@ Current index: 8 criteria passed, 34 pending, and 2 blocked of 44.
   artifacts were regenerated and verified across 10 artifacts and 18
   acceptance criteria; `tests/plan/test_phase_0_52_review_blockers.py::test_final_052_006_evidence_regenerates_cleanly`
   then passed on rerun.
+- Final default regression after the 0.56 action-worker changes:
+  the same non-optional command passed 2,810 tests, skipped 71 optional cases,
+  and deselected 604 by marker in 5m38s. It includes the action-job tests and
+  regenerable 0.52 evidence check. The cross-provider planning fixture now sends
+  each connector only its declared configuration, preserving the local-files
+  schema's fail-closed unknown-option behavior.
 - CP1 and CP-GA OpenAPI snapshots were refreshed for the managed rerun and
   replay endpoints; both stable-operation snapshot tests passed.
 - Live PostgreSQL connector and multiprocess acceptance:
@@ -229,6 +235,35 @@ Current index: 8 criteria passed, 34 pending, and 2 blocked of 44.
   `writeOnly` fields, and installed package/version metadata. Headless/HTTP
   output parity, authorization-before-discovery and both OpenAPI operation
   snapshots passed.
+- Isolated connector action jobs (AC056-020 implementation evidence):
+  `uv run pytest -q tests/control_plane/test_action_jobs_0_56.py
+  tests/fastapi/test_managed_action_jobs_0_56.py` — 9 passed. The tests exercise
+  closed secret-free requests, durable/idempotent acceptance, SQLModel restart,
+  HTTP submission and owner-scoped pagination, action and object authorization
+  rechecks before provider calls, lease fencing, deadline cancellation,
+  provider-error redaction, nested result bounds and separate worker execution.
+  The built-in catalog handler returned the profile-authorized page; registered
+  async handlers executed test, schema-inspection and preflight payloads. The
+  combined managed-service, authorization and OpenAPI regression passed 96
+  tests. Live PostgreSQL 16.13 multiprocess qualification of the CP3 action
+  store passed 3 tests: concurrent acceptance returned one receipt, competing
+  workers produced one fenced claim, the accepted receipt survived reopening,
+  and a different owner received an opaque 404. `ActionExecutionHost` and
+  `ActionHandler` are available through `etlantic.runtime`; the handler and
+  worker contract is documented in
+  [`ACTION_WORKERS_0_56.md`](../../ACTION_WORKERS_0_56.md). This is generic
+  action-worker evidence; provider-specific live test/schema/preflight
+  integrations remain open, so AC056-020 is still pending.
+- Candidate wheel build and isolated action-worker smoke (AC056-020 / 040):
+  `uv build --all-packages --wheel` built all 25 workspace distributions.
+  Their exact candidate wheel sizes and SHA-256 digests are recorded in
+  `WHEEL_MANIFEST.json`. Core, FastAPI and SQLModel candidate wheels were
+  installed in a clean Python 3.14.3 environment without workspace path
+  injection. That install applied SQLModel migration 010, imported the public
+  action execution exports, accepted a durable action through the managed
+  service, executed it in a separate worker, and returned a redacted scoped
+  receipt. This is package-install evidence; AC056-040's full compatibility,
+  version-skew and upgrade/rollback matrix remains pending.
 - Managed command and authorization matrix:
   `uv run pytest -q tests/fastapi/test_managed_application_0_56.py tests/fastapi/test_managed_backend_0_56.py tests/fastapi/test_cp1_full_authz_matrix.py tests/fastapi/test_managed_control_races_0_56.py`
   — 64 passed before the rerun endpoint was added. It includes action-provider
@@ -346,8 +381,9 @@ Current index: 8 criteria passed, 34 pending, and 2 blocked of 44.
 - `scripts/check_pyright.sh` passed: 781 suppressions matched the locked
   inventory, the strict shadow scan matched its 10,451-diagnostic baseline,
   and raw Pyright reported zero errors and warnings. The suppression count is
-  unchanged; the strict digest was refreshed for the managed route and
-  acceptance-test line shifts and the new test surface.
+  unchanged; the strict digest was refreshed for the AC056-020 durable model,
+  route and adapter additions plus test-line shifts. The shadow diagnostic
+  count stayed at 10,451.
 - `ruff check .`, `git diff --check`, plugin-manifest checks and `uv lock --check`
   passed.
 
@@ -372,8 +408,13 @@ Current index: 8 criteria passed, 34 pending, and 2 blocked of 44.
   acceptance/quota tests now pass. AC056-042 is qualified for the tested 0.55
   migration chain and legacy incomplete-payload guard. AC056-039 remains open
   for backup/restore and broader failure campaigns.
-- AC056-020–024: isolated action jobs, bounded previews/provisioning, and the
-  complete secret lease/rotation lifecycle are not implemented and observed.
+- AC056-020: durable isolated action jobs, authorization rechecks, bounded
+  receipts, a built-in catalog action, and a deployment handler contract now
+  have focused evidence. Provider-specific live connection, schema and
+  preflight integrations plus the full provider cancellation matrix remain
+  open, so this criterion stays pending. AC056-021–022 bounded preview and
+  explicit provisioning are not implemented. AC056-023–024 retain their open
+  resource-isolation and complete secret lease/rotation lifecycle requirements.
   AC056-025 has immutable upload, durable lease, bounded cleanup and PostgreSQL
   multiprocess race evidence, but its full worker threat and provider security
   campaign remain open. AC056-026 passed its owner-scoped cleanup,

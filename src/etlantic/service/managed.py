@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import base64
 import hashlib
 import json
 from collections.abc import Callable, Mapping
@@ -18,6 +19,11 @@ from etlantic.authoring.serialize import (
     pipeline_fingerprint,
     pipeline_from_dict,
     pipeline_to_dict,
+)
+from etlantic.control_plane.action_jobs import (
+    ConnectorActionKind,
+    connector_action_resources,
+    parse_connector_action_request,
 )
 from etlantic.control_plane.authz import require_authorized, require_authorized_run
 from etlantic.control_plane.durable_models import SubmissionRecord
@@ -61,6 +67,17 @@ def _mapping(value: object) -> Mapping[str, Any]:
     return {}
 
 
+CONNECTOR_ACTION_TYPES = frozenset(
+    {
+        "connector.test",
+        "connector.catalog",
+        "connector.schema.inspect",
+        "connector.preflight",
+    }
+)
+MAX_ACTION_PAGE_SIZE = 100
+
+
 @dataclass(slots=True)
 class ManagedApplicationService:
     """Shared authorized service used by headless and HTTP callers.
@@ -89,6 +106,7 @@ class ManagedApplicationService:
     ) = None
     input_resources: InputResourceStore | None = None
     input_resource_retention_seconds: int = 90 * 24 * 60 * 60
+    action_job_max_deadline_seconds: int = 300
 
     def register_definition(
         self,
@@ -147,6 +165,145 @@ class ManagedApplicationService:
                 title="Service Unavailable",
                 type="etlantic.control_plane/unavailable",
             ) from exc
+
+    def submit_connector_action(
+        self,
+        ctx: ControlPlaneContext,
+        action: str,
+        request: Mapping[str, Any],
+        *,
+        idempotency_key: str,
+        deadline_seconds: int = 30,
+    ) -> dict[str, Any]:
+        """Accept one explicitly authorized connector action for worker execution."""
+        if action not in CONNECTOR_ACTION_TYPES:
+            raise ControlPlaneError(
+                "Unsupported connector action",
+                code="PMCP400",
+                status=400,
+                title="Bad Request",
+                type="etlantic.control_plane/bad_request",
+            )
+        if not idempotency_key.strip():
+            raise ControlPlaneError(
+                "Idempotency-Key is required for connector actions",
+                code="PMCP400",
+                status=400,
+                title="Bad Request",
+                type="etlantic.control_plane/bad_request",
+            )
+        if (
+            type(deadline_seconds) is not int
+            or deadline_seconds < 1
+            or deadline_seconds > self.action_job_max_deadline_seconds
+        ):
+            raise ControlPlaneError(
+                "Connector action deadline is outside the configured bounds",
+                code="PMCP400",
+                status=400,
+                title="Bad Request",
+                type="etlantic.control_plane/bad_request",
+            )
+        typed_action = cast(ConnectorActionKind, action)
+        typed_request = parse_connector_action_request(typed_action, dict(request))
+        for resource in connector_action_resources(typed_action, typed_request):
+            require_authorized(
+                self.authorizer,
+                ctx,
+                action,
+                resource,
+                resource_in_caller_scope=True,
+            )
+        deadline_at = (
+            datetime.now(UTC) + timedelta(seconds=deadline_seconds)
+        ).isoformat().replace("+00:00", "Z")
+        return self.durable_work.accept_action_job(
+            ctx,
+            action=action,
+            idempotency_key=idempotency_key,
+            request=typed_request.to_dict(),
+            deadline_at=deadline_at,
+        ).to_dict()
+
+    def get_connector_action(
+        self, ctx: ControlPlaneContext, action_id: str
+    ) -> dict[str, Any]:
+        """Read an authorized owner-scoped action receipt."""
+        require_authorized(
+            self.authorizer,
+            ctx,
+            "connector.action.read",
+            f"connector-action:{action_id}",
+            resource_in_caller_scope=False,
+        )
+        return self.durable_work.get_action_job(ctx, action_id).to_dict()
+
+    def list_connector_actions(
+        self,
+        ctx: ControlPlaneContext,
+        *,
+        cursor: str | None = None,
+        limit: int = 50,
+    ) -> dict[str, Any]:
+        """List receipts through stable owner-scoped cursor pagination."""
+        require_authorized(
+            self.authorizer,
+            ctx,
+            "connector.action.list",
+            "connector-action:*",
+            resource_in_caller_scope=True,
+        )
+        if type(limit) is not int or not 1 <= limit <= MAX_ACTION_PAGE_SIZE:
+            raise ControlPlaneError(
+                f"Action page limit must be between 1 and {MAX_ACTION_PAGE_SIZE}",
+                code="PMCP400",
+                status=400,
+                title="Bad Request",
+                type="etlantic.control_plane/bad_request",
+            )
+        after: tuple[str, str] | None = None
+        if cursor is not None:
+            try:
+                if len(cursor) > 2048:
+                    raise ValueError("cursor too long")
+                decoded = base64.urlsafe_b64decode(cursor + "=" * (-len(cursor) % 4))
+                decoded_payload = json.loads(decoded)
+                if not isinstance(decoded_payload, list):
+                    raise ValueError("cursor payload is invalid")
+                payload = cast(list[Any], decoded_payload)
+                if (
+                    len(payload) != 2
+                    or not isinstance(payload[0], str)
+                    or not isinstance(payload[1], str)
+                ):
+                    raise ValueError("invalid cursor payload")
+                after = (payload[0], payload[1])
+            except (ValueError, TypeError, json.JSONDecodeError) as exc:
+                raise ControlPlaneError(
+                    "Invalid connector action cursor",
+                    code="PMCP400",
+                    status=400,
+                    title="Bad Request",
+                    type="etlantic.control_plane/bad_request",
+                ) from exc
+        records = self.durable_work.list_action_jobs(
+            ctx, after=after, limit=limit + 1
+        )
+        has_more = len(records) > limit
+        page = records[:limit]
+        next_cursor = None
+        if has_more and page:
+            last = page[-1]
+            encoded = json.dumps(
+                [last.created_at, last.action_id], separators=(",", ":")
+            ).encode("utf-8")
+            next_cursor = base64.urlsafe_b64encode(encoded).decode("ascii").rstrip("=")
+        return {
+            "schema": "etlantic.control_plane.action_job_page/1",
+            "items": [record.to_dict() for record in page],
+            "next_cursor": next_cursor,
+            "has_more": has_more,
+        }
 
     def edit_definition(
         self,

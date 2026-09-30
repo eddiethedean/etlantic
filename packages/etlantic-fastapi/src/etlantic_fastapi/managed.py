@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import inspect
 from collections.abc import Callable, Mapping
 from contextlib import asynccontextmanager
 from dataclasses import dataclass, field
@@ -13,6 +14,7 @@ from etlantic.control_plane.protocols import Authorizer, IdempotentEventStore
 from etlantic.control_plane.registry_definitions import RegistryDefinitionRepository
 from etlantic.profile import Profile, resolve_profile
 from etlantic.registry import PlanningContext
+from etlantic.runtime.action_execution_host import ActionHandler
 from etlantic_fastapi.api import ETLanticAPI, create_app
 from etlantic_fastapi.auth import (
     ContextFactory,
@@ -24,8 +26,14 @@ from fastapi import FastAPI
 if TYPE_CHECKING:
     from sqlalchemy.engine import Engine
 
+    from etlantic.runtime.action_execution_host import ActionExecutionHost
+
 
 def _empty_engine_options() -> dict[str, Any]:
+    return {}
+
+
+def _empty_action_handlers() -> dict[str, ActionHandler]:
     return {}
 
 
@@ -50,6 +58,11 @@ class ManagedBackendConfig:
     max_input_upload_bytes: int = 64 * 1024 * 1024
     input_upload_ttl_seconds: int = 60 * 60
     input_resource_retention_seconds: int = 90 * 24 * 60 * 60
+    action_job_max_deadline_seconds: int = 300
+    action_job_lease_seconds: int = 330
+    action_handlers: Mapping[str, ActionHandler] = field(
+        default_factory=_empty_action_handlers, repr=False
+    )
 
     def __post_init__(self) -> None:
         if not self.database_url.strip():
@@ -70,6 +83,39 @@ class ManagedBackendConfig:
         ):
             if type(value) is not int or value < 1:
                 raise ValueError(f"{name} must be a positive integer")
+        if (
+            type(self.action_job_max_deadline_seconds) is not int
+            or not 1 <= self.action_job_max_deadline_seconds <= 300
+        ):
+            raise ValueError(
+                "action_job_max_deadline_seconds must be between 1 and 300"
+            )
+        if (
+            type(self.action_job_lease_seconds) is not int
+            or self.action_job_lease_seconds
+            <= self.action_job_max_deadline_seconds
+        ):
+            raise ValueError(
+                "action_job_lease_seconds must exceed the maximum action deadline"
+            )
+        supported_actions = {
+            "connector.test",
+            "connector.catalog",
+            "connector.schema.inspect",
+            "connector.preflight",
+        }
+        unsupported_actions = set(self.action_handlers) - supported_actions
+        if unsupported_actions:
+            raise ValueError(
+                "action_handlers contains unsupported action(s): "
+                + ", ".join(sorted(unsupported_actions))
+            )
+        for action, handler in self.action_handlers.items():
+            if not callable(handler) or not (
+                inspect.iscoroutinefunction(handler)
+                or inspect.iscoroutinefunction(type(handler).__call__)
+            ):
+                raise TypeError(f"action handler {action!r} must be asynchronous")
 
 
 @dataclass(slots=True)
@@ -80,6 +126,10 @@ class ManagedBackend:
     engine: Engine = field(repr=False)
     report_store_factory: Callable[[ControlPlaneContext], Any] = field(repr=False)
     input_resources: Any = field(repr=False)
+    action_handlers: Mapping[str, ActionHandler] = field(
+        default_factory=_empty_action_handlers, repr=False
+    )
+    action_job_lease_seconds: int = 330
     execution_profile: Profile | None = field(default=None, repr=False)
     _closed: bool = field(default=False, init=False, repr=False)
 
@@ -124,6 +174,26 @@ class ManagedBackend:
                 profile=self.execution_profile,
                 input_resource_store=self.input_resources,
             ),
+        )
+
+    def create_action_execution_host(
+        self, *, worker_id: str = "action-worker-1"
+    ) -> ActionExecutionHost:
+        """Create the separate worker for test/catalog/schema/preflight jobs."""
+        if self._closed:
+            raise RuntimeError("Managed backend is closed")
+        durable = self.api.durable_work
+        if durable is None:
+            raise RuntimeError("Managed backend has no durable work store")
+        from etlantic.runtime.action_execution_host import ActionExecutionHost
+
+        return ActionExecutionHost(
+            durable,
+            handlers=self.action_handlers,
+            authorizer=self.api.authorizer,
+            profile=self.execution_profile,
+            worker_id=worker_id,
+            lease_seconds=self.action_job_lease_seconds,
         )
 
 
@@ -201,11 +271,16 @@ def create_managed_backend(
         api.enable_managed_execution()
         if api.managed_service is not None:
             api.managed_service.report_store_factory = report_store_provider.for_context
+            api.managed_service.action_job_max_deadline_seconds = (
+                config.action_job_max_deadline_seconds
+            )
         return ManagedBackend(
             api=api,
             engine=engine,
             report_store_factory=report_store_provider.for_context,
             input_resources=input_resources,
+            action_handlers=dict(config.action_handlers),
+            action_job_lease_seconds=config.action_job_lease_seconds,
             execution_profile=execution_profile,
         )
     except BaseException:

@@ -3,8 +3,8 @@
   "packages": [
     {
       "filename": "etlantic-0.55.0-py3-none-any.whl",
-      "sha256": "270d58aaddb3a4420dea5e38b4a12e23db522de274492bfccbf454a89a0e8ada",
-      "size_bytes": 1103990
+      "sha256": "55b845da2261b303000d5f3f9d9af3cd5a7b12789659443fa0857826e9455eaa",
+      "size_bytes": 1113709
     },
     {
       "filename": "etlantic_airflow-0.55.0-py3-none-any.whl",
@@ -23,8 +23,8 @@
     },
     {
       "filename": "etlantic_fastapi-0.55.0-py3-none-any.whl",
-      "sha256": "99d7a5d9bac476e879b736e7cf942c4bf948dd239366b2a617904a65e6c69b54",
-      "size_bytes": 46744
+      "sha256": "ebd4be5506edd0edc003c9469d05ac444085a0396b4fc10fea9692dc0c7b1730",
+      "size_bytes": 47885
     },
     {
       "filename": "etlantic_foundry-0.55.0-py3-none-any.whl",
@@ -118,8 +118,8 @@
     },
     {
       "filename": "etlantic_sqlmodel-0.55.0-py3-none-any.whl",
-      "sha256": "0dcc0388f9965e47fbc7b62ec522ec63f58627909599a79bd968bfab903b3bf4",
-      "size_bytes": 55464
+      "sha256": "c9ad0aa6b65af3b6d47016c3306711498c1b5bb104cce00269141a424dee7fb4",
+      "size_bytes": 55599
     },
     {
       "filename": "medallantic-0.55.0-py3-none-any.whl",

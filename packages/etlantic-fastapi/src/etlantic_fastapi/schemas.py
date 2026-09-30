@@ -99,6 +99,42 @@ class InputResourceFinalizeBody(BaseModel):
     model_config = {"extra": "forbid"}
 
 
+class ConnectorActionSubmitBody(BaseModel):
+    payload: dict[str, Any] = Field(default_factory=dict)
+    deadline_seconds: int = Field(default=30, ge=1, le=300)
+
+    model_config = {"extra": "forbid"}
+
+
+class ConnectorActionReceiptResponse(BaseModel):
+    schema_: str = Field(alias="schema")
+    action_id: str
+    tenant_id: str
+    workspace_id: str
+    action: str
+    created_at: str
+    deadline_at: str
+    status: Literal["queued", "running", "succeeded", "failed", "timed_out"]
+    attempt: int
+    started_at: str | None = None
+    completed_at: str | None = None
+    result: dict[str, Any] | None = None
+    error_code: str | None = None
+
+    model_config = {"populate_by_name": True}
+
+
+class ConnectorActionPageResponse(BaseModel):
+    schema_: str = Field(
+        alias="schema", default="etlantic.control_plane.action_job_page/1"
+    )
+    items: list[ConnectorActionReceiptResponse] = Field(default_factory=list)
+    next_cursor: str | None = None
+    has_more: bool = False
+
+    model_config = {"populate_by_name": True}
+
+
 class RunStatusResponse(BaseModel):
     run_id: str
     submission_id: str

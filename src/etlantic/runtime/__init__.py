@@ -3,7 +3,7 @@
 
 from __future__ import annotations
 
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 from etlantic.runtime.context import TrustedExecutionScope
 from etlantic.runtime.request import (
@@ -18,7 +18,15 @@ from etlantic.runtime.request import (
 )
 from etlantic.runtime.state import FailureStage, RunStatus, StepStatus
 
+if TYPE_CHECKING:
+    from etlantic.runtime.action_execution_host import (
+        ActionExecutionHost,
+        ActionHandler,
+    )
+
 __all__ = [
+    "ActionExecutionHost",
+    "ActionHandler",
     "CancellationPolicy",
     "DebugSession",
     "FailureStage",
@@ -53,6 +61,10 @@ __all__ = [
 
 
 def __getattr__(name: str) -> Any:
+    if name in {"ActionExecutionHost", "ActionHandler"}:
+        from etlantic.runtime import action_execution_host
+
+        return getattr(action_execution_host, name)
     if name in {"DebugSession", "arun_pipeline", "run_pipeline"}:
         from etlantic.runtime import execute as _execute
 

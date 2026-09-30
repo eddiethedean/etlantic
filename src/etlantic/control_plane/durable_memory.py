@@ -19,6 +19,8 @@ from typing import Any
 
 from etlantic.control_plane.durable_models import (
     STATE_NAMESPACES,
+    ActionJobRecord,
+    ActionJobStatus,
     AttemptRecord,
     BaselineAcknowledgement,
     CheckpointRecord,
@@ -60,6 +62,17 @@ def _scope(ctx: ControlPlaneContext) -> tuple[str, str]:
 
 
 _NON_TERMINAL = {"accepted", "dispatched", "cancel_requested"}
+_ACTION_ERROR_CODES = frozenset(
+    {
+        "action_failed",
+        "authorization_denied",
+        "deadline_exceeded",
+        "handler_unavailable",
+        "invalid_action_request",
+        "provider_timeout",
+        "result_limit_exceeded",
+    }
+)
 
 
 def _require_namespaced_checkpoint_id(checkpoint_id: str) -> None:
@@ -86,6 +99,10 @@ class MemoryDurableWorkStore:
         self._diffs: dict[tuple[str, str, str], DiffRecord] = {}
         self._shadows: dict[tuple[str, str, str], ShadowRunRecord] = {}
         self._baselines: dict[tuple[str, str, str], BaselineAcknowledgement] = {}
+        self._action_jobs: dict[tuple[str, str, str], ActionJobRecord] = {}
+        self._action_idempotency: dict[
+            tuple[str, str, str, str, str, str, str], str
+        ] = {}
         self._diagnostics: list[StateDiagnostic] = []
         self._lock = threading.RLock()
 
@@ -360,6 +377,274 @@ class MemoryDurableWorkStore:
                 return None
             row = self._submissions.get((*_scope(ctx), submission_id))
             return deepcopy(row) if row is not None else None
+
+    def accept_action_job(
+        self,
+        ctx: ControlPlaneContext,
+        *,
+        action: str,
+        idempotency_key: str,
+        request: Mapping[str, Any],
+        deadline_at: str,
+    ) -> ActionJobRecord:
+        """Durably accept one redacted, owner-scoped action intent."""
+        if not action.strip() or not idempotency_key.strip():
+            raise ValueError("action and idempotency_key must not be empty")
+        try:
+            deadline = datetime.fromisoformat(deadline_at.replace("Z", "+00:00"))
+        except (TypeError, ValueError) as exc:
+            raise ControlPlaneError(
+                "Action deadline must be an ISO timestamp with a timezone",
+                code="PMCP400",
+                status=400,
+                title="Bad Request",
+                type="etlantic.control_plane/bad_request",
+            ) from exc
+        if deadline.tzinfo is None or deadline.utcoffset() is None:
+            raise ControlPlaneError(
+                "Action deadline must be an ISO timestamp with a timezone",
+                code="PMCP400",
+                status=400,
+                title="Bad Request",
+                type="etlantic.control_plane/bad_request",
+            )
+        if deadline <= _now():
+            raise ControlPlaneError.conflict("Action deadline has already elapsed")
+        safe_request = redact_control_plane_payload(dict(request))
+        if not isinstance(safe_request, dict):
+            raise ValueError("action request must be a JSON object")
+        request_json = json.dumps(
+            safe_request, sort_keys=True, separators=(",", ":"), allow_nan=False
+        )
+        if len(request_json.encode("utf-8")) > 64 * 1024:
+            raise ControlPlaneError(
+                "Connector action request exceeds the configured byte limit",
+                code="PMCP413",
+                status=413,
+                title="Payload Too Large",
+                type="etlantic.control_plane/payload_too_large",
+            )
+        fingerprint = hashlib.sha256(
+            json.dumps(
+                {"action": action, "request": safe_request},
+                sort_keys=True,
+                separators=(",", ":"),
+                allow_nan=False,
+            ).encode("utf-8")
+        ).hexdigest()
+        idem = (
+            *_scope(ctx),
+            ctx.principal.issuer or "",
+            ctx.principal.kind,
+            ctx.principal.subject,
+            action,
+            idempotency_key,
+        )
+        owner_id = ctx.resource_owner_id or ctx.principal.subject
+        with self._lock:
+            prior_id = self._action_idempotency.get(idem)
+            if prior_id is not None:
+                prior = self._action_jobs[(*_scope(ctx), prior_id)]
+                if prior.request_fingerprint != fingerprint:
+                    raise ControlPlaneError.conflict(
+                        "Action idempotency key reuse has different inputs"
+                    )
+                return deepcopy(prior)
+            record = ActionJobRecord(
+                action_id=f"act-{uuid.uuid4().hex[:24]}",
+                tenant_id=ctx.tenant.tenant_id,
+                workspace_id=ctx.workspace.workspace_id,
+                owner_id=owner_id,
+                principal_subject=ctx.principal.subject,
+                principal_issuer=ctx.principal.issuer,
+                principal_kind=ctx.principal.kind,
+                environment=ctx.environment.name,
+                security_domain_id=ctx.security_domain.domain_id,
+                action=action,
+                idempotency_key=idempotency_key,
+                request_fingerprint=fingerprint,
+                request_json=request_json,
+                created_at=_iso(),
+                deadline_at=deadline_at,
+            )
+            self._action_jobs[(*_scope(ctx), record.action_id)] = record
+            self._action_idempotency[idem] = record.action_id
+            return deepcopy(record)
+
+    def get_action_job(
+        self, ctx: ControlPlaneContext, action_id: str
+    ) -> ActionJobRecord:
+        """Read an action receipt within the caller's resource-owner scope."""
+        owner_id = ctx.resource_owner_id or ctx.principal.subject
+        with self._lock:
+            record = self._action_jobs.get((*_scope(ctx), action_id))
+            if record is None or record.owner_id != owner_id:
+                raise ControlPlaneError.not_found("Action job not found")
+            return deepcopy(record)
+
+    def list_action_jobs(
+        self,
+        ctx: ControlPlaneContext,
+        *,
+        after: tuple[str, str] | None = None,
+        limit: int = 100,
+    ) -> list[ActionJobRecord]:
+        """Return one bounded page of owner-scoped action receipts."""
+        if type(limit) is not int or limit < 1:
+            raise ValueError("limit must be a positive integer")
+        owner_id = ctx.resource_owner_id or ctx.principal.subject
+        with self._lock:
+            records = sorted(
+                (
+                    row
+                    for key, row in self._action_jobs.items()
+                    if key[:2] == _scope(ctx) and row.owner_id == owner_id
+                ),
+                key=lambda row: (row.created_at, row.action_id),
+            )
+            if after is not None:
+                records = [
+                    row for row in records if (row.created_at, row.action_id) > after
+                ]
+            return [deepcopy(row) for row in records[:limit]]
+
+    def claim_action_job(
+        self,
+        ctx: ControlPlaneContext,
+        *,
+        worker_id: str,
+        lease_seconds: int = 30,
+        now: datetime | None = None,
+    ) -> ActionJobRecord | None:
+        """Claim the earliest live action and fence stale workers."""
+        if not worker_id.strip() or type(lease_seconds) is not int or lease_seconds < 1:
+            raise ValueError("worker_id and a positive lease_seconds are required")
+        current = now or _now()
+        current_iso = _iso(current)
+        lease_expires = _iso(current + timedelta(seconds=lease_seconds))
+        with self._lock:
+            scoped = [
+                (key, row)
+                for key, row in self._action_jobs.items()
+                if key[:2] == _scope(ctx)
+                and row.status in {"queued", "running"}
+            ]
+            for key, row in scoped:
+                if _parse(row.deadline_at) <= current:
+                    self._action_jobs[key] = replace(
+                        row,
+                        status="timed_out",
+                        completed_at=current_iso,
+                        worker_id=None,
+                        lease_expires_at=None,
+                        error_code="deadline_exceeded",
+                    )
+            candidates = sorted(
+                (
+                    (key, row)
+                    for key, row in self._action_jobs.items()
+                    if key[:2] == _scope(ctx)
+                    and row.status in {"queued", "running"}
+                    and _parse(row.deadline_at) > current
+                    and (
+                        row.status == "queued"
+                        or row.lease_expires_at is None
+                        or _parse(row.lease_expires_at) <= current
+                    )
+                ),
+                key=lambda item: (item[1].created_at, item[1].action_id),
+            )
+            if not candidates:
+                return None
+            key, row = candidates[0]
+            claimed = replace(
+                row,
+                status="running",
+                attempt=row.attempt + 1,
+                fencing_token=row.fencing_token + 1,
+                worker_id=worker_id,
+                lease_expires_at=lease_expires,
+                started_at=row.started_at or current_iso,
+            )
+            self._action_jobs[key] = claimed
+            return deepcopy(claimed)
+
+    def finish_action_job(
+        self,
+        ctx: ControlPlaneContext,
+        action_id: str,
+        *,
+        worker_id: str,
+        fencing_token: int,
+        status: ActionJobStatus,
+        result: Mapping[str, Any] | None = None,
+        error_code: str | None = None,
+        now: datetime | None = None,
+    ) -> ActionJobRecord:
+        """Finish a claimed action iff the worker still holds its fence."""
+        if status not in {"succeeded", "failed", "timed_out"}:
+            raise ValueError("action job completion status is invalid")
+        current = now or _now()
+        key = (*_scope(ctx), action_id)
+        with self._lock:
+            row = self._action_jobs.get(key)
+            if row is None:
+                raise ControlPlaneError.not_found("Action job not found")
+            if (
+                row.status != "running"
+                or row.worker_id != worker_id
+                or row.fencing_token != fencing_token
+                or row.lease_expires_at is None
+                or _parse(row.lease_expires_at) <= current
+            ):
+                raise ControlPlaneError.conflict("Action worker lease is stale")
+            if status == "timed_out":
+                if _parse(row.deadline_at) > current:
+                    raise ControlPlaneError.conflict(
+                        "Action deadline has not elapsed"
+                    )
+                finished = replace(
+                    row,
+                    status="timed_out",
+                    completed_at=_iso(current),
+                    worker_id=None,
+                    lease_expires_at=None,
+                    error_code="deadline_exceeded",
+                )
+            elif _parse(row.deadline_at) <= current:
+                finished = replace(
+                    row,
+                    status="timed_out",
+                    completed_at=_iso(current),
+                    worker_id=None,
+                    lease_expires_at=None,
+                    error_code="deadline_exceeded",
+                )
+            else:
+                safe_result = redact_control_plane_payload(dict(result or {}))
+                result_json = json.dumps(
+                    safe_result,
+                    sort_keys=True,
+                    separators=(",", ":"),
+                    allow_nan=False,
+                )
+                finished = replace(
+                    row,
+                    status=status,
+                    completed_at=_iso(current),
+                    worker_id=None,
+                    lease_expires_at=None,
+                    result_json=result_json if status == "succeeded" else None,
+                    error_code=(
+                        error_code
+                        if status == "failed" and error_code in _ACTION_ERROR_CODES
+                        else "action_failed"
+                        if status == "failed"
+                        else None
+                    ),
+                )
+            self._action_jobs[key] = finished
+            return deepcopy(finished)
 
     def list_attempts(
         self, ctx: ControlPlaneContext, submission_id: str

@@ -6,6 +6,7 @@ from __future__ import annotations
 import os
 import uuid
 from concurrent.futures import ProcessPoolExecutor
+from datetime import UTC, datetime, timedelta
 from multiprocessing import get_context
 
 import pytest
@@ -18,6 +19,7 @@ from sqlalchemy.engine import Engine
 
 from etlantic.control_plane import (
     ControlPlaneContext,
+    ControlPlaneError,
     EnvironmentRef,
     Principal,
     SecurityDomain,
@@ -77,6 +79,36 @@ def _admit_quota_in_process(url: str, store_id: str) -> tuple[str, int]:
             idempotency_key="same-submission-digest",
         )
         return decision.effect, decision.used
+    finally:
+        engine.dispose()
+
+
+def _accept_action_in_process(url: str, store_id: str) -> str:
+    engine = create_engine(url, pool_pre_ping=True)
+    try:
+        record = SQLModelDurableWorkStore(engine, store_id=store_id).accept_action_job(
+            _context(),
+            action="connector.test",
+            idempotency_key="same-action-intent",
+            request={"provider": "test", "connection_id": "saved-db"},
+            deadline_at=(datetime.now(UTC) + timedelta(minutes=2)).isoformat(),
+        )
+        return record.action_id
+    finally:
+        engine.dispose()
+
+
+def _claim_action_in_process(
+    url: str, store_id: str, worker_id: str
+) -> tuple[str, int] | None:
+    engine = create_engine(url, pool_pre_ping=True)
+    try:
+        record = SQLModelDurableWorkStore(engine, store_id=store_id).claim_action_job(
+            _context(), worker_id=worker_id, lease_seconds=30
+        )
+        if record is None:
+            return None
+        return record.action_id, record.fencing_token
     finally:
         engine.dispose()
 
@@ -190,6 +222,70 @@ def test_postgresql_multiprocess_quota_idempotency_is_single_and_restart_visible
         assert set(results) == {("allow", 1)}
         reopened = SQLModelQuotaProvider(engine, store_id=store_id)
         assert reopened.get_state(_context()).usage["concurrency"] == 1
+    finally:
+        _remove_store(engine, store_id)
+        engine.dispose()
+
+
+def test_postgresql_multiprocess_action_acceptance_and_claim_are_single() -> None:
+    url = os.environ.get("ETLANTIC_CP_TEST_URL")
+    if not url:
+        pytest.skip(
+            "set ETLANTIC_CP_TEST_URL to qualify live PostgreSQL control storage"
+        )
+    engine = create_engine(url, pool_pre_ping=True)
+    store_id = f"phase056-actions-{uuid.uuid4().hex}"
+    create_cp4_tables(engine)
+    create_durable_tables(engine)
+    try:
+        with ProcessPoolExecutor(
+            max_workers=8, mp_context=get_context("spawn")
+        ) as workers:
+            action_ids = list(
+                workers.map(_accept_action_in_process, [url] * 8, [store_id] * 8)
+            )
+        assert len(set(action_ids)) == 1
+
+        worker_ids = [f"action-worker-{index}" for index in range(8)]
+        with ProcessPoolExecutor(
+            max_workers=8, mp_context=get_context("spawn")
+        ) as workers:
+            claims = list(
+                workers.map(
+                    _claim_action_in_process,
+                    [url] * len(worker_ids),
+                    [store_id] * len(worker_ids),
+                    worker_ids,
+                )
+            )
+        winners = [
+            (worker_id, claim)
+            for worker_id, claim in zip(worker_ids, claims, strict=True)
+            if claim is not None
+        ]
+        assert len(winners) == 1
+        worker_id, claim = winners[0]
+        assert claim is not None
+        action_id, fencing_token = claim
+        assert action_id == action_ids[0]
+
+        restarted = SQLModelDurableWorkStore(engine, store_id=store_id)
+        queued = restarted.get_action_job(_context(), action_id)
+        assert queued.status == "running"
+        assert queued.worker_id == worker_id
+        assert queued.fencing_token == fencing_token
+        with pytest.raises(ControlPlaneError) as cross_owner:
+            restarted.get_action_job(
+                ControlPlaneContext(
+                    principal=Principal("other", issuer="phase056-tests"),
+                    tenant=TenantRef("phase056-tenant"),
+                    workspace=WorkspaceRef("phase056-tenant", "phase056-workspace"),
+                    environment=EnvironmentRef("test"),
+                    security_domain=SecurityDomain("phase056-test-domain"),
+                ),
+                action_id,
+            )
+        assert cross_owner.value.status == 404
     finally:
         _remove_store(engine, store_id)
         engine.dispose()

@@ -3,9 +3,12 @@
 from __future__ import annotations
 
 from collections.abc import Mapping, Sequence
+from datetime import datetime
 from typing import Any, Protocol, runtime_checkable
 
 from etlantic.control_plane.durable_models import (
+    ActionJobRecord,
+    ActionJobStatus,
     AttemptRecord,
     BaselineAcknowledgement,
     CheckpointRecord,
@@ -26,6 +29,46 @@ from etlantic.control_plane.models import ControlPlaneContext
 
 @runtime_checkable
 class DurableWorkStore(Protocol):
+    def accept_action_job(
+        self,
+        ctx: ControlPlaneContext,
+        *,
+        action: str,
+        idempotency_key: str,
+        request: Mapping[str, Any],
+        deadline_at: str,
+    ) -> ActionJobRecord: ...
+    def get_action_job(
+        self, ctx: ControlPlaneContext, action_id: str
+    ) -> ActionJobRecord: ...
+    def list_action_jobs(
+        self,
+        ctx: ControlPlaneContext,
+        *,
+        after: tuple[str, str] | None = None,
+        limit: int = 100,
+    ) -> Sequence[ActionJobRecord]: ...
+    def claim_action_job(
+        self,
+        ctx: ControlPlaneContext,
+        *,
+        worker_id: str,
+        lease_seconds: int = 30,
+        now: datetime | None = None,
+    ) -> ActionJobRecord | None: ...
+    def finish_action_job(
+        self,
+        ctx: ControlPlaneContext,
+        action_id: str,
+        *,
+        worker_id: str,
+        fencing_token: int,
+        status: ActionJobStatus,
+        result: Mapping[str, Any] | None = None,
+        error_code: str | None = None,
+        now: datetime | None = None,
+    ) -> ActionJobRecord: ...
+
     def accept(
         self,
         ctx: ControlPlaneContext,
