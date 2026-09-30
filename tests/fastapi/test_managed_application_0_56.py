@@ -97,6 +97,8 @@ def _ctx() -> ControlPlaneContext:
 
 def _wired(
     tmp_path: Path,
+    *,
+    profile: Profile | str = "development",
 ) -> tuple[
     ControlPlaneContext,
     MemoryAuthorizer,
@@ -136,7 +138,7 @@ def _wired(
         submissions=submissions,
         durable_work=durable,
         events=events,
-        profile="development",
+        profile=profile,
         report_root=tmp_path / "reports",
     )
     definition = definition_from_pipeline(ManagedPipeline)
@@ -212,6 +214,182 @@ def test_headless_and_http_share_verified_acceptance(tmp_path) -> None:
         definition_from_pipeline(ManagedPipeline)
     )
     assert envelope.canonical_intent_fingerprint
+
+
+def test_managed_headless_and_http_command_semantics_match(tmp_path: Path) -> None:
+    profile = Profile(
+        name="managed-command-parity",
+        security_mode="development",
+        plugin_allowlist={"etlantic": None},
+    )
+    ctx, authz, definitions, submissions, durable, events, service = _wired(
+        tmp_path, profile=profile
+    )
+
+    api = ETLanticAPI(
+        authorizer=authz,
+        definitions=definitions,
+        submissions=submissions,
+        events=events,
+        durable_work=durable,
+        managed_service=service,
+        profile=profile,
+        context_factory=membership_context_factory(
+            {"alice": ("tenant-a", "ws-1", "development", "default")}
+        ),
+        principal_dependency=principal_from_header,
+    ).enable_managed_execution()
+    client = cast(Any, TestClient(create_app(api)))
+    headers = {"X-Principal": "alice"}
+    document = pipeline_to_dict(definition_from_pipeline(ManagedPipeline))
+
+    headless_registered = service.register_definition(
+        ctx, "parity-headless", document
+    )
+    http_registered = client.put(
+        "/v1/definitions/parity-http",
+        headers=headers,
+        json={"document": document},
+    )
+    assert http_registered.status_code == 200
+    assert {
+        key: value
+        for key, value in http_registered.json().items()
+        if key != "definition_id"
+    } == {
+        key: value
+        for key, value in headless_registered.items()
+        if key != "definition_id"
+    }
+
+    headless_definition = service.get_definition(ctx, "parity-headless")
+    http_definition = client.get("/v1/definitions/parity-headless", headers=headers)
+    assert http_definition.status_code == 200
+    assert http_definition.json() == {
+        "definition_id": headless_definition["definition_id"],
+        "document": headless_definition["document"],
+    }
+
+    first_node = dict(document["nodes"][0])
+    first_node["metadata"] = {
+        **dict(first_node.get("metadata") or {}),
+        "plugin:parity": "first-edit",
+    }
+    first_edit = {
+        "op": "update_node",
+        "payload": {"name": first_node["name"], "node": first_node},
+    }
+    headless_edit = service.edit_definition(
+        ctx,
+        "parity-headless",
+        first_edit,
+        expected_fingerprint=headless_registered["fingerprint"],
+    )
+    http_edit = client.post(
+        "/v1/definitions/parity-http/edit",
+        headers=headers,
+        json={
+            "expected_fingerprint": http_registered.json()["fingerprint"],
+            "command": first_edit,
+        },
+    )
+    assert http_edit.status_code == 200
+    assert {
+        key: value for key, value in http_edit.json().items() if key != "definition_id"
+    } == {
+        key: value for key, value in headless_edit.items() if key != "definition_id"
+    }
+
+    headless_validation = service.validate_definition(ctx, "parity-headless")
+    http_validation = client.post(
+        "/v1/definitions/parity-http/validate", headers=headers
+    )
+    assert http_validation.status_code == 200
+    assert {
+        key: value
+        for key, value in http_validation.json().items()
+        if key != "definition_id"
+    } == {
+        key: value
+        for key, value in headless_validation.items()
+        if key != "definition_id"
+    }
+
+    headless_plan = service.plan_definition(ctx, "parity-headless")
+    http_plan = client.post(
+        "/v1/definitions/parity-http/plan",
+        headers=headers,
+        json={"request": RunRequest().to_dict()},
+    )
+    assert http_plan.status_code == 200
+    assert http_plan.json()["plan"] == headless_plan["plan"]
+    assert http_plan.json()["metadata"]["fingerprint"] == headless_plan["fingerprint"]
+
+    service.register_definition(ctx, "parity-run", document)
+    headless_receipt = service.submit_run(
+        ctx, "parity-run", idempotency_key="parity-submit"
+    )
+    http_receipt = client.post(
+        "/v1/definitions/parity-run/runs",
+        headers={**headers, "Idempotency-Key": "parity-submit"},
+        json={},
+    )
+    assert http_receipt.status_code == 202
+    assert http_receipt.json()["resource_id"] == headless_receipt.resource_id
+    assert http_receipt.json()["status"] == headless_receipt.status
+    assert http_receipt.json()["submission_id"] == headless_receipt.submission_id
+    assert http_receipt.json()["acceptance_id"] == headless_receipt.acceptance_id
+
+    headless_status = service.get_run_status(ctx, str(headless_receipt.resource_id))
+    http_status = client.get(
+        f"/v1/runs/{headless_receipt.resource_id}", headers=headers
+    )
+    assert http_status.status_code == 200
+    for field in (
+        "status",
+        "tenant_id",
+        "workspace_id",
+        "definition_id",
+        "idempotency_key",
+        "resource_type",
+    ):
+        assert http_status.json()[field] == headless_status[field]
+    assert http_status.json()["run_id"]
+    assert http_status.json()["submission_id"]
+    assert http_status.json()["acceptance_id"]
+
+    headless_actions = service.get_run_actions(ctx, str(headless_receipt.resource_id))
+    http_actions = client.get(
+        f"/v1/runs/{headless_receipt.resource_id}/actions", headers=headers
+    )
+    assert http_actions.status_code == 200
+    assert http_actions.json() == headless_actions
+
+    headless_events = service.list_run_events(ctx, str(headless_receipt.resource_id))
+    http_events = client.get(
+        f"/v1/runs/{headless_receipt.resource_id}/events/history", headers=headers
+    )
+    assert http_events.status_code == 200
+    assert http_events.json() == headless_events
+
+    for query, method in (
+        ("report", service.get_run_report),
+        ("lineage", service.get_run_lineage),
+        ("artifacts", service.list_run_artifacts),
+    ):
+        with pytest.raises(ControlPlaneError) as headless_pending:
+            method(ctx, str(headless_receipt.resource_id))
+        http_pending = client.get(
+            f"/v1/runs/{headless_receipt.resource_id}/{query}", headers=headers
+        )
+        assert http_pending.status_code == headless_pending.value.status
+        assert http_pending.json()["code"] == headless_pending.value.code
+
+    with pytest.raises(ControlPlaneError) as headless_missing:
+        service.get_definition(ctx, "does-not-exist")
+    http_missing = client.get("/v1/definitions/does-not-exist", headers=headers)
+    assert http_missing.status_code == headless_missing.value.status
+    assert http_missing.json()["code"] == headless_missing.value.code
 
 
 def test_headless_run_event_pages_are_scoped_and_resumable(tmp_path: Path) -> None:

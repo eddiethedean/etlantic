@@ -4,7 +4,7 @@
 not claim that AC056-001–044 have all passed. The evidence index marks a
 criterion passed only after its complete documented case has been observed.
 
-Current index: 9 criteria passed, 33 pending, and 2 blocked of 44.
+Current index: 10 criteria passed, 32 pending, and 2 blocked of 44.
 
 ## Candidate environment
 
@@ -33,6 +33,16 @@ Current index: 9 criteria passed, 33 pending, and 2 blocked of 44.
   regenerable 0.52 evidence check. The cross-provider planning fixture now sends
   each connector only its declared configuration, preserving the local-files
   schema's fail-closed unknown-option behavior.
+- Managed headless/HTTP parity (AC056-001):
+  `uv run pytest -q tests/fastapi/test_managed_application_0_56.py` — 18 passed.
+  The parity case sends registration, edit, validation, planning and idempotent
+  submission through both the public `ManagedApplicationService` and its HTTP
+  adapter, then compares the semantic responses for definitions, plans, run
+  status, allowed actions and event history. Pending report/lineage/artifact
+  reads and missing-definition reads return matching status and error codes.
+  The test exposed and fixed two headless response omissions: empty validation
+  metadata and the run-action response schema identifier. No private imports or
+  synthetic HTTP request are used.
 - CP1 and CP-GA OpenAPI snapshots were refreshed for the managed rerun and
   replay endpoints; both stable-operation snapshot tests passed.
 - Live PostgreSQL connector and multiprocess acceptance:
@@ -266,6 +276,14 @@ Current index: 9 criteria passed, 33 pending, and 2 blocked of 44.
   the single persisted concurrency charge. This is package-install evidence;
   AC056-040's full compatibility,
   version-skew and upgrade/rollback matrix remains pending.
+- Rebuilt candidate wheels after the AC056-001 service response fixes:
+  `uv build --all-packages --wheel --out-dir /tmp/etlantic-phase056-wheels-ac001`
+  built all 25 workspace wheels. The rebuilt core, FastAPI and SQLModel wheels
+  installed into a fresh Python 3.14.3 environment without workspace path
+  injection. The installed service and HTTP adapter returned matching
+  validation, action-discovery and event-history results; idempotent submit
+  recovered the same receipt. Migration 010 and the public action-worker
+  exports passed. Updated wheel hashes are in `WHEEL_MANIFEST.json`.
 - Managed command and authorization matrix:
   `uv run pytest -q tests/fastapi/test_managed_application_0_56.py tests/fastapi/test_managed_backend_0_56.py tests/fastapi/test_cp1_full_authz_matrix.py tests/fastapi/test_managed_control_races_0_56.py`
   — 64 passed before the rerun endpoint was added. It includes action-provider
@@ -402,14 +420,15 @@ Current index: 9 criteria passed, 33 pending, and 2 blocked of 44.
   inventory, the strict shadow scan matched its 10,451-diagnostic baseline,
   and raw Pyright reported zero errors and warnings. The suppression count is
   unchanged; the strict digest was refreshed for the AC056-020 action-worker
-  additions and the AC056-008 CP4 snapshot initializer plus test-line shifts.
-  The shadow diagnostic count stayed at 10,451 with no new diagnostics.
+  additions, AC056-008 CP4 snapshot initializer and test-line shifts, and
+  AC056-001 parity coverage. The shadow diagnostic count stayed at 10,451 with
+  no new diagnostics.
 - `ruff check .`, `git diff --check`, plugin-manifest checks and `uv lock --check`
   passed.
 
 ## Open release requirements
 
-- AC056-001–002, AC056-004, AC056-009–019 and AC056-033: the managed application,
+- AC056-002, AC056-004, AC056-009–019 and AC056-033: the managed application,
   authorization, specification, admission, worker, result and PostgreSQL
   provider paths have implementation and focused tests, but their full
   criterion-level failure, concurrency and runtime campaigns remain open.

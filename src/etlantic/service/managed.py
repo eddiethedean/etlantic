@@ -392,6 +392,7 @@ class ManagedApplicationService:
             "definition_id": definition_id,
             "fingerprint": definition.fingerprint or pipeline_fingerprint(definition),
             "diagnostics": [item.to_dict() for item in report.diagnostics],
+            "metadata": {},
         }
 
     def plan_definition(
@@ -787,6 +788,7 @@ class ManagedApplicationService:
         else:
             replay_reason = self._rerun_block_reason(ctx, submission_id)
         return {
+            "schema": "etlantic.control_plane.run_actions/1",
             "run_id": run_id,
             "status": status,
             "actions": [
