@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import hashlib
 import os
+from collections.abc import Callable
 from dataclasses import replace
 from pathlib import Path
 from threading import Event
@@ -70,6 +71,7 @@ class ManagedExecutionAdapter:
         self,
         *,
         report_root: str | Path | None = None,
+        report_store_factory: Callable[[ControlPlaneContext], Any] | None = None,
         runtime_factory: Any = PipelineRuntime,
         secret_alias_authorizer: SecretAliasAuthorizer | None = None,
     ) -> None:
@@ -77,6 +79,7 @@ class ManagedExecutionAdapter:
         self.report_root = Path(
             configured_root or (Path.home() / ".etlantic" / "reports")
         ).expanduser()
+        self.report_store_factory = report_store_factory
         self.runtime_factory = runtime_factory
         self.secret_alias_authorizer = secret_alias_authorizer
 
@@ -121,7 +124,11 @@ class ManagedExecutionAdapter:
             ) from exc
 
         run_id = managed_run_id(ctx, submission.idempotency_key)
-        reports = managed_report_store(ctx, report_root=self.report_root)
+        reports = (
+            self.report_store_factory(ctx)
+            if self.report_store_factory is not None
+            else managed_report_store(ctx, report_root=self.report_root)
+        )
         existing = reports.get(run_id)
         if existing is not None:
             if existing.plan_fingerprint != envelope.plan_fingerprint:

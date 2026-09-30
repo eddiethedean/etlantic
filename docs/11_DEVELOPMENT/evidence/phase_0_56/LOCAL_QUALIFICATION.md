@@ -35,11 +35,24 @@ Current index: 5 criteria passed, 37 pending, and 2 blocked of 44.
 - Managed HTTP malformed revision-selector boundary: 1 passed.
 - Native staged-checkpoint deadline rollback: 2 parameter cases passed.
 - Standard SQLModel-backed FastAPI lifecycle:
-  `uv run pytest -q tests/fastapi/test_managed_backend_0_56.py` — 4 passed.
+  `uv run pytest -q tests/fastapi/test_managed_backend_0_56.py` — 5 passed.
   SQLite lifecycle cases verify the one-engine managed constructor, strict
   migration gate and partial-initialization disposal, disposal after failed
   startup and normal shutdown, and recovery of accepted durable work after
   shutdown. This is local lifecycle evidence, not a PostgreSQL qualification.
+- Standard worker report durability and recovery:
+  `uv run pytest -vv -s -o faulthandler_timeout=15 tests/fastapi/test_managed_backend_0_56.py::test_standard_backend_worker_persists_queryable_report_in_sqlmodel`
+  — 1 passed. The standard backend worker transferred a canonical JSON-to-CSV
+  run without a caller runner, persisted its report in the scoped SQLModel
+  table, and exposed the report after backend restart. A simulated worker crash
+  after report persistence recovered the expired lease from the stored report;
+  the test changed the source before recovery and verified the sink was not
+  written a second time. A second workspace could not read the scoped report.
+- Versioned report-table migration:
+  `uv run pytest -q tests/sqlmodel/test_cp1_migrations_0_51.py`
+  — local SQLite cases cover fresh install, upgrade from each prior head through
+  006, restart, downgrade to 006 and re-upgrade. PostgreSQL cases were skipped
+  because `ETLANTIC_SQLMODEL_TEST_URL` is not configured in this environment.
 - Provider-aware run-action reason:
   `uv run pytest -q tests/fastapi/test_managed_control_races_0_56.py::test_action_discovery_reports_unsupported_cancel_provider`
   — 1 passed. The command query now reports `provider_unsupported` when the
@@ -164,9 +177,15 @@ Current index: 5 criteria passed, 37 pending, and 2 blocked of 44.
   source; public catalog imports, the `etlantic.connector_catalog/1` contract
   and FastAPI router import passed.
 - Latest managed-backend clean wheel smoke: refreshed core, FastAPI and SQLModel
-  wheels installed into a fresh Python 3.14.3 virtual environment. Migration 006,
+  wheels installed into a fresh Python 3.14.3 virtual environment. Migration 007,
   the registry-backed managed constructor, close, and the in-memory revision
   reversion/current-selection behavior all passed.
+- Managed SQLModel report wheel smoke: the refreshed wheels were installed into
+  a separate clean Python 3.14.3 environment. A fresh SQLite database migrated
+  to `007_managed_run_reports_0_56`; the standard worker transferred a canonical
+  JSON-to-CSV definition without a caller runner, persisted the actual report,
+  and served that report after reopening the backend. Output and report identity
+  stayed consistent after the source file changed.
 - Public CLI: sample pipeline validation passed with no diagnostics; plan
   generation returned fingerprint
   `8f3879b301b3b0ea1b87434eef3dd0a58ef0cbe8342ced056323cc9d6d5b19da`.
@@ -188,6 +207,11 @@ Current index: 5 criteria passed, 37 pending, and 2 blocked of 44.
   authorization, specification, admission, worker, result and PostgreSQL
   provider paths have implementation and focused tests, but their full
   criterion-level failure, concurrency and runtime campaigns remain open.
+- AC056-017–018: the standard SQLModel backend now persists runtime reports in
+  a tenant/workspace-scoped table, and worker recovery reuses a report committed
+  before attempt acknowledgment. Report-publication failure after an external
+  sink commit, durable event publication/reconnect, and separate result and
+  cleanup state machines remain unqualified.
 - AC056-007–008: immutable revision pinning, resource authorization,
   effective-fingerprint policy binding and same/different-intent retry behavior
   now have focused evidence. Complete durable resource/version resolution,

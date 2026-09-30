@@ -33,7 +33,8 @@ Install the managed extra and apply versioned migrations before creating the
 backend. The constructor checks the recorded migration version and fails
 closed when the schema is missing or behind. It creates one SQLAlchemy engine
 for the SQLModel control-plane stores and owns that engine for the backend
-lifetime.
+lifetime. The required migration head is `007_managed_run_reports_0_56`, which
+adds the scope-isolated report table used by managed workers and report queries.
 
 ```bash
 pip install 'etlantic-fastapi[managed]==0.55.0'
@@ -78,6 +79,24 @@ commands, call `create_managed_backend(...)`, use `backend.api.managed_service`
 or its stores, and call `backend.close()` when the owner exits. That constructor
 uses the same store composition and migration checks without creating a
 synthetic HTTP request.
+
+Run ETL in a separate worker process with the same migrated backend settings:
+
+```python
+backend = create_managed_backend(config, authorizer=worker_authorizer,
+                                 context_factory=worker_context_factory)
+worker = backend.create_execution_host(owner_id="etl-worker-1")
+try:
+    worker.tick(trusted_worker_context)
+finally:
+    backend.close()
+```
+
+`create_execution_host` installs the packaged runtime adapter and uses the
+backend's tenant/workspace-scoped SQLModel report store. Runtime reports remain
+queryable from another backend process after worker restart. Local reference
+hosts can continue to use the file report store by constructing
+`ExecutionHost` directly.
 
 ## Control-plane usage
 

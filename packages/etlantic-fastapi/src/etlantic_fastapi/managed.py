@@ -8,6 +8,7 @@ from dataclasses import dataclass, field
 from importlib import import_module
 from typing import TYPE_CHECKING, Any, cast
 
+from etlantic.control_plane.models import ControlPlaneContext
 from etlantic.control_plane.protocols import Authorizer
 from etlantic.control_plane.registry_definitions import RegistryDefinitionRepository
 from etlantic.registry import PlanningContext
@@ -58,6 +59,7 @@ class ManagedBackend:
 
     api: ETLanticAPI = field(repr=False)
     engine: Engine = field(repr=False)
+    report_store_factory: Callable[[ControlPlaneContext], Any] = field(repr=False)
     _closed: bool = field(default=False, init=False, repr=False)
 
     def close(self) -> None:
@@ -66,6 +68,27 @@ class ManagedBackend:
             return
         self.engine.dispose()
         self._closed = True
+
+    def create_execution_host(
+        self, *, owner_id: str = "managed-worker", ttl_seconds: int = 30
+    ) -> Any:
+        """Create the standard worker using this backend's durable result store."""
+        if self._closed:
+            raise RuntimeError("Managed backend is closed")
+        durable = self.api.durable_work
+        if durable is None:
+            raise RuntimeError("Managed backend has no durable work store")
+        from etlantic.runtime.execution_host import ExecutionHost
+        from etlantic.runtime.managed_execution import ManagedExecutionAdapter
+
+        return ExecutionHost(
+            durable,
+            owner_id=owner_id,
+            ttl_seconds=ttl_seconds,
+            runner=ManagedExecutionAdapter(
+                report_store_factory=self.report_store_factory
+            ),
+        )
 
 
 def create_managed_backend(
@@ -111,6 +134,7 @@ def create_managed_backend(
 
         stores = cast(Any, import_module("etlantic_sqlmodel.control_plane"))
         registry = stores.SqlModelRegistryProvider(engine)
+        report_store_provider = stores.SqlModelRunReportStoreProvider(engine)
         api = ETLanticAPI(
             authorizer=authorizer,
             definitions=RegistryDefinitionRepository(registry),
@@ -129,7 +153,13 @@ def create_managed_backend(
         if config.version is not None:
             api.version = config.version
         api.enable_managed_execution()
-        return ManagedBackend(api=api, engine=engine)
+        if api.managed_service is not None:
+            api.managed_service.report_store_factory = report_store_provider.for_context
+        return ManagedBackend(
+            api=api,
+            engine=engine,
+            report_store_factory=report_store_provider.for_context,
+        )
     except BaseException:
         if engine is not None:
             engine.dispose()

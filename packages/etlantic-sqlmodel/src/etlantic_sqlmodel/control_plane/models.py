@@ -6,7 +6,9 @@ pipeline contracts.
 
 from __future__ import annotations
 
-from sqlalchemy import Column, Integer, String, UniqueConstraint
+from typing import Any, cast
+
+from sqlalchemy import Column, Integer, String, Text, UniqueConstraint
 
 from sqlmodel import Field, SQLModel
 
@@ -87,6 +89,30 @@ class EventRow(SQLModel, table=True):
     created_at: str
     payload_json: str
     correlation_id: str | None = None
+
+
+class RunReportRow(SQLModel, table=True):
+    """Durable runtime report stored within its tenant/workspace scope."""
+
+    __tablename__ = cast(Any, "cp_run_reports")
+    __table_args__ = (
+        UniqueConstraint(
+            "tenant_id",
+            "workspace_id",
+            "run_id",
+            name="uq_cp_run_report_scope",
+        ),
+    )
+
+    id: int | None = Field(default=None, primary_key=True)
+    tenant_id: str = Field(sa_column=Column(String(), index=True, nullable=False))
+    workspace_id: str = Field(sa_column=Column(String(), index=True, nullable=False))
+    run_id: str = Field(sa_column=Column(String(), index=True, nullable=False))
+    pipeline_id: str = Field(sa_column=Column(String(), index=True, nullable=False))
+    plan_fingerprint: str = Field(sa_column=Column(String(), nullable=False))
+    report_json: str = Field(sa_column=Column(Text(), nullable=False))
+    created_at: str = Field(sa_column=Column(String(), nullable=False))
+    updated_at: str = Field(sa_column=Column(String(), nullable=False))
 
 
 class TenantRow(SQLModel, table=True):

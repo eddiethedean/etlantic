@@ -72,6 +72,7 @@ class ManagedApplicationService:
     events: EventStore | None = None
     profile: Any = "development"
     report_root: str | Path | None = None
+    report_store_factory: Callable[[ControlPlaneContext], Any] | None = None
     policy: Any = None
     approvals: Any = None
     quotas: Any = None
@@ -1103,9 +1104,12 @@ class ManagedApplicationService:
         idempotency_key = str(record.get("idempotency_key") or "")
         if not idempotency_key:
             raise ControlPlaneError.not_found("Run report not found")
-        result = managed_report_store(ctx, report_root=self.report_root).get(
-            managed_run_id(ctx, idempotency_key)
+        report_store = (
+            self.report_store_factory(ctx)
+            if self.report_store_factory is not None
+            else managed_report_store(ctx, report_root=self.report_root)
         )
+        result = report_store.get(managed_run_id(ctx, idempotency_key))
         if result is None:
             raise ControlPlaneError(
                 "Run report has not been published",

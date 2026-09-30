@@ -37,6 +37,7 @@ from etlantic_sqlmodel.control_plane.models import (
     LogicalIdentityRow,
     PromotionRow,
     RevisionRow,
+    RunReportRow,
     ScheduleSnapshotRow,
     SecurityDomainRow,
     SubmissionRow,
@@ -60,6 +61,11 @@ from etlantic_sqlmodel.control_plane.registry_stores import (
     SqlModelTenantDirectory,
     SqlModelWorkspaceDirectory,
     create_registry_tables,
+)
+from etlantic_sqlmodel.control_plane.report_stores import (
+    SqlModelRunReportStore,
+    SqlModelRunReportStoreProvider,
+    create_run_report_tables,
 )
 from etlantic_sqlmodel.control_plane.schedule_stores import (
     SCHEDULE_TABLES,
@@ -97,6 +103,7 @@ __all__ = [
     "LogicalIdentityRow",
     "PromotionRow",
     "RevisionRow",
+    "RunReportRow",
     "SQLModelApprovalStore",
     "SQLModelAttestationStore",
     "SQLModelAuditEvidenceStore",
@@ -113,6 +120,8 @@ __all__ = [
     "SqlModelEventStore",
     "SqlModelRegistryProvider",
     "SqlModelRevisionRegistry",
+    "SqlModelRunReportStore",
+    "SqlModelRunReportStoreProvider",
     "SqlModelTenantDirectory",
     "SqlModelWorkspaceDirectory",
     "SubmissionRow",
@@ -124,6 +133,7 @@ __all__ = [
     "create_cp4_tables",
     "create_durable_tables",
     "create_registry_tables",
+    "create_run_report_tables",
     "create_schedule_tables",
     "create_sqlite_engine",
     "dump_registry_sqlite",

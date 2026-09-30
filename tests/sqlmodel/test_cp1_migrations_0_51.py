@@ -41,6 +41,7 @@ from etlantic_sqlmodel.migrations import (
     VERSIONS,
     apply_migrations,
     current_version,
+    downgrade,
     upgrade,
 )
 
@@ -60,7 +61,7 @@ def test_006_migration_imports_legacy_definitions_as_immutable_revisions(
     }
     legacy.put(ctx, "legacy-orders", document)
 
-    assert upgrade(engine) == "006_managed_definition_revisions_0_56"
+    assert upgrade(engine) == "007_managed_run_reports_0_56"
     registry = cast(RegistryProvider, SqlModelRegistryProvider(engine))
     definitions = RegistryDefinitionRepository(registry)
     current = definitions.resolve_revision(ctx, "legacy-orders", "current")
@@ -121,15 +122,16 @@ def _ctx(
     )
 
 
-def test_latest_migration_provisions_all_cp1_store_tables(tmp_path: Path) -> None:
+def test_latest_migration_provisions_cp1_and_report_tables(tmp_path: Path) -> None:
     engine = create_sqlite_engine(f"sqlite:///{tmp_path / 'cp1.db'}")
 
-    assert apply_migrations(engine) == "006_managed_definition_revisions_0_56"
-    assert current_version(engine) == "006_managed_definition_revisions_0_56"
+    assert apply_migrations(engine) == "007_managed_run_reports_0_56"
+    assert current_version(engine) == "007_managed_run_reports_0_56"
     assert {
         "cp_definitions",
         "cp_submissions",
         "cp_events",
+        "cp_run_reports",
     }.issubset(set(inspect(engine).get_table_names()))
     constraints = {
         constraint["name"]
@@ -166,8 +168,8 @@ def test_latest_migration_provisions_all_cp1_store_tables(tmp_path: Path) -> Non
     assert replayed[0].event_id == event.event_id
 
 
-@pytest.mark.parametrize("previous_head", VERSIONS[:-2])
-def test_upgrade_from_published_head_adds_cp1_tables_without_replacing_existing_schema(
+@pytest.mark.parametrize("previous_head", VERSIONS[:-1])
+def test_upgrade_from_published_head_adds_managed_reports_without_replacing_schema(
     tmp_path: Path,
     previous_head: str,
 ) -> None:
@@ -177,16 +179,38 @@ def test_upgrade_from_published_head_adds_cp1_tables_without_replacing_existing_
 
     assert upgrade(engine, target=previous_head) == previous_head
     before = set(inspect(engine).get_table_names())
-    assert "cp_events" not in before
+    assert "cp_run_reports" not in before
 
-    assert upgrade(engine) == "006_managed_definition_revisions_0_56"
+    assert upgrade(engine) == "007_managed_run_reports_0_56"
     tables = set(inspect(engine).get_table_names())
     assert before.issubset(tables)
     assert {
         "cp_definitions",
         "cp_submissions",
         "cp_events",
+        "cp_run_reports",
     }.issubset(tables)
+
+
+def test_managed_report_migration_downgrade_preserves_prior_tables(
+    tmp_path: Path,
+) -> None:
+    engine = create_sqlite_engine(f"sqlite:///{tmp_path / 'report-migration.db'}")
+    assert upgrade(engine) == "007_managed_run_reports_0_56"
+
+    assert downgrade(engine, target="006_managed_definition_revisions_0_56") == (
+        "006_managed_definition_revisions_0_56"
+    )
+    tables = set(inspect(engine).get_table_names())
+    assert "cp_run_reports" not in tables
+    assert {
+        "cp_definitions",
+        "cp_events",
+        "cp_registry_revisions",
+    }.issubset(tables)
+
+    assert upgrade(engine) == "007_managed_run_reports_0_56"
+    assert "cp_run_reports" in set(inspect(engine).get_table_names())
 
 
 @pytest.mark.parametrize(
@@ -217,13 +241,14 @@ def test_postgresql_migration_provisions_and_persists_cp1_stores(
                 },
             )
 
-    assert upgrade(engine) == "006_managed_definition_revisions_0_56"
-    assert current_version(engine) == "006_managed_definition_revisions_0_56"
+    assert upgrade(engine) == "007_managed_run_reports_0_56"
+    assert current_version(engine) == "007_managed_run_reports_0_56"
     tables = set(inspect(engine).get_table_names())
     assert {
         "cp_definitions",
         "cp_submissions",
         "cp_events",
+        "cp_run_reports",
     }.issubset(tables)
     if starting_head is not None:
         with engine.connect() as connection:
@@ -263,7 +288,7 @@ def test_postgresql_concurrent_event_appends_allocate_ordered_sequences(
     postgres_engine_factory: Callable[[], Engine],
 ) -> None:
     engine = postgres_engine_factory()
-    assert upgrade(engine) == "006_managed_definition_revisions_0_56"
+    assert upgrade(engine) == "007_managed_run_reports_0_56"
     engine.dispose()
 
     ctx = _ctx()

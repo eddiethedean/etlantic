@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from pathlib import Path
+from time import sleep
 from typing import Any, cast
 
 import pytest
@@ -31,6 +32,7 @@ from etlantic.control_plane import (
     TenantRef,
     WorkspaceRef,
 )
+from etlantic.registry import BindingDescriptor, PlanningContext
 from etlantic_fastapi import (
     ManagedBackend,
     ManagedBackendConfig,
@@ -63,7 +65,7 @@ def _context() -> ControlPlaneContext:
 def _migrated_url(tmp_path: Path) -> str:
     url = f"sqlite:///{tmp_path / 'managed.db'}"
     engine = sqlalchemy.create_engine(url)
-    assert upgrade(engine) == "006_managed_definition_revisions_0_56"
+    assert upgrade(engine) == "007_managed_run_reports_0_56"
     engine.dispose()
     return url
 
@@ -198,6 +200,142 @@ def test_managed_backend_persists_and_resolves_definition_revision(
         )
         assert pinned.revision_id == resolution.revision_id
         assert pinned.document == resolution.document
+    finally:
+        restarted.close()
+
+
+def test_standard_backend_worker_persists_queryable_report_in_sqlmodel(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    database_url = _migrated_url(tmp_path)
+    source = tmp_path / "input.json"
+    target = tmp_path / "output.csv"
+    source.write_text('[{"id": 29}]', encoding="utf-8")
+
+    def planning_context_factory(
+        _ctx: ControlPlaneContext, profile: Any
+    ) -> PlanningContext:
+        planning = PlanningContext.create(profile=profile)
+        planning.registry.register_binding(
+            BindingDescriptor(
+                binding="source",
+                provider="json",
+                location=str(source),
+                kind="source",
+            )
+        )
+        planning.registry.register_binding(
+            BindingDescriptor(
+                binding="result",
+                provider="csv",
+                location=str(target),
+                kind="sink",
+            )
+        )
+        return planning
+
+    config = ManagedBackendConfig(
+        database_url=database_url,
+        store_id="managed-backend-report",
+    )
+    authorizer = MemoryAuthorizer()
+    ctx = _context()
+    for action in (
+        "definition.write",
+        "run.submit",
+        "run.read",
+        "run.report",
+        "run.lineage",
+    ):
+        authorizer.grant(ctx, action)
+    backend = create_managed_backend(
+        config,
+        authorizer=authorizer,
+        context_factory=static_context_factory(
+            tenant_id=ctx.tenant.tenant_id,
+            workspace_id=ctx.workspace.workspace_id,
+            environment=ctx.environment.name,
+            security_domain=ctx.security_domain.domain_id,
+        ),
+        planning_context_factory=planning_context_factory,
+    )
+    try:
+        service = backend.api.managed_service
+        assert service is not None
+        service.register_definition(
+            ctx,
+            "reported-pipe",
+            pipeline_to_dict(definition_from_pipeline(_ManagedBackendPipeline)),
+        )
+        receipt = service.submit_run(
+            ctx, "reported-pipe", idempotency_key="sqlmodel-report-run"
+        )
+        assert receipt.resource_id is not None
+        durable = backend.api.durable_work
+        assert durable is not None
+        host = backend.create_execution_host(owner_id="sqlmodel-worker", ttl_seconds=1)
+
+        def fail_after_report_is_published(*_args: Any, **_kwargs: Any) -> None:
+            raise RuntimeError("simulated worker crash after report publication")
+
+        monkeypatch.setattr(durable, "finish_attempt", fail_after_report_is_published)
+        with pytest.raises(RuntimeError, match="after report publication"):
+            host.tick(ctx)
+        report = service.get_run_report(ctx, receipt.resource_id)
+        assert report["run_id"] == receipt.resource_id
+        assert report["status"] == "succeeded"
+        assert target.read_text(encoding="utf-8").splitlines() == ["id", "29"]
+    finally:
+        backend.close()
+
+    # The restarted worker must reuse the published report rather than rerun
+    # the transfer against changed source contents.
+    source.write_text('[{"id": 30}]', encoding="utf-8")
+    sleep(1.1)
+
+    restarted = create_managed_backend(
+        config,
+        authorizer=authorizer,
+        context_factory=static_context_factory(
+            tenant_id=ctx.tenant.tenant_id,
+            workspace_id=ctx.workspace.workspace_id,
+            environment=ctx.environment.name,
+            security_domain=ctx.security_domain.domain_id,
+        ),
+        planning_context_factory=planning_context_factory,
+    )
+    try:
+        service = restarted.api.managed_service
+        assert service is not None
+        durable = restarted.api.durable_work
+        assert durable is not None
+        assert (
+            durable.get_submission_by_idempotency(
+                ctx, idempotency_key="sqlmodel-report-run"
+            )
+            is not None
+        )
+        assert (
+            restarted.create_execution_host(
+                owner_id="sqlmodel-worker-restarted", ttl_seconds=1
+            ).tick(ctx)
+            == 1
+        )
+        assert service.get_run_report(ctx, receipt.resource_id)["status"] == (
+            "succeeded"
+        )
+        assert target.read_text(encoding="utf-8").splitlines() == ["id", "29"]
+        other_workspace = ControlPlaneContext(
+            principal=ctx.principal,
+            tenant=ctx.tenant,
+            workspace=WorkspaceRef(ctx.tenant.tenant_id, "other-workspace"),
+            environment=ctx.environment,
+            security_domain=ctx.security_domain,
+        )
+        assert (
+            restarted.report_store_factory(other_workspace).get(report["run_id"])
+            is None
+        )
     finally:
         restarted.close()
 
