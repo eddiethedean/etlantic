@@ -4,7 +4,7 @@
 not claim that AC056-001–044 have all passed. The evidence index marks a
 criterion passed only after its complete documented case has been observed.
 
-Current index: 7 criteria passed, 35 pending, and 2 blocked of 44.
+Current index: 8 criteria passed, 34 pending, and 2 blocked of 44.
 
 ## Candidate environment
 
@@ -109,15 +109,17 @@ Current index: 7 criteria passed, 35 pending, and 2 blocked of 44.
   transfer successfully. The later migration-010 worker and PostgreSQL tests
   below complete the immutable-upload CSV matrix for AC056-035.
 - Owner-scoped immutable CSV uploads and durable input leases (AC056-025/026;
-  AC056-035 passed):
+  AC056-026 and AC056-035 passed):
   `uv run pytest -q tests/control_plane/test_input_resources_0_56.py
   tests/connectors/test_local_files_csv_0_56.py
   tests/fastapi/test_managed_backend_0_56.py::test_managed_worker_executes_finalized_upload_and_lease_outlives_staging_ttl
   tests/fastapi/test_managed_backend_0_56.py::test_managed_http_stages_finalizes_and_aborts_only_staged_input
   tests/fastapi/test_managed_backend_0_56.py::test_managed_worker_rejects_invalid_or_tampered_finalized_csv_uploads
-  tests/sqlmodel/test_cp1_migrations_0_51.py` — 50 passed, 5 PostgreSQL-only
-  cases skipped in the no-database run because `ETLANTIC_SQLMODEL_TEST_URL` was
-  not configured. Migration
+  tests/sqlmodel/test_cp1_migrations_0_51.py` — the no-database run passed 50
+  tests and skipped 5 PostgreSQL-only cases because
+  `ETLANTIC_SQLMODEL_TEST_URL` was not configured. With the temporary local
+  PostgreSQL URL configured, the combined suite below passed all cases with no
+  skips. Migration
   010 adds bounded relational staging storage and scoped durable leases. HTTP
   staging streams up to the configured byte limit; finalization binds the
   uploaded CSV to an immutable SHA-256/version/length/tenant/workspace/owner
@@ -127,9 +129,14 @@ Current index: 7 criteria passed, 35 pending, and 2 blocked of 44.
   tampered blobs and references, cross-owner denial, forbidden extra locator
   fields and physical paths, unsupported media/formats, bounded orphan cleanup,
   lease protection, expiry, staged-only abort and execution after staging TTL.
-  The real managed worker parsed a UTF-8 BOM/semicolon upload into typed rows
-  after its staging TTL and emitted a comma-delimited sink without placing row
-  values in the report. Real managed-worker cases also finalized empty,
+  The real managed worker first rejected a run before runtime startup, then
+  reused the finalized resource for a successful retry, rerun and replay. Four
+  durable leases protected it after staging TTL; the worker parsed the UTF-8
+  BOM/semicolon upload into typed rows and emitted a comma-delimited sink
+  without placing row values in the report. The HTTP cleanup case also verifies
+  permission denial, caller-owner scoping, one-item cleanup batches, stable
+  remaining counts and idempotent empty cleanup. Real managed-worker cases
+  finalized empty,
   malformed, byte-over-budget and same-length-tampered CSV uploads; each
   produced a failed run report without creating the sink, and the over-budget
   case used a deliberately lower worker connector limit. A rebuilt clean-wheel
@@ -137,8 +144,11 @@ Current index: 7 criteria passed, 35 pending, and 2 blocked of 44.
   migration 010, constructed the standard backend, exposed the upload route in
   OpenAPI, finalized an upload, read it after backend restart under a durable
   lease, denied a cross-owner read and rejected same-length blob tampering.
-  PostgreSQL concurrent lease/cleanup qualification and the full provider
-  security campaign remain open, so AC056-025 and AC056-026 stay pending.
+  PostgreSQL concurrent lease/cleanup qualification passed six multi-process
+  trials. Together, the bounded owner-scoped HTTP cleanup, accepted/retry/
+  rerun/replay lease coverage, live-lease cleanup checks and race qualification
+  complete AC056-026 locally. The broader worker threat and provider security
+  campaign remains open for AC056-025.
 - PostgreSQL input-resource acquisition/cleanup race:
   `ETLANTIC_SQLMODEL_TEST_URL=... uv run pytest -q
   tests/sqlmodel/test_input_resource_postgresql_0_56.py` — 1 passed. Six
@@ -364,9 +374,10 @@ Current index: 7 criteria passed, 35 pending, and 2 blocked of 44.
   for backup/restore and broader failure campaigns.
 - AC056-020–024: isolated action jobs, bounded previews/provisioning, and the
   complete secret lease/rotation lifecycle are not implemented and observed.
-  AC056-025/026 now have immutable upload, durable lease, bounded cleanup and
-  PostgreSQL multiprocess race evidence, but the full worker threat,
-  authorization/isolation and retry/replay recovery campaigns remain open.
+  AC056-025 has immutable upload, durable lease, bounded cleanup and PostgreSQL
+  multiprocess race evidence, but its full worker threat and provider security
+  campaign remain open. AC056-026 passed its owner-scoped cleanup,
+  accepted/retry/rerun/replay retention and PostgreSQL race case.
 - AC056-035 passed its typed CSV, encoding, malformed/empty/over-budget and
   tamper-rejection worker cases plus resource-retention checks; see the selected PostgreSQL-backed suite above.
 - AC056-027–029 and AC056-031–032: scheduler admission parity,

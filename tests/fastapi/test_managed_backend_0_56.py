@@ -38,6 +38,7 @@ from etlantic.control_plane import (
 )
 from etlantic.lifecycle.runtime import PipelineRuntime
 from etlantic.registry import BindingDescriptor, PlanningContext
+from etlantic.runtime.execution_host import ExecutionHost
 from etlantic.runtime.managed_errors import ExecutionRejected
 from etlantic.runtime.managed_execution import ManagedExecutionAdapter
 from etlantic_fastapi import (
@@ -379,7 +380,16 @@ def test_managed_worker_executes_finalized_upload_and_lease_outlives_staging_ttl
         return planning
 
     authorizer = MemoryAuthorizer()
-    for action in ("definition.write", "run.submit", "input.read", "run.report"):
+    for action in (
+        "definition.write",
+        "run.submit",
+        "run.retry",
+        "run.rerun",
+        "run.replay",
+        "run.read",
+        "input.read",
+        "run.report",
+    ):
         authorizer.grant(ctx, action)
     backend = create_managed_backend(
         ManagedBackendConfig(
@@ -427,17 +437,65 @@ def test_managed_worker_executes_finalized_upload_and_lease_outlives_staging_ttl
         future = datetime.now(UTC) + timedelta(days=2)
         assert store.read(ctx, reference, now=future) == content
 
+        durable = backend.api.durable_work
+        assert durable is not None
+        refusing_host = ExecutionHost(
+            durable,
+            owner_id="immutable-upload-refusing-worker",
+            runner=lambda *_args, **_kwargs: (_ for _ in ()).throw(
+                ExecutionRejected("transient worker startup rejection")
+            ),
+        )
+        assert refusing_host.tick(ctx) == 1
+        assert service.get_run_status(ctx, str(receipt.resource_id))["status"] == (
+            "failed"
+        )
+
+        retry = service.retry_run(
+            ctx,
+            str(receipt.resource_id),
+            idempotency_key="immutable-upload-retry",
+        )
+
+        rerun = service.rerun_run(
+            ctx,
+            str(receipt.resource_id),
+            idempotency_key="immutable-upload-rerun",
+        )
+        replay = service.replay_run(
+            ctx,
+            str(receipt.resource_id),
+            idempotency_key="immutable-upload-replay",
+        )
+        with backend.engine.connect() as connection:
+            lease_count = connection.execute(
+                sqlalchemy.text(
+                    "SELECT count(*) FROM cp_input_resource_leases "
+                    "WHERE upload_id = :upload_id"
+                ),
+                {"upload_id": reference.resource_id},
+            ).scalar_one()
+        assert lease_count == 4
+        assert store.read(ctx, reference, now=future) == content
         assert (
-            backend.create_execution_host(owner_id="immutable-upload-worker").tick(ctx)
-            == 1
+            backend.create_execution_host(
+                owner_id="immutable-upload-replay-worker"
+            ).tick(ctx)
+            == 3
         )
         assert target.read_text(encoding="utf-8").splitlines() == [
             "id,name",
             "91,Gráce",
         ]
-        report = service.get_run_report(ctx, str(receipt.resource_id))
+        report = service.get_run_report(ctx, str(retry.resource_id))
         assert report["status"] == "succeeded"
         assert "Gráce" not in json.dumps(report)
+        assert service.get_run_report(ctx, str(rerun.resource_id))["status"] == (
+            "succeeded"
+        )
+        assert service.get_run_report(ctx, str(replay.resource_id))["status"] == (
+            "succeeded"
+        )
     finally:
         backend.close()
 
@@ -594,6 +652,31 @@ def test_managed_http_stages_finalizes_and_aborts_only_staged_input(
             security_domain=ctx.security_domain.domain_id,
         ),
     )
+    backend = app.state.managed_backend
+    other_owner = ControlPlaneContext(
+        principal=Principal("other-upload-owner", kind="workload"),
+        tenant=ctx.tenant,
+        workspace=ctx.workspace,
+        environment=ctx.environment,
+        security_domain=ctx.security_domain,
+        resource_owner_id="other-upload-owner",
+    )
+    cleanup_expiry = datetime.now(UTC) + timedelta(seconds=1)
+    for _ in range(2):
+        backend.input_resources.stage(
+            ctx,
+            b"id\n1\n",
+            media_type="text/csv",
+            format="csv",
+            expires_at=cleanup_expiry,
+        )
+    other_orphan = backend.input_resources.stage(
+        other_owner,
+        b"id\n2\n",
+        media_type="text/csv",
+        format="csv",
+        expires_at=cleanup_expiry,
+    )
     content = b"id,name\n11,Ada\n"
     client_type = cast(Any, FastAPITestClient)
     with client_type(app) as client:
@@ -617,6 +700,41 @@ def test_managed_http_stages_finalizes_and_aborts_only_staged_input(
         assert finalized.status_code == 200
         assert finalized.json()["sha256"] == hashlib.sha256(content).hexdigest()
         assert finalized.json()["byte_length"] == len(content)
+
+        denied_cleanup = client.post(
+            "/v1/input-resources/cleanup?limit=1", headers=headers
+        )
+        assert denied_cleanup.status_code == 404
+        authorizer.grant(ctx, "input.cleanup")
+        sleep(1.1)
+        first_cleanup = client.post(
+            "/v1/input-resources/cleanup?limit=1", headers=headers
+        )
+        assert first_cleanup.status_code == 200
+        assert first_cleanup.json() == {
+            "deleted_count": 1,
+            "remaining_candidates": 1,
+        }
+        second_cleanup = client.post(
+            "/v1/input-resources/cleanup?limit=1", headers=headers
+        )
+        assert second_cleanup.status_code == 200
+        assert second_cleanup.json() == {
+            "deleted_count": 1,
+            "remaining_candidates": 0,
+        }
+        assert (
+            backend.input_resources.abort(other_owner, other_orphan.upload_id) is None
+        )
+        empty_cleanup = client.post(
+            "/v1/input-resources/cleanup?limit=1", headers=headers
+        )
+        assert empty_cleanup.status_code == 200
+        assert empty_cleanup.json() == {
+            "deleted_count": 0,
+            "remaining_candidates": 0,
+        }
+
         aborted = client.delete(f"/v1/input-resources/{upload_id}", headers=headers)
         assert aborted.status_code == 409
         cross_owner = client.delete(
