@@ -35,9 +35,7 @@ def _scope(ctx: ControlPlaneContext) -> tuple[str, str]:
     return ctx.scope_key
 
 
-def _new_idempotent_event_map() -> dict[
-    tuple[str, str, str], tuple[str, dict[str, Any], ControlPlaneEvent]
-]:
+def _new_idempotent_event_map() -> dict[tuple[str, str, str], tuple[str, str, str]]:
     return {}
 
 
@@ -365,13 +363,20 @@ class MemoryEventStore:
     _events: dict[tuple[str, str], list[ControlPlaneEvent]] = field(
         default_factory=dict
     )
-    _idempotent_events: dict[
-        tuple[str, str, str], tuple[str, dict[str, Any], ControlPlaneEvent]
-    ] = field(default_factory=_new_idempotent_event_map)
+    _idempotent_events: dict[tuple[str, str, str], tuple[str, str, str]] = field(
+        default_factory=_new_idempotent_event_map
+    )
     _event_sequences: dict[tuple[str, str], int] = field(
         default_factory=_new_event_sequence_map
     )
     _lock: threading.RLock = field(default_factory=threading.RLock)
+    max_events_per_scope: int | None = None
+
+    def __post_init__(self) -> None:
+        if self.max_events_per_scope is not None and (
+            type(self.max_events_per_scope) is not int or self.max_events_per_scope < 1
+        ):
+            raise ValueError("max_events_per_scope must be a positive integer or None")
 
     def append(
         self,
@@ -386,10 +391,13 @@ class MemoryEventStore:
             safe_payload = {}
         with self._lock:
             bucket = self._events.setdefault(scope, [])
-            sequence = max(
-                self._event_sequences.get(scope, 0),
-                max((event.sequence for event in bucket), default=0),
-            ) + 1
+            sequence = (
+                max(
+                    self._event_sequences.get(scope, 0),
+                    max((event.sequence for event in bucket), default=0),
+                )
+                + 1
+            )
             self._event_sequences[scope] = sequence
             cursor = hashlib.sha256(
                 f"{scope[0]}:{scope[1]}:{sequence}".encode()
@@ -412,6 +420,11 @@ class MemoryEventStore:
                 },
             )
             bucket.append(event)
+            if (
+                self.max_events_per_scope is not None
+                and len(bucket) > self.max_events_per_scope
+            ):
+                del bucket[: -self.max_events_per_scope]
             return deepcopy(event)
 
     def append_once(
@@ -432,18 +445,28 @@ class MemoryEventStore:
             if isinstance(redacted_payload, dict)
             else {}
         )
-        scoped_key = (*scope, event_key)
+        event_key_digest = hashlib.sha256(event_key.encode("utf-8")).hexdigest()
+        scoped_key = (*scope, event_key_digest)
+        payload_digest = hashlib.sha256(
+            json.dumps(
+                safe_payload,
+                sort_keys=True,
+                separators=(",", ":"),
+                ensure_ascii=False,
+            ).encode("utf-8")
+        ).hexdigest()
         with self._lock:
             previous = self._idempotent_events.get(scoped_key)
             if previous is not None:
-                previous_kind, previous_payload, event = previous
-                if previous_kind != kind or previous_payload != safe_payload:
+                previous_kind, previous_payload_digest, cursor = previous
+                if previous_kind != kind or previous_payload_digest != payload_digest:
                     raise ControlPlaneError.conflict(
                         "Event idempotency key was reused with different content",
                         extensions={"operation": "event.append_once"},
                     )
                 retained = self._events.get(scope, [])
-                if not any(item.cursor == event.cursor for item in retained):
+                event = next((item for item in retained if item.cursor == cursor), None)
+                if event is None:
                     raise ControlPlaneError.gone(
                         "Previously delivered event is outside retained history",
                         extensions={
@@ -455,8 +478,8 @@ class MemoryEventStore:
             event = self.append(ctx, kind=kind, payload=safe_payload)
             self._idempotent_events[scoped_key] = (
                 kind,
-                deepcopy(safe_payload),
-                event,
+                payload_digest,
+                event.cursor,
             )
             return deepcopy(event)
 

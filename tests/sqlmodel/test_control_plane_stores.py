@@ -166,6 +166,70 @@ def test_sqlite_event_retention_preserves_tombstones_and_sequence_anchor(
     assert events.list_after_cursor(_ctx(tenant="tenant-b"), None) == [other_scope]
 
 
+def test_sqlite_event_retention_policy_is_enforced_and_survives_restart(
+    tmp_path: Path,
+) -> None:
+    url = f"sqlite:///{tmp_path / 'cp-events-policy.db'}"
+    engine = create_sqlite_engine(url)
+    create_control_plane_tables(engine)
+    ctx = _ctx()
+    unbounded = SqlModelEventStore(engine)
+    expired = unbounded.append_once(
+        ctx,
+        event_key="start-policy-1",
+        kind="run.started",
+        payload={"run_id": "run-1"},
+    )
+    unbounded.append(ctx, kind="run.progress", payload={"run_id": "run-1"})
+    anchor = unbounded.append(ctx, kind="run.completed", payload={"run_id": "run-1"})
+    other_scope = unbounded.append(_ctx(tenant="tenant-b"), kind="other.scope")
+
+    retained = SqlModelEventStore(engine, max_events_per_scope=2)
+    assert [event.sequence for event in retained.list_after_cursor(ctx, None)] == [2, 3]
+    with pytest.raises(ControlPlaneError) as cursor_error:
+        retained.list_after_cursor(ctx, expired.cursor)
+    assert cursor_error.value.status == 410
+    with pytest.raises(ControlPlaneError) as retry_error:
+        retained.append_once(
+            ctx,
+            event_key="start-policy-1",
+            kind="run.started",
+            payload={"run_id": "run-1"},
+        )
+    assert retry_error.value.status == 410
+
+    next_event = retained.append(ctx, kind="run.recovered")
+    assert next_event.sequence == anchor.sequence + 1 == 4
+    assert [event.sequence for event in retained.list_after_cursor(ctx, None)] == [3, 4]
+    assert retained.list_after_cursor(_ctx(tenant="tenant-b"), None) == [other_scope]
+    engine.dispose()
+
+    restarted_engine = create_sqlite_engine(url)
+    restarted = SqlModelEventStore(restarted_engine, max_events_per_scope=2)
+    assert [event.sequence for event in restarted.list_after_cursor(ctx, None)] == [
+        3,
+        4,
+    ]
+    with pytest.raises(ControlPlaneError) as restarted_retry:
+        restarted.append_once(
+            ctx,
+            event_key="start-policy-1",
+            kind="run.started",
+            payload={"run_id": "run-1"},
+        )
+    assert restarted_retry.value.status == 410
+    restarted_engine.dispose()
+
+
+def test_sqlite_event_store_rejects_invalid_retention_policy(tmp_path: Path) -> None:
+    engine = create_sqlite_engine(
+        f"sqlite:///{tmp_path / 'cp-events-invalid-policy.db'}"
+    )
+    with pytest.raises(ValueError, match="positive integer"):
+        SqlModelEventStore(engine, max_events_per_scope=0)
+    engine.dispose()
+
+
 def test_sqlite_event_sequence_conflict_is_bounded_and_retryable(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:

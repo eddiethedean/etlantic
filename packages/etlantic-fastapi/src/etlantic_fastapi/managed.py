@@ -45,12 +45,20 @@ class ManagedBackendConfig:
     )
     title: str = "ETLantic Control Plane"
     version: str | None = None
+    event_retention_max_events_per_scope: int = 100_000
 
     def __post_init__(self) -> None:
         if not self.database_url.strip():
             raise ValueError("database_url must be a non-empty SQLAlchemy URL")
         if not self.store_id.strip():
             raise ValueError("store_id must be non-empty")
+        if (
+            type(self.event_retention_max_events_per_scope) is not int
+            or self.event_retention_max_events_per_scope < 1
+        ):
+            raise ValueError(
+                "event_retention_max_events_per_scope must be a positive integer"
+            )
 
 
 @dataclass(slots=True)
@@ -152,7 +160,10 @@ def create_managed_backend(
             authorizer=authorizer,
             definitions=RegistryDefinitionRepository(registry),
             submissions=stores.SQLModelSubmissionStore(engine),
-            events=stores.SqlModelEventStore(engine),
+            events=stores.SqlModelEventStore(
+                engine,
+                max_events_per_scope=config.event_retention_max_events_per_scope,
+            ),
             registry=registry,
             context_factory=context_factory,
             principal_dependency=principal_dependency or principal_from_header,

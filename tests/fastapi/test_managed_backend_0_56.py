@@ -429,3 +429,33 @@ def test_managed_backend_configuration_hides_database_credentials() -> None:
     )
 
     assert "secret-value" not in repr(config)
+
+
+def test_managed_backend_enforces_configured_event_retention(
+    tmp_path: Path,
+) -> None:
+    backend = _backend(
+        ManagedBackendConfig(
+            database_url=_migrated_url(tmp_path),
+            store_id="managed-event-retention",
+            event_retention_max_events_per_scope=2,
+        )
+    )
+    try:
+        events = backend.api.events
+        events.append(_context(), kind="run.started", payload={"run_id": "run-1"})
+        events.append(_context(), kind="run.progress", payload={"run_id": "run-1"})
+        events.append(_context(), kind="run.completed", payload={"run_id": "run-1"})
+
+        page = events.list_after_cursor(_context(), None)
+        assert [event.sequence for event in page] == [2, 3]
+    finally:
+        backend.close()
+
+
+def test_managed_backend_rejects_invalid_event_retention_configuration() -> None:
+    with pytest.raises(ValueError, match="positive integer"):
+        ManagedBackendConfig(
+            database_url="sqlite:///managed.db",
+            event_retention_max_events_per_scope=0,
+        )

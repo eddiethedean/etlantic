@@ -196,7 +196,10 @@ def test_upgrade_from_published_head_adds_managed_reports_without_replacing_sche
             "event_key",
             "event_id",
         }.issubset(
-            {column["name"] for column in inspect(engine).get_columns("cp_event_idempotency")}
+            {
+                column["name"]
+                for column in inspect(engine).get_columns("cp_event_idempotency")
+            }
         )
     else:
         assert "cp_event_idempotency" not in before
@@ -217,7 +220,10 @@ def test_upgrade_from_published_head_adds_managed_reports_without_replacing_sche
         "sequence",
         "cursor",
     }.issubset(
-        {column["name"] for column in inspect(engine).get_columns("cp_event_idempotency")}
+        {
+            column["name"]
+            for column in inspect(engine).get_columns("cp_event_idempotency")
+        }
     )
 
 
@@ -284,15 +290,15 @@ def test_idempotent_event_migration_round_trip_preserves_event_history(
 def test_event_retention_migration_backfills_previously_published_keys(
     tmp_path: Path,
 ) -> None:
-    engine = create_sqlite_engine(f"sqlite:///{tmp_path / 'event-tombstone-backfill.db'}")
+    engine = create_sqlite_engine(
+        f"sqlite:///{tmp_path / 'event-tombstone-backfill.db'}"
+    )
     assert upgrade(engine, target="008_idempotent_run_events_0_56") == (
         "008_idempotent_run_events_0_56"
     )
     ctx = _ctx()
     events = SqlModelEventStore(engine)
-    prior = events.append(
-        ctx, kind="run.started", payload={"run_id": "legacy-key-run"}
-    )
+    prior = events.append(ctx, kind="run.started", payload={"run_id": "legacy-key-run"})
     key = "legacy-key-started"
     with engine.begin() as connection:
         connection.execute(
@@ -326,9 +332,7 @@ def test_event_retention_migration_backfills_previously_published_keys(
             {"event_key": hashlib.sha256(key.encode()).hexdigest()},
         ).one()
     assert metadata[0] == "run.started"
-    assert metadata[1] == hashlib.sha256(
-        b'{"run_id": "legacy-key-run"}'
-    ).hexdigest()
+    assert metadata[1] == hashlib.sha256(b'{"run_id": "legacy-key-run"}').hexdigest()
     assert metadata[2:] == (prior.sequence, prior.cursor)
 
 
@@ -486,3 +490,40 @@ def test_postgresql_event_retention_expires_cursors_without_duplicate_delivery(
         anchor.event_id,
         appended.event_id,
     ]
+
+
+def test_postgresql_event_retention_policy_bounds_each_scope_and_keeps_keys(
+    postgres_engine_factory: Callable[[], Engine],
+) -> None:
+    engine = postgres_engine_factory()
+    assert upgrade(engine) == "009_event_retention_tombstones_0_56"
+    ctx = _ctx()
+    events = SqlModelEventStore(engine, max_events_per_scope=2)
+    expired = events.append_once(
+        ctx,
+        event_key="attempt-start-policy-retention",
+        kind="run.started",
+        payload={"run_id": "policy-run"},
+    )
+    events.append(ctx, kind="run.progress", payload={"run_id": "policy-run"})
+    anchor = events.append(ctx, kind="run.completed", payload={"run_id": "policy-run"})
+
+    assert [item.sequence for item in events.list_after_cursor(ctx, None)] == [2, 3]
+    with pytest.raises(ControlPlaneError) as cursor_error:
+        events.list_after_cursor(ctx, expired.cursor)
+    assert cursor_error.value.status == 410
+    with pytest.raises(ControlPlaneError) as retry_error:
+        events.append_once(
+            ctx,
+            event_key="attempt-start-policy-retention",
+            kind="run.started",
+            payload={"run_id": "policy-run"},
+        )
+    assert retry_error.value.status == 410
+
+    next_event = events.append(ctx, kind="run.recovered")
+    assert next_event.sequence == anchor.sequence + 1 == 4
+    assert [item.sequence for item in events.list_after_cursor(ctx, None)] == [3, 4]
+    isolated = events.append(_ctx("tenant-b", "workspace-b"), kind="other.scope")
+    assert isolated.sequence == 1
+    assert events.list_after_cursor(_ctx("tenant-b", "workspace-b"), None) == [isolated]

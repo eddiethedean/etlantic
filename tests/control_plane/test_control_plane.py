@@ -201,6 +201,45 @@ def test_memory_event_retention_expires_cursors_without_reusing_sequences() -> N
     assert events.list_after_cursor(_ctx(tenant="tenant-b"), None) == [other_scope]
 
 
+def test_memory_event_retention_policy_bounds_each_scope() -> None:
+    events = MemoryEventStore(max_events_per_scope=2)
+    ctx = _ctx()
+    expired = events.append_once(
+        ctx,
+        event_key="start-1",
+        kind="run.started",
+        payload={"run_id": "run-1", "result": "private-event-payload"},
+    )
+    events.append(ctx, kind="run.progress", payload={"run_id": "run-1"})
+    anchor = events.append(ctx, kind="run.completed", payload={"run_id": "run-1"})
+
+    retained = events.list_after_cursor(ctx, None)
+    assert [event.sequence for event in retained] == [2, 3]
+    with pytest.raises(ControlPlaneError) as cursor_error:
+        events.list_after_cursor(ctx, expired.cursor)
+    assert cursor_error.value.status == 410
+    with pytest.raises(ControlPlaneError) as retry_error:
+        events.append_once(
+            ctx,
+            event_key="start-1",
+            kind="run.started",
+            payload={"run_id": "run-1", "result": "private-event-payload"},
+        )
+    assert retry_error.value.status == 410
+    assert "private-event-payload" not in repr(events)
+
+    other_scope = events.append(_ctx(tenant="tenant-b"), kind="other.scope")
+    next_event = events.append(ctx, kind="run.recovered")
+    assert next_event.sequence == anchor.sequence + 1 == 4
+    assert [event.sequence for event in events.list_after_cursor(ctx, None)] == [3, 4]
+    assert events.list_after_cursor(_ctx(tenant="tenant-b"), None) == [other_scope]
+
+
+def test_memory_event_store_rejects_invalid_retention_policy() -> None:
+    with pytest.raises(ValueError, match="positive integer"):
+        MemoryEventStore(max_events_per_scope=0)
+
+
 def test_memory_store_empty_positive_limits_return_lists() -> None:
     ctx = _ctx()
 

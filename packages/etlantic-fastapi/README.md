@@ -157,9 +157,17 @@ Unknown or expired cursors fail with `410 Gone`.
 `prune_before_sequence(ctx, before_sequence)` to remove older rows while
 preserving the latest sequence anchor. Keyed-event digests remain as tombstones:
 a retry for a pruned key returns `410 Gone` instead of publishing a duplicate,
-and changed content returns `409 Conflict`. Retention is an explicit store
-operation; deployments still need to define when to invoke it and how long to
-keep idempotency tombstones.
+and changed content returns `409 Conflict`. The managed backend enforces a
+per-tenant/workspace event window on append and history reads. Its default is
+100,000 retained events per scope; set
+`ManagedBackendConfig.event_retention_max_events_per_scope` to a smaller or
+larger positive integer for the deployment. History outside the window returns
+`410 Gone`, while sequence numbers and idempotency tombstones remain intact.
+Raw event-store constructors accept the same `max_events_per_scope` setting;
+`None` leaves automatic count retention disabled for those explicitly composed
+stores. Idempotency tombstones are intentionally retained after event payloads
+expire so delayed retries cannot recreate pruned lifecycle events; deployments
+that need a tombstone expiry contract must account for that separately.
 
 ### Managed rerun and replay commands
 

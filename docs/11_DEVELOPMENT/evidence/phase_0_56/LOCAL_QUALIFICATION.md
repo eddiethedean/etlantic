@@ -31,7 +31,7 @@ Current index: 6 criteria passed, 36 pending, and 2 blocked of 44.
   `ETLANTIC_SQL_TEST_URL=... ETLANTIC_CP_TEST_URL=... uv run pytest -q tests/sql/test_postgresql_live_0_56.py tests/sqlmodel/test_durable_postgresql_multiprocess_0_56.py` — 4 passed.
 - Final isolated PostgreSQL 16.14 qualification:
   `ETLANTIC_SQLMODEL_TEST_URL=... uv run pytest -q tests/sqlmodel/test_cp1_migrations_0_51.py`
-  — 17 passed across SQLite and PostgreSQL schemas, including migration 009,
+  — 18 passed across SQLite and PostgreSQL schemas, including migration 009,
   concurrent SQLModel event sequencing, downgrade/re-upgrade, retained event
   history and retention tombstones. `ETLANTIC_SQL_TEST_URL=... uv run pytest -q
   tests/sql/test_postgresql_live_0_56.py` — 6 passed, covering append/upsert/
@@ -61,7 +61,10 @@ Current index: 6 criteria passed, 36 pending, and 2 blocked of 44.
   included `/v1/runs/{run_id}/events/history`. Exact wheel sizes and SHA-256
   values are recorded in `WHEEL_MANIFEST.json`. This is
   useful AC056-040 evidence; complete package/export/schema compatibility,
-  version skew and upgrade/rollback qualification remain pending.
+  version skew and upgrade/rollback qualification remain pending. The latest
+  rebuilt core, FastAPI and SQLModel wheels also passed a fresh Python 3.14.3
+  managed-backend smoke: after migration to head, a backend configured with a
+  two-event scope limit retained sequences 2 and 3 from three published events.
 - Overlap-guard wheel smoke: rebuilt core and `etlantic-sql` wheels installed
   into a separate Python 3.14.3 environment. Public imports for
   `ResourceIdentityConnector` and both live PostgreSQL connector identity
@@ -96,7 +99,9 @@ Current index: 6 criteria passed, 36 pending, and 2 blocked of 44.
   — 3 passed. Migration 008 adds a separate scoped event-key table, and
   migration 009 adds digest-only tombstones without rewriting CP1 event rows.
   SQLite restart returns the original unpruned event for the same key and
-  rejects changed content.
+  rejects changed content. The memory store now keeps only the key digest,
+  payload digest and cursor for an idempotency tombstone, not a second event
+  payload copy.
 - Managed lifecycle events and paginated event history:
   `uv run pytest -q tests/fastapi/test_managed_backend_0_56.py::test_standard_backend_worker_persists_queryable_report_in_sqlmodel tests/fastapi/test_cp1_sse.py tests/fastapi/test_managed_application_0_56.py::test_headless_run_event_pages_are_scoped_and_resumable tests/fastapi/test_cp1_full_authz_matrix.py tests/fastapi/test_cp1_openapi.py`
   — 62 passed in the latest focused run (the final worker integration and all
@@ -106,9 +111,16 @@ Current index: 6 criteria passed, 36 pending, and 2 blocked of 44.
   reconnect cursors advance through the workspace log, with explicit empty-page
   behavior when other runs' events are interleaved. Unknown and pruned scoped
   cursors return 410. A pruned lifecycle key cannot recreate its event; changed
-  content conflicts. AC056-019 remains pending for an enforced retention policy,
-  authorized artifact content downloads and the full reconnect and cross-scope
-  isolation campaign.
+  content conflicts. Managed retention now applies a configurable per-scope
+  event count on append and history reads (default 100,000), preserves sequence
+  continuity, and leaves digest tombstones intact. The focused memory, SQLModel
+  and managed-backend retention suite passed 36 tests, including policy
+  validation, scope isolation, stale-cursor 410, restart and retry behavior.
+  The configured automatic-retention path also passed against isolated
+  PostgreSQL 16.14: history stayed within two events per scope, expired cursors
+  and retries returned 410, and sequence allocation continued after pruning.
+  AC056-019 remains pending for bounded tombstone expiry, authorized artifact
+  content downloads and the full reconnect and cross-scope isolation campaign.
 - Provider-aware run-action reason:
   `uv run pytest -q tests/fastapi/test_managed_control_races_0_56.py::test_action_discovery_reports_unsupported_cancel_provider`
   — 1 passed. The command query now reports `provider_unsupported` when the

@@ -374,8 +374,15 @@ class SQLModelSubmissionStore:
 class SqlModelEventStore:
     """Minimal SQLModel-backed EventStore with tenant/workspace isolation."""
 
-    def __init__(self, engine: Engine) -> None:
+    def __init__(
+        self, engine: Engine, *, max_events_per_scope: int | None = None
+    ) -> None:
+        if max_events_per_scope is not None and (
+            type(max_events_per_scope) is not int or max_events_per_scope < 1
+        ):
+            raise ValueError("max_events_per_scope must be a positive integer or None")
         self._engine = engine
+        self.max_events_per_scope = max_events_per_scope
 
     def append(
         self,
@@ -578,6 +585,7 @@ class SqlModelEventStore:
                     )
                 )
                 session.flush()
+            self._enforce_retention(session, ctx, high_water_sequence=sequence)
             return ControlPlaneEvent(
                 event_id=event_id,
                 sequence=sequence,
@@ -672,6 +680,7 @@ class SqlModelEventStore:
     ) -> Sequence[ControlPlaneEvent]:
         if limit < 1:
             return ()
+        self._enforce_scope_retention(ctx)
         with session_scope(self._engine) as session:
             start_seq = 0
             if cursor is not None:
@@ -704,6 +713,42 @@ class SqlModelEventStore:
             )
             rows = session.exec(statement).all()
             return [self._to_event(r) for r in rows]
+
+    def _enforce_scope_retention(self, ctx: ControlPlaneContext) -> None:
+        if self.max_events_per_scope is None:
+            return
+        with session_scope(self._engine) as session:
+            self._lock_append_scope(session, ctx)
+            latest_sequence = session.exec(
+                select(EventRow.sequence)
+                .where(
+                    EventRow.tenant_id == ctx.tenant.tenant_id,
+                    EventRow.workspace_id == ctx.workspace.workspace_id,
+                )
+                .order_by(text("sequence DESC"))
+                .limit(1)
+            ).first()
+            if latest_sequence is not None:
+                self._enforce_retention(
+                    session, ctx, high_water_sequence=int(latest_sequence)
+                )
+
+    def _enforce_retention(
+        self, session: Session, ctx: ControlPlaneContext, *, high_water_sequence: int
+    ) -> None:
+        """Keep only the configured newest event window inside this scope."""
+        if self.max_events_per_scope is None:
+            return
+        first_retained = high_water_sequence - self.max_events_per_scope + 1
+        if first_retained <= 1:
+            return
+        session.exec(
+            delete(EventRow).where(
+                EventRow.tenant_id == ctx.tenant.tenant_id,
+                EventRow.workspace_id == ctx.workspace.workspace_id,
+                EventRow.sequence < first_retained,
+            )
+        )
 
     @staticmethod
     def _to_event(row: EventRow) -> ControlPlaneEvent:
