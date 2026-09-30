@@ -2574,6 +2574,98 @@ def build_control_plane_router(api: ETLanticAPI) -> APIRouter:
     register_schedule_routes(router, api, get_ctx)
     register_ai_routes(router, api, get_ctx)
 
+    def rerun_run_endpoint(
+        run_id: str,
+        response: Response,
+        ctx: ControlPlaneContext = Depends(get_ctx),
+        idempotency_key_header: str | None = Header(
+            default=None, alias="Idempotency-Key"
+        ),
+    ) -> AcceptReceiptResponse:
+        if api.managed_service is None:
+            _authorize_run(ctx, "run.rerun", run_id)
+            _require_scoped_run_exists(ctx, run_id)
+            raise ControlPlaneError(
+                "Managed run rerun is not configured",
+                code="PMCP501",
+                status=501,
+                title="Not Implemented",
+            )
+        idempotency_key = idempotency_key_header or (
+            ctx.idempotency_key.value if ctx.idempotency_key else None
+        )
+        if not idempotency_key:
+            raise ControlPlaneError(
+                "Idempotency-Key is required for managed rerun",
+                code="PMCP400",
+                status=400,
+                title="Bad Request",
+                type="etlantic.control_plane/bad_request",
+            )
+        receipt = api.managed_service.rerun_run(
+            ctx, run_id, idempotency_key=idempotency_key
+        )
+        response.status_code = status.HTTP_202_ACCEPTED
+        return AcceptReceiptResponse.model_validate(
+            _receipt_with_urls(receipt).to_dict()
+        )
+
+    router.add_api_route(
+        "/v1/runs/{run_id}/rerun",
+        endpoint=rerun_run_endpoint,
+        methods=["POST"],
+        operation_id="cp_rerun_run",
+        response_model=AcceptReceiptResponse,
+        status_code=status.HTTP_202_ACCEPTED,
+        tags=["runs"],
+    )
+
+    def replay_run_endpoint(
+        run_id: str,
+        response: Response,
+        ctx: ControlPlaneContext = Depends(get_ctx),
+        idempotency_key_header: str | None = Header(
+            default=None, alias="Idempotency-Key"
+        ),
+    ) -> AcceptReceiptResponse:
+        if api.managed_service is None:
+            _authorize_run(ctx, "run.replay", run_id)
+            _require_scoped_run_exists(ctx, run_id)
+            raise ControlPlaneError(
+                "Managed run replay is not configured",
+                code="PMCP501",
+                status=501,
+                title="Not Implemented",
+            )
+        idempotency_key = idempotency_key_header or (
+            ctx.idempotency_key.value if ctx.idempotency_key else None
+        )
+        if not idempotency_key:
+            raise ControlPlaneError(
+                "Idempotency-Key is required for managed replay",
+                code="PMCP400",
+                status=400,
+                title="Bad Request",
+                type="etlantic.control_plane/bad_request",
+            )
+        receipt = api.managed_service.replay_run(
+            ctx, run_id, idempotency_key=idempotency_key
+        )
+        response.status_code = status.HTTP_202_ACCEPTED
+        return AcceptReceiptResponse.model_validate(
+            _receipt_with_urls(receipt).to_dict()
+        )
+
+    router.add_api_route(
+        "/v1/runs/{run_id}/replay",
+        endpoint=replay_run_endpoint,
+        methods=["POST"],
+        operation_id="cp_replay_run",
+        response_model=AcceptReceiptResponse,
+        status_code=status.HTTP_202_ACCEPTED,
+        tags=["runs"],
+    )
+
     return router
 
 

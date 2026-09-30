@@ -7,7 +7,7 @@ plan_last_reviewed: v0.55.0
 
 # ETLantic 0.56 — Complete Application ETL Backend
 
-**Status: planned; no implementation or qualification is claimed.** This phase
+**Status: implementation in progress; qualification remains open.** This phase
 follows 0.55 inferred-model authoring. Brownfield bridges move to 0.57, the
 operator console to 0.58, managed-runtime/provider packs to 0.59 and
 TransformationModel incubation to 0.60. Their existing scope is preserved.

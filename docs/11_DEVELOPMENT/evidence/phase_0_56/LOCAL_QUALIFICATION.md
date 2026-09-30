@@ -4,9 +4,11 @@
 not claim that AC056-001–044 have all passed. The evidence index leaves each
 criterion open until its complete documented case has been observed.
 
+Current index: 3 criteria passed, 39 pending, and 2 blocked of 44.
+
 ## Candidate environment
 
-- Date: 2026-09-29
+- Date: 2026-09-30
 - Host: macOS 25.5.0, arm64
 - Python: 3.11.15
 - Live database: isolated local PostgreSQL 16.14 container
@@ -18,11 +20,12 @@ criterion open until its complete documented case has been observed.
 
 - Default non-optional suite:
   `uv run pytest -q -m "not medallantic and not polars and not pandas and not sql and not spark and not real_pyspark and not airflow and not prefect and not keyring and not sqlmodel and not datafusion"`
-  observed 2,705 passed, 67 skipped, 586 deselected, and one failure in the
-  pinned adaptive-evidence regeneration case. That failure identified a stale
-  0.52 evidence snapshot after a managed-service source edit. The snapshot was
-  regenerated again after the final source move; the exact regression case then
-  passed. The entire default suite was not rerun after that evidence refresh.
+  — 2,717 passed, 67 skipped, and 586 deselected. The source-linked 0.52
+  adaptive evidence was regenerated after the managed-service edits; all 10
+  artifacts across 18 acceptance criteria verified, and its exact regression
+  test passed before the clean full-suite rerun.
+- CP1 and CP-GA OpenAPI snapshots were refreshed for the managed rerun and
+  replay endpoints; both stable-operation snapshot tests passed.
 - Live PostgreSQL connector and multiprocess acceptance:
   `ETLANTIC_SQL_TEST_URL=... ETLANTIC_CP_TEST_URL=... uv run pytest -q tests/sql/test_postgresql_live_0_56.py tests/sqlmodel/test_durable_postgresql_multiprocess_0_56.py` — 4 passed.
 - SQLModel migration campaign against SQLite and isolated PostgreSQL schemas:
@@ -36,11 +39,36 @@ criterion open until its complete documented case has been observed.
   migration gate and partial-initialization disposal, disposal after failed
   startup and normal shutdown, and recovery of accepted durable work after
   shutdown. This is local lifecycle evidence, not a PostgreSQL qualification.
-- Follow-up FastAPI wheel:
-  `uv build --package etlantic-fastapi --wheel` succeeded. The wheel was
+- Provider-aware run-action reason:
+  `uv run pytest -q tests/fastapi/test_managed_control_races_0_56.py::test_action_discovery_reports_unsupported_cancel_provider`
+  — 1 passed. The command query now reports `provider_unsupported` when the
+  submission store cannot cancel; execution remains a reauthorized 501.
+- Legacy incomplete submission:
+  `uv run pytest -q tests/fastapi/test_managed_control_races_0_56.py::test_legacy_acceptance_without_envelope_cannot_be_replanned_or_executed`
+  — 1 passed. A legacy record with a well-formed but unverified plan hash is
+  neither replanned into an envelope nor dispatched by the managed runtime.
+- Managed command and authorization matrix:
+  `uv run pytest -q tests/fastapi/test_managed_application_0_56.py tests/fastapi/test_managed_backend_0_56.py tests/fastapi/test_cp1_full_authz_matrix.py tests/fastapi/test_managed_control_races_0_56.py`
+  — 64 passed before the rerun endpoint was added. It includes action-provider
+  availability, concurrent state changes after action discovery,
+  authorization rechecks, legacy acceptance handling and failed-run retry
+  behavior.
+- Managed rerun/replay service and HTTP commands:
+  `uv run pytest -q tests/fastapi/test_managed_application_0_56.py tests/fastapi/test_managed_backend_0_56.py tests/fastapi/test_cp1_full_authz_matrix.py tests/fastapi/test_managed_control_races_0_56.py tests/fastapi/test_managed_rerun_http_0_56.py`
+  — 67 passed. A packaged worker performed both accepted child transfers from
+  the immutable parent snapshot, and tests cover explicit rerun after a
+  committed effect, full-snapshot replay intent, unknown-effect rejection,
+  idempotency, action discovery and OpenAPI registration. AC056-031 remains
+  open until checkpoint resume, repair and backfill are executable and the
+  complete lifecycle case is qualified.
+- Follow-up core and FastAPI wheels:
+  `uv build --package etlantic --wheel` and
+  `uv build --package etlantic-fastapi --wheel` succeeded. Both wheels were
   force-installed into the existing clean Python 3.11 environment alongside
-  the phase candidate's core and SQLModel wheels; public imports, migrations,
-  managed-backend construction and explicit close passed a smoke check.
+  the phase candidate's SQLModel wheel; public imports, migrations,
+  managed-backend construction and explicit close passed a smoke check. The
+  latest core and FastAPI wheels were installed again; SQLite migrations,
+  managed-backend lifecycle and rerun/replay OpenAPI registration passed.
 - Wheel build: all 25 workspace wheels built successfully.
 - Clean install smoke: core, FastAPI, PostgreSQL SQL, Foundry and SQLModel
   wheels installed into a fresh Python 3.11 environment; public imports and
@@ -66,15 +94,17 @@ criterion open until its complete documented case has been observed.
   criterion-level failure, concurrency and runtime campaigns remain open.
 - AC056-020–026: isolated action jobs, previews/provisioning, scoped secret
   lifecycle and immutable upload leases are not fully implemented and observed.
-- AC056-027–032: scheduler admission parity, complete lifecycle commands,
-  qualified pause/amendment and runnable replay/repair/backfill remain open.
+- AC056-027–029 and AC056-031–032: scheduler admission parity,
+  checkpoint-resume/repair/backfill, qualified pause/amendment and complete
+  lifecycle qualification remain open. Idempotent rerun and full-snapshot
+  replay commands now share the managed worker path.
 - AC056-034 and AC056-036: no isolated live Foundry account is configured.
   The required two independent Foundry scopes and all 12 real-worker pairings
   have not been exercised; mock transport tests do not qualify them.
-- AC056-037–044: independent private-provider, full disclosure campaign,
-  PostgreSQL backup/restore/failure, version-skew/rollback, complete advanced
-  engine matrix, managed adaptive `/2`, and generic consumer evidence remain
-  open.
+- AC056-037–041 and AC056-043–044: independent private-provider, full
+  disclosure campaign, PostgreSQL backup/restore/failure, version-skew/rollback,
+  complete advanced engine matrix, managed adaptive `/2`, and generic consumer
+  evidence remain open.
 
 See [`RELEASE_INDEX.json`](RELEASE_INDEX.json) for the per-criterion status,
 case references, provider tuple and open reason. These limitations keep the

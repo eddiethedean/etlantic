@@ -72,6 +72,8 @@
     "cp_registry_put_alias",
     "cp_registry_put_tenant",
     "cp_registry_put_workspace",
+    "cp_replay_run",
+    "cp_rerun_run",
     "cp_resume_schedule",
     "cp_retry_run",
     "cp_scheduler_health",

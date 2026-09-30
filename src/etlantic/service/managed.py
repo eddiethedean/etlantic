@@ -44,7 +44,7 @@ from etlantic.runtime.managed_execution import (
     managed_report_store,
     managed_run_id,
 )
-from etlantic.runtime.request import RunRequest
+from etlantic.runtime.request import RunIntent, RunRequest
 
 
 def _mapping(value: object) -> Mapping[str, Any]:
@@ -518,16 +518,23 @@ class ManagedApplicationService:
         record = self._authorized_run_record(ctx, "run.actions", run_id)
         status = str(record.get("status") or "unknown")
         submission_id = str(record.get("submission_id") or "")
+        durable_record: SubmissionRecord | None = None
         if submission_id:
             try:
-                status = self.durable_work.get_submission(ctx, submission_id).status
+                durable_record = self.durable_work.get_submission(ctx, submission_id)
+                status = durable_record.status
             except ControlPlaneError as exc:
                 if exc.status != 404:
                     raise
         decision = self.authorizer.authorize(ctx, "run.cancel", f"run:{run_id}")
         state_allows_cancel = status in {"accepted", "dispatched"}
+        provider_supports_cancel = callable(
+            getattr(self.submissions, "cancel_run", None)
+        )
         if not decision.allowed:
             reason = "not_authorized"
+        elif not provider_supports_cancel:
+            reason = "provider_unsupported"
         elif status == "cancel_requested":
             reason = "already_requested"
         elif not state_allows_cancel:
@@ -540,10 +547,38 @@ class ManagedApplicationService:
             retry_reason = "not_authorized"
         elif status != "failed":
             retry_reason = "non_retryable_state"
-        elif not submission_id:
+        elif not submission_id or durable_record is None:
             retry_reason = "durable_state_unavailable"
+        elif not durable_record.input_snapshot:
+            retry_reason = "unverified_execution_envelope"
         else:
             retry_reason = self._retry_block_reason(ctx, submission_id)
+        rerun_decision = self.authorizer.authorize(
+            ctx, "run.rerun", f"run:{run_id}"
+        )
+        if not rerun_decision.allowed:
+            rerun_reason: str | None = "not_authorized"
+        elif status not in {"completed", "failed", "cancelled"}:
+            rerun_reason = "non_rerunnable_state"
+        elif not submission_id or durable_record is None:
+            rerun_reason = "durable_state_unavailable"
+        elif not durable_record.input_snapshot:
+            rerun_reason = "unverified_execution_envelope"
+        else:
+            rerun_reason = self._rerun_block_reason(ctx, submission_id)
+        replay_decision = self.authorizer.authorize(
+            ctx, "run.replay", f"run:{run_id}"
+        )
+        if not replay_decision.allowed:
+            replay_reason: str | None = "not_authorized"
+        elif status not in {"completed", "failed", "cancelled"}:
+            replay_reason = "non_replayable_state"
+        elif not submission_id or durable_record is None:
+            replay_reason = "durable_state_unavailable"
+        elif not durable_record.input_snapshot:
+            replay_reason = "unverified_execution_envelope"
+        else:
+            replay_reason = self._rerun_block_reason(ctx, submission_id)
         return {
             "run_id": run_id,
             "status": status,
@@ -553,6 +588,16 @@ class ManagedApplicationService:
                     "name": "retry",
                     "allowed": retry_reason is None,
                     "reason": retry_reason,
+                },
+                {
+                    "name": "rerun",
+                    "allowed": rerun_reason is None,
+                    "reason": rerun_reason,
+                },
+                {
+                    "name": "replay",
+                    "allowed": replay_reason is None,
+                    "reason": replay_reason,
                 },
             ],
         }
@@ -626,6 +671,181 @@ class ManagedApplicationService:
             parent_run_id=run_id,
             parent_submission_id=parent_submission_id,
         )
+
+    def rerun_run(
+        self,
+        ctx: ControlPlaneContext,
+        run_id: str,
+        *,
+        idempotency_key: str,
+    ) -> AcceptReceipt:
+        """Accept an explicit fresh execution of a terminal run's snapshot.
+
+        Unlike retry, rerun may intentionally repeat an already committed
+        effect. An unresolved effect still blocks admission because the prior
+        operation may be active or partially committed.
+        """
+        if not idempotency_key.strip():
+            raise ControlPlaneError(
+                "Idempotency-Key is required for managed rerun",
+                code="PMCP400",
+                status=400,
+                title="Bad Request",
+                type="etlantic.control_plane/bad_request",
+            )
+        record = self._authorized_run_record(ctx, "run.rerun", run_id)
+        parent_submission_id = str(record.get("submission_id") or "")
+        if not parent_submission_id:
+            raise ControlPlaneError.conflict(
+                "Run record has no durable submission identity"
+            )
+        parent = self.durable_work.get_submission(ctx, parent_submission_id)
+        if parent.status not in {"completed", "failed", "cancelled"}:
+            raise ControlPlaneError.conflict(
+                "Only terminal runs can be rerun from their accepted snapshot"
+            )
+        if not parent.input_snapshot:
+            raise ControlPlaneError.conflict(
+                "Legacy accepted work has no verified execution envelope"
+            )
+        parent_envelope = self._parse_envelope(parent.input_snapshot)
+        envelope_data = parent_envelope.to_dict()
+        evidence_refs = dict(envelope_data.get("evidence_refs") or {})
+        evidence_refs.update(
+            {
+                "command": "rerun",
+                "parent_run_id": run_id,
+                "parent_submission_id": parent_submission_id,
+            }
+        )
+        envelope = ExecutionEnvelope.from_dict(
+            {**envelope_data, "evidence_refs": evidence_refs}
+        )
+        prior_receipt = self.submissions.lookup_idempotency(
+            ctx, idempotency_key, operation="run.rerun"
+        )
+        prior_durable = self.durable_work.get_submission_by_idempotency(
+            ctx, idempotency_key=idempotency_key, operation="run.rerun"
+        )
+        if prior_receipt is None and prior_durable is None:
+            rerun_reason = self._rerun_block_reason(ctx, parent_submission_id)
+            if rerun_reason is not None:
+                raise ControlPlaneError.conflict(
+                    "Rerun is blocked until the prior execution effect is reconciled",
+                    extensions={"reason": rerun_reason},
+                )
+        return self._accept_child_run(
+            ctx,
+            idempotency_key=idempotency_key,
+            operation="run.rerun",
+            envelope=envelope,
+            parent_run_id=run_id,
+            parent_submission_id=parent_submission_id,
+        )
+
+    def replay_run(
+        self,
+        ctx: ControlPlaneContext,
+        run_id: str,
+        *,
+        idempotency_key: str,
+    ) -> AcceptReceipt:
+        """Replay a terminal run's complete verified snapshot from the start.
+
+        This command preserves the original plan and controls, marks the run
+        intent as ``replay``, and records the parent identity. It does not
+        imply checkpoint resume; that requires a separately qualified command.
+        """
+        if not idempotency_key.strip():
+            raise ControlPlaneError(
+                "Idempotency-Key is required for managed replay",
+                code="PMCP400",
+                status=400,
+                title="Bad Request",
+                type="etlantic.control_plane/bad_request",
+            )
+        record = self._authorized_run_record(ctx, "run.replay", run_id)
+        parent_submission_id = str(record.get("submission_id") or "")
+        if not parent_submission_id:
+            raise ControlPlaneError.conflict(
+                "Run record has no durable submission identity"
+            )
+        parent = self.durable_work.get_submission(ctx, parent_submission_id)
+        if parent.status not in {"completed", "failed", "cancelled"}:
+            raise ControlPlaneError.conflict(
+                "Only terminal runs can be replayed from their accepted snapshot"
+            )
+        if not parent.input_snapshot:
+            raise ControlPlaneError.conflict(
+                "Legacy accepted work has no verified execution envelope"
+            )
+        parent_envelope = self._parse_envelope(parent.input_snapshot)
+        request = RunRequest.from_dict(dict(parent_envelope.run_request))
+        replay_request = RunRequest(
+            selection=request.selection,
+            intent=RunIntent.REPLAY,
+            materialization=request.materialization,
+            retry=request.retry,
+            timeout=request.timeout,
+            cancellation=request.cancellation,
+            parameter_overrides=request.parameter_overrides,
+            asset_overrides=request.asset_overrides,
+            implementation_overrides=request.implementation_overrides,
+            invalidation=request.invalidation,
+            no_write=request.no_write,
+            metadata=request.metadata,
+        )
+        envelope_data = parent_envelope.to_dict()
+        evidence_refs = dict(envelope_data.get("evidence_refs") or {})
+        evidence_refs.update(
+            {
+                "command": "replay",
+                "parent_run_id": run_id,
+                "parent_submission_id": parent_submission_id,
+            }
+        )
+        envelope = ExecutionEnvelope.from_dict(
+            {
+                **envelope_data,
+                "run_request": replay_request.to_dict(),
+                "evidence_refs": evidence_refs,
+            }
+        )
+        prior_receipt = self.submissions.lookup_idempotency(
+            ctx, idempotency_key, operation="run.replay"
+        )
+        prior_durable = self.durable_work.get_submission_by_idempotency(
+            ctx, idempotency_key=idempotency_key, operation="run.replay"
+        )
+        if prior_receipt is None and prior_durable is None:
+            replay_reason = self._rerun_block_reason(ctx, parent_submission_id)
+            if replay_reason is not None:
+                raise ControlPlaneError.conflict(
+                    "Replay is blocked until the prior execution effect is reconciled",
+                    extensions={"reason": replay_reason},
+                )
+            self.durable_work.replay(ctx, parent_submission_id)
+        return self._accept_child_run(
+            ctx,
+            idempotency_key=idempotency_key,
+            operation="run.replay",
+            envelope=envelope,
+            parent_run_id=run_id,
+            parent_submission_id=parent_submission_id,
+        )
+
+    def _rerun_block_reason(
+        self, ctx: ControlPlaneContext, submission_id: str
+    ) -> str | None:
+        try:
+            effect = self.durable_work.get_effect(ctx, f"{submission_id}:execution")
+        except ControlPlaneError as exc:
+            if exc.status == 404:
+                return None
+            raise
+        if effect.status in {"none", "not_committed", "failed", "committed"}:
+            return None
+        return "effect_requires_reconciliation"
 
     def _retry_block_reason(
         self, ctx: ControlPlaneContext, submission_id: str

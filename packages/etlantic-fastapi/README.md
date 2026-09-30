@@ -124,6 +124,21 @@ app = create_app(api)
 #                            # (create_app installs them; include_router does not)
 ```
 
+### Managed rerun and replay commands
+
+The managed HTTP adapter exposes `POST /v1/runs/{run_id}/rerun` and
+`POST /v1/runs/{run_id}/replay`; both require a new `Idempotency-Key` and accept
+a child run from the parent's verified, immutable execution envelope. The
+parent must be terminal. Rerun preserves its accepted run intent; replay marks
+the intent as `replay` and executes the full snapshot from the start. Replay
+does not claim checkpoint-resume semantics. Both commands can repeat a
+committed effect by explicit request; an unknown or pending effect must be
+reconciled first. Each child records parent run/submission lineage and is
+recovered through the same durable worker path. `ManagedApplicationService`
+provides matching headless `rerun_run(...)` and `replay_run(...)` commands.
+Rerun and replay require `run.rerun` and `run.replay` authorization
+respectively, and appear in state-aware run-action queries.
+
 ### Auth adapters
 
 - Inject an app-defined principal dependency (`principal_dependency=`).

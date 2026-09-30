@@ -7,8 +7,9 @@ plan_last_reviewed: v0.55.0
 
 # ETLantic 0.56 Execution Plan
 
-**Planned.** This document sequences the
-[implementation contract](IMPLEMENTATION_PLAN_0_56.md). Its acceptance criteria
+**Implementation in progress; release qualification remains open.** This
+document sequences the [implementation contract](IMPLEMENTATION_PLAN_0_56.md).
+Its acceptance criteria
 are normative; this sequence does not narrow their scope. The
 [findings ledger](FINDINGS_0_56.md) records the reviewed source, not a claim that
 these features have shipped.
