@@ -10,6 +10,9 @@ __version__ = "0.55.0"
 def __getattr__(name: str) -> Any:
     if name in {
         "FakePostgresConnection",
+        "LivePostgresSinkConnector",
+        "LivePostgresSourceConnector",
+        "LivePostgresStorageConnector",
         "PostgresSinkConnector",
         "PostgresSourceConnector",
         "PostgresStorageConnector",
@@ -44,6 +47,9 @@ def __getattr__(name: str) -> Any:
 
 __all__ = [
     "FakePostgresConnection",
+    "LivePostgresSinkConnector",
+    "LivePostgresSourceConnector",
+    "LivePostgresStorageConnector",
     "PostgresSinkConnector",
     "PostgresSourceConnector",
     "PostgresSqlPlugin",

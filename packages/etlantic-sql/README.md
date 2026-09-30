@@ -73,24 +73,52 @@ target = SQLiteTableTarget(
 observation = etl.inspect_target(target)
 ```
 
-## Connector capability matrix (0.38 Experimental)
+## PostgreSQL connectors (0.56 implementation; Experimental)
 
-Source/sink/storage entry points (`postgresql`) implement
-`etlantic.connectors` protocols. CI uses an in-memory SQLite fake; live
-PostgreSQL remains the intended production dialect for the SQL plugin.
+The `postgresql` source, sink and storage entry points use SQLAlchemy and
+psycopg against a live PostgreSQL database. They require a runtime
+`SecretValue` containing the connection URL, or a worker-level
+`ETLANTIC_SQL_URL`. Put table and mode options in the public asset config; do
+not put a URL or credential in that config. The source reads one repeatable
+read snapshot, with configurable `row_limit`, `batch_size` and `max_bytes`
+(bounded to 100,000 rows, 10,000 records per batch and 256 MiB). Schema
+inspection reads catalog metadata and PostgreSQL's row estimate without
+creating or changing a target.
+
+The sink supports `append`, `replace`/`overwrite`, and `upsert`. Upsert
+requires `key_columns` that match a primary or unique constraint. Commit
+recovery relies on a provisioned durable effect ledger. Provision it once
+through a database administrator or migration before enabling sink writes:
+
+```sql
+CREATE TABLE public.etlantic_connector_effects (
+    effect_id text PRIMARY KEY,
+    intent_fingerprint text NOT NULL,
+    publication_id text NOT NULL UNIQUE,
+    row_count bigint NOT NULL,
+    committed_at timestamptz NOT NULL DEFAULT now()
+);
+```
+
+The worker takes a transaction-scoped advisory lock for each stable run/node
+effect ID, changes the target and inserts the ledger row in the same
+transaction. Reconciliation consults that row; an unavailable ledger returns
+`unknown`. An effect ID bound to different write intent fails closed. The
+SQLite-backed fake remains available as `FakePostgresConnection` for fast
+connector unit tests; it is not registered as the PostgreSQL provider.
 
 | Capability | Source | Sink | Storage | Notes |
 |---|:---:|:---:|:---:|---|
 | `source.batch_snapshot` | ✓ | | | Bounded table read |
 | `source.schema_discovery` | ✓ | | ✓ | Row-free field inspect |
-| `source.statistics_bounded` | ✓ | | ✓ | Row estimate only |
+| `source.statistics_bounded` | ✓ | | ✓ | PostgreSQL catalog estimate |
 | `write.append` | | ✓ | | Transactional |
 | `write.overwrite` | | ✓ | | DELETE + INSERT |
-| `write.merge` | | ✓ | | `ON CONFLICT` (PG / sqlite fake) |
+| `write.merge` | | ✓ | | `ON CONFLICT` with declared unique key |
 | `publication.atomic` | | ✓ | | Commit / rollback |
 | `transactions` | | ✓ | | Autocommit-off path |
-| `reconciliation` | | ✓ | | `query_id` evidence |
-| `idempotency` | ✓ | ✓ | | Declared |
+| `reconciliation` | | ✓ | | Durable effect ledger |
+| `idempotency` | | ✓ | | Sink effect ledger; PostgreSQL source reads are per-run snapshots |
 
 Entry points: `etlantic.source_connectors` / `sink_connectors` /
 `storage_connectors` → `postgresql`.

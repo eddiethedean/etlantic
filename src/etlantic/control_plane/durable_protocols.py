@@ -44,6 +44,26 @@ class DurableWorkStore(Protocol):
     def pending_outbox(
         self, ctx: ControlPlaneContext, *, limit: int = 100
     ) -> Sequence[OutboxRecord]: ...
+    def reconcile_terminal_outbox(
+        self, ctx: ControlPlaneContext, *, limit: int = 100
+    ) -> Sequence[OutboxRecord]: ...
+    def reconcile_cancelled_submissions(
+        self, ctx: ControlPlaneContext, *, limit: int = 100
+    ) -> Sequence[SubmissionRecord]: ...
+    def get_submission(
+        self, ctx: ControlPlaneContext, submission_id: str
+    ) -> SubmissionRecord: ...
+    def get_submission_by_idempotency(
+        self,
+        ctx: ControlPlaneContext,
+        *,
+        idempotency_key: str,
+        operation: str = "run.submit",
+    ) -> SubmissionRecord | None: ...
+    def list_attempts(
+        self, ctx: ControlPlaneContext, submission_id: str
+    ) -> Sequence[AttemptRecord]: ...
+    def get_effect(self, ctx: ControlPlaneContext, effect_id: str) -> EffectRecord: ...
     def mark_published(
         self, ctx: ControlPlaneContext, outbox_id: str
     ) -> OutboxRecord: ...

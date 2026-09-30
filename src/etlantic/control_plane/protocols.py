@@ -89,6 +89,7 @@ class SubmissionStore(Protocol):
         payload: Mapping[str, Any],
         resource_type: str = "run",
         resource_id: str | None = None,
+        submission_id: str | None = None,
         operation: str = "run.submit",
     ) -> AcceptResult:
         """Durably accept work; same ADR tuple returns the original receipt."""
@@ -102,6 +103,16 @@ class SubmissionStore(Protocol):
         operation: str = "run.submit",
     ) -> AcceptReceipt | None:
         """Return a prior acceptance for the ADR-016 idempotency tuple."""
+        ...
+
+    def lookup_idempotency_payload(
+        self,
+        ctx: ControlPlaneContext,
+        idempotency_key: str,
+        *,
+        operation: str = "run.submit",
+    ) -> Mapping[str, Any] | None:
+        """Return the secret-free canonical payload for a prior acceptance."""
         ...
 
 

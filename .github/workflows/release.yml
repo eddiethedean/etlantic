@@ -52,6 +52,7 @@ jobs:
           POLARS_VERSION="$(sed -n 's/^version = "\(.*\)"/\1/p' packages/etlantic-polars/pyproject.toml | head -1)"
           PANDAS_VERSION="$(sed -n 's/^version = "\(.*\)"/\1/p' packages/etlantic-pandas/pyproject.toml | head -1)"
           SQL_VERSION="$(sed -n 's/^version = "\(.*\)"/\1/p' packages/etlantic-sql/pyproject.toml | head -1)"
+          FOUNDRY_VERSION="$(sed -n 's/^version = "\(.*\)"/\1/p' packages/etlantic-foundry/pyproject.toml | head -1)"
           SPARK_VERSION="$(sed -n 's/^version = "\(.*\)"/\1/p' packages/etlantic-pyspark/pyproject.toml | head -1)"
           AIRFLOW_VERSION="$(sed -n 's/^version = "\(.*\)"/\1/p' packages/etlantic-airflow/pyproject.toml | head -1)"
           PREFECT_VERSION="$(sed -n 's/^version = "\(.*\)"/\1/p' packages/etlantic-prefect/pyproject.toml | head -1)"
@@ -80,6 +81,10 @@ jobs:
             echo "Plugin version mismatch: tag='$TAG' polars='$POLARS_VERSION' pandas='$PANDAS_VERSION' sql='$SQL_VERSION' spark='$SPARK_VERSION' airflow='$AIRFLOW_VERSION' prefect='$PREFECT_VERSION' keyring='$KEYRING_VERSION' sqlmodel='$SQLMODEL_VERSION' medallantic='$MEDALLANTIC_VERSION' sparkforge='$SPARKFORGE_VERSION' datafusion='$DATAFUSION_VERSION' fastapi='$FASTAPI_VERSION' lsp='$LSP_VERSION' s3='$S3_VERSION' kafka='$KAFKA_VERSION' k8s='$K8S_VERSION' spark-connect='$SPARK_CONNECT_VERSION' schemaregistry='$SR_VERSION' iceberg='$ICEBERG_VERSION' snowflake='$SNOWFLAKE_VERSION' openlineage='$OPENLINEAGE_VERSION' mcp='$MCP_VERSION' duckdb='$DUCKDB_VERSION'"
             exit 1
           fi
+          if [ "$TAG" != "$FOUNDRY_VERSION" ]; then
+            echo "Foundry connector version mismatch: tag='$TAG' foundry='$FOUNDRY_VERSION'"
+            exit 1
+          fi
 
       - name: Build
         run: |
@@ -89,6 +94,7 @@ jobs:
           uv build --package etlantic-polars --out-dir dist
           uv build --package etlantic-pandas --out-dir dist
           uv build --package etlantic-sql --out-dir dist
+          uv build --package etlantic-foundry --out-dir dist
           uv build --package etlantic-pyspark --out-dir dist
           uv build --package etlantic-airflow --out-dir dist
           uv build --package etlantic-prefect --out-dir dist
@@ -369,6 +375,9 @@ jobs:
           publish_pair etlantic-sql \
             "dist/etlantic_sql-${TAG}-py3-none-any.whl" \
             "dist/etlantic_sql-${TAG}.tar.gz"
+          publish_pair etlantic-foundry \
+            "dist/etlantic_foundry-${TAG}-py3-none-any.whl" \
+            "dist/etlantic_foundry-${TAG}.tar.gz"
           publish_pair etlantic-pyspark \
             "dist/etlantic_pyspark-${TAG}-py3-none-any.whl" \
             "dist/etlantic_pyspark-${TAG}.tar.gz"

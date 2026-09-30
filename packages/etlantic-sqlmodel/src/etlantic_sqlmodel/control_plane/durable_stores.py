@@ -10,12 +10,14 @@ Production note: apply versioned migrations — do not rely on
 
 from __future__ import annotations
 
+import hashlib
 import json
 from collections.abc import Callable, Mapping
 from dataclasses import asdict
 from datetime import UTC, datetime
 from typing import Any, TypeVar
 
+from sqlalchemy import text
 from sqlalchemy.engine import Engine
 
 from etlantic.control_plane.durable_memory import MemoryDurableWorkStore
@@ -164,12 +166,29 @@ class SQLModelDurableWorkStore:
 
     def _txn(self, fn: Callable[[MemoryDurableWorkStore], T]) -> T:
         with session_scope(self.engine) as session:
+            self._lock_store(session)
             mem, version = self._read(session, for_update=True)
             if self.admission_limit is not None:
                 mem.admission_limit = self.admission_limit
             result = fn(mem)
             self._write(session, mem, expected_version=version)
             return result
+
+    def _lock_store(self, session: Session) -> None:
+        """Serialize PostgreSQL mutations even before the snapshot row exists.
+
+        ``SELECT FOR UPDATE`` cannot lock a missing row. Without a transaction
+        advisory lock, two fresh processes can both observe version zero and
+        race to create the snapshot, which turns a valid concurrent accept
+        into a uniqueness failure instead of an idempotent recovery.
+        """
+        if self.engine.dialect.name != "postgresql":
+            return
+        digest = hashlib.sha256(self.store_id.encode("utf-8")).digest()[:8]
+        lock_id = int.from_bytes(digest, byteorder="big", signed=True)
+        session.execute(
+            text("SELECT pg_advisory_xact_lock(:lock_id)"), {"lock_id": lock_id}
+        )
 
     def _read_only(self, fn: Callable[[MemoryDurableWorkStore], T]) -> T:
         with session_scope(self.engine) as session:
@@ -275,6 +294,33 @@ class SQLModelDurableWorkStore:
     def pending_outbox(self, ctx: ControlPlaneContext, *, limit: int = 100):
         return self._read_only(lambda m: m.pending_outbox(ctx, limit=limit))
 
+    def reconcile_terminal_outbox(self, ctx: ControlPlaneContext, *, limit: int = 100):
+        return self._txn(lambda m: m.reconcile_terminal_outbox(ctx, limit=limit))
+
+    def reconcile_cancelled_submissions(
+        self, ctx: ControlPlaneContext, *, limit: int = 100
+    ):
+        return self._txn(lambda m: m.reconcile_cancelled_submissions(ctx, limit=limit))
+
+    def get_submission(self, ctx: ControlPlaneContext, submission_id: str):
+        return self._read_only(lambda m: m.get_submission(ctx, submission_id))
+
+    def get_submission_by_idempotency(
+        self,
+        ctx: ControlPlaneContext,
+        *,
+        idempotency_key: str,
+        operation: str = "run.submit",
+    ):
+        return self._read_only(
+            lambda m: m.get_submission_by_idempotency(
+                ctx, idempotency_key=idempotency_key, operation=operation
+            )
+        )
+
+    def list_attempts(self, ctx: ControlPlaneContext, submission_id: str):
+        return self._read_only(lambda m: m.list_attempts(ctx, submission_id))
+
     def mark_published(self, ctx: ControlPlaneContext, outbox_id: str):
         return self._txn(lambda m: m.mark_published(ctx, outbox_id))
 
@@ -326,6 +372,9 @@ class SQLModelDurableWorkStore:
 
     def record_effect(self, ctx: ControlPlaneContext, effect: EffectRecord):
         return self._txn(lambda m: m.record_effect(ctx, effect))
+
+    def get_effect(self, ctx: ControlPlaneContext, effect_id: str):
+        return self._read_only(lambda m: m.get_effect(ctx, effect_id))
 
     def replay(self, ctx: ControlPlaneContext, submission_id: str, **kwargs: Any):
         return self._read_only(lambda m: m.replay(ctx, submission_id, **kwargs))

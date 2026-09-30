@@ -109,6 +109,10 @@ from etlantic.control_plane.errors import (
     ErrorDisclosure,
     ProblemDetails,
 )
+from etlantic.control_plane.execution_envelope import (
+    EXECUTION_ENVELOPE_SCHEMA,
+    ExecutionEnvelope,
+)
 from etlantic.control_plane.governance_models import (
     GOVERNANCE_CONSTRAINTS_SCHEMA,
     GovernanceConstraints,
@@ -318,6 +322,7 @@ __all__ = [  # noqa: RUF022
     "DELIVERY_OBJECTIVE_SCHEMA",
     "DIFF_RECORD_SCHEMA",
     "EFFECT_RECORD_SCHEMA",
+    "EXECUTION_ENVELOPE_SCHEMA",
     "ENVIRONMENT_RECORD_SCHEMA",
     "ERASURE_PLAN_SCHEMA",
     "ERASURE_REPORT_SCHEMA",
@@ -385,6 +390,7 @@ __all__ = [  # noqa: RUF022
     "EffectRecord",
     "EnvironmentRecord",
     "EnvironmentRef",
+    "ExecutionEnvelope",
     "ErasurePlan",
     "ErasurePlanStep",
     "ErasureProvider",

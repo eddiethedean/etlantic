@@ -32,9 +32,12 @@ from etlantic_fastapi.schemas import (
     AliasResponse,
     ArtifactMeta,
     ArtifactsResponse,
+    DefinitionEditBody,
     DefinitionGetResponse,
     DefinitionListResponse,
     DefinitionSummary,
+    DefinitionWriteBody,
+    DefinitionWriteResponse,
     DurableCheckpointCasBody,
     DurableFinishAttemptBody,
     DurableLeaseBody,
@@ -44,6 +47,7 @@ from etlantic_fastapi.schemas import (
     DurableStartAttemptBody,
     HealthResponse,
     LineageStubResponse,
+    PlanRequestBody,
     PlanResponse,
     PromoteBody,
     PromotionResponse,
@@ -52,6 +56,7 @@ from etlantic_fastapi.schemas import (
     ReportStubResponse,
     RevisionListResponse,
     RevisionResponse,
+    RunActionsResponse,
     RunStatusResponse,
     RunSubmitBody,
     SchemaObservationAckResponse,
@@ -378,6 +383,12 @@ def build_control_plane_router(api: ETLanticAPI) -> APIRouter:
         definition_id: str,
         ctx: ControlPlaneContext = Depends(get_ctx),
     ) -> DefinitionGetResponse:
+        if api.managed_service is not None:
+            result = api.managed_service.get_definition(ctx, definition_id)
+            return DefinitionGetResponse(
+                definition_id=definition_id,
+                document=result["document"],
+            )
         document = authorized_get_definition(
             api.authorizer, api.definitions, ctx, definition_id
         )
@@ -385,6 +396,55 @@ def build_control_plane_router(api: ETLanticAPI) -> APIRouter:
             definition_id=definition_id,
             document=redact_control_plane_payload(dict(document)),
         )
+
+    @router.put(
+        "/v1/definitions/{definition_id}",
+        operation_id="cp_register_definition",
+        response_model=DefinitionWriteResponse,
+        tags=["definitions"],
+    )
+    def register_definition(
+        definition_id: str,
+        body: DefinitionWriteBody,
+        ctx: ControlPlaneContext = Depends(get_ctx),
+    ) -> DefinitionWriteResponse:
+        if api.managed_service is None:
+            raise ControlPlaneError(
+                "Managed authoring service is not configured",
+                code="PMCP501",
+                status=501,
+                title="Not Implemented",
+            )
+        result = api.managed_service.register_definition(
+            ctx, definition_id, body.document
+        )
+        return DefinitionWriteResponse.model_validate(result)
+
+    @router.post(
+        "/v1/definitions/{definition_id}/edit",
+        operation_id="cp_edit_definition",
+        response_model=DefinitionWriteResponse,
+        tags=["definitions"],
+    )
+    def edit_definition(
+        definition_id: str,
+        body: DefinitionEditBody,
+        ctx: ControlPlaneContext = Depends(get_ctx),
+    ) -> DefinitionWriteResponse:
+        if api.managed_service is None:
+            raise ControlPlaneError(
+                "Managed authoring service is not configured",
+                code="PMCP501",
+                status=501,
+                title="Not Implemented",
+            )
+        result = api.managed_service.edit_definition(
+            ctx,
+            definition_id,
+            body.command,
+            expected_fingerprint=body.expected_fingerprint,
+        )
+        return DefinitionWriteResponse.model_validate(result)
 
     @router.post(
         "/v1/definitions/{definition_id}/validate",
@@ -396,6 +456,9 @@ def build_control_plane_router(api: ETLanticAPI) -> APIRouter:
         definition_id: str,
         ctx: ControlPlaneContext = Depends(get_ctx),
     ) -> ValidateResponse:
+        if api.managed_service is not None:
+            result = api.managed_service.validate_definition(ctx, definition_id)
+            return ValidateResponse.model_validate(result)
         document = authorized_get_definition(
             api.authorizer,
             api.definitions,
@@ -413,8 +476,21 @@ def build_control_plane_router(api: ETLanticAPI) -> APIRouter:
     )
     def plan_definition(
         definition_id: str,
+        body: PlanRequestBody | None = None,
         ctx: ControlPlaneContext = Depends(get_ctx),
     ) -> PlanResponse:
+        if api.managed_service is not None:
+            result = api.managed_service.plan_definition(
+                ctx,
+                definition_id,
+                request=(body.request if body and body.request is not None else None),
+            )
+            return PlanResponse(
+                ok=bool(result.get("ok")),
+                definition_id=definition_id,
+                plan=result.get("plan"),
+                metadata={"fingerprint": result.get("fingerprint")},
+            )
         document = authorized_get_definition(
             api.authorizer,
             api.definitions,
@@ -440,30 +516,6 @@ def build_control_plane_router(api: ETLanticAPI) -> APIRouter:
             default=None, alias="Idempotency-Key"
         ),
     ) -> AcceptReceiptResponse:
-        require_authorized(
-            api.authorizer,
-            ctx,
-            "run.submit",
-            f"definition:{definition_id}",
-            resource_in_caller_scope=False,
-        )
-        # Authz before existence disclosure.
-        try:
-            definition = api.definitions.get(ctx, definition_id)
-        except KeyError as exc:
-            raise ControlPlaneError.not_found(
-                f"Definition {definition_id!r} not found"
-            ) from exc
-        if definition.get("schema") == ADAPTIVE_PLAN_SCHEMA:
-            raise ControlPlaneError(
-                "PMADP500: control-plane acceptance does not advertise adaptive "
-                "etlantic.plan/2 support",
-                code="PMADP500",
-                status=501,
-                title="Not Implemented",
-                type="etlantic.control_plane/not_implemented",
-            )
-
         body = body or RunSubmitBody()
         idem = (
             idempotency_key_header
@@ -496,6 +548,56 @@ def build_control_plane_router(api: ETLanticAPI) -> APIRouter:
                 },
             )
         payload["definition_id"] = definition_id
+        if api.managed_service is not None:
+            unknown = set(payload) - {
+                "definition_id",
+                "request",
+                "revision_selector",
+            }
+            if unknown:
+                raise ControlPlaneError(
+                    "Unknown managed run field(s): " + ", ".join(sorted(unknown)),
+                    code="PMCP400",
+                    status=400,
+                    title="Bad Request",
+                    type="etlantic.control_plane/bad_request",
+                )
+            receipt = api.managed_service.submit_run(
+                ctx,
+                definition_id,
+                idempotency_key=idem,
+                request=payload.get("request"),
+                revision_selector=payload.get("revision_selector", "current"),
+            )
+            response.status_code = status.HTTP_202_ACCEPTED
+            return AcceptReceiptResponse.model_validate(
+                _receipt_with_urls(receipt).to_dict()
+            )
+
+        require_authorized(
+            api.authorizer,
+            ctx,
+            "run.submit",
+            f"definition:{definition_id}",
+            resource_in_caller_scope=False,
+        )
+        # Authz before existence disclosure.
+        try:
+            definition = api.definitions.get(ctx, definition_id)
+        except KeyError as exc:
+            raise ControlPlaneError.not_found(
+                f"Definition {definition_id!r} not found"
+            ) from exc
+        if definition.get("schema") == ADAPTIVE_PLAN_SCHEMA:
+            raise ControlPlaneError(
+                "PMADP500: control-plane acceptance does not advertise adaptive "
+                "etlantic.plan/2 support",
+                code="PMADP500",
+                status=501,
+                title="Not Implemented",
+                type="etlantic.control_plane/not_implemented",
+            )
+
         plan_fp = str(
             payload.get("plan_fingerprint")
             or payload.get("plan_id")
@@ -630,6 +732,13 @@ def build_control_plane_router(api: ETLanticAPI) -> APIRouter:
             probe_exists=lambda: _run_exists_probe(api, ctx, run_id),
         )
 
+    def _require_scoped_run_exists(ctx: ControlPlaneContext, run_id: str) -> None:
+        get_run_fn, _ = _run_store_methods(api)
+        try:
+            get_run_fn(ctx, run_id)
+        except KeyError as exc:
+            raise ControlPlaneError.not_found(f"Run {run_id!r} not found") from exc
+
     @router.get(
         "/v1/runs/{run_id}",
         operation_id="cp_get_run",
@@ -640,6 +749,10 @@ def build_control_plane_router(api: ETLanticAPI) -> APIRouter:
         run_id: str,
         ctx: ControlPlaneContext = Depends(get_ctx),
     ) -> RunStatusResponse:
+        if api.managed_service is not None:
+            return RunStatusResponse.model_validate(
+                api.managed_service.get_run_status(ctx, run_id)
+            )
         _authorize_run(ctx, "run.read", run_id)
         get_run_fn, _ = _run_store_methods(api)
         try:
@@ -647,6 +760,72 @@ def build_control_plane_router(api: ETLanticAPI) -> APIRouter:
         except KeyError as exc:
             raise ControlPlaneError.not_found(f"Run {run_id!r} not found") from exc
         return RunStatusResponse.model_validate(record)
+
+    @router.get(
+        "/v1/runs/{run_id}/actions",
+        operation_id="cp_get_run_actions",
+        response_model=RunActionsResponse,
+        tags=["runs"],
+    )
+    def get_run_actions(
+        run_id: str,
+        ctx: ControlPlaneContext = Depends(get_ctx),
+    ) -> RunActionsResponse:
+        if api.managed_service is None:
+            _authorize_run(ctx, "run.actions", run_id)
+            _require_scoped_run_exists(ctx, run_id)
+            raise ControlPlaneError(
+                "Managed run-action discovery is not configured",
+                code="PMCP501",
+                status=501,
+                title="Not Implemented",
+            )
+        return RunActionsResponse.model_validate(
+            api.managed_service.get_run_actions(ctx, run_id)
+        )
+
+    @router.post(
+        "/v1/runs/{run_id}/retry",
+        operation_id="cp_retry_run",
+        response_model=AcceptReceiptResponse,
+        status_code=status.HTTP_202_ACCEPTED,
+        tags=["runs"],
+    )
+    def retry_run(
+        run_id: str,
+        response: Response,
+        ctx: ControlPlaneContext = Depends(get_ctx),
+        idempotency_key_header: str | None = Header(
+            default=None, alias="Idempotency-Key"
+        ),
+    ) -> AcceptReceiptResponse:
+        if api.managed_service is None:
+            _authorize_run(ctx, "run.retry", run_id)
+            _require_scoped_run_exists(ctx, run_id)
+            raise ControlPlaneError(
+                "Managed run retry is not configured",
+                code="PMCP501",
+                status=501,
+                title="Not Implemented",
+            )
+        idempotency_key = idempotency_key_header or (
+            ctx.idempotency_key.value if ctx.idempotency_key else None
+        )
+        if not idempotency_key:
+            raise ControlPlaneError(
+                "Idempotency-Key is required for managed retry",
+                code="PMCP400",
+                status=400,
+                title="Bad Request",
+                type="etlantic.control_plane/bad_request",
+            )
+        receipt = api.managed_service.retry_run(
+            ctx, run_id, idempotency_key=idempotency_key
+        )
+        response.status_code = status.HTTP_202_ACCEPTED
+        return AcceptReceiptResponse.model_validate(
+            _receipt_with_urls(receipt).to_dict()
+        )
 
     @router.post(
         "/v1/runs/{run_id}/cancel",
@@ -658,6 +837,10 @@ def build_control_plane_router(api: ETLanticAPI) -> APIRouter:
         run_id: str,
         ctx: ControlPlaneContext = Depends(get_ctx),
     ) -> RunStatusResponse:
+        if api.managed_service is not None:
+            return RunStatusResponse.model_validate(
+                api.managed_service.cancel_run(ctx, run_id)
+            )
         _authorize_run(ctx, "run.cancel", run_id)
         get_run_fn, cancel_fn = _run_store_methods(api)
         try:
@@ -756,6 +939,13 @@ def build_control_plane_router(api: ETLanticAPI) -> APIRouter:
         run_id: str,
         ctx: ControlPlaneContext = Depends(get_ctx),
     ) -> ReportStubResponse:
+        if api.managed_service is not None:
+            report = api.managed_service.get_run_report(ctx, run_id)
+            return ReportStubResponse(
+                run_id=run_id,
+                status=str(report.get("status") or "unknown"),
+                report=report,
+            )
         _authorize_run(ctx, "run.report", run_id)
         get_run_fn, _ = _run_store_methods(api)
         try:
@@ -765,16 +955,19 @@ def build_control_plane_router(api: ETLanticAPI) -> APIRouter:
         return ReportStubResponse(
             run_id=run_id,
             status=str(record["status"]),
-            metadata=redact_control_plane_payload(
-                {
-                    "acceptance_id": record.get("acceptance_id"),
-                    "definition_id": record.get("definition_id"),
-                    "note": (
-                        "Experimental stub (not CP-GA): minimal report metadata; "
-                        "full reports arrive with execution hosts."
-                    ),
-                }
-            ),
+            schema_="etlantic.control_plane.run_report_stub/1",
+            report={
+                "metadata": redact_control_plane_payload(
+                    {
+                        "acceptance_id": record.get("acceptance_id"),
+                        "definition_id": record.get("definition_id"),
+                        "note": (
+                            "Experimental stub (not CP-GA): minimal report metadata; "
+                            "full reports arrive with execution hosts."
+                        ),
+                    }
+                ),
+            },
         )
 
     @router.get(
@@ -787,6 +980,9 @@ def build_control_plane_router(api: ETLanticAPI) -> APIRouter:
         run_id: str,
         ctx: ControlPlaneContext = Depends(get_ctx),
     ) -> ArtifactsResponse:
+        if api.managed_service is not None:
+            items = api.managed_service.list_run_artifacts(ctx, run_id)
+            return ArtifactsResponse.model_validate({"run_id": run_id, "items": items})
         _authorize_run(ctx, "run.artifacts", run_id)
         get_run_fn, _ = _run_store_methods(api)
         try:
@@ -822,6 +1018,10 @@ def build_control_plane_router(api: ETLanticAPI) -> APIRouter:
         run_id: str,
         ctx: ControlPlaneContext = Depends(get_ctx),
     ) -> LineageStubResponse:
+        if api.managed_service is not None:
+            return LineageStubResponse.model_validate(
+                api.managed_service.get_run_lineage(ctx, run_id)
+            )
         _authorize_run(ctx, "run.lineage", run_id)
         get_run_fn, _ = _run_store_methods(api)
         try:
@@ -834,7 +1034,12 @@ def build_control_plane_router(api: ETLanticAPI) -> APIRouter:
         if definition_id:
             nodes.append({"id": str(definition_id), "kind": "definition"})
             edges.append({"from": str(definition_id), "to": run_id, "kind": "produced"})
-        return LineageStubResponse(run_id=run_id, nodes=nodes, edges=edges)
+        return LineageStubResponse(
+            schema_="etlantic.control_plane.lineage_stub/1",
+            run_id=run_id,
+            nodes=nodes,
+            edges=edges,
+        )
 
     @router.get(
         "/v1/schema/observations",

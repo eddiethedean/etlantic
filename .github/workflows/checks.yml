@@ -790,7 +790,7 @@ jobs:
 
       - name: Build all plugin wheels
         run: |
-          for pkg in etlantic-polars etlantic-pandas etlantic-sql etlantic-pyspark \
+          for pkg in etlantic-polars etlantic-pandas etlantic-sql etlantic-foundry etlantic-pyspark \
             etlantic-airflow etlantic-prefect etlantic-keyring etlantic-sqlmodel \
             medallantic etlantic-sparkforge etlantic-fastapi etlantic-lsp etlantic-datafusion \
             etlantic-s3 etlantic-kafka etlantic-k8s etlantic-spark-connect etlantic-schemaregistry etlantic-iceberg etlantic-snowflake \

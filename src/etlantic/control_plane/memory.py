@@ -157,6 +157,18 @@ class MemorySubmissionStore:
             receipt = self._by_id.get(key)
             return deepcopy(receipt) if receipt is not None else None
 
+    def lookup_idempotency_payload(
+        self,
+        ctx: ControlPlaneContext,
+        idempotency_key: str,
+        *,
+        operation: str = "run.submit",
+    ) -> Mapping[str, Any] | None:
+        key = _idem_key(ctx, idempotency_key, operation=operation)
+        with self._lock:
+            payload = self._payloads.get(key)
+            return deepcopy(payload) if payload is not None else None
+
     def accept(
         self,
         ctx: ControlPlaneContext,
@@ -165,6 +177,7 @@ class MemorySubmissionStore:
         payload: Mapping[str, Any],
         resource_type: str = "run",
         resource_id: str | None = None,
+        submission_id: str | None = None,
         operation: str = "run.submit",
     ) -> AcceptResult:
         key = _idem_key(ctx, idempotency_key, operation=operation)
@@ -180,10 +193,24 @@ class MemorySubmissionStore:
                         "Idempotency key reuse with a different payload",
                         extensions={"idempotency_key": idempotency_key},
                     )
+                if (
+                    submission_id is not None
+                    and existing.submission_id != submission_id
+                ):
+                    raise ControlPlaneError.conflict(
+                        "Idempotency key is bound to a different submission"
+                    )
                 return AcceptResult(receipt=deepcopy(existing), created=False)
 
             acceptance_id = f"acc-{uuid.uuid4().hex[:16]}"
-            submission_id = f"sub-{uuid.uuid4().hex[:16]}"
+            submission_id = submission_id or f"sub-{uuid.uuid4().hex[:16]}"
+            if any(
+                receipt.submission_id == submission_id
+                for receipt in self._by_id.values()
+            ):
+                raise ControlPlaneError.conflict(
+                    "submission_id is already bound to an acceptance"
+                )
             run_id = resource_id or submission_id
             created = _utcnow_iso()
             receipt = AcceptReceipt(

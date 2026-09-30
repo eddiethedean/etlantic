@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import json
 from pathlib import Path
+from typing import cast
 
 import pytest
 
@@ -18,7 +19,21 @@ from etlantic import (
     SecretRef,
     Transformation,
 )
+from etlantic.authoring import definition_from_pipeline
+from etlantic.control_plane import (
+    ControlPlaneContext,
+    EnvironmentRef,
+    ExecutionEnvelope,
+    MemoryDurableWorkStore,
+    Principal,
+    SecurityDomain,
+    TenantRef,
+    WorkspaceRef,
+)
+from etlantic.plan.model import PipelinePlan
 from etlantic.registry import BindingDescriptor, PlanningContext
+from etlantic.runtime.execute import run_pipeline
+from etlantic.runtime.managed_execution import ManagedExecutionAdapter
 from etlantic.runtime.request import RunIntent, RunRequest
 from etlantic.runtime.state import RunStatus
 from etlantic.secrets import SecretValue
@@ -92,6 +107,156 @@ def test_local_memory_pipeline_runs() -> None:
     assert "succeeded" in text
     html = report.to_html()
     assert "<html>" in html
+
+
+def test_verified_stored_plan_runs_without_replanning() -> None:
+    plan_document = SimplePipeline.plan(profile="development")
+    plan = PipelinePlan.from_dict(plan_document.to_dict(), verify=True)
+    runtime = PipelineRuntime()
+    runtime.memory.seed("rows", [Row(id=3, name=" stored ")])
+
+    report = run_pipeline(plan, profile="development", runtime=runtime)
+
+    assert report.status is RunStatus.SUCCEEDED
+    assert runtime.memory.get("out")[0].name == "Stored"
+
+
+def test_execution_envelope_round_trips_verified_plan_and_request() -> None:
+    definition = definition_from_pipeline(SimplePipeline)
+    plan_document = SimplePipeline.plan(profile="development")
+    plan = PipelinePlan.from_dict(plan_document.to_dict(), verify=True)
+    envelope = ExecutionEnvelope.create(
+        definition_id=definition.pipeline_id,
+        revision_selector="latest-approved",
+        revision_id="rev-1",
+        definition=definition,
+        plan=plan,
+        profile_name="development",
+        request=RunRequest(),
+        setting_provenance={"retry_max_attempts": "profile.default"},
+    )
+
+    encoded = envelope.to_json()
+    restored = ExecutionEnvelope.from_json(encoded)
+
+    assert restored.to_json() == encoded
+    assert restored.definition_fingerprint == definition.fingerprint or (
+        restored.definition_fingerprint == envelope.definition_fingerprint
+    )
+    assert restored.plan_fingerprint == plan.fingerprint
+    assert restored.revision_id == "rev-1"
+    with pytest.raises(TypeError):
+        cast(dict[str, object], restored.plan_document["metadata"])["changed"] = True
+
+
+def test_execution_envelope_rejects_tampered_plan_and_secret_fields() -> None:
+    definition = definition_from_pipeline(SimplePipeline)
+    plan_document = SimplePipeline.plan(profile="development")
+    plan = PipelinePlan.from_dict(plan_document.to_dict(), verify=True)
+    envelope = ExecutionEnvelope.create(
+        definition_id=definition.pipeline_id,
+        revision_selector=definition.pipeline_id,
+        revision_id=None,
+        definition=definition,
+        plan=plan,
+        profile_name="development",
+        request=RunRequest(),
+    )
+    tampered = envelope.to_dict()
+    tampered["plan_document"]["profile_name"] = "production"
+    with pytest.raises(ValueError, match="fingerprint"):
+        ExecutionEnvelope.from_dict(tampered)
+
+    secret = envelope.to_dict()
+    secret["setting_provenance"]["password"] = "should-never-persist"
+    with pytest.raises(ValueError, match="sensitive field"):
+        ExecutionEnvelope.from_dict(secret)
+
+
+def test_packaged_worker_executes_accepted_envelope_and_recovers_report(
+    tmp_path: Path,
+) -> None:
+    source = tmp_path / "source.json"
+    target = tmp_path / "target.csv"
+    source.write_text(json.dumps([{"id": 7, "name": "Ada"}]), encoding="utf-8")
+
+    class FileTransferPipeline(Pipeline):
+        raw: Extract[Row] = Extract(asset="file_in")
+        out: Load[Row] = Load(input=raw, asset="file_out")
+
+    planning = PlanningContext.create(profile="development")
+    planning.registry.register_binding(
+        BindingDescriptor(
+            binding="file_in",
+            provider="json",
+            location=str(source),
+            kind="source",
+        )
+    )
+    planning.registry.register_binding(
+        BindingDescriptor(
+            binding="file_out",
+            provider="csv",
+            location=str(target),
+            kind="sink",
+        )
+    )
+    definition = definition_from_pipeline(FileTransferPipeline)
+    plan_document = FileTransferPipeline.plan(
+        profile="development", context=planning
+    )
+    plan = PipelinePlan.from_dict(plan_document.to_dict(), verify=True)
+    envelope = ExecutionEnvelope.create(
+        definition_id=definition.pipeline_id,
+        revision_selector="rev-1",
+        revision_id="rev-1",
+        definition=definition,
+        plan=plan,
+        profile_name="development",
+        request=RunRequest(),
+    )
+
+    ctx = ControlPlaneContext(
+        principal=Principal("worker"),
+        tenant=TenantRef("tenant-a"),
+        workspace=WorkspaceRef("tenant-a", "workspace-a"),
+        environment=EnvironmentRef("development"),
+        security_domain=SecurityDomain("internal"),
+    )
+    durable = MemoryDurableWorkStore()
+    submission, _created = durable.accept(
+        ctx,
+        idempotency_key="managed-run-1",
+        operation="run.submit",
+        plan_fingerprint=envelope.plan_fingerprint,
+        revision_id="rev-1",
+        input_snapshot=envelope.to_json(),
+    )
+    worker = ManagedExecutionAdapter(report_root=tmp_path / "reports")
+
+    report = worker(
+        ctx,
+        submission=submission,
+        submission_id=submission.submission_id,
+        attempt_id="attempt-1",
+        fencing_token=1,
+    )
+    replayed = worker(
+        ctx,
+        submission=submission,
+        submission_id=submission.submission_id,
+        attempt_id="attempt-2",
+        fencing_token=2,
+        recovered_attempt=True,
+    )
+
+    assert report.status is RunStatus.SUCCEEDED
+    assert report.run_id == replayed.run_id
+    assert replayed.status is RunStatus.SUCCEEDED
+    assert target.read_text(encoding="utf-8").splitlines() == [
+        "id,name",
+        "7,Ada",
+    ]
 
 
 def test_json_csv_round_trip(tmp_path: Path) -> None:

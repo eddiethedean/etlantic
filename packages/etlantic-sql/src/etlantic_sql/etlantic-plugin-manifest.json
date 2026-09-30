@@ -8,7 +8,7 @@
     "publication.atomic",
     "transactions"
   ],
-  "digest": "sha256:4292c2006eaac2590378d6cbcfc8a7319ec9f01dc86ee4b513f33a88180f12b8",
+  "digest": "sha256:c3668fe7c125f0464bcef8eddce2a35d48dffee696251c4306273866041b17b8",
   "entries": [
     {
       "capabilities": [
@@ -35,7 +35,7 @@
       "capabilities": [
         "source.batch_snapshot",
         "source.schema_discovery",
-        "idempotency"
+        "source.statistics_bounded"
       ],
       "engine": "postgresql",
       "group": "etlantic.source_connectors",

@@ -6,6 +6,7 @@ from __future__ import annotations
 from collections.abc import AsyncIterator, Callable
 from contextlib import AbstractAsyncContextManager, asynccontextmanager
 from dataclasses import dataclass, field
+from threading import Event
 from typing import Any
 
 from etlantic.diagnostics import Diagnostic
@@ -97,6 +98,9 @@ class PipelineRuntime:
     _manual_sink_connectors: dict[str, Any] = field(default_factory=dict, repr=False)
     _manual_storage_connectors: dict[str, Any] = field(default_factory=dict, repr=False)
     _manual_storage_bindings: dict[str, Any] = field(default_factory=dict, repr=False)
+    # Set only by managed workers. Local execution watches this thread-safe
+    # token and converts a control-plane cancel request into runtime cancel.
+    external_cancel_event: Event | None = field(default=None, repr=False)
     _observability_bridge: Any = field(default=None, repr=False)
 
     def __post_init__(self) -> None:

@@ -8,7 +8,7 @@ import hashlib
 import inspect
 import threading
 import uuid
-from collections.abc import Mapping
+from collections.abc import Awaitable, Callable, Mapping
 from dataclasses import dataclass, field, replace
 from datetime import UTC, datetime
 from pathlib import Path
@@ -152,6 +152,10 @@ def _logical_type_of(value: Any) -> str:
     if isinstance(value, (list, tuple)):
         return "array"
     return type(value).__name__
+
+
+class _ManagedCancellation(Exception):
+    """Internal signal that a managed worker requested runtime cancellation."""
 
 
 def _observe_records_schema(
@@ -605,6 +609,43 @@ class LocalOrchestrator:
             for name in ready:
                 wave.start_soon(run_one, name)
 
+    async def _with_managed_cancellation(
+        self, operation: Callable[[], Awaitable[None]]
+    ) -> None:
+        """Watch the worker's thread-safe cancellation token during execution."""
+        cancellation = getattr(self.runtime, "external_cancel_event", None)
+        if cancellation is None:
+            await operation()
+            return
+        if not callable(getattr(cancellation, "is_set", None)):
+            raise PipelineExecutionError(
+                "Managed cancellation token does not support is_set()",
+                code="PMEXEC411",
+                stage="admission",
+            )
+        if cancellation.is_set():
+            raise _ManagedCancellation
+
+        stop_monitor = anyio.Event()
+
+        async def monitor(scope: anyio.CancelScope) -> None:
+            while not stop_monitor.is_set():
+                if cancellation.is_set():
+                    scope.cancel()
+                    return
+                with anyio.move_on_after(0.05):
+                    await stop_monitor.wait()
+
+        with anyio.CancelScope() as execution_scope:
+            async with anyio.create_task_group() as task_group:
+                task_group.start_soon(monitor, execution_scope)
+                try:
+                    await operation()
+                finally:
+                    stop_monitor.set()
+        if execution_scope.cancel_called:
+            raise _ManagedCancellation
+
     def _index_transformations(self, pipeline_cls: type[Any]) -> None:
         members = getattr(pipeline_cls, "__pipeline_members__", {})
         for value in members.values():
@@ -840,14 +881,18 @@ class LocalOrchestrator:
 
         cancel_exc = anyio.get_cancelled_exc_class()
         try:
-            async with run_lifespan(self.runtime, run_id):
-                timeout = self.request.timeout.run_seconds
-                if timeout is not None:
-                    with anyio.fail_after(timeout):
+
+            async def execute_managed_body() -> None:
+                async with run_lifespan(self.runtime, run_id):
+                    timeout = self.request.timeout.run_seconds
+                    if timeout is not None:
+                        with anyio.fail_after(timeout):
+                            await self.runtime.run_middleware.run(run_context, run_body)
+                    else:
                         await self.runtime.run_middleware.run(run_context, run_body)
-                else:
-                    await self.runtime.run_middleware.run(run_context, run_body)
-        except (TimeoutError, anyio.get_cancelled_exc_class()) as exc:
+
+            await self._with_managed_cancellation(execute_managed_body)
+        except TimeoutError as exc:
             status = RunStatus.TIMED_OUT
             self._finalize_incomplete_steps(
                 nodes,
@@ -883,7 +928,7 @@ class LocalOrchestrator:
                 report=report,
                 code="PMEXEC408",
             ) from exc
-        except cancel_exc as exc:
+        except (cancel_exc, _ManagedCancellation) as exc:
             cancelled = True
             status = RunStatus.CANCELLED
             self._finalize_incomplete_steps(
@@ -1190,15 +1235,18 @@ class LocalOrchestrator:
                     unit_trace=unit_trace,
                 )
 
-            timeout = self.request.timeout.run_seconds
-            if timeout is None:
-                async with run_lifespan(self.runtime, run_id):
-                    await run_units()
-            else:
-                with anyio.fail_after(timeout):
+            async def execute_physical_body() -> None:
+                timeout = self.request.timeout.run_seconds
+                if timeout is None:
                     async with run_lifespan(self.runtime, run_id):
                         await run_units()
-        except anyio.get_cancelled_exc_class() as exc:
+                else:
+                    with anyio.fail_after(timeout):
+                        async with run_lifespan(self.runtime, run_id):
+                            await run_units()
+
+            await self._with_managed_cancellation(execute_physical_body)
+        except (anyio.get_cancelled_exc_class(), _ManagedCancellation) as exc:
             status = RunStatus.CANCELLED
             self._finalize_incomplete_steps(
                 nodes, terminal=StepStatus.CANCELLED, message="Run cancelled"
@@ -4526,6 +4574,85 @@ class LocalOrchestrator:
                 context=self._pending_source_context,
             )
 
+    async def _write_with_sink_connector(
+        self,
+        connector: Any,
+        *,
+        provider_name: str,
+        binding_payload: Mapping[str, Any],
+        data: Any,
+        context: Mapping[str, Any],
+        binding_name: str,
+        node_name: str,
+    ) -> None:
+        from etlantic.connectors.session import write_via_sink_connector
+
+        try:
+            receipt = await write_via_sink_connector(
+                connector,
+                binding=binding_payload,
+                data=data,
+                context=context,
+            )
+        except Exception as exc:
+            raise NodeExecutionError(
+                redact_message(str(exc)),
+                node_name=node_name,
+                stage=FailureStage.WRITE.value,
+                code=getattr(exc, "code", None) or "PMEXEC431",
+            ) from exc
+        if receipt.status == "unknown":
+            receipt = await self._reconcile_unknown_receipt(
+                receipt,
+                provider_name=provider_name,
+                storage=None,
+                context=context,
+            )
+        publication_unit = next(
+            (
+                unit.identity
+                for unit in self.plan.physical_units
+                if unit.metadata.get("etlantic.physical_kind") == "publication"
+                and unit.metadata.get("etlantic.logical_node") == node_name
+            ),
+            node_name,
+        )
+        self._sink_commit_receipts.append(receipt)
+        self._publication_receipt_summaries.append(
+            {
+                "status": receipt.status,
+                "publication_id": receipt.publication_id,
+                "unit_id": publication_unit,
+                "provider": provider_name,
+            }
+        )
+        if receipt.status == "unknown":
+            self._unknown_publications.append(
+                {
+                    "status": "unknown",
+                    "code": "PMADP524",
+                    "publication_id": receipt.publication_id,
+                    "binding": binding_name,
+                    "provider": provider_name,
+                }
+            )
+            raise NodeExecutionError(
+                "Publication acknowledgement was not received; reconciliation required",
+                node_name=node_name,
+                stage=FailureStage.WRITE.value,
+                code="PMADP524",
+            )
+        if receipt.status != "committed":
+            raise NodeExecutionError(
+                "Sink publication was rolled back",
+                node_name=node_name,
+                stage=FailureStage.WRITE.value,
+                code="PMEXEC433",
+            )
+        if self._publication_barrier is not None:
+            self._publication_barrier.record(receipt)
+            await self._finalize_landing_after_commit(receipt)
+
     async def _write_sink(self, node: Node, data: Any, *, run_id: str) -> None:
         binding_name = node.binding or node.name
         binding_name = self.request.binding_overrides.get(node.name, binding_name)
@@ -4590,10 +4717,12 @@ class LocalOrchestrator:
             if self.physical_storage_pins is not None
             else self.runtime.storage
         ).get(provider_name)
+        sink_connectors = getattr(self.runtime, "sink_connectors", None) or {}
+        sink_connector = sink_connectors.get(provider_name)
         if storage is None:
             if provider_name == "memory":
                 storage = self.runtime.memory
-            else:
+            elif sink_connector is None:
                 raise NodeExecutionError(
                     f"Unknown storage provider {provider_name!r} for "
                     f"sink {node.name!r}",
@@ -4630,9 +4759,24 @@ class LocalOrchestrator:
             context["secret"] = await self._resolve_secret(
                 descriptor.secret_ref, run_id=run_id, step=node.name
             )
+        if sink_connector is not None and provider_name != "null":
+            await self._write_with_sink_connector(
+                sink_connector,
+                provider_name=provider_name,
+                binding_payload=self._connector_binding_payload(
+                    descriptor, binding_name=binding_name
+                ),
+                data=data,
+                context=context,
+                binding_name=binding_name,
+                node_name=node.name,
+            )
+            return
         # Prefer CommitReceipt barrier when a landing source is pending.
-        if self._pending_source_connector is not None and provider_name != "null":
+        pending_source_connector = self._pending_source_connector
+        if pending_source_connector is not None and provider_name != "null":
             from etlantic.connectors.session import write_via_storage_session
+            from etlantic.storage.protocol import StorageBinding
 
             binding_payload = {
                 "binding": binding_name,
@@ -4642,15 +4786,15 @@ class LocalOrchestrator:
             }
             try:
                 receipt = await write_via_storage_session(
-                    storage,
+                    cast(StorageBinding, storage),
                     binding=binding_payload,
                     data=data,
                     context=context,
                 )
             except Exception as exc:
                 # Write raised before a receipt — nothing published; discard OK.
-                if hasattr(self._pending_source_connector, "discard_proposal"):
-                    self._pending_source_connector.discard_proposal()
+                if hasattr(pending_source_connector, "discard_proposal"):
+                    pending_source_connector.discard_proposal()
                 raise NodeExecutionError(
                     redact_message(str(exc)),
                     node_name=node.name,
@@ -4670,8 +4814,8 @@ class LocalOrchestrator:
             self._sink_commit_receipts.append(receipt)
             status = getattr(receipt, "status", None)
             if status == "rolled_back":
-                if hasattr(self._pending_source_connector, "discard_proposal"):
-                    self._pending_source_connector.discard_proposal()
+                if hasattr(pending_source_connector, "discard_proposal"):
+                    pending_source_connector.discard_proposal()
                 raise NodeExecutionError(
                     redact_message(
                         receipt.message or f"Sink commit status={receipt.status}"
@@ -4691,8 +4835,8 @@ class LocalOrchestrator:
                     code="PMEXEC433",
                 )
             if status != "committed":
-                if hasattr(self._pending_source_connector, "discard_proposal"):
-                    self._pending_source_connector.discard_proposal()
+                if hasattr(pending_source_connector, "discard_proposal"):
+                    pending_source_connector.discard_proposal()
                 raise NodeExecutionError(
                     redact_message(
                         receipt.message or f"Sink commit status={receipt.status}"
@@ -4737,6 +4881,13 @@ class LocalOrchestrator:
                     publication_id=publication_id,
                 )
             else:
+                if storage is None:
+                    raise NodeExecutionError(
+                        "A storage binding is required for this sink",
+                        node_name=node.name,
+                        stage=FailureStage.WRITE.value,
+                        code="PMEXEC431",
+                    )
                 receipt = await storage.write(
                     binding=binding_name,
                     location=location,

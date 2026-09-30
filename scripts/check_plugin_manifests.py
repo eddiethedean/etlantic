@@ -15,6 +15,7 @@ MANIFEST_PACKAGES = (
     "etlantic-polars",
     "etlantic-pandas",
     "etlantic-sql",
+    "etlantic-foundry",
     "etlantic-pyspark",
     "etlantic-airflow",
     "etlantic-prefect",

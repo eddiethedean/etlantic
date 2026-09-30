@@ -44,6 +44,31 @@ class DefinitionGetResponse(BaseModel):
     document: dict[str, Any]
 
 
+class DefinitionWriteBody(BaseModel):
+    document: dict[str, Any]
+
+    model_config = {"extra": "forbid"}
+
+
+class DefinitionWriteResponse(BaseModel):
+    definition_id: str
+    fingerprint: str
+    document: dict[str, Any]
+
+
+class DefinitionEditBody(BaseModel):
+    expected_fingerprint: str
+    command: dict[str, Any]
+
+    model_config = {"extra": "forbid"}
+
+
+class PlanRequestBody(BaseModel):
+    request: dict[str, Any] | None = None
+
+    model_config = {"extra": "forbid"}
+
+
 class ValidateResponse(BaseModel):
     ok: bool
     definition_id: str
@@ -81,14 +106,26 @@ class RunStatusResponse(BaseModel):
     resource_type: str = "run"
 
 
-class ReportStubResponse(BaseModel):
-    schema_: str = Field(
-        alias="schema", default="etlantic.control_plane.run_report_stub/1"
-    )
+class RunActionItem(BaseModel):
+    name: str
+    allowed: bool
+    reason: str | None = None
+
+
+class RunActionsResponse(BaseModel):
+    schema_: str = Field(alias="schema", default="etlantic.control_plane.run_actions/1")
     run_id: str
     status: str
-    experimental: bool = True
-    metadata: dict[str, Any] = Field(default_factory=dict)
+    actions: list[RunActionItem] = Field(default_factory=list)
+
+    model_config = {"populate_by_name": True}
+
+
+class ReportStubResponse(BaseModel):
+    schema_: str = Field(alias="schema", default="etlantic.control_plane.run_report/1")
+    run_id: str
+    status: str
+    report: dict[str, Any] | None = None
 
     model_config = {"populate_by_name": True}
 
@@ -105,12 +142,10 @@ class ArtifactsResponse(BaseModel):
 
 
 class LineageStubResponse(BaseModel):
-    schema_: str = Field(
-        alias="schema", default="etlantic.control_plane.lineage_stub/1"
-    )
+    schema_: str = Field(alias="schema", default="etlantic.control_plane.lineage/1")
     run_id: str
-    experimental: bool = True
-    note: str = "Experimental stub (not CP-GA); not a lineage authority."
+    submission_id: str | None = None
+    attempt_id: str | None = None
     nodes: list[dict[str, Any]] = Field(default_factory=list)
     edges: list[dict[str, Any]] = Field(default_factory=list)
 

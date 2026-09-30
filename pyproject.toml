@@ -35,6 +35,7 @@ polars = ["etlantic-polars==0.55.0"]
 pandas = ["etlantic-pandas==0.55.0"]
 sql = ["etlantic-sql==0.55.0"]
 postgresql = ["etlantic-sql==0.55.0"]
+foundry = ["etlantic-foundry==0.55.0"]
 pyspark = ["etlantic-pyspark==0.55.0"]
 spark = ["etlantic-pyspark==0.55.0"]
 airflow = ["etlantic-airflow==0.55.0"]
@@ -108,6 +109,9 @@ pandas = [
 ]
 sql = [
     "etlantic-sql",
+]
+foundry = [
+    "etlantic-foundry",
 ]
 pyspark = [
     "etlantic-pyspark",
@@ -200,6 +204,7 @@ members = [
     "packages/etlantic-polars",
     "packages/etlantic-pandas",
     "packages/etlantic-sql",
+    "packages/etlantic-foundry",
     "packages/etlantic-pyspark",
     "packages/etlantic-airflow",
     "packages/etlantic-prefect",
@@ -227,6 +232,7 @@ etlantic = { workspace = true }
 etlantic-polars = { workspace = true }
 etlantic-pandas = { workspace = true }
 etlantic-sql = { workspace = true }
+etlantic-foundry = { workspace = true }
 etlantic-pyspark = { workspace = true }
 etlantic-airflow = { workspace = true }
 etlantic-prefect = { workspace = true }
@@ -255,6 +261,7 @@ pythonpath = [
     "packages/etlantic-polars/src",
     "packages/etlantic-pandas/src",
     "packages/etlantic-sql/src",
+    "packages/etlantic-foundry/src",
     "packages/etlantic-pyspark/src",
     "packages/etlantic-airflow/src",
     "packages/etlantic-prefect/src",
@@ -375,6 +382,7 @@ docstring-code-format = true
 [tool.pyright]
 pythonVersion = "3.11"
 typeCheckingMode = "strict"
+extraPaths = ["src", "packages/etlantic-foundry/src"]
 # Check every first-party Python surface, including tests. Dynamic plugin and
 # fixture boundaries use explicit file-level exceptions where needed. The
 # inventory is locked and strict-scanned without file directives by the checks.

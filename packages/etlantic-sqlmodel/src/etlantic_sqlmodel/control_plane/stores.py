@@ -129,6 +129,17 @@ class SQLModelSubmissionStore:
             row = self._by_idem(session, ctx, idempotency_key, operation=operation)
             return None if row is None else self._to_receipt(row)
 
+    def lookup_idempotency_payload(
+        self,
+        ctx: ControlPlaneContext,
+        idempotency_key: str,
+        *,
+        operation: str = "run.submit",
+    ) -> Mapping[str, Any] | None:
+        with session_scope(self._engine) as session:
+            row = self._by_idem(session, ctx, idempotency_key, operation=operation)
+            return None if row is None else json.loads(row.payload_json)
+
     def accept(
         self,
         ctx: ControlPlaneContext,
@@ -137,6 +148,7 @@ class SQLModelSubmissionStore:
         payload: Mapping[str, Any],
         resource_type: str = "run",
         resource_id: str | None = None,
+        submission_id: str | None = None,
         operation: str = "run.submit",
     ) -> AcceptResult:
         from sqlalchemy.exc import IntegrityError
@@ -156,12 +168,19 @@ class SQLModelSubmissionStore:
                             "Idempotency key reuse with a different payload",
                             extensions={"idempotency_key": idempotency_key},
                         )
+                    if (
+                        submission_id is not None
+                        and existing.submission_id != submission_id
+                    ):
+                        raise ControlPlaneError.conflict(
+                            "Idempotency key is bound to a different submission"
+                        )
                     return AcceptResult(
                         receipt=self._to_receipt(existing), created=False
                     )
 
                 acceptance_id = f"acc-{uuid.uuid4().hex[:16]}"
-                submission_id = f"sub-{uuid.uuid4().hex[:16]}"
+                submission_id = submission_id or f"sub-{uuid.uuid4().hex[:16]}"
                 run_id = resource_id or submission_id
                 created = _utcnow_iso()
                 row = SubmissionRow(
@@ -203,6 +222,10 @@ class SQLModelSubmissionStore:
                     raise ControlPlaneError.conflict(
                         "Idempotency key reuse with a different payload",
                         extensions={"idempotency_key": idempotency_key},
+                    ) from exc
+                if submission_id is not None and winner.submission_id != submission_id:
+                    raise ControlPlaneError.conflict(
+                        "Idempotency key is bound to a different submission"
                     ) from exc
                 return AcceptResult(receipt=self._to_receipt(winner), created=False)
 

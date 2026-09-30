@@ -1,0 +1,1206 @@
+{
+  "acceptance": [
+    {
+      "acceptance_criterion": "The same register/edit/validate/plan/submit/query commands work headlessly and through HTTP with identical semantic results and errors, without a synthetic request or private imports",
+      "case_id": "AC056-001-local-qualification",
+      "environment_id": "local-darwin-arm64-python311-postgresql16",
+      "evidence_artifacts": [
+        {
+          "path": "docs/11_DEVELOPMENT/evidence/phase_0_56/LOCAL_QUALIFICATION.md",
+          "sha256": "e2916ec7b63966941b92a17d198c90091c1b548fdbeee3cdec715b21b8c76599"
+        },
+        {
+          "path": "docs/11_DEVELOPMENT/evidence/phase_0_56/WHEEL_MANIFEST.json",
+          "sha256": "3b0cb4a28f999be0c91d8f17ede3f55fbcce8b00573cf2840508891fb2342d2a"
+        }
+      ],
+      "id": "AC056-001",
+      "observed_result": "No complete AC-level pass is asserted.",
+      "open_reason": "Complete criterion-level evidence is still pending; listed tests cover only part of the required acceptance case.",
+      "owner": "056-SVC",
+      "provider_version_tuple": [
+        "source candidate; workspace package version 0.55.0"
+      ],
+      "status": "pending",
+      "supporting_cases": [
+        "tests/fastapi/test_managed_application_0_56.py",
+        "tests/fastapi/test_cp1_full_authz_matrix.py"
+      ]
+    },
+    {
+      "acceptance_criterion": "Per-operation authorization precedes lookup; explicit disclosure policy, cross-tenant/workspace/owner isolation and concurrent calls are equivalent across adapters",
+      "case_id": "AC056-002-local-qualification",
+      "environment_id": "local-darwin-arm64-python311-postgresql16",
+      "evidence_artifacts": [
+        {
+          "path": "docs/11_DEVELOPMENT/evidence/phase_0_56/LOCAL_QUALIFICATION.md",
+          "sha256": "e2916ec7b63966941b92a17d198c90091c1b548fdbeee3cdec715b21b8c76599"
+        },
+        {
+          "path": "docs/11_DEVELOPMENT/evidence/phase_0_56/WHEEL_MANIFEST.json",
+          "sha256": "3b0cb4a28f999be0c91d8f17ede3f55fbcce8b00573cf2840508891fb2342d2a"
+        }
+      ],
+      "id": "AC056-002",
+      "observed_result": "No complete AC-level pass is asserted.",
+      "open_reason": "Complete criterion-level evidence is still pending; listed tests cover only part of the required acceptance case.",
+      "owner": "056-SVC",
+      "provider_version_tuple": [
+        "source candidate; workspace package version 0.55.0"
+      ],
+      "status": "pending",
+      "supporting_cases": [
+        "tests/fastapi/test_managed_application_0_56.py",
+        "tests/fastapi/test_cp1_full_authz_matrix.py"
+      ]
+    },
+    {
+      "acceptance_criterion": "Configuration constructs a standard backend; explicit resource ownership, shared lifespans, partial-start cleanup and shutdown preserve accepted durable work",
+      "case_id": "AC056-003-local-qualification",
+      "environment_id": "local-darwin-arm64-python311-postgresql16",
+      "evidence_artifacts": [
+        {
+          "path": "docs/11_DEVELOPMENT/evidence/phase_0_56/LOCAL_QUALIFICATION.md",
+          "sha256": "e2916ec7b63966941b92a17d198c90091c1b548fdbeee3cdec715b21b8c76599"
+        },
+        {
+          "path": "docs/11_DEVELOPMENT/evidence/phase_0_56/WHEEL_MANIFEST.json",
+          "sha256": "3b0cb4a28f999be0c91d8f17ede3f55fbcce8b00573cf2840508891fb2342d2a"
+        }
+      ],
+      "id": "AC056-003",
+      "observed_result": "No complete AC-level pass is asserted.",
+      "open_reason": "Complete criterion-level evidence is still pending; listed tests cover only part of the required acceptance case.",
+      "owner": "056-SVC",
+      "provider_version_tuple": [
+        "source candidate; workspace package version 0.55.0"
+      ],
+      "status": "pending",
+      "supporting_cases": [
+        "tests/fastapi/test_managed_application_0_56.py",
+        "tests/fastapi/test_cp1_full_authz_matrix.py"
+      ]
+    },
+    {
+      "acceptance_criterion": "Every qualified public field, command and query has a coverage-map row through storage to runtime; omitted/downgraded controls fail qualification",
+      "case_id": "AC056-004-local-qualification",
+      "environment_id": "local-darwin-arm64-python311-postgresql16",
+      "evidence_artifacts": [
+        {
+          "path": "docs/11_DEVELOPMENT/evidence/phase_0_56/LOCAL_QUALIFICATION.md",
+          "sha256": "e2916ec7b63966941b92a17d198c90091c1b548fdbeee3cdec715b21b8c76599"
+        },
+        {
+          "path": "docs/11_DEVELOPMENT/evidence/phase_0_56/WHEEL_MANIFEST.json",
+          "sha256": "3b0cb4a28f999be0c91d8f17ede3f55fbcce8b00573cf2840508891fb2342d2a"
+        }
+      ],
+      "id": "AC056-004",
+      "observed_result": "No complete AC-level pass is asserted.",
+      "open_reason": "Complete criterion-level evidence is still pending; listed tests cover only part of the required acceptance case.",
+      "owner": "056-SPEC",
+      "provider_version_tuple": [
+        "source candidate; workspace package version 0.55.0"
+      ],
+      "status": "pending",
+      "supporting_cases": [
+        "tests/runtime/test_run_request_wire.py",
+        "tests/connectors/test_connector_configuration_schemas_0_56.py"
+      ]
+    },
+    {
+      "acceptance_criterion": "Typed request import/export preserves overrides and extension data; defaults/precedence and effective-setting provenance are deterministic and inspectable",
+      "case_id": "AC056-005-local-qualification",
+      "environment_id": "local-darwin-arm64-python311-postgresql16",
+      "evidence_artifacts": [
+        {
+          "path": "docs/11_DEVELOPMENT/evidence/phase_0_56/LOCAL_QUALIFICATION.md",
+          "sha256": "e2916ec7b63966941b92a17d198c90091c1b548fdbeee3cdec715b21b8c76599"
+        },
+        {
+          "path": "docs/11_DEVELOPMENT/evidence/phase_0_56/WHEEL_MANIFEST.json",
+          "sha256": "3b0cb4a28f999be0c91d8f17ede3f55fbcce8b00573cf2840508891fb2342d2a"
+        }
+      ],
+      "id": "AC056-005",
+      "observed_result": "No complete AC-level pass is asserted.",
+      "open_reason": "Complete criterion-level evidence is still pending; listed tests cover only part of the required acceptance case.",
+      "owner": "056-SPEC",
+      "provider_version_tuple": [
+        "source candidate; workspace package version 0.55.0"
+      ],
+      "status": "pending",
+      "supporting_cases": [
+        "tests/runtime/test_run_request_wire.py",
+        "tests/connectors/test_connector_configuration_schemas_0_56.py"
+      ]
+    },
+    {
+      "acceptance_criterion": "Installed-provider discovery supplies schemas, types, constraints, defaults, sensitivity and compatibility; unknown semantic options are rejected with a stable reason",
+      "case_id": "AC056-006-local-qualification",
+      "environment_id": "local-darwin-arm64-python311-postgresql16",
+      "evidence_artifacts": [
+        {
+          "path": "docs/11_DEVELOPMENT/evidence/phase_0_56/LOCAL_QUALIFICATION.md",
+          "sha256": "e2916ec7b63966941b92a17d198c90091c1b548fdbeee3cdec715b21b8c76599"
+        },
+        {
+          "path": "docs/11_DEVELOPMENT/evidence/phase_0_56/WHEEL_MANIFEST.json",
+          "sha256": "3b0cb4a28f999be0c91d8f17ede3f55fbcce8b00573cf2840508891fb2342d2a"
+        }
+      ],
+      "id": "AC056-006",
+      "observed_result": "No complete AC-level pass is asserted.",
+      "open_reason": "Complete criterion-level evidence is still pending; listed tests cover only part of the required acceptance case.",
+      "owner": "056-SPEC",
+      "provider_version_tuple": [
+        "source candidate; workspace package version 0.55.0"
+      ],
+      "status": "pending",
+      "supporting_cases": [
+        "tests/runtime/test_run_request_wire.py",
+        "tests/connectors/test_connector_configuration_schemas_0_56.py"
+      ]
+    },
+    {
+      "acceptance_criterion": "One command resolves revisions/resources and derives plan/effective fingerprints; forged hashes/revisions cannot bypass planning, policy or approval binding",
+      "case_id": "AC056-007-local-qualification",
+      "environment_id": "local-darwin-arm64-python311-postgresql16",
+      "evidence_artifacts": [
+        {
+          "path": "docs/11_DEVELOPMENT/evidence/phase_0_56/LOCAL_QUALIFICATION.md",
+          "sha256": "e2916ec7b63966941b92a17d198c90091c1b548fdbeee3cdec715b21b8c76599"
+        },
+        {
+          "path": "docs/11_DEVELOPMENT/evidence/phase_0_56/WHEEL_MANIFEST.json",
+          "sha256": "3b0cb4a28f999be0c91d8f17ede3f55fbcce8b00573cf2840508891fb2342d2a"
+        }
+      ],
+      "id": "AC056-007",
+      "observed_result": "No complete AC-level pass is asserted.",
+      "open_reason": "Complete criterion-level evidence is still pending; listed tests cover only part of the required acceptance case.",
+      "owner": "056-ADMIT",
+      "provider_version_tuple": [
+        "source candidate; workspace package version 0.55.0"
+      ],
+      "status": "pending",
+      "supporting_cases": [
+        "tests/fastapi/test_managed_application_0_56.py",
+        "tests/sqlmodel/test_durable_postgresql_multiprocess_0_56.py"
+      ]
+    },
+    {
+      "acceptance_criterion": "Identical scoped retries recover the same receipt before live work or quota charging; changed intent conflicts, including concurrent requests",
+      "case_id": "AC056-008-local-qualification",
+      "environment_id": "local-darwin-arm64-python311-postgresql16",
+      "evidence_artifacts": [
+        {
+          "path": "docs/11_DEVELOPMENT/evidence/phase_0_56/LOCAL_QUALIFICATION.md",
+          "sha256": "e2916ec7b63966941b92a17d198c90091c1b548fdbeee3cdec715b21b8c76599"
+        },
+        {
+          "path": "docs/11_DEVELOPMENT/evidence/phase_0_56/WHEEL_MANIFEST.json",
+          "sha256": "3b0cb4a28f999be0c91d8f17ede3f55fbcce8b00573cf2840508891fb2342d2a"
+        }
+      ],
+      "id": "AC056-008",
+      "observed_result": "No complete AC-level pass is asserted.",
+      "open_reason": "Complete criterion-level evidence is still pending; listed tests cover only part of the required acceptance case.",
+      "owner": "056-ADMIT",
+      "provider_version_tuple": [
+        "source candidate; workspace package version 0.55.0"
+      ],
+      "status": "pending",
+      "supporting_cases": [
+        "tests/fastapi/test_managed_application_0_56.py",
+        "tests/sqlmodel/test_durable_postgresql_multiprocess_0_56.py"
+      ]
+    },
+    {
+      "acceptance_criterion": "Long preparation survives process death and supports query/cancel by operation ID, without app-side sequencing or secret exposure",
+      "case_id": "AC056-009-local-qualification",
+      "environment_id": "local-darwin-arm64-python311-postgresql16",
+      "evidence_artifacts": [
+        {
+          "path": "docs/11_DEVELOPMENT/evidence/phase_0_56/LOCAL_QUALIFICATION.md",
+          "sha256": "e2916ec7b63966941b92a17d198c90091c1b548fdbeee3cdec715b21b8c76599"
+        },
+        {
+          "path": "docs/11_DEVELOPMENT/evidence/phase_0_56/WHEEL_MANIFEST.json",
+          "sha256": "3b0cb4a28f999be0c91d8f17ede3f55fbcce8b00573cf2840508891fb2342d2a"
+        }
+      ],
+      "id": "AC056-009",
+      "observed_result": "No complete AC-level pass is asserted.",
+      "open_reason": "Complete criterion-level evidence is still pending; listed tests cover only part of the required acceptance case.",
+      "owner": "056-ADMIT",
+      "provider_version_tuple": [
+        "source candidate; workspace package version 0.55.0"
+      ],
+      "status": "pending",
+      "supporting_cases": [
+        "tests/fastapi/test_managed_application_0_56.py",
+        "tests/sqlmodel/test_durable_postgresql_multiprocess_0_56.py"
+      ]
+    },
+    {
+      "acceptance_criterion": "Failure at every CP1/CP3/outbox boundary leaves a discoverable accepted command or a recoverable, explicit rejection; no orphan or duplicate execution",
+      "case_id": "AC056-010-local-qualification",
+      "environment_id": "local-darwin-arm64-python311-postgresql16",
+      "evidence_artifacts": [
+        {
+          "path": "docs/11_DEVELOPMENT/evidence/phase_0_56/LOCAL_QUALIFICATION.md",
+          "sha256": "e2916ec7b63966941b92a17d198c90091c1b548fdbeee3cdec715b21b8c76599"
+        },
+        {
+          "path": "docs/11_DEVELOPMENT/evidence/phase_0_56/WHEEL_MANIFEST.json",
+          "sha256": "3b0cb4a28f999be0c91d8f17ede3f55fbcce8b00573cf2840508891fb2342d2a"
+        }
+      ],
+      "id": "AC056-010",
+      "observed_result": "No complete AC-level pass is asserted.",
+      "open_reason": "Complete criterion-level evidence is still pending; listed tests cover only part of the required acceptance case.",
+      "owner": "056-ADMIT",
+      "provider_version_tuple": [
+        "source candidate; workspace package version 0.55.0"
+      ],
+      "status": "pending",
+      "supporting_cases": [
+        "tests/fastapi/test_managed_application_0_56.py",
+        "tests/sqlmodel/test_durable_postgresql_multiprocess_0_56.py"
+      ]
+    },
+    {
+      "acceptance_criterion": "Static checks remain pure; live preflight uses bounded executors; policy, approvals, quotas and evidence freshness are checked against the final effective plan",
+      "case_id": "AC056-011-local-qualification",
+      "environment_id": "local-darwin-arm64-python311-postgresql16",
+      "evidence_artifacts": [
+        {
+          "path": "docs/11_DEVELOPMENT/evidence/phase_0_56/LOCAL_QUALIFICATION.md",
+          "sha256": "e2916ec7b63966941b92a17d198c90091c1b548fdbeee3cdec715b21b8c76599"
+        },
+        {
+          "path": "docs/11_DEVELOPMENT/evidence/phase_0_56/WHEEL_MANIFEST.json",
+          "sha256": "3b0cb4a28f999be0c91d8f17ede3f55fbcce8b00573cf2840508891fb2342d2a"
+        }
+      ],
+      "id": "AC056-011",
+      "observed_result": "No complete AC-level pass is asserted.",
+      "open_reason": "Complete criterion-level evidence is still pending; listed tests cover only part of the required acceptance case.",
+      "owner": "056-ADMIT",
+      "provider_version_tuple": [
+        "source candidate; workspace package version 0.55.0"
+      ],
+      "status": "pending",
+      "supporting_cases": [
+        "tests/fastapi/test_managed_application_0_56.py",
+        "tests/sqlmodel/test_durable_postgresql_multiprocess_0_56.py"
+      ]
+    },
+    {
+      "acceptance_criterion": "A packaged worker performs real ETL from a submitted canonical definition without a caller runner; missing execution support fails closed",
+      "case_id": "AC056-012-local-qualification",
+      "environment_id": "local-darwin-arm64-python311-postgresql16",
+      "evidence_artifacts": [
+        {
+          "path": "docs/11_DEVELOPMENT/evidence/phase_0_56/LOCAL_QUALIFICATION.md",
+          "sha256": "e2916ec7b63966941b92a17d198c90091c1b548fdbeee3cdec715b21b8c76599"
+        },
+        {
+          "path": "docs/11_DEVELOPMENT/evidence/phase_0_56/WHEEL_MANIFEST.json",
+          "sha256": "3b0cb4a28f999be0c91d8f17ede3f55fbcce8b00573cf2840508891fb2342d2a"
+        }
+      ],
+      "id": "AC056-012",
+      "observed_result": "No complete AC-level pass is asserted.",
+      "open_reason": "Complete criterion-level evidence is still pending; listed tests cover only part of the required acceptance case.",
+      "owner": "056-WORKER",
+      "provider_version_tuple": [
+        "source candidate; workspace package version 0.55.0"
+      ],
+      "status": "pending",
+      "supporting_cases": [
+        "tests/runtime/test_local_runtime.py",
+        "tests/schedule/test_loops.py"
+      ]
+    },
+    {
+      "acceptance_criterion": "Long work renews leases, reacts to in-flight cancellation and fences stale owners; advertised row/byte/time/memory/concurrency limits are enforced",
+      "case_id": "AC056-013-local-qualification",
+      "environment_id": "local-darwin-arm64-python311-postgresql16",
+      "evidence_artifacts": [
+        {
+          "path": "docs/11_DEVELOPMENT/evidence/phase_0_56/LOCAL_QUALIFICATION.md",
+          "sha256": "e2916ec7b63966941b92a17d198c90091c1b548fdbeee3cdec715b21b8c76599"
+        },
+        {
+          "path": "docs/11_DEVELOPMENT/evidence/phase_0_56/WHEEL_MANIFEST.json",
+          "sha256": "3b0cb4a28f999be0c91d8f17ede3f55fbcce8b00573cf2840508891fb2342d2a"
+        }
+      ],
+      "id": "AC056-013",
+      "observed_result": "No complete AC-level pass is asserted.",
+      "open_reason": "Complete criterion-level evidence is still pending; listed tests cover only part of the required acceptance case.",
+      "owner": "056-WORKER",
+      "provider_version_tuple": [
+        "source candidate; workspace package version 0.55.0"
+      ],
+      "status": "pending",
+      "supporting_cases": [
+        "tests/runtime/test_local_runtime.py",
+        "tests/schedule/test_loops.py"
+      ]
+    },
+    {
+      "acceptance_criterion": "Crash after outbox publication, lease expiry, worker death and restart recover safely with stable attempt identities",
+      "case_id": "AC056-014-local-qualification",
+      "environment_id": "local-darwin-arm64-python311-postgresql16",
+      "evidence_artifacts": [
+        {
+          "path": "docs/11_DEVELOPMENT/evidence/phase_0_56/LOCAL_QUALIFICATION.md",
+          "sha256": "e2916ec7b63966941b92a17d198c90091c1b548fdbeee3cdec715b21b8c76599"
+        },
+        {
+          "path": "docs/11_DEVELOPMENT/evidence/phase_0_56/WHEEL_MANIFEST.json",
+          "sha256": "3b0cb4a28f999be0c91d8f17ede3f55fbcce8b00573cf2840508891fb2342d2a"
+        }
+      ],
+      "id": "AC056-014",
+      "observed_result": "No complete AC-level pass is asserted.",
+      "open_reason": "Complete criterion-level evidence is still pending; listed tests cover only part of the required acceptance case.",
+      "owner": "056-WORKER",
+      "provider_version_tuple": [
+        "source candidate; workspace package version 0.55.0"
+      ],
+      "status": "pending",
+      "supporting_cases": [
+        "tests/runtime/test_local_runtime.py",
+        "tests/schedule/test_loops.py"
+      ]
+    },
+    {
+      "acceptance_criterion": "Unknown commits, lost acknowledgements and partial multi-sink effects require reconciliation; no automatic duplicate write or invented rollback",
+      "case_id": "AC056-015-local-qualification",
+      "environment_id": "local-darwin-arm64-python311-postgresql16",
+      "evidence_artifacts": [
+        {
+          "path": "docs/11_DEVELOPMENT/evidence/phase_0_56/LOCAL_QUALIFICATION.md",
+          "sha256": "e2916ec7b63966941b92a17d198c90091c1b548fdbeee3cdec715b21b8c76599"
+        },
+        {
+          "path": "docs/11_DEVELOPMENT/evidence/phase_0_56/WHEEL_MANIFEST.json",
+          "sha256": "3b0cb4a28f999be0c91d8f17ede3f55fbcce8b00573cf2840508891fb2342d2a"
+        }
+      ],
+      "id": "AC056-015",
+      "observed_result": "No complete AC-level pass is asserted.",
+      "open_reason": "Complete criterion-level evidence is still pending; listed tests cover only part of the required acceptance case.",
+      "owner": "056-WORKER",
+      "provider_version_tuple": [
+        "source candidate; workspace package version 0.55.0"
+      ],
+      "status": "pending",
+      "supporting_cases": [
+        "tests/runtime/test_local_runtime.py",
+        "tests/schedule/test_loops.py"
+      ]
+    },
+    {
+      "acceptance_criterion": "Checkpoint/cursor advancement follows durable publication semantics; cleanup/drain/interruption are idempotent, scoped and observable",
+      "case_id": "AC056-016-local-qualification",
+      "environment_id": "local-darwin-arm64-python311-postgresql16",
+      "evidence_artifacts": [
+        {
+          "path": "docs/11_DEVELOPMENT/evidence/phase_0_56/LOCAL_QUALIFICATION.md",
+          "sha256": "e2916ec7b63966941b92a17d198c90091c1b548fdbeee3cdec715b21b8c76599"
+        },
+        {
+          "path": "docs/11_DEVELOPMENT/evidence/phase_0_56/WHEEL_MANIFEST.json",
+          "sha256": "3b0cb4a28f999be0c91d8f17ede3f55fbcce8b00573cf2840508891fb2342d2a"
+        }
+      ],
+      "id": "AC056-016",
+      "observed_result": "No complete AC-level pass is asserted.",
+      "open_reason": "Complete criterion-level evidence is still pending; listed tests cover only part of the required acceptance case.",
+      "owner": "056-WORKER",
+      "provider_version_tuple": [
+        "source candidate; workspace package version 0.55.0"
+      ],
+      "status": "pending",
+      "supporting_cases": [
+        "tests/runtime/test_local_runtime.py",
+        "tests/schedule/test_loops.py"
+      ]
+    },
+    {
+      "acceptance_criterion": "Public status/report/lineage/artifacts reflect actual runtime work with stable run/submission/attempt/node/partition links; no acceptance stub masquerades as completion",
+      "case_id": "AC056-017-local-qualification",
+      "environment_id": "local-darwin-arm64-python311-postgresql16",
+      "evidence_artifacts": [
+        {
+          "path": "docs/11_DEVELOPMENT/evidence/phase_0_56/LOCAL_QUALIFICATION.md",
+          "sha256": "e2916ec7b63966941b92a17d198c90091c1b548fdbeee3cdec715b21b8c76599"
+        },
+        {
+          "path": "docs/11_DEVELOPMENT/evidence/phase_0_56/WHEEL_MANIFEST.json",
+          "sha256": "3b0cb4a28f999be0c91d8f17ede3f55fbcce8b00573cf2840508891fb2342d2a"
+        }
+      ],
+      "id": "AC056-017",
+      "observed_result": "No complete AC-level pass is asserted.",
+      "open_reason": "Complete criterion-level evidence is still pending; listed tests cover only part of the required acceptance case.",
+      "owner": "056-RESULT",
+      "provider_version_tuple": [
+        "source candidate; workspace package version 0.55.0"
+      ],
+      "status": "pending",
+      "supporting_cases": [
+        "tests/runtime/test_local_runtime.py",
+        "tests/fastapi/test_managed_application_0_56.py"
+      ]
+    },
+    {
+      "acceptance_criterion": "Commit-success/report-failure recovers publication without rerunning ETL; result and cleanup state truthfully represent remaining obligations",
+      "case_id": "AC056-018-local-qualification",
+      "environment_id": "local-darwin-arm64-python311-postgresql16",
+      "evidence_artifacts": [
+        {
+          "path": "docs/11_DEVELOPMENT/evidence/phase_0_56/LOCAL_QUALIFICATION.md",
+          "sha256": "e2916ec7b63966941b92a17d198c90091c1b548fdbeee3cdec715b21b8c76599"
+        },
+        {
+          "path": "docs/11_DEVELOPMENT/evidence/phase_0_56/WHEEL_MANIFEST.json",
+          "sha256": "3b0cb4a28f999be0c91d8f17ede3f55fbcce8b00573cf2840508891fb2342d2a"
+        }
+      ],
+      "id": "AC056-018",
+      "observed_result": "No complete AC-level pass is asserted.",
+      "open_reason": "Complete criterion-level evidence is still pending; listed tests cover only part of the required acceptance case.",
+      "owner": "056-RESULT",
+      "provider_version_tuple": [
+        "source candidate; workspace package version 0.55.0"
+      ],
+      "status": "pending",
+      "supporting_cases": [
+        "tests/runtime/test_local_runtime.py",
+        "tests/fastapi/test_managed_application_0_56.py"
+      ]
+    },
+    {
+      "acceptance_criterion": "Event resume, duplicates, cursor gaps, pagination, retention and artifact authorization pass reconnect and isolation cases",
+      "case_id": "AC056-019-local-qualification",
+      "environment_id": "local-darwin-arm64-python311-postgresql16",
+      "evidence_artifacts": [
+        {
+          "path": "docs/11_DEVELOPMENT/evidence/phase_0_56/LOCAL_QUALIFICATION.md",
+          "sha256": "e2916ec7b63966941b92a17d198c90091c1b548fdbeee3cdec715b21b8c76599"
+        },
+        {
+          "path": "docs/11_DEVELOPMENT/evidence/phase_0_56/WHEEL_MANIFEST.json",
+          "sha256": "3b0cb4a28f999be0c91d8f17ede3f55fbcce8b00573cf2840508891fb2342d2a"
+        }
+      ],
+      "id": "AC056-019",
+      "observed_result": "No complete AC-level pass is asserted.",
+      "open_reason": "Complete criterion-level evidence is still pending; listed tests cover only part of the required acceptance case.",
+      "owner": "056-RESULT",
+      "provider_version_tuple": [
+        "source candidate; workspace package version 0.55.0"
+      ],
+      "status": "pending",
+      "supporting_cases": [
+        "tests/runtime/test_local_runtime.py",
+        "tests/fastapi/test_managed_application_0_56.py"
+      ]
+    },
+    {
+      "acceptance_criterion": "Test/catalog/schema/preflight actions run outside the gateway with action authorization, pagination, deadlines, redaction and scoped receipts",
+      "case_id": "AC056-020-local-qualification",
+      "environment_id": "local-darwin-arm64-python311-postgresql16",
+      "evidence_artifacts": [
+        {
+          "path": "docs/11_DEVELOPMENT/evidence/phase_0_56/LOCAL_QUALIFICATION.md",
+          "sha256": "e2916ec7b63966941b92a17d198c90091c1b548fdbeee3cdec715b21b8c76599"
+        },
+        {
+          "path": "docs/11_DEVELOPMENT/evidence/phase_0_56/WHEEL_MANIFEST.json",
+          "sha256": "3b0cb4a28f999be0c91d8f17ede3f55fbcce8b00573cf2840508891fb2342d2a"
+        }
+      ],
+      "id": "AC056-020",
+      "observed_result": "No complete AC-level pass is asserted.",
+      "open_reason": "Action-job executors are not implemented.",
+      "owner": "056-ACTION",
+      "provider_version_tuple": [
+        "source candidate; workspace package version 0.55.0"
+      ],
+      "status": "pending",
+      "supporting_cases": []
+    },
+    {
+      "acceptance_criterion": "Preview executes only in a qualified bounded action role, isolates credentials, limits/redacts returned data and enforces separate retention",
+      "case_id": "AC056-021-local-qualification",
+      "environment_id": "local-darwin-arm64-python311-postgresql16",
+      "evidence_artifacts": [
+        {
+          "path": "docs/11_DEVELOPMENT/evidence/phase_0_56/LOCAL_QUALIFICATION.md",
+          "sha256": "e2916ec7b63966941b92a17d198c90091c1b548fdbeee3cdec715b21b8c76599"
+        },
+        {
+          "path": "docs/11_DEVELOPMENT/evidence/phase_0_56/WHEEL_MANIFEST.json",
+          "sha256": "3b0cb4a28f999be0c91d8f17ede3f55fbcce8b00573cf2840508891fb2342d2a"
+        }
+      ],
+      "id": "AC056-021",
+      "observed_result": "No complete AC-level pass is asserted.",
+      "open_reason": "Qualified bounded preview, credential isolation and preview retention are not implemented.",
+      "owner": "056-ACTION",
+      "provider_version_tuple": [
+        "source candidate; workspace package version 0.55.0"
+      ],
+      "status": "pending",
+      "supporting_cases": []
+    },
+    {
+      "acceptance_criterion": "Explicit provisioning has permission, idempotency, effect and cleanup evidence; ordinary inspection does not create or mutate targets",
+      "case_id": "AC056-022-local-qualification",
+      "environment_id": "local-darwin-arm64-python311-postgresql16",
+      "evidence_artifacts": [
+        {
+          "path": "docs/11_DEVELOPMENT/evidence/phase_0_56/LOCAL_QUALIFICATION.md",
+          "sha256": "e2916ec7b63966941b92a17d198c90091c1b548fdbeee3cdec715b21b8c76599"
+        },
+        {
+          "path": "docs/11_DEVELOPMENT/evidence/phase_0_56/WHEEL_MANIFEST.json",
+          "sha256": "3b0cb4a28f999be0c91d8f17ede3f55fbcce8b00573cf2840508891fb2342d2a"
+        }
+      ],
+      "id": "AC056-022",
+      "observed_result": "No complete AC-level pass is asserted.",
+      "open_reason": "Authorized idempotent provisioning with effect and cleanup evidence is not implemented.",
+      "owner": "056-ACTION",
+      "provider_version_tuple": [
+        "source candidate; workspace package version 0.55.0"
+      ],
+      "status": "pending",
+      "supporting_cases": []
+    },
+    {
+      "acceptance_criterion": "Trusted owner/workload/scope/purpose reaches each worker/action secret and resource access; tampered references and cross-owner cache reuse are rejected",
+      "case_id": "AC056-023-local-qualification",
+      "environment_id": "local-darwin-arm64-python311-postgresql16",
+      "evidence_artifacts": [
+        {
+          "path": "docs/11_DEVELOPMENT/evidence/phase_0_56/LOCAL_QUALIFICATION.md",
+          "sha256": "e2916ec7b63966941b92a17d198c90091c1b548fdbeee3cdec715b21b8c76599"
+        },
+        {
+          "path": "docs/11_DEVELOPMENT/evidence/phase_0_56/WHEEL_MANIFEST.json",
+          "sha256": "3b0cb4a28f999be0c91d8f17ede3f55fbcce8b00573cf2840508891fb2342d2a"
+        }
+      ],
+      "id": "AC056-023",
+      "observed_result": "No complete AC-level pass is asserted.",
+      "open_reason": "Trusted owner/workload/scope propagation to secret and resource resolvers is incomplete.",
+      "owner": "056-SECRET",
+      "provider_version_tuple": [
+        "source candidate; workspace package version 0.55.0"
+      ],
+      "status": "pending",
+      "supporting_cases": []
+    },
+    {
+      "acceptance_criterion": "Exact-version and authorized late-binding modes cover rotation/revocation/expiry/outage; actual version is auditable without leaking values",
+      "case_id": "AC056-024-local-qualification",
+      "environment_id": "local-darwin-arm64-python311-postgresql16",
+      "evidence_artifacts": [
+        {
+          "path": "docs/11_DEVELOPMENT/evidence/phase_0_56/LOCAL_QUALIFICATION.md",
+          "sha256": "e2916ec7b63966941b92a17d198c90091c1b548fdbeee3cdec715b21b8c76599"
+        },
+        {
+          "path": "docs/11_DEVELOPMENT/evidence/phase_0_56/WHEEL_MANIFEST.json",
+          "sha256": "3b0cb4a28f999be0c91d8f17ede3f55fbcce8b00573cf2840508891fb2342d2a"
+        }
+      ],
+      "id": "AC056-024",
+      "observed_result": "No complete AC-level pass is asserted.",
+      "open_reason": "Secret version pinning, late binding and rotation/revocation qualification are incomplete.",
+      "owner": "056-SECRET",
+      "provider_version_tuple": [
+        "source candidate; workspace package version 0.55.0"
+      ],
+      "status": "pending",
+      "supporting_cases": []
+    },
+    {
+      "acceptance_criterion": "Finalized uploads bind immutable version/checksum/length/owner; workers reject tampering, unsafe paths and unsupported format/resource locators",
+      "case_id": "AC056-025-local-qualification",
+      "environment_id": "local-darwin-arm64-python311-postgresql16",
+      "evidence_artifacts": [
+        {
+          "path": "docs/11_DEVELOPMENT/evidence/phase_0_56/LOCAL_QUALIFICATION.md",
+          "sha256": "e2916ec7b63966941b92a17d198c90091c1b548fdbeee3cdec715b21b8c76599"
+        },
+        {
+          "path": "docs/11_DEVELOPMENT/evidence/phase_0_56/WHEEL_MANIFEST.json",
+          "sha256": "3b0cb4a28f999be0c91d8f17ede3f55fbcce8b00573cf2840508891fb2342d2a"
+        }
+      ],
+      "id": "AC056-025",
+      "observed_result": "No complete AC-level pass is asserted.",
+      "open_reason": "Finalized immutable upload references and tamper-checked worker resolution are not implemented.",
+      "owner": "056-RESOURCE",
+      "provider_version_tuple": [
+        "source candidate; workspace package version 0.55.0"
+      ],
+      "status": "pending",
+      "supporting_cases": []
+    },
+    {
+      "acceptance_criterion": "Leases protect accepted/retry/replay inputs from retention; aborted uploads, orphans and expired inputs have bounded cleanup and stable outcomes",
+      "case_id": "AC056-026-local-qualification",
+      "environment_id": "local-darwin-arm64-python311-postgresql16",
+      "evidence_artifacts": [
+        {
+          "path": "docs/11_DEVELOPMENT/evidence/phase_0_56/LOCAL_QUALIFICATION.md",
+          "sha256": "e2916ec7b63966941b92a17d198c90091c1b548fdbeee3cdec715b21b8c76599"
+        },
+        {
+          "path": "docs/11_DEVELOPMENT/evidence/phase_0_56/WHEEL_MANIFEST.json",
+          "sha256": "3b0cb4a28f999be0c91d8f17ede3f55fbcce8b00573cf2840508891fb2342d2a"
+        }
+      ],
+      "id": "AC056-026",
+      "observed_result": "No complete AC-level pass is asserted.",
+      "open_reason": "Upload input leases and bounded orphan/expiry cleanup are not implemented.",
+      "owner": "056-RESOURCE",
+      "provider_version_tuple": [
+        "source candidate; workspace package version 0.55.0"
+      ],
+      "status": "pending",
+      "supporting_cases": []
+    },
+    {
+      "acceptance_criterion": "Manual, scheduled and external triggers produce equivalent effective plans, authorization and admission for the same declared intent",
+      "case_id": "AC056-027-local-qualification",
+      "environment_id": "local-darwin-arm64-python311-postgresql16",
+      "evidence_artifacts": [
+        {
+          "path": "docs/11_DEVELOPMENT/evidence/phase_0_56/LOCAL_QUALIFICATION.md",
+          "sha256": "e2916ec7b63966941b92a17d198c90091c1b548fdbeee3cdec715b21b8c76599"
+        },
+        {
+          "path": "docs/11_DEVELOPMENT/evidence/phase_0_56/WHEEL_MANIFEST.json",
+          "sha256": "3b0cb4a28f999be0c91d8f17ede3f55fbcce8b00573cf2840508891fb2342d2a"
+        }
+      ],
+      "id": "AC056-027",
+      "observed_result": "No complete AC-level pass is asserted.",
+      "open_reason": "Scheduled and external trigger admission does not yet share the complete managed preparation authority.",
+      "owner": "056-SCHEDULE",
+      "provider_version_tuple": [
+        "source candidate; workspace package version 0.55.0"
+      ],
+      "status": "pending",
+      "supporting_cases": [
+        "tests/schedule/test_loops.py"
+      ]
+    },
+    {
+      "acceptance_criterion": "Pinned/latest-approved selection, workload identity and parameter policy are recorded once per occurrence and survive concurrent edits/restarts",
+      "case_id": "AC056-028-local-qualification",
+      "environment_id": "local-darwin-arm64-python311-postgresql16",
+      "evidence_artifacts": [
+        {
+          "path": "docs/11_DEVELOPMENT/evidence/phase_0_56/LOCAL_QUALIFICATION.md",
+          "sha256": "e2916ec7b63966941b92a17d198c90091c1b548fdbeee3cdec715b21b8c76599"
+        },
+        {
+          "path": "docs/11_DEVELOPMENT/evidence/phase_0_56/WHEEL_MANIFEST.json",
+          "sha256": "3b0cb4a28f999be0c91d8f17ede3f55fbcce8b00573cf2840508891fb2342d2a"
+        }
+      ],
+      "id": "AC056-028",
+      "observed_result": "No complete AC-level pass is asserted.",
+      "open_reason": "Pinned/latest-approved schedule selection and workload parameter policy are incomplete.",
+      "owner": "056-SCHEDULE",
+      "provider_version_tuple": [
+        "source candidate; workspace package version 0.55.0"
+      ],
+      "status": "pending",
+      "supporting_cases": [
+        "tests/schedule/test_loops.py"
+      ]
+    },
+    {
+      "acceptance_criterion": "DST/timezone/misfire/catch-up/overlap/concurrency and scheduler outage cases preserve occurrence idempotency and firing-to-run linkage",
+      "case_id": "AC056-029-local-qualification",
+      "environment_id": "local-darwin-arm64-python311-postgresql16",
+      "evidence_artifacts": [
+        {
+          "path": "docs/11_DEVELOPMENT/evidence/phase_0_56/LOCAL_QUALIFICATION.md",
+          "sha256": "e2916ec7b63966941b92a17d198c90091c1b548fdbeee3cdec715b21b8c76599"
+        },
+        {
+          "path": "docs/11_DEVELOPMENT/evidence/phase_0_56/WHEEL_MANIFEST.json",
+          "sha256": "3b0cb4a28f999be0c91d8f17ede3f55fbcce8b00573cf2840508891fb2342d2a"
+        }
+      ],
+      "id": "AC056-029",
+      "observed_result": "No complete AC-level pass is asserted.",
+      "open_reason": "The full outage, DST, catch-up and overlap qualification campaign is incomplete.",
+      "owner": "056-SCHEDULE",
+      "provider_version_tuple": [
+        "source candidate; workspace package version 0.55.0"
+      ],
+      "status": "pending",
+      "supporting_cases": [
+        "tests/schedule/test_loops.py"
+      ]
+    },
+    {
+      "acceptance_criterion": "Allowed actions reflect caller/state/provider with stable reasons; commands reauthorize and enforce state preconditions despite concurrent transitions",
+      "case_id": "AC056-030-local-qualification",
+      "environment_id": "local-darwin-arm64-python311-postgresql16",
+      "evidence_artifacts": [
+        {
+          "path": "docs/11_DEVELOPMENT/evidence/phase_0_56/LOCAL_QUALIFICATION.md",
+          "sha256": "e2916ec7b63966941b92a17d198c90091c1b548fdbeee3cdec715b21b8c76599"
+        },
+        {
+          "path": "docs/11_DEVELOPMENT/evidence/phase_0_56/WHEEL_MANIFEST.json",
+          "sha256": "3b0cb4a28f999be0c91d8f17ede3f55fbcce8b00573cf2840508891fb2342d2a"
+        }
+      ],
+      "id": "AC056-030",
+      "observed_result": "No complete AC-level pass is asserted.",
+      "open_reason": "Complete criterion-level evidence is still pending; listed tests cover only part of the required acceptance case.",
+      "owner": "056-CONTROL",
+      "provider_version_tuple": [
+        "source candidate; workspace package version 0.55.0"
+      ],
+      "status": "pending",
+      "supporting_cases": [
+        "tests/fastapi/test_managed_application_0_56.py",
+        "tests/schedule/test_loops.py"
+      ]
+    },
+    {
+      "acceptance_criterion": "Retry/rerun/replay/resume/repair/backfill enqueue and execute qualified work, with distinct command identity, idempotency and parent/run/attempt lineage",
+      "case_id": "AC056-031-local-qualification",
+      "environment_id": "local-darwin-arm64-python311-postgresql16",
+      "evidence_artifacts": [
+        {
+          "path": "docs/11_DEVELOPMENT/evidence/phase_0_56/LOCAL_QUALIFICATION.md",
+          "sha256": "e2916ec7b63966941b92a17d198c90091c1b548fdbeee3cdec715b21b8c76599"
+        },
+        {
+          "path": "docs/11_DEVELOPMENT/evidence/phase_0_56/WHEEL_MANIFEST.json",
+          "sha256": "3b0cb4a28f999be0c91d8f17ede3f55fbcce8b00573cf2840508891fb2342d2a"
+        }
+      ],
+      "id": "AC056-031",
+      "observed_result": "No complete AC-level pass is asserted.",
+      "open_reason": "Retry is implemented; rerun, replay, resume, repair and backfill are not all executable through qualified commands.",
+      "owner": "056-CONTROL",
+      "provider_version_tuple": [
+        "source candidate; workspace package version 0.55.0"
+      ],
+      "status": "pending",
+      "supporting_cases": [
+        "tests/fastapi/test_managed_application_0_56.py",
+        "tests/schedule/test_loops.py"
+      ]
+    },
+    {
+      "acceptance_criterion": "Cancel, qualified pause/resume and safe amendments have tested boundaries; accepted snapshots and old attempts remain immutable",
+      "case_id": "AC056-032-local-qualification",
+      "environment_id": "local-darwin-arm64-python311-postgresql16",
+      "evidence_artifacts": [
+        {
+          "path": "docs/11_DEVELOPMENT/evidence/phase_0_56/LOCAL_QUALIFICATION.md",
+          "sha256": "e2916ec7b63966941b92a17d198c90091c1b548fdbeee3cdec715b21b8c76599"
+        },
+        {
+          "path": "docs/11_DEVELOPMENT/evidence/phase_0_56/WHEEL_MANIFEST.json",
+          "sha256": "3b0cb4a28f999be0c91d8f17ede3f55fbcce8b00573cf2840508891fb2342d2a"
+        }
+      ],
+      "id": "AC056-032",
+      "observed_result": "No complete AC-level pass is asserted.",
+      "open_reason": "Queued/in-flight cancellation exists; qualified pause/resume and safe amendment boundaries remain open.",
+      "owner": "056-CONTROL",
+      "provider_version_tuple": [
+        "source candidate; workspace package version 0.55.0"
+      ],
+      "status": "pending",
+      "supporting_cases": [
+        "tests/fastapi/test_managed_application_0_56.py",
+        "tests/schedule/test_loops.py"
+      ]
+    },
+    {
+      "acceptance_criterion": "Live PostgreSQL append/upsert/replace, key/schema validation, permissions, overlaps, staged failure and commit/reconciliation cases pass",
+      "case_id": "AC056-033-local-qualification",
+      "environment_id": "local-darwin-arm64-python311-postgresql16",
+      "evidence_artifacts": [
+        {
+          "path": "docs/11_DEVELOPMENT/evidence/phase_0_56/LOCAL_QUALIFICATION.md",
+          "sha256": "e2916ec7b63966941b92a17d198c90091c1b548fdbeee3cdec715b21b8c76599"
+        },
+        {
+          "path": "docs/11_DEVELOPMENT/evidence/phase_0_56/WHEEL_MANIFEST.json",
+          "sha256": "3b0cb4a28f999be0c91d8f17ede3f55fbcce8b00573cf2840508891fb2342d2a"
+        }
+      ],
+      "id": "AC056-033",
+      "observed_result": "No complete AC-level pass is asserted.",
+      "open_reason": "Complete criterion-level evidence is still pending; listed tests cover only part of the required acceptance case.",
+      "owner": "056-PROVIDER",
+      "provider_version_tuple": [
+        "etlantic-sql==0.55.0",
+        "PostgreSQL 16.14"
+      ],
+      "status": "pending",
+      "supporting_cases": [
+        "tests/sql/test_postgresql_live_0_56.py"
+      ]
+    },
+    {
+      "acceptance_criterion": "Live Foundry dataset/branch/file operations, all declared write modes, overlap and effect/reconciliation cases pass in an isolated account/project",
+      "case_id": "AC056-034-local-qualification",
+      "environment_id": "local-darwin-arm64-python311-postgresql16",
+      "evidence_artifacts": [
+        {
+          "path": "docs/11_DEVELOPMENT/evidence/phase_0_56/LOCAL_QUALIFICATION.md",
+          "sha256": "e2916ec7b63966941b92a17d198c90091c1b548fdbeee3cdec715b21b8c76599"
+        },
+        {
+          "path": "docs/11_DEVELOPMENT/evidence/phase_0_56/WHEEL_MANIFEST.json",
+          "sha256": "3b0cb4a28f999be0c91d8f17ede3f55fbcce8b00573cf2840508891fb2342d2a"
+        }
+      ],
+      "id": "AC056-034",
+      "observed_result": "No complete AC-level pass is asserted.",
+      "open_reason": "Requires a live isolated Foundry account/project and scoped credentials; only mock transport cases are available here.",
+      "owner": "056-PROVIDER",
+      "provider_version_tuple": [
+        "etlantic-foundry==0.55.0",
+        "live Foundry version unavailable"
+      ],
+      "status": "blocked",
+      "supporting_cases": [
+        "tests/foundry/test_connectors_0_56.py"
+      ]
+    },
+    {
+      "acceptance_criterion": "Immutable CSV inputs exercise parsing/type/encoding choices, empty/malformed/oversize data and resource retention through the real worker",
+      "case_id": "AC056-035-local-qualification",
+      "environment_id": "local-darwin-arm64-python311-postgresql16",
+      "evidence_artifacts": [
+        {
+          "path": "docs/11_DEVELOPMENT/evidence/phase_0_56/LOCAL_QUALIFICATION.md",
+          "sha256": "e2916ec7b63966941b92a17d198c90091c1b548fdbeee3cdec715b21b8c76599"
+        },
+        {
+          "path": "docs/11_DEVELOPMENT/evidence/phase_0_56/WHEEL_MANIFEST.json",
+          "sha256": "3b0cb4a28f999be0c91d8f17ede3f55fbcce8b00573cf2840508891fb2342d2a"
+        }
+      ],
+      "id": "AC056-035",
+      "observed_result": "No complete AC-level pass is asserted.",
+      "open_reason": "Complete criterion-level evidence is still pending; listed tests cover only part of the required acceptance case.",
+      "owner": "056-PROVIDER",
+      "provider_version_tuple": [
+        "source candidate; workspace package version 0.55.0"
+      ],
+      "status": "pending",
+      "supporting_cases": [
+        "tests/fastapi/test_managed_application_0_56.py"
+      ]
+    },
+    {
+      "acceptance_criterion": "All 12 minimum source/destination pairings and advertised modes have success/failure evidence, including two independently scoped Foundry configurations",
+      "case_id": "AC056-036-local-qualification",
+      "environment_id": "local-darwin-arm64-python311-postgresql16",
+      "evidence_artifacts": [
+        {
+          "path": "docs/11_DEVELOPMENT/evidence/phase_0_56/LOCAL_QUALIFICATION.md",
+          "sha256": "e2916ec7b63966941b92a17d198c90091c1b548fdbeee3cdec715b21b8c76599"
+        },
+        {
+          "path": "docs/11_DEVELOPMENT/evidence/phase_0_56/WHEEL_MANIFEST.json",
+          "sha256": "3b0cb4a28f999be0c91d8f17ede3f55fbcce8b00573cf2840508891fb2342d2a"
+        }
+      ],
+      "id": "AC056-036",
+      "observed_result": "No complete AC-level pass is asserted.",
+      "open_reason": "Requires all 12 real-worker pairings and two independent Foundry scopes; that live environment is not configured.",
+      "owner": "056-PROVIDER",
+      "provider_version_tuple": [
+        "PostgreSQL 16.14",
+        "Foundry: no live tenant configured",
+        "CSV input: local source only"
+      ],
+      "status": "blocked",
+      "supporting_cases": [
+        "tests/sql/test_postgresql_live_0_56.py",
+        "tests/foundry/test_connectors_0_56.py"
+      ]
+    },
+    {
+      "acceptance_criterion": "An independently built private provider installs without an adopter or core edit; its schema/options/native references survive authoring, submission and execution",
+      "case_id": "AC056-037-local-qualification",
+      "environment_id": "local-darwin-arm64-python311-postgresql16",
+      "evidence_artifacts": [
+        {
+          "path": "docs/11_DEVELOPMENT/evidence/phase_0_56/LOCAL_QUALIFICATION.md",
+          "sha256": "e2916ec7b63966941b92a17d198c90091c1b548fdbeee3cdec715b21b8c76599"
+        },
+        {
+          "path": "docs/11_DEVELOPMENT/evidence/phase_0_56/WHEEL_MANIFEST.json",
+          "sha256": "3b0cb4a28f999be0c91d8f17ede3f55fbcce8b00573cf2840508891fb2342d2a"
+        }
+      ],
+      "id": "AC056-037",
+      "observed_result": "No complete AC-level pass is asserted.",
+      "open_reason": "An independently built private-provider consumer has not been installed and run.",
+      "owner": "056-QUALIFY",
+      "provider_version_tuple": [
+        "source candidate; workspace package version 0.55.0"
+      ],
+      "status": "pending",
+      "supporting_cases": [
+        "docs/11_DEVELOPMENT/evidence/phase_0_56/LOCAL_QUALIFICATION.md"
+      ]
+    },
+    {
+      "acceptance_criterion": "Issue #150 disclosure regression and the complete multi-tenant/owner redaction campaign pass for services, HTTP, actions, events and artifacts",
+      "case_id": "AC056-038-local-qualification",
+      "environment_id": "local-darwin-arm64-python311-postgresql16",
+      "evidence_artifacts": [
+        {
+          "path": "docs/11_DEVELOPMENT/evidence/phase_0_56/LOCAL_QUALIFICATION.md",
+          "sha256": "e2916ec7b63966941b92a17d198c90091c1b548fdbeee3cdec715b21b8c76599"
+        },
+        {
+          "path": "docs/11_DEVELOPMENT/evidence/phase_0_56/WHEEL_MANIFEST.json",
+          "sha256": "3b0cb4a28f999be0c91d8f17ede3f55fbcce8b00573cf2840508891fb2342d2a"
+        }
+      ],
+      "id": "AC056-038",
+      "observed_result": "No complete AC-level pass is asserted.",
+      "open_reason": "The complete cross-owner redaction campaign has not been run.",
+      "owner": "056-QUALIFY",
+      "provider_version_tuple": [
+        "source candidate; workspace package version 0.55.0"
+      ],
+      "status": "pending",
+      "supporting_cases": [
+        "docs/11_DEVELOPMENT/evidence/phase_0_56/LOCAL_QUALIFICATION.md"
+      ]
+    },
+    {
+      "acceptance_criterion": "Real PostgreSQL control-plane persistence passes multi-process accept/race/restart/backup/restore and failure campaigns; memory/SQLite remain separately labelled",
+      "case_id": "AC056-039-local-qualification",
+      "environment_id": "local-darwin-arm64-python311-postgresql16",
+      "evidence_artifacts": [
+        {
+          "path": "docs/11_DEVELOPMENT/evidence/phase_0_56/LOCAL_QUALIFICATION.md",
+          "sha256": "e2916ec7b63966941b92a17d198c90091c1b548fdbeee3cdec715b21b8c76599"
+        },
+        {
+          "path": "docs/11_DEVELOPMENT/evidence/phase_0_56/WHEEL_MANIFEST.json",
+          "sha256": "3b0cb4a28f999be0c91d8f17ede3f55fbcce8b00573cf2840508891fb2342d2a"
+        }
+      ],
+      "id": "AC056-039",
+      "observed_result": "No complete AC-level pass is asserted.",
+      "open_reason": "PostgreSQL multiprocess acceptance passed; backup/restore and full failure campaigns remain open.",
+      "owner": "056-QUALIFY",
+      "provider_version_tuple": [
+        "etlantic-sqlmodel==0.55.0",
+        "PostgreSQL 16.14"
+      ],
+      "status": "pending",
+      "supporting_cases": [
+        "tests/sqlmodel/test_durable_postgresql_multiprocess_0_56.py"
+      ]
+    },
+    {
+      "acceptance_criterion": "Built wheels install in a clean environment; package/export/schema/OpenAPI compatibility, migrations, version skew and upgrade/rollback behavior are recorded",
+      "case_id": "AC056-040-local-qualification",
+      "environment_id": "local-darwin-arm64-python311-postgresql16",
+      "evidence_artifacts": [
+        {
+          "path": "docs/11_DEVELOPMENT/evidence/phase_0_56/LOCAL_QUALIFICATION.md",
+          "sha256": "e2916ec7b63966941b92a17d198c90091c1b548fdbeee3cdec715b21b8c76599"
+        },
+        {
+          "path": "docs/11_DEVELOPMENT/evidence/phase_0_56/WHEEL_MANIFEST.json",
+          "sha256": "3b0cb4a28f999be0c91d8f17ede3f55fbcce8b00573cf2840508891fb2342d2a"
+        }
+      ],
+      "id": "AC056-040",
+      "observed_result": "No complete AC-level pass is asserted.",
+      "open_reason": "Complete criterion-level evidence is still pending; listed tests cover only part of the required acceptance case.",
+      "owner": "056-QUALIFY",
+      "provider_version_tuple": [
+        "25 workspace wheels; exact hashes in WHEEL_MANIFEST.json"
+      ],
+      "status": "pending",
+      "supporting_cases": [
+        "docs/11_DEVELOPMENT/evidence/phase_0_56/WHEEL_MANIFEST.json",
+        "tests/sqlmodel/test_cp1_migrations_0_51.py"
+      ]
+    },
+    {
+      "acceptance_criterion": "Mandatory transforms/quality and every advertised engine/native/dynamic/incremental/streaming combination retain their semantics through the managed path; unsupported combinations explain their real limit",
+      "case_id": "AC056-041-local-qualification",
+      "environment_id": "local-darwin-arm64-python311-postgresql16",
+      "evidence_artifacts": [
+        {
+          "path": "docs/11_DEVELOPMENT/evidence/phase_0_56/LOCAL_QUALIFICATION.md",
+          "sha256": "e2916ec7b63966941b92a17d198c90091c1b548fdbeee3cdec715b21b8c76599"
+        },
+        {
+          "path": "docs/11_DEVELOPMENT/evidence/phase_0_56/WHEEL_MANIFEST.json",
+          "sha256": "3b0cb4a28f999be0c91d8f17ede3f55fbcce8b00573cf2840508891fb2342d2a"
+        }
+      ],
+      "id": "AC056-041",
+      "observed_result": "No complete AC-level pass is asserted.",
+      "open_reason": "The complete advertised engine/native/dynamic/incremental/streaming matrix is not qualified.",
+      "owner": "056-QUALIFY",
+      "provider_version_tuple": [
+        "source candidate; workspace package version 0.55.0"
+      ],
+      "status": "pending",
+      "supporting_cases": [
+        "docs/11_DEVELOPMENT/evidence/phase_0_56/LOCAL_QUALIFICATION.md"
+      ]
+    },
+    {
+      "acceptance_criterion": "Existing 0.55 definitions/runs/stores migrate; legacy incomplete payloads cannot execute under fabricated fingerprints or silently receive new semantics",
+      "case_id": "AC056-042-local-qualification",
+      "environment_id": "local-darwin-arm64-python311-postgresql16",
+      "evidence_artifacts": [
+        {
+          "path": "docs/11_DEVELOPMENT/evidence/phase_0_56/LOCAL_QUALIFICATION.md",
+          "sha256": "e2916ec7b63966941b92a17d198c90091c1b548fdbeee3cdec715b21b8c76599"
+        },
+        {
+          "path": "docs/11_DEVELOPMENT/evidence/phase_0_56/WHEEL_MANIFEST.json",
+          "sha256": "3b0cb4a28f999be0c91d8f17ede3f55fbcce8b00573cf2840508891fb2342d2a"
+        }
+      ],
+      "id": "AC056-042",
+      "observed_result": "No complete AC-level pass is asserted.",
+      "open_reason": "Legacy 0.55 payload migration and forged/incomplete execution-payload rejection are not fully qualified.",
+      "owner": "056-ADMIT",
+      "provider_version_tuple": [
+        "source candidate; workspace package version 0.55.0"
+      ],
+      "status": "pending",
+      "supporting_cases": [
+        "tests/fastapi/test_managed_application_0_56.py",
+        "tests/sqlmodel/test_durable_postgresql_multiprocess_0_56.py"
+      ]
+    },
+    {
+      "acceptance_criterion": "At least one exact managed adaptive tuple passes authoritative `/2` admission/runtime and observed qualification; all other tuples remain truthful and fail closed",
+      "case_id": "AC056-043-local-qualification",
+      "environment_id": "local-darwin-arm64-python311-postgresql16",
+      "evidence_artifacts": [
+        {
+          "path": "docs/11_DEVELOPMENT/evidence/phase_0_56/LOCAL_QUALIFICATION.md",
+          "sha256": "e2916ec7b63966941b92a17d198c90091c1b548fdbeee3cdec715b21b8c76599"
+        },
+        {
+          "path": "docs/11_DEVELOPMENT/evidence/phase_0_56/WHEEL_MANIFEST.json",
+          "sha256": "3b0cb4a28f999be0c91d8f17ede3f55fbcce8b00573cf2840508891fb2342d2a"
+        }
+      ],
+      "id": "AC056-043",
+      "observed_result": "No complete AC-level pass is asserted.",
+      "open_reason": "Managed adaptive /2 admission and observed runtime qualification are not complete.",
+      "owner": "056-QUALIFY",
+      "provider_version_tuple": [
+        "source candidate; workspace package version 0.55.0"
+      ],
+      "status": "pending",
+      "supporting_cases": [
+        "docs/11_DEVELOPMENT/evidence/phase_0_56/LOCAL_QUALIFICATION.md"
+      ]
+    },
+    {
+      "acceptance_criterion": "A generated-spec consumer performs optional review/approval and external business orchestration using public commands alone, with no ETL implementation in its application path",
+      "case_id": "AC056-044-local-qualification",
+      "environment_id": "local-darwin-arm64-python311-postgresql16",
+      "evidence_artifacts": [
+        {
+          "path": "docs/11_DEVELOPMENT/evidence/phase_0_56/LOCAL_QUALIFICATION.md",
+          "sha256": "e2916ec7b63966941b92a17d198c90091c1b548fdbeee3cdec715b21b8c76599"
+        },
+        {
+          "path": "docs/11_DEVELOPMENT/evidence/phase_0_56/WHEEL_MANIFEST.json",
+          "sha256": "3b0cb4a28f999be0c91d8f17ede3f55fbcce8b00573cf2840508891fb2342d2a"
+        }
+      ],
+      "id": "AC056-044",
+      "observed_result": "No complete AC-level pass is asserted.",
+      "open_reason": "A clean generic consumer exercising external business orchestration has not been delivered.",
+      "owner": "056-CONTROL",
+      "provider_version_tuple": [
+        "source candidate; workspace package version 0.55.0"
+      ],
+      "status": "pending",
+      "supporting_cases": [
+        "tests/fastapi/test_managed_application_0_56.py",
+        "tests/schedule/test_loops.py"
+      ]
+    }
+  ],
+  "artifacts": [
+    {
+      "path": "docs/11_DEVELOPMENT/evidence/phase_0_56/LOCAL_QUALIFICATION.md",
+      "sha256": "e2916ec7b63966941b92a17d198c90091c1b548fdbeee3cdec715b21b8c76599"
+    },
+    {
+      "path": "docs/11_DEVELOPMENT/evidence/phase_0_56/WHEEL_MANIFEST.json",
+      "sha256": "3b0cb4a28f999be0c91d8f17ede3f55fbcce8b00573cf2840508891fb2342d2a"
+    }
+  ],
+  "candidate": {
+    "base_commit": "e7fd6b866dbecab646cf68b73405ee06ea4437e5",
+    "branch": "codex/phase-0-56",
+    "implementation_patch_sha256_before_index": "e66028812a3015cdc02e1911231e945b0bd2c55d70fa6234c622efcf186f4134",
+    "package_versions": {
+      "etlantic": "0.55.0",
+      "etlantic-fastapi": "0.55.0",
+      "etlantic-foundry": "0.55.0",
+      "etlantic-sql": "0.55.0",
+      "etlantic-sqlmodel": "0.55.0"
+    },
+    "patch_hash_scope": "git diff HEAD --binary before this index file is added; pins the rest of the candidate tree"
+  },
+  "environment": {
+    "architecture": "arm64",
+    "foundry_live_environment_configured": false,
+    "os": "Darwin",
+    "os_release": "25.5.0",
+    "postgresql": "16.14 (isolated local container)",
+    "python": "3.11.15"
+  },
+  "generated_at_utc": "2026-09-30T03:07:23+00:00",
+  "phase": "0.56",
+  "release_decision": "OPEN",
+  "schema": "etlantic.phase_0_56.release_index/1",
+  "summary": {
+    "blocked": 2,
+    "passed": 0,
+    "pending": 42,
+    "total": 44
+  }
+}

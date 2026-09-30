@@ -16,6 +16,7 @@ members = [
     "etlantic-datafusion",
     "etlantic-duckdb",
     "etlantic-fastapi",
+    "etlantic-foundry",
     "etlantic-iceberg",
     "etlantic-k8s",
     "etlantic-kafka",
@@ -843,6 +844,9 @@ duckdb = [
 fastapi = [
     { name = "etlantic-fastapi" },
 ]
+foundry = [
+    { name = "etlantic-foundry" },
+]
 iceberg = [
     { name = "etlantic-iceberg" },
 ]
@@ -949,6 +953,9 @@ dev = [
 duckdb = [
     { name = "etlantic-duckdb" },
 ]
+foundry = [
+    { name = "etlantic-foundry" },
+]
 iceberg = [
     { name = "etlantic-iceberg" },
 ]
@@ -1020,6 +1027,7 @@ requires-dist = [
     { name = "etlantic-datafusion", marker = "extra == 'datafusion'", editable = "packages/etlantic-datafusion" },
     { name = "etlantic-duckdb", marker = "extra == 'duckdb'", editable = "packages/etlantic-duckdb" },
     { name = "etlantic-fastapi", marker = "extra == 'fastapi'", editable = "packages/etlantic-fastapi" },
+    { name = "etlantic-foundry", marker = "extra == 'foundry'", editable = "packages/etlantic-foundry" },
     { name = "etlantic-iceberg", marker = "extra == 'iceberg'", editable = "packages/etlantic-iceberg" },
     { name = "etlantic-k8s", marker = "extra == 'k8s'", editable = "packages/etlantic-k8s" },
     { name = "etlantic-kafka", marker = "extra == 'kafka'", editable = "packages/etlantic-kafka" },
@@ -1054,7 +1062,7 @@ requires-dist = [
     { name = "typer", specifier = ">=0.15,<1" },
     { name = "tzdata", specifier = ">=2024.1" },
 ]
-provides-extras = ["polars", "pandas", "sql", "postgresql", "pyspark", "spark", "airflow", "prefect", "keyring", "sqlmodel", "medallantic", "sparkforge", "fastapi", "datafusion", "s3", "kafka", "k8s", "spark-connect", "schemaregistry", "iceberg", "snowflake", "openlineage", "mcp", "otel", "observability", "arrow", "notebook", "lsp", "dataframes", "duckdb"]
+provides-extras = ["polars", "pandas", "sql", "postgresql", "foundry", "pyspark", "spark", "airflow", "prefect", "keyring", "sqlmodel", "medallantic", "sparkforge", "fastapi", "datafusion", "s3", "kafka", "k8s", "spark-connect", "schemaregistry", "iceberg", "snowflake", "openlineage", "mcp", "otel", "observability", "arrow", "notebook", "lsp", "dataframes", "duckdb"]
 
 [package.metadata.requires-dev]
 airflow = [{ name = "etlantic-airflow", editable = "packages/etlantic-airflow" }]
@@ -1080,6 +1088,7 @@ dev = [
     { name = "ruff", specifier = ">=0.9,<1" },
 ]
 duckdb = [{ name = "etlantic-duckdb", editable = "packages/etlantic-duckdb" }]
+foundry = [{ name = "etlantic-foundry", editable = "packages/etlantic-foundry" }]
 iceberg = [{ name = "etlantic-iceberg", editable = "packages/etlantic-iceberg" }]
 k8s = [{ name = "etlantic-k8s", editable = "packages/etlantic-k8s" }]
 kafka = [{ name = "etlantic-kafka", editable = "packages/etlantic-kafka" }]
@@ -1194,6 +1203,21 @@ provides-extras = ["test"]
 dev = [
     { name = "httpx", specifier = ">=0.27,<1" },
     { name = "pytest", specifier = ">=8,<9" },
+]
+
+[[package]]
+name = "etlantic-foundry"
+version = "0.55.0"
+source = { editable = "packages/etlantic-foundry" }
+dependencies = [
+    { name = "etlantic" },
+    { name = "httpx" },
+]
+
+[package.metadata]
+requires-dist = [
+    { name = "etlantic", editable = "." },
+    { name = "httpx", specifier = ">=0.27,<1" },
 ]
 
 [[package]]

@@ -26,6 +26,7 @@ from etlantic.control_plane import (
     WorkspaceRef,
     authorized_get_definition,
     map_deny_disclosure,
+    require_authorized_run,
 )
 from etlantic.control_plane.errors import CONTROL_PLANE_ERROR_SCHEMA
 from etlantic.control_plane.models import (
@@ -261,6 +262,34 @@ def test_authorizer_in_scope_forbidden_disclosure() -> None:
         )
         == "not_found"
     )
+
+
+def test_run_explicit_not_found_deny_does_not_probe_existence() -> None:
+    class ExplicitNotFoundAuthorizer:
+        def authorize(
+            self, ctx: ControlPlaneContext, action: str, resource: str
+        ) -> AuthzDecision:
+            _ = ctx, action, resource
+            return AuthzDecision(
+                allowed=False,
+                reason="opaque denial",
+                disclosure="not_found",
+            )
+
+    def fail_if_probed() -> bool:
+        raise AssertionError("existence probe must not run after explicit not_found")
+
+    with pytest.raises(ControlPlaneError) as caught:
+        require_authorized_run(
+            ExplicitNotFoundAuthorizer(),
+            _ctx(),
+            "run.read",
+            "run-secret",
+            probe_exists=fail_if_probed,
+        )
+
+    assert caught.value.status == 404
+    assert caught.value.detail == "opaque denial"
 
 
 def test_idempotency_same_key_same_receipt() -> None:

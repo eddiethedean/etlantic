@@ -1,0 +1,63 @@
+{
+  "capabilities": [
+    "source.batch_snapshot",
+    "source.schema_discovery",
+    "write.append",
+    "write.overwrite",
+    "publication.atomic",
+    "transactions",
+    "reconciliation",
+    "idempotency"
+  ],
+  "digest": "sha256:e11d38359470137d31d4748ef763d1c66e680649baef6ba4f5d415db8f93b626",
+  "entries": [
+    {
+      "capabilities": [
+        "source.batch_snapshot",
+        "source.schema_discovery",
+        "idempotency"
+      ],
+      "engine": "foundry",
+      "group": "etlantic.source_connectors",
+      "name": "foundry",
+      "protocol": "etlantic.source/1",
+      "target": "etlantic_foundry.connectors:create_source"
+    },
+    {
+      "capabilities": [
+        "write.append",
+        "write.overwrite",
+        "publication.atomic",
+        "transactions",
+        "reconciliation",
+        "idempotency"
+      ],
+      "engine": "foundry",
+      "group": "etlantic.sink_connectors",
+      "name": "foundry",
+      "protocol": "etlantic.sink/1",
+      "target": "etlantic_foundry.connectors:create_sink"
+    },
+    {
+      "capabilities": [
+        "source.schema_discovery"
+      ],
+      "engine": "foundry",
+      "group": "etlantic.storage_connectors",
+      "name": "foundry",
+      "protocol": "etlantic.storage/1",
+      "target": "etlantic_foundry.connectors:create_storage"
+    }
+  ],
+  "package": "etlantic-foundry",
+  "privileges": [
+    "api:datasets-read",
+    "api:datasets-write"
+  ],
+  "protocol_range": "etlantic.source/1,etlantic.sink/1,etlantic.storage/1",
+  "provenance": {
+    "publisher": "etlantic"
+  },
+  "schema": "etlantic.plugin_manifest/1",
+  "version": "0.55.0"
+}

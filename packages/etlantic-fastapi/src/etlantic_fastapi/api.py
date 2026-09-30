@@ -25,6 +25,8 @@ from etlantic.control_plane import (
     SubmissionStore,
 )
 from etlantic.control_plane.schedule_trust import validate_schedule_runtime
+from etlantic.registry import PlanningContext
+from etlantic.service import ManagedApplicationService
 from etlantic_fastapi._version import __version__
 from etlantic_fastapi.auth import (
     ContextFactory,
@@ -82,6 +84,11 @@ class ETLanticAPI:
     audit: AuditEvidenceStore | None = None
     attestations: AttestationStore | None = None
     objectives: ObjectiveStore | None = None
+    # When configured, headless and HTTP commands share the verified durable
+    # preparation/acceptance service.
+    managed_service: ManagedApplicationService | None = None
+    # Optional resource/connector resolution for canonical plan construction.
+    planning_context_factory: Callable[[Any, Any], PlanningContext] | None = None
     title: str = "ETLantic Control Plane"
     version: str = __version__
     _router: APIRouter | None = field(default=None, init=False, repr=False)
@@ -126,7 +133,7 @@ class ETLanticAPI:
         return self._router
 
     def stores_ready(self) -> bool:
-        return all(
+        ready = all(
             x is not None
             for x in (
                 self.authorizer,
@@ -136,6 +143,27 @@ class ETLanticAPI:
                 self.context_factory,
             )
         )
+        return ready and (self.managed_service is None or self.durable_work is not None)
+
+    def enable_managed_execution(self) -> ETLanticAPI:
+        """Install the shared verified application service on this composition."""
+        if self.durable_work is None:
+            raise TypeError("managed execution requires an injected DurableWorkStore")
+        self.managed_service = ManagedApplicationService(
+            authorizer=self.authorizer,
+            definitions=self.definitions,
+            submissions=self.submissions,
+            durable_work=self.durable_work,
+            events=self.events,
+            profile=self.profile,
+            policy=self.policy,
+            approvals=self.approvals,
+            quotas=self.quotas,
+            audit=self.audit,
+            attestations=self.attestations,
+            planning_context_factory=self.planning_context_factory,
+        )
+        return self
 
 
 def include_router(
@@ -175,6 +203,9 @@ def create_app(
     audit: AuditEvidenceStore | None = None,
     attestations: AttestationStore | None = None,
     objectives: ObjectiveStore | None = None,
+    managed_service: ManagedApplicationService | None = None,
+    managed_execution: bool = False,
+    planning_context_factory: Callable[[Any, Any], PlanningContext] | None = None,
     definitions_backend: str | None = None,
     title: str | None = None,
     version: str | None = None,
@@ -235,6 +266,8 @@ def create_app(
             audit=audit,
             attestations=attestations,
             objectives=objectives,
+            managed_service=managed_service,
+            planning_context_factory=planning_context_factory,
             title=title or "ETLantic Control Plane",
             version=version or __version__,
         )
@@ -267,12 +300,19 @@ def create_app(
             api.attestations = attestations
         if objectives is not None:
             api.objectives = objectives
+        if managed_service is not None:
+            api.managed_service = managed_service
+        if planning_context_factory is not None:
+            api.planning_context_factory = planning_context_factory
         if definitions_backend == "registry":
             if api.registry is None:
                 raise TypeError(
                     "definitions_backend='registry' requires a registry provider"
                 )
             api.definitions = RegistryDefinitionRepository(api.registry)
+
+    if managed_execution and api.managed_service is None:
+        api.enable_managed_execution()
 
     if getattr(api, "schedule_store", None) is not None:
         validate_schedule_runtime(api.profile, api.schedule_store)
@@ -297,6 +337,7 @@ def create_app(
             app.state.audit = api.audit
             app.state.attestations = api.attestations
             app.state.objectives = api.objectives
+            app.state.managed_service = api.managed_service
             # Ready signal only — no BackgroundTasks worker started here.
             app.state.control_plane_ready = api.stores_ready()
             yield

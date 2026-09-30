@@ -218,8 +218,166 @@ class MemoryDurableWorkStore:
             return [
                 deepcopy(row)
                 for (t, w, _), row in self._outbox.items()
-                if (t, w) == _scope(ctx) and row.published_at is None
+                if (t, w) == _scope(ctx)
+                and row.published_at is None
+                and self._submissions.get((t, w, row.submission_id)) is not None
+                and self._submissions[(t, w, row.submission_id)].status
+                not in {"cancelled", "completed", "failed"}
             ][: max(0, limit)]
+
+    def reconcile_terminal_outbox(
+        self, ctx: ControlPlaneContext, *, limit: int = 100
+    ) -> list[OutboxRecord]:
+        """Acknowledge work whose terminal state committed before its outbox ack."""
+        reconciled: list[OutboxRecord] = []
+        with self._lock:
+            candidates = sorted(
+                (
+                    (key, row)
+                    for key, row in self._outbox.items()
+                    if key[:2] == _scope(ctx) and row.published_at is None
+                ),
+                key=lambda item: (item[1].created_at, item[1].outbox_id),
+            )
+            for key, row in candidates:
+                if len(reconciled) >= max(0, limit):
+                    break
+                submission = self._submissions.get((*_scope(ctx), row.submission_id))
+                if submission is None or submission.status not in {
+                    "cancelled",
+                    "completed",
+                    "failed",
+                }:
+                    continue
+                acknowledged = replace(
+                    row,
+                    published_at=_iso(),
+                    delivery_count=row.delivery_count + 1,
+                )
+                self._outbox[key] = acknowledged
+                reconciled.append(deepcopy(acknowledged))
+        return reconciled
+
+    def reconcile_cancelled_submissions(
+        self, ctx: ControlPlaneContext, *, limit: int = 100
+    ) -> list[SubmissionRecord]:
+        """Finalize cancellation requests after their worker lease expires."""
+        reconciled: list[SubmissionRecord] = []
+        now = _now()
+        with self._lock:
+            candidates = sorted(
+                (
+                    (key, row)
+                    for key, row in self._submissions.items()
+                    if key[:2] == _scope(ctx) and row.status == "cancel_requested"
+                ),
+                key=lambda item: (item[1].created_at, item[1].submission_id),
+            )
+            for key, submission in candidates:
+                if len(reconciled) >= max(0, limit):
+                    break
+                lease = self._leases.get(key)
+                if lease is not None and _parse(lease.expires_at) > now:
+                    continue
+                had_running_attempt = False
+                for attempt_key, attempt in tuple(self._attempts.items()):
+                    if (
+                        attempt_key[:2] == _scope(ctx)
+                        and attempt.submission_id == submission.submission_id
+                        and attempt.status == "running"
+                    ):
+                        self._attempts[attempt_key] = replace(
+                            attempt, status="lost", completed_at=_iso(now)
+                        )
+                        had_running_attempt = True
+                if had_running_attempt:
+                    self._record_unknown_effect_locked(ctx, submission.submission_id)
+                cancelled = replace(submission, status="cancelled")
+                self._submissions[key] = cancelled
+                self._ack_submission_outbox_locked(ctx, submission.submission_id)
+                reconciled.append(deepcopy(cancelled))
+        return reconciled
+
+    def _record_unknown_effect_locked(
+        self, ctx: ControlPlaneContext, submission_id: str
+    ) -> None:
+        effect_id = f"{submission_id}:execution"
+        key = (*_scope(ctx), effect_id)
+        existing = self._effects.get(key)
+        if existing is not None and existing.status == "committed":
+            return
+        self._effects[key] = EffectRecord(
+            effect_id=effect_id,
+            submission_id=submission_id,
+            tenant_id=ctx.tenant.tenant_id,
+            workspace_id=ctx.workspace.workspace_id,
+            status="unknown",
+            recorded_at=_iso(),
+            authoritative=True,
+        )
+
+    def _ack_submission_outbox_locked(
+        self, ctx: ControlPlaneContext, submission_id: str
+    ) -> None:
+        for key, row in tuple(self._outbox.items()):
+            if (
+                key[:2] == _scope(ctx)
+                and row.submission_id == submission_id
+                and row.published_at is None
+            ):
+                self._outbox[key] = replace(
+                    row,
+                    published_at=_iso(),
+                    delivery_count=row.delivery_count + 1,
+                )
+
+    def get_submission(
+        self, ctx: ControlPlaneContext, submission_id: str
+    ) -> SubmissionRecord:
+        """Return an accepted execution record inside the caller's scope."""
+        with self._lock:
+            row = self._submissions.get((*_scope(ctx), submission_id))
+            if row is None:
+                raise ControlPlaneError.not_found("Submission not found")
+            return deepcopy(row)
+
+    def get_submission_by_idempotency(
+        self,
+        ctx: ControlPlaneContext,
+        *,
+        idempotency_key: str,
+        operation: str = "run.submit",
+    ) -> SubmissionRecord | None:
+        """Resolve a prior accepted command in its complete principal scope."""
+        idem = (
+            *_scope(ctx),
+            ctx.principal.issuer or "",
+            ctx.principal.kind,
+            ctx.principal.subject,
+            operation,
+            idempotency_key,
+        )
+        with self._lock:
+            submission_id = self._idempotency.get(idem)
+            if submission_id is None:
+                return None
+            row = self._submissions.get((*_scope(ctx), submission_id))
+            return deepcopy(row) if row is not None else None
+
+    def list_attempts(
+        self, ctx: ControlPlaneContext, submission_id: str
+    ) -> list[AttemptRecord]:
+        """Return a scoped attempt history in stable start order."""
+        with self._lock:
+            if (*_scope(ctx), submission_id) not in self._submissions:
+                raise ControlPlaneError.not_found("Submission not found")
+            attempts = [
+                deepcopy(row)
+                for (tenant, workspace, _), row in self._attempts.items()
+                if (tenant, workspace) == _scope(ctx)
+                and row.submission_id == submission_id
+            ]
+            return sorted(attempts, key=lambda row: (row.started_at, row.attempt_id))
 
     def mark_published(self, ctx: ControlPlaneContext, outbox_id: str) -> OutboxRecord:
         key = (*_scope(ctx), outbox_id)
@@ -256,10 +414,19 @@ class MemoryDurableWorkStore:
             if submission.status != "cancel_requested":
                 submission = replace(submission, status="cancel_requested")
                 self._submissions[key] = submission
-            # Expire any live lease so holders cannot heartbeat forever and
-            # block takeover after cancel.
             lease = self._leases.get(key)
-            if lease is not None and _parse(lease.expires_at) > _now():
+            lease_active = lease is not None and _parse(lease.expires_at) > _now()
+            running_attempts = [
+                (attempt_key, attempt)
+                for attempt_key, attempt in self._attempts.items()
+                if attempt_key[:2] == _scope(ctx)
+                and attempt.submission_id == submission_id
+                and attempt.status == "running"
+            ]
+            # Let a live attempt retain its lease briefly so it can acknowledge
+            # cooperative cancellation. Queued work has no owner to wake, so
+            # expire its lease tombstone and let a host reconcile it at once.
+            if lease is not None and lease_active and not running_attempts:
                 self._leases[key] = replace(
                     lease,
                     expires_at=_iso(_now() - timedelta(seconds=1)),
@@ -405,14 +572,23 @@ class MemoryDurableWorkStore:
                 raise ControlPlaneError.conflict(
                     "Terminal submission cannot start an attempt"
                 )
-            if any(
-                attempt.submission_id == submission_id and attempt.status == "running"
-                for (tenant, workspace, _), attempt in self._attempts.items()
-                if (tenant, workspace) == _scope(ctx)
-            ):
-                raise ControlPlaneError.conflict(
-                    "Submission already has a running attempt"
-                )
+            for attempt_key, attempt in list(self._attempts.items()):
+                if (
+                    attempt_key[:2] == _scope(ctx)
+                    and attempt.submission_id == submission_id
+                    and attempt.status == "running"
+                ):
+                    if attempt.fencing_token >= fencing_token:
+                        raise ControlPlaneError.conflict(
+                            "Submission already has a running attempt with the current fencing token"
+                        )
+                    # A new fencing token proves that the previous lease
+                    # expired or was replaced. Preserve its outcome as lost;
+                    # the worker must consult the stable result/effect before
+                    # deciding whether execution can safely resume.
+                    self._attempts[attempt_key] = replace(
+                        attempt, status="lost", completed_at=_iso()
+                    )
             # Caller context first, then authoritative submission fields last.
             merged = dict(context or {})
             merged.update(
@@ -705,6 +881,14 @@ class MemoryDurableWorkStore:
                 )
             self._effects[(*_scope(ctx), safe_effect.effect_id)] = deepcopy(safe_effect)
             return deepcopy(safe_effect)
+
+    def get_effect(self, ctx: ControlPlaneContext, effect_id: str) -> EffectRecord:
+        """Read one effect receipt inside the caller's tenant/workspace scope."""
+        with self._lock:
+            row = self._effects.get((*_scope(ctx), effect_id))
+            if row is None:
+                raise ControlPlaneError.not_found("Effect not found")
+            return deepcopy(row)
 
     def replay(
         self,

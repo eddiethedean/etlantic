@@ -4,6 +4,7 @@
 from __future__ import annotations
 
 from pathlib import Path
+from time import sleep
 
 import pytest
 
@@ -186,3 +187,44 @@ def test_read_only_durable_ops_do_not_bump_payload_version(tmp_path: Path) -> No
     store.plan_repair(_ctx(), submission.submission_id)
     store.plan_backfill(_ctx(), submission.submission_id, partition_ids=("p1",))
     assert _version() == before
+
+
+def test_cancel_reconciliation_is_persisted_and_unknown_after_worker_death(
+    tmp_path: Path,
+) -> None:
+    engine = create_sqlite_engine(f"sqlite:///{tmp_path / 'cancel-recovery.db'}")
+    apply_migrations(engine)
+    store = SQLModelDurableWorkStore(engine)
+    submission, _ = store.accept(
+        _ctx(),
+        idempotency_key="cancel-recovery",
+        operation="run.submit",
+        plan_fingerprint="plan",
+    )
+    lease = store.acquire_lease(
+        _ctx(), submission.submission_id, owner_id="crashed-worker", ttl_seconds=1
+    )
+    attempt = store.start_attempt(
+        _ctx(),
+        submission.submission_id,
+        owner_id="crashed-worker",
+        fencing_token=lease.fencing_token,
+    )
+    assert store.cancel_submission(_ctx(), submission.submission_id).status == (
+        "cancel_requested"
+    )
+    sleep(1.1)
+
+    reopened = SQLModelDurableWorkStore(engine)
+    recovered = reopened.reconcile_cancelled_submissions(_ctx(), limit=10)
+    assert [item.submission_id for item in recovered] == [submission.submission_id]
+    assert (
+        reopened.get_submission(_ctx(), submission.submission_id).status == "cancelled"
+    )
+    assert reopened.list_attempts(_ctx(), submission.submission_id)[0].status == "lost"
+    assert (
+        reopened.get_effect(_ctx(), f"{submission.submission_id}:execution").status
+        == "unknown"
+    )
+    assert reopened.pending_outbox(_ctx()) == []
+    assert attempt.status == "running"

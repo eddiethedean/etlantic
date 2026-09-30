@@ -1,0 +1,131 @@
+{
+  "package_count": 25,
+  "packages": [
+    {
+      "filename": "etlantic-0.55.0-py3-none-any.whl",
+      "sha256": "b48bc05fe1b70545b111b30163ebe967f2740eb763ba813fe9e7d97557a16ff6",
+      "size_bytes": 1079849
+    },
+    {
+      "filename": "etlantic_airflow-0.55.0-py3-none-any.whl",
+      "sha256": "4f83dcfb9cacb6aec2378c4ff6a604d4130ffed7512e69effad8f20aaefa89da",
+      "size_bytes": 9155
+    },
+    {
+      "filename": "etlantic_datafusion-0.55.0-py3-none-any.whl",
+      "sha256": "b1141f1515d77fa65be194fd290c07fa7b186198e795c304619184acefb4c928",
+      "size_bytes": 13177
+    },
+    {
+      "filename": "etlantic_duckdb-0.55.0-py3-none-any.whl",
+      "sha256": "37534c744cf643c3730e3cfabbddbd1cbca2f8587267c860cce5513ca172acb9",
+      "size_bytes": 32061
+    },
+    {
+      "filename": "etlantic_fastapi-0.55.0-py3-none-any.whl",
+      "sha256": "12fc455bf4eba1846f0648c3a49af934671bf40faff5e9072f9be769d677ad7a",
+      "size_bytes": 38912
+    },
+    {
+      "filename": "etlantic_foundry-0.55.0-py3-none-any.whl",
+      "sha256": "bbaa236db6338df4b0eb5b53b2e47e95cf60c272b8494a3e14fbfbbb953e0f1e",
+      "size_bytes": 16539
+    },
+    {
+      "filename": "etlantic_iceberg-0.55.0-py3-none-any.whl",
+      "sha256": "383c1b0f1b84ea32a60ad95fa17aa09a127ed9a8dec94b58be519ce84f10151d",
+      "size_bytes": 7498
+    },
+    {
+      "filename": "etlantic_k8s-0.55.0-py3-none-any.whl",
+      "sha256": "dd66e4c41ac8d994530b2292033f445abeef110adb2c7d6d6b1e5fd85bb566e9",
+      "size_bytes": 3782
+    },
+    {
+      "filename": "etlantic_kafka-0.55.0-py3-none-any.whl",
+      "sha256": "9d03cfb627e1716a2e10d5440f964baa96c2f40a76345586b0162dfe8564830f",
+      "size_bytes": 5966
+    },
+    {
+      "filename": "etlantic_keyring-0.55.0-py3-none-any.whl",
+      "sha256": "df057731423ce007e13b37378bbefa6145a4e74f9e84160ceac5d43d13fdf4bd",
+      "size_bytes": 3171
+    },
+    {
+      "filename": "etlantic_lsp-0.55.0-py3-none-any.whl",
+      "sha256": "46de809f9040dd9542cc279bb80f317e82faf82c4db1569ebb2e5ce93db06fa6",
+      "size_bytes": 6251
+    },
+    {
+      "filename": "etlantic_mcp-0.55.0-py3-none-any.whl",
+      "sha256": "8c79f60f871ae6fb6c824e2541842db27eaab94eb3d6dd3ac14c565898b64e69",
+      "size_bytes": 4639
+    },
+    {
+      "filename": "etlantic_openlineage-0.55.0-py3-none-any.whl",
+      "sha256": "79f6bff754f18ad762f2e9f07c4c4fd7cb1227bad784892f8739231a533dbce6",
+      "size_bytes": 4582
+    },
+    {
+      "filename": "etlantic_pandas-0.55.0-py3-none-any.whl",
+      "sha256": "7dddfaee61f5fcb1a7f8bc1451a1355966dd4274f46e095519b86fb248319fd0",
+      "size_bytes": 18003
+    },
+    {
+      "filename": "etlantic_polars-0.55.0-py3-none-any.whl",
+      "sha256": "93110bbdee9f2e6daaa8b26a44367b3da55fc8e862d50c21513c363a8ceb25a5",
+      "size_bytes": 26958
+    },
+    {
+      "filename": "etlantic_prefect-0.55.0-py3-none-any.whl",
+      "sha256": "e12aace0013a75c795565e453bd92116b1fef1e0f5a70f5250a02a4265cc2f84",
+      "size_bytes": 5595
+    },
+    {
+      "filename": "etlantic_pyspark-0.55.0-py3-none-any.whl",
+      "sha256": "8ba9b93eaf20ca36d144df1cb4f21fd8ca4923aa9bcba1fd1fb2e09cce45557c",
+      "size_bytes": 26232
+    },
+    {
+      "filename": "etlantic_s3-0.55.0-py3-none-any.whl",
+      "sha256": "2508ad9251aa1a1e9267b74837e76f387e9f662e9f807e4ac027d483746bc6d7",
+      "size_bytes": 9682
+    },
+    {
+      "filename": "etlantic_schemaregistry-0.55.0-py3-none-any.whl",
+      "sha256": "dc2959153debffdf9b7be5823d5a0ff39f6e1ba5c0ecf24cc7cf008dbd7e5146",
+      "size_bytes": 4712
+    },
+    {
+      "filename": "etlantic_snowflake-0.55.0-py3-none-any.whl",
+      "sha256": "977959620170b4a9cbcd1cc9863e98e232c7cc0c13c7b1767bd86a09bfa0e715",
+      "size_bytes": 7672
+    },
+    {
+      "filename": "etlantic_spark_connect-0.55.0-py3-none-any.whl",
+      "sha256": "2ec4ca5318375eb4dcbe3957ff0bd318d36d487ddda5eda1403ce9591b2644a2",
+      "size_bytes": 3922
+    },
+    {
+      "filename": "etlantic_sparkforge-0.55.0-py3-none-any.whl",
+      "sha256": "5c7a75d261ce65b3fa7b84ce06cf58827f4aee0b69a5177b52accd8e11924bf1",
+      "size_bytes": 3851
+    },
+    {
+      "filename": "etlantic_sql-0.55.0-py3-none-any.whl",
+      "sha256": "48a2b0f5f7a507203b07bd7c0bed579c9071e445a098a54c0612415a0bb9fdd8",
+      "size_bytes": 76114
+    },
+    {
+      "filename": "etlantic_sqlmodel-0.55.0-py3-none-any.whl",
+      "sha256": "67e245c1614bf2467e22357bd27b1507c40f5f9d86491313d38ef0e0e4613eb8",
+      "size_bytes": 41712
+    },
+    {
+      "filename": "medallantic-0.55.0-py3-none-any.whl",
+      "sha256": "21c3ff66c43b69f7413385145086491cc639f0c6ff1581ea9fa5e16c17b3ec1a",
+      "size_bytes": 56878
+    }
+  ],
+  "schema": "etlantic.phase_0_56.wheel_manifest/1"
+}

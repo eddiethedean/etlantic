@@ -50,6 +50,8 @@ CROSS_TENANT_404_CASES: list[tuple[str, str, str, dict | None]] = [
     ),
     ("cp_submit_run", "POST", "/v1/definitions/{definition_id}/runs", {}),
     ("cp_get_run", "GET", "/v1/runs/{run_id}", None),
+    ("cp_get_run_actions", "GET", "/v1/runs/{run_id}/actions", None),
+    ("cp_retry_run", "POST", "/v1/runs/{run_id}/retry", None),
     ("cp_cancel_run", "POST", "/v1/runs/{run_id}/cancel", None),
     ("cp_stream_run_events", "GET", "/v1/runs/{run_id}/events", None),
     ("cp_get_run_report", "GET", "/v1/runs/{run_id}/report", None),
@@ -80,6 +82,8 @@ ACTIONS = (
     "run.submit",
     "run.read",
     "run.cancel",
+    "run.actions",
+    "run.retry",
     "run.report",
     "run.artifacts",
     "run.lineage",
@@ -221,7 +225,10 @@ def test_in_tenant_allow(
     if operation_id == "cp_submit_run":
         headers["Idempotency-Key"] = "alice-allow"
     resp = client.request(method, path, headers=headers, json=body)
-    assert resp.status_code in {200, 202}, (
+    expected_statuses = (
+        {501} if operation_id in {"cp_get_run_actions", "cp_retry_run"} else {200, 202}
+    )
+    assert resp.status_code in expected_statuses, (
         operation_id,
         method,
         path,

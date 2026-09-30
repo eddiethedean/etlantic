@@ -439,7 +439,7 @@ def test_staged_checkpoint_deadline_restores_files(
     old_bytes = existing.read_bytes()
     new = tmp_path / "checkpoint-new.json"
     original = artifact_module.write_text_safe
-    deadline_scope: anyio.CancelScope
+    deadline_scope: anyio.CancelScope | None = None
 
     def persist(path: Path, *args: Any, **kwargs: Any) -> Any:
         result = original(path, *args, **kwargs)
@@ -448,6 +448,7 @@ def test_staged_checkpoint_deadline_restores_files(
                 original(existing, '{"records": [{"id": 2}]}', args[1])
 
             def expire_after_preparation() -> None:
+                assert deadline_scope is not None
                 deadline_scope.deadline = anyio.current_time() + 0.1
 
             # Arm the deadline at the operation under test. Thread startup and

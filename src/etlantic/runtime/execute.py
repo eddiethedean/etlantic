@@ -99,6 +99,7 @@ async def arun_pipeline(
     context: PlanningContext | None = None,
     workspace: str | Path | None = None,
     artifact_store: ArtifactStore | None = None,
+    run_id: str | None = None,
 ) -> PipelineRunReport:
     """Validate, plan, and execute a pipeline asynchronously.
 
@@ -173,7 +174,21 @@ async def arun_pipeline(
         )
 
     pipeline_for_scheduler: type[Any] | None
-    if isinstance(pipeline_cls, PipelineDefinition):
+    supplied_plan: PipelinePlan | None = None
+    if isinstance(pipeline_cls, PipelinePlan):
+        from etlantic.plan.serialize import verify_plan_fingerprint
+
+        verify_plan_fingerprint(pipeline_cls)
+        if pipeline_cls.profile_name != resolved.name:
+            raise PipelineExecutionError(
+                "Stored plan profile does not match the selected runtime profile",
+                code="PMPLAN409",
+                stage="admission",
+            )
+        supplied_plan = pipeline_cls
+        graph = pipeline_cls.logical_graph
+        pipeline_for_scheduler = None
+    elif isinstance(pipeline_cls, PipelineDefinition):
         if context is None:
             context = PlanningContext.create(profile=profile, registry=runtime.registry)
         _defn, context, _ = resolve_definition(
@@ -187,15 +202,28 @@ async def arun_pipeline(
         if context is None:
             context = PlanningContext.create(profile=profile, registry=runtime.registry)
 
-    selection = request.selection.to_plan_selection(graph)
-    plan = plan_pipeline(
-        pipeline_cls,
-        context=context,
-        profile=profile,
-        selection=selection,
-        request=request if resolved.execution_strategy == "adaptive" else None,
-    )
-    explicit_plan = cast(PipelinePlan, plan)
+    if supplied_plan is not None:
+        requested_nodes = request.selection.resolve(graph)
+        planned_nodes = supplied_plan.selected_nodes or tuple(
+            node.name for node in graph.nodes
+        )
+        if tuple(requested_nodes) != tuple(planned_nodes):
+            raise PipelineExecutionError(
+                "Run selection does not match the accepted plan",
+                code="PMPLAN409",
+                stage="admission",
+            )
+        explicit_plan = supplied_plan
+    else:
+        selection = request.selection.to_plan_selection(graph)
+        plan = plan_pipeline(
+            pipeline_cls,
+            context=context,
+            profile=profile,
+            selection=selection,
+            request=request if resolved.execution_strategy == "adaptive" else None,
+        )
+        explicit_plan = cast(PipelinePlan, plan)
     if resolved.execution_strategy != "adaptive":
         request = _merge_plan_policies(request, explicit_plan)
 
@@ -263,7 +291,7 @@ async def arun_pipeline(
         orchestrator_name,
         plugins=None if scheduler_plugins is None else dict(scheduler_plugins),
     )
-    run_id = f"run-{uuid.uuid4().hex[:12]}"
+    run_id = run_id or f"run-{uuid.uuid4().hex[:12]}"
     async with runtime.session():
         return await scheduler.execute(
             explicit_plan,
@@ -290,6 +318,7 @@ def run_pipeline(
     context: PlanningContext | None = None,
     workspace: str | Path | None = None,
     artifact_store: ArtifactStore | None = None,
+    run_id: str | None = None,
 ) -> PipelineRunReport:
     """Validate, plan, and execute a pipeline synchronously.
 
@@ -306,6 +335,7 @@ def run_pipeline(
             context=context,
             workspace=workspace,
             artifact_store=artifact_store,
+            run_id=run_id,
         )
 
     return anyio.run(_main)
