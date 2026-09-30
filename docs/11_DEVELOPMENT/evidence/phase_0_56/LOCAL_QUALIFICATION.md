@@ -247,7 +247,7 @@ Current index: 10 criteria passed, 32 pending, and 2 blocked of 44.
   snapshots passed.
 - Isolated connector action jobs (AC056-020 implementation evidence):
   `uv run pytest -q tests/control_plane/test_action_jobs_0_56.py
-  tests/fastapi/test_managed_action_jobs_0_56.py` — 9 passed. The tests exercise
+  tests/fastapi/test_managed_action_jobs_0_56.py` — 16 passed. The tests exercise
   closed secret-free requests, durable/idempotent acceptance, SQLModel restart,
   HTTP submission and owner-scoped pagination, action and object authorization
   rechecks before provider calls, lease fencing, deadline cancellation,
@@ -264,6 +264,24 @@ Current index: 10 criteria passed, 32 pending, and 2 blocked of 44.
   [`ACTION_WORKERS_0_56.md`](../../ACTION_WORKERS_0_56.md). This is generic
   action-worker evidence; provider-specific live test/schema/preflight
   integrations remain open, so AC056-020 is still pending.
+- Bounded preview and explicit provisioning action contracts (AC056-021/022):
+  The same 16-test action suite exercises preview requests containing only
+  opaque provider, connection and resource references, bounded row/byte limits
+  and redaction fields; inline credential fields are rejected. The separate
+  action host applies its own caps, requires declared columns, redacts
+  sensitive columns and caller-selected values, and marks truncation. Preview
+  result TTL is configurable; SQLite-backed SQLModel qualification cleared the
+  expired payload, preserved the successful receipt and expiry timestamp, and
+  recovered that state after backend restart. Provisioning uses a separate
+  permission, returns the same action receipt on an idempotent retry, forces
+  create-only/if-exists-fail behavior, and validates a backend-derived schema
+  fingerprint and matching effect receipt. Cleanup is a separately authorized
+  command tied to a successful same-owner parent action; mismatched and foreign
+  parents fail before provider IO. A mock effect store exercised create and
+  compensation, while schema inspection was tested without target mutation.
+  Provider-specific credential resolution and create/cleanup integrations are
+  deployment-owned and were not qualified here, so AC056-021/022 remain
+  pending.
 - Candidate wheel build and isolated action-worker smoke (AC056-020 / 040):
   `uv build --all-packages --wheel` built all 25 workspace distributions.
   Their exact candidate wheel sizes and SHA-256 digests are recorded in
@@ -409,6 +427,15 @@ Current index: 10 criteria passed, 32 pending, and 2 blocked of 44.
   a pruned cursor and refused to recreate its keyed event. The installed FastAPI
   wheel constructed and closed the standard SQLModel backend, and its generated
   OpenAPI included the bounded run-event history endpoint.
+- Candidate wheel smoke for preview and provisioning (AC056-021/022):
+  `uv build --all-packages --wheel --out-dir
+  /tmp/etlantic-phase056-actions-final` built all 25 distributions. Core, FastAPI and
+  SQLModel wheels were installed in a fresh Python 3.14.3 environment without
+  workspace path injection. Migration 010 applied; the installed backend
+  executed a redacted preview, cleared its expired result while retaining its
+  receipt, then accepted a create-only provision action and a parent-linked
+  cleanup action. The provider-neutral mock effect was removed and both
+  durable receipts remained queryable.
 - Public CLI: sample pipeline validation passed with no diagnostics; plan
   generation returned fingerprint
   `8f3879b301b3b0ea1b87434eef3dd0a58ef0cbe8342ced056323cc9d6d5b19da`.
@@ -454,9 +481,11 @@ Current index: 10 criteria passed, 32 pending, and 2 blocked of 44.
   receipts, a built-in catalog action, and a deployment handler contract now
   have focused evidence. Provider-specific live connection, schema and
   preflight integrations plus the full provider cancellation matrix remain
-  open, so this criterion stays pending. AC056-021–022 bounded preview and
-  explicit provisioning are not implemented. AC056-023–024 retain their open
-  resource-isolation and complete secret lease/rotation lifecycle requirements.
+  open, so this criterion stays pending. AC056-021–022 now have bounded
+  preview and explicit create/cleanup contracts with mock-worker evidence;
+  provider credential resolution and provider-specific effect qualification
+  remain open. AC056-023–024 retain their open resource-isolation and complete
+  secret lease/rotation lifecycle requirements.
   AC056-025 has immutable upload, durable lease, bounded cleanup and PostgreSQL
   multiprocess race evidence, but its full worker threat and provider security
   campaign remain open. AC056-026 passed its owner-scoped cleanup,

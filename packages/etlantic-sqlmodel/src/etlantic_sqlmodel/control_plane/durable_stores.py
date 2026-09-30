@@ -350,6 +350,9 @@ class SQLModelDurableWorkStore:
     ):
         return self._txn(lambda m: m.finish_action_job(ctx, action_id, **kwargs))
 
+    def cleanup_expired_action_results(self, ctx: ControlPlaneContext, **kwargs: Any):
+        return self._txn(lambda m: m.cleanup_expired_action_results(ctx, **kwargs))
+
     def list_attempts(self, ctx: ControlPlaneContext, submission_id: str):
         return self._read_only(lambda m: m.list_attempts(ctx, submission_id))
 

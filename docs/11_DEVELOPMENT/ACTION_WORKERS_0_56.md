@@ -6,7 +6,8 @@ description: Public action job contract, handler registration, and bounded execu
 # Isolated connector action workers
 
 The managed backend accepts the `connector.test`, `connector.catalog`,
-`connector.schema.inspect`, and `connector.preflight` actions as durable jobs.
+`connector.schema.inspect`, `connector.preflight`, `connector.preview`,
+`connector.provision`, and `connector.provision.cleanup` actions as durable jobs.
 HTTP only validates and authorizes a typed request, stores the job, and returns
 its receipt. A separately created `ActionExecutionHost` claims the job, rebuilds
 the accepted caller scope, checks action and object permissions again, and
@@ -34,12 +35,15 @@ action name. This keeps connection storage, provider construction, and secret
 resolution in the deployment's trusted provider integration. A missing handler
 finishes the accepted job with the stable `handler_unavailable` code.
 
-Requests have closed schemas. Test and schema inspection refer only to a
-provider and a saved `connection_id`; preflight refers to a saved definition
-and revision selector. Unknown fields, including inline credentials, are
-rejected before acceptance. The worker repeats request parsing and checks
-authorization for the action and every declared connector, connection, or
-definition reference before invoking a handler.
+Requests have closed schemas. Test, schema inspection, preview, and
+provisioning refer only to a provider and saved `connection_id`; preflight
+refers to a saved definition and revision selector. Preview and provisioning
+also name an opaque provider resource. Preview accepts row and byte caps plus
+caller-selected fields to redact. Its request is limited to 100 rows and 64
+KiB. Unknown fields, including inline credentials and caller-supplied
+provisioning modes, are rejected before acceptance. The worker repeats request
+parsing and checks authorization for the action and every declared connector,
+connection, resource, definition, and parent action before invoking a handler.
 
 Handlers receive the job's accepted `ControlPlaneContext`, including principal,
 tenant, workspace, environment, security domain, and resource owner. They must
@@ -51,10 +55,31 @@ messages and exception-defined codes are never copied into receipts.
 The API bounds requested deadlines to 1–300 seconds. Standard managed backend
 configuration requires the worker lease to exceed the configured maximum
 deadline. The worker also caps each tick at 100 jobs and each result at 64 KiB,
-100 items per array, and 32 nested levels. Oversized results fail with
-`result_limit_exceeded`; successful results pass through control-plane
-redaction before persistence. Receipts are idempotent by caller, action, and
-idempotency key, and list/query operations remain owner-scoped and paginated.
+100 items per array, and 32 nested levels. Preview output is restricted to
+declared columns; provider-marked sensitive columns and caller-selected fields
+are redacted before byte and row limits are applied. Oversized general results
+fail with `result_limit_exceeded`. Preview results have a separate configurable
+retention window from their durable action receipts (60–86,400 seconds by
+default one hour). Worker maintenance clears expired preview payloads while
+preserving receipt status and expiry metadata.
+
+`connector.provision` is a separate permissioned action. The worker derives a
+schema fingerprint, supplies a stable action id for provider idempotency, and
+forces `mode=create_only` with `if_exists=fail`. A handler must return a
+matching action id, resource id, schema fingerprint, safe effect id, and
+positive create and cleanup flags or the receipt fails with
+`invalid_effect_receipt`. It must not implement replace, alter, or implicit
+create behavior for inspection actions. `connector.provision.cleanup` requires
+a successfully completed provision action owned by the same caller and an
+exact match on provider, connection, resource, schema, and effect receipt.
+Cleanup handlers receive that verified effect id; their response must prove
+which provision action was compensated and that the effect was removed.
+
+Receipts are idempotent by caller, action, and idempotency key, and list/query
+operations remain owner-scoped and paginated. These provider-neutral contracts
+are qualified with local fake handlers. A deployment still needs provider
+integrations that resolve saved connections and execute their provider's
+create and compensation operations in the separately deployed worker role.
 
 ```python
 worker = backend.create_action_execution_host(worker_id="connector-actions-1")

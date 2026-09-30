@@ -69,7 +69,9 @@ _ACTION_ERROR_CODES = frozenset(
         "deadline_exceeded",
         "handler_unavailable",
         "invalid_action_request",
+        "invalid_effect_receipt",
         "provider_timeout",
+        "provision_parent_unavailable",
         "result_limit_exceeded",
     }
 )
@@ -579,11 +581,16 @@ class MemoryDurableWorkStore:
         status: ActionJobStatus,
         result: Mapping[str, Any] | None = None,
         error_code: str | None = None,
+        result_ttl_seconds: int | None = None,
         now: datetime | None = None,
     ) -> ActionJobRecord:
         """Finish a claimed action iff the worker still holds its fence."""
         if status not in {"succeeded", "failed", "timed_out"}:
             raise ValueError("action job completion status is invalid")
+        if result_ttl_seconds is not None and (
+            type(result_ttl_seconds) is not int or result_ttl_seconds < 1
+        ):
+            raise ValueError("result_ttl_seconds must be a positive integer")
         current = now or _now()
         key = (*_scope(ctx), action_id)
         with self._lock:
@@ -621,6 +628,20 @@ class MemoryDurableWorkStore:
                     error_code="deadline_exceeded",
                 )
             else:
+                if status == "succeeded":
+                    if row.action == "connector.preview" and result_ttl_seconds is None:
+                        raise ValueError(
+                            "connector preview results require separate retention"
+                        )
+                    if (
+                        row.action != "connector.preview"
+                        and result_ttl_seconds is not None
+                    ):
+                        raise ValueError(
+                            "result TTL applies only to connector preview actions"
+                        )
+                elif result_ttl_seconds is not None:
+                    raise ValueError("failed action jobs cannot retain result payloads")
                 safe_result = redact_control_plane_payload(dict(result or {}))
                 result_json = json.dumps(
                     safe_result,
@@ -635,6 +656,11 @@ class MemoryDurableWorkStore:
                     worker_id=None,
                     lease_expires_at=None,
                     result_json=result_json if status == "succeeded" else None,
+                    result_expires_at=(
+                        _iso(current + timedelta(seconds=result_ttl_seconds))
+                        if status == "succeeded" and result_ttl_seconds is not None
+                        else None
+                    ),
                     error_code=(
                         error_code
                         if status == "failed" and error_code in _ACTION_ERROR_CODES
@@ -645,6 +671,33 @@ class MemoryDurableWorkStore:
                 )
             self._action_jobs[key] = finished
             return deepcopy(finished)
+
+    def cleanup_expired_action_results(
+        self,
+        ctx: ControlPlaneContext,
+        *,
+        limit: int = 100,
+        now: datetime | None = None,
+    ) -> int:
+        """Delete expired preview payloads while retaining action receipts."""
+        if type(limit) is not int or not 1 <= limit <= 1000:
+            raise ValueError("limit must be between 1 and 1000")
+        current = now or _now()
+        with self._lock:
+            expired = sorted(
+                (
+                    (key, row)
+                    for key, row in self._action_jobs.items()
+                    if key[:2] == _scope(ctx)
+                    and row.result_json is not None
+                    and row.result_expires_at is not None
+                    and _parse(row.result_expires_at) <= current
+                ),
+                key=lambda item: (item[1].result_expires_at or "", item[1].action_id),
+            )[:limit]
+            for key, row in expired:
+                self._action_jobs[key] = replace(row, result_json=None)
+            return len(expired)
 
     def list_attempts(
         self, ctx: ControlPlaneContext, submission_id: str

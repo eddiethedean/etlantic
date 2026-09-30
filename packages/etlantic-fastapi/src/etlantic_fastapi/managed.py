@@ -60,6 +60,7 @@ class ManagedBackendConfig:
     input_resource_retention_seconds: int = 90 * 24 * 60 * 60
     action_job_max_deadline_seconds: int = 300
     action_job_lease_seconds: int = 330
+    preview_result_ttl_seconds: int = 60 * 60
     action_handlers: Mapping[str, ActionHandler] = field(
         default_factory=_empty_action_handlers, repr=False
     )
@@ -98,11 +99,19 @@ class ManagedBackendConfig:
             raise ValueError(
                 "action_job_lease_seconds must exceed the maximum action deadline"
             )
+        if (
+            type(self.preview_result_ttl_seconds) is not int
+            or not 60 <= self.preview_result_ttl_seconds <= 24 * 60 * 60
+        ):
+            raise ValueError("preview_result_ttl_seconds must be between 60 and 86400")
         supported_actions = {
             "connector.test",
             "connector.catalog",
             "connector.schema.inspect",
             "connector.preflight",
+            "connector.preview",
+            "connector.provision",
+            "connector.provision.cleanup",
         }
         unsupported_actions = set(self.action_handlers) - supported_actions
         if unsupported_actions:
@@ -130,6 +139,7 @@ class ManagedBackend:
         default_factory=_empty_action_handlers, repr=False
     )
     action_job_lease_seconds: int = 330
+    preview_result_ttl_seconds: int = 60 * 60
     execution_profile: Profile | None = field(default=None, repr=False)
     _closed: bool = field(default=False, init=False, repr=False)
 
@@ -179,7 +189,7 @@ class ManagedBackend:
     def create_action_execution_host(
         self, *, worker_id: str = "action-worker-1"
     ) -> ActionExecutionHost:
-        """Create the separate worker for test/catalog/schema/preflight jobs."""
+        """Create the separate worker for connector inspection/action jobs."""
         if self._closed:
             raise RuntimeError("Managed backend is closed")
         durable = self.api.durable_work
@@ -194,6 +204,7 @@ class ManagedBackend:
             profile=self.execution_profile,
             worker_id=worker_id,
             lease_seconds=self.action_job_lease_seconds,
+            preview_result_ttl_seconds=self.preview_result_ttl_seconds,
         )
 
 
@@ -281,6 +292,7 @@ def create_managed_backend(
             input_resources=input_resources,
             action_handlers=dict(config.action_handlers),
             action_job_lease_seconds=config.action_job_lease_seconds,
+            preview_result_ttl_seconds=config.preview_result_ttl_seconds,
             execution_profile=execution_profile,
         )
     except BaseException:

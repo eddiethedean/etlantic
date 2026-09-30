@@ -11,6 +11,7 @@ from __future__ import annotations
 import json
 from collections.abc import Mapping
 from dataclasses import asdict, dataclass, field
+from datetime import UTC, datetime
 from typing import Any, Literal, cast
 
 from etlantic.control_plane.redaction import (
@@ -428,12 +429,22 @@ class ActionJobRecord:
     started_at: str | None = None
     completed_at: str | None = None
     result_json: str | None = None
+    result_expires_at: str | None = None
     error_code: str | None = None
 
     def to_dict(self) -> dict[str, Any]:
         """Return the safe caller receipt without the submitted request."""
         result: Any = None
-        if self.result_json is not None:
+        result_expired = False
+        if self.result_expires_at is not None:
+            try:
+                expiry = datetime.fromisoformat(
+                    self.result_expires_at.replace("Z", "+00:00")
+                )
+                result_expired = expiry <= datetime.now(UTC)
+            except (TypeError, ValueError):
+                result_expired = True
+        if self.result_json is not None and not result_expired:
             try:
                 result = json.loads(self.result_json)
             except (TypeError, ValueError):
@@ -450,6 +461,7 @@ class ActionJobRecord:
             "attempt": self.attempt,
             "started_at": self.started_at,
             "completed_at": self.completed_at,
+            "result_expires_at": self.result_expires_at,
             "result": (
                 dict(cast(Mapping[str, Any], result))
                 if isinstance(result, Mapping)

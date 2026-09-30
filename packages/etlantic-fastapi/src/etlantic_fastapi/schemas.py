@@ -119,6 +119,7 @@ class ConnectorActionReceiptResponse(BaseModel):
     started_at: str | None = None
     completed_at: str | None = None
     result: dict[str, Any] | None = None
+    result_expires_at: str | None = None
     error_code: str | None = None
 
     model_config = {"populate_by_name": True}

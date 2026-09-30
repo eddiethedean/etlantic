@@ -19,10 +19,10 @@ from typing import Any
 EXPECTED_DIGESTS = {
     # Pyright's import/type surface differs by host platform because the
     # synchronized dependency set includes platform-specific distributions.
-    # AC056-001 parity coverage shifted test diagnostic line positions;
-    # reviewed shadow diagnostics stayed at 10,451 with no added diagnostics.
-    "Darwin": "5722f73ca878719931f0a3debc5bdca075893098c77a4f08a3cfbf129467774a",
-    "Linux": "5722f73ca878719931f0a3debc5bdca075893098c77a4f08a3cfbf129467774a",
+    # AC056-021/022 action contracts shifted source and test diagnostic line
+    # positions; the reviewed shadow diagnostic count remains 10,451.
+    "Darwin": "644a8b9493fa7899a4b185d34ff463b50f3cf17ffc712984a3cacdfdd5b3d3ee",
+    "Linux": "644a8b9493fa7899a4b185d34ff463b50f3cf17ffc712984a3cacdfdd5b3d3ee",
 }
 
 

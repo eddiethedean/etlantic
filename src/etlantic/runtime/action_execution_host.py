@@ -7,14 +7,19 @@ import base64
 import hashlib
 import inspect
 import json
+import re
 from collections.abc import Awaitable, Callable, Mapping
 from datetime import UTC, datetime
 from typing import Any, cast
 
 from etlantic.control_plane.action_jobs import (
     ConnectorActionKind,
+    ConnectorPreviewRequest,
+    ConnectorProvisionCleanupRequest,
+    ConnectorProvisionRequest,
     connector_action_resources,
     parse_connector_action_request,
+    verify_provision_parent,
 )
 from etlantic.control_plane.authz import require_authorized
 from etlantic.control_plane.durable_models import ActionJobRecord
@@ -30,13 +35,15 @@ from etlantic.control_plane.models import (
     WorkspaceRef,
 )
 from etlantic.control_plane.protocols import Authorizer
-from etlantic.control_plane.redaction import redact_control_plane_payload
+from etlantic.control_plane.redaction import REDACTED, redact_control_plane_payload
 
 ActionHandler = Callable[
     [ControlPlaneContext, Mapping[str, Any]], Awaitable[Mapping[str, Any]]
 ]
 _MAX_RESULT_DEPTH = 32
 _MAX_TICK_LIMIT = 100
+_SAFE_EFFECT_ID = re.compile(r"[A-Za-z0-9][A-Za-z0-9_.:-]{0,255}\Z")
+_SAFE_PREVIEW_COLUMN = re.compile(r"[A-Za-z0-9][A-Za-z0-9_.:-]{0,255}\Z")
 
 
 def _now() -> datetime:
@@ -63,6 +70,7 @@ class ActionExecutionHost:
         lease_seconds: int = 30,
         max_result_bytes: int = 64 * 1024,
         max_result_items: int = 100,
+        preview_result_ttl_seconds: int = 60 * 60,
     ) -> None:
         if not worker_id.strip():
             raise ValueError("worker_id must be non-empty")
@@ -72,6 +80,11 @@ class ActionExecutionHost:
             raise ValueError("max_result_bytes must be a positive integer")
         if type(max_result_items) is not int or max_result_items < 1:
             raise ValueError("max_result_items must be a positive integer")
+        if (
+            type(preview_result_ttl_seconds) is not int
+            or preview_result_ttl_seconds < 60
+        ):
+            raise ValueError("preview_result_ttl_seconds must be at least 60 seconds")
         self.durable = durable
         self.authorizer = authorizer
         self.handlers: dict[str, ActionHandler] = dict(handlers or {})
@@ -88,11 +101,13 @@ class ActionExecutionHost:
         self.lease_seconds = lease_seconds
         self.max_result_bytes = max_result_bytes
         self.max_result_items = max_result_items
+        self.preview_result_ttl_seconds = preview_result_ttl_seconds
 
     def tick(self, ctx: ControlPlaneContext, *, limit: int = 20) -> int:
         """Execute at most ``limit`` currently available action jobs."""
         if type(limit) is not int or not 1 <= limit <= _MAX_TICK_LIMIT:
             raise ValueError(f"limit must be between 1 and {_MAX_TICK_LIMIT}")
+        self.durable.cleanup_expired_action_results(ctx, limit=100)
         processed = 0
         for _ in range(limit):
             job = self.durable.claim_action_job(
@@ -113,10 +128,8 @@ class ActionExecutionHost:
                     raise ValueError("action request must be an object")
                 request = cast(dict[str, Any], raw_request)
                 typed_action = cast(ConnectorActionKind, job.action)
-                typed_request = parse_connector_action_request(
-                    typed_action, request
-                )
-                request = typed_request.to_dict()
+                typed_request = parse_connector_action_request(typed_action, request)
+                request: dict[str, Any] = typed_request.to_dict()
                 action_ctx = self._trusted_context(ctx, job)
             except Exception:
                 self._finish_failure(ctx, job, "invalid_action_request")
@@ -135,9 +148,53 @@ class ActionExecutionHost:
                 self._finish_failure(ctx, job, "authorization_denied")
                 processed += 1
                 continue
-            deadline = datetime.fromisoformat(
-                job.deadline_at.replace("Z", "+00:00")
-            )
+            provision_effect: Mapping[str, Any] | None = None
+            try:
+                if isinstance(typed_request, ConnectorProvisionCleanupRequest):
+                    parent = self.durable.get_action_job(
+                        action_ctx, typed_request.provision_action_id
+                    )
+                    provision, provision_effect = verify_provision_parent(
+                        action_ctx, typed_request, parent
+                    )
+                    request.update(
+                        {
+                            "action_id": job.action_id,
+                            "effect_id": provision_effect["effect_id"],
+                            "schema_fingerprint": provision.schema_fingerprint(),
+                            "target_kind": provision.target_kind,
+                        }
+                    )
+                elif isinstance(typed_request, ConnectorProvisionRequest):
+                    request.update(
+                        {
+                            "action_id": job.action_id,
+                            "mode": "create_only",
+                            "if_exists": "fail",
+                            "schema_fingerprint": typed_request.schema_fingerprint(),
+                        }
+                    )
+                elif isinstance(typed_request, ConnectorPreviewRequest):
+                    request["max_rows"] = min(
+                        typed_request.max_rows, self.max_result_items
+                    )
+                    request["max_bytes"] = min(
+                        typed_request.max_bytes, self.max_result_bytes
+                    )
+            except ControlPlaneError as exc:
+                failure = (
+                    "authorization_denied"
+                    if exc.status in {403, 404}
+                    else "provision_parent_unavailable"
+                )
+                self._finish_failure(ctx, job, failure)
+                processed += 1
+                continue
+            except Exception:
+                self._finish_failure(ctx, job, "invalid_action_request")
+                processed += 1
+                continue
+            deadline = datetime.fromisoformat(job.deadline_at.replace("Z", "+00:00"))
             remaining = (deadline - _now()).total_seconds()
             if remaining <= 0:
                 self._finish_timeout(ctx, job)
@@ -148,9 +205,10 @@ class ActionExecutionHost:
                     asyncio.wait_for(handler(action_ctx, request), timeout=remaining)
                 )
             except TimeoutError:
-                if datetime.fromisoformat(
-                    job.deadline_at.replace("Z", "+00:00")
-                ) <= _now():
+                if (
+                    datetime.fromisoformat(job.deadline_at.replace("Z", "+00:00"))
+                    <= _now()
+                ):
                     self._finish_timeout(ctx, job)
                 else:
                     self._finish_failure(ctx, job, "provider_timeout")
@@ -160,6 +218,33 @@ class ActionExecutionHost:
                 # Provider exception codes and messages are untrusted. Never
                 # persist provider-controlled text in a caller-visible receipt.
                 self._finish_failure(ctx, job, "action_failed")
+                processed += 1
+                continue
+            if isinstance(typed_request, ConnectorPreviewRequest):
+                try:
+                    result = self._bounded_preview_result(
+                        typed_request,
+                        result,
+                        max_rows=min(typed_request.max_rows, self.max_result_items),
+                        max_bytes=min(typed_request.max_bytes, self.max_result_bytes),
+                    )
+                except Exception:
+                    self._finish_failure(ctx, job, "result_limit_exceeded")
+                    processed += 1
+                    continue
+            elif isinstance(typed_request, ConnectorProvisionRequest):
+                if not self._valid_provision_effect(
+                    typed_request, job.action_id, result
+                ):
+                    self._finish_failure(ctx, job, "invalid_effect_receipt")
+                    processed += 1
+                    continue
+            elif isinstance(
+                typed_request, ConnectorProvisionCleanupRequest
+            ) and not self._valid_cleanup_effect(
+                typed_request, job.action_id, provision_effect, result
+            ):
+                self._finish_failure(ctx, job, "invalid_effect_receipt")
                 processed += 1
                 continue
             try:
@@ -175,9 +260,152 @@ class ActionExecutionHost:
                 fencing_token=job.fencing_token,
                 status="succeeded",
                 result=safe_result,
+                result_ttl_seconds=(
+                    self.preview_result_ttl_seconds
+                    if isinstance(typed_request, ConnectorPreviewRequest)
+                    else None
+                ),
             )
             processed += 1
         return processed
+
+    @staticmethod
+    def _valid_provision_effect(
+        request: ConnectorProvisionRequest,
+        action_id: str,
+        result: Mapping[str, Any],
+    ) -> bool:
+        if set(result) != {
+            "action_id",
+            "effect_id",
+            "resource_id",
+            "schema_fingerprint",
+            "created",
+            "cleanup_supported",
+        }:
+            return False
+        effect_id = result.get("effect_id")
+        return (
+            isinstance(effect_id, str)
+            and _SAFE_EFFECT_ID.fullmatch(effect_id) is not None
+            and result.get("action_id") == action_id
+            and result.get("resource_id") == request.resource_id
+            and result.get("schema_fingerprint") == request.schema_fingerprint()
+            and result.get("created") is True
+            and result.get("cleanup_supported") is True
+        )
+
+    @staticmethod
+    def _valid_cleanup_effect(
+        request: ConnectorProvisionCleanupRequest,
+        action_id: str,
+        provision_effect: Mapping[str, Any] | None,
+        result: Mapping[str, Any],
+    ) -> bool:
+        if provision_effect is None:
+            return False
+        if set(result) != {
+            "action_id",
+            "effect_id",
+            "resource_id",
+            "cleanup_of",
+            "removed",
+        }:
+            return False
+        return (
+            result.get("action_id") == action_id
+            and result.get("effect_id") == provision_effect.get("effect_id")
+            and result.get("resource_id") == request.resource_id
+            and result.get("cleanup_of") == request.provision_action_id
+            and result.get("removed") is True
+        )
+
+    @staticmethod
+    def _bounded_preview_result(
+        request: ConnectorPreviewRequest,
+        result: Mapping[str, Any],
+        *,
+        max_rows: int,
+        max_bytes: int,
+    ) -> dict[str, Any]:
+        if set(result) - {"columns", "rows", "truncated"}:
+            raise ValueError("preview provider returned unsupported fields")
+        columns_value = result.get("columns")
+        rows_value = result.get("rows")
+        truncated_value = result.get("truncated", False)
+        if (
+            not isinstance(columns_value, list)
+            or not isinstance(rows_value, list)
+            or type(truncated_value) is not bool
+        ):
+            raise ValueError("preview provider returned an invalid shape")
+        columns_list = cast(list[Any], columns_value)
+        rows_list = cast(list[Any], rows_value)
+        if len(columns_list) > 100:
+            raise ValueError("preview provider returned too many columns")
+        columns: list[dict[str, Any]] = []
+        sensitive_fields = set(request.redact_fields)
+        names: set[str] = set()
+        for raw_column in columns_list:
+            if not isinstance(raw_column, Mapping):
+                raise ValueError("preview column metadata is invalid")
+            column = cast(Mapping[str, Any], raw_column)
+            name = column.get("name")
+            logical_type = column.get("logical_type", "unknown")
+            sensitive = column.get("sensitive", False)
+            if (
+                not isinstance(name, str)
+                or _SAFE_PREVIEW_COLUMN.fullmatch(name) is None
+                or not isinstance(logical_type, str)
+                or len(logical_type) > 64
+                or type(sensitive) is not bool
+                or name in names
+                or set(column) - {"name", "logical_type", "sensitive"}
+            ):
+                raise ValueError("preview column metadata is invalid")
+            names.add(name)
+            if sensitive:
+                sensitive_fields.add(name)
+            columns.append({"name": name, "logical_type": logical_type})
+        rows: list[dict[str, Any]] = []
+        for raw_row in rows_list[:max_rows]:
+            if not isinstance(raw_row, Mapping):
+                raise ValueError("preview row is invalid")
+            source = cast(Mapping[str, Any], raw_row)
+            rows.append(
+                {
+                    name: REDACTED if name in sensitive_fields else source[name]
+                    for name in names
+                    if name in source
+                }
+            )
+        truncated = truncated_value or len(rows_list) > max_rows
+        safe = redact_control_plane_payload(
+            {
+                "schema": "etlantic.connector.preview/1",
+                "columns": columns,
+                "rows": rows,
+                "truncated": truncated,
+            }
+        )
+        if not isinstance(safe, dict):
+            raise ValueError("preview redaction returned an invalid shape")
+        payload = cast(dict[str, Any], safe)
+
+        def encode() -> bytes:
+            return json.dumps(
+                payload,
+                sort_keys=True,
+                separators=(",", ":"),
+                allow_nan=False,
+            ).encode("utf-8")
+
+        while len(encode()) > max_bytes and payload["rows"]:
+            payload["rows"].pop()
+            payload["truncated"] = True
+        if len(encode()) > max_bytes:
+            raise ValueError("preview schema exceeds the result byte limit")
+        return payload
 
     @staticmethod
     def _trusted_context(
@@ -232,9 +460,7 @@ class ActionExecutionHost:
             raise ValueError("action result exceeds its byte limit")
         return safe_result
 
-    def _finish_timeout(
-        self, ctx: ControlPlaneContext, job: ActionJobRecord
-    ) -> None:
+    def _finish_timeout(self, ctx: ControlPlaneContext, job: ActionJobRecord) -> None:
         self.durable.finish_action_job(
             ctx,
             job.action_id,
@@ -268,9 +494,7 @@ class ActionExecutionHost:
                     filtered_entries.append(entry)
             entries = filtered_entries
         fingerprint = hashlib.sha256(
-            json.dumps(catalog, sort_keys=True, separators=(",", ":")).encode(
-                "utf-8"
-            )
+            json.dumps(catalog, sort_keys=True, separators=(",", ":")).encode("utf-8")
         ).hexdigest()
         limit = request.get("limit", 50)
         if type(limit) is not int or not 1 <= limit <= self.max_result_items:

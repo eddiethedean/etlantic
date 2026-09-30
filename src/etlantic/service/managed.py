@@ -22,8 +22,10 @@ from etlantic.authoring.serialize import (
 )
 from etlantic.control_plane.action_jobs import (
     ConnectorActionKind,
+    ConnectorProvisionCleanupRequest,
     connector_action_resources,
     parse_connector_action_request,
+    verify_provision_parent,
 )
 from etlantic.control_plane.authz import require_authorized, require_authorized_run
 from etlantic.control_plane.durable_models import SubmissionRecord
@@ -73,6 +75,9 @@ CONNECTOR_ACTION_TYPES = frozenset(
         "connector.catalog",
         "connector.schema.inspect",
         "connector.preflight",
+        "connector.preview",
+        "connector.provision",
+        "connector.provision.cleanup",
     }
 )
 MAX_ACTION_PAGE_SIZE = 100
@@ -214,6 +219,11 @@ class ManagedApplicationService:
                 resource,
                 resource_in_caller_scope=True,
             )
+        if isinstance(typed_request, ConnectorProvisionCleanupRequest):
+            parent = self.durable_work.get_action_job(
+                ctx, typed_request.provision_action_id
+            )
+            verify_provision_parent(ctx, typed_request, parent)
         deadline_at = (
             datetime.now(UTC) + timedelta(seconds=deadline_seconds)
         ).isoformat().replace("+00:00", "Z")

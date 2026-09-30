@@ -66,8 +66,16 @@ class DurableWorkStore(Protocol):
         status: ActionJobStatus,
         result: Mapping[str, Any] | None = None,
         error_code: str | None = None,
+        result_ttl_seconds: int | None = None,
         now: datetime | None = None,
     ) -> ActionJobRecord: ...
+    def cleanup_expired_action_results(
+        self,
+        ctx: ControlPlaneContext,
+        *,
+        limit: int = 100,
+        now: datetime | None = None,
+    ) -> int: ...
 
     def accept(
         self,
