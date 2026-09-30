@@ -8,7 +8,7 @@ import hashlib
 import inspect
 import threading
 import uuid
-from collections.abc import Awaitable, Callable, Mapping
+from collections.abc import Awaitable, Callable, Mapping, Sequence
 from dataclasses import dataclass, field, replace
 from datetime import UTC, datetime
 from pathlib import Path
@@ -155,6 +155,10 @@ def _logical_type_of(value: Any) -> str:
     return type(value).__name__
 
 
+def _new_string_set() -> set[str]:
+    return set()
+
+
 class _ManagedCancellation(Exception):
     """Internal signal that a managed worker requested runtime cancellation."""
 
@@ -275,6 +279,15 @@ class LocalOrchestrator:
     _pending_source_connector: Any | None = field(default=None, repr=False)
     _pending_source_binding: dict[str, Any] = field(default_factory=dict, repr=False)
     _pending_source_context: dict[str, Any] = field(default_factory=dict, repr=False)
+    _connector_source_providers: set[str] = field(
+        default_factory=_new_string_set, repr=False
+    )
+    _unverified_connector_source_providers: set[str] = field(
+        default_factory=_new_string_set, repr=False
+    )
+    _source_resource_identities: set[str] = field(
+        default_factory=_new_string_set, repr=False
+    )
     _sink_commit_receipts: list[Any] = field(default_factory=list, repr=False)
     _expected_sink_commits: int = field(default=0, repr=False)
     _publication_barrier: Any | None = field(default=None, repr=False)
@@ -4333,6 +4346,53 @@ class LocalOrchestrator:
             return {}
         return {"etlantic.control_plane_scope": scope.to_dict()}
 
+    async def _connector_resource_identities(
+        self,
+        connector: Any,
+        *,
+        binding: Mapping[str, Any],
+        context: Mapping[str, Any],
+        node_name: str,
+        stage: str,
+    ) -> tuple[str, ...]:
+        """Resolve optional opaque provider identities without exposing them."""
+        resolver = getattr(connector, "resource_identities", None)
+        if not callable(resolver):
+            return ()
+        try:
+            raw = await maybe_await(resolver, binding=binding, context=context)
+        except Exception:
+            raise NodeExecutionError(
+                "Provider resource overlap could not be verified",
+                node_name=node_name,
+                stage=stage,
+                code="PMEXEC435",
+            ) from None
+        if isinstance(raw, str):
+            identities: tuple[object, ...] = (raw,)
+        elif isinstance(raw, Sequence) and not isinstance(raw, (bytes, bytearray)):
+            identities = tuple(cast(Sequence[object], raw))
+        else:
+            identities = ()
+        if not identities:
+            raise NodeExecutionError(
+                "Provider returned no verifiable resource identity",
+                node_name=node_name,
+                stage=stage,
+                code="PMEXEC435",
+            )
+        normalized: list[str] = []
+        for identity in identities:
+            if not isinstance(identity, str) or not identity.strip():
+                raise NodeExecutionError(
+                    "Provider returned no verifiable resource identity",
+                    node_name=node_name,
+                    stage=stage,
+                    code="PMEXEC435",
+                )
+            normalized.append(identity)
+        return tuple(sorted(set(normalized)))
+
     async def _read_source(self, node: Node, *, run_id: str) -> Any:
         binding_name = node.binding or node.name
         binding_name = self.request.binding_overrides.get(node.name, binding_name)
@@ -4380,6 +4440,17 @@ class LocalOrchestrator:
                     descriptor.secret_ref, run_id=run_id, step=node.name
                 )
             try:
+                identities = await self._connector_resource_identities(
+                    connector,
+                    binding=binding_payload,
+                    context=context,
+                    node_name=node.name,
+                    stage=FailureStage.READ.value,
+                )
+                self._connector_source_providers.add(provider_name)
+                if not identities:
+                    self._unverified_connector_source_providers.add(provider_name)
+                self._source_resource_identities.update(identities)
                 records, _batch = await run_source_connector_extract(
                     connector,
                     binding=binding_payload,
@@ -4601,6 +4672,34 @@ class LocalOrchestrator:
         from etlantic.connectors.session import write_via_sink_connector
 
         try:
+            if self._connector_source_providers:
+                sink_identities = await self._connector_resource_identities(
+                    connector,
+                    binding=binding_payload,
+                    context=context,
+                    node_name=node_name,
+                    stage=FailureStage.WRITE.value,
+                )
+                if (
+                    provider_name in self._connector_source_providers
+                    and (
+                        provider_name in self._unverified_connector_source_providers
+                        or not sink_identities
+                    )
+                ):
+                    raise NodeExecutionError(
+                        "Same-provider source and sink overlap cannot be verified",
+                        node_name=node_name,
+                        stage=FailureStage.WRITE.value,
+                        code="PMEXEC435",
+                    )
+                if self._source_resource_identities.intersection(sink_identities):
+                    raise NodeExecutionError(
+                        "Source and sink resolve to the same resource; publication was prevented",
+                        node_name=node_name,
+                        stage=FailureStage.WRITE.value,
+                        code="PMEXEC435",
+                    )
             receipt = await write_via_sink_connector(
                 connector,
                 binding=binding_payload,

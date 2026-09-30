@@ -163,10 +163,30 @@ class StorageConnector(Protocol):
         ...
 
 
+@runtime_checkable
+class ResourceIdentityConnector(Protocol):
+    """Optional connector contract for runtime overlap detection.
+
+    Returned values are opaque equality tokens. Connectors must not include
+    credentials or raw resource names; the runtime keeps tokens in memory and
+    rejects a write when a source and sink resolve to the same identity.
+    """
+
+    async def resource_identities(
+        self,
+        *,
+        binding: Mapping[str, Any],
+        context: Mapping[str, Any],
+    ) -> tuple[str, ...]:
+        """Return opaque identities for the bound resource and its aliases."""
+        ...
+
+
 __all__ = [
     "SINK_PROTOCOL",
     "SOURCE_PROTOCOL",
     "STORAGE_PROTOCOL",
+    "ResourceIdentityConnector",
     "SinkConnector",
     "SourceConnector",
     "StorageConnector",

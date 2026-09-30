@@ -99,6 +99,7 @@ from etlantic.connectors.models import (
     fingerprint_public_config,
 )
 from etlantic.connectors.protocol import (
+    ResourceIdentityConnector,
     SinkConnector,
     SourceConnector,
     StorageConnector,
@@ -161,6 +162,7 @@ __all__ = [
     "ReadBatch",
     "ReconciliationResult",
     "RedactedRuntimeContext",
+    "ResourceIdentityConnector",
     "RetryPolicy",
     "SchemaInspection",
     "SinkConnector",

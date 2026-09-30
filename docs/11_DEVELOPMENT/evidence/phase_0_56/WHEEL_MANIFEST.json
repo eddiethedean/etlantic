@@ -3,8 +3,8 @@
   "packages": [
     {
       "filename": "etlantic-0.55.0-py3-none-any.whl",
-      "sha256": "c784c30d4c6ac814ccdc724aecce323f8c274a5e6d80ae21cf8a5256854fc6ed",
-      "size_bytes": 1093767
+      "sha256": "c0a5e305bc589f25fed28f361f971e2d5476c61b5331988a350b088f6ce95446",
+      "size_bytes": 1094633
     },
     {
       "filename": "etlantic_airflow-0.55.0-py3-none-any.whl",
@@ -113,8 +113,8 @@
     },
     {
       "filename": "etlantic_sql-0.55.0-py3-none-any.whl",
-      "sha256": "48a2b0f5f7a507203b07bd7c0bed579c9071e445a098a54c0612415a0bb9fdd8",
-      "size_bytes": 76114
+      "sha256": "15536b39704486f7a1e4077fe1cf2e7bfed46ee37e9f7d31290e8b635bb2c1aa",
+      "size_bytes": 77060
     },
     {
       "filename": "etlantic_sqlmodel-0.55.0-py3-none-any.whl",

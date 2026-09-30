@@ -34,13 +34,24 @@ Current index: 6 criteria passed, 36 pending, and 2 blocked of 44.
   — 17 passed across SQLite and PostgreSQL schemas, including migration 009,
   concurrent SQLModel event sequencing, downgrade/re-upgrade, retained event
   history and retention tombstones. `ETLANTIC_SQL_TEST_URL=... uv run pytest -q
-  tests/sql/test_postgresql_live_0_56.py` — 4 passed, covering append/upsert/
+  tests/sql/test_postgresql_live_0_56.py` — 6 passed, covering append/upsert/
   replace, idempotent replay, bounded source/schema reads, permission denial,
-  staged rollback and lost-ack reconciliation. `ETLANTIC_CP_TEST_URL=... uv run
+  staged rollback, lost-ack reconciliation, PostgreSQL table aliases, and an
+  actual managed source-to-same-table replace rejected before the target
+  transaction while preserving the source row. `ETLANTIC_CP_TEST_URL=... uv run
   pytest -q tests/sqlmodel/test_durable_postgresql_multiprocess_0_56.py` — 2
   passed, covering eight-process single acceptance and quota idempotency plus
   restart reads. The disposable database ran PostgreSQL 16.14; it was isolated
   from application data.
+- Managed connector overlap guard:
+  `uv run pytest -q tests/connectors/test_resource_overlap_0_56.py` — 4 passed.
+  The runtime rejects matching opaque source/target identities before opening a
+  sink session, fails closed when same-provider identities are unavailable,
+  permits proven disjoint resources, and does not serialize identity tokens in
+  reports. PostgreSQL normalizes table aliases and adds the live server address
+  to compare distinct endpoint aliases. The live PostgreSQL test exercised the
+  guard through the standard managed runtime. AC056-033 remains pending for the
+  full provider permission, key, schema, cleanup and pairing matrix.
 - Clean installed-wheel smoke:
   rebuilt core, FastAPI and SQLModel 0.55.0 candidate wheels were installed
   into a fresh Python 3.14.3 virtual environment without workspace path
@@ -51,6 +62,11 @@ Current index: 6 criteria passed, 36 pending, and 2 blocked of 44.
   values are recorded in `WHEEL_MANIFEST.json`. This is
   useful AC056-040 evidence; complete package/export/schema compatibility,
   version skew and upgrade/rollback qualification remain pending.
+- Overlap-guard wheel smoke: rebuilt core and `etlantic-sql` wheels installed
+  into a separate Python 3.14.3 environment. Public imports for
+  `ResourceIdentityConnector` and both live PostgreSQL connector identity
+  resolvers passed without workspace path injection. The current wheel hashes
+  and sizes are recorded in `WHEEL_MANIFEST.json`.
 - SQLModel migration campaign against SQLite and isolated PostgreSQL schemas:
   `ETLANTIC_SQLMODEL_TEST_URL=... uv run pytest -q tests/sqlmodel/test_cp1_migrations_0_51.py` — 8 passed.
 - CP1 authorization matrix: 48 passed.

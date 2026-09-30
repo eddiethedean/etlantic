@@ -9,9 +9,11 @@ plan, receipt, or connector error.
 from __future__ import annotations
 
 import hashlib
+import hmac
 import json
 import os
 import re
+import secrets
 import uuid
 from collections.abc import AsyncIterator, Mapping, Sequence
 from copy import deepcopy
@@ -62,6 +64,7 @@ from etlantic_sql.configuration_schemas import (
 
 PROVIDER = "postgresql"
 PACKAGE_VERSION = "0.55.0"
+_RESOURCE_IDENTITY_KEY = secrets.token_bytes(32)
 DEFAULT_ROW_LIMIT = 10_000
 MAX_ROW_LIMIT = 100_000
 DEFAULT_BATCH_SIZE = 1_000
@@ -269,6 +272,80 @@ def _qualified(schema: str, table: str) -> str:
     return f"{schema}.{table}"
 
 
+def _resource_identity_token(payload: Mapping[str, Any]) -> str:
+    """Return a process-local opaque identity for overlap comparisons."""
+    canonical = json.dumps(
+        dict(payload), sort_keys=True, separators=(",", ":"), ensure_ascii=False
+    ).encode("utf-8")
+    return hmac.new(_RESOURCE_IDENTITY_KEY, canonical, hashlib.sha256).hexdigest()
+
+
+async def _postgres_resource_identities(
+    context: Mapping[str, Any],
+    *,
+    schema: str,
+    table: str,
+    timeout_seconds: int,
+) -> tuple[str, ...]:
+    """Resolve URL and server aliases before the run can publish a sink."""
+    from anyio import to_thread
+    from sqlalchemy import text
+
+    url = _runtime_url(context)
+    identities = {
+        _resource_identity_token(
+            {
+                "kind": "url",
+                "host": str(url.host or "").rstrip(".").lower(),
+                "port": int(url.port or 5432),
+                "database": str(url.database or ""),
+                "schema": schema,
+                "table": table,
+            }
+        )
+    }
+
+    def inspect_server() -> tuple[str | None, int | None, str]:
+        engine = _engine(context, timeout_seconds=timeout_seconds)
+        try:
+            with engine.connect() as connection:
+                row = connection.execute(
+                    text(
+                        "SELECT inet_server_addr()::text, inet_server_port(), "
+                        "current_database()"
+                    )
+                ).one()
+                address = str(row[0]) if row[0] is not None else None
+                port = int(row[1]) if row[1] is not None else None
+                database = str(row[2])
+                return address, port, database
+        finally:
+            engine.dispose()
+
+    try:
+        address, port, database = await to_thread.run_sync(inspect_server)
+    except Exception:
+        raise ConnectorConfigError(
+            "PostgreSQL resource overlap could not be verified",
+            code="PMCONN880",
+            provider=PROVIDER,
+        ) from None
+    if address is not None and port is not None:
+        identities.add(
+            _resource_identity_token(
+                {
+                    "kind": "server",
+                    "address": address,
+                    "port": port,
+                    "database": database,
+                    "schema": schema,
+                    "table": table,
+                }
+            )
+        )
+    return tuple(sorted(identities))
+
+
 def _json_bytes(row: Mapping[str, Any]) -> int:
     try:
         return len(
@@ -302,6 +379,24 @@ class LivePostgresSourceConnector:
             maturity=ConnectorMaturity.EXPERIMENTAL,
             metadata={"dialect": "postgresql", "backend": "live"},
             configuration_schema=deepcopy(SOURCE_CONFIG_SCHEMA),
+        )
+
+    async def resource_identities(
+        self, *, binding: Mapping[str, Any], context: Mapping[str, Any]
+    ) -> tuple[str, ...]:
+        cfg = _config(binding, _SOURCE_KEYS)
+        schema, table = _table_parts(binding, cfg)
+        timeout_seconds = _bounded_integer(
+            cfg.get("timeout_seconds"),
+            name="timeout_seconds",
+            default=DEFAULT_TIMEOUT_SECONDS,
+            maximum=MAX_TIMEOUT_SECONDS,
+        )
+        return await _postgres_resource_identities(
+            context,
+            schema=schema,
+            table=table,
+            timeout_seconds=timeout_seconds,
         )
 
     async def plan_read(
@@ -502,6 +597,24 @@ class LivePostgresSinkConnector:
                 "effect_ledger": "provisioned",
             },
             configuration_schema=deepcopy(SINK_CONFIG_SCHEMA),
+        )
+
+    async def resource_identities(
+        self, *, binding: Mapping[str, Any], context: Mapping[str, Any]
+    ) -> tuple[str, ...]:
+        cfg = _config(binding, _SINK_KEYS)
+        schema, table = _table_parts(binding, cfg)
+        timeout_seconds = _bounded_integer(
+            cfg.get("timeout_seconds"),
+            name="timeout_seconds",
+            default=DEFAULT_TIMEOUT_SECONDS,
+            maximum=MAX_TIMEOUT_SECONDS,
+        )
+        return await _postgres_resource_identities(
+            context,
+            schema=schema,
+            table=table,
+            timeout_seconds=timeout_seconds,
         )
 
     async def plan_write(

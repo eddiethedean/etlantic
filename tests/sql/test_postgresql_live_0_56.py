@@ -12,8 +12,11 @@ import pytest
 from sqlalchemy import create_engine, text
 from sqlalchemy.engine import make_url
 
+from etlantic import Data, Extract, Load, Pipeline, PipelineRuntime, Profile
 from etlantic.connectors.models import CommitReceipt
 from etlantic.connectors.session import write_via_sink_connector
+from etlantic.registry import BindingDescriptor, PlanningContext
+from etlantic.runtime.state import RunStatus
 from etlantic.secrets import SecretValue
 from etlantic_sql.live_postgresql import (
     LivePostgresSinkConnector,
@@ -25,6 +28,16 @@ URL = os.environ.get("ETLANTIC_SQL_TEST_URL")
 pytestmark = pytest.mark.skipif(
     not URL, reason="requires an isolated live PostgreSQL URL"
 )
+
+
+class ManagedOrder(Data):
+    id: str
+    payload: str
+
+
+class OverlappingManagedTransfer(Pipeline):
+    source = Extract[ManagedOrder](asset="source")
+    sink = Load[ManagedOrder](input=source, asset="sink")
 
 
 @pytest.fixture(autouse=True)
@@ -193,6 +206,101 @@ def test_live_source_and_storage_inspection_are_bounded_and_read_only(
     inspection = anyio.run(inspect)
     assert {field["name"] for field in inspection.fields} == {"id", "payload"}
     assert inspection.row_estimate is not None
+    engine.dispose()
+
+
+def test_live_postgresql_resource_identity_resolves_table_aliases(
+    secret_context: dict[str, Any],
+) -> None:
+    source = LivePostgresSourceConnector()
+    sink = LivePostgresSinkConnector()
+
+    async def resolve() -> tuple[tuple[str, ...], tuple[str, ...], tuple[str, ...]]:
+        source_identity = await source.resource_identities(
+            binding={
+                "provider": "postgresql",
+                "location": "etlantic_phase056_orders",
+            },
+            context=secret_context,
+        )
+        aliased_sink_identity = await sink.resource_identities(
+            binding={
+                "provider": "postgresql",
+                "config": {
+                    "schema": "public",
+                    "table": "etlantic_phase056_orders",
+                    "mode": "append",
+                },
+            },
+            context=secret_context,
+        )
+        other_sink_identity = await sink.resource_identities(
+            binding={
+                "provider": "postgresql",
+                "config": {
+                    "schema": "public",
+                    "table": "other_table",
+                    "mode": "append",
+                },
+            },
+            context=secret_context,
+        )
+        return source_identity, aliased_sink_identity, other_sink_identity
+
+    source_ids, alias_ids, other_ids = anyio.run(resolve)
+    assert set(source_ids).intersection(alias_ids)
+    assert not set(source_ids).intersection(other_ids)
+
+
+def test_live_managed_postgresql_overlap_is_rejected_before_replace(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    assert URL is not None
+    monkeypatch.setenv("ETLANTIC_SQL_URL", URL)
+    engine = create_engine(URL, hide_parameters=True)
+    with engine.begin() as connection:
+        connection.execute(
+            text(
+                "INSERT INTO public.etlantic_phase056_orders VALUES "
+                "('keep', 'source-row')"
+            )
+        )
+
+    profile = Profile(name="dev", security_mode="development")
+    planning = PlanningContext.create(profile=profile)
+    planning.registry.register_binding(
+        BindingDescriptor(
+            binding="source",
+            provider="postgresql",
+            location="etlantic_phase056_orders",
+            kind="source",
+        )
+    )
+    planning.registry.register_binding(
+        BindingDescriptor(
+            binding="sink",
+            provider="postgresql",
+            location="etlantic_phase056_orders",
+            kind="sink",
+            config={"schema": "public", "mode": "replace"},
+        )
+    )
+    runtime = PipelineRuntime()
+    runtime.register_source_connector("postgresql", LivePostgresSourceConnector())
+    runtime.register_sink_connector("postgresql", LivePostgresSinkConnector())
+
+    report = OverlappingManagedTransfer.run(
+        profile=profile, runtime=runtime, context=planning
+    )
+
+    assert report.status is RunStatus.PARTIAL
+    assert any(item.code == "PMEXEC435" for item in report.diagnostics)
+    assert "source-row" not in report.to_json()
+    with engine.connect() as connection:
+        rows = connection.execute(
+            text("SELECT id, payload FROM public.etlantic_phase056_orders")
+        ).all()
+    assert rows == [("keep", "source-row")]
     engine.dispose()
 
 

@@ -107,6 +107,15 @@ transaction. Reconciliation consults that row; an unavailable ledger returns
 SQLite-backed fake remains available as `FakePostgresConnection` for fast
 connector unit tests; it is not registered as the PostgreSQL provider.
 
+During managed execution, PostgreSQL source and sink connectors also provide
+opaque resource identities to the worker. Before opening a sink write session,
+the runtime compares source and target identities, including the live server
+address and normalized schema/table. A matching identity, or a same-provider
+transfer whose identities cannot be verified, fails with `PMEXEC435` before
+target mutation. The comparison tokens use a worker-process key and stay in
+memory; credentials and raw database/resource names are not written to plans,
+receipts or reports.
+
 | Capability | Source | Sink | Storage | Notes |
 |---|:---:|:---:|:---:|---|
 | `source.batch_snapshot` | ✓ | | | Bounded table read |
