@@ -118,8 +118,8 @@
     },
     {
       "filename": "etlantic_sqlmodel-0.55.0-py3-none-any.whl",
-      "sha256": "c9ad0aa6b65af3b6d47016c3306711498c1b5bb104cce00269141a424dee7fb4",
-      "size_bytes": 55599
+      "sha256": "9476472ca28906b286667605f2a3127e2f4008b552872fc92e89285a2e546ecc",
+      "size_bytes": 56113
     },
     {
       "filename": "medallantic-0.55.0-py3-none-any.whl",

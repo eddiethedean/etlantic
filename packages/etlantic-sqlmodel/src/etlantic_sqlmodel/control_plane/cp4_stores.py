@@ -8,6 +8,7 @@ from datetime import UTC, datetime
 from typing import Any, TypeVar, cast
 
 from sqlalchemy.engine import Engine
+from sqlalchemy.exc import IntegrityError
 
 from etlantic.control_plane.approval_memory import MemoryApprovalStore
 from etlantic.control_plane.approval_models import (
@@ -117,6 +118,7 @@ class _SnapshotBackedStore:
 
     def _txn(self, fn: Callable[[Any], T]) -> T:
         with session_scope(self.engine) as session:
+            self._ensure_snapshot_row(session)
             mem, version = self._read(session, for_update=True)
             result = fn(mem)
             self._write(session, mem, expected_version=version)
@@ -141,6 +143,45 @@ class _SnapshotBackedStore:
         return self._load(json.loads(row.payload_json or "{}")), int(
             row.payload_version or 0
         )
+
+    def _ensure_snapshot_row(self, session: Session) -> None:
+        """Create a version-zero lock row without racing on first use.
+
+        ``SELECT FOR UPDATE`` cannot lock a row that does not exist. When two
+        processes perform the first governance write at once, both would
+        otherwise observe absence and race to insert the unique
+        ``(store_id, kind)`` row. Insert under a savepoint so the loser can
+        recover from that uniqueness race and continue by locking the winner's
+        committed row.
+        """
+        statement = (
+            select(Cp4GovernanceSnapshotRow)
+            .where(Cp4GovernanceSnapshotRow.store_id == self.store_id)
+            .where(Cp4GovernanceSnapshotRow.kind == self.kind)
+        )
+        if session.exec(statement).first() is not None:
+            return
+
+        try:
+            with session.begin_nested():
+                session.add(
+                    Cp4GovernanceSnapshotRow(
+                        store_id=self.store_id,
+                        kind=self.kind,
+                        payload_json=json.dumps(
+                            self._dump(self._empty()), sort_keys=True, default=str
+                        ),
+                        payload_version=0,
+                        updated_at=_utcnow_iso(),
+                    )
+                )
+                session.flush()
+        except IntegrityError:
+            # The conflict is recoverable only when another transaction created
+            # the exact scoped snapshot row. Other integrity errors still fail
+            # closed.
+            if session.exec(statement).first() is None:
+                raise
 
     def _write(self, session: Session, store: Any, *, expected_version: int) -> None:
         payload = json.dumps(self._dump(store), sort_keys=True, default=str)

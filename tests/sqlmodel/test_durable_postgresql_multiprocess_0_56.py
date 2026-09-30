@@ -70,6 +70,45 @@ def _accept_in_process(url: str, store_id: str) -> tuple[str, bool]:
         engine.dispose()
 
 
+def _accept_competing_intent_in_process(
+    url: str, store_id: str, fingerprint: str, snapshot: str
+) -> tuple[str, str, bool]:
+    engine = create_engine(url, pool_pre_ping=True)
+    try:
+        store = SQLModelDurableWorkStore(engine, store_id=store_id)
+        try:
+            submission, created = store.accept(
+                _context(),
+                idempotency_key="concurrent-changed-intent",
+                operation="run.submit",
+                plan_fingerprint=fingerprint,
+                input_snapshot=snapshot,
+            )
+        except ControlPlaneError as exc:
+            return fingerprint, str(exc.status), False
+        return fingerprint, submission.submission_id, created
+    finally:
+        engine.dispose()
+
+
+def _accept_then_lose_ack_in_process(url: str, store_id: str) -> None:
+    engine = create_engine(url, pool_pre_ping=True)
+    try:
+        store = SQLModelDurableWorkStore(engine, store_id=store_id)
+        store.accept(
+            _context(),
+            idempotency_key="lost-accept-ack",
+            operation="run.submit",
+            plan_fingerprint="c" * 64,
+            input_snapshot='{"intent":"committed-before-ack-loss"}',
+        )
+        # The store transaction has committed; failing before returning models
+        # a lost process/transport acknowledgement at the acceptance boundary.
+        raise RuntimeError("simulated lost acceptance acknowledgement")
+    finally:
+        engine.dispose()
+
+
 def _admit_quota_in_process(url: str, store_id: str) -> tuple[str, int]:
     engine = create_engine(url, pool_pre_ping=True)
     try:
@@ -210,8 +249,9 @@ def test_postgresql_multiprocess_quota_idempotency_is_single_and_restart_visible
     store_id = f"phase056-quota-{uuid.uuid4().hex}"
     create_cp4_tables(engine)
     try:
-        quota = SQLModelQuotaProvider(engine, store_id=store_id)
-        quota.set_suspended(_context(), suspended=False)
+        # Do not initialize the snapshot row first: all worker processes race
+        # through the store's first transaction, exercising missing-row
+        # initialization as well as idempotent quota admission.
         with ProcessPoolExecutor(
             max_workers=8, mp_context=get_context("spawn")
         ) as workers:
@@ -286,6 +326,87 @@ def test_postgresql_multiprocess_action_acceptance_and_claim_are_single() -> Non
                 action_id,
             )
         assert cross_owner.value.status == 404
+    finally:
+        _remove_store(engine, store_id)
+        engine.dispose()
+
+
+def test_postgresql_multiprocess_changed_intent_conflicts_under_one_key() -> None:
+    url = os.environ.get("ETLANTIC_CP_TEST_URL")
+    if not url:
+        pytest.skip(
+            "set ETLANTIC_CP_TEST_URL to qualify live PostgreSQL control storage"
+        )
+    engine = create_engine(url, pool_pre_ping=True)
+    store_id = f"phase056-intent-race-{uuid.uuid4().hex}"
+    create_cp4_tables(engine)
+    create_durable_tables(engine)
+    try:
+        fingerprints = ["a" * 64] * 4 + ["b" * 64] * 4
+        snapshots = ['{"intent":"a"}'] * 4 + ['{"intent":"b"}'] * 4
+        with ProcessPoolExecutor(
+            max_workers=8, mp_context=get_context("spawn")
+        ) as workers:
+            results = list(
+                workers.map(
+                    _accept_competing_intent_in_process,
+                    [url] * 8,
+                    [store_id] * 8,
+                    fingerprints,
+                    snapshots,
+                )
+            )
+
+        accepted = [item for item in results if item[1] != "409"]
+        conflicts = [item for item in results if item[1] == "409"]
+        assert len(accepted) == len(conflicts) == 4
+        assert len({item[0] for item in accepted}) == 1
+        assert len({item[1] for item in accepted}) == 1
+        assert sum(item[2] for item in accepted) == 1
+
+        durable = SQLModelDurableWorkStore(engine, store_id=store_id)
+        record = durable.get_submission_by_idempotency(
+            _context(),
+            idempotency_key="concurrent-changed-intent",
+            operation="run.submit",
+        )
+        assert record is not None
+        assert record.plan_fingerprint == accepted[0][0]
+        assert len(durable.pending_outbox(_context())) == 1
+    finally:
+        _remove_store(engine, store_id)
+        engine.dispose()
+
+
+def test_postgresql_lost_accept_ack_recovers_the_committed_receipt() -> None:
+    url = os.environ.get("ETLANTIC_CP_TEST_URL")
+    if not url:
+        pytest.skip(
+            "set ETLANTIC_CP_TEST_URL to qualify live PostgreSQL control storage"
+        )
+    engine = create_engine(url, pool_pre_ping=True)
+    store_id = f"phase056-lost-ack-{uuid.uuid4().hex}"
+    create_cp4_tables(engine)
+    create_durable_tables(engine)
+    try:
+        with ProcessPoolExecutor(
+            max_workers=1, mp_context=get_context("spawn")
+        ) as workers:
+            future = workers.submit(_accept_then_lose_ack_in_process, url, store_id)
+            with pytest.raises(RuntimeError, match="simulated lost acceptance"):
+                future.result()
+
+        restarted = SQLModelDurableWorkStore(engine, store_id=store_id)
+        receipt, created = restarted.accept(
+            _context(),
+            idempotency_key="lost-accept-ack",
+            operation="run.submit",
+            plan_fingerprint="c" * 64,
+            input_snapshot='{"intent":"committed-before-ack-loss"}',
+        )
+        assert not created
+        assert restarted.get_submission(_context(), receipt.submission_id) == receipt
+        assert len(restarted.pending_outbox(_context())) == 1
     finally:
         _remove_store(engine, store_id)
         engine.dispose()

@@ -4,7 +4,7 @@
 not claim that AC056-001–044 have all passed. The evidence index marks a
 criterion passed only after its complete documented case has been observed.
 
-Current index: 8 criteria passed, 34 pending, and 2 blocked of 44.
+Current index: 9 criteria passed, 33 pending, and 2 blocked of 44.
 
 ## Candidate environment
 
@@ -262,7 +262,9 @@ Current index: 8 criteria passed, 34 pending, and 2 blocked of 44.
   injection. That install applied SQLModel migration 010, imported the public
   action execution exports, accepted a durable action through the managed
   service, executed it in a separate worker, and returned a redacted scoped
-  receipt. This is package-install evidence; AC056-040's full compatibility,
+  receipt. It also exercised first-write SQLModel quota admission and read back
+  the single persisted concurrency charge. This is package-install evidence;
+  AC056-040's full compatibility,
   version-skew and upgrade/rollback matrix remains pending.
 - Managed command and authorization matrix:
   `uv run pytest -q tests/fastapi/test_managed_application_0_56.py tests/fastapi/test_managed_backend_0_56.py tests/fastapi/test_cp1_full_authz_matrix.py tests/fastapi/test_managed_control_races_0_56.py`
@@ -287,9 +289,27 @@ Current index: 8 criteria passed, 34 pending, and 2 blocked of 44.
   retry after an alias change, verify concurrent same-intent submissions charge
   quota once, and make concurrent changed intent conflict under the same
   idempotency key. Migration 006 imports legacy CP1 definitions into the CP2
-  revision registry while retaining the CP1 rows. AC056-007 and AC056-008 remain
-  open for durable resource/version resolution, full scope disclosure coverage,
-  and process-level PostgreSQL failure and retry qualification.
+  revision registry while retaining the CP1 rows. AC056-007 remains open for
+  durable resource/version resolution and full scope disclosure coverage.
+- PostgreSQL managed-service idempotency, quota and failure recovery:
+  `ETLANTIC_CP_TEST_URL=... ETLANTIC_SQLMODEL_TEST_URL=... uv run pytest -q
+  tests/sqlmodel tests/fastapi/test_managed_postgresql_process_0_56.py` — 63
+  passed, with one SQLModel test warning. Eight independent processes submitted
+  the same pinned run through separate managed-service instances; all received
+  one receipt, the durable outbox held one command, the persisted concurrency
+  quota was charged once, and a reopened service recovered that receipt. A
+  second eight-process race used two different request intents under the same
+  idempotency key; four callers recovered the winning receipt and four received
+  a conflict. This exercised a real first-use race in the PostgreSQL CP4 quota
+  snapshot: concurrent transactions both tried to create its unique row. The
+  SQLModel store now seeds a version-zero row inside a savepoint so the loser
+  can roll back the uniqueness conflict and lock the committed snapshot. The
+  PostgreSQL quota test no longer pre-creates the row. A separate process
+  committed durable acceptance and then simulated a lost acknowledgement; the
+  caller's retry recovered the original submission and single outbox record.
+  AC056-008 is passed. AC056-010 remains pending because the lost-ack case
+  covers durable acceptance only, not every CP1/CP3/outbox and worker failure
+  boundary.
 - Current SQLModel migration and governance campaign after revision backfill:
   `uv run pytest -q tests/control_plane/ga/test_cp_ga_campaigns.py tests/sqlmodel/test_cp1_migrations_0_51.py tests/sqlmodel/test_registry_stores_0_40.py tests/sqlmodel/test_cp4_stores_0_42.py tests/sqlmodel/test_durable_postgresql_multiprocess_0_56.py`
   — 26 passed, 5 skipped. SQLite migration upgrade/backfill/restart and
@@ -381,9 +401,9 @@ Current index: 8 criteria passed, 34 pending, and 2 blocked of 44.
 - `scripts/check_pyright.sh` passed: 781 suppressions matched the locked
   inventory, the strict shadow scan matched its 10,451-diagnostic baseline,
   and raw Pyright reported zero errors and warnings. The suppression count is
-  unchanged; the strict digest was refreshed for the AC056-020 durable model,
-  route and adapter additions plus test-line shifts. The shadow diagnostic
-  count stayed at 10,451.
+  unchanged; the strict digest was refreshed for the AC056-020 action-worker
+  additions and the AC056-008 CP4 snapshot initializer plus test-line shifts.
+  The shadow diagnostic count stayed at 10,451 with no new diagnostics.
 - `ruff check .`, `git diff --check`, plugin-manifest checks and `uv lock --check`
   passed.
 
@@ -400,14 +420,17 @@ Current index: 8 criteria passed, 34 pending, and 2 blocked of 44.
   share authorization and scoped cursor semantics. Report-publication failure
   after an external sink commit, event retention/artifact authorization, and
   separate result and cleanup state machines remain unqualified.
-- AC056-007–008: immutable revision pinning, resource authorization,
-  effective-fingerprint policy binding and same/different-intent retry behavior
-  now have focused evidence. Complete durable resource/version resolution,
-  full disclosure and cross-process CP1/CP3 failure/retry campaigns remain open.
-- AC056-039 and AC056-042: PostgreSQL 16.14 migration and multi-process
-  acceptance/quota tests now pass. AC056-042 is qualified for the tested 0.55
-  migration chain and legacy incomplete-payload guard. AC056-039 remains open
-  for backup/restore and broader failure campaigns.
+- AC056-007: immutable revision pinning, resource authorization and
+  effective-fingerprint policy binding have focused evidence. Complete durable
+  resource/version resolution and full disclosure coverage remain open.
+- AC056-008 passed with concurrent managed-service retries and changed-intent
+  conflict against PostgreSQL 16.13, persisted quota idempotency, restart reads
+  and lost-ack receipt recovery. AC056-010 remains open for its full boundary
+  fault matrix.
+- AC056-039 and AC056-042: PostgreSQL 16.14 migration evidence and PostgreSQL
+  16.13 multi-process managed acceptance/quota/restart tests now pass. AC056-042
+  is qualified for the tested 0.55 migration chain and legacy incomplete-payload
+  guard. AC056-039 remains open for backup/restore and broader failure campaigns.
 - AC056-020: durable isolated action jobs, authorization rechecks, bounded
   receipts, a built-in catalog action, and a deployment handler contract now
   have focused evidence. Provider-specific live connection, schema and
