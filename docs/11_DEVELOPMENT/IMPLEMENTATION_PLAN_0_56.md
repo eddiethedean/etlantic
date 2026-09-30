@@ -2,7 +2,7 @@
 title: ETLantic 0.56 Implementation Plan
 description: Complete application ETL backend with full specification and run control.
 plan_status: current
-plan_last_reviewed: 0.55.0-rc-source
+plan_last_reviewed: v0.55.0
 ---
 
 # ETLantic 0.56 — Complete Application ETL Backend
@@ -12,8 +12,9 @@ follows 0.55 inferred-model authoring. Brownfield bridges move to 0.57, the
 operator console to 0.58, managed-runtime/provider packs to 0.59 and
 TransformationModel incubation to 0.60. Their existing scope is preserved.
 
-Read the [source review](FINDINGS_0_56.md) for the exact 0.55 candidate baseline,
-the [execution sequence](EXECUTION_PLAN_0_56.md) for work dependencies, and the
+Read the [source review](FINDINGS_0_56.md) for the original 0.55 candidate audit
+and final-tag reconciliation, the [execution sequence](EXECUTION_PLAN_0_56.md)
+for work dependencies, and the
 [shared delivery contract](FORWARD_IMPLEMENTATION_PLANS.md) for release rules.
 The source review identifies twelve integration/coverage gaps. Every gap is
 required work in this phase; priorities determine ordering, not optionality.
@@ -78,6 +79,25 @@ private package; operator trust policy and conformance still apply.
   Version bumps, migrations and availability claims belong to implementation
   and release qualification. The final 0.55 tag is the compatibility baseline.
 
+### Gate A decisions that unblock implementation
+
+Freeze these decisions as public contracts and state diagrams before adapters
+or providers depend on them. Gate A records exact names and signatures; the
+following responsibilities are fixed now.
+
+| Contract | Required decision |
+|---|---|
+| Service and composition | Public command/query exports, trusted context argument, sync/async behavior, error and authorization semantics, standard local/PostgreSQL constructors, resource ownership and shutdown order |
+| Identity and replay | Scope of the idempotency key, canonical submitted intent, operation/submission/run/attempt/action/command/occurrence IDs, conflict rules and stable receipt lookup |
+| Execution envelope | Versioned immutable snapshot of resolved definition/revision, requested and effective settings with provenance, plan and dependency fingerprints, resource versions, policy/evidence references and retention obligations; never secret values or source rows |
+| Persistence boundary | A transaction or durable handoff protocol for each supported store topology, its acceptance linearization point, unique constraints, outbox/reconciler ownership and crash-state table |
+| Provider and action contract | Installed option schemas, minimum required versus advertised capabilities, action permissions/deadlines, effect receipts, reconciliation behavior and typed unavailable reasons |
+| Outcome contract | Separate execution, result-publication and cleanup state machines, including unknown external commits and legacy records lacking verified plans |
+
+The coverage inventory names the public owner and evidence case for each field,
+command and query. A missing owner or an option accepted but not consumed is a
+Gate A blocker; a later adapter cannot define its own semantics.
+
 ## Workstreams
 
 | ID | Required delivery | Existing authority to reuse | Review gaps |
@@ -102,13 +122,15 @@ private package; operator trust policy and conformance still apply.
 The public submission command owns this sequence, including any asynchronous
 continuations:
 
-1. Authenticate/adapt trusted context and authorize the operation and resources.
+1. Authenticate/adapt trusted context and authorize the command before scoped
+   lookup.
 2. Recover an existing operation/submission for the scoped idempotency key and
    canonical intent; conflicting intent gets a stable conflict. Authorization
    is rechecked without re-running live probes or charging quotas twice.
 3. Resolve the definition/revision selector once, bind resources/parameters and
-   compute canonical effective settings and backend fingerprints. Fingerprints
-   include every execution-relevant choice and exact qualified dependencies.
+   authorize each resolved resource before access. Compute canonical effective
+   settings and backend fingerprints. Fingerprints include every
+   execution-relevant choice and exact qualified dependencies.
 4. Validate and plan with existing semantic authorities; run explicitly selected
    bounded live preflight in an action executor. A pure validate/plan call does
    not resolve secrets, run user transformations or write to providers.
@@ -119,6 +141,14 @@ continuations:
 6. Commit one immutable execution envelope plus its durable handoff. Publish
    admission events through recoverable outbox handling. Return canonical
    operation/submission/run identities and a queryable status.
+
+Canonical submitted intent includes the caller's revision selector and request
+options, while the accepted envelope records the revision actually selected.
+An identical retry with the same scoped idempotency key returns the original
+receipt even if a `latest-approved` selector now resolves differently. A new
+key creates a new resolution. A conflicting request under the old key fails
+before live work. Preparation retries may refresh expired evidence before
+acceptance, but must retain the operation identity and an auditable generation.
 
 Long preparation returns an operation identity, not a recipe for app callbacks.
 Cancellation, failure and process restart have explicit preparation states;
@@ -253,6 +283,16 @@ range/membership validation with declared reject/quarantine behavior. It is a
 release floor; joins, unions and every other qualified public operation remain
 accessible. Generic Foundry and PostgreSQL delivery are owned by this phase;
 the broader enterprise cloud/runtime portfolio remains in 0.59.
+
+For each of the 12 pairings, record a result for every destination mode the
+provider advertises for that exact tuple. PostgreSQL append, keyed upsert and
+atomic replacement, and Foundry destination file replacement are minimum
+required modes; a capability declaration cannot remove them from the release
+floor. Each pair/mode needs a successful real-worker run and a provider-relevant
+failure observation. Record separate overlap rejection, credential denial,
+commit uncertainty and recovery scenarios with the exact provider versions,
+resource identities and effect receipts. Unqualified optional combinations
+remain unavailable with a reason; they do not count as passing required rows.
 
 ## Acceptance criteria
 

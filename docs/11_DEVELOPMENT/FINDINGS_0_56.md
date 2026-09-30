@@ -2,7 +2,7 @@
 title: ETLantic 0.56 Backend Gap Review
 description: Source evidence and required follow-up for the complete application ETL backend phase.
 plan_status: current
-plan_last_reviewed: 0.55.0-rc-source
+plan_last_reviewed: v0.55.0
 ---
 
 # ETLantic 0.56 Backend Gap Review
@@ -22,8 +22,22 @@ That evidence does not qualify the application backend described below.
 The [0.55 exit gate](EXIT_GATE_0_55.md) qualifies a scoped Experimental inference
 surface, including SQLite reference target writes. It does not establish live
 PostgreSQL/Foundry transfer or a complete durable application execution path.
-Recheck findings against the final 0.55 tag before implementation; carry forward
-regression coverage for anything fixed before 0.56 starts.
+Carry forward regression coverage for anything fixed after this source review,
+and recheck any later maintenance commits before 0.56 implementation.
+
+### Final 0.55 release reconciliation
+
+The final [`v0.55.0` tag](https://github.com/eddiethedean/etlantic/releases/tag/v0.55.0)
+points to commit `702efa58b1ed2263fe8fac00dd0cdb553d09c60f`. A targeted
+comparison from the reviewed commit to that tag found no changes under the
+control-plane, runtime, service, secrets or connectors source trees, nor in the
+FastAPI and SQL packages cited by these findings. The final release did change
+inference and storage foundations; Gate A must inventory their final public
+contracts before freezing 0.56 schemas. The twelve backend gaps remain open at
+the final tag. In particular, `require_authorized_run` still probes scoped
+existence after an explicit `not_found` denial (F056-12), and the packaged
+`ExecutionHost` still defaults to a no-op runner (F056-04). This reconciliation
+is a source check, not live backend qualification or a claim about future code.
 
 The question is whether an independent application can specify and control its
 ETL through public contracts while ETLantic and independently installed providers
@@ -43,7 +57,7 @@ neither becomes an ETLantic build, runtime, test, or optional dependency.
 
 ## Confirmed gaps and required disposition
 
-All rows are **open at this baseline**. P1 means a blocker for the complete
+All rows are **open at the final 0.55 baseline**. P1 means a blocker for the complete
 application backend release claim, not a security severity label. Implementation
 belongs to the [0.56 plan](IMPLEMENTATION_PLAN_0_56.md); its acceptance IDs are
 the closure criteria. Issue state alone is not evidence of missing code.

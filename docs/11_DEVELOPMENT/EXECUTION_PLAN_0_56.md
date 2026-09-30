@@ -2,7 +2,7 @@
 title: ETLantic 0.56 Execution Plan
 description: Ordered delivery and release gates for the complete application ETL backend.
 plan_status: current
-plan_last_reviewed: 0.55.0-rc-source
+plan_last_reviewed: v0.55.0
 ---
 
 # ETLantic 0.56 Execution Plan
@@ -15,10 +15,11 @@ these features have shipped.
 
 ## Entry and release boundary
 
-Planning can proceed while 0.55 finishes. Implementation starts from its final
-release decision and reconciles any final fixes with the findings. Do not put
-0.56 behavior, dependency bumps or new migrations into the 0.55 release merely
-to satisfy this plan. Preserve the candidate's scoped inference qualification.
+The 0.55.0 release is published. Implementation starts from the final
+`v0.55.0` tag and the [final-tag reconciliation](FINDINGS_0_56.md#final-055-release-reconciliation).
+Preserve its scoped inference qualification and recorded release evidence.
+Review later maintenance commits as explicit 0.56 inputs, not as an assumed
+change to the compatibility baseline.
 
 0.56 owns the complete generic application backend and the required live
 PostgreSQL/Foundry/CSV provider floor. Later 0.57 brownfield import, 0.58 console,
@@ -40,6 +41,24 @@ Work can overlap after its prerequisite contracts are frozen. For example,
 provider development and deterministic fixtures can proceed alongside worker
 implementation, but live end-to-end qualification depends on Gates C and D.
 
+### Critical path and integration checkpoints
+
+The critical path is contract freeze → authorized durable acceptance → real
+worker/effect publication → executable controls → live provider matrix →
+installed-wheel release decision. Run these integration checkpoints in order:
+
+| Checkpoint | Required observable result | Limit of the checkpoint |
+|---|---|---|
+| B1 — accepted command | Headless and HTTP submit the same definition; the real relational store returns one scoped receipt across concurrent retry and restart | Acceptance does not claim ETL execution |
+| C1 — complete reference run | A packaged worker executes a qualified local reference transfer, publishes a real report and effect receipt, and recovers after death between commit and publication | This does not qualify PostgreSQL or Foundry transfer |
+| D1 — controlled run | The same run path supports an authorized action, a schedule firing and a runnable retry/repair case with stable lineage | Provider-specific limits remain explicit |
+| E1 — live transfer floor | Built provider packages execute all required pair/mode cases through the same acceptance, worker and result path | Final support still requires Gate F security, migration and clean-wheel evidence |
+
+Provider implementation begins after Gate A and supplies live PostgreSQL
+control-store tests during Gate B. The reference run at C1 keeps the state
+machine testable while Foundry and PostgreSQL connector qualification proceeds.
+No checkpoint changes the AC056-001–044 release floor.
+
 ### Gate A — Freeze exact public contracts
 
 1. Audit the final 0.55 tag and every installed companion package used by the
@@ -54,6 +73,9 @@ implementation, but live end-to-end qualification depends on Gates C and D.
 4. Freeze the state diagrams for preparation, submission, attempt, publication,
    cancellation/pause, action jobs, uploads and schedule firings. Specify
    transaction boundaries, recovery owners, idempotency scope and audit links.
+   For each supported persistence topology, identify the single acceptance
+   point and enumerate crash states before and after it. Compensation alone is
+   insufficient once a command is reported accepted.
 5. Publish exact Python exports, wire/schema versions, action identifiers,
    provider requirements, standard constructors and resource ownership. Cover
    all existing public controls, including provider-specific extension schemas.
@@ -78,6 +100,10 @@ preparation. Resolve the upstream contract before implementing that adapter.
 - Implement durable operation identity, canonical intent conflict checks,
   resumable preparation and single acceptance/handoff semantics. Bound policy,
   quota, approval and evidence refresh behavior across retries.
+- Prove that retry finds the stored intent and receipt, and execution uses the
+  accepted resolved revision. A later `latest-approved` edit cannot rebind an
+  accepted receipt. Inject failure before and after the chosen acceptance
+  point and run the reconciler.
 - Qualify on the real relational provider early. Fakes remain unit fixtures;
   they cannot settle transaction, concurrency or restart semantics.
 
@@ -137,6 +163,10 @@ exact effective values and results without implementing ETL behavior.
   add cancellation, failures, denied credentials, schema mismatch and overlap
   cases. Record actual provider capability limits rather than approximating
   atomicity across unrelated systems.
+- Index each observation by source configuration, destination configuration,
+  write mode, provider versions, scoped resources, worker attempt and effect
+  receipt. Same-configuration transfers use distinct resources; aliases to the
+  same resource exercise pre-mutation overlap rejection.
 - Install an independently authored private provider with custom option schema
   and native implementation references. Exercise it through Python and HTTP
   without changing core or importing an adopter.
