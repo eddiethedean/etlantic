@@ -444,10 +444,6 @@ class ManagedApplicationService:
             policy_fingerprint = (
                 decision.policy_fingerprint if decision is not None else None
             )
-        provenance = {
-            f"execution_settings.{key}": f"profile:{profile.name}"
-            for key in sorted(plan.execution_settings)
-        }
         envelope = ExecutionEnvelope.create(
             definition_id=definition_id,
             revision_selector=revision_selector,
@@ -456,7 +452,6 @@ class ManagedApplicationService:
             plan=plan,
             profile_name=profile.name,
             request=typed_request,
-            setting_provenance=provenance,
             plugin_fingerprint=plugin_fingerprint,
             policy_fingerprint=policy_fingerprint,
             resource_versions=self._resource_versions(plan),
@@ -817,8 +812,11 @@ class ManagedApplicationService:
             invalidation=request.invalidation,
             no_write=request.no_write,
             metadata=request.metadata,
+            extensions=request.extensions,
+            explicit_settings=request.explicit_settings,
         )
-        envelope_data = parent_envelope.to_dict()
+        envelope = parent_envelope.with_request(replay_request)
+        envelope_data = envelope.to_dict()
         evidence_refs = dict(envelope_data.get("evidence_refs") or {})
         evidence_refs.update(
             {
@@ -828,11 +826,7 @@ class ManagedApplicationService:
             }
         )
         envelope = ExecutionEnvelope.from_dict(
-            {
-                **envelope_data,
-                "run_request": replay_request.to_dict(),
-                "evidence_refs": evidence_refs,
-            }
+            {**envelope_data, "evidence_refs": evidence_refs}
         )
         prior_receipt = self.submissions.lookup_idempotency(
             ctx, idempotency_key, operation="run.replay"

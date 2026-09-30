@@ -1,10 +1,10 @@
 # Phase 0.56 Local Qualification
 
 **Decision: OPEN.** This record reports local implementation evidence; it does
-not claim that AC056-001–044 have all passed. The evidence index leaves each
-criterion open until its complete documented case has been observed.
+not claim that AC056-001–044 have all passed. The evidence index marks a
+criterion passed only after its complete documented case has been observed.
 
-Current index: 4 criteria passed, 38 pending, and 2 blocked of 44.
+Current index: 5 criteria passed, 37 pending, and 2 blocked of 44.
 
 ## Candidate environment
 
@@ -20,11 +20,11 @@ Current index: 4 criteria passed, 38 pending, and 2 blocked of 44.
 
 - Default non-optional suite:
   `uv run pytest -q -m "not medallantic and not polars and not pandas and not sql and not spark and not real_pyspark and not airflow and not prefect and not keyring and not sqlmodel and not datafusion"`
-  — 2,717 passed, 67 skipped, and 586 deselected. The source-linked 0.52
-  adaptive evidence regression was the sole failure in that run because its
-  artifacts were stale after these source edits. The artifacts were regenerated
-  and verified across 10 artifacts and 18 acceptance criteria; the exact
-  regression test then passed on rerun.
+  — 2,739 passed, 67 skipped, and 586 deselected. The source-linked 0.52
+  adaptive evidence regeneration was the sole failure because its artifacts
+  were stale after these source edits. The artifacts were regenerated and
+  verified across 10 artifacts and 18 acceptance criteria; the exact regression
+  test then passed on rerun.
 - CP1 and CP-GA OpenAPI snapshots were refreshed for the managed rerun and
   replay endpoints; both stable-operation snapshot tests passed.
 - Live PostgreSQL connector and multiprocess acceptance:
@@ -57,6 +57,18 @@ Current index: 4 criteria passed, 38 pending, and 2 blocked of 44.
   provider-marked fields, and credential-named keys are recursively removed
   from nested samples. Unknown provider options fail planning with `PMCONN880`
   without echoing submitted values. AC056-006 is qualified.
+- Typed request controls and managed-envelope resolution:
+  `uv run pytest tests/runtime/test_run_request_wire.py tests/runtime/test_local_runtime.py -q`
+  — 20 passed. Request import/export preserves nested overrides and namespaced
+  extension data, rejects unknown constructor semantics and secret-bearing
+  extensions, and isolates caller/export mutations. Profile precedence is
+  field-specific; explicit defaults such as one attempt, zero backoff and
+  no timeout survive the wire. Envelope schema `/2` stores the requested and
+  resolved request plus deterministic setting provenance, and the packaged
+  worker consumes the resolved values. A legacy `/1` envelope upgrades using
+  the previous default precedence. A clean Python 3.11 installation of the
+  built core, FastAPI and Foundry wheels passed the request round-trip and
+  envelope-schema smoke check. AC056-005 is qualified.
 - Connector catalog final focused rerun:
   `pytest -q tests/connectors/test_connector_catalog_0_56.py tests/fastapi/test_managed_application_0_56.py::test_connector_catalog_is_shared_by_headless_and_http tests/fastapi/test_managed_application_0_56.py::test_connector_catalog_authorizes_before_plugin_discovery tests/fastapi/test_cp1_openapi.py tests/fastapi/test_cp_ga_openapi_0_43.py`
   — 6 passed. The final schema redaction test covers snake_case and camelCase
@@ -151,7 +163,7 @@ Current index: 4 criteria passed, 38 pending, and 2 blocked of 44.
 
 ## Open release requirements
 
-- AC056-001–002, AC056-004–005, AC056-007–019 and AC056-033: the managed application,
+- AC056-001–002, AC056-004, AC056-007–019 and AC056-033: the managed application,
   authorization, specification, admission, worker, result and PostgreSQL
   provider paths have implementation and focused tests, but their full
   criterion-level failure, concurrency and runtime campaigns remain open.

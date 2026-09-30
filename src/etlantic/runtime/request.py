@@ -3,11 +3,14 @@
 from __future__ import annotations
 
 from collections.abc import Iterable, Mapping
+from copy import deepcopy
 from dataclasses import dataclass
 from enum import StrEnum
 from typing import Any, cast
 
+from etlantic.extensions import validate_extension_metadata
 from etlantic.model import LogicalGraph
+from etlantic.plan.freeze import deep_freeze, mutable_copy
 from etlantic.plan.slicing import (
     dependency_closure,
     run_one_selection,
@@ -293,6 +296,8 @@ class RunRequest:
     invalidation: InvalidationMode
     no_write: bool
     metadata: dict[str, Any]
+    extensions: Mapping[str, Any]
+    explicit_settings: frozenset[str]
 
     def __init__(
         self,
@@ -302,12 +307,14 @@ class RunRequest:
         retry: RetryPolicy | None = None,
         timeout: TimeoutPolicy | None = None,
         cancellation: CancellationPolicy | None = None,
-        parameter_overrides: dict[str, dict[str, Any]] | None = None,
+        parameter_overrides: Mapping[str, Mapping[str, Any]] | None = None,
         asset_overrides: dict[str, str] | None = None,
-        implementation_overrides: dict[str, str] | None = None,
+        implementation_overrides: Mapping[str, str] | None = None,
         invalidation: InvalidationMode = InvalidationMode.NONE,
         no_write: bool = False,
-        metadata: dict[str, Any] | None = None,
+        metadata: Mapping[str, Any] | None = None,
+        extensions: Mapping[str, Any] | None = None,
+        explicit_settings: Iterable[str] | None = None,
         **kwargs: Any,
     ) -> None:
         if "binding_overrides" in kwargs:
@@ -316,7 +323,46 @@ class RunRequest:
                 "Use asset_overrides= instead. "
                 "See docs/11_DEVELOPMENT/MIGRATION_0_15_TO_0_16.md."
             )
+        if kwargs:
+            unknown = ", ".join(sorted(kwargs))
+            raise TypeError(f"RunRequest got unexpected keyword argument(s): {unknown}")
+
+        valid_explicit_settings: set[str] = {
+            "retry.max_attempts",
+            "retry.backoff_seconds",
+            "retry.retry_on",
+            "timeout.run_seconds",
+            "timeout.step_seconds",
+        }
+        if explicit_settings is None:
+            explicit: set[str] = set()
+            if retry is not None:
+                explicit.update(
+                    {
+                        "retry.max_attempts",
+                        "retry.backoff_seconds",
+                        "retry.retry_on",
+                    }
+                )
+            if timeout is not None:
+                explicit.update({"timeout.run_seconds", "timeout.step_seconds"})
+        else:
+            explicit = set()
+            for key in cast(Iterable[object], explicit_settings):
+                if not isinstance(key, str):
+                    raise TypeError("explicit_settings must contain strings")
+                explicit.add(key)
+        unknown_explicit = explicit - valid_explicit_settings
+        if unknown_explicit:
+            raise ValueError(
+                "Unknown explicit setting(s): " + ", ".join(sorted(unknown_explicit))
+            )
+
         store = {str(k): str(v) for k, v in dict(asset_overrides or {}).items()}
+        extension_data = cast(dict[str, Any], mutable_copy(extensions or {}))
+        validate_extension_metadata(
+            extension_data, path="run_request.extensions", strict=True
+        )
         object.__setattr__(
             self,
             "selection",
@@ -333,10 +379,16 @@ class RunRequest:
             "cancellation",
             cancellation if cancellation is not None else CancellationPolicy(),
         )
-        object.__setattr__(self, "parameter_overrides", dict(parameter_overrides or {}))
+        object.__setattr__(
+            self,
+            "parameter_overrides",
+            deepcopy(dict(parameter_overrides or {})),
+        )
         object.__setattr__(self, "binding_overrides", store)
         object.__setattr__(
-            self, "implementation_overrides", dict(implementation_overrides or {})
+            self,
+            "implementation_overrides",
+            dict(implementation_overrides or {}),
         )
         object.__setattr__(self, "invalidation", invalidation)
         object.__setattr__(
@@ -344,7 +396,13 @@ class RunRequest:
             "no_write",
             True if intent is RunIntent.VALIDATE or no_write else no_write,
         )
-        object.__setattr__(self, "metadata", dict(metadata or {}))
+        object.__setattr__(
+            self,
+            "metadata",
+            deepcopy(dict(metadata or {})),
+        )
+        object.__setattr__(self, "extensions", deep_freeze(extension_data))
+        object.__setattr__(self, "explicit_settings", frozenset(explicit))
 
     @property
     def asset_overrides(self) -> dict[str, str]:
@@ -360,12 +418,14 @@ class RunRequest:
             "retry": self.retry.to_dict(),
             "timeout": self.timeout.to_dict(),
             "cancellation": self.cancellation.to_dict(),
-            "parameter_overrides": dict(self.parameter_overrides),
+            "parameter_overrides": deepcopy(self.parameter_overrides),
             "asset_overrides": overrides,
-            "implementation_overrides": dict(self.implementation_overrides),
+            "implementation_overrides": mutable_copy(self.implementation_overrides),
             "invalidation": self.invalidation.value,
             "no_write": self.no_write,
-            "metadata": dict(self.metadata),
+            "metadata": deepcopy(self.metadata),
+            "extensions": mutable_copy(self.extensions),
+            "explicit_settings": sorted(self.explicit_settings),
         }
 
     @classmethod
@@ -384,6 +444,8 @@ class RunRequest:
             "invalidation",
             "no_write",
             "metadata",
+            "extensions",
+            "explicit_settings",
         }
         unknown = set(data) - allowed
         if unknown:
@@ -477,6 +539,27 @@ class RunRequest:
                 cast(str, name): item for name, item in values.items()
             }
         metadata = mapping_value("metadata")
+        extensions = mapping_value("extensions")
+        if "explicit_settings" in data:
+            explicit_settings: set[str] = set(
+                _string_values(
+                    data["explicit_settings"], name="explicit_settings"
+                )
+            )
+        else:
+            # Legacy request documents had no explicitness marker. Keep their
+            # former merge behavior by inheriting values equal to defaults.
+            explicit_settings = set()
+            if max_attempts != 1:
+                explicit_settings.add("retry.max_attempts")
+            if float(backoff) != 0.0:
+                explicit_settings.add("retry.backoff_seconds")
+            if retry_on:
+                explicit_settings.add("retry.retry_on")
+            if run_seconds is not None:
+                explicit_settings.add("timeout.run_seconds")
+            if step_seconds is not None:
+                explicit_settings.add("timeout.step_seconds")
         no_write = data.get("no_write", False)
         if not isinstance(no_write, bool):
             raise TypeError("no_write must be a boolean")
@@ -513,4 +596,231 @@ class RunRequest:
             invalidation=invalidation,
             no_write=no_write,
             metadata=dict(metadata),
+            extensions=dict(extensions),
+            explicit_settings=explicit_settings,
         )
+
+
+def resolve_request_policies(
+    request: RunRequest,
+    execution_settings: Mapping[str, Any],
+    intents: Mapping[str, Any] | None = None,
+) -> RunRequest:
+    """Resolve profile policy defaults while preserving explicit request values.
+
+    Request-level retry and timeout values take precedence field by field.
+    Omitted fields inherit plan settings/intents, then use request defaults.
+    ``explicit_settings`` preserves this distinction across the wire, including
+    explicitly requested zero and ``None`` values.
+    """
+    intent_data = dict(intents or {})
+    retry_intent_raw = intent_data.get("retry")
+    timeout_intent_raw = intent_data.get("timeout")
+    retry_intent: Mapping[str, Any] = (
+        cast(Mapping[str, Any], retry_intent_raw)
+        if isinstance(retry_intent_raw, Mapping)
+        else {}
+    )
+    timeout_intent: Mapping[str, Any] = (
+        cast(Mapping[str, Any], timeout_intent_raw)
+        if isinstance(timeout_intent_raw, Mapping)
+        else {}
+    )
+
+    def profile_value(
+        setting_key: str,
+        group: Mapping[str, Any],
+        intent_key: str,
+        legacy_intent_key: str,
+    ) -> Any:
+        value = execution_settings.get(setting_key)
+        if value is not None:
+            return value
+        value = group.get(intent_key)
+        if value is not None:
+            return value
+        return intent_data.get(legacy_intent_key)
+
+    explicit = request.explicit_settings
+    attempts_default = profile_value(
+        "retry_max_attempts", retry_intent, "max_attempts", "retry_max_attempts"
+    )
+    attempts = (
+        request.retry.max_attempts
+        if "retry.max_attempts" in explicit
+        else max(1, int(attempts_default))
+        if attempts_default is not None
+        else request.retry.max_attempts
+    )
+
+    backoff_default = profile_value(
+        "retry_backoff_seconds",
+        retry_intent,
+        "backoff_seconds",
+        "retry_backoff_seconds",
+    )
+    backoff = (
+        request.retry.backoff_seconds
+        if "retry.backoff_seconds" in explicit
+        else float(backoff_default)
+        if backoff_default is not None
+        else request.retry.backoff_seconds
+    )
+    retry_on_default: Any = retry_intent.get("retry_on")
+    if retry_on_default is None:
+        retry_on_default = intent_data.get("retry_on")
+    retry_on = (
+        request.retry.retry_on
+        if "retry.retry_on" in explicit or retry_on_default is None
+        else tuple(_string_values(retry_on_default, name="retry.retry_on"))
+    )
+
+    run_timeout_default = profile_value(
+        "timeout_seconds", timeout_intent, "seconds", "timeout_seconds"
+    )
+    run_timeout = (
+        request.timeout.run_seconds
+        if "timeout.run_seconds" in explicit
+        else float(run_timeout_default)
+        if run_timeout_default is not None
+        else request.timeout.run_seconds
+    )
+
+    step_timeout_default = profile_value(
+        "step_timeout_seconds",
+        timeout_intent,
+        "step_seconds",
+        "step_timeout_seconds",
+    )
+    step_timeout = (
+        request.timeout.step_seconds
+        if "timeout.step_seconds" in explicit
+        else float(step_timeout_default)
+        if step_timeout_default is not None
+        else request.timeout.step_seconds
+    )
+
+    return RunRequest(
+        selection=request.selection,
+        intent=request.intent,
+        materialization=request.materialization,
+        retry=RetryPolicy(
+            max_attempts=attempts,
+            backoff_seconds=backoff,
+            retry_on=tuple(retry_on),
+        ),
+        timeout=TimeoutPolicy(
+            run_seconds=run_timeout,
+            step_seconds=step_timeout,
+        ),
+        cancellation=request.cancellation,
+        parameter_overrides=request.parameter_overrides,
+        asset_overrides=request.asset_overrides,
+        implementation_overrides=request.implementation_overrides,
+        invalidation=request.invalidation,
+        no_write=request.no_write,
+        metadata=request.metadata,
+        extensions=request.extensions,
+        explicit_settings=explicit,
+    )
+
+
+def request_setting_provenance(
+    request: RunRequest,
+    execution_settings: Mapping[str, Any],
+    *,
+    profile_name: str,
+    intents: Mapping[str, Any] | None = None,
+) -> dict[str, str]:
+    """Return deterministic provenance for each effective request setting."""
+    provenance = {
+        f"execution_settings.{key}": f"profile:{profile_name}"
+        for key in sorted(execution_settings)
+    }
+    intent_data = dict(intents or {})
+    retry_intent_raw = intent_data.get("retry")
+    timeout_intent_raw = intent_data.get("timeout")
+    retry_intent: Mapping[str, Any] = (
+        cast(Mapping[str, Any], retry_intent_raw)
+        if isinstance(retry_intent_raw, Mapping)
+        else {}
+    )
+    timeout_intent: Mapping[str, Any] = (
+        cast(Mapping[str, Any], timeout_intent_raw)
+        if isinstance(timeout_intent_raw, Mapping)
+        else {}
+    )
+
+    def inherited(setting: str, nested: Any, legacy: str) -> bool:
+        return (
+            execution_settings.get(setting) is not None
+            or nested is not None
+            or intent_data.get(legacy) is not None
+        )
+
+    defaults = {
+        "retry.max_attempts": inherited(
+            "retry_max_attempts",
+            retry_intent.get("max_attempts"),
+            "retry_max_attempts",
+        ),
+        "retry.backoff_seconds": inherited(
+            "retry_backoff_seconds",
+            retry_intent.get("backoff_seconds"),
+            "retry_backoff_seconds",
+        ),
+        "retry.retry_on": retry_intent.get("retry_on") is not None
+        or intent_data.get("retry_on") is not None,
+        "timeout.run_seconds": inherited(
+            "timeout_seconds", timeout_intent.get("seconds"), "timeout_seconds"
+        ),
+        "timeout.step_seconds": inherited(
+            "step_timeout_seconds",
+            timeout_intent.get("step_seconds"),
+            "step_timeout_seconds",
+        ),
+    }
+    for key, from_profile in defaults.items():
+        source = (
+            "request"
+            if key in request.explicit_settings
+            else f"profile:{profile_name}"
+            if from_profile
+            else "runtime.default"
+        )
+        provenance[f"request.{key}"] = source
+
+    provenance.update(
+        {
+            "request.selection": "request"
+            if request.selection != RunSelection.all()
+            else "runtime.default",
+            "request.intent": "request"
+            if request.intent is not RunIntent.STANDARD
+            else "runtime.default",
+            "request.materialization": "request"
+            if request.materialization is not MaterializationPolicy.DEFAULT
+            else "runtime.default",
+            "request.cancellation": "request"
+            if request.cancellation != CancellationPolicy()
+            else "runtime.default",
+            "request.parameter_overrides": "request"
+            if request.parameter_overrides
+            else "runtime.default",
+            "request.asset_overrides": "request"
+            if request.asset_overrides
+            else "runtime.default",
+            "request.implementation_overrides": "request"
+            if request.implementation_overrides
+            else "runtime.default",
+            "request.invalidation": "request"
+            if request.invalidation is not InvalidationMode.NONE
+            else "runtime.default",
+            "request.no_write": "request" if request.no_write else "runtime.default",
+            "request.metadata": "request" if request.metadata else "runtime.default",
+            "request.extensions": "request"
+            if request.extensions
+            else "runtime.default",
+        }
+    )
+    return dict(sorted(provenance.items()))

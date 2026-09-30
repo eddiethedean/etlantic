@@ -114,7 +114,7 @@ class ManagedExecutionAdapter:
             plan = PipelinePlan.from_dict(
                 mutable_copy(envelope.plan_document), verify=True
             )
-            request = RunRequest.from_dict(envelope.run_request)
+            request = RunRequest.from_dict(envelope.effective_request)
         except Exception as exc:
             raise ExecutionRejected(
                 "Accepted plan or run controls are invalid"

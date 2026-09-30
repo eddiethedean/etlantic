@@ -24,6 +24,7 @@ from etlantic.runtime.request import (
     InvalidationMode,
     RunRequest,
     RunSelection,
+    resolve_request_policies,
 )
 from etlantic.runtime.scheduler import SchedulingContext
 from etlantic.runtime.state import RunStatus
@@ -42,51 +43,11 @@ def _ensure_not_in_running_loop() -> None:
 
 
 def _merge_plan_policies(request: RunRequest, plan: PipelinePlan) -> RunRequest:
-    """Fill request retry/timeout defaults from plan execution_settings/intents."""
-    settings = dict(plan.execution_settings or {})
-    intents = dict(plan.intents or {})
-    retry = request.retry
-    timeout = request.timeout
-
-    plan_attempts = settings.get("retry_max_attempts")
-    if plan_attempts is None:
-        plan_attempts = intents.get("retry_max_attempts")
-    if retry.max_attempts == 1 and plan_attempts is not None:
-        retry = replace(retry, max_attempts=max(1, int(plan_attempts)))
-
-    plan_backoff = settings.get("retry_backoff_seconds") or intents.get(
-        "retry_backoff_seconds"
-    )
-    if retry.backoff_seconds == 0.0 and plan_backoff is not None:
-        retry = replace(retry, backoff_seconds=float(plan_backoff))
-
-    plan_run_timeout = settings.get("timeout_seconds")
-    if plan_run_timeout is None:
-        plan_run_timeout = intents.get("timeout_seconds")
-    if timeout.run_seconds is None and plan_run_timeout is not None:
-        timeout = replace(timeout, run_seconds=float(plan_run_timeout))
-
-    plan_step_timeout = settings.get("step_timeout_seconds") or intents.get(
-        "step_timeout_seconds"
-    )
-    if timeout.step_seconds is None and plan_step_timeout is not None:
-        timeout = replace(timeout, step_seconds=float(plan_step_timeout))
-
-    if retry is request.retry and timeout is request.timeout:
-        return request
-    return RunRequest(
-        selection=request.selection,
-        intent=request.intent,
-        materialization=request.materialization,
-        retry=retry,
-        timeout=timeout,
-        cancellation=request.cancellation,
-        parameter_overrides=dict(request.parameter_overrides),
-        asset_overrides=dict(request.binding_overrides),
-        implementation_overrides=dict(request.implementation_overrides),
-        invalidation=request.invalidation,
-        no_write=request.no_write,
-        metadata=dict(request.metadata),
+    """Resolve request policies with the same precedence used by admission."""
+    return resolve_request_policies(
+        request,
+        plan.execution_settings or {},
+        plan.intents or {},
     )
 
 
@@ -131,6 +92,8 @@ async def arun_pipeline(
             invalidation=request.invalidation,
             no_write=request.no_write,
             metadata={**request.metadata, "concurrency": resolved.concurrency},
+            extensions=request.extensions,
+            explicit_settings=request.explicit_settings,
         )
     if (
         resolved.execution_strategy == "adaptive"

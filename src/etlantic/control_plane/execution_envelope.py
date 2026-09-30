@@ -19,9 +19,14 @@ from etlantic.plan.freeze import deep_freeze, mutable_copy
 from etlantic.plan.model import PipelinePlan
 from etlantic.plan.serialize import verify_plan_fingerprint
 from etlantic.runtime.logging import is_sensitive_key, redact_message
-from etlantic.runtime.request import RunRequest
+from etlantic.runtime.request import (
+    RunRequest,
+    request_setting_provenance,
+    resolve_request_policies,
+)
 
-EXECUTION_ENVELOPE_SCHEMA = "etlantic.execution_envelope/1"
+_EXECUTION_ENVELOPE_SCHEMA_V1 = "etlantic.execution_envelope/1"
+EXECUTION_ENVELOPE_SCHEMA = "etlantic.execution_envelope/2"
 _FINGERPRINT_RE = re.compile(r"^[0-9a-f]{64}$")
 
 
@@ -83,6 +88,7 @@ class ExecutionEnvelope:
     plan_document: Mapping[str, Any]
     profile_name: str
     run_request: Mapping[str, Any]
+    effective_request: Mapping[str, Any]
     effective_settings: Mapping[str, Any]
     setting_provenance: Mapping[str, str]
     plugin_fingerprint: str | None = None
@@ -109,6 +115,19 @@ class ExecutionEnvelope:
         evidence_refs: Mapping[str, str] | None = None,
     ) -> ExecutionEnvelope:
         """Create an envelope after validating all immutable inputs."""
+        effective_request = resolve_request_policies(
+            request, plan.execution_settings, plan.intents
+        )
+        provenance = request_setting_provenance(
+            request,
+            plan.execution_settings,
+            profile_name=profile_name,
+            intents=plan.intents,
+        )
+        if setting_provenance is not None and dict(setting_provenance) != provenance:
+            raise ValueError(
+                "setting_provenance must match provenance derived from the request and plan"
+            )
         return cls.from_dict(
             {
                 "schema": EXECUTION_ENVELOPE_SCHEMA,
@@ -122,8 +141,9 @@ class ExecutionEnvelope:
                 "plan_document": plan.to_dict(),
                 "profile_name": profile_name,
                 "run_request": request.to_dict(),
+                "effective_request": effective_request.to_dict(),
                 "effective_settings": dict(plan.execution_settings),
-                "setting_provenance": dict(setting_provenance or {}),
+                "setting_provenance": provenance,
                 "plugin_fingerprint": plugin_fingerprint,
                 "policy_fingerprint": policy_fingerprint,
                 "resource_versions": dict(resource_versions or {}),
@@ -145,6 +165,7 @@ class ExecutionEnvelope:
             "plan_document",
             "profile_name",
             "run_request",
+            "effective_request",
             "effective_settings",
             "setting_provenance",
             "plugin_fingerprint",
@@ -157,7 +178,11 @@ class ExecutionEnvelope:
             raise ValueError(
                 "Unknown execution-envelope field(s): " + ", ".join(sorted(unknown))
             )
-        if data.get("schema") != EXECUTION_ENVELOPE_SCHEMA:
+        schema_raw = data.get("schema")
+        if schema_raw not in {
+            _EXECUTION_ENVELOPE_SCHEMA_V1,
+            EXECUTION_ENVELOPE_SCHEMA,
+        }:
             raise ValueError("Unsupported execution-envelope schema")
 
         def text_field(name: str, *, allow_empty: bool = False) -> str:
@@ -175,22 +200,37 @@ class ExecutionEnvelope:
         definition_raw = data.get("definition_document")
         plan_raw = data.get("plan_document")
         request_raw = data.get("run_request")
+        effective_request_raw = data.get("effective_request")
         effective_raw = data.get("effective_settings")
         provenance_raw = data.get("setting_provenance")
-        for name, value in (
+        required_mappings = [
             ("definition_document", definition_raw),
             ("plan_document", plan_raw),
             ("run_request", request_raw),
             ("effective_settings", effective_raw),
             ("setting_provenance", provenance_raw),
-        ):
+        ]
+        if schema_raw == EXECUTION_ENVELOPE_SCHEMA:
+            required_mappings.append(("effective_request", effective_request_raw))
+        for name, value in required_mappings:
             if not isinstance(value, Mapping):
                 raise TypeError(f"{name} must be an object")
         definition_data = cast(Mapping[str, Any], definition_raw)
         plan_data = cast(Mapping[str, Any], plan_raw)
         request_data = cast(Mapping[str, Any], request_raw)
+        effective_request_data = (
+            cast(Mapping[str, Any], effective_request_raw)
+            if isinstance(effective_request_raw, Mapping)
+            else None
+        )
         effective_data = cast(Mapping[str, Any], effective_raw)
-        provenance_data = cast(Mapping[str, Any], provenance_raw)
+        provenance_entries = cast(Mapping[object, object], provenance_raw)
+        if not all(
+            isinstance(key, str) and isinstance(value, str)
+            for key, value in provenance_entries.items()
+        ):
+            raise TypeError("setting_provenance must map strings to strings")
+        provenance_data = cast(Mapping[str, Any], provenance_entries)
 
         definition_fingerprint = _require_fingerprint(
             data.get("definition_fingerprint"), "definition_fingerprint"
@@ -252,14 +292,37 @@ class ExecutionEnvelope:
             mutable_copy(plan.execution_settings)
         ):
             raise ValueError("Effective settings do not match the verified plan")
-        if not all(isinstance(value, str) for value in provenance_data.values()):
-            raise TypeError("setting_provenance must map strings to strings")
+        _validate_secret_free("setting_provenance", dict(provenance_data))
+        if effective_request_data is not None:
+            _validate_secret_free(
+                "effective_request", dict(effective_request_data)
+            )
+
+        effective_request = resolve_request_policies(
+            request, plan.execution_settings, plan.intents
+        )
+        expected_effective_request = effective_request.to_dict()
+        expected_provenance = request_setting_provenance(
+            request,
+            plan.execution_settings,
+            profile_name=profile_name,
+            intents=plan.intents,
+        )
+        if schema_raw == EXECUTION_ENVELOPE_SCHEMA:
+            if effective_request_data is None or _canonical_json(
+                dict(effective_request_data)
+            ) != _canonical_json(expected_effective_request):
+                raise ValueError("Effective request does not match its plan and request")
+            if _canonical_json(dict(provenance_data)) != _canonical_json(
+                expected_provenance
+            ):
+                raise ValueError("Setting provenance does not match resolved settings")
 
         _validate_secret_free("definition_document", dict(definition_data))
         _validate_secret_free("plan_document", dict(plan_data))
         _validate_secret_free("run_request", request.to_dict())
+        _validate_secret_free("effective_request", expected_effective_request)
         _validate_secret_free("effective_settings", dict(effective_data))
-        _validate_secret_free("setting_provenance", dict(provenance_data))
         _validate_secret_free("resource_versions", dict(resource_versions_data))
         _validate_secret_free("evidence_refs", dict(evidence_refs_data))
         return cls(
@@ -272,8 +335,9 @@ class ExecutionEnvelope:
             plan_document=deep_freeze(mutable_copy(plan_data)),
             profile_name=profile_name,
             run_request=deep_freeze(request.to_dict()),
+            effective_request=deep_freeze(expected_effective_request),
             effective_settings=deep_freeze(mutable_copy(effective_data)),
-            setting_provenance=deep_freeze(dict(provenance_data)),
+            setting_provenance=deep_freeze(expected_provenance),
             plugin_fingerprint=plugin_fingerprint,
             policy_fingerprint=policy_fingerprint,
             resource_versions=deep_freeze(
@@ -305,6 +369,7 @@ class ExecutionEnvelope:
             "plan_document": mutable_copy(self.plan_document),
             "profile_name": self.profile_name,
             "run_request": mutable_copy(self.run_request),
+            "effective_request": mutable_copy(self.effective_request),
             "effective_settings": mutable_copy(self.effective_settings),
             "setting_provenance": mutable_copy(self.setting_provenance),
             "plugin_fingerprint": self.plugin_fingerprint,
@@ -312,6 +377,23 @@ class ExecutionEnvelope:
             "resource_versions": mutable_copy(self.resource_versions or {}),
             "evidence_refs": mutable_copy(self.evidence_refs or {}),
         }
+
+    def with_request(self, request: RunRequest) -> ExecutionEnvelope:
+        """Return a verified envelope with a new request and resolved policies."""
+        payload = self.to_dict()
+        payload["run_request"] = request.to_dict()
+        payload["effective_request"] = resolve_request_policies(
+            request,
+            self.effective_settings,
+            cast(Mapping[str, Any], self.plan_document.get("intents") or {}),
+        ).to_dict()
+        payload["setting_provenance"] = request_setting_provenance(
+            request,
+            self.effective_settings,
+            profile_name=self.profile_name,
+            intents=cast(Mapping[str, Any], self.plan_document.get("intents") or {}),
+        )
+        return self.from_dict(payload)
 
     def to_json(self) -> str:
         """Serialize the envelope deterministically for durable acceptance."""

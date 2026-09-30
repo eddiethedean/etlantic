@@ -31,10 +31,11 @@ from etlantic.control_plane import (
     WorkspaceRef,
 )
 from etlantic.plan.model import PipelinePlan
+from etlantic.profile import Profile
 from etlantic.registry import BindingDescriptor, PlanningContext
 from etlantic.runtime.execute import run_pipeline
 from etlantic.runtime.managed_execution import ManagedExecutionAdapter
-from etlantic.runtime.request import RunIntent, RunRequest
+from etlantic.runtime.request import RetryPolicy, RunIntent, RunRequest
 from etlantic.runtime.state import RunStatus
 from etlantic.secrets import SecretValue
 from etlantic.secrets.env import EnvSecretProvider
@@ -123,17 +124,25 @@ def test_verified_stored_plan_runs_without_replanning() -> None:
 
 def test_execution_envelope_round_trips_verified_plan_and_request() -> None:
     definition = definition_from_pipeline(SimplePipeline)
-    plan_document = SimplePipeline.plan(profile="development")
+    profile = Profile(
+        name="qualified",
+        retry_max_attempts=5,
+        timeout_seconds=120,
+    )
+    plan_document = SimplePipeline.plan(profile=profile)
     plan = PipelinePlan.from_dict(plan_document.to_dict(), verify=True)
+    request = RunRequest(
+        retry=RetryPolicy(max_attempts=1),
+        extensions={"plugin:example/trace": {"enabled": True}},
+    )
     envelope = ExecutionEnvelope.create(
         definition_id=definition.pipeline_id,
         revision_selector="latest-approved",
         revision_id="rev-1",
         definition=definition,
         plan=plan,
-        profile_name="development",
-        request=RunRequest(),
-        setting_provenance={"retry_max_attempts": "profile.default"},
+        profile_name="qualified",
+        request=request,
     )
 
     encoded = envelope.to_json()
@@ -145,8 +154,28 @@ def test_execution_envelope_round_trips_verified_plan_and_request() -> None:
     )
     assert restored.plan_fingerprint == plan.fingerprint
     assert restored.revision_id == "rev-1"
+    assert restored.effective_request == envelope.effective_request
+    assert restored.setting_provenance == envelope.setting_provenance
+    assert restored.setting_provenance["request.retry.max_attempts"] == "request"
+    assert restored.effective_request["retry"]["max_attempts"] == 1
+    assert restored.effective_request["timeout"]["run_seconds"] == 120
+    assert restored.setting_provenance["request.timeout.run_seconds"] == (
+        "profile:qualified"
+    )
+    assert RunRequest.from_dict(restored.run_request).extensions == request.extensions
     with pytest.raises(TypeError):
         cast(dict[str, object], restored.plan_document["metadata"])["changed"] = True
+
+    legacy_document = envelope.to_dict()
+    legacy_document["schema"] = "etlantic.execution_envelope/1"
+    legacy_document.pop("effective_request")
+    legacy_document["run_request"].pop("explicit_settings")
+    legacy_document["run_request"].pop("extensions")
+    legacy_document["setting_provenance"] = {"retry_max_attempts": "profile.default"}
+    upgraded = ExecutionEnvelope.from_dict(legacy_document)
+    assert upgraded.schema == "etlantic.execution_envelope/2"
+    assert upgraded.effective_request["retry"]["max_attempts"] == 5
+    assert upgraded.effective_request["timeout"]["run_seconds"] == 120
 
 
 def test_execution_envelope_rejects_tampered_plan_and_secret_fields() -> None:
@@ -171,6 +200,18 @@ def test_execution_envelope_rejects_tampered_plan_and_secret_fields() -> None:
     secret["setting_provenance"]["password"] = "should-never-persist"
     with pytest.raises(ValueError, match="sensitive field"):
         ExecutionEnvelope.from_dict(secret)
+
+    tampered_settings = envelope.to_dict()
+    tampered_settings["effective_request"]["retry"]["max_attempts"] = 9
+    with pytest.raises(ValueError, match="Effective request"):
+        ExecutionEnvelope.from_dict(tampered_settings)
+
+    tampered_provenance = envelope.to_dict()
+    tampered_provenance["setting_provenance"]["request.retry.max_attempts"] = (
+        "profile:development"
+    )
+    with pytest.raises(ValueError, match="Setting provenance"):
+        ExecutionEnvelope.from_dict(tampered_provenance)
 
 
 def test_packaged_worker_executes_accepted_envelope_and_recovers_report(
