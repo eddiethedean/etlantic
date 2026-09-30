@@ -41,6 +41,7 @@
     "cp_get_definition",
     "cp_get_run",
     "cp_get_run_actions",
+    "cp_get_run_artifact_content",
     "cp_get_run_lineage",
     "cp_get_run_report",
     "cp_get_schedule",

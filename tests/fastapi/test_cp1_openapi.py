@@ -46,6 +46,7 @@ REQUIRED_OPERATION_IDS = {
     "cp_list_run_events",
     "cp_get_run_report",
     "cp_list_run_artifacts",
+    "cp_get_run_artifact_content",
     "cp_get_run_lineage",
     "cp_list_schema_observations",
     "cp_ack_schema_observation",

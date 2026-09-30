@@ -3,6 +3,7 @@
 
 from __future__ import annotations
 
+import json
 from collections.abc import Mapping
 from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
@@ -50,7 +51,7 @@ from etlantic.profile import Profile, resolve_profile
 from etlantic.registry import BindingDescriptor, PlanningContext
 from etlantic.runtime.execution_host import ExecutionHost
 from etlantic.runtime.managed_execution import ManagedExecutionAdapter
-from etlantic.runtime.request import RunRequest
+from etlantic.runtime.request import MaterializationPolicy, RunRequest
 from etlantic.service import ManagedApplicationService
 from etlantic_fastapi import (
     ETLanticAPI,
@@ -1063,6 +1064,160 @@ def test_accepted_file_transfer_publishes_real_report_and_effect(tmp_path) -> No
         durable.get_effect(ctx, f"{receipt.submission_id}:execution").status
         == "committed"
     )
+
+
+def test_durable_artifact_content_is_separately_authorized_and_downloadable(
+    tmp_path: Path,
+) -> None:
+    source = tmp_path / "artifact-source.json"
+    target = tmp_path / "artifact-target.csv"
+    source.write_text('[{"id": 7}]', encoding="utf-8")
+    ctx = _ctx()
+    authorizer = MemoryAuthorizer()
+    for action in (
+        "definition.write",
+        "definition.validate",
+        "definition.plan",
+        "run.submit",
+        "run.read",
+        "run.report",
+        "run.artifacts",
+    ):
+        authorizer.grant(ctx, action)
+    definitions = MemoryDefinitionRepository()
+    submissions = MemorySubmissionStore()
+    durable = MemoryDurableWorkStore()
+    events = MemoryEventStore()
+    report_root = tmp_path / "reports"
+    artifact_root = tmp_path / "artifacts"
+
+    def planning_context(
+        _ctx: ControlPlaneContext, profile: Profile
+    ) -> PlanningContext:
+        planning = PlanningContext.create(profile=profile)
+        planning.registry.register_binding(
+            BindingDescriptor(
+                binding="file-in",
+                provider="json",
+                location=str(source),
+                kind="source",
+            )
+        )
+        planning.registry.register_binding(
+            BindingDescriptor(
+                binding="file-out",
+                provider="csv",
+                location=str(target),
+                kind="sink",
+            )
+        )
+        return planning
+
+    service = ManagedApplicationService(
+        authorizer=authorizer,
+        definitions=definitions,
+        submissions=submissions,
+        durable_work=durable,
+        events=events,
+        profile="development",
+        report_root=report_root,
+        artifact_root=artifact_root,
+        planning_context_factory=planning_context,
+    )
+    service.register_definition(
+        ctx,
+        "artifact-pipe",
+        pipeline_to_dict(definition_from_pipeline(ManagedFilePipeline)),
+    )
+    receipt = service.submit_run(
+        ctx,
+        "artifact-pipe",
+        idempotency_key="durable-artifact-content",
+        request=RunRequest(materialization=MaterializationPolicy.DURABLE),
+    )
+    assert receipt.resource_id is not None
+    assert (
+        ExecutionHost(
+            durable,
+            owner_id="artifact-content-worker",
+            runner=ManagedExecutionAdapter(
+                report_root=report_root, artifact_root=artifact_root
+            ),
+        ).tick(ctx)
+        == 1
+    )
+    listed = service.list_run_artifacts(ctx, receipt.resource_id)
+    downloadable = next(item for item in listed if item["media_type"] == "application/json")
+    assert downloadable["content_available"] is True
+    artifact_id = str(downloadable["artifact_id"])
+
+    with pytest.raises(ControlPlaneError) as denied:
+        service.get_run_artifact_content(ctx, receipt.resource_id, artifact_id)
+    assert denied.value.status == 404
+
+    api = ETLanticAPI(
+        authorizer=authorizer,
+        definitions=definitions,
+        submissions=submissions,
+        durable_work=durable,
+        events=events,
+        managed_service=service,
+        context_factory=membership_context_factory(
+            {"alice": ("tenant-a", "ws-1", "development", "default")}
+        ),
+        principal_dependency=principal_from_header,
+    )
+    client: Any = TestClient(create_app(api))
+    denied_http: Any = client.get(
+        f"/v1/runs/{receipt.resource_id}/artifacts/content",
+        params={"artifact_id": artifact_id},
+        headers={"X-Principal": "alice"},
+    )
+    assert denied_http.status_code == 404
+
+    authorizer.grant(ctx, "run.artifact.content")
+    authorizer.forbidden_resources.add(
+        (
+            ctx.tenant.tenant_id,
+            ctx.workspace.workspace_id,
+            "run.artifact.content",
+            f"artifact:{artifact_id}",
+        )
+    )
+    with pytest.raises(ControlPlaneError) as resource_denied:
+        service.get_run_artifact_content(ctx, receipt.resource_id, artifact_id)
+    assert resource_denied.value.status == 403
+    authorizer.forbidden_resources.clear()
+
+    content, media_type = service.get_run_artifact_content(
+        ctx, receipt.resource_id, artifact_id
+    )
+    assert media_type == "application/json"
+    assert json.loads(content) == [{"id": 7}]
+
+    restarted_service = ManagedApplicationService(
+        authorizer=authorizer,
+        definitions=definitions,
+        submissions=submissions,
+        durable_work=durable,
+        events=events,
+        report_root=report_root,
+        artifact_root=artifact_root,
+    )
+    restarted_content, _ = restarted_service.get_run_artifact_content(
+        ctx, receipt.resource_id, artifact_id
+    )
+    assert restarted_content == content
+
+    response: Any = client.get(
+        f"/v1/runs/{receipt.resource_id}/artifacts/content",
+        params={"artifact_id": artifact_id},
+        headers={"X-Principal": "alice"},
+    )
+    assert response.status_code == 200
+    assert response.content == content
+    assert response.headers["content-type"] == "application/json"
+    assert response.headers["cache-control"] == "private, no-store"
 
 
 def test_managed_worker_cancels_real_runtime_and_does_not_write_target(

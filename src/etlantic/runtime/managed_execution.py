@@ -9,7 +9,7 @@ from collections.abc import Callable, Mapping
 from dataclasses import replace
 from pathlib import Path
 from threading import Event
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, cast
 
 from etlantic.control_plane.execution_envelope import ExecutionEnvelope
 from etlantic.control_plane.input_resources import (
@@ -17,15 +17,17 @@ from etlantic.control_plane.input_resources import (
     InputResourceStore,
 )
 from etlantic.control_plane.models import ControlPlaneContext
-from etlantic.exceptions import PipelineCancelledError
+from etlantic.exceptions import PipelineCancelledError, PipelineExecutionError
 from etlantic.lifecycle.runtime import PipelineRuntime
 from etlantic.plan.freeze import mutable_copy
 from etlantic.plan.model import PipelinePlan
 from etlantic.profile import Profile, resolve_profile
 from etlantic.reports.file_store import FileReportStore
 from etlantic.reports.model import PipelineRunReport
+from etlantic.runtime.artifacts import ArtifactStore
 from etlantic.runtime.context import TrustedExecutionScope
 from etlantic.runtime.execute import run_pipeline
+from etlantic.runtime.faults import active_faults
 from etlantic.runtime.managed_errors import ExecutionRejected, UnknownCommitError
 from etlantic.runtime.request import RunRequest
 from etlantic.runtime.state import RunStatus
@@ -49,6 +51,25 @@ def managed_run_id(ctx: ControlPlaneContext, idempotency_key: str) -> str:
         )
     )
     return "run-" + _scope_fragment(scope)
+
+
+def managed_artifact_workspace(
+    ctx: ControlPlaneContext,
+    run_id: str,
+    *,
+    artifact_root: str | Path | None = None,
+) -> Path:
+    """Return a run-specific artifact root under the trusted caller scope."""
+    configured_root = artifact_root or os.environ.get("ETLANTIC_ARTIFACT_DIR")
+    root = Path(configured_root or (Path.home() / ".etlantic" / "artifacts"))
+    root = root.expanduser()
+    scoped_root = (
+        root
+        / _scope_fragment(ctx.security_domain.domain_id)
+        / _scope_fragment(ctx.tenant.tenant_id)
+        / _scope_fragment(ctx.workspace.workspace_id)
+    )
+    return scoped_root / _scope_fragment(run_id)
 
 
 def managed_report_store(
@@ -78,6 +99,7 @@ class ManagedExecutionAdapter:
         self,
         *,
         report_root: str | Path | None = None,
+        artifact_root: str | Path | None = None,
         report_store_factory: Callable[[ControlPlaneContext], Any] | None = None,
         event_publisher: (
             Callable[[ControlPlaneContext, str, str, Mapping[str, Any]], None] | None
@@ -91,6 +113,7 @@ class ManagedExecutionAdapter:
         self.report_root = Path(
             configured_root or (Path.home() / ".etlantic" / "reports")
         ).expanduser()
+        self.artifact_root = artifact_root
         self.report_store_factory = report_store_factory
         self.event_publisher = event_publisher
         self.runtime_factory = runtime_factory
@@ -208,6 +231,7 @@ class ManagedExecutionAdapter:
                 return input_resource_store.read(ctx, immutable)
 
             runtime.input_resource_resolver = resolve_input_resource
+        publication_recovered = False
         try:
             try:
                 execution_profile = self._execution_profile(envelope, plan)
@@ -216,6 +240,12 @@ class ManagedExecutionAdapter:
                     profile=execution_profile,
                     request=request,
                     runtime=runtime,
+                    artifact_store=ArtifactStore(
+                        workspace=managed_artifact_workspace(
+                            ctx, run_id, artifact_root=self.artifact_root
+                        ),
+                        hash_identities=True,
+                    ),
                     run_id=run_id,
                 )
             except PipelineCancelledError as exc:
@@ -224,6 +254,77 @@ class ManagedExecutionAdapter:
                         "Managed cancellation ended without a durable run report"
                     ) from exc
                 report = exc.report
+            except PipelineExecutionError as exc:
+                candidate = exc.report
+                if (
+                    exc.code != "PMEXEC410"
+                    or not isinstance(candidate, PipelineRunReport)
+                    or candidate.status is not RunStatus.FAILED
+                    or not any(
+                        item.code == "PMEXEC410" for item in candidate.diagnostics
+                    )
+                ):
+                    raise
+                # PMEXEC410 is raised only after the runtime knows target
+                # publication committed. Require the fallback report to be
+                # readable before replacing its transient publication failure.
+                persisted = reports.get(run_id)
+                if (
+                    not isinstance(persisted, PipelineRunReport)
+                    or persisted.plan_fingerprint != envelope.plan_fingerprint
+                    or persisted.status is not RunStatus.FAILED
+                    or not any(
+                        item.code == "PMEXEC410" for item in persisted.diagnostics
+                    )
+                ):
+                    raise
+                diagnostics = tuple(
+                    replace(
+                        item,
+                        severity="warning",
+                        message=(
+                            "Target publication committed; managed result publication "
+                            "was recovered without rerunning ETL."
+                        ),
+                    )
+                    if item.code == "PMEXEC410"
+                    else item
+                    for item in persisted.diagnostics
+                )
+                recovered_metadata = dict(persisted.metadata)
+                execution_metadata: dict[str, Any] = {}
+                prior_execution: object = recovered_metadata.get(
+                    "etlantic.control_plane.execution"
+                )
+                if isinstance(prior_execution, Mapping):
+                    execution_metadata.update(
+                        cast(Mapping[str, Any], prior_execution)
+                    )
+                execution_metadata.update(
+                    {
+                        "submission_id": submission_id,
+                        "attempt_id": attempt_id,
+                        "plan_fingerprint": envelope.plan_fingerprint,
+                        "canonical_intent_fingerprint": (
+                            envelope.canonical_intent_fingerprint
+                        ),
+                        "no_write": request.no_write,
+                        "effect_status": "none" if request.no_write else "committed",
+                        "result_publication_status": "recovered",
+                    }
+                )
+                recovered_metadata[
+                    "etlantic.control_plane.execution"
+                ] = execution_metadata
+                report = replace(
+                    persisted,
+                    status=RunStatus.SUCCEEDED,
+                    diagnostics=diagnostics,
+                    metadata=recovered_metadata,
+                )
+                with active_faults():
+                    reports.put(report)
+                publication_recovered = True
         except ExecutionRejected:
             self._publish_event(
                 ctx,
@@ -251,17 +352,32 @@ class ManagedExecutionAdapter:
             runtime.input_resource_resolver = previous_input_resource_resolver
 
         metadata = dict(report.metadata)
-        metadata["etlantic.control_plane.execution"] = {
-            "submission_id": submission_id,
-            "attempt_id": attempt_id,
-            "plan_fingerprint": envelope.plan_fingerprint,
-            "canonical_intent_fingerprint": envelope.canonical_intent_fingerprint,
-            "no_write": request.no_write,
-        }
+        execution_metadata: dict[str, Any] = {}
+        previous_execution: object = metadata.get("etlantic.control_plane.execution")
+        if isinstance(previous_execution, Mapping):
+            execution_metadata.update(cast(Mapping[str, Any], previous_execution))
+        execution_metadata.update(
+            {
+                "submission_id": submission_id,
+                "attempt_id": attempt_id,
+                "plan_fingerprint": envelope.plan_fingerprint,
+                "canonical_intent_fingerprint": envelope.canonical_intent_fingerprint,
+                "no_write": request.no_write,
+            }
+        )
+        if publication_recovered:
+            execution_metadata.update(
+                {
+                    "effect_status": "none" if request.no_write else "committed",
+                    "result_publication_status": "recovered",
+                }
+            )
+        metadata["etlantic.control_plane.execution"] = execution_metadata
         published = replace(report, metadata=metadata)
         # Runtime persists during execution; write the enriched immutable
         # result last so result queries and recovery see the same lineage.
-        reports.put(published)
+        if not publication_recovered:
+            reports.put(published)
         self._publish_report_event(ctx, event_base, published)
         return published
 

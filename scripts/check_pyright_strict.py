@@ -21,8 +21,11 @@ EXPECTED_DIGESTS = {
     # synchronized dependency set includes platform-specific distributions.
     # AC056-037 typed the metadata fixture helper, removing 19 pre-existing
     # unknown-type diagnostics; the clean consumer uses public owner modules.
-    "Darwin": "c3120bb2460598fdbd8746fc28abace7f65e13f2abd2d5f064ace9d1a4f83fbe",
-    "Linux": "c3120bb2460598fdbd8746fc28abace7f65e13f2abd2d5f064ace9d1a4f83fbe",
+    # AC056-017/018 added managed artifact and report-recovery paths plus tests;
+    # the shadow scan still reports 10,432 diagnostics, with the fingerprint
+    # change caused by shifted source locations in the existing debt inventory.
+    "Darwin": "e06f97c5a0a3c4a2223a4b68127afc2921058cb9f44cdf0f40e55fc1b2d08481",
+    "Linux": "e06f97c5a0a3c4a2223a4b68127afc2921058cb9f44cdf0f40e55fc1b2d08481",
 }
 
 

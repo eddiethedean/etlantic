@@ -1380,6 +1380,67 @@ def build_control_plane_router(api: ETLanticAPI) -> APIRouter:
         )
 
     @router.get(
+        "/v1/runs/{run_id}/artifacts/content",
+        operation_id="cp_get_run_artifact_content",
+        tags=["runs"],
+        response_class=Response,
+        responses={
+            200: {
+                "description": "Authorized durable artifact content",
+                "content": {
+                    "application/json": {
+                        "schema": {"type": "string", "format": "binary"}
+                    }
+                },
+            },
+            404: {"description": "Run or artifact not found"},
+            424: {"description": "Artifact content is unavailable"},
+        },
+    )
+    def get_run_artifact_content(
+        run_id: str,
+        artifact_id: str | None = Query(default=None, max_length=4096),
+        ctx: ControlPlaneContext = Depends(get_ctx),
+    ) -> Response:
+        """Download one durable artifact after run and artifact authorization."""
+        if api.managed_service is not None:
+            content, media_type = api.managed_service.get_run_artifact_content(
+                ctx, run_id, artifact_id or ""
+            )
+        else:
+            _authorize_run(ctx, "run.artifact.content", run_id)
+            get_run_fn, _ = _run_store_methods(api)
+            try:
+                get_run_fn(ctx, run_id)
+            except KeyError as exc:
+                raise ControlPlaneError.not_found(
+                    f"Run {run_id!r} not found"
+                ) from exc
+            if artifact_id:
+                require_authorized(
+                    api.authorizer,
+                    ctx,
+                    "run.artifact.content",
+                    f"artifact:{artifact_id}",
+                    resource_in_caller_scope=False,
+                )
+            raise ControlPlaneError(
+                "Artifact content is unavailable from this run provider",
+                code="PMCP501",
+                status=501,
+                title="Not Implemented",
+            )
+        return Response(
+            content=content,
+            media_type=media_type,
+            headers={
+                "Cache-Control": "private, no-store",
+                "Content-Disposition": 'attachment; filename="artifact.json"',
+                "X-Content-Type-Options": "nosniff",
+            },
+        )
+
+    @router.get(
         "/v1/runs/{run_id}/lineage",
         operation_id="cp_get_run_lineage",
         response_model=LineageStubResponse,

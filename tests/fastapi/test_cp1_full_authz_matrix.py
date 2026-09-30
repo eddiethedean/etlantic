@@ -62,6 +62,12 @@ CROSS_TENANT_404_CASES: list[tuple[str, str, str, dict | None]] = [
     ),
     ("cp_get_run_report", "GET", "/v1/runs/{run_id}/report", None),
     ("cp_list_run_artifacts", "GET", "/v1/runs/{run_id}/artifacts", None),
+    (
+        "cp_get_run_artifact_content",
+        "GET",
+        "/v1/runs/{run_id}/artifacts/content",
+        None,
+    ),
     ("cp_get_run_lineage", "GET", "/v1/runs/{run_id}/lineage", None),
 ]
 
@@ -94,6 +100,7 @@ ACTIONS = (
     "run.retry",
     "run.report",
     "run.artifacts",
+    "run.artifact.content",
     "run.lineage",
     "run.events",
     "schema.observations.list",
@@ -236,7 +243,12 @@ def test_in_tenant_allow(
     expected_statuses = (
         {501}
         if operation_id
-        in {"cp_get_run_actions", "cp_retry_run", "cp_list_connector_catalog"}
+        in {
+            "cp_get_run_actions",
+            "cp_retry_run",
+            "cp_list_connector_catalog",
+            "cp_get_run_artifact_content",
+        }
         else {200, 202}
     )
     assert resp.status_code in expected_statuses, (

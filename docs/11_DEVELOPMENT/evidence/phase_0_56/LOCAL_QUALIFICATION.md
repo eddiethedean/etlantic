@@ -27,12 +27,18 @@ Current index: 11 criteria passed, 31 pending, and 2 blocked of 44.
   artifacts were regenerated and verified across 10 artifacts and 18
   acceptance criteria; `tests/plan/test_phase_0_52_review_blockers.py::test_final_052_006_evidence_regenerates_cleanly`
   then passed on rerun.
-- Final default regression after the 0.56 action-worker changes:
+- Default regression after the 0.56 action-worker changes:
   the same non-optional command passed 2,810 tests, skipped 71 optional cases,
-  and deselected 604 by marker in 5m38s. It includes the action-job tests and
-  regenerable 0.52 evidence check. The cross-provider planning fixture now sends
-  each connector only its declared configuration, preserving the local-files
-  schema's fail-closed unknown-option behavior.
+  and deselected 604 by marker in 5m38s. This run included the action-job tests
+  and regenerable 0.52 evidence check. The cross-provider planning fixture now
+  sends each connector only its declared configuration, preserving the
+  local-files schema's fail-closed unknown-option behavior.
+- Latest complete default regression after durable artifact access and transient
+  report-write recovery:
+  the same non-optional command passed 2,824 tests, skipped 72 optional cases,
+  and deselected 606 by marker in 4m20s. The adaptive 0.52 evidence was
+  regenerated and its exact regression test passed immediately before this run;
+  no evidence writer was active during the suite.
 - Managed headless/HTTP parity (AC056-001):
   `uv run pytest -q tests/fastapi/test_managed_application_0_56.py` — 18 passed.
   The parity case sends registration, edit, validation, planning and idempotent
@@ -106,7 +112,10 @@ Current index: 11 criteria passed, 31 pending, and 2 blocked of 44.
   table, and exposed the report after backend restart. A simulated worker crash
   after report persistence recovered the expired lease from the stored report;
   the test changed the source before recovery and verified the sink was not
-  written a second time. A second workspace could not read the scoped report.
+  written a second time. A one-shot SQLModel report-write failure after the
+  sink commit was recovered as a successful report with a committed effect
+  record and a `PMEXEC410` warning, without rerunning ETL. A second workspace
+  could not read the scoped report.
 - Managed directory-CSV parser and worker evidence, extended by the immutable
   upload qualification below:
   `uv run pytest -q tests/connectors/test_local_files_csv_0_56.py` — 20 passed;
@@ -207,8 +216,18 @@ Current index: 11 criteria passed, 31 pending, and 2 blocked of 44.
   The configured automatic-retention path also passed against isolated
   PostgreSQL 16.14: history stayed within two events per scope, expired cursors
   and retries returned 410, and sequence allocation continued after pruning.
-  AC056-019 remains pending for bounded tombstone expiry, authorized artifact
-  content downloads and the full reconnect and cross-scope isolation campaign.
+  AC056-019 remains pending for bounded tombstone expiry, result/artifact
+  retention and the full reconnect and cross-scope isolation campaign.
+- Durable run-artifact content (AC056-017/019 subrequirement): the managed
+  worker writes only explicitly durable JSON outputs into hashed per-run
+  directories. Artifact listings report content availability; HTTP and
+  headless reads require `run.artifact.content` at both the run and artifact
+  resource, and reads use the bounded `SafeIoPolicy`. The focused application
+  and standard SQLModel backend tests cover denied discovery, per-artifact
+  denial, download headers, and retrieval after reopening the service. The
+  combined run of the managed application/backend, CP1 authorization matrices,
+  and CP1/CP-GA OpenAPI tests passed 98 cases. Attempt/node/partition links and
+  the result-retention campaign remain open.
 - Provider-aware run-action reason:
   `uv run pytest -q tests/fastapi/test_managed_control_races_0_56.py::test_action_discovery_reports_unsupported_cancel_provider`
   — 1 passed. The command query now reports `provider_unsupported` when the
@@ -477,11 +496,14 @@ Current index: 11 criteria passed, 31 pending, and 2 blocked of 44.
   criterion-level failure, concurrency and runtime campaigns remain open.
 - AC056-017–018: the standard SQLModel backend now persists runtime reports in
   a tenant/workspace-scoped table, and worker recovery reuses a report committed
-  before attempt acknowledgment. Run-level start/completion events have
-  idempotent scoped persistence. Bounded headless and HTTP event history reads
-  share authorization and scoped cursor semantics. Report-publication failure
-  after an external sink commit, event retention/artifact authorization, and
-  separate result and cleanup state machines remain unqualified.
+  before attempt acknowledgment. Explicitly durable JSON artifacts have
+  separately authorized bounded HTTP/headless downloads and restart coverage.
+  Run-level start/completion events have idempotent scoped persistence, and
+  bounded headless and HTTP event history reads share authorization and scoped
+  cursor semantics. A transient report-write failure after an external sink
+  commit now recovers the durable terminal report without rerunning ETL;
+  persistent report-store outage recovery, attempt/node/partition links, result
+  retention, and separate result and cleanup state machines remain unqualified.
 - AC056-007: immutable revision pinning, resource authorization and
   effective-fingerprint policy binding have focused evidence. Complete durable
   resource/version resolution and full disclosure coverage remain open.

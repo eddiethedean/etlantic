@@ -49,6 +49,7 @@ REQUIRED_GA_OPERATION_IDS = {
     "cp_cancel_run",
     "cp_stream_run_events",
     "cp_get_run_report",
+    "cp_get_run_artifact_content",
     "cp_get_run_lineage",
     "cp_list_reliability",
     "cp_policy_decide",

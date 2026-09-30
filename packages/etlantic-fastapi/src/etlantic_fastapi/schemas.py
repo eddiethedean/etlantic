@@ -190,6 +190,7 @@ class ArtifactMeta(BaseModel):
     artifact_id: str
     kind: str
     media_type: str | None = None
+    content_available: bool = False
 
 
 class ArtifactsResponse(BaseModel):

@@ -42,6 +42,7 @@ ACTIONS = (
     "run.cancel",
     "run.report",
     "run.artifacts",
+    "run.artifact.content",
     "run.lineage",
     "run.events",
     "schema.observations.list",

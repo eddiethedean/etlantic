@@ -38,9 +38,12 @@ from etlantic.control_plane import (
 )
 from etlantic.lifecycle.runtime import PipelineRuntime
 from etlantic.registry import BindingDescriptor, PlanningContext
+from etlantic.reports.model import PipelineRunReport
 from etlantic.runtime.execution_host import ExecutionHost
 from etlantic.runtime.managed_errors import ExecutionRejected
 from etlantic.runtime.managed_execution import ManagedExecutionAdapter
+from etlantic.runtime.request import MaterializationPolicy, RunRequest
+from etlantic.runtime.state import RunStatus
 from etlantic_fastapi import (
     ManagedBackend,
     ManagedBackendConfig,
@@ -48,6 +51,7 @@ from etlantic_fastapi import (
     create_managed_backend,
     static_context_factory,
 )
+from etlantic_sqlmodel.control_plane.report_stores import SqlModelRunReportStore
 from etlantic_sqlmodel.migrations import upgrade
 
 
@@ -275,6 +279,8 @@ def test_standard_worker_reads_configured_csv_and_does_not_retain_row_content(
         "run.submit",
         "run.read",
         "run.report",
+        "run.artifacts",
+        "run.artifact.content",
         "run.lineage",
     ):
         authorizer.grant(ctx, action)
@@ -283,6 +289,7 @@ def test_standard_worker_reads_configured_csv_and_does_not_retain_row_content(
             database_url=database_url,
             store_id="managed-csv-worker",
             profile=profile,
+            artifact_root=str(tmp_path / "managed-csv-artifacts"),
         ),
         authorizer=authorizer,
         context_factory=static_context_factory(
@@ -302,7 +309,10 @@ def test_standard_worker_reads_configured_csv_and_does_not_retain_row_content(
             pipeline_to_dict(definition_from_pipeline(_ManagedCsvPipeline)),
         )
         receipt = service.submit_run(
-            ctx, "managed-csv-pipe", idempotency_key="managed-csv-worker-run"
+            ctx,
+            "managed-csv-pipe",
+            idempotency_key="managed-csv-worker-run",
+            request=RunRequest(materialization=MaterializationPolicy.DURABLE),
         )
         assert receipt.resource_id is not None
         durable = backend.api.durable_work
@@ -335,6 +345,16 @@ def test_standard_worker_reads_configured_csv_and_does_not_retain_row_content(
         ]
         assert source.is_file()
         assert "Zoë" not in json.dumps(report, ensure_ascii=False)
+        downloadable = next(
+            item
+            for item in service.list_run_artifacts(ctx, receipt.resource_id)
+            if item["content_available"]
+        )
+        content, media_type = service.get_run_artifact_content(
+            ctx, receipt.resource_id, str(downloadable["artifact_id"])
+        )
+        assert media_type == "application/json"
+        assert json.loads(content) == [{"id": "42", "name": "Zoë"}]
     finally:
         backend.close()
 
@@ -815,6 +835,22 @@ def test_standard_backend_worker_persists_queryable_report_in_sqlmodel(
         assert durable is not None
         host = backend.create_execution_host(owner_id="sqlmodel-worker", ttl_seconds=1)
 
+        original_report_put = SqlModelRunReportStore.put
+        report_persist_faulted = False
+
+        def fail_first_successful_report_put(
+            store: SqlModelRunReportStore, report: PipelineRunReport
+        ) -> None:
+            nonlocal report_persist_faulted
+            if not report_persist_faulted and report.status is RunStatus.SUCCEEDED:
+                report_persist_faulted = True
+                raise RuntimeError("simulated report publication interruption")
+            original_report_put(store, report)
+
+        monkeypatch.setattr(
+            SqlModelRunReportStore, "put", fail_first_successful_report_put
+        )
+
         def fail_after_report_is_published(*_args: Any, **_kwargs: Any) -> None:
             raise RuntimeError("simulated worker crash after report publication")
 
@@ -824,6 +860,18 @@ def test_standard_backend_worker_persists_queryable_report_in_sqlmodel(
         report = service.get_run_report(ctx, receipt.resource_id)
         assert report["run_id"] == receipt.resource_id
         assert report["status"] == "succeeded"
+        assert report_persist_faulted
+        execution = report["metadata"]["etlantic.control_plane.execution"]
+        assert execution["result_publication_status"] == "recovered"
+        assert execution["effect_status"] == "committed"
+        assert any(
+            diagnostic["code"] == "PMEXEC410"
+            and diagnostic["severity"] == "warning"
+            for diagnostic in report["diagnostics"]
+        )
+        assert durable.get_effect(
+            ctx, f"{receipt.submission_id}:execution"
+        ).status == "committed"
         assert target.read_text(encoding="utf-8").splitlines() == ["id", "29"]
     finally:
         backend.close()

@@ -48,14 +48,17 @@ from etlantic.control_plane.protocols import (
     EventStore,
     SubmissionStore,
 )
+from etlantic.io_policy import SafeIoPolicy, read_text_safe
 from etlantic.plan.freeze import mutable_copy
 from etlantic.plan.model import PipelinePlan
 from etlantic.plan.serialize import verify_plan_fingerprint
 from etlantic.profile import resolve_profile
 from etlantic.registry import PlanningContext
 from etlantic.reports.model import PipelineRunReport
+from etlantic.runtime.artifacts import artifact_storage_path
 from etlantic.runtime.logging import redact_message
 from etlantic.runtime.managed_execution import (
+    managed_artifact_workspace,
     managed_report_store,
     managed_run_id,
 )
@@ -112,6 +115,7 @@ class ManagedApplicationService:
     input_resources: InputResourceStore | None = None
     input_resource_retention_seconds: int = 90 * 24 * 60 * 60
     action_job_max_deadline_seconds: int = 300
+    artifact_root: str | Path | None = None
 
     def register_definition(
         self,
@@ -1347,9 +1351,15 @@ class ManagedApplicationService:
         }
 
     def _runtime_report(
-        self, ctx: ControlPlaneContext, action: str, run_id: str
+        self,
+        ctx: ControlPlaneContext,
+        action: str,
+        run_id: str,
+        *,
+        record: dict[str, Any] | None = None,
     ) -> tuple[dict[str, Any], PipelineRunReport]:
-        record = self._authorized_run_record(ctx, action, run_id)
+        if record is None:
+            record = self._authorized_run_record(ctx, action, run_id)
         idempotency_key = str(record.get("idempotency_key") or "")
         if not idempotency_key:
             raise ControlPlaneError.not_found("Run report not found")
@@ -1446,6 +1456,9 @@ class ManagedApplicationService:
         report: dict[str, Any] = report_model.to_dict()
         items: list[dict[str, Any]] = []
         artifacts: list[dict[str, Any]] = report.get("artifacts") or []
+        workspace = managed_artifact_workspace(
+            ctx, run_id, artifact_root=self.artifact_root
+        )
         for artifact in artifacts:
             identity = str(artifact.get("identity") or "")
             if not identity:
@@ -1460,14 +1473,80 @@ class ManagedApplicationService:
                 )
             except ControlPlaneError:
                 continue
+            strategy = artifact.get("strategy", "output")
+            path = artifact_storage_path(workspace, identity)
+            content_available = (
+                strategy == "durable" and path.is_file() and not path.is_symlink()
+            )
             items.append(
                 {
                     "artifact_id": identity,
-                    "kind": artifact.get("strategy", "output"),
-                    "media_type": _mapping(artifact.get("metadata")).get("media_type"),
+                    "kind": strategy,
+                    "content_available": content_available,
+                    "media_type": (
+                        "application/json"
+                        if content_available
+                        else _mapping(artifact.get("metadata")).get("media_type")
+                    ),
                 }
             )
         return items
+
+    def get_run_artifact_content(
+        self, ctx: ControlPlaneContext, run_id: str, artifact_id: str
+    ) -> tuple[bytes, str]:
+        """Return one authorized, durable artifact as bounded JSON bytes."""
+        record = self._authorized_run_record(ctx, "run.artifact.content", run_id)
+        if not artifact_id:
+            raise ControlPlaneError.not_found("Run artifact not found")
+        require_authorized(
+            self.authorizer,
+            ctx,
+            "run.artifact.content",
+            f"artifact:{artifact_id}",
+            resource_in_caller_scope=False,
+        )
+        _record, report_model = self._runtime_report(
+            ctx,
+            "run.artifact.content",
+            run_id,
+            record=record,
+        )
+        artifact = next(
+            (
+                item
+                for item in report_model.to_dict().get("artifacts", [])
+                if item.get("identity") == artifact_id
+                and item.get("strategy") == "durable"
+            ),
+            None,
+        )
+        if artifact is None:
+            raise ControlPlaneError.not_found("Run artifact not found")
+
+        workspace = managed_artifact_workspace(
+            ctx, run_id, artifact_root=self.artifact_root
+        )
+        path = artifact_storage_path(workspace, artifact_id)
+        if path.is_symlink() or not path.is_file():
+            raise ControlPlaneError.not_found("Run artifact content not found")
+        policy = SafeIoPolicy.for_root(
+            workspace,
+            security_domain=ctx.security_domain.domain_id,
+            tenant=ctx.tenant.tenant_id,
+        )
+        try:
+            _resolved, content, _events = read_text_safe(
+                path, policy, run_id=run_id
+            )
+        except Exception as exc:
+            raise ControlPlaneError(
+                "Run artifact content is unavailable under the configured I/O policy",
+                code="PMCP424",
+                status=424,
+                title="Failed Dependency",
+            ) from exc
+        return content.encode("utf-8"), "application/json"
 
     def _get_document(
         self,

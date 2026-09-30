@@ -64,6 +64,7 @@ class ManagedBackendConfig:
     action_handlers: Mapping[str, ActionHandler] = field(
         default_factory=_empty_action_handlers, repr=False
     )
+    artifact_root: str | None = field(default=None, repr=False)
 
     def __post_init__(self) -> None:
         if not self.database_url.strip():
@@ -141,6 +142,7 @@ class ManagedBackend:
     action_job_lease_seconds: int = 330
     preview_result_ttl_seconds: int = 60 * 60
     execution_profile: Profile | None = field(default=None, repr=False)
+    artifact_root: str | None = field(default=None, repr=False)
     _closed: bool = field(default=False, init=False, repr=False)
 
     def close(self) -> None:
@@ -180,6 +182,7 @@ class ManagedBackend:
             ttl_seconds=ttl_seconds,
             runner=ManagedExecutionAdapter(
                 report_store_factory=self.report_store_factory,
+                artifact_root=self.artifact_root,
                 event_publisher=publish_event,
                 profile=self.execution_profile,
                 input_resource_store=self.input_resources,
@@ -282,6 +285,7 @@ def create_managed_backend(
         api.enable_managed_execution()
         if api.managed_service is not None:
             api.managed_service.report_store_factory = report_store_provider.for_context
+            api.managed_service.artifact_root = config.artifact_root
             api.managed_service.action_job_max_deadline_seconds = (
                 config.action_job_max_deadline_seconds
             )
@@ -290,6 +294,7 @@ def create_managed_backend(
             engine=engine,
             report_store_factory=report_store_provider.for_context,
             input_resources=input_resources,
+            artifact_root=config.artifact_root,
             action_handlers=dict(config.action_handlers),
             action_job_lease_seconds=config.action_job_lease_seconds,
             preview_result_ttl_seconds=config.preview_result_ttl_seconds,
