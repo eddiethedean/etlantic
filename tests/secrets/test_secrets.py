@@ -55,6 +55,11 @@ def test_managed_secret_cache_is_partitioned_by_trusted_scope() -> None:
     assert cache.get(reference) is None
 
 
+def test_secret_ref_rejects_blank_version() -> None:
+    with pytest.raises(ValueError, match="version"):
+        SecretRef(provider="env", name="database", key="password", version=" ")
+
+
 def test_env_provider_fail_closed() -> None:
     provider = EnvSecretProvider()
 
@@ -65,6 +70,25 @@ def test_env_provider_fail_closed() -> None:
         )
 
     with pytest.raises(PipelineExecutionError):
+        anyio.run(_run)
+
+
+def test_env_provider_rejects_unsupported_version(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setenv("DATABASE_PASSWORD", "present")
+    provider = EnvSecretProvider()
+
+    async def _run() -> None:
+        await provider.resolve(
+            SecretRef(
+                provider="env",
+                name="DATABASE_PASSWORD",
+                key="value",
+                version="v7",
+            ),
+            SecretResolutionContext(run_id="r", pipeline_id="p"),
+        )
+
+    with pytest.raises(PipelineExecutionError, match="does not support version"):
         anyio.run(_run)
 
 
@@ -83,6 +107,25 @@ def test_file_provider_round_trip(tmp_path: Path) -> None:
     assert value.get_secret_value() == "s3cr3t"
     with pytest.raises(SecretSerializationError):
         value.to_dict()
+
+
+def test_file_provider_rejects_unsupported_version(tmp_path: Path) -> None:
+    (tmp_path / "db_password").write_text("present", encoding="utf-8")
+    provider = MountedFileSecretProvider(root=tmp_path)
+
+    async def _run() -> None:
+        await provider.resolve(
+            SecretRef(
+                provider="file",
+                name="db_password",
+                key="value",
+                version="v7",
+            ),
+            SecretResolutionContext(run_id="r", pipeline_id="p"),
+        )
+
+    with pytest.raises(PipelineExecutionError, match="does not support version"):
+        anyio.run(_run)
 
 
 def test_file_provider_rejects_path_traversal(tmp_path: Path) -> None:

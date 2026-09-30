@@ -48,6 +48,12 @@ class EnvSecretProvider:
         reference: SecretRef,
         context: SecretResolutionContext,
     ) -> SecretValue:
+        if reference.version != "current":
+            raise PipelineExecutionError(
+                "Environment secret provider does not support version selection",
+                run_id=context.run_id,
+                code="PMEXEC403",
+            )
         env_name = self._env_name(reference)
         if env_name not in os.environ:
             raise PipelineExecutionError(

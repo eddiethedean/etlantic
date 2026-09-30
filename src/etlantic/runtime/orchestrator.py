@@ -117,6 +117,7 @@ from etlantic.schema_policy import (
 )
 from etlantic.secrets.provider import SecretResolutionContext
 from etlantic.secrets.ref import SecretRef
+from etlantic.secrets.value import SecretValue
 from etlantic.spark.provider import SparkSessionHandle
 from etlantic.sql.protocol import (
     RelationRef,
@@ -4989,9 +4990,6 @@ class LocalOrchestrator:
 
     async def _resolve_secret(self, ref: SecretRef, *, run_id: str, step: str) -> Any:
         trusted_scope = self.runtime.trusted_execution_scope
-        cached = self.runtime.secret_cache.get(ref, trusted_scope=trusted_scope)
-        if cached is not None:
-            return cached
         provider = self.runtime.secret_providers.get(ref.provider)
         if provider is None:
             raise PipelineExecutionError(
@@ -4999,15 +4997,75 @@ class LocalOrchestrator:
                 run_id=run_id,
                 code="PMEXEC400",
             )
-        context = SecretResolutionContext(
-            run_id=run_id,
-            pipeline_id=self.plan.pipeline_id,
-            step_name=step,
-            purpose=ref.purpose,
-            trusted_scope=trusted_scope,
-        )
         try:
-            value = await provider.resolve(ref, context)
+            capabilities = provider.descriptor.capabilities
+            if ref.version != "current" and not capabilities.versions:
+                raise PipelineExecutionError(
+                    "Secret provider does not support exact version selection",
+                    run_id=run_id,
+                    code="PMEXEC403",
+                )
+            cache_enabled = capabilities.in_memory_cache
+            if cache_enabled:
+                cached = self.runtime.secret_cache.get(
+                    ref, trusted_scope=trusted_scope
+                )
+                if cached is not None:
+                    self.runtime.events.emit(
+                        SecurityEvent(
+                            kind="secret_resolution",
+                            run_id=run_id,
+                            provider=ref.provider,
+                            secret_identity=ref.identity(),
+                            outcome="success",
+                            step_name=step,
+                            metadata={
+                                "requested_version": ref.version,
+                                "resolved_version": (
+                                    cached.version
+                                    if cached.version != "current"
+                                    else None
+                                ),
+                                "cache_hit": True,
+                            },
+                        )
+                    )
+                    return cached
+            context = SecretResolutionContext(
+                run_id=run_id,
+                pipeline_id=self.plan.pipeline_id,
+                step_name=step,
+                purpose=ref.purpose,
+                trusted_scope=trusted_scope,
+            )
+            value: Any = await provider.resolve(ref, context)
+            if not isinstance(value, SecretValue):
+                raise PipelineExecutionError(
+                    "Secret provider returned an invalid value",
+                    run_id=run_id,
+                    code="PMEXEC404",
+                )
+            if ref.version != "current" and value.version != ref.version:
+                raise PipelineExecutionError(
+                    "Secret provider did not return the requested exact version",
+                    run_id=run_id,
+                    code="PMEXEC404",
+                )
+            if capabilities.versions and (
+                not value.version.strip()
+                or (ref.version == "current" and value.version == "current")
+            ):
+                raise PipelineExecutionError(
+                    "Versioned secret provider did not report the resolved version",
+                    run_id=run_id,
+                    code="PMEXEC404",
+                )
+            if redact_message(value.version) != value.version:
+                raise PipelineExecutionError(
+                    "Secret provider returned an unsafe version identifier",
+                    run_id=run_id,
+                    code="PMEXEC404",
+                )
         except Exception as exc:
             self.runtime.events.emit(
                 SecurityEvent(
@@ -5021,7 +5079,10 @@ class LocalOrchestrator:
                 )
             )
             raise
-        self.runtime.secret_cache.put(ref, value, trusted_scope=trusted_scope)
+        if cache_enabled:
+            self.runtime.secret_cache.put(
+                ref, value, trusted_scope=trusted_scope
+            )
         self.runtime.events.emit(
             SecurityEvent(
                 kind="secret_resolution",
@@ -5030,6 +5091,13 @@ class LocalOrchestrator:
                 secret_identity=ref.identity(),
                 outcome="success",
                 step_name=step,
+                metadata={
+                    "requested_version": ref.version,
+                    "resolved_version": (
+                        value.version if value.version != "current" else None
+                    ),
+                    "cache_hit": False,
+                },
             )
         )
         return value

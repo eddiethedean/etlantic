@@ -69,6 +69,12 @@ class MountedFileSecretProvider:
         reference: SecretRef,
         context: SecretResolutionContext,
     ) -> SecretValue:
+        if reference.version != "current":
+            raise PipelineExecutionError(
+                "Mounted-file secret provider does not support version selection",
+                run_id=context.run_id,
+                code="PMEXEC403",
+            )
         try:
             path = self._path(reference)
         except PipelineExecutionError as exc:

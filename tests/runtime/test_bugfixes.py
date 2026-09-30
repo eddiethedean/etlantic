@@ -3,8 +3,9 @@
 
 from __future__ import annotations
 
+from contextlib import asynccontextmanager
 from pathlib import Path
-from typing import Annotated
+from typing import Annotated, cast
 
 import pytest
 
@@ -22,6 +23,8 @@ from etlantic import (
 from etlantic.lifecycle import Inject
 from etlantic.lifecycle.callbacks import FailureAction
 from etlantic.registry import BindingDescriptor, PlanningContext
+from etlantic.reports.model import PipelineRunReport
+from etlantic.runtime.events import SecurityEvent
 from etlantic.runtime.request import MaterializationPolicy, RunRequest, RunSelection
 from etlantic.runtime.state import RunStatus
 from etlantic.schema_drift import (
@@ -30,6 +33,13 @@ from etlantic.schema_drift import (
     normalize_schema_from_model,
 )
 from etlantic.schema_policy import DriftAction, SchemaDriftPolicy, evaluate_drift
+from etlantic.secrets.provider import (
+    SecretProvider,
+    SecretProviderCapabilities,
+    SecretProviderDescriptor,
+    SecretResolutionContext,
+)
+from etlantic.secrets.value import SecretValue
 
 
 class Row(Data):
@@ -57,6 +67,31 @@ class SimplePipeline(Pipeline):
     normalized = Normalize.step(rows=raw)
     out: Load[Row] = Load(input=normalized.result, asset="out")
 
+
+class _VersionedSecretProvider:
+    def __init__(self, *, supports_versions: bool, resolved_version: str) -> None:
+        self.descriptor = SecretProviderDescriptor(
+            name="versioned-test",
+            engine="test",
+            capabilities=SecretProviderCapabilities(
+                versions=supports_versions,
+                in_memory_cache=True,
+            ),
+        )
+        self.resolved_version = resolved_version
+        self.calls = 0
+
+    async def resolve(
+        self, reference: SecretRef, context: SecretResolutionContext
+    ) -> SecretValue:
+        self.calls += 1
+        return SecretValue(
+            _value="version-test-secret",
+            provider=reference.provider,
+            name=reference.name,
+            key=reference.key,
+            version=self.resolved_version,
+        )
 
 class MissingImplPipeline(Pipeline):
     raw: Extract[Row] = Extract(asset="rows")
@@ -150,6 +185,75 @@ def test_missing_secret_fails_closed() -> None:
     assert any("Secret" in (d.message or "") for d in report.diagnostics)
 
 
+def _run_with_secret_version(
+    provider: _VersionedSecretProvider, requested_version: str
+) -> tuple[PipelineRuntime, PipelineRunReport]:
+    runtime = PipelineRuntime()
+    runtime.secret_providers["versioned-test"] = cast(SecretProvider, provider)
+    planning = PlanningContext.create(profile="development")
+    planning.registry.register_binding(
+        BindingDescriptor(
+            binding="rows",
+            provider="memory",
+            secret_ref=SecretRef(
+                provider="versioned-test",
+                name="warehouse",
+                key="password",
+                version=requested_version,
+            ),
+        )
+    )
+    return runtime, SimplePipeline.run(
+        profile="development", runtime=runtime, context=planning
+    )
+
+
+def test_managed_secret_resolution_audits_actual_version() -> None:
+    provider = _VersionedSecretProvider(
+        supports_versions=True, resolved_version="release-42"
+    )
+    runtime, report = _run_with_secret_version(provider, "current")
+
+    assert report.status is RunStatus.SUCCEEDED
+    events = [
+        event
+        for event in runtime.events.events
+        if isinstance(event, SecurityEvent) and event.kind == "secret_resolution"
+    ]
+    assert len(events) == 1
+    assert events[0].metadata == {
+        "requested_version": "current",
+        "resolved_version": "release-42",
+        "cache_hit": False,
+    }
+    assert "version-test-secret" not in str(events[0].to_dict())
+
+
+@pytest.mark.parametrize(
+    ("supports_versions", "resolved_version", "expected_calls", "reason"),
+    [
+        (False, "release-42", 0, "does not support exact version selection"),
+        (True, "release-42", 1, "did not return the requested exact version"),
+    ],
+)
+def test_exact_secret_version_fails_closed(
+    supports_versions: bool,
+    resolved_version: str,
+    expected_calls: int,
+    reason: str,
+) -> None:
+    provider = _VersionedSecretProvider(
+        supports_versions=supports_versions,
+        resolved_version=resolved_version,
+    )
+    runtime, report = _run_with_secret_version(provider, "release-41")
+
+    assert report.status is RunStatus.FAILED
+    assert provider.calls == expected_calls
+    assert runtime.secret_cache.stats()["entries"] == 0
+    assert any(reason in (diagnostic.message or "") for diagnostic in report.diagnostics)
+
+
 def test_run_selection_until_excludes_sink() -> None:
     runtime = PipelineRuntime()
     runtime.memory.seed("rows", [Row(id=1, name="a")])
@@ -193,7 +297,6 @@ def test_resource_injection_and_cleanup() -> None:
         out: Load[Row] = Load(input=counted.result, asset="out")
 
     async def provide_db(_ctx):
-        from contextlib import asynccontextmanager
 
         @asynccontextmanager
         async def cm():

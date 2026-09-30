@@ -71,6 +71,13 @@ Current index: 3 criteria passed, 39 pending, and 2 blocked of 44.
   local runtime cannot reuse the value. The scope is absent from accepted
   envelopes. AC056-023 remains open for action executors, resource resolvers,
   tampered-reference policy and complete lifecycle qualification.
+- Secret version selection and audit:
+  `uv run pytest -q tests/secrets/test_secrets.py tests/runtime/test_bugfixes.py`
+  — 24 passed. Environment and mounted-file providers reject unsupported
+  version selectors; managed resolution rejects an unsupported or mismatched
+  exact version and records a versioned provider's resolved version in the
+  security event without the value. AC056-024 remains open for authorized
+  late binding, rotation, revocation, expiry, outage and lease qualification.
 - Follow-up core and FastAPI wheels:
   `uv build --package etlantic --wheel` and
   `uv build --package etlantic-fastapi --wheel` succeeded. Both wheels were
