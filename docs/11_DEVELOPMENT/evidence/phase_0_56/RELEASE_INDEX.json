@@ -1001,7 +1001,6 @@
       "supporting_cases": [
         "tests/connectors/test_local_files_csv_0_56.py",
         "tests/fastapi/test_managed_backend_0_56.py::test_managed_worker_executes_finalized_upload_and_lease_outlives_staging_ttl",
-        "tests/fastapi/test_managed_backend_0_56.py::test_managed_worker_rejects_invalid_finalized_csv_uploads",
         "tests/fastapi/test_managed_backend_0_56.py::test_standard_worker_reads_configured_csv_and_does_not_retain_row_content",
         "tests/runtime/test_local_runtime.py::test_packaged_worker_executes_accepted_envelope_and_recovers_report",
         "tests/sqlmodel/test_input_resource_postgresql_0_56.py::test_postgres_multiprocess_lease_and_cleanup_race_is_linearizable",
@@ -1286,7 +1285,7 @@
     "postgresql": "16.14 (isolated local container)",
     "python": "3.11.15"
   },
-  "generated_at_utc": "2026-09-30T13:00:43Z",
+  "generated_at_utc": "2026-09-30T13:02:39Z",
   "phase": "0.56",
   "release_decision": "OPEN",
   "schema": "etlantic.phase_0_56.release_index/1",
