@@ -41,6 +41,27 @@ def _scope_fragment(value: str) -> str:
     return hashlib.sha256(value.encode("utf-8")).hexdigest()[:24]
 
 
+def _record_attempt(
+    execution: dict[str, Any], *, attempt_id: str, role: str
+) -> None:
+    history: list[dict[str, str]] = []
+    prior_history: object = execution.get("attempt_history")
+    if isinstance(prior_history, (list, tuple)):
+        for raw_item in cast(list[object] | tuple[object, ...], prior_history):
+            if not isinstance(raw_item, Mapping):
+                continue
+            item = cast(Mapping[str, object], raw_item)
+            history_attempt = item.get("attempt_id")
+            history_role = item.get("role")
+            if isinstance(history_attempt, str) and isinstance(history_role, str):
+                history.append({"attempt_id": history_attempt, "role": history_role})
+    if not any(
+        item["attempt_id"] == attempt_id and item["role"] == role for item in history
+    ):
+        history.append({"attempt_id": attempt_id, "role": role})
+    execution["attempt_history"] = history
+
+
 def managed_run_id(ctx: ControlPlaneContext, idempotency_key: str) -> str:
     scope = "/".join(
         (
@@ -183,6 +204,19 @@ class ManagedExecutionAdapter:
         if existing is not None:
             if existing.plan_fingerprint != envelope.plan_fingerprint:
                 raise ExecutionRejected("Stored result conflicts with accepted plan")
+            metadata = dict(existing.metadata)
+            execution: dict[str, Any] = {}
+            prior_execution: object = metadata.get(
+                "etlantic.control_plane.execution"
+            )
+            if isinstance(prior_execution, Mapping):
+                execution.update(cast(Mapping[str, Any], prior_execution))
+            _record_attempt(
+                execution, attempt_id=attempt_id, role="result_reconciled"
+            )
+            metadata["etlantic.control_plane.execution"] = execution
+            existing = replace(existing, metadata=metadata)
+            reports.put(existing)
             self._publish_report_event(ctx, event_base, existing)
             return existing
         if recovered_attempt:
@@ -313,6 +347,9 @@ class ManagedExecutionAdapter:
                         "result_publication_status": "recovered",
                     }
                 )
+                _record_attempt(
+                    execution_metadata, attempt_id=attempt_id, role="executed"
+                )
                 recovered_metadata[
                     "etlantic.control_plane.execution"
                 ] = execution_metadata
@@ -365,6 +402,7 @@ class ManagedExecutionAdapter:
                 "no_write": request.no_write,
             }
         )
+        _record_attempt(execution_metadata, attempt_id=attempt_id, role="executed")
         if publication_recovered:
             execution_metadata.update(
                 {

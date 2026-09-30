@@ -1423,6 +1423,77 @@ class ManagedApplicationService:
         submission_id = (
             submission_id_raw if isinstance(submission_id_raw, str) else None
         )
+        raw_attempt_id: object = execution.get("attempt_id")
+        attempt_id = raw_attempt_id if isinstance(raw_attempt_id, str) else None
+        attempt_history: list[dict[str, str]] = []
+        raw_attempt_history: object = execution.get("attempt_history")
+        if isinstance(raw_attempt_history, (list, tuple)):
+            for raw_item in cast(
+                list[object] | tuple[object, ...], raw_attempt_history
+            ):
+                if not isinstance(raw_item, Mapping):
+                    continue
+                item = cast(Mapping[str, object], raw_item)
+                history_attempt = item.get("attempt_id")
+                history_role = item.get("role")
+                if isinstance(history_attempt, str) and isinstance(history_role, str):
+                    attempt_history.append(
+                        {"attempt_id": history_attempt, "role": history_role}
+                    )
+        if attempt_id and not any(
+            item["attempt_id"] == attempt_id and item["role"] == "executed"
+            for item in attempt_history
+        ):
+            attempt_history.append({"attempt_id": attempt_id, "role": "executed"})
+        run_id_value = str(report["run_id"])
+        attempt_nodes: dict[str, str] = {}
+        for item in attempt_history:
+            current_attempt = item["attempt_id"]
+            node_id = f"attempt:{current_attempt}"
+            if node_id not in attempt_nodes.values():
+                nodes.append(
+                    {
+                        "id": node_id,
+                        "kind": "attempt",
+                        "attempt_id": current_attempt,
+                        "role": item["role"],
+                    }
+                )
+                edges.append(
+                    {"from": run_id_value, "to": node_id, "kind": "has_attempt"}
+                )
+            attempt_nodes[current_attempt] = node_id
+        execution_attempts = [
+            attempt_nodes[item["attempt_id"]]
+            for item in attempt_history
+            if item["role"] == "executed" and item["attempt_id"] in attempt_nodes
+        ]
+        steps: list[object] = report.get("steps") or []
+        for step in steps:
+            if not isinstance(step, Mapping):
+                continue
+            step_data = cast(Mapping[str, Any], step)
+            step_id = step_data.get("step_id")
+            if not isinstance(step_id, str) or not step_id:
+                continue
+            node_id = f"node:{report['pipeline_id']}:{step_id}"
+            nodes.append(
+                {
+                    "id": node_id,
+                    "kind": "node",
+                    "step_id": step_id,
+                    "name": step_data.get("step_name"),
+                    "status": step_data.get("status"),
+                }
+            )
+            for execution_attempt in execution_attempts:
+                edges.append(
+                    {
+                        "from": execution_attempt,
+                        "to": node_id,
+                        "kind": "executed_node",
+                    }
+                )
         if isinstance(submission_id, str) and submission_id:
             durable = self.durable_work.get_submission(ctx, submission_id)
             if durable.input_snapshot:
@@ -1443,7 +1514,7 @@ class ManagedApplicationService:
             "schema": "etlantic.run_lineage/1",
             "run_id": report["run_id"],
             "submission_id": submission_id,
-            "attempt_id": execution.get("attempt_id"),
+            "attempt_id": attempt_id,
             "nodes": nodes,
             "edges": edges,
         }

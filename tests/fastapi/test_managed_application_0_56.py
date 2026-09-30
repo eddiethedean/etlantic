@@ -1060,6 +1060,31 @@ def test_accepted_file_transfer_publishes_real_report_and_effect(tmp_path) -> No
     assert report["run_id"] == receipt.resource_id
     assert report["status"] == "succeeded"
     assert lineage["submission_id"] == receipt.submission_id
+    execution = report["metadata"]["etlantic.control_plane.execution"]
+    assert lineage["attempt_id"] == execution["attempt_id"]
+    attempt_node = next(
+        node
+        for node in lineage["nodes"]
+        if node.get("kind") == "attempt"
+        and node.get("attempt_id") == execution["attempt_id"]
+    )
+    assert attempt_node["role"] == "executed"
+    assert {
+        "from": receipt.resource_id,
+        "to": attempt_node["id"],
+        "kind": "has_attempt",
+    } in lineage["edges"]
+    for step in report["steps"]:
+        step_node = next(
+            node
+            for node in lineage["nodes"]
+            if node.get("kind") == "node" and node.get("step_id") == step["step_id"]
+        )
+        assert {
+            "from": attempt_node["id"],
+            "to": step_node["id"],
+            "kind": "executed_node",
+        } in lineage["edges"]
     assert (
         durable.get_effect(ctx, f"{receipt.submission_id}:execution").status
         == "committed"

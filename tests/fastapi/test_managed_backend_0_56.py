@@ -909,10 +909,23 @@ def test_standard_backend_worker_persists_queryable_report_in_sqlmodel(
             ).tick(ctx)
             == 1
         )
-        assert service.get_run_report(ctx, receipt.resource_id)["status"] == (
-            "succeeded"
-        )
+        recovered_report = service.get_run_report(ctx, receipt.resource_id)
+        assert recovered_report["status"] == "succeeded"
         assert target.read_text(encoding="utf-8").splitlines() == ["id", "29"]
+        execution = recovered_report["metadata"]["etlantic.control_plane.execution"]
+        assert {item["role"] for item in execution["attempt_history"]} == {
+            "executed",
+            "result_reconciled",
+        }
+        lineage = service.get_run_lineage(ctx, receipt.resource_id)
+        attempt_nodes = [
+            node for node in lineage["nodes"] if node.get("kind") == "attempt"
+        ]
+        assert {node["role"] for node in attempt_nodes} == {
+            "executed",
+            "result_reconciled",
+        }
+        assert len({node["attempt_id"] for node in attempt_nodes}) == 2
         assert restarted.api.events is not None
         run_events = [
             event

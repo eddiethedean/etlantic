@@ -24,8 +24,10 @@ EXPECTED_DIGESTS = {
     # AC056-017/018 added managed artifact and report-recovery paths plus tests;
     # the shadow scan still reports 10,432 diagnostics, with the fingerprint
     # change caused by shifted source locations in the existing debt inventory.
-    "Darwin": "e06f97c5a0a3c4a2223a4b68127afc2921058cb9f44cdf0f40e55fc1b2d08481",
-    "Linux": "e06f97c5a0a3c4a2223a4b68127afc2921058cb9f44cdf0f40e55fc1b2d08481",
+    # AC056-017 now records recovered worker attempts and execution-node lineage;
+    # the 10,432-diagnostic total is unchanged.
+    "Darwin": "f18972182dfa82b6367a4c7ecc64ce7f89bf167fc55ab95ada5172d9706c2876",
+    "Linux": "f18972182dfa82b6367a4c7ecc64ce7f89bf167fc55ab95ada5172d9706c2876",
 }
 
 

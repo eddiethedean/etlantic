@@ -33,12 +33,13 @@ Current index: 11 criteria passed, 31 pending, and 2 blocked of 44.
   and regenerable 0.52 evidence check. The cross-provider planning fixture now
   sends each connector only its declared configuration, preserving the
   local-files schema's fail-closed unknown-option behavior.
-- Latest complete default regression after durable artifact access and transient
-  report-write recovery:
-  the same non-optional command passed 2,824 tests, skipped 72 optional cases,
-  and deselected 606 by marker in 4m20s. The adaptive 0.52 evidence was
-  regenerated and its exact regression test passed immediately before this run;
-  no evidence writer was active during the suite.
+- Latest default regression after managed attempt/node lineage:
+  the same non-optional command passed 2,823 tests, skipped 72 optional cases,
+  and deselected 606 by marker in 8m56s. One regression failed because the
+  source-linked 0.52 adaptive evidence was stale after these runtime changes.
+  The 10 evidence artifacts were regenerated and verified across 18 acceptance
+  criteria; the exact failing regression then passed on rerun in 26.03s. The
+  run plus the exact rerun covers every selected test successfully.
 - Managed headless/HTTP parity (AC056-001):
   `uv run pytest -q tests/fastapi/test_managed_application_0_56.py` — 18 passed.
   The parity case sends registration, edit, validation, planning and idempotent
@@ -226,8 +227,18 @@ Current index: 11 criteria passed, 31 pending, and 2 blocked of 44.
   and standard SQLModel backend tests cover denied discovery, per-artifact
   denial, download headers, and retrieval after reopening the service. The
   combined run of the managed application/backend, CP1 authorization matrices,
-  and CP1/CP-GA OpenAPI tests passed 98 cases. Attempt/node/partition links and
-  the result-retention campaign remain open.
+  and CP1/CP-GA OpenAPI tests passed 98 cases. Result-retention remains open.
+- Attempt and execution-node lineage (AC056-017 subrequirement):
+  `uv run pytest -q tests/fastapi/test_managed_application_0_56.py
+  tests/fastapi/test_managed_backend_0_56.py
+  tests/fastapi/test_cp1_full_authz_matrix.py` — 89 passed. Lineage queries now
+  return stable run-to-attempt and attempt-to-executed-node edges, including
+  attempt roles. If a worker dies after report publication and the durable
+  completion acknowledgment is recovered after restart, the report and lineage
+  retain both the original executing attempt and the result-reconciliation
+  attempt. Partition identities are not emitted because the current worker
+  report has no partition execution records; partition links and result
+  retention remain open.
 - Provider-aware run-action reason:
   `uv run pytest -q tests/fastapi/test_managed_control_races_0_56.py::test_action_discovery_reports_unsupported_cancel_provider`
   — 1 passed. The command query now reports `provider_unsupported` when the
@@ -502,8 +513,10 @@ Current index: 11 criteria passed, 31 pending, and 2 blocked of 44.
   bounded headless and HTTP event history reads share authorization and scoped
   cursor semantics. A transient report-write failure after an external sink
   commit now recovers the durable terminal report without rerunning ETL;
-  persistent report-store outage recovery, attempt/node/partition links, result
-  retention, and separate result and cleanup state machines remain unqualified.
+  persistent report-store outage recovery, result retention, and separate
+  result and cleanup state machines remain unqualified. Run lineage now links
+  reports to executed nodes and records worker result-reconciliation attempts;
+  partition results remain unmodeled.
 - AC056-007: immutable revision pinning, resource authorization and
   effective-fingerprint policy binding have focused evidence. Complete durable
   resource/version resolution and full disclosure coverage remain open.
