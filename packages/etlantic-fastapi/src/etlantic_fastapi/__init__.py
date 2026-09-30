@@ -32,6 +32,12 @@ from etlantic_fastapi.landing_sensor import (
     local_files_binding_ref,
     make_testclient_submit_run,
 )
+from etlantic_fastapi.managed import (
+    ManagedBackend,
+    ManagedBackendConfig,
+    create_managed_app,
+    create_managed_backend,
+)
 from etlantic_fastapi.reference import create_reference_app
 from etlantic_fastapi.schemas import (
     AcceptReceiptResponse,
@@ -47,6 +53,8 @@ __all__ = [
     "ETLanticAPI",
     "HealthResponse",
     "LandingWatchSubmitter",
+    "ManagedBackend",
+    "ManagedBackendConfig",
     "MembershipMap",
     "PolicyContext",
     "PrincipalDependency",
@@ -56,6 +64,8 @@ __all__ = [
     "assert_path_scope",
     "control_plane_error_handler",
     "create_app",
+    "create_managed_app",
+    "create_managed_backend",
     "create_reference_app",
     "format_sse_message",
     "include_router",

@@ -862,6 +862,9 @@ keyring = [
 lsp = [
     { name = "etlantic-lsp" },
 ]
+managed = [
+    { name = "etlantic-fastapi", extra = ["managed"] },
+]
 mcp = [
     { name = "etlantic-mcp" },
 ]
@@ -1027,6 +1030,7 @@ requires-dist = [
     { name = "etlantic-datafusion", marker = "extra == 'datafusion'", editable = "packages/etlantic-datafusion" },
     { name = "etlantic-duckdb", marker = "extra == 'duckdb'", editable = "packages/etlantic-duckdb" },
     { name = "etlantic-fastapi", marker = "extra == 'fastapi'", editable = "packages/etlantic-fastapi" },
+    { name = "etlantic-fastapi", extras = ["managed"], marker = "extra == 'managed'", editable = "packages/etlantic-fastapi" },
     { name = "etlantic-foundry", marker = "extra == 'foundry'", editable = "packages/etlantic-foundry" },
     { name = "etlantic-iceberg", marker = "extra == 'iceberg'", editable = "packages/etlantic-iceberg" },
     { name = "etlantic-k8s", marker = "extra == 'k8s'", editable = "packages/etlantic-k8s" },
@@ -1062,7 +1066,7 @@ requires-dist = [
     { name = "typer", specifier = ">=0.15,<1" },
     { name = "tzdata", specifier = ">=2024.1" },
 ]
-provides-extras = ["polars", "pandas", "sql", "postgresql", "foundry", "pyspark", "spark", "airflow", "prefect", "keyring", "sqlmodel", "medallantic", "sparkforge", "fastapi", "datafusion", "s3", "kafka", "k8s", "spark-connect", "schemaregistry", "iceberg", "snowflake", "openlineage", "mcp", "otel", "observability", "arrow", "notebook", "lsp", "dataframes", "duckdb"]
+provides-extras = ["polars", "pandas", "sql", "postgresql", "foundry", "pyspark", "spark", "airflow", "prefect", "keyring", "sqlmodel", "medallantic", "sparkforge", "fastapi", "managed", "datafusion", "s3", "kafka", "k8s", "spark-connect", "schemaregistry", "iceberg", "snowflake", "openlineage", "mcp", "otel", "observability", "arrow", "notebook", "lsp", "dataframes", "duckdb"]
 
 [package.metadata.requires-dev]
 airflow = [{ name = "etlantic-airflow", editable = "packages/etlantic-airflow" }]
@@ -1180,6 +1184,9 @@ dependencies = [
 ]
 
 [package.optional-dependencies]
+managed = [
+    { name = "etlantic-sqlmodel" },
+]
 test = [
     { name = "httpx" },
 ]
@@ -1193,11 +1200,12 @@ dev = [
 [package.metadata]
 requires-dist = [
     { name = "etlantic", editable = "." },
+    { name = "etlantic-sqlmodel", marker = "extra == 'managed'", editable = "packages/etlantic-sqlmodel" },
     { name = "fastapi", specifier = ">=0.115,<1" },
     { name = "httpx", marker = "extra == 'test'", specifier = ">=0.27,<1" },
     { name = "pydantic", specifier = ">=2.12,<3" },
 ]
-provides-extras = ["test"]
+provides-extras = ["managed", "test"]
 
 [package.metadata.requires-dev]
 dev = [

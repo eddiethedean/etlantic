@@ -30,6 +30,17 @@ criterion open until its complete documented case has been observed.
 - CP1 authorization matrix: 48 passed.
 - Managed HTTP malformed revision-selector boundary: 1 passed.
 - Native staged-checkpoint deadline rollback: 2 parameter cases passed.
+- Standard SQLModel-backed FastAPI lifecycle:
+  `uv run pytest -q tests/fastapi/test_managed_backend_0_56.py` — 4 passed.
+  SQLite lifecycle cases verify the one-engine managed constructor, strict
+  migration gate and partial-initialization disposal, disposal after failed
+  startup and normal shutdown, and recovery of accepted durable work after
+  shutdown. This is local lifecycle evidence, not a PostgreSQL qualification.
+- Follow-up FastAPI wheel:
+  `uv build --package etlantic-fastapi --wheel` succeeded. The wheel was
+  force-installed into the existing clean Python 3.11 environment alongside
+  the phase candidate's core and SQLModel wheels; public imports, migrations,
+  managed-backend construction and explicit close passed a smoke check.
 - Wheel build: all 25 workspace wheels built successfully.
 - Clean install smoke: core, FastAPI, PostgreSQL SQL, Foundry and SQLModel
   wheels installed into a fresh Python 3.11 environment; public imports and
@@ -49,6 +60,10 @@ criterion open until its complete documented case has been observed.
 
 ## Open release requirements
 
+- AC056-001–002, AC056-004–019 and AC056-033: the managed application,
+  authorization, specification, admission, worker, result and PostgreSQL
+  provider paths have implementation and focused tests, but their full
+  criterion-level failure, concurrency and runtime campaigns remain open.
 - AC056-020–026: isolated action jobs, previews/provisioning, scoped secret
   lifecycle and immutable upload leases are not fully implemented and observed.
 - AC056-027–032: scheduler admission parity, complete lifecycle commands,

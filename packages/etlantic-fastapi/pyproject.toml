@@ -23,6 +23,7 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
+managed = ["etlantic-sqlmodel==0.55.0"]
 test = ["httpx>=0.27,<1"]
 
 [dependency-groups]

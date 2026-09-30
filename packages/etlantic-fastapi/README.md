@@ -27,6 +27,58 @@ pip install 'etlantic-fastapi==0.55.0'
 # pip install 'etlantic==0.55.0'
 ```
 
+## Standard SQLModel-backed managed backend
+
+Install the managed extra and apply versioned migrations before creating the
+backend. The constructor checks the recorded migration version and fails
+closed when the schema is missing or behind. It creates one SQLAlchemy engine
+for the SQLModel control-plane stores and owns that engine for the backend
+lifetime.
+
+```bash
+pip install 'etlantic-fastapi[managed]==0.55.0'
+```
+
+The migration is an explicit deployment step. Use the public
+`etlantic_sqlmodel.migrations.upgrade` function in your deployment command;
+the application constructor never mutates the schema:
+
+```python
+from sqlalchemy import create_engine
+from etlantic_sqlmodel.migrations import upgrade
+
+engine = create_engine(database_url)
+try:
+    upgrade(engine)
+finally:
+    engine.dispose()
+```
+
+For a standalone HTTP process, let the app own the connection pool:
+
+```python
+from etlantic_fastapi import ManagedBackendConfig, create_managed_app
+
+app = create_managed_app(
+    ManagedBackendConfig(
+        database_url=database_url,
+        store_id="control-plane",
+        profile=profile,
+    ),
+    authorizer=host_authorizer,
+    context_factory=host_context_factory,
+)
+```
+
+`ManagedBackendConfig.database_url` and engine options are omitted from repr.
+Do not log the original URL. At startup the app checks store readiness; on
+shutdown or partial startup failure it disposes its pool. Accepted definitions
+and durable work remain stored for another process to recover. For headless
+commands, call `create_managed_backend(...)`, use `backend.api.managed_service`
+or its stores, and call `backend.close()` when the owner exits. That constructor
+uses the same store composition and migration checks without creating a
+synthetic HTTP request.
+
 ## Control-plane usage
 
 ```python
