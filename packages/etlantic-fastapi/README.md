@@ -99,6 +99,12 @@ queryable from another backend process after worker restart. Local reference
 hosts can continue to use the file report store by constructing
 `ExecutionHost` directly.
 
+The worker uses the profile configured on `ManagedBackendConfig`. It compares
+that profile's plan-safe settings with the profile snapshot accepted for each
+run and rejects profile drift before executing effects. Runtime-only I/O roots
+remain deployment configuration and are supplied by that same worker profile;
+absolute host paths are not stored in the accepted plan.
+
 ## Control-plane usage
 
 ```python

@@ -10,9 +10,10 @@ import os
 import unicodedata
 from collections.abc import AsyncIterator, Mapping, Sequence
 from contextlib import suppress
+from copy import deepcopy
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Any
+from typing import Any, cast
 
 from etlantic.connectors.capabilities import LOCAL_FILES_CAPABILITIES
 from etlantic.connectors.checkpoint import (
@@ -49,6 +50,50 @@ DEFAULT_MAX_FILES = 10_000
 DEFAULT_MAX_FILE_BYTES = 64 * 1024 * 1024
 DEFAULT_MAX_TOTAL_BYTES = 256 * 1024 * 1024
 DEFAULT_MAX_ROWS = 1_000_000
+CSV_ENCODINGS = ("utf-8", "utf-8-sig", "latin-1", "cp1252")
+CSV_DELIMITERS = (",", ";", "\t", "|")
+LOCAL_FILES_CONFIG_SCHEMA: dict[str, Any] = {
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "type": "object",
+    "additionalProperties": False,
+    "properties": {
+        "format": {"type": "string", "enum": ["csv"], "default": "csv"},
+        "mode": {
+            "type": "string",
+            "enum": ["snapshot", "incremental"],
+            "default": "snapshot",
+        },
+        "glob": {"type": "string", "minLength": 1, "default": "*.csv"},
+        "root": {"type": "string", "minLength": 1},
+        "root_ref": {"type": "string", "minLength": 1},
+        "consume": {
+            "type": "string",
+            "enum": ["none", "ledger", "rename_done"],
+            "default": "none",
+        },
+        "checkpoint": {"type": "string", "minLength": 1},
+        "empty_match": {
+            "type": "string",
+            "enum": ["fail", "allow"],
+            "default": "fail",
+        },
+        "required_capabilities": {
+            "type": "array",
+            "items": {"type": "string"},
+            "uniqueItems": True,
+        },
+        "encoding": {
+            "type": "string",
+            "enum": list(CSV_ENCODINGS),
+            "default": "utf-8",
+        },
+        "delimiter": {
+            "type": "string",
+            "enum": list(CSV_DELIMITERS),
+            "default": ",",
+        },
+    },
+}
 
 
 @dataclass
@@ -75,6 +120,7 @@ class LocalFilesSourceConnector:
             version="0.39.0",
             provider=PROVIDER_NAME,
             capabilities=tuple(sorted(LOCAL_FILES_CAPABILITIES)),
+            configuration_schema=deepcopy(LOCAL_FILES_CONFIG_SCHEMA),
             maturity=ConnectorMaturity.PREVIEW,
             metadata={"stdlib": True, "promotion": "preview"},
         )
@@ -86,29 +132,52 @@ class LocalFilesSourceConnector:
         context: Mapping[str, Any],
     ) -> SourcePlan:
         cfg = _public_config(binding)
-        mode = str(cfg.get("mode") or binding.get("mode") or "snapshot")
+        _validate_public_config(cfg)
+        mode = _config_text(cfg, "mode", "snapshot", code="PMCONN701")
         if mode not in {"snapshot", "incremental"}:
             raise ConnectorConfigError(
                 f"Unsupported local-files mode {mode!r}",
                 code="PMCONN701",
                 provider=PROVIDER_NAME,
             )
-        glob_pat = str(cfg.get("glob") or binding.get("glob") or "*.csv")
+        glob_pat = _config_text(cfg, "glob", "*.csv", code="PMCONN750")
         _validate_glob(glob_pat, allow_recursive=self.allow_recursive_glob)
-        root_ref = str(
-            cfg.get("root_ref")
-            or binding.get("root_ref")
-            or binding.get("root")
-            or "landing"
-        )
-        fmt = str(cfg.get("format") or binding.get("format") or "csv")
+        if "root_ref" in cfg:
+            root_ref = _config_text(cfg, "root_ref", "landing", code="PMCONN706")
+        else:
+            binding_root_ref = (
+                binding.get("root_ref") or binding.get("root") or "landing"
+            )
+            if not isinstance(binding_root_ref, str):
+                raise ConnectorConfigError(
+                    "Invalid local-files root reference configuration",
+                    code="PMCONN706",
+                    provider=PROVIDER_NAME,
+                )
+            root_ref = binding_root_ref
+        fmt = _config_text(cfg, "format", "csv", code="PMCONN702")
         if fmt != "csv":
             raise ConnectorConfigError(
                 f"local-files supports format=csv only; got {fmt!r}",
                 code="PMCONN702",
                 provider=PROVIDER_NAME,
             )
-        checkpoint = cfg.get("checkpoint") or binding.get("checkpoint")
+        encoding, delimiter = _csv_options(cfg)
+        consume = _config_text(cfg, "consume", "none", code="PMCONN720")
+        if consume not in {"none", "ledger", "rename_done"}:
+            raise ConnectorConfigError(
+                "Unsupported local-files consume policy",
+                code="PMCONN720",
+                provider=PROVIDER_NAME,
+            )
+        empty_match = _config_text(cfg, "empty_match", "fail", code="PMCONN704")
+        if empty_match not in {"fail", "allow"}:
+            raise ConnectorConfigError(
+                "Unsupported local-files empty-match policy",
+                code="PMCONN704",
+                provider=PROVIDER_NAME,
+            )
+        checkpoint = cfg.get("checkpoint")
         if mode == "incremental" and not checkpoint:
             raise ConnectorConfigError(
                 "mode=incremental requires checkpoint",
@@ -121,10 +190,10 @@ class LocalFilesSourceConnector:
             "root_ref": root_ref,
             "glob": glob_pat,
             "format": fmt,
-            "consume": cfg.get("consume") or binding.get("consume") or "none",
-            "empty_match": cfg.get("empty_match")
-            or binding.get("empty_match")
-            or "fail",
+            "consume": consume,
+            "empty_match": empty_match,
+            "encoding": encoding,
+            "delimiter": delimiter,
         }
         root_rel = cfg.get("root") or binding.get("root")
         if root_rel is not None:
@@ -142,12 +211,7 @@ class LocalFilesSourceConnector:
             identity_scheme="landing_file_sha256/1",
             listing_intent=listing_intent,
             required_capabilities=tuple(
-                str(x)
-                for x in (
-                    binding.get("required_capabilities")
-                    or cfg.get("required_capabilities")
-                    or ()
-                )
+                str(x) for x in (cfg.get("required_capabilities") or ())
             ),
             config_fingerprint=fingerprint_public_config(cfg),
             checkpoint_ref=str(checkpoint) if checkpoint else None,
@@ -166,6 +230,7 @@ class LocalFilesSourceConnector:
     ) -> AsyncIterator[ReadBatch]:
         policy = _require_policy(context)
         cfg = _public_config(binding)
+        _validate_public_config(cfg)
         intent = dict(plan.listing_intent)
         root_rel = str(
             intent.get("root") or cfg.get("root") or binding.get("root") or "."
@@ -174,6 +239,7 @@ class LocalFilesSourceConnector:
         root_ref = str(plan.root_ref or intent.get("root_ref") or "landing")
         mode = str(plan.mode or "snapshot")
         empty_match = str(intent.get("empty_match") or "fail")
+        encoding, delimiter = _csv_options(intent)
         physical_root = _resolve_root(root_rel, policy, context)
 
         identities = list_landing_files(
@@ -226,6 +292,8 @@ class LocalFilesSourceConnector:
             max_rows=self.max_rows,
             max_file_bytes=self.max_file_bytes,
             run_id=str(context.get("run_id") or "local-files"),
+            encoding=encoding,
+            delimiter=delimiter,
         )
         yield ReadBatch(
             records=tuple(records),
@@ -445,9 +513,6 @@ def create_local_files_source() -> LocalFilesSourceConnector:
 
 def _public_config(binding: Mapping[str, Any]) -> dict[str, Any]:
     raw = binding.get("config")
-    if isinstance(raw, dict):
-        return dict(raw)
-    # Lift known top-level keys into public config.
     keys = (
         "format",
         "mode",
@@ -457,9 +522,123 @@ def _public_config(binding: Mapping[str, Any]) -> dict[str, Any]:
         "consume",
         "checkpoint",
         "empty_match",
+        "encoding",
+        "delimiter",
         "required_capabilities",
     )
-    return {k: binding[k] for k in keys if k in binding and binding[k] is not None}
+    if raw is not None and not isinstance(raw, Mapping):
+        raise ConnectorConfigError(
+            "local-files config must be an object",
+            code="PMCONN706",
+            provider=PROVIDER_NAME,
+        )
+    config: dict[str, Any] = (
+        dict(cast(Mapping[str, Any], raw)) if isinstance(raw, Mapping) else {}
+    )
+    for key in keys:
+        if key not in config and key in binding and binding[key] is not None:
+            config[key] = binding[key]
+    return config
+
+
+def _validate_public_config(config: Mapping[str, Any]) -> None:
+    if set(config).difference(LOCAL_FILES_CONFIG_SCHEMA["properties"]):
+        raise ConnectorConfigError(
+            "Unsupported local-files configuration option",
+            code="PMCONN706",
+            provider=PROVIDER_NAME,
+        )
+    for key in (
+        "format",
+        "mode",
+        "glob",
+        "root",
+        "root_ref",
+        "consume",
+        "checkpoint",
+        "empty_match",
+        "encoding",
+        "delimiter",
+    ):
+        value = config.get(key)
+        if key in config and (
+            not isinstance(value, str)
+            or (key in {"glob", "root", "root_ref", "checkpoint"} and not value.strip())
+        ):
+            code = {
+                "mode": "PMCONN701",
+                "format": "PMCONN702",
+                "consume": "PMCONN720",
+                "encoding": "PMCONN704",
+                "delimiter": "PMCONN705",
+            }.get(key, "PMCONN706")
+            raise ConnectorConfigError(
+                f"Invalid local-files {key} configuration",
+                code=code,
+                provider=PROVIDER_NAME,
+            )
+    capabilities = config.get("required_capabilities")
+    if capabilities is not None:
+        if not isinstance(capabilities, (list, tuple)):
+            raise ConnectorConfigError(
+                "required_capabilities must be a unique list of non-empty strings",
+                code="PMCONN706",
+                provider=PROVIDER_NAME,
+            )
+        capability_values = cast(Sequence[Any], capabilities)
+        if any(
+            not isinstance(item, str) or not item.strip() for item in capability_values
+        ) or len(set(capability_values)) != len(capability_values):
+            raise ConnectorConfigError(
+                "required_capabilities must be a unique list of non-empty strings",
+                code="PMCONN706",
+                provider=PROVIDER_NAME,
+            )
+
+
+def _config_text(
+    config: Mapping[str, Any], key: str, default: str, *, code: str
+) -> str:
+    value = config.get(key, default)
+    if not isinstance(value, str):
+        raise ConnectorConfigError(
+            f"Invalid local-files {key} configuration",
+            code=code,
+            provider=PROVIDER_NAME,
+        )
+    return value
+
+
+def _csv_options(config: Mapping[str, Any]) -> tuple[str, str]:
+    raw_encoding = config.get("encoding", "utf-8")
+    raw_delimiter = config.get("delimiter", ",")
+    if not isinstance(raw_encoding, str):
+        raise ConnectorConfigError(
+            "Unsupported local-files CSV encoding",
+            code="PMCONN704",
+            provider=PROVIDER_NAME,
+        )
+    if not isinstance(raw_delimiter, str):
+        raise ConnectorConfigError(
+            "Unsupported local-files CSV delimiter",
+            code="PMCONN705",
+            provider=PROVIDER_NAME,
+        )
+    encoding = raw_encoding.strip()
+    delimiter = raw_delimiter
+    if encoding not in CSV_ENCODINGS:
+        raise ConnectorConfigError(
+            "Unsupported local-files CSV encoding",
+            code="PMCONN704",
+            provider=PROVIDER_NAME,
+        )
+    if delimiter not in CSV_DELIMITERS:
+        raise ConnectorConfigError(
+            "Unsupported local-files CSV delimiter",
+            code="PMCONN705",
+            provider=PROVIDER_NAME,
+        )
+    return encoding, delimiter
 
 
 def _require_policy(context: Mapping[str, Any]) -> SafeIoPolicy:
@@ -467,7 +646,7 @@ def _require_policy(context: Mapping[str, Any]) -> SafeIoPolicy:
     if isinstance(policy, SafeIoPolicy):
         return policy
     if isinstance(policy, dict):
-        return SafeIoPolicy.from_dict(policy)
+        return SafeIoPolicy.from_dict(cast(dict[str, Any], policy))
     raise ConnectorConfigError(
         "local-files requires SafeIoPolicy in context['safe_io']",
         code="PMCONN740",
@@ -656,6 +835,7 @@ def read_csv_identities(
     delimiter: str = ",",
 ) -> list[Any]:
     """Read ordered CSV files into one logical extract; cross-file header check."""
+    encoding, delimiter = _csv_options({"encoding": encoding, "delimiter": delimiter})
     rows: list[dict[str, Any]] = []
     header: list[str] | None = None
     for identity in identities:
@@ -706,14 +886,28 @@ def read_csv_identities(
                 fd, "r", newline="", encoding=encoding, closefd=True
             ) as handle:
                 fd = -1
-                reader = csv.DictReader(handle, delimiter=delimiter)
+                reader = csv.DictReader(handle, delimiter=delimiter, strict=True)
                 if reader.fieldnames is None:
                     raise ConnectorReadError(
                         f"CSV missing header: {identity.relative_path}",
                         code="PMCONN774",
                         provider=PROVIDER_NAME,
                     )
-                fields = [_normalize_rel(str(f)) for f in reader.fieldnames]
+                fields = [
+                    unicodedata.normalize("NFC", str(field))
+                    for field in reader.fieldnames
+                ]
+                if (
+                    not fields
+                    or any(not field.strip() for field in fields)
+                    or len(set(fields)) != len(fields)
+                ):
+                    raise ConnectorReadError(
+                        f"CSV header is malformed: {identity.relative_path}",
+                        code="PMCONN778",
+                        provider=PROVIDER_NAME,
+                    )
+                reader.fieldnames = fields
                 if header is None:
                     header = fields
                 elif fields != header:
@@ -724,6 +918,13 @@ def read_csv_identities(
                         details={"expected": header, "got": fields},
                     )
                 for row in reader:
+                    if None in row or any(value is None for value in row.values()):
+                        raise ConnectorReadError(
+                            "CSV row width does not match its header: "
+                            f"{identity.relative_path}",
+                            code="PMCONN778",
+                            provider=PROVIDER_NAME,
+                        )
                     rows.append(dict(row))
                     if len(rows) > max_rows:
                         raise ConnectorReadError(
@@ -731,11 +932,30 @@ def read_csv_identities(
                             code="PMCONN776",
                             provider=PROVIDER_NAME,
                         )
+        except UnicodeDecodeError:
+            raise ConnectorReadError(
+                "CSV bytes do not match the selected encoding",
+                code="PMCONN777",
+                provider=PROVIDER_NAME,
+            ) from None
+        except csv.Error:
+            raise ConnectorReadError(
+                "CSV structure is malformed",
+                code="PMCONN777",
+                provider=PROVIDER_NAME,
+            ) from None
         finally:
             if fd >= 0:
                 with suppress(OSError):
                     os.close(fd)
-    return as_records(rows, contract_type)
+    try:
+        return as_records(rows, contract_type)
+    except Exception:
+        raise ConnectorReadError(
+            "CSV values do not match the declared record contract",
+            code="PMCONN779",
+            provider=PROVIDER_NAME,
+        ) from None
 
 
 def _sha256_fd(fd: int) -> str:

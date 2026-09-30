@@ -11,6 +11,7 @@ from typing import TYPE_CHECKING, Any, cast
 from etlantic.control_plane.models import ControlPlaneContext
 from etlantic.control_plane.protocols import Authorizer, IdempotentEventStore
 from etlantic.control_plane.registry_definitions import RegistryDefinitionRepository
+from etlantic.profile import Profile, resolve_profile
 from etlantic.registry import PlanningContext
 from etlantic_fastapi.api import ETLanticAPI, create_app
 from etlantic_fastapi.auth import (
@@ -68,6 +69,7 @@ class ManagedBackend:
     api: ETLanticAPI = field(repr=False)
     engine: Engine = field(repr=False)
     report_store_factory: Callable[[ControlPlaneContext], Any] = field(repr=False)
+    execution_profile: Profile | None = field(default=None, repr=False)
     _closed: bool = field(default=False, init=False, repr=False)
 
     def close(self) -> None:
@@ -108,6 +110,7 @@ class ManagedBackend:
             runner=ManagedExecutionAdapter(
                 report_store_factory=self.report_store_factory,
                 event_publisher=publish_event,
+                profile=self.execution_profile,
             ),
         )
 
@@ -156,6 +159,7 @@ def create_managed_backend(
         stores = cast(Any, import_module("etlantic_sqlmodel.control_plane"))
         registry = stores.SqlModelRegistryProvider(engine)
         report_store_provider = stores.SqlModelRunReportStoreProvider(engine)
+        execution_profile = resolve_profile(config.profile, allow_adhoc_profile=False)
         api = ETLanticAPI(
             authorizer=authorizer,
             definitions=RegistryDefinitionRepository(registry),
@@ -167,7 +171,7 @@ def create_managed_backend(
             registry=registry,
             context_factory=context_factory,
             principal_dependency=principal_dependency or principal_from_header,
-            profile=config.profile,
+            profile=execution_profile,
             durable_work=stores.SQLModelDurableWorkStore(
                 engine, store_id=config.store_id
             ),
@@ -183,6 +187,7 @@ def create_managed_backend(
             api=api,
             engine=engine,
             report_store_factory=report_store_provider.for_context,
+            execution_profile=execution_profile,
         )
     except BaseException:
         if engine is not None:

@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import json
 from pathlib import Path
 from time import sleep
 from typing import Any, cast
@@ -18,7 +19,7 @@ import sqlalchemy
 from fastapi.testclient import TestClient as FastAPITestClient
 from sqlalchemy.engine import Engine
 
-from etlantic import Data, Extract, Load, Pipeline
+from etlantic import Data, Extract, Load, Pipeline, Profile
 from etlantic.authoring import definition_from_pipeline
 from etlantic.authoring.serialize import pipeline_to_dict
 from etlantic.control_plane import (
@@ -33,6 +34,8 @@ from etlantic.control_plane import (
     WorkspaceRef,
 )
 from etlantic.registry import BindingDescriptor, PlanningContext
+from etlantic.runtime.managed_errors import ExecutionRejected
+from etlantic.runtime.managed_execution import ManagedExecutionAdapter
 from etlantic_fastapi import (
     ManagedBackend,
     ManagedBackendConfig,
@@ -50,6 +53,16 @@ class _ManagedBackendRow(Data):
 class _ManagedBackendPipeline(Pipeline):
     source: Extract[_ManagedBackendRow] = Extract(asset="source")
     result: Load[_ManagedBackendRow] = Load(input=source, asset="result")
+
+
+class _ManagedCsvRow(Data):
+    id: int
+    name: str
+
+
+class _ManagedCsvPipeline(Pipeline):
+    source: Extract[_ManagedCsvRow] = Extract(asset="source")
+    result: Load[_ManagedCsvRow] = Load(input=source, asset="result")
 
 
 def _context() -> ControlPlaneContext:
@@ -202,6 +215,123 @@ def test_managed_backend_persists_and_resolves_definition_revision(
         assert pinned.document == resolution.document
     finally:
         restarted.close()
+
+
+def test_standard_worker_reads_configured_csv_and_does_not_retain_row_content(
+    tmp_path: Path,
+) -> None:
+    database_url = _migrated_url(tmp_path)
+    landing = tmp_path / "landing"
+    landing.mkdir()
+    source = landing / "orders.csv"
+    source.write_bytes("\ufeffid;name\n42;Zoë\n".encode("utf-8"))
+    target = tmp_path / "managed-output.csv"
+    ctx = _context()
+    profile = Profile(
+        name="csv-worker",
+        security_mode="development",
+        safe_io={"approved_roots": [str(tmp_path)]},
+    )
+
+    def planning_context_factory(
+        _ctx: ControlPlaneContext, effective_profile: Any
+    ) -> PlanningContext:
+        planning = PlanningContext.create(profile=effective_profile)
+        planning.registry.register_binding(
+            BindingDescriptor(
+                binding="source",
+                provider="local-files",
+                location="landing",
+                kind="source",
+                config={
+                    "format": "csv",
+                    "mode": "snapshot",
+                    "root": "landing",
+                    "root_ref": "managed-orders",
+                    "glob": "*.csv",
+                    "encoding": "utf-8-sig",
+                    "delimiter": ";",
+                },
+            )
+        )
+        planning.registry.register_binding(
+            BindingDescriptor(
+                binding="result",
+                provider="csv",
+                location=str(target),
+                kind="sink",
+            )
+        )
+        return planning
+
+    authorizer = MemoryAuthorizer()
+    for action in (
+        "definition.write",
+        "run.submit",
+        "run.read",
+        "run.report",
+        "run.lineage",
+    ):
+        authorizer.grant(ctx, action)
+    backend = create_managed_backend(
+        ManagedBackendConfig(
+            database_url=database_url,
+            store_id="managed-csv-worker",
+            profile=profile,
+        ),
+        authorizer=authorizer,
+        context_factory=static_context_factory(
+            tenant_id=ctx.tenant.tenant_id,
+            workspace_id=ctx.workspace.workspace_id,
+            environment=ctx.environment.name,
+            security_domain=ctx.security_domain.domain_id,
+        ),
+        planning_context_factory=planning_context_factory,
+    )
+    try:
+        service = backend.api.managed_service
+        assert service is not None
+        service.register_definition(
+            ctx,
+            "managed-csv-pipe",
+            pipeline_to_dict(definition_from_pipeline(_ManagedCsvPipeline)),
+        )
+        receipt = service.submit_run(
+            ctx, "managed-csv-pipe", idempotency_key="managed-csv-worker-run"
+        )
+        assert receipt.resource_id is not None
+        durable = backend.api.durable_work
+        assert durable is not None
+        accepted = durable.get_submission(ctx, receipt.submission_id)
+        assert accepted is not None
+        drifted_worker = ManagedExecutionAdapter(
+            report_store_factory=backend.report_store_factory,
+            profile=profile.with_updates(timeout_seconds=15),
+        )
+        with pytest.raises(ExecutionRejected, match="differs from the accepted plan"):
+            drifted_worker(
+                ctx,
+                submission=accepted,
+                submission_id=receipt.submission_id,
+                attempt_id="drifted-profile-attempt",
+                fencing_token=2,
+            )
+        assert not target.exists()
+
+        assert (
+            backend.create_execution_host(owner_id="managed-csv-worker").tick(ctx) == 1
+        )
+
+        report = service.get_run_report(ctx, receipt.resource_id)
+        assert report["status"] == "succeeded"
+        assert target.read_text(encoding="utf-8").splitlines() == [
+            "id,name",
+            "42,Zoë",
+        ]
+        assert source.is_file()
+        assert "Zoë" not in json.dumps(report, ensure_ascii=False)
+    finally:
+        backend.close()
 
 
 def test_standard_backend_worker_persists_queryable_report_in_sqlmodel(

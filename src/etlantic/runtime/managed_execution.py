@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import hashlib
+import json
 import os
 from collections.abc import Callable, Mapping
 from dataclasses import replace
@@ -16,6 +17,7 @@ from etlantic.exceptions import PipelineCancelledError
 from etlantic.lifecycle.runtime import PipelineRuntime
 from etlantic.plan.freeze import mutable_copy
 from etlantic.plan.model import PipelinePlan
+from etlantic.profile import Profile, resolve_profile
 from etlantic.reports.file_store import FileReportStore
 from etlantic.reports.model import PipelineRunReport
 from etlantic.runtime.context import TrustedExecutionScope
@@ -78,6 +80,7 @@ class ManagedExecutionAdapter:
         ) = None,
         runtime_factory: Any = PipelineRuntime,
         secret_alias_authorizer: SecretAliasAuthorizer | None = None,
+        profile: str | Profile | None = None,
     ) -> None:
         configured_root = report_root or os.environ.get("ETLANTIC_REPORT_DIR")
         self.report_root = Path(
@@ -87,6 +90,7 @@ class ManagedExecutionAdapter:
         self.event_publisher = event_publisher
         self.runtime_factory = runtime_factory
         self.secret_alias_authorizer = secret_alias_authorizer
+        self.profile = resolve_profile(profile) if profile is not None else None
 
     def __call__(
         self,
@@ -183,9 +187,10 @@ class ManagedExecutionAdapter:
         runtime.external_cancel_event = cancel_event
         try:
             try:
+                execution_profile = self._execution_profile(envelope, plan)
                 report = run_pipeline(
                     plan,
-                    profile=envelope.profile_name,
+                    profile=execution_profile,
                     request=request,
                     runtime=runtime,
                     run_id=run_id,
@@ -235,6 +240,50 @@ class ManagedExecutionAdapter:
         reports.put(published)
         self._publish_report_event(ctx, event_base, published)
         return published
+
+    def _execution_profile(
+        self, envelope: ExecutionEnvelope, plan: PipelinePlan
+    ) -> str | Profile:
+        """Resolve worker runtime policy and reject drift from accepted settings."""
+        if self.profile is None:
+            return envelope.profile_name
+        if self.profile.name != envelope.profile_name:
+            raise ExecutionRejected(
+                "Configured worker profile does not match the accepted profile"
+            )
+        accepted_snapshot = mutable_copy(plan.profile_snapshot)
+        if not accepted_snapshot:
+            raise ExecutionRejected("Accepted plan has no verified profile snapshot")
+        try:
+            configured_snapshot = self.profile.to_plan_snapshot()
+            accepted_secrets = dict(accepted_snapshot.get("secrets") or {})
+            configured_secrets = dict(configured_snapshot.get("secrets") or {})
+            configured_snapshot["secrets"] = {
+                key: configured_secrets[key]
+                for key in accepted_secrets
+                if key in configured_secrets
+            }
+            configured = json.dumps(
+                configured_snapshot,
+                sort_keys=True,
+                separators=(",", ":"),
+                ensure_ascii=False,
+                allow_nan=False,
+            )
+            accepted = json.dumps(
+                accepted_snapshot,
+                sort_keys=True,
+                separators=(",", ":"),
+                ensure_ascii=False,
+                allow_nan=False,
+            )
+        except Exception as exc:
+            raise ExecutionRejected("Configured worker profile is invalid") from exc
+        if configured != accepted:
+            raise ExecutionRejected(
+                "Configured worker profile differs from the accepted plan"
+            )
+        return self.profile
 
     def _publish_event(
         self,

@@ -89,6 +89,23 @@ Current index: 6 criteria passed, 36 pending, and 2 blocked of 44.
   after report persistence recovered the expired lease from the stored report;
   the test changed the source before recovery and verified the sink was not
   written a second time. A second workspace could not read the scoped report.
+- Managed CSV parser and worker evidence, partial AC056-035:
+  `uv run pytest -q tests/connectors/test_local_files_csv_0_56.py` — 20 passed;
+  `uv run pytest -q tests/fastapi/test_managed_backend_0_56.py::test_standard_worker_reads_configured_csv_and_does_not_retain_row_content`
+  — 1 passed; and
+  `uv run pytest -q tests/runtime/test_local_runtime.py::test_packaged_worker_executes_accepted_envelope_and_recovers_report`
+  — 1 passed. The connector pins declared encoding and delimiter choices,
+  rejects unsupported settings, malformed quoting, decode errors, duplicate or
+  mismatched row shapes, empty files and over-budget inputs, and checks each
+  file's content digest before parsing. The standard managed worker executed a
+  UTF-8 BOM/semicolon transfer, rejected a changed effective profile before
+  writing, then succeeded with the accepted profile; row values were absent
+  from its report. Core, FastAPI and SQLModel wheels installed into a fresh
+  Python 3.14.3 environment without workspace path injection. The installed
+  backend migrated to 009 and repeated the profile-drift check and managed CSV
+  transfer successfully. AC056-035 remains pending: directory/glob selection
+  is not an owner-scoped immutable finalized-upload reference, and accepted-run
+  leases, retention and orphan cleanup are still open.
 - Versioned report-table and event-retention migration:
   `uv run pytest -q tests/sqlmodel/test_cp1_migrations_0_51.py`
   — the final PostgreSQL-backed rerun passed 17 SQLite and PostgreSQL cases,
@@ -272,7 +289,7 @@ Current index: 6 criteria passed, 36 pending, and 2 blocked of 44.
   artifacts across 18 prior-phase acceptance criteria; its exact CI regression
   test passed afterward.
 - `scripts/check_pyright.sh` passed: 781 suppressions matched the locked
-  inventory, the strict shadow scan matched its 10,453-diagnostic baseline,
+  inventory, the strict shadow scan matched its 10,451-diagnostic baseline,
   and raw Pyright reported zero errors and warnings. The suppression count is
   unchanged; the strict digest was refreshed for the managed route and
   acceptance-test line shifts and the new test surface.

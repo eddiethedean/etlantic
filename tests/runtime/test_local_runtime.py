@@ -31,7 +31,7 @@ from etlantic.control_plane import (
     WorkspaceRef,
 )
 from etlantic.plan.model import PipelinePlan
-from etlantic.profile import Profile
+from etlantic.profile import Profile, resolve_profile
 from etlantic.registry import BindingDescriptor, PlanningContext
 from etlantic.runtime.execute import run_pipeline
 from etlantic.runtime.managed_execution import ManagedExecutionAdapter
@@ -271,7 +271,9 @@ def test_packaged_worker_executes_accepted_envelope_and_recovers_report(
         revision_id="rev-1",
         input_snapshot=envelope.to_json(),
     )
-    worker = ManagedExecutionAdapter(report_root=tmp_path / "reports")
+    worker = ManagedExecutionAdapter(
+        report_root=tmp_path / "reports", profile=resolve_profile("development")
+    )
 
     report = worker(
         ctx,
@@ -296,6 +298,19 @@ def test_packaged_worker_executes_accepted_envelope_and_recovers_report(
         "id,name",
         "7,Ada",
     ]
+    drifted_worker = ManagedExecutionAdapter(
+        report_root=tmp_path / "reports",
+        profile=resolve_profile("development").with_updates(security_mode="test"),
+    )
+    recovered_with_drift = drifted_worker(
+        ctx,
+        submission=submission,
+        submission_id=submission.submission_id,
+        attempt_id="attempt-drifted-profile",
+        fencing_token=3,
+        recovered_attempt=True,
+    )
+    assert recovered_with_drift.status is RunStatus.SUCCEEDED
 
 
 def test_json_csv_round_trip(tmp_path: Path) -> None:
