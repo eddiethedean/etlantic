@@ -31,9 +31,9 @@ Current index: 6 criteria passed, 36 pending, and 2 blocked of 44.
   `ETLANTIC_SQL_TEST_URL=... ETLANTIC_CP_TEST_URL=... uv run pytest -q tests/sql/test_postgresql_live_0_56.py tests/sqlmodel/test_durable_postgresql_multiprocess_0_56.py` — 4 passed.
 - Final isolated PostgreSQL 16.14 qualification:
   `ETLANTIC_SQLMODEL_TEST_URL=... uv run pytest -q tests/sqlmodel/test_cp1_migrations_0_51.py`
-  — 14 passed across SQLite and PostgreSQL schemas, including migration 008,
-  concurrent SQLModel event sequencing, downgrade/re-upgrade and retained event
-  history. `ETLANTIC_SQL_TEST_URL=... uv run pytest -q
+  — 17 passed across SQLite and PostgreSQL schemas, including migration 009,
+  concurrent SQLModel event sequencing, downgrade/re-upgrade, retained event
+  history and retention tombstones. `ETLANTIC_SQL_TEST_URL=... uv run pytest -q
   tests/sql/test_postgresql_live_0_56.py` — 4 passed, covering append/upsert/
   replace, idempotent replay, bounded source/schema reads, permission denial,
   staged rollback and lost-ack reconciliation. `ETLANTIC_CP_TEST_URL=... uv run
@@ -44,10 +44,11 @@ Current index: 6 criteria passed, 36 pending, and 2 blocked of 44.
 - Clean installed-wheel smoke:
   rebuilt core, FastAPI and SQLModel 0.55.0 candidate wheels were installed
   into a fresh Python 3.14.3 virtual environment without workspace path
-  injection. Migration 008 applied, idempotent event replay survived engine
-  disposal/reopen, the standard managed backend constructed and closed, and
-  generated OpenAPI included `/v1/runs/{run_id}/events/history`. Exact wheel
-  sizes and SHA-256 values are recorded in `WHEEL_MANIFEST.json`. This is
+  injection. Migration 009 applied, idempotent event replay survived engine
+  disposal/reopen, pruning rejected stale cursors and duplicate replay, the
+  standard managed backend constructed and closed, and generated OpenAPI
+  included `/v1/runs/{run_id}/events/history`. Exact wheel sizes and SHA-256
+  values are recorded in `WHEEL_MANIFEST.json`. This is
   useful AC056-040 evidence; complete package/export/schema compatibility,
   version skew and upgrade/rollback qualification remain pending.
 - SQLModel migration campaign against SQLite and isolated PostgreSQL schemas:
@@ -69,18 +70,17 @@ Current index: 6 criteria passed, 36 pending, and 2 blocked of 44.
   after report persistence recovered the expired lease from the stored report;
   the test changed the source before recovery and verified the sink was not
   written a second time. A second workspace could not read the scoped report.
-- Versioned report-table migration:
+- Versioned report-table and event-retention migration:
   `uv run pytest -q tests/sqlmodel/test_cp1_migrations_0_51.py`
-  — local SQLite cases cover fresh install, upgrade from each prior head through
-  006, restart, downgrade to 006 and re-upgrade. PostgreSQL cases were skipped
-  on the initial SQLite-only run; the final PostgreSQL-backed rerun above passed
-  all 14 migration cases.
+  — the final PostgreSQL-backed rerun passed 17 SQLite and PostgreSQL cases,
+  covering fresh install, upgrade from each prior head, restart, downgrade and
+  re-upgrade while preserving CP1 event history.
 - Idempotent lifecycle-event storage and migration:
   `uv run pytest -q tests/control_plane/test_control_plane.py::test_memory_event_store_append_once_is_scoped_and_conflict_checked tests/sqlmodel/test_control_plane_stores.py::test_sqlite_event_append_once_survives_restart_and_rejects_conflicts tests/sqlmodel/test_cp1_migrations_0_51.py::test_idempotent_event_migration_round_trip_preserves_event_history`
-  — 3 passed. Migration 008 adds a separate scoped event-key table, preserving
-  CP1 event rows and allowing retry-safe lifecycle publication. The migration
-  rollback to 007 and re-upgrade retained event history; SQLite restart returned
-  the original event for the same key and rejected changed content.
+  — 3 passed. Migration 008 adds a separate scoped event-key table, and
+  migration 009 adds digest-only tombstones without rewriting CP1 event rows.
+  SQLite restart returns the original unpruned event for the same key and
+  rejects changed content.
 - Managed lifecycle events and paginated event history:
   `uv run pytest -q tests/fastapi/test_managed_backend_0_56.py::test_standard_backend_worker_persists_queryable_report_in_sqlmodel tests/fastapi/test_cp1_sse.py tests/fastapi/test_managed_application_0_56.py::test_headless_run_event_pages_are_scoped_and_resumable tests/fastapi/test_cp1_full_authz_matrix.py tests/fastapi/test_cp1_openapi.py`
   — 62 passed in the latest focused run (the final worker integration and all
@@ -88,9 +88,11 @@ Current index: 6 criteria passed, 36 pending, and 2 blocked of 44.
   stable per-attempt keys and persists one start/completion pair across report
   recovery. Headless and HTTP page queries return the same scoped events;
   reconnect cursors advance through the workspace log, with explicit empty-page
-  behavior when other runs' events are interleaved. Unknown scoped cursors
-  return 410. AC056-019 remains pending for retention, artifact authorization
-  and the complete reconnect/duplicate-delivery isolation campaign.
+  behavior when other runs' events are interleaved. Unknown and pruned scoped
+  cursors return 410. A pruned lifecycle key cannot recreate its event; changed
+  content conflicts. AC056-019 remains pending for an enforced retention policy,
+  authorized artifact content downloads and the full reconnect and cross-scope
+  isolation campaign.
 - Provider-aware run-action reason:
   `uv run pytest -q tests/fastapi/test_managed_control_races_0_56.py::test_action_discovery_reports_unsupported_cancel_provider`
   — 1 passed. The command query now reports `provider_unsupported` when the
@@ -229,10 +231,11 @@ Current index: 6 criteria passed, 36 pending, and 2 blocked of 44.
   `uv build --package etlantic-fastapi --wheel`, and
   `uv build --package etlantic-sqlmodel --wheel` succeeded. All three candidate
   wheels installed into a fresh Python 3.14.3 environment. The installed
-  SQLModel wheel applied migration `008_idempotent_run_events_0_56`; its event
-  store returned the original event after engine disposal/reopen. The installed
-  FastAPI wheel constructed and closed the standard SQLModel backend, and its
-  generated OpenAPI included the bounded run-event history endpoint.
+  SQLModel wheel applied migration `009_event_retention_tombstones_0_56`; its
+  event store returned the original event after engine disposal/reopen, expired
+  a pruned cursor and refused to recreate its keyed event. The installed FastAPI
+  wheel constructed and closed the standard SQLModel backend, and its generated
+  OpenAPI included the bounded run-event history endpoint.
 - Public CLI: sample pipeline validation passed with no diagnostics; plan
   generation returned fingerprint
   `8f3879b301b3b0ea1b87434eef3dd0a58ef0cbe8342ced056323cc9d6d5b19da`.
@@ -240,7 +243,7 @@ Current index: 6 criteria passed, 36 pending, and 2 blocked of 44.
 - Final `scripts/check_adaptive_0_52.py --write` refreshed and verified 10
   artifacts across 18 prior-phase acceptance criteria; its exact CI regression
   test passed afterward.
-- `scripts/check_pyright.sh` passed: 784 suppressions matched the locked
+- `scripts/check_pyright.sh` passed: 781 suppressions matched the locked
   inventory, the strict shadow scan matched its 10,453-diagnostic baseline,
   and raw Pyright reported zero errors and warnings. The suppression count is
   unchanged; the strict digest was refreshed for the managed route and

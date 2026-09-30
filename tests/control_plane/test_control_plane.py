@@ -158,6 +158,49 @@ def test_memory_event_store_append_once_is_scoped_and_conflict_checked() -> None
     assert isolated.event_id != event.event_id
 
 
+def test_memory_event_retention_expires_cursors_without_reusing_sequences() -> None:
+    events = MemoryEventStore()
+    ctx = _ctx()
+    expired = events.append_once(
+        ctx,
+        event_key="stable-attempt-start",
+        kind="run.started",
+        payload={"run_id": "run-1"},
+    )
+    events.append(ctx, kind="run.progress", payload={"run_id": "run-1"})
+    anchor = events.append(ctx, kind="run.completed", payload={"run_id": "run-1"})
+    other_scope = events.append(_ctx(tenant="tenant-b"), kind="other.scope")
+
+    assert events.prune_before_sequence(ctx, before_sequence=3) == 2
+    with pytest.raises(ControlPlaneError) as cursor_error:
+        events.list_after_cursor(ctx, expired.cursor)
+    assert cursor_error.value.status == 410
+    with pytest.raises(ControlPlaneError) as retry_error:
+        events.append_once(
+            ctx,
+            event_key="stable-attempt-start",
+            kind="run.started",
+            payload={"run_id": "run-1"},
+        )
+    assert retry_error.value.status == 410
+    with pytest.raises(ControlPlaneError) as conflict:
+        events.append_once(
+            ctx,
+            event_key="stable-attempt-start",
+            kind="run.started",
+            payload={"run_id": "different"},
+        )
+    assert conflict.value.status == 409
+
+    appended = events.append(ctx, kind="run.recovered")
+    assert appended.sequence == anchor.sequence + 1 == 4
+    assert [event.event_id for event in events.list_after_cursor(ctx, None)] == [
+        anchor.event_id,
+        appended.event_id,
+    ]
+    assert events.list_after_cursor(_ctx(tenant="tenant-b"), None) == [other_scope]
+
+
 def test_memory_store_empty_positive_limits_return_lists() -> None:
     ctx = _ctx()
 

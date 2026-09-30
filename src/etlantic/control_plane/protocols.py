@@ -168,6 +168,23 @@ class EventStore(Protocol):
 
 
 @runtime_checkable
+class EventRetentionStore(Protocol):
+    """Optional scoped event-history retention operations."""
+
+    def prune_before_sequence(
+        self, ctx: ControlPlaneContext, before_sequence: int
+    ) -> int:
+        """Prune older events while preserving a sequence anchor.
+
+        Idempotency records survive pruning so a delayed publisher cannot
+        recreate an expired event. Reusing a pruned key returns an explicit
+        expired-history error. The newest event is retained as the sequence
+        anchor, preventing cursor reuse after a complete retention sweep.
+        """
+        ...
+
+
+@runtime_checkable
 class IdempotentEventStore(Protocol):
     """Optional EventStore extension with crash-safe keyed event delivery."""
 
@@ -188,6 +205,7 @@ __all__ = [
     "AuthzDecision",
     "DefinitionRepository",
     "DefinitionResolution",
+    "EventRetentionStore",
     "EventStore",
     "IdempotentEventStore",
     "RevisionedDefinitionRepository",

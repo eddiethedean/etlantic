@@ -10,7 +10,7 @@ from copy import deepcopy
 from datetime import UTC, datetime
 from typing import Any, cast
 
-from sqlalchemy import Table
+from sqlalchemy import Table, delete
 from sqlalchemy.engine import Engine
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.sql import text
@@ -505,8 +505,23 @@ class SqlModelEventStore:
                         )
                     ).first()
                     if event_row is None:
-                        raise RuntimeError(
-                            "Event idempotency mapping references a missing event"
+                        payload_digest = hashlib.sha256(
+                            json.dumps(safe_payload, sort_keys=True).encode("utf-8")
+                        ).hexdigest()
+                        if (
+                            existing.event_kind != kind
+                            or existing.payload_sha256 != payload_digest
+                        ):
+                            raise ControlPlaneError.conflict(
+                                "Event idempotency key was reused with different content",
+                                extensions={"operation": "event.append_once"},
+                            )
+                        raise ControlPlaneError.gone(
+                            "Previously delivered event is outside retained history",
+                            extensions={
+                                "hint": "event_expired",
+                                "operation": "event.append_once",
+                            },
                         )
                     event = self._to_event(event_row)
                     if event.kind != kind or dict(event.payload or {}) != safe_payload:
@@ -554,6 +569,12 @@ class SqlModelEventStore:
                         workspace_id=ctx.workspace.workspace_id,
                         event_key=event_key,
                         event_id=event_id,
+                        event_kind=kind,
+                        payload_sha256=hashlib.sha256(
+                            json.dumps(safe_payload, sort_keys=True).encode("utf-8")
+                        ).hexdigest(),
+                        sequence=sequence,
+                        cursor=cursor,
                     )
                 )
                 session.flush()
@@ -570,6 +591,35 @@ class SqlModelEventStore:
                     "workspace_id": ctx.workspace.workspace_id,
                 },
             )
+
+    def prune_before_sequence(
+        self, ctx: ControlPlaneContext, before_sequence: int
+    ) -> int:
+        """Delete older scoped events while preserving the sequence high-water."""
+        if before_sequence < 1:
+            raise ValueError("before_sequence must be at least 1")
+        with session_scope(self._engine) as session:
+            self._lock_append_scope(session, ctx)
+            latest_sequence = session.exec(
+                select(EventRow.sequence)
+                .where(
+                    EventRow.tenant_id == ctx.tenant.tenant_id,
+                    EventRow.workspace_id == ctx.workspace.workspace_id,
+                )
+                .order_by(text("sequence DESC"))
+                .limit(1)
+            ).first()
+            if latest_sequence is None:
+                return 0
+            cutoff = min(before_sequence, int(latest_sequence))
+            result = session.exec(
+                delete(EventRow).where(
+                    EventRow.tenant_id == ctx.tenant.tenant_id,
+                    EventRow.workspace_id == ctx.workspace.workspace_id,
+                    EventRow.sequence < cutoff,
+                )
+            )
+            return int(result.rowcount or 0)
 
     def _get_event_by_key(
         self, ctx: ControlPlaneContext, event_key: str

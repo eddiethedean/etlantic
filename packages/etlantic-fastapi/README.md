@@ -33,7 +33,7 @@ Install the managed extra and apply versioned migrations before creating the
 backend. The constructor checks the recorded migration version and fails
 closed when the schema is missing or behind. It creates one SQLAlchemy engine
 for the SQLModel control-plane stores and owns that engine for the backend
-lifetime. The required migration head is `008_idempotent_run_events_0_56`, which
+lifetime. The required migration head is `009_event_retention_tombstones_0_56`, which
 adds durable scope-isolated run reports and idempotent lifecycle event delivery
 for managed workers.
 
@@ -151,6 +151,15 @@ for headless consumers. HTTP clients can use
 items are filtered to the requested run. The existing
 `GET /v1/runs/{run_id}/events` endpoint streams history as server-sent events.
 Unknown or expired cursors fail with `410 Gone`.
+
+`MemoryEventStore` and `SqlModelEventStore` also implement the public
+`EventRetentionStore` protocol. An operator can call
+`prune_before_sequence(ctx, before_sequence)` to remove older rows while
+preserving the latest sequence anchor. Keyed-event digests remain as tombstones:
+a retry for a pruned key returns `410 Gone` instead of publishing a duplicate,
+and changed content returns `409 Conflict`. Retention is an explicit store
+operation; deployments still need to define when to invoke it and how long to
+keep idempotency tombstones.
 
 ### Managed rerun and replay commands
 

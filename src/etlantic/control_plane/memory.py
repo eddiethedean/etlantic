@@ -35,6 +35,16 @@ def _scope(ctx: ControlPlaneContext) -> tuple[str, str]:
     return ctx.scope_key
 
 
+def _new_idempotent_event_map() -> dict[
+    tuple[str, str, str], tuple[str, dict[str, Any], ControlPlaneEvent]
+]:
+    return {}
+
+
+def _new_event_sequence_map() -> dict[tuple[str, str], int]:
+    return {}
+
+
 def _idem_key(
     ctx: ControlPlaneContext,
     idempotency_key: str,
@@ -49,12 +59,6 @@ def _idem_key(
         operation,
         idempotency_key,
     )
-
-
-def _new_idempotent_event_map() -> dict[
-    tuple[str, str, str], tuple[str, dict[str, Any], ControlPlaneEvent]
-]:
-    return {}
 
 
 @dataclass
@@ -364,6 +368,9 @@ class MemoryEventStore:
     _idempotent_events: dict[
         tuple[str, str, str], tuple[str, dict[str, Any], ControlPlaneEvent]
     ] = field(default_factory=_new_idempotent_event_map)
+    _event_sequences: dict[tuple[str, str], int] = field(
+        default_factory=_new_event_sequence_map
+    )
     _lock: threading.RLock = field(default_factory=threading.RLock)
 
     def append(
@@ -379,7 +386,11 @@ class MemoryEventStore:
             safe_payload = {}
         with self._lock:
             bucket = self._events.setdefault(scope, [])
-            sequence = len(bucket) + 1
+            sequence = max(
+                self._event_sequences.get(scope, 0),
+                max((event.sequence for event in bucket), default=0),
+            ) + 1
+            self._event_sequences[scope] = sequence
             cursor = hashlib.sha256(
                 f"{scope[0]}:{scope[1]}:{sequence}".encode()
             ).hexdigest()[:24]
@@ -431,6 +442,15 @@ class MemoryEventStore:
                         "Event idempotency key was reused with different content",
                         extensions={"operation": "event.append_once"},
                     )
+                retained = self._events.get(scope, [])
+                if not any(item.cursor == event.cursor for item in retained):
+                    raise ControlPlaneError.gone(
+                        "Previously delivered event is outside retained history",
+                        extensions={
+                            "hint": "event_expired",
+                            "operation": "event.append_once",
+                        },
+                    )
                 return deepcopy(event)
             event = self.append(ctx, kind=kind, payload=safe_payload)
             self._idempotent_events[scoped_key] = (
@@ -439,6 +459,25 @@ class MemoryEventStore:
                 event,
             )
             return deepcopy(event)
+
+    def prune_before_sequence(
+        self, ctx: ControlPlaneContext, before_sequence: int
+    ) -> int:
+        """Prune old scoped events while keeping the high-water anchor."""
+        if before_sequence < 1:
+            raise ValueError("before_sequence must be at least 1")
+        scope = _scope(ctx)
+        with self._lock:
+            bucket = self._events.get(scope, [])
+            if len(bucket) < 2:
+                return 0
+            latest = max(event.sequence for event in bucket)
+            cutoff = min(before_sequence, latest)
+            retained = [event for event in bucket if event.sequence >= cutoff]
+            pruned = len(bucket) - len(retained)
+            if pruned:
+                self._events[scope] = retained
+            return pruned
 
     def list_after_cursor(
         self,

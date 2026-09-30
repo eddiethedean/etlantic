@@ -109,6 +109,14 @@ class EventIdempotencyRow(SQLModel, table=True):
     workspace_id: str = Field(sa_column=Column(String(), index=True, nullable=False))
     event_key: str = Field(sa_column=Column(String(), nullable=False))
     event_id: str = Field(sa_column=Column(String(), index=True, nullable=False))
+    event_kind: str | None = Field(
+        default=None, sa_column=Column(String(), nullable=True)
+    )
+    payload_sha256: str | None = Field(
+        default=None, sa_column=Column(String(64), nullable=True)
+    )
+    sequence: int | None = Field(default=None, sa_column=Column(Integer(), nullable=True))
+    cursor: str | None = Field(default=None, sa_column=Column(String(), nullable=True))
 
 
 class RunReportRow(SQLModel, table=True):

@@ -3,6 +3,7 @@
 
 from __future__ import annotations
 
+import hashlib
 import os
 import uuid
 from collections.abc import Callable, Iterator
@@ -22,6 +23,7 @@ from sqlalchemy.schema import CreateSchema, DropSchema
 
 from etlantic.control_plane import (
     ControlPlaneContext,
+    ControlPlaneError,
     EnvironmentRef,
     Principal,
     RegistryDefinitionRepository,
@@ -61,7 +63,7 @@ def test_006_migration_imports_legacy_definitions_as_immutable_revisions(
     }
     legacy.put(ctx, "legacy-orders", document)
 
-    assert upgrade(engine) == "008_idempotent_run_events_0_56"
+    assert upgrade(engine) == "009_event_retention_tombstones_0_56"
     registry = cast(RegistryProvider, SqlModelRegistryProvider(engine))
     definitions = RegistryDefinitionRepository(registry)
     current = definitions.resolve_revision(ctx, "legacy-orders", "current")
@@ -125,8 +127,8 @@ def _ctx(
 def test_latest_migration_provisions_cp1_and_report_tables(tmp_path: Path) -> None:
     engine = create_sqlite_engine(f"sqlite:///{tmp_path / 'cp1.db'}")
 
-    assert apply_migrations(engine) == "008_idempotent_run_events_0_56"
-    assert current_version(engine) == "008_idempotent_run_events_0_56"
+    assert apply_migrations(engine) == "009_event_retention_tombstones_0_56"
+    assert current_version(engine) == "009_event_retention_tombstones_0_56"
     assert {
         "cp_definitions",
         "cp_submissions",
@@ -179,13 +181,27 @@ def test_upgrade_from_published_head_adds_managed_reports_without_replacing_sche
 
     assert upgrade(engine, target=previous_head) == previous_head
     before = set(inspect(engine).get_table_names())
-    if previous_head == "007_managed_run_reports_0_56":
+    if previous_head in {
+        "007_managed_run_reports_0_56",
+        "008_idempotent_run_events_0_56",
+    }:
         assert "cp_run_reports" in before
     else:
         assert "cp_run_reports" not in before
-    assert "cp_event_idempotency" not in before
+    if previous_head == "008_idempotent_run_events_0_56":
+        assert "cp_event_idempotency" in before
+        assert {
+            "tenant_id",
+            "workspace_id",
+            "event_key",
+            "event_id",
+        }.issubset(
+            {column["name"] for column in inspect(engine).get_columns("cp_event_idempotency")}
+        )
+    else:
+        assert "cp_event_idempotency" not in before
 
-    assert upgrade(engine) == "008_idempotent_run_events_0_56"
+    assert upgrade(engine) == "009_event_retention_tombstones_0_56"
     tables = set(inspect(engine).get_table_names())
     assert before.issubset(tables)
     assert {
@@ -195,13 +211,21 @@ def test_upgrade_from_published_head_adds_managed_reports_without_replacing_sche
         "cp_run_reports",
         "cp_event_idempotency",
     }.issubset(tables)
+    assert {
+        "event_kind",
+        "payload_sha256",
+        "sequence",
+        "cursor",
+    }.issubset(
+        {column["name"] for column in inspect(engine).get_columns("cp_event_idempotency")}
+    )
 
 
 def test_managed_report_migration_downgrade_preserves_prior_tables(
     tmp_path: Path,
 ) -> None:
     engine = create_sqlite_engine(f"sqlite:///{tmp_path / 'report-migration.db'}")
-    assert upgrade(engine) == "008_idempotent_run_events_0_56"
+    assert upgrade(engine) == "009_event_retention_tombstones_0_56"
 
     assert downgrade(engine, target="006_managed_definition_revisions_0_56") == (
         "006_managed_definition_revisions_0_56"
@@ -214,7 +238,7 @@ def test_managed_report_migration_downgrade_preserves_prior_tables(
         "cp_registry_revisions",
     }.issubset(tables)
 
-    assert upgrade(engine) == "008_idempotent_run_events_0_56"
+    assert upgrade(engine) == "009_event_retention_tombstones_0_56"
     assert "cp_run_reports" in set(inspect(engine).get_table_names())
 
 
@@ -222,7 +246,7 @@ def test_idempotent_event_migration_round_trip_preserves_event_history(
     tmp_path: Path,
 ) -> None:
     engine = create_sqlite_engine(f"sqlite:///{tmp_path / 'event-migration.db'}")
-    assert upgrade(engine) == "008_idempotent_run_events_0_56"
+    assert upgrade(engine) == "009_event_retention_tombstones_0_56"
     ctx = _ctx()
     events = SqlModelEventStore(engine)
     original = events.append(
@@ -233,7 +257,7 @@ def test_idempotent_event_migration_round_trip_preserves_event_history(
         "007_managed_run_reports_0_56"
     )
     assert "cp_event_idempotency" not in set(inspect(engine).get_table_names())
-    assert upgrade(engine) == "008_idempotent_run_events_0_56"
+    assert upgrade(engine) == "009_event_retention_tombstones_0_56"
     assert "cp_event_idempotency" in set(inspect(engine).get_table_names())
     events = SqlModelEventStore(engine)
     repeated = events.append_once(
@@ -255,6 +279,57 @@ def test_idempotent_event_migration_round_trip_preserves_event_history(
         "run.accepted",
         "run.started",
     ]
+
+
+def test_event_retention_migration_backfills_previously_published_keys(
+    tmp_path: Path,
+) -> None:
+    engine = create_sqlite_engine(f"sqlite:///{tmp_path / 'event-tombstone-backfill.db'}")
+    assert upgrade(engine, target="008_idempotent_run_events_0_56") == (
+        "008_idempotent_run_events_0_56"
+    )
+    ctx = _ctx()
+    events = SqlModelEventStore(engine)
+    prior = events.append(
+        ctx, kind="run.started", payload={"run_id": "legacy-key-run"}
+    )
+    key = "legacy-key-started"
+    with engine.begin() as connection:
+        connection.execute(
+            text(
+                "INSERT INTO cp_event_idempotency "
+                "(tenant_id, workspace_id, event_key, event_id) "
+                "VALUES (:tenant_id, :workspace_id, :event_key, :event_id)"
+            ),
+            {
+                "tenant_id": ctx.tenant.tenant_id,
+                "workspace_id": ctx.workspace.workspace_id,
+                "event_key": hashlib.sha256(key.encode()).hexdigest(),
+                "event_id": prior.event_id,
+            },
+        )
+
+    assert upgrade(engine) == "009_event_retention_tombstones_0_56"
+    repeated = SqlModelEventStore(engine).append_once(
+        ctx,
+        event_key=key,
+        kind="run.started",
+        payload={"run_id": "legacy-key-run"},
+    )
+    assert repeated.event_id == prior.event_id
+    with engine.connect() as connection:
+        metadata = connection.execute(
+            text(
+                "SELECT event_kind, payload_sha256, sequence, cursor "
+                "FROM cp_event_idempotency WHERE event_key = :event_key"
+            ),
+            {"event_key": hashlib.sha256(key.encode()).hexdigest()},
+        ).one()
+    assert metadata[0] == "run.started"
+    assert metadata[1] == hashlib.sha256(
+        b'{"run_id": "legacy-key-run"}'
+    ).hexdigest()
+    assert metadata[2:] == (prior.sequence, prior.cursor)
 
 
 @pytest.mark.parametrize(
@@ -285,8 +360,8 @@ def test_postgresql_migration_provisions_and_persists_cp1_stores(
                 },
             )
 
-    assert upgrade(engine) == "008_idempotent_run_events_0_56"
-    assert current_version(engine) == "008_idempotent_run_events_0_56"
+    assert upgrade(engine) == "009_event_retention_tombstones_0_56"
+    assert current_version(engine) == "009_event_retention_tombstones_0_56"
     tables = set(inspect(engine).get_table_names())
     assert {
         "cp_definitions",
@@ -332,7 +407,7 @@ def test_postgresql_concurrent_event_appends_allocate_ordered_sequences(
     postgres_engine_factory: Callable[[], Engine],
 ) -> None:
     engine = postgres_engine_factory()
-    assert upgrade(engine) == "008_idempotent_run_events_0_56"
+    assert upgrade(engine) == "009_event_retention_tombstones_0_56"
     engine.dispose()
 
     ctx = _ctx()
@@ -372,3 +447,42 @@ def test_postgresql_concurrent_event_appends_allocate_ordered_sequences(
     )
     assert isolated.sequence == 1
     assert isolated.cursor not in {event.cursor for event in events}
+
+
+def test_postgresql_event_retention_expires_cursors_without_duplicate_delivery(
+    postgres_engine_factory: Callable[[], Engine],
+) -> None:
+    engine = postgres_engine_factory()
+    assert upgrade(engine) == "009_event_retention_tombstones_0_56"
+    ctx = _ctx()
+    events = SqlModelEventStore(engine)
+    expired = events.append_once(
+        ctx,
+        event_key="attempt-start-retention",
+        kind="run.started",
+        payload={"run_id": "retention-run"},
+    )
+    events.append(ctx, kind="run.progress", payload={"run_id": "retention-run"})
+    anchor = events.append(
+        ctx, kind="run.completed", payload={"run_id": "retention-run"}
+    )
+
+    assert events.prune_before_sequence(ctx, before_sequence=3) == 2
+    with pytest.raises(ControlPlaneError) as cursor_error:
+        events.list_after_cursor(ctx, expired.cursor)
+    assert cursor_error.value.status == 410
+    with pytest.raises(ControlPlaneError) as duplicate_error:
+        events.append_once(
+            ctx,
+            event_key="attempt-start-retention",
+            kind="run.started",
+            payload={"run_id": "retention-run"},
+        )
+    assert duplicate_error.value.status == 410
+
+    appended = events.append(ctx, kind="run.recovered")
+    assert appended.sequence == anchor.sequence + 1 == 4
+    assert [item.event_id for item in events.list_after_cursor(ctx, None)] == [
+        anchor.event_id,
+        appended.event_id,
+    ]

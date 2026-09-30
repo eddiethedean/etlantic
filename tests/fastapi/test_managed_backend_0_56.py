@@ -65,7 +65,7 @@ def _context() -> ControlPlaneContext:
 def _migrated_url(tmp_path: Path) -> str:
     url = f"sqlite:///{tmp_path / 'managed.db'}"
     engine = sqlalchemy.create_engine(url)
-    assert upgrade(engine) == "008_idempotent_run_events_0_56"
+    assert upgrade(engine) == "009_event_retention_tombstones_0_56"
     engine.dispose()
     return url
 

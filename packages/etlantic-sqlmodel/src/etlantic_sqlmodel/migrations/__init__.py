@@ -23,6 +23,7 @@ VERSIONS: Sequence[str] = (
     "006_managed_definition_revisions_0_56",
     "007_managed_run_reports_0_56",
     "008_idempotent_run_events_0_56",
+    "009_event_retention_tombstones_0_56",
 )
 
 
