@@ -9,7 +9,7 @@ from importlib import import_module
 from typing import TYPE_CHECKING, Any, cast
 
 from etlantic.control_plane.models import ControlPlaneContext
-from etlantic.control_plane.protocols import Authorizer
+from etlantic.control_plane.protocols import Authorizer, IdempotentEventStore
 from etlantic.control_plane.registry_definitions import RegistryDefinitionRepository
 from etlantic.registry import PlanningContext
 from etlantic_fastapi.api import ETLanticAPI, create_app
@@ -81,12 +81,25 @@ class ManagedBackend:
         from etlantic.runtime.execution_host import ExecutionHost
         from etlantic.runtime.managed_execution import ManagedExecutionAdapter
 
+        event_store = cast(IdempotentEventStore, self.api.events)
+
+        def publish_event(
+            ctx: ControlPlaneContext,
+            event_key: str,
+            kind: str,
+            payload: Mapping[str, Any],
+        ) -> None:
+            event_store.append_once(
+                ctx, event_key=event_key, kind=kind, payload=payload
+            )
+
         return ExecutionHost(
             durable,
             owner_id=owner_id,
             ttl_seconds=ttl_seconds,
             runner=ManagedExecutionAdapter(
-                report_store_factory=self.report_store_factory
+                report_store_factory=self.report_store_factory,
+                event_publisher=publish_event,
             ),
         )
 

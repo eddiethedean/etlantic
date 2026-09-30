@@ -65,7 +65,7 @@ def _context() -> ControlPlaneContext:
 def _migrated_url(tmp_path: Path) -> str:
     url = f"sqlite:///{tmp_path / 'managed.db'}"
     engine = sqlalchemy.create_engine(url)
-    assert upgrade(engine) == "007_managed_run_reports_0_56"
+    assert upgrade(engine) == "008_idempotent_run_events_0_56"
     engine.dispose()
     return url
 
@@ -325,6 +325,33 @@ def test_standard_backend_worker_persists_queryable_report_in_sqlmodel(
             "succeeded"
         )
         assert target.read_text(encoding="utf-8").splitlines() == ["id", "29"]
+        assert restarted.api.events is not None
+        run_events = [
+            event
+            for event in restarted.api.events.list_after_cursor(ctx, None, limit=50)
+            if dict(event.payload or {}).get("run_id") == receipt.resource_id
+        ]
+        attempt_events = [
+            event
+            for event in run_events
+            if event.kind in {"run.started", "run.completed"}
+        ]
+        assert [event.kind for event in attempt_events].count("run.started") == 2
+        assert [event.kind for event in attempt_events].count("run.completed") == 2
+        assert len({event.event_id for event in attempt_events}) == len(attempt_events)
+        assert all(
+            dict(event.payload or {}).get("submission_id") == receipt.submission_id
+            for event in attempt_events
+        )
+        assert (
+            len(
+                {
+                    dict(event.payload or {}).get("attempt_id")
+                    for event in attempt_events
+                }
+            )
+            == 2
+        )
         other_workspace = ControlPlaneContext(
             principal=ctx.principal,
             tenant=ctx.tenant,

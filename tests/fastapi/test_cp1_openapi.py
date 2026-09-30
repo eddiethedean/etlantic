@@ -43,6 +43,7 @@ REQUIRED_OPERATION_IDS = {
     "cp_retry_run",
     "cp_cancel_run",
     "cp_stream_run_events",
+    "cp_list_run_events",
     "cp_get_run_report",
     "cp_list_run_artifacts",
     "cp_get_run_lineage",

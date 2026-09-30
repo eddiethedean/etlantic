@@ -33,8 +33,9 @@ Install the managed extra and apply versioned migrations before creating the
 backend. The constructor checks the recorded migration version and fails
 closed when the schema is missing or behind. It creates one SQLAlchemy engine
 for the SQLModel control-plane stores and owns that engine for the backend
-lifetime. The required migration head is `007_managed_run_reports_0_56`, which
-adds the scope-isolated report table used by managed workers and report queries.
+lifetime. The required migration head is `008_idempotent_run_events_0_56`, which
+adds durable scope-isolated run reports and idempotent lifecycle event delivery
+for managed workers.
 
 ```bash
 pip install 'etlantic-fastapi[managed]==0.55.0'
@@ -142,6 +143,14 @@ app = create_app(api)
 # include_router(host, api)  # host must register Problem Details handlers
 #                            # (create_app installs them; include_router does not)
 ```
+
+Managed services expose `list_run_events(ctx, run_id, cursor=..., limit=...)`
+for headless consumers. HTTP clients can use
+`GET /v1/runs/{run_id}/events/history` for the same bounded page contract;
+`next_cursor` resumes through the scoped workspace event log, while returned
+items are filtered to the requested run. The existing
+`GET /v1/runs/{run_id}/events` endpoint streams history as server-sent events.
+Unknown or expired cursors fail with `410 Gone`.
 
 ### Managed rerun and replay commands
 

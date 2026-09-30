@@ -167,12 +167,29 @@ class EventStore(Protocol):
         ...
 
 
+@runtime_checkable
+class IdempotentEventStore(Protocol):
+    """Optional EventStore extension with crash-safe keyed event delivery."""
+
+    def append_once(
+        self,
+        ctx: ControlPlaneContext,
+        *,
+        event_key: str,
+        kind: str,
+        payload: Mapping[str, Any] | None = None,
+    ) -> ControlPlaneEvent:
+        """Return the matching event or append it once inside this scope."""
+        ...
+
+
 __all__ = [
     "Authorizer",
     "AuthzDecision",
     "DefinitionRepository",
     "DefinitionResolution",
     "EventStore",
+    "IdempotentEventStore",
     "RevisionedDefinitionRepository",
     "SubmissionStore",
 ]

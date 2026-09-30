@@ -57,6 +57,7 @@ from etlantic_fastapi.schemas import (
     RevisionListResponse,
     RevisionResponse,
     RunActionsResponse,
+    RunEventPageResponse,
     RunStatusResponse,
     RunSubmitBody,
     SchemaObservationAckResponse,
@@ -954,6 +955,56 @@ def build_control_plane_router(api: ETLanticAPI) -> APIRouter:
             run_id,
             cursor=resume,
             follow=follow,
+        )
+
+    @router.get(
+        "/v1/runs/{run_id}/events/history",
+        operation_id="cp_list_run_events",
+        response_model=RunEventPageResponse,
+        description=(
+            "Read a bounded page from the caller's scoped event log, filtered to "
+            "this run. The resume cursor advances over scoped events, so a page "
+            "may contain no matching items while still returning a cursor."
+        ),
+        tags=["runs"],
+    )
+    def list_run_events(
+        run_id: str,
+        cursor: str | None = Query(
+            default=None,
+            description="Opaque resume cursor returned by the previous page",
+        ),
+        limit: int = Query(default=100, ge=1, le=200),
+        ctx: ControlPlaneContext = Depends(get_ctx),
+    ) -> RunEventPageResponse:
+        """Read one bounded, resumable page from a run's event history."""
+        if api.managed_service is not None:
+            result = api.managed_service.list_run_events(
+                ctx, run_id, cursor=cursor, limit=limit
+            )
+            return RunEventPageResponse.model_validate(result)
+        _authorize_run(ctx, "run.events", run_id)
+        get_run_fn, _ = _run_store_methods(api)
+        try:
+            get_run_fn(ctx, run_id)
+        except KeyError as exc:
+            raise ControlPlaneError.not_found(f"Run {run_id!r} not found") from exc
+        page = api.events.list_after_cursor(ctx, cursor, limit=limit)
+        items = [
+            event.to_dict()
+            for event in page
+            if str((event.payload or {}).get("run_id") or "") == run_id
+        ]
+        next_cursor: str | None = None
+        if len(page) == limit and page:
+            last_cursor = page[-1].cursor
+            if api.events.list_after_cursor(ctx, last_cursor, limit=1):
+                next_cursor = last_cursor
+        return RunEventPageResponse(
+            run_id=run_id,
+            items=items,
+            next_cursor=next_cursor,
+            has_more=next_cursor is not None,
         )
 
     @router.get(

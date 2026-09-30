@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import hashlib
 import os
-from collections.abc import Callable
+from collections.abc import Callable, Mapping
 from dataclasses import replace
 from pathlib import Path
 from threading import Event
@@ -22,6 +22,7 @@ from etlantic.runtime.context import TrustedExecutionScope
 from etlantic.runtime.execute import run_pipeline
 from etlantic.runtime.managed_errors import ExecutionRejected, UnknownCommitError
 from etlantic.runtime.request import RunRequest
+from etlantic.runtime.state import RunStatus
 from etlantic.secrets.provider import SecretAliasAuthorizer
 
 if TYPE_CHECKING:
@@ -72,6 +73,9 @@ class ManagedExecutionAdapter:
         *,
         report_root: str | Path | None = None,
         report_store_factory: Callable[[ControlPlaneContext], Any] | None = None,
+        event_publisher: (
+            Callable[[ControlPlaneContext, str, str, Mapping[str, Any]], None] | None
+        ) = None,
         runtime_factory: Any = PipelineRuntime,
         secret_alias_authorizer: SecretAliasAuthorizer | None = None,
     ) -> None:
@@ -80,6 +84,7 @@ class ManagedExecutionAdapter:
             configured_root or (Path.home() / ".etlantic" / "reports")
         ).expanduser()
         self.report_store_factory = report_store_factory
+        self.event_publisher = event_publisher
         self.runtime_factory = runtime_factory
         self.secret_alias_authorizer = secret_alias_authorizer
 
@@ -124,6 +129,18 @@ class ManagedExecutionAdapter:
             ) from exc
 
         run_id = managed_run_id(ctx, submission.idempotency_key)
+        event_base = {
+            "run_id": run_id,
+            "submission_id": submission_id,
+            "attempt_id": attempt_id,
+            "plan_fingerprint": envelope.plan_fingerprint,
+        }
+        self._publish_event(
+            ctx,
+            event_key=f"{submission_id}:{attempt_id}:started",
+            kind="run.started",
+            payload=event_base,
+        )
         reports = (
             self.report_store_factory(ctx)
             if self.report_store_factory is not None
@@ -133,6 +150,7 @@ class ManagedExecutionAdapter:
         if existing is not None:
             if existing.plan_fingerprint != envelope.plan_fingerprint:
                 raise ExecutionRejected("Stored result conflicts with accepted plan")
+            self._publish_report_event(ctx, event_base, existing)
             return existing
         if recovered_attempt:
             raise ExecutionRejected(
@@ -179,10 +197,22 @@ class ManagedExecutionAdapter:
                     ) from exc
                 report = exc.report
         except ExecutionRejected:
+            self._publish_event(
+                ctx,
+                event_key=f"{submission_id}:{attempt_id}:failed",
+                kind="run.failed",
+                payload={**event_base, "status": "failed"},
+            )
             raise
         except Exception as exc:
             # A runtime exception can occur after a provider has committed. The
             # worker records an unknown effect and requires reconciliation.
+            self._publish_event(
+                ctx,
+                event_key=f"{submission_id}:{attempt_id}:unknown",
+                kind="run.reconciliation_required",
+                payload={**event_base, "status": "unknown"},
+            )
             raise UnknownCommitError(
                 "Managed execution ended without a classified runtime report"
             ) from exc
@@ -203,7 +233,38 @@ class ManagedExecutionAdapter:
         # Runtime persists during execution; write the enriched immutable
         # result last so result queries and recovery see the same lineage.
         reports.put(published)
+        self._publish_report_event(ctx, event_base, published)
         return published
+
+    def _publish_event(
+        self,
+        ctx: ControlPlaneContext,
+        *,
+        event_key: str,
+        kind: str,
+        payload: Mapping[str, Any],
+    ) -> None:
+        if self.event_publisher is not None:
+            self.event_publisher(ctx, event_key, kind, payload)
+
+    def _publish_report_event(
+        self,
+        ctx: ControlPlaneContext,
+        event_base: Mapping[str, Any],
+        report: PipelineRunReport,
+    ) -> None:
+        if report.status is RunStatus.SUCCEEDED:
+            status, kind = "completed", "run.completed"
+        elif report.status is RunStatus.CANCELLED:
+            status, kind = "cancelled", "run.cancelled"
+        else:
+            status, kind = "unknown", "run.reconciliation_required"
+        self._publish_event(
+            ctx,
+            event_key=f"{event_base['submission_id']!s}:{event_base['attempt_id']!s}:{status}",
+            kind=kind,
+            payload={**event_base, "status": status},
+        )
 
 
 __all__ = ["ManagedExecutionAdapter", "managed_report_store", "managed_run_id"]

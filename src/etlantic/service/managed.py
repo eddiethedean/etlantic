@@ -1097,6 +1097,56 @@ class ManagedApplicationService:
         _record, result = self._runtime_report(ctx, "run.report", run_id)
         return result.to_dict()
 
+    def list_run_events(
+        self,
+        ctx: ControlPlaneContext,
+        run_id: str,
+        *,
+        cursor: str | None = None,
+        limit: int = 100,
+    ) -> dict[str, Any]:
+        """Return one bounded, resumable page of events for an authorized run.
+
+        The cursor advances through the caller's scoped event log. Events for
+        other runs are filtered after the authorized run lookup, so a page can
+        be empty while still carrying a cursor when other runs are active in
+        the same workspace.
+        """
+        self._authorized_run_record(ctx, "run.events", run_id)
+        if self.events is None:
+            raise ControlPlaneError(
+                "Event history is unavailable",
+                code="PMCP501",
+                status=501,
+                title="Not Implemented",
+            )
+        if limit < 1 or limit > 200:
+            raise ControlPlaneError(
+                "Event page limit must be between 1 and 200",
+                code="PMCP400",
+                status=400,
+                title="Bad Request",
+                type="etlantic.control_plane/bad_request",
+            )
+        page = self.events.list_after_cursor(ctx, cursor, limit=limit)
+        items = [
+            event.to_dict()
+            for event in page
+            if str((event.payload or {}).get("run_id") or "") == run_id
+        ]
+        next_cursor: str | None = None
+        if len(page) == limit and page:
+            last_cursor = page[-1].cursor
+            if self.events.list_after_cursor(ctx, last_cursor, limit=1):
+                next_cursor = last_cursor
+        return {
+            "schema": "etlantic.control_plane.run_event_page/1",
+            "run_id": run_id,
+            "items": items,
+            "next_cursor": next_cursor,
+            "has_more": next_cursor is not None,
+        }
+
     def _runtime_report(
         self, ctx: ControlPlaneContext, action: str, run_id: str
     ) -> tuple[dict[str, Any], PipelineRunReport]:

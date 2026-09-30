@@ -54,6 +54,12 @@ CROSS_TENANT_404_CASES: list[tuple[str, str, str, dict | None]] = [
     ("cp_retry_run", "POST", "/v1/runs/{run_id}/retry", None),
     ("cp_cancel_run", "POST", "/v1/runs/{run_id}/cancel", None),
     ("cp_stream_run_events", "GET", "/v1/runs/{run_id}/events", None),
+    (
+        "cp_list_run_events",
+        "GET",
+        "/v1/runs/{run_id}/events/history",
+        None,
+    ),
     ("cp_get_run_report", "GET", "/v1/runs/{run_id}/report", None),
     ("cp_list_run_artifacts", "GET", "/v1/runs/{run_id}/artifacts", None),
     ("cp_get_run_lineage", "GET", "/v1/runs/{run_id}/lineage", None),

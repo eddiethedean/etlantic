@@ -85,6 +85,40 @@ def test_sqlite_event_store_restart(tmp_path: Path) -> None:
     assert listed[0].to_dict()["run_id"] == "run-1"
 
 
+def test_sqlite_event_append_once_survives_restart_and_rejects_conflicts(
+    tmp_path: Path,
+) -> None:
+    url = f"sqlite:///{tmp_path / 'cp-events-idempotent.db'}"
+    engine = create_sqlite_engine(url)
+    create_control_plane_tables(engine)
+    ctx = _ctx()
+    first = SqlModelEventStore(engine).append_once(
+        ctx,
+        event_key="sub-1:attempt-1:started",
+        kind="run.started",
+        payload={"run_id": "run-1", "attempt_id": "attempt-1"},
+    )
+
+    restarted = create_sqlite_engine(url)
+    events = SqlModelEventStore(restarted)
+    repeated = events.append_once(
+        ctx,
+        event_key="sub-1:attempt-1:started",
+        kind="run.started",
+        payload={"run_id": "run-1", "attempt_id": "attempt-1"},
+    )
+    assert repeated.event_id == first.event_id
+    assert len(events.list_after_cursor(ctx, None)) == 1
+    with pytest.raises(ControlPlaneError) as caught:
+        events.append_once(
+            ctx,
+            event_key="sub-1:attempt-1:started",
+            kind="run.started",
+            payload={"run_id": "different"},
+        )
+    assert caught.value.status == 409
+
+
 def test_sqlite_event_sequence_conflict_is_bounded_and_retryable(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:

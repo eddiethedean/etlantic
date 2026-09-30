@@ -3,12 +3,14 @@
 from __future__ import annotations
 
 import os
+import uuid
 from collections.abc import Mapping
 from typing import Any
 
 import anyio
 import pytest
 from sqlalchemy import create_engine, text
+from sqlalchemy.engine import make_url
 
 from etlantic.connectors.models import CommitReceipt
 from etlantic.connectors.session import write_via_sink_connector
@@ -226,3 +228,58 @@ def test_live_failed_stage_rolls_back_and_effect_ack_reconciles(
         lambda: LivePostgresSinkConnector().reconcile(lost, context=lost_context)
     )
     assert recovered.status == "committed"
+
+
+def test_live_sink_denies_ungranted_write_and_leaves_target_unchanged(
+    secret_context: dict[str, Any],
+) -> None:
+    assert URL is not None
+    admin_engine = create_engine(URL, hide_parameters=True)
+    role = f"etlantic_p056_{uuid.uuid4().hex[:16]}"
+    quoted_role = admin_engine.dialect.identifier_preparer.quote(role)
+    try:
+        with admin_engine.begin() as connection:
+            connection.execute(text(f"CREATE ROLE {quoted_role} LOGIN"))
+            connection.execute(
+                text(
+                    "GRANT SELECT ON public.etlantic_phase056_orders "
+                    f"TO {quoted_role}"
+                )
+            )
+            connection.execute(
+                text(
+                    "GRANT SELECT ON public.etlantic_connector_effects "
+                    f"TO {quoted_role}"
+                )
+            )
+
+        restricted_url = make_url(URL).set(username=role).render_as_string(
+            hide_password=False
+        )
+        restricted_context = {
+            **secret_context,
+            "node": "denied-write",
+            "secret": SecretValue(
+                _value=restricted_url,
+                provider="test",
+                name="postgresql-read-only-url",
+                key="url",
+                version="fixture",
+            ),
+        }
+        result = _write(
+            LivePostgresSinkConnector(),
+            _binding("append"),
+            restricted_context,
+            [{"id": "denied", "payload": "must-not-publish"}],
+        )
+        assert result.status == "rolled_back"
+        with admin_engine.connect() as connection:
+            assert connection.execute(
+                text("SELECT count(*) FROM public.etlantic_phase056_orders")
+            ).scalar_one() == 0
+    finally:
+        with admin_engine.begin() as connection:
+            connection.execute(text(f"DROP OWNED BY {quoted_role}"))
+            connection.execute(text(f"DROP ROLE IF EXISTS {quoted_role}"))
+        admin_engine.dispose()

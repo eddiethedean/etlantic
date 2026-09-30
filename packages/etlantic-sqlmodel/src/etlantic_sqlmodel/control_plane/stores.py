@@ -8,8 +8,9 @@ import uuid
 from collections.abc import Callable, Mapping, Sequence
 from copy import deepcopy
 from datetime import UTC, datetime
-from typing import Any
+from typing import Any, cast
 
+from sqlalchemy import Table
 from sqlalchemy.engine import Engine
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.sql import text
@@ -25,6 +26,7 @@ from etlantic.control_plane import (
 )
 from etlantic_sqlmodel.control_plane.models import (
     DefinitionRow,
+    EventIdempotencyRow,
     EventRow,
     SubmissionRow,
 )
@@ -38,6 +40,15 @@ def _utcnow_iso() -> str:
 
 _EVENT_APPEND_MAX_ATTEMPTS = 3
 _EVENT_SEQUENCE_CONSTRAINT = "uq_cp_event_scope_seq"
+_EVENT_IDEMPOTENCY_CONSTRAINT = "uq_cp_event_scope_idem"
+
+
+def _event_idempotency_table() -> Table:
+    return cast(Table, vars(EventIdempotencyRow)["__table__"])
+
+
+def _sqlmodel_table(model: type[SQLModel]) -> Table:
+    return cast(Table, vars(model)["__table__"])
 
 
 def create_control_plane_tables(engine: Engine) -> None:
@@ -45,14 +56,13 @@ def create_control_plane_tables(engine: Engine) -> None:
 
     Intended for tests and local demos — not a production migration path.
     """
-    SQLModel.metadata.create_all(
-        engine,
-        tables=[
-            DefinitionRow.__table__,  # type: ignore[list-item]
-            SubmissionRow.__table__,  # type: ignore[list-item]
-            EventRow.__table__,  # type: ignore[list-item]
-        ],
-    )
+    tables: list[Table] = [
+        _sqlmodel_table(DefinitionRow),
+        _sqlmodel_table(SubmissionRow),
+        _sqlmodel_table(EventRow),
+        _event_idempotency_table(),
+    ]
+    SQLModel.metadata.create_all(engine, tables=tables)
 
 
 class SQLModelDefinitionRepository:
@@ -180,6 +190,7 @@ class SQLModelSubmissionStore:
         safe_payload = redact_control_plane_payload(deepcopy(dict(payload)))
         if not isinstance(safe_payload, dict):
             safe_payload = {}
+        requested_submission_id = submission_id
         try:
             with session_scope(self._engine) as session:
                 existing = self._by_idem(
@@ -247,7 +258,10 @@ class SQLModelSubmissionStore:
                         "Idempotency key reuse with a different payload",
                         extensions={"idempotency_key": idempotency_key},
                     ) from exc
-                if submission_id is not None and winner.submission_id != submission_id:
+                if (
+                    requested_submission_id is not None
+                    and winner.submission_id != requested_submission_id
+                ):
                     raise ControlPlaneError.conflict(
                         "Idempotency key is bound to a different submission"
                     ) from exc
@@ -370,18 +384,67 @@ class SqlModelEventStore:
         kind: str,
         payload: Mapping[str, Any] | None = None,
     ) -> ControlPlaneEvent:
-        safe_payload = redact_control_plane_payload(deepcopy(dict(payload or {})))
-        if not isinstance(safe_payload, dict):
-            safe_payload = {}
+        return self._append(
+            ctx,
+            event_key=None,
+            kind=kind,
+            payload=payload,
+        )
+
+    def append_once(
+        self,
+        ctx: ControlPlaneContext,
+        *,
+        event_key: str,
+        kind: str,
+        payload: Mapping[str, Any] | None = None,
+    ) -> ControlPlaneEvent:
+        """Append once per trusted scope and key, including across restarts."""
+        if not event_key.strip():
+            raise ValueError("event_key must not be empty")
+        return self._append(ctx, event_key=event_key, kind=kind, payload=payload)
+
+    def _append(
+        self,
+        ctx: ControlPlaneContext,
+        *,
+        event_key: str | None,
+        kind: str,
+        payload: Mapping[str, Any] | None,
+    ) -> ControlPlaneEvent:
+        redacted_payload = redact_control_plane_payload(deepcopy(dict(payload or {})))
+        safe_payload = (
+            cast(dict[str, Any], redacted_payload)
+            if isinstance(redacted_payload, dict)
+            else {}
+        )
+        safe_key = (
+            None
+            if event_key is None
+            else hashlib.sha256(event_key.encode("utf-8")).hexdigest()
+        )
         for attempt in range(1, _EVENT_APPEND_MAX_ATTEMPTS + 1):
             try:
                 return self._append_once(
                     ctx,
                     kind=kind,
                     safe_payload=safe_payload,
+                    event_key=safe_key,
                 )
             except IntegrityError as exc:
-                if not self._is_sequence_conflict(exc):
+                if self._is_idempotency_conflict(exc) and safe_key is not None:
+                    existing = self._get_event_by_key(ctx, safe_key)
+                    if existing is not None:
+                        if (
+                            existing.kind != kind
+                            or dict(existing.payload or {}) != safe_payload
+                        ):
+                            raise ControlPlaneError.conflict(
+                                "Event idempotency key was reused with different content",
+                                extensions={"operation": "event.append_once"},
+                            ) from exc
+                        return existing
+                elif not self._is_sequence_conflict(exc):
                     raise
                 if attempt == _EVENT_APPEND_MAX_ATTEMPTS:
                     raise ControlPlaneError.conflict(
@@ -402,15 +465,56 @@ class SqlModelEventStore:
             return constraint_name == _EVENT_SEQUENCE_CONSTRAINT
         return _EVENT_SEQUENCE_CONSTRAINT in str(exc.orig)
 
+    @staticmethod
+    def _is_idempotency_conflict(exc: IntegrityError) -> bool:
+        diagnostic = getattr(exc.orig, "diag", None)
+        constraint_name = getattr(diagnostic, "constraint_name", None)
+        if constraint_name is not None:
+            return constraint_name == _EVENT_IDEMPOTENCY_CONSTRAINT
+        detail = str(exc.orig)
+        return _EVENT_IDEMPOTENCY_CONSTRAINT in detail or (
+            "cp_event_idempotency.tenant_id, "
+            "cp_event_idempotency.workspace_id, "
+            "cp_event_idempotency.event_key" in detail
+        )
+
     def _append_once(
         self,
         ctx: ControlPlaneContext,
         *,
         kind: str,
         safe_payload: dict[str, Any],
+        event_key: str | None,
     ) -> ControlPlaneEvent:
         with session_scope(self._engine) as session:
             self._lock_append_scope(session, ctx)
+            if event_key is not None:
+                existing = session.exec(
+                    select(EventIdempotencyRow).where(
+                        EventIdempotencyRow.tenant_id == ctx.tenant.tenant_id,
+                        EventIdempotencyRow.workspace_id == ctx.workspace.workspace_id,
+                        EventIdempotencyRow.event_key == event_key,
+                    )
+                ).first()
+                if existing is not None:
+                    event_row = session.exec(
+                        select(EventRow).where(
+                            EventRow.tenant_id == ctx.tenant.tenant_id,
+                            EventRow.workspace_id == ctx.workspace.workspace_id,
+                            EventRow.event_id == existing.event_id,
+                        )
+                    ).first()
+                    if event_row is None:
+                        raise RuntimeError(
+                            "Event idempotency mapping references a missing event"
+                        )
+                    event = self._to_event(event_row)
+                    if event.kind != kind or dict(event.payload or {}) != safe_payload:
+                        raise ControlPlaneError.conflict(
+                            "Event idempotency key was reused with different content",
+                            extensions={"operation": "event.append_once"},
+                        )
+                    return event
             statement = (
                 select(EventRow)
                 .where(
@@ -443,6 +547,16 @@ class SqlModelEventStore:
             )
             session.add(row)
             session.flush()
+            if event_key is not None:
+                session.add(
+                    EventIdempotencyRow(
+                        tenant_id=ctx.tenant.tenant_id,
+                        workspace_id=ctx.workspace.workspace_id,
+                        event_key=event_key,
+                        event_id=event_id,
+                    )
+                )
+                session.flush()
             return ControlPlaneEvent(
                 event_id=event_id,
                 sequence=sequence,
@@ -456,6 +570,28 @@ class SqlModelEventStore:
                     "workspace_id": ctx.workspace.workspace_id,
                 },
             )
+
+    def _get_event_by_key(
+        self, ctx: ControlPlaneContext, event_key: str
+    ) -> ControlPlaneEvent | None:
+        with session_scope(self._engine) as session:
+            mapping = session.exec(
+                select(EventIdempotencyRow).where(
+                    EventIdempotencyRow.tenant_id == ctx.tenant.tenant_id,
+                    EventIdempotencyRow.workspace_id == ctx.workspace.workspace_id,
+                    EventIdempotencyRow.event_key == event_key,
+                )
+            ).first()
+            if mapping is None:
+                return None
+            row = session.exec(
+                select(EventRow).where(
+                    EventRow.tenant_id == ctx.tenant.tenant_id,
+                    EventRow.workspace_id == ctx.workspace.workspace_id,
+                    EventRow.event_id == mapping.event_id,
+                )
+            ).first()
+            return None if row is None else self._to_event(row)
 
     def _lock_append_scope(self, session: Session, ctx: ControlPlaneContext) -> None:
         """Serialize sequence allocation for this scope on PostgreSQL.

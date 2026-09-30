@@ -130,6 +130,18 @@ class ReportStubResponse(BaseModel):
     model_config = {"populate_by_name": True}
 
 
+class RunEventPageResponse(BaseModel):
+    schema_: str = Field(
+        alias="schema", default="etlantic.control_plane.run_event_page/1"
+    )
+    run_id: str
+    items: list[dict[str, Any]] = Field(default_factory=list)
+    next_cursor: str | None = None
+    has_more: bool = False
+
+    model_config = {"populate_by_name": True}
+
+
 class ArtifactMeta(BaseModel):
     artifact_id: str
     kind: str

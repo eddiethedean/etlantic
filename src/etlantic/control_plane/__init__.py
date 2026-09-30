@@ -203,6 +203,7 @@ from etlantic.control_plane.protocols import (
     DefinitionRepository,
     DefinitionResolution,
     EventStore,
+    IdempotentEventStore,
     RevisionedDefinitionRepository,
     SubmissionStore,
 )
@@ -405,6 +406,7 @@ __all__ = [  # noqa: RUF022
     "ErasureStore",
     "ErrorDisclosure",
     "EventStore",
+    "IdempotentEventStore",
     "FIRING_SCHEMA",
     "FakeScheduleClock",
     "FiringRecord",

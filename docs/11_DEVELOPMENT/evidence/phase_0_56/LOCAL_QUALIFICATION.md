@@ -4,7 +4,7 @@
 not claim that AC056-001–044 have all passed. The evidence index marks a
 criterion passed only after its complete documented case has been observed.
 
-Current index: 5 criteria passed, 37 pending, and 2 blocked of 44.
+Current index: 6 criteria passed, 36 pending, and 2 blocked of 44.
 
 ## Candidate environment
 
@@ -29,6 +29,27 @@ Current index: 5 criteria passed, 37 pending, and 2 blocked of 44.
   replay endpoints; both stable-operation snapshot tests passed.
 - Live PostgreSQL connector and multiprocess acceptance:
   `ETLANTIC_SQL_TEST_URL=... ETLANTIC_CP_TEST_URL=... uv run pytest -q tests/sql/test_postgresql_live_0_56.py tests/sqlmodel/test_durable_postgresql_multiprocess_0_56.py` — 4 passed.
+- Final isolated PostgreSQL 16.14 qualification:
+  `ETLANTIC_SQLMODEL_TEST_URL=... uv run pytest -q tests/sqlmodel/test_cp1_migrations_0_51.py`
+  — 14 passed across SQLite and PostgreSQL schemas, including migration 008,
+  concurrent SQLModel event sequencing, downgrade/re-upgrade and retained event
+  history. `ETLANTIC_SQL_TEST_URL=... uv run pytest -q
+  tests/sql/test_postgresql_live_0_56.py` — 4 passed, covering append/upsert/
+  replace, idempotent replay, bounded source/schema reads, permission denial,
+  staged rollback and lost-ack reconciliation. `ETLANTIC_CP_TEST_URL=... uv run
+  pytest -q tests/sqlmodel/test_durable_postgresql_multiprocess_0_56.py` — 2
+  passed, covering eight-process single acceptance and quota idempotency plus
+  restart reads. The disposable database ran PostgreSQL 16.14; it was isolated
+  from application data.
+- Clean installed-wheel smoke:
+  rebuilt core, FastAPI and SQLModel 0.55.0 candidate wheels were installed
+  into a fresh Python 3.14.3 virtual environment without workspace path
+  injection. Migration 008 applied, idempotent event replay survived engine
+  disposal/reopen, the standard managed backend constructed and closed, and
+  generated OpenAPI included `/v1/runs/{run_id}/events/history`. Exact wheel
+  sizes and SHA-256 values are recorded in `WHEEL_MANIFEST.json`. This is
+  useful AC056-040 evidence; complete package/export/schema compatibility,
+  version skew and upgrade/rollback qualification remain pending.
 - SQLModel migration campaign against SQLite and isolated PostgreSQL schemas:
   `ETLANTIC_SQLMODEL_TEST_URL=... uv run pytest -q tests/sqlmodel/test_cp1_migrations_0_51.py` — 8 passed.
 - CP1 authorization matrix: 48 passed.
@@ -52,7 +73,24 @@ Current index: 5 criteria passed, 37 pending, and 2 blocked of 44.
   `uv run pytest -q tests/sqlmodel/test_cp1_migrations_0_51.py`
   — local SQLite cases cover fresh install, upgrade from each prior head through
   006, restart, downgrade to 006 and re-upgrade. PostgreSQL cases were skipped
-  because `ETLANTIC_SQLMODEL_TEST_URL` is not configured in this environment.
+  on the initial SQLite-only run; the final PostgreSQL-backed rerun above passed
+  all 14 migration cases.
+- Idempotent lifecycle-event storage and migration:
+  `uv run pytest -q tests/control_plane/test_control_plane.py::test_memory_event_store_append_once_is_scoped_and_conflict_checked tests/sqlmodel/test_control_plane_stores.py::test_sqlite_event_append_once_survives_restart_and_rejects_conflicts tests/sqlmodel/test_cp1_migrations_0_51.py::test_idempotent_event_migration_round_trip_preserves_event_history`
+  — 3 passed. Migration 008 adds a separate scoped event-key table, preserving
+  CP1 event rows and allowing retry-safe lifecycle publication. The migration
+  rollback to 007 and re-upgrade retained event history; SQLite restart returned
+  the original event for the same key and rejected changed content.
+- Managed lifecycle events and paginated event history:
+  `uv run pytest -q tests/fastapi/test_managed_backend_0_56.py::test_standard_backend_worker_persists_queryable_report_in_sqlmodel tests/fastapi/test_cp1_sse.py tests/fastapi/test_managed_application_0_56.py::test_headless_run_event_pages_are_scoped_and_resumable tests/fastapi/test_cp1_full_authz_matrix.py tests/fastapi/test_cp1_openapi.py`
+  — 62 passed in the latest focused run (the final worker integration and all
+  event-history/authz/OpenAPI tests were included). Lifecycle delivery uses
+  stable per-attempt keys and persists one start/completion pair across report
+  recovery. Headless and HTTP page queries return the same scoped events;
+  reconnect cursors advance through the workspace log, with explicit empty-page
+  behavior when other runs' events are interleaved. Unknown scoped cursors
+  return 410. AC056-019 remains pending for retention, artifact authorization
+  and the complete reconnect/duplicate-delivery isolation campaign.
 - Provider-aware run-action reason:
   `uv run pytest -q tests/fastapi/test_managed_control_races_0_56.py::test_action_discovery_reports_unsupported_cancel_provider`
   — 1 passed. The command query now reports `provider_unsupported` when the
@@ -186,6 +224,15 @@ Current index: 5 criteria passed, 37 pending, and 2 blocked of 44.
   JSON-to-CSV definition without a caller runner, persisted the actual report,
   and served that report after reopening the backend. Output and report identity
   stayed consistent after the source file changed.
+- Final clean wheel smoke for event durability:
+  `uv build --package etlantic --wheel`,
+  `uv build --package etlantic-fastapi --wheel`, and
+  `uv build --package etlantic-sqlmodel --wheel` succeeded. All three candidate
+  wheels installed into a fresh Python 3.14.3 environment. The installed
+  SQLModel wheel applied migration `008_idempotent_run_events_0_56`; its event
+  store returned the original event after engine disposal/reopen. The installed
+  FastAPI wheel constructed and closed the standard SQLModel backend, and its
+  generated OpenAPI included the bounded run-event history endpoint.
 - Public CLI: sample pipeline validation passed with no diagnostics; plan
   generation returned fingerprint
   `8f3879b301b3b0ea1b87434eef3dd0a58ef0cbe8342ced056323cc9d6d5b19da`.
@@ -209,13 +256,19 @@ Current index: 5 criteria passed, 37 pending, and 2 blocked of 44.
   criterion-level failure, concurrency and runtime campaigns remain open.
 - AC056-017–018: the standard SQLModel backend now persists runtime reports in
   a tenant/workspace-scoped table, and worker recovery reuses a report committed
-  before attempt acknowledgment. Report-publication failure after an external
-  sink commit, durable event publication/reconnect, and separate result and
-  cleanup state machines remain unqualified.
+  before attempt acknowledgment. Run-level start/completion events have
+  idempotent scoped persistence. Bounded headless and HTTP event history reads
+  share authorization and scoped cursor semantics. Report-publication failure
+  after an external sink commit, event retention/artifact authorization, and
+  separate result and cleanup state machines remain unqualified.
 - AC056-007–008: immutable revision pinning, resource authorization,
   effective-fingerprint policy binding and same/different-intent retry behavior
   now have focused evidence. Complete durable resource/version resolution,
   full disclosure and cross-process CP1/CP3 failure/retry campaigns remain open.
+- AC056-039 and AC056-042: PostgreSQL 16.14 migration and multi-process
+  acceptance/quota tests now pass. AC056-042 is qualified for the tested 0.55
+  migration chain and legacy incomplete-payload guard. AC056-039 remains open
+  for backup/restore and broader failure campaigns.
 - AC056-020–026: isolated action jobs, previews/provisioning, scoped secret
   lifecycle and immutable upload leases are not fully implemented and observed.
 - AC056-027–029 and AC056-031–032: scheduler admission parity,
@@ -228,7 +281,10 @@ Current index: 5 criteria passed, 37 pending, and 2 blocked of 44.
 - AC056-037–041 and AC056-043–044: independent private-provider, full
   disclosure campaign, PostgreSQL backup/restore/failure, version-skew/rollback,
   complete advanced engine matrix, managed adaptive `/2`, and generic consumer
-  evidence remain open.
+  evidence remain open. AC056-040 has clean Python 3.14.3 wheel-build/install,
+  migration-008, backend-construction and OpenAPI smoke evidence; its complete
+  compatibility, version-skew, migration rollback and package matrix remains
+  open.
 
 See [`RELEASE_INDEX.json`](RELEASE_INDEX.json) for the per-criterion status,
 case references, provider tuple and open reason. These limitations keep the

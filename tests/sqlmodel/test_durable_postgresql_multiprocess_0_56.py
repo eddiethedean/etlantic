@@ -113,6 +113,7 @@ def test_postgresql_multiprocess_accept_is_single_and_restart_visible() -> None:
         )
     engine = create_engine(url, pool_pre_ping=True)
     store_id = f"phase056-{uuid.uuid4().hex}"
+    create_cp4_tables(engine)
     create_durable_tables(engine)
     try:
         with ProcessPoolExecutor(

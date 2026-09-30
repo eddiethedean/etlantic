@@ -121,6 +121,43 @@ def test_memory_event_store_concurrent_append() -> None:
     assert sequences == list(range(1, 41))
 
 
+def test_memory_event_store_append_once_is_scoped_and_conflict_checked() -> None:
+    events = MemoryEventStore()
+    ctx = _ctx()
+    event = events.append_once(
+        ctx,
+        event_key="submission-1:attempt-1:started",
+        kind="run.started",
+        payload={"run_id": "run-1", "attempt_id": "attempt-1"},
+    )
+    repeated = events.append_once(
+        ctx,
+        event_key="submission-1:attempt-1:started",
+        kind="run.started",
+        payload={"run_id": "run-1", "attempt_id": "attempt-1"},
+    )
+
+    assert repeated.event_id == event.event_id
+    assert len(events.list_after_cursor(ctx, None)) == 1
+    with pytest.raises(ControlPlaneError) as caught:
+        events.append_once(
+            ctx,
+            event_key="submission-1:attempt-1:started",
+            kind="run.started",
+            payload={"run_id": "other-run"},
+        )
+    assert caught.value.status == 409
+    assert len(events.list_after_cursor(ctx, None)) == 1
+
+    isolated = events.append_once(
+        _ctx(tenant="tenant-b", workspace="ws-2"),
+        event_key="submission-1:attempt-1:started",
+        kind="run.started",
+        payload={"run_id": "run-1", "attempt_id": "attempt-1"},
+    )
+    assert isolated.event_id != event.event_id
+
+
 def test_memory_store_empty_positive_limits_return_lists() -> None:
     ctx = _ctx()
 

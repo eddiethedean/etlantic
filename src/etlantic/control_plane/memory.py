@@ -11,7 +11,7 @@ from collections.abc import Mapping, Sequence
 from copy import deepcopy
 from dataclasses import dataclass, field
 from datetime import UTC, datetime
-from typing import Any
+from typing import Any, cast
 
 from etlantic.control_plane.errors import ControlPlaneError
 from etlantic.control_plane.models import (
@@ -49,6 +49,12 @@ def _idem_key(
         operation,
         idempotency_key,
     )
+
+
+def _new_idempotent_event_map() -> dict[
+    tuple[str, str, str], tuple[str, dict[str, Any], ControlPlaneEvent]
+]:
+    return {}
 
 
 @dataclass
@@ -355,6 +361,9 @@ class MemoryEventStore:
     _events: dict[tuple[str, str], list[ControlPlaneEvent]] = field(
         default_factory=dict
     )
+    _idempotent_events: dict[
+        tuple[str, str, str], tuple[str, dict[str, Any], ControlPlaneEvent]
+    ] = field(default_factory=_new_idempotent_event_map)
     _lock: threading.RLock = field(default_factory=threading.RLock)
 
     def append(
@@ -392,6 +401,43 @@ class MemoryEventStore:
                 },
             )
             bucket.append(event)
+            return deepcopy(event)
+
+    def append_once(
+        self,
+        ctx: ControlPlaneContext,
+        *,
+        event_key: str,
+        kind: str,
+        payload: Mapping[str, Any] | None = None,
+    ) -> ControlPlaneEvent:
+        """Append once per trusted scope and key; reject key reuse with new content."""
+        if not event_key.strip():
+            raise ValueError("event_key must not be empty")
+        scope = _scope(ctx)
+        redacted_payload = redact_control_plane_payload(deepcopy(dict(payload or {})))
+        safe_payload = (
+            cast(dict[str, Any], redacted_payload)
+            if isinstance(redacted_payload, dict)
+            else {}
+        )
+        scoped_key = (*scope, event_key)
+        with self._lock:
+            previous = self._idempotent_events.get(scoped_key)
+            if previous is not None:
+                previous_kind, previous_payload, event = previous
+                if previous_kind != kind or previous_payload != safe_payload:
+                    raise ControlPlaneError.conflict(
+                        "Event idempotency key was reused with different content",
+                        extensions={"operation": "event.append_once"},
+                    )
+                return deepcopy(event)
+            event = self.append(ctx, kind=kind, payload=safe_payload)
+            self._idempotent_events[scoped_key] = (
+                kind,
+                deepcopy(safe_payload),
+                event,
+            )
             return deepcopy(event)
 
     def list_after_cursor(

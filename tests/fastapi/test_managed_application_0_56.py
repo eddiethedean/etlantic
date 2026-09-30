@@ -122,6 +122,7 @@ def _wired(
         "run.report",
         "run.artifacts",
         "run.lineage",
+        "run.events",
         "connector.catalog",
     ):
         authz.grant(ctx, action)
@@ -211,6 +212,48 @@ def test_headless_and_http_share_verified_acceptance(tmp_path) -> None:
         definition_from_pipeline(ManagedPipeline)
     )
     assert envelope.canonical_intent_fingerprint
+
+
+def test_headless_run_event_pages_are_scoped_and_resumable(tmp_path: Path) -> None:
+    ctx, authz, definitions, submissions, durable, events, service = _wired(tmp_path)
+    receipt = service.submit_run(ctx, "pipe", idempotency_key="headless-events")
+    run_id = receipt.resource_id
+    assert run_id is not None
+    events.append(ctx, kind="run.progress", payload={"run_id": "other-run"})
+    events.append(ctx, kind="run.progress", payload={"run_id": run_id, "step": 1})
+    events.append(ctx, kind="run.progress", payload={"run_id": run_id, "step": 2})
+
+    first = service.list_run_events(ctx, run_id, limit=2)
+    assert [item["kind"] for item in first["items"]] == ["run.accepted"]
+    assert first["has_more"] is True
+    api = ETLanticAPI(
+        authorizer=authz,
+        definitions=definitions,
+        submissions=submissions,
+        durable_work=durable,
+        events=events,
+        managed_service=service,
+        context_factory=membership_context_factory(
+            {"alice": ("tenant-a", "ws-1", "development", "default")}
+        ),
+        principal_dependency=principal_from_header,
+    )
+    http = cast(Any, TestClient(create_app(api)))
+    response = http.get(
+        f"/v1/runs/{run_id}/events/history",
+        params={"limit": 2},
+        headers={"X-Principal": "alice"},
+    )
+    assert response.status_code == 200
+    assert response.json() == first
+    cursor = first["next_cursor"]
+    assert isinstance(cursor, str)
+    second = service.list_run_events(ctx, run_id, cursor=cursor, limit=2)
+    assert [item["kind"] for item in second["items"]] == [
+        "run.progress",
+        "run.progress",
+    ]
+    assert second["has_more"] is False
 
 
 def test_memory_definition_repository_current_tracks_reversion() -> None:

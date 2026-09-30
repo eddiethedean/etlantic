@@ -22,6 +22,7 @@ VERSIONS: Sequence[str] = (
     "005_cp1_reference",
     "006_managed_definition_revisions_0_56",
     "007_managed_run_reports_0_56",
+    "008_idempotent_run_events_0_56",
 )
 
 

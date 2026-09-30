@@ -91,6 +91,26 @@ class EventRow(SQLModel, table=True):
     correlation_id: str | None = None
 
 
+class EventIdempotencyRow(SQLModel, table=True):
+    """Unique scoped key mapping for idempotent event delivery."""
+
+    __tablename__ = cast(Any, "cp_event_idempotency")
+    __table_args__ = (
+        UniqueConstraint(
+            "tenant_id",
+            "workspace_id",
+            "event_key",
+            name="uq_cp_event_scope_idem",
+        ),
+    )
+
+    id: int | None = Field(default=None, primary_key=True)
+    tenant_id: str = Field(sa_column=Column(String(), index=True, nullable=False))
+    workspace_id: str = Field(sa_column=Column(String(), index=True, nullable=False))
+    event_key: str = Field(sa_column=Column(String(), nullable=False))
+    event_id: str = Field(sa_column=Column(String(), index=True, nullable=False))
+
+
 class RunReportRow(SQLModel, table=True):
     """Durable runtime report stored within its tenant/workspace scope."""
 
