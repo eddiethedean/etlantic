@@ -24,6 +24,7 @@ from sqlalchemy.engine import Engine
 from etlantic import Data, Extract, Load, Pipeline, Profile
 from etlantic.authoring import definition_from_pipeline
 from etlantic.authoring.serialize import pipeline_to_dict
+from etlantic.connectors.local_files import LocalFilesSourceConnector
 from etlantic.control_plane import (
     ControlPlaneContext,
     EnvironmentRef,
@@ -35,6 +36,7 @@ from etlantic.control_plane import (
     TenantRef,
     WorkspaceRef,
 )
+from etlantic.lifecycle.runtime import PipelineRuntime
 from etlantic.registry import BindingDescriptor, PlanningContext
 from etlantic.runtime.managed_errors import ExecutionRejected
 from etlantic.runtime.managed_execution import ManagedExecutionAdapter
@@ -436,6 +438,123 @@ def test_managed_worker_executes_finalized_upload_and_lease_outlives_staging_ttl
         report = service.get_run_report(ctx, str(receipt.resource_id))
         assert report["status"] == "succeeded"
         assert "Gráce" not in json.dumps(report)
+    finally:
+        backend.close()
+
+
+@pytest.mark.parametrize(
+    ("case", "content", "max_file_bytes", "max_rows"),
+    [
+        ("empty", b"", 1024, 100),
+        ("malformed", b"id,name\n1\n", 1024, 100),
+        ("over_budget", b"id,name\n1,private-value\n", 8, 100),
+    ],
+)
+def test_managed_worker_rejects_invalid_finalized_csv_uploads(
+    tmp_path: Path,
+    case: str,
+    content: bytes,
+    max_file_bytes: int,
+    max_rows: int,
+) -> None:
+    database_url = _migrated_url(tmp_path)
+    ctx = _context()
+    target = tmp_path / f"invalid-upload-{case}.csv"
+    profile = Profile(
+        name=f"invalid-upload-{case}",
+        security_mode="development",
+        plugin_allowlist={"etlantic": None},
+    )
+    reference: Any = None
+
+    def planning_context_factory(
+        _ctx: ControlPlaneContext, effective_profile: Any
+    ) -> PlanningContext:
+        planning = PlanningContext.create(profile=effective_profile)
+        planning.registry.register_binding(
+            BindingDescriptor(
+                binding="source",
+                provider="local-files",
+                kind="source",
+                config={"input_resource": reference.to_dict()},
+            )
+        )
+        planning.registry.register_binding(
+            BindingDescriptor(
+                binding="result",
+                provider="csv",
+                location=str(target),
+                kind="sink",
+            )
+        )
+        return planning
+
+    authorizer = MemoryAuthorizer()
+    for action in ("definition.write", "run.submit", "input.read", "run.report"):
+        authorizer.grant(ctx, action)
+    backend = create_managed_backend(
+        ManagedBackendConfig(
+            database_url=database_url,
+            store_id=f"managed-invalid-upload-{case}",
+            profile=profile,
+        ),
+        authorizer=authorizer,
+        context_factory=static_context_factory(
+            tenant_id=ctx.tenant.tenant_id,
+            workspace_id=ctx.workspace.workspace_id,
+            environment=ctx.environment.name,
+            security_domain=ctx.security_domain.domain_id,
+        ),
+        planning_context_factory=planning_context_factory,
+    )
+    try:
+        staged = backend.input_resources.stage(
+            ctx,
+            content,
+            media_type="text/csv",
+            format="csv",
+            expires_at=datetime.now(UTC) + timedelta(hours=1),
+        )
+        reference = backend.input_resources.finalize(
+            ctx,
+            staged.upload_id,
+            expected_sha256=hashlib.sha256(content).hexdigest(),
+            expected_byte_length=len(content),
+        )
+        service = backend.api.managed_service
+        assert service is not None
+        service.register_definition(
+            ctx,
+            f"invalid-upload-{case}",
+            pipeline_to_dict(definition_from_pipeline(_ManagedCsvPipeline)),
+        )
+        receipt = service.submit_run(
+            ctx,
+            f"invalid-upload-{case}",
+            idempotency_key=f"invalid-upload-{case}",
+        )
+
+        host = backend.create_execution_host(owner_id=f"invalid-upload-{case}-worker")
+        adapter = cast(ManagedExecutionAdapter, host.runner)
+
+        def runtime_factory() -> PipelineRuntime:
+            runtime = PipelineRuntime()
+            runtime.register_source_connector(
+                "local-files",
+                LocalFilesSourceConnector(
+                    max_file_bytes=max_file_bytes,
+                    max_total_bytes=max_file_bytes,
+                    max_rows=max_rows,
+                ),
+            )
+            return runtime
+
+        adapter.runtime_factory = runtime_factory
+        assert host.tick(ctx) == 1
+        report = service.get_run_report(ctx, str(receipt.resource_id))
+        assert report["status"] == "failed"
+        assert not target.exists()
+        assert "private-value" not in json.dumps(report)
     finally:
         backend.close()
 
