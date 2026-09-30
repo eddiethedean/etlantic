@@ -17,6 +17,7 @@ from etlantic.plugins.coordinator import PluginDiscoveryCoordinator, profile_plu
 from etlantic.profile import Profile
 from etlantic.registry import RegistryBundle, builtin_stub_registry
 from etlantic.reports.store import ReportStore
+from etlantic.runtime.context import TrustedExecutionScope
 from etlantic.runtime.events import EventBus
 from etlantic.secrets.cache import SecretCache
 from etlantic.secrets.env import EnvSecretProvider
@@ -101,6 +102,10 @@ class PipelineRuntime:
     # Set only by managed workers. Local execution watches this thread-safe
     # token and converts a control-plane cancel request into runtime cancel.
     external_cancel_event: Event | None = field(default=None, repr=False)
+    # Server-derived identity passed to secret and connector providers at I/O.
+    trusted_execution_scope: TrustedExecutionScope | None = field(
+        default=None, repr=False
+    )
     _observability_bridge: Any = field(default=None, repr=False)
 
     def __post_init__(self) -> None:

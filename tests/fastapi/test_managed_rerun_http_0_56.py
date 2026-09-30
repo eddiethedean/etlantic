@@ -30,10 +30,15 @@ from etlantic.control_plane import (
     TenantRef,
     WorkspaceRef,
 )
+from etlantic.lifecycle.runtime import PipelineRuntime
 from etlantic.registry import BindingDescriptor, PlanningContext
 from etlantic.runtime.execution_host import ExecutionHost
 from etlantic.runtime.managed_execution import ManagedExecutionAdapter
 from etlantic.runtime.request import RunIntent, RunRequest
+from etlantic.secrets.env import EnvSecretProvider
+from etlantic.secrets.provider import SecretResolutionContext
+from etlantic.secrets.ref import SecretRef
+from etlantic.storage.json_binding import JsonStorage
 from etlantic_fastapi import (
     ETLanticAPI,
     create_app,
@@ -51,10 +56,49 @@ class _HTTPRerunPipeline(Pipeline):
     output: Load[_HTTPRows] = Load(input=raw, asset="output")
 
 
-def test_managed_http_rerun_and_replay_execute_accepted_child(tmp_path: Path) -> None:
+class _ScopeRecordingEnvSecretProvider(EnvSecretProvider):
+    def __init__(self) -> None:
+        super().__init__()
+        self.contexts: list[SecretResolutionContext] = []
+
+    async def resolve(
+        self, reference: SecretRef, context: SecretResolutionContext
+    ) -> Any:
+        self.contexts.append(context)
+        return await super().resolve(reference, context)
+
+
+class _ScopeRecordingJsonStorage(JsonStorage):
+    def __init__(self) -> None:
+        super().__init__()
+        self.contexts: list[dict[str, Any]] = []
+
+    async def read(
+        self,
+        *,
+        binding: str,
+        location: str | None,
+        contract_type: type[Any] | None,
+        context: dict[str, Any],
+    ) -> Any:
+        self.contexts.append(dict(context))
+        return await super().read(
+            binding=binding,
+            location=location,
+            contract_type=contract_type,
+            context=context,
+        )
+
+
+def test_managed_http_rerun_and_replay_execute_accepted_child(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
     source = tmp_path / "replay-source.json"
     target = tmp_path / "replay-target.csv"
     source.write_text('[{"id": 31}]', encoding="utf-8")
+    monkeypatch.setenv("ETLANTIC_SCOPE_TOKEN", "test-token")
+    secret_provider = _ScopeRecordingEnvSecretProvider()
+    json_storage = _ScopeRecordingJsonStorage()
 
     ctx = ControlPlaneContext(
         principal=Principal(subject="alice"),
@@ -62,6 +106,7 @@ def test_managed_http_rerun_and_replay_execute_accepted_child(tmp_path: Path) ->
         workspace=WorkspaceRef(tenant_id="tenant-a", workspace_id="ws-1"),
         environment=EnvironmentRef(name="development"),
         security_domain=SecurityDomain(domain_id="default"),
+        resource_owner_id="owner-a",
     )
     authorizer = MemoryAuthorizer()
     for action in (
@@ -86,6 +131,12 @@ def test_managed_http_rerun_and_replay_execute_accepted_child(tmp_path: Path) ->
                 provider="json",
                 location=str(source),
                 kind="source",
+                secret_ref=SecretRef(
+                    provider="env",
+                    name="ETLANTIC_SCOPE_TOKEN",
+                    key="value",
+                    purpose="read",
+                ),
             )
         )
         planning.registry.register_binding(
@@ -106,7 +157,8 @@ def test_managed_http_rerun_and_replay_execute_accepted_child(tmp_path: Path) ->
         durable_work=durable,
         profile="development",
         context_factory=membership_context_factory(
-            {"alice": ("tenant-a", "ws-1", "development", "default")}
+            {"alice": ("tenant-a", "ws-1", "development", "default")},
+            resource_owners={"alice": "owner-a"},
         ),
         principal_dependency=principal_from_header,
         planning_context_factory=planning_context,
@@ -123,6 +175,17 @@ def test_managed_http_rerun_and_replay_execute_accepted_child(tmp_path: Path) ->
     )
     assert parent.resource_id is not None
     accepted = durable.get_submission(ctx, parent.submission_id)
+    assert accepted.input_snapshot is not None
+    ExecutionEnvelope.from_json(accepted.input_snapshot)
+    assert "ETLANTIC_SCOPE_TOKEN" in accepted.input_snapshot
+    assert "test-token" not in accepted.input_snapshot
+    parent_payload = submissions.lookup_idempotency_payload(
+        ctx, "http-rerun-parent", operation="run.submit"
+    )
+    assert parent_payload is not None
+    parent_payload_envelope = parent_payload.get("execution_envelope")
+    assert isinstance(parent_payload_envelope, str)
+    ExecutionEnvelope.from_json(parent_payload_envelope)
     lease = durable.acquire_lease(
         ctx, accepted.submission_id, owner_id="http-rerun-worker", ttl_seconds=30
     )
@@ -162,7 +225,7 @@ def test_managed_http_rerun_and_replay_execute_accepted_child(tmp_path: Path) ->
         )
         schema = http_client.get("/openapi.json")
 
-    assert response.status_code == 202
+    assert response.status_code == 202, response.text
     assert repeat.status_code == 202
     assert response.json()["submission_id"] == repeat.json()["submission_id"]
     assert actions["actions"][3] == {
@@ -179,18 +242,53 @@ def test_managed_http_rerun_and_replay_execute_accepted_child(tmp_path: Path) ->
     assert RunRequest.from_dict(replay_envelope.run_request).intent is RunIntent.REPLAY
     assert replay_envelope.evidence_refs is not None
     assert replay_envelope.evidence_refs["parent_run_id"] == parent.resource_id
+    assert parent.submission_id
+    parent_record = durable.get_submission(ctx, parent.submission_id)
+    assert parent_record.input_snapshot is not None
+    assert "etlantic.control_plane_scope" not in parent_record.input_snapshot
     assert "/v1/runs/{run_id}/rerun" in schema.json()["paths"]
     assert "/v1/runs/{run_id}/replay" in schema.json()["paths"]
 
     rerun_id = response.json()["submission_id"]
     replay_id = replay.json()["submission_id"]
+    def runtime_factory() -> PipelineRuntime:
+        runtime = PipelineRuntime()
+        runtime.secret_providers["env"] = secret_provider
+        runtime.storage["json"] = json_storage
+        return runtime
+
     processed = ExecutionHost(
         durable,
         owner_id="managed-replay-worker",
-        runner=ManagedExecutionAdapter(report_root=tmp_path / "reports"),
+        runner=ManagedExecutionAdapter(
+            report_root=tmp_path / "reports",
+            runtime_factory=runtime_factory,
+        ),
     ).tick(ctx)
 
     assert processed == 2
     assert durable.get_submission(ctx, rerun_id).status == "completed"
     assert durable.get_submission(ctx, replay_id).status == "completed"
     assert target.read_text(encoding="utf-8").splitlines() == ["id", "31"]
+    expected_scope = {
+        "principal_id": "alice",
+        "principal_kind": "human",
+        "principal_issuer": None,
+        "workload_id": None,
+        "tenant_id": "tenant-a",
+        "workspace_id": "ws-1",
+        "environment": "development",
+        "security_domain_id": "default",
+        "resource_owner_id": "owner-a",
+    }
+    assert len(secret_provider.contexts) == 2
+    assert all(
+        context.trusted_scope is not None
+        and context.trusted_scope.to_dict() == expected_scope
+        for context in secret_provider.contexts
+    )
+    assert len(json_storage.contexts) == 2
+    assert all(
+        context["etlantic.control_plane_scope"] == expected_scope
+        for context in json_storage.contexts
+    )

@@ -20,7 +20,10 @@ from etlantic.control_plane.models import (
     ControlPlaneEvent,
 )
 from etlantic.control_plane.protocols import AuthzDecision
-from etlantic.control_plane.redaction import redact_control_plane_payload
+from etlantic.control_plane.redaction import (
+    redact_control_plane_payload,
+    redact_or_preserve_execution_envelope,
+)
 
 
 def _utcnow_iso() -> str:
@@ -184,6 +187,11 @@ class MemorySubmissionStore:
         safe_payload = redact_control_plane_payload(deepcopy(dict(payload)))
         if not isinstance(safe_payload, dict):
             safe_payload = {}
+        execution_envelope = payload.get("execution_envelope")
+        if isinstance(execution_envelope, str):
+            safe_payload["execution_envelope"] = (
+                redact_or_preserve_execution_envelope(execution_envelope)
+            )
         with self._lock:
             existing = self._by_id.get(key)
             if existing is not None:

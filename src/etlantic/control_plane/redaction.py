@@ -23,6 +23,25 @@ def redact_control_plane_text(text: str) -> str:
     return redact_message(text)
 
 
+def redact_or_preserve_execution_envelope(text: str | None) -> str | None:
+    """Preserve a verified secret-free envelope as canonical JSON.
+
+    Generic text redaction can corrupt harmless secret references inside an
+    execution envelope, making the accepted plan unverifiable. Envelopes have
+    their own strict validator, so retain their canonical bytes only after
+    revalidating the schema, fingerprints, and secret-free fields. Unverified
+    text continues through the ordinary redactor.
+    """
+    if text is None:
+        return None
+    try:
+        from etlantic.control_plane.execution_envelope import ExecutionEnvelope
+
+        return ExecutionEnvelope.from_json(text).to_json()
+    except Exception:
+        return redact_control_plane_text(text)
+
+
 def assert_no_secrets(blob: str, *, sentinel: str = "super-secret-token") -> None:
     """Raise ``AssertionError`` when a known sentinel secret appears in ``blob``."""
     if sentinel and sentinel in blob:
@@ -36,4 +55,5 @@ __all__ = [
     "assert_no_secrets",
     "redact_control_plane_payload",
     "redact_control_plane_text",
+    "redact_or_preserve_execution_envelope",
 ]

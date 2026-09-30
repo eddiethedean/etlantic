@@ -39,6 +39,7 @@ from etlantic.control_plane.models import ControlPlaneContext
 from etlantic.control_plane.redaction import (
     redact_control_plane_payload,
     redact_control_plane_text,
+    redact_or_preserve_execution_envelope,
 )
 
 
@@ -121,11 +122,7 @@ class MemoryDurableWorkStore:
             operation,
             idempotency_key,
         )
-        safe_input_snapshot = (
-            redact_control_plane_text(input_snapshot)
-            if input_snapshot is not None
-            else None
-        )
+        safe_input_snapshot = redact_or_preserve_execution_envelope(input_snapshot)
         requested = (
             plan_fingerprint,
             revision_id,

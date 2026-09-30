@@ -15,6 +15,7 @@ from typing import Any, Literal
 from etlantic.control_plane.redaction import (
     redact_control_plane_payload,
     redact_control_plane_text,
+    redact_or_preserve_execution_envelope,
 )
 
 SUBMISSION_RECORD_SCHEMA = "etlantic.control_plane.submission_record/1"
@@ -86,9 +87,7 @@ class SubmissionRecord:
     def to_dict(self) -> dict[str, Any]:
         payload = asdict(self)
         payload["input_snapshot"] = (
-            redact_control_plane_text(self.input_snapshot)
-            if self.input_snapshot is not None
-            else None
+            redact_or_preserve_execution_envelope(self.input_snapshot)
         )
         return {
             "schema": SUBMISSION_RECORD_SCHEMA,
@@ -237,9 +236,7 @@ class ReplayRecord:
     def to_dict(self) -> dict[str, Any]:
         payload = asdict(self)
         payload["input_snapshot"] = (
-            redact_control_plane_text(self.input_snapshot)
-            if self.input_snapshot is not None
-            else None
+            redact_or_preserve_execution_envelope(self.input_snapshot)
         )
         return {
             "schema": REPLAY_RECORD_SCHEMA,

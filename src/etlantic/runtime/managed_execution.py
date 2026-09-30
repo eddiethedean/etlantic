@@ -17,6 +17,7 @@ from etlantic.plan.freeze import mutable_copy
 from etlantic.plan.model import PipelinePlan
 from etlantic.reports.file_store import FileReportStore
 from etlantic.reports.model import PipelineRunReport
+from etlantic.runtime.context import TrustedExecutionScope
 from etlantic.runtime.execute import run_pipeline
 from etlantic.runtime.managed_errors import ExecutionRejected, UnknownCommitError
 from etlantic.runtime.request import RunRequest
@@ -131,6 +132,18 @@ class ManagedExecutionAdapter:
         runtime = self.runtime_factory()
         runtime.reports = reports
         previous_cancel_event = getattr(runtime, "external_cancel_event", None)
+        previous_trusted_scope = getattr(runtime, "trusted_execution_scope", None)
+        trusted_scope = TrustedExecutionScope(
+            principal_id=ctx.principal.subject,
+            principal_kind=ctx.principal.kind,
+            principal_issuer=ctx.principal.issuer,
+            tenant_id=ctx.tenant.tenant_id,
+            workspace_id=ctx.workspace.workspace_id,
+            environment=ctx.environment.name,
+            security_domain_id=ctx.security_domain.domain_id,
+            resource_owner_id=ctx.resource_owner_id,
+        )
+        runtime.trusted_execution_scope = trusted_scope
         runtime.external_cancel_event = cancel_event
         try:
             try:
@@ -157,6 +170,7 @@ class ManagedExecutionAdapter:
             ) from exc
         finally:
             runtime.external_cancel_event = previous_cancel_event
+            runtime.trusted_execution_scope = previous_trusted_scope
 
         metadata = dict(report.metadata)
         metadata["etlantic.control_plane.execution"] = {

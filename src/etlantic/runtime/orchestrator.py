@@ -4325,6 +4325,13 @@ class LocalOrchestrator:
                     return desc
         return self.plan.bindings.get(node.name) or self.plan.bindings.get(binding_name)
 
+    def _trusted_scope_context(self) -> dict[str, Any]:
+        """Return server-derived identity for provider calls, if managed."""
+        scope = self.runtime.trusted_execution_scope
+        if scope is None:
+            return {}
+        return {"etlantic.control_plane_scope": scope.to_dict()}
+
     async def _read_source(self, node: Node, *, run_id: str) -> Any:
         binding_name = node.binding or node.name
         binding_name = self.request.binding_overrides.get(node.name, binding_name)
@@ -4352,6 +4359,7 @@ class LocalOrchestrator:
                 "pipeline_id": self.plan.pipeline_id,
                 "contract_type": node.contract_type,
                 "extract_id": node.name,
+                **self._trusted_scope_context(),
             }
             profile = getattr(self.runtime, "_active_profile", None)
             if profile is not None and getattr(profile, "safe_io", None):
@@ -4418,7 +4426,11 @@ class LocalOrchestrator:
                     code="PMEXEC430",
                 )
         location = descriptor.location if descriptor is not None else None
-        context = {"run_id": run_id, "node": node.name}
+        context = {
+            "run_id": run_id,
+            "node": node.name,
+            **self._trusted_scope_context(),
+        }
         if descriptor is not None and descriptor.secret_ref is not None:
             context["secret"] = await self._resolve_secret(
                 descriptor.secret_ref, run_id=run_id, step=node.name
@@ -4736,6 +4748,7 @@ class LocalOrchestrator:
             "node": node.name,
             "write_mode": mode.value,
             "contract_type": node.contract_type,
+            **self._trusted_scope_context(),
         }
         profile = getattr(self.runtime, "_active_profile", None)
         safe_io = (
@@ -4975,7 +4988,8 @@ class LocalOrchestrator:
             ) from exc
 
     async def _resolve_secret(self, ref: SecretRef, *, run_id: str, step: str) -> Any:
-        cached = self.runtime.secret_cache.get(ref)
+        trusted_scope = self.runtime.trusted_execution_scope
+        cached = self.runtime.secret_cache.get(ref, trusted_scope=trusted_scope)
         if cached is not None:
             return cached
         provider = self.runtime.secret_providers.get(ref.provider)
@@ -4990,6 +5004,7 @@ class LocalOrchestrator:
             pipeline_id=self.plan.pipeline_id,
             step_name=step,
             purpose=ref.purpose,
+            trusted_scope=trusted_scope,
         )
         try:
             value = await provider.resolve(ref, context)
@@ -5006,7 +5021,7 @@ class LocalOrchestrator:
                 )
             )
             raise
-        self.runtime.secret_cache.put(ref, value)
+        self.runtime.secret_cache.put(ref, value, trusted_scope=trusted_scope)
         self.runtime.events.emit(
             SecurityEvent(
                 kind="secret_resolution",

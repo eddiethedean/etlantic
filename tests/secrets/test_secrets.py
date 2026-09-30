@@ -11,11 +11,48 @@ import anyio
 import pytest
 
 from etlantic.exceptions import PipelineExecutionError
+from etlantic.runtime.context import TrustedExecutionScope
+from etlantic.secrets.cache import SecretCache
 from etlantic.secrets.env import EnvSecretProvider
 from etlantic.secrets.file import MountedFileSecretProvider
 from etlantic.secrets.provider import SecretResolutionContext
 from etlantic.secrets.ref import SecretRef
 from etlantic.secrets.value import SecretSerializationError, SecretValue
+
+
+def test_managed_secret_cache_is_partitioned_by_trusted_scope() -> None:
+    cache = SecretCache()
+    reference = SecretRef(provider="vault", name="database", key="password")
+    value = SecretValue(
+        _value="scope-a-secret",
+        provider="vault",
+        name="database",
+        key="password",
+    )
+    scope_a = TrustedExecutionScope(
+        principal_id="worker-a",
+        principal_kind="workload",
+        tenant_id="tenant-a",
+        workspace_id="workspace-a",
+        environment="production",
+        security_domain_id="domain-a",
+        resource_owner_id="owner-a",
+    )
+    scope_b = TrustedExecutionScope(
+        principal_id="worker-b",
+        principal_kind="workload",
+        tenant_id="tenant-a",
+        workspace_id="workspace-a",
+        environment="production",
+        security_domain_id="domain-a",
+        resource_owner_id="owner-b",
+    )
+
+    cache.put(reference, value, trusted_scope=scope_a)
+
+    assert cache.get(reference, trusted_scope=scope_a) is value
+    assert cache.get(reference, trusted_scope=scope_b) is None
+    assert cache.get(reference) is None
 
 
 def test_env_provider_fail_closed() -> None:

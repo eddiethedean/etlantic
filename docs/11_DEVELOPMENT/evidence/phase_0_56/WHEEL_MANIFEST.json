@@ -3,8 +3,8 @@
   "packages": [
     {
       "filename": "etlantic-0.55.0-py3-none-any.whl",
-      "sha256": "7671697cb4a4e0bc229bb0f923765f619c6cda87526560c3cc2e38667500853f",
-      "size_bytes": 1080902
+      "sha256": "251e1d7fd027de434d06562f6d43792cf2270c9b8d4841d3225fe2f521a9c4cc",
+      "size_bytes": 1082624
     },
     {
       "filename": "etlantic_airflow-0.55.0-py3-none-any.whl",
@@ -23,8 +23,8 @@
     },
     {
       "filename": "etlantic_fastapi-0.55.0-py3-none-any.whl",
-      "sha256": "39881b5b08061b881103ce45846cf0ef34cdfa8bb71e9009b632c821fc6fe9f0",
-      "size_bytes": 42725
+      "sha256": "5d0ef3503f4961a1e30f76a5ce7242a9558127e6df3fc73c5cf23c850ea2ae15",
+      "size_bytes": 43082
     },
     {
       "filename": "etlantic_foundry-0.55.0-py3-none-any.whl",

@@ -139,6 +139,16 @@ provides matching headless `rerun_run(...)` and `replay_run(...)` commands.
 Rerun and replay require `run.rerun` and `run.replay` authorization
 respectively, and appear in state-aware run-action queries.
 
+Managed workers reconstruct a temporary `TrustedExecutionScope` from the
+server-derived `ControlPlaneContext` and pass it to secret providers and
+storage/connector calls. Configure `resource_owners` on
+`membership_context_factory(...)` (or `resource_owner_id` on
+`static_context_factory(...)`) when providers need a distinct owner boundary;
+these values come from host configuration, never request bodies. The runtime
+secret cache is partitioned by principal, tenant, workspace, environment,
+security domain and resource owner. The scope and resolved secret values are
+not written to the accepted execution envelope.
+
 ### Auth adapters
 
 - Inject an app-defined principal dependency (`principal_dependency=`).

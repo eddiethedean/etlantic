@@ -155,6 +155,7 @@ class ControlPlaneContext:
     correlation_key: CorrelationKey | None = None
     idempotency_key: IdempotencyKey | None = None
     request_id: str | None = None
+    resource_owner_id: str | None = None
 
     def __post_init__(self) -> None:
         if self.workspace.tenant_id != self.tenant.tenant_id:
@@ -162,6 +163,8 @@ class ControlPlaneContext:
                 "workspace.tenant_id must match tenant.tenant_id "
                 f"({self.workspace.tenant_id!r} != {self.tenant.tenant_id!r})"
             )
+        if self.resource_owner_id is not None and not self.resource_owner_id.strip():
+            raise ValueError("resource_owner_id must be non-empty when provided")
 
     @property
     def scope_key(self) -> tuple[str, str]:
@@ -183,6 +186,7 @@ class ControlPlaneContext:
                 self.idempotency_key.to_dict() if self.idempotency_key else None
             ),
             "request_id": self.request_id,
+            "resource_owner_id": self.resource_owner_id,
         }
 
     @classmethod
@@ -203,6 +207,11 @@ class ControlPlaneContext:
             ),
             request_id=(
                 str(data["request_id"]) if data.get("request_id") is not None else None
+            ),
+            resource_owner_id=(
+                str(data["resource_owner_id"])
+                if data.get("resource_owner_id") is not None
+                else None
             ),
         )
 

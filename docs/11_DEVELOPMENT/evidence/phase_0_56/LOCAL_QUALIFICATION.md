@@ -21,9 +21,10 @@ Current index: 3 criteria passed, 39 pending, and 2 blocked of 44.
 - Default non-optional suite:
   `uv run pytest -q -m "not medallantic and not polars and not pandas and not sql and not spark and not real_pyspark and not airflow and not prefect and not keyring and not sqlmodel and not datafusion"`
   — 2,717 passed, 67 skipped, and 586 deselected. The source-linked 0.52
-  adaptive evidence was regenerated after the managed-service edits; all 10
-  artifacts across 18 acceptance criteria verified, and its exact regression
-  test passed before the clean full-suite rerun.
+  adaptive evidence regression was the sole failure in that run because its
+  artifacts were stale after these source edits. The artifacts were regenerated
+  and verified across 10 artifacts and 18 acceptance criteria; the exact
+  regression test then passed on rerun.
 - CP1 and CP-GA OpenAPI snapshots were refreshed for the managed rerun and
   replay endpoints; both stable-operation snapshot tests passed.
 - Live PostgreSQL connector and multiprocess acceptance:
@@ -61,6 +62,15 @@ Current index: 3 criteria passed, 39 pending, and 2 blocked of 44.
   idempotency, action discovery and OpenAPI registration. AC056-031 remains
   open until checkpoint resume, repair and backfill are executable and the
   complete lifecycle case is qualified.
+- Managed provider scope and secret cache isolation:
+  `uv run pytest -q tests/fastapi/test_managed_rerun_http_0_56.py tests/secrets/test_secrets.py tests/control_plane/test_control_plane.py`
+  — 20 passed. A server-configured resource owner reaches secret, storage and
+  connector calls through the worker's temporary trusted scope. Runtime secret
+  cache entries are partitioned by principal and full tenant/workspace/
+  environment/security-domain/owner scope; a different scope and unscoped
+  local runtime cannot reuse the value. The scope is absent from accepted
+  envelopes. AC056-023 remains open for action executors, resource resolvers,
+  tampered-reference policy and complete lifecycle qualification.
 - Follow-up core and FastAPI wheels:
   `uv build --package etlantic --wheel` and
   `uv build --package etlantic-fastapi --wheel` succeeded. Both wheels were
@@ -68,7 +78,9 @@ Current index: 3 criteria passed, 39 pending, and 2 blocked of 44.
   the phase candidate's SQLModel wheel; public imports, migrations,
   managed-backend construction and explicit close passed a smoke check. The
   latest core and FastAPI wheels were installed again; SQLite migrations,
-  managed-backend lifecycle and rerun/replay OpenAPI registration passed.
+  managed-backend construction/close and rerun/replay OpenAPI registration
+  passed. The latest clean-wheel smoke also imported `TrustedExecutionScope`
+  and verified that a configured resource owner reaches the server context.
 - Wheel build: all 25 workspace wheels built successfully.
 - Clean install smoke: core, FastAPI, PostgreSQL SQL, Foundry and SQLModel
   wheels installed into a fresh Python 3.11 environment; public imports and

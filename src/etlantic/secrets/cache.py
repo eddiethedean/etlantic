@@ -7,6 +7,7 @@ import time
 from dataclasses import dataclass, field
 from typing import Any
 
+from etlantic.runtime.context import TrustedExecutionScope
 from etlantic.secrets.ref import SecretRef
 from etlantic.secrets.value import SecretValue
 
@@ -24,13 +25,28 @@ class SecretCache:
 
     max_entries: int = 128
     default_ttl_seconds: float = 60.0
-    _entries: dict[str, _CacheEntry] = field(default_factory=dict)
+    _entries: dict[tuple[str, tuple[str, ...] | None], _CacheEntry] = field(
+        default_factory=dict
+    )
 
-    def _key(self, reference: SecretRef) -> str:
-        return reference.identity()
+    def _key(
+        self,
+        reference: SecretRef,
+        trusted_scope: TrustedExecutionScope | None = None,
+    ) -> tuple[str, tuple[str, ...] | None]:
+        """Partition managed cache entries by their authenticated authority."""
+        return (
+            reference.identity(),
+            trusted_scope.cache_partition if trusted_scope is not None else None,
+        )
 
-    def get(self, reference: SecretRef) -> SecretValue | None:
-        key = self._key(reference)
+    def get(
+        self,
+        reference: SecretRef,
+        *,
+        trusted_scope: TrustedExecutionScope | None = None,
+    ) -> SecretValue | None:
+        key = self._key(reference, trusted_scope)
         entry = self._entries.get(key)
         if entry is None:
             return None
@@ -46,11 +62,12 @@ class SecretCache:
         *,
         ttl_seconds: float | None = None,
         lease_id: str | None = None,
+        trusted_scope: TrustedExecutionScope | None = None,
     ) -> None:
         while len(self._entries) >= self.max_entries and self._entries:
             oldest = next(iter(self._entries))
             self._entries.pop(oldest, None)
-        self._entries[self._key(reference)] = _CacheEntry(
+        self._entries[self._key(reference, trusted_scope)] = _CacheEntry(
             value=value,
             expires_at=time.monotonic() + (ttl_seconds or self.default_ttl_seconds),
             lease_id=lease_id,

@@ -8,6 +8,7 @@ from contextlib import AbstractAsyncContextManager
 from dataclasses import dataclass, field
 from typing import Any, Protocol, runtime_checkable
 
+from etlantic.runtime.context import TrustedExecutionScope
 from etlantic.secrets.ref import SecretRef
 from etlantic.secrets.value import SecretValue
 
@@ -64,6 +65,7 @@ class SecretResolutionContext:
     attempt: int = 1
     purpose: str | None = None
     metadata: Mapping[str, Any] = field(default_factory=dict)
+    trusted_scope: TrustedExecutionScope | None = None
 
 
 @dataclass(frozen=True, slots=True)

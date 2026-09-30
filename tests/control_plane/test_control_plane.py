@@ -42,6 +42,7 @@ def _ctx(
     workspace: str = "ws-1",
     subject: str = "user-a",
     idempotency: str | None = None,
+    resource_owner_id: str | None = None,
 ) -> ControlPlaneContext:
     return ControlPlaneContext(
         principal=Principal(
@@ -56,16 +57,18 @@ def _ctx(
             IdempotencyKey(value=idempotency) if idempotency is not None else None
         ),
         request_id="req-1",
+        resource_owner_id=resource_owner_id,
     )
 
 
 def test_context_round_trip_stable() -> None:
-    ctx = _ctx(idempotency="idem-1")
+    ctx = _ctx(idempotency="idem-1", resource_owner_id="owner-1")
     payload = ctx.to_dict()
     assert payload["schema"] == CONTROL_PLANE_CONTEXT_SCHEMA
     restored = ControlPlaneContext.from_dict(payload)
     assert restored.to_dict() == payload
     assert restored.scope_key == ("tenant-a", "ws-1")
+    assert restored.resource_owner_id == "owner-1"
 
 
 def test_accept_receipt_and_event_round_trip() -> None:
@@ -180,6 +183,7 @@ def test_serialized_context_has_no_secrets() -> None:
         "correlation_key",
         "idempotency_key",
         "request_id",
+        "resource_owner_id",
     }
 
 

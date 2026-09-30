@@ -5,6 +5,7 @@ from __future__ import annotations
 
 from typing import Any
 
+from etlantic.runtime.context import TrustedExecutionScope
 from etlantic.runtime.request import (
     CancellationPolicy,
     InvalidationMode,
@@ -45,6 +46,7 @@ __all__ = [
     "StateStore",
     "StepStatus",
     "TimeoutPolicy",
+    "TrustedExecutionScope",
     "arun_pipeline",
     "run_pipeline",
 ]
