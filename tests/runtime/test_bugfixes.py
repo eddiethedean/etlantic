@@ -87,9 +87,7 @@ class _VersionedSecretProvider:
             capabilities=SecretProviderCapabilities(
                 versions=supports_versions,
                 aliases=(
-                    supports_versions
-                    if supports_aliases is None
-                    else supports_aliases
+                    supports_versions if supports_aliases is None else supports_aliases
                 ),
                 leases=supports_leases,
                 renewal=supports_renewal,
@@ -113,9 +111,7 @@ class _VersionedSecretProvider:
             name=reference.name,
             key=reference.key,
             version=(
-                f"release-{41 + self.calls}"
-                if self.rotate
-                else self.resolved_version
+                f"release-{41 + self.calls}" if self.rotate else self.resolved_version
             ),
         )
 
@@ -134,6 +130,8 @@ class _AllowSecretAlias:
             and context.trusted_scope.resource_owner_id == "owner-a"
             and context.purpose == "read"
         )
+
+
 class MissingImplPipeline(Pipeline):
     raw: Extract[Row] = Extract(asset="rows")
     step = NoImpl.step(rows=raw)
@@ -318,16 +316,12 @@ def test_managed_current_secret_requires_explicit_runtime_authorization() -> Non
         resource_owner_id="owner-a",
     )
 
-    runtime, report = _run_with_secret_version(
-        provider, "current", trusted_scope=scope
-    )
+    runtime, report = _run_with_secret_version(provider, "current", trusted_scope=scope)
 
     assert report.status is RunStatus.FAILED
     assert provider.calls == 0
     assert runtime.secret_cache.stats()["entries"] == 0
-    assert any(
-        diagnostic.code == "PMEXEC403" for diagnostic in report.diagnostics
-    )
+    assert any(diagnostic.code == "PMEXEC403" for diagnostic in report.diagnostics)
 
 
 def test_managed_late_binding_rechecks_policy_before_cache_reuse() -> None:
@@ -416,9 +410,7 @@ def test_managed_secret_policy_is_rechecked_before_unversioned_cache() -> None:
     assert all(event.metadata["late_binding_authorized"] for event in events)
 
 
-@pytest.mark.parametrize(
-    "lifecycle_capability", ["leases", "renewal", "revocation"]
-)
+@pytest.mark.parametrize("lifecycle_capability", ["leases", "renewal", "revocation"])
 def test_secret_lifecycle_capability_disables_process_cache(
     lifecycle_capability: str,
 ) -> None:
@@ -431,9 +423,7 @@ def test_secret_lifecycle_capability_disables_process_cache(
         supports_revocation=lifecycle_capability == "revocation",
     )
 
-    runtime, report = _run_with_secret_version(
-        provider, "current", also_bind_sink=True
-    )
+    runtime, report = _run_with_secret_version(provider, "current", also_bind_sink=True)
 
     assert report.status is RunStatus.SUCCEEDED
     assert provider.calls == 2
@@ -462,7 +452,9 @@ def test_exact_secret_version_fails_closed(
     assert report.status is RunStatus.FAILED
     assert provider.calls == expected_calls
     assert runtime.secret_cache.stats()["entries"] == 0
-    assert any(reason in (diagnostic.message or "") for diagnostic in report.diagnostics)
+    assert any(
+        reason in (diagnostic.message or "") for diagnostic in report.diagnostics
+    )
 
 
 def test_run_selection_until_excludes_sink() -> None:

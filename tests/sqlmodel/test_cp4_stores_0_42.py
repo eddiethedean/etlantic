@@ -21,6 +21,7 @@ from etlantic.control_plane import (
 from etlantic_sqlmodel.control_plane.cp4_stores import (
     SQLModelAuditEvidenceStore,
     SQLModelPolicyProvider,
+    SQLModelQuotaProvider,
     create_cp4_tables,
 )
 from etlantic_sqlmodel.control_plane.durable_stores import SQLModelDurableWorkStore
@@ -85,6 +86,27 @@ def test_policy_sql_round_trip(tmp_path: Path) -> None:
     assert decision.effect == "deny"
     again = SQLModelPolicyProvider(engine)
     assert again.decide(c, hook="pre_submit", plan_fingerprint="p1").effect == "deny"
+
+
+def test_quota_idempotency_survives_store_reopen(tmp_path: Path) -> None:
+    engine = create_sqlite_engine(f"sqlite:///{tmp_path / 'quota-idempotency.db'}")
+    apply_migrations(engine)
+    create_cp4_tables(engine)
+    ctx = _ctx()
+    first = SQLModelQuotaProvider(engine).admit(
+        ctx,
+        resource="concurrency",
+        idempotency_key="scoped-submission-digest",
+    )
+    repeated = SQLModelQuotaProvider(engine).admit(
+        ctx,
+        resource="concurrency",
+        idempotency_key="scoped-submission-digest",
+    )
+
+    assert first == repeated
+    assert repeated.used == 1
+    assert SQLModelQuotaProvider(engine).get_state(ctx).usage["concurrency"] == 1
 
 
 def test_durable_accept_dual_writes_entity_rows(tmp_path: Path) -> None:

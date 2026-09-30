@@ -535,16 +535,12 @@ class RunRequest:
             values = cast(Mapping[object, Any], value)
             if not all(isinstance(name, str) for name in values):
                 raise TypeError("parameter_overrides entries must use string keys")
-            parameters[key] = {
-                cast(str, name): item for name, item in values.items()
-            }
+            parameters[key] = {cast(str, name): item for name, item in values.items()}
         metadata = mapping_value("metadata")
         extensions = mapping_value("extensions")
         if "explicit_settings" in data:
             explicit_settings: set[str] = set(
-                _string_values(
-                    data["explicit_settings"], name="explicit_settings"
-                )
+                _string_values(data["explicit_settings"], name="explicit_settings")
             )
         else:
             # Legacy request documents had no explicitness marker. Keep their

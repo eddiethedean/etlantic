@@ -5074,9 +5074,7 @@ class LocalOrchestrator:
                 )
             )
             if cache_enabled:
-                cached = self.runtime.secret_cache.get(
-                    ref, trusted_scope=trusted_scope
-                )
+                cached = self.runtime.secret_cache.get(ref, trusted_scope=trusted_scope)
                 if cached is not None:
                     self.runtime.events.emit(
                         SecurityEvent(
@@ -5145,9 +5143,7 @@ class LocalOrchestrator:
             )
             raise
         if cache_enabled:
-            self.runtime.secret_cache.put(
-                ref, value, trusted_scope=trusted_scope
-            )
+            self.runtime.secret_cache.put(ref, value, trusted_scope=trusted_scope)
         self.runtime.events.emit(
             SecurityEvent(
                 kind="secret_resolution",

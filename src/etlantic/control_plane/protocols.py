@@ -50,6 +50,14 @@ class Authorizer(Protocol):
         ...
 
 
+@dataclass(frozen=True, slots=True)
+class DefinitionResolution:
+    """One verified definition snapshot selected for an operation."""
+
+    revision_id: str
+    document: Mapping[str, Any]
+
+
 @runtime_checkable
 class DefinitionRepository(Protocol):
     """Workspace-scoped pipeline/definition registry."""
@@ -69,6 +77,20 @@ class DefinitionRepository(Protocol):
         document: Mapping[str, Any],
     ) -> None:
         """Store or replace a definition document inside ``ctx`` scope."""
+        ...
+
+
+@runtime_checkable
+class RevisionedDefinitionRepository(Protocol):
+    """Optional extension for repositories that resolve immutable revisions."""
+
+    def resolve_revision(
+        self,
+        ctx: ControlPlaneContext,
+        definition_id: str,
+        selector: str,
+    ) -> DefinitionResolution:
+        """Resolve ``current``, a revision id, or a configured revision alias."""
         ...
 
 
@@ -149,6 +171,8 @@ __all__ = [
     "Authorizer",
     "AuthzDecision",
     "DefinitionRepository",
+    "DefinitionResolution",
     "EventStore",
+    "RevisionedDefinitionRepository",
     "SubmissionStore",
 ]

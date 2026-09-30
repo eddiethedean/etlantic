@@ -5,7 +5,7 @@ from __future__ import annotations
 import json
 from collections.abc import Callable, Mapping, Sequence
 from datetime import UTC, datetime
-from typing import Any, TypeVar
+from typing import Any, TypeVar, cast
 
 from sqlalchemy.engine import Engine
 
@@ -36,7 +36,12 @@ from etlantic.control_plane.objective_models import (
 )
 from etlantic.control_plane.policy_memory import MemoryPolicyProvider
 from etlantic.control_plane.quota_memory import MemoryQuotaProvider
-from etlantic.control_plane.quota_models import QuotaState
+from etlantic.control_plane.quota_models import (
+    QuotaDecision,
+    QuotaEffect,
+    QuotaResource,
+    QuotaState,
+)
 from etlantic_sqlmodel.control_plane.models import Cp4GovernanceSnapshotRow
 from etlantic_sqlmodel.control_plane.session import session_scope
 from sqlmodel import Session, SQLModel, select
@@ -321,6 +326,14 @@ class SQLModelQuotaProvider(_SnapshotBackedStore):
             "default_limits": dict(mem.default_limits),
             "weights": {f"{t}|{w}": wt for (t, w), wt in mem.weights.items()},
             "states": {f"{t}|{w}": s.to_dict() for (t, w), s in mem._states.items()},
+            "admissions": {
+                f"{t}|{w}|{key}": {
+                    "resource": resource,
+                    "units": units,
+                    "decision": decision.to_dict(),
+                }
+                for (t, w, key), (resource, units, decision) in mem._admissions.items()
+            },
             "rr_cursor": int(mem._rr_cursor),
             "shared_pressure": bool(getattr(mem, "shared_pressure", False)),
         }
@@ -347,6 +360,21 @@ class SQLModelQuotaProvider(_SnapshotBackedStore):
                 updated_at=datetime.fromisoformat(str(raw["updated_at"]))
                 if raw.get("updated_at")
                 else datetime.now(UTC),
+            )
+        for key, raw in dict(payload.get("admissions") or {}).items():
+            t, w, idem = str(key).split("|", 2)
+            decision = raw["decision"]
+            mem._admissions[(t, w, idem)] = (
+                cast(QuotaResource, str(raw["resource"])),
+                int(raw["units"]),
+                QuotaDecision(
+                    effect=cast(QuotaEffect, str(decision["effect"])),
+                    resource=cast(QuotaResource, str(decision["resource"])),
+                    limit=int(decision["limit"]),
+                    used=int(decision["used"]),
+                    reason=str(decision["reason"]),
+                    metadata=dict(decision.get("metadata") or {}),
+                ),
             )
         mem._rr_cursor = int(payload.get("rr_cursor") or 0)
         mem.shared_pressure = bool(payload.get("shared_pressure"))

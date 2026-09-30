@@ -4,6 +4,7 @@
 from __future__ import annotations
 
 import hashlib
+import json
 import threading
 import uuid
 from collections.abc import Mapping, Sequence
@@ -19,7 +20,7 @@ from etlantic.control_plane.models import (
     ControlPlaneContext,
     ControlPlaneEvent,
 )
-from etlantic.control_plane.protocols import AuthzDecision
+from etlantic.control_plane.protocols import AuthzDecision, DefinitionResolution
 from etlantic.control_plane.redaction import (
     redact_control_plane_payload,
     redact_or_preserve_execution_envelope,
@@ -98,6 +99,9 @@ class MemoryDefinitionRepository:
     """In-memory definition store keyed by (tenant, workspace, definition_id)."""
 
     _docs: dict[tuple[str, str, str], dict[str, Any]] = field(default_factory=dict)
+    _revisions: dict[tuple[str, str, str], dict[str, dict[str, Any]]] = field(
+        default_factory=lambda: dict[tuple[str, str, str], dict[str, dict[str, Any]]]()
+    )
     _lock: threading.RLock = field(default_factory=threading.RLock)
 
     def get(self, ctx: ControlPlaneContext, definition_id: str) -> Mapping[str, Any]:
@@ -119,6 +123,30 @@ class MemoryDefinitionRepository:
                 if t == tenant_id and w == workspace_id
             )
 
+    def resolve_revision(
+        self,
+        ctx: ControlPlaneContext,
+        definition_id: str,
+        selector: str,
+    ) -> DefinitionResolution:
+        """Resolve an immutable in-memory snapshot by selector or content id."""
+        key = (*_scope(ctx), definition_id)
+        with self._lock:
+            revisions: dict[str, dict[str, Any]] = self._revisions.get(key, {})
+            if selector == "current":
+                revision_id = next(reversed(revisions), None)
+            else:
+                revision_id = selector if selector in revisions else None
+            if revision_id is None:
+                raise ControlPlaneError.not_found(
+                    "Definition revision was not found",
+                    extensions={"definition_id": definition_id},
+                )
+            return DefinitionResolution(
+                revision_id=revision_id,
+                document=deepcopy(revisions[revision_id]),
+            )
+
     def put(
         self,
         ctx: ControlPlaneContext,
@@ -126,8 +154,24 @@ class MemoryDefinitionRepository:
         document: Mapping[str, Any],
     ) -> None:
         key = (*_scope(ctx), definition_id)
+        document_copy = deepcopy(dict(document))
+        revision_digest = hashlib.sha256(
+            json.dumps(
+                document_copy,
+                sort_keys=True,
+                separators=(",", ":"),
+                ensure_ascii=False,
+                allow_nan=False,
+            ).encode("utf-8")
+        ).hexdigest()
+        revision_id = f"defrev-{revision_digest}"
         with self._lock:
-            self._docs[key] = deepcopy(dict(document))
+            self._docs[key] = document_copy
+            revisions = self._revisions.setdefault(key, {})
+            # Re-inserting an earlier content digest is a new current selection
+            # even though its immutable revision id and payload are unchanged.
+            revisions.pop(revision_id, None)
+            revisions[revision_id] = document_copy
 
 
 @dataclass
@@ -189,8 +233,8 @@ class MemorySubmissionStore:
             safe_payload = {}
         execution_envelope = payload.get("execution_envelope")
         if isinstance(execution_envelope, str):
-            safe_payload["execution_envelope"] = (
-                redact_or_preserve_execution_envelope(execution_envelope)
+            safe_payload["execution_envelope"] = redact_or_preserve_execution_envelope(
+                execution_envelope
             )
         with self._lock:
             existing = self._by_id.get(key)

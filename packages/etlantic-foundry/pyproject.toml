@@ -6,6 +6,7 @@ readme = "README.md"
 license = "MIT"
 requires-python = ">=3.11"
 authors = [{ name = "Odo Matthews", email = "odosmatthews@gmail.com" }]
+classifiers = ["Development Status :: 4 - Beta"]
 dependencies = [
     "etlantic>=0.55.0,<0.56",
     "httpx>=0.27,<1",

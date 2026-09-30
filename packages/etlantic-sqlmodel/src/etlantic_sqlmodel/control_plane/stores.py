@@ -20,6 +20,7 @@ from etlantic.control_plane import (
     ControlPlaneContext,
     ControlPlaneError,
     ControlPlaneEvent,
+    DefinitionResolution,
     redact_control_plane_payload,
 )
 from etlantic_sqlmodel.control_plane.models import (
@@ -68,6 +69,29 @@ class SQLModelDefinitionRepository:
                     f"Definition {definition_id!r} not found"
                 )
             return json.loads(row.document_json)
+
+    def resolve_revision(
+        self,
+        ctx: ControlPlaneContext,
+        definition_id: str,
+        selector: str,
+    ) -> DefinitionResolution:
+        """Resolve the current content-addressed document in this legacy store."""
+        document = self.get(ctx, definition_id)
+        canonical = json.dumps(
+            dict(document),
+            sort_keys=True,
+            separators=(",", ":"),
+            ensure_ascii=False,
+            allow_nan=False,
+        )
+        revision_id = f"defrev-{hashlib.sha256(canonical.encode('utf-8')).hexdigest()}"
+        if selector not in {"current", revision_id}:
+            raise ControlPlaneError.not_found(
+                "Definition revision was not found",
+                extensions={"definition_id": definition_id},
+            )
+        return DefinitionResolution(revision_id=revision_id, document=document)
 
     def list(self, ctx: ControlPlaneContext) -> Sequence[str]:
         with session_scope(self._engine) as session:

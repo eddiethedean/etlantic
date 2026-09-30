@@ -127,9 +127,8 @@ def test_execution_host_does_not_acknowledge_a_noop_runner() -> None:
         operation="run.submit",
         plan_fingerprint="plan",
     )
-    def no_op_runner(
-        _ctx: ControlPlaneContext, **_kwargs: object
-    ) -> None:
+
+    def no_op_runner(_ctx: ControlPlaneContext, **_kwargs: object) -> None:
         return None
 
     host = ExecutionHost(durable, owner_id="w1", runner=no_op_runner)
@@ -148,6 +147,7 @@ def test_execution_host_persists_actual_effect_receipt() -> None:
         operation="run.submit",
         plan_fingerprint="plan",
     )
+
     def success_runner(
         _ctx: ControlPlaneContext, **_kwargs: object
     ) -> PipelineRunReport:

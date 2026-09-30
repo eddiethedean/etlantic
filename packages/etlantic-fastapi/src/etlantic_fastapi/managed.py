@@ -9,6 +9,7 @@ from importlib import import_module
 from typing import TYPE_CHECKING, Any, cast
 
 from etlantic.control_plane.protocols import Authorizer
+from etlantic.control_plane.registry_definitions import RegistryDefinitionRepository
 from etlantic.registry import PlanningContext
 from etlantic_fastapi.api import ETLanticAPI, create_app
 from etlantic_fastapi.auth import (
@@ -73,9 +74,7 @@ def create_managed_backend(
     authorizer: Authorizer,
     context_factory: ContextFactory,
     principal_dependency: PrincipalDependency | None = None,
-    planning_context_factory: (
-        Callable[[Any, Any], PlanningContext] | None
-    ) = None,
+    planning_context_factory: (Callable[[Any, Any], PlanningContext] | None) = None,
 ) -> ManagedBackend:
     """Construct shared headless services over the migrated SQLModel stores.
 
@@ -110,14 +109,14 @@ def create_managed_backend(
                 f"required version {latest_version!r}"
             )
 
-        stores = cast(
-            Any, import_module("etlantic_sqlmodel.control_plane")
-        )
+        stores = cast(Any, import_module("etlantic_sqlmodel.control_plane"))
+        registry = stores.SqlModelRegistryProvider(engine)
         api = ETLanticAPI(
             authorizer=authorizer,
-            definitions=stores.SQLModelDefinitionRepository(engine),
+            definitions=RegistryDefinitionRepository(registry),
             submissions=stores.SQLModelSubmissionStore(engine),
             events=stores.SqlModelEventStore(engine),
+            registry=registry,
             context_factory=context_factory,
             principal_dependency=principal_dependency or principal_from_header,
             profile=config.profile,
@@ -143,9 +142,7 @@ def create_managed_app(
     authorizer: Authorizer,
     context_factory: ContextFactory,
     principal_dependency: PrincipalDependency | None = None,
-    planning_context_factory: (
-        Callable[[Any, Any], PlanningContext] | None
-    ) = None,
+    planning_context_factory: (Callable[[Any, Any], PlanningContext] | None) = None,
     install_handlers: bool = True,
 ) -> FastAPI:
     """Create a managed HTTP app and own its engine for the app lifespan.
@@ -189,4 +186,9 @@ def create_managed_app(
         raise
 
 
-__all__ = ["ManagedBackend", "ManagedBackendConfig", "create_managed_app", "create_managed_backend"]
+__all__ = [
+    "ManagedBackend",
+    "ManagedBackendConfig",
+    "create_managed_app",
+    "create_managed_backend",
+]

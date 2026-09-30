@@ -71,6 +71,7 @@ def test_connector_catalog_publishes_typed_schema_without_secret_defaults(
             group=SOURCE_CONNECTORS_GROUP,
         ),
     )
+
     def discover(_profile: Profile, *, run_id: str) -> dict[str, PluginLifecycleResult]:
         assert run_id == "connector-catalog"
         return {
@@ -86,9 +87,7 @@ def test_connector_catalog_publishes_typed_schema_without_secret_defaults(
         Profile(name="development")
     )
     provider = next(
-        item
-        for item in document["connectors"]
-        if item["name"] == "test-secret-source"
+        item for item in document["connectors"] if item["name"] == "test-secret-source"
     )
     schema = provider["configuration_schema"]
 
@@ -104,9 +103,7 @@ def test_connector_catalog_publishes_typed_schema_without_secret_defaults(
     assert schema["properties"]["private_key"]["x-sensitive"] is True
     assert "examples" not in schema["properties"]["private_key"]
     assert "enum" not in schema["properties"]["private_key"]
-    assert schema["properties"]["connection"]["default"] == {
-        "region": "us-east-1"
-    }
+    assert schema["properties"]["connection"]["default"] == {"region": "us-east-1"}
     assert "default" not in schema["properties"]["opaque"]
     assert "never-publish-this" not in json.dumps(document, sort_keys=True)
     assert "never-publish-this-example" not in json.dumps(document, sort_keys=True)

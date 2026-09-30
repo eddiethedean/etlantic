@@ -243,9 +243,7 @@ def test_packaged_worker_executes_accepted_envelope_and_recovers_report(
         )
     )
     definition = definition_from_pipeline(FileTransferPipeline)
-    plan_document = FileTransferPipeline.plan(
-        profile="development", context=planning
-    )
+    plan_document = FileTransferPipeline.plan(profile="development", context=planning)
     plan = PipelinePlan.from_dict(plan_document.to_dict(), verify=True)
     envelope = ExecutionEnvelope.create(
         definition_id=definition.pipeline_id,

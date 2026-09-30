@@ -73,7 +73,11 @@ def run_compat_campaign() -> dict[str, Any]:
     # Migration apply on fresh sqlite (sqlmodel optional).
     try:
         from etlantic_sqlmodel.control_plane.session import create_sqlite_engine
-        from etlantic_sqlmodel.migrations import apply_migrations, current_version
+        from etlantic_sqlmodel.migrations import (
+            VERSIONS,
+            apply_migrations,
+            current_version,
+        )
 
         engine = create_sqlite_engine("sqlite://")
         apply_migrations(engine)
@@ -81,7 +85,7 @@ def run_compat_campaign() -> dict[str, Any]:
         cases.append(
             {
                 "id": "sqlmodel_migrations_fresh",
-                "status": "pass" if ver == "005_cp1_reference" else "fail",
+                "status": "pass" if ver == VERSIONS[-1] else "fail",
                 "version": ver,
             }
         )

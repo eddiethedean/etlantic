@@ -73,7 +73,9 @@ def test_env_provider_fail_closed() -> None:
         anyio.run(_run)
 
 
-def test_env_provider_rejects_unsupported_version(monkeypatch: pytest.MonkeyPatch) -> None:
+def test_env_provider_rejects_unsupported_version(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
     monkeypatch.setenv("DATABASE_PASSWORD", "present")
     provider = EnvSecretProvider()
 

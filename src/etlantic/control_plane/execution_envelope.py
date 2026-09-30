@@ -294,9 +294,7 @@ class ExecutionEnvelope:
             raise ValueError("Effective settings do not match the verified plan")
         _validate_secret_free("setting_provenance", dict(provenance_data))
         if effective_request_data is not None:
-            _validate_secret_free(
-                "effective_request", dict(effective_request_data)
-            )
+            _validate_secret_free("effective_request", dict(effective_request_data))
 
         effective_request = resolve_request_policies(
             request, plan.execution_settings, plan.intents
@@ -312,7 +310,9 @@ class ExecutionEnvelope:
             if effective_request_data is None or _canonical_json(
                 dict(effective_request_data)
             ) != _canonical_json(expected_effective_request):
-                raise ValueError("Effective request does not match its plan and request")
+                raise ValueError(
+                    "Effective request does not match its plan and request"
+                )
             if _canonical_json(dict(provenance_data)) != _canonical_json(
                 expected_provenance
             ):
@@ -341,10 +341,16 @@ class ExecutionEnvelope:
             plugin_fingerprint=plugin_fingerprint,
             policy_fingerprint=policy_fingerprint,
             resource_versions=deep_freeze(
-                {cast(str, key): cast(str, value) for key, value in resource_versions_data.items()}
+                {
+                    cast(str, key): cast(str, value)
+                    for key, value in resource_versions_data.items()
+                }
             ),
             evidence_refs=deep_freeze(
-                {cast(str, key): cast(str, value) for key, value in evidence_refs_data.items()}
+                {
+                    cast(str, key): cast(str, value)
+                    for key, value in evidence_refs_data.items()
+                }
             ),
         )
 
@@ -410,6 +416,20 @@ class ExecutionEnvelope:
             profile_name=self.profile_name,
             request=RunRequest.from_dict(self.run_request),
         )
+
+    @property
+    def effective_fingerprint(self) -> str:
+        """Fingerprint the verified executable plan, controls and dependencies."""
+        effective = {
+            "definition_fingerprint": self.definition_fingerprint,
+            "revision_id": self.revision_id,
+            "plan_fingerprint": self.plan_fingerprint,
+            "effective_request": mutable_copy(self.effective_request),
+            "effective_settings": mutable_copy(self.effective_settings),
+            "resource_versions": mutable_copy(self.resource_versions or {}),
+            "plugin_fingerprint": self.plugin_fingerprint,
+        }
+        return hashlib.sha256(_canonical_json(effective).encode("utf-8")).hexdigest()
 
     @staticmethod
     def intent_fingerprint(

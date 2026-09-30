@@ -7,8 +7,10 @@ import os
 import uuid
 from collections.abc import Callable, Iterator
 from concurrent.futures import ThreadPoolExecutor
+from importlib import import_module
 from pathlib import Path
 from threading import Barrier
+from typing import cast
 
 import pytest
 
@@ -22,6 +24,8 @@ from etlantic.control_plane import (
     ControlPlaneContext,
     EnvironmentRef,
     Principal,
+    RegistryDefinitionRepository,
+    RegistryProvider,
     SecurityDomain,
     TenantRef,
     WorkspaceRef,
@@ -29,6 +33,7 @@ from etlantic.control_plane import (
 from etlantic_sqlmodel.control_plane import (
     SQLModelDefinitionRepository,
     SqlModelEventStore,
+    SqlModelRegistryProvider,
     SQLModelSubmissionStore,
     create_sqlite_engine,
 )
@@ -40,6 +45,36 @@ from etlantic_sqlmodel.migrations import (
 )
 
 pytestmark = pytest.mark.sqlmodel
+
+
+def test_006_migration_imports_legacy_definitions_as_immutable_revisions(
+    tmp_path: Path,
+) -> None:
+    engine = create_sqlite_engine(f"sqlite:///{tmp_path / 'legacy-definitions.db'}")
+    assert upgrade(engine, target="005_cp1_reference") == "005_cp1_reference"
+    ctx = _ctx()
+    legacy = SQLModelDefinitionRepository(engine)
+    document = {
+        "name": "orders",
+        "authoring_id": "natural metadata remains intact",
+    }
+    legacy.put(ctx, "legacy-orders", document)
+
+    assert upgrade(engine) == "006_managed_definition_revisions_0_56"
+    registry = cast(RegistryProvider, SqlModelRegistryProvider(engine))
+    definitions = RegistryDefinitionRepository(registry)
+    current = definitions.resolve_revision(ctx, "legacy-orders", "current")
+    exact = definitions.resolve_revision(ctx, "legacy-orders", current.revision_id)
+    assert current.document == document
+    assert exact == current
+    assert legacy.get(ctx, "legacy-orders") == document
+
+    # Re-applying its backfill is idempotent and keeps the immutable revision.
+    migration = import_module(
+        "etlantic_sqlmodel.migrations.versions.006_managed_definition_revisions_0_56"
+    )
+    migration.upgrade(engine)
+    assert definitions.resolve_revision(ctx, "legacy-orders", "current") == current
 
 
 @pytest.fixture
@@ -89,8 +124,8 @@ def _ctx(
 def test_latest_migration_provisions_all_cp1_store_tables(tmp_path: Path) -> None:
     engine = create_sqlite_engine(f"sqlite:///{tmp_path / 'cp1.db'}")
 
-    assert apply_migrations(engine) == "005_cp1_reference"
-    assert current_version(engine) == "005_cp1_reference"
+    assert apply_migrations(engine) == "006_managed_definition_revisions_0_56"
+    assert current_version(engine) == "006_managed_definition_revisions_0_56"
     assert {
         "cp_definitions",
         "cp_submissions",
@@ -131,7 +166,7 @@ def test_latest_migration_provisions_all_cp1_store_tables(tmp_path: Path) -> Non
     assert replayed[0].event_id == event.event_id
 
 
-@pytest.mark.parametrize("previous_head", VERSIONS[:-1])
+@pytest.mark.parametrize("previous_head", VERSIONS[:-2])
 def test_upgrade_from_published_head_adds_cp1_tables_without_replacing_existing_schema(
     tmp_path: Path,
     previous_head: str,
@@ -144,7 +179,7 @@ def test_upgrade_from_published_head_adds_cp1_tables_without_replacing_existing_
     before = set(inspect(engine).get_table_names())
     assert "cp_events" not in before
 
-    assert upgrade(engine) == "005_cp1_reference"
+    assert upgrade(engine) == "006_managed_definition_revisions_0_56"
     tables = set(inspect(engine).get_table_names())
     assert before.issubset(tables)
     assert {
@@ -182,8 +217,8 @@ def test_postgresql_migration_provisions_and_persists_cp1_stores(
                 },
             )
 
-    assert upgrade(engine) == "005_cp1_reference"
-    assert current_version(engine) == "005_cp1_reference"
+    assert upgrade(engine) == "006_managed_definition_revisions_0_56"
+    assert current_version(engine) == "006_managed_definition_revisions_0_56"
     tables = set(inspect(engine).get_table_names())
     assert {
         "cp_definitions",
@@ -228,7 +263,7 @@ def test_postgresql_concurrent_event_appends_allocate_ordered_sequences(
     postgres_engine_factory: Callable[[], Engine],
 ) -> None:
     engine = postgres_engine_factory()
-    assert upgrade(engine) == "005_cp1_reference"
+    assert upgrade(engine) == "006_managed_definition_revisions_0_56"
     engine.dispose()
 
     ctx = _ctx()

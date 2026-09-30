@@ -132,9 +132,7 @@ def test_managed_http_rerun_and_replay_execute_accepted_child(
     submissions = MemorySubmissionStore()
     durable = MemoryDurableWorkStore()
 
-    def planning_context(
-        _ctx: ControlPlaneContext, profile: Any
-    ) -> PlanningContext:
+    def planning_context(_ctx: ControlPlaneContext, profile: Any) -> PlanningContext:
         planning = PlanningContext.create(profile=profile)
         planning.registry.register_binding(
             BindingDescriptor(
@@ -181,9 +179,7 @@ def test_managed_http_rerun_and_replay_execute_accepted_child(
         "rerunnable",
         pipeline_to_dict(definition_from_pipeline(_HTTPRerunPipeline)),
     )
-    parent = service.submit_run(
-        ctx, "rerunnable", idempotency_key="http-rerun-parent"
-    )
+    parent = service.submit_run(ctx, "rerunnable", idempotency_key="http-rerun-parent")
     assert parent.resource_id is not None
     accepted = durable.get_submission(ctx, parent.submission_id)
     assert accepted.input_snapshot is not None
@@ -262,6 +258,7 @@ def test_managed_http_rerun_and_replay_execute_accepted_child(
 
     rerun_id = response.json()["submission_id"]
     replay_id = replay.json()["submission_id"]
+
     def runtime_factory() -> PipelineRuntime:
         runtime = PipelineRuntime()
         runtime.secret_providers["env"] = secret_provider

@@ -41,6 +41,13 @@ class MemoryQuotaProvider:
     )
     weights: dict[tuple[str, str], int] = field(default_factory=dict)
     _states: dict[tuple[str, str], QuotaState] = field(default_factory=dict)
+    _admissions: dict[
+        tuple[str, str, str], tuple[QuotaResource, int, QuotaDecision]
+    ] = field(
+        default_factory=lambda: dict[
+            tuple[str, str, str], tuple[QuotaResource, int, QuotaDecision]
+        ]()
+    )
     _lock: threading.RLock = field(default_factory=threading.RLock, repr=False)
     _rr_cursor: int = 0
 
@@ -68,11 +75,25 @@ class MemoryQuotaProvider:
         *,
         resource: QuotaResource,
         units: int = 1,
+        idempotency_key: str | None = None,
     ) -> QuotaDecision:
         self.require_available(ctx)
         if units < 1:
             raise ControlPlaneError.conflict("units must be positive")
         with self._lock:
+            admission_key: tuple[str, str, str] | None = None
+            if idempotency_key is not None:
+                admission_key = (*_scope(ctx), idempotency_key)
+            if admission_key is not None:
+                prior: tuple[QuotaResource, int, QuotaDecision] | None = (
+                    self._admissions.get(admission_key)
+                )
+                if prior is not None:
+                    if prior[:2] != (resource, units):
+                        raise ControlPlaneError.conflict(
+                            "Quota idempotency key reused with different admission"
+                        )
+                    return deepcopy(prior[2])
             state = self._ensure(ctx)
             budget = self.get_budget(ctx, resource=resource)
             if state.suspended:
@@ -119,7 +140,7 @@ class MemoryQuotaProvider:
             usage = dict(state.usage)
             usage[resource] = used + units
             self._states[scope] = replace(state, usage=usage, updated_at=_now())
-            return QuotaDecision(
+            decision = QuotaDecision(
                 effect="allow",
                 resource=resource,
                 limit=budget.limit,
@@ -131,6 +152,9 @@ class MemoryQuotaProvider:
                     "shared_pressure": self.shared_pressure,
                 },
             )
+            if admission_key is not None:
+                self._admissions[admission_key] = (resource, units, decision)
+            return decision
 
     def _wrr_allows(
         self,

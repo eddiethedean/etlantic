@@ -31,6 +31,7 @@ from etlantic.control_plane.policy_gates import gate_pre_submit
 from etlantic.control_plane.protocols import (
     Authorizer,
     DefinitionRepository,
+    DefinitionResolution,
     EventStore,
     SubmissionStore,
 )
@@ -40,6 +41,7 @@ from etlantic.plan.serialize import verify_plan_fingerprint
 from etlantic.profile import resolve_profile
 from etlantic.registry import PlanningContext
 from etlantic.reports.model import PipelineRunReport
+from etlantic.runtime.logging import redact_message
 from etlantic.runtime.managed_execution import (
     managed_report_store,
     managed_run_id,
@@ -257,6 +259,7 @@ class ManagedApplicationService:
                 type="etlantic.control_plane/not_implemented",
             )
         verify_plan_fingerprint(plan)
+        self._authorize_plan_resources(ctx, plan, action="definition.plan")
         return {
             "ok": True,
             "definition_id": definition_id,
@@ -368,9 +371,11 @@ class ManagedApplicationService:
             )
             return receipt_result.receipt
 
-        document = self._get_document(
-            ctx, definition_id, action="run.submit", authorize=False
+        resolution = self._resolve_definition_revision(
+            ctx, definition_id, revision_selector
         )
+        document = resolution.document
+        revision_id = resolution.revision_id
         definition = self._decode_definition(document)
         planning_context = self._planning_context(ctx, profile)
         validation = validate_pipeline_like(
@@ -404,6 +409,7 @@ class ManagedApplicationService:
                 type="etlantic.control_plane/not_implemented",
             )
         verify_plan_fingerprint(plan)
+        self._authorize_plan_resources(ctx, plan, action="run.submit")
         plugin_fingerprint = (
             hashlib.sha256(
                 json.dumps(
@@ -415,6 +421,18 @@ class ManagedApplicationService:
             if plan.plugin_versions
             else None
         )
+        resource_versions = self._resource_versions(plan)
+        effective_fingerprint = ExecutionEnvelope.create(
+            definition_id=definition_id,
+            revision_selector=revision_selector,
+            revision_id=revision_id,
+            definition=definition,
+            plan=plan,
+            profile_name=profile.name,
+            request=typed_request,
+            plugin_fingerprint=plugin_fingerprint,
+            resource_versions=resource_versions,
+        ).effective_fingerprint
         policy_fingerprint = None
         if any(
             item is not None
@@ -434,7 +452,9 @@ class ManagedApplicationService:
                 audit=self.audit,
                 attestations=self.attestations,
                 plan_fingerprint=plan.fingerprint,
-                revision_id=None,
+                effective_fingerprint=effective_fingerprint,
+                revision_id=revision_id,
+                quota_idempotency_key=self._quota_idempotency_key(ctx, idempotency_key),
                 plugin_fingerprints=(
                     [plugin_fingerprint] if plugin_fingerprint is not None else None
                 ),
@@ -447,14 +467,14 @@ class ManagedApplicationService:
         envelope = ExecutionEnvelope.create(
             definition_id=definition_id,
             revision_selector=revision_selector,
-            revision_id=None,
+            revision_id=revision_id,
             definition=definition,
             plan=plan,
             profile_name=profile.name,
             request=typed_request,
             plugin_fingerprint=plugin_fingerprint,
             policy_fingerprint=policy_fingerprint,
-            resource_versions=self._resource_versions(plan),
+            resource_versions=resource_versions,
         )
         payload = self._acceptance_payload(envelope)
         receipt_result = self.submissions.accept(
@@ -571,9 +591,7 @@ class ManagedApplicationService:
             retry_reason = "unverified_execution_envelope"
         else:
             retry_reason = self._retry_block_reason(ctx, submission_id)
-        rerun_decision = self.authorizer.authorize(
-            ctx, "run.rerun", f"run:{run_id}"
-        )
+        rerun_decision = self.authorizer.authorize(ctx, "run.rerun", f"run:{run_id}")
         if not rerun_decision.allowed:
             rerun_reason: str | None = "not_authorized"
         elif status not in {"completed", "failed", "cancelled"}:
@@ -584,9 +602,7 @@ class ManagedApplicationService:
             rerun_reason = "unverified_execution_envelope"
         else:
             rerun_reason = self._rerun_block_reason(ctx, submission_id)
-        replay_decision = self.authorizer.authorize(
-            ctx, "run.replay", f"run:{run_id}"
-        )
+        replay_decision = self.authorizer.authorize(ctx, "run.replay", f"run:{run_id}")
         if not replay_decision.allowed:
             replay_reason: str | None = "not_authorized"
         elif status not in {"completed", "failed", "cancelled"}:
@@ -1223,6 +1239,46 @@ class ManagedApplicationService:
                 f"Definition {definition_id!r} not found"
             ) from exc
 
+    def _resolve_definition_revision(
+        self,
+        ctx: ControlPlaneContext,
+        definition_id: str,
+        selector: str,
+    ) -> DefinitionResolution:
+        resolver = getattr(self.definitions, "resolve_revision", None)
+        if callable(resolver):
+            try:
+                result = resolver(ctx, definition_id, selector)
+            except ControlPlaneError:
+                raise
+            except Exception as exc:
+                raise ControlPlaneError(
+                    "Definition revision could not be resolved",
+                    code="PMCP503",
+                    status=503,
+                    title="Service Unavailable",
+                    type="etlantic.control_plane/unavailable",
+                ) from exc
+            if not isinstance(result, DefinitionResolution):
+                raise ControlPlaneError(
+                    "Definition repository returned an invalid revision resolution",
+                    code="PMCP500",
+                    status=500,
+                    title="Internal Server Error",
+                )
+            return result
+        if selector != "current":
+            raise ControlPlaneError.not_found(
+                "Definition revision was not found",
+                extensions={"definition_id": definition_id},
+            )
+        document = self._get_document(
+            ctx, definition_id, action="run.submit", authorize=False
+        )
+        definition = self._decode_definition(document)
+        revision_id = definition.fingerprint or pipeline_fingerprint(definition)
+        return DefinitionResolution(revision_id=revision_id, document=document)
+
     @staticmethod
     def _decode_definition(document: Mapping[str, Any]):
         try:
@@ -1272,6 +1328,27 @@ class ManagedApplicationService:
             ) from exc
         return context
 
+    def _authorize_plan_resources(
+        self,
+        ctx: ControlPlaneContext,
+        plan: PipelinePlan,
+        *,
+        action: str,
+    ) -> None:
+        """Authorize every resolved logical resource before disclosure or use."""
+        resources = {
+            str(reference.get("binding") or identity)
+            for identity, reference in plan.resource_refs.items()
+        }
+        for identity in sorted(resources):
+            require_authorized(
+                self.authorizer,
+                ctx,
+                action,
+                f"resource:{identity}",
+                resource_in_caller_scope=False,
+            )
+
     @staticmethod
     def _acceptance_payload(envelope: ExecutionEnvelope) -> dict[str, Any]:
         return {
@@ -1280,6 +1357,7 @@ class ManagedApplicationService:
             "profile_name": envelope.profile_name,
             "request": mutable_copy(envelope.run_request),
             "plan_fingerprint": envelope.plan_fingerprint,
+            "effective_fingerprint": envelope.effective_fingerprint,
             # Kept as a JSON string so CP1 redaction preserves extension keys
             # and the exact digest-verified accepted bytes.
             "execution_envelope": envelope.to_json(),
@@ -1293,9 +1371,18 @@ class ManagedApplicationService:
             raise ControlPlaneError.conflict(
                 "Prior acceptance has no verified execution envelope"
             )
-        return ManagedApplicationService._parse_envelope(
+        envelope = ManagedApplicationService._parse_envelope(
             str(payload["execution_envelope"])
         )
+        effective_fingerprint = payload.get("effective_fingerprint")
+        if (
+            effective_fingerprint is not None
+            and effective_fingerprint != envelope.effective_fingerprint
+        ):
+            raise ControlPlaneError.conflict(
+                "Prior acceptance has an invalid effective fingerprint"
+            )
+        return envelope
 
     @staticmethod
     def _parse_envelope(value: str) -> ExecutionEnvelope:
@@ -1344,6 +1431,23 @@ class ManagedApplicationService:
             if isinstance(version, str) and version:
                 versions[str(identity)] = version
         return versions
+
+    @staticmethod
+    def _quota_idempotency_key(ctx: ControlPlaneContext, idempotency_key: str) -> str:
+        """Derive a secret-safe quota reservation key from the CP1 scope."""
+        value = {
+            "scope": list(ctx.scope_key),
+            "principal": [
+                ctx.principal.issuer or "",
+                ctx.principal.kind,
+                ctx.principal.subject,
+            ],
+            "operation": "run.submit",
+            "idempotency_key": idempotency_key,
+        }
+        return hashlib.sha256(
+            json.dumps(value, sort_keys=True, separators=(",", ":")).encode("utf-8")
+        ).hexdigest()
 
     def _cancel_cp1(
         self, ctx: ControlPlaneContext, run_id: str | None
@@ -1411,9 +1515,16 @@ __all__ = ["ManagedApplicationService"]
 
 
 def _require_revision_selector(value: object) -> str:
-    if not isinstance(value, str) or not value.strip():
+    if (
+        not isinstance(value, str)
+        or not value.strip()
+        or len(value) > 256
+        or value != value.strip()
+        or any(ord(character) < 0x20 for character in value)
+        or redact_message(value) != value
+    ):
         raise ControlPlaneError(
-            "revision_selector must be a non-empty string",
+            "revision_selector must be a bounded, credential-free string",
             code="PMCP400",
             status=400,
             title="Bad Request",

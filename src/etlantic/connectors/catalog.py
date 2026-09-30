@@ -174,16 +174,16 @@ def connector_catalog_for_profile(profile: Profile) -> dict[str, Any]:
                             plugin.distribution_name if plugin is not None else None
                         ),
                         "package_version": (
-                            plugin.distribution_version
-                            if plugin is not None
-                            else None
+                            plugin.distribution_version if plugin is not None else None
                         ),
                         "capabilities": sorted(
                             str(capability)
                             for capability in (getattr(info, "capabilities", ()) or ())
                         ),
                         "maturity": str(
-                            getattr(getattr(info, "maturity", None), "value", "experimental")
+                            getattr(
+                                getattr(info, "maturity", None), "value", "experimental"
+                            )
                         ),
                         "configuration_schema": schema_copy,
                         "schema_available": bool(schema_copy),
@@ -211,7 +211,10 @@ def connector_catalog_for_profile(profile: Profile) -> dict[str, Any]:
 
     # The in-tree source is deliberately exempt from entry-point allowlists,
     # matching PipelineRuntime's local-files registration behavior.
-    if not any(entry["kind"] == "source" and entry["name"] == "local-files" for entry in entries):
+    if not any(
+        entry["kind"] == "source" and entry["name"] == "local-files"
+        for entry in entries
+    ):
         info = create_local_files_source().info()
         schema = cast(
             dict[str, Any],

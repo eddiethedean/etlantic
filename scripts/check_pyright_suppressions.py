@@ -12,7 +12,7 @@ from pathlib import Path
 # their exact inventory prevents a new suppression from silently widening the
 # strict-checking escape hatch; intentional changes must update this digest in
 # the same review.
-EXPECTED_DIGEST = "53df956cacf3e8edae06917912a69b50f1c7a3f11312cb35a352fc6f6abe7c75"
+EXPECTED_DIGEST = "e264cf9d8f35faced11e9ec2049a2821c666141853d2eecfb2bced65552fb731"
 
 _IGNORED_DIRECTORIES = frozenset(
     {

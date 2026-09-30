@@ -20,11 +20,11 @@ Current index: 5 criteria passed, 37 pending, and 2 blocked of 44.
 
 - Default non-optional suite:
   `uv run pytest -q -m "not medallantic and not polars and not pandas and not sql and not spark and not real_pyspark and not airflow and not prefect and not keyring and not sqlmodel and not datafusion"`
-  — 2,739 passed, 67 skipped, and 586 deselected. The source-linked 0.52
-  adaptive evidence regeneration was the sole failure because its artifacts
-  were stale after these source edits. The artifacts were regenerated and
-  verified across 10 artifacts and 18 acceptance criteria; the exact regression
-  test then passed on rerun.
+  — 2,745 passed, 67 skipped, and 589 deselected. The first run had one failure
+  because source-linked 0.52 adaptive evidence was stale after these edits. The
+  artifacts were regenerated and verified across 10 artifacts and 18
+  acceptance criteria; `tests/plan/test_phase_0_52_review_blockers.py::test_final_052_006_evidence_regenerates_cleanly`
+  then passed on rerun.
 - CP1 and CP-GA OpenAPI snapshots were refreshed for the managed rerun and
   replay endpoints; both stable-operation snapshot tests passed.
 - Live PostgreSQL connector and multiprocess acceptance:
@@ -90,6 +90,23 @@ Current index: 5 criteria passed, 37 pending, and 2 blocked of 44.
   idempotency, action discovery and OpenAPI registration. AC056-031 remains
   open until checkpoint resume, repair and backfill are executable and the
   complete lifecycle case is qualified.
+- Revision-pinned admission, resource authorization and concurrent idempotency:
+  `uv run pytest -q tests/fastapi/test_managed_application_0_56.py tests/fastapi/test_managed_backend_0_56.py tests/fastapi/test_cp1_full_authz_matrix.py tests/fastapi/test_managed_control_races_0_56.py tests/fastapi/test_managed_rerun_http_0_56.py tests/sqlmodel/test_cp1_migrations_0_51.py tests/sqlmodel/test_registry_stores_0_40.py tests/sqlmodel/test_cp4_stores_0_42.py tests/sqlmodel/test_durable_postgresql_multiprocess_0_56.py`
+  — 93 passed, 5 skipped. Managed submission resolves an immutable definition
+  revision once, authorizes every planned logical resource before acceptance,
+  and binds policy to a verified effective fingerprint. Tests reject forged
+  plan hashes and unknown revisions, preserve `latest-approved` selection on
+  retry after an alias change, verify concurrent same-intent submissions charge
+  quota once, and make concurrent changed intent conflict under the same
+  idempotency key. Migration 006 imports legacy CP1 definitions into the CP2
+  revision registry while retaining the CP1 rows. AC056-007 and AC056-008 remain
+  open for durable resource/version resolution, full scope disclosure coverage,
+  and process-level PostgreSQL failure and retry qualification.
+- Current SQLModel migration and governance campaign after revision backfill:
+  `uv run pytest -q tests/control_plane/ga/test_cp_ga_campaigns.py tests/sqlmodel/test_cp1_migrations_0_51.py tests/sqlmodel/test_registry_stores_0_40.py tests/sqlmodel/test_cp4_stores_0_42.py tests/sqlmodel/test_durable_postgresql_multiprocess_0_56.py`
+  — 26 passed, 5 skipped. SQLite migration upgrade/backfill/restart and
+  governance persistence passed; PostgreSQL-only cases skipped because database
+  test URLs are not configured in this environment.
 - Managed provider scope and secret cache isolation:
   `uv run pytest -q tests/fastapi/test_managed_rerun_http_0_56.py tests/secrets/test_secrets.py tests/control_plane/test_control_plane.py`
   — 20 passed. A server-configured resource owner reaches secret, storage and
@@ -146,6 +163,10 @@ Current index: 5 criteria passed, 37 pending, and 2 blocked of 44.
   connectors with installed package versions, plus the built-in `local-files`
   source; public catalog imports, the `etlantic.connector_catalog/1` contract
   and FastAPI router import passed.
+- Latest managed-backend clean wheel smoke: refreshed core, FastAPI and SQLModel
+  wheels installed into a fresh Python 3.14.3 virtual environment. Migration 006,
+  the registry-backed managed constructor, close, and the in-memory revision
+  reversion/current-selection behavior all passed.
 - Public CLI: sample pipeline validation passed with no diagnostics; plan
   generation returned fingerprint
   `8f3879b301b3b0ea1b87434eef3dd0a58ef0cbe8342ced056323cc9d6d5b19da`.
@@ -163,10 +184,14 @@ Current index: 5 criteria passed, 37 pending, and 2 blocked of 44.
 
 ## Open release requirements
 
-- AC056-001–002, AC056-004, AC056-007–019 and AC056-033: the managed application,
+- AC056-001–002, AC056-004, AC056-009–019 and AC056-033: the managed application,
   authorization, specification, admission, worker, result and PostgreSQL
   provider paths have implementation and focused tests, but their full
   criterion-level failure, concurrency and runtime campaigns remain open.
+- AC056-007–008: immutable revision pinning, resource authorization,
+  effective-fingerprint policy binding and same/different-intent retry behavior
+  now have focused evidence. Complete durable resource/version resolution,
+  full disclosure and cross-process CP1/CP3 failure/retry campaigns remain open.
 - AC056-020–026: isolated action jobs, previews/provisioning, scoped secret
   lifecycle and immutable upload leases are not fully implemented and observed.
 - AC056-027–029 and AC056-031–032: scheduler admission parity,

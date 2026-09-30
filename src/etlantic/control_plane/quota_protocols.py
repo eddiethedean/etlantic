@@ -33,8 +33,9 @@ class QuotaProvider(Protocol):
         *,
         resource: QuotaResource,
         units: int = 1,
+        idempotency_key: str | None = None,
     ) -> QuotaDecision:
-        """Admit or deny consumption; fail closed when unavailable."""
+        """Admit or deny consumption; keyed retries consume once."""
         ...
 
     def release(

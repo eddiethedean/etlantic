@@ -17,11 +17,16 @@ import sqlalchemy
 from fastapi.testclient import TestClient as FastAPITestClient
 from sqlalchemy.engine import Engine
 
+from etlantic import Data, Extract, Load, Pipeline
+from etlantic.authoring import definition_from_pipeline
+from etlantic.authoring.serialize import pipeline_to_dict
 from etlantic.control_plane import (
     ControlPlaneContext,
     EnvironmentRef,
+    ExecutionEnvelope,
     MemoryAuthorizer,
     Principal,
+    RevisionedDefinitionRepository,
     SecurityDomain,
     TenantRef,
     WorkspaceRef,
@@ -34,6 +39,15 @@ from etlantic_fastapi import (
     static_context_factory,
 )
 from etlantic_sqlmodel.migrations import upgrade
+
+
+class _ManagedBackendRow(Data):
+    id: int
+
+
+class _ManagedBackendPipeline(Pipeline):
+    source: Extract[_ManagedBackendRow] = Extract(asset="source")
+    result: Load[_ManagedBackendRow] = Load(input=source, asset="result")
 
 
 def _context() -> ControlPlaneContext:
@@ -49,7 +63,7 @@ def _context() -> ControlPlaneContext:
 def _migrated_url(tmp_path: Path) -> str:
     url = f"sqlite:///{tmp_path / 'managed.db'}"
     engine = sqlalchemy.create_engine(url)
-    assert upgrade(engine) == "005_cp1_reference"
+    assert upgrade(engine) == "006_managed_definition_revisions_0_56"
     engine.dispose()
     return url
 
@@ -137,6 +151,57 @@ def test_managed_app_shares_stores_and_preserves_accepted_work_on_shutdown(
         restarted.close()
 
 
+def test_managed_backend_persists_and_resolves_definition_revision(
+    tmp_path: Path,
+) -> None:
+    config = ManagedBackendConfig(
+        database_url=_migrated_url(tmp_path),
+        store_id="managed-backend-revision",
+    )
+    backend = _backend(config)
+    ctx = _context()
+    try:
+        authorizer = cast(MemoryAuthorizer, backend.api.authorizer)
+        authorizer.grant(ctx, "definition.write")
+        authorizer.grant(ctx, "run.submit")
+        service = backend.api.managed_service
+        assert service is not None
+        definitions = cast(RevisionedDefinitionRepository, service.definitions)
+        service.register_definition(
+            ctx,
+            "persisted-pipe",
+            pipeline_to_dict(definition_from_pipeline(_ManagedBackendPipeline)),
+        )
+        resolution = definitions.resolve_revision(ctx, "persisted-pipe", "current")
+        receipt = service.submit_run(
+            ctx,
+            "persisted-pipe",
+            idempotency_key="persisted-revision-run",
+            revision_selector=resolution.revision_id,
+        )
+        durable = backend.api.durable_work
+        assert durable is not None
+        accepted = durable.get_submission(ctx, receipt.submission_id)
+        assert accepted.input_snapshot is not None
+        envelope = ExecutionEnvelope.from_json(accepted.input_snapshot)
+        assert envelope.revision_id == resolution.revision_id
+    finally:
+        backend.close()
+
+    restarted = _backend(config)
+    try:
+        service = restarted.api.managed_service
+        assert service is not None
+        definitions = cast(RevisionedDefinitionRepository, service.definitions)
+        pinned = definitions.resolve_revision(
+            ctx, "persisted-pipe", resolution.revision_id
+        )
+        assert pinned.revision_id == resolution.revision_id
+        assert pinned.document == resolution.document
+    finally:
+        restarted.close()
+
+
 def test_managed_backend_rejects_unmigrated_schema_and_disposes_partial_engine(
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
@@ -156,9 +221,7 @@ def test_managed_backend_rejects_unmigrated_schema_and_disposes_partial_engine(
     monkeypatch.setattr(sqlalchemy, "create_engine", capture_initial_pool)
     with pytest.raises(RuntimeError, match="not migrated"):
         _backend(
-            ManagedBackendConfig(
-                database_url=f"sqlite:///{tmp_path / 'unmigrated.db'}"
-            )
+            ManagedBackendConfig(database_url=f"sqlite:///{tmp_path / 'unmigrated.db'}")
         )
 
     assert len(engines) == 1
@@ -187,9 +250,7 @@ def test_managed_app_disposes_backend_after_partial_lifespan_startup(
     monkeypatch.setattr(backend.api, "stores_ready", lambda: False)
 
     test_client = cast(Any, FastAPITestClient)
-    with pytest.raises(RuntimeError, match="stores are not ready"), test_client(
-        app
-    ):
+    with pytest.raises(RuntimeError, match="stores are not ready"), test_client(app):
         pytest.fail("the application entered service with unready stores")
 
     assert backend.engine.pool is not initial_pool

@@ -305,13 +305,14 @@ def test_rerun_accepts_new_command_from_immutable_parent_snapshot() -> None:
         "reason": None,
     }
 
-    rerun = service.rerun_run(
-        ctx, parent_run_id, idempotency_key="explicit-rerun"
-    )
+    rerun = service.rerun_run(ctx, parent_run_id, idempotency_key="explicit-rerun")
 
-    assert service.rerun_run(
-        ctx, parent_run_id, idempotency_key="explicit-rerun"
-    ).to_dict() == rerun.to_dict()
+    assert (
+        service.rerun_run(
+            ctx, parent_run_id, idempotency_key="explicit-rerun"
+        ).to_dict()
+        == rerun.to_dict()
+    )
     assert rerun.submission_id != parent.submission_id
     child = durable.get_submission(ctx, rerun.submission_id)
     assert child.plan_fingerprint == parent.plan_fingerprint
@@ -375,9 +376,7 @@ def test_rerun_blocks_unknown_parent_effect() -> None:
     pending_before = durable.pending_outbox(ctx)
 
     with pytest.raises(ControlPlaneError, match="effect is reconciled") as error:
-        service.rerun_run(
-            ctx, parent_run_id, idempotency_key="unsafe-rerun"
-        )
+        service.rerun_run(ctx, parent_run_id, idempotency_key="unsafe-rerun")
 
     assert error.value.extensions["reason"] == "effect_requires_reconciliation"
     assert durable.pending_outbox(ctx) == pending_before

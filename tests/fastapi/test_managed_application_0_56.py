@@ -3,9 +3,11 @@
 
 from __future__ import annotations
 
+from collections.abc import Mapping
+from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
-from threading import Event, Thread
-from typing import Any
+from threading import Barrier, Event, Thread
+from typing import Any, cast
 
 import anyio
 import pytest
@@ -20,15 +22,24 @@ from etlantic import Data, Extract, Input, Load, Output, Pipeline, Transformatio
 from etlantic.authoring import definition_from_pipeline
 from etlantic.authoring.serialize import pipeline_fingerprint, pipeline_to_dict
 from etlantic.control_plane import (
+    AliasRecord,
+    AuthzDecision,
     ControlPlaneContext,
+    DefinitionResolution,
     EnvironmentRef,
     ExecutionEnvelope,
     MemoryAuthorizer,
     MemoryDefinitionRepository,
     MemoryDurableWorkStore,
     MemoryEventStore,
+    MemoryPolicyProvider,
+    MemoryQuotaProvider,
+    MemoryRegistryProvider,
     MemorySubmissionStore,
+    PolicyDecision,
+    PolicyHook,
     Principal,
+    RegistryDefinitionRepository,
     SecurityDomain,
     TenantRef,
     WorkspaceRef,
@@ -132,6 +143,16 @@ def _wired(
     return ctx, authz, definitions, submissions, durable, events, service
 
 
+def _accepted_envelope(
+    durable: MemoryDurableWorkStore,
+    ctx: ControlPlaneContext,
+    submission_id: str,
+) -> ExecutionEnvelope:
+    record = durable.get_submission(ctx, submission_id)
+    assert record.input_snapshot is not None
+    return ExecutionEnvelope.from_json(record.input_snapshot)
+
+
 def test_headless_and_http_share_verified_acceptance(tmp_path) -> None:
     ctx, authz, definitions, submissions, durable, events, service = _wired(tmp_path)
     expected = service.submit_run(ctx, "pipe", idempotency_key="same-intent")
@@ -190,6 +211,291 @@ def test_headless_and_http_share_verified_acceptance(tmp_path) -> None:
         definition_from_pipeline(ManagedPipeline)
     )
     assert envelope.canonical_intent_fingerprint
+
+
+def test_memory_definition_repository_current_tracks_reversion() -> None:
+    definitions = MemoryDefinitionRepository()
+    ctx = _ctx()
+    original = {"version": "original"}
+    changed = {"version": "changed"}
+    definitions.put(ctx, "revision-order", original)
+    original_revision = definitions.resolve_revision(ctx, "revision-order", "current")
+    definitions.put(ctx, "revision-order", changed)
+    changed_revision = definitions.resolve_revision(ctx, "revision-order", "current")
+
+    definitions.put(ctx, "revision-order", original)
+    current = definitions.resolve_revision(ctx, "revision-order", "current")
+
+    assert current == original_revision
+    assert changed_revision.revision_id != original_revision.revision_id
+    assert (
+        definitions.resolve_revision(
+            ctx, "revision-order", changed_revision.revision_id
+        )
+        == changed_revision
+    )
+
+
+def test_submission_resolves_revision_once_and_binds_effective_policy(
+    tmp_path: Path,
+) -> None:
+    ctx, _authz, _definitions, _submissions, durable, _events, service = _wired(
+        tmp_path
+    )
+    registry = MemoryRegistryProvider()
+    definitions = RegistryDefinitionRepository(registry)
+    service.definitions = definitions
+    original = definition_from_pipeline(ManagedPipeline)
+    service.register_definition(ctx, "pipe", pipeline_to_dict(original))
+    first_revision = definitions.resolve_revision(ctx, "pipe", "current")
+
+    class RecordingPolicy(MemoryPolicyProvider):
+        last_decision: Any = None
+
+        def decide(
+            self,
+            ctx: ControlPlaneContext,
+            *,
+            hook: PolicyHook,
+            plan_fingerprint: str | None = None,
+            revision_id: str | None = None,
+            resource: str | None = None,
+            attributes: Mapping[str, Any] | None = None,
+            bundle_id: str | None = None,
+        ) -> PolicyDecision:
+            decision = super().decide(
+                ctx,
+                hook=hook,
+                plan_fingerprint=plan_fingerprint,
+                revision_id=revision_id,
+                resource=resource,
+                attributes=attributes,
+                bundle_id=bundle_id,
+            )
+            if hook == "pre_submit":
+                self.last_decision = decision
+            return decision
+
+    policy = RecordingPolicy()
+    service.policy = policy
+    first_receipt = service.submit_run(
+        ctx,
+        "pipe",
+        idempotency_key="revision-pinned",
+        revision_selector=first_revision.revision_id,
+    )
+    first_envelope = _accepted_envelope(durable, ctx, first_receipt.submission_id)
+    assert first_envelope.revision_id == first_revision.revision_id
+    assert policy.last_decision.plan_fingerprint == first_envelope.effective_fingerprint
+    assert policy.last_decision.revision_id == first_revision.revision_id
+
+    changed_node = dict(pipeline_to_dict(original)["nodes"][0])
+    changed_metadata = dict(changed_node.get("metadata") or {})
+    changed_metadata["plugin:managed-revision-test"] = "second"
+    changed_node["metadata"] = changed_metadata
+    service.edit_definition(
+        ctx,
+        "pipe",
+        {
+            "op": "update_node",
+            "payload": {"name": changed_node["name"], "node": changed_node},
+        },
+        expected_fingerprint=pipeline_fingerprint(original),
+    )
+    latest_revision = definitions.resolve_revision(ctx, "pipe", "current")
+    registry.revisions.put_alias(
+        ctx,
+        AliasRecord(
+            tenant_id=ctx.tenant.tenant_id,
+            workspace_id=ctx.workspace.workspace_id,
+            alias="latest-approved",
+            logical_id="pipe",
+            revision_id=latest_revision.revision_id,
+        ),
+    )
+
+    approved_receipt = service.submit_run(
+        ctx,
+        "pipe",
+        idempotency_key="revision-latest-approved",
+        revision_selector="latest-approved",
+    )
+    approved_envelope = _accepted_envelope(durable, ctx, approved_receipt.submission_id)
+    assert approved_envelope.revision_id == latest_revision.revision_id
+    assert (
+        approved_envelope.definition_fingerprint
+        != first_envelope.definition_fingerprint
+    )
+    assert (
+        policy.last_decision.plan_fingerprint == approved_envelope.effective_fingerprint
+    )
+
+    registry.revisions.put_alias(
+        ctx,
+        AliasRecord(
+            tenant_id=ctx.tenant.tenant_id,
+            workspace_id=ctx.workspace.workspace_id,
+            alias="latest-approved",
+            logical_id="pipe",
+            revision_id=first_revision.revision_id,
+        ),
+    )
+    retried = service.submit_run(
+        ctx,
+        "pipe",
+        idempotency_key="revision-latest-approved",
+        revision_selector="latest-approved",
+    )
+    assert retried.to_dict() == approved_receipt.to_dict()
+    assert _accepted_envelope(durable, ctx, retried.submission_id).revision_id == (
+        latest_revision.revision_id
+    )
+
+
+def test_concurrent_same_intent_charges_workspace_quota_once(tmp_path: Path) -> None:
+    ctx, _authz, definitions, _submissions, _durable, _events, service = _wired(
+        tmp_path
+    )
+    quota = MemoryQuotaProvider()
+    service.quotas = quota
+    resolve_barrier = Barrier(2)
+    resolve = definitions.resolve_revision
+
+    def synchronized_resolution(
+        ctx: ControlPlaneContext,
+        definition_id: str,
+        selector: str,
+    ) -> DefinitionResolution:
+        resolve_barrier.wait(timeout=10)
+        return resolve(ctx, definition_id, selector)
+
+    definitions.resolve_revision = synchronized_resolution
+
+    def submit():
+        return service.submit_run(
+            ctx,
+            "pipe",
+            idempotency_key="concurrent-managed-submit",
+        )
+
+    with ThreadPoolExecutor(max_workers=2) as pool:
+        first_future = pool.submit(submit)
+        second_future = pool.submit(submit)
+        first = first_future.result()
+        second = second_future.result()
+
+    assert first.to_dict() == second.to_dict()
+    assert quota.get_state(ctx).usage["concurrency"] == 1
+
+
+def test_concurrent_changed_intent_conflicts_under_same_idempotency_key(
+    tmp_path: Path,
+) -> None:
+    ctx, _authz, definitions, submissions, durable, _events, service = _wired(tmp_path)
+    quota = MemoryQuotaProvider()
+    service.quotas = quota
+    resolve_barrier = Barrier(2)
+    resolve = definitions.resolve_revision
+
+    def synchronized_resolution(
+        ctx: ControlPlaneContext,
+        definition_id: str,
+        selector: str,
+    ) -> DefinitionResolution:
+        resolve_barrier.wait(timeout=10)
+        return resolve(ctx, definition_id, selector)
+
+    definitions.resolve_revision = synchronized_resolution
+
+    def submit(request: RunRequest | None = None):
+        try:
+            return service.submit_run(
+                ctx,
+                "pipe",
+                idempotency_key="concurrent-changed-intent",
+                request=request,
+            )
+        except ControlPlaneError as exc:
+            return exc
+
+    with ThreadPoolExecutor(max_workers=2) as pool:
+        results = list(pool.map(submit, (None, RunRequest(no_write=True))))
+
+    receipts = [item for item in results if not isinstance(item, ControlPlaneError)]
+    conflicts = [
+        item
+        for item in results
+        if isinstance(item, ControlPlaneError) and item.status == 409
+    ]
+    assert len(receipts) == len(conflicts) == 1
+    accepted = submissions.lookup_idempotency(
+        ctx, "concurrent-changed-intent", operation="run.submit"
+    )
+    persisted = durable.get_submission_by_idempotency(
+        ctx,
+        idempotency_key="concurrent-changed-intent",
+        operation="run.submit",
+    )
+    assert accepted is not None
+    assert persisted is not None
+    assert accepted.submission_id == persisted.submission_id
+    assert quota.get_state(ctx).usage["concurrency"] == 1
+
+
+def test_submission_authorizes_resolved_resources_before_acceptance(
+    tmp_path: Path,
+) -> None:
+    ctx, authz, _definitions, submissions, durable, _events, service = _wired(tmp_path)
+
+    class ResourceDenyingAuthorizer(MemoryAuthorizer):
+        def __init__(self) -> None:
+            super().__init__(grants=set(authz.grants))
+            self.resources: list[str] = []
+
+        def authorize(self, ctx: ControlPlaneContext, action: str, resource: str):
+            if resource.startswith("resource:"):
+                self.resources.append(resource)
+                if resource == "resource:file-in":
+                    return AuthzDecision(
+                        allowed=False,
+                        reason="resource unavailable",
+                        disclosure="not_found",
+                    )
+            return super().authorize(ctx, action, resource)
+
+    scoped_authz = ResourceDenyingAuthorizer()
+    service.authorizer = scoped_authz
+    service.profile = Profile(
+        name="development",
+        assets={
+            "file-in": "memory://source",
+            "file-out": "memory://target",
+        },
+    )
+    service.register_definition(
+        ctx,
+        "file-pipe",
+        pipeline_to_dict(definition_from_pipeline(ManagedFilePipeline)),
+    )
+
+    with pytest.raises(ControlPlaneError) as denied:
+        service.submit_run(ctx, "file-pipe", idempotency_key="resource-denied")
+
+    assert denied.value.status == 404
+    assert "resource:file-in" in scoped_authz.resources
+    assert "resource:file-out" not in scoped_authz.resources
+    assert (
+        submissions.lookup_idempotency(ctx, "resource-denied", operation="run.submit")
+        is None
+    )
+    assert (
+        durable.get_submission_by_idempotency(
+            ctx,
+            idempotency_key="resource-denied",
+            operation="run.submit",
+        )
+        is None
+    )
 
 
 def test_connector_catalog_is_shared_by_headless_and_http(tmp_path: Path) -> None:
@@ -684,4 +990,38 @@ def test_managed_http_rejects_non_string_revision_selector(tmp_path) -> None:
     )
 
     assert response.status_code == 400
+    assert durable.pending_outbox(ctx) == []
+
+
+def test_managed_http_rejects_forged_plan_hash_and_unknown_revision(
+    tmp_path: Path,
+) -> None:
+    ctx, authz, definitions, submissions, durable, events, _service = _wired(tmp_path)
+    api = ETLanticAPI(
+        authorizer=authz,
+        definitions=definitions,
+        submissions=submissions,
+        events=events,
+        durable_work=durable,
+        profile="development",
+        context_factory=membership_context_factory(
+            {"alice": ("tenant-a", "ws-1", "development", "default")}
+        ),
+        principal_dependency=principal_from_header,
+    ).enable_managed_execution()
+    client = cast(Any, TestClient(create_app(api)))
+    headers = {"X-Principal": "alice", "Idempotency-Key": "forged-plan"}
+    forged_plan = client.post(
+        "/v1/definitions/pipe/runs",
+        headers=headers,
+        json={"payload": {"plan_fingerprint": "a" * 64}},
+    )
+    forged_revision = client.post(
+        "/v1/definitions/pipe/runs",
+        headers={**headers, "Idempotency-Key": "forged-revision"},
+        json={"payload": {"revision_selector": "defrev-unknown"}},
+    )
+
+    assert forged_plan.status_code == 400
+    assert forged_revision.status_code == 404
     assert durable.pending_outbox(ctx) == []
