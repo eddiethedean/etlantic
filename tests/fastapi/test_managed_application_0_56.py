@@ -3,7 +3,9 @@
 
 from __future__ import annotations
 
+from pathlib import Path
 from threading import Event, Thread
+from typing import Any
 
 import anyio
 import pytest
@@ -33,7 +35,7 @@ from etlantic.control_plane import (
 )
 from etlantic.control_plane.errors import ControlPlaneError
 from etlantic.lifecycle.runtime import PipelineRuntime
-from etlantic.profile import resolve_profile
+from etlantic.profile import Profile, resolve_profile
 from etlantic.registry import BindingDescriptor, PlanningContext
 from etlantic.runtime.execution_host import ExecutionHost
 from etlantic.runtime.managed_execution import ManagedExecutionAdapter
@@ -82,7 +84,17 @@ def _ctx() -> ControlPlaneContext:
     )
 
 
-def _wired(tmp_path):
+def _wired(
+    tmp_path: Path,
+) -> tuple[
+    ControlPlaneContext,
+    MemoryAuthorizer,
+    MemoryDefinitionRepository,
+    MemorySubmissionStore,
+    MemoryDurableWorkStore,
+    MemoryEventStore,
+    ManagedApplicationService,
+]:
     ctx = _ctx()
     authz = MemoryAuthorizer()
     for action in (
@@ -99,6 +111,7 @@ def _wired(tmp_path):
         "run.report",
         "run.artifacts",
         "run.lineage",
+        "connector.catalog",
     ):
         authz.grant(ctx, action)
     definitions = MemoryDefinitionRepository()
@@ -177,6 +190,59 @@ def test_headless_and_http_share_verified_acceptance(tmp_path) -> None:
         definition_from_pipeline(ManagedPipeline)
     )
     assert envelope.canonical_intent_fingerprint
+
+
+def test_connector_catalog_is_shared_by_headless_and_http(tmp_path: Path) -> None:
+    ctx, authz, definitions, submissions, durable, events, service = _wired(tmp_path)
+    expected = service.get_connector_catalog(ctx)
+    api = ETLanticAPI(
+        authorizer=authz,
+        definitions=definitions,
+        submissions=submissions,
+        events=events,
+        durable_work=durable,
+        managed_service=service,
+        context_factory=membership_context_factory(
+            {"alice": ("tenant-a", "ws-1", "development", "default")}
+        ),
+        principal_dependency=principal_from_header,
+    )
+    client = TestClient(create_app(api, with_lifespan=False))
+
+    response = client.get("/v1/connectors", headers={"X-Principal": "alice"})
+
+    assert response.status_code == 200
+    assert response.json() == expected
+    assert expected["schema"] == "etlantic.connector_catalog/1"
+    assert any(
+        entry["name"] == "local-files" and entry["kind"] == "source"
+        for entry in expected["connectors"]
+    )
+
+
+def test_connector_catalog_authorizes_before_plugin_discovery(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    ctx, _authz, _definitions, _submissions, _durable, _events, service = _wired(
+        tmp_path
+    )
+    from etlantic.connectors import catalog as connector_catalog
+
+    service.authorizer = MemoryAuthorizer()
+
+    def unexpected_catalog(_profile: Profile) -> dict[str, Any]:
+        raise AssertionError("must not discover")
+
+    monkeypatch.setattr(
+        connector_catalog,
+        "connector_catalog_for_profile",
+        unexpected_catalog,
+    )
+
+    with pytest.raises(ControlPlaneError) as exc_info:
+        service.get_connector_catalog(ctx)
+
+    assert exc_info.value.status == 404
 
 
 def test_headless_and_http_share_run_actions_and_cancellation(tmp_path) -> None:

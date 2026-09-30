@@ -62,6 +62,7 @@ CROSS_TENANT_404_CASES: list[tuple[str, str, str, dict | None]] = [
 # Caller-scoped list/ack ops: allow in-tenant; never leak foreign ids.
 SCOPED_LIST_CASES: list[tuple[str, str, str, dict | None]] = [
     ("cp_list_definitions", "GET", "/v1/definitions", None),
+    ("cp_list_connector_catalog", "GET", "/v1/connectors", None),
     ("cp_list_schema_observations", "GET", "/v1/schema/observations", None),
     (
         "cp_ack_schema_observation",
@@ -77,6 +78,7 @@ PUBLIC_OPERATION_IDS = {"cp_health", "cp_ready"}
 ACTIONS = (
     "definition.list",
     "definition.read",
+    "connector.catalog",
     "definition.validate",
     "definition.plan",
     "run.submit",
@@ -226,7 +228,10 @@ def test_in_tenant_allow(
         headers["Idempotency-Key"] = "alice-allow"
     resp = client.request(method, path, headers=headers, json=body)
     expected_statuses = (
-        {501} if operation_id in {"cp_get_run_actions", "cp_retry_run"} else {200, 202}
+        {501}
+        if operation_id
+        in {"cp_get_run_actions", "cp_retry_run", "cp_list_connector_catalog"}
+        else {200, 202}
     )
     assert resp.status_code in expected_statuses, (
         operation_id,

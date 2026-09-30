@@ -41,6 +41,7 @@
     "cp_get_run_report",
     "cp_get_schedule",
     "cp_health",
+    "cp_list_connector_catalog",
     "cp_list_definition_schedules",
     "cp_list_definitions",
     "cp_list_firings",

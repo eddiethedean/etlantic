@@ -4,7 +4,7 @@
 not claim that AC056-001–044 have all passed. The evidence index leaves each
 criterion open until its complete documented case has been observed.
 
-Current index: 3 criteria passed, 39 pending, and 2 blocked of 44.
+Current index: 4 criteria passed, 38 pending, and 2 blocked of 44.
 
 ## Candidate environment
 
@@ -48,6 +48,22 @@ Current index: 3 criteria passed, 39 pending, and 2 blocked of 44.
   `uv run pytest -q tests/fastapi/test_managed_control_races_0_56.py::test_legacy_acceptance_without_envelope_cannot_be_replanned_or_executed`
   — 1 passed. A legacy record with a well-formed but unverified plan hash is
   neither replanned into an envelope nor dispatched by the managed runtime.
+- Installed connector catalog and option schemas:
+  `uv run pytest -q tests/connectors/test_connector_catalog_0_56.py tests/connectors/test_connector_configuration_schemas_0_56.py tests/connectors/test_discovery_0_38.py tests/fastapi/test_managed_application_0_56.py tests/fastapi/test_cp1_full_authz_matrix.py tests/fastapi/test_cp1_openapi.py tests/fastapi/test_cp_ga_openapi_0_43.py`
+  — 69 passed. Headless and HTTP catalog requests return the same
+  profile-authorized installed-provider schemas, including protocol/package
+  versions, maturity and capabilities. Schema types, defaults and constraints
+  are preserved; secret defaults/examples/enums are stripped for named or
+  provider-marked fields, and credential-named keys are recursively removed
+  from nested samples. Unknown provider options fail planning with `PMCONN880`
+  without echoing submitted values. AC056-006 is qualified.
+- Connector catalog final focused rerun:
+  `pytest -q tests/connectors/test_connector_catalog_0_56.py tests/fastapi/test_managed_application_0_56.py::test_connector_catalog_is_shared_by_headless_and_http tests/fastapi/test_managed_application_0_56.py::test_connector_catalog_authorizes_before_plugin_discovery tests/fastapi/test_cp1_openapi.py tests/fastapi/test_cp_ga_openapi_0_43.py`
+  — 6 passed. The final schema redaction test covers snake_case and camelCase
+  secret fields, nested credentials in generic samples, provider-marked
+  `writeOnly` fields, and installed package/version metadata. Headless/HTTP
+  output parity, authorization-before-discovery and both OpenAPI operation
+  snapshots passed.
 - Managed command and authorization matrix:
   `uv run pytest -q tests/fastapi/test_managed_application_0_56.py tests/fastapi/test_managed_backend_0_56.py tests/fastapi/test_cp1_full_authz_matrix.py tests/fastapi/test_managed_control_races_0_56.py`
   — 64 passed before the rerun endpoint was added. It includes action-provider
@@ -112,6 +128,12 @@ Current index: 3 criteria passed, 39 pending, and 2 blocked of 44.
 - Clean install smoke: core, FastAPI, PostgreSQL SQL, Foundry and SQLModel
   wheels installed into a fresh Python 3.11 environment; public imports and
   Foundry configuration-schema discovery passed.
+- Latest clean catalog wheel smoke: core, FastAPI and Foundry wheels built from
+  this candidate installed into a fresh Python 3.11 virtual environment.
+  Profile discovery returned schema-bearing Foundry source, sink and storage
+  connectors with installed package versions, plus the built-in `local-files`
+  source; public catalog imports, the `etlantic.connector_catalog/1` contract
+  and FastAPI router import passed.
 - Public CLI: sample pipeline validation passed with no diagnostics; plan
   generation returned fingerprint
   `8f3879b301b3b0ea1b87434eef3dd0a58ef0cbe8342ced056323cc9d6d5b19da`.
@@ -120,16 +142,16 @@ Current index: 3 criteria passed, 39 pending, and 2 blocked of 44.
   artifacts across 18 prior-phase acceptance criteria; its exact CI regression
   test passed afterward.
 - `scripts/check_pyright.sh` passed: 784 suppressions matched the locked
-  inventory, the strict shadow scan matched its 10,452-diagnostic baseline,
-  and raw Pyright reported zero errors and warnings. The suppression count and
-  diagnostic messages/rules are unchanged from the prior baseline; the locked
-  digests were refreshed for shifted source locations.
+  inventory, the strict shadow scan matched its 10,453-diagnostic baseline,
+  and raw Pyright reported zero errors and warnings. The suppression count is
+  unchanged; the strict digest was refreshed for the managed route and
+  acceptance-test line shifts and the new test surface.
 - `ruff check .`, `git diff --check`, plugin-manifest checks and `uv lock --check`
   passed.
 
 ## Open release requirements
 
-- AC056-001–002, AC056-004–019 and AC056-033: the managed application,
+- AC056-001–002, AC056-004–005, AC056-007–019 and AC056-033: the managed application,
   authorization, specification, admission, worker, result and PostgreSQL
   provider paths have implementation and focused tests, but their full
   criterion-level failure, concurrency and runtime campaigns remain open.

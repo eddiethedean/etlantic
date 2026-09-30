@@ -40,6 +40,7 @@ REQUIRED_GA_OPERATION_IDS = {
     "cp_health",
     "cp_ready",
     "cp_list_definitions",
+    "cp_list_connector_catalog",
     "cp_get_definition",
     "cp_submit_run",
     "cp_get_run",

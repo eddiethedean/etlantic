@@ -33,6 +33,7 @@ REQUIRED_OPERATION_IDS = {
     "cp_health",
     "cp_ready",
     "cp_list_definitions",
+    "cp_list_connector_catalog",
     "cp_get_definition",
     "cp_validate_definition",
     "cp_plan_definition",

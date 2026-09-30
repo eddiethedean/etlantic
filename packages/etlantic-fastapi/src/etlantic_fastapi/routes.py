@@ -373,6 +373,33 @@ def build_control_plane_router(api: ETLanticAPI) -> APIRouter:
             items=[DefinitionSummary(definition_id=i) for i in ids]
         )
 
+    def list_connector_catalog(
+        ctx: ControlPlaneContext = Depends(get_ctx),
+    ) -> dict[str, Any]:
+        if api.managed_service is None:
+            require_authorized(
+                api.authorizer,
+                ctx,
+                "connector.catalog",
+                "connector:*",
+                resource_in_caller_scope=True,
+            )
+            raise ControlPlaneError(
+                "Managed connector catalog is not configured",
+                code="PMCP501",
+                status=501,
+                title="Not Implemented",
+            )
+        return api.managed_service.get_connector_catalog(ctx)
+
+    router.add_api_route(
+        "/v1/connectors",
+        endpoint=list_connector_catalog,
+        methods=["GET"],
+        operation_id="cp_list_connector_catalog",
+        tags=["catalog"],
+    )
+
     @router.get(
         "/v1/definitions/{definition_id}",
         operation_id="cp_get_definition",

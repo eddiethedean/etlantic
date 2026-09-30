@@ -115,6 +115,29 @@ class ManagedApplicationService:
             "document": pipeline_to_dict(definition),
         }
 
+    def get_connector_catalog(self, ctx: ControlPlaneContext) -> dict[str, Any]:
+        """Return installed connector schemas allowed by the active profile."""
+        require_authorized(
+            self.authorizer,
+            ctx,
+            "connector.catalog",
+            "connector:*",
+            resource_in_caller_scope=True,
+        )
+        try:
+            from etlantic.connectors.catalog import connector_catalog_for_profile
+
+            profile = resolve_profile(self.profile, allow_adhoc_profile=False)
+            return connector_catalog_for_profile(profile)
+        except Exception as exc:
+            raise ControlPlaneError(
+                "Connector catalog could not be resolved",
+                code="PMCP503",
+                status=503,
+                title="Service Unavailable",
+                type="etlantic.control_plane/unavailable",
+            ) from exc
+
     def edit_definition(
         self,
         ctx: ControlPlaneContext,
