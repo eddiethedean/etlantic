@@ -5005,7 +5005,74 @@ class LocalOrchestrator:
                     run_id=run_id,
                     code="PMEXEC403",
                 )
-            cache_enabled = capabilities.in_memory_cache
+            if (
+                ref.version == "current"
+                and capabilities.versions
+                and not capabilities.aliases
+            ):
+                raise PipelineExecutionError(
+                    "Secret provider does not support current-version aliases",
+                    run_id=run_id,
+                    code="PMEXEC403",
+                )
+
+            context = SecretResolutionContext(
+                run_id=run_id,
+                pipeline_id=self.plan.pipeline_id,
+                step_name=step,
+                purpose=ref.purpose,
+                trusted_scope=trusted_scope,
+            )
+            late_binding_authorized = False
+            if ref.version == "current" and trusted_scope is not None:
+                authorizer = self.runtime.secret_alias_authorizer
+                if authorizer is None:
+                    raise PipelineExecutionError(
+                        "Managed current-version secret resolution requires an "
+                        "explicit worker authorization policy",
+                        run_id=run_id,
+                        code="PMEXEC403",
+                    )
+                try:
+                    late_binding_authorized = bool(
+                        await authorizer.authorize_late_binding(ref, context)
+                    )
+                except Exception as exc:
+                    raise PipelineExecutionError(
+                        "Managed current-version secret authorization failed",
+                        run_id=run_id,
+                        code="PMEXEC403",
+                    ) from exc
+                if not late_binding_authorized:
+                    raise PipelineExecutionError(
+                        "Managed current-version secret resolution was denied",
+                        run_id=run_id,
+                        code="PMEXEC403",
+                    )
+                context = SecretResolutionContext(
+                    run_id=context.run_id,
+                    pipeline_id=context.pipeline_id,
+                    step_name=context.step_name,
+                    attempt=context.attempt,
+                    purpose=context.purpose,
+                    metadata=context.metadata,
+                    trusted_scope=context.trusted_scope,
+                    late_binding_authorized=True,
+                )
+            # Alias values can rotate without changing the accepted reference.
+            # Providers that advertise leases, renewal, or revocation require
+            # provider-owned lifetime handling; until the runtime owns that
+            # lifecycle, keep those values out of the process cache.
+            cache_enabled = capabilities.in_memory_cache and not (
+                capabilities.leases
+                or capabilities.renewal
+                or capabilities.revocation
+                or (
+                    trusted_scope is not None
+                    and ref.version == "current"
+                    and capabilities.aliases
+                )
+            )
             if cache_enabled:
                 cached = self.runtime.secret_cache.get(
                     ref, trusted_scope=trusted_scope
@@ -5027,17 +5094,15 @@ class LocalOrchestrator:
                                     else None
                                 ),
                                 "cache_hit": True,
+                                **(
+                                    {"late_binding_authorized": True}
+                                    if late_binding_authorized
+                                    else {}
+                                ),
                             },
                         )
                     )
                     return cached
-            context = SecretResolutionContext(
-                run_id=run_id,
-                pipeline_id=self.plan.pipeline_id,
-                step_name=step,
-                purpose=ref.purpose,
-                trusted_scope=trusted_scope,
-            )
             value: Any = await provider.resolve(ref, context)
             if not isinstance(value, SecretValue):
                 raise PipelineExecutionError(
@@ -5097,6 +5162,11 @@ class LocalOrchestrator:
                         value.version if value.version != "current" else None
                     ),
                     "cache_hit": False,
+                    **(
+                        {"late_binding_authorized": True}
+                        if late_binding_authorized
+                        else {}
+                    ),
                 },
             )
         )

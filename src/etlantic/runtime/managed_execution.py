@@ -21,6 +21,7 @@ from etlantic.runtime.context import TrustedExecutionScope
 from etlantic.runtime.execute import run_pipeline
 from etlantic.runtime.managed_errors import ExecutionRejected, UnknownCommitError
 from etlantic.runtime.request import RunRequest
+from etlantic.secrets.provider import SecretAliasAuthorizer
 
 if TYPE_CHECKING:
     from etlantic.control_plane.durable_models import SubmissionRecord
@@ -70,12 +71,14 @@ class ManagedExecutionAdapter:
         *,
         report_root: str | Path | None = None,
         runtime_factory: Any = PipelineRuntime,
+        secret_alias_authorizer: SecretAliasAuthorizer | None = None,
     ) -> None:
         configured_root = report_root or os.environ.get("ETLANTIC_REPORT_DIR")
         self.report_root = Path(
             configured_root or (Path.home() / ".etlantic" / "reports")
         ).expanduser()
         self.runtime_factory = runtime_factory
+        self.secret_alias_authorizer = secret_alias_authorizer
 
     def __call__(
         self,
@@ -133,6 +136,9 @@ class ManagedExecutionAdapter:
         runtime.reports = reports
         previous_cancel_event = getattr(runtime, "external_cancel_event", None)
         previous_trusted_scope = getattr(runtime, "trusted_execution_scope", None)
+        previous_secret_alias_authorizer = getattr(
+            runtime, "secret_alias_authorizer", None
+        )
         trusted_scope = TrustedExecutionScope(
             principal_id=ctx.principal.subject,
             principal_kind=ctx.principal.kind,
@@ -144,6 +150,11 @@ class ManagedExecutionAdapter:
             resource_owner_id=ctx.resource_owner_id,
         )
         runtime.trusted_execution_scope = trusted_scope
+        runtime.secret_alias_authorizer = (
+            self.secret_alias_authorizer
+            if self.secret_alias_authorizer is not None
+            else previous_secret_alias_authorizer
+        )
         runtime.external_cancel_event = cancel_event
         try:
             try:
@@ -171,6 +182,7 @@ class ManagedExecutionAdapter:
         finally:
             runtime.external_cancel_event = previous_cancel_event
             runtime.trusted_execution_scope = previous_trusted_scope
+            runtime.secret_alias_authorizer = previous_secret_alias_authorizer
 
         metadata = dict(report.metadata)
         metadata["etlantic.control_plane.execution"] = {

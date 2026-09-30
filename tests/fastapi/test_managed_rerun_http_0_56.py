@@ -68,6 +68,17 @@ class _ScopeRecordingEnvSecretProvider(EnvSecretProvider):
         return await super().resolve(reference, context)
 
 
+class _AllowOwnerScopedAlias:
+    async def authorize_late_binding(
+        self, reference: SecretRef, context: SecretResolutionContext
+    ) -> bool:
+        return (
+            reference.purpose == "read"
+            and context.trusted_scope is not None
+            and context.trusted_scope.resource_owner_id == "owner-a"
+        )
+
+
 class _ScopeRecordingJsonStorage(JsonStorage):
     def __init__(self) -> None:
         super().__init__()
@@ -263,6 +274,7 @@ def test_managed_http_rerun_and_replay_execute_accepted_child(
         runner=ManagedExecutionAdapter(
             report_root=tmp_path / "reports",
             runtime_factory=runtime_factory,
+            secret_alias_authorizer=_AllowOwnerScopedAlias(),
         ),
     ).tick(ctx)
 
@@ -285,6 +297,7 @@ def test_managed_http_rerun_and_replay_execute_accepted_child(
     assert all(
         context.trusted_scope is not None
         and context.trusted_scope.to_dict() == expected_scope
+        and context.late_binding_authorized
         for context in secret_provider.contexts
     )
     assert len(json_storage.contexts) == 2

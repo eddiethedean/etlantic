@@ -18,6 +18,7 @@ from etlantic.control_plane.schedule_diagnostics import fed_diagnostic
 from etlantic.reports.model import PipelineRunReport
 from etlantic.runtime.managed_errors import ExecutionRejected, UnknownCommitError
 from etlantic.runtime.state import RunStatus
+from etlantic.secrets.provider import SecretAliasAuthorizer
 
 
 class ExecutionHost:
@@ -31,11 +32,14 @@ class ExecutionHost:
         ttl_seconds: int = 30,
         runner: Callable[..., Any] | None = None,
         cancel_check: Callable[[ControlPlaneContext, str], bool] | None = None,
+        secret_alias_authorizer: SecretAliasAuthorizer | None = None,
     ) -> None:
         if runner is None:
             from etlantic.runtime.managed_execution import ManagedExecutionAdapter
 
-            runner = ManagedExecutionAdapter()
+            runner = ManagedExecutionAdapter(
+                secret_alias_authorizer=secret_alias_authorizer
+            )
         self.durable = durable
         self.owner_id = owner_id
         self.ttl_seconds = ttl_seconds

@@ -21,7 +21,7 @@ from etlantic.runtime.context import TrustedExecutionScope
 from etlantic.runtime.events import EventBus
 from etlantic.secrets.cache import SecretCache
 from etlantic.secrets.env import EnvSecretProvider
-from etlantic.secrets.provider import SecretProvider
+from etlantic.secrets.provider import SecretAliasAuthorizer, SecretProvider
 from etlantic.storage.callable_binding import CallableStorage
 from etlantic.storage.csv_binding import CsvStorage
 from etlantic.storage.json_binding import JsonStorage
@@ -61,6 +61,11 @@ class PipelineRuntime:
     step_middleware: MiddlewareStack = field(default_factory=MiddlewareStack)
     provider_middleware: MiddlewareStack = field(default_factory=MiddlewareStack)
     secret_providers: dict[str, SecretProvider] = field(default_factory=dict)
+    # A managed worker supplies this authority. Local unmanaged runs do not
+    # have an authenticated control-plane scope and retain provider behavior.
+    secret_alias_authorizer: SecretAliasAuthorizer | None = field(
+        default=None, repr=False
+    )
     storage: dict[str, StorageBinding] = field(default_factory=dict)
     source_connectors: dict[str, Any] = field(default_factory=dict)
     sink_connectors: dict[str, Any] = field(default_factory=dict)

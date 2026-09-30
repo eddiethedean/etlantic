@@ -78,6 +78,23 @@ Current index: 3 criteria passed, 39 pending, and 2 blocked of 44.
   exact version and records a versioned provider's resolved version in the
   security event without the value. AC056-024 remains open for authorized
   late binding, rotation, revocation, expiry, outage and lease qualification.
+- Managed late-binding policy and rotation:
+  `uv run pytest -q tests/runtime/test_bugfixes.py tests/fastapi/test_managed_rerun_http_0_56.py tests/secrets/test_secrets.py`
+  — 28 passed. Managed `current` references now require an injected worker
+  policy, are authorized again before cache lookup, and fail before provider
+  access when the policy is missing or denies them. Versioned providers must
+  advertise alias support; managed alias values and provider values with lease,
+  renewal, or revocation capabilities bypass the process cache. Tests verify
+  rotation is visible on consecutive lookups, actual versions are audited,
+  and scoped policy reaches the secret provider. AC056-024 remains open for
+  provider lease renewal, revocation, expiry, outage and full lifecycle
+  qualification.
+- Provider alias declarations and lifecycle-aware caching:
+  `uv run pytest -vv tests/runtime/test_bugfixes.py::test_versioned_provider_must_advertise_current_alias_support`
+  — 1 passed; `uv run pytest -vv tests/runtime/test_bugfixes.py::test_secret_lifecycle_capability_disables_process_cache`
+  — 3 passed. Versioned providers without alias capability are rejected before
+  resolution, and providers advertising leases, renewal or revocation bypass
+  process caching.
 - Follow-up core and FastAPI wheels:
   `uv build --package etlantic --wheel` and
   `uv build --package etlantic-fastapi --wheel` succeeded. Both wheels were
@@ -88,6 +105,9 @@ Current index: 3 criteria passed, 39 pending, and 2 blocked of 44.
   managed-backend construction/close and rerun/replay OpenAPI registration
   passed. The latest clean-wheel smoke also imported `TrustedExecutionScope`
   and verified that a configured resource owner reaches the server context.
+  The updated core wheel was force-installed, and its
+  `etlantic.secrets.SecretAliasAuthorizer` export and
+  `PipelineRuntime.secret_alias_authorizer` field passed an import smoke check.
 - Wheel build: all 25 workspace wheels built successfully.
 - Clean install smoke: core, FastAPI, PostgreSQL SQL, Foundry and SQLModel
   wheels installed into a fresh Python 3.11 environment; public imports and
@@ -101,7 +121,9 @@ Current index: 3 criteria passed, 39 pending, and 2 blocked of 44.
   test passed afterward.
 - `scripts/check_pyright.sh` passed: 784 suppressions matched the locked
   inventory, the strict shadow scan matched its 10,452-diagnostic baseline,
-  and raw Pyright reported zero errors and warnings.
+  and raw Pyright reported zero errors and warnings. The suppression count and
+  diagnostic messages/rules are unchanged from the prior baseline; the locked
+  digests were refreshed for shifted source locations.
 - `ruff check .`, `git diff --check`, plugin-manifest checks and `uv lock --check`
   passed.
 

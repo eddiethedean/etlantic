@@ -7,6 +7,7 @@ from etlantic.secrets.env import EnvSecretProvider
 from etlantic.secrets.file import MountedFileSecretProvider
 from etlantic.secrets.provider import (
     ProviderContext,
+    SecretAliasAuthorizer,
     SecretProvider,
     SecretProviderCapabilities,
     SecretProviderDescriptor,
@@ -19,6 +20,7 @@ __all__ = [
     "EnvSecretProvider",
     "MountedFileSecretProvider",
     "ProviderContext",
+    "SecretAliasAuthorizer",
     "SecretCache",
     "SecretProvider",
     "SecretProviderCapabilities",

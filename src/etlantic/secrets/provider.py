@@ -66,6 +66,25 @@ class SecretResolutionContext:
     purpose: str | None = None
     metadata: Mapping[str, Any] = field(default_factory=dict)
     trusted_scope: TrustedExecutionScope | None = None
+    late_binding_authorized: bool = False
+
+
+@runtime_checkable
+class SecretAliasAuthorizer(Protocol):
+    """Worker policy that approves runtime resolution of a moving alias.
+
+    Implementations must evaluate the authenticated scope and reference on
+    every call. The decision is deliberately made before the runtime cache is
+    consulted, so a revoked grant cannot reuse an earlier cached value.
+    """
+
+    async def authorize_late_binding(
+        self,
+        reference: SecretRef,
+        context: SecretResolutionContext,
+    ) -> bool:
+        """Return whether ``reference.version == 'current'`` may be resolved."""
+        ...
 
 
 @dataclass(frozen=True, slots=True)

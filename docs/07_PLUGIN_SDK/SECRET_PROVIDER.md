@@ -22,6 +22,37 @@ A provider:
 A provider must not add values to plans, log request or response bodies, or
 define pipeline semantics.
 
+## Managed current-version references
+
+In a managed worker, `SecretRef.version="current"` is a late-bound request.
+The worker requires an injected `SecretAliasAuthorizer` and calls it for each
+resolution with the secret reference and the server-derived
+`SecretResolutionContext`. The decision runs before cache lookup, so a changed
+policy cannot be bypassed by a cached value. The provider receives
+`context.late_binding_authorized=True` only after approval.
+
+Configure the policy on the worker, rather than accepting authorization in a
+pipeline or HTTP payload:
+
+```python
+from etlantic.runtime.execution_host import ExecutionHost
+
+host = ExecutionHost(
+    durable_store,
+    secret_alias_authorizer=deployment_secret_policy,
+)
+```
+
+The policy must use the trusted principal, tenant, workspace, environment,
+security domain, resource owner, and reference purpose. Denials and policy
+errors fail closed before provider access. Versioned providers must advertise
+`aliases=True` before they may resolve `current`; providers must return the
+actual resolved version for auditing. Managed aliases are not cached because
+their target can rotate between lookups. Values from providers advertising
+leases, renewal, or revocation are also not cached until the worker owns those
+lifecycle operations. Exact version references continue to require
+`versions=True` and an exact returned-version match.
+
 ## Shipped Protocol
 
 ```python

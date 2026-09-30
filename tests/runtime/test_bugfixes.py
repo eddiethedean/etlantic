@@ -24,6 +24,7 @@ from etlantic.lifecycle import Inject
 from etlantic.lifecycle.callbacks import FailureAction
 from etlantic.registry import BindingDescriptor, PlanningContext
 from etlantic.reports.model import PipelineRunReport
+from etlantic.runtime.context import TrustedExecutionScope
 from etlantic.runtime.events import SecurityEvent
 from etlantic.runtime.request import MaterializationPolicy, RunRequest, RunSelection
 from etlantic.runtime.state import RunStatus
@@ -69,30 +70,70 @@ class SimplePipeline(Pipeline):
 
 
 class _VersionedSecretProvider:
-    def __init__(self, *, supports_versions: bool, resolved_version: str) -> None:
+    def __init__(
+        self,
+        *,
+        supports_versions: bool,
+        resolved_version: str,
+        supports_aliases: bool | None = None,
+        rotate: bool = False,
+        supports_leases: bool = False,
+        supports_renewal: bool = False,
+        supports_revocation: bool = False,
+    ) -> None:
         self.descriptor = SecretProviderDescriptor(
             name="versioned-test",
             engine="test",
             capabilities=SecretProviderCapabilities(
                 versions=supports_versions,
+                aliases=(
+                    supports_versions
+                    if supports_aliases is None
+                    else supports_aliases
+                ),
+                leases=supports_leases,
+                renewal=supports_renewal,
+                revocation=supports_revocation,
                 in_memory_cache=True,
             ),
         )
         self.resolved_version = resolved_version
+        self.rotate = rotate
         self.calls = 0
+        self.contexts: list[SecretResolutionContext] = []
 
     async def resolve(
         self, reference: SecretRef, context: SecretResolutionContext
     ) -> SecretValue:
         self.calls += 1
+        self.contexts.append(context)
         return SecretValue(
             _value="version-test-secret",
             provider=reference.provider,
             name=reference.name,
             key=reference.key,
-            version=self.resolved_version,
+            version=(
+                f"release-{41 + self.calls}"
+                if self.rotate
+                else self.resolved_version
+            ),
         )
 
+
+class _AllowSecretAlias:
+    def __init__(self) -> None:
+        self.contexts: list[SecretResolutionContext] = []
+
+    async def authorize_late_binding(
+        self, reference: SecretRef, context: SecretResolutionContext
+    ) -> bool:
+        assert reference.version == "current"
+        self.contexts.append(context)
+        return (
+            context.trusted_scope is not None
+            and context.trusted_scope.resource_owner_id == "owner-a"
+            and context.purpose == "read"
+        )
 class MissingImplPipeline(Pipeline):
     raw: Extract[Row] = Extract(asset="rows")
     step = NoImpl.step(rows=raw)
@@ -186,23 +227,40 @@ def test_missing_secret_fails_closed() -> None:
 
 
 def _run_with_secret_version(
-    provider: _VersionedSecretProvider, requested_version: str
+    provider: _VersionedSecretProvider,
+    requested_version: str,
+    *,
+    trusted_scope: TrustedExecutionScope | None = None,
+    alias_authorizer: _AllowSecretAlias | None = None,
+    also_bind_sink: bool = False,
 ) -> tuple[PipelineRuntime, PipelineRunReport]:
     runtime = PipelineRuntime()
     runtime.secret_providers["versioned-test"] = cast(SecretProvider, provider)
+    runtime.trusted_execution_scope = trusted_scope
+    runtime.secret_alias_authorizer = alias_authorizer
     planning = PlanningContext.create(profile="development")
+    reference = SecretRef(
+        provider="versioned-test",
+        name="warehouse",
+        key="password",
+        version=requested_version,
+        purpose="read",
+    )
     planning.registry.register_binding(
         BindingDescriptor(
             binding="rows",
             provider="memory",
-            secret_ref=SecretRef(
-                provider="versioned-test",
-                name="warehouse",
-                key="password",
-                version=requested_version,
-            ),
+            secret_ref=reference,
         )
     )
+    if also_bind_sink:
+        planning.registry.register_binding(
+            BindingDescriptor(
+                binding="out",
+                provider="memory",
+                secret_ref=reference,
+            )
+        )
     return runtime, SimplePipeline.run(
         profile="development", runtime=runtime, context=planning
     )
@@ -227,6 +285,159 @@ def test_managed_secret_resolution_audits_actual_version() -> None:
         "cache_hit": False,
     }
     assert "version-test-secret" not in str(events[0].to_dict())
+
+
+def test_versioned_provider_must_advertise_current_alias_support() -> None:
+    provider = _VersionedSecretProvider(
+        supports_versions=True,
+        resolved_version="release-42",
+        supports_aliases=False,
+    )
+
+    _runtime, report = _run_with_secret_version(provider, "current")
+
+    assert report.status is RunStatus.FAILED
+    assert provider.calls == 0
+    assert any(
+        "does not support current-version aliases" in (d.message or "")
+        for d in report.diagnostics
+    )
+
+
+def test_managed_current_secret_requires_explicit_runtime_authorization() -> None:
+    provider = _VersionedSecretProvider(
+        supports_versions=True, resolved_version="release-42"
+    )
+    scope = TrustedExecutionScope(
+        principal_id="worker-a",
+        principal_kind="workload",
+        tenant_id="tenant-a",
+        workspace_id="workspace-a",
+        environment="production",
+        security_domain_id="domain-a",
+        resource_owner_id="owner-a",
+    )
+
+    runtime, report = _run_with_secret_version(
+        provider, "current", trusted_scope=scope
+    )
+
+    assert report.status is RunStatus.FAILED
+    assert provider.calls == 0
+    assert runtime.secret_cache.stats()["entries"] == 0
+    assert any(
+        diagnostic.code == "PMEXEC403" for diagnostic in report.diagnostics
+    )
+
+
+def test_managed_late_binding_rechecks_policy_before_cache_reuse() -> None:
+    provider = _VersionedSecretProvider(
+        supports_versions=True,
+        resolved_version="release-42",
+        rotate=True,
+    )
+    scope = TrustedExecutionScope(
+        principal_id="worker-a",
+        principal_kind="workload",
+        tenant_id="tenant-a",
+        workspace_id="workspace-a",
+        environment="production",
+        security_domain_id="domain-a",
+        resource_owner_id="owner-a",
+    )
+    authorizer = _AllowSecretAlias()
+
+    runtime, report = _run_with_secret_version(
+        provider,
+        "current",
+        trusted_scope=scope,
+        alias_authorizer=authorizer,
+        also_bind_sink=True,
+    )
+
+    assert report.status is RunStatus.SUCCEEDED
+    assert provider.calls == 2
+    assert len(authorizer.contexts) == 2
+    assert all(
+        context.trusted_scope == scope and context.purpose == "read"
+        for context in authorizer.contexts
+    )
+    assert all(
+        context.late_binding_authorized and context.trusted_scope == scope
+        for context in provider.contexts
+    )
+    events = [
+        event
+        for event in runtime.events.events
+        if isinstance(event, SecurityEvent) and event.kind == "secret_resolution"
+    ]
+    assert [event.metadata["cache_hit"] for event in events] == [False, False]
+    assert all(event.metadata["late_binding_authorized"] for event in events)
+    assert [event.metadata["resolved_version"] for event in events] == [
+        "release-42",
+        "release-43",
+    ]
+
+
+def test_managed_secret_policy_is_rechecked_before_unversioned_cache() -> None:
+    provider = _VersionedSecretProvider(
+        supports_versions=False,
+        resolved_version="current",
+        supports_aliases=False,
+    )
+    scope = TrustedExecutionScope(
+        principal_id="worker-a",
+        principal_kind="workload",
+        tenant_id="tenant-a",
+        workspace_id="workspace-a",
+        environment="production",
+        security_domain_id="domain-a",
+        resource_owner_id="owner-a",
+    )
+    authorizer = _AllowSecretAlias()
+
+    runtime, report = _run_with_secret_version(
+        provider,
+        "current",
+        trusted_scope=scope,
+        alias_authorizer=authorizer,
+        also_bind_sink=True,
+    )
+
+    assert report.status is RunStatus.SUCCEEDED
+    assert provider.calls == 1
+    assert len(authorizer.contexts) == 2
+    events = [
+        event
+        for event in runtime.events.events
+        if isinstance(event, SecurityEvent) and event.kind == "secret_resolution"
+    ]
+    assert [event.metadata["cache_hit"] for event in events] == [False, True]
+    assert all(event.metadata["late_binding_authorized"] for event in events)
+
+
+@pytest.mark.parametrize(
+    "lifecycle_capability", ["leases", "renewal", "revocation"]
+)
+def test_secret_lifecycle_capability_disables_process_cache(
+    lifecycle_capability: str,
+) -> None:
+    provider = _VersionedSecretProvider(
+        supports_versions=False,
+        resolved_version="current",
+        supports_aliases=False,
+        supports_leases=lifecycle_capability == "leases",
+        supports_renewal=lifecycle_capability == "renewal",
+        supports_revocation=lifecycle_capability == "revocation",
+    )
+
+    runtime, report = _run_with_secret_version(
+        provider, "current", also_bind_sink=True
+    )
+
+    assert report.status is RunStatus.SUCCEEDED
+    assert provider.calls == 2
+    assert runtime.secret_cache.stats()["entries"] == 0
 
 
 @pytest.mark.parametrize(

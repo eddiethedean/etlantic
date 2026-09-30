@@ -601,8 +601,8 @@
         }
       ],
       "id": "AC056-023",
-      "observed_result": "Partial local evidence: server-derived worker scope reaches secret and storage/connector calls; secret cache is isolated by trusted scope.",
-      "open_reason": "Action executors and resource resolvers do not yet share the scope; tampered-reference policy and complete lifecycle evidence remain open.",
+      "observed_result": "Partial local evidence: server-derived worker scope reaches secret and storage/connector calls; secret cache is isolated by trusted scope. Managed current-version references require a worker-injected policy, which receives that authenticated scope and blocks provider access when missing or denied.",
+      "open_reason": "Action executors, finalized upload/resource resolution, tampered-reference policy and full scope-isolation qualification remain incomplete.",
       "owner": "056-SECRET",
       "provider_version_tuple": [
         "source candidate; workspace package version 0.55.0"
@@ -611,7 +611,10 @@
       "supporting_cases": [
         "tests/fastapi/test_managed_rerun_http_0_56.py",
         "tests/secrets/test_secrets.py::test_managed_secret_cache_is_partitioned_by_trusted_scope",
-        "tests/control_plane/test_control_plane.py::test_context_round_trip_stable"
+        "tests/control_plane/test_control_plane.py::test_context_round_trip_stable",
+        "tests/runtime/test_bugfixes.py::test_managed_current_secret_requires_explicit_runtime_authorization",
+        "tests/runtime/test_bugfixes.py::test_managed_late_binding_rechecks_policy_before_cache_reuse",
+        "tests/runtime/test_bugfixes.py::test_managed_secret_policy_is_rechecked_before_unversioned_cache"
       ]
     },
     {
@@ -629,8 +632,8 @@
         }
       ],
       "id": "AC056-024",
-      "observed_result": "Partial local evidence: built-in unversioned providers reject exact selectors; managed exact-version mismatches fail closed and versioned providers expose the resolved version in a secret-free security event.",
-      "open_reason": "Authorized late binding, rotation, revocation, expiry, outage and secret lease qualification remain incomplete.",
+      "observed_result": "Partial local evidence: unversioned built-ins reject exact selectors; managed current aliases require runtime authorization before provider or cache access; versioned aliases must be declared and report the resolved version. Managed aliases and providers with lease/renewal/revocation capabilities bypass process caching, and consecutive alias resolutions observe rotation without exposing values.",
+      "open_reason": "Provider lease acquisition/renewal/revocation, expiry and outage behavior are not implemented end to end or qualified.",
       "owner": "056-SECRET",
       "provider_version_tuple": [
         "source candidate; workspace package version 0.55.0"
@@ -639,7 +642,12 @@
       "supporting_cases": [
         "tests/secrets/test_secrets.py",
         "tests/runtime/test_bugfixes.py::test_managed_secret_resolution_audits_actual_version",
-        "tests/runtime/test_bugfixes.py::test_exact_secret_version_fails_closed"
+        "tests/runtime/test_bugfixes.py::test_exact_secret_version_fails_closed",
+        "tests/runtime/test_bugfixes.py::test_managed_current_secret_requires_explicit_runtime_authorization",
+        "tests/runtime/test_bugfixes.py::test_managed_late_binding_rechecks_policy_before_cache_reuse",
+        "tests/runtime/test_bugfixes.py::test_managed_secret_policy_is_rechecked_before_unversioned_cache",
+        "tests/runtime/test_bugfixes.py::test_versioned_provider_must_advertise_current_alias_support",
+        "tests/runtime/test_bugfixes.py::test_secret_lifecycle_capability_disables_process_cache"
       ]
     },
     {
@@ -1180,17 +1188,17 @@
   "artifacts": [
     {
       "path": "docs/11_DEVELOPMENT/evidence/phase_0_56/LOCAL_QUALIFICATION.md",
-      "sha256": "fd324ab3359d8af106e0abc9554bbda46dca42fc0d5cee4fd0bed20590554ab2"
+      "sha256": "cae6c62c7777cf255e851673302d9b82788d3bb21758091252d1f0eb57143c54"
     },
     {
       "path": "docs/11_DEVELOPMENT/evidence/phase_0_56/WHEEL_MANIFEST.json",
-      "sha256": "20b13cc34e12cdae534ac2eb232d091e03797128ffbe0ceb6613805e6cf5490d"
+      "sha256": "ad21ff51f6a4ab5fe1fef3af5151262f5c99a537b4cb69221859642649616266"
     }
   ],
   "candidate": {
     "base_commit": "e7fd6b866dbecab646cf68b73405ee06ea4437e5",
     "branch": "codex/phase-0-56",
-    "implementation_patch_sha256_before_index": "9363457c8535f414ec0a7b364cc1d0f6c7c4601118d03e423073b9941c277b16",
+    "implementation_patch_sha256_before_index": "1dd4e2ba05e325acffdbb492573a439393475d44ec89df7960831e7872bfd593",
     "package_versions": {
       "etlantic": "0.55.0",
       "etlantic-fastapi": "0.55.0",
@@ -1208,7 +1216,7 @@
     "postgresql": "16.14 (isolated local container)",
     "python": "3.11.15"
   },
-  "generated_at_utc": "2026-09-30T05:33:43Z",
+  "generated_at_utc": "2026-09-30T05:53:48Z",
   "phase": "0.56",
   "release_decision": "OPEN",
   "schema": "etlantic.phase_0_56.release_index/1",
