@@ -4,14 +4,16 @@
 not claim that AC056-001–044 have all passed. The evidence index marks a
 criterion passed only after its complete documented case has been observed.
 
-Current index: 6 criteria passed, 36 pending, and 2 blocked of 44.
+Current index: 7 criteria passed, 35 pending, and 2 blocked of 44.
 
 ## Candidate environment
 
 - Date: 2026-09-30
 - Host: macOS 25.5.0, arm64
 - Python: 3.11.15
-- Live database: isolated local PostgreSQL 16.14 container
+- Live databases: earlier isolated PostgreSQL 16.14 container evidence; the
+  current input-resource race and migration qualification used a temporary
+  loopback PostgreSQL 16.13 Homebrew cluster.
 - Workspace base: `e7fd6b866dbecab646cf68b73405ee06ea4437e5`
 - Candidate packages: core and companions currently build as 0.55.0; this is
   implementation work against the 0.55 compatibility baseline, not a release.
@@ -89,7 +91,8 @@ Current index: 6 criteria passed, 36 pending, and 2 blocked of 44.
   after report persistence recovered the expired lease from the stored report;
   the test changed the source before recovery and verified the sink was not
   written a second time. A second workspace could not read the scoped report.
-- Managed CSV parser and worker evidence, partial AC056-035:
+- Managed directory-CSV parser and worker evidence, extended by the immutable
+  upload qualification below:
   `uv run pytest -q tests/connectors/test_local_files_csv_0_56.py` — 20 passed;
   `uv run pytest -q tests/fastapi/test_managed_backend_0_56.py::test_standard_worker_reads_configured_csv_and_does_not_retain_row_content`
   — 1 passed; and
@@ -103,17 +106,18 @@ Current index: 6 criteria passed, 36 pending, and 2 blocked of 44.
   from its report. Core, FastAPI and SQLModel wheels installed into a fresh
   Python 3.14.3 environment without workspace path injection. The installed
   backend migrated to 009 and repeated the profile-drift check and managed CSV
-  transfer successfully. AC056-035 remains pending: directory/glob selection
-  is not an owner-scoped immutable finalized-upload reference, and accepted-run
-  leases, retention and orphan cleanup are still open.
-- Owner-scoped immutable CSV uploads and durable input leases, partial AC056-025/026/035:
+  transfer successfully. The later migration-010 worker and PostgreSQL tests
+  below complete the immutable-upload CSV matrix for AC056-035.
+- Owner-scoped immutable CSV uploads and durable input leases (AC056-025/026;
+  AC056-035 passed):
   `uv run pytest -q tests/control_plane/test_input_resources_0_56.py
   tests/connectors/test_local_files_csv_0_56.py
   tests/fastapi/test_managed_backend_0_56.py::test_managed_worker_executes_finalized_upload_and_lease_outlives_staging_ttl
   tests/fastapi/test_managed_backend_0_56.py::test_managed_http_stages_finalizes_and_aborts_only_staged_input
-  tests/fastapi/test_managed_backend_0_56.py::test_managed_worker_rejects_invalid_finalized_csv_uploads
-  tests/sqlmodel/test_cp1_migrations_0_51.py` — 49 passed, 5 PostgreSQL-only
-  cases skipped because `ETLANTIC_SQLMODEL_TEST_URL` is not configured. Migration
+  tests/fastapi/test_managed_backend_0_56.py::test_managed_worker_rejects_invalid_or_tampered_finalized_csv_uploads
+  tests/sqlmodel/test_cp1_migrations_0_51.py` — 50 passed, 5 PostgreSQL-only
+  cases skipped in the no-database run because `ETLANTIC_SQLMODEL_TEST_URL` was
+  not configured. Migration
   010 adds bounded relational staging storage and scoped durable leases. HTTP
   staging streams up to the configured byte limit; finalization binds the
   uploaded CSV to an immutable SHA-256/version/length/tenant/workspace/owner
@@ -126,20 +130,32 @@ Current index: 6 criteria passed, 36 pending, and 2 blocked of 44.
   The real managed worker parsed a UTF-8 BOM/semicolon upload into typed rows
   after its staging TTL and emitted a comma-delimited sink without placing row
   values in the report. Real managed-worker cases also finalized empty,
-  malformed and byte-over-budget CSV uploads; each produced a failed run
-  report without creating the sink, and the over-budget case used a deliberately
-  lower worker connector limit. A rebuilt clean-wheel smoke on Python 3.14.3 applied
+  malformed, byte-over-budget and same-length-tampered CSV uploads; each
+  produced a failed run report without creating the sink, and the over-budget
+  case used a deliberately lower worker connector limit. A rebuilt clean-wheel
+  smoke on Python 3.14.3 applied
   migration 010, constructed the standard backend, exposed the upload route in
   OpenAPI, finalized an upload, read it after backend restart under a durable
   lease, denied a cross-owner read and rejected same-length blob tampering.
   PostgreSQL concurrent lease/cleanup qualification and the full provider
-  security campaign remain open, so AC056-025, AC056-026 and AC056-035 stay
-  pending.
+  security campaign remain open, so AC056-025 and AC056-026 stay pending.
+- PostgreSQL input-resource acquisition/cleanup race:
+  `ETLANTIC_SQLMODEL_TEST_URL=... uv run pytest -q
+  tests/sqlmodel/test_input_resource_postgresql_0_56.py` — 1 passed. Six
+  independent-process trials include forced lease-first and cleanup-first
+  orderings plus four simultaneous races. A committed lease always preserved
+  readable bytes through the cleanup horizon; cleanup winning first made the
+  later lease fail with a stable 404. The temporary PostgreSQL 16.13 cluster
+  listened only on loopback.
+- Combined immutable-input, CSV, worker and migration qualification with the
+  temporary PostgreSQL URL set — 56 passed, no skips. The migration module
+  passed 19 SQLite/PostgreSQL cases through migration 010; no database URL is
+  written to this evidence record.
 - Versioned report-table and event-retention migration:
   `uv run pytest -q tests/sqlmodel/test_cp1_migrations_0_51.py`
-  — the final PostgreSQL-backed rerun passed 17 SQLite and PostgreSQL cases,
+  — the latest PostgreSQL-backed rerun passed 19 SQLite and PostgreSQL cases,
   covering fresh install, upgrade from each prior head, restart, downgrade and
-  re-upgrade while preserving CP1 event history.
+  re-upgrade while preserving CP1 event history through migration 010.
 - Idempotent lifecycle-event storage and migration:
   `uv run pytest -q tests/control_plane/test_control_plane.py::test_memory_event_store_append_once_is_scoped_and_conflict_checked tests/sqlmodel/test_control_plane_stores.py::test_sqlite_event_append_once_survives_restart_and_rejects_conflicts tests/sqlmodel/test_cp1_migrations_0_51.py::test_idempotent_event_migration_round_trip_preserves_event_history`
   — 3 passed. Migration 008 adds a separate scoped event-key table, and
@@ -346,8 +362,13 @@ Current index: 6 criteria passed, 36 pending, and 2 blocked of 44.
   acceptance/quota tests now pass. AC056-042 is qualified for the tested 0.55
   migration chain and legacy incomplete-payload guard. AC056-039 remains open
   for backup/restore and broader failure campaigns.
-- AC056-020–026: isolated action jobs, previews/provisioning, scoped secret
-  lifecycle and immutable upload leases are not fully implemented and observed.
+- AC056-020–024: isolated action jobs, bounded previews/provisioning, and the
+  complete secret lease/rotation lifecycle are not implemented and observed.
+  AC056-025/026 now have immutable upload, durable lease, bounded cleanup and
+  PostgreSQL multiprocess race evidence, but the full worker threat,
+  authorization/isolation and retry/replay recovery campaigns remain open.
+- AC056-035 passed its typed CSV, encoding, malformed/empty/over-budget and
+  tamper-rejection worker cases plus resource-retention checks; see the selected PostgreSQL-backed suite above.
 - AC056-027–029 and AC056-031–032: scheduler admission parity,
   checkpoint-resume/repair/backfill, qualified pause/amendment and complete
   lifecycle qualification remain open. Idempotent rerun and full-snapshot

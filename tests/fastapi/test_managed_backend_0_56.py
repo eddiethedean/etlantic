@@ -443,19 +443,21 @@ def test_managed_worker_executes_finalized_upload_and_lease_outlives_staging_ttl
 
 
 @pytest.mark.parametrize(
-    ("case", "content", "max_file_bytes", "max_rows"),
+    ("case", "content", "max_file_bytes", "max_rows", "tamper_after_accept"),
     [
-        ("empty", b"", 1024, 100),
-        ("malformed", b"id,name\n1\n", 1024, 100),
-        ("over_budget", b"id,name\n1,private-value\n", 8, 100),
+        ("empty", b"", 1024, 100, False),
+        ("malformed", b"id,name\n1\n", 1024, 100, False),
+        ("over_budget", b"id,name\n1,private-value\n", 8, 100, False),
+        ("tampered", b"id,name\n1,private-value\n", 1024, 100, True),
     ],
 )
-def test_managed_worker_rejects_invalid_finalized_csv_uploads(
+def test_managed_worker_rejects_invalid_or_tampered_finalized_csv_uploads(
     tmp_path: Path,
     case: str,
     content: bytes,
     max_file_bytes: int,
     max_rows: int,
+    tamper_after_accept: bool,
 ) -> None:
     database_url = _migrated_url(tmp_path)
     ctx = _context()
@@ -533,6 +535,17 @@ def test_managed_worker_rejects_invalid_finalized_csv_uploads(
             f"invalid-upload-{case}",
             idempotency_key=f"invalid-upload-{case}",
         )
+        if tamper_after_accept:
+            tampered = content.replace(b"1,", b"2,", 1)
+            assert len(tampered) == len(content)
+            with backend.engine.begin() as connection:
+                connection.execute(
+                    sqlalchemy.text(
+                        "UPDATE cp_input_uploads SET content = :content "
+                        "WHERE upload_id = :upload_id"
+                    ),
+                    {"content": tampered, "upload_id": reference.resource_id},
+                )
 
         host = backend.create_execution_host(owner_id=f"invalid-upload-{case}-worker")
         adapter = cast(ManagedExecutionAdapter, host.runner)
