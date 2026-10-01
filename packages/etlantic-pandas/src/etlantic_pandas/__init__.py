@@ -150,7 +150,11 @@ class PandasDataframePlugin:
             return self._from_records(value, contract_type)
         table = to_arrow_table(value)
         if table is not None:
-            return table.to_pandas()
+            # Record-backed inputs have no Arrow dtype contract to preserve.
+            # Materialize them through Python records instead of PyArrow's
+            # pandas_compat bridge, which can crash on some platform/version
+            # combinations even though this path starts from ordinary rows.
+            return self._from_records(table.to_pylist(), contract_type)
         # Polars → pandas without Arrow
         if type(value).__module__.startswith("polars"):
             if hasattr(value, "collect"):
