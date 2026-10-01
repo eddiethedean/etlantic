@@ -722,20 +722,50 @@ a durable cursor file scoped by security domain, tenant, workspace and pipeline
 when the accepted plan declares incremental strategies; persistence and scope
 isolation passed, alongside the standalone atomic publication-barrier tests.
 
-The full AC is still open: SQL/PySpark/DataFusion/DuckDB managed transform rows,
-dynamic runtime expansion, and end-to-end cursor advancement through a managed
-worker are not demonstrated by this campaign. Existing standalone engine and
-incremental tests are not counted as managed-path proof.
+The managed matrix now also demonstrates end-to-end incremental cursor
+advancement: an accepted run declares an `etlantic.incremental.strategies`
+cursor and supplies the candidate in trusted submitter request metadata. The
+cursor commits only after accepted and rejected outputs publish. This managed
+adapter persists the declared cursor but does not extract source watermarks;
+the source or orchestration submitter must provide the candidate.
+
+Managed dynamic expansion and continuous Spark streaming fail closed with the
+actual runtime-owner boundary: the worker runs frozen finite batches and has
+no child scheduler/ledger or streaming trigger/checkpoint owner. SQL, PySpark,
+DataFusion and DuckDB portable transform requests are also rejected during
+planning with capability diagnostics (unsupported requirement lowering for
+SQL/PySpark/DataFusion; no registered DuckDB engine capabilities). These are
+recorded as unavailable combinations rather than qualified execution. The
+matrix therefore qualifies the runnable Local, Pandas and Polars native paths,
+the managed incremental publication barrier, and explicit rejection behavior
+for the combinations the managed worker cannot run.
+
+### Managed adaptive `/2` runtime (AC056-043)
+
+`tests/fastapi/test_managed_backend_0_56.py::test_managed_adaptive_local_chain_is_admitted_and_observed`
+qualified one exact tuple through the managed service: plan schema
+`etlantic.plan/2`, support row `local-static:chain/1:local`, local engine,
+implicit process-local memory bindings, and ETLantic 0.55.0 on Python 3.11.15.
+The service admitted the plan during both planning and submission, and a durable
+worker completed the run and published the seeded row to its memory sink.
+
+Only that candidate row is pinned to 0.55.0. Every other packaged candidate
+row retains its 0.54.0 pin and fails exact runtime version admission in this
+environment. External or partial binding snapshots remain rejected. The
+candidate remains Experimental with graduation pending; this observed managed
+execution does not claim an Available maturity or independent graduation.
+Detailed tuple and test evidence is recorded in
+`MANAGED_ADAPTIVE_QUALIFICATION_0_56.json`.
 
 ## Open release requirements
 
-The remaining three criteria are AC056-031, AC056-041 and AC056-043:
+The remaining open criteria include AC056-031 and AC056-041:
 - AC056-031: expose and qualify managed resume, repair and backfill commands
   with distinct idempotency and complete parent/run/attempt lineage.
 - AC056-041: qualify the full advertised engine/native/dynamic/incremental/
   streaming combination matrix through the managed path.
-- AC056-043: complete authoritative adaptive `/2` admission and observed
-  managed runtime qualification for at least one exact tuple.
+- AC056-043 passed for the exact local-memory tuple documented above;
+  candidate graduation and other package tuples remain pending or fail closed.
   checked against finalized owner-bound references and live operation leases,
   including tamper rejection, alternate principal/environment lease isolation,
   legacy retry receipt recovery, and PostgreSQL lease/cleanup races. Action
@@ -784,9 +814,10 @@ The remaining three criteria are AC056-031, AC056-041 and AC056-043:
   open. AC056-034 now passes the Semblance-backed dataset/branch/file, all-mode,
   overlap and effect/reconciliation matrix in two independent loopback scopes;
   live Foundry access is not required.
-- AC056-038–041 and AC056-043–044: full disclosure campaign, PostgreSQL
-  backup/restore/failure, complete advanced engine matrix and managed adaptive
-  `/2` remain open.
+- AC056-038–041 and AC056-044: full disclosure campaign, PostgreSQL
+  backup/restore/failure, and complete advanced engine matrix remain open.
+  AC056-043 passes for one exact managed adaptive `/2` tuple; other candidate
+  tuples stay version-gated and the candidate remains Experimental.
   AC056-044 passed: a standard-library consumer ran through register,
   checkpointed revision, validate, plan, review and submit against an API built
   from fresh core/FastAPI wheel installs. Rejection prevented submit and webhook

@@ -48,6 +48,15 @@
       "reason": "The managed worker executes finite runs and does not own a streaming trigger runner or checkpoint lifecycle. The worker rejects this profile before invoking the runtime with that reason."
     },
     {
+      "id": "dynamic-runtime-expansion",
+      "implementation": "runtime-generated child graph expansion",
+      "status": "unavailable",
+      "tests": [
+        "tests/fastapi/test_managed_backend_0_56.py::test_managed_worker_explains_dynamic_expansion_boundary"
+      ],
+      "reason": "Managed execution accepts frozen batch graphs. Dynamic control nodes require a control.expansion child scheduler and durable child ledger; the worker rejects the graph before invoking the runtime."
+    },
+    {
       "id": "sql-pyspark-datafusion-duckdb-managed-transforms",
       "engine": [
         "sql",
@@ -56,26 +65,35 @@
         "duckdb"
       ],
       "implementation": "managed transform/quality execution",
-      "status": "unqualified",
-      "reason": "No real managed-worker transform and quality campaign for these engine families is attached to this evidence. Standalone engine qualification is not counted as managed-path proof."
-    },
-    {
-      "id": "dynamic-runtime-expansion",
-      "implementation": "runtime-generated child graph expansion",
-      "status": "unqualified",
-      "reason": "The managed worker campaign does not exercise dynamic runtime graph expansion; static graph serialization is not treated as equivalent evidence."
+      "status": "unavailable",
+      "tests": [
+        "tests/fastapi/test_managed_backend_0_56.py::test_managed_worker_preserves_or_explains_transform_quality_engine_limit[sql]",
+        "tests/fastapi/test_managed_backend_0_56.py::test_managed_worker_preserves_or_explains_transform_quality_engine_limit[pyspark]",
+        "tests/fastapi/test_managed_backend_0_56.py::test_managed_worker_preserves_or_explains_transform_quality_engine_limit[datafusion]",
+        "tests/fastapi/test_managed_backend_0_56.py::test_managed_worker_preserves_or_explains_transform_quality_engine_limit[duckdb]"
+      ],
+      "reason": "Managed planning fails closed with concrete capability diagnostics. SQL, PySpark, and DataFusion portable compilation report unsupported requirements (including protocol categories and function lowering); DuckDB reports PMPLAN401 because no plugin capabilities are registered for engine 'duckdb'. The worker does not execute these plans."
     },
     {
       "id": "incremental-managed-cursor-advancement",
       "implementation": "incremental source cursor through durable managed execution",
-      "status": "unqualified",
-      "reason": "Atomic cursor staging is covered by standalone runtime tests, but this campaign does not prove cursor advancement through the durable managed worker.",
+      "status": "passed",
       "tests": [
-        "tests/fastapi/test_managed_backend_0_56.py::test_managed_incremental_cursor_store_persists_and_is_scope_isolated",
+        "tests/fastapi/test_managed_backend_0_56.py::test_managed_incremental_run_commits_cursor_after_published_outputs"
+      ],
+      "reason": "A durable incremental managed run staged and committed its declared cursor after accepted and rejected outputs published. Cursor candidates are supplied by the trusted submitter in request metadata; managed execution does not derive source watermarks itself.",
+      "contract": "PipelineDefinition.extensions['etlantic.incremental'].strategies declares per-subject IncrementalStrategy objects. Incremental RunRequest metadata.state_candidates supplies opaque candidate values; only successful output publication commits them.",
+      "observed_managed_case": "The 'orders' cursor advanced to '43' after both accepted and rejected CSV sinks published their rows."
+    },
+    {
+      "id": "incremental-publication-failure-barrier",
+      "implementation": "atomic cursor staging across selected sinks",
+      "status": "passed",
+      "tests": [
         "tests/runtime/test_incremental_cursor_staging_0_56.py::test_cursor_commits_only_after_both_selected_sinks_publish",
         "tests/runtime/test_incremental_cursor_staging_0_56.py::test_partial_multi_sink_failure_preserves_committed_cursor"
       ],
-      "observed": "The worker now installs a per-security-domain, tenant, workspace, and pipeline file cursor store when an accepted plan declares incremental strategies. Store persistence and scope isolation passed; atomic staging and partial-publication barriers passed in standalone runtime tests. End-to-end managed cursor advancement is still unqualified."
+      "observed": "Cursor commits wait for all selected sinks; a partial multi-sink failure leaves the previously committed cursor unchanged."
     }
   ],
   "secret_scan_regression": {
@@ -86,6 +104,6 @@
     ],
     "observed": "Only the bounded plugin trust status values allowed, denied, skipped, and pending are accepted for the authorization field; credential-bearing values remain rejected."
   },
-  "acceptance_status": "pending",
-  "open_reason": "Managed transform and quality semantics pass for Local, Pandas, and Polars. SQL, PySpark, DataFusion, DuckDB, dynamic runtime expansion, and end-to-end incremental cursor advancement still lack managed-path qualification."
+  "acceptance_status": "qualified_with_limits",
+  "open_reason": "Managed semantics are qualified for Local, Pandas, and Polars native paths and for the incremental cursor publication barrier. SQL, PySpark, DataFusion, DuckDB portable compilation, dynamic graph expansion, and continuous Spark streaming remain unavailable in the managed path and fail closed with concrete capability or runtime-owner reasons."
 }

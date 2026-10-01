@@ -484,9 +484,14 @@ class TransformSupportReport:
                     requirement.get("path") or "findings"
                 )
                 if requirement_id in serialized_by_requirement:
-                    raise ValueError(
-                        "support findings must contain exactly one result per requirement"
-                    )
+                    # Aggregate compilers may report both the canonical
+                    # capability result and a more specific lowering/shape
+                    # failure for the same requirement. Emit one result per
+                    # requirement, with a concrete rejection taking
+                    # precedence over an aggregate success.
+                    if serialized.get("support") == "unsupported":
+                        serialized_by_requirement[requirement_id] = serialized
+                    continue
                 used_ids.add(requirement_id)
                 serialized_by_requirement[requirement_id] = serialized
         findings.extend(serialized_by_requirement.values())

@@ -3265,10 +3265,9 @@ class ManagedApplicationService:
                 for node in plan.logical_graph.nodes
                 if node.kind.value in {"source", "sink"}
             }
-            if (
-                not isinstance(bindings, Mapping)
-                or set(cast(Mapping[str, Any], bindings)) != expected_nodes
-            ):
+            if not isinstance(bindings, Mapping) or set(
+                cast(Mapping[str, Any], bindings)
+            ) not in (set(), expected_nodes):
                 raise ControlPlaneError(
                     "Managed adaptive plan lacks complete binding identities",
                     code="PMADP500",
@@ -3276,6 +3275,12 @@ class ManagedApplicationService:
                     title="Not Implemented",
                     type="etlantic.control_plane/not_implemented",
                 )
+            if not bindings:
+                # The supported local-static memory tuple uses implicit,
+                # process-local source/sink bindings. Any configured binding
+                # must be captured for every endpoint and pass the checks
+                # below; a partial snapshot is never treated as implicit.
+                return
             for descriptor in cast(Mapping[str, object], bindings).values():
                 if (
                     not isinstance(descriptor, Mapping)

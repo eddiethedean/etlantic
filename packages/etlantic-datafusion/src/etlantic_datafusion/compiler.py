@@ -8,6 +8,7 @@ import io
 import json
 import re
 from collections.abc import Mapping, Sequence
+from dataclasses import replace
 from decimal import Decimal
 from typing import Any
 
@@ -163,7 +164,13 @@ class DataFusionTransformCompiler:
             self.info.evidence_fingerprint,
             pushdown,
             requirement_records_from_mapping(req, definition=definition),
-            report.requirement_findings,
+            tuple(
+                replace(
+                    finding,
+                    evidence_fingerprint=self.info.evidence_fingerprint,
+                )
+                for finding in report.requirement_findings
+            ),
         )
 
     def compile(

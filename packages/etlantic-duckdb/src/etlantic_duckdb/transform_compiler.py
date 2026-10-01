@@ -184,7 +184,13 @@ class DuckDBTransformCompiler:
                 supported_actions=self._info.capabilities.actions,
             ),
             requirements=requirement_records_from_mapping(req, definition=definition),
-            requirement_findings=report.requirement_findings,
+            requirement_findings=tuple(
+                replace(
+                    finding,
+                    evidence_fingerprint=self._info.evidence_fingerprint,
+                )
+                for finding in report.requirement_findings
+            ),
         )
 
     def compile(

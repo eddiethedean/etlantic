@@ -1060,7 +1060,9 @@ jobs:
           github-token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Sync with fastapi extra
-        run: uv sync --locked --extra fastapi --extra dataframes --group sqlmodel
+        run: >-
+          uv sync --locked --extra fastapi --extra dataframes --extra sql
+          --extra datafusion --extra duckdb --group pyspark --group sqlmodel
 
       - name: Pytest FastAPI reference suite
         env:

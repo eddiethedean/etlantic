@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import hashlib
 import json
+from dataclasses import replace
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
 from time import sleep
@@ -37,6 +38,7 @@ from etlantic.authoring.serialize import pipeline_to_dict
 from etlantic.connectors.local_files import LocalFilesSourceConnector
 from etlantic.control_plane import (
     ControlPlaneContext,
+    ControlPlaneError,
     EnvironmentRef,
     ExecutionEnvelope,
     MemoryAuthorizer,
@@ -46,7 +48,10 @@ from etlantic.control_plane import (
     TenantRef,
     WorkspaceRef,
 )
+from etlantic.exceptions import PipelineValidationError
 from etlantic.lifecycle.runtime import PipelineRuntime
+from etlantic.model import LogicalGraph, Node, NodeKind
+from etlantic.profile import PlacementTarget
 from etlantic.quality import QualityRuleset, make_quality_gate, rule_membership
 from etlantic.registry import BindingDescriptor, PlanningContext
 from etlantic.reports.model import ArtifactResult, PipelineRunReport
@@ -80,6 +85,15 @@ class _ManagedBackendRow(Data):
 class _ManagedBackendPipeline(Pipeline):
     source: Extract[_ManagedBackendRow] = Extract(asset="source")
     result: Load[_ManagedBackendRow] = Load(input=source, asset="result")
+
+
+class _ManagedAdaptiveRow(Data):
+    id: int
+
+
+class _ManagedAdaptivePipeline(Pipeline):
+    source: Extract[_ManagedAdaptiveRow] = Extract(asset="rows")
+    result: Load[_ManagedAdaptiveRow] = Load(input=source, asset="out")
 
 
 class _ManagedCsvRow(Data):
@@ -164,6 +178,34 @@ class _ManagedTransformPipeline(Pipeline):
     )
     rejected: Load[_ManagedTransformOutput] = Load(
         input=checked.rejected, asset="rejected"
+    )
+
+
+class _PortableManagedNormalize(Transformation):
+    rows: Input[_ManagedTransformInput]
+    result: Output[_ManagedTransformOutput]
+
+
+_PortableManagedNormalize.portable(_normalize_managed_rows)
+
+
+class _PortableManagedTransformPipeline(Pipeline):
+    source: Extract[_ManagedTransformInput] = Extract(asset="source")
+    normalized = _PortableManagedNormalize.step(rows=source)
+    checked = _ManagedNameQuality.step(rows=normalized.result)
+    accepted: Load[_ManagedTransformOutput] = Load(
+        input=checked.result, asset="accepted"
+    )
+    rejected: Load[_ManagedTransformOutput] = Load(
+        input=checked.rejected, asset="rejected"
+    )
+
+
+class _PortableManagedTransformOnlyPipeline(Pipeline):
+    source: Extract[_ManagedTransformInput] = Extract(asset="source")
+    normalized = _PortableManagedNormalize.step(rows=source)
+    result: Load[_ManagedTransformOutput] = Load(
+        input=normalized.result, asset="accepted"
     )
 
 
@@ -694,10 +736,14 @@ def test_managed_worker_executes_finalized_upload_and_lease_outlives_staging_ttl
         backend.close()
 
 
-@pytest.mark.parametrize("engine", ["local", "pandas", "polars"])
-def test_managed_worker_preserves_native_transform_quality_and_quarantine(
+@pytest.mark.parametrize(
+    "engine",
+    ["local", "pandas", "polars", "sql", "datafusion", "duckdb", "pyspark"],
+)
+def test_managed_worker_preserves_or_explains_transform_quality_engine_limit(
     tmp_path: Path,
     engine: str,
+    monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     """The accepted worker plan preserves transform and quality-port semantics."""
     landing = tmp_path / "semantic-input.csv"
@@ -708,11 +754,33 @@ def test_managed_worker_preserves_native_transform_quality_and_quarantine(
     profile = Profile(
         name="managed-semantic-worker",
         security_mode="development",
-        dataframe_engine=engine,
-        plugin_allowlist={} if engine == "local" else {f"etlantic-{engine}": None},
-        portable_transform_policy="native",
+        dataframe_engine="local" if engine in {"sql", "pyspark"} else engine,
+        sql_engine="sql" if engine == "sql" else None,
+        spark_engine="pyspark" if engine == "pyspark" else None,
+        plugin_allowlist=(
+            {}
+            if engine == "local"
+            else {
+                f"etlantic-{name}": None
+                for name in (
+                    "pandas",
+                    "polars",
+                    "local",
+                    "sql",
+                    "datafusion",
+                    "duckdb",
+                    "pyspark",
+                )
+            }
+        ),
+        portable_transform_policy=(
+            "native" if engine in {"local", "pandas", "polars"} else "require"
+        ),
         safe_io={"approved_roots": [str(tmp_path)]},
     )
+    if engine == "pyspark":
+        monkeypatch.setenv("SPARKLESS_TEST_MODE", "sparkless")
+        monkeypatch.setenv("ETLANTIC_SPARK_BACKEND", "sparkless")
 
     def planning_context_factory(
         _ctx: ControlPlaneContext, effective_profile: Any
@@ -771,8 +839,40 @@ def test_managed_worker_preserves_native_transform_quality_and_quarantine(
         service.register_definition(
             ctx,
             "managed-semantic-pipe",
-            pipeline_to_dict(definition_from_pipeline(_ManagedTransformPipeline)),
+            pipeline_to_dict(
+                definition_from_pipeline(
+                    _PortableManagedTransformOnlyPipeline
+                    if engine in {"sql", "datafusion", "duckdb", "pyspark"}
+                    else _ManagedTransformPipeline
+                )
+            ),
         )
+        if engine in {"sql", "datafusion", "duckdb", "pyspark"}:
+            with pytest.raises((ControlPlaneError, PipelineValidationError)) as failure:
+                service.submit_run(
+                    ctx,
+                    "managed-semantic-pipe",
+                    idempotency_key="managed-transform-quality-run",
+                )
+            if isinstance(failure.value, PipelineValidationError):
+                diagnostics = [d.to_dict() for d in failure.value.report.diagnostics]
+            else:
+                diagnostics = failure.value.extensions.get("diagnostics")
+            assert isinstance(diagnostics, list) and diagnostics
+            assert any(
+                (
+                    item.get("code") == "PMXFORM301"
+                    and "unsupported" in str(item.get("message", "")).lower()
+                )
+                or (
+                    item.get("code") == "PMPLAN401"
+                    and "no plugin capabilities registered"
+                    in str(item.get("message", "")).lower()
+                )
+                for item in diagnostics
+                if isinstance(item, dict)
+            ), diagnostics
+            return
         receipt = service.submit_run(
             ctx,
             "managed-semantic-pipe",
@@ -807,6 +907,33 @@ def test_managed_worker_explains_continuous_streaming_boundary() -> None:
         cast(Any, adapter)._execution_profile(accepted_envelope, streaming_plan)
 
 
+def test_managed_worker_explains_dynamic_expansion_boundary() -> None:
+    from types import MappingProxyType
+
+    graph = LogicalGraph(
+        pipeline_id="managed-dynamic",
+        pipeline_name="Managed dynamic graph",
+        nodes=(
+            Node(
+                name="fanout",
+                kind=NodeKind.MAP,
+                identity="fanout",
+                metadata=MappingProxyType(
+                    {"etlantic.expansion": {"collection_identity": "parts"}}
+                ),
+            ),
+        ),
+    )
+    dynamic_plan = SimpleNamespace(profile_snapshot={}, logical_graph=graph)
+    with pytest.raises(
+        ExecutionRejected,
+        match=r"frozen batch graphs.*control\.expansion child scheduler.*durable child ledger",
+    ):
+        cast(Any, ManagedExecutionAdapter())._execution_profile(
+            SimpleNamespace(profile_name="development"), dynamic_plan
+        )
+
+
 def test_managed_incremental_cursor_store_persists_and_is_scope_isolated(
     tmp_path: Path,
 ) -> None:
@@ -833,6 +960,211 @@ def test_managed_incremental_cursor_store_persists_and_is_scope_isolated(
         other_scope, "managed-pipeline", state_root=tmp_path
     )
     assert isolated.get("orders") is None
+
+
+def test_managed_incremental_run_commits_cursor_after_published_outputs(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    landing = tmp_path / "incremental-input.csv"
+    landing.write_text("id,name\n42,  Ada  \n43,Grace\n", encoding="utf-8")
+    accepted_path = tmp_path / "incremental-accepted.csv"
+    rejected_path = tmp_path / "incremental-rejected.csv"
+    state_root = tmp_path / "managed-state"
+    monkeypatch.setenv("ETLANTIC_STATE_DIR", str(state_root))
+    ctx = _context()
+    profile = Profile(
+        name="managed-incremental-worker",
+        security_mode="development",
+        dataframe_engine="local",
+        portable_transform_policy="native",
+        safe_io={"approved_roots": [str(tmp_path)]},
+    )
+
+    def planning_context_factory(
+        _ctx: ControlPlaneContext, effective_profile: Any
+    ) -> PlanningContext:
+        planning = PlanningContext.create(profile=effective_profile)
+        for descriptor in (
+            BindingDescriptor(
+                binding="source",
+                provider="local-files",
+                location=landing.name,
+                kind="source",
+                config={"format": "csv", "mode": "snapshot", "root": str(tmp_path)},
+            ),
+            BindingDescriptor(
+                binding="accepted",
+                provider="csv",
+                location=str(accepted_path),
+                kind="sink",
+            ),
+            BindingDescriptor(
+                binding="rejected",
+                provider="csv",
+                location=str(rejected_path),
+                kind="sink",
+            ),
+        ):
+            planning.registry.register_binding(descriptor)
+        return planning
+
+    authorizer = MemoryAuthorizer()
+    for permission in ("definition.write", "run.submit", "run.read", "run.report"):
+        authorizer.grant(ctx, permission)
+    backend = create_managed_backend(
+        ManagedBackendConfig(
+            database_url=_migrated_url(tmp_path),
+            store_id="managed-incremental-worker",
+            profile=profile,
+        ),
+        authorizer=authorizer,
+        context_factory=static_context_factory(
+            tenant_id=ctx.tenant.tenant_id,
+            workspace_id=ctx.workspace.workspace_id,
+            environment=ctx.environment.name,
+            security_domain=ctx.security_domain.domain_id,
+        ),
+        planning_context_factory=planning_context_factory,
+    )
+    try:
+        service = backend.api.managed_service
+        assert service is not None
+        definition_model = replace(
+            definition_from_pipeline(_ManagedTransformPipeline),
+            extensions={
+                "etlantic.incremental": {
+                    "strategies": {"orders": {"kind": "cursor", "field": "id"}}
+                }
+            },
+        )
+        definition = pipeline_to_dict(definition_model)
+        service.register_definition(ctx, "managed-incremental-pipe", definition)
+        receipt = service.submit_run(
+            ctx,
+            "managed-incremental-pipe",
+            idempotency_key="managed-incremental-run",
+            request=RunRequest(
+                intent=RunIntent.INCREMENTAL,
+                metadata={"state_candidates": {"orders": "43"}},
+            ),
+        )
+        assert (
+            backend.create_execution_host(owner_id="managed-incremental-worker").tick(
+                ctx
+            )
+            == 1
+        )
+        report = service.get_run_report(ctx, str(receipt.resource_id))
+        assert report["status"] == "succeeded"
+        state = managed_incremental_state_store(
+            ctx, definition_model.pipeline_id, state_root=state_root
+        )
+        cursor = state.get("orders")
+        assert cursor is not None and cursor.value == "43"
+        assert accepted_path.read_text(encoding="utf-8").splitlines() == [
+            "id,name",
+            "42,Ada",
+        ]
+        assert rejected_path.read_text(encoding="utf-8").splitlines() == [
+            "id,name",
+            "43,Grace",
+        ]
+    finally:
+        backend.close()
+
+
+def test_managed_adaptive_local_chain_is_admitted_and_observed(
+    tmp_path: Path,
+) -> None:
+    """Qualify one exact plan/2 support row through durable managed execution."""
+    ctx = _context()
+    profile = Profile(
+        name="managed-adaptive-local-chain",
+        security_mode="development",
+        execution_strategy="adaptive",
+        portable_transform_policy="require",
+        placement_targets={"local": PlacementTarget(engine="local")},
+        eligible_targets=("local",),
+    )
+    authorizer = MemoryAuthorizer()
+    for permission in (
+        "definition.write",
+        "definition.plan",
+        "run.submit",
+        "run.read",
+        "run.report",
+    ):
+        authorizer.grant(ctx, permission)
+    backend = create_managed_backend(
+        ManagedBackendConfig(
+            database_url=_migrated_url(tmp_path),
+            store_id="managed-adaptive-local-chain",
+            profile=profile,
+        ),
+        authorizer=authorizer,
+        context_factory=static_context_factory(
+            tenant_id=ctx.tenant.tenant_id,
+            workspace_id=ctx.workspace.workspace_id,
+            environment=ctx.environment.name,
+            security_domain=ctx.security_domain.domain_id,
+        ),
+    )
+    try:
+        service = backend.api.managed_service
+        assert service is not None
+        service.register_definition(
+            ctx,
+            "managed-adaptive-local-pipe",
+            pipeline_to_dict(definition_from_pipeline(_ManagedAdaptivePipeline)),
+        )
+        planned = service.plan_definition(ctx, "managed-adaptive-local-pipe")
+        plan = planned["plan"]
+        assert plan["schema"] == "etlantic.plan/2"
+        assert plan["metadata"]["etlantic.runtime"]["support_row_id"] == (
+            "local-static:chain/1:local"
+        )
+        assert plan["metadata"]["etlantic.runtime"]["bindings"] == {}
+        assert (
+            plan["metadata"]["etlantic.runtime"]["support_row"]["version_requirements"][
+                "etlantic"
+            ]
+            == "0.55.0"
+        )
+        from etlantic.runtime.adaptive_support import candidate_bundle
+
+        candidate, _candidate_digest = candidate_bundle()
+        assert all(
+            row["versions"]["etlantic"] == "0.54.0"
+            for identity, row in candidate["rows"].items()
+            if identity != "chain/1:local"
+        )
+
+        receipt = service.submit_run(
+            ctx,
+            "managed-adaptive-local-pipe",
+            idempotency_key="managed-adaptive-local-chain-run",
+        )
+        assert receipt.resource_id is not None
+        runtime_instance: PipelineRuntime | None = None
+
+        def runtime_factory() -> PipelineRuntime:
+            nonlocal runtime_instance
+            runtime_instance = PipelineRuntime()
+            runtime_instance.memory.seed("rows", [{"id": 73}])
+            return runtime_instance
+
+        host = backend.create_execution_host(owner_id="managed-adaptive-local-worker")
+        adapter = cast(ManagedExecutionAdapter, host.runner)
+        adapter.runtime_factory = runtime_factory
+        assert host.tick(ctx) == 1
+        report = service.get_run_report(ctx, receipt.resource_id)
+        assert report["status"] == "succeeded"
+        assert runtime_instance is not None
+        observed_rows = runtime_instance.memory.get("out")
+        assert len(observed_rows) == 1
+        assert observed_rows[0].id == 73
+    finally:
+        backend.close()
 
 
 @pytest.mark.parametrize(

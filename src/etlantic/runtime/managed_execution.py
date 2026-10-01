@@ -676,6 +676,16 @@ class ManagedExecutionAdapter:
     ) -> str | Profile:
         """Resolve worker runtime policy and reject drift from accepted settings."""
         snapshot = plan.profile_snapshot or {}
+        from etlantic.streaming.control import is_control_kind
+
+        graph = getattr(plan, "logical_graph", None)
+        if graph is not None and any(
+            is_control_kind(node.kind) for node in getattr(graph, "nodes", ())
+        ):
+            raise ExecutionRejected(
+                "Managed worker executes frozen batch graphs; dynamic control nodes "
+                "require a control.expansion child scheduler and durable child ledger"
+            )
         if snapshot.get("spark_streaming") is True:
             raise ExecutionRejected(
                 "Managed worker runs finite batches; continuous Spark streaming "

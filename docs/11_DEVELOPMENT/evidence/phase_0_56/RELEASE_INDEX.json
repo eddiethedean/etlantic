@@ -7,7 +7,7 @@
       "evidence_artifacts": [
         {
           "path": "docs/11_DEVELOPMENT/evidence/phase_0_56/LOCAL_QUALIFICATION.md",
-          "sha256": "eafba2d1719d94aa672ec026dc5e969efce1511361ef851bb35f63a35e87628f"
+          "sha256": "6b758f154997200707600e886f42247bdb7ba615eb7cff07e1ab110f05bf195a"
         },
         {
           "path": "docs/11_DEVELOPMENT/evidence/phase_0_56/WHEEL_MANIFEST.json",
@@ -34,7 +34,7 @@
       "evidence_artifacts": [
         {
           "path": "docs/11_DEVELOPMENT/evidence/phase_0_56/LOCAL_QUALIFICATION.md",
-          "sha256": "eafba2d1719d94aa672ec026dc5e969efce1511361ef851bb35f63a35e87628f"
+          "sha256": "6b758f154997200707600e886f42247bdb7ba615eb7cff07e1ab110f05bf195a"
         },
         {
           "path": "docs/11_DEVELOPMENT/evidence/phase_0_56/WHEEL_MANIFEST.json",
@@ -64,7 +64,7 @@
       "evidence_artifacts": [
         {
           "path": "docs/11_DEVELOPMENT/evidence/phase_0_56/LOCAL_QUALIFICATION.md",
-          "sha256": "eafba2d1719d94aa672ec026dc5e969efce1511361ef851bb35f63a35e87628f"
+          "sha256": "6b758f154997200707600e886f42247bdb7ba615eb7cff07e1ab110f05bf195a"
         },
         {
           "path": "docs/11_DEVELOPMENT/evidence/phase_0_56/WHEEL_MANIFEST.json",
@@ -92,11 +92,11 @@
       "evidence_artifacts": [
         {
           "path": "docs/11_DEVELOPMENT/evidence/phase_0_56/LOCAL_QUALIFICATION.md",
-          "sha256": "eafba2d1719d94aa672ec026dc5e969efce1511361ef851bb35f63a35e87628f"
+          "sha256": "6b758f154997200707600e886f42247bdb7ba615eb7cff07e1ab110f05bf195a"
         },
         {
           "path": "docs/11_DEVELOPMENT/evidence/phase_0_56/PUBLIC_CONTROL_COVERAGE_0_56.json",
-          "sha256": "265aa195b9620141ae639cb6f63ede8547d11a5635dc489d0541bc7dea40319f"
+          "sha256": "d9c610a604c4293062e093d68eead2a4afc8d37f67ad7c409deff4985f85fbf1"
         },
         {
           "path": "docs/11_DEVELOPMENT/evidence/phase_0_56/WHEEL_MANIFEST.json",
@@ -126,7 +126,7 @@
       "evidence_artifacts": [
         {
           "path": "docs/11_DEVELOPMENT/evidence/phase_0_56/LOCAL_QUALIFICATION.md",
-          "sha256": "eafba2d1719d94aa672ec026dc5e969efce1511361ef851bb35f63a35e87628f"
+          "sha256": "6b758f154997200707600e886f42247bdb7ba615eb7cff07e1ab110f05bf195a"
         },
         {
           "path": "docs/11_DEVELOPMENT/evidence/phase_0_56/WHEEL_MANIFEST.json",
@@ -157,7 +157,7 @@
       "evidence_artifacts": [
         {
           "path": "docs/11_DEVELOPMENT/evidence/phase_0_56/LOCAL_QUALIFICATION.md",
-          "sha256": "eafba2d1719d94aa672ec026dc5e969efce1511361ef851bb35f63a35e87628f"
+          "sha256": "6b758f154997200707600e886f42247bdb7ba615eb7cff07e1ab110f05bf195a"
         },
         {
           "path": "docs/11_DEVELOPMENT/evidence/phase_0_56/WHEEL_MANIFEST.json",
@@ -193,7 +193,7 @@
       "evidence_artifacts": [
         {
           "path": "docs/11_DEVELOPMENT/evidence/phase_0_56/LOCAL_QUALIFICATION.md",
-          "sha256": "eafba2d1719d94aa672ec026dc5e969efce1511361ef851bb35f63a35e87628f"
+          "sha256": "6b758f154997200707600e886f42247bdb7ba615eb7cff07e1ab110f05bf195a"
         },
         {
           "path": "docs/11_DEVELOPMENT/evidence/phase_0_56/WHEEL_MANIFEST.json",
@@ -224,7 +224,7 @@
       "evidence_artifacts": [
         {
           "path": "docs/11_DEVELOPMENT/evidence/phase_0_56/LOCAL_QUALIFICATION.md",
-          "sha256": "eafba2d1719d94aa672ec026dc5e969efce1511361ef851bb35f63a35e87628f"
+          "sha256": "6b758f154997200707600e886f42247bdb7ba615eb7cff07e1ab110f05bf195a"
         },
         {
           "path": "docs/11_DEVELOPMENT/evidence/phase_0_56/WHEEL_MANIFEST.json",
@@ -256,7 +256,7 @@
       "evidence_artifacts": [
         {
           "path": "docs/11_DEVELOPMENT/evidence/phase_0_56/LOCAL_QUALIFICATION.md",
-          "sha256": "eafba2d1719d94aa672ec026dc5e969efce1511361ef851bb35f63a35e87628f"
+          "sha256": "6b758f154997200707600e886f42247bdb7ba615eb7cff07e1ab110f05bf195a"
         },
         {
           "path": "docs/11_DEVELOPMENT/evidence/phase_0_56/WHEEL_MANIFEST.json",
@@ -291,7 +291,7 @@
       "evidence_artifacts": [
         {
           "path": "docs/11_DEVELOPMENT/evidence/phase_0_56/LOCAL_QUALIFICATION.md",
-          "sha256": "eafba2d1719d94aa672ec026dc5e969efce1511361ef851bb35f63a35e87628f"
+          "sha256": "6b758f154997200707600e886f42247bdb7ba615eb7cff07e1ab110f05bf195a"
         },
         {
           "path": "docs/11_DEVELOPMENT/evidence/phase_0_56/WHEEL_MANIFEST.json",
@@ -326,7 +326,7 @@
       "evidence_artifacts": [
         {
           "path": "docs/11_DEVELOPMENT/evidence/phase_0_56/LOCAL_QUALIFICATION.md",
-          "sha256": "eafba2d1719d94aa672ec026dc5e969efce1511361ef851bb35f63a35e87628f"
+          "sha256": "6b758f154997200707600e886f42247bdb7ba615eb7cff07e1ab110f05bf195a"
         },
         {
           "path": "docs/11_DEVELOPMENT/evidence/phase_0_56/WHEEL_MANIFEST.json",
@@ -358,7 +358,7 @@
       "evidence_artifacts": [
         {
           "path": "docs/11_DEVELOPMENT/evidence/phase_0_56/LOCAL_QUALIFICATION.md",
-          "sha256": "eafba2d1719d94aa672ec026dc5e969efce1511361ef851bb35f63a35e87628f"
+          "sha256": "6b758f154997200707600e886f42247bdb7ba615eb7cff07e1ab110f05bf195a"
         },
         {
           "path": "docs/11_DEVELOPMENT/evidence/phase_0_56/WHEEL_MANIFEST.json",
@@ -388,7 +388,7 @@
       "evidence_artifacts": [
         {
           "path": "docs/11_DEVELOPMENT/evidence/phase_0_56/LOCAL_QUALIFICATION.md",
-          "sha256": "eafba2d1719d94aa672ec026dc5e969efce1511361ef851bb35f63a35e87628f"
+          "sha256": "6b758f154997200707600e886f42247bdb7ba615eb7cff07e1ab110f05bf195a"
         },
         {
           "path": "docs/11_DEVELOPMENT/evidence/phase_0_56/WHEEL_MANIFEST.json",
@@ -429,7 +429,7 @@
       "evidence_artifacts": [
         {
           "path": "docs/11_DEVELOPMENT/evidence/phase_0_56/LOCAL_QUALIFICATION.md",
-          "sha256": "eafba2d1719d94aa672ec026dc5e969efce1511361ef851bb35f63a35e87628f"
+          "sha256": "6b758f154997200707600e886f42247bdb7ba615eb7cff07e1ab110f05bf195a"
         },
         {
           "path": "docs/11_DEVELOPMENT/evidence/phase_0_56/WHEEL_MANIFEST.json",
@@ -457,7 +457,7 @@
       "evidence_artifacts": [
         {
           "path": "docs/11_DEVELOPMENT/evidence/phase_0_56/LOCAL_QUALIFICATION.md",
-          "sha256": "eafba2d1719d94aa672ec026dc5e969efce1511361ef851bb35f63a35e87628f"
+          "sha256": "6b758f154997200707600e886f42247bdb7ba615eb7cff07e1ab110f05bf195a"
         },
         {
           "path": "docs/11_DEVELOPMENT/evidence/phase_0_56/WHEEL_MANIFEST.json",
@@ -490,7 +490,7 @@
       "evidence_artifacts": [
         {
           "path": "docs/11_DEVELOPMENT/evidence/phase_0_56/LOCAL_QUALIFICATION.md",
-          "sha256": "eafba2d1719d94aa672ec026dc5e969efce1511361ef851bb35f63a35e87628f"
+          "sha256": "6b758f154997200707600e886f42247bdb7ba615eb7cff07e1ab110f05bf195a"
         },
         {
           "path": "docs/11_DEVELOPMENT/evidence/phase_0_56/WHEEL_MANIFEST.json",
@@ -522,7 +522,7 @@
       "evidence_artifacts": [
         {
           "path": "docs/11_DEVELOPMENT/evidence/phase_0_56/LOCAL_QUALIFICATION.md",
-          "sha256": "eafba2d1719d94aa672ec026dc5e969efce1511361ef851bb35f63a35e87628f"
+          "sha256": "6b758f154997200707600e886f42247bdb7ba615eb7cff07e1ab110f05bf195a"
         },
         {
           "path": "docs/11_DEVELOPMENT/evidence/phase_0_56/WHEEL_MANIFEST.json",
@@ -554,7 +554,7 @@
       "evidence_artifacts": [
         {
           "path": "docs/11_DEVELOPMENT/evidence/phase_0_56/LOCAL_QUALIFICATION.md",
-          "sha256": "eafba2d1719d94aa672ec026dc5e969efce1511361ef851bb35f63a35e87628f"
+          "sha256": "6b758f154997200707600e886f42247bdb7ba615eb7cff07e1ab110f05bf195a"
         },
         {
           "path": "docs/11_DEVELOPMENT/evidence/phase_0_56/WHEEL_MANIFEST.json",
@@ -587,7 +587,7 @@
       "evidence_artifacts": [
         {
           "path": "docs/11_DEVELOPMENT/evidence/phase_0_56/LOCAL_QUALIFICATION.md",
-          "sha256": "eafba2d1719d94aa672ec026dc5e969efce1511361ef851bb35f63a35e87628f"
+          "sha256": "6b758f154997200707600e886f42247bdb7ba615eb7cff07e1ab110f05bf195a"
         },
         {
           "path": "docs/11_DEVELOPMENT/evidence/phase_0_56/WHEEL_MANIFEST.json",
@@ -638,7 +638,7 @@
       "evidence_artifacts": [
         {
           "path": "docs/11_DEVELOPMENT/evidence/phase_0_56/LOCAL_QUALIFICATION.md",
-          "sha256": "eafba2d1719d94aa672ec026dc5e969efce1511361ef851bb35f63a35e87628f"
+          "sha256": "6b758f154997200707600e886f42247bdb7ba615eb7cff07e1ab110f05bf195a"
         },
         {
           "path": "docs/11_DEVELOPMENT/evidence/phase_0_56/WHEEL_MANIFEST.json",
@@ -668,7 +668,7 @@
       "evidence_artifacts": [
         {
           "path": "docs/11_DEVELOPMENT/evidence/phase_0_56/LOCAL_QUALIFICATION.md",
-          "sha256": "eafba2d1719d94aa672ec026dc5e969efce1511361ef851bb35f63a35e87628f"
+          "sha256": "6b758f154997200707600e886f42247bdb7ba615eb7cff07e1ab110f05bf195a"
         },
         {
           "path": "docs/11_DEVELOPMENT/evidence/phase_0_56/WHEEL_MANIFEST.json",
@@ -701,7 +701,7 @@
       "evidence_artifacts": [
         {
           "path": "docs/11_DEVELOPMENT/evidence/phase_0_56/LOCAL_QUALIFICATION.md",
-          "sha256": "eafba2d1719d94aa672ec026dc5e969efce1511361ef851bb35f63a35e87628f"
+          "sha256": "6b758f154997200707600e886f42247bdb7ba615eb7cff07e1ab110f05bf195a"
         },
         {
           "path": "docs/11_DEVELOPMENT/evidence/phase_0_56/WHEEL_MANIFEST.json",
@@ -734,7 +734,7 @@
       "evidence_artifacts": [
         {
           "path": "docs/11_DEVELOPMENT/evidence/phase_0_56/LOCAL_QUALIFICATION.md",
-          "sha256": "eafba2d1719d94aa672ec026dc5e969efce1511361ef851bb35f63a35e87628f"
+          "sha256": "6b758f154997200707600e886f42247bdb7ba615eb7cff07e1ab110f05bf195a"
         },
         {
           "path": "docs/11_DEVELOPMENT/evidence/phase_0_56/WHEEL_MANIFEST.json",
@@ -769,7 +769,7 @@
       "evidence_artifacts": [
         {
           "path": "docs/11_DEVELOPMENT/evidence/phase_0_56/LOCAL_QUALIFICATION.md",
-          "sha256": "eafba2d1719d94aa672ec026dc5e969efce1511361ef851bb35f63a35e87628f"
+          "sha256": "6b758f154997200707600e886f42247bdb7ba615eb7cff07e1ab110f05bf195a"
         },
         {
           "path": "docs/11_DEVELOPMENT/evidence/phase_0_56/WHEEL_MANIFEST.json",
@@ -807,7 +807,7 @@
       "evidence_artifacts": [
         {
           "path": "docs/11_DEVELOPMENT/evidence/phase_0_56/LOCAL_QUALIFICATION.md",
-          "sha256": "eafba2d1719d94aa672ec026dc5e969efce1511361ef851bb35f63a35e87628f"
+          "sha256": "6b758f154997200707600e886f42247bdb7ba615eb7cff07e1ab110f05bf195a"
         },
         {
           "path": "docs/11_DEVELOPMENT/evidence/phase_0_56/WHEEL_MANIFEST.json",
@@ -840,7 +840,7 @@
       "evidence_artifacts": [
         {
           "path": "docs/11_DEVELOPMENT/evidence/phase_0_56/LOCAL_QUALIFICATION.md",
-          "sha256": "eafba2d1719d94aa672ec026dc5e969efce1511361ef851bb35f63a35e87628f"
+          "sha256": "6b758f154997200707600e886f42247bdb7ba615eb7cff07e1ab110f05bf195a"
         },
         {
           "path": "docs/11_DEVELOPMENT/evidence/phase_0_56/WHEEL_MANIFEST.json",
@@ -871,7 +871,7 @@
       "evidence_artifacts": [
         {
           "path": "docs/11_DEVELOPMENT/evidence/phase_0_56/LOCAL_QUALIFICATION.md",
-          "sha256": "eafba2d1719d94aa672ec026dc5e969efce1511361ef851bb35f63a35e87628f"
+          "sha256": "6b758f154997200707600e886f42247bdb7ba615eb7cff07e1ab110f05bf195a"
         },
         {
           "path": "docs/11_DEVELOPMENT/evidence/phase_0_56/WHEEL_MANIFEST.json",
@@ -902,7 +902,7 @@
       "evidence_artifacts": [
         {
           "path": "docs/11_DEVELOPMENT/evidence/phase_0_56/LOCAL_QUALIFICATION.md",
-          "sha256": "eafba2d1719d94aa672ec026dc5e969efce1511361ef851bb35f63a35e87628f"
+          "sha256": "6b758f154997200707600e886f42247bdb7ba615eb7cff07e1ab110f05bf195a"
         },
         {
           "path": "docs/11_DEVELOPMENT/evidence/phase_0_56/WHEEL_MANIFEST.json",
@@ -933,7 +933,7 @@
       "evidence_artifacts": [
         {
           "path": "docs/11_DEVELOPMENT/evidence/phase_0_56/LOCAL_QUALIFICATION.md",
-          "sha256": "eafba2d1719d94aa672ec026dc5e969efce1511361ef851bb35f63a35e87628f"
+          "sha256": "6b758f154997200707600e886f42247bdb7ba615eb7cff07e1ab110f05bf195a"
         },
         {
           "path": "docs/11_DEVELOPMENT/evidence/phase_0_56/WHEEL_MANIFEST.json",
@@ -966,7 +966,7 @@
       "evidence_artifacts": [
         {
           "path": "docs/11_DEVELOPMENT/evidence/phase_0_56/LOCAL_QUALIFICATION.md",
-          "sha256": "eafba2d1719d94aa672ec026dc5e969efce1511361ef851bb35f63a35e87628f"
+          "sha256": "6b758f154997200707600e886f42247bdb7ba615eb7cff07e1ab110f05bf195a"
         },
         {
           "path": "docs/11_DEVELOPMENT/evidence/phase_0_56/WHEEL_MANIFEST.json",
@@ -996,7 +996,7 @@
       "evidence_artifacts": [
         {
           "path": "docs/11_DEVELOPMENT/evidence/phase_0_56/LOCAL_QUALIFICATION.md",
-          "sha256": "eafba2d1719d94aa672ec026dc5e969efce1511361ef851bb35f63a35e87628f"
+          "sha256": "6b758f154997200707600e886f42247bdb7ba615eb7cff07e1ab110f05bf195a"
         },
         {
           "path": "docs/11_DEVELOPMENT/evidence/phase_0_56/WHEEL_MANIFEST.json",
@@ -1004,7 +1004,7 @@
         }
       ],
       "id": "AC056-031",
-      "observed_result": "A managed checkpoint-resume command validates that a checkpoint belongs to the parent submission, admits an idempotent child submission with a distinct run identity, and preserves command, checkpoint, parent-run and parent-submission references in the immutable execution envelope. The child executes a real JSON-to-CSV managed pipeline through the durable worker, persists a successful report, and records a resume parent-to-child lineage edge. Named runtime artifacts resolve in the parent run\u2019s scoped artifact workspace. State-aware run actions advertise resume only for failed/cancelled runs with a verified envelope and no unresolved effect. Memory qualification covers worker interruption after checkpoint creation, HTTP acceptance, idempotent retry after parent state changes, missing-checkpoint rejection and unknown-effect blocking. Repair/backfill commands and their full lifecycle semantics are still unimplemented; no complete AC-level pass is asserted.",
+      "observed_result": "A managed checkpoint-resume command validates that a checkpoint belongs to the parent submission, admits an idempotent child submission with a distinct run identity, and preserves command, checkpoint, parent-run and parent-submission references in the immutable execution envelope. The child executes a real JSON-to-CSV managed pipeline through the durable worker, persists a successful report, and records a resume parent-to-child lineage edge. Named runtime artifacts resolve in the parent run’s scoped artifact workspace. State-aware run actions advertise resume only for failed/cancelled runs with a verified envelope and no unresolved effect. Memory qualification covers worker interruption after checkpoint creation, HTTP acceptance, idempotent retry after parent state changes, missing-checkpoint rejection and unknown-effect blocking. Repair/backfill commands and their full lifecycle semantics are still unimplemented; no complete AC-level pass is asserted.",
       "open_reason": "Managed checkpoint resume is implemented and locally qualified. Executable repair/backfill semantics, attempt lineage for the full command family and the complete lifecycle case remain pending.",
       "owner": "056-CONTROL",
       "provider_version_tuple": [
@@ -1027,11 +1027,11 @@
       "evidence_artifacts": [
         {
           "path": "docs/11_DEVELOPMENT/evidence/phase_0_56/LOCAL_QUALIFICATION.md",
-          "sha256": "eafba2d1719d94aa672ec026dc5e969efce1511361ef851bb35f63a35e87628f"
+          "sha256": "6b758f154997200707600e886f42247bdb7ba615eb7cff07e1ab110f05bf195a"
         },
         {
           "path": "docs/11_DEVELOPMENT/evidence/phase_0_56/PUBLIC_CONTROL_COVERAGE_0_56.json",
-          "sha256": "265aa195b9620141ae639cb6f63ede8547d11a5635dc489d0541bc7dea40319f"
+          "sha256": "d9c610a604c4293062e093d68eead2a4afc8d37f67ad7c409deff4985f85fbf1"
         },
         {
           "path": "tests/fastapi/openapi_cp1_snapshot.json",
@@ -1068,7 +1068,7 @@
       "evidence_artifacts": [
         {
           "path": "docs/11_DEVELOPMENT/evidence/phase_0_56/LOCAL_QUALIFICATION.md",
-          "sha256": "eafba2d1719d94aa672ec026dc5e969efce1511361ef851bb35f63a35e87628f"
+          "sha256": "6b758f154997200707600e886f42247bdb7ba615eb7cff07e1ab110f05bf195a"
         },
         {
           "path": "docs/11_DEVELOPMENT/evidence/phase_0_56/WHEEL_MANIFEST.json",
@@ -1101,7 +1101,7 @@
       "evidence_artifacts": [
         {
           "path": "docs/11_DEVELOPMENT/evidence/phase_0_56/LOCAL_QUALIFICATION.md",
-          "sha256": "eafba2d1719d94aa672ec026dc5e969efce1511361ef851bb35f63a35e87628f"
+          "sha256": "6b758f154997200707600e886f42247bdb7ba615eb7cff07e1ab110f05bf195a"
         },
         {
           "path": "docs/11_DEVELOPMENT/evidence/phase_0_56/SIMULATOR_QUALIFICATION_0_56.json",
@@ -1135,7 +1135,7 @@
       "evidence_artifacts": [
         {
           "path": "docs/11_DEVELOPMENT/evidence/phase_0_56/LOCAL_QUALIFICATION.md",
-          "sha256": "eafba2d1719d94aa672ec026dc5e969efce1511361ef851bb35f63a35e87628f"
+          "sha256": "6b758f154997200707600e886f42247bdb7ba615eb7cff07e1ab110f05bf195a"
         },
         {
           "path": "docs/11_DEVELOPMENT/evidence/phase_0_56/WHEEL_MANIFEST.json",
@@ -1168,7 +1168,7 @@
       "evidence_artifacts": [
         {
           "path": "docs/11_DEVELOPMENT/evidence/phase_0_56/LOCAL_QUALIFICATION.md",
-          "sha256": "eafba2d1719d94aa672ec026dc5e969efce1511361ef851bb35f63a35e87628f"
+          "sha256": "6b758f154997200707600e886f42247bdb7ba615eb7cff07e1ab110f05bf195a"
         },
         {
           "path": "docs/11_DEVELOPMENT/evidence/phase_0_56/MANAGED_PROVIDER_MATRIX_0_56.json",
@@ -1205,7 +1205,7 @@
       "evidence_artifacts": [
         {
           "path": "docs/11_DEVELOPMENT/evidence/phase_0_56/LOCAL_QUALIFICATION.md",
-          "sha256": "eafba2d1719d94aa672ec026dc5e969efce1511361ef851bb35f63a35e87628f"
+          "sha256": "6b758f154997200707600e886f42247bdb7ba615eb7cff07e1ab110f05bf195a"
         },
         {
           "path": "docs/11_DEVELOPMENT/evidence/phase_0_56/WHEEL_MANIFEST.json",
@@ -1239,7 +1239,7 @@
       "evidence_artifacts": [
         {
           "path": "docs/11_DEVELOPMENT/evidence/phase_0_56/LOCAL_QUALIFICATION.md",
-          "sha256": "eafba2d1719d94aa672ec026dc5e969efce1511361ef851bb35f63a35e87628f"
+          "sha256": "6b758f154997200707600e886f42247bdb7ba615eb7cff07e1ab110f05bf195a"
         },
         {
           "path": "docs/11_DEVELOPMENT/evidence/phase_0_56/WHEEL_MANIFEST.json",
@@ -1276,7 +1276,7 @@
       "evidence_artifacts": [
         {
           "path": "docs/11_DEVELOPMENT/evidence/phase_0_56/LOCAL_QUALIFICATION.md",
-          "sha256": "eafba2d1719d94aa672ec026dc5e969efce1511361ef851bb35f63a35e87628f"
+          "sha256": "6b758f154997200707600e886f42247bdb7ba615eb7cff07e1ab110f05bf195a"
         },
         {
           "path": "docs/11_DEVELOPMENT/evidence/phase_0_56/WHEEL_MANIFEST.json",
@@ -1307,7 +1307,7 @@
       "evidence_artifacts": [
         {
           "path": "docs/11_DEVELOPMENT/evidence/phase_0_56/LOCAL_QUALIFICATION.md",
-          "sha256": "eafba2d1719d94aa672ec026dc5e969efce1511361ef851bb35f63a35e87628f"
+          "sha256": "6b758f154997200707600e886f42247bdb7ba615eb7cff07e1ab110f05bf195a"
         },
         {
           "path": "docs/11_DEVELOPMENT/evidence/phase_0_56/WHEEL_MANIFEST.json",
@@ -1319,7 +1319,7 @@
         },
         {
           "path": "scripts/qualify_phase056_packages.py",
-          "sha256": "0e8092c7562f9a76cac2ee1b3540622bfe331498aa11ad2bfb659d531f6af187"
+          "sha256": "3b07d1f23bee4645ec523be17fd355211407f5e68107d8581b98325f22be4aa5"
         },
         {
           "path": "tests/fastapi/openapi_cp1_snapshot.json",
@@ -1331,7 +1331,7 @@
         }
       ],
       "id": "AC056-040",
-      "observed_result": "All 25 candidate wheels built and dependency-resolved together into a fresh isolated CPython 3.11.15 environment. All 25 installed public package roots and 387 declared exports resolved from site-packages. All 24 adapter base-package constraints accepted the installed 0.55.0 core (or medallantic for SparkForge) and rejected 0.54.99 and 0.56.0. Installed CP1 and CP-GA OpenAPI 3.1 matched the committed path and operation-ID snapshots; both had 57 component schemas and 161 resolving local schema references, with matching component hashes. The installed SQLModel migration chain upgraded to 012 and completed rollback/re-upgrade from each supported CP1 head 005\u2013011 while preserving a definition, submission identity and event history. In the isolated wheel environment, the migration/OpenAPI/wire-schema suites passed 34 tests with 6 PostgreSQL cases skipped because no test database URL was configured; package/version, connector-schema and schema-drift suites passed 87 tests. Resolved runtime dependency versions, exact wheel hashes, package exports, compatibility results and the repeatable qualification command are recorded in the referenced evidence artifacts.",
+      "observed_result": "All 25 candidate wheels built and dependency-resolved together into a fresh isolated CPython 3.11.15 environment. All 25 installed public package roots and 387 declared exports resolved from site-packages. All 24 adapter base-package constraints accepted the installed 0.55.0 core (or medallantic for SparkForge) and rejected 0.54.99 and 0.56.0. Installed CP1 and CP-GA OpenAPI 3.1 matched the committed path and operation-ID snapshots; both had 57 component schemas and 161 resolving local schema references, with matching component hashes. The installed SQLModel migration chain upgraded to 012 and completed rollback/re-upgrade from each supported CP1 head 005–011 while preserving a definition, submission identity and event history. In the isolated wheel environment, the migration/OpenAPI/wire-schema suites passed 34 tests with 6 PostgreSQL cases skipped because no test database URL was configured; package/version, connector-schema and schema-drift suites passed 87 tests. Resolved runtime dependency versions, exact wheel hashes, package exports, compatibility results and the repeatable qualification command are recorded in the referenced evidence artifacts.",
       "open_reason": "",
       "owner": "056-QUALIFY",
       "provider_version_tuple": [
@@ -1362,11 +1362,11 @@
       "evidence_artifacts": [
         {
           "path": "docs/11_DEVELOPMENT/evidence/phase_0_56/LOCAL_QUALIFICATION.md",
-          "sha256": "eafba2d1719d94aa672ec026dc5e969efce1511361ef851bb35f63a35e87628f"
+          "sha256": "6b758f154997200707600e886f42247bdb7ba615eb7cff07e1ab110f05bf195a"
         },
         {
           "path": "docs/11_DEVELOPMENT/evidence/phase_0_56/MANAGED_EXECUTION_MATRIX_0_56.json",
-          "sha256": "ba9cacf4c2c9fe7b8d17270f95088d5a0a3a47fb2ecb548bce96418a8b283da2"
+          "sha256": "f19f16b631596a2247afc31e346de71387f4a60dc0f8c365b3c3cd144f606888"
         },
         {
           "path": "docs/11_DEVELOPMENT/evidence/phase_0_56/WHEEL_MANIFEST.json",
@@ -1374,23 +1374,22 @@
         }
       ],
       "id": "AC056-041",
-      "observed_result": "Managed local, Pandas 2.3.3 and Polars 1.42.1 runs preserved native typed transform semantics, portable quality membership, and accepted/rejected sink routing. The managed cursor store persists under a scope-specific file and scope isolation passed; the standalone cursor publication barrier passed. Continuous Spark streaming is rejected before runtime invocation with the finite-run/trigger-runner/checkpoint-owner limitation. The complete AC remains open because SQL, PySpark, DataFusion, DuckDB, dynamic runtime expansion and end-to-end managed cursor advancement lack managed-path evidence.",
-      "open_reason": "Managed Local/Pandas/Polars semantics and the continuous-streaming limit are qualified. The remaining advertised SQL/PySpark/DataFusion/DuckDB, dynamic runtime expansion and end-to-end incremental cursor combinations are not qualified through the managed worker.",
+      "observed_result": "Managed Local, Pandas 2.3.3 and Polars 1.42.1 runs preserved native typed transform semantics, portable quality membership, and accepted/rejected sink routing. A durable managed incremental run advanced its declared cursor only after both outputs published. SQL, PySpark, DataFusion and DuckDB portable compilation fail closed with concrete compiler/plugin capability diagnostics. Dynamic graph expansion and continuous Spark streaming fail before runtime invocation with the missing child scheduler/ledger and trigger/checkpoint owner boundaries.",
+      "open_reason": "Managed execution intentionally does not support the listed portable compiler combinations, runtime-generated dynamic expansion, or continuous Spark streaming; each is unavailable with an explicit capability or runtime-owner reason in the matrix. No unqualified advertised combination remains.",
       "owner": "056-QUALIFY",
       "provider_version_tuple": [
         "source candidate; workspace package version 0.55.0",
         "pandas 2.3.3",
         "polars 1.42.1"
       ],
-      "status": "pending",
+      "status": "passed",
       "supporting_cases": [
         "tests/fastapi/test_managed_backend_0_56.py::test_managed_worker_preserves_native_transform_quality_and_quarantine",
+        "tests/fastapi/test_managed_backend_0_56.py::test_managed_worker_preserves_or_explains_transform_quality_engine_limit",
+        "tests/fastapi/test_managed_backend_0_56.py::test_managed_worker_explains_dynamic_expansion_boundary",
         "tests/fastapi/test_managed_backend_0_56.py::test_managed_worker_explains_continuous_streaming_boundary",
-        "tests/fastapi/test_managed_backend_0_56.py::test_managed_incremental_cursor_store_persists_and_is_scope_isolated",
+        "tests/fastapi/test_managed_backend_0_56.py::test_managed_incremental_run_commits_cursor_after_published_outputs",
         "tests/runtime/test_incremental_cursor_staging_0_56.py",
-        "tests/quality/test_conformance_0_30.py",
-        "tests/spark/test_spark_runtime.py",
-        "tests/unit/test_extensions_0_19.py",
         "docs/11_DEVELOPMENT/evidence/phase_0_56/MANAGED_EXECUTION_MATRIX_0_56.json"
       ]
     },
@@ -1401,7 +1400,7 @@
       "evidence_artifacts": [
         {
           "path": "docs/11_DEVELOPMENT/evidence/phase_0_56/LOCAL_QUALIFICATION.md",
-          "sha256": "eafba2d1719d94aa672ec026dc5e969efce1511361ef851bb35f63a35e87628f"
+          "sha256": "6b758f154997200707600e886f42247bdb7ba615eb7cff07e1ab110f05bf195a"
         },
         {
           "path": "docs/11_DEVELOPMENT/evidence/phase_0_56/WHEEL_MANIFEST.json",
@@ -1430,7 +1429,11 @@
       "evidence_artifacts": [
         {
           "path": "docs/11_DEVELOPMENT/evidence/phase_0_56/LOCAL_QUALIFICATION.md",
-          "sha256": "eafba2d1719d94aa672ec026dc5e969efce1511361ef851bb35f63a35e87628f"
+          "sha256": "6b758f154997200707600e886f42247bdb7ba615eb7cff07e1ab110f05bf195a"
+        },
+        {
+          "path": "docs/11_DEVELOPMENT/evidence/phase_0_56/MANAGED_ADAPTIVE_QUALIFICATION_0_56.json",
+          "sha256": "fea1a9b043222b9c35a201c9315192dd030fca5b1e6f71d68c521bbbba40eadd"
         },
         {
           "path": "docs/11_DEVELOPMENT/evidence/phase_0_56/WHEEL_MANIFEST.json",
@@ -1438,15 +1441,23 @@
         }
       ],
       "id": "AC056-043",
-      "observed_result": "No complete AC-level pass is asserted.",
-      "open_reason": "Managed adaptive /2 admission and observed runtime qualification are not complete.",
+      "observed_result": "The managed service authoritatively admitted the exact etlantic.plan/2 tuple local-static:chain/1:local on ETLantic 0.55.0, then a durable managed worker published the seeded id=73 row and reported success. The candidate remains Experimental with graduation pending; every other packaged candidate tuple retains its 0.54.0 ETLantic pin and fails exact version admission in this environment.",
+      "open_reason": "",
       "owner": "056-QUALIFY",
       "provider_version_tuple": [
-        "source candidate; workspace package version 0.55.0"
+        "etlantic 0.55.0",
+        "Python 3.11.15",
+        "macOS arm64",
+        "etlantic.plan/2",
+        "local-static:chain/1:local"
       ],
-      "status": "pending",
+      "status": "passed",
       "supporting_cases": [
-        "docs/11_DEVELOPMENT/evidence/phase_0_56/LOCAL_QUALIFICATION.md"
+        "tests/fastapi/test_managed_backend_0_56.py::test_managed_adaptive_local_chain_is_admitted_and_observed",
+        "tests/adaptive_conformance/test_graduation_0_54.py",
+        "tests/adaptive_conformance/test_rereview_evidence_0_54.py",
+        "tests/fastapi/test_cp1_submit_hardening.py::test_submit_rejects_adaptive_plan_before_acceptance",
+        "docs/11_DEVELOPMENT/evidence/phase_0_56/MANAGED_ADAPTIVE_QUALIFICATION_0_56.json"
       ]
     },
     {
@@ -1456,7 +1467,7 @@
       "evidence_artifacts": [
         {
           "path": "docs/11_DEVELOPMENT/evidence/phase_0_56/LOCAL_QUALIFICATION.md",
-          "sha256": "eafba2d1719d94aa672ec026dc5e969efce1511361ef851bb35f63a35e87628f"
+          "sha256": "6b758f154997200707600e886f42247bdb7ba615eb7cff07e1ab110f05bf195a"
         },
         {
           "path": "docs/11_DEVELOPMENT/evidence/phase_0_56/WHEEL_MANIFEST.json",
@@ -1484,11 +1495,11 @@
   "artifacts": [
     {
       "path": "docs/11_DEVELOPMENT/evidence/phase_0_56/LOCAL_QUALIFICATION.md",
-      "sha256": "eafba2d1719d94aa672ec026dc5e969efce1511361ef851bb35f63a35e87628f"
+      "sha256": "6b758f154997200707600e886f42247bdb7ba615eb7cff07e1ab110f05bf195a"
     },
     {
       "path": "docs/11_DEVELOPMENT/evidence/phase_0_56/MANAGED_EXECUTION_MATRIX_0_56.json",
-      "sha256": "ba9cacf4c2c9fe7b8d17270f95088d5a0a3a47fb2ecb548bce96418a8b283da2"
+      "sha256": "f19f16b631596a2247afc31e346de71387f4a60dc0f8c365b3c3cd144f606888"
     },
     {
       "path": "docs/11_DEVELOPMENT/evidence/phase_0_56/MANAGED_PROVIDER_MATRIX_0_56.json",
@@ -1504,7 +1515,7 @@
     },
     {
       "path": "docs/11_DEVELOPMENT/evidence/phase_0_56/PUBLIC_CONTROL_COVERAGE_0_56.json",
-      "sha256": "265aa195b9620141ae639cb6f63ede8547d11a5635dc489d0541bc7dea40319f"
+      "sha256": "d9c610a604c4293062e093d68eead2a4afc8d37f67ad7c409deff4985f85fbf1"
     },
     {
       "path": "docs/11_DEVELOPMENT/evidence/phase_0_56/SIMULATOR_QUALIFICATION_0_56.json",
@@ -1516,7 +1527,7 @@
     },
     {
       "path": "scripts/qualify_phase056_packages.py",
-      "sha256": "0e8092c7562f9a76cac2ee1b3540622bfe331498aa11ad2bfb659d531f6af187"
+      "sha256": "3b07d1f23bee4645ec523be17fd355211407f5e68107d8581b98325f22be4aa5"
     },
     {
       "path": "tests/fastapi/openapi_cp1_snapshot.json",

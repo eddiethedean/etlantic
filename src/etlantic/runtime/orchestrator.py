@@ -544,15 +544,15 @@ class LocalOrchestrator:
         ):
             return
         strategies = self.plan.intents.get("incremental_strategies") or {}
-        if not isinstance(strategies, dict):
+        if not isinstance(strategies, Mapping):
             return
         for subject_id, raw in strategies.items():
-            if not isinstance(raw, dict):
+            if not isinstance(raw, Mapping):
                 continue
             # Prefer candidate from request metadata, else strategy metadata.
             candidate = None
             candidates = self.request.metadata.get("state_candidates") or {}
-            if isinstance(candidates, dict) and subject_id in candidates:
+            if isinstance(candidates, Mapping) and subject_id in candidates:
                 candidate = candidates[subject_id]
             elif "candidate" in raw:
                 candidate = raw.get("candidate")
