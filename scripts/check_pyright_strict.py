@@ -72,8 +72,10 @@ EXPECTED_DIGESTS = {
     # The Phase 0.56 full authorization matrix now includes resume across
     # tenant/workspace scopes. Its added cases shift existing diagnostic lines;
     # the reviewed shadow scan remains at 10,563 diagnostics.
-    "Darwin": "b0a518986b2ffea2c3b8387c040660078f1db75d167f30d6984ca769359eeb1c",
-    "Linux": "b0a518986b2ffea2c3b8387c040660078f1db75d167f30d6984ca769359eeb1c",
+    # The 0.52 evidence revision scanner now includes non-ignored untracked
+    # source files, shifting diagnostics later in that checker only.
+    "Darwin": "e9629b65f3319727580dbda270263d71af46b5565d1212773e084960660c0e49",
+    "Linux": "e9629b65f3319727580dbda270263d71af46b5565d1212773e084960660c0e49",
 }
 
 

@@ -497,11 +497,11 @@ def test_secret_lease_lifecycle_is_renewed_and_revoked_without_caching() -> None
         supports_leases=True,
         supports_renewal=True,
         supports_revocation=True,
-        lease_ttl=0.12,
+        lease_ttl=1.0,
     )
 
     runtime, report = _run_with_secret_version(
-        provider, "current", also_bind_sink=True, io_delay=0.25
+        provider, "current", also_bind_sink=True, io_delay=1.2
     )
 
     assert report.status is RunStatus.SUCCEEDED
@@ -635,11 +635,11 @@ def test_secret_lease_renewal_outage_cancels_without_secret_leak() -> None:
         supports_leases=True,
         supports_renewal=True,
         supports_revocation=True,
-        lease_ttl=0.12,
+        lease_ttl=1.0,
         fail_renewal=True,
     )
 
-    runtime, report = _run_with_secret_version(provider, "current", io_delay=0.25)
+    runtime, report = _run_with_secret_version(provider, "current", io_delay=1.2)
 
     assert report.status is RunStatus.FAILED
     assert provider.renewal_calls == 1

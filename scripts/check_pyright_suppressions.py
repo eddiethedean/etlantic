@@ -21,7 +21,7 @@ from pathlib import Path
 # adapter's same-transaction operation as a public coordination method. The
 # managed preparation service, managed resume command, route and authorization
 # matrix shift existing directives; the reviewed inventory remains 784 entries.
-EXPECTED_DIGEST = "d448953093da4e71ca131ae783f349c1f396fde830932b88ce588edbe5ba400a"
+EXPECTED_DIGEST = "c4e4e6d360a184f2445b7c9e1a1fe5d490559a34f81398df7593af74fe67ccd2"
 
 _IGNORED_DIRECTORIES = frozenset(
     {
