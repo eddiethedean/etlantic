@@ -95,13 +95,16 @@ def test_action_job_claim_fencing_and_receipt_pagination() -> None:
     second = _accepted(
         store, ctx, key="second", request={"provider": "mock", "connection_id": "db"}
     )
+    expected_order = sorted(
+        (first, second), key=lambda job: (job.created_at, job.action_id)
+    )
     page = store.list_action_jobs(ctx, limit=1)
     assert len(page) == 1
-    assert page[0].action_id == first.action_id
+    assert page[0].action_id == expected_order[0].action_id
     next_page = store.list_action_jobs(
         ctx, after=(page[0].created_at, page[0].action_id), limit=1
     )
-    assert [job.action_id for job in next_page] == [second.action_id]
+    assert [job.action_id for job in next_page] == [expected_order[1].action_id]
 
     now = datetime.now(UTC) + timedelta(seconds=1)
     stale = store.claim_action_job(ctx, worker_id="worker-a", lease_seconds=1, now=now)
@@ -317,9 +320,9 @@ def test_action_worker_executes_schema_and_preflight_handlers_with_typed_request
         store, handlers=handlers, authorizer=authorizer
     )
     assert worker.tick(ctx, limit=2) == 2
-    assert [(action, dict(request)) for action, request in calls] == [
-        (action, request) for action, request, _resources in cases
-    ]
+    assert {action: dict(request) for action, request in calls} == {
+        action: request for action, request, _resources in cases
+    }
     assert all(
         store.get_action_job(ctx, job.action_id).status == "succeeded"
         for job in accepted
@@ -440,6 +443,11 @@ def test_preview_results_are_redacted_bounded_and_expire_separately() -> None:
         _action_ctx: ControlPlaneContext, request: Mapping[str, Any]
     ) -> dict[str, Any]:
         observed.append(request)
+        if request["resource_id"] == "table-b":
+            return {
+                "columns": [{"name": "payload", "logical_type": "string"}],
+                "rows": [{"payload": "x" * 300}, {"payload": "y" * 300}],
+            }
         return {
             "columns": [
                 {"name": "id", "logical_type": "integer"},
@@ -481,14 +489,6 @@ def test_preview_results_are_redacted_bounded_and_expire_separately() -> None:
         },
     )
 
-    async def byte_preview(
-        _action_ctx: ControlPlaneContext, _request: Mapping[str, Any]
-    ) -> dict[str, Any]:
-        return {
-            "columns": [{"name": "payload", "logical_type": "string"}],
-            "rows": [{"payload": "x" * 300}, {"payload": "y" * 300}],
-        }
-
     worker = ActionExecutionHost(
         store,
         handlers={"connector.preview": preview},
@@ -497,24 +497,19 @@ def test_preview_results_are_redacted_bounded_and_expire_separately() -> None:
         max_result_items=10,
         preview_result_ttl_seconds=60,
     )
-    byte_worker = ActionExecutionHost(
-        store,
-        handlers={"connector.preview": byte_preview},
-        authorizer=authorizer,
-        max_result_bytes=2048,
-        preview_result_ttl_seconds=60,
-    )
-    assert worker.tick(ctx, limit=1) == 1
+    assert worker.tick(ctx, limit=2) == 2
     bounded_receipt = store.get_action_job(ctx, bounded.action_id).to_dict()
     assert bounded_receipt["status"] == "succeeded"
     assert bounded_receipt["result"]["truncated"] is True
     assert len(bounded_receipt["result"]["rows"]) == 2
     assert all(row["email"] == "***" for row in bounded_receipt["result"]["rows"])
     assert all(row["note"] == "***" for row in bounded_receipt["result"]["rows"])
-    assert observed[0]["max_rows"] == 2
-    assert observed[0]["max_bytes"] == 1024
+    bounded_request = next(
+        request for request in observed if request["resource_id"] == "table-a"
+    )
+    assert bounded_request["max_rows"] == 2
+    assert bounded_request["max_bytes"] == 1024
     assert bounded_receipt["result_expires_at"] is not None
-    assert byte_worker.tick(ctx) == 1
     byte_receipt = store.get_action_job(ctx, byte_limited.action_id).to_dict()
     assert byte_receipt["status"] == "succeeded"
     assert byte_receipt["result"]["truncated"] is True
