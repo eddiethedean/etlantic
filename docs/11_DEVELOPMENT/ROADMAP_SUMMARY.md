@@ -373,7 +373,8 @@ shared entry, evidence, and completion rules for all later phases.
   reviewed durable export
 - **[0.56](IMPLEMENTATION_PLAN_0_56.md):** complete application ETL backend;
   authorized shared services, real durable execution/results, isolated provider
-  actions, complete run controls and live PostgreSQL/Foundry/CSV qualification
+  actions, complete run controls, live PostgreSQL/CSV and Semblance-backed
+  Foundry API qualification
 - **[0.57](IMPLEMENTATION_PLAN_0_57.md):** brownfield adoption bridges for dbt, Dagster, Prefect, and Argo
 - **[0.58](IMPLEMENTATION_PLAN_0_58.md):** read-only-first operator console
 - **[0.59](IMPLEMENTATION_PLAN_0_59.md):** managed runtime and enterprise provider packs

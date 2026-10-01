@@ -189,7 +189,15 @@ def _source_revision() -> str:
     digest = hashlib.sha256()
     inputs = {Path(relative) for relative in REVISION_FILES}
     tracked = subprocess.run(
-        ["git", "ls-files", "--", *REVISION_TREES],
+        [
+            "git",
+            "ls-files",
+            "--cached",
+            "--others",
+            "--exclude-standard",
+            "--",
+            *REVISION_TREES,
+        ],
         cwd=ROOT,
         capture_output=True,
         text=True,

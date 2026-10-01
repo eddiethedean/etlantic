@@ -12,13 +12,18 @@ from pathlib import Path
 from threading import Event
 from typing import TYPE_CHECKING, Any, cast
 
+from etlantic.control_plane.durable_models import ResultPublicationRecord
 from etlantic.control_plane.execution_envelope import ExecutionEnvelope
 from etlantic.control_plane.input_resources import (
     InputResourceReference,
     InputResourceStore,
 )
 from etlantic.control_plane.models import ControlPlaneContext
-from etlantic.exceptions import PipelineCancelledError, PipelineExecutionError
+from etlantic.exceptions import (
+    PipelineCancelledError,
+    PipelineExecutionError,
+    PipelineTimeoutError,
+)
 from etlantic.lifecycle.runtime import PipelineRuntime
 from etlantic.plan.freeze import mutable_copy
 from etlantic.plan.model import PipelinePlan
@@ -200,6 +205,9 @@ class ManagedExecutionAdapter:
         fencing_token: int,
         recovered_attempt: bool = False,
         cancel_event: Event | None = None,
+        result_publisher: Callable[[PipelineRunReport], ResultPublicationRecord]
+        | None = None,
+        result_reader: Callable[[], ResultPublicationRecord | None] | None = None,
     ) -> PipelineRunReport:
         if submission.submission_id != submission_id:
             raise ExecutionRejected("Submission identity does not match the lease")
@@ -263,12 +271,24 @@ class ManagedExecutionAdapter:
             kind="run.started",
             payload=event_base,
         )
-        reports = (
+        report_store = (
             self.report_store_factory(ctx)
             if self.report_store_factory is not None
             else managed_report_store(ctx, report_root=self.report_root)
         )
-        existing = reports.get(run_id)
+        reports = _ResultRecoveryReportStore(report_store, result_publisher)
+        try:
+            existing = reports.get(run_id)
+        except Exception:
+            existing = None
+        recovered_publication = False
+        if existing is None and result_reader is not None:
+            existing = _read_result_publication(
+                result_reader,
+                run_id=run_id,
+                plan_fingerprint=envelope.plan_fingerprint,
+            )
+            recovered_publication = existing is not None
         if existing is not None:
             if existing.plan_fingerprint != envelope.plan_fingerprint:
                 raise ExecutionRejected("Stored result conflicts with accepted plan")
@@ -278,9 +298,15 @@ class ManagedExecutionAdapter:
             if isinstance(prior_execution, Mapping):
                 execution.update(cast(Mapping[str, Any], prior_execution))
             _record_attempt(execution, attempt_id=attempt_id, role="result_reconciled")
+            if recovered_publication:
+                execution["result_publication_status"] = "pending"
             metadata["etlantic.control_plane.execution"] = execution
             existing = replace(existing, metadata=metadata)
-            reports.put(existing)
+            if not recovered_publication:
+                reports.put(existing)
+            elif result_publisher is not None:
+                # Preserve the updated attempt lineage in the durable snapshot.
+                result_publisher(existing)
             self._publish_report_event(ctx, event_base, existing)
             return existing
         if recovered_attempt:
@@ -330,6 +356,14 @@ class ManagedExecutionAdapter:
                 return leased_reader(ctx, immutable, lease_id=input_lease_id)
 
             runtime.input_resource_resolver = resolve_input_resource
+        evidence_refs = envelope.evidence_refs or {}
+        artifact_parent_run_id = evidence_refs.get("artifact_parent_run_id")
+        artifact_run_id = (
+            artifact_parent_run_id
+            if isinstance(artifact_parent_run_id, str)
+            and artifact_parent_run_id.strip()
+            else run_id
+        )
         publication_recovered = False
         try:
             try:
@@ -341,7 +375,7 @@ class ManagedExecutionAdapter:
                     runtime=runtime,
                     artifact_store=ArtifactStore(
                         workspace=managed_artifact_workspace(
-                            ctx, run_id, artifact_root=self.artifact_root
+                            ctx, artifact_run_id, artifact_root=self.artifact_root
                         ),
                         hash_identities=True,
                     ),
@@ -351,6 +385,12 @@ class ManagedExecutionAdapter:
                 if not isinstance(exc.report, PipelineRunReport):
                     raise UnknownCommitError(
                         "Managed cancellation ended without a durable run report"
+                    ) from exc
+                report = exc.report
+            except PipelineTimeoutError as exc:
+                if not isinstance(exc.report, PipelineRunReport):
+                    raise UnknownCommitError(
+                        "Managed timeout ended without a durable run report"
                     ) from exc
                 report = exc.report
             except PipelineExecutionError as exc:
@@ -367,50 +407,86 @@ class ManagedExecutionAdapter:
                 # PMEXEC410 is raised only after the runtime knows target
                 # publication committed. Require the fallback report to be
                 # readable before replacing its transient publication failure.
-                persisted = reports.get(run_id)
+                try:
+                    persisted = reports.get(run_id)
+                except Exception:
+                    persisted = None
+                from_durable_publication = False
+                if (
+                    not isinstance(persisted, PipelineRunReport)
+                    and result_reader is not None
+                ):
+                    persisted = _read_result_publication(
+                        result_reader,
+                        run_id=run_id,
+                        plan_fingerprint=envelope.plan_fingerprint,
+                    )
+                    from_durable_publication = persisted is not None
                 if (
                     not isinstance(persisted, PipelineRunReport)
                     or persisted.plan_fingerprint != envelope.plan_fingerprint
-                    or persisted.status is not RunStatus.FAILED
-                    or not any(
-                        item.code == "PMEXEC410" for item in persisted.diagnostics
-                    )
                 ):
                     raise
-                report_failure = next(
-                    item for item in persisted.diagnostics if item.code == "PMEXEC410"
-                )
-                original_status_value = report_failure.metadata.get(
-                    "etlantic.report_failure.original_status"
-                )
-                if original_status_value is None:
-                    # Preserve the established recovery behavior for legacy
-                    # reports that predate status metadata.
-                    recovered_status = RunStatus.SUCCEEDED
+                if from_durable_publication:
+                    recovered_status = persisted.status
                 else:
-                    try:
-                        recovered_status = RunStatus(original_status_value)
-                    except (TypeError, ValueError) as exc:
-                        raise UnknownCommitError(
-                            "Managed result recovery found an invalid prior run status"
-                        ) from exc
-                    if recovered_status in (RunStatus.PENDING, RunStatus.RUNNING):
-                        raise UnknownCommitError(
-                            "Managed result recovery found a nonterminal prior run status"
-                        ) from None
-                diagnostics = tuple(
-                    replace(
-                        item,
-                        severity="warning",
-                        message=(
-                            "Output publication was observed; the run result was "
-                            "recovered without rerunning ETL."
+                    if persisted.status is not RunStatus.FAILED or not any(
+                        item.code == "PMEXEC410" for item in persisted.diagnostics
+                    ):
+                        raise
+                    report_failure = next(
+                        item
+                        for item in persisted.diagnostics
+                        if item.code == "PMEXEC410"
+                    )
+                    original_status_value = report_failure.metadata.get(
+                        "etlantic.report_failure.original_status"
+                    )
+                    if original_status_value is None:
+                        # Preserve the established recovery behavior for legacy
+                        # reports that predate status metadata.
+                        recovered_status = RunStatus.SUCCEEDED
+                    else:
+                        try:
+                            recovered_status = RunStatus(original_status_value)
+                        except (TypeError, ValueError) as exc:
+                            raise UnknownCommitError(
+                                "Managed result recovery found an invalid prior run status"
+                            ) from exc
+                        if recovered_status in (RunStatus.PENDING, RunStatus.RUNNING):
+                            raise UnknownCommitError(
+                                "Managed result recovery found a nonterminal prior run status"
+                            ) from None
+                if from_durable_publication:
+                    diagnostics = (
+                        *persisted.diagnostics,
+                        replace(
+                            next(
+                                item
+                                for item in candidate.diagnostics
+                                if item.code == "PMEXEC410"
+                            ),
+                            severity="warning",
+                            message=(
+                                "Output publication was observed; the run result was "
+                                "recovered without rerunning ETL."
+                            ),
                         ),
                     )
-                    if item.code == "PMEXEC410"
-                    else item
-                    for item in persisted.diagnostics
-                )
+                else:
+                    diagnostics = tuple(
+                        replace(
+                            item,
+                            severity="warning",
+                            message=(
+                                "Output publication was observed; the run result was "
+                                "recovered without rerunning ETL."
+                            ),
+                        )
+                        if item.code == "PMEXEC410"
+                        else item
+                        for item in persisted.diagnostics
+                    )
                 recovered_metadata = dict(persisted.metadata)
                 execution_metadata: dict[str, Any] = {}
                 prior_execution: object = recovered_metadata.get(
@@ -434,7 +510,9 @@ class ManagedExecutionAdapter:
                             if recovered_status is RunStatus.SUCCEEDED
                             else "unknown"
                         ),
-                        "result_publication_status": "recovered",
+                        "result_publication_status": (
+                            "pending" if from_durable_publication else "recovered"
+                        ),
                     }
                 )
                 _record_attempt(
@@ -449,8 +527,9 @@ class ManagedExecutionAdapter:
                     diagnostics=diagnostics,
                     metadata=recovered_metadata,
                 )
-                with active_faults():
-                    reports.put(report)
+                if not from_durable_publication:
+                    with active_faults():
+                        reports.put(report)
                 publication_recovered = True
         except ExecutionRejected:
             self._publish_event(
@@ -503,7 +582,9 @@ class ManagedExecutionAdapter:
                         if report.status is RunStatus.SUCCEEDED
                         else "unknown"
                     ),
-                    "result_publication_status": "recovered",
+                    "result_publication_status": execution_metadata.get(
+                        "result_publication_status", "recovered"
+                    ),
                 }
             )
         metadata["etlantic.control_plane.execution"] = execution_metadata
@@ -512,8 +593,35 @@ class ManagedExecutionAdapter:
         # result last so result queries and recovery see the same lineage.
         if not publication_recovered:
             reports.put(published)
+        elif result_publisher is not None:
+            result_publisher(published)
         self._publish_report_event(ctx, event_base, published)
         return published
+
+    def publish_result_publication(
+        self, ctx: ControlPlaneContext, record: ResultPublicationRecord
+    ) -> None:
+        """Copy a previously fenced report into the queryable report store."""
+        if (record.tenant_id, record.workspace_id) != (
+            ctx.tenant.tenant_id,
+            ctx.workspace.workspace_id,
+        ):
+            raise ExecutionRejected("Durable run result has an invalid owner scope")
+        report = _decode_result_publication(record)
+        metadata = dict(report.metadata)
+        execution: dict[str, Any] = {}
+        prior_execution: object = metadata.get("etlantic.control_plane.execution")
+        if isinstance(prior_execution, Mapping):
+            execution.update(cast(Mapping[str, Any], prior_execution))
+        execution["result_publication_status"] = "published"
+        metadata["etlantic.control_plane.execution"] = execution
+        report = replace(report, metadata=metadata)
+        report_store = (
+            self.report_store_factory(ctx)
+            if self.report_store_factory is not None
+            else managed_report_store(ctx, report_root=self.report_root)
+        )
+        report_store.put(report)
 
     def _execution_profile(
         self, envelope: ExecutionEnvelope, plan: PipelinePlan
@@ -588,6 +696,86 @@ class ManagedExecutionAdapter:
             kind=kind,
             payload={**event_base, "status": status},
         )
+
+
+class _ResultRecoveryReportStore:
+    """Mirror failed report writes into the fenced durable-work snapshot."""
+
+    def __init__(
+        self,
+        store: Any,
+        publisher: Callable[[PipelineRunReport], ResultPublicationRecord] | None,
+    ) -> None:
+        self._store = store
+        self._publisher = publisher
+
+    def get(self, run_id: str) -> PipelineRunReport | None:
+        try:
+            return self._store.get(run_id)
+        except Exception:
+            # Runtime report lookup is advisory on the first attempt. A
+            # recovered attempt remains fenced by the adapter's explicit
+            # recovered_attempt check before execution can start.
+            return None
+
+    def put(self, report: PipelineRunReport) -> None:
+        try:
+            self._store.put(report)
+        except Exception:
+            # PMEXEC410 is the runtime's fallback report for the failure to
+            # publish the original result. Keep the already mirrored original
+            # result as the recovery authority instead of replacing it with
+            # this synthetic failure report.
+            if self._publisher is not None and not any(
+                item.code == "PMEXEC410" for item in report.diagnostics
+            ):
+                self._publisher(report)
+            raise
+
+
+def _decode_result_publication(
+    record: ResultPublicationRecord,
+) -> PipelineRunReport:
+    if hashlib.sha256(record.report_json.encode("utf-8")).hexdigest() != (
+        record.report_sha256
+    ):
+        raise UnknownCommitError("Durable run result fingerprint is invalid")
+    try:
+        raw = json.loads(record.report_json)
+    except (TypeError, ValueError) as exc:
+        raise UnknownCommitError("Durable run result is invalid JSON") from exc
+    if not isinstance(raw, dict):
+        raise UnknownCommitError("Durable run result has an invalid document")
+    try:
+        report = PipelineRunReport.from_dict(cast(dict[str, Any], raw))
+    except Exception as exc:
+        raise UnknownCommitError("Durable run result schema is invalid") from exc
+    if report.run_id != record.run_id or report.status in (
+        RunStatus.PENDING,
+        RunStatus.RUNNING,
+    ):
+        raise UnknownCommitError("Durable run result identity or status is invalid")
+    return report
+
+
+def _read_result_publication(
+    reader: Callable[[], ResultPublicationRecord | None],
+    *,
+    run_id: str,
+    plan_fingerprint: str,
+) -> PipelineRunReport | None:
+    try:
+        record = reader()
+    except Exception as exc:
+        raise UnknownCommitError(
+            "Durable run result is temporarily unavailable"
+        ) from exc
+    if record is None:
+        return None
+    report = _decode_result_publication(record)
+    if report.run_id != run_id or report.plan_fingerprint != plan_fingerprint:
+        raise UnknownCommitError("Durable run result does not match the accepted plan")
+    return report
 
 
 __all__ = ["ManagedExecutionAdapter", "managed_report_store", "managed_run_id"]

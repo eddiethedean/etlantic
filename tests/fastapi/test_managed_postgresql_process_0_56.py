@@ -6,7 +6,7 @@ import os
 import uuid
 from concurrent.futures import ProcessPoolExecutor
 from multiprocessing import get_context
-from typing import cast
+from typing import Any, cast
 
 import pytest
 
@@ -16,7 +16,7 @@ pytest.importorskip("etlantic_sqlmodel")
 pytest.importorskip("fastapi")
 
 import sqlalchemy
-from sqlalchemy import text
+from sqlalchemy import event, text
 
 from etlantic import Data, Extract, Load, Pipeline
 from etlantic.authoring import definition_from_pipeline
@@ -204,6 +204,170 @@ def _qualify_managed_service_race(
         return results, scope, resolution.revision_id, ctx
     finally:
         backend.close()
+
+
+def test_postgresql_managed_accept_recovers_cp1_and_cp3_lost_acknowledgements(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    url = os.environ.get("ETLANTIC_CP_TEST_URL")
+    if not url:
+        pytest.skip(
+            "set ETLANTIC_CP_TEST_URL for PostgreSQL acceptance-boundary qualification"
+        )
+
+    scope = f"phase056-ack-{uuid.uuid4().hex}"
+    store_id = f"phase056-ack-{uuid.uuid4().hex}"
+    ctx = _context(scope)
+    migration_engine = sqlalchemy.create_engine(url, pool_pre_ping=True)
+    try:
+        assert upgrade(migration_engine) == "012_bounded_event_tombstone_retention_0_56"
+    finally:
+        migration_engine.dispose()
+
+    authorizer = MemoryAuthorizer()
+    authorizer.grant(ctx, "definition.write")
+    authorizer.grant(ctx, "run.submit")
+    backend = create_managed_backend(
+        ManagedBackendConfig(database_url=url, store_id=store_id),
+        authorizer=authorizer,
+        context_factory=static_context_factory(
+            tenant_id=scope,
+            workspace_id="workspace",
+            environment="test",
+            security_domain=f"security-{scope}",
+        ),
+    )
+    try:
+        service = backend.api.managed_service
+        assert service is not None
+        service.register_definition(
+            ctx,
+            "postgres-ack-pipe",
+            pipeline_to_dict(definition_from_pipeline(_ServicePipeline)),
+        )
+        cp1_accept = service.submissions.accept
+        cp3_accept = service.durable_work.accept
+
+        def cp1_commit_then_lose_ack(*args: Any, **kwargs: Any) -> Any:
+            cp1_accept(*args, **kwargs)
+            raise RuntimeError("simulated lost PostgreSQL CP1 acknowledgement")
+
+        def cp3_commit_then_lose_ack(*args: Any, **kwargs: Any) -> Any:
+            cp3_accept(*args, **kwargs)
+            raise RuntimeError("simulated lost PostgreSQL CP3 acknowledgement")
+
+        monkeypatch.setattr(service.submissions, "accept", cp1_commit_then_lose_ack)
+        monkeypatch.setattr(service.durable_work, "accept", cp3_commit_then_lose_ack)
+
+        receipt = service.submit_run(
+            ctx,
+            "postgres-ack-pipe",
+            idempotency_key="postgres-ack-loss",
+        )
+
+        monkeypatch.setattr(service.submissions, "accept", cp1_accept)
+        monkeypatch.setattr(service.durable_work, "accept", cp3_accept)
+        cp1_receipt = service.submissions.lookup_idempotency(
+            ctx, "postgres-ack-loss", operation="run.submit"
+        )
+        cp3_record = service.durable_work.get_submission_by_idempotency(
+            ctx,
+            idempotency_key="postgres-ack-loss",
+            operation="run.submit",
+        )
+        assert cp1_receipt == receipt
+        assert cp3_record is not None
+        assert cp3_record.submission_id == receipt.submission_id
+        assert len(service.durable_work.pending_outbox(ctx)) == 1
+
+        retried = service.submit_run(
+            ctx,
+            "postgres-ack-pipe",
+            idempotency_key="postgres-ack-loss",
+        )
+        assert retried == receipt
+        assert len(service.durable_work.pending_outbox(ctx)) == 1
+
+        outbox_failure_armed = True
+
+        def fail_outbox_entity_insert(
+            _connection: sqlalchemy.engine.Connection,
+            _cursor: Any,
+            statement: str,
+            _parameters: Any,
+            _context: sqlalchemy.engine.ExecutionContext,
+            _executemany: bool,
+        ) -> None:
+            nonlocal outbox_failure_armed
+            if (
+                outbox_failure_armed
+                and statement.lstrip().lower().startswith("insert")
+                and "cp_durable_outbox_entity" in statement.lower()
+            ):
+                outbox_failure_armed = False
+                raise RuntimeError("simulated outbox entity write failure")
+
+        event.listen(backend.engine, "before_cursor_execute", fail_outbox_entity_insert)
+        try:
+            with pytest.raises(ControlPlaneError, match="acknowledgement is uncertain"):
+                service.submit_run(
+                    ctx,
+                    "postgres-ack-pipe",
+                    idempotency_key="postgres-outbox-write-retry",
+                )
+        finally:
+            event.remove(
+                backend.engine, "before_cursor_execute", fail_outbox_entity_insert
+            )
+
+        # Snapshot, normalized submission, and outbox rows share one transaction.
+        # The failed outbox insert rolls back CP3 while preserving the CP1
+        # receipt for same-key recovery.
+        cp1_outbox_retry = service.submissions.lookup_idempotency(
+            ctx, "postgres-outbox-write-retry", operation="run.submit"
+        )
+        assert cp1_outbox_retry is not None
+        assert (
+            service.durable_work.get_submission_by_idempotency(
+                ctx,
+                idempotency_key="postgres-outbox-write-retry",
+                operation="run.submit",
+            )
+            is None
+        )
+        assert len(service.durable_work.pending_outbox(ctx)) == 1
+
+        # Reopen both durable stores before retrying, so the CP1 receipt and
+        # verified envelope—not process-local state—drive recovery.
+        backend.close()
+        reopened_authorizer = MemoryAuthorizer()
+        reopened_authorizer.grant(ctx, "run.submit")
+        backend = create_managed_backend(
+            ManagedBackendConfig(database_url=url, store_id=store_id),
+            authorizer=reopened_authorizer,
+            context_factory=static_context_factory(
+                tenant_id=scope,
+                workspace_id="workspace",
+                environment="test",
+                security_domain=f"security-{scope}",
+            ),
+        )
+        service = backend.api.managed_service
+        assert service is not None
+        outbox_recovered = service.submit_run(
+            ctx,
+            "postgres-ack-pipe",
+            idempotency_key="postgres-outbox-write-retry",
+        )
+        assert outbox_recovered == cp1_outbox_retry
+        assert len(service.durable_work.pending_outbox(ctx)) == 2
+    finally:
+        backend.close()
+        cleanup_engine = sqlalchemy.create_engine(url, pool_pre_ping=True)
+        try:
+            _cleanup_scope(cleanup_engine, store_id, scope)
+        finally:
+            cleanup_engine.dispose()
 
 
 def test_postgresql_multiprocess_managed_service_retry_and_intent_conflict() -> None:

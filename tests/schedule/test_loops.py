@@ -3,10 +3,12 @@
 from __future__ import annotations
 
 import ast
+from collections.abc import Mapping
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
 from threading import Event, Thread
 from time import sleep
+from typing import Any, cast
 
 import pytest
 
@@ -43,6 +45,14 @@ def _ctx() -> ControlPlaneContext:
     )
 
 
+@pytest.mark.parametrize("ttl_seconds", [True, 0, -1, 1.5, None])
+def test_worker_and_scheduler_reject_invalid_lease_ttls(ttl_seconds: object) -> None:
+    with pytest.raises(ValueError, match="positive integer"):
+        ExecutionHost(MemoryDurableWorkStore(), ttl_seconds=cast(Any, ttl_seconds))
+    with pytest.raises(ValueError, match="positive integer"):
+        SchedulerService(MemoryScheduleStore(), ttl_seconds=cast(Any, ttl_seconds))
+
+
 def test_dual_replica_one_durable_firing() -> None:
     store = MemoryScheduleStore()
     durable = MemoryDurableWorkStore()
@@ -66,6 +76,64 @@ def test_dual_replica_one_durable_firing() -> None:
     assert len(durable.pending_outbox(ctx)) == 1
 
 
+def test_wake_outage_after_firing_commit_is_recoverable_without_duplicate() -> None:
+    class FailFirstWake:
+        calls = 0
+
+        def notify(self) -> None:
+            self.calls += 1
+            if self.calls == 1:
+                raise OSError("simulated wake transport outage")
+
+    ctx = _ctx()
+    due_at = datetime(2026, 1, 1, 0, 1, tzinfo=UTC)
+    schedules = MemoryScheduleStore()
+    durable = MemoryDurableWorkStore()
+    rec = schedules.create(
+        ctx,
+        definition_id="wake-outage-pipeline",
+        profile_name="test",
+        spec=ScheduleSpec(kind="interval", interval_seconds=60),
+        next_fire_at=due_at.isoformat().replace("+00:00", "Z"),
+    )
+    wake = FailFirstWake()
+    service = SchedulerService(
+        schedules,
+        durable=durable,
+        clock=FakeScheduleClock(due_at),
+        owner_id="wake-outage-scheduler",
+        wake=wake,
+    )
+
+    with pytest.raises(OSError, match="wake transport outage"):
+        service.tick(ctx)
+    committed_firings = schedules.list_firings(ctx, rec.schedule_id)
+    committed_outbox = durable.pending_outbox(ctx)
+    assert len(committed_firings) == 1
+    assert committed_firings[0].status == "accepted"
+    assert committed_firings[0].submission_id == committed_outbox[0].submission_id
+
+    # Simulate process replacement from both durable snapshots. The next scan
+    # sees the advanced schedule cursor and cannot enqueue a second occurrence.
+    recovered_schedules = MemoryScheduleStore()
+    recovered_schedules.load(schedules.dump())
+    recovered_durable = MemoryDurableWorkStore()
+    recovered_durable.load(durable.dump())
+    restarted = SchedulerService(
+        recovered_schedules,
+        durable=recovered_durable,
+        clock=FakeScheduleClock(due_at),
+        owner_id="wake-outage-scheduler",
+    )
+    assert restarted.tick(ctx) == 0
+    assert recovered_schedules.list_firings(ctx, rec.schedule_id) == tuple(
+        committed_firings
+    )
+    assert [item.submission_id for item in recovered_durable.pending_outbox(ctx)] == [
+        committed_outbox[0].submission_id
+    ]
+
+
 def test_due_scan_cannot_admit_firing_after_schedule_is_paused() -> None:
     class PauseBeforeClaimStore(MemoryScheduleStore):
         pause_before_claim = True
@@ -83,7 +151,9 @@ def test_due_scan_cannot_admit_firing_after_schedule_is_paused() -> None:
             durable: DurableWorkStore | None = None,
             next_fire_at: str | None = None,
             require_leader_lease: bool = True,
+            admit_submission: bool = True,
             skip_status: FiringStatus | None = None,
+            metadata: Mapping[str, object] | None = None,
         ) -> tuple[FiringRecord, bool]:
             if self.pause_before_claim:
                 self.pause_before_claim = False
@@ -99,7 +169,9 @@ def test_due_scan_cannot_admit_firing_after_schedule_is_paused() -> None:
                 durable=durable,
                 next_fire_at=next_fire_at,
                 require_leader_lease=require_leader_lease,
+                admit_submission=admit_submission,
                 skip_status=skip_status,
+                metadata=metadata,
             )
 
     ctx = _ctx()

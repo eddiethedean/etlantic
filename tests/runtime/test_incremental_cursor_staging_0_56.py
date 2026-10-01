@@ -2,15 +2,19 @@
 
 from __future__ import annotations
 
+from collections.abc import Callable
 from dataclasses import replace
-from typing import Any
+from pathlib import Path
+from typing import Any, cast
 
 import anyio
+import pytest
 
-from etlantic import Data, Extract, Load, Pipeline, PipelineRuntime
+from etlantic import Data, Extract, Load, Pipeline, PipelineRuntime, io_policy
+from etlantic.io_policy import SafeIoPolicy, SafeIoResult
 from etlantic.plan.model import PipelinePlan
 from etlantic.plan.serialize import plan_fingerprint
-from etlantic.runtime.incremental import MemoryStateStore
+from etlantic.runtime.incremental import FileStateStore, MemoryStateStore
 from etlantic.runtime.orchestrator import LocalOrchestrator
 from etlantic.runtime.request import RunIntent, RunRequest
 from etlantic.runtime.state import RunStatus
@@ -98,6 +102,7 @@ def _incremental_plan() -> PipelinePlan:
     intents = dict(plan.intents)
     intents["incremental_strategies"] = {
         "subject": {"kind": "cursor"},
+        "subject-2": {"kind": "cursor"},
     }
     changed = replace(plan, intents=intents, fingerprint="")
     return replace(changed, fingerprint=plan_fingerprint(changed))
@@ -105,11 +110,17 @@ def _incremental_plan() -> PipelinePlan:
 
 async def _execute(
     *, fail_second: bool
-) -> tuple[RunStatus, str | None, list[str | None]]:
+) -> tuple[
+    RunStatus,
+    dict[str, str | None],
+    dict[str, bool],
+    list[str | None],
+]:
     runtime = PipelineRuntime()
     runtime.memory.seed("source", [CursorRow(id=1)])
     state_store = MemoryStateStore()
     state_store.commit("subject", "cursor-1", reason="test seed")
+    state_store.commit("subject-2", "cursor-1b", reason="test seed")
     probe = PublicationProbeStorage(
         delegate=runtime.memory,
         state_store=state_store,
@@ -118,7 +129,12 @@ async def _execute(
     runtime.register_storage("memory", probe)
     request = RunRequest(
         intent=RunIntent.INCREMENTAL,
-        metadata={"state_candidates": {"subject": "cursor-2"}},
+        metadata={
+            "state_candidates": {
+                "subject": "cursor-2",
+                "subject-2": "cursor-2b",
+            }
+        },
     )
     orchestrator = LocalOrchestrator(
         runtime=runtime,
@@ -128,25 +144,94 @@ async def _execute(
         state_store=state_store,
     )
     report = await orchestrator.execute()
-    cursor = state_store.get("subject")
+    cursors = {
+        subject: (
+            item.value if (item := state_store.get(subject)) is not None else None
+        )
+        for subject in ("subject", "subject-2")
+    }
+    published_sinks = {
+        sink: bool(runtime.memory.get(f"memory://{sink}"))
+        for sink in ("first", "second")
+    }
     return (
         report.status,
-        cursor.value if cursor is not None else None,
+        cursors,
+        published_sinks,
         probe.observed_cursors,
     )
 
 
 def test_cursor_commits_only_after_both_selected_sinks_publish() -> None:
-    status, cursor, observed = anyio.run(lambda: _execute(fail_second=False))
+    status, cursors, published, observed = anyio.run(
+        lambda: _execute(fail_second=False)
+    )
 
     assert status is RunStatus.SUCCEEDED
     assert observed == ["cursor-1", "cursor-1"]
-    assert cursor == "cursor-2"
+    assert cursors == {"subject": "cursor-2", "subject-2": "cursor-2b"}
+    assert published == {"first": True, "second": True}
 
 
 def test_partial_multi_sink_failure_preserves_committed_cursor() -> None:
-    status, cursor, observed = anyio.run(lambda: _execute(fail_second=True))
+    status, cursors, published, observed = anyio.run(lambda: _execute(fail_second=True))
 
     assert status is not RunStatus.SUCCEEDED
     assert observed == ["cursor-1", "cursor-1"]
-    assert cursor == "cursor-1"
+    assert cursors == {"subject": "cursor-1", "subject-2": "cursor-1b"}
+    assert published == {"first": True, "second": False}
+
+
+def test_memory_state_store_validates_the_full_batch_before_commit() -> None:
+    state = MemoryStateStore()
+    state.commit_many({"first": ("first-1", None), "second": ("second-1", None)})
+
+    try:
+        state.commit_many(
+            {
+                "first": ("first-2", None),
+                "second": cast(Any, ("second-2",)),
+            }
+        )
+    except ValueError:
+        pass
+    else:
+        raise AssertionError("invalid cursor batch was accepted")
+
+    first = state.get("first")
+    second = state.get("second")
+    assert first is not None and first.value == "first-1"
+    assert second is not None and second.value == "second-1"
+
+
+def test_file_state_store_persists_a_cursor_batch_with_one_atomic_write(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    write_count = 0
+
+    def counted_write(
+        path: str | Path,
+        policy: SafeIoPolicy,
+        modifier: Callable[[dict[str, Any]], dict[str, Any]],
+        *,
+        run_id: str = "io",
+    ) -> SafeIoResult:
+        nonlocal write_count
+        write_count += 1
+        return original_write(path, policy, modifier, run_id=run_id)
+
+    original_write = io_policy.read_modify_write_json_safe
+    monkeypatch.setattr(io_policy, "read_modify_write_json_safe", counted_write)
+    store = FileStateStore(tmp_path / "state.json")
+    write_count = 0
+    transitions = store.commit_many(
+        {"first": ("first-2", "published"), "second": ("second-2", "published")}
+    )
+
+    assert write_count == 1
+    assert [item.subject for item in transitions] == ["first", "second"]
+    reopened = FileStateStore(tmp_path / "state.json")
+    first = reopened.get("first")
+    second = reopened.get("second")
+    assert first is not None and first.value == "first-2"
+    assert second is not None and second.value == "second-2"

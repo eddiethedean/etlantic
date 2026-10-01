@@ -490,6 +490,7 @@ def run_recovery_campaign() -> dict[str, Any]:
         signer_id=att.signer_id,
         tenant_id=att.tenant_id,
         workspace_id=att.workspace_id,
+        created_at=att.created_at,
     )
     store1.put(ctx, attestation=signed)
     store2 = MemoryAttestationStore(signing_secret=b"rotated-secret-value-0001")

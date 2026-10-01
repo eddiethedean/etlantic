@@ -3,9 +3,11 @@
 from __future__ import annotations
 
 import json
+from collections.abc import Awaitable, Callable
 from pathlib import Path
-from typing import cast
+from typing import Any, cast
 
+import anyio
 import pytest
 
 from etlantic import (
@@ -33,7 +35,8 @@ from etlantic.control_plane import (
 from etlantic.plan.model import PipelinePlan
 from etlantic.profile import Profile, resolve_profile
 from etlantic.registry import BindingDescriptor, PlanningContext
-from etlantic.runtime.execute import run_pipeline
+from etlantic.runtime.context import StepContext
+from etlantic.runtime.execute import arun_pipeline, run_pipeline
 from etlantic.runtime.managed_execution import ManagedExecutionAdapter
 from etlantic.runtime.request import RetryPolicy, RunIntent, RunRequest
 from etlantic.runtime.state import RunStatus
@@ -108,6 +111,39 @@ def test_local_memory_pipeline_runs() -> None:
     assert "succeeded" in text
     html = report.to_html()
     assert "<html>" in html
+
+
+def test_profile_concurrency_caps_local_parallel_pipeline() -> None:
+    async def exercise() -> None:
+        active = 0
+        peak = 0
+        runtime = PipelineRuntime()
+        runtime.memory.seed("rows", [Row(id=1, name="alice")])
+
+        async def observe_concurrency(
+            context: StepContext, call_next: Callable[[], Awaitable[Any]]
+        ) -> Any:
+            nonlocal active, peak
+            active += 1
+            peak = max(peak, active)
+            try:
+                await anyio.sleep(0.01)
+                return await call_next()
+            finally:
+                active -= 1
+
+        runtime.step_middleware.add(observe_concurrency)
+        report = await arun_pipeline(
+            ParallelPipeline,
+            profile=Profile(name="single-concurrency", concurrency=1),
+            runtime=runtime,
+            request=RunRequest(metadata={"concurrency": 4}),
+        )
+
+        assert report.status is RunStatus.SUCCEEDED, report.diagnostics
+        assert peak == 1
+
+    anyio.run(exercise)
 
 
 def test_verified_stored_plan_runs_without_replanning() -> None:

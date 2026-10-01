@@ -15,7 +15,7 @@ from collections.abc import Mapping, Sequence
 from copy import deepcopy
 from dataclasses import replace
 from datetime import UTC, datetime, timedelta
-from typing import Any
+from typing import Any, cast
 
 from etlantic.control_plane.action_jobs import (
     MAX_PREVIEW_RESULT_TTL_SECONDS,
@@ -35,6 +35,7 @@ from etlantic.control_plane.durable_models import (
     PreviewWorkspace,
     RepairPlan,
     ReplayRecord,
+    ResultPublicationRecord,
     ShadowRunRecord,
     StateDiagnostic,
     StateTransitionExplanation,
@@ -99,6 +100,9 @@ class MemoryDurableWorkStore:
         self._outbox: dict[tuple[str, str, str], OutboxRecord] = {}
         self._leases: dict[tuple[str, str, str], LeaseRecord] = {}
         self._attempts: dict[tuple[str, str, str], AttemptRecord] = {}
+        self._result_publications: dict[
+            tuple[str, str, str, str], ResultPublicationRecord
+        ] = {}
         self._checkpoints: dict[tuple[str, str, str], CheckpointRecord] = {}
         self._effects: dict[tuple[str, str, str], EffectRecord] = {}
         self._previews: dict[tuple[str, str, str], PreviewWorkspace] = {}
@@ -516,6 +520,86 @@ class MemoryDurableWorkStore:
                 raise ControlPlaneError.not_found("Action job not found")
             return deepcopy(record)
 
+    def get_action_job_by_idempotency(
+        self,
+        ctx: ControlPlaneContext,
+        *,
+        action: str,
+        idempotency_key: str,
+    ) -> ActionJobRecord | None:
+        owner_id = ctx.resource_owner_id or ctx.principal.subject
+        idem = (
+            *_scope(ctx),
+            ctx.security_domain.domain_id,
+            ctx.environment.name,
+            owner_id,
+            ctx.principal.issuer or "",
+            ctx.principal.kind,
+            ctx.principal.subject,
+            action,
+            idempotency_key,
+        )
+        legacy_idem = (
+            *_scope(ctx),
+            ctx.principal.issuer or "",
+            ctx.principal.kind,
+            ctx.principal.subject,
+            action,
+            idempotency_key,
+        )
+        with self._lock:
+            action_id = self._action_idempotency.get(idem)
+            if action_id is None:
+                action_id = self._action_idempotency.get(legacy_idem)
+            if action_id is None:
+                return None
+            record = self._action_jobs.get((*_scope(ctx), action_id))
+            if (
+                record is None
+                or record.owner_id != owner_id
+                or record.security_domain_id != ctx.security_domain.domain_id
+                or record.environment != ctx.environment.name
+            ):
+                return None
+            return deepcopy(record)
+
+    def cancel_action_job(
+        self, ctx: ControlPlaneContext, action_id: str
+    ) -> ActionJobRecord:
+        owner_id = ctx.resource_owner_id or ctx.principal.subject
+        key = (*_scope(ctx), action_id)
+        with self._lock:
+            row = self._action_jobs.get(key)
+            if (
+                row is None
+                or row.owner_id != owner_id
+                or row.security_domain_id != ctx.security_domain.domain_id
+                or row.environment != ctx.environment.name
+            ):
+                raise ControlPlaneError.not_found("Preparation operation not found")
+            if row.action != "run.prepare":
+                raise ControlPlaneError.not_found("Preparation operation not found")
+            if row.status == "queued":
+                cancelled = replace(
+                    row,
+                    status="cancelled",
+                    phase="cancelled",
+                    completed_at=_iso(),
+                    error_code=None,
+                )
+            elif row.status == "running" and row.phase != "accepting":
+                cancelled = replace(row, status="cancel_requested")
+            elif row.status == "cancel_requested":
+                return deepcopy(row)
+            else:
+                raise ControlPlaneError.conflict(
+                    "Preparation can no longer be cancelled",
+                    code="PMCP409",
+                    extensions={"reason": "acceptance_started"},
+                )
+            self._action_jobs[key] = cancelled
+            return deepcopy(cancelled)
+
     def list_action_jobs(
         self,
         ctx: ControlPlaneContext,
@@ -563,9 +647,24 @@ class MemoryDurableWorkStore:
             scoped = [
                 (key, row)
                 for key, row in self._action_jobs.items()
-                if key[:2] == _scope(ctx) and row.status in {"queued", "running"}
+                if key[:2] == _scope(ctx)
+                and row.status in {"queued", "running", "cancel_requested"}
             ]
             for key, row in scoped:
+                if (
+                    row.status == "cancel_requested"
+                    and row.lease_expires_at is not None
+                    and _parse(row.lease_expires_at) <= current
+                ):
+                    self._action_jobs[key] = replace(
+                        row,
+                        status="cancelled",
+                        phase="cancelled",
+                        completed_at=current_iso,
+                        worker_id=None,
+                        lease_expires_at=None,
+                    )
+                    continue
                 if _parse(row.deadline_at) <= current:
                     self._action_jobs[key] = replace(
                         row,
@@ -601,9 +700,79 @@ class MemoryDurableWorkStore:
                 worker_id=worker_id,
                 lease_expires_at=lease_expires,
                 started_at=row.started_at or current_iso,
+                phase="preparing" if row.phase == "queued" else row.phase,
             )
             self._action_jobs[key] = claimed
             return deepcopy(claimed)
+
+    def heartbeat_action_job(
+        self,
+        ctx: ControlPlaneContext,
+        action_id: str,
+        *,
+        worker_id: str,
+        fencing_token: int,
+        lease_seconds: int = 30,
+        now: datetime | None = None,
+    ) -> ActionJobRecord:
+        if not worker_id.strip() or type(lease_seconds) is not int or lease_seconds < 1:
+            raise ValueError("worker_id and a positive lease_seconds are required")
+        current = now or _now()
+        key = (*_scope(ctx), action_id)
+        with self._lock:
+            row = self._action_jobs.get(key)
+            if row is None:
+                raise ControlPlaneError.not_found("Action job not found")
+            if (
+                row.status not in {"running", "cancel_requested"}
+                or row.worker_id != worker_id
+                or row.fencing_token != fencing_token
+                or row.lease_expires_at is None
+                or _parse(row.lease_expires_at) <= current
+            ):
+                raise ControlPlaneError.conflict("Action worker lease is stale")
+            updated = replace(
+                row,
+                lease_expires_at=_iso(current + timedelta(seconds=lease_seconds)),
+            )
+            self._action_jobs[key] = updated
+            return deepcopy(updated)
+
+    def mark_action_job_accepting(
+        self,
+        ctx: ControlPlaneContext,
+        action_id: str,
+        *,
+        worker_id: str,
+        fencing_token: int,
+        now: datetime | None = None,
+    ) -> ActionJobRecord:
+        current = now or _now()
+        key = (*_scope(ctx), action_id)
+        with self._lock:
+            row = self._action_jobs.get(key)
+            if row is None:
+                raise ControlPlaneError.not_found("Action job not found")
+            if row.status == "cancel_requested":
+                raise ControlPlaneError.conflict(
+                    "Preparation was cancelled before acceptance",
+                    code="PMCP409",
+                    extensions={"reason": "cancelled"},
+                )
+            if (
+                row.action != "run.prepare"
+                or row.status != "running"
+                or row.worker_id != worker_id
+                or row.fencing_token != fencing_token
+                or row.lease_expires_at is None
+                or _parse(row.lease_expires_at) <= current
+            ):
+                raise ControlPlaneError.conflict("Action worker lease is stale")
+            if row.phase == "accepting":
+                return deepcopy(row)
+            updated = replace(row, phase="accepting")
+            self._action_jobs[key] = updated
+            return deepcopy(updated)
 
     def finish_action_job(
         self,
@@ -619,7 +788,7 @@ class MemoryDurableWorkStore:
         now: datetime | None = None,
     ) -> ActionJobRecord:
         """Finish a claimed action iff the worker still holds its fence."""
-        if status not in {"succeeded", "failed", "timed_out"}:
+        if status not in {"succeeded", "failed", "timed_out", "cancelled"}:
             raise ValueError("action job completion status is invalid")
         if result_ttl_seconds is not None and (
             type(result_ttl_seconds) is not int or result_ttl_seconds < 1
@@ -632,14 +801,26 @@ class MemoryDurableWorkStore:
             if row is None:
                 raise ControlPlaneError.not_found("Action job not found")
             if (
-                row.status != "running"
+                row.status not in {"running", "cancel_requested"}
                 or row.worker_id != worker_id
                 or row.fencing_token != fencing_token
                 or row.lease_expires_at is None
                 or _parse(row.lease_expires_at) <= current
             ):
                 raise ControlPlaneError.conflict("Action worker lease is stale")
-            if status == "timed_out":
+            if row.status == "cancel_requested" or status == "cancelled":
+                finished = replace(
+                    row,
+                    status="cancelled",
+                    phase="cancelled",
+                    completed_at=_iso(current),
+                    worker_id=None,
+                    lease_expires_at=None,
+                    result_json=None,
+                    result_expires_at=None,
+                    error_code=None,
+                )
+            elif status == "timed_out":
                 if result_ttl_seconds is not None:
                     raise ValueError(
                         "timed-out action jobs cannot retain result payloads"
@@ -1042,6 +1223,122 @@ class MemoryDurableWorkStore:
                 submission, status=terminal_status
             )
             return deepcopy(result)
+
+    def record_result_publication(
+        self,
+        ctx: ControlPlaneContext,
+        record: ResultPublicationRecord,
+        *,
+        owner_id: str,
+        fencing_token: int,
+    ) -> ResultPublicationRecord:
+        """Persist a secret-free report under the active execution fence."""
+        if (record.tenant_id, record.workspace_id) != _scope(ctx):
+            raise ControlPlaneError.forbidden(
+                "Result publication must match the trusted scope"
+            )
+        if not record.submission_id or not record.attempt_id or not record.run_id:
+            raise ValueError("result publication identities must be non-empty")
+        if len(record.report_json.encode("utf-8")) > 4 * 1024 * 1024:
+            raise ControlPlaneError.conflict(
+                "Run report exceeds the durable recovery size limit",
+                extensions={"reason": "result_too_large"},
+            )
+        if hashlib.sha256(record.report_json.encode("utf-8")).hexdigest() != (
+            record.report_sha256
+        ):
+            raise ValueError("result publication fingerprint does not match report")
+        try:
+            report = json.loads(record.report_json)
+        except (TypeError, ValueError) as exc:
+            raise ValueError("result publication report is invalid JSON") from exc
+        if not isinstance(report, dict):
+            raise ValueError("result publication report identity is invalid")
+        report_data = cast(dict[str, Any], report)
+        if (
+            report_data.get("schema") != "etlantic.run_report/1"
+            or report_data.get("run_id") != record.run_id
+        ):
+            raise ValueError("result publication report identity is invalid")
+        key = (*_scope(ctx), record.submission_id, record.attempt_id)
+        with self._lock:
+            submission_key = (*_scope(ctx), record.submission_id)
+            self._require_lease(submission_key, owner_id, fencing_token)
+            attempt = self._attempts.get((*_scope(ctx), record.attempt_id))
+            if (
+                attempt is None
+                or attempt.submission_id != record.submission_id
+                or attempt.owner_id != owner_id
+                or attempt.fencing_token != fencing_token
+            ):
+                raise ControlPlaneError.conflict(
+                    "Result publication does not match the current attempt fence"
+                )
+            prior = self._result_publications.get(key)
+            if prior is not None:
+                if prior.run_id != record.run_id:
+                    raise ControlPlaneError.conflict(
+                        "Result publication run identity changed"
+                    )
+                if prior.report_sha256 != record.report_sha256:
+                    if prior.published_at is not None:
+                        raise ControlPlaneError.conflict(
+                            "Published run result is immutable"
+                        )
+                    record = replace(record, created_at=prior.created_at)
+                elif prior.published_at is not None:
+                    record = replace(record, published_at=prior.published_at)
+            self._result_publications[key] = deepcopy(record)
+            return deepcopy(record)
+
+    def get_latest_result_publication(
+        self, ctx: ControlPlaneContext, submission_id: str
+    ) -> ResultPublicationRecord | None:
+        with self._lock:
+            rows = [
+                record
+                for key, record in self._result_publications.items()
+                if key[:3] == (*_scope(ctx), submission_id)
+            ]
+            if not rows:
+                return None
+            return deepcopy(max(rows, key=lambda record: _parse(record.created_at)))
+
+    def pending_result_publications(
+        self, ctx: ControlPlaneContext, *, limit: int = 100
+    ) -> Sequence[ResultPublicationRecord]:
+        if type(limit) is not int or limit < 1:
+            raise ValueError("limit must be a positive integer")
+        with self._lock:
+            rows = [
+                record
+                for key, record in self._result_publications.items()
+                if key[:2] == _scope(ctx) and record.published_at is None
+            ]
+            rows.sort(key=lambda record: record.created_at)
+            return tuple(deepcopy(rows[:limit]))
+
+    def mark_result_publication_published(
+        self,
+        ctx: ControlPlaneContext,
+        submission_id: str,
+        attempt_id: str,
+        *,
+        report_sha256: str,
+    ) -> ResultPublicationRecord:
+        key = (*_scope(ctx), submission_id, attempt_id)
+        with self._lock:
+            record = self._result_publications.get(key)
+            if record is None:
+                raise ControlPlaneError.not_found("Result publication not found")
+            if record.report_sha256 != report_sha256:
+                raise ControlPlaneError.conflict(
+                    "Result publication fingerprint changed"
+                )
+            if record.published_at is None:
+                record = replace(record, published_at=_iso())
+                self._result_publications[key] = record
+            return deepcopy(record)
 
     def compare_and_swap_checkpoint(
         self,

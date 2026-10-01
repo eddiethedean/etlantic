@@ -150,8 +150,11 @@ The Python entry point also exposes `consume_generated_spec(...)` for host
 applications to supply their own review and business-orchestration callbacks.
 The optional webhook receives an idempotent `etlantic.run.accepted` event; its
 bearer token is read from `ETLANTIC_BUSINESS_WEBHOOK_TOKEN` and is never logged.
-This example is implementation evidence only; the clean-wheel and external
-orchestration qualification remains open in the 0.56 release index.
+The 0.56 qualification runs this CLI against built core and FastAPI wheels in a
+clean Python environment, verifies review rejection prevents submission, then
+approves the pinned revision and delivers the acceptance event to an external
+loopback webhook receiver. The consumer script itself uses only the standard
+library and public HTTP commands.
 
 ## Dataframe parity (CI)
 

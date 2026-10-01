@@ -48,6 +48,7 @@ from etlantic.runtime.managed_execution import (
 )
 from etlantic.runtime.request import MaterializationPolicy, RunIntent, RunRequest
 from etlantic.runtime.state import RunStatus
+from etlantic.service import managed as managed_service_module
 from etlantic_fastapi import (
     ManagedBackend,
     ManagedBackendConfig,
@@ -364,7 +365,7 @@ def test_standard_worker_reads_configured_csv_and_does_not_retain_row_content(
 
 
 def test_managed_worker_executes_finalized_upload_and_lease_outlives_staging_ttl(
-    tmp_path: Path,
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     database_url = _migrated_url(tmp_path)
     ctx = _context()
@@ -458,11 +459,17 @@ def test_managed_worker_executes_finalized_upload_and_lease_outlives_staging_ttl
             "immutable-upload-pipe",
             idempotency_key="immutable-upload-run",
         )
+        durable = backend.api.durable_work
+        assert durable is not None
+        accepted = durable.get_submission(ctx, receipt.submission_id)
+        assert accepted.input_snapshot is not None
+        envelope = ExecutionEnvelope.from_json(accepted.input_snapshot)
+        assert envelope.resource_versions == {
+            f"input:{reference.resource_id}": reference.version
+        }
         future = datetime.now(UTC) + timedelta(days=2)
         assert store.read(ctx, reference, now=future) == content
 
-        durable = backend.api.durable_work
-        assert durable is not None
         refusing_host = ExecutionHost(
             durable,
             owner_id="immutable-upload-refusing-worker",
@@ -475,10 +482,40 @@ def test_managed_worker_executes_finalized_upload_and_lease_outlives_staging_ttl
             "failed"
         )
 
+        # Simulate a prior application version accepting this lifecycle
+        # command before the lease identity included environment and principal.
+        # The current service must still recover that immutable receipt.
+        current_lease_id = managed_service_module.__dict__["_input_resource_lease_id"]
+
+        def legacy_lease_id(
+            context: ControlPlaneContext,
+            operation: str,
+            idempotency_key: str,
+            *,
+            legacy_scope: bool = False,
+        ) -> str:
+            return current_lease_id(
+                context, operation, idempotency_key, legacy_scope=True
+            )
+
+        monkeypatch.setattr(
+            managed_service_module, "_input_resource_lease_id", legacy_lease_id
+        )
         retry = service.retry_run(
             ctx,
             str(receipt.resource_id),
             idempotency_key="immutable-upload-retry",
+        )
+        monkeypatch.setattr(
+            managed_service_module, "_input_resource_lease_id", current_lease_id
+        )
+        assert (
+            service.retry_run(
+                ctx,
+                str(receipt.resource_id),
+                idempotency_key="immutable-upload-retry",
+            ).to_dict()
+            == retry.to_dict()
         )
 
         rerun = service.rerun_run(
@@ -520,6 +557,51 @@ def test_managed_worker_executes_finalized_upload_and_lease_outlives_staging_ttl
         assert service.get_run_report(ctx, str(replay.resource_id))["status"] == (
             "succeeded"
         )
+
+        alternate_trusted_context = ControlPlaneContext(
+            principal=Principal(
+                "managed-backend-alternate-workload",
+                issuer="alternate-issuer",
+                kind="workload",
+            ),
+            tenant=ctx.tenant,
+            workspace=ctx.workspace,
+            environment=EnvironmentRef("staging"),
+            security_domain=ctx.security_domain,
+            resource_owner_id=ctx.principal.subject,
+        )
+        with backend.engine.connect() as connection:
+            before_alternate = set(
+                connection.execute(
+                    sqlalchemy.text(
+                        "SELECT lease_id FROM cp_input_resource_leases "
+                        "WHERE upload_id = :upload_id"
+                    ),
+                    {"upload_id": reference.resource_id},
+                )
+                .scalars()
+                .all()
+            )
+        assert len(before_alternate) == 4
+        service.submit_run(
+            alternate_trusted_context,
+            "immutable-upload-pipe",
+            idempotency_key="same-resource-alternate-trusted-context",
+        )
+        with backend.engine.connect() as connection:
+            after_alternate = set(
+                connection.execute(
+                    sqlalchemy.text(
+                        "SELECT lease_id FROM cp_input_resource_leases "
+                        "WHERE upload_id = :upload_id"
+                    ),
+                    {"upload_id": reference.resource_id},
+                )
+                .scalars()
+                .all()
+            )
+        assert len(after_alternate) == 5
+        assert len(after_alternate - before_alternate) == 1
     finally:
         backend.close()
 
@@ -530,6 +612,7 @@ def test_managed_worker_executes_finalized_upload_and_lease_outlives_staging_ttl
         ("empty", b"", 1024, 100, False),
         ("malformed", b"id,name\n1\n", 1024, 100, False),
         ("over_budget", b"id,name\n1,private-value\n", 8, 100, False),
+        ("over_rows", b"id,name\n1,Ada\n2,Grace\n", 1024, 1, False),
         ("tampered", b"id,name\n1,private-value\n", 1024, 100, True),
     ],
 )
@@ -998,6 +1081,163 @@ def test_managed_backend_rejects_unmigrated_schema_and_disposes_partial_engine(
     assert engines[0].pool is not disposed_pool
 
 
+def test_managed_report_outage_recovers_fenced_result_without_rerunning(
+    tmp_path: Path,
+) -> None:
+    database_url = _migrated_url(tmp_path)
+    source = tmp_path / "report-outage-input.json"
+    target = tmp_path / "report-outage-output.csv"
+    source.write_text('[{"id": 29}]', encoding="utf-8")
+
+    def planning_context_factory(
+        _ctx: ControlPlaneContext, profile: Any
+    ) -> PlanningContext:
+        planning = PlanningContext.create(profile=profile)
+        planning.registry.register_binding(
+            BindingDescriptor(
+                binding="source",
+                provider="json",
+                location=str(source),
+                kind="source",
+            )
+        )
+        planning.registry.register_binding(
+            BindingDescriptor(
+                binding="result",
+                provider="csv",
+                location=str(target),
+                kind="sink",
+            )
+        )
+        return planning
+
+    config = ManagedBackendConfig(
+        database_url=database_url,
+        store_id="managed-report-outage-recovery",
+    )
+    authorizer = MemoryAuthorizer()
+    ctx = _context()
+    for action in (
+        "definition.write",
+        "run.submit",
+        "run.read",
+        "run.report",
+        "run.lineage",
+    ):
+        authorizer.grant(ctx, action)
+    backend = create_managed_backend(
+        config,
+        authorizer=authorizer,
+        context_factory=static_context_factory(
+            tenant_id=ctx.tenant.tenant_id,
+            workspace_id=ctx.workspace.workspace_id,
+            environment=ctx.environment.name,
+            security_domain=ctx.security_domain.domain_id,
+        ),
+        planning_context_factory=planning_context_factory,
+    )
+    online = False
+
+    def use_toggled_report_store(
+        original_factory: Any,
+    ) -> Any:
+        def factory(context: ControlPlaneContext) -> Any:
+            store = original_factory(context)
+
+            class ToggledStore:
+                def get(self, run_id: str) -> Any:
+                    if not online:
+                        raise OSError("simulated persistent report-store outage")
+                    return store.get(run_id)
+
+                def put(self, report: PipelineRunReport) -> None:
+                    if not online:
+                        raise OSError("simulated persistent report-store outage")
+                    store.put(report)
+
+            return ToggledStore()
+
+        return factory
+
+    restarted: ManagedBackend | None = None
+    try:
+        service = backend.api.managed_service
+        assert service is not None
+        service.register_definition(
+            ctx,
+            "report-outage-pipe",
+            pipeline_to_dict(definition_from_pipeline(_ManagedBackendPipeline)),
+        )
+        receipt = service.submit_run(
+            ctx, "report-outage-pipe", idempotency_key="report-outage-run"
+        )
+        assert receipt.resource_id is not None
+        durable = backend.api.durable_work
+        assert durable is not None
+        toggled_factory = use_toggled_report_store(backend.report_store_factory)
+        backend.report_store_factory = toggled_factory
+        service.report_store_factory = toggled_factory
+        host = backend.create_execution_host(owner_id="report-outage-worker")
+        assert host.tick(ctx) == 1
+        online = True
+        assert target.exists()
+        online = False
+        assert target.read_text(encoding="utf-8").splitlines() == ["id", "29"]
+        pending = durable.pending_result_publications(ctx)
+        assert len(pending) == 1
+        assert pending[0].published_at is None
+
+        # The worker process can disappear while the report store remains
+        # unavailable; the authorized query recovers the committed result.
+        backend.close()
+        source.write_text('[{"id": 30}]', encoding="utf-8")
+        restarted = create_managed_backend(
+            config,
+            authorizer=authorizer,
+            context_factory=static_context_factory(
+                tenant_id=ctx.tenant.tenant_id,
+                workspace_id=ctx.workspace.workspace_id,
+                environment=ctx.environment.name,
+                security_domain=ctx.security_domain.domain_id,
+            ),
+            planning_context_factory=planning_context_factory,
+        )
+        service = restarted.api.managed_service
+        assert service is not None
+        toggled_factory = use_toggled_report_store(restarted.report_store_factory)
+        restarted.report_store_factory = toggled_factory
+        service.report_store_factory = toggled_factory
+        report = service.get_run_report(ctx, receipt.resource_id)
+        assert report["status"] == "succeeded"
+        execution = report["metadata"]["etlantic.control_plane.execution"]
+        assert execution["result_publication_status"] == "pending"
+        assert any(
+            diagnostic["code"] == "PMEXEC410" and diagnostic["severity"] == "warning"
+            for diagnostic in report["diagnostics"]
+        )
+
+        online = True
+        restarted_host = restarted.create_execution_host(
+            owner_id="report-outage-restarted-worker"
+        )
+        assert restarted_host.tick(ctx) == 0
+        restarted_durable = restarted.api.durable_work
+        assert restarted_durable is not None
+        assert not restarted_durable.pending_result_publications(ctx)
+        assert target.read_text(encoding="utf-8").splitlines() == ["id", "29"]
+        published = service.get_run_report(ctx, receipt.resource_id)
+        assert (
+            published["metadata"]["etlantic.control_plane.execution"][
+                "result_publication_status"
+            ]
+            == "published"
+        )
+    finally:
+        backend.close()
+        if restarted is not None:
+            restarted.close()
+
+
 def test_managed_app_disposes_backend_after_partial_lifespan_startup(
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
@@ -1063,6 +1303,20 @@ def test_managed_backend_rejects_invalid_event_retention_configuration() -> None
         ManagedBackendConfig(
             database_url="sqlite:///managed.db",
             event_retention_max_events_per_scope=0,
+        )
+
+
+def test_managed_backend_action_lease_exceeds_every_preparation_deadline() -> None:
+    with pytest.raises(ValueError, match="action_job_lease_seconds"):
+        ManagedBackendConfig(
+            database_url="sqlite:///managed.db",
+            action_job_max_deadline_seconds=300,
+            action_job_lease_seconds=300,
+        )
+    with pytest.raises(ValueError, match="action_job_lease_seconds"):
+        ManagedBackendConfig(
+            database_url="sqlite:///managed.db",
+            action_job_lease_seconds=cast(Any, True),
         )
 
 

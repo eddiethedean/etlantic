@@ -4710,8 +4710,9 @@ Deliver:
 - isolated connector test/catalog/schema/preflight/preview/provision actions,
   scoped credential resolution and immutable uploaded input lifecycle;
 - scheduler/manual/external-trigger equivalence and executable lifecycle commands;
-- independently packaged Foundry support and live PostgreSQL/CSV qualification,
-  including 12 source/destination pairings and advertised writer modes;
+- independently packaged Foundry support qualified against the local
+  Semblance API simulator, plus live PostgreSQL/CSV qualification, including 12
+  source/destination pairings and advertised writer modes;
 - private extensions and existing advanced engine/native/dynamic/streaming
   controls through the same service, with exact capability evidence;
 - migration, security, real-store, installed-wheel and independent-consumer proof.

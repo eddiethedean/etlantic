@@ -19,6 +19,7 @@ from etlantic.control_plane.durable_models import (
     PreviewWorkspace,
     RepairPlan,
     ReplayRecord,
+    ResultPublicationRecord,
     ShadowRunRecord,
     StateDiagnostic,
     StateTransitionExplanation,
@@ -41,6 +42,16 @@ class DurableWorkStore(Protocol):
     def get_action_job(
         self, ctx: ControlPlaneContext, action_id: str
     ) -> ActionJobRecord: ...
+    def get_action_job_by_idempotency(
+        self,
+        ctx: ControlPlaneContext,
+        *,
+        action: str,
+        idempotency_key: str,
+    ) -> ActionJobRecord | None: ...
+    def cancel_action_job(
+        self, ctx: ControlPlaneContext, action_id: str
+    ) -> ActionJobRecord: ...
     def list_action_jobs(
         self,
         ctx: ControlPlaneContext,
@@ -56,6 +67,25 @@ class DurableWorkStore(Protocol):
         lease_seconds: int = 30,
         now: datetime | None = None,
     ) -> ActionJobRecord | None: ...
+    def heartbeat_action_job(
+        self,
+        ctx: ControlPlaneContext,
+        action_id: str,
+        *,
+        worker_id: str,
+        fencing_token: int,
+        lease_seconds: int = 30,
+        now: datetime | None = None,
+    ) -> ActionJobRecord: ...
+    def mark_action_job_accepting(
+        self,
+        ctx: ControlPlaneContext,
+        action_id: str,
+        *,
+        worker_id: str,
+        fencing_token: int,
+        now: datetime | None = None,
+    ) -> ActionJobRecord: ...
     def finish_action_job(
         self,
         ctx: ControlPlaneContext,
@@ -164,6 +194,28 @@ class DurableWorkStore(Protocol):
         fencing_token: int,
         status: str,
     ) -> AttemptRecord: ...
+    def record_result_publication(
+        self,
+        ctx: ControlPlaneContext,
+        record: ResultPublicationRecord,
+        *,
+        owner_id: str,
+        fencing_token: int,
+    ) -> ResultPublicationRecord: ...
+    def get_latest_result_publication(
+        self, ctx: ControlPlaneContext, submission_id: str
+    ) -> ResultPublicationRecord | None: ...
+    def pending_result_publications(
+        self, ctx: ControlPlaneContext, *, limit: int = 100
+    ) -> Sequence[ResultPublicationRecord]: ...
+    def mark_result_publication_published(
+        self,
+        ctx: ControlPlaneContext,
+        submission_id: str,
+        attempt_id: str,
+        *,
+        report_sha256: str,
+    ) -> ResultPublicationRecord: ...
     def compare_and_swap_checkpoint(
         self,
         ctx: ControlPlaneContext,

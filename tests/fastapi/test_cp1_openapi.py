@@ -41,6 +41,7 @@ REQUIRED_OPERATION_IDS = {
     "cp_get_run",
     "cp_get_run_actions",
     "cp_retry_run",
+    "cp_resume_run",
     "cp_cancel_run",
     "cp_stream_run_events",
     "cp_list_run_events",

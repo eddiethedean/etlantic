@@ -98,6 +98,20 @@ def test_america_new_york_spring_forward_skips_missing_hour() -> None:
     assert not (local.month == 3 and local.day == 8 and local.hour == 2)
 
 
+def test_america_new_york_fall_back_keeps_both_distinct_utc_occurrences() -> None:
+    """A repeated local 01:30 maps to two unique UTC firing identities."""
+    spec = ScheduleSpec(kind="cron", cron="30 1 * * *", timezone="America/New_York")
+    first = next_fire_after(
+        spec,
+        after=datetime(2026, 11, 1, 4, 59, tzinfo=UTC),
+    )
+    assert first is not None
+    assert first == datetime(2026, 11, 1, 5, 30, tzinfo=UTC)
+    second = next_fire_after(spec, after=first)
+    assert second == datetime(2026, 11, 1, 6, 30, tzinfo=UTC)
+    assert first != second
+
+
 def test_fake_clock_advance() -> None:
     clock = FakeScheduleClock(datetime(2026, 1, 1, tzinfo=UTC))
     clock.advance(timedelta(seconds=30))

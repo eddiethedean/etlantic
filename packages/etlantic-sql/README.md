@@ -116,6 +116,26 @@ target mutation. The comparison tokens use a worker-process key and stay in
 memory; credentials and raw database/resource names are not written to plans,
 receipts or reports.
 
+### Explicit action provisioning
+
+For deployments that grant `connector.provision`, the package also provides
+`etlantic_sql.create_action_handlers(resolve_engine)`. The callback receives
+the action worker's trusted `ControlPlaneContext` and an opaque saved
+connection ID, then returns an application-owned SQLAlchemy engine. The
+factory registers PostgreSQL table create and cleanup handlers; connection
+URLs and credentials stay inside the deployment callback.
+
+Provisioning is create-only. The handler accepts only a typed table schema
+with safe identifiers, refuses an existing unmanaged table, and records the
+action ID, owner scope, schema fingerprint and effect ID in the same database.
+Retries of one accepted action recover the recorded receipt instead of
+recreating the table. Cleanup requires the worker-verified successful parent
+provision receipt and removes only that exact effect; its tombstone makes a
+cleanup retry idempotent. The action factory performs no database writes when
+constructed, and the Foundry storage inspection handler remains read-only.
+The SQLite-backed unit case and isolated PostgreSQL loopback qualification
+exercise create-only conflict, receipt recovery and compensation.
+
 | Capability | Source | Sink | Storage | Notes |
 |---|:---:|:---:|:---:|---|
 | `source.batch_snapshot` | ✓ | | | Bounded table read |

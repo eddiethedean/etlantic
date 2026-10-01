@@ -52,7 +52,7 @@ adoption and ecosystem gates described below.
 | 0.46 | Bounded dynamic control flow, incremental/CDC semantics, DLQ policy, and schema registries | Supported dynamic and change-stream contract |
 | 0.47 | Kubernetes and managed execution **Experimental fakes** (`etlantic-k8s`, `etlantic-spark-connect`) plus conforming remote-runtime protocol | Remote execution profiles (fakes); live packs remain 0.59 |
 | 0.55 | Optional data-first authoring and inferred models for qualified sources and write targets | Qualified interactive authoring, target-guided backward inference, existing-target compatibility, and reviewable durable export |
-| 0.56 | Complete application ETL backend; public services and live PostgreSQL/Foundry/CSV provider floor | Fully specified managed ETL without application implementation; all gates required |
+| 0.56 | Complete application ETL backend; public services, live PostgreSQL and immutable CSV qualification, and Semblance-backed Foundry API qualification | Fully specified managed ETL without application implementation; all gates required |
 | 0.57 | Brownfield adoption bridges | Supported import/compiler compatibility matrix |
 | 0.58 | Operator console | Supported control-plane operations UI |
 | 0.59 | Enterprise provider packs | Supported cloud provider matrix |
@@ -91,8 +91,10 @@ independent providers perform connector, engine, secret and storage operations.
 External warehouses, catalogs, identity systems, secret managers and cluster
 services remain integrations behind those providers.
 
-0.56 specifically owns generic Foundry support and live PostgreSQL/CSV transfer
-qualification, plus isolated provider actions and scoped resource lifecycle.
+0.56 specifically owns generic Foundry support qualified against the local
+Semblance API simulator, live PostgreSQL/CSV transfer qualification, isolated
+provider actions and scoped resource lifecycle. A live Foundry account is not
+required.
 The larger cloud/runtime/secret-provider portfolio remains 0.59. The source
 review documents gaps in composing existing foundations; historical component
 gates do not alone qualify the complete application execution path.

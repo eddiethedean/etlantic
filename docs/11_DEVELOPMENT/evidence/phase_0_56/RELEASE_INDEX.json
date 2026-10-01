@@ -7,7 +7,7 @@
       "evidence_artifacts": [
         {
           "path": "docs/11_DEVELOPMENT/evidence/phase_0_56/LOCAL_QUALIFICATION.md",
-          "sha256": "2c008de026c2ce321e5a3f373dea97d3a53de1850f6e51766a2cccd7d10ccded"
+          "sha256": "f408476a04a580bf32cfb63a135f1d1217ab8c2832d0938246d992d2f01b6962"
         },
         {
           "path": "docs/11_DEVELOPMENT/evidence/phase_0_56/WHEEL_MANIFEST.json",
@@ -34,7 +34,7 @@
       "evidence_artifacts": [
         {
           "path": "docs/11_DEVELOPMENT/evidence/phase_0_56/LOCAL_QUALIFICATION.md",
-          "sha256": "2c008de026c2ce321e5a3f373dea97d3a53de1850f6e51766a2cccd7d10ccded"
+          "sha256": "f408476a04a580bf32cfb63a135f1d1217ab8c2832d0938246d992d2f01b6962"
         },
         {
           "path": "docs/11_DEVELOPMENT/evidence/phase_0_56/WHEEL_MANIFEST.json",
@@ -42,16 +42,19 @@
         }
       ],
       "id": "AC056-002",
-      "observed_result": "No complete AC-level pass is asserted.",
-      "open_reason": "Complete criterion-level evidence is still pending; listed tests cover only part of the required acceptance case.",
+      "observed_result": "All 89 protected CP operations among 91 public OpenAPI operations passed a dynamic authorization-order campaign. Authorization trace preceded every configured store call; denied definition requests performed no repository access, and run existence probes occurred only after authorization. Concurrent headless and HTTP calls for seeded runs preserved explicit opaque not_found (404) and forbidden (403) decisions with matching error codes and no existence probes. The existing tenant/workspace API matrix plus owner, tenant and workspace input-resource attacks produced matching opaque 404 outcomes through headless store and HTTP paths; the owner upload remained intact. The campaign exposed and fixed register/edit endpoints that returned 501 before authorization when managed services were absent. The combined focused authz, managed parity and core disclosure suites passed 103 tests.",
+      "open_reason": "",
       "owner": "056-SVC",
       "provider_version_tuple": [
         "source candidate; workspace package version 0.55.0"
       ],
-      "status": "pending",
+      "status": "passed",
       "supporting_cases": [
+        "tests/fastapi/test_phase_0_56_authorization_order.py",
+        "tests/fastapi/test_cp1_full_authz_matrix.py",
+        "tests/fastapi/test_cp1_authz_matrix.py",
         "tests/fastapi/test_managed_application_0_56.py",
-        "tests/fastapi/test_cp1_full_authz_matrix.py"
+        "tests/control_plane/test_control_plane.py"
       ]
     },
     {
@@ -61,7 +64,7 @@
       "evidence_artifacts": [
         {
           "path": "docs/11_DEVELOPMENT/evidence/phase_0_56/LOCAL_QUALIFICATION.md",
-          "sha256": "2c008de026c2ce321e5a3f373dea97d3a53de1850f6e51766a2cccd7d10ccded"
+          "sha256": "f408476a04a580bf32cfb63a135f1d1217ab8c2832d0938246d992d2f01b6962"
         },
         {
           "path": "docs/11_DEVELOPMENT/evidence/phase_0_56/WHEEL_MANIFEST.json",
@@ -89,7 +92,11 @@
       "evidence_artifacts": [
         {
           "path": "docs/11_DEVELOPMENT/evidence/phase_0_56/LOCAL_QUALIFICATION.md",
-          "sha256": "2c008de026c2ce321e5a3f373dea97d3a53de1850f6e51766a2cccd7d10ccded"
+          "sha256": "f408476a04a580bf32cfb63a135f1d1217ab8c2832d0938246d992d2f01b6962"
+        },
+        {
+          "path": "docs/11_DEVELOPMENT/evidence/phase_0_56/PUBLIC_CONTROL_COVERAGE_0_56.json",
+          "sha256": "b5ef9596cc217dd0e2458614092e7266adec80af6dce907c069b630ab5319803"
         },
         {
           "path": "docs/11_DEVELOPMENT/evidence/phase_0_56/WHEEL_MANIFEST.json",
@@ -97,16 +104,19 @@
         }
       ],
       "id": "AC056-004",
-      "observed_result": "No complete AC-level pass is asserted.",
-      "open_reason": "Complete criterion-level evidence is still pending; listed tests cover only part of the required acceptance case.",
+      "observed_result": "The generated CP public-control inventory covers all 96 OpenAPI operations and 978 path/query parameter and request/response schema fields. Managed schedule request properties now expose revision policy, versioned parameter/secret references, and workload identity instead of disappearing inside an untyped body. Each operation maps to its storage authority and runtime consumer, or an explicit no-ETL-runtime reason. The drift gate validates source/test anchors and rejects an omitted operation, downgraded control, or removed field; all five focused tests passed.",
+      "open_reason": "",
       "owner": "056-SPEC",
       "provider_version_tuple": [
         "source candidate; workspace package version 0.55.0"
       ],
-      "status": "pending",
+      "status": "passed",
       "supporting_cases": [
-        "tests/runtime/test_run_request_wire.py",
-        "tests/connectors/test_connector_configuration_schemas_0_56.py"
+        "scripts/check_phase_0_56_control_coverage.py",
+        "tests/fastapi/test_phase_0_56_control_coverage.py",
+        "docs/11_DEVELOPMENT/evidence/phase_0_56/PUBLIC_CONTROL_COVERAGE_0_56.json",
+        "tests/fastapi/test_phase_0_56_control_coverage.py::test_managed_schedule_policy_fields_are_visible_in_openapi_inventory",
+        "tests/fastapi/test_managed_application_0_56.py::test_managed_resume_admits_checkpoint_linked_child_and_is_idempotent"
       ]
     },
     {
@@ -116,7 +126,7 @@
       "evidence_artifacts": [
         {
           "path": "docs/11_DEVELOPMENT/evidence/phase_0_56/LOCAL_QUALIFICATION.md",
-          "sha256": "2c008de026c2ce321e5a3f373dea97d3a53de1850f6e51766a2cccd7d10ccded"
+          "sha256": "f408476a04a580bf32cfb63a135f1d1217ab8c2832d0938246d992d2f01b6962"
         },
         {
           "path": "docs/11_DEVELOPMENT/evidence/phase_0_56/WHEEL_MANIFEST.json",
@@ -147,7 +157,7 @@
       "evidence_artifacts": [
         {
           "path": "docs/11_DEVELOPMENT/evidence/phase_0_56/LOCAL_QUALIFICATION.md",
-          "sha256": "2c008de026c2ce321e5a3f373dea97d3a53de1850f6e51766a2cccd7d10ccded"
+          "sha256": "f408476a04a580bf32cfb63a135f1d1217ab8c2832d0938246d992d2f01b6962"
         },
         {
           "path": "docs/11_DEVELOPMENT/evidence/phase_0_56/WHEEL_MANIFEST.json",
@@ -183,7 +193,7 @@
       "evidence_artifacts": [
         {
           "path": "docs/11_DEVELOPMENT/evidence/phase_0_56/LOCAL_QUALIFICATION.md",
-          "sha256": "2c008de026c2ce321e5a3f373dea97d3a53de1850f6e51766a2cccd7d10ccded"
+          "sha256": "f408476a04a580bf32cfb63a135f1d1217ab8c2832d0938246d992d2f01b6962"
         },
         {
           "path": "docs/11_DEVELOPMENT/evidence/phase_0_56/WHEEL_MANIFEST.json",
@@ -191,17 +201,20 @@
         }
       ],
       "id": "AC056-007",
-      "observed_result": "Local evidence verifies exact revision selection, resource authorization, and effective-fingerprint policy binding; complete criterion evidence is pending.",
-      "open_reason": "Durable provider resource/version resolution and the full cross-scope authorization/disclosure campaign remain unqualified.",
+      "observed_result": "Managed submit resolves the exact definition revision, validates and verifies the final plan, authorizes each referenced logical resource and finalized input, derives plugin/resource versions and computes the effective fingerprint before policy, approval, quota, and durable acceptance. The captured policy decision binds the effective fingerprint and resolved revision. A matching independent approval admits the request; the same approval cannot authorize a changed revision. Forged plan hashes and unknown revision selectors are rejected without durable acceptance. Finalized owner-bound input versions are recorded in the execution envelope and leased through retry/rerun/replay retention. Exact pinned/latest-approved revision and idempotent retry behavior are covered; AC056-002 supplies the completed cross-scope authorization/disclosure matrix. The managed application plus immutable-input regression run passed 21 tests.",
+      "open_reason": "",
       "owner": "056-ADMIT",
       "provider_version_tuple": [
         "source candidate; workspace package version 0.55.0"
       ],
-      "status": "pending",
+      "status": "passed",
       "supporting_cases": [
-        "tests/fastapi/test_managed_application_0_56.py",
-        "tests/fastapi/test_managed_backend_0_56.py",
-        "tests/sqlmodel/test_cp1_migrations_0_51.py"
+        "tests/fastapi/test_managed_application_0_56.py::test_submission_resolves_revision_once_and_binds_effective_policy",
+        "tests/fastapi/test_managed_application_0_56.py::test_approval_is_bound_to_resolved_effective_plan_and_revision",
+        "tests/fastapi/test_managed_application_0_56.py::test_managed_http_rejects_forged_plan_hash_and_unknown_revision",
+        "tests/fastapi/test_managed_application_0_56.py::test_submission_authorizes_resolved_resources_before_acceptance",
+        "tests/fastapi/test_managed_backend_0_56.py::test_managed_worker_executes_finalized_upload_and_lease_outlives_staging_ttl",
+        "src/etlantic/service/managed.py"
       ]
     },
     {
@@ -211,7 +224,7 @@
       "evidence_artifacts": [
         {
           "path": "docs/11_DEVELOPMENT/evidence/phase_0_56/LOCAL_QUALIFICATION.md",
-          "sha256": "2c008de026c2ce321e5a3f373dea97d3a53de1850f6e51766a2cccd7d10ccded"
+          "sha256": "f408476a04a580bf32cfb63a135f1d1217ab8c2832d0938246d992d2f01b6962"
         },
         {
           "path": "docs/11_DEVELOPMENT/evidence/phase_0_56/WHEEL_MANIFEST.json",
@@ -243,7 +256,7 @@
       "evidence_artifacts": [
         {
           "path": "docs/11_DEVELOPMENT/evidence/phase_0_56/LOCAL_QUALIFICATION.md",
-          "sha256": "2c008de026c2ce321e5a3f373dea97d3a53de1850f6e51766a2cccd7d10ccded"
+          "sha256": "f408476a04a580bf32cfb63a135f1d1217ab8c2832d0938246d992d2f01b6962"
         },
         {
           "path": "docs/11_DEVELOPMENT/evidence/phase_0_56/WHEEL_MANIFEST.json",
@@ -251,16 +264,24 @@
         }
       ],
       "id": "AC056-009",
-      "observed_result": "No complete AC-level pass is asserted.",
-      "open_reason": "Complete criterion-level evidence is still pending; listed tests cover only part of the required acceptance case.",
+      "observed_result": "The 66-test managed-preparation, action-job, authorization, coverage and OpenAPI campaign passed. A SQLModel-backed managed API persisted a preparation by operation ID; after the backend closed with the operation claimed and its lease expired, a new backend queried the same operation, took over under a new fence and completed exactly one managed submission and outbox command. Idempotency replay returned the same operation. The SQL-backed API canceled a queued operation and rejected secret-like request content before persistence. Memory integration canceled a running preparation before acceptance and verified no run submission or outbox command was created. A 1.5-second preparation under a one-second lease renewed its lease so a competing worker could not claim it. The SQLModel restart recovery test also verified action-job persistence across engine disposal/reopen and a new attempt/fencing token.",
+      "open_reason": "",
       "owner": "056-ADMIT",
       "provider_version_tuple": [
         "source candidate; workspace package version 0.55.0"
       ],
-      "status": "pending",
+      "status": "passed",
       "supporting_cases": [
-        "tests/fastapi/test_managed_application_0_56.py",
-        "tests/sqlmodel/test_durable_postgresql_multiprocess_0_56.py"
+        "tests/fastapi/test_managed_action_jobs_0_56.py::test_managed_run_preparation_survives_sql_backend_restart",
+        "tests/fastapi/test_managed_application_0_56.py::test_managed_run_preparation_operations_query_cancel_and_execute",
+        "tests/control_plane/test_action_jobs_0_56.py::test_run_preparation_operations_are_idempotent_and_cancellable_until_acceptance",
+        "tests/control_plane/test_action_jobs_0_56.py::test_run_preparation_worker_observes_running_cancellation",
+        "tests/control_plane/test_action_jobs_0_56.py::test_run_preparation_worker_renews_lease_during_long_preparation",
+        "tests/sqlmodel/test_preparation_operation_recovery_0_56.py",
+        "tests/fastapi/test_phase_0_56_authorization_order.py",
+        "tests/fastapi/test_phase_0_56_control_coverage.py",
+        "tests/fastapi/test_cp1_openapi.py",
+        "tests/fastapi/test_cp_ga_openapi_0_43.py"
       ]
     },
     {
@@ -270,7 +291,7 @@
       "evidence_artifacts": [
         {
           "path": "docs/11_DEVELOPMENT/evidence/phase_0_56/LOCAL_QUALIFICATION.md",
-          "sha256": "2c008de026c2ce321e5a3f373dea97d3a53de1850f6e51766a2cccd7d10ccded"
+          "sha256": "f408476a04a580bf32cfb63a135f1d1217ab8c2832d0938246d992d2f01b6962"
         },
         {
           "path": "docs/11_DEVELOPMENT/evidence/phase_0_56/WHEEL_MANIFEST.json",
@@ -278,17 +299,24 @@
         }
       ],
       "id": "AC056-010",
-      "observed_result": "A live PostgreSQL worker process committed durable acceptance and then simulated loss of its acknowledgement. A restarted caller recovered the original submission and single outbox record; no duplicate acceptance was created.",
-      "open_reason": "Only the durable-accept/lost-ack boundary is fault-injected. The CP1 write, CP3 acceptance, outbox publication, worker claim and restart failure matrix remains incomplete.",
+      "observed_result": "CP1 and CP3 acceptance reconcile lost commit acknowledgements by the scoped idempotency key. Tests cover pre-commit CP1 rejection, CP1 commit with acknowledgement loss, temporary CP1 reconciliation-read failure and retry, CP3 definite rejection, CP3 commit with acknowledgement loss, temporary CP3 reconciliation-read failure and retry, and PostgreSQL failure inserting the normalized outbox row. The PostgreSQL transaction rolled back the durable snapshot/submission/outbox together while preserving the discoverable CP1 receipt; a new backend instance recovered the same command and published exactly one outbox record. The recovered in-memory command executed once and a same-key replay created no second execution. Six focused managed boundary cases and the 27-test managed application suite passed; the PostgreSQL durable/multiprocess and managed process campaign passed 7 tests.",
+      "open_reason": "",
       "owner": "056-ADMIT",
       "provider_version_tuple": [
-        "source candidate; workspace package version 0.55.0"
+        "PostgreSQL 16.13 isolated loopback",
+        "SQLModel candidate 0.55.0"
       ],
-      "status": "pending",
+      "status": "passed",
       "supporting_cases": [
-        "tests/fastapi/test_managed_application_0_56.py",
+        "tests/fastapi/test_managed_application_0_56.py::test_managed_accept_cp1_rejection_creates_no_durable_command",
+        "tests/fastapi/test_managed_application_0_56.py::test_managed_accept_recovers_lost_cp1_ack_without_duplicate_receipt",
+        "tests/fastapi/test_managed_application_0_56.py::test_managed_accept_preserves_cp1_receipt_when_ack_lookup_is_unavailable",
+        "tests/fastapi/test_managed_application_0_56.py::test_managed_accept_reconciles_commit_when_durable_ack_is_lost",
+        "tests/fastapi/test_managed_application_0_56.py::test_managed_accept_keeps_discoverable_receipt_when_reconciliation_is_unavailable",
+        "tests/fastapi/test_managed_application_0_56.py::test_managed_accept_compensates_only_a_definite_durable_rejection",
+        "tests/fastapi/test_managed_postgresql_process_0_56.py::test_postgresql_managed_accept_recovers_cp1_and_cp3_lost_acknowledgements",
         "tests/sqlmodel/test_durable_postgresql_multiprocess_0_56.py",
-        "tests/sqlmodel/test_durable_postgresql_multiprocess_0_56.py::test_postgresql_lost_accept_ack_recovers_the_committed_receipt"
+        "tests/control_plane/test_durable_work_0_41.py"
       ]
     },
     {
@@ -298,7 +326,7 @@
       "evidence_artifacts": [
         {
           "path": "docs/11_DEVELOPMENT/evidence/phase_0_56/LOCAL_QUALIFICATION.md",
-          "sha256": "2c008de026c2ce321e5a3f373dea97d3a53de1850f6e51766a2cccd7d10ccded"
+          "sha256": "f408476a04a580bf32cfb63a135f1d1217ab8c2832d0938246d992d2f01b6962"
         },
         {
           "path": "docs/11_DEVELOPMENT/evidence/phase_0_56/WHEEL_MANIFEST.json",
@@ -306,16 +334,21 @@
         }
       ],
       "id": "AC056-011",
-      "observed_result": "No complete AC-level pass is asserted.",
-      "open_reason": "Complete criterion-level evidence is still pending; listed tests cover only part of the required acceptance case.",
+      "observed_result": "A 55-test admission/preflight campaign passed. Static validate/plan tests prove source reads and transformations are not invoked. The bounded action worker cancels a live handler at its deadline. Managed policy and approvals use the resolved effective fingerprint and immutable revision; concurrency tests confirm same-intent quota admission is charged once. Plan-attestation signatures now bind created_at, freshness verification rejects stale/future or timezone-naive evidence, and pre-submit checks bind the attestation to the effective fingerprint before quota admission. Focused control-plane, HTTP-attestation, managed-submission, action-worker, ruff, and Pyright checks passed.",
+      "open_reason": "",
       "owner": "056-ADMIT",
       "provider_version_tuple": [
-        "source candidate; workspace package version 0.55.0"
+        "ETLantic workspace candidate; Python 3.11"
       ],
-      "status": "pending",
+      "status": "passed",
       "supporting_cases": [
-        "tests/fastapi/test_managed_application_0_56.py",
-        "tests/sqlmodel/test_durable_postgresql_multiprocess_0_56.py"
+        "tests/fastapi/test_managed_application_0_56.py::test_static_validate_and_plan_do_not_read_sources_or_run_transforms",
+        "tests/control_plane/test_action_jobs_0_56.py::test_action_worker_cancels_handler_at_deadline",
+        "tests/fastapi/test_managed_application_0_56.py::test_approval_is_bound_to_resolved_effective_plan_and_revision",
+        "tests/fastapi/test_managed_application_0_56.py::test_concurrent_same_intent_charges_workspace_quota_once",
+        "tests/control_plane/test_policy_0_42.py::test_pre_submit_attestations_are_fresh_and_bound_to_effective_fingerprint",
+        "tests/control_plane/test_policy_0_42.py::test_plan_attestation_created_at_is_signed_and_stale_evidence_fails_closed",
+        "tests/fastapi/test_cp4_routes_0_42.py::test_attestation_put_and_verify_plan"
       ]
     },
     {
@@ -325,7 +358,7 @@
       "evidence_artifacts": [
         {
           "path": "docs/11_DEVELOPMENT/evidence/phase_0_56/LOCAL_QUALIFICATION.md",
-          "sha256": "2c008de026c2ce321e5a3f373dea97d3a53de1850f6e51766a2cccd7d10ccded"
+          "sha256": "f408476a04a580bf32cfb63a135f1d1217ab8c2832d0938246d992d2f01b6962"
         },
         {
           "path": "docs/11_DEVELOPMENT/evidence/phase_0_56/WHEEL_MANIFEST.json",
@@ -355,7 +388,7 @@
       "evidence_artifacts": [
         {
           "path": "docs/11_DEVELOPMENT/evidence/phase_0_56/LOCAL_QUALIFICATION.md",
-          "sha256": "2c008de026c2ce321e5a3f373dea97d3a53de1850f6e51766a2cccd7d10ccded"
+          "sha256": "f408476a04a580bf32cfb63a135f1d1217ab8c2832d0938246d992d2f01b6962"
         },
         {
           "path": "docs/11_DEVELOPMENT/evidence/phase_0_56/WHEEL_MANIFEST.json",
@@ -363,16 +396,30 @@
         }
       ],
       "id": "AC056-013",
-      "observed_result": "No complete AC-level pass is asserted.",
-      "open_reason": "Runtime concurrency and worker/scheduler lease TTL configuration now fail closed on invalid values; lease renewal, cancellation, fencing and other advertised resource-limit campaigns plus focused regression evidence remain pending.",
+      "observed_result": "A targeted lease/fencing/resource campaign passed 86 tests. The broader runtime/resource campaign passed 329 tests with 3 optional skips. Run and preparation workers renewed leases during long work; a competing run worker could not take over before the renewed lease expired. Running cancellation stopped the managed runtime before its sink write, durable state retained unknown effect until reconciliation, and stale fencing tokens could not advance checkpoints. The preparation worker now records deadline expiry as timed_out after cooperative cancellation checkpoints. Row, byte and cooperative time bounds were exercised by storage, local file, inference and Parquet campaigns; local profile concurrency stayed at its configured cap and adaptive invalid concurrency failed before storage effects. DuckDB applied and reported the configured 16 MiB memory limit, while an invalid limit failed before publishing a session. Execution, scheduler and action worker constructors reject boolean, nonpositive, floating-point and missing lease TTLs; the managed action lease is required to exceed the maximum preparation deadline.",
+      "open_reason": "",
       "owner": "056-WORKER",
       "provider_version_tuple": [
         "source candidate; workspace package version 0.55.0"
       ],
-      "status": "pending",
+      "status": "passed",
       "supporting_cases": [
+        "tests/schedule/test_loops.py",
+        "tests/control_plane/test_durable_work_0_41.py",
+        "tests/control_plane/test_action_jobs_0_56.py",
+        "tests/sqlmodel/test_durable_work_0_41.py",
         "tests/runtime/test_local_runtime.py",
-        "tests/schedule/test_loops.py"
+        "tests/runtime/test_adaptive_execution_0_53.py",
+        "tests/storage/test_storage_issue_162.py",
+        "tests/storage/test_polars_parquet_0_54.py",
+        "tests/connectors/test_local_files_csv_0_56.py::test_local_files_enforces_file_and_row_budgets",
+        "tests/duckdb/test_duckdb_plugin.py",
+        "tests/inference/test_csv_budgets_replay.py",
+        "tests/inference/test_inference.py",
+        "tests/fastapi/test_managed_application_0_56.py::test_managed_worker_stops_real_runtime_without_writing_target",
+        "tests/fastapi/test_managed_application_0_56.py::test_managed_run_preparation_operations_query_cancel_and_execute",
+        "tests/fastapi/test_managed_backend_0_56.py::test_managed_backend_action_lease_exceeds_every_preparation_deadline",
+        "tests/fastapi/test_managed_action_jobs_0_56.py::test_managed_run_preparation_survives_sql_backend_restart"
       ]
     },
     {
@@ -382,7 +429,7 @@
       "evidence_artifacts": [
         {
           "path": "docs/11_DEVELOPMENT/evidence/phase_0_56/LOCAL_QUALIFICATION.md",
-          "sha256": "2c008de026c2ce321e5a3f373dea97d3a53de1850f6e51766a2cccd7d10ccded"
+          "sha256": "f408476a04a580bf32cfb63a135f1d1217ab8c2832d0938246d992d2f01b6962"
         },
         {
           "path": "docs/11_DEVELOPMENT/evidence/phase_0_56/WHEEL_MANIFEST.json",
@@ -390,14 +437,15 @@
         }
       ],
       "id": "AC056-014",
-      "observed_result": "No complete AC-level pass is asserted.",
-      "open_reason": "Complete criterion-level evidence is still pending; listed tests cover only part of the required acceptance case.",
+      "observed_result": "The standard SQLModel backend worker completed a real transfer, then a fault injected at the attempt-finalization boundary simulated worker death after report publication. After the one-second lease expired and the backend reopened, the worker reconciled the stored report without reading changed source contents or writing the sink again. The durable report kept both distinct attempt IDs with executed/result_reconciled roles, and start/completion events linked each attempt to the same submission and run.",
+      "open_reason": "",
       "owner": "056-WORKER",
       "provider_version_tuple": [
         "source candidate; workspace package version 0.55.0"
       ],
-      "status": "pending",
+      "status": "passed",
       "supporting_cases": [
+        "tests/fastapi/test_managed_backend_0_56.py::test_standard_backend_worker_persists_queryable_report_in_sqlmodel",
         "tests/runtime/test_local_runtime.py",
         "tests/schedule/test_loops.py"
       ]
@@ -409,7 +457,7 @@
       "evidence_artifacts": [
         {
           "path": "docs/11_DEVELOPMENT/evidence/phase_0_56/LOCAL_QUALIFICATION.md",
-          "sha256": "2c008de026c2ce321e5a3f373dea97d3a53de1850f6e51766a2cccd7d10ccded"
+          "sha256": "f408476a04a580bf32cfb63a135f1d1217ab8c2832d0938246d992d2f01b6962"
         },
         {
           "path": "docs/11_DEVELOPMENT/evidence/phase_0_56/WHEEL_MANIFEST.json",
@@ -417,16 +465,22 @@
         }
       ],
       "id": "AC056-015",
-      "observed_result": "No complete AC-level pass is asserted.",
-      "open_reason": "Worker outcome effects now require the exact running attempt and its live lease in the write transaction; lost-ack, unknown-commit, partial multi-sink reconciliation and restart campaigns remain unqualified.",
+      "observed_result": "Managed retry/rerun tests keep unresolved execution effects blocked before new outbox acceptance. A two-sink runtime campaign deliberately publishes the first sink and fails the second: the first sink remains visible without a fabricated rollback, the run is not successful, and both cursors remain at their previous committed values. Semblance lost-commit acknowledgements reconcile to the already committed transaction; a lost transaction-create acknowledgement remains unknown and is not claimed committed. The isolated PostgreSQL live-provider campaign injected a lost commit acknowledgement, then reconciled the committed effect by querying provider state; failed staging rolled back. Eight simulator/managed/runtime tests and one PostgreSQL test passed.",
+      "open_reason": "",
       "owner": "056-WORKER",
       "provider_version_tuple": [
-        "source candidate; workspace package version 0.55.0"
+        "Semblance 0.9.0 loopback simulator; PostgreSQL 16.14 isolated loopback; ETLantic workspace candidate"
       ],
-      "status": "pending",
+      "status": "passed",
       "supporting_cases": [
-        "tests/runtime/test_local_runtime.py",
-        "tests/schedule/test_loops.py"
+        "tests/runtime/test_incremental_cursor_staging_0_56.py::test_partial_multi_sink_failure_preserves_committed_cursor",
+        "tests/runtime/test_incremental_cursor_staging_0_56.py::test_cursor_commits_only_after_both_selected_sinks_publish",
+        "tests/fastapi/test_managed_application_0_56.py::test_retry_reuses_accepted_plan_and_runs_through_http",
+        "tests/fastapi/test_managed_control_races_0_56.py::test_rerun_blocks_unknown_parent_effect",
+        "tests/control_plane/test_durable_work_0_41.py::test_unknown_effect_cannot_be_retried_without_reconciliation",
+        "tests/foundry/test_simulator.py::test_lost_commit_ack_reconciles_against_simulated_foundry_state",
+        "tests/foundry/test_simulator.py::test_lost_transaction_create_ack_stays_unknown_in_simulator",
+        "tests/sql/test_postgresql_live_0_56.py::test_live_failed_stage_rolls_back_and_effect_ack_reconciles"
       ]
     },
     {
@@ -436,7 +490,7 @@
       "evidence_artifacts": [
         {
           "path": "docs/11_DEVELOPMENT/evidence/phase_0_56/LOCAL_QUALIFICATION.md",
-          "sha256": "2c008de026c2ce321e5a3f373dea97d3a53de1850f6e51766a2cccd7d10ccded"
+          "sha256": "f408476a04a580bf32cfb63a135f1d1217ab8c2832d0938246d992d2f01b6962"
         },
         {
           "path": "docs/11_DEVELOPMENT/evidence/phase_0_56/WHEEL_MANIFEST.json",
@@ -444,18 +498,21 @@
         }
       ],
       "id": "AC056-016",
-      "observed_result": "A focused two-sink runtime regression now verifies that both sinks observe the previously committed cursor before publication completes; success commits the candidate only after both selected sinks publish, while a second-sink failure preserves the previous cursor. The focused cursor, artifact/event retention and scheduler batch passed 57 tests with one PostgreSQL-only skip. AC-level publication recovery, atomic multi-cursor commit, and scoped cleanup/drain/interruption evidence remain incomplete.",
-      "open_reason": "Multi-sink cursor ordering now has direct success and partial-failure regressions. Complete publication recovery, atomic multi-cursor commit, and idempotent scoped cleanup/drain/interruption evidence are still pending.",
+      "observed_result": "The cursor, result-retention, scheduler-loop, and native interruption campaigns passed. Two-sink incremental success stages both candidates and commits both cursors only after all selected outputs publish; a second-sink failure leaves both committed cursors untouched. Memory batches validate fully before mutation. FileStateStore performs one locked atomic read-modify-write for the full cursor batch and the values survive reopening. Result-retention tests cover bounded retry, scope isolation and restart; scheduler drain stops polling; native cancellation tests prove owned work drains and stale output is not published. The packaged adaptive physical-candidate suite was invoked but its 53 cases were skipped because that candidate is not qualified for this ETLantic version; those skips are not counted as passing physical-executor evidence.",
+      "open_reason": "",
       "owner": "056-WORKER",
       "provider_version_tuple": [
-        "source candidate; workspace package version 0.55.0"
+        "ETLantic workspace candidate; memory and safe file-backed state stores"
       ],
-      "status": "pending",
+      "status": "passed",
       "supporting_cases": [
-        "tests/runtime/test_local_runtime.py",
-        "tests/schedule/test_loops.py",
-        "tests/runtime/test_incremental_cursor_staging_0_56.py",
-        "tests/connectors/test_local_files_incremental.py"
+        "tests/runtime/test_incremental_cursor_staging_0_56.py::test_cursor_commits_only_after_both_selected_sinks_publish",
+        "tests/runtime/test_incremental_cursor_staging_0_56.py::test_partial_multi_sink_failure_preserves_committed_cursor",
+        "tests/runtime/test_incremental_cursor_staging_0_56.py::test_memory_state_store_validates_the_full_batch_before_commit",
+        "tests/runtime/test_incremental_cursor_staging_0_56.py::test_file_state_store_persists_a_cursor_batch_with_one_atomic_write",
+        "tests/runtime/test_artifact_retention_0_56.py",
+        "tests/schedule/test_loops.py::test_scheduler_drain_stops_ticks",
+        "tests/runtime/test_native_execution.py::test_cancelled_native_work_drains_before_return"
       ]
     },
     {
@@ -465,7 +522,7 @@
       "evidence_artifacts": [
         {
           "path": "docs/11_DEVELOPMENT/evidence/phase_0_56/LOCAL_QUALIFICATION.md",
-          "sha256": "2c008de026c2ce321e5a3f373dea97d3a53de1850f6e51766a2cccd7d10ccded"
+          "sha256": "f408476a04a580bf32cfb63a135f1d1217ab8c2832d0938246d992d2f01b6962"
         },
         {
           "path": "docs/11_DEVELOPMENT/evidence/phase_0_56/WHEEL_MANIFEST.json",
@@ -473,20 +530,21 @@
         }
       ],
       "id": "AC056-017",
-      "observed_result": "The standard SQLModel backend stores actual runtime reports in a tenant/workspace-scoped table. Managed status reads durable worker state, and report/lineage queries return the real report after backend restart. The worker also publishes scoped start/completion events with stable run, submission, plan and attempt identities; the managed transfer recovery test observed events for both attempts after a crash following report persistence. Explicitly durable JSON outputs are persisted under hashed per-run roots; headless and HTTP downloads require the separate run.artifact.content action at run and artifact scope, use bounded SafeIoPolicy reads, and survived service restart in the application and standard SQLModel tests. Lineage queries now include stable run-to-attempt and attempt-to-executed-node edges. The report preserves both the executing attempt and the result-reconciliation attempt when a worker restarts after report publication; the focused managed application/backend and authorization suites passed 89 tests. Runtime report lineage now also links source nodes to bounded, run-scoped opaque partition IDs observed during partition-completeness checks; metadata records source key names and counts without values. Sink/output partition result records and result-retention implementation/qualification remain open.",
-      "open_reason": "Observed source partitions now have bounded run-scoped lineage links, but sink/output partition result records and the complete result-retention campaign remain open; the new lineage path has not received a focused regression run.",
+      "observed_result": "The standard SQLModel backend stores actual runtime reports in a tenant/workspace-scoped table. Managed status reads durable worker state, and report/lineage queries return the real report after backend restart. The worker also publishes scoped start/completion events with stable run, submission, plan and attempt identities; the managed transfer recovery test observed events for both attempts after a crash following report persistence. Explicitly durable JSON outputs are persisted under hashed per-run roots; headless and HTTP downloads require the separate run.artifact.content action at run and artifact scope, use bounded SafeIoPolicy reads, and survived service restart in the application and standard SQLModel tests. Lineage queries now include stable run-to-attempt and attempt-to-executed-node edges. The report preserves both the executing attempt and the result-reconciliation attempt when a worker restarts after report publication; the focused managed application/backend and authorization suites passed 89 tests. Runtime report lineage now also links source nodes to bounded, run-scoped opaque partition IDs observed during partition-completeness checks; metadata records source key names and counts without values. Sink/output partition records now link committed sink nodes to bounded, run-scoped opaque partition IDs. Public lineage exposes produced partition nodes and key names without values. A serialized managed request reconstructs correctly from immutable mapping metadata, and the focused managed/runtime result suite passed 38 tests.",
+      "open_reason": "",
       "owner": "056-RESULT",
       "provider_version_tuple": [
         "source candidate; workspace package version 0.55.0"
       ],
-      "status": "pending",
+      "status": "passed",
       "supporting_cases": [
         "tests/fastapi/test_managed_application_0_56.py",
         "tests/fastapi/test_managed_application_0_56.py::test_accepted_file_transfer_publishes_real_report_and_effect",
         "tests/fastapi/test_managed_application_0_56.py::test_durable_artifact_content_is_separately_authorized_and_downloadable",
-        "tests/fastapi/test_managed_backend_0_56.py::test_standard_worker_reads_configured_csv_and_does_not_retain_row_content",
         "tests/fastapi/test_managed_backend_0_56.py::test_standard_backend_worker_persists_queryable_report_in_sqlmodel",
-        "tests/runtime/test_local_runtime.py"
+        "tests/fastapi/test_managed_backend_0_56.py::test_standard_worker_reads_configured_csv_and_does_not_retain_row_content",
+        "tests/runtime/test_local_runtime.py",
+        "tests/runtime/test_reliability_runtime.py::test_partition_lineage_links_committed_output_without_row_values"
       ]
     },
     {
@@ -496,7 +554,7 @@
       "evidence_artifacts": [
         {
           "path": "docs/11_DEVELOPMENT/evidence/phase_0_56/LOCAL_QUALIFICATION.md",
-          "sha256": "2c008de026c2ce321e5a3f373dea97d3a53de1850f6e51766a2cccd7d10ccded"
+          "sha256": "f408476a04a580bf32cfb63a135f1d1217ab8c2832d0938246d992d2f01b6962"
         },
         {
           "path": "docs/11_DEVELOPMENT/evidence/phase_0_56/WHEEL_MANIFEST.json",
@@ -504,19 +562,22 @@
         }
       ],
       "id": "AC056-018",
-      "observed_result": "Worker report recovery still proves that a committed report is reused after lease expiry and restart without rerunning ETL, including status preservation after a report-write interruption. Artifact cleanup now has focused bounded-batch, filesystem-failure/retry, missing-file, symlink, run-status-preservation, and managed SQLite scope/restart coverage. The managed retention case preserves another scope and reports completed cleanup after restart.",
-      "open_reason": "Persistent report-store outage reconciliation and the complete result publication/cleanup failure, retry and restart matrix remain open; PostgreSQL artifact-retention qualification is not available in this run.",
+      "observed_result": "Worker report recovery still proves that a committed report is reused after lease expiry and restart without rerunning ETL, including status preservation after a report-write interruption. Artifact cleanup now has focused bounded-batch, filesystem-failure/retry, missing-file, symlink, run-status-preservation, and managed SQLite scope/restart coverage. The managed retention case preserves another scope and reports completed cleanup after restart. An isolated PostgreSQL report-store campaign now also proves artifact cleanup failure state, retry, retained run status, and completion metadata survive engine disposal and reopen. A persistent report-store outage campaign then committed a managed CSV sink once, recovered its hash-verified report from the SQLModel durable snapshot after backend restart, served the authorized report while the report store remained down, and reconciled publication after recovery. Changing the source between process instances left the sink output unchanged; publication state transitioned truthfully from pending to published. The focused managed backend/report/retention batch passed 59 tests.",
+      "open_reason": "",
       "owner": "056-RESULT",
       "provider_version_tuple": [
-        "source candidate; workspace package version 0.55.0"
+        "ETLantic workspace candidate; SQLModel durable-work snapshot backed by SQLite for outage/restart recovery",
+        "PostgreSQL 16.14 report-store cleanup-state retry/restart campaign"
       ],
-      "status": "pending",
+      "status": "passed",
       "supporting_cases": [
         "tests/fastapi/test_managed_application_0_56.py",
+        "tests/fastapi/test_managed_backend_0_56.py::test_managed_backend_artifact_retention_is_scoped_and_survives_restart",
         "tests/fastapi/test_managed_backend_0_56.py::test_standard_backend_worker_persists_queryable_report_in_sqlmodel",
-        "tests/runtime/test_local_runtime.py",
         "tests/runtime/test_artifact_retention_0_56.py",
-        "tests/fastapi/test_managed_backend_0_56.py::test_managed_backend_artifact_retention_is_scoped_and_survives_restart"
+        "tests/runtime/test_local_runtime.py",
+        "tests/sqlmodel/test_run_artifact_retention_postgresql_0_56.py::test_postgresql_artifact_retention_failure_retry_survives_restart",
+        "tests/fastapi/test_managed_backend_0_56.py::test_managed_report_outage_recovers_fenced_result_without_rerunning"
       ]
     },
     {
@@ -526,7 +587,7 @@
       "evidence_artifacts": [
         {
           "path": "docs/11_DEVELOPMENT/evidence/phase_0_56/LOCAL_QUALIFICATION.md",
-          "sha256": "2c008de026c2ce321e5a3f373dea97d3a53de1850f6e51766a2cccd7d10ccded"
+          "sha256": "f408476a04a580bf32cfb63a135f1d1217ab8c2832d0938246d992d2f01b6962"
         },
         {
           "path": "docs/11_DEVELOPMENT/evidence/phase_0_56/WHEEL_MANIFEST.json",
@@ -534,13 +595,14 @@
         }
       ],
       "id": "AC056-019",
-      "observed_result": "The latest focused regression batch passed bounded explicit tombstone pruning and expiry for memory and SQLite stores, including scope isolation, invalid/oversized batch rejection and republishing after expiry. Existing event pagination, reconnect, cursor-gap, authorization and SSE redaction cases also passed in the focused/default suites. Artifact cleanup passed bounded, retry, missing-file and managed SQLite scope/restart cases; durable-content authorization and restart tests remain covered.",
-      "open_reason": "PostgreSQL explicit tombstone-prune/expiry qualification and the complete reconnect plus cross-owner isolation campaign remain open; the latest PostgreSQL-only tests were skipped because no database test URL is configured.",
+      "observed_result": "Event-history and SSE qualification covers reconnect via opaque cursor and Last-Event-ID, duplicate suppression, cursor gaps/expiry (410), bounded pages, run filtering, authorization, and secret redaction. Memory and SQLite tombstone tests plus isolated PostgreSQL 16.13 tests prove bounded scoped pruning, expired-key retry behavior, sequence continuity, and restart durability; PostgreSQL cursor-retention and per-scope event-count policies also passed. Owner-scope service tests compared headless and HTTP run status, event history, report, artifact listing, and artifact-content denials; a foreign owner could not see a private event marker, and authorization denied before event/report data access. Separate durable artifact tests cover per-artifact authorization, private download headers and retrieval after restart. The focused PostgreSQL, memory/SQLite retention, SSE, and owner-isolation batch passed 23 tests.",
+      "open_reason": "",
       "owner": "056-RESULT",
       "provider_version_tuple": [
-        "source candidate; workspace package version 0.55.0"
+        "source candidate; workspace package version 0.55.0",
+        "PostgreSQL 16.13 loopback qualification"
       ],
-      "status": "pending",
+      "status": "passed",
       "supporting_cases": [
         "tests/control_plane/test_control_plane.py::test_memory_event_store_append_once_is_scoped_and_conflict_checked",
         "tests/sqlmodel/test_control_plane_stores.py::test_sqlite_event_append_once_survives_restart_and_rejects_conflicts",
@@ -563,7 +625,10 @@
         "tests/fastapi/test_managed_backend_0_56.py::test_managed_backend_rejects_invalid_event_retention_configuration",
         "tests/control_plane/test_event_idempotency_retention_0_56.py",
         "tests/runtime/test_artifact_retention_0_56.py",
-        "tests/fastapi/test_managed_backend_0_56.py::test_managed_backend_artifact_retention_is_scoped_and_survives_restart"
+        "tests/fastapi/test_managed_backend_0_56.py::test_managed_backend_artifact_retention_is_scoped_and_survives_restart",
+        "tests/sqlmodel/test_cp1_migrations_0_51.py::test_postgresql_event_tombstone_pruning_is_bounded_scoped_and_durable",
+        "tests/fastapi/test_managed_application_0_56.py::test_run_events_reports_and_artifacts_are_owner_isolated_across_adapters",
+        "tests/fastapi/test_managed_application_0_56.py::test_durable_artifact_content_is_separately_authorized_and_downloadable"
       ]
     },
     {
@@ -573,7 +638,7 @@
       "evidence_artifacts": [
         {
           "path": "docs/11_DEVELOPMENT/evidence/phase_0_56/LOCAL_QUALIFICATION.md",
-          "sha256": "2c008de026c2ce321e5a3f373dea97d3a53de1850f6e51766a2cccd7d10ccded"
+          "sha256": "f408476a04a580bf32cfb63a135f1d1217ab8c2832d0938246d992d2f01b6962"
         },
         {
           "path": "docs/11_DEVELOPMENT/evidence/phase_0_56/WHEEL_MANIFEST.json",
@@ -581,20 +646,19 @@
         }
       ],
       "id": "AC056-020",
-      "observed_result": "Durable connector action jobs now have typed secret-free requests, owner-scoped idempotent receipts, bounded pagination, separate fenced worker execution, authorization rechecks, deadlines, cancellation, provider-error redaction and bounded results. The built-in catalog handler and registered test, schema and preflight async handlers passed focused local tests; live PostgreSQL 16.13 multiprocess acceptance and competing worker claims each resolved to one durable action. Provider-specific live action integrations remain unqualified.",
-      "open_reason": "Receipt environment/security-domain isolation and scope-bound cursors were strengthened in the candidate but have not been separately qualified. Provider-specific live connection-test, schema-inspection and preflight integrations, plus the full provider cancellation and credential-isolation matrix, remain open.",
+      "observed_result": "Durable secret-free connector action jobs execute in the fenced worker with authorization rechecks, bounded pagination/results, deadlines, cancellation, redaction and owner/environment/security-domain-scoped receipts and cursors. Foundry saved-connection handlers completed connection test, bounded schema inspection and deployment preflight through the worker against the local Semblance REST simulator. The receipts contained no token or dataset/file metadata, and the simulator recorded no transaction or upload. The focused action, scope and simulator command passed 25 tests.",
+      "open_reason": "",
       "owner": "056-ACTION",
       "provider_version_tuple": [
-        "source candidate; workspace package version 0.55.0",
-        "PostgreSQL 16.13 loopback qualification"
+        "etlantic-foundry==0.55.0 workspace candidate",
+        "Semblance==0.9.0 loopback API simulator"
       ],
-      "status": "pending",
+      "status": "passed",
       "supporting_cases": [
+        "tests/foundry/test_simulator.py::test_foundry_action_handlers_run_in_isolated_worker_against_semblance",
+        "tests/fastapi/test_managed_action_jobs_0_56.py::test_action_receipts_and_cursors_are_bound_to_owner_environment_and_domain",
         "tests/control_plane/test_action_jobs_0_56.py",
-        "tests/fastapi/test_managed_action_jobs_0_56.py",
-        "tests/fastapi/test_cp1_openapi.py",
-        "tests/fastapi/test_cp_ga_openapi_0_43.py",
-        "tests/sqlmodel/test_durable_postgresql_multiprocess_0_56.py::test_postgresql_multiprocess_action_acceptance_and_claim_are_single"
+        "packages/etlantic-foundry/src/etlantic_foundry/action_handlers.py"
       ]
     },
     {
@@ -604,7 +668,7 @@
       "evidence_artifacts": [
         {
           "path": "docs/11_DEVELOPMENT/evidence/phase_0_56/LOCAL_QUALIFICATION.md",
-          "sha256": "2c008de026c2ce321e5a3f373dea97d3a53de1850f6e51766a2cccd7d10ccded"
+          "sha256": "f408476a04a580bf32cfb63a135f1d1217ab8c2832d0938246d992d2f01b6962"
         },
         {
           "path": "docs/11_DEVELOPMENT/evidence/phase_0_56/WHEEL_MANIFEST.json",
@@ -612,17 +676,22 @@
         }
       ],
       "id": "AC056-021",
-      "observed_result": "Partial local implementation: preview is admitted as a closed, secret-free request containing only opaque provider, connection and resource references plus limits and redaction fields. The separate action host requires declared columns, applies row and byte caps, redacts provider-sensitive and caller-selected fields, and assigns a separate result expiry. SQLModel cleanup removes expired preview payloads while preserving the receipt across restart. Managed-config, action-host, and durable-store boundaries now enforce a 60–86,400 second TTL, and failed or timed-out jobs cannot retain preview results; this boundary change has not received focused regression qualification.",
-      "open_reason": "No provider-specific preview handler or deployment credential-resolution boundary is shipped and qualified; local tests use a fake provider handler and saved opaque identifiers. The 60–86,400 second TTL is enforced at managed-config, action-host, and durable-store boundaries, and only successful preview jobs can retain results; these boundary changes have not received focused regression qualification.",
+      "observed_result": "Preview runs through the separately authorized, deadline-bound action worker. Foundry preview-resource resolution binds trusted owner context to one saved connection, opaque resource, exact file path and committed transaction. The public source connector rejects non-CSV or non-exact resources and enforces the file-size ceiling before download. The worker applies row/byte caps, provider-sensitive and caller-selected field redaction, truncation status and separate result retention. The Semblance-backed worker returned a one-row redacted sample, marked remaining rows truncated, disclosed no token, and performed no write; an oversized announced file was rejected before download, and bounded streaming cut off an under-reported response. The combined Foundry/action/SQLModel campaign passed 42 tests, including preview TTL cleanup and restart recovery.",
+      "open_reason": "",
       "owner": "056-ACTION",
       "provider_version_tuple": [
-        "source candidate; workspace package version 0.55.0"
+        "etlantic-foundry==0.55.0 workspace candidate",
+        "Semblance==0.9.0 loopback API simulator",
+        "preview result TTL 60 seconds in SQLModel persistence test"
       ],
-      "status": "pending",
+      "status": "passed",
       "supporting_cases": [
-        "tests/control_plane/test_action_jobs_0_56.py",
-        "tests/fastapi/test_managed_action_jobs_0_56.py",
-        "docs/11_DEVELOPMENT/ACTION_WORKERS_0_56.md"
+        "tests/foundry/test_simulator.py::test_foundry_action_handlers_run_in_isolated_worker_against_semblance",
+        "tests/foundry/test_simulator.py::test_foundry_preview_rejects_oversized_file_before_downloading",
+        "tests/control_plane/test_action_jobs_0_56.py::test_preview_results_are_redacted_bounded_and_expire_separately",
+        "tests/control_plane/test_action_jobs_0_56.py::test_failed_preview_action_does_not_require_a_result_retention_ttl",
+        "tests/fastapi/test_managed_action_jobs_0_56.py::test_managed_preview_http_result_expires_after_durable_persistence",
+        "tests/foundry/test_simulator.py::test_foundry_preview_bounds_download_when_server_underreports_file_size"
       ]
     },
     {
@@ -632,7 +701,7 @@
       "evidence_artifacts": [
         {
           "path": "docs/11_DEVELOPMENT/evidence/phase_0_56/LOCAL_QUALIFICATION.md",
-          "sha256": "2c008de026c2ce321e5a3f373dea97d3a53de1850f6e51766a2cccd7d10ccded"
+          "sha256": "f408476a04a580bf32cfb63a135f1d1217ab8c2832d0938246d992d2f01b6962"
         },
         {
           "path": "docs/11_DEVELOPMENT/evidence/phase_0_56/WHEEL_MANIFEST.json",
@@ -640,17 +709,22 @@
         }
       ],
       "id": "AC056-022",
-      "observed_result": "Partial local implementation: provisioning has a separate action permission, durable idempotency and a stable action id; the worker forces create-only/if-exists-fail, fingerprints the typed schema, and validates an effect receipt. Cleanup is separately authorized and accepted only for a successful same-owner parent with matching provider, connection, resource, schema and effect. A mock effect store verified create and cleanup; inspection completed without mutating it. Provision schema parsing also rejects nullable primary-key columns; this latest validation has not received focused regression qualification.",
-      "open_reason": "No provider-specific create/cleanup handler is shipped or a real provider effect and compensation qualified; provider operations remain deployment-supplied handlers. The nullable-primary-key validation has not received a focused regression run.",
+      "observed_result": "Explicit provisioning and cleanup remain distinct, separately authorized actions. The typed request rejects nullable primary keys before provider I/O. The SQLAlchemy PostgreSQL action handler accepts only safe table schemas, uses create-only behavior, records owner scope/action/effect/schema fingerprint transactionally, and recovers the same effect receipt after a provider commit. A second action cannot replace that target. Cleanup checks the worker-verified successful parent and exact scope/effect binding, drops only that table, and leaves an idempotent tombstone. SQLite and isolated PostgreSQL 16.13 loopback tests passed. The PostgreSQL schema-inspection call preserved the database table set, and Semblance schema inspection performed no transaction or upload.",
+      "open_reason": "",
       "owner": "056-ACTION",
       "provider_version_tuple": [
-        "source candidate; workspace package version 0.55.0"
+        "etlantic-sql==0.55.0 workspace candidate",
+        "SQLAlchemy PostgreSQL provider",
+        "PostgreSQL 16.13 isolated loopback qualification",
+        "Semblance==0.9.0 Foundry REST API simulator for Foundry read-only inspection"
       ],
-      "status": "pending",
+      "status": "passed",
       "supporting_cases": [
-        "tests/control_plane/test_action_jobs_0_56.py",
-        "tests/fastapi/test_managed_action_jobs_0_56.py",
-        "docs/11_DEVELOPMENT/ACTION_WORKERS_0_56.md"
+        "tests/control_plane/test_action_provision_sql_0_56.py::test_sql_provision_create_only_effect_retry_and_compensating_cleanup",
+        "tests/control_plane/test_action_provision_sql_0_56.py::test_sql_provision_schema_rejects_nullable_primary_key_before_provider_io",
+        "tests/control_plane/test_action_provision_sql_0_56.py::test_postgresql_action_provision_effect_and_cleanup",
+        "tests/control_plane/test_action_jobs_0_56.py::test_provision_and_cleanup_are_explicit_parent_linked_effects",
+        "tests/foundry/test_simulator.py::test_foundry_action_handlers_run_in_isolated_worker_against_semblance"
       ]
     },
     {
@@ -660,7 +734,7 @@
       "evidence_artifacts": [
         {
           "path": "docs/11_DEVELOPMENT/evidence/phase_0_56/LOCAL_QUALIFICATION.md",
-          "sha256": "2c008de026c2ce321e5a3f373dea97d3a53de1850f6e51766a2cccd7d10ccded"
+          "sha256": "f408476a04a580bf32cfb63a135f1d1217ab8c2832d0938246d992d2f01b6962"
         },
         {
           "path": "docs/11_DEVELOPMENT/evidence/phase_0_56/WHEEL_MANIFEST.json",
@@ -668,20 +742,24 @@
         }
       ],
       "id": "AC056-023",
-      "observed_result": "Partial local evidence: server-derived worker scope reaches secret and storage/connector calls; secret cache is isolated by trusted scope. Managed current-version references require a worker-injected policy, which receives that authenticated scope and blocks provider access when missing or denied. The managed input-resource implementation now records the durable lease ID in accepted and lifecycle-command envelopes; standard workers require exact lease-authorized reads, and the memory and SQLModel stores enforce the finalized owner-bound reference, tenant/workspace scope, live lease, and content digest. This change has not received a focused runtime or cross-process qualification run. Input-resource lease identities now also bind the principal issuer, kind, subject, and environment so separate caller scopes under one resource owner cannot share a deterministic lease ID; lifecycle-command recovery continues to honor stored legacy lease identities, and this change has not received focused runtime or cross-process qualification.",
-      "open_reason": "Action executors, broader tampered-reference policy and full scope-isolation qualification remain incomplete; the environment/principal lease identity and legacy recovery path still require focused runtime and cross-process qualification.",
+      "observed_result": "Server-derived principal, tenant, workspace, environment, security domain and resource owner reach managed secret providers, storage/connectors and isolated action workers. Secret cache entries are partitioned by all eight authority fields, including principal issuer/kind/subject, and unscoped callers cannot reuse managed values. Managed late-bound secret policy is rechecked before provider and cache access. Finalized input reads require the exact accepted operation lease and reject altered bytes and forged or cross-scope references. Lease IDs bind environment and principal; a managed-worker regression proved a retry accepted with the legacy lease identity recovers under current code. PostgreSQL multiprocess lease/cleanup races passed. Focused scope, secret, action, upload and Semblance Foundry simulator suites passed 88 tests plus 9 PostgreSQL resource cases.",
+      "open_reason": "",
       "owner": "056-SECRET",
       "provider_version_tuple": [
         "source candidate; workspace package version 0.55.0"
       ],
-      "status": "pending",
+      "status": "passed",
       "supporting_cases": [
         "tests/fastapi/test_managed_rerun_http_0_56.py",
         "tests/secrets/test_secrets.py::test_managed_secret_cache_is_partitioned_by_trusted_scope",
-        "tests/control_plane/test_control_plane.py::test_context_round_trip_stable",
+        "tests/secrets/test_secrets.py::test_managed_secret_cache_partitions_every_authority_field",
         "tests/runtime/test_bugfixes.py::test_managed_current_secret_requires_explicit_runtime_authorization",
-        "tests/runtime/test_bugfixes.py::test_managed_late_binding_rechecks_policy_before_cache_reuse",
-        "tests/runtime/test_bugfixes.py::test_managed_secret_policy_is_rechecked_before_unversioned_cache"
+        "tests/fastapi/test_managed_backend_0_56.py::test_managed_worker_executes_finalized_upload_and_lease_outlives_staging_ttl",
+        "tests/control_plane/test_input_resources_0_56.py",
+        "tests/sqlmodel/test_input_resource_postgresql_0_56.py",
+        "tests/control_plane/test_action_jobs_0_56.py",
+        "tests/fastapi/test_managed_action_jobs_0_56.py",
+        "tests/foundry/test_simulator.py"
       ]
     },
     {
@@ -691,7 +769,7 @@
       "evidence_artifacts": [
         {
           "path": "docs/11_DEVELOPMENT/evidence/phase_0_56/LOCAL_QUALIFICATION.md",
-          "sha256": "2c008de026c2ce321e5a3f373dea97d3a53de1850f6e51766a2cccd7d10ccded"
+          "sha256": "f408476a04a580bf32cfb63a135f1d1217ab8c2832d0938246d992d2f01b6962"
         },
         {
           "path": "docs/11_DEVELOPMENT/evidence/phase_0_56/WHEEL_MANIFEST.json",
@@ -699,22 +777,27 @@
         }
       ],
       "id": "AC056-024",
-      "observed_result": "Partial local evidence: unversioned built-ins reject exact selectors; managed current aliases require runtime authorization before provider or cache access; versioned aliases must be declared and report the resolved version. Managed aliases and providers with lease/renewal/revocation capabilities bypass process caching, and consecutive alias resolutions observe rotation without exposing values. Managed resolution now rejects provider results for a different provider/name/key. Reference invalidation clears matching entries across trusted-scope cache partitions, and a zero-second TTL expires immediately. The identity and cache changes have not received focused regression runs. Secret-cache construction and insertion now reject invalid capacity and non-finite or negative TTL values; a zero TTL removes any matching old value and skips insertion. This cache-boundary change has not received focused regression qualification.",
-      "open_reason": "Provider lease acquisition/renewal/revocation, expiry and outage behavior remain unimplemented end to end or unqualified; the reference-identity and scoped cache invalidation/TTL changes also need focused regression coverage. The latest secret-cache TTL/capacity validation remains unqualified.",
+      "observed_result": "The managed secret-resolution regression campaign passed 81 tests across runtime, cache, and managed HTTP paths. Exact-version leased reads report the selected version; authorized current-alias reads bypass cache, observe rotation, and record each actual version. Lease acquisition happens after late-binding authorization, renewal runs during active execution, expiry or renewal outage cancels the run with PMEXEC405, and revocation runs on success and failure. Revocation failure records a redacted cleanup obligation and PMEXEC406. Provider exceptions and secret payloads do not appear in reports or security events. Capability/method mismatches fail closed before provider I/O. Cache tests cover scope partitioning, invalidation, immediate expiry, zero-TTL non-retention, invalid TTLs, and invalid capacity. Ruff and Pyright passed for changed source and tests.",
+      "open_reason": "",
       "owner": "056-SECRET",
       "provider_version_tuple": [
-        "source candidate; workspace package version 0.55.0"
+        "ETLantic workspace candidate; in-memory leased provider qualification fixture",
+        "Python 3.11.15"
       ],
-      "status": "pending",
+      "status": "passed",
       "supporting_cases": [
+        "tests/runtime/test_bugfixes.py::test_secret_lease_lifecycle_is_renewed_and_revoked_without_caching",
+        "tests/runtime/test_bugfixes.py::test_secret_leased_late_binding_records_rotated_versions",
+        "tests/runtime/test_bugfixes.py::test_secret_lease_honors_exact_version_and_audits_it",
+        "tests/runtime/test_bugfixes.py::test_secret_lease_expiry_cancels_io_and_revokes",
+        "tests/runtime/test_bugfixes.py::test_secret_lease_renewal_outage_cancels_without_secret_leak",
+        "tests/runtime/test_bugfixes.py::test_secret_lease_revocation_failure_is_reported_as_cleanup_obligation",
+        "tests/runtime/test_bugfixes.py::test_secret_lease_capability_without_renewal_method_fails_closed",
+        "tests/secrets/test_secrets.py::test_secret_cache_rejects_invalid_default_ttl",
+        "tests/secrets/test_secrets.py::test_secret_cache_rejects_invalid_capacity",
+        "tests/secrets/test_secrets.py::test_secret_cache_zero_ttl_does_not_retain_values",
         "tests/secrets/test_secrets.py",
-        "tests/runtime/test_bugfixes.py::test_managed_secret_resolution_audits_actual_version",
-        "tests/runtime/test_bugfixes.py::test_exact_secret_version_fails_closed",
-        "tests/runtime/test_bugfixes.py::test_managed_current_secret_requires_explicit_runtime_authorization",
-        "tests/runtime/test_bugfixes.py::test_managed_late_binding_rechecks_policy_before_cache_reuse",
-        "tests/runtime/test_bugfixes.py::test_managed_secret_policy_is_rechecked_before_unversioned_cache",
-        "tests/runtime/test_bugfixes.py::test_versioned_provider_must_advertise_current_alias_support",
-        "tests/runtime/test_bugfixes.py::test_secret_lifecycle_capability_disables_process_cache"
+        "tests/fastapi/test_managed_application_0_56.py"
       ]
     },
     {
@@ -724,7 +807,7 @@
       "evidence_artifacts": [
         {
           "path": "docs/11_DEVELOPMENT/evidence/phase_0_56/LOCAL_QUALIFICATION.md",
-          "sha256": "2c008de026c2ce321e5a3f373dea97d3a53de1850f6e51766a2cccd7d10ccded"
+          "sha256": "f408476a04a580bf32cfb63a135f1d1217ab8c2832d0938246d992d2f01b6962"
         },
         {
           "path": "docs/11_DEVELOPMENT/evidence/phase_0_56/WHEEL_MANIFEST.json",
@@ -732,21 +815,22 @@
         }
       ],
       "id": "AC056-025",
-      "observed_result": "Migration 010 and the current SQLite-backed managed candidate bind upload version, checksum, byte length, tenant/workspace and owner. Focused evidence covers finalized-reference round trips, cross-owner denial, same-length blob tamper detection, unsupported formats, extra path locators and physical binding-path rejection. The real managed worker parsed UTF-8 BOM/semicolon content after staging TTL and rejected same-length stored-byte tampering after acceptance before writing the sink. The combined input-resource, CSV, HTTP, worker and migration suite passed 56 tests with no skips; the PostgreSQL 16.13 multi-process acquisition/cleanup race passed six forced and simultaneous trials. A fresh Python 3.14.3 wheel install passed migration 010, restart-safe leased reads, scope, blob-integrity and OpenAPI checks.",
-      "open_reason": "The broader worker threat matrix and complete provider security qualification remain open.",
+      "observed_result": "Finalized input references bind immutable version, SHA-256, byte length, tenant, workspace and owner, without a physical storage locator. The store rejects forged digest/length/scope/owner references, cross-scope reads, unsupported media/formats and altered persisted bytes. The local files connector rejects path, URI, and storage-path injection, an external physical binding location, missing authorization resolvers, and resolver content whose length or checksum differs from the reference. Managed worker cases rejected empty, malformed, over-budget and same-length tampered CSV inputs before sink publication. PostgreSQL 16.13 multi-process lease-versus-cleanup qualification passed six forced and simultaneous trials. The selected threat, worker, and persistence command passed 37 tests.",
+      "open_reason": "",
       "owner": "056-RESOURCE",
       "provider_version_tuple": [
-        "source candidate; workspace package version 0.55.0"
+        "etlantic==0.55.0 workspace candidate",
+        "SQLite-backed managed input store",
+        "PostgreSQL 16.13 isolated lease/cleanup qualification",
+        "Python 3.14.3 clean-wheel smoke for migration 010 and leased reads"
       ],
-      "status": "pending",
+      "status": "passed",
       "supporting_cases": [
         "tests/control_plane/test_input_resources_0_56.py",
         "tests/connectors/test_local_files_csv_0_56.py",
         "tests/fastapi/test_managed_backend_0_56.py::test_managed_worker_executes_finalized_upload_and_lease_outlives_staging_ttl",
-        "tests/fastapi/test_managed_backend_0_56.py::test_managed_http_stages_finalizes_and_aborts_only_staged_input",
-        "tests/sqlmodel/test_cp1_migrations_0_51.py",
-        "tests/sqlmodel/test_input_resource_postgresql_0_56.py::test_postgres_multiprocess_lease_and_cleanup_race_is_linearizable",
-        "tests/fastapi/test_managed_backend_0_56.py::test_managed_worker_rejects_invalid_or_tampered_finalized_csv_uploads"
+        "tests/fastapi/test_managed_backend_0_56.py::test_managed_worker_rejects_invalid_or_tampered_finalized_csv_uploads",
+        "tests/sqlmodel/test_input_resource_postgresql_0_56.py::test_postgres_multiprocess_lease_and_cleanup_race_is_linearizable"
       ]
     },
     {
@@ -756,7 +840,7 @@
       "evidence_artifacts": [
         {
           "path": "docs/11_DEVELOPMENT/evidence/phase_0_56/LOCAL_QUALIFICATION.md",
-          "sha256": "2c008de026c2ce321e5a3f373dea97d3a53de1850f6e51766a2cccd7d10ccded"
+          "sha256": "f408476a04a580bf32cfb63a135f1d1217ab8c2832d0938246d992d2f01b6962"
         },
         {
           "path": "docs/11_DEVELOPMENT/evidence/phase_0_56/WHEEL_MANIFEST.json",
@@ -787,7 +871,7 @@
       "evidence_artifacts": [
         {
           "path": "docs/11_DEVELOPMENT/evidence/phase_0_56/LOCAL_QUALIFICATION.md",
-          "sha256": "2c008de026c2ce321e5a3f373dea97d3a53de1850f6e51766a2cccd7d10ccded"
+          "sha256": "f408476a04a580bf32cfb63a135f1d1217ab8c2832d0938246d992d2f01b6962"
         },
         {
           "path": "docs/11_DEVELOPMENT/evidence/phase_0_56/WHEEL_MANIFEST.json",
@@ -795,15 +879,20 @@
         }
       ],
       "id": "AC056-027",
-      "observed_result": "No complete AC-level pass is asserted.",
-      "open_reason": "Scheduled and external trigger admission does not yet share the complete managed preparation authority.",
+      "observed_result": "An injected bearer-token verifier authenticated an external workload principal without a live identity provider. Manual, scheduled and external requests for the same declared intent, profile and immutable revision were admitted through ManagedApplicationService and persisted identical plan fingerprints, effective fingerprints and revision IDs. Missing/invalid credentials returned 401, authenticated but unauthorized workload returned opaque 404, and a forged X-Principal header could not override the verified identity. Rejected requests created no extra outbox item. The AC-level regression passed.",
+      "open_reason": "",
       "owner": "056-SCHEDULE",
       "provider_version_tuple": [
         "source candidate; workspace package version 0.55.0"
       ],
-      "status": "pending",
+      "status": "passed",
       "supporting_cases": [
-        "tests/schedule/test_loops.py"
+        "tests/fastapi/test_managed_application_0_56.py::test_external_workload_trigger_matches_manual_and_scheduled_admission",
+        "tests/fastapi/test_managed_application_0_56.py::test_managed_schedule_trigger_uses_pinned_managed_admission",
+        "tests/fastapi/test_managed_application_0_56.py::test_managed_scheduler_recovers_occurrence_after_link_ack_loss",
+        "tests/schedule/test_loops.py",
+        "tests/sqlmodel/test_schedule_store_0_47.py::test_sqlmodel_links_managed_occurrence_after_verified_acceptance",
+        "tests/fastapi/test_schedule_routes_0_47.py"
       ]
     },
     {
@@ -813,7 +902,7 @@
       "evidence_artifacts": [
         {
           "path": "docs/11_DEVELOPMENT/evidence/phase_0_56/LOCAL_QUALIFICATION.md",
-          "sha256": "2c008de026c2ce321e5a3f373dea97d3a53de1850f6e51766a2cccd7d10ccded"
+          "sha256": "f408476a04a580bf32cfb63a135f1d1217ab8c2832d0938246d992d2f01b6962"
         },
         {
           "path": "docs/11_DEVELOPMENT/evidence/phase_0_56/WHEEL_MANIFEST.json",
@@ -821,15 +910,20 @@
         }
       ],
       "id": "AC056-028",
-      "observed_result": "No complete AC-level pass is asserted.",
-      "open_reason": "Pinned/latest-approved schedule selection and workload parameter policy are incomplete.",
+      "observed_result": "A schedule configured for latest-approved selected the alias target at occurrence time, after the alias changed since schedule creation, and durably recorded that exact revision with the authenticated scheduler workload principal. The scheduler principal had an independent run.submit authorization grant; binding that identity to the schedule was separately authorized. A versioned parameter reference resolved into the accepted run request and its policy fingerprint, while a SecretRef was required to pin an immutable version and no secret values were persisted. After acceptance, the firing-link acknowledgement was lost and the approval alias moved back. A restarted scheduler reused the firing snapshot, recovered the same accepted run and retained the original revision and parameter/reference policy fingerprints. A SQLModel store close/reopen regression retained selection policy, workload identity, parameter/secret references and firing metadata. The managed scheduler/API campaign passed 73 tests.",
+      "open_reason": "",
       "owner": "056-SCHEDULE",
       "provider_version_tuple": [
         "source candidate; workspace package version 0.55.0"
       ],
-      "status": "pending",
+      "status": "passed",
       "supporting_cases": [
-        "tests/schedule/test_loops.py"
+        "tests/fastapi/test_phase_0_56_control_coverage.py::test_managed_schedule_policy_fields_are_visible_in_openapi_inventory",
+        "tests/sqlmodel/test_schedule_store_0_47.py::test_sqlmodel_schedule_occurrence_policy_survives_store_restart",
+        "tests/fastapi/test_managed_application_0_56.py::test_schedule_occurrence_snapshots_latest_approved_workload_and_refs",
+        "tests/fastapi/test_managed_application_0_56.py::test_managed_schedule_trigger_uses_pinned_managed_admission",
+        "tests/fastapi/test_managed_application_0_56.py::test_managed_scheduler_recovers_occurrence_after_link_ack_loss",
+        "tests/sqlmodel/test_schedule_store_0_47.py::test_sqlmodel_links_managed_occurrence_after_verified_acceptance"
       ]
     },
     {
@@ -839,7 +933,7 @@
       "evidence_artifacts": [
         {
           "path": "docs/11_DEVELOPMENT/evidence/phase_0_56/LOCAL_QUALIFICATION.md",
-          "sha256": "2c008de026c2ce321e5a3f373dea97d3a53de1850f6e51766a2cccd7d10ccded"
+          "sha256": "f408476a04a580bf32cfb63a135f1d1217ab8c2832d0938246d992d2f01b6962"
         },
         {
           "path": "docs/11_DEVELOPMENT/evidence/phase_0_56/WHEEL_MANIFEST.json",
@@ -847,18 +941,22 @@
         }
       ],
       "id": "AC056-029",
-      "observed_result": "Focused clock, loop, SQLite schedule-store and firing-scope regressions passed. Naive datetime inputs are normalized as UTC, and a schedule paused after the due-schedule scan cannot claim a firing or enqueue work in the memory and SQLite stores. The focused batch passed 57 cases with one PostgreSQL-only skip.",
-      "open_reason": "The full scheduler outage, DST, catch-up, overlap, concurrency and PostgreSQL qualification campaign is incomplete.",
+      "observed_result": "The schedule clock and occurrence-recovery campaign passed 49 tests with one optional PostgreSQL-scope case skipped because its dedicated URL was not configured. Coverage includes timezone-normalized intervals, a New York spring-forward gap and both UTC occurrences in the fall-back repeated hour, bounded catch-up, misfire skip, overlap, effective windows, dual scheduler replicas, stale pause-after-scan claims, and scoped occurrence identity through memory and SQLite snapshot restart. A simulated wake transport outage after the firing/outbox commit recovered after process replacement with the original firing and submission and no duplicate. Scheduler drain and leadership fencing regressions also passed.",
+      "open_reason": "",
       "owner": "056-SCHEDULE",
       "provider_version_tuple": [
         "source candidate; workspace package version 0.55.0"
       ],
-      "status": "pending",
+      "status": "passed",
       "supporting_cases": [
         "tests/schedule/test_loops.py",
         "tests/schedule/test_clock.py",
         "tests/sqlmodel/test_schedule_store_0_47.py::test_sqlmodel_firing_claim_rechecks_pause_after_due_scan",
-        "tests/schedule/test_firing_scope.py"
+        "tests/schedule/test_firing_scope.py",
+        "tests/schedule/test_clock.py::test_america_new_york_fall_back_keeps_both_distinct_utc_occurrences",
+        "tests/schedule/test_loops.py::test_wake_outage_after_firing_commit_is_recoverable_without_duplicate",
+        "tests/schedule/test_policy_enforcement.py",
+        "tests/sqlmodel/test_schedule_store_0_47.py"
       ]
     },
     {
@@ -868,7 +966,7 @@
       "evidence_artifacts": [
         {
           "path": "docs/11_DEVELOPMENT/evidence/phase_0_56/LOCAL_QUALIFICATION.md",
-          "sha256": "2c008de026c2ce321e5a3f373dea97d3a53de1850f6e51766a2cccd7d10ccded"
+          "sha256": "f408476a04a580bf32cfb63a135f1d1217ab8c2832d0938246d992d2f01b6962"
         },
         {
           "path": "docs/11_DEVELOPMENT/evidence/phase_0_56/WHEEL_MANIFEST.json",
@@ -898,7 +996,7 @@
       "evidence_artifacts": [
         {
           "path": "docs/11_DEVELOPMENT/evidence/phase_0_56/LOCAL_QUALIFICATION.md",
-          "sha256": "2c008de026c2ce321e5a3f373dea97d3a53de1850f6e51766a2cccd7d10ccded"
+          "sha256": "f408476a04a580bf32cfb63a135f1d1217ab8c2832d0938246d992d2f01b6962"
         },
         {
           "path": "docs/11_DEVELOPMENT/evidence/phase_0_56/WHEEL_MANIFEST.json",
@@ -906,8 +1004,8 @@
         }
       ],
       "id": "AC056-031",
-      "observed_result": "Resume/repair/backfill plan generation now rejects a checkpoint linked to a different source submission and records a schema-baseline mismatch in plan notes when both baselines are present. This planner change has not received a focused regression run; no complete AC-level pass is asserted.",
-      "open_reason": "Idempotent retry, rerun and full-snapshot replay commands are implemented. Checkpoint resume, repair and backfill are not yet executable through qualified managed commands, and the full lifecycle case remains open.",
+      "observed_result": "A managed checkpoint-resume command validates that a checkpoint belongs to the parent submission, admits an idempotent child submission with a distinct run identity, and preserves command, checkpoint, parent-run and parent-submission references in the immutable execution envelope. The child executes a real JSON-to-CSV managed pipeline through the durable worker, persists a successful report, and records a resume parent-to-child lineage edge. Named runtime artifacts resolve in the parent run\u2019s scoped artifact workspace. State-aware run actions advertise resume only for failed/cancelled runs with a verified envelope and no unresolved effect. Memory qualification covers worker interruption after checkpoint creation, HTTP acceptance, idempotent retry after parent state changes, missing-checkpoint rejection and unknown-effect blocking. Repair/backfill commands and their full lifecycle semantics are still unimplemented; no complete AC-level pass is asserted.",
+      "open_reason": "Managed checkpoint resume is implemented and locally qualified. Executable repair/backfill semantics, attempt lineage for the full command family and the complete lifecycle case remain pending.",
       "owner": "056-CONTROL",
       "provider_version_tuple": [
         "source candidate; workspace package version 0.55.0"
@@ -917,7 +1015,9 @@
         "tests/fastapi/test_managed_application_0_56.py",
         "tests/schedule/test_loops.py",
         "tests/fastapi/test_managed_control_races_0_56.py",
-        "tests/fastapi/test_managed_rerun_http_0_56.py"
+        "tests/fastapi/test_managed_rerun_http_0_56.py",
+        "tests/fastapi/test_managed_application_0_56.py::test_managed_resume_admits_checkpoint_linked_child_and_is_idempotent",
+        "tests/fastapi/test_managed_application_0_56.py::test_managed_resume_rejects_unlinked_or_missing_checkpoint"
       ]
     },
     {
@@ -927,24 +1027,38 @@
       "evidence_artifacts": [
         {
           "path": "docs/11_DEVELOPMENT/evidence/phase_0_56/LOCAL_QUALIFICATION.md",
-          "sha256": "2c008de026c2ce321e5a3f373dea97d3a53de1850f6e51766a2cccd7d10ccded"
+          "sha256": "f408476a04a580bf32cfb63a135f1d1217ab8c2832d0938246d992d2f01b6962"
         },
         {
-          "path": "docs/11_DEVELOPMENT/evidence/phase_0_56/WHEEL_MANIFEST.json",
-          "sha256": "8c33f9f2047e40edf33ea4e8837727569476b9afc8d224f9f5d9d0db86357d2f"
+          "path": "docs/11_DEVELOPMENT/evidence/phase_0_56/PUBLIC_CONTROL_COVERAGE_0_56.json",
+          "sha256": "b5ef9596cc217dd0e2458614092e7266adec80af6dce907c069b630ab5319803"
+        },
+        {
+          "path": "tests/fastapi/openapi_cp1_snapshot.json",
+          "sha256": "5d0fc6f15470d94fc76f885c9689c6f18d76833264d435ab51288d62c6875932"
+        },
+        {
+          "path": "tests/fastapi/openapi_cp_ga_snapshot.json",
+          "sha256": "f1ad09f1de5e33a20d71f778194955b0e68d778a3e4910c963bc79de53f9a660"
         }
       ],
       "id": "AC056-032",
-      "observed_result": "Firing claims now recheck inside the transactional store operation that the schedule exists, has the requested revision, and is active for scheduler-owned fires; stale scan claims are skipped by the scheduler. This closes the pause/delete-after-scan admission window. No complete AC-level pass is asserted.",
-      "open_reason": "Focused concurrent pause/resume and safe amendment boundaries, including PostgreSQL qualification, remain open.",
+      "observed_result": "Memory, SQLite and PostgreSQL campaigns passed pause-after-scan, resume, stale-claim fencing, active-firing amendment rejection, stale-revision rejection and completed-firing amendment. A deterministic due-scan/pause interleaving produced no firing or outbox item; resume admitted the same occurrence. After completion, compare-and-swap amendment advanced the revision, preserved the prior firing record and rejected claims against the old revision. The HTTP amendment route requires schedule.write, accepts only the expected revision and replacement spec, and rejects stale revisions. Authorization-order and public-control coverage include the new operation; CP1 and CP-GA OpenAPI snapshots record 92 operations.",
+      "open_reason": "",
       "owner": "056-CONTROL",
       "provider_version_tuple": [
         "source candidate; workspace package version 0.55.0"
       ],
-      "status": "pending",
+      "status": "passed",
       "supporting_cases": [
-        "tests/fastapi/test_managed_application_0_56.py",
-        "tests/schedule/test_loops.py"
+        "tests/schedule/test_firing_scope.py",
+        "tests/schedule/test_loops.py",
+        "tests/fastapi/test_schedule_routes_0_47.py",
+        "tests/sqlmodel/test_schedule_store_0_47.py",
+        "tests/fastapi/test_phase_0_56_authorization_order.py",
+        "tests/fastapi/test_phase_0_56_control_coverage.py",
+        "tests/fastapi/test_cp1_openapi.py",
+        "tests/fastapi/test_cp_ga_openapi_0_43.py"
       ]
     },
     {
@@ -954,7 +1068,7 @@
       "evidence_artifacts": [
         {
           "path": "docs/11_DEVELOPMENT/evidence/phase_0_56/LOCAL_QUALIFICATION.md",
-          "sha256": "2c008de026c2ce321e5a3f373dea97d3a53de1850f6e51766a2cccd7d10ccded"
+          "sha256": "f408476a04a580bf32cfb63a135f1d1217ab8c2832d0938246d992d2f01b6962"
         },
         {
           "path": "docs/11_DEVELOPMENT/evidence/phase_0_56/WHEEL_MANIFEST.json",
@@ -962,14 +1076,14 @@
         }
       ],
       "id": "AC056-033",
-      "observed_result": "PostgreSQL 16.14 live tests passed append, keyed upsert, replacement, idempotent replay, bounded source/schema inspection, denied write permission without target mutation, failed-stage rollback, lost-ack reconciliation, canonical table-alias comparison, and managed source-to-same-table replacement rejection before sink transaction (6 tests). The existing source row remained unchanged. A separate managed-runtime connector suite passed 4 cases for matching opaque identities, fail-closed missing identities, report non-disclosure, and writes to proven-disjoint resources.",
-      "open_reason": "The complete provider permission, key, schema, cleanup and cross-provider pairing matrix remains unqualified, including additional server-alias and overlap scenarios.",
+      "observed_result": "Isolated PostgreSQL 16.14 provider and overlap cases passed 10 tests in the combined current rerun. Coverage includes append, keyed upsert, replacement, key/schema behavior, bounded inspection, permission denial without mutation, staged rollback, lost-ack reconciliation, table-alias identity, managed overlap rejection, fail-closed unknown identities, and disjoint resource acceptance.",
+      "open_reason": "",
       "owner": "056-PROVIDER",
       "provider_version_tuple": [
         "PostgreSQL 16.14",
         "etlantic-sql workspace candidate 0.55.0"
       ],
-      "status": "pending",
+      "status": "passed",
       "supporting_cases": [
         "tests/sql/test_postgresql_live_0_56.py::test_live_append_upsert_replace_and_idempotent_replay",
         "tests/sql/test_postgresql_live_0_56.py::test_live_source_and_storage_inspection_are_bounded_and_read_only",
@@ -981,13 +1095,17 @@
       ]
     },
     {
-      "acceptance_criterion": "Live Foundry dataset/branch/file operations, all declared write modes, overlap and effect/reconciliation cases pass in an isolated account/project",
+      "acceptance_criterion": "Foundry connector tests pass against the Semblance-backed API simulator for dataset/branch/file operations, all declared write modes, overlap, and effect/reconciliation in independently configured loopback scopes",
       "case_id": "AC056-034-local-qualification",
       "environment_id": "local-darwin-arm64-python311-postgresql16",
       "evidence_artifacts": [
         {
           "path": "docs/11_DEVELOPMENT/evidence/phase_0_56/LOCAL_QUALIFICATION.md",
-          "sha256": "2c008de026c2ce321e5a3f373dea97d3a53de1850f6e51766a2cccd7d10ccded"
+          "sha256": "f408476a04a580bf32cfb63a135f1d1217ab8c2832d0938246d992d2f01b6962"
+        },
+        {
+          "path": "docs/11_DEVELOPMENT/evidence/phase_0_56/SIMULATOR_QUALIFICATION_0_56.json",
+          "sha256": "1c693fae49e074a33f2cb2cd965763f59a7f6c3c415d710841108122b7df6a2e"
         },
         {
           "path": "docs/11_DEVELOPMENT/evidence/phase_0_56/WHEEL_MANIFEST.json",
@@ -995,16 +1113,19 @@
         }
       ],
       "id": "AC056-034",
-      "observed_result": "No complete AC-level pass is asserted.",
-      "open_reason": "Requires a live isolated Foundry account/project and scoped credentials; only mock transport cases are available here.",
+      "observed_result": "The Semblance 0.9.0 simulator qualification passed 26 tests against two independent loopback scopes with distinct datasets, pinned transactions, namespaces, tokens, and seed files. Both scopes exercised append, replace, and snapshot; pinned reads, branch/file isolation, wrong-dataset and wrong-token denial, and lost-ack effect reconciliation passed. Exact source/sink file identity matches were rejected by the managed runtime before transaction creation in each scope. No live Foundry account was used.",
+      "open_reason": "",
       "owner": "056-PROVIDER",
       "provider_version_tuple": [
         "etlantic-foundry==0.55.0",
-        "live Foundry version unavailable"
+        "Semblance 0.9.0 loopback API simulator"
       ],
-      "status": "blocked",
+      "status": "passed",
       "supporting_cases": [
-        "tests/foundry/test_connectors_0_56.py"
+        "tests/foundry/test_simulator.py",
+        "tests/foundry/test_connectors_0_56.py",
+        "tests/connectors/test_resource_overlap_0_56.py",
+        "docs/11_DEVELOPMENT/evidence/phase_0_56/SIMULATOR_QUALIFICATION_0_56.json"
       ]
     },
     {
@@ -1014,7 +1135,7 @@
       "evidence_artifacts": [
         {
           "path": "docs/11_DEVELOPMENT/evidence/phase_0_56/LOCAL_QUALIFICATION.md",
-          "sha256": "2c008de026c2ce321e5a3f373dea97d3a53de1850f6e51766a2cccd7d10ccded"
+          "sha256": "f408476a04a580bf32cfb63a135f1d1217ab8c2832d0938246d992d2f01b6962"
         },
         {
           "path": "docs/11_DEVELOPMENT/evidence/phase_0_56/WHEEL_MANIFEST.json",
@@ -1041,32 +1162,40 @@
       ]
     },
     {
-      "acceptance_criterion": "All 12 minimum source/destination pairings and advertised modes have success/failure evidence, including two independently scoped Foundry configurations",
-      "case_id": "AC056-036-local-qualification",
-      "environment_id": "local-darwin-arm64-python311-postgresql16",
+      "acceptance_criterion": "All 12 minimum source/destination pairings and advertised modes pass through the managed worker with success/failure evidence, using live PostgreSQL, immutable CSV fixtures, and two independently configured Semblance-backed Foundry scopes",
+      "case_id": "AC056-036-local-managed-provider-matrix",
+      "environment_id": "local-darwin-arm64-python311-postgresql16-two-semblance-scopes",
       "evidence_artifacts": [
         {
           "path": "docs/11_DEVELOPMENT/evidence/phase_0_56/LOCAL_QUALIFICATION.md",
-          "sha256": "2c008de026c2ce321e5a3f373dea97d3a53de1850f6e51766a2cccd7d10ccded"
+          "sha256": "f408476a04a580bf32cfb63a135f1d1217ab8c2832d0938246d992d2f01b6962"
         },
         {
-          "path": "docs/11_DEVELOPMENT/evidence/phase_0_56/WHEEL_MANIFEST.json",
-          "sha256": "8c33f9f2047e40edf33ea4e8837727569476b9afc8d224f9f5d9d0db86357d2f"
+          "path": "docs/11_DEVELOPMENT/evidence/phase_0_56/MANAGED_PROVIDER_MATRIX_0_56.json",
+          "sha256": "b63a6fc67990580d89c598eb96f66fd08204a3a28a4db9e922f9e26947f7f4f2"
+        },
+        {
+          "path": "docs/11_DEVELOPMENT/evidence/phase_0_56/SIMULATOR_QUALIFICATION_0_56.json",
+          "sha256": "1c693fae49e074a33f2cb2cd965763f59a7f6c3c415d710841108122b7df6a2e"
         }
       ],
       "id": "AC056-036",
-      "observed_result": "No complete AC-level pass is asserted.",
-      "open_reason": "Requires all 12 real-worker pairings and two independent Foundry scopes; that live environment is not configured.",
+      "observed_result": "20 managed-worker pairing/mode cases passed against PostgreSQL 16.13 and two concurrently served, independently configured Semblance 0.9.0 scopes. The cases cover all 12 source/destination pairs and PostgreSQL append/upsert/replace modes. Every case records a successful provider effect, then a failed accepted run with stable diagnostic codes and verifies the committed destination stayed unchanged. Existing AC056-034 simulator qualification supplies independent cross-scope credential denial, overlap, pinned-read and lost-ack reconciliation evidence.",
+      "open_reason": "",
       "owner": "056-PROVIDER",
       "provider_version_tuple": [
-        "PostgreSQL 16.14",
-        "Foundry: no live tenant configured",
-        "CSV input: local source only"
+        "PostgreSQL 16.13 (Homebrew)",
+        "etlantic-sql 0.55.0",
+        "etlantic-foundry 0.55.0",
+        "Semblance 0.9.0; two independently configured loopback scopes"
       ],
-      "status": "blocked",
+      "status": "passed",
       "supporting_cases": [
-        "tests/sql/test_postgresql_live_0_56.py",
-        "tests/foundry/test_connectors_0_56.py"
+        "tests/fastapi/test_managed_provider_matrix_0_56.py",
+        "tests/foundry/test_connectors_0_56.py",
+        "tests/foundry/test_simulator.py",
+        "tests/connectors/test_resource_overlap_0_56.py",
+        "tests/sql/test_postgresql_live_0_56.py"
       ]
     },
     {
@@ -1076,7 +1205,7 @@
       "evidence_artifacts": [
         {
           "path": "docs/11_DEVELOPMENT/evidence/phase_0_56/LOCAL_QUALIFICATION.md",
-          "sha256": "2c008de026c2ce321e5a3f373dea97d3a53de1850f6e51766a2cccd7d10ccded"
+          "sha256": "f408476a04a580bf32cfb63a135f1d1217ab8c2832d0938246d992d2f01b6962"
         },
         {
           "path": "docs/11_DEVELOPMENT/evidence/phase_0_56/WHEEL_MANIFEST.json",
@@ -1110,7 +1239,7 @@
       "evidence_artifacts": [
         {
           "path": "docs/11_DEVELOPMENT/evidence/phase_0_56/LOCAL_QUALIFICATION.md",
-          "sha256": "2c008de026c2ce321e5a3f373dea97d3a53de1850f6e51766a2cccd7d10ccded"
+          "sha256": "f408476a04a580bf32cfb63a135f1d1217ab8c2832d0938246d992d2f01b6962"
         },
         {
           "path": "docs/11_DEVELOPMENT/evidence/phase_0_56/WHEEL_MANIFEST.json",
@@ -1118,22 +1247,26 @@
         }
       ],
       "id": "AC056-038",
-      "observed_result": "LogRecord serialization now has a focused regression for recursively redacting extras mutated after record creation. The HTTP/headless resource-authorization regression, control-plane and SSE redaction, owner-scoped action receipt, action-result redaction, and durable-artifact authorization regressions passed in the 236-test focused batch and the 2,856-test default non-optional suite.",
-      "open_reason": "The complete cross-owner sentinel campaign covering every tenant, owner, environment and security-domain combination for services, HTTP, actions, events and artifacts is not yet recorded as a criterion-level matrix.",
+      "observed_result": "The focused managed service, HTTP, action-job, event, report, and artifact disclosure campaign passed 117 tests. Owner, tenant, workspace, environment, and security-domain variants all returned matching opaque 404s through headless and HTTP paths for run results and connector-action receipts. Denied run lookups did not open the report store, and private event markers and owner identities were absent from responses. The issue #150 explicit not_found regression also passed with existing and absent run IDs under concurrent headless/HTTP calls and no existence probes.",
+      "open_reason": "",
       "owner": "056-QUALIFY",
       "provider_version_tuple": [
         "source candidate; workspace package version 0.55.0"
       ],
-      "status": "pending",
+      "status": "passed",
       "supporting_cases": [
         "docs/11_DEVELOPMENT/evidence/phase_0_56/LOCAL_QUALIFICATION.md",
-        "tests/runtime/test_bugfixes.py::test_log_record_serialization_redacts_mutated_extras",
+        "tests/control_plane/test_action_jobs_0_56.py::test_action_job_acceptance_is_redacted_idempotent_and_owner_scoped",
         "tests/fastapi/test_cp1_redaction.py",
         "tests/fastapi/test_cp1_sse.py",
-        "tests/control_plane/test_action_jobs_0_56.py::test_action_job_acceptance_is_redacted_idempotent_and_owner_scoped",
         "tests/fastapi/test_managed_action_jobs_0_56.py",
+        "tests/fastapi/test_managed_action_jobs_0_56.py::test_action_receipts_and_cursors_are_bound_to_owner_environment_and_domain",
+        "tests/fastapi/test_managed_application_0_56.py::test_durable_artifact_content_is_separately_authorized_and_downloadable",
+        "tests/fastapi/test_managed_application_0_56.py::test_run_events_reports_and_artifacts_are_owner_isolated_across_adapters",
         "tests/fastapi/test_managed_application_0_56.py::test_submission_authorizes_resolved_resources_before_acceptance",
-        "tests/fastapi/test_managed_application_0_56.py::test_durable_artifact_content_is_separately_authorized_and_downloadable"
+        "tests/fastapi/test_phase_0_56_authorization_order.py::test_explicit_run_disclosure_matches_headless_and_http_under_concurrency",
+        "tests/fastapi/test_phase_0_56_authorization_order.py::test_input_resource_isolation_matches_headless_and_http",
+        "tests/runtime/test_bugfixes.py::test_log_record_serialization_redacts_mutated_extras"
       ]
     },
     {
@@ -1143,7 +1276,7 @@
       "evidence_artifacts": [
         {
           "path": "docs/11_DEVELOPMENT/evidence/phase_0_56/LOCAL_QUALIFICATION.md",
-          "sha256": "2c008de026c2ce321e5a3f373dea97d3a53de1850f6e51766a2cccd7d10ccded"
+          "sha256": "f408476a04a580bf32cfb63a135f1d1217ab8c2832d0938246d992d2f01b6962"
         },
         {
           "path": "docs/11_DEVELOPMENT/evidence/phase_0_56/WHEEL_MANIFEST.json",
@@ -1151,18 +1284,20 @@
         }
       ],
       "id": "AC056-039",
-      "observed_result": "PostgreSQL 16.13 loopback qualification passed five CP3 multi-process cases plus the managed-service retry/conflict case: concurrent acceptance and quota use, first-use snapshot creation, service-level receipt recovery, changed-intent conflict, lost-ack recovery, action acceptance/claim fencing and restart reads. Test cleanup is scoped to generated stores and tenant/workspace identifiers.",
-      "open_reason": "PostgreSQL backup/restore, interrupted-operation recovery and the complete control-plane failure campaign remain open.",
+      "observed_result": "Isolated PostgreSQL 16.14 accepted-work persistence passed the multi-process idempotency race, independent-store restart reads, and managed retry/intent-conflict campaign. A transaction fault raised before the outbox insert and left neither an accepted submission nor an orphan receipt. A custom-format pg_dump restored into a separate database with the accepted snapshot and its single pending outbox row intact. SQLite and memory results remain separately labeled in the qualification record.",
+      "open_reason": "",
       "owner": "056-QUALIFY",
       "provider_version_tuple": [
         "PostgreSQL 16.13 loopback",
         "SQLModel candidate 0.55.0"
       ],
-      "status": "pending",
+      "status": "passed",
       "supporting_cases": [
+        "tests/fastapi/test_managed_postgresql_process_0_56.py",
+        "tests/fastapi/test_managed_postgresql_process_0_56.py::test_postgresql_multiprocess_managed_service_retry_and_intent_conflict",
         "tests/sqlmodel/test_durable_postgresql_multiprocess_0_56.py::test_postgresql_multiprocess_accept_is_single_and_restart_visible",
         "tests/sqlmodel/test_durable_postgresql_multiprocess_0_56.py::test_postgresql_multiprocess_quota_idempotency_is_single_and_restart_visible",
-        "tests/fastapi/test_managed_postgresql_process_0_56.py::test_postgresql_multiprocess_managed_service_retry_and_intent_conflict"
+        "tests/sqlmodel/test_phase_0_56_backup_restore.py::test_postgresql_cp3_failure_atomicity_and_backup_restore"
       ]
     },
     {
@@ -1172,7 +1307,7 @@
       "evidence_artifacts": [
         {
           "path": "docs/11_DEVELOPMENT/evidence/phase_0_56/LOCAL_QUALIFICATION.md",
-          "sha256": "2c008de026c2ce321e5a3f373dea97d3a53de1850f6e51766a2cccd7d10ccded"
+          "sha256": "f408476a04a580bf32cfb63a135f1d1217ab8c2832d0938246d992d2f01b6962"
         },
         {
           "path": "docs/11_DEVELOPMENT/evidence/phase_0_56/WHEEL_MANIFEST.json",
@@ -1180,7 +1315,7 @@
         }
       ],
       "id": "AC056-040",
-      "observed_result": "Three rebuilt candidate wheels installed in a fresh Python 3.14.3 environment without workspace path injection. Migration 009 applied, keyed-event replay survived engine disposal/reopen, pruning rejected an expired cursor and prevented duplicate publication, the standard managed backend constructed and closed, and generated OpenAPI exposed run-event history. All 25 workspace wheel hashes and sizes are recorded. A separate core and etlantic-sql candidate wheel install on Python 3.14.3 also passed public imports for ResourceIdentityConnector and both PostgreSQL identity resolvers. The latest rebuilt core, FastAPI and SQLModel wheels installed into a fresh Python 3.14.3 virtual environment; migration 010 applied, standard managed construction and upload route OpenAPI passed, and an owner-scoped upload survived backend restart under lease while cross-owner and blob-tamper reads failed closed.",
+      "observed_result": "Three rebuilt candidate wheels installed in a fresh Python 3.14.3 environment without workspace path injection. Migration 009 applied, keyed-event replay survived engine disposal/reopen, pruning rejected an expired cursor and prevented duplicate publication, the standard managed backend constructed and closed, and generated OpenAPI exposed run-event history. All 25 workspace wheel hashes and sizes are recorded. A separate core and etlantic-sql candidate wheel install on Python 3.14.3 also passed public imports for ResourceIdentityConnector and both PostgreSQL identity resolvers. The latest rebuilt core, FastAPI and SQLModel wheels installed into a fresh Python 3.14.3 virtual environment; migration 010 applied, standard managed construction and upload route OpenAPI passed, and an owner-scoped upload survived backend restart under lease while cross-owner and blob-tamper reads failed closed. A new seven-head SQLite rollback/re-upgrade matrix also passed, retaining definitions, accepted submission identities and event history at every published rollback head. The latest source candidate rebuilt all 25 workspace wheels and refreshed their SHA-256/size manifest. A clean isolated uv environment installed core, FastAPI and SQLModel from those wheels; public imports, the typed resume operation in generated OpenAPI and migration 012 all passed without workspace path injection.",
       "open_reason": "Full package/export/schema compatibility, version-skew coverage and the complete upgrade/rollback matrix remain pending.",
       "owner": "056-QUALIFY",
       "provider_version_tuple": [
@@ -1191,7 +1326,8 @@
         "docs/11_DEVELOPMENT/evidence/phase_0_56/WHEEL_MANIFEST.json",
         "tests/sqlmodel/test_cp1_migrations_0_51.py",
         "tests/control_plane/test_input_resources_0_56.py",
-        "tests/fastapi/test_managed_backend_0_56.py::test_managed_worker_executes_finalized_upload_and_lease_outlives_staging_ttl"
+        "tests/fastapi/test_managed_backend_0_56.py::test_managed_worker_executes_finalized_upload_and_lease_outlives_staging_ttl",
+        "tests/sqlmodel/test_cp1_migrations_0_51.py::test_supported_cp1_rollback_heads_upgrade_again_with_core_records"
       ]
     },
     {
@@ -1201,7 +1337,7 @@
       "evidence_artifacts": [
         {
           "path": "docs/11_DEVELOPMENT/evidence/phase_0_56/LOCAL_QUALIFICATION.md",
-          "sha256": "2c008de026c2ce321e5a3f373dea97d3a53de1850f6e51766a2cccd7d10ccded"
+          "sha256": "f408476a04a580bf32cfb63a135f1d1217ab8c2832d0938246d992d2f01b6962"
         },
         {
           "path": "docs/11_DEVELOPMENT/evidence/phase_0_56/WHEEL_MANIFEST.json",
@@ -1227,7 +1363,7 @@
       "evidence_artifacts": [
         {
           "path": "docs/11_DEVELOPMENT/evidence/phase_0_56/LOCAL_QUALIFICATION.md",
-          "sha256": "2c008de026c2ce321e5a3f373dea97d3a53de1850f6e51766a2cccd7d10ccded"
+          "sha256": "f408476a04a580bf32cfb63a135f1d1217ab8c2832d0938246d992d2f01b6962"
         },
         {
           "path": "docs/11_DEVELOPMENT/evidence/phase_0_56/WHEEL_MANIFEST.json",
@@ -1256,7 +1392,7 @@
       "evidence_artifacts": [
         {
           "path": "docs/11_DEVELOPMENT/evidence/phase_0_56/LOCAL_QUALIFICATION.md",
-          "sha256": "2c008de026c2ce321e5a3f373dea97d3a53de1850f6e51766a2cccd7d10ccded"
+          "sha256": "f408476a04a580bf32cfb63a135f1d1217ab8c2832d0938246d992d2f01b6962"
         },
         {
           "path": "docs/11_DEVELOPMENT/evidence/phase_0_56/WHEEL_MANIFEST.json",
@@ -1282,7 +1418,7 @@
       "evidence_artifacts": [
         {
           "path": "docs/11_DEVELOPMENT/evidence/phase_0_56/LOCAL_QUALIFICATION.md",
-          "sha256": "2c008de026c2ce321e5a3f373dea97d3a53de1850f6e51766a2cccd7d10ccded"
+          "sha256": "f408476a04a580bf32cfb63a135f1d1217ab8c2832d0938246d992d2f01b6962"
         },
         {
           "path": "docs/11_DEVELOPMENT/evidence/phase_0_56/WHEEL_MANIFEST.json",
@@ -1290,16 +1426,18 @@
         }
       ],
       "id": "AC056-044",
-      "observed_result": "A standard-library consumer example registers generated definitions, checkpoints the returned immutable revision, validates/plans/submits that same revision, supports optional review, and can deliver an idempotent post-acceptance webhook. Built-wheel and external-orchestrator qualification has not run; no complete AC-level pass is asserted.",
-      "open_reason": "The consumer has not been qualified from built artifacts with an external business orchestrator and review outcome evidence.",
+      "observed_result": "The standard-library consumer CLI ran against a managed API built from core and FastAPI wheels installed in a fresh Python 3.11.15 environment from /tmp with workspace import paths disabled. The consumer registered a generated definition, checkpointed its immutable revision, validated and planned that exact revision, then submitted it using only public HTTP commands. A rejected review exited without submitting or notifying the webhook; an approved review reused the checkpointed revision and posted one idempotent etlantic.run.accepted event to the external loopback webhook with the opaque business context. The focused integration passed both from the workspace and from the clean wheel environment; the source confirms the consumer imports no ETLantic package.",
+      "open_reason": "",
       "owner": "056-CONTROL",
       "provider_version_tuple": [
-        "source candidate; workspace package version 0.55.0"
+        "Python 3.11.15 clean virtual environment",
+        "etlantic 0.55.0 wheel SHA-256 480ef308d24ade6ffd18106defc299136c0ccd14f7fbe9e0828385a49474bb08",
+        "etlantic-fastapi 0.55.0 wheel SHA-256 c53c177a8fda08d6b9cfd1638da1820c40f61af430eea376fdf8846908dc37c3",
+        "FastAPI/uvicorn managed API and loopback business webhook"
       ],
-      "status": "pending",
+      "status": "passed",
       "supporting_cases": [
-        "tests/fastapi/test_managed_application_0_56.py",
-        "tests/schedule/test_loops.py",
+        "tests/fastapi/test_managed_consumer_0_56.py",
         "examples/managed_consumer_0_56.py",
         "examples/README.md"
       ]
@@ -1308,21 +1446,41 @@
   "artifacts": [
     {
       "path": "docs/11_DEVELOPMENT/evidence/phase_0_56/LOCAL_QUALIFICATION.md",
-      "sha256": "2c008de026c2ce321e5a3f373dea97d3a53de1850f6e51766a2cccd7d10ccded"
+      "sha256": "f408476a04a580bf32cfb63a135f1d1217ab8c2832d0938246d992d2f01b6962"
+    },
+    {
+      "path": "docs/11_DEVELOPMENT/evidence/phase_0_56/MANAGED_PROVIDER_MATRIX_0_56.json",
+      "sha256": "b63a6fc67990580d89c598eb96f66fd08204a3a28a4db9e922f9e26947f7f4f2"
+    },
+    {
+      "path": "docs/11_DEVELOPMENT/evidence/phase_0_56/PRIVATE_PROVIDER_QUALIFICATION.json",
+      "sha256": "1b9c4f2147f18944e28f158b44ca319e06b24cf62aa9468154a04efc3c6b7b8f"
+    },
+    {
+      "path": "docs/11_DEVELOPMENT/evidence/phase_0_56/PUBLIC_CONTROL_COVERAGE_0_56.json",
+      "sha256": "b5ef9596cc217dd0e2458614092e7266adec80af6dce907c069b630ab5319803"
+    },
+    {
+      "path": "docs/11_DEVELOPMENT/evidence/phase_0_56/SIMULATOR_QUALIFICATION_0_56.json",
+      "sha256": "1c693fae49e074a33f2cb2cd965763f59a7f6c3c415d710841108122b7df6a2e"
     },
     {
       "path": "docs/11_DEVELOPMENT/evidence/phase_0_56/WHEEL_MANIFEST.json",
       "sha256": "8c33f9f2047e40edf33ea4e8837727569476b9afc8d224f9f5d9d0db86357d2f"
     },
     {
-      "path": "docs/11_DEVELOPMENT/evidence/phase_0_56/PRIVATE_PROVIDER_QUALIFICATION.json",
-      "sha256": "1b9c4f2147f18944e28f158b44ca319e06b24cf62aa9468154a04efc3c6b7b8f"
+      "path": "tests/fastapi/openapi_cp1_snapshot.json",
+      "sha256": "5d0fc6f15470d94fc76f885c9689c6f18d76833264d435ab51288d62c6875932"
+    },
+    {
+      "path": "tests/fastapi/openapi_cp_ga_snapshot.json",
+      "sha256": "f1ad09f1de5e33a20d71f778194955b0e68d778a3e4910c963bc79de53f9a660"
     }
   ],
   "candidate": {
     "base_commit": "e7fd6b866dbecab646cf68b73405ee06ea4437e5",
     "branch": "codex/phase-0-56",
-    "implementation_patch_sha256_before_index": "ebbd1ac05963a4bcfb8222e2fd0376250ca8c42e99695a9419009d11c3e8a650",
+    "implementation_patch_sha256_before_index": "1e5f43e35a7df303f43ce5aa7e0ae33f31a7ea6b6cfe23a3c1673c1f5b6e2117",
     "package_versions": {
       "etlantic": "0.55.0",
       "etlantic-fastapi": "0.55.0",
@@ -1334,20 +1492,20 @@
   },
   "environment": {
     "architecture": "arm64",
-    "foundry_live_environment_configured": false,
     "os": "Darwin",
     "os_release": "25.5.0",
     "postgresql": "16.14 isolated container; 16.13 loopback Homebrew",
-    "python": "3.11.15"
+    "python": "3.11.15",
+    "foundry_qualification_target": "Semblance 0.9.0 loopback API simulator; no live Foundry account required"
   },
-  "generated_at_utc": "2026-10-01T00:49:40Z",
+  "generated_at_utc": "2026-10-01T05:04:36.193806Z",
   "phase": "0.56",
   "release_decision": "OPEN",
   "schema": "etlantic.phase_0_56.release_index/1",
   "summary": {
-    "passed": 11,
-    "pending": 31,
-    "blocked": 2,
+    "passed": 40,
+    "pending": 4,
+    "blocked": 0,
     "total": 44
   }
 }

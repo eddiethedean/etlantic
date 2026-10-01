@@ -221,6 +221,23 @@ def test_duckdb_result_row_budget_applies_across_statements() -> None:
     plugin.cleanup_run(run_id=context.run_id)
 
 
+def test_duckdb_memory_limit_is_applied_before_run_queries() -> None:
+    plugin = DuckDBSqlPlugin(config=DuckDBConfig(memory_limit="16MiB"))
+    session = plugin.connections.session("memory-limit")
+    configured = session.execute("SELECT current_setting('memory_limit')").fetchone()
+    assert configured is not None
+    assert "16" in str(configured[0])
+    assert "mib" in str(configured[0]).lower()
+    plugin.cleanup_run(run_id="memory-limit")
+
+
+def test_duckdb_invalid_memory_limit_fails_before_session_is_published() -> None:
+    plugin = DuckDBSqlPlugin(config=DuckDBConfig(memory_limit="not-a-limit"))
+    with pytest.raises(duckdb.ParserException):
+        plugin.connections.session("invalid-memory-limit")
+    assert plugin.connections.active_run_ids() == ()
+
+
 def test_compiled_statement_cannot_cross_run_or_replay() -> None:
     plugin = create_plugin()
     statement = plugin.compile_query(

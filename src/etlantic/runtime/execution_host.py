@@ -11,7 +11,10 @@ from datetime import UTC, datetime
 from threading import Event, Thread
 from typing import Any, cast
 
-from etlantic.control_plane.durable_models import EffectRecord
+from etlantic.control_plane.durable_models import (
+    EffectRecord,
+    ResultPublicationRecord,
+)
 from etlantic.control_plane.durable_protocols import DurableWorkStore
 from etlantic.control_plane.errors import ControlPlaneError
 from etlantic.control_plane.models import ControlPlaneContext
@@ -132,7 +135,50 @@ class ExecutionHost:
             accepts_cancel = False
         if accepts_cancel:
             kwargs["cancel_event"] = cancel_event
+        if _accepts_keyword(runner, "result_publisher"):
+            kwargs["result_publisher"] = self._result_publisher(
+                ctx,
+                submission_id=submission_id,
+                attempt_id=attempt_id,
+                owner_id=self.owner_id,
+                fencing_token=fencing_token,
+            )
+        if _accepts_keyword(runner, "result_reader"):
+            kwargs["result_reader"] = lambda: (
+                self.durable.get_latest_result_publication(ctx, submission_id)
+            )
         return runner(ctx, **kwargs)
+
+    def _result_publisher(
+        self,
+        ctx: ControlPlaneContext,
+        *,
+        submission_id: str,
+        attempt_id: str,
+        owner_id: str,
+        fencing_token: int,
+    ) -> Callable[[PipelineRunReport], ResultPublicationRecord]:
+        def publish(report: PipelineRunReport) -> ResultPublicationRecord:
+            report_json = report.to_json(indent=None)
+            return self.durable.record_result_publication(
+                ctx,
+                ResultPublicationRecord(
+                    submission_id=submission_id,
+                    attempt_id=attempt_id,
+                    run_id=report.run_id,
+                    tenant_id=ctx.tenant.tenant_id,
+                    workspace_id=ctx.workspace.workspace_id,
+                    report_json=report_json,
+                    report_sha256=hashlib.sha256(
+                        report_json.encode("utf-8")
+                    ).hexdigest(),
+                    created_at=datetime.now(UTC).isoformat(),
+                ),
+                owner_id=owner_id,
+                fencing_token=fencing_token,
+            )
+
+        return publish
 
     def drain(self) -> None:
         self.draining = True
@@ -165,6 +211,7 @@ class ExecutionHost:
                 )
         self.durable.reconcile_cancelled_submissions(ctx, limit=limit)
         self.durable.reconcile_terminal_outbox(ctx, limit=limit)
+        self._reconcile_result_publications(ctx, limit=limit)
         processed = 0
         for item in self.durable.pending_outbox(ctx, limit=limit):
             try:
@@ -326,6 +373,31 @@ class ExecutionHost:
             processed += 1
         return processed
 
+    def _reconcile_result_publications(
+        self, ctx: ControlPlaneContext, *, limit: int
+    ) -> None:
+        publish = getattr(self.runner, "publish_result_publication", None)
+        if not callable(publish):
+            return
+        try:
+            records = self.durable.pending_result_publications(ctx, limit=limit)
+        except Exception:
+            _LOG.warning("Could not inspect pending run-result publications")
+            return
+        for record in records:
+            try:
+                publish(ctx, record)
+                self.durable.mark_result_publication_published(
+                    ctx,
+                    record.submission_id,
+                    record.attempt_id,
+                    report_sha256=record.report_sha256,
+                )
+            except Exception:
+                _LOG.warning(
+                    "Could not publish a durable run result; it remains recoverable"
+                )
+
     def _record_unknown_effect(
         self,
         ctx: ControlPlaneContext,
@@ -399,6 +471,17 @@ def unknown_commit_message() -> str:
         "unknown_commit_retry",
         "Unknown commits must not auto-retry; mark the attempt lost.",
     ).code
+
+
+def _accepts_keyword(callable_object: Any, name: str) -> bool:
+    try:
+        parameters = inspect.signature(callable_object).parameters.values()
+    except (TypeError, ValueError):
+        return False
+    return any(
+        parameter.name == name or parameter.kind is inspect.Parameter.VAR_KEYWORD
+        for parameter in parameters
+    )
 
 
 __all__ = ["ExecutionHost", "UnknownCommitError", "unknown_commit_message"]

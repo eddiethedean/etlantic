@@ -6,6 +6,7 @@ import csv
 import hashlib
 import io
 import json
+import re
 import urllib.parse
 from collections.abc import AsyncGenerator, AsyncIterator, Iterable, Mapping, Sequence
 from contextlib import asynccontextmanager
@@ -294,6 +295,22 @@ def _path_path(path: str) -> str:
     return urllib.parse.quote(path, safe="/")
 
 
+def _resource_identity(
+    *, base_url: str, dataset_rid: str, branch_name: str, file_path: str
+) -> str:
+    """Return a stable opaque identity for one dataset-branch file."""
+    parsed = urllib.parse.urlsplit(base_url)
+    host = (parsed.hostname or "").lower()
+    if host in {"localhost", "127.0.0.1", "::1"}:
+        host = "loopback"
+    scheme = parsed.scheme.lower()
+    port = parsed.port or (443 if scheme == "https" else 80)
+    origin = f"{scheme}://{host}:{port}"
+    payload = "\0".join((origin, dataset_rid, branch_name, file_path))
+    digest = hashlib.sha256(payload.encode("utf-8")).hexdigest()
+    return f"foundry_file_resource/1:{digest}"
+
+
 @dataclass
 class _FoundryClient:
     """Scoped HTTP requests; diagnostics never include credentials or bodies."""
@@ -480,6 +497,7 @@ class _FoundryClient:
         path: str,
         transaction_rid: str | None = None,
         branch: bool = False,
+        max_bytes: int | None = None,
     ) -> bytes:
         _, dataset_rid = _base(cfg)
         params: dict[str, Any] = {}
@@ -487,18 +505,60 @@ class _FoundryClient:
             params["endTransactionRid"] = transaction_rid
         elif branch:
             params["branchName"] = cfg["branch_name"]
-        response = await self._request(
-            cfg=cfg,
-            context=context,
-            method="GET",
-            path=(
-                f"/api/v2/datasets/{_rid_path(dataset_rid)}/files/"
-                f"{_path_path(path)}/content"
-            ),
-            write=False,
-            params=params,
+        request_path = (
+            f"/api/v2/datasets/{_rid_path(dataset_rid)}/files/"
+            f"{_path_path(path)}/content"
         )
-        return bytes(response.content)
+        if max_bytes is None:
+            response = await self._request(
+                cfg=cfg,
+                context=context,
+                method="GET",
+                path=request_path,
+                write=False,
+                params=params,
+            )
+            return bytes(response.content)
+        if type(max_bytes) is not int or max_bytes < 1:
+            raise ValueError("max_bytes must be a positive integer")
+        try:
+            async with (
+                self._client(cfg, context) as client,
+                client.stream("GET", request_path, params=params) as response,
+            ):
+                if response.status_code >= 400:
+                    raise ConnectorReadError(
+                        f"Foundry rejected the request (HTTP {response.status_code})",
+                        code=f"PMFND_HTTP_{response.status_code}",
+                        provider=PROVIDER,
+                        details={"status_code": response.status_code},
+                    )
+                chunks: list[bytes] = []
+                total_bytes = 0
+                async for chunk in response.aiter_bytes():
+                    total_bytes += len(chunk)
+                    if total_bytes > max_bytes:
+                        raise ConnectorReadError(
+                            "Foundry file content exceeds max_bytes",
+                            code="PMFND032",
+                            provider=PROVIDER,
+                        )
+                    chunks.append(chunk)
+                return b"".join(chunks)
+        except httpx.TimeoutException as exc:
+            raise ConnectorReadError(
+                "Foundry request timed out; operation outcome may require reconciliation",
+                code="PMFND019",
+                provider=PROVIDER,
+                details={"effect_unknown": False},
+            ) from exc
+        except httpx.HTTPError as exc:
+            raise ConnectorReadError(
+                "Foundry request failed; response details were redacted",
+                code="PMFND020",
+                provider=PROVIDER,
+                details={"effect_unknown": False},
+            ) from exc
 
 
 @dataclass
@@ -516,6 +576,52 @@ class FoundrySourceConnector(_FoundryClient):
             metadata={"api": "foundry-datasets-v2", "snapshot": "pinned-transaction"},
             configuration_schema=deepcopy(SOURCE_CONFIG_SCHEMA),
         )
+
+    async def resource_identities(
+        self, *, binding: Mapping[str, Any], context: Mapping[str, Any]
+    ) -> tuple[str, ...]:
+        """Resolve the exact pinned files consumed by this source binding."""
+        plan = await self.plan_read(binding=binding, context=context)
+        intent = dict(plan.listing_intent)
+        cfg = _config(binding, _SOURCE_KEYS)
+        _, dataset = _base(cfg)
+        transaction = str(intent["transaction_rid"])
+        files = await self._list_files(
+            cfg=cfg,
+            context=context,
+            transaction_rid=transaction,
+            path_prefix=(
+                str(intent["path_prefix"]) if intent.get("path_prefix") else None
+            ),
+            max_files=int(intent["max_files"]),
+        )
+        identities = {
+            _resource_identity(
+                base_url=str(intent["base_url"]),
+                dataset_rid=dataset,
+                branch_name=str(intent["branch_name"]),
+                file_path=_safe_path(item.get("path")),
+            )
+            for item in files
+        }
+        if identities:
+            return tuple(sorted(identities))
+        # An empty, pinned snapshot still has a verifiable identity. It is
+        # intentionally distinct from every file identity, while preserving
+        # the runtime's fail-closed requirement that providers return proof.
+        empty_digest = hashlib.sha256(
+            "\0".join(
+                (
+                    str(intent["base_url"]),
+                    dataset,
+                    str(intent["branch_name"]),
+                    transaction,
+                    str(intent.get("path_prefix") or ""),
+                    "empty-snapshot",
+                )
+            ).encode("utf-8")
+        ).hexdigest()
+        return (f"foundry_empty_snapshot/1:{empty_digest}",)
 
     async def plan_read(
         self, *, binding: Mapping[str, Any], context: Mapping[str, Any]
@@ -603,6 +709,160 @@ class FoundrySourceConnector(_FoundryClient):
             root_ref=f"{dataset}@{transaction}",
             secret_refs=_secret_ref_names(binding),
         )
+
+    async def preview(
+        self,
+        *,
+        binding: Mapping[str, Any],
+        context: Mapping[str, Any],
+        max_rows: int,
+        max_bytes: int,
+    ) -> dict[str, Any]:
+        """Read a bounded CSV sample from one exact pinned file resource.
+
+        This method is intended for isolated preview workers. It accepts only
+        the already-resolved saved binding and runtime context; callers must
+        resolve an opaque resource ID to an exact ``path_prefix`` and pinned
+        transaction before invoking it.
+        """
+        if type(max_rows) is not int or not 1 <= max_rows <= 100:
+            raise ValueError("Foundry preview max_rows must be between 1 and 100")
+        if type(max_bytes) is not int or not 256 <= max_bytes <= 64 * 1024:
+            raise ValueError("Foundry preview max_bytes must be between 256 and 65536")
+        cfg = _config(binding, _SOURCE_KEYS)
+        plan = await self.plan_read(binding=binding, context=context)
+        intent = plan.listing_intent
+        path_prefix = intent.get("path_prefix")
+        if not isinstance(path_prefix, str) or not path_prefix:
+            raise ConnectorConfigError(
+                "Foundry preview requires an exact saved file path",
+                code="PMFND057",
+                provider=PROVIDER,
+            )
+        resource_path = _safe_path(path_prefix)
+        if intent.get("format") != "csv":
+            raise ConnectorConfigError(
+                "Foundry preview currently supports CSV resources",
+                code="PMFND058",
+                provider=PROVIDER,
+            )
+        transaction = str(intent["transaction_rid"])
+        _, dataset = _base(cfg)
+        transaction_response = await self._request(
+            cfg=cfg,
+            context=context,
+            method="GET",
+            path=(
+                f"/api/v2/datasets/{_rid_path(dataset)}/transactions/"
+                f"{_rid_path(transaction)}"
+            ),
+            write=False,
+        )
+        try:
+            transaction_status = transaction_response.json().get("status")
+        except (AttributeError, ValueError) as exc:
+            raise ConnectorReadError(
+                "Foundry transaction lookup returned invalid JSON",
+                code="PMFND053",
+                provider=PROVIDER,
+            ) from exc
+        if transaction_status != "COMMITTED":
+            raise ConnectorReadError(
+                "Foundry preview transaction is not committed",
+                code="PMFND054",
+                provider=PROVIDER,
+            )
+        files = await self._list_files(
+            cfg=cfg,
+            context=context,
+            transaction_rid=transaction,
+            path_prefix=resource_path,
+            max_files=2,
+        )
+        if len(files) != 1 or files[0].get("path") != resource_path:
+            raise ConnectorReadError(
+                "Foundry preview resource did not resolve to one exact file",
+                code="PMFND059",
+                provider=PROVIDER,
+            )
+        byte_limit = min(
+            max_bytes,
+            int(intent["max_file_bytes"]),
+            int(intent["max_total_bytes"]),
+        )
+        announced_size = files[0].get("sizeBytes")
+        if announced_size is not None:
+            try:
+                size = int(announced_size)
+            except (TypeError, ValueError) as exc:
+                raise ConnectorReadError(
+                    "Foundry preview file metadata has invalid sizeBytes",
+                    code="PMFND031",
+                    provider=PROVIDER,
+                ) from exc
+            if size < 0 or size > byte_limit:
+                raise ConnectorReadError(
+                    "Foundry preview file exceeds its byte limit",
+                    code="PMFND032",
+                    provider=PROVIDER,
+                )
+        payload = await self._file_content(
+            cfg=cfg,
+            context=context,
+            path=resource_path,
+            transaction_rid=transaction,
+            max_bytes=byte_limit,
+        )
+        if len(payload) > byte_limit or (
+            announced_size is not None and int(announced_size) != len(payload)
+        ):
+            raise ConnectorReadError(
+                "Foundry preview content exceeds its declared bound",
+                code="PMFND032",
+                provider=PROVIDER,
+            )
+        try:
+            decoded = payload.decode(str(intent["encoding"]), errors="strict")
+            reader = csv.reader(
+                io.StringIO(decoded), delimiter=str(intent["delimiter"])
+            )
+            try:
+                header = next(reader)
+            except StopIteration:
+                header = []
+            if not header or len(header) != len(set(header)):
+                raise ValueError("CSV preview requires unique column names")
+            rows: list[dict[str, str | None]] = []
+            truncated = False
+            for values in reader:
+                if len(values) != len(header):
+                    raise ValueError("CSV preview row has an invalid width")
+                if len(rows) == max_rows:
+                    truncated = True
+                    break
+                rows.append(dict(zip(header, values, strict=True)))
+        except (UnicodeDecodeError, csv.Error, ValueError) as exc:
+            raise ConnectorReadError(
+                "Foundry CSV preview could not be parsed",
+                code="PMFND051",
+                provider=PROVIDER,
+            ) from exc
+        sensitive_name = re.compile(
+            r"(?:password|passwd|secret|token|credential|api[_-]?key|access[_-]?key)",
+            re.IGNORECASE,
+        )
+        return {
+            "columns": [
+                {
+                    "name": name,
+                    "logical_type": "string",
+                    "sensitive": bool(sensitive_name.search(name)),
+                }
+                for name in header
+            ],
+            "rows": rows,
+            "truncated": truncated,
+        }
 
     async def read_batches(
         self,
@@ -842,6 +1102,21 @@ class FoundrySinkConnector(_FoundryClient):
                 "commit": "dataset-transaction",
             },
             configuration_schema=deepcopy(SINK_CONFIG_SCHEMA),
+        )
+
+    async def resource_identities(
+        self, *, binding: Mapping[str, Any], context: Mapping[str, Any]
+    ) -> tuple[str, ...]:
+        """Resolve the exact branch file the sink will publish."""
+        plan = await self.plan_write(binding=binding, context=context)
+        metadata = plan.metadata
+        return (
+            _resource_identity(
+                base_url=str(metadata["base_url"]),
+                dataset_rid=str(metadata["dataset_rid"]),
+                branch_name=str(metadata["branch_name"]),
+                file_path=str(metadata["file_path"]),
+            ),
         )
 
     async def plan_write(

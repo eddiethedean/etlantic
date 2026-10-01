@@ -7,7 +7,7 @@ import hashlib
 import json
 from collections.abc import Callable, Mapping
 from contextlib import suppress
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
 from typing import Any, cast
@@ -28,7 +28,7 @@ from etlantic.control_plane.action_jobs import (
     verify_provision_parent,
 )
 from etlantic.control_plane.authz import require_authorized, require_authorized_run
-from etlantic.control_plane.durable_models import SubmissionRecord
+from etlantic.control_plane.durable_models import ActionJobRecord, SubmissionRecord
 from etlantic.control_plane.durable_protocols import DurableWorkStore
 from etlantic.control_plane.errors import ControlPlaneError
 from etlantic.control_plane.execution_envelope import ExecutionEnvelope
@@ -38,6 +38,7 @@ from etlantic.control_plane.input_resources import (
 )
 from etlantic.control_plane.models import (
     AcceptReceipt,
+    AcceptResult,
     ControlPlaneContext,
 )
 from etlantic.control_plane.policy_gates import gate_pre_submit
@@ -48,11 +49,13 @@ from etlantic.control_plane.protocols import (
     EventStore,
     SubmissionStore,
 )
+from etlantic.control_plane.redaction import redact_control_plane_payload
+from etlantic.control_plane.schedule_models import ScheduleRecord, firing_key
 from etlantic.io_policy import SafeIoPolicy, read_text_safe
 from etlantic.plan.freeze import mutable_copy
 from etlantic.plan.model import PipelinePlan
 from etlantic.plan.serialize import verify_plan_fingerprint
-from etlantic.profile import resolve_profile
+from etlantic.profile import Profile, resolve_profile
 from etlantic.registry import PlanningContext
 from etlantic.reports.model import PipelineRunReport
 from etlantic.reports.retention import RUN_ARTIFACT_RETENTION_STATE_KEY
@@ -64,6 +67,7 @@ from etlantic.runtime.managed_execution import (
     managed_run_id,
 )
 from etlantic.runtime.request import RunIntent, RunRequest
+from etlantic.secrets.ref import SecretRef
 
 
 def _mapping(value: object) -> Mapping[str, Any]:
@@ -101,6 +105,33 @@ CONNECTOR_ACTION_TYPES = frozenset(
 MAX_ACTION_PAGE_SIZE = 100
 
 
+@dataclass(frozen=True, slots=True)
+class _PreparationControl:
+    operation_id: str
+    worker_id: str
+    fencing_token: int
+    is_cancelled: Callable[[], bool]
+    durable_work: DurableWorkStore
+    context: ControlPlaneContext
+
+    def check(self) -> None:
+        if self.is_cancelled():
+            raise ControlPlaneError.conflict(
+                "Run preparation was cancelled",
+                code="PMCP409",
+                extensions={"reason": "cancelled"},
+            )
+
+    def begin_acceptance(self) -> None:
+        self.check()
+        self.durable_work.mark_action_job_accepting(
+            self.context,
+            self.operation_id,
+            worker_id=self.worker_id,
+            fencing_token=self.fencing_token,
+        )
+
+
 @dataclass(slots=True)
 class ManagedApplicationService:
     """Shared authorized service used by headless and HTTP callers.
@@ -132,6 +163,13 @@ class ManagedApplicationService:
     run_artifact_retention_seconds: int | None = None
     action_job_max_deadline_seconds: int = 300
     artifact_root: str | Path | None = None
+    schedule_parameter_resolver: (
+        Callable[
+            [ControlPlaneContext, Mapping[str, str]],
+            Mapping[str, Mapping[str, Any]],
+        ]
+        | None
+    ) = None
 
     def register_definition(
         self,
@@ -513,6 +551,561 @@ class ManagedApplicationService:
             "plan": plan.to_dict(),
         }
 
+    def pin_schedule_definition_revision(
+        self,
+        ctx: ControlPlaneContext,
+        definition_id: str,
+        *,
+        revision_selector: str = "current",
+    ) -> tuple[str, str]:
+        """Resolve the immutable definition/profile selected by a schedule."""
+        revision_selector = _require_revision_selector(revision_selector)
+        require_authorized(
+            self.authorizer,
+            ctx,
+            "run.submit",
+            f"definition:{definition_id}",
+            resource_in_caller_scope=False,
+        )
+        profile = resolve_profile(self.profile, allow_adhoc_profile=False)
+        resolution = self._resolve_definition_revision(
+            ctx, definition_id, revision_selector
+        )
+        self._decode_definition(resolution.document)
+        return resolution.revision_id, profile.name
+
+    def validate_schedule_references(
+        self,
+        parameter_refs: Mapping[str, Any],
+        secret_refs: Mapping[str, Any],
+    ) -> dict[str, dict[str, Any]]:
+        """Validate public schedule refs without resolving secret values."""
+        profile = resolve_profile(self.profile, allow_adhoc_profile=False)
+        if parameter_refs and self.schedule_parameter_resolver is None:
+            raise ControlPlaneError(
+                "Managed schedule parameter references require a configured resolver",
+                code="PMCP501",
+                status=501,
+                title="Not Implemented",
+                type="etlantic.control_plane/not_implemented",
+            )
+        for target, reference in cast(Mapping[object, Any], parameter_refs).items():
+            if (
+                not isinstance(target, str)
+                or not target.strip()
+                or not isinstance(reference, str)
+                or not reference.strip()
+            ):
+                raise ControlPlaneError(
+                    "Schedule parameter references must map non-empty targets to references",
+                    code="PMCP400",
+                    status=400,
+                    title="Bad Request",
+                    type="etlantic.control_plane/bad_request",
+                )
+        normalized_secrets: dict[str, dict[str, Any]] = {}
+        for alias, raw_ref in cast(Mapping[object, Any], secret_refs).items():
+            if (
+                not isinstance(alias, str)
+                or not alias.strip()
+                or not isinstance(raw_ref, Mapping)
+            ):
+                raise ControlPlaneError(
+                    "Schedule secret references must be named SecretRef objects",
+                    code="PMCP400",
+                    status=400,
+                    title="Bad Request",
+                    type="etlantic.control_plane/bad_request",
+                )
+            try:
+                ref_payload = {
+                    str(key): value
+                    for key, value in cast(Mapping[object, Any], raw_ref).items()
+                }
+                ref = SecretRef.from_dict(ref_payload)
+            except (KeyError, TypeError, ValueError) as exc:
+                raise ControlPlaneError(
+                    "Schedule secret reference is invalid",
+                    code="PMCP400",
+                    status=400,
+                    title="Bad Request",
+                    type="etlantic.control_plane/bad_request",
+                ) from exc
+            if ref.version == "current":
+                raise ControlPlaneError(
+                    "Managed schedule secret references must pin an immutable version",
+                    code="PMCP400",
+                    status=400,
+                    title="Bad Request",
+                    type="etlantic.control_plane/bad_request",
+                )
+            if ref.provider not in set(profile.secret_providers.values()) and (
+                ref.provider not in profile.secret_providers
+            ):
+                raise ControlPlaneError(
+                    "Managed schedule secret provider is outside the active profile",
+                    code="PMCP403",
+                    status=403,
+                    title="Forbidden",
+                    type="etlantic.control_plane/forbidden",
+                )
+            normalized_secrets[alias] = ref.to_dict()
+        return normalized_secrets
+
+    def submit_scheduled_run(
+        self,
+        ctx: ControlPlaneContext,
+        schedule: ScheduleRecord,
+        nominal_fire_time: str,
+    ) -> tuple[str, str]:
+        """Submit one occurrence through the standard managed admission path.
+
+        The stable occurrence key and firing snapshot make a process restart
+        reuse the revision, workload identity, parameter policy and pinned
+        SecretRef set selected for this occurrence.
+        """
+        prepared = schedule
+        if prepared.occurrence_inputs is None:
+            prepared = self.prepare_scheduled_occurrence(
+                ctx, schedule, nominal_fire_time
+            )
+        if prepared.definition_revision_id is None:
+            raise ControlPlaneError.conflict(
+                "Managed schedule occurrence has no selected definition revision"
+            )
+        occurrence_inputs = cast(Mapping[str, Any], prepared.occurrence_inputs)
+        profile = cast(Profile, occurrence_inputs["profile"])
+        if prepared.profile_name != profile.name:
+            raise ControlPlaneError.conflict(
+                "Managed schedule profile differs from the active managed profile"
+            )
+        occurrence = firing_key(
+            prepared.schedule_id, prepared.revision_id, nominal_fire_time
+        )
+        idempotency_key = (
+            "schedule-" + hashlib.sha256(occurrence.encode("utf-8")).hexdigest()
+        )
+        receipt = self.submit_run(
+            ctx,
+            prepared.definition_id,
+            idempotency_key=idempotency_key,
+            request=RunRequest(
+                parameter_overrides=cast(
+                    Mapping[str, Mapping[str, Any]],
+                    occurrence_inputs["parameter_overrides"],
+                )
+            ),
+            revision_selector=prepared.definition_revision_id,
+            _profile_override=profile,
+        )
+        submission = self.durable_work.get_submission(ctx, receipt.submission_id)
+        if not submission.input_snapshot:
+            raise ControlPlaneError.conflict(
+                "Managed schedule submission has no verified execution snapshot"
+            )
+        return submission.submission_id, submission.plan_fingerprint
+
+    def prepare_scheduled_occurrence(
+        self,
+        ctx: ControlPlaneContext,
+        schedule: ScheduleRecord,
+        nominal_fire_time: str,
+        existing_firing: Any = None,
+    ) -> ScheduleRecord:
+        """Bind occurrence-time selection, identity and input policy once.
+
+        The returned ``occurrence_snapshot`` contains only identifiers and
+        fingerprints suitable for durable schedule metadata. Resolved
+        parameter values and the profile carrying SecretRef objects live only
+        on the runtime-only ``occurrence_inputs`` field and are accepted into
+        the execution envelope after the firing is durably claimed.
+        """
+        require_authorized(
+            self.authorizer,
+            ctx,
+            "run.submit",
+            f"definition:{schedule.definition_id}",
+            resource_in_caller_scope=False,
+        )
+        if (
+            schedule.workload_identity is not None
+            and ctx.principal != schedule.workload_identity
+        ):
+            raise ControlPlaneError.not_found("schedule workload identity not found")
+        prior_metadata: Mapping[str, Any] = (
+            cast(Mapping[str, Any], existing_firing.metadata)
+            if existing_firing is not None
+            else {}
+        )
+        prior_principal = prior_metadata.get("trigger_principal")
+        if prior_principal is not None and prior_principal != ctx.principal.to_dict():
+            raise ControlPlaneError.conflict(
+                "Schedule occurrence belongs to a different workload identity"
+            )
+
+        prior_revision = prior_metadata.get("selected_definition_revision_id")
+        if isinstance(prior_revision, str) and prior_revision:
+            selector = prior_revision
+        elif schedule.revision_policy == "latest-approved":
+            selector = "latest-approved"
+        else:
+            selector = schedule.definition_revision_id or ""
+        if not selector:
+            raise ControlPlaneError.conflict(
+                "Pinned managed schedule has no definition revision"
+            )
+        resolution = self._resolve_definition_revision(
+            ctx, schedule.definition_id, selector
+        )
+        self._decode_definition(resolution.document)
+
+        parameter_overrides: dict[str, dict[str, Any]] = {}
+        if schedule.parameter_refs:
+            resolver = self.schedule_parameter_resolver
+            if resolver is None:
+                raise ControlPlaneError(
+                    "Managed schedule parameter references require a configured resolver",
+                    code="PMCP501",
+                    status=501,
+                    title="Not Implemented",
+                    type="etlantic.control_plane/not_implemented",
+                )
+            resolved: Any = resolver(ctx, schedule.parameter_refs)
+            if not isinstance(resolved, Mapping):
+                raise ControlPlaneError.conflict(
+                    "Schedule parameter resolver returned an invalid snapshot"
+                )
+            raw_parameters: dict[str, dict[str, Any]] = {}
+            resolved_values = cast(Mapping[object, Any], resolved)
+            for node, values in resolved_values.items():
+                if not isinstance(node, str) or not isinstance(values, Mapping):
+                    raise ControlPlaneError.conflict(
+                        "Schedule parameter resolver returned an invalid snapshot"
+                    )
+                values_mapping = cast(Mapping[object, Any], values)
+                normalized_values = {
+                    key: value
+                    for key, value in values_mapping.items()
+                    if isinstance(key, str)
+                }
+                if len(normalized_values) != len(values_mapping):
+                    raise ControlPlaneError.conflict(
+                        "Schedule parameter resolver returned an invalid snapshot"
+                    )
+                raw_parameters[node] = normalized_values
+            if redact_control_plane_payload(raw_parameters) != raw_parameters:
+                raise ControlPlaneError(
+                    "Resolved scheduled parameters contain secret-like values",
+                    code="PMCP400",
+                    status=400,
+                    title="Bad Request",
+                    type="etlantic.control_plane/bad_request",
+                )
+            try:
+                parameter_bytes = json.dumps(
+                    raw_parameters,
+                    sort_keys=True,
+                    separators=(",", ":"),
+                    ensure_ascii=False,
+                    allow_nan=False,
+                ).encode("utf-8")
+            except (TypeError, ValueError) as exc:
+                raise ControlPlaneError(
+                    "Resolved scheduled parameters are not JSON-safe",
+                    code="PMCP400",
+                    status=400,
+                    title="Bad Request",
+                    type="etlantic.control_plane/bad_request",
+                ) from exc
+            parameter_overrides = raw_parameters
+            parameter_fingerprint = hashlib.sha256(parameter_bytes).hexdigest()
+        else:
+            parameter_fingerprint = hashlib.sha256(b"{}").hexdigest()
+
+        profile = resolve_profile(self.profile, allow_adhoc_profile=False)
+        if schedule.profile_name != profile.name:
+            raise ControlPlaneError.conflict(
+                "Managed schedule profile differs from the active managed profile"
+            )
+        resolved_secret_refs: dict[str, SecretRef] = {}
+        for alias, raw_ref in schedule.secret_refs.items():
+            if not isinstance(raw_ref, Mapping):
+                raise ControlPlaneError.conflict(
+                    "Managed schedules require structured SecretRef values"
+                )
+            ref = SecretRef.from_dict(dict(raw_ref))
+            if ref.version == "current":
+                raise ControlPlaneError.conflict(
+                    "Managed schedule secret references must pin an immutable version"
+                )
+            if ref.provider not in set(profile.secret_providers.values()) and (
+                ref.provider not in profile.secret_providers
+            ):
+                raise ControlPlaneError.conflict(
+                    "Managed schedule secret provider is outside the active profile"
+                )
+            resolved_secret_refs[alias] = ref
+        profile_document = profile.to_dict()
+        profile_document["secrets"] = {
+            **{alias: ref.to_dict() for alias, ref in profile.secrets.items()},
+            **{alias: ref.to_dict() for alias, ref in resolved_secret_refs.items()},
+        }
+        effective_profile = Profile.from_dict(profile_document)
+        secret_payload = {
+            alias: ref.to_dict() for alias, ref in sorted(resolved_secret_refs.items())
+        }
+        secret_fingerprint = hashlib.sha256(
+            json.dumps(
+                secret_payload,
+                sort_keys=True,
+                separators=(",", ":"),
+                ensure_ascii=False,
+            ).encode("utf-8")
+        ).hexdigest()
+        selection_policy = {
+            "revision_policy": schedule.revision_policy,
+            "selected_revision_id": resolution.revision_id,
+            "parameter_refs": dict(schedule.parameter_refs),
+            "parameter_fingerprint": parameter_fingerprint,
+            "secret_fingerprint": secret_fingerprint,
+            "trigger_principal": ctx.principal.to_dict(),
+            "schedule_policy_fingerprint": schedule.policy_fingerprint,
+        }
+        policy_fingerprint = hashlib.sha256(
+            json.dumps(
+                selection_policy,
+                sort_keys=True,
+                separators=(",", ":"),
+                ensure_ascii=False,
+            ).encode("utf-8")
+        ).hexdigest()
+        snapshot = {
+            "selected_definition_revision_id": resolution.revision_id,
+            "trigger_principal": ctx.principal.to_dict(),
+            "parameter_fingerprint": parameter_fingerprint,
+            "reference_fingerprint": secret_fingerprint,
+            "policy_fingerprint": policy_fingerprint,
+        }
+        if existing_firing is not None:
+            for key, value in snapshot.items():
+                expected = prior_metadata.get(key)
+                if expected is not None and expected != value:
+                    raise ControlPlaneError.conflict(
+                        "Schedule occurrence policy changed after its durable claim",
+                        extensions={"field": key},
+                    )
+        return replace(
+            schedule,
+            definition_revision_id=resolution.revision_id,
+            policy_fingerprint=policy_fingerprint,
+            occurrence_snapshot=snapshot,
+            occurrence_inputs={
+                "parameter_overrides": parameter_overrides,
+                "profile": effective_profile,
+            },
+        )
+
+    def start_run_preparation(
+        self,
+        ctx: ControlPlaneContext,
+        definition_id: str,
+        *,
+        idempotency_key: str,
+        request: RunRequest | Mapping[str, Any] | None = None,
+        revision_selector: str = "current",
+        deadline_seconds: int = 300,
+    ) -> dict[str, Any]:
+        """Persist an owner-scoped preparation operation for managed workers."""
+        if not idempotency_key.strip():
+            raise ControlPlaneError(
+                "Idempotency-Key is required for run preparation",
+                code="PMCP400",
+                status=400,
+                title="Bad Request",
+                type="etlantic.control_plane/bad_request",
+            )
+        if (
+            type(deadline_seconds) is not int
+            or deadline_seconds < 1
+            or deadline_seconds > self.action_job_max_deadline_seconds
+        ):
+            raise ControlPlaneError(
+                "Preparation deadline is outside the configured bounds",
+                code="PMCP400",
+                status=400,
+                title="Bad Request",
+                type="etlantic.control_plane/bad_request",
+            )
+        revision_selector = _require_revision_selector(revision_selector)
+        require_authorized(
+            self.authorizer,
+            ctx,
+            "run.submit",
+            f"definition:{definition_id}",
+            resource_in_caller_scope=False,
+        )
+        typed_request = self._coerce_request(request)
+        request_document = typed_request.to_dict()
+        safe_request = redact_control_plane_payload(request_document)
+        if safe_request != request_document:
+            raise ControlPlaneError(
+                "Run preparation cannot persist secret-like request values",
+                code="PMCP400",
+                status=400,
+                title="Bad Request",
+                type="etlantic.control_plane/bad_request",
+            )
+        profile = resolve_profile(self.profile, allow_adhoc_profile=False)
+        intent = {
+            "definition_id": definition_id,
+            "revision_selector": revision_selector,
+            "profile_name": profile.name,
+            "run_request": request_document,
+        }
+        prior = self.durable_work.get_action_job_by_idempotency(
+            ctx, action="run.prepare", idempotency_key=idempotency_key
+        )
+        if prior is not None:
+            try:
+                accepted_intent = json.loads(prior.request_json)
+            except (TypeError, ValueError) as exc:
+                raise ControlPlaneError.conflict(
+                    "Preparation operation has an invalid stored intent"
+                ) from exc
+            if not isinstance(accepted_intent, Mapping):
+                raise ControlPlaneError.conflict(
+                    "Preparation idempotency key reuse has different inputs"
+                )
+            stored_intent = cast(Mapping[str, Any], accepted_intent)
+            if any(stored_intent.get(key) != value for key, value in intent.items()):
+                raise ControlPlaneError.conflict(
+                    "Preparation idempotency key reuse has different inputs"
+                )
+            return self._preparation_operation_payload(prior)
+
+        resolution = self._resolve_definition_revision(
+            ctx, definition_id, revision_selector
+        )
+        operation_request = {
+            **intent,
+            "definition_revision_id": resolution.revision_id,
+        }
+        deadline_at = (
+            (datetime.now(UTC) + timedelta(seconds=deadline_seconds))
+            .isoformat()
+            .replace("+00:00", "Z")
+        )
+        record = self.durable_work.accept_action_job(
+            ctx,
+            action="run.prepare",
+            idempotency_key=idempotency_key,
+            request=operation_request,
+            deadline_at=deadline_at,
+        )
+        return self._preparation_operation_payload(record)
+
+    def get_run_preparation(
+        self, ctx: ControlPlaneContext, operation_id: str
+    ) -> dict[str, Any]:
+        require_authorized(
+            self.authorizer,
+            ctx,
+            "run.read",
+            f"preparation:{operation_id}",
+            resource_in_caller_scope=False,
+        )
+        record = self.durable_work.get_action_job(ctx, operation_id)
+        if record.action != "run.prepare":
+            raise ControlPlaneError.not_found("Preparation operation not found")
+        return self._preparation_operation_payload(record)
+
+    def cancel_run_preparation(
+        self, ctx: ControlPlaneContext, operation_id: str
+    ) -> dict[str, Any]:
+        require_authorized(
+            self.authorizer,
+            ctx,
+            "run.cancel",
+            f"preparation:{operation_id}",
+            resource_in_caller_scope=False,
+        )
+        record = self.durable_work.cancel_action_job(ctx, operation_id)
+        return self._preparation_operation_payload(record)
+
+    def execute_run_preparation(
+        self,
+        ctx: ControlPlaneContext,
+        operation_id: str,
+        *,
+        worker_id: str,
+        fencing_token: int,
+        request: Mapping[str, Any],
+        is_cancelled: Callable[[], bool],
+    ) -> dict[str, Any]:
+        """Resume a durable operation under the worker's current fence."""
+        record = self.durable_work.get_action_job(ctx, operation_id)
+        if (
+            record.action != "run.prepare"
+            or record.worker_id != worker_id
+            or (record.fencing_token != fencing_token)
+        ):
+            raise ControlPlaneError.conflict("Preparation worker fence is stale")
+        try:
+            intent = json.loads(record.request_json)
+        except (TypeError, ValueError) as exc:
+            raise ControlPlaneError.conflict(
+                "Preparation operation has an invalid stored intent"
+            ) from exc
+        if not isinstance(intent, Mapping):
+            raise ControlPlaneError.conflict(
+                "Preparation operation has an invalid stored intent"
+            )
+        stored_intent = cast(Mapping[str, Any], intent)
+        if any(
+            request.get(key) != stored_intent.get(key)
+            for key in (
+                "definition_id",
+                "definition_revision_id",
+                "profile_name",
+                "run_request",
+            )
+        ):
+            raise ControlPlaneError.conflict(
+                "Preparation worker input differs from its durable intent"
+            )
+        profile = resolve_profile(self.profile, allow_adhoc_profile=False)
+        if profile.name != stored_intent.get("profile_name"):
+            raise ControlPlaneError.conflict(
+                "Preparation profile changed after operation acceptance"
+            )
+        control = _PreparationControl(
+            operation_id=operation_id,
+            worker_id=worker_id,
+            fencing_token=fencing_token,
+            is_cancelled=is_cancelled,
+            durable_work=self.durable_work,
+            context=ctx,
+        )
+        receipt = self.submit_run(
+            ctx,
+            str(stored_intent["definition_id"]),
+            idempotency_key=f"preparation-{operation_id}",
+            request=cast(Mapping[str, Any], stored_intent["run_request"]),
+            revision_selector=str(stored_intent["definition_revision_id"]),
+            _preparation_control=control,
+        )
+        return receipt.to_dict()
+
+    @staticmethod
+    def _preparation_operation_payload(record: ActionJobRecord) -> dict[str, Any]:
+        if record.action != "run.prepare":
+            raise ControlPlaneError.not_found("Preparation operation not found")
+        return {
+            **record.to_dict(),
+            "schema": "etlantic.control_plane.preparation_operation/1",
+            "operation_id": record.action_id,
+        }
+
     def submit_run(
         self,
         ctx: ControlPlaneContext,
@@ -521,6 +1114,8 @@ class ManagedApplicationService:
         idempotency_key: str,
         request: RunRequest | Mapping[str, Any] | None = None,
         revision_selector: str = "current",
+        _preparation_control: _PreparationControl | None = None,
+        _profile_override: Profile | None = None,
     ) -> AcceptReceipt:
         """Prepare, bind and durably accept one managed execution."""
         if not idempotency_key.strip():
@@ -542,7 +1137,9 @@ class ManagedApplicationService:
             resource_in_caller_scope=False,
         )
         typed_request = self._coerce_request(request)
-        profile = resolve_profile(self.profile, allow_adhoc_profile=False)
+        profile = _profile_override or resolve_profile(
+            self.profile, allow_adhoc_profile=False
+        )
         intent_fingerprint = ExecutionEnvelope.intent_fingerprint(
             definition_id=definition_id,
             revision_selector=revision_selector,
@@ -617,9 +1214,13 @@ class ManagedApplicationService:
             )
             return receipt_result.receipt
 
+        if _preparation_control is not None:
+            _preparation_control.check()
         resolution = self._resolve_definition_revision(
             ctx, definition_id, revision_selector
         )
+        if _preparation_control is not None:
+            _preparation_control.check()
         document = resolution.document
         revision_id = resolution.revision_id
         definition = self._decode_definition(document)
@@ -627,6 +1228,8 @@ class ManagedApplicationService:
         validation = validate_pipeline_like(
             definition, context=planning_context, profile=profile
         )
+        if _preparation_control is not None:
+            _preparation_control.check()
         if validation.has_errors:
             raise ControlPlaneError(
                 "Pipeline definition failed static validation",
@@ -646,6 +1249,8 @@ class ManagedApplicationService:
             selection=typed_request.selection.to_plan_selection(graph),
             request=typed_request,
         )
+        if _preparation_control is not None:
+            _preparation_control.check()
         if not isinstance(plan, PipelinePlan):
             raise ControlPlaneError(
                 "This managed service does not qualify adaptive plan schema /2",
@@ -656,6 +1261,8 @@ class ManagedApplicationService:
             )
         verify_plan_fingerprint(plan)
         self._authorize_plan_resources(ctx, plan, action="run.submit")
+        if _preparation_control is not None:
+            _preparation_control.check()
         input_lease_id = self._protect_input_resources(
             ctx,
             plan,
@@ -716,6 +1323,12 @@ class ManagedApplicationService:
             policy_fingerprint = (
                 decision.policy_fingerprint if decision is not None else None
             )
+        if _preparation_control is not None:
+            try:
+                _preparation_control.check()
+            except Exception:
+                self._release_input_lease(ctx, input_lease_id)
+                raise
         envelope = ExecutionEnvelope.create(
             definition_id=definition_id,
             revision_selector=revision_selector,
@@ -734,14 +1347,66 @@ class ManagedApplicationService:
             ),
         )
         payload = self._acceptance_payload(envelope)
-        receipt_result = self.submissions.accept(
-            ctx,
-            idempotency_key=idempotency_key,
-            payload=payload,
-            resource_type="run",
-            resource_id=managed_run_id(ctx, idempotency_key),
-            operation="run.submit",
-        )
+        if _preparation_control is not None:
+            try:
+                _preparation_control.begin_acceptance()
+            except Exception:
+                self._release_input_lease(ctx, input_lease_id)
+                raise
+        try:
+            receipt_result = self.submissions.accept(
+                ctx,
+                idempotency_key=idempotency_key,
+                payload=payload,
+                resource_type="run",
+                resource_id=managed_run_id(ctx, idempotency_key),
+                operation="run.submit",
+            )
+        except Exception as exc:
+            # CP1 acceptance is itself durable. Recover its acknowledgement
+            # loss by the same scoped idempotency key before rejecting the
+            # command or trying to create another receipt.
+            prior_receipt: AcceptReceipt | None = None
+            prior_payload: Mapping[str, Any] | None = None
+            candidate_receipt: AcceptReceipt | None = None
+            candidate_payload: Mapping[str, Any] | None = None
+            try:
+                candidate_receipt = self.submissions.lookup_idempotency(
+                    ctx, idempotency_key, operation="run.submit"
+                )
+                candidate_payload = self.submissions.lookup_idempotency_payload(
+                    ctx, idempotency_key, operation="run.submit"
+                )
+            except Exception:
+                # Keep both unset when either read fails; a partial lookup
+                # cannot prove that the accepted snapshot matches.
+                candidate_receipt = None
+                candidate_payload = None
+            if candidate_receipt is not None:
+                prior_receipt = candidate_receipt
+                prior_payload = candidate_payload
+            if prior_receipt is not None:
+                prior_envelope = self._envelope_from_payload(prior_payload)
+                if prior_envelope.to_json() != envelope.to_json():
+                    raise ControlPlaneError.conflict(
+                        "Idempotency key reuse with a different accepted snapshot"
+                    ) from exc
+                receipt_result = AcceptResult(receipt=prior_receipt, created=False)
+            else:
+                if isinstance(exc, ControlPlaneError) and exc.status < 500:
+                    raise
+                raise ControlPlaneError(
+                    "CP1 acceptance acknowledgement is uncertain; retry the same "
+                    "idempotency key to reconcile",
+                    code="PMCP503",
+                    status=503,
+                    title="Service Unavailable",
+                    type="etlantic.control_plane/unavailable",
+                    extensions={
+                        "idempotency_key": idempotency_key,
+                        "acceptance_uncertain": True,
+                    },
+                ) from exc
         try:
             self._accept_durable(
                 ctx,
@@ -750,28 +1415,65 @@ class ManagedApplicationService:
                 submission_id=receipt_result.receipt.submission_id,
             )
         except Exception as exc:
-            if receipt_result.created:
-                try:
-                    record, changed = self._cancel_cp1(
-                        ctx, receipt_result.receipt.resource_id
-                    )
-                    if changed or record.get("status") == "cancelled":
-                        self._release_input_lease(ctx, input_lease_id)
-                except Exception:
-                    pass
-            if isinstance(exc, ControlPlaneError):
-                raise
-            raise ControlPlaneError(
-                "Durable execution acceptance failed; no receipt was returned",
-                code="PMCP503",
-                status=503,
-                title="Service Unavailable",
-                type="etlantic.control_plane/unavailable",
-                extensions={
-                    "submission_id": receipt_result.receipt.submission_id,
-                    "compensated": receipt_result.created,
-                },
-            ) from exc
+            # Durable acceptance and its outbox are committed atomically by
+            # the execution store, but the acknowledgement can be lost after
+            # that commit. Reconcile by the stable command identity before
+            # compensating the separately durable CP1 receipt.
+            durable_receipt: SubmissionRecord | None = None
+            with suppress(Exception):
+                durable_receipt = self.durable_work.get_submission_by_idempotency(
+                    ctx,
+                    idempotency_key=idempotency_key,
+                    operation="run.submit",
+                )
+            # A failed reconciliation read leaves the commit outcome unknown.
+            # Preserve the discoverable CP1 receipt so a caller can retry the
+            # same idempotency key and reconcile later.
+            if durable_receipt is not None:
+                if (
+                    durable_receipt.submission_id
+                    != receipt_result.receipt.submission_id
+                    or durable_receipt.input_snapshot != envelope.to_json()
+                ):
+                    raise ControlPlaneError.conflict(
+                        "Durable acceptance conflicts with the CP1 receipt"
+                    ) from exc
+                # A matching durable row proves that acceptance committed;
+                # continue to return the original CP1 receipt.
+            else:
+                compensated = False
+                # Only an explicit client-side control-plane rejection proves
+                # that no durable command was accepted. Transient/server
+                # errors may have happened after commit and must not cancel a
+                # runnable outbox record.
+                definite_rejection = (
+                    isinstance(exc, ControlPlaneError) and exc.status < 500
+                )
+                if receipt_result.created and definite_rejection:
+                    try:
+                        record, changed = self._cancel_cp1(
+                            ctx, receipt_result.receipt.resource_id
+                        )
+                        compensated = changed or record.get("status") == "cancelled"
+                        if compensated:
+                            self._release_input_lease(ctx, input_lease_id)
+                    except Exception:
+                        pass
+                if isinstance(exc, ControlPlaneError) and definite_rejection:
+                    raise
+                raise ControlPlaneError(
+                    "Durable execution acceptance acknowledgement is uncertain; "
+                    "retry the same idempotency key to reconcile",
+                    code="PMCP503",
+                    status=503,
+                    title="Service Unavailable",
+                    type="etlantic.control_plane/unavailable",
+                    extensions={
+                        "submission_id": receipt_result.receipt.submission_id,
+                        "acceptance_uncertain": True,
+                        "compensated": compensated,
+                    },
+                ) from exc
 
         if self.events is not None and receipt_result.created:
             with suppress(Exception):
@@ -871,6 +1573,17 @@ class ManagedApplicationService:
             replay_reason = "unverified_execution_envelope"
         else:
             replay_reason = self._rerun_block_reason(ctx, submission_id)
+        resume_decision = self.authorizer.authorize(ctx, "run.resume", f"run:{run_id}")
+        if not resume_decision.allowed:
+            resume_reason: str | None = "not_authorized"
+        elif status not in {"failed", "cancelled"}:
+            resume_reason = "non_resumable_state"
+        elif not submission_id or durable_record is None:
+            resume_reason = "durable_state_unavailable"
+        elif not durable_record.input_snapshot:
+            resume_reason = "unverified_execution_envelope"
+        else:
+            resume_reason = self._retry_block_reason(ctx, submission_id)
         return {
             "schema": "etlantic.control_plane.run_actions/1",
             "run_id": run_id,
@@ -891,6 +1604,11 @@ class ManagedApplicationService:
                     "name": "replay",
                     "allowed": replay_reason is None,
                     "reason": replay_reason,
+                },
+                {
+                    "name": "resume",
+                    "allowed": resume_reason is None,
+                    "reason": resume_reason,
                 },
             ],
         }
@@ -1122,6 +1840,113 @@ class ManagedApplicationService:
             idempotency_key=idempotency_key,
             operation="run.replay",
             envelope=envelope,
+            parent_run_id=run_id,
+            parent_submission_id=parent_submission_id,
+        )
+
+    def resume_run(
+        self,
+        ctx: ControlPlaneContext,
+        run_id: str,
+        *,
+        idempotency_key: str,
+        checkpoint_id: str,
+    ) -> AcceptReceipt:
+        """Resume a terminal managed run from a verified durable checkpoint.
+
+        The new submission retains a distinct run identity and attempt history.
+        Named runtime artifacts use the parent run's scoped artifact workspace,
+        allowing qualified checkpoint/reuse operators to find their persisted
+        values without sharing report or submission identities.
+        """
+        if not idempotency_key.strip():
+            raise ControlPlaneError(
+                "Idempotency-Key is required for managed resume",
+                code="PMCP400",
+                status=400,
+                title="Bad Request",
+                type="etlantic.control_plane/bad_request",
+            )
+        if not checkpoint_id.strip():
+            raise ControlPlaneError(
+                "checkpoint_id is required for managed resume",
+                code="PMCP400",
+                status=400,
+                title="Bad Request",
+                type="etlantic.control_plane/bad_request",
+            )
+        record = self._authorized_run_record(ctx, "run.resume", run_id)
+        parent_submission_id = str(record.get("submission_id") or "")
+        if not parent_submission_id:
+            raise ControlPlaneError.conflict(
+                "Run record has no durable submission identity"
+            )
+        parent = self.durable_work.get_submission(ctx, parent_submission_id)
+        if parent.status not in {"failed", "cancelled"}:
+            raise ControlPlaneError.conflict(
+                "Only failed or cancelled runs can resume from a checkpoint"
+            )
+        if not parent.input_snapshot:
+            raise ControlPlaneError.conflict(
+                "Legacy accepted work has no verified execution envelope"
+            )
+        prior_receipt = self.submissions.lookup_idempotency(
+            ctx, idempotency_key, operation="run.resume"
+        )
+        prior_durable = self.durable_work.get_submission_by_idempotency(
+            ctx, idempotency_key=idempotency_key, operation="run.resume"
+        )
+        if prior_receipt is None and prior_durable is None:
+            resume_block = self._retry_block_reason(ctx, parent_submission_id)
+            if resume_block is not None:
+                raise ControlPlaneError.conflict(
+                    "Resume is blocked until the prior execution effect is reconciled",
+                    extensions={"reason": resume_block},
+                )
+        # This validates checkpoint scope and schema lineage before admitting
+        # the child. The plan record itself is advisory; execution is the
+        # durable child submission created below.
+        self.durable_work.plan_resume(
+            ctx, parent_submission_id, checkpoint_id=checkpoint_id
+        )
+        envelope = self._parse_envelope(parent.input_snapshot)
+        request = RunRequest.from_dict(dict(envelope.run_request))
+        resume_request = RunRequest(
+            selection=request.selection,
+            intent=RunIntent.RESUME,
+            materialization=request.materialization,
+            retry=request.retry,
+            timeout=request.timeout,
+            cancellation=request.cancellation,
+            parameter_overrides=request.parameter_overrides,
+            asset_overrides=request.asset_overrides,
+            implementation_overrides=request.implementation_overrides,
+            invalidation=request.invalidation,
+            no_write=request.no_write,
+            metadata=request.metadata,
+            extensions=request.extensions,
+            explicit_settings=request.explicit_settings,
+        )
+        resumed = envelope.with_request(resume_request)
+        envelope_data = resumed.to_dict()
+        evidence_refs = dict(envelope_data.get("evidence_refs") or {})
+        evidence_refs.update(
+            {
+                "command": "resume",
+                "parent_run_id": run_id,
+                "parent_submission_id": parent_submission_id,
+                "checkpoint_id": checkpoint_id,
+                "artifact_parent_run_id": run_id,
+            }
+        )
+        resumed = ExecutionEnvelope.from_dict(
+            {**envelope_data, "evidence_refs": evidence_refs}
+        )
+        return self._accept_child_run(
+            ctx,
+            idempotency_key=idempotency_key,
+            operation="run.resume",
+            envelope=resumed,
             parent_run_id=run_id,
             parent_submission_id=parent_submission_id,
         )
@@ -1479,7 +2304,79 @@ class ManagedApplicationService:
             if self.report_store_factory is not None
             else managed_report_store(ctx, report_root=self.report_root)
         )
-        result = report_store.get(managed_run_id(ctx, idempotency_key))
+        report_store_error: Exception | None = None
+        try:
+            result = report_store.get(managed_run_id(ctx, idempotency_key))
+        except Exception as exc:
+            report_store_error = exc
+            result = None
+        submission_id = str(record.get("submission_id") or "")
+        durable = self.durable_work.get_submission(ctx, submission_id)
+        if result is None:
+            try:
+                publication = self.durable_work.get_latest_result_publication(
+                    ctx, submission_id
+                )
+            except Exception as exc:
+                if report_store_error is not None:
+                    raise ControlPlaneError(
+                        "Run result stores are temporarily unavailable",
+                        code="PMCP503",
+                        status=503,
+                        title="Service Unavailable",
+                        type="etlantic.control_plane/unavailable",
+                    ) from exc
+                publication = None
+            if publication is not None:
+                try:
+                    if (
+                        publication.submission_id != submission_id
+                        or publication.run_id != managed_run_id(ctx, idempotency_key)
+                        or (publication.tenant_id, publication.workspace_id)
+                        != (ctx.tenant.tenant_id, ctx.workspace.workspace_id)
+                        or hashlib.sha256(
+                            publication.report_json.encode("utf-8")
+                        ).hexdigest()
+                        != publication.report_sha256
+                    ):
+                        raise ValueError("durable result identity is invalid")
+                    raw_report = json.loads(publication.report_json)
+                    if not isinstance(raw_report, dict):
+                        raise ValueError("durable result document is invalid")
+                    result = PipelineRunReport.from_dict(
+                        cast(dict[str, Any], raw_report)
+                    )
+                except Exception as exc:
+                    raise ControlPlaneError(
+                        "Durable run result failed integrity validation",
+                        code="PMCP500",
+                        status=500,
+                        title="Internal Server Error",
+                    ) from exc
+                if result.run_id != publication.run_id:
+                    raise ControlPlaneError(
+                        "Durable run result identity is invalid",
+                        code="PMCP500",
+                        status=500,
+                        title="Internal Server Error",
+                    )
+                metadata = dict(result.metadata)
+                execution = dict(
+                    _mapping(metadata.get("etlantic.control_plane.execution"))
+                )
+                execution["result_publication_status"] = (
+                    "published" if publication.published_at is not None else "pending"
+                )
+                metadata["etlantic.control_plane.execution"] = execution
+                result = replace(result, metadata=metadata)
+        if result is None and report_store_error is not None:
+            raise ControlPlaneError(
+                "Run result is temporarily unavailable",
+                code="PMCP503",
+                status=503,
+                title="Service Unavailable",
+                type="etlantic.control_plane/unavailable",
+            ) from report_store_error
         if result is None:
             raise ControlPlaneError(
                 "Run report has not been published",
@@ -1489,8 +2386,6 @@ class ManagedApplicationService:
                 type="etlantic.control_plane/result_pending",
                 extensions={"run_id": run_id, "status": record.get("status")},
             )
-        submission_id = str(record.get("submission_id") or "")
-        durable = self.durable_work.get_submission(ctx, submission_id)
         if result.plan_fingerprint != durable.plan_fingerprint:
             raise ControlPlaneError(
                 "Stored run report does not match the accepted plan",
@@ -1529,21 +2424,25 @@ class ManagedApplicationService:
             )
         partition_lineage = _mapping(metadata.get("etlantic.partition_lineage"))
         raw_sources: object = partition_lineage.get("sources")
+        raw_outputs: object = partition_lineage.get("outputs")
         sources: dict[str, dict[str, Any]] = {}
-        if isinstance(raw_sources, (list, tuple)):
-            for raw_source in cast(list[object] | tuple[object, ...], raw_sources):
-                if not isinstance(raw_source, Mapping):
+        for raw_items in (raw_sources, raw_outputs):
+            if not isinstance(raw_items, (list, tuple)):
+                continue
+            for raw_item in cast(list[object] | tuple[object, ...], raw_items):
+                if not isinstance(raw_item, Mapping):
                     continue
-                source = cast(Mapping[str, Any], raw_source)
-                node_id = source.get("node_id")
+                item = cast(Mapping[str, Any], raw_item)
+                node_id = item.get("node_id")
                 if isinstance(node_id, str) and node_id:
-                    sources[node_id] = dict(source)
+                    sources[node_id] = dict(item)
         partition_nodes: dict[str, dict[str, Any]] = {}
         for edge in edges:
             partition_id = edge.get("to")
             source_id = edge.get("from")
+            edge_kind = edge.get("kind")
             if (
-                edge.get("kind") != "observed_partition"
+                edge_kind not in {"observed_partition", "produced_partition"}
                 or not isinstance(partition_id, str)
                 or not isinstance(source_id, str)
             ):
@@ -1551,9 +2450,15 @@ class ManagedApplicationService:
             partition_node: dict[str, Any] = {
                 "id": partition_id,
                 "kind": "partition",
-                "status": "observed",
-                "source_node_id": source_id,
+                "status": (
+                    "produced" if edge_kind == "produced_partition" else "observed"
+                ),
             }
+            partition_node[
+                "output_node_id"
+                if edge_kind == "produced_partition"
+                else "source_node_id"
+            ] = source_id
             ordinal = partition_id.rsplit(":", maxsplit=1)[-1]
             if ordinal.isdigit():
                 partition_node["ordinal"] = int(ordinal)
@@ -1852,16 +2757,16 @@ class ManagedApplicationService:
                     title="Internal Server Error",
                 )
             return result
-        if selector != "current":
-            raise ControlPlaneError.not_found(
-                "Definition revision was not found",
-                extensions={"definition_id": definition_id},
-            )
         document = self._get_document(
             ctx, definition_id, action="run.submit", authorize=False
         )
         definition = self._decode_definition(document)
         revision_id = definition.fingerprint or pipeline_fingerprint(definition)
+        if selector not in {"current", revision_id}:
+            raise ControlPlaneError.not_found(
+                "Definition revision was not found",
+                extensions={"definition_id": definition_id},
+            )
         return DefinitionResolution(revision_id=revision_id, document=document)
 
     @staticmethod
@@ -2088,6 +2993,14 @@ class ManagedApplicationService:
             version = resource.get("version") or resource.get("fingerprint")
             if isinstance(version, str) and version:
                 versions[str(identity)] = version
+        for reference in _input_resource_references(plan):
+            identity = f"input:{reference.resource_id}"
+            prior = versions.get(identity)
+            if prior is not None and prior != reference.version:
+                raise ControlPlaneError.conflict(
+                    "Accepted input resource has ambiguous versions"
+                )
+            versions[identity] = reference.version
         return versions
 
     @staticmethod

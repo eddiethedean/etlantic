@@ -12,7 +12,7 @@ from typing import Any, Literal
 
 from etlantic.control_plane.redaction import redact_control_plane_payload
 
-ATTESTATION_SCHEMA = "etlantic.control_plane.attestation/1"
+ATTESTATION_SCHEMA = "etlantic.control_plane.attestation/2"
 VERIFICATION_RESULT_SCHEMA = "etlantic.control_plane.verification_result/1"
 SIGNED_SCHEMA_OBSERVATION_SCHEMA = "etlantic.control_plane.signed_schema_observation/1"
 
@@ -48,6 +48,10 @@ class Attestation:
     created_at: datetime = field(default_factory=_now)
     metadata: Mapping[str, Any] = field(default_factory=dict)
 
+    def __post_init__(self) -> None:
+        if self.created_at.tzinfo is None or self.created_at.utcoffset() is None:
+            raise ValueError("attestation created_at must include a timezone")
+
     def to_dict(self) -> dict[str, Any]:
         return {
             "schema": ATTESTATION_SCHEMA,
@@ -67,6 +71,7 @@ class Attestation:
     def signing_payload(self) -> str:
         return "|".join(
             [
+                ATTESTATION_SCHEMA,
                 self.kind,
                 self.subject_fingerprint,
                 self.signer_id,
@@ -74,6 +79,7 @@ class Attestation:
                 self.workspace_id or "",
                 self.environment or "",
                 self.sbom_digest or "",
+                self.created_at.astimezone(UTC).isoformat(),
             ]
         )
 

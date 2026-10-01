@@ -476,6 +476,51 @@ jobs:
           uv run python examples/sql_boundary_hybrid.py
           uv run python examples/sql_failure_recovery.py
 
+  managed-provider-matrix:
+    name: Managed phase 0.56 provider matrix
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: etlantic
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v9.0.0
+        with:
+          version: "0.12.0"
+          python-version: "3.11"
+          enable-cache: true
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Sync managed provider dependencies
+        run: uv sync --locked --all-groups --extra fastapi --extra lsp
+
+      - name: Execute PostgreSQL, CSV and two-scope Semblance worker matrix
+        env:
+          ETLANTIC_SQL_TEST_URL: "postgresql+psycopg://postgres:postgres@localhost:5432/etlantic"
+          ETLANTIC_PHASE056_MATRIX_EVIDENCE: ${{ runner.temp }}/phase-0.56-managed-provider-matrix.json
+        run: uv run pytest -q tests/fastapi/test_managed_provider_matrix_0_56.py
+
+      - name: Upload managed provider matrix evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: phase-0.56-managed-provider-matrix
+          path: ${{ runner.temp }}/phase-0.56-managed-provider-matrix.json
+          if-no-files-found: ignore
+
   duckdb:
     name: DuckDB optional plugin
     runs-on: ${{ matrix.os }}

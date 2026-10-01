@@ -112,6 +112,7 @@ def gate_pre_submit(
     sbom_digest: str | None = None,
     require_policy: bool = False,
     require_attestations: bool = False,
+    attestation_max_age_seconds: int = 24 * 60 * 60,
     resource: QuotaResource = "concurrency",
 ) -> tuple[PolicyDecision | None, QuotaDecision | None]:
     """Run pre-submit policy, quota admission, and optional attestation checks."""
@@ -125,6 +126,28 @@ def gate_pre_submit(
         required=require_policy,
     )
     enforce_policy_decision(decision, approvals=approvals, ctx=ctx)
+
+    if require_attestations:
+        if attestations is None:
+            raise ControlPlaneError(
+                "attestation store required",
+                code="PMCP503",
+                status=503,
+                type="etlantic.control_plane/unavailable",
+                title="Unavailable",
+            )
+        results = attestations.verify_plan(
+            ctx,
+            plan_fingerprint=approval_fingerprint,
+            revision_id=revision_id or plan_fingerprint,
+            policy_fingerprint=(
+                decision.policy_fingerprint if decision else "unsigned"
+            ),
+            plugin_fingerprints=plugin_fingerprints or (),
+            sbom_digest=sbom_digest,
+            max_age_seconds=attestation_max_age_seconds,
+        )
+        require_verified(results)
 
     quota_decision: QuotaDecision | None = None
     if quotas is not None:
@@ -143,27 +166,6 @@ def gate_pre_submit(
                 f"quota {quota_decision.effect}: {quota_decision.reason}",
                 extensions=quota_decision.to_dict(),
             )
-
-    if require_attestations:
-        if attestations is None:
-            raise ControlPlaneError(
-                "attestation store required",
-                code="PMCP503",
-                status=503,
-                type="etlantic.control_plane/unavailable",
-                title="Unavailable",
-            )
-        results = attestations.verify_plan(
-            ctx,
-            plan_fingerprint=plan_fingerprint,
-            revision_id=revision_id or plan_fingerprint,
-            policy_fingerprint=(
-                decision.policy_fingerprint if decision else "unsigned"
-            ),
-            plugin_fingerprints=plugin_fingerprints or (),
-            sbom_digest=sbom_digest,
-        )
-        require_verified(results)
 
     if audit is not None:
         audit.append(

@@ -8,11 +8,11 @@ status: experimental
 not claim that AC056-001–044 have all passed. The evidence index marks a
 criterion passed only after its complete documented case has been observed.
 
-Current index: 11 criteria passed, 31 pending, and 2 blocked of 44.
+Current index: 40 criteria passed, 4 pending, and 0 blocked of 44.
 
 ## Candidate environment
 
-- Date: 2026-09-30
+- Date: 2026-10-01
 - Host: macOS 25.5.0, arm64
 - Python: 3.11.15
 - Live databases: earlier isolated PostgreSQL 16.14 container evidence; the
@@ -54,8 +54,8 @@ Current index: 11 criteria passed, 31 pending, and 2 blocked of 44.
   The test exposed and fixed two headless response omissions: empty validation
   metadata and the run-action response schema identifier. No private imports or
   synthetic HTTP request are used.
-- CP1 and CP-GA OpenAPI snapshots were refreshed for the managed rerun and
-  replay endpoints; both stable-operation snapshot tests passed.
+- CP1 and CP-GA OpenAPI snapshots were refreshed for the managed rerun, replay
+  and checkpoint-resume endpoints; both stable-operation snapshot tests passed.
 - Live PostgreSQL connector and multiprocess acceptance:
   `ETLANTIC_SQL_TEST_URL=... ETLANTIC_CP_TEST_URL=... uv run pytest -q tests/sql/test_postgresql_live_0_56.py tests/sqlmodel/test_durable_postgresql_multiprocess_0_56.py` — 4 passed.
 - Final isolated PostgreSQL 16.14 qualification:
@@ -72,6 +72,29 @@ Current index: 11 criteria passed, 31 pending, and 2 blocked of 44.
   passed, covering eight-process single acceptance and quota idempotency plus
   restart reads. The disposable database ran PostgreSQL 16.14; it was isolated
   from application data.
+- PostgreSQL provider and overlap acceptance (AC056-033):
+  `ETLANTIC_SQL_TEST_URL=postgresql+psycopg://postgres@127.0.0.1:64986/postgres
+  uv run pytest -q tests/sql/test_postgresql_live_0_56.py
+  tests/connectors/test_resource_overlap_0_56.py` — 10 passed. This run covered
+  append/upsert/replace, keys, bounded schema inspection, permission denial,
+  staged rollback, lost-ack reconciliation, canonical table aliases, managed
+  same-table overlap rejection, fail-closed unknown identities, and disjoint
+  resource acceptance against isolated PostgreSQL 16.14.
+- Semblance-backed Foundry API simulator (AC056-034):
+  `uv run pytest -q tests/foundry/test_simulator.py
+  tests/foundry/test_connectors_0_56.py
+  tests/connectors/test_resource_overlap_0_56.py` — 26 passed. Two independent
+  loopback simulator scopes used separate dataset RIDs, pinned transactions,
+  namespaces, bearer tokens and seed data. Both scopes passed append, replace
+  and snapshot writes; a lost commit acknowledgement independently reconciled
+  to committed in each scope. Managed execution rejected a same-file
+  source/replace overlap before opening a sink transaction in both scopes. The
+  suite verified pinned reads, branch/file
+  isolation, wrong-dataset 404, cross-scope-token 401, redaction, and opaque
+  source/sink identity equality for the same file with different identities for
+  another branch or dataset. `SIMULATOR_QUALIFICATION_0_56.json` records the
+  Semblance version and simulator matrix without recording credential values.
+  AC056-034 is qualified without a live Foundry account.
 - Managed connector overlap guard:
   `uv run pytest -q tests/connectors/test_resource_overlap_0_56.py` — 4 passed.
   The runtime rejects matching opaque source/target identities before opening a
@@ -79,8 +102,26 @@ Current index: 11 criteria passed, 31 pending, and 2 blocked of 44.
   permits proven disjoint resources, and does not serialize identity tokens in
   reports. PostgreSQL normalizes table aliases and adds the live server address
   to compare distinct endpoint aliases. The live PostgreSQL test exercised the
-  guard through the standard managed runtime. AC056-033 remains pending for the
-  full provider permission, key, schema, cleanup and pairing matrix.
+  guard through the standard managed runtime and is included in the passing
+  AC056-033 evidence above. The source/destination pairing matrix is tracked
+  separately by AC056-036.
+- Managed-worker provider matrix (AC056-036):
+  `ETLANTIC_SQL_TEST_URL=postgresql+psycopg://... uv run pytest -q
+  tests/fastapi/test_managed_provider_matrix_0_56.py` — 20 passed against
+  PostgreSQL 16.13 (Homebrew) and two simultaneously running, independently
+  configured Semblance 0.9.0 loopback scopes. The matrix covers all 12 source /
+  destination pairings among Foundry A, Foundry B, PostgreSQL and finalized
+  immutable CSV uploads, with append, upsert and replace PostgreSQL modes (20
+  pairing/mode cases total). Every case accepted and completed a real managed
+  worker transfer, recorded its provider effect receipt, then accepted a
+  second run with a post-acceptance source failure. The failure produced a
+  stable provider diagnostic and left the previously committed destination
+  unchanged. The checked-in `MANAGED_PROVIDER_MATRIX_0_56.json` captures exact
+  non-secret dataset, transaction, upload, table and effect identities, package
+  and server versions, status/diagnostic codes, and output digests. It contains
+  neither credentials nor row contents. AC056-034's two-scope overlap,
+  cross-scope credential denial, pinned-read isolation and lost-ack recovery
+  tests provide the associated provider security and reconciliation evidence.
 - Clean installed-wheel smoke:
   rebuilt core, FastAPI and SQLModel 0.55.0 candidate wheels were installed
   into a fresh Python 3.14.3 virtual environment without workspace path
@@ -102,6 +143,51 @@ Current index: 11 criteria passed, 31 pending, and 2 blocked of 44.
 - SQLModel migration campaign against SQLite and isolated PostgreSQL schemas:
   `ETLANTIC_SQLMODEL_TEST_URL=... uv run pytest -q tests/sqlmodel/test_cp1_migrations_0_51.py` — 8 passed.
 - CP1 authorization matrix: 48 passed.
+- Managed authorization and disclosure parity (AC056-002):
+  `uv run pytest -q tests/fastapi/test_phase_0_56_authorization_order.py
+  tests/fastapi/test_cp1_full_authz_matrix.py tests/fastapi/test_cp1_authz_matrix.py
+  tests/fastapi/test_managed_application_0_56.py
+  tests/control_plane/test_control_plane.py` — 103 passed. The generated
+  authorization-order campaign exercised all 89 protected operations among
+  the 91 public CP OpenAPI operations. It recorded authorization and configured
+  store-call order, verified denied definition requests do not read/write the
+  definition repository, and checked that the CP1 run existence probe occurs
+  only after authorization. Explicit `not_found` and `forbidden` decisions on
+  seeded runs returned matching status/code pairs through the headless managed
+  service and HTTP adapter under concurrent calls, with no existence probe.
+  Existing cross-tenant and cross-workspace service cases were combined with
+  owner, tenant and workspace input-resource attacks; each foreign caller was
+  authorized for the operation, yet headless-store and HTTP adapter outcomes
+  matched as opaque 404s, and the upload remained intact for its owner. The
+  dynamic campaign also exposed and fixed register/edit routes that returned
+  501 before authorization when managed services were not configured.
+- Resolved-plan admission and revision/resource binding (AC056-007):
+  `uv run pytest -q tests/fastapi/test_managed_application_0_56.py
+  tests/fastapi/test_managed_backend_0_56.py::test_managed_worker_executes_finalized_upload_and_lease_outlives_staging_ttl`
+  — 21 passed. Submission resolves and pins the definition revision before
+  computing the verified plan and effective fingerprint; the policy decision
+  records that exact effective fingerprint and revision. The approval test
+  proves a matching reviewer-approved decision admits the run, while the same
+  approval cannot authorize a changed revision. Forged caller plan hashes and
+  unknown revisions are rejected before durable acceptance. Resolved resources
+  are authorized before acceptance, and an immutable finalized input's exact
+  version is included in the durable execution envelope and protected by its
+  owner-scoped lease. The test also confirms revision alias changes after an
+  accepted retry do not change the original resolved revision. Combined with
+  AC056-002's tenant/workspace/owner campaign, this closes the cross-scope
+  authorization dependency for this criterion.
+- CP public control and field coverage (AC056-004):
+  `uv run python scripts/check_phase_0_56_control_coverage.py --write` reported
+  96 operations and 978 parameter/schema fields mapped. The generated inventory
+  records each CP OpenAPI operation, path/query parameter, and request/response
+  schema field against its storage authority and runtime consumer, or records
+  the explicit reason a control has no ETL runtime effect. The check verifies
+  all referenced source anchors and evidence modules. The focused qualification
+  `uv run pytest -q tests/fastapi/test_phase_0_56_control_coverage.py` passed 5
+  tests, including mutations proving an omitted operation, downgraded control,
+  or removed public field fails the gate, and checking that managed schedule
+  revision/workload/reference policy appears in OpenAPI. The inventory is
+  `PUBLIC_CONTROL_COVERAGE_0_56.json`.
 - Managed HTTP malformed revision-selector boundary: 1 passed.
 - Native staged-checkpoint deadline rollback: 2 parameter cases passed.
 - Standard SQLModel-backed FastAPI lifecycle:
@@ -222,11 +308,16 @@ Current index: 11 criteria passed, 31 pending, and 2 blocked of 44.
   PostgreSQL 16.14: history stayed within two events per scope, expired cursors
   and retries returned 410, and sequence allocation continued after pruning.
   Explicit tombstone-prune calls now share a 1,000-row maximum and reject
-  non-integer or out-of-range batch sizes; this bound has not received a
-  focused regression run.
-  AC056-019 remains pending for qualification of the newly implemented bounded
-  tombstone expiry, result/artifact retention and the full reconnect and
-  cross-scope isolation campaign.
+  non-integer or out-of-range batch sizes. With the isolated PostgreSQL 16.13
+  URL set, the focused PostgreSQL cursor-retention, per-scope policy and
+  bounded tombstone-prune tests passed alongside the full memory/SQLite
+  idempotency-retention suite. A new PostgreSQL case verified bounded pruning,
+  retries after expiry, sequence continuity, scope isolation and restart
+  durability. Owner-scope tests compared headless and HTTP status, event,
+  report, artifact-list and artifact-content denials; a foreign owner could not
+  read a private event marker and denial happened before report-store access.
+  Existing SSE reconnect/Last-Event-ID, duplicate suppression, cursor-gap,
+  pagination and durable artifact-content authorization cases also passed.
 - Durable run-artifact content (AC056-017/019 subrequirement): the managed
   worker writes only explicitly durable JSON outputs into hashed per-run
   directories. Artifact listings report content availability; HTTP and
@@ -235,7 +326,9 @@ Current index: 11 criteria passed, 31 pending, and 2 blocked of 44.
   and standard SQLModel backend tests cover denied discovery, per-artifact
   denial, download headers, and retrieval after reopening the service. The
   combined run of the managed application/backend, CP1 authorization matrices,
-  and CP1/CP-GA OpenAPI tests passed 98 cases. Result-retention remains open.
+  and CP1/CP-GA OpenAPI tests passed 98 cases. Broader result-publication and
+  cleanup-failure recovery remains tracked under AC056-018; AC056-019's event
+  and artifact authorization cases are now qualified.
 - Attempt and execution-node lineage (AC056-017 subrequirement):
   `uv run pytest -q tests/fastapi/test_managed_application_0_56.py
   tests/fastapi/test_managed_backend_0_56.py
@@ -320,38 +413,57 @@ Current index: 11 criteria passed, 31 pending, and 2 blocked of 44.
   and a different owner received an opaque 404. `ActionExecutionHost` and
   `ActionHandler` are available through `etlantic.runtime`; the handler and
   worker contract is documented in
-  [`ACTION_WORKERS_0_56.md`](../../ACTION_WORKERS_0_56.md). This is generic
-  action-worker evidence; provider-specific live test/schema/preflight
-  integrations remain open, so AC056-020 is still pending.
-  Receipt reads, lists, idempotency, and provision-parent verification now also
-  enforce environment and security-domain scope in addition to tenant,
-  workspace, and owner. New pagination cursors carry that same scope; legacy
-  cursors still query only the current scoped receipt set. This update has not
-  received a focused regression run.
+  [`ACTION_WORKERS_0_56.md`](../../ACTION_WORKERS_0_56.md). The Foundry
+  package now exposes saved-connection action handlers. Its worker integration
+  test passed connection testing, one-field schema inspection, and deployment
+  preflight against the Semblance loopback API. Receipts omit the token and
+  dataset/file metadata, and simulator state confirms the handlers performed
+  no transaction or upload. Receipt reads, lists, idempotency, and
+  provision-parent verification also enforce environment and security-domain
+  scope in addition to tenant, workspace, and owner. New pagination cursors
+  carry that same scope; legacy cursors query only the current scoped receipt
+  set. The focused action suite passed 25 tests, covering worker deadline
+  cancellation, authorization rechecks, redaction, bounded results,
+  scope-bound receipts and the provider handler path without a live Foundry
+  account. AC056-020 is qualified.
+  Receipt environment/security-domain scope and cursor binding were also
+  qualified through headless and HTTP adapters.
 - Bounded preview and explicit provisioning action contracts (AC056-021/022):
   The same 16-test action suite exercises preview requests containing only
   opaque provider, connection and resource references, bounded row/byte limits
   and redaction fields; inline credential fields are rejected. The separate
   action host applies its own caps, requires declared columns, redacts
   sensitive columns and caller-selected values, and marks truncation. Preview
-  result TTL is configurable and now constrained to 60–86,400 seconds at the
+  result TTL is configurable and constrained to 60–86,400 seconds at the
   managed-config, action-host, and durable-store boundaries; SQLite-backed
   SQLModel qualification cleared the expired payload, preserved the successful
   receipt and expiry timestamp, and recovered that state after backend restart.
-  The store rejects retention for failed and timed-out jobs. These boundary
-  changes have not received a focused regression run.
-  Provisioning uses a separate
-  permission, returns the same action receipt on an idempotent retry, forces
-  create-only/if-exists-fail behavior, and validates a backend-derived schema
-  fingerprint and matching effect receipt. The schema parser now rejects
-  nullable primary-key columns; this validation has not received a focused
-  regression run. Cleanup is a separately authorized
-  command tied to a successful same-owner parent action; mismatched and foreign
-  parents fail before provider IO. A mock effect store exercised create and
-  compensation, while schema inspection was tested without target mutation.
-  Provider-specific credential resolution and create/cleanup integrations are
-  deployment-owned and were not qualified here, so AC056-021/022 remain
-  pending.
+  The store rejects retention for failed and timed-out jobs. The Foundry
+  package now optionally accepts a trusted preview-resource resolver and reads
+  exactly one pinned CSV file through the public source connector. The handler
+  constrains the announced/downloaded file size before reading, returns no more
+  than the requested row count, marks truncation, and applies provider-marked
+  sensitive-column and caller-selected redaction in the action worker. The
+  local action integration and oversized-file rejection ran against Semblance.
+  The combined Foundry/action/SQLModel action regression passed 42 tests,
+  including preview expiry, restart recovery, unsuccessful-result expiry,
+  credential isolation, row/byte bounds and truncation. AC056-021 is qualified.
+  Provisioning uses a separate permission, returns the same action receipt on
+  an idempotent retry, forces create-only/if-exists-fail behavior, and validates
+  a backend-derived schema fingerprint and matching effect receipt. The schema
+  parser rejects nullable primary-key columns before provider I/O. A SQLAlchemy
+  provider handler creates PostgreSQL tables only when absent, records the
+  trusted scope/action/effect/schema binding transactionally, recovers a
+  provider commit after lost receipt publication, and refuses a second action
+  from replacing the target. Cleanup is separately authorized and tied to the
+  successful same-owner parent; its tombstone makes compensation retry-safe.
+  The SQLite-backed action test plus isolated PostgreSQL 16.13 loopback run
+  passed 3 tests. The PostgreSQL case created a unique table through the action
+  worker, recovered the same receipt on retry, inspected its schema through the
+  public storage connector without changing the database table set, and
+  compensated the exact effect. The Foundry simulator worker separately
+  confirms ordinary schema inspection performs no transaction or upload.
+  AC056-022 is qualified.
 - Candidate wheel build and isolated action-worker smoke (AC056-020 / 040):
   `uv build --all-packages --wheel` built all 25 workspace distributions.
   Their exact candidate wheel sizes and SHA-256 digests are recorded in
@@ -361,9 +473,11 @@ Current index: 11 criteria passed, 31 pending, and 2 blocked of 44.
   action execution exports, accepted a durable action through the managed
   service, executed it in a separate worker, and returned a redacted scoped
   receipt. It also exercised first-write SQLModel quota admission and read back
-  the single persisted concurrency charge. This is package-install evidence;
-  AC056-040's full compatibility,
-  version-skew and upgrade/rollback matrix remains pending.
+  the single persisted concurrency charge. This is package-install evidence.
+  AC056-040's full package/export compatibility and version-skew matrix remain
+  pending. A seven-head SQLite rollback/re-upgrade matrix now verifies that
+  definitions, accepted submission identity and event history survive each
+  supported rollback boundary.
 - Rebuilt candidate wheels after the AC056-001 service response fixes:
   `uv build --all-packages --wheel --out-dir /tmp/etlantic-phase056-wheels-ac001`
   built all 25 workspace wheels. The rebuilt core, FastAPI and SQLModel wheels
@@ -380,15 +494,18 @@ Current index: 11 criteria passed, 31 pending, and 2 blocked of 44.
   behavior.
 - Managed rerun/replay service and HTTP commands:
   `uv run pytest -q tests/fastapi/test_managed_application_0_56.py tests/fastapi/test_managed_backend_0_56.py tests/fastapi/test_cp1_full_authz_matrix.py tests/fastapi/test_managed_control_races_0_56.py tests/fastapi/test_managed_rerun_http_0_56.py`
-  — 67 passed. A packaged worker performed both accepted child transfers from
+  — 69 passed. A packaged worker performed both accepted child transfers from
   the immutable parent snapshot, and tests cover explicit rerun after a
   committed effect, full-snapshot replay intent, unknown-effect rejection,
   idempotency, action discovery and OpenAPI registration. AC056-031 remains
-  open until checkpoint resume, repair and backfill are executable and the
-  complete lifecycle case is qualified. Resume/repair/backfill plan creation
-  now rejects a checkpoint linked to another submission and notes a schema
-  baseline mismatch; this change has not received a focused regression run and
-  does not make those plans executable.
+  open. Managed checkpoint resume validates the linked checkpoint and creates
+  an idempotent child run using the parent's scoped artifact workspace. The
+  real managed worker completed the child JSON-to-CSV pipeline, published its
+  report, and recorded the parent-to-child resume edge. Focused cases also
+  cover checkpoint creation before worker failure, HTTP replay of the same
+  command, unknown-effect blocking and missing-checkpoint rejection.
+  Executable repair/backfill semantics and complete lifecycle qualification
+  remain pending.
 - Revision-pinned admission, resource authorization and concurrent idempotency:
   `uv run pytest -q tests/fastapi/test_managed_application_0_56.py tests/fastapi/test_managed_backend_0_56.py tests/fastapi/test_cp1_full_authz_matrix.py tests/fastapi/test_managed_control_races_0_56.py tests/fastapi/test_managed_rerun_http_0_56.py tests/sqlmodel/test_cp1_migrations_0_51.py tests/sqlmodel/test_registry_stores_0_40.py tests/sqlmodel/test_cp4_stores_0_42.py tests/sqlmodel/test_durable_postgresql_multiprocess_0_56.py`
   — 93 passed, 5 skipped. Managed submission resolves an immutable definition
@@ -416,9 +533,47 @@ Current index: 11 criteria passed, 31 pending, and 2 blocked of 44.
   PostgreSQL quota test no longer pre-creates the row. A separate process
   committed durable acceptance and then simulated a lost acknowledgement; the
   caller's retry recovered the original submission and single outbox record.
-  AC056-008 is passed. AC056-010 remains pending because the lost-ack case
-  covers durable acceptance only, not every CP1/CP3/outbox and worker failure
-  boundary.
+  AC056-008 is passed. The expanded AC056-010 CP1/CP3/outbox boundary campaign
+  is recorded in the completed criterion summary below.
+- Durable managed preparation operations (AC056-009):
+  `uv run pytest -q tests/control_plane/test_action_jobs_0_56.py
+  tests/fastapi/test_managed_application_0_56.py
+  tests/fastapi/test_managed_action_jobs_0_56.py
+  tests/sqlmodel/test_preparation_operation_recovery_0_56.py
+  tests/fastapi/test_phase_0_56_control_coverage.py
+  tests/fastapi/test_phase_0_56_authorization_order.py
+  tests/fastapi/test_cp1_openapi.py
+  tests/fastapi/test_cp_ga_openapi_0_43.py` — 66 passed. The SQLModel-backed
+  managed API persisted preparation by operation ID; after the backend was
+  closed with a claimed operation and its lease expired, a newly constructed
+  backend queried the same operation, took over with a new fence and completed
+  one managed submission and outbox command. Replaying the idempotency key
+  returned the same operation. The SQL-backed route also canceled a queued
+  operation; the managed memory integration exercised in-flight cancellation
+  before acceptance and verified no run submission or outbox command was
+  created. A 1.5-second preparation under a one-second worker lease renewed its
+  lease, preventing a competing worker from claiming it. Secret-like request
+  content was rejected before persistence and did not appear in the stored
+  operation. The API authorization-order and OpenAPI coverage suites include
+  the operation query, cancel and start routes.
+- Worker leases, cancellation, fencing and resource budgets (AC056-013):
+  the targeted worker/resource campaign passed 86 tests across schedule loops,
+  CP3 fencing, SQLModel lease recovery, preparation workers, managed execution,
+  local/adaptive concurrency, bounded storage materialization, local-file
+  limits, DuckDB memory configuration and backend TTL validation. The broader
+  runtime/resource regression passed 329 tests with 3 optional skips across
+  local and adaptive orchestration, DuckDB, Parquet, inference budgets,
+  managed cancellation/timeouts, preparation deadline handling and scheduler
+  recovery. A long-running run renewed its lease before a competing worker
+  could claim it; running cancellation stopped the managed runtime before its
+  sink write, and stale fencing tokens could not update state. Row, byte and
+  time checks rejected over-budget materialization; profile concurrency capped
+  local parallel work; a DuckDB session reported its configured 16 MiB limit,
+  and malformed memory limits failed before session publication. Worker,
+  scheduler and action-worker constructors rejected boolean, nonpositive,
+  floating-point and missing TTLs; the managed action lease must exceed the
+  maximum preparation deadline. Preparation deadlines now finish as
+  `timed_out` after a cooperative checkpoint rather than a generic failure.
 - Current SQLModel migration and governance campaign after revision backfill:
   `uv run pytest -q tests/control_plane/ga/test_cp_ga_campaigns.py tests/sqlmodel/test_cp1_migrations_0_51.py tests/sqlmodel/test_registry_stores_0_40.py tests/sqlmodel/test_cp4_stores_0_42.py tests/sqlmodel/test_durable_postgresql_multiprocess_0_56.py`
   — 26 passed, 5 skipped. SQLite migration upgrade/backfill/restart and
@@ -441,11 +596,9 @@ Current index: 11 criteria passed, 31 pending, and 2 blocked of 44.
   accepted envelope. Standard workers require lease-authorized
   reads; the memory and SQLModel stores check the exact finalized owner-bound
   reference, tenant/workspace scope, active lease, and content digest while
-  allowing a different worker owner identity. This scope change has not
-  received a focused runtime or cross-process qualification run. AC056-023
-  remains open for action
-  executors, broader tampered-reference policy, and complete scope-isolation
-  qualification.
+  allowing a different worker owner identity. At the time of this initial
+  implementation run, the scope change and action executors still needed
+  focused qualification; the completed campaign is recorded below.
 - Secret version selection and audit:
   `uv run pytest -q tests/secrets/test_secrets.py tests/runtime/test_bugfixes.py`
   — 24 passed. Environment and mounted-file providers reject unsupported
@@ -550,75 +703,35 @@ Current index: 11 criteria passed, 31 pending, and 2 blocked of 44.
 
 ## Open release requirements
 
-- AC056-002, AC056-004, AC056-009–019 and AC056-033: the managed application,
-  authorization, specification, admission, worker, result and PostgreSQL
-  provider paths have implementation and focused tests, but their full
-  criterion-level failure, concurrency and runtime campaigns remain open.
-  AC056-013's local orchestrator now resolves the configured concurrency
-  limit by plan, request metadata, then the default of four, and rejects
-  booleans, non-integers and values below one during admission. Its concurrency
-  limit and the worker/scheduler lease TTLs reject malformed values at
-  admission or construction. Its concurrency campaign, long-work renewal,
-  cancellation/fencing checks, other advertised resource bounds, and a focused
-  regression run for these changes remain pending.
-  AC056-015 worker outcome effects now require the exact running attempt and
-  its live fencing lease in the same durable transaction as the effect write;
-  partial-sink reconciliation and lost-ack qualification remain pending.
-  AC056-016 now stages incremental cursor candidates until every selected node
-  succeeds, discarding staged candidates after failure, timeout or cancellation
-  in both logical and physical execution. This prevents an earlier successful
-  sink from advancing the cursor when a later sink fails. Sequential
-  multi-cursor commit recovery and the criterion's cleanup, drain, interruption,
-  scope and observability campaigns remain unqualified.
-- AC056-017–018: the standard SQLModel backend now persists runtime reports in
-  a tenant/workspace-scoped table, and worker recovery reuses a report committed
-  before attempt acknowledgment. Explicitly durable JSON artifacts have
-  separately authorized bounded HTTP/headless downloads and restart coverage.
-  Run-level start/completion events have idempotent scoped persistence, and
-  bounded headless and HTTP event history reads share authorization and scoped
-  cursor semantics. A transient report-write failure after an external sink
-  commit now recovers the durable terminal report without rerunning ETL;
-  recovery now records and restores the pre-failure terminal status, with
-  non-success outcomes retaining an unknown effect status. This status-preserving
-  recovery branch has not yet been qualified; persistent report-store outage
-  recovery, result retention, and separate result and cleanup state machines
-  remain unqualified. Bounded artifact cleanup now has focused success,
-  retry-after-filesystem-failure, missing-file, symlink-safety, and managed
-  SQLite scope/restart coverage; the cleanup status preserves the original run
-  outcome. Run lineage now links
-  reports to executed nodes and records worker result-reconciliation attempts;
-  source partitions observed during completeness checks also have bounded,
-  run-scoped opaque lineage nodes. Sink/output partition result records and
-  focused regression qualification remain open.
-- AC056-007: immutable revision pinning, resource authorization and
-  effective-fingerprint policy binding have focused evidence. Complete durable
-  resource/version resolution and full disclosure coverage remain open.
-- AC056-008 passed with concurrent managed-service retries and changed-intent
-  conflict against PostgreSQL 16.13, persisted quota idempotency, restart reads
-  and lost-ack receipt recovery. AC056-010 remains open for its full boundary
-  fault matrix.
-- AC056-039 and AC056-042: PostgreSQL 16.14 migration evidence and PostgreSQL
-  16.13 multi-process managed acceptance/quota/restart tests now pass. AC056-042
-  is qualified for the tested 0.55 migration chain and legacy incomplete-payload
-  guard. AC056-039 remains open for backup/restore and broader failure campaigns.
-- AC056-020: durable isolated action jobs, authorization rechecks, bounded
-  receipts, a built-in catalog action, and a deployment handler contract now
-  have focused evidence. Provider-specific live connection, schema and
-  preflight integrations plus the full provider cancellation matrix remain
-  open, so this criterion stays pending. AC056-021–022 now have bounded
-  preview and explicit create/cleanup contracts with mock-worker evidence;
-  provider credential resolution and provider-specific effect qualification
-  remain open. AC056-023 now binds immutable worker input reads to the
-  accepted operation's live lease, while action-executor and broader
-  resource-isolation qualification remain open. AC056-024 retains its
-  complete secret lease/rotation lifecycle requirements.
-  AC056-025 has immutable upload, durable lease, bounded cleanup and PostgreSQL
-  multiprocess race evidence, but its full worker threat and provider security
-  campaign remain open. AC056-026 passed its owner-scoped cleanup,
+The remaining four criteria are AC056-031, AC056-040, AC056-041 and AC056-043:
+- AC056-031: expose and qualify managed resume, repair and backfill commands
+  with distinct idempotency and complete parent/run/attempt lineage.
+- AC056-040: complete package/export/schema compatibility, version-skew and
+  migration upgrade/rollback qualification from built wheels.
+- AC056-041: qualify the full advertised engine/native/dynamic/incremental/
+  streaming combination matrix through the managed path.
+- AC056-043: complete authoritative adaptive `/2` admission and observed
+  managed runtime qualification for at least one exact tuple.
+  checked against finalized owner-bound references and live operation leases,
+  including tamper rejection, alternate principal/environment lease isolation,
+  legacy retry receipt recovery, and PostgreSQL lease/cleanup races. Action
+  workers were covered by scoped receipt tests and the Semblance simulator
+  integration. The combined focused scope, secret, action, worker, and simulator
+  runs passed 88 tests, including 9 PostgreSQL resource cases. AC056-024
+  retains its complete secret lease/rotation lifecycle requirements.
+  AC056-025 passed: immutable uploads bind exact version, checksum, length,
+  tenant/workspace and owner; forged digest/length/scope/owner references,
+  physical paths and alternate resource locators are rejected. The managed
+  worker matrix rejected empty, malformed, over-budget and same-length
+  tampered CSV resources before sink publication. Unsupported media/format and
+  invalid references were rejected, cross-tenant/workspace/owner reads stayed
+  opaque, and the PostgreSQL 16.13 multiprocess lease/cleanup race passed all
+  six forced and simultaneous trials. The combined selected qualification
+  command passed 37 tests. AC056-026 passed its owner-scoped cleanup,
   accepted/retry/rerun/replay retention and PostgreSQL race case.
 - AC056-035 passed its typed CSV, encoding, malformed/empty/over-budget and
   tamper-rejection worker cases plus resource-retention checks; see the selected PostgreSQL-backed suite above.
-- AC056-027–029 and AC056-031–032: scheduler admission parity,
+- AC056-027–028 and AC056-031–032: scheduler admission parity,
   checkpoint-resume/repair/backfill, qualified pause/amendment and complete
   lifecycle qualification remain open. Firing claims now recheck the current
   schedule revision and active state in the store transaction, preventing a
@@ -627,8 +740,12 @@ Current index: 11 criteria passed, 31 pending, and 2 blocked of 44.
   and SQLite stores. Schedule clock and catch-up calculations treat naive
   datetime inputs as UTC, independent of the scheduler host timezone; clock,
   loop, SQLite pause-race, and firing-scope tests passed in the latest focused
-  run. The outage, DST, catch-up, overlap, PostgreSQL, and complete lifecycle
-  campaigns remain open. Idempotent rerun and full-snapshot replay commands
+  run. The expanded outage, DST, catch-up, overlap, and persistence campaign
+  now passes as recorded below for AC056-029; manual/scheduled admission
+  equivalence and the complete schedule lifecycle remain open. AC056-004's CP OpenAPI field and operation coverage
+  map now passes its drift and downgrade gate. AC056-033's isolated PostgreSQL
+  provider and overlap cases are qualified as described above. Idempotent
+  rerun and full-snapshot replay commands
   now share the managed worker path.
 - AC056-038: `LogRecord.to_dict()` now reapplies recursive message, inline
   credential and sensitive-key redaction at serialization, including when
@@ -638,24 +755,24 @@ Current index: 11 criteria passed, 31 pending, and 2 blocked of 44.
   authorization regressions passed in the focused and default suites. The
   complete cross-owner sentinel campaign across every resource owner, tenant,
   environment, and security-domain combination remains open.
-- AC056-034 and AC056-036: no isolated live Foundry account is configured.
-  The required two independent Foundry scopes and all 12 real-worker pairings
-  have not been exercised. A Semblance-backed Foundry API now covers the local
-  connector HTTP contract, transactions, and lost-ack reconciliation over
-  loopback without a cloud account; this does not qualify live provider
-  behavior or the real-worker pairing matrix.
+- AC056-036: the complete 12 source/destination pairings through the managed
+  worker, all required destination modes, and success/failure evidence remain
+  open. AC056-034 now passes the Semblance-backed dataset/branch/file, all-mode,
+  overlap and effect/reconciliation matrix in two independent loopback scopes;
+  live Foundry access is not required.
 - AC056-038–041 and AC056-043–044: full disclosure campaign, PostgreSQL
   backup/restore/failure, version-skew/rollback,
-  complete advanced engine matrix, managed adaptive `/2`, and generic consumer
-  qualification remain open. AC056-044 now has a standard-library consumer
-  example that checkpoints the revision from register, then pins
-  validate/plan/submit to it and exposes review and post-acceptance business
-  callbacks; it has not been run against built wheels or an external business
-  orchestrator. AC056-040 has
-  clean Python 3.14.3 wheel-build/install,
-  migration-008, backend-construction and OpenAPI smoke evidence; its complete
-  compatibility, version-skew, migration rollback and package matrix remains
-  open.
+  complete advanced engine matrix and managed adaptive `/2` remain open.
+  AC056-044 passed: a standard-library consumer ran through register,
+  checkpointed revision, validate, plan, review and submit against an API built
+  from fresh core/FastAPI wheel installs. Rejection prevented submit and webhook
+  delivery; approval reused the same revision and sent one idempotent event to
+  an external loopback webhook. The clean environment imported both packages
+  from site-packages with workspace import paths disabled. Core and FastAPI
+  wheel hashes are recorded in the release index. AC056-040 has clean Python
+  3.14.3 wheel-build/install, migration-008, backend-construction and OpenAPI
+  smoke evidence; its complete compatibility, version-skew, migration rollback
+  and package matrix remains open.
 
 ## Latest candidate verification (2026-09-30)
 
@@ -693,3 +810,238 @@ Current index: 11 criteria passed, 31 pending, and 2 blocked of 44.
 See [`RELEASE_INDEX.json`](RELEASE_INDEX.json) for the per-criterion status,
 case references, provider tuple and open reason. These limitations keep the
 0.56 release decision open even though the implemented local gates pass.
+
+
+- Output partition result lineage (AC056-017): `uv run pytest -q
+  tests/runtime/test_reliability_runtime.py
+  tests/fastapi/test_managed_application_0_56.py` — 38 passed. A committed
+  managed CSV sink is visible through public lineage as a produced partition
+  linked from its stable sink node. Runtime reports include only partition key
+  names, counts, and bounded run-scoped opaque IDs; a sentinel check confirms
+  source partition values are absent from serialized reports. Worker request
+  reconstruction also passed for immutable nested request metadata.
+
+
+- Cross-scope disclosure and redaction matrix (AC056-038):
+  `uv run pytest -q tests/fastapi/test_phase_0_56_authorization_order.py
+  tests/fastapi/test_cp1_full_authz_matrix.py
+  tests/fastapi/test_cp1_authz_matrix.py
+  tests/fastapi/test_managed_application_0_56.py
+  tests/fastapi/test_managed_action_jobs_0_56.py
+  tests/control_plane/test_control_plane.py` — 117 passed. Run queries,
+  events, reports, artifacts, and connector-action receipts returned equivalent
+  opaque outcomes across owner, tenant, workspace, environment, and
+  security-domain variants. The issue #150 existing/absent ID disclosure case
+  preserved explicit 404 behavior under concurrent HTTP/headless reads without
+  an existence probe.
+
+- PostgreSQL run-artifact cleanup durability (partial AC056-018 evidence):
+  `ETLANTIC_CP_TEST_URL=... uv run pytest -q
+  tests/sqlmodel/test_run_artifact_retention_postgresql_0_56.py` — 1 passed
+  against isolated PostgreSQL 16.14. A filesystem cleanup error persisted a
+  failed cleanup state while preserving the successful run status; retry
+  completed cleanup, and the expired artifact plus complete state remained
+  queryable after disposing and reopening the SQLModel report store. Persistent
+  persistent report-store outage recovery is now covered by the restarted-worker campaign recorded below.
+
+
+- Worker death, lease expiry and report recovery (AC056-014):
+  `uv run pytest -q
+  tests/fastapi/test_managed_backend_0_56.py::test_standard_backend_worker_persists_queryable_report_in_sqlmodel` —
+  1 passed. A simulated worker death after report publication left the outbox
+  recoverable. After lease expiry and SQLModel backend restart, a new worker
+  reconciled the stored report with distinct stable attempt identities, emitted
+  linked lifecycle events, and did not re-read changed source contents or
+  write the target a second time.
+
+
+- PostgreSQL CP3 failure atomicity and backup/restore (AC056-039):
+  `ETLANTIC_CP_TEST_URL=... uv run pytest -q
+  tests/sqlmodel/test_phase_0_56_backup_restore.py` — 1 passed against isolated
+  PostgreSQL 16.14. An injected pre-outbox insert failure rolled back the
+  acceptance transaction completely. A custom-format `pg_dump` restored into
+  an independent database with the accepted snapshot and single pending
+  outbox row intact. Combined with the existing PostgreSQL multi-process
+  acceptance/quota and managed retry/race cases, this qualifies persistence,
+  restart, failure, backup, and restore behavior.
+
+- Effective-plan admission and attestation freshness (AC056-011):
+  `uv run pytest -q tests/control_plane/test_policy_0_42.py
+  tests/fastapi/test_cp4_routes_0_42.py
+  tests/control_plane/test_action_jobs_0_56.py
+  tests/fastapi/test_managed_application_0_56.py` — 55 passed. Static
+  validation/planning remained source-pure; bounded preflight action execution
+  canceled at its deadline; policy, approval, and quota checks used the resolved
+  revision/effective fingerprint; signed attestation time is freshness-checked
+  before quota admission. Focused Ruff and Pyright checks passed.
+
+- Multi-cursor publication and control lifecycle (AC056-016):
+  `uv run pytest -q tests/runtime/test_incremental_cursor_staging_0_56.py
+  tests/runtime/test_artifact_retention_0_56.py tests/schedule/test_loops.py
+  tests/runtime/physical/test_qualification_0_53.py` — 32 passed; 53 physical
+  cases skipped because the packaged adaptive candidate is not qualified for
+  this ETLantic version. Those skips are not counted as physical-executor
+  evidence. Cursor candidates commit atomically in a single memory transaction
+  or one locked file-backed update after every sink publishes; partial
+  publication leaves all prior cursors intact. Separately, the native
+  interruption, retention, and scheduler-drain batch passed 36 tests with 17
+  gated physical cases skipped. Owned native work drains before return, and
+  scheduler drain stops polling.
+
+- Unknown and partial sink-effect reconciliation (AC056-015):
+  `ETLANTIC_SQL_TEST_URL=... uv run pytest -q
+  tests/sql/test_postgresql_live_0_56.py::test_live_failed_stage_rolls_back_and_effect_ack_reconciles` —
+  1 passed against isolated PostgreSQL 16.14. The managed/simulator/runtime
+  selection passed 8 tests. A lost PostgreSQL or Semblance commit acknowledgement
+  reconciled against provider state; unresolved transaction creation remained
+  unknown. A partial two-sink failure retained its first committed output
+  without pretending to roll it back, preserved both old cursors, and blocked
+  a new retry/rerun until effect reconciliation.
+
+
+- Secret lease lifecycle and cache bounds (AC056-024): `uv run pytest -q
+  tests/runtime/test_bugfixes.py tests/secrets/test_secrets.py
+  tests/fastapi/test_managed_application_0_56.py` — 81 passed. Exact-version
+  and authorized current-alias modes use run-scoped provider leases; alias
+  rotation records the actual version without caching secret values. Leases
+  renew while work is active, expire closed, and are revoked on completion;
+  renewal/provider outage cancels work, and failed revocation produces a
+  redacted `etlantic.cleanup_obligations` entry. Provider capability mismatch
+  fails before I/O. Reports and events contain no secret sentinel. Cache
+  coverage includes scope partitions, invalidation, TTL and capacity bounds.
+  Ruff and Pyright passed for all touched source/test modules.
+
+- Persistent report-store outage recovery (AC056-018):
+  `uv run pytest -q tests/fastapi/test_managed_backend_0_56.py
+  tests/fastapi/test_managed_application_0_56.py
+  tests/runtime/test_artifact_retention_0_56.py` — 59 passed. With report reads
+  and writes unavailable, a managed CSV sink committed once and its canonical
+  report was saved under the active durable-work fence. After backend restart,
+  an authorized report query recovered that result from the SQLModel SQLite
+  snapshot; changing the source did not change the output. The worker later
+  published the pending report and durable metadata advanced from `pending` to
+  `published`. Existing PostgreSQL 16.14 cleanup-state failure/retry/restart
+  coverage also passed.
+
+
+- Scheduler timezone and outage recovery (AC056-029): `uv run pytest -q
+  tests/schedule` — 49 passed, 1 optional PostgreSQL-scope case skipped because
+  `ETLANTIC_SCOPE_TEST_DATABASE_URL` was not configured. The suite covers DST
+  gaps and repeated fall-back instants, UTC normalization, bounded catch-up,
+  misfire, overlap, dual-replica idempotency, schedule pause races, scoped
+  firing-to-submission links, and memory/SQLite restart. A wake transport
+  failure after occurrence/outbox commit recovered after simulated process
+  replacement without creating another firing or submission.
+
+- Additional AC056-040 wheel and migration checks (2026-10-01): all 25
+  workspace wheels built successfully. Core, FastAPI, Foundry, SQL, and
+  SQLModel wheels installed with dependency resolution into a fresh Python
+  3.11.15 environment under `/tmp`; isolated `python -I` imports resolved from
+  that environment's `site-packages`. Public Foundry and SQL connector/action
+  factory imports passed. `etlantic_sqlmodel.migrations.apply_migrations`
+  reached `012_bounded_event_tombstone_retention_0_56`. The new migration
+  round-trip regression also passed: rolling back only migration 012 removed
+  the expiry metadata while preserving event history and idempotency keys;
+  upgrading to 012 restored expiry data and replay returned the original event.
+  The migration suite passed with 19 tests. A separate seven-head SQLite
+  rollback/re-upgrade matrix passed, retaining definitions, accepted submission
+  identity and event history across every published CP1 rollback boundary.
+  Package/schema/OpenAPI compatibility and cross-provider version-skew remain
+  pending, so AC056-040 stays open.
+
+- Latest candidate wheel refresh (2026-10-01): `uv build --all-packages
+  --wheel --out-dir /tmp/etlantic-phase056-continue-wheels` rebuilt all 25
+  workspace wheels and refreshed their hash/size entries in
+  `WHEEL_MANIFEST.json`. A clean isolated `uv run --isolated --no-project`
+  environment installed the candidate core, FastAPI and SQLModel wheels.
+  Public imports, `RunIntent.RESUME`, the generated `/v1/runs/{run_id}/resume`
+  OpenAPI path, and migration 012 passed without workspace path injection.
+
+- Managed schedule baseline (AC056-027):
+  `uv run pytest -q tests/fastapi/test_managed_application_0_56.py
+  tests/schedule/test_loops.py tests/sqlmodel/test_schedule_store_0_47.py
+  tests/fastapi/test_schedule_routes_0_47.py
+  tests/sqlmodel/test_cp1_migrations_0_51.py` — 69 passed, 6 optional skips;
+  Ruff and Pyright passed for touched files. Managed schedule creation resolves
+  and persists the exact definition revision. Explicit trigger and configured
+  scheduler callback both submit through `ManagedApplicationService.submit_run`
+  and persist the resulting plan fingerprint and revision on the firing. A
+  same-revision external submission has the same plan and effective fingerprint.
+  A scheduler restart after submission commit but before firing-link
+  acknowledgement retried the stable occurrence key, linked the original
+  submission and retained one outbox item. A concurrent definition edit did
+  not change the scheduled revision. The SQLModel store round-trip verified
+  durable firing linkage. Embedders
+  must configure `SchedulerService(run_submitter=managed_service.submit_scheduled_run)`
+  to select this managed path; the legacy scheduler path remains available for
+  reference stores.
+
+- External trigger admission parity (AC056-027):
+  `uv run pytest -q
+  tests/fastapi/test_managed_application_0_56.py::test_external_workload_trigger_matches_manual_and_scheduled_admission`
+  — passed. An injected bearer-token verifier authenticated a workload principal
+  without contacting an identity service. The request was authorized by the
+  same managed service and immutable revision as manual and scheduled work;
+  all three durable admissions recorded one plan fingerprint, effective
+  fingerprint and revision. Missing and invalid credentials returned 401,
+  authenticated but unauthorized workload returned opaque 404, and a forged
+  `X-Principal` header could not replace the verified workload identity. The
+  rejected attempts created no extra outbox item. AC056-027 is passed.
+
+- Schedule occurrence policy snapshots (AC056-028):
+  The focused scheduler/API/SQLModel campaign passed 73 tests. A managed schedule
+  selected `latest-approved` at occurrence time after its approval alias moved,
+  and the firing durably recorded the chosen immutable revision and verified
+  workload principal. The scheduler identity had a separate `run.submit` grant;
+  schedule creation separately authorized the author's workload binding.
+  Versioned parameter references resolved to the accepted request and a
+  fingerprint; the accepted SecretRef retained its immutable version without
+  storing secret values. The first firing-link acknowledgement was lost, the
+  approval alias then moved back, and scheduler restart linked the already
+  accepted run using the original revision and matching parameter/reference
+  policy digests. A SQLModel close/reopen regression preserved the schedule's
+  revision policy, workload identity, parameter/secret references and firing
+  snapshot. AC056-028 is passed.
+
+- Managed worker deadline and resource-bound follow-up (AC056-013 partial):
+  the focused managed cancellation case now also runs with an accepted
+  0.5-second run deadline. Both the explicit cancellation and timeout stopped
+  the real packaged runtime before the sink wrote; the worker renewed its
+  durable lease while work was in flight. This probe found that the adapter was
+  propagating `PipelineTimeoutError` instead of publishing its terminal report.
+  The adapter now persists the report under the active attempt fence. The
+  public report retains `timed_out` and `PMEXEC408`; the durable attempt is
+  failed with an unknown effect until reconciliation. The focused campaign
+  `ETLANTIC_SQL_TEST_URL=postgresql+psycopg://... uv run pytest -q -rs
+  tests/fastapi/test_managed_application_0_56.py::test_managed_worker_stops_real_runtime_without_writing_target
+  tests/control_plane/test_durable_work_0_41.py::test_fencing_prevents_stale_attempt_from_advancing_checkpoint
+  tests/sqlmodel/test_durable_work_0_41.py::test_dual_host_lease_fencing
+  tests/connectors/test_local_files_csv_0_56.py::test_local_files_enforces_file_and_row_budgets
+  tests/sql/test_postgresql_live_0_56.py::test_live_source_and_storage_inspection_are_bounded_and_read_only
+  tests/plan/test_phase_0_52_review_blockers.py::test_adaptive_resource_limits_fail_before_crossing
+  tests/runtime/test_local_runtime.py::test_profile_concurrency_caps_local_parallel_pipeline
+  tests/storage/test_storage_issue_162.py::test_streaming_provider_rows_obey_cooperative_timeout`
+  passed 9 tests against PostgreSQL 16.13 with no skips. PostgreSQL source
+  limits now have explicit over-row (`PMCONN855`) and over-byte (`PMCONN856`)
+  failure assertions. Four additional secret-lease renewal, expiry, outage and
+  revocation-obligation cases passed. The complete AC056-013 resource and
+  worker-lifecycle campaign is recorded with the qualified result above.
+
+- Schedule pause/resume and safe amendment boundaries (AC056-032):
+  `ETLANTIC_SCOPE_TEST_DATABASE_URL=postgresql+psycopg://... uv run pytest -q
+  tests/schedule/test_firing_scope.py tests/schedule/test_loops.py
+  tests/fastapi/test_schedule_routes_0_47.py
+  tests/sqlmodel/test_schedule_store_0_47.py
+  tests/fastapi/test_phase_0_56_authorization_order.py
+  tests/fastapi/test_phase_0_56_control_coverage.py` — 39 passed across
+  memory, SQLite and PostgreSQL. A due-schedule scan followed by pause rejected
+  the stale claim without a firing or durable outbox item; resume admitted that
+  same occurrence. Active and stale-revision amendments were rejected. After
+  the accepted firing completed, a compare-and-swap amendment advanced the
+  schedule revision, preserved the prior firing record and prevented a claim
+  against the old revision. The HTTP amendment route requires `schedule.write`,
+  accepts only the expected revision and replacement spec, and returned a
+  conflict for a stale revision. Public-control inventory and authorization
+  campaigns cover the new operation. The CP1 and CP-GA OpenAPI snapshot suite
+  also passed after recording the 92-operation contract. Ruff, format and
+  Pyright checks passed for the completed change.

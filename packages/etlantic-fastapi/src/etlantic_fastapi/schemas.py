@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from typing import Any, Literal
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, ConfigDict, Field
 
 from etlantic.control_plane import LifecycleState
 
@@ -74,7 +74,9 @@ class PlanRequestBody(BaseModel):
 class ValidateResponse(BaseModel):
     ok: bool
     definition_id: str
-    diagnostics: list[dict[str, Any]] = Field(default_factory=list)
+    diagnostics: list[dict[str, Any]] = Field(
+        default_factory=lambda: list[dict[str, Any]]()
+    )
     fingerprint: str | None = None
     revision_id: str | None = None
     metadata: dict[str, Any] = Field(default_factory=dict)
@@ -83,7 +85,9 @@ class ValidateResponse(BaseModel):
 class PlanResponse(BaseModel):
     ok: bool
     definition_id: str
-    diagnostics: list[dict[str, Any]] = Field(default_factory=list)
+    diagnostics: list[dict[str, Any]] = Field(
+        default_factory=lambda: list[dict[str, Any]]()
+    )
     plan: dict[str, Any] | None = None
     revision_id: str | None = None
     metadata: dict[str, Any] = Field(default_factory=dict)
@@ -94,6 +98,63 @@ class RunSubmitBody(BaseModel):
 
     idempotency_key: str | None = None
     payload: dict[str, Any] | None = None
+
+
+class ScheduleSpecBody(BaseModel):
+    """OpenAPI-visible schedule timing policy accepted by CP1."""
+
+    kind: Literal["interval", "cron"]
+    timezone: str = "UTC"
+    interval_seconds: int | None = None
+    cron: str | None = None
+    misfire: Literal["skip", "fire_once", "catch_up"] = "fire_once"
+    catch_up_max: int = 10
+    overlap: Literal["skip", "queue"] = "skip"
+    jitter_seconds: int = 0
+    window_start: str | None = None
+    window_end: str | None = None
+
+
+class ScheduleSecretRefBody(BaseModel):
+    """Versioned secret selector; values are never accepted in this schema."""
+
+    provider: str
+    name: str
+    key: str
+    version: str = "current"
+    purpose: str | None = None
+
+
+class ScheduleWorkloadIdentityBody(BaseModel):
+    """Issuer-qualified trigger identity bound by the schedule authorizer."""
+
+    subject: str
+    issuer: str | None = None
+    kind: Literal["workload", "service"]
+
+
+class ScheduleCreateBody(BaseModel):
+    """Explicit managed schedule policy, inputs and execution identity."""
+
+    model_config = ConfigDict(extra="allow")
+
+    spec: ScheduleSpecBody | None = None
+    kind: Literal["interval", "cron"] | None = None
+    timezone: str | None = None
+    interval_seconds: int | None = None
+    cron: str | None = None
+    misfire: Literal["skip", "fire_once", "catch_up"] | None = None
+    catch_up_max: int | None = None
+    overlap: Literal["skip", "queue"] | None = None
+    jitter_seconds: int | None = None
+    window_start: str | None = None
+    window_end: str | None = None
+    revision_selector: str | None = None
+    profile_name: str | None = None
+    parameter_refs: dict[str, str] | None = None
+    secret_refs: dict[str, ScheduleSecretRefBody | str] | None = None
+    workload_identity: ScheduleWorkloadIdentityBody | None = None
+    policy_fingerprint: str | None = None
 
 
 class InputResourceFinalizeBody(BaseModel):
@@ -133,7 +194,9 @@ class ConnectorActionPageResponse(BaseModel):
     schema_: str = Field(
         alias="schema", default="etlantic.control_plane.action_job_page/1"
     )
-    items: list[ConnectorActionReceiptResponse] = Field(default_factory=list)
+    items: list[ConnectorActionReceiptResponse] = Field(
+        default_factory=lambda: list[ConnectorActionReceiptResponse]()
+    )
     next_cursor: str | None = None
     has_more: bool = False
 
@@ -164,7 +227,7 @@ class RunActionsResponse(BaseModel):
     schema_: str = Field(alias="schema", default="etlantic.control_plane.run_actions/1")
     run_id: str
     status: str
-    actions: list[RunActionItem] = Field(default_factory=list)
+    actions: list[RunActionItem] = Field(default_factory=lambda: list[RunActionItem]())
 
     model_config = {"populate_by_name": True}
 
@@ -183,7 +246,7 @@ class RunEventPageResponse(BaseModel):
         alias="schema", default="etlantic.control_plane.run_event_page/1"
     )
     run_id: str
-    items: list[dict[str, Any]] = Field(default_factory=list)
+    items: list[dict[str, Any]] = Field(default_factory=lambda: list[dict[str, Any]]())
     next_cursor: str | None = None
     has_more: bool = False
 
@@ -199,7 +262,7 @@ class ArtifactMeta(BaseModel):
 
 class ArtifactsResponse(BaseModel):
     run_id: str
-    items: list[ArtifactMeta] = Field(default_factory=list)
+    items: list[ArtifactMeta] = Field(default_factory=lambda: list[ArtifactMeta]())
 
 
 class LineageStubResponse(BaseModel):
@@ -207,8 +270,8 @@ class LineageStubResponse(BaseModel):
     run_id: str
     submission_id: str | None = None
     attempt_id: str | None = None
-    nodes: list[dict[str, Any]] = Field(default_factory=list)
-    edges: list[dict[str, Any]] = Field(default_factory=list)
+    nodes: list[dict[str, Any]] = Field(default_factory=lambda: list[dict[str, Any]]())
+    edges: list[dict[str, Any]] = Field(default_factory=lambda: list[dict[str, Any]]())
 
     model_config = {"populate_by_name": True}
 
@@ -221,7 +284,7 @@ class SchemaObservationsResponse(BaseModel):
     note: str = (
         "Schema observations are labeled observations and are not contract authority."
     )
-    items: list[dict[str, Any]] = Field(default_factory=list)
+    items: list[dict[str, Any]] = Field(default_factory=lambda: list[dict[str, Any]]())
 
     model_config = {"populate_by_name": True}
 
@@ -249,7 +312,7 @@ class ReliabilityListResponse(BaseModel):
         "Experimental stub (not CP-GA) unless a history_store is injected; "
         "empty list is not an authority claim."
     )
-    items: list[dict[str, Any]] = Field(default_factory=list)
+    items: list[dict[str, Any]] = Field(default_factory=lambda: list[dict[str, Any]]())
 
     model_config = {"populate_by_name": True}
 
@@ -270,7 +333,9 @@ class TenantRecordResponse(BaseModel):
 
 
 class TenantListResponse(BaseModel):
-    items: list[TenantRecordResponse] = Field(default_factory=list)
+    items: list[TenantRecordResponse] = Field(
+        default_factory=lambda: list[TenantRecordResponse]()
+    )
 
 
 class TenantPutBody(BaseModel):
@@ -296,7 +361,9 @@ class WorkspaceRecordResponse(BaseModel):
 
 
 class WorkspaceListResponse(BaseModel):
-    items: list[WorkspaceRecordResponse] = Field(default_factory=list)
+    items: list[WorkspaceRecordResponse] = Field(
+        default_factory=lambda: list[WorkspaceRecordResponse]()
+    )
 
 
 class WorkspacePutBody(BaseModel):
@@ -322,7 +389,9 @@ class RevisionResponse(BaseModel):
 
 
 class RevisionListResponse(BaseModel):
-    items: list[RevisionResponse] = Field(default_factory=list)
+    items: list[RevisionResponse] = Field(
+        default_factory=lambda: list[RevisionResponse]()
+    )
 
 
 class AliasPutBody(BaseModel):
@@ -414,6 +483,10 @@ class DurableReplayBody(BaseModel):
     checkpoint_id: str | None = None
 
 
+class RunResumeBody(BaseModel):
+    checkpoint_id: str
+
+
 class DurablePreviewBody(BaseModel):
     preview_id: str
     base_revision_id: str
@@ -455,6 +528,7 @@ __all__ = [
     "ReportStubResponse",
     "RevisionListResponse",
     "RevisionResponse",
+    "RunResumeBody",
     "RunStatusResponse",
     "RunSubmitBody",
     "SchemaObservationAckResponse",

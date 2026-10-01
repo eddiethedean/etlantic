@@ -28,6 +28,7 @@ class AttestationStore(Protocol):
         policy_fingerprint: str,
         plugin_fingerprints: Sequence[str],
         sbom_digest: str | None = None,
+        max_age_seconds: int = 24 * 60 * 60,
     ) -> Sequence[VerificationResult]: ...
 
     def put_schema_observation(

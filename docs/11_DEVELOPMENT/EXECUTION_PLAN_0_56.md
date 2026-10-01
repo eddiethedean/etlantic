@@ -22,8 +22,10 @@ Preserve its scoped inference qualification and recorded release evidence.
 Review later maintenance commits as explicit 0.56 inputs, not as an assumed
 change to the compatibility baseline.
 
-0.56 owns the complete generic application backend and the required live
-PostgreSQL/Foundry/CSV provider floor. Later 0.57 brownfield import, 0.58 console,
+0.56 owns the complete generic application backend, live isolated PostgreSQL
+qualification, immutable CSV inputs, and Foundry API qualification against
+Semblance loopback simulators. A live Foundry account is not required. Later
+0.57 brownfield import, 0.58 console,
 0.59 additional enterprise runtime/provider packs and 0.60 modeling incubation
 consume this service. They cannot be used to defer a required 0.56 backend gap.
 
@@ -35,17 +37,18 @@ consume this service. They cannot be used to defer a required 0.56 backend gap.
 | B — Safe command boundary | Implement 056-SVC/SPEC/SECRET/RESOURCE and prepare/admit persistence; adapt HTTP to shared services | Headless/HTTP parity, isolation, immutable bindings, idempotent admission and migration fixtures |
 | C — Real execution and recovery | Implement 056-WORKER/RESULT; join actual runtime to durable state and provider actions | Real bounded ETL, crash/fencing/cancel/effect/result-publication campaign |
 | D — Complete control surface | Finish 056-ACTION/SCHEDULE/CONTROL and advanced setting propagation | Runnable actions, scheduler equivalence, all lifecycle commands and complete control map |
-| E — Providers and independence | Deliver 056-PROVIDER and qualify private extensions/advanced engines | Live 12-pairing matrix, required modes, generic consumer and extension evidence |
+| E — Providers and independence | Deliver 056-PROVIDER and qualify private extensions/advanced engines | 12-pairing matrix through the real worker, using live PostgreSQL and Semblance-backed Foundry APIs; required modes, generic consumer and extension evidence |
 | F — Release qualification | Complete 056-QUALIFY against built distributions and real stores | All AC rows evidenced, migration/recovery runbooks, support matrix and release decision |
 
 Work can overlap after its prerequisite contracts are frozen. For example,
 provider development and deterministic fixtures can proceed alongside worker
-implementation, but live end-to-end qualification depends on Gates C and D.
+implementation, but end-to-end provider qualification depends on Gates C and D.
 
 ### Critical path and integration checkpoints
 
 The critical path is contract freeze → authorized durable acceptance → real
-worker/effect publication → executable controls → live provider matrix →
+worker/effect publication → executable controls → live PostgreSQL and simulated
+Foundry provider matrix →
 installed-wheel release decision. Run these integration checkpoints in order:
 
 | Checkpoint | Required observable result | Limit of the checkpoint |
@@ -53,11 +56,12 @@ installed-wheel release decision. Run these integration checkpoints in order:
 | B1 — accepted command | Headless and HTTP submit the same definition; the real relational store returns one scoped receipt across concurrent retry and restart | Acceptance does not claim ETL execution |
 | C1 — complete reference run | A packaged worker executes a qualified local reference transfer, publishes a real report and effect receipt, and recovers after death between commit and publication | This does not qualify PostgreSQL or Foundry transfer |
 | D1 — controlled run | The same run path supports an authorized action, a schedule firing and a runnable retry/repair case with stable lineage | Provider-specific limits remain explicit |
-| E1 — live transfer floor | Built provider packages execute all required pair/mode cases through the same acceptance, worker and result path | Final support still requires Gate F security, migration and clean-wheel evidence |
+| E1 — provider transfer floor | Built provider packages execute all required pair/mode cases through the same acceptance, worker and result path; PostgreSQL uses an isolated live database and Foundry uses Semblance loopback simulators | Final support still requires Gate F security, migration and clean-wheel evidence |
 
 Provider implementation begins after Gate A and supplies live PostgreSQL
 control-store tests during Gate B. The reference run at C1 keeps the state
-machine testable while Foundry and PostgreSQL connector qualification proceeds.
+machine testable while the Semblance-backed Foundry and PostgreSQL connector
+qualification proceeds.
 No checkpoint changes the AC056-001–044 release floor.
 
 ### Gate A — Freeze exact public contracts
@@ -154,7 +158,9 @@ exact effective values and results without implementing ETL behavior.
 ### Gate E — Deliver providers and prove independence
 
 - Package generic Foundry support independently; treat MSS and MCS-COP as two
-  scoped configurations. Vendor APIs and credentials remain provider-owned.
+  independently configured Semblance-backed simulator scopes. Vendor API
+  integration and credential handling remain provider-owned. No live Foundry
+  account is required for phase qualification.
 - Qualify PostgreSQL append/upsert/atomic replacement against a live isolated
   database; explicitly verify keys, constraints, permissions, source/target
   overlap and reconciliation/cleanup semantics.
@@ -162,8 +168,9 @@ exact effective values and results without implementing ETL behavior.
   controls and bounded failure behavior.
 - Execute all 12 required pairings with each destination's advertised modes;
   add cancellation, failures, denied credentials, schema mismatch and overlap
-  cases. Record actual provider capability limits rather than approximating
-  atomicity across unrelated systems.
+  cases through the actual managed worker. Foundry endpoints use the local
+  Semblance API simulator. Record actual provider capability limits rather than
+  approximating atomicity across unrelated systems.
 - Index each observation by source configuration, destination configuration,
   write mode, provider versions, scoped resources, worker attempt and effect
   receipt. Same-configuration transfers use distinct resources; aliases to the
@@ -221,5 +228,6 @@ checks for this phase are not runtime qualification.
   truthful explanation.
 - Contract changes update implementation, roadmap, generated schemas, coverage
   inventory and downstream dependency notes together.
-- A missing live account or environment blocks that qualification claim;
-  deterministic fakes cannot replace it. No release date is implied by this plan.
+- A missing required service or simulator fixture blocks its qualification
+  claim. Semblance is the required Foundry qualification target; no live Foundry
+  account is required. No release date is implied by this plan.

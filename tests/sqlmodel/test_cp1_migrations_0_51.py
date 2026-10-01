@@ -8,6 +8,7 @@ import os
 import uuid
 from collections.abc import Callable, Iterator
 from concurrent.futures import ThreadPoolExecutor
+from datetime import UTC, datetime, timedelta
 from importlib import import_module
 from pathlib import Path
 from threading import Barrier
@@ -367,6 +368,129 @@ def test_event_retention_migration_backfills_previously_published_keys(
     assert metadata[2:] == (prior_sequence, prior_cursor)
 
 
+def test_bounded_event_tombstone_rollback_and_upgrade_preserve_delivery_keys(
+    tmp_path: Path,
+) -> None:
+    engine = create_sqlite_engine(
+        f"sqlite:///{tmp_path / 'bounded-event-tombstone-round-trip.db'}"
+    )
+    assert upgrade(engine) == "012_bounded_event_tombstone_retention_0_56"
+    ctx = _ctx()
+    events = SqlModelEventStore(engine)
+    original = events.append_once(
+        ctx,
+        event_key="bounded-event-round-trip",
+        kind="run.accepted",
+        payload={"run_id": "bounded-event-round-trip"},
+    )
+    with engine.connect() as connection:
+        original_expiry = connection.execute(
+            text(
+                "SELECT expires_at FROM cp_event_idempotency "
+                "WHERE tenant_id = :tenant_id AND workspace_id = :workspace_id"
+            ),
+            {
+                "tenant_id": ctx.tenant.tenant_id,
+                "workspace_id": ctx.workspace.workspace_id,
+            },
+        ).scalar_one()
+    assert isinstance(original_expiry, str)
+
+    # Rolling back only 012 removes the expiry index/column while retaining
+    # published events and their idempotency keys from migration 008 onward.
+    assert downgrade(engine, target="011_run_artifact_retention_0_56") == (
+        "011_run_artifact_retention_0_56"
+    )
+    assert "expires_at" not in {
+        column["name"] for column in inspect(engine).get_columns("cp_event_idempotency")
+    }
+    with engine.connect() as connection:
+        retained_event_id = connection.execute(
+            text(
+                "SELECT event_id FROM cp_events "
+                "WHERE tenant_id = :tenant_id AND workspace_id = :workspace_id"
+            ),
+            {
+                "tenant_id": ctx.tenant.tenant_id,
+                "workspace_id": ctx.workspace.workspace_id,
+            },
+        ).scalar_one()
+        retained_delivery_key = connection.execute(
+            text(
+                "SELECT event_id FROM cp_event_idempotency "
+                "WHERE tenant_id = :tenant_id AND workspace_id = :workspace_id"
+            ),
+            {
+                "tenant_id": ctx.tenant.tenant_id,
+                "workspace_id": ctx.workspace.workspace_id,
+            },
+        ).scalar_one()
+    assert retained_event_id == original.event_id
+    assert retained_delivery_key == original.event_id
+
+    assert upgrade(engine) == "012_bounded_event_tombstone_retention_0_56"
+    replayed = SqlModelEventStore(engine).append_once(
+        ctx,
+        event_key="bounded-event-round-trip",
+        kind="run.accepted",
+        payload={"run_id": "bounded-event-round-trip"},
+    )
+    assert replayed.event_id == original.event_id
+    with engine.connect() as connection:
+        restored_expiry = connection.execute(
+            text(
+                "SELECT expires_at FROM cp_event_idempotency "
+                "WHERE tenant_id = :tenant_id AND workspace_id = :workspace_id"
+            ),
+            {
+                "tenant_id": ctx.tenant.tenant_id,
+                "workspace_id": ctx.workspace.workspace_id,
+            },
+        ).scalar_one()
+    assert isinstance(restored_expiry, str)
+
+
+@pytest.mark.parametrize("rollback_head", VERSIONS[4:-1])
+def test_supported_cp1_rollback_heads_upgrade_again_with_core_records(
+    tmp_path: Path,
+    rollback_head: str,
+) -> None:
+    """Exercise every published CP1 rollback boundary and subsequent upgrade."""
+    database_path = tmp_path / ("rollback-" + rollback_head.replace("/", "-") + ".db")
+    engine = create_sqlite_engine(f"sqlite:///{database_path}")
+    assert upgrade(engine) == VERSIONS[-1]
+    ctx = _ctx()
+    definition_store = SQLModelDefinitionRepository(engine)
+    submission_store = SQLModelSubmissionStore(engine)
+    event_store = SqlModelEventStore(engine)
+    definition_store.put(ctx, "rollback-definition", {"name": "orders"})
+    accepted = submission_store.accept(
+        ctx,
+        idempotency_key="rollback-submission",
+        payload={"definition_id": "rollback-definition"},
+    )
+    accepted_receipt = accepted.receipt
+    assert accepted_receipt is not None
+    event = event_store.append(
+        ctx,
+        kind="run.accepted",
+        payload={"submission_id": accepted_receipt.submission_id},
+    )
+
+    assert downgrade(engine, target=rollback_head) == rollback_head
+    assert upgrade(engine) == VERSIONS[-1]
+    assert SQLModelDefinitionRepository(engine).get(ctx, "rollback-definition") == {
+        "name": "orders"
+    }
+    receipt = SQLModelSubmissionStore(engine).lookup_idempotency(
+        ctx, "rollback-submission"
+    )
+    assert receipt is not None
+    assert receipt.submission_id == accepted_receipt.submission_id
+    replayed = SqlModelEventStore(engine).list_after_cursor(ctx, None, limit=10)
+    assert [item.event_id for item in replayed] == [event.event_id]
+
+
 @pytest.mark.parametrize(
     "starting_head",
     (None, "004_schedules_0_47"),
@@ -558,3 +682,57 @@ def test_postgresql_event_retention_policy_bounds_each_scope_and_keeps_keys(
     isolated = events.append(_ctx("tenant-b", "workspace-b"), kind="other.scope")
     assert isolated.sequence == 1
     assert events.list_after_cursor(_ctx("tenant-b", "workspace-b"), None) == [isolated]
+
+
+def test_postgresql_event_tombstone_pruning_is_bounded_scoped_and_durable(
+    postgres_engine_factory: Callable[[], Engine],
+) -> None:
+    engine = postgres_engine_factory()
+    assert upgrade(engine) == "012_bounded_event_tombstone_retention_0_56"
+    ctx = _ctx()
+    other = _ctx("tenant-b", "workspace-b")
+    events = SqlModelEventStore(engine, idempotency_retention_seconds=1)
+    for event_key in ("one", "two", "three"):
+        events.append_once(
+            ctx,
+            event_key=event_key,
+            kind="run.started",
+            payload={"key": event_key},
+        )
+    other_event = events.append_once(
+        other,
+        event_key="other-scope",
+        kind="run.started",
+        payload={"key": "other-scope"},
+    )
+    expired_at = datetime.now(UTC) + timedelta(seconds=6)
+
+    assert events.prune_expired_idempotency(ctx, limit=2, now=expired_at) == 2
+    assert events.prune_expired_idempotency(ctx, limit=2, now=expired_at) == 1
+    assert events.prune_expired_idempotency(ctx, limit=2, now=expired_at) == 0
+    replacement = events.append_once(
+        ctx,
+        event_key="one",
+        kind="run.started",
+        payload={"key": "one"},
+    )
+    assert replacement.sequence == 4
+
+    engine.dispose()
+    restarted = postgres_engine_factory()
+    durable = SqlModelEventStore(restarted, idempotency_retention_seconds=1)
+    assert (
+        durable.append_once(
+            other,
+            event_key="other-scope",
+            kind="run.started",
+            payload={"key": "other-scope"},
+        ).event_id
+        == other_event.event_id
+    )
+    assert [item.sequence for item in durable.list_after_cursor(ctx, None)] == [
+        1,
+        2,
+        3,
+        4,
+    ]

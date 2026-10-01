@@ -49,8 +49,31 @@ EXPECTED_DIGESTS = {
     # With all workspace groups plus the FastAPI and LSP extras installed,
     # AC056-029 removes seven firing-scope diagnostics (10,402 -> 10,395) and
     # adds none versus the 0.55 base tree.
-    "Darwin": "d749d46a837fed2eb154301df57b4445a0b05b2e8b73a124cc64242ac79b67b3",
-    "Linux": "d749d46a837fed2eb154301df57b4445a0b05b2e8b73a124cc64242ac79b67b3",
+    # Phase 0.56 adds 150 no-suppression diagnostics across newly exercised
+    # managed HTTP tests, orchestration secret/incremental paths, and schedule
+    # models, while removing one prior incremental diagnostic. They remain in
+    # modules with reviewed existing Pyright boundaries; the regular repository
+    # Pyright run is clean. Lock the reviewed shadow inventory at 10,548.
+    # AC056-032 adds schedule amendment and control-contract tests. Their
+    # reviewed changes leave the normalized diagnostic count unchanged; source
+    # line fingerprints were refreshed after placing the new regression last
+    # and giving the PostgreSQL test a unique durable-store namespace.
+    # AC056-009 adds preparation-operation restart, cancellation and lease
+    # renewal cases; the 10,548-diagnostic total is unchanged, with refreshed
+    # source-location fingerprints.
+    # AC056-027/028 adds workload-bound schedules and typed schedule policy.
+    # Review of the changed files found 31 additional no-suppression
+    # diagnostics across attestation/durable/schedule models, secrets,
+    # orchestration and their contract tests; no new suppression was added for
+    # these findings. The ordinary repository Pyright gate remains clean.
+    # AC056-031 adds managed checkpoint resume, state-aware action discovery
+    # and rollback qualification. Typing the new managed test harness removes
+    # 14 shadow diagnostics; the reviewed total is 10,563.
+    # The Phase 0.56 full authorization matrix now includes resume across
+    # tenant/workspace scopes. Its added cases shift existing diagnostic lines;
+    # the reviewed shadow scan remains at 10,563 diagnostics.
+    "Darwin": "b0a518986b2ffea2c3b8387c040660078f1db75d167f30d6984ca769359eeb1c",
+    "Linux": "b0a518986b2ffea2c3b8387c040660078f1db75d167f30d6984ca769359eeb1c",
 }
 
 

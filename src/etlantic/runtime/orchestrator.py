@@ -6,11 +6,12 @@ from __future__ import annotations
 import contextlib
 import hashlib
 import inspect
+import json
 import threading
 import uuid
 from collections.abc import Awaitable, Callable, Mapping, Sequence
 from dataclasses import dataclass, field, replace
-from datetime import UTC, datetime
+from datetime import UTC, datetime, timedelta
 from pathlib import Path
 from typing import Annotated, Any, cast, get_args, get_origin
 
@@ -115,7 +116,11 @@ from etlantic.schema_policy import (
     SchemaDriftPolicy,
     evaluate_drift,
 )
-from etlantic.secrets.provider import SecretResolutionContext
+from etlantic.secrets.provider import (
+    LeasedSecretProvider,
+    SecretLease,
+    SecretResolutionContext,
+)
 from etlantic.secrets.ref import SecretRef
 from etlantic.secrets.value import SecretValue
 from etlantic.spark.provider import SparkSessionHandle
@@ -163,6 +168,28 @@ def _new_string_set() -> set[str]:
 
 class _ManagedCancellation(Exception):
     """Internal signal that a managed worker requested runtime cancellation."""
+
+
+class _SecretLeaseLost(Exception):
+    """Internal signal for expired or unrenewable provider credentials."""
+
+
+class _SecretLeaseRevocationFailed(Exception):
+    """Internal signal for a failed provider-owned cleanup obligation."""
+
+
+@dataclass
+class _ActiveSecretLease:
+    """A run-scoped secret lease and its provider-owned renewal schedule."""
+
+    provider: LeasedSecretProvider
+    context: SecretResolutionContext
+    reference: SecretRef
+    lease: SecretLease
+    renew_at: datetime
+    renewal_required: bool
+    revocation_required: bool
+    supports_versions: bool
 
 
 def _observe_records_schema(
@@ -289,6 +316,14 @@ class LocalOrchestrator:
             repr=False,
         )
     )
+    _output_partition_observations: dict[
+        str, tuple[int, tuple[str, ...], tuple[str, ...]]
+    ] = field(
+        default_factory=lambda: dict[
+            str, tuple[int, tuple[str, ...], tuple[str, ...]]
+        ](),
+        repr=False,
+    )
     _pending_source_connector: Any | None = field(default=None, repr=False)
     _pending_source_binding: dict[str, Any] = field(default_factory=dict, repr=False)
     _pending_source_context: dict[str, Any] = field(default_factory=dict, repr=False)
@@ -316,6 +351,12 @@ class LocalOrchestrator:
         default=None, init=False, repr=False
     )
     _cleanup_obligations: list[dict[str, Any]] = field(default_factory=list, repr=False)
+    _secret_leases: list[_ActiveSecretLease] = field(default_factory=list, repr=False)
+    _secret_lease_lock: threading.RLock = field(
+        default_factory=threading.RLock, repr=False
+    )
+    _secret_lease_failure: bool = field(default=False, repr=False)
+    _secret_lease_cleanup_failure: bool = field(default=False, repr=False)
     _publication_receipt_summaries: list[dict[str, Any]] = field(
         default_factory=list, repr=False
     )
@@ -528,15 +569,28 @@ class LocalOrchestrator:
         """Commit staged cursors after the run's selected outputs all publish."""
         if self.state_store is None:
             return
-        for subject_id, (value, reason) in sorted(
-            self._pending_state_candidates.items()
-        ):
-            transition = self.state_store.commit(
-                subject_id,
-                value,
-                reason=reason,
+        if not self._pending_state_candidates:
+            return
+        commit_many = getattr(self.state_store, "commit_many", None)
+        if not callable(commit_many):
+            if len(self._pending_state_candidates) != 1:
+                raise RuntimeError(
+                    "State provider must support atomic multi-cursor commits"
+                )
+            subject_id, (value, reason) = next(
+                iter(self._pending_state_candidates.items())
             )
-            self._state_transitions.append(transition)
+            transitions = [self.state_store.commit(subject_id, value, reason=reason)]
+        else:
+            commit_many_typed = cast(
+                Callable[
+                    [Mapping[str, tuple[str | None, str | None]]],
+                    Sequence[StateTransitionResult],
+                ],
+                commit_many,
+            )
+            transitions = commit_many_typed(self._pending_state_candidates)
+        self._state_transitions.extend(transitions)
         self._pending_state_candidates.clear()
 
     def _mark_publication(self) -> None:
@@ -658,39 +712,214 @@ class LocalOrchestrator:
     async def _with_managed_cancellation(
         self, operation: Callable[[], Awaitable[None]]
     ) -> None:
-        """Watch the worker's thread-safe cancellation token during execution."""
+        """Watch cancellation and provider leases during the complete run body."""
         cancellation = getattr(self.runtime, "external_cancel_event", None)
-        if cancellation is None:
-            await operation()
-            return
-        if not callable(getattr(cancellation, "is_set", None)):
+        if cancellation is not None and not callable(
+            getattr(cancellation, "is_set", None)
+        ):
             raise PipelineExecutionError(
                 "Managed cancellation token does not support is_set()",
                 code="PMEXEC411",
                 stage="admission",
             )
-        if cancellation.is_set():
+        if cancellation is not None and cancellation.is_set():
             raise _ManagedCancellation
 
         stop_monitor = anyio.Event()
+        self._secret_lease_failure = False
+        self._secret_lease_cleanup_failure = False
 
-        async def monitor(scope: anyio.CancelScope) -> None:
+        async def renew_due_leases(scope: anyio.CancelScope) -> None:
             while not stop_monitor.is_set():
-                if cancellation.is_set():
+                if cancellation is not None and cancellation.is_set():
                     scope.cancel()
                     return
+                now = datetime.now(UTC)
+                with self._secret_lease_lock:
+                    leases = tuple(self._secret_leases)
+                for active in leases:
+                    if active.lease.expires_at.astimezone(UTC) <= now:
+                        self._secret_lease_failure = True
+                        scope.cancel()
+                        return
+                    if not active.renewal_required or now < active.renew_at:
+                        continue
+                    try:
+                        remaining = max(
+                            0.05,
+                            (
+                                active.lease.expires_at.astimezone(UTC) - now
+                            ).total_seconds(),
+                        )
+                        with anyio.fail_after(remaining):
+                            renewed = await active.provider.renew_lease(
+                                active.lease.lease_id, active.context
+                            )
+                        self._validate_secret_lease(
+                            active.reference,
+                            renewed,
+                            supports_versions=active.supports_versions,
+                        )
+                        if renewed.lease_id != active.lease.lease_id:
+                            raise ValueError("renewed secret lease changed identity")
+                        if (
+                            renewed.value.provider,
+                            renewed.value.name,
+                            renewed.value.key,
+                            renewed.value.version,
+                        ) != (
+                            active.lease.value.provider,
+                            active.lease.value.name,
+                            active.lease.value.key,
+                            active.lease.value.version,
+                        ):
+                            raise ValueError("renewed secret identity changed")
+                        old_expiry = active.lease.expires_at.astimezone(UTC)
+                        new_expiry = renewed.expires_at.astimezone(UTC)
+                        lifetime = (new_expiry - old_expiry).total_seconds()
+                        if lifetime <= 0:
+                            raise ValueError(
+                                "secret lease renewal did not extend expiry"
+                            )
+                        active.lease = renewed
+                        active.renew_at = now + timedelta(
+                            seconds=max(0.0, lifetime * (2.0 / 3.0))
+                        )
+                    except Exception:
+                        # Provider exception text may contain credential data.
+                        self._secret_lease_failure = True
+                        scope.cancel()
+                        return
                 with anyio.move_on_after(0.05):
                     await stop_monitor.wait()
 
-        with anyio.CancelScope() as execution_scope:
-            async with anyio.create_task_group() as task_group:
-                task_group.start_soon(monitor, execution_scope)
+        try:
+            with anyio.CancelScope() as execution_scope:
                 try:
-                    await operation()
-                finally:
-                    stop_monitor.set()
+                    async with anyio.create_task_group() as task_group:
+                        task_group.start_soon(renew_due_leases, execution_scope)
+                        try:
+                            await operation()
+                        finally:
+                            stop_monitor.set()
+                except BaseExceptionGroup as exc:
+                    # A task group wraps a single exception from its body in
+                    # an ExceptionGroup. Preserve the public timeout,
+                    # cancellation and execution error types consumed by the
+                    # outer run state machine; multiple independent failures
+                    # remain grouped for diagnosis.
+                    while (
+                        isinstance(exc, BaseExceptionGroup) and len(exc.exceptions) == 1
+                    ):
+                        inner = exc.exceptions[0]
+                        if not isinstance(inner, BaseExceptionGroup):
+                            raise inner from exc
+                        exc = inner
+                    raise
+        finally:
+            # Revocation is a provider call and must still be attempted after
+            # a worker cancellation or an operation error.
+            with anyio.CancelScope(shield=True):
+                await self._revoke_secret_leases()
         if execution_scope.cancel_called:
+            if cancellation is not None and cancellation.is_set():
+                raise _ManagedCancellation
+            if self._secret_lease_failure:
+                raise _SecretLeaseLost
             raise _ManagedCancellation
+        if self._secret_lease_cleanup_failure:
+            raise _SecretLeaseRevocationFailed
+
+    def _validate_secret_lease(
+        self,
+        reference: SecretRef,
+        lease: Any,
+        *,
+        supports_versions: bool,
+    ) -> None:
+        if not isinstance(lease, SecretLease) or not isinstance(
+            lease.value, SecretValue
+        ):
+            raise ValueError("secret provider returned an invalid lease")
+        if lease.expires_at.astimezone(UTC) <= datetime.now(UTC):
+            raise ValueError("secret lease is already expired")
+        value = lease.value
+        if (value.provider, value.name, value.key) != (
+            reference.provider,
+            reference.name,
+            reference.key,
+        ):
+            raise ValueError("secret lease belongs to a different reference")
+        if reference.version != "current" and value.version != reference.version:
+            raise ValueError("secret lease did not return the requested version")
+        if supports_versions and (
+            not value.version.strip()
+            or (reference.version == "current" and value.version == "current")
+        ):
+            raise ValueError("versioned secret lease omitted its actual version")
+        if redact_message(value.version) != value.version:
+            raise ValueError("secret lease returned an unsafe version identifier")
+
+    def _track_secret_lease(
+        self,
+        provider: LeasedSecretProvider,
+        context: SecretResolutionContext,
+        reference: SecretRef,
+        lease: SecretLease,
+        *,
+        renewal_required: bool,
+        revocation_required: bool,
+        supports_versions: bool,
+    ) -> None:
+        now = datetime.now(UTC)
+        lifetime = max(0.0, (lease.expires_at.astimezone(UTC) - now).total_seconds())
+        active = _ActiveSecretLease(
+            provider=provider,
+            context=context,
+            reference=reference,
+            lease=lease,
+            renew_at=now + timedelta(seconds=lifetime * (2.0 / 3.0)),
+            renewal_required=renewal_required,
+            revocation_required=revocation_required,
+            supports_versions=supports_versions,
+        )
+        with self._secret_lease_lock:
+            self._secret_leases.append(active)
+
+    async def _revoke_secret_leases(self) -> None:
+        with self._secret_lease_lock:
+            leases = tuple(reversed(self._secret_leases))
+            self._secret_leases.clear()
+        for active in leases:
+            if not active.revocation_required:
+                continue
+            try:
+                with anyio.fail_after(5.0):
+                    await active.provider.revoke_lease(
+                        active.lease.lease_id, active.context
+                    )
+            except Exception:
+                self._secret_lease_cleanup_failure = True
+                self._cleanup_obligations.append(
+                    {
+                        "status": "unknown",
+                        "kind": "secret_lease_revocation",
+                        "provider": active.reference.provider,
+                        "secret_identity": active.reference.identity(),
+                        "code": "PMEXEC406",
+                    }
+                )
+                self.runtime.events.emit(
+                    SecurityEvent(
+                        kind="secret_lease_revocation",
+                        run_id=self.run_id or "",
+                        provider=active.reference.provider,
+                        secret_identity=active.reference.identity(),
+                        outcome="failure",
+                        step_name=active.context.step_name,
+                        message="Secret lease revocation failed.",
+                    )
+                )
 
     def _index_transformations(self, pipeline_cls: type[Any]) -> None:
         members = getattr(pipeline_cls, "__pipeline_members__", {})
@@ -795,6 +1024,7 @@ class LocalOrchestrator:
         self._state_transitions.clear()
         self._pending_state_candidates.clear()
         self._partition_observations.clear()
+        self._output_partition_observations.clear()
         if self.physical_mode:
             return await self._execute_physical()
         verify_plan_fingerprint(self.plan)
@@ -950,6 +1180,37 @@ class LocalOrchestrator:
                 self._commit_staged_state_after_publication()
             else:
                 self._pending_state_candidates.clear()
+        except (_SecretLeaseLost, _SecretLeaseRevocationFailed) as exc:
+            self._pending_state_candidates.clear()
+            status = RunStatus.FAILED
+            lease_lost = isinstance(exc, _SecretLeaseLost)
+            code = "PMEXEC405" if lease_lost else "PMEXEC406"
+            message = (
+                "Secret lease expired or renewal failed; execution was cancelled."
+                if lease_lost
+                else "Secret lease revocation failed; cleanup reconciliation is required."
+            )
+            self._finalize_incomplete_steps(
+                nodes, terminal=StepStatus.FAILED, message=message
+            )
+            self._append_diagnostic(
+                diagnostics,
+                RunDiagnostic(code=code, severity="error", message=message),
+            )
+            report = self._build_report(
+                run_id=run_id,
+                started=started,
+                nodes=nodes,
+                validations=validations,
+                diagnostics=diagnostics,
+                schema_obs=schema_obs,
+                artifacts=artifacts,
+                status=status,
+            )
+            self._persist_report(report)
+            raise PipelineExecutionError(
+                message, run_id=run_id, report=report, code=code
+            ) from exc
         except TimeoutError as exc:
             self._pending_state_candidates.clear()
             status = RunStatus.TIMED_OUT
@@ -2530,8 +2791,11 @@ class LocalOrchestrator:
         nodes = {node.name: node for node in self.plan.logical_graph.nodes}
         edges: list[dict[str, str]] = []
         sources: list[dict[str, Any]] = []
+        outputs: list[dict[str, Any]] = []
         observed_count = 0
         linked_count = 0
+        output_count = 0
+        output_linked_count = 0
         remaining = _MAX_PARTITION_LINEAGE_LINKS
         for node_name in sorted(selected):
             node = nodes.get(node_name)
@@ -2560,15 +2824,118 @@ class LocalOrchestrator:
                 }
                 for partition_id in linked_ids
             )
+        for node_name in sorted(selected):
+            node = nodes.get(node_name)
+            observation = self._output_partition_observations.get(node_name)
+            if node is None or observation is None:
+                continue
+            count, partition_ids, partition_keys = observation
+            output_id = f"node:{self.plan.pipeline_id}:{node.identity}"
+            linked_ids = partition_ids[:remaining]
+            remaining -= len(linked_ids)
+            output_count += count
+            output_linked_count += len(linked_ids)
+            outputs.append(
+                {
+                    "node_id": output_id,
+                    "partition_keys": list(partition_keys),
+                    "produced_partitions": count,
+                    "linked_partitions": len(linked_ids),
+                }
+            )
+            edges.extend(
+                {
+                    "from": output_id,
+                    "to": partition_id,
+                    "kind": "produced_partition",
+                }
+                for partition_id in linked_ids
+            )
         return edges, {
             "source_nodes": len(sources),
             "sources": sources,
+            "output_nodes": len(outputs),
+            "outputs": outputs,
             "observed_partitions": observed_count,
             "linked_partitions": linked_count,
             "truncated_partitions": observed_count - linked_count,
+            "output_partitions": output_count,
+            "output_linked_partitions": output_linked_count,
+            "truncated_output_partitions": output_count - output_linked_count,
             "link_limit": _MAX_PARTITION_LINEAGE_LINKS,
             "identity_scope": "run",
         }
+
+    def _observe_output_partitions(self, node: Node, data: Any, *, run_id: str) -> None:
+        """Record bounded opaque partition identities for a committed sink."""
+        expected_keys = {
+            key
+            for _count, _identities, keys in self._partition_observations.values()
+            for key in keys
+        }
+        binding_name = self.request.binding_overrides.get(
+            node.name, node.binding or node.name
+        )
+        descriptor = self._binding_descriptor(node, binding_name)
+        metadata = dict(descriptor.metadata or {}) if descriptor is not None else {}
+        configured_keys = metadata.get("partition_by") or metadata.get("partition_keys")
+        if isinstance(configured_keys, (list, tuple)):
+            expected_keys.update(
+                key for key in configured_keys if isinstance(key, str) and key.strip()
+            )
+        if not expected_keys:
+            return
+        try:
+            records = as_records(data, None)
+        except Exception:
+            return
+        if not isinstance(records, Sequence) or isinstance(records, (str, bytes)):
+            return
+        mappings: list[Mapping[str, Any]] = []
+        for record in records:
+            if isinstance(record, Mapping):
+                mappings.append(record)
+                continue
+            model_dump = getattr(record, "model_dump", None)
+            if callable(model_dump):
+                row = model_dump()
+            else:
+                legacy_dump = getattr(record, "dict", None)
+                row = legacy_dump() if callable(legacy_dump) else None
+            if isinstance(row, Mapping):
+                mappings.append(row)
+        if not mappings:
+            return
+        available_keys = set(mappings[0])
+        for mapping in mappings[1:]:
+            available_keys.intersection_update(mapping)
+        partition_keys = tuple(sorted(expected_keys & available_keys))
+        if not partition_keys:
+            return
+        values = sorted(
+            {
+                tuple(str(mapping.get(key, "")) for key in partition_keys)
+                for mapping in mappings
+            }
+        )
+        namespace = hashlib.sha256(
+            "\0".join(
+                (
+                    run_id,
+                    node.identity,
+                    json.dumps(partition_keys, separators=(",", ":")),
+                )
+            ).encode("utf-8")
+        ).hexdigest()
+        partition_ids = tuple(
+            f"partition:{namespace}:{ordinal}"
+            for ordinal, _value in enumerate(values[:_MAX_PARTITION_LINEAGE_LINKS])
+        )
+        self._output_partition_observations[node.name] = (
+            len(values),
+            partition_ids,
+            partition_keys,
+        )
 
     def _producers(self, graph: LogicalGraph) -> dict[str, set[str]]:
         producers: dict[str, set[str]] = {n.name: set() for n in graph.nodes}
@@ -3101,6 +3468,8 @@ class LocalOrchestrator:
                 state.metadata["etlantic.spark"] = result.metrics.to_dict()
                 if result.schema_observation:
                     state.metadata["etlantic.spark_schema"] = result.schema_observation
+                if isinstance(payload, list):
+                    self._observe_output_partitions(node, payload, run_id=run_id)
                 self._notify_publication(run_id=run_id, node=node, attempt=attempt)
                 return
             if self._is_sql_engine(self._engine_for(node.name)) and not isinstance(
@@ -3172,6 +3541,7 @@ class LocalOrchestrator:
                     )
                 )
                 self._mark_publication()
+                self._observe_output_partitions(node, payload, run_id=run_id)
                 return
             # SQL-region sink with Python list payload: load directly into target.
             if self._is_sql_engine(self._engine_for(node.name)) and isinstance(
@@ -3241,6 +3611,7 @@ class LocalOrchestrator:
                     )
                 )
                 self._mark_publication()
+                self._observe_output_partitions(node, payload, run_id=run_id)
                 return
             # SQL IR into a non-sql storage sink must not silently ignore the IR.
             if isinstance(payload, (RelationRef, SqlQuery)):
@@ -4995,6 +5366,7 @@ class LocalOrchestrator:
                 binding_name=binding_name,
                 node_name=node.name,
             )
+            self._observe_output_partitions(node, data, run_id=run_id)
             return
         # Prefer CommitReceipt barrier when a landing source is pending.
         pending_source_connector = self._pending_source_connector
@@ -5071,6 +5443,7 @@ class LocalOrchestrator:
                 )
             # Finalize only when every required sink has committed.
             await self._finalize_landing_after_commit(receipt)
+            self._observe_output_partitions(node, data, run_id=run_id)
             return
         publication_id = ""
         try:
@@ -5197,6 +5570,8 @@ class LocalOrchestrator:
                 stage=FailureStage.WRITE.value,
                 code="PMADP524",
             ) from exc
+        if provider_name != "null" and mode is not WriteMode.NO_WRITE:
+            self._observe_output_partitions(node, data, run_id=run_id)
 
     async def _resolve_secret(self, ref: SecretRef, *, run_id: str, step: str) -> Any:
         trusted_scope = self.runtime.trusted_execution_scope
@@ -5269,14 +5644,36 @@ class LocalOrchestrator:
                     trusted_scope=context.trusted_scope,
                     late_binding_authorized=True,
                 )
+            if (capabilities.renewal or capabilities.revocation) and not (
+                capabilities.leases
+            ):
+                raise PipelineExecutionError(
+                    "Secret provider advertises an incomplete lease capability set",
+                    run_id=run_id,
+                    code="PMEXEC404",
+                )
+            leased_provider: LeasedSecretProvider | None = None
+            if capabilities.leases:
+                acquire_lease = getattr(provider, "acquire_lease", None)
+                renew_lease = getattr(provider, "renew_lease", None)
+                revoke_lease = getattr(provider, "revoke_lease", None)
+                if (
+                    not callable(acquire_lease)
+                    or (capabilities.renewal and not callable(renew_lease))
+                    or (capabilities.revocation and not callable(revoke_lease))
+                ):
+                    raise PipelineExecutionError(
+                        "Secret provider lease capabilities are not implemented",
+                        run_id=run_id,
+                        code="PMEXEC404",
+                    )
+                leased_provider = cast(LeasedSecretProvider, provider)
+
             # Alias values can rotate without changing the accepted reference.
-            # Providers that advertise leases, renewal, or revocation require
-            # provider-owned lifetime handling; until the runtime owns that
-            # lifecycle, keep those values out of the process cache.
+            # Managed aliases bypass cache so authorization and version choice
+            # are evaluated for every operation.
             cache_enabled = capabilities.in_memory_cache and not (
                 capabilities.leases
-                or capabilities.renewal
-                or capabilities.revocation
                 or (
                     trusted_scope is not None
                     and ref.version == "current"
@@ -5311,7 +5708,48 @@ class LocalOrchestrator:
                         )
                     )
                     return cached
-            value: Any = await provider.resolve(ref, context)
+            lease: SecretLease | None = None
+            if leased_provider is not None:
+                try:
+                    lease = await leased_provider.acquire_lease(ref, context)
+                except Exception:
+                    raise PipelineExecutionError(
+                        "Secret lease acquisition failed",
+                        run_id=run_id,
+                        code="PMEXEC404",
+                    ) from None
+                try:
+                    self._validate_secret_lease(
+                        ref, lease, supports_versions=capabilities.versions
+                    )
+                except Exception:
+                    if capabilities.revocation and isinstance(lease, SecretLease):
+                        try:
+                            await leased_provider.revoke_lease(lease.lease_id, context)
+                        except Exception:
+                            self._secret_lease_cleanup_failure = True
+                            self._cleanup_obligations.append(
+                                {
+                                    "status": "unknown",
+                                    "kind": "secret_lease_revocation",
+                                    "provider": ref.provider,
+                                    "secret_identity": ref.identity(),
+                                    "code": "PMEXEC406",
+                                }
+                            )
+                    raise
+                self._track_secret_lease(
+                    leased_provider,
+                    context,
+                    ref,
+                    lease,
+                    renewal_required=capabilities.renewal,
+                    revocation_required=capabilities.revocation,
+                    supports_versions=capabilities.versions,
+                )
+                value = lease.value
+            else:
+                value = await provider.resolve(ref, context)
             if not isinstance(value, SecretValue):
                 raise PipelineExecutionError(
                     "Secret provider returned an invalid value",
@@ -5378,6 +5816,7 @@ class LocalOrchestrator:
                         value.version if value.version != "current" else None
                     ),
                     "cache_hit": False,
+                    **({"leased": True} if lease is not None else {}),
                     **(
                         {"late_binding_authorized": True}
                         if late_binding_authorized
@@ -5411,6 +5850,42 @@ class LocalOrchestrator:
                 )
         partitions = self.request.metadata.get("partitions") or {}
         pref = partitions.get(node.name) or partitions.get(node.binding or "")
+        if isinstance(pref, Mapping):
+            raw_subject = pref.get("subject_id")
+            raw_keys = pref.get("partition_keys")
+            raw_lateness = pref.get("allowed_lateness_seconds", 0)
+            raw_minimum = pref.get("minimum_count")
+            raw_metadata = pref.get("metadata", {})
+            if (
+                not isinstance(raw_subject, str)
+                or not isinstance(raw_keys, (list, tuple))
+                or not raw_keys
+                or not all(isinstance(key, str) and key for key in raw_keys)
+                or isinstance(raw_lateness, bool)
+                or not isinstance(raw_lateness, (int, float))
+                or (
+                    raw_minimum is not None
+                    and (
+                        isinstance(raw_minimum, bool)
+                        or not isinstance(raw_minimum, int)
+                    )
+                )
+                or not isinstance(raw_metadata, Mapping)
+            ):
+                raise NodeExecutionError(
+                    "Invalid partition completeness expectation",
+                    node_name=node.name,
+                    stage=FailureStage.FRESHNESS.value,
+                    run_id=run_id,
+                    code="PMEXEC351",
+                )
+            pref = PartitionCompletenessExpectation(
+                subject_id=raw_subject,
+                partition_keys=tuple(cast(Sequence[str], raw_keys)),
+                allowed_lateness_seconds=float(raw_lateness),
+                minimum_count=raw_minimum,
+                metadata=dict(cast(Mapping[str, Any], raw_metadata)),
+            )
         if isinstance(pref, PartitionCompletenessExpectation):
             observed: set[str] = set()
             observed_values: set[tuple[str, ...]] = set()

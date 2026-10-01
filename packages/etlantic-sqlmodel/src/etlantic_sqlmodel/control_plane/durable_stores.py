@@ -31,6 +31,7 @@ from etlantic.control_plane.durable_models import (
     LeaseRecord,
     OutboxRecord,
     PreviewWorkspace,
+    ResultPublicationRecord,
     ShadowRunRecord,
     StateDiagnostic,
     SubmissionRecord,
@@ -93,6 +94,9 @@ def _dump_store(store: MemoryDurableWorkStore) -> dict[str, Any]:
         "outbox": {_encode_key(k): asdict(v) for k, v in store._outbox.items()},
         "leases": {_encode_key(k): asdict(v) for k, v in store._leases.items()},
         "attempts": {_encode_key(k): asdict(v) for k, v in store._attempts.items()},
+        "result_publications": {
+            _encode_key(k): asdict(v) for k, v in store._result_publications.items()
+        },
         "checkpoints": {
             _encode_key(k): asdict(v) for k, v in store._checkpoints.items()
         },
@@ -133,6 +137,10 @@ def _load_store(payload: Mapping[str, Any]) -> MemoryDurableWorkStore:
     store._attempts = {
         _decode_key(k): AttemptRecord(**v)  # type: ignore[arg-type]
         for k, v in dict(payload.get("attempts") or {}).items()
+    }
+    store._result_publications = {
+        _decode_key(k): ResultPublicationRecord(**cast(Any, v))
+        for k, v in dict(payload.get("result_publications") or {}).items()
     }
     store._checkpoints = {
         _decode_key(k): CheckpointRecord(**v)  # type: ignore[arg-type]
@@ -211,6 +219,25 @@ class SQLModelDurableWorkStore:
             if self.admission_limit is not None:
                 mem.admission_limit = self.admission_limit
             return fn(mem)
+
+    def apply_in_transaction(
+        self,
+        session: Session,
+        operation: Callable[[MemoryDurableWorkStore], T],
+    ) -> T:
+        """Apply durable-work semantics inside a caller-owned SQL transaction.
+
+        This public coordination hook lets same-engine stores commit linked
+        state atomically without reaching into this adapter's snapshot methods.
+        The caller owns transaction lifetime and must share this store's engine.
+        """
+        self._lock_store(session)
+        memory, version = self._read(session, for_update=True)
+        if self.admission_limit is not None:
+            memory.admission_limit = self.admission_limit
+        result = operation(memory)
+        self._write(session, memory, expected_version=version)
+        return result
 
     def _read(
         self, session: Session, *, for_update: bool
@@ -339,11 +366,29 @@ class SQLModelDurableWorkStore:
     def get_action_job(self, ctx: ControlPlaneContext, action_id: str):
         return self._read_only(lambda m: m.get_action_job(ctx, action_id))
 
+    def get_action_job_by_idempotency(self, ctx: ControlPlaneContext, **kwargs: Any):
+        return self._read_only(lambda m: m.get_action_job_by_idempotency(ctx, **kwargs))
+
+    def cancel_action_job(self, ctx: ControlPlaneContext, action_id: str):
+        return self._txn(lambda m: m.cancel_action_job(ctx, action_id))
+
     def list_action_jobs(self, ctx: ControlPlaneContext, **kwargs: Any):
         return self._read_only(lambda m: m.list_action_jobs(ctx, **kwargs))
 
     def claim_action_job(self, ctx: ControlPlaneContext, **kwargs: Any):
         return self._txn(lambda m: m.claim_action_job(ctx, **kwargs))
+
+    def heartbeat_action_job(
+        self, ctx: ControlPlaneContext, action_id: str, **kwargs: Any
+    ):
+        return self._txn(lambda m: m.heartbeat_action_job(ctx, action_id, **kwargs))
+
+    def mark_action_job_accepting(
+        self, ctx: ControlPlaneContext, action_id: str, **kwargs: Any
+    ):
+        return self._txn(
+            lambda m: m.mark_action_job_accepting(ctx, action_id, **kwargs)
+        )
 
     def finish_action_job(
         self, ctx: ControlPlaneContext, action_id: str, **kwargs: Any
@@ -382,6 +427,38 @@ class SQLModelDurableWorkStore:
 
     def finish_attempt(self, ctx: ControlPlaneContext, attempt_id: str, **kwargs: Any):
         return self._txn(lambda m: m.finish_attempt(ctx, attempt_id, **kwargs))
+
+    def record_result_publication(
+        self, ctx: ControlPlaneContext, record: ResultPublicationRecord, **kwargs: Any
+    ):
+        return self._txn(lambda m: m.record_result_publication(ctx, record, **kwargs))
+
+    def get_latest_result_publication(
+        self, ctx: ControlPlaneContext, submission_id: str
+    ):
+        return self._read_only(
+            lambda m: m.get_latest_result_publication(ctx, submission_id)
+        )
+
+    def pending_result_publications(
+        self, ctx: ControlPlaneContext, *, limit: int = 100
+    ):
+        return self._read_only(
+            lambda m: m.pending_result_publications(ctx, limit=limit)
+        )
+
+    def mark_result_publication_published(
+        self,
+        ctx: ControlPlaneContext,
+        submission_id: str,
+        attempt_id: str,
+        **kwargs: Any,
+    ):
+        return self._txn(
+            lambda m: m.mark_result_publication_published(
+                ctx, submission_id, attempt_id, **kwargs
+            )
+        )
 
     def compare_and_swap_checkpoint(
         self, ctx: ControlPlaneContext, checkpoint_id: str, **kwargs: Any

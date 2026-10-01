@@ -47,6 +47,7 @@ class RunIntent(StrEnum):
     VALIDATE = "validate"
     BACKFILL = "backfill"
     REPLAY = "replay"
+    RESUME = "resume"
 
 
 class MaterializationPolicy(StrEnum):
@@ -399,7 +400,7 @@ class RunRequest:
         object.__setattr__(
             self,
             "metadata",
-            deepcopy(dict(metadata or {})),
+            mutable_copy(metadata or {}),
         )
         object.__setattr__(self, "extensions", deep_freeze(extension_data))
         object.__setattr__(self, "explicit_settings", frozenset(explicit))

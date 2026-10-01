@@ -8,6 +8,7 @@ import hashlib
 import inspect
 import json
 import re
+import threading
 from collections.abc import Awaitable, Callable, Mapping
 from datetime import UTC, datetime
 from typing import Any, cast
@@ -128,6 +129,10 @@ class ActionExecutionHost:
             handler = self.handlers.get(job.action)
             if handler is None:
                 self._finish_failure(ctx, job, "handler_unavailable")
+                processed += 1
+                continue
+            if job.action == "run.prepare":
+                self._execute_run_preparation(ctx, job, handler)
                 processed += 1
                 continue
             try:
@@ -276,6 +281,128 @@ class ActionExecutionHost:
             )
             processed += 1
         return processed
+
+    def _execute_run_preparation(
+        self,
+        worker_ctx: ControlPlaneContext,
+        job: ActionJobRecord,
+        handler: ActionHandler,
+    ) -> None:
+        try:
+            raw = json.loads(job.request_json)
+            if not isinstance(raw, dict) or set(cast(dict[str, Any], raw)) != {
+                "definition_id",
+                "revision_selector",
+                "profile_name",
+                "run_request",
+                "definition_revision_id",
+            }:
+                raise ValueError("invalid run preparation intent")
+            request = cast(dict[str, Any], raw)
+            if not all(
+                isinstance(request.get(name), str)
+                for name in (
+                    "definition_id",
+                    "revision_selector",
+                    "profile_name",
+                    "definition_revision_id",
+                )
+            ) or not isinstance(request.get("run_request"), dict):
+                raise ValueError("invalid run preparation intent")
+            action_ctx = self._trusted_context(worker_ctx, job)
+            require_authorized(
+                self.authorizer,
+                action_ctx,
+                "run.submit",
+                f"definition:{request['definition_id']}",
+                resource_in_caller_scope=False,
+            )
+        except ControlPlaneError as exc:
+            self._finish_failure(
+                worker_ctx,
+                job,
+                "authorization_denied"
+                if exc.status in {403, 404}
+                else "invalid_action_request",
+            )
+            return
+        except Exception:
+            self._finish_failure(worker_ctx, job, "invalid_action_request")
+            return
+
+        cancel_event = threading.Event()
+        request["_operation_id"] = job.action_id
+        request["_worker_id"] = self.worker_id
+        request["_fencing_token"] = job.fencing_token
+        request["_cancel_event"] = cancel_event
+        deadline = datetime.fromisoformat(job.deadline_at.replace("Z", "+00:00"))
+        try:
+            result = asyncio.run(
+                self._run_preparation_handler(
+                    action_ctx,
+                    job,
+                    handler,
+                    request,
+                    cancel_event,
+                    deadline=deadline,
+                )
+            )
+            safe_result = self._bounded_result(result)
+            self.durable.finish_action_job(
+                action_ctx,
+                job.action_id,
+                worker_id=self.worker_id,
+                fencing_token=job.fencing_token,
+                status="succeeded",
+                result=safe_result,
+            )
+        except TimeoutError:
+            self._finish_timeout(action_ctx, job)
+        except Exception:
+            self._finish_failure(action_ctx, job, "preparation_failed")
+
+    async def _run_preparation_handler(
+        self,
+        ctx: ControlPlaneContext,
+        job: ActionJobRecord,
+        handler: ActionHandler,
+        request: Mapping[str, Any],
+        cancel_event: threading.Event,
+        *,
+        deadline: datetime,
+    ) -> Mapping[str, Any]:
+        async def invoke() -> Mapping[str, Any]:
+            return await handler(ctx, request)
+
+        task = asyncio.create_task(invoke())
+        interval = min(1.0, max(0.05, self.lease_seconds / 3))
+        timed_out = False
+        while not task.done():
+            await asyncio.wait({task}, timeout=interval)
+            if task.done():
+                break
+            operation = self.durable.get_action_job(ctx, job.action_id)
+            if operation.status == "cancel_requested":
+                cancel_event.set()
+            if _now() >= deadline:
+                timed_out = True
+                cancel_event.set()
+            self.durable.heartbeat_action_job(
+                ctx,
+                job.action_id,
+                worker_id=self.worker_id,
+                fencing_token=job.fencing_token,
+                lease_seconds=self.lease_seconds,
+            )
+        try:
+            result = await task
+        except Exception:
+            if timed_out or _now() >= deadline:
+                raise TimeoutError from None
+            raise
+        if timed_out or _now() >= deadline:
+            raise TimeoutError
+        return result
 
     @staticmethod
     def _valid_provision_effect(

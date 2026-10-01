@@ -5,6 +5,7 @@ from __future__ import annotations
 from typing import TYPE_CHECKING, Any
 
 if TYPE_CHECKING:
+    from .action_handlers import create_action_handlers as create_action_handlers
     from .connectors import (
         FoundrySinkConnector as FoundrySinkConnector,
     )
@@ -28,6 +29,10 @@ __version__ = "0.55.0"
 
 
 def __getattr__(name: str) -> Any:
+    if name == "create_action_handlers":
+        from etlantic_foundry.action_handlers import create_action_handlers
+
+        return create_action_handlers
     if name in {
         "FoundrySinkConnector",
         "FoundrySourceConnector",
@@ -47,6 +52,7 @@ __all__ = [
     "FoundrySourceConnector",
     "FoundryStorageConnector",
     "__version__",
+    "create_action_handlers",
     "create_sink",
     "create_source",
     "create_storage",

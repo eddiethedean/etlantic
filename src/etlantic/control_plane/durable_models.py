@@ -37,6 +37,7 @@ STATE_TRANSITION_EXPLANATION_SCHEMA = (
 STATE_DIAGNOSTIC_SCHEMA = "etlantic.control_plane.state_diagnostic/1"
 BASELINE_ACK_SCHEMA = "etlantic.control_plane.baseline_acknowledgement/1"
 ACTION_JOB_SCHEMA = "etlantic.control_plane.action_job/1"
+RESULT_PUBLICATION_SCHEMA = "etlantic.control_plane.result_publication/1"
 
 STATE_NAMESPACES = ("cursor:", "watermark:", "partition:", "snapshot:", "checkpoint:")
 
@@ -48,7 +49,15 @@ EffectStatus = Literal[
     "none", "pending", "committed", "not_committed", "failed", "unknown"
 ]
 RepairPlanKind = Literal["resume", "repair", "backfill"]
-ActionJobStatus = Literal["queued", "running", "succeeded", "failed", "timed_out"]
+ActionJobStatus = Literal[
+    "queued",
+    "running",
+    "cancel_requested",
+    "succeeded",
+    "failed",
+    "timed_out",
+    "cancelled",
+]
 
 
 def _metadata(value: Mapping[str, Any] | None) -> Mapping[str, Any]:
@@ -154,6 +163,24 @@ class AttemptRecord:
             **asdict(self),
             "context": _metadata(self.context),
         }
+
+
+@dataclass(frozen=True, slots=True)
+class ResultPublicationRecord:
+    """Durable canonical run report awaiting or confirming publication."""
+
+    submission_id: str
+    attempt_id: str
+    run_id: str
+    tenant_id: str
+    workspace_id: str
+    report_json: str
+    report_sha256: str
+    created_at: str
+    published_at: str | None = None
+
+    def to_dict(self) -> dict[str, Any]:
+        return {"schema": RESULT_PUBLICATION_SCHEMA, **asdict(self)}
 
 
 @dataclass(frozen=True, slots=True)
@@ -422,6 +449,7 @@ class ActionJobRecord:
     created_at: str
     deadline_at: str
     status: ActionJobStatus = "queued"
+    phase: str = "queued"
     attempt: int = 0
     fencing_token: int = 0
     worker_id: str | None = None

@@ -89,13 +89,24 @@ def test_finalized_reference_is_owner_bound_and_checksum_verified(
     )
 
     assert InputResourceReference.from_dict(reference.to_dict()) == reference
-    with pytest.raises(ValueError, match="unsupported fields"):
-        InputResourceReference.from_dict({**reference.to_dict(), "path": "/etc/passwd"})
+    for locator_field, locator in (
+        ("path", "/etc/passwd"),
+        ("uri", "file:///etc/passwd"),
+        ("storage_path", "../../outside.csv"),
+    ):
+        with pytest.raises(ValueError, match="unsupported fields"):
+            InputResourceReference.from_dict(
+                {**reference.to_dict(), locator_field: locator}
+            )
     assert store.read(ctx, reference) == content
-    other_owner = _context(owner="different-owner")
-    with pytest.raises(ControlPlaneError) as denied:
-        store.read(other_owner, reference)
-    assert denied.value.status == 404
+    for other_scope in (
+        _context(tenant="different-tenant"),
+        _context(workspace="different-workspace"),
+        _context(owner="different-owner"),
+    ):
+        with pytest.raises(ControlPlaneError) as denied:
+            store.read(other_scope, reference)
+        assert denied.value.status == 404
     with pytest.raises(ControlPlaneError, match="owner-bound"):
         store.read(
             ctx,
@@ -111,6 +122,32 @@ def test_finalized_reference_is_owner_bound_and_checksum_verified(
             format="csv",
             expires_at=datetime.now(UTC) + timedelta(hours=1),
         )
+
+
+def test_finalized_reference_rejects_forged_version_scope_length_and_owner() -> None:
+    store = MemoryInputResourceStore()
+    ctx = _context()
+    content = b"id,name\n1,Ada\n"
+    reference = _finalize(store, ctx, content)
+    forged_digest = "0" * 64
+    changes = (
+        {"sha256": forged_digest, "version": f"sha256:{forged_digest}"},
+        {"byte_length": reference.byte_length + 1},
+        {"tenant_id": "different-tenant"},
+        {"workspace_id": "different-workspace"},
+        {"owner_id": "different-owner"},
+    )
+    for change in changes:
+        forged = InputResourceReference.from_dict({**reference.to_dict(), **change})
+        with pytest.raises(ControlPlaneError):
+            store.read(ctx, forged)
+
+    for change in (
+        {"format": "parquet"},
+        {"media_type": "application/octet-stream"},
+    ):
+        with pytest.raises(ValueError, match="unsupported input resource"):
+            InputResourceReference.from_dict({**reference.to_dict(), **change})
 
 
 def test_upload_cleanup_is_bounded_and_respects_live_leases() -> None:

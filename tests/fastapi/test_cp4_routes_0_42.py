@@ -286,6 +286,7 @@ def test_attestation_put_and_verify_plan() -> None:
         signer_id=att.signer_id,
         tenant_id=att.tenant_id,
         workspace_id=att.workspace_id,
+        created_at=att.created_at,
     )
     authz = MemoryAuthorizer()
     ctx = _ctx()

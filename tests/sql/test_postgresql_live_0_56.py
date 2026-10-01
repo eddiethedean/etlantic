@@ -17,6 +17,7 @@ from sqlalchemy import create_engine, text
 from sqlalchemy.engine import make_url
 
 from etlantic import Data, Extract, Load, Pipeline, PipelineRuntime, Profile
+from etlantic.connectors.errors import ConnectorReadError
 from etlantic.connectors.models import CommitReceipt
 from etlantic.connectors.session import write_via_sink_connector
 from etlantic.registry import BindingDescriptor, PlanningContext
@@ -180,13 +181,19 @@ def test_live_source_and_storage_inspection_are_bounded_and_read_only(
             text("INSERT INTO public.etlantic_phase056_orders VALUES ('1', 'row')")
         )
     source = LivePostgresSourceConnector()
-    binding = {
-        "provider": "postgresql",
-        "location": "etlantic_phase056_orders",
-        "config": {"row_limit": 10, "batch_size": 1, "max_bytes": 1024},
-    }
 
-    async def read_all() -> list[dict[str, Any]]:
+    async def read_all(
+        *, row_limit: int = 10, max_bytes: int = 1024
+    ) -> list[dict[str, Any]]:
+        binding = {
+            "provider": "postgresql",
+            "location": "etlantic_phase056_orders",
+            "config": {
+                "row_limit": row_limit,
+                "batch_size": 1,
+                "max_bytes": max_bytes,
+            },
+        }
         plan = await source.plan_read(binding=binding, context=secret_context)
         batches = [
             batch
@@ -198,6 +205,25 @@ def test_live_source_and_storage_inspection_are_bounded_and_read_only(
 
     records = anyio.run(read_all)
     assert records == [{"id": "1", "payload": "row"}]
+    with engine.begin() as connection:
+        connection.execute(
+            text(
+                "INSERT INTO public.etlantic_phase056_orders VALUES ('2', 'another row')"
+            )
+        )
+
+    async def read_with_row_limit() -> list[dict[str, Any]]:
+        return await read_all(row_limit=1)
+
+    async def read_with_byte_limit() -> list[dict[str, Any]]:
+        return await read_all(max_bytes=1)
+
+    with pytest.raises(ConnectorReadError) as row_error:
+        anyio.run(read_with_row_limit)
+    assert row_error.value.code == "PMCONN855"
+    with pytest.raises(ConnectorReadError) as byte_error:
+        anyio.run(read_with_byte_limit)
+    assert byte_error.value.code == "PMCONN856"
 
     storage = LivePostgresStorageConnector()
 

@@ -63,6 +63,7 @@ from etlantic_fastapi.schemas import (
     RevisionResponse,
     RunActionsResponse,
     RunEventPageResponse,
+    RunResumeBody,
     RunStatusResponse,
     RunSubmitBody,
     SchemaObservationAckResponse,
@@ -694,6 +695,123 @@ def build_control_plane_router(api: ETLanticAPI) -> APIRouter:
         receipt = api.managed_service.get_connector_action(ctx, action_id)
         return ConnectorActionReceiptResponse.model_validate(receipt)
 
+    @router.post(
+        "/v1/definitions/{definition_id}/preparations",
+        operation_id="cp_start_run_preparation",
+        status_code=status.HTTP_202_ACCEPTED,
+        tags=["runs"],
+    )
+    def start_run_preparation(
+        definition_id: str,
+        response: Response,
+        ctx: ControlPlaneContext = Depends(get_ctx),
+        body: RunSubmitBody | None = None,
+        idempotency_key_header: str | None = Header(
+            default=None, alias="Idempotency-Key"
+        ),
+    ) -> dict[str, Any]:
+        if api.managed_service is None:
+            require_authorized(
+                api.authorizer,
+                ctx,
+                "run.submit",
+                f"definition:{definition_id}",
+                resource_in_caller_scope=False,
+            )
+            raise ControlPlaneError(
+                "Managed run preparation is not configured",
+                code="PMCP501",
+                status=501,
+                title="Not Implemented",
+                type="etlantic.control_plane/not_implemented",
+            )
+        idem = (
+            idempotency_key_header
+            or (body.idempotency_key if body else None)
+            or (ctx.idempotency_key.value if ctx.idempotency_key else None)
+        )
+        if not idem:
+            raise ControlPlaneError(
+                "Idempotency-Key is required for run preparation",
+                code="PMCP400",
+                status=400,
+                title="Bad Request",
+                type="etlantic.control_plane/bad_request",
+            )
+        payload = dict(body.payload or {}) if body is not None else {}
+        if set(payload) - {"request", "revision_selector"}:
+            raise ControlPlaneError(
+                "Unknown run preparation field(s): "
+                + ", ".join(sorted(set(payload) - {"request", "revision_selector"})),
+                code="PMCP400",
+                status=400,
+                title="Bad Request",
+                type="etlantic.control_plane/bad_request",
+            )
+        receipt = api.managed_service.start_run_preparation(
+            ctx,
+            definition_id,
+            idempotency_key=idem,
+            request=payload.get("request"),
+            revision_selector=payload.get("revision_selector", "current"),
+        )
+        response.status_code = status.HTTP_202_ACCEPTED
+        response.headers["Location"] = f"/v1/preparations/{receipt['operation_id']}"
+        return receipt
+
+    @router.get(
+        "/v1/preparations/{operation_id}",
+        operation_id="cp_get_run_preparation",
+        tags=["runs"],
+    )
+    def get_run_preparation(
+        operation_id: str,
+        ctx: ControlPlaneContext = Depends(get_ctx),
+    ) -> dict[str, Any]:
+        if api.managed_service is None:
+            require_authorized(
+                api.authorizer,
+                ctx,
+                "run.read",
+                f"preparation:{operation_id}",
+                resource_in_caller_scope=False,
+            )
+            raise ControlPlaneError(
+                "Managed run preparation is not configured",
+                code="PMCP501",
+                status=501,
+                title="Not Implemented",
+                type="etlantic.control_plane/not_implemented",
+            )
+        return api.managed_service.get_run_preparation(ctx, operation_id)
+
+    @router.delete(
+        "/v1/preparations/{operation_id}",
+        operation_id="cp_cancel_run_preparation",
+        status_code=status.HTTP_202_ACCEPTED,
+        tags=["runs"],
+    )
+    def cancel_run_preparation(
+        operation_id: str,
+        ctx: ControlPlaneContext = Depends(get_ctx),
+    ) -> dict[str, Any]:
+        if api.managed_service is None:
+            require_authorized(
+                api.authorizer,
+                ctx,
+                "run.cancel",
+                f"preparation:{operation_id}",
+                resource_in_caller_scope=False,
+            )
+            raise ControlPlaneError(
+                "Managed run preparation is not configured",
+                code="PMCP501",
+                status=501,
+                title="Not Implemented",
+                type="etlantic.control_plane/not_implemented",
+            )
+        return api.managed_service.cancel_run_preparation(ctx, operation_id)
+
     @router.get(
         "/v1/definitions/{definition_id}",
         operation_id="cp_get_definition",
@@ -730,6 +848,13 @@ def build_control_plane_router(api: ETLanticAPI) -> APIRouter:
         ctx: ControlPlaneContext = Depends(get_ctx),
     ) -> DefinitionWriteResponse:
         if api.managed_service is None:
+            require_authorized(
+                api.authorizer,
+                ctx,
+                "definition.write",
+                f"definition:{definition_id}",
+                resource_in_caller_scope=False,
+            )
             raise ControlPlaneError(
                 "Managed authoring service is not configured",
                 code="PMCP501",
@@ -753,6 +878,13 @@ def build_control_plane_router(api: ETLanticAPI) -> APIRouter:
         ctx: ControlPlaneContext = Depends(get_ctx),
     ) -> DefinitionWriteResponse:
         if api.managed_service is None:
+            require_authorized(
+                api.authorizer,
+                ctx,
+                "definition.edit",
+                f"definition:{definition_id}",
+                resource_in_caller_scope=False,
+            )
             raise ControlPlaneError(
                 "Managed authoring service is not configured",
                 code="PMCP501",
@@ -2207,7 +2339,7 @@ def build_control_plane_router(api: ETLanticAPI) -> APIRouter:
         body: dict[str, Any],
         ctx: ControlPlaneContext = Depends(get_ctx),
     ) -> dict[str, Any]:
-        from datetime import UTC, datetime
+        from datetime import datetime
 
         from etlantic.control_plane import EffectRecord
 
@@ -2768,7 +2900,7 @@ def build_control_plane_router(api: ETLanticAPI) -> APIRouter:
             resource_in_caller_scope=False,
         )
         store = _require_cp4(api.attestations, name="attestation store")
-        from datetime import datetime
+        from datetime import UTC, datetime
 
         from etlantic.control_plane import Attestation
 
@@ -2786,7 +2918,7 @@ def build_control_plane_router(api: ETLanticAPI) -> APIRouter:
                 environment=raw.get("environment"),
                 sbom_digest=raw.get("sbom_digest"),
                 created_at=(
-                    datetime.fromisoformat(created) if created else datetime.now()
+                    datetime.fromisoformat(created) if created else datetime.now(UTC)
                 ),
                 metadata=dict(raw.get("metadata") or {}),
             )
@@ -3113,6 +3245,56 @@ def build_control_plane_router(api: ETLanticAPI) -> APIRouter:
         endpoint=replay_run_endpoint,
         methods=["POST"],
         operation_id="cp_replay_run",
+        response_model=AcceptReceiptResponse,
+        status_code=status.HTTP_202_ACCEPTED,
+        tags=["runs"],
+    )
+
+    def resume_run_endpoint(
+        run_id: str,
+        body: RunResumeBody,
+        response: Response,
+        ctx: ControlPlaneContext = Depends(get_ctx),
+        idempotency_key_header: str | None = Header(
+            default=None, alias="Idempotency-Key"
+        ),
+    ) -> AcceptReceiptResponse:
+        if api.managed_service is None:
+            _authorize_run(ctx, "run.resume", run_id)
+            _require_scoped_run_exists(ctx, run_id)
+            raise ControlPlaneError(
+                "Managed run resume is not configured",
+                code="PMCP501",
+                status=501,
+                title="Not Implemented",
+            )
+        idempotency_key = idempotency_key_header or (
+            ctx.idempotency_key.value if ctx.idempotency_key else None
+        )
+        if not idempotency_key:
+            raise ControlPlaneError(
+                "Idempotency-Key is required for managed resume",
+                code="PMCP400",
+                status=400,
+                title="Bad Request",
+                type="etlantic.control_plane/bad_request",
+            )
+        receipt = api.managed_service.resume_run(
+            ctx,
+            run_id,
+            idempotency_key=idempotency_key,
+            checkpoint_id=body.checkpoint_id,
+        )
+        response.status_code = status.HTTP_202_ACCEPTED
+        return AcceptReceiptResponse.model_validate(
+            _receipt_with_urls(receipt).to_dict()
+        )
+
+    router.add_api_route(
+        "/v1/runs/{run_id}/resume",
+        endpoint=resume_run_endpoint,
+        methods=["POST"],
+        operation_id="cp_resume_run",
         response_model=AcceptReceiptResponse,
         status_code=status.HTTP_202_ACCEPTED,
         tags=["runs"],

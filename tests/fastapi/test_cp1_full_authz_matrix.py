@@ -52,6 +52,12 @@ CROSS_TENANT_404_CASES: list[tuple[str, str, str, dict | None]] = [
     ("cp_get_run", "GET", "/v1/runs/{run_id}", None),
     ("cp_get_run_actions", "GET", "/v1/runs/{run_id}/actions", None),
     ("cp_retry_run", "POST", "/v1/runs/{run_id}/retry", None),
+    (
+        "cp_resume_run",
+        "POST",
+        "/v1/runs/{run_id}/resume",
+        {"checkpoint_id": "checkpoint-matrix"},
+    ),
     ("cp_cancel_run", "POST", "/v1/runs/{run_id}/cancel", None),
     ("cp_stream_run_events", "GET", "/v1/runs/{run_id}/events", None),
     (
@@ -98,6 +104,7 @@ ACTIONS = (
     "run.cancel",
     "run.actions",
     "run.retry",
+    "run.resume",
     "run.report",
     "run.artifacts",
     "run.artifact.content",
@@ -192,11 +199,10 @@ def test_cross_tenant_resource_is_404(
     template: str,
     body: dict | None,
 ) -> None:
-    del operation_id
     client, run_id, _ = _build()
     path = _path(template, definition_id="pipe-a", run_id=run_id)
     headers = {"X-Principal": "bob"}
-    if template.endswith("/runs") and method == "POST":
+    if method == "POST" and operation_id in {"cp_submit_run", "cp_resume_run"}:
         headers["Idempotency-Key"] = "bob-cross"
     resp = client.request(method, path, headers=headers, json=body)
     assert resp.status_code == 404, (method, path, resp.status_code, resp.text)
@@ -213,11 +219,10 @@ def test_cross_workspace_same_tenant_is_404(
     template: str,
     body: dict | None,
 ) -> None:
-    del operation_id
     client, run_id, _ = _build()
     path = _path(template, definition_id="pipe-a", run_id=run_id)
     headers = {"X-Principal": "alice-ws2"}
-    if template.endswith("/runs") and method == "POST":
+    if method == "POST" and operation_id in {"cp_submit_run", "cp_resume_run"}:
         headers["Idempotency-Key"] = "alice-ws2-cross"
     resp = client.request(method, path, headers=headers, json=body)
     assert resp.status_code == 404, (method, path, resp.status_code, resp.text)
@@ -237,7 +242,7 @@ def test_in_tenant_allow(
     client, run_id, _ = _build()
     path = _path(template, definition_id="pipe-a", run_id=run_id)
     headers = {"X-Principal": "alice"}
-    if operation_id == "cp_submit_run":
+    if operation_id in {"cp_submit_run", "cp_resume_run"}:
         headers["Idempotency-Key"] = "alice-allow"
     resp = client.request(method, path, headers=headers, json=body)
     expected_statuses = (
@@ -246,6 +251,7 @@ def test_in_tenant_allow(
         in {
             "cp_get_run_actions",
             "cp_retry_run",
+            "cp_resume_run",
             "cp_list_connector_catalog",
             "cp_get_run_artifact_content",
         }

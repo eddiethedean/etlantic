@@ -4,9 +4,11 @@
 from __future__ import annotations
 
 from contextlib import asynccontextmanager
+from datetime import UTC, datetime, timedelta
 from pathlib import Path
-from typing import Annotated, cast
+from typing import Annotated, Any, cast
 
+import anyio
 import pytest
 
 from etlantic import (
@@ -20,6 +22,7 @@ from etlantic import (
     SecretRef,
     Transformation,
 )
+from etlantic.exceptions import PipelineExecutionError
 from etlantic.lifecycle import Inject
 from etlantic.lifecycle.callbacks import FailureAction
 from etlantic.registry import BindingDescriptor, PlanningContext
@@ -35,6 +38,7 @@ from etlantic.schema_drift import (
 )
 from etlantic.schema_policy import DriftAction, SchemaDriftPolicy, evaluate_drift
 from etlantic.secrets.provider import (
+    SecretLease,
     SecretProvider,
     SecretProviderCapabilities,
     SecretProviderDescriptor,
@@ -80,6 +84,9 @@ class _VersionedSecretProvider:
         supports_leases: bool = False,
         supports_renewal: bool = False,
         supports_revocation: bool = False,
+        lease_ttl: float = 1.0,
+        fail_renewal: bool = False,
+        fail_revocation: bool = False,
     ) -> None:
         self.descriptor = SecretProviderDescriptor(
             name="versioned-test",
@@ -98,7 +105,18 @@ class _VersionedSecretProvider:
         self.resolved_version = resolved_version
         self.rotate = rotate
         self.calls = 0
+        self.lease_calls = 0
+        self.renewal_calls = 0
+        self.revocation_calls = 0
+        self.lease_ttl = lease_ttl
+        self.fail_renewal = fail_renewal
+        self.fail_revocation = fail_revocation
+        self._leases: dict[str, SecretValue] = {}
         self.contexts: list[SecretResolutionContext] = []
+
+    @property
+    def active_lease_count(self) -> int:
+        return len(self._leases)
 
     async def resolve(
         self, reference: SecretRef, context: SecretResolutionContext
@@ -114,6 +132,51 @@ class _VersionedSecretProvider:
                 f"release-{41 + self.calls}" if self.rotate else self.resolved_version
             ),
         )
+
+    async def acquire_lease(
+        self, reference: SecretRef, context: SecretResolutionContext
+    ) -> SecretLease:
+        self.lease_calls += 1
+        self.contexts.append(context)
+        lease_id = f"lease-{self.lease_calls}"
+        value = SecretValue(
+            _value="version-test-secret",
+            provider=reference.provider,
+            name=reference.name,
+            key=reference.key,
+            version=(
+                f"release-{41 + self.lease_calls}"
+                if self.rotate
+                else self.resolved_version
+            ),
+        )
+        self._leases[lease_id] = value
+        return SecretLease(
+            lease_id=lease_id,
+            value=value,
+            expires_at=datetime.now(UTC) + timedelta(seconds=self.lease_ttl),
+        )
+
+    async def renew_lease(
+        self, lease_id: str, context: SecretResolutionContext
+    ) -> SecretLease:
+        self.renewal_calls += 1
+        if self.fail_renewal:
+            raise RuntimeError("provider outage containing version-test-secret")
+        value = self._leases[lease_id]
+        return SecretLease(
+            lease_id=lease_id,
+            value=value,
+            expires_at=datetime.now(UTC) + timedelta(seconds=self.lease_ttl),
+        )
+
+    async def revoke_lease(
+        self, lease_id: str, context: SecretResolutionContext
+    ) -> None:
+        self.revocation_calls += 1
+        if self.fail_revocation:
+            raise RuntimeError("revocation failed for version-test-secret")
+        self._leases.pop(lease_id, None)
 
 
 class _AllowSecretAlias:
@@ -231,11 +294,21 @@ def _run_with_secret_version(
     trusted_scope: TrustedExecutionScope | None = None,
     alias_authorizer: _AllowSecretAlias | None = None,
     also_bind_sink: bool = False,
+    io_delay: float = 0.0,
 ) -> tuple[PipelineRuntime, PipelineRunReport]:
     runtime = PipelineRuntime()
     runtime.secret_providers["versioned-test"] = cast(SecretProvider, provider)
     runtime.trusted_execution_scope = trusted_scope
     runtime.secret_alias_authorizer = alias_authorizer
+    if io_delay:
+        memory = runtime.memory
+        original_read = memory.read
+
+        async def delayed_read(*args: Any, **kwargs: Any) -> Any:
+            await anyio.sleep(io_delay)
+            return await original_read(*args, **kwargs)
+
+        object.__setattr__(memory, "read", delayed_read)
     planning = PlanningContext.create(profile="development")
     reference = SecretRef(
         provider="versioned-test",
@@ -259,9 +332,15 @@ def _run_with_secret_version(
                 secret_ref=reference,
             )
         )
-    return runtime, SimplePipeline.run(
-        profile="development", runtime=runtime, context=planning
-    )
+    try:
+        report = SimplePipeline.run(
+            profile="development", runtime=runtime, context=planning
+        )
+    except PipelineExecutionError as exc:
+        if not isinstance(exc.report, PipelineRunReport):
+            raise
+        report = exc.report
+    return runtime, report
 
 
 def test_managed_secret_resolution_audits_actual_version() -> None:
@@ -410,24 +489,201 @@ def test_managed_secret_policy_is_rechecked_before_unversioned_cache() -> None:
     assert all(event.metadata["late_binding_authorized"] for event in events)
 
 
-@pytest.mark.parametrize("lifecycle_capability", ["leases", "renewal", "revocation"])
-def test_secret_lifecycle_capability_disables_process_cache(
-    lifecycle_capability: str,
-) -> None:
+def test_secret_lease_lifecycle_is_renewed_and_revoked_without_caching() -> None:
     provider = _VersionedSecretProvider(
         supports_versions=False,
         resolved_version="current",
         supports_aliases=False,
-        supports_leases=lifecycle_capability == "leases",
-        supports_renewal=lifecycle_capability == "renewal",
-        supports_revocation=lifecycle_capability == "revocation",
+        supports_leases=True,
+        supports_renewal=True,
+        supports_revocation=True,
+        lease_ttl=0.12,
     )
 
-    runtime, report = _run_with_secret_version(provider, "current", also_bind_sink=True)
+    runtime, report = _run_with_secret_version(
+        provider, "current", also_bind_sink=True, io_delay=0.25
+    )
 
     assert report.status is RunStatus.SUCCEEDED
-    assert provider.calls == 2
+    assert provider.calls == 0
+    assert provider.lease_calls == 2
+    assert provider.renewal_calls >= 1
+    assert provider.revocation_calls == 2
     assert runtime.secret_cache.stats()["entries"] == 0
+    assert provider.active_lease_count == 0
+    events = [
+        event
+        for event in runtime.events.events
+        if isinstance(event, SecurityEvent) and event.kind == "secret_resolution"
+    ]
+    assert len(events) == 2
+    assert all(event.metadata["leased"] is True for event in events)
+    assert all(event.metadata["resolved_version"] is None for event in events)
+
+
+def test_secret_leased_late_binding_records_rotated_versions() -> None:
+    provider = _VersionedSecretProvider(
+        supports_versions=True,
+        resolved_version="release-42",
+        rotate=True,
+        supports_leases=True,
+        supports_renewal=True,
+        supports_revocation=True,
+    )
+    scope = TrustedExecutionScope(
+        principal_id="worker-a",
+        principal_kind="workload",
+        tenant_id="tenant-a",
+        workspace_id="workspace-a",
+        environment="production",
+        security_domain_id="domain-a",
+        resource_owner_id="owner-a",
+    )
+    authorizer = _AllowSecretAlias()
+
+    runtime, report = _run_with_secret_version(
+        provider,
+        "current",
+        trusted_scope=scope,
+        alias_authorizer=authorizer,
+        also_bind_sink=True,
+    )
+
+    assert report.status is RunStatus.SUCCEEDED
+    assert provider.lease_calls == 2
+    assert provider.revocation_calls == 2
+    assert len(authorizer.contexts) == 2
+    assert all(context.late_binding_authorized for context in provider.contexts)
+    events = [
+        event
+        for event in runtime.events.events
+        if isinstance(event, SecurityEvent) and event.kind == "secret_resolution"
+    ]
+    assert [event.metadata["resolved_version"] for event in events] == [
+        "release-42",
+        "release-43",
+    ]
+    assert all(event.metadata["leased"] is True for event in events)
+    assert "version-test-secret" not in str([event.to_dict() for event in events])
+
+
+def test_secret_lease_capability_without_renewal_method_fails_closed() -> None:
+    provider = _VersionedSecretProvider(
+        supports_versions=False,
+        resolved_version="current",
+        supports_leases=True,
+        supports_renewal=True,
+    )
+    object.__setattr__(provider, "renew_lease", None)
+
+    _runtime, report = _run_with_secret_version(provider, "current")
+
+    assert report.status is RunStatus.FAILED
+    assert provider.lease_calls == 0
+    assert provider.calls == 0
+    assert any(item.code == "PMEXEC404" for item in report.diagnostics)
+
+
+def test_secret_lease_honors_exact_version_and_audits_it() -> None:
+    provider = _VersionedSecretProvider(
+        supports_versions=True,
+        resolved_version="release-41",
+        supports_leases=True,
+        supports_renewal=True,
+        supports_revocation=True,
+    )
+
+    runtime, report = _run_with_secret_version(provider, "release-41")
+
+    assert report.status is RunStatus.SUCCEEDED
+    assert provider.lease_calls == 1
+    assert provider.revocation_calls == 1
+    event = next(
+        event
+        for event in runtime.events.events
+        if isinstance(event, SecurityEvent) and event.kind == "secret_resolution"
+    )
+    assert event.metadata["requested_version"] == "release-41"
+    assert event.metadata["resolved_version"] == "release-41"
+    assert event.metadata["leased"] is True
+
+
+def test_secret_lease_expiry_cancels_io_and_revokes() -> None:
+    provider = _VersionedSecretProvider(
+        supports_versions=False,
+        resolved_version="current",
+        supports_aliases=False,
+        supports_leases=True,
+        supports_revocation=True,
+        lease_ttl=0.06,
+    )
+
+    _runtime, report = _run_with_secret_version(provider, "current", io_delay=0.15)
+
+    assert report.status is RunStatus.FAILED
+    assert provider.lease_calls == 1
+    assert provider.renewal_calls == 0
+    assert provider.revocation_calls == 1
+    assert any(item.code == "PMEXEC405" for item in report.diagnostics)
+
+
+def test_secret_lease_renewal_outage_cancels_without_secret_leak() -> None:
+    provider = _VersionedSecretProvider(
+        supports_versions=False,
+        resolved_version="current",
+        supports_aliases=False,
+        supports_leases=True,
+        supports_renewal=True,
+        supports_revocation=True,
+        lease_ttl=0.12,
+        fail_renewal=True,
+    )
+
+    runtime, report = _run_with_secret_version(provider, "current", io_delay=0.25)
+
+    assert report.status is RunStatus.FAILED
+    assert provider.renewal_calls == 1
+    assert provider.revocation_calls == 1
+    assert any(item.code == "PMEXEC405" for item in report.diagnostics)
+    assert "version-test-secret" not in str(report.to_dict())
+    assert all(
+        "version-test-secret" not in str(event.to_dict())
+        for event in runtime.events.events
+        if isinstance(event, SecurityEvent)
+    )
+
+
+def test_secret_lease_revocation_failure_is_reported_as_cleanup_obligation() -> None:
+    provider = _VersionedSecretProvider(
+        supports_versions=False,
+        resolved_version="current",
+        supports_aliases=False,
+        supports_leases=True,
+        supports_revocation=True,
+        fail_revocation=True,
+    )
+
+    runtime, report = _run_with_secret_version(provider, "current")
+
+    assert report.status is RunStatus.FAILED
+    assert provider.revocation_calls == 1
+    assert any(item.code == "PMEXEC406" for item in report.diagnostics)
+    assert report.metadata["etlantic.cleanup_obligations"] == [
+        {
+            "status": "unknown",
+            "kind": "secret_lease_revocation",
+            "provider": "versioned-test",
+            "secret_identity": "secret:versioned-test/warehouse#password@current?purpose=read",
+            "code": "PMEXEC406",
+        }
+    ]
+    assert "version-test-secret" not in str(report.to_dict())
+    assert any(
+        isinstance(event, SecurityEvent)
+        and event.kind == "secret_lease_revocation"
+        and event.outcome == "failure"
+        for event in runtime.events.events
+    )
 
 
 @pytest.mark.parametrize(

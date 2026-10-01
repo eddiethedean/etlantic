@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import asyncio
 import inspect
 from collections.abc import Callable, Mapping
 from contextlib import asynccontextmanager
@@ -267,14 +268,46 @@ class ManagedBackend:
             raise RuntimeError("Managed backend has no durable work store")
         from etlantic.runtime.action_execution_host import ActionExecutionHost
 
+        handlers = dict(self.action_handlers)
+        if self.api.managed_service is not None:
+            handlers["run.prepare"] = self._run_preparation_action
         return ActionExecutionHost(
             durable,
-            handlers=self.action_handlers,
+            handlers=handlers,
             authorizer=self.api.authorizer,
             profile=self.execution_profile,
             worker_id=worker_id,
             lease_seconds=self.action_job_lease_seconds,
             preview_result_ttl_seconds=self.preview_result_ttl_seconds,
+        )
+
+    async def _run_preparation_action(
+        self,
+        ctx: ControlPlaneContext,
+        request: Mapping[str, Any],
+    ) -> Mapping[str, Any]:
+        service = self.api.managed_service
+        if service is None:
+            raise RuntimeError("Managed run preparation is not configured")
+        operation_id = request.get("_operation_id")
+        worker_id = request.get("_worker_id")
+        fencing_token = request.get("_fencing_token")
+        cancel_event = request.get("_cancel_event")
+        if (
+            not isinstance(operation_id, str)
+            or not isinstance(worker_id, str)
+            or type(fencing_token) is not int
+            or not callable(getattr(cancel_event, "is_set", None))
+        ):
+            raise ValueError("invalid preparation worker context")
+        return await asyncio.to_thread(
+            service.execute_run_preparation,
+            ctx,
+            operation_id,
+            worker_id=worker_id,
+            fencing_token=fencing_token,
+            request=request,
+            is_cancelled=cancel_event.is_set,
         )
 
 

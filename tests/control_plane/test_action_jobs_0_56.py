@@ -6,7 +6,9 @@ import asyncio
 import json
 from collections.abc import Mapping
 from datetime import UTC, datetime, timedelta
-from typing import Any
+from threading import Event, Thread
+from time import sleep
+from typing import Any, cast
 
 import pytest
 
@@ -32,6 +34,17 @@ def _context(owner: str = "action-owner") -> ControlPlaneContext:
         environment=EnvironmentRef("test"),
         security_domain=SecurityDomain("action-domain"),
     )
+
+
+@pytest.mark.parametrize("lease_seconds", [True, 0, -1, 1.5, None])
+def test_action_worker_rejects_invalid_lease_ttls(lease_seconds: object) -> None:
+    with pytest.raises(ValueError, match="positive integer"):
+        ActionExecutionHost(
+            MemoryDurableWorkStore(),
+            handlers={},
+            authorizer=MemoryAuthorizer(),
+            lease_seconds=cast(Any, lease_seconds),
+        )
 
 
 def _accepted(
@@ -84,6 +97,215 @@ def test_action_job_acceptance_is_redacted_idempotent_and_owner_scoped() -> None
     with pytest.raises(ControlPlaneError) as cross_owner:
         store.get_action_job(_context("other-owner"), original.action_id)
     assert cross_owner.value.status == 404
+
+
+def test_run_preparation_operations_are_idempotent_and_cancellable_until_acceptance() -> (
+    None
+):
+    store = MemoryDurableWorkStore()
+    ctx = _context()
+    queued = _accepted(
+        store,
+        ctx,
+        key="prepare-queued",
+        action="run.prepare",
+        request={"definition_id": "pipe"},
+    )
+    assert (
+        store.get_action_job_by_idempotency(
+            ctx, action="run.prepare", idempotency_key="prepare-queued"
+        )
+        == queued
+    )
+    assert store.cancel_action_job(ctx, queued.action_id).status == "cancelled"
+    assert store.claim_action_job(ctx, worker_id="worker") is None
+
+    running = _accepted(
+        store,
+        ctx,
+        key="prepare-running",
+        action="run.prepare",
+        request={"definition_id": "pipe"},
+    )
+    claim = store.claim_action_job(ctx, worker_id="worker", lease_seconds=10)
+    assert claim is not None and claim.action_id == running.action_id
+    requested = store.cancel_action_job(ctx, running.action_id)
+    assert requested.status == "cancel_requested"
+    with pytest.raises(ControlPlaneError, match="cancelled"):
+        store.mark_action_job_accepting(
+            ctx,
+            running.action_id,
+            worker_id="worker",
+            fencing_token=claim.fencing_token,
+        )
+    completed = store.finish_action_job(
+        ctx,
+        running.action_id,
+        worker_id="worker",
+        fencing_token=claim.fencing_token,
+        status="failed",
+        error_code="preparation_failed",
+    )
+    assert completed.status == "cancelled"
+
+    accepting = _accepted(
+        store,
+        ctx,
+        key="prepare-accepting",
+        action="run.prepare",
+        request={"definition_id": "pipe"},
+    )
+    claim = store.claim_action_job(ctx, worker_id="worker", lease_seconds=10)
+    assert claim is not None and claim.action_id == accepting.action_id
+    store.mark_action_job_accepting(
+        ctx,
+        accepting.action_id,
+        worker_id="worker",
+        fencing_token=claim.fencing_token,
+    )
+    with pytest.raises(ControlPlaneError) as too_late:
+        store.cancel_action_job(ctx, accepting.action_id)
+    assert too_late.value.extensions.get("reason") == "acceptance_started"
+
+
+def test_run_preparation_worker_observes_running_cancellation() -> None:
+    store = MemoryDurableWorkStore()
+    ctx = _context()
+    authorizer = MemoryAuthorizer()
+    authorizer.grant(ctx, "run.submit")
+    job = _accepted(
+        store,
+        ctx,
+        key="prepare-running-cancel",
+        action="run.prepare",
+        request={
+            "definition_id": "pipe",
+            "revision_selector": "current",
+            "profile_name": "development",
+            "run_request": {},
+            "definition_revision_id": "revision-1",
+        },
+    )
+    started = Event()
+
+    async def wait_for_cancel(
+        _action_ctx: ControlPlaneContext, request: Mapping[str, Any]
+    ) -> dict[str, bool]:
+        started.set()
+        cancel_event = request["_cancel_event"]
+        while not cancel_event.is_set():
+            await asyncio.sleep(0.01)
+        return {"cancel_observed": True}
+
+    worker = ActionExecutionHost(
+        store,
+        handlers={"run.prepare": wait_for_cancel},
+        authorizer=authorizer,
+        worker_id="preparation-worker",
+        lease_seconds=3,
+    )
+    result: list[int] = []
+    process = Thread(target=lambda: result.append(worker.tick(ctx)))
+    process.start()
+    assert started.wait(timeout=3)
+    assert store.cancel_action_job(ctx, job.action_id).status == "cancel_requested"
+    process.join(timeout=5)
+    assert not process.is_alive()
+    assert result == [1]
+    assert store.get_action_job(ctx, job.action_id).status == "cancelled"
+
+
+def test_run_preparation_worker_renews_lease_during_long_preparation() -> None:
+    store = MemoryDurableWorkStore()
+    ctx = _context()
+    authorizer = MemoryAuthorizer()
+    authorizer.grant(ctx, "run.submit")
+    job = _accepted(
+        store,
+        ctx,
+        key="prepare-long-running",
+        action="run.prepare",
+        request={
+            "definition_id": "pipe",
+            "revision_selector": "current",
+            "profile_name": "development",
+            "run_request": {},
+            "definition_revision_id": "revision-1",
+        },
+    )
+    started = Event()
+
+    async def long_preparation(
+        _action_ctx: ControlPlaneContext, _request: Mapping[str, Any]
+    ) -> dict[str, bool]:
+        started.set()
+        await asyncio.sleep(1.5)
+        return {"prepared": True}
+
+    worker = ActionExecutionHost(
+        store,
+        handlers={"run.prepare": long_preparation},
+        authorizer=authorizer,
+        worker_id="long-preparation-worker",
+        lease_seconds=1,
+    )
+    result: list[int] = []
+    process = Thread(target=lambda: result.append(worker.tick(ctx)))
+    process.start()
+    assert started.wait(timeout=3)
+    sleep(1.1)
+    assert (
+        store.claim_action_job(ctx, worker_id="competing-worker", lease_seconds=1)
+        is None
+    )
+    process.join(timeout=5)
+    assert not process.is_alive()
+    assert result == [1]
+    assert store.get_action_job(ctx, job.action_id).status == "succeeded"
+
+
+def test_run_preparation_worker_enforces_deadline_at_cancellation_checkpoint() -> None:
+    store = MemoryDurableWorkStore()
+    ctx = _context()
+    authorizer = MemoryAuthorizer()
+    authorizer.grant(ctx, "run.submit")
+    now = datetime.now(UTC)
+    job = store.accept_action_job(
+        ctx,
+        action="run.prepare",
+        idempotency_key="prepare-deadline",
+        request={
+            "definition_id": "pipe",
+            "revision_selector": "current",
+            "profile_name": "development",
+            "run_request": {},
+            "definition_revision_id": "revision-1",
+        },
+        deadline_at=(now + timedelta(milliseconds=100)).isoformat(),
+    )
+    started = Event()
+
+    async def wait_for_deadline(
+        _action_ctx: ControlPlaneContext, request: Mapping[str, Any]
+    ) -> dict[str, bool]:
+        started.set()
+        cancel_event = request["_cancel_event"]
+        while not cancel_event.is_set():
+            await asyncio.sleep(0.01)
+        return {"completed_after_deadline": True}
+
+    worker = ActionExecutionHost(
+        store,
+        handlers={"run.prepare": wait_for_deadline},
+        authorizer=authorizer,
+        worker_id="deadline-preparation-worker",
+        lease_seconds=1,
+    )
+    assert worker.tick(ctx) == 1
+    assert started.is_set()
+    timed_out = store.get_action_job(ctx, job.action_id)
+    assert timed_out.status == "timed_out"
+    assert timed_out.error_code == "deadline_exceeded"
 
 
 def test_action_job_claim_fencing_and_receipt_pagination() -> None:

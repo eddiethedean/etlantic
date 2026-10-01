@@ -13,10 +13,15 @@ from pathlib import Path
 # strict-checking escape hatch; intentional changes must update this digest in
 # the same review. AC056-020 action-scope checks shifted later source lines;
 # prior AC056-019/044/031/015 work shifted other positions. AC056-021's
-# validation imports and branches shift locations again. Ruff formatting in
-# this 0.56 worktree moved existing directives too; their count and text remain
-# unchanged at 781.
-EXPECTED_DIGEST = "bc03029d9f381b54aee3f2bf36f57720693e9a8e151891db30b3f8b285bfd230"
+# validation imports and branches shift locations again. Phase 0.56 adds two
+# reviewed file-scoped exceptions: FastAPI route decorators appear unused to
+# Pyright's module scan, and the same-engine schedule adapter coordinates a
+# transaction through the durable adapter's internal snapshot API.
+# The private-usage exception was removed after exposing the SQLModel durable
+# adapter's same-transaction operation as a public coordination method. The
+# managed preparation service, managed resume command, route and authorization
+# matrix shift existing directives; the reviewed inventory remains 784 entries.
+EXPECTED_DIGEST = "d448953093da4e71ca131ae783f349c1f396fde830932b88ce588edbe5ba400a"
 
 _IGNORED_DIRECTORIES = frozenset(
     {

@@ -6,6 +6,7 @@ import threading
 import uuid
 from collections.abc import Sequence
 from copy import deepcopy
+from datetime import UTC, datetime, timedelta
 
 from etlantic.control_plane.attestation_models import (
     Attestation,
@@ -94,8 +95,17 @@ class MemoryAttestationStore:
         policy_fingerprint: str,
         plugin_fingerprints: Sequence[str],
         sbom_digest: str | None = None,
+        max_age_seconds: int = 24 * 60 * 60,
     ) -> Sequence[VerificationResult]:
         with self._lock:
+            if type(max_age_seconds) is not int or max_age_seconds < 1:
+                raise ControlPlaneError(
+                    "attestation freshness bound must be a positive integer",
+                    code="PMCP400",
+                    status=400,
+                    title="Bad Request",
+                    type="etlantic.control_plane/bad_request",
+                )
             results: list[VerificationResult] = []
             checks = [
                 ("plan", plan_fingerprint),
@@ -133,6 +143,35 @@ class MemoryAttestationStore:
                         VerificationResult(
                             ok=False,
                             reasons=(f"tampered {kind} attestation",),
+                            attestation_id=aid,
+                        )
+                    )
+                    continue
+                created_at = att.created_at
+                if created_at.tzinfo is None or created_at.utcoffset() is None:
+                    results.append(
+                        VerificationResult(
+                            ok=False,
+                            reasons=(f"invalid {kind} attestation timestamp",),
+                            attestation_id=aid,
+                        )
+                    )
+                    continue
+                age = datetime.now(UTC) - created_at.astimezone(UTC)
+                if age < timedelta(seconds=-300):
+                    results.append(
+                        VerificationResult(
+                            ok=False,
+                            reasons=(f"future-dated {kind} attestation",),
+                            attestation_id=aid,
+                        )
+                    )
+                    continue
+                if age > timedelta(seconds=max_age_seconds):
+                    results.append(
+                        VerificationResult(
+                            ok=False,
+                            reasons=(f"stale {kind} attestation",),
                             attestation_id=aid,
                         )
                     )
