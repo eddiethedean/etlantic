@@ -1969,7 +1969,7 @@
     {
       "actions": 12,
       "engine": "duckdb",
-      "evidence_fingerprint": "5962745d0627eb062eb9e818be8d7bd29509c8fe0b118837eb84ef8fb0580826",
+      "evidence_fingerprint": "a458f6392f401eaaab5398e0997b4a7f1ee6b06fd5a6cc4a56d2011808907d17",
       "execution_modes": {
         "eager": true,
         "lazy": true
