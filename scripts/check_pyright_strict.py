@@ -78,8 +78,12 @@ EXPECTED_DIGESTS = {
     # managed-service and package-qualification typing errors. Reviewing the
     # changed paths confirms those fixes remove cascaded shadow diagnostics;
     # the strict inventory falls from 10,563 to 9,832 without new suppressions.
-    "Darwin": "6d162afe0b7ba189b1a27ba2ebd9681babc431700e1bf6ee03b325d3da2e5185",
-    "Linux": "6d162afe0b7ba189b1a27ba2ebd9681babc431700e1bf6ee03b325d3da2e5185",
+    # AC056-043 extends managed local adaptive admission and records the
+    # managed qualification path; review of the touched paths leaves 9,846
+    # diagnostics in the suppression-free inventory (including existing
+    # diagnostics in those paths), with no new suppression directives.
+    "Darwin": "96d26954afeb6686503c2599c2b63c0f824fa3c054810435a5c2708ef5111ea0",
+    "Linux": "96d26954afeb6686503c2599c2b63c0f824fa3c054810435a5c2708ef5111ea0",
 }
 
 

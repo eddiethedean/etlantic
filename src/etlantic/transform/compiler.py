@@ -390,7 +390,11 @@ class TransformSupportReport:
                 raise ValueError("requirement IDs must be unique")
             requirements_by_id[identifier] = record
         requirement_ids = set(requirements_by_id)
-        for collection in (canonical_findings, list(self.findings)):
+        finding_collections = (
+            ("canonical", canonical_findings),
+            ("legacy", list(self.findings)),
+        )
+        for _source, collection in finding_collections:
             collection_object_ids: set[int] = set()
             for finding in collection:
                 if id(finding) in collection_object_ids:
@@ -399,7 +403,13 @@ class TransformSupportReport:
                     )
                 collection_object_ids.add(id(finding))
         seen_finding_objects: set[int] = set()
-        for index, finding in enumerate((*canonical_findings, *self.findings)):
+        finding_source_by_requirement: dict[str, str] = {}
+        indexed_findings = (
+            (source, index, finding)
+            for source, collection in finding_collections
+            for index, finding in enumerate(collection)
+        )
+        for source, index, finding in indexed_findings:
             item = finding.to_dict()
             finding_object_id = id(finding)
             if finding_object_id in seen_finding_objects:
@@ -484,16 +494,22 @@ class TransformSupportReport:
                     requirement.get("path") or "findings"
                 )
                 if requirement_id in serialized_by_requirement:
-                    # Aggregate compilers may report both the canonical
-                    # capability result and a more specific lowering/shape
-                    # failure for the same requirement. Emit one result per
-                    # requirement, with a concrete rejection taking
-                    # precedence over an aggregate success.
-                    if serialized.get("support") == "unsupported":
-                        serialized_by_requirement[requirement_id] = serialized
-                    continue
+                    previous_source = finding_source_by_requirement[requirement_id]
+                    if source != previous_source:
+                        # Canonical capability findings supersede legacy
+                        # summaries that describe the same requirement. Keep
+                        # duplicate IDs within either input collection an
+                        # error: they are ambiguous producer output.
+                        if source == "canonical":
+                            serialized_by_requirement[requirement_id] = serialized
+                            finding_source_by_requirement[requirement_id] = source
+                        continue
+                    raise ValueError(
+                        "support findings must contain exactly one result per requirement"
+                    )
                 used_ids.add(requirement_id)
                 serialized_by_requirement[requirement_id] = serialized
+                finding_source_by_requirement[requirement_id] = source
         findings.extend(serialized_by_requirement.values())
         # Legacy compilers may only provide aggregate findings. Preserve those
         # records while making successful reports explicit about their target.
