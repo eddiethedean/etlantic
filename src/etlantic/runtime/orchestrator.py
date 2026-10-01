@@ -79,7 +79,7 @@ from etlantic.runtime.faults import (
 from etlantic.runtime.incremental import MemoryStateStore, may_advance_state
 from etlantic.runtime.invoke import maybe_await
 from etlantic.runtime.logging import RunLogger, redact_message, redact_value
-from etlantic.runtime.request import MaterializationPolicy, RunRequest
+from etlantic.runtime.request import MaterializationPolicy, RunIntent, RunRequest
 from etlantic.runtime.spark_exec import (
     acquire_session,
     cancel_spark_jobs,
@@ -3279,6 +3279,17 @@ class LocalOrchestrator:
         elif node.kind is NodeKind.STEP:
             await maybe_inject_async(FaultBoundary.TRANSFORM, step_name=node.name)
         if node.kind is NodeKind.SOURCE:
+            if self._partition_ids_for_node(node.name) and (
+                is_spark_engine(self._engine_for(node.name))
+                or self._is_sql_engine(self._engine_for(node.name))
+            ):
+                raise NodeExecutionError(
+                    "This engine does not implement bounded partition reads",
+                    node_name=node.name,
+                    stage=FailureStage.READ.value,
+                    run_id=run_id,
+                    code="PMEXEC457",
+                )
             if is_spark_engine(self._engine_for(node.name)):
                 plugin = resolve_spark_plugin(
                     "pyspark",
@@ -4821,6 +4832,85 @@ class LocalOrchestrator:
                     return desc
         return self.plan.bindings.get(node.name) or self.plan.bindings.get(binding_name)
 
+    def _partition_ids_for_node(self, node_name: str) -> tuple[str, ...]:
+        """Return the immutable partition selector for one lifecycle command."""
+        operation_key = "etlantic.control_plane.partition_operation"
+        if operation_key not in self.request.metadata:
+            return ()
+        operation = self.request.metadata.get(operation_key)
+        expected_intent = {
+            "repair": RunIntent.REPAIR,
+            "backfill": RunIntent.BACKFILL,
+        }
+        if (
+            not isinstance(operation, Mapping)
+            or not isinstance(operation.get("command"), str)
+            or operation.get("command") not in expected_intent
+            or self.request.intent
+            is not expected_intent.get(cast(str, operation.get("command")))
+            or not isinstance(operation.get("parent_run_id"), str)
+            or not operation.get("parent_run_id", "").strip()
+        ):
+            raise NodeExecutionError(
+                "Accepted partition operation metadata is invalid",
+                node_name=node_name,
+                stage=FailureStage.ORCHESTRATOR.value,
+                code="PMEXEC458",
+            )
+        by_node = operation.get("partition_ids_by_node")
+        if not isinstance(by_node, Mapping):
+            raise NodeExecutionError(
+                "Accepted partition selector is missing",
+                node_name=node_name,
+                stage=FailureStage.ORCHESTRATOR.value,
+                code="PMEXEC458",
+            )
+        values = by_node.get(node_name)
+        if not isinstance(values, (list, tuple)):
+            raise NodeExecutionError(
+                "Accepted partition selector is missing for this node",
+                node_name=node_name,
+                stage=FailureStage.ORCHESTRATOR.value,
+                code="PMEXEC458",
+            )
+        if (
+            not values
+            or any(
+                not isinstance(value, str) or not value.strip() or len(value) > 4096
+                for value in values
+            )
+            or len(set(values)) != len(values)
+        ):
+            raise NodeExecutionError(
+                "Accepted partition selector is invalid",
+                node_name=node_name,
+                stage=FailureStage.ORCHESTRATOR.value,
+                code="PMEXEC458",
+            )
+        return tuple(values)
+
+    def _partition_provider_metadata(self, node_name: str) -> dict[str, Any]:
+        """Pass opaque lifecycle qualifiers to the provider for this node."""
+        operation = self.request.metadata.get(
+            "etlantic.control_plane.partition_operation"
+        )
+        if not isinstance(operation, Mapping):
+            return {}
+        partition_ids = self._partition_ids_for_node(node_name)
+        if not partition_ids:
+            return {}
+        return {
+            "etlantic.partition_operation": {
+                key: operation.get(key)
+                for key in (
+                    "command",
+                    "parent_run_id",
+                    "checkpoint_id",
+                    "reusable_artifact_ids",
+                )
+            }
+        }
+
     def _trusted_scope_context(self) -> dict[str, Any]:
         """Return server-derived identity for provider calls, if managed."""
         scope = self.runtime.trusted_execution_scope
@@ -4876,6 +4966,7 @@ class LocalOrchestrator:
         return tuple(sorted(set(normalized)))
 
     async def _read_source(self, node: Node, *, run_id: str) -> Any:
+        partition_ids = self._partition_ids_for_node(node.name)
         binding_name = node.binding or node.name
         binding_name = self.request.binding_overrides.get(node.name, binding_name)
         descriptor = self._binding_descriptor(node, binding_name)
@@ -4904,6 +4995,9 @@ class LocalOrchestrator:
                 "extract_id": node.name,
                 **self._trusted_scope_context(),
             }
+            if partition_ids:
+                context["etlantic.partition_ids"] = list(partition_ids)
+                context.update(self._partition_provider_metadata(node.name))
             input_resource_resolver = self.runtime.input_resource_resolver
             if input_resource_resolver is not None:
                 context["input_resource_resolver"] = input_resource_resolver
@@ -4988,6 +5082,9 @@ class LocalOrchestrator:
             "node": node.name,
             **self._trusted_scope_context(),
         }
+        if partition_ids:
+            context["etlantic.partition_ids"] = list(partition_ids)
+            context.update(self._partition_provider_metadata(node.name))
         if descriptor is not None and descriptor.secret_ref is not None:
             context["secret"] = await self._resolve_secret(
                 descriptor.secret_ref, run_id=run_id, step=node.name
@@ -5010,6 +5107,24 @@ class LocalOrchestrator:
                     stage=FailureStage.READ.value,
                     code="PMEXEC432",
                 ) from exc
+        if partition_ids:
+            reader = getattr(storage, "read_partitions", None)
+            if not callable(reader):
+                raise NodeExecutionError(
+                    "Storage provider does not implement bounded partition reads",
+                    node_name=node.name,
+                    stage=FailureStage.READ.value,
+                    run_id=run_id,
+                    code="PMEXEC457",
+                )
+            return await maybe_await(
+                reader,
+                binding=binding_name,
+                location=location,
+                contract_type=node.contract_type,
+                context=context,
+                partition_ids=partition_ids,
+            )
         return await storage.read(
             binding=binding_name,
             location=location,
@@ -5248,6 +5363,7 @@ class LocalOrchestrator:
             await self._finalize_landing_after_commit(receipt)
 
     async def _write_sink(self, node: Node, data: Any, *, run_id: str) -> None:
+        partition_ids = self._partition_ids_for_node(node.name)
         binding_name = node.binding or node.name
         binding_name = self.request.binding_overrides.get(node.name, binding_name)
         mode = self._effective_write_mode(node, binding_name)
@@ -5332,6 +5448,17 @@ class LocalOrchestrator:
             "contract_type": node.contract_type,
             **self._trusted_scope_context(),
         }
+        if partition_ids:
+            if sink_connector is None:
+                raise NodeExecutionError(
+                    "Sink provider does not implement bounded partition writes",
+                    node_name=node.name,
+                    stage=FailureStage.WRITE.value,
+                    run_id=run_id,
+                    code="PMEXEC459",
+                )
+            context["etlantic.partition_ids"] = list(partition_ids)
+            context.update(self._partition_provider_metadata(node.name))
         profile = getattr(self.runtime, "_active_profile", None)
         safe_io = (
             (self.plan.profile_snapshot or {}).get("safe_io")

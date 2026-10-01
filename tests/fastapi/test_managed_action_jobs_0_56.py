@@ -14,7 +14,7 @@ pytest.importorskip("sqlalchemy")
 pytest.importorskip("sqlmodel")
 pytest.importorskip("etlantic_sqlmodel")
 pytest.importorskip("fastapi")
-pytest.importorskip("httpx")
+pytest.importorskip("httpx2")
 
 import sqlalchemy
 from fastapi.testclient import TestClient

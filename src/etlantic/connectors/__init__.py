@@ -99,6 +99,8 @@ from etlantic.connectors.models import (
     fingerprint_public_config,
 )
 from etlantic.connectors.protocol import (
+    PartitionedSinkConnector,
+    PartitionedSourceConnector,
     ResourceIdentityConnector,
     SinkConnector,
     SourceConnector,
@@ -158,6 +160,8 @@ __all__ = [
     "LandingFileIdentity",
     "LandingReadManifest",
     "LocalFilesSourceConnector",
+    "PartitionedSinkConnector",
+    "PartitionedSourceConnector",
     "PublicationDecision",
     "ReadBatch",
     "ReconciliationResult",

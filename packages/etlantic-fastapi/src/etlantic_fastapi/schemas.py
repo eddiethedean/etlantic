@@ -487,6 +487,21 @@ class RunResumeBody(BaseModel):
     checkpoint_id: str
 
 
+class RunRepairBody(BaseModel):
+    invalidated_partition_ids: dict[str, list[str]]
+    checkpoint_id: str | None = None
+    reusable_artifact_ids: list[str] = Field(default_factory=list)
+
+    model_config = {"extra": "forbid"}
+
+
+class RunBackfillBody(BaseModel):
+    partition_ids: dict[str, list[str]]
+    checkpoint_id: str | None = None
+
+    model_config = {"extra": "forbid"}
+
+
 class DurablePreviewBody(BaseModel):
     preview_id: str
     base_revision_id: str
@@ -528,6 +543,8 @@ __all__ = [
     "ReportStubResponse",
     "RevisionListResponse",
     "RevisionResponse",
+    "RunBackfillBody",
+    "RunRepairBody",
     "RunResumeBody",
     "RunStatusResponse",
     "RunSubmitBody",

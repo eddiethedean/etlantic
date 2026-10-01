@@ -1,0 +1,1000 @@
+{
+  "built_wheels": {
+    "manifest_sha256": "d416a52721f2e1aa2bf74e151d637d8408f7b20bbe7d65c88b0b99e1aa3d3786",
+    "package_count": 25,
+    "packages": [
+      {
+        "distribution": "etlantic",
+        "filename": "etlantic-0.55.0-py3-none-any.whl",
+        "sha256": "9652e67cfcb51b6f3703524d583ad470c44fa880581d4a536eba8515fdc992a1",
+        "size_bytes": 1155713,
+        "version": "0.55.0"
+      },
+      {
+        "distribution": "etlantic-airflow",
+        "filename": "etlantic_airflow-0.55.0-py3-none-any.whl",
+        "sha256": "4f83dcfb9cacb6aec2378c4ff6a604d4130ffed7512e69effad8f20aaefa89da",
+        "size_bytes": 9155,
+        "version": "0.55.0"
+      },
+      {
+        "distribution": "etlantic-datafusion",
+        "filename": "etlantic_datafusion-0.55.0-py3-none-any.whl",
+        "sha256": "b1141f1515d77fa65be194fd290c07fa7b186198e795c304619184acefb4c928",
+        "size_bytes": 13177,
+        "version": "0.55.0"
+      },
+      {
+        "distribution": "etlantic-duckdb",
+        "filename": "etlantic_duckdb-0.55.0-py3-none-any.whl",
+        "sha256": "37534c744cf643c3730e3cfabbddbd1cbca2f8587267c860cce5513ca172acb9",
+        "size_bytes": 32061,
+        "version": "0.55.0"
+      },
+      {
+        "distribution": "etlantic-fastapi",
+        "filename": "etlantic_fastapi-0.55.0-py3-none-any.whl",
+        "sha256": "d512b98f6591059d41c33575dca9445586a5917396c09887a2224a29ba514c1d",
+        "size_bytes": 52937,
+        "version": "0.55.0"
+      },
+      {
+        "distribution": "etlantic-foundry",
+        "filename": "etlantic_foundry-0.55.0-py3-none-any.whl",
+        "sha256": "052753f8d11013e5b2298650037a6b678234bb249d97b1586f597d8c1d5b9589",
+        "size_bytes": 21450,
+        "version": "0.55.0"
+      },
+      {
+        "distribution": "etlantic-iceberg",
+        "filename": "etlantic_iceberg-0.55.0-py3-none-any.whl",
+        "sha256": "383c1b0f1b84ea32a60ad95fa17aa09a127ed9a8dec94b58be519ce84f10151d",
+        "size_bytes": 7498,
+        "version": "0.55.0"
+      },
+      {
+        "distribution": "etlantic-k8s",
+        "filename": "etlantic_k8s-0.55.0-py3-none-any.whl",
+        "sha256": "dd66e4c41ac8d994530b2292033f445abeef110adb2c7d6d6b1e5fd85bb566e9",
+        "size_bytes": 3782,
+        "version": "0.55.0"
+      },
+      {
+        "distribution": "etlantic-kafka",
+        "filename": "etlantic_kafka-0.55.0-py3-none-any.whl",
+        "sha256": "9d03cfb627e1716a2e10d5440f964baa96c2f40a76345586b0162dfe8564830f",
+        "size_bytes": 5966,
+        "version": "0.55.0"
+      },
+      {
+        "distribution": "etlantic-keyring",
+        "filename": "etlantic_keyring-0.55.0-py3-none-any.whl",
+        "sha256": "df057731423ce007e13b37378bbefa6145a4e74f9e84160ceac5d43d13fdf4bd",
+        "size_bytes": 3171,
+        "version": "0.55.0"
+      },
+      {
+        "distribution": "etlantic-lsp",
+        "filename": "etlantic_lsp-0.55.0-py3-none-any.whl",
+        "sha256": "46de809f9040dd9542cc279bb80f317e82faf82c4db1569ebb2e5ce93db06fa6",
+        "size_bytes": 6251,
+        "version": "0.55.0"
+      },
+      {
+        "distribution": "etlantic-mcp",
+        "filename": "etlantic_mcp-0.55.0-py3-none-any.whl",
+        "sha256": "8c79f60f871ae6fb6c824e2541842db27eaab94eb3d6dd3ac14c565898b64e69",
+        "size_bytes": 4639,
+        "version": "0.55.0"
+      },
+      {
+        "distribution": "etlantic-openlineage",
+        "filename": "etlantic_openlineage-0.55.0-py3-none-any.whl",
+        "sha256": "79f6bff754f18ad762f2e9f07c4c4fd7cb1227bad784892f8739231a533dbce6",
+        "size_bytes": 4582,
+        "version": "0.55.0"
+      },
+      {
+        "distribution": "etlantic-pandas",
+        "filename": "etlantic_pandas-0.55.0-py3-none-any.whl",
+        "sha256": "7dddfaee61f5fcb1a7f8bc1451a1355966dd4274f46e095519b86fb248319fd0",
+        "size_bytes": 18003,
+        "version": "0.55.0"
+      },
+      {
+        "distribution": "etlantic-polars",
+        "filename": "etlantic_polars-0.55.0-py3-none-any.whl",
+        "sha256": "93110bbdee9f2e6daaa8b26a44367b3da55fc8e862d50c21513c363a8ceb25a5",
+        "size_bytes": 26958,
+        "version": "0.55.0"
+      },
+      {
+        "distribution": "etlantic-prefect",
+        "filename": "etlantic_prefect-0.55.0-py3-none-any.whl",
+        "sha256": "e12aace0013a75c795565e453bd92116b1fef1e0f5a70f5250a02a4265cc2f84",
+        "size_bytes": 5595,
+        "version": "0.55.0"
+      },
+      {
+        "distribution": "etlantic-pyspark",
+        "filename": "etlantic_pyspark-0.55.0-py3-none-any.whl",
+        "sha256": "8ba9b93eaf20ca36d144df1cb4f21fd8ca4923aa9bcba1fd1fb2e09cce45557c",
+        "size_bytes": 26232,
+        "version": "0.55.0"
+      },
+      {
+        "distribution": "etlantic-s3",
+        "filename": "etlantic_s3-0.55.0-py3-none-any.whl",
+        "sha256": "2508ad9251aa1a1e9267b74837e76f387e9f662e9f807e4ac027d483746bc6d7",
+        "size_bytes": 9682,
+        "version": "0.55.0"
+      },
+      {
+        "distribution": "etlantic-schemaregistry",
+        "filename": "etlantic_schemaregistry-0.55.0-py3-none-any.whl",
+        "sha256": "dc2959153debffdf9b7be5823d5a0ff39f6e1ba5c0ecf24cc7cf008dbd7e5146",
+        "size_bytes": 4712,
+        "version": "0.55.0"
+      },
+      {
+        "distribution": "etlantic-snowflake",
+        "filename": "etlantic_snowflake-0.55.0-py3-none-any.whl",
+        "sha256": "977959620170b4a9cbcd1cc9863e98e232c7cc0c13c7b1767bd86a09bfa0e715",
+        "size_bytes": 7672,
+        "version": "0.55.0"
+      },
+      {
+        "distribution": "etlantic-spark-connect",
+        "filename": "etlantic_spark_connect-0.55.0-py3-none-any.whl",
+        "sha256": "2ec4ca5318375eb4dcbe3957ff0bd318d36d487ddda5eda1403ce9591b2644a2",
+        "size_bytes": 3922,
+        "version": "0.55.0"
+      },
+      {
+        "distribution": "etlantic-sparkforge",
+        "filename": "etlantic_sparkforge-0.55.0-py3-none-any.whl",
+        "sha256": "5c7a75d261ce65b3fa7b84ce06cf58827f4aee0b69a5177b52accd8e11924bf1",
+        "size_bytes": 3851,
+        "version": "0.55.0"
+      },
+      {
+        "distribution": "etlantic-sql",
+        "filename": "etlantic_sql-0.55.0-py3-none-any.whl",
+        "sha256": "b35a80bb1d47c4654c13d0ed732e7e652d64139ea1f95788772bfd3bff16de92",
+        "size_bytes": 80842,
+        "version": "0.55.0"
+      },
+      {
+        "distribution": "etlantic-sqlmodel",
+        "filename": "etlantic_sqlmodel-0.55.0-py3-none-any.whl",
+        "sha256": "bd8867cfdf188e97e3c65d9c5c8a9528536c3522617ee03b838249e9425b2d32",
+        "size_bytes": 61970,
+        "version": "0.55.0"
+      },
+      {
+        "distribution": "medallantic",
+        "filename": "medallantic-0.55.0-py3-none-any.whl",
+        "sha256": "21c3ff66c43b69f7413385145086491cc639f0c6ff1581ea9fa5e16c17b3ec1a",
+        "size_bytes": 56878,
+        "version": "0.55.0"
+      }
+    ],
+    "status": "passed",
+    "wheel_directory": "/private/tmp/etlantic-ac056-040-wheels"
+  },
+  "environment": {
+    "implementation": "CPython",
+    "isolated_mode": true,
+    "platform": "macOS-26.5.2-arm64-arm-64bit",
+    "python": "3.11.15"
+  },
+  "migrations": {
+    "core_records_preserved": [
+      "definition",
+      "submission_idempotency",
+      "event"
+    ],
+    "fresh_upgrade": "passed",
+    "latest_head": "012_bounded_event_tombstone_retention_0_56",
+    "migration_versions": [
+      "001_registry_cp2",
+      "002_durable_cp3",
+      "003_cp4_governance",
+      "004_schedules_0_47",
+      "005_cp1_reference",
+      "006_managed_definition_revisions_0_56",
+      "007_managed_run_reports_0_56",
+      "008_idempotent_run_events_0_56",
+      "009_event_retention_tombstones_0_56",
+      "010_immutable_input_resources_0_56",
+      "011_run_artifact_retention_0_56",
+      "012_bounded_event_tombstone_retention_0_56"
+    ],
+    "rollback_heads_reupgraded": [
+      "005_cp1_reference",
+      "006_managed_definition_revisions_0_56",
+      "007_managed_run_reports_0_56",
+      "008_idempotent_run_events_0_56",
+      "009_event_retention_tombstones_0_56",
+      "010_immutable_input_resources_0_56",
+      "011_run_artifact_retention_0_56"
+    ],
+    "status": "passed"
+  },
+  "openapi_and_schemas": {
+    "cp1": {
+      "component_schema_count": 57,
+      "components_sha256": "f05f97b9d9a4ae54a96a657f3943b490784a9711131392744a46bfa5d4c6fb70",
+      "openapi": "3.1.0",
+      "operationIds": [
+        "cp_abort_input_resource",
+        "cp_ack_schema_observation",
+        "cp_amend_schedule",
+        "cp_approval_create",
+        "cp_approval_decide",
+        "cp_approval_get",
+        "cp_approval_revoke",
+        "cp_attestation_put",
+        "cp_attestation_verify_plan",
+        "cp_attestation_verify_schema_observation",
+        "cp_audit_export",
+        "cp_audit_list",
+        "cp_backfill_run",
+        "cp_cancel_run",
+        "cp_cancel_run_preparation",
+        "cp_cleanup_input_resources",
+        "cp_create_schedule",
+        "cp_definition_context",
+        "cp_durable_acquire_lease",
+        "cp_durable_authorize_shadow",
+        "cp_durable_cancel",
+        "cp_durable_checkpoint_cas",
+        "cp_durable_create_preview",
+        "cp_durable_diagnose_checkpoint",
+        "cp_durable_finish_attempt",
+        "cp_durable_heartbeat",
+        "cp_durable_mark_published",
+        "cp_durable_pending_outbox",
+        "cp_durable_plan_repair",
+        "cp_durable_record_effect",
+        "cp_durable_release_lease",
+        "cp_durable_replay",
+        "cp_durable_start_attempt",
+        "cp_edit_definition",
+        "cp_erasure_create",
+        "cp_erasure_execute",
+        "cp_erasure_plan",
+        "cp_erasure_report",
+        "cp_finalize_input_resource",
+        "cp_get_connector_action",
+        "cp_get_definition",
+        "cp_get_run",
+        "cp_get_run_actions",
+        "cp_get_run_artifact_content",
+        "cp_get_run_lineage",
+        "cp_get_run_preparation",
+        "cp_get_run_report",
+        "cp_get_schedule",
+        "cp_health",
+        "cp_list_connector_actions",
+        "cp_list_connector_catalog",
+        "cp_list_definition_schedules",
+        "cp_list_definitions",
+        "cp_list_firings",
+        "cp_list_reliability",
+        "cp_list_run_artifacts",
+        "cp_list_run_events",
+        "cp_list_schema_observations",
+        "cp_objective_evaluate",
+        "cp_objective_get",
+        "cp_objective_notify",
+        "cp_objective_put",
+        "cp_pause_schedule",
+        "cp_plan_definition",
+        "cp_policy_decide",
+        "cp_preview_schedule",
+        "cp_proposal_validate",
+        "cp_quota_admit",
+        "cp_quota_contain",
+        "cp_quota_release",
+        "cp_quota_suspend",
+        "cp_ready",
+        "cp_register_definition",
+        "cp_registry_get_revision",
+        "cp_registry_get_tenant",
+        "cp_registry_get_workspace",
+        "cp_registry_list_revisions",
+        "cp_registry_list_tenants",
+        "cp_registry_list_workspaces",
+        "cp_registry_promote",
+        "cp_registry_put_alias",
+        "cp_registry_put_tenant",
+        "cp_registry_put_workspace",
+        "cp_repair_run",
+        "cp_replay_run",
+        "cp_rerun_run",
+        "cp_resume_run",
+        "cp_resume_schedule",
+        "cp_retry_run",
+        "cp_scheduler_health",
+        "cp_stage_input_resource",
+        "cp_start_run_preparation",
+        "cp_stream_run_events",
+        "cp_submit_connector_action",
+        "cp_submit_run",
+        "cp_trigger_schedule",
+        "cp_validate_definition",
+        "cp_workers_health"
+      ],
+      "paths": [
+        "/health",
+        "/ready",
+        "/v1/approvals",
+        "/v1/approvals/{approval_id}",
+        "/v1/approvals/{approval_id}/decide",
+        "/v1/approvals/{approval_id}/revoke",
+        "/v1/attestations",
+        "/v1/attestations/schema-observations/verify",
+        "/v1/attestations/verify-plan",
+        "/v1/audit",
+        "/v1/audit/export",
+        "/v1/connector-actions",
+        "/v1/connector-actions/{action_id}",
+        "/v1/connector-actions/{action}",
+        "/v1/connectors",
+        "/v1/definitions",
+        "/v1/definitions/{definition_id}",
+        "/v1/definitions/{definition_id}/context",
+        "/v1/definitions/{definition_id}/edit",
+        "/v1/definitions/{definition_id}/plan",
+        "/v1/definitions/{definition_id}/preparations",
+        "/v1/definitions/{definition_id}/runs",
+        "/v1/definitions/{definition_id}/schedules",
+        "/v1/definitions/{definition_id}/validate",
+        "/v1/durable/attempts/{attempt_id}/finish",
+        "/v1/durable/checkpoints/{checkpoint_id}/cas",
+        "/v1/durable/checkpoints/{checkpoint_id}/diagnose",
+        "/v1/durable/effects",
+        "/v1/durable/outbox",
+        "/v1/durable/outbox/{outbox_id}/published",
+        "/v1/durable/previews",
+        "/v1/durable/shadow",
+        "/v1/durable/submissions/{submission_id}/attempts",
+        "/v1/durable/submissions/{submission_id}/cancel",
+        "/v1/durable/submissions/{submission_id}/leases",
+        "/v1/durable/submissions/{submission_id}/leases/heartbeat",
+        "/v1/durable/submissions/{submission_id}/leases/release",
+        "/v1/durable/submissions/{submission_id}/repair",
+        "/v1/durable/submissions/{submission_id}/replay",
+        "/v1/erasure/plans/{plan_id}/execute",
+        "/v1/erasure/reports/{report_id}",
+        "/v1/erasure/requests",
+        "/v1/erasure/requests/{request_id}/plan",
+        "/v1/input-resources",
+        "/v1/input-resources/cleanup",
+        "/v1/input-resources/{upload_id}",
+        "/v1/input-resources/{upload_id}/finalize",
+        "/v1/objectives",
+        "/v1/objectives/{objective_id}",
+        "/v1/objectives/{objective_id}/evaluate",
+        "/v1/objectives/{objective_id}/notify",
+        "/v1/policy/decide",
+        "/v1/preparations/{operation_id}",
+        "/v1/proposals/validate",
+        "/v1/quotas/admit",
+        "/v1/quotas/contain",
+        "/v1/quotas/release",
+        "/v1/quotas/suspend",
+        "/v1/registry/aliases/{alias}",
+        "/v1/registry/logicals/{logical_id}/revisions",
+        "/v1/registry/promotions",
+        "/v1/registry/revisions/{revision_id}",
+        "/v1/registry/tenants",
+        "/v1/registry/tenants/{tenant_id}",
+        "/v1/registry/workspaces",
+        "/v1/registry/workspaces/{workspace_id}",
+        "/v1/reliability",
+        "/v1/runs/{run_id}",
+        "/v1/runs/{run_id}/actions",
+        "/v1/runs/{run_id}/artifacts",
+        "/v1/runs/{run_id}/artifacts/content",
+        "/v1/runs/{run_id}/backfill",
+        "/v1/runs/{run_id}/cancel",
+        "/v1/runs/{run_id}/events",
+        "/v1/runs/{run_id}/events/history",
+        "/v1/runs/{run_id}/lineage",
+        "/v1/runs/{run_id}/repair",
+        "/v1/runs/{run_id}/replay",
+        "/v1/runs/{run_id}/report",
+        "/v1/runs/{run_id}/rerun",
+        "/v1/runs/{run_id}/resume",
+        "/v1/runs/{run_id}/retry",
+        "/v1/scheduler/health",
+        "/v1/schedules/{schedule_id}",
+        "/v1/schedules/{schedule_id}/amend",
+        "/v1/schedules/{schedule_id}/firings",
+        "/v1/schedules/{schedule_id}/pause",
+        "/v1/schedules/{schedule_id}/preview",
+        "/v1/schedules/{schedule_id}/resume",
+        "/v1/schedules/{schedule_id}/trigger",
+        "/v1/schema/observations",
+        "/v1/schema/observations/{observation_id}/ack",
+        "/v1/workers/health"
+      ],
+      "schema_reference_count": 161
+    },
+    "cp_ga": {
+      "component_schema_count": 57,
+      "components_sha256": "f05f97b9d9a4ae54a96a657f3943b490784a9711131392744a46bfa5d4c6fb70",
+      "openapi": "3.1.0",
+      "operationIds": [
+        "cp_abort_input_resource",
+        "cp_ack_schema_observation",
+        "cp_amend_schedule",
+        "cp_approval_create",
+        "cp_approval_decide",
+        "cp_approval_get",
+        "cp_approval_revoke",
+        "cp_attestation_put",
+        "cp_attestation_verify_plan",
+        "cp_attestation_verify_schema_observation",
+        "cp_audit_export",
+        "cp_audit_list",
+        "cp_backfill_run",
+        "cp_cancel_run",
+        "cp_cancel_run_preparation",
+        "cp_cleanup_input_resources",
+        "cp_create_schedule",
+        "cp_definition_context",
+        "cp_durable_acquire_lease",
+        "cp_durable_authorize_shadow",
+        "cp_durable_cancel",
+        "cp_durable_checkpoint_cas",
+        "cp_durable_create_preview",
+        "cp_durable_diagnose_checkpoint",
+        "cp_durable_finish_attempt",
+        "cp_durable_heartbeat",
+        "cp_durable_mark_published",
+        "cp_durable_pending_outbox",
+        "cp_durable_plan_repair",
+        "cp_durable_record_effect",
+        "cp_durable_release_lease",
+        "cp_durable_replay",
+        "cp_durable_start_attempt",
+        "cp_edit_definition",
+        "cp_erasure_create",
+        "cp_erasure_execute",
+        "cp_erasure_plan",
+        "cp_erasure_report",
+        "cp_finalize_input_resource",
+        "cp_get_connector_action",
+        "cp_get_definition",
+        "cp_get_run",
+        "cp_get_run_actions",
+        "cp_get_run_artifact_content",
+        "cp_get_run_lineage",
+        "cp_get_run_preparation",
+        "cp_get_run_report",
+        "cp_get_schedule",
+        "cp_health",
+        "cp_list_connector_actions",
+        "cp_list_connector_catalog",
+        "cp_list_definition_schedules",
+        "cp_list_definitions",
+        "cp_list_firings",
+        "cp_list_reliability",
+        "cp_list_run_artifacts",
+        "cp_list_run_events",
+        "cp_list_schema_observations",
+        "cp_objective_evaluate",
+        "cp_objective_get",
+        "cp_objective_notify",
+        "cp_objective_put",
+        "cp_pause_schedule",
+        "cp_plan_definition",
+        "cp_policy_decide",
+        "cp_preview_schedule",
+        "cp_proposal_validate",
+        "cp_quota_admit",
+        "cp_quota_contain",
+        "cp_quota_release",
+        "cp_quota_suspend",
+        "cp_ready",
+        "cp_register_definition",
+        "cp_registry_get_revision",
+        "cp_registry_get_tenant",
+        "cp_registry_get_workspace",
+        "cp_registry_list_revisions",
+        "cp_registry_list_tenants",
+        "cp_registry_list_workspaces",
+        "cp_registry_promote",
+        "cp_registry_put_alias",
+        "cp_registry_put_tenant",
+        "cp_registry_put_workspace",
+        "cp_repair_run",
+        "cp_replay_run",
+        "cp_rerun_run",
+        "cp_resume_run",
+        "cp_resume_schedule",
+        "cp_retry_run",
+        "cp_scheduler_health",
+        "cp_stage_input_resource",
+        "cp_start_run_preparation",
+        "cp_stream_run_events",
+        "cp_submit_connector_action",
+        "cp_submit_run",
+        "cp_trigger_schedule",
+        "cp_validate_definition",
+        "cp_workers_health"
+      ],
+      "schema_reference_count": 161
+    }
+  },
+  "package_exports": {
+    "package_count": 25,
+    "packages": [
+      {
+        "distribution": "etlantic",
+        "import_origin": "/private/tmp/etlantic-ac056-040-venv/lib/python3.11/site-packages/etlantic/__init__.py",
+        "module": "etlantic",
+        "public_export_count": 67,
+        "public_exports_sha256": "04d0d99d04abe76f7768148bd62abd14d0805f68a08296aa884054db6e8bb307",
+        "status": "passed",
+        "version": "0.55.0"
+      },
+      {
+        "distribution": "etlantic-airflow",
+        "import_origin": "/private/tmp/etlantic-ac056-040-venv/lib/python3.11/site-packages/etlantic_airflow/__init__.py",
+        "module": "etlantic_airflow",
+        "public_export_count": 5,
+        "public_exports_sha256": "322b47029ca2359cf5fe9221a967466f661048bc4442873d496b93778b03d148",
+        "status": "passed",
+        "version": "0.55.0"
+      },
+      {
+        "distribution": "etlantic-datafusion",
+        "import_origin": "/private/tmp/etlantic-ac056-040-venv/lib/python3.11/site-packages/etlantic_datafusion/__init__.py",
+        "module": "etlantic_datafusion",
+        "public_export_count": 4,
+        "public_exports_sha256": "c4450ffb1a1c6dbde4a168606c096ee2f003cb07dc7384293fec81e8eeb6cf1f",
+        "status": "passed",
+        "version": "0.55.0"
+      },
+      {
+        "distribution": "etlantic-duckdb",
+        "import_origin": "/private/tmp/etlantic-ac056-040-venv/lib/python3.11/site-packages/etlantic_duckdb/__init__.py",
+        "module": "etlantic_duckdb",
+        "public_export_count": 6,
+        "public_exports_sha256": "7fc384b1e5cfb8315de9eee88d14cdd09e69204b589ac07a3afac9c8e0641ae4",
+        "status": "passed",
+        "version": "0.55.0"
+      },
+      {
+        "distribution": "etlantic-fastapi",
+        "import_origin": "/private/tmp/etlantic-ac056-040-venv/lib/python3.11/site-packages/etlantic_fastapi/__init__.py",
+        "module": "etlantic_fastapi",
+        "public_export_count": 35,
+        "public_exports_sha256": "3fd371ae098043236fae6d51b976cc44b5d476240b7a8690909b7ee907ec4d0f",
+        "status": "passed",
+        "version": "0.55.0"
+      },
+      {
+        "distribution": "etlantic-foundry",
+        "import_origin": "/private/tmp/etlantic-ac056-040-venv/lib/python3.11/site-packages/etlantic_foundry/__init__.py",
+        "module": "etlantic_foundry",
+        "public_export_count": 8,
+        "public_exports_sha256": "8e76d69c3788d28e5d9db044e29ad0b1c418871719341618046789cfffe43da8",
+        "status": "passed",
+        "version": "0.55.0"
+      },
+      {
+        "distribution": "etlantic-iceberg",
+        "import_origin": "/private/tmp/etlantic-ac056-040-venv/lib/python3.11/site-packages/etlantic_iceberg/__init__.py",
+        "module": "etlantic_iceberg",
+        "public_export_count": 9,
+        "public_exports_sha256": "4a142a1a80dcb8849bee306fe24ad65890427bd470116dbcb887e517b6dc63c0",
+        "status": "passed",
+        "version": "0.55.0"
+      },
+      {
+        "distribution": "etlantic-k8s",
+        "import_origin": "/private/tmp/etlantic-ac056-040-venv/lib/python3.11/site-packages/etlantic_k8s/__init__.py",
+        "module": "etlantic_k8s",
+        "public_export_count": 4,
+        "public_exports_sha256": "4f98c0f0f091f9a4547aed5f4debd289af40e07b7bdca24287185822d17f96ae",
+        "status": "passed",
+        "version": "0.55.0"
+      },
+      {
+        "distribution": "etlantic-kafka",
+        "import_origin": "/private/tmp/etlantic-ac056-040-venv/lib/python3.11/site-packages/etlantic_kafka/__init__.py",
+        "module": "etlantic_kafka",
+        "public_export_count": 7,
+        "public_exports_sha256": "0d6fb2111963042aa0c613a17f1be8bc3ee89d57c6b8aa76f293396e69acf040",
+        "status": "passed",
+        "version": "0.55.0"
+      },
+      {
+        "distribution": "etlantic-keyring",
+        "import_origin": "/private/tmp/etlantic-ac056-040-venv/lib/python3.11/site-packages/etlantic_keyring/__init__.py",
+        "module": "etlantic_keyring",
+        "public_export_count": 3,
+        "public_exports_sha256": "e1c5fdb22dfc3ece637c16e02f9a057ab634c17c0e6d71cfa364622b4bb2af8c",
+        "status": "passed",
+        "version": "0.55.0"
+      },
+      {
+        "distribution": "etlantic-lsp",
+        "import_origin": "/private/tmp/etlantic-ac056-040-venv/lib/python3.11/site-packages/etlantic_lsp/__init__.py",
+        "module": "etlantic_lsp",
+        "public_export_count": 2,
+        "public_exports_sha256": "bae8e11136bd64c18992e35a82ec82758a8fca5b40f236bddd2734dc105e3ea0",
+        "status": "passed",
+        "version": "0.55.0"
+      },
+      {
+        "distribution": "etlantic-mcp",
+        "import_origin": "/private/tmp/etlantic-ac056-040-venv/lib/python3.11/site-packages/etlantic_mcp/__init__.py",
+        "module": "etlantic_mcp",
+        "public_export_count": 4,
+        "public_exports_sha256": "10ba1a8e8a784c51b0e26c21872041faf78625ed5831f0f9f155181a559a2c1c",
+        "status": "passed",
+        "version": "0.55.0"
+      },
+      {
+        "distribution": "etlantic-openlineage",
+        "import_origin": "/private/tmp/etlantic-ac056-040-venv/lib/python3.11/site-packages/etlantic_openlineage/__init__.py",
+        "module": "etlantic_openlineage",
+        "public_export_count": 5,
+        "public_exports_sha256": "5883fac4b383c1f4c843d0135d70573c48797d90029eabbd105903d1639477de",
+        "status": "passed",
+        "version": "0.55.0"
+      },
+      {
+        "distribution": "etlantic-pandas",
+        "import_origin": "/private/tmp/etlantic-ac056-040-venv/lib/python3.11/site-packages/etlantic_pandas/__init__.py",
+        "module": "etlantic_pandas",
+        "public_export_count": 5,
+        "public_exports_sha256": "0a115c7705c61f3506357e07327613101a1ae6f931ba5d1844521b3e8262d171",
+        "status": "passed",
+        "version": "0.55.0"
+      },
+      {
+        "distribution": "etlantic-polars",
+        "import_origin": "/private/tmp/etlantic-ac056-040-venv/lib/python3.11/site-packages/etlantic_polars/__init__.py",
+        "module": "etlantic_polars",
+        "public_export_count": 7,
+        "public_exports_sha256": "7e4804854199291f74fcc2aef4641a063c41c129c048d6fdf83aae58d874b600",
+        "status": "passed",
+        "version": "0.55.0"
+      },
+      {
+        "distribution": "etlantic-prefect",
+        "import_origin": "/private/tmp/etlantic-ac056-040-venv/lib/python3.11/site-packages/etlantic_prefect/__init__.py",
+        "module": "etlantic_prefect",
+        "public_export_count": 3,
+        "public_exports_sha256": "7784aa2c47b5b68e89a5abb17d1de38e12db12d5a72ef2692c585162be8faf6c",
+        "status": "passed",
+        "version": "0.55.0"
+      },
+      {
+        "distribution": "etlantic-pyspark",
+        "import_origin": "/private/tmp/etlantic-ac056-040-venv/lib/python3.11/site-packages/etlantic_pyspark/__init__.py",
+        "module": "etlantic_pyspark",
+        "public_export_count": 7,
+        "public_exports_sha256": "3880edcd8c7afc84d0109a3f6441c49331490552413c22f67ec97d3c71ffb694",
+        "status": "passed",
+        "version": "0.55.0"
+      },
+      {
+        "distribution": "etlantic-s3",
+        "import_origin": "/private/tmp/etlantic-ac056-040-venv/lib/python3.11/site-packages/etlantic_s3/__init__.py",
+        "module": "etlantic_s3",
+        "public_export_count": 9,
+        "public_exports_sha256": "dcb6d21f2156a5ccb1cab63ffb712e5b4f96de599a91458b0cb67346193dde32",
+        "status": "passed",
+        "version": "0.55.0"
+      },
+      {
+        "distribution": "etlantic-schemaregistry",
+        "import_origin": "/private/tmp/etlantic-ac056-040-venv/lib/python3.11/site-packages/etlantic_schemaregistry/__init__.py",
+        "module": "etlantic_schemaregistry",
+        "public_export_count": 5,
+        "public_exports_sha256": "d818e46cefa257a862dace98443ac857c6fa2549fcd4ccdb52358fb131cc15db",
+        "status": "passed",
+        "version": "0.55.0"
+      },
+      {
+        "distribution": "etlantic-snowflake",
+        "import_origin": "/private/tmp/etlantic-ac056-040-venv/lib/python3.11/site-packages/etlantic_snowflake/__init__.py",
+        "module": "etlantic_snowflake",
+        "public_export_count": 9,
+        "public_exports_sha256": "1375eafb48e80a59f5242187fb4794aea58e4aef72a28fa10f3dc3b23d70c174",
+        "status": "passed",
+        "version": "0.55.0"
+      },
+      {
+        "distribution": "etlantic-spark-connect",
+        "import_origin": "/private/tmp/etlantic-ac056-040-venv/lib/python3.11/site-packages/etlantic_spark_connect/__init__.py",
+        "module": "etlantic_spark_connect",
+        "public_export_count": 4,
+        "public_exports_sha256": "7217c6d908f9a20a22850260eabd65ab02e1849d412230a0807b121338052ede",
+        "status": "passed",
+        "version": "0.55.0"
+      },
+      {
+        "distribution": "etlantic-sparkforge",
+        "import_origin": "/private/tmp/etlantic-ac056-040-venv/lib/python3.11/site-packages/etlantic_sparkforge/__init__.py",
+        "module": "etlantic_sparkforge",
+        "public_export_count": 62,
+        "public_exports_sha256": "282a8e7d685c16cd66cc9e1ac8c89a27e8be8508206270d32c38ccbf0028672a",
+        "status": "passed",
+        "version": "0.55.0"
+      },
+      {
+        "distribution": "etlantic-sql",
+        "import_origin": "/private/tmp/etlantic-ac056-040-venv/lib/python3.11/site-packages/etlantic_sql/__init__.py",
+        "module": "etlantic_sql",
+        "public_export_count": 17,
+        "public_exports_sha256": "75e7fb7395f5b02bf35a5638f7330e8daae6ee2577b308bd0aa05280735c793c",
+        "status": "passed",
+        "version": "0.55.0"
+      },
+      {
+        "distribution": "etlantic-sqlmodel",
+        "import_origin": "/private/tmp/etlantic-ac056-040-venv/lib/python3.11/site-packages/etlantic_sqlmodel/__init__.py",
+        "module": "etlantic_sqlmodel",
+        "public_export_count": 38,
+        "public_exports_sha256": "bd798813baf79d31e09ad9e8d574fd94a41af857952a80d555f4f9d6300cb6fe",
+        "status": "passed",
+        "version": "0.55.0"
+      },
+      {
+        "distribution": "medallantic",
+        "import_origin": "/private/tmp/etlantic-ac056-040-venv/lib/python3.11/site-packages/medallantic/__init__.py",
+        "module": "medallantic",
+        "public_export_count": 62,
+        "public_exports_sha256": "282a8e7d685c16cd66cc9e1ac8c89a27e8be8508206270d32c38ccbf0028672a",
+        "status": "passed",
+        "version": "0.55.0"
+      }
+    ],
+    "resolved_dependency_versions": {
+      "alembic": "1.20.0",
+      "anyio": "4.15.1",
+      "datafusion": "49.0.0",
+      "duckdb": "1.5.6",
+      "fastapi": "0.142.2",
+      "httpx2": "2.13.1",
+      "keyring": "25.7.0",
+      "lsprotocol": "2023.0.1",
+      "pandas": "2.3.3",
+      "polars": "1.44.2",
+      "prefect": "3.8.7",
+      "pyarrow": "25.0.1",
+      "pydantic": "2.13.5",
+      "pygls": "1.3.1",
+      "pyspark": "3.5.9",
+      "sqlalchemy": "2.0.54",
+      "sqlmodel": "0.0.47"
+    },
+    "version_skew": [
+      {
+        "base_distribution": "etlantic",
+        "base_requirement": "<0.56,>=0.55.0",
+        "candidate_base_accepted": "True",
+        "distribution": "etlantic-airflow",
+        "outside_0_55_major_minor_rejected": "True"
+      },
+      {
+        "base_distribution": "etlantic",
+        "base_requirement": "<0.56,>=0.55.0",
+        "candidate_base_accepted": "True",
+        "distribution": "etlantic-datafusion",
+        "outside_0_55_major_minor_rejected": "True"
+      },
+      {
+        "base_distribution": "etlantic",
+        "base_requirement": "<0.56,>=0.55.0",
+        "candidate_base_accepted": "True",
+        "distribution": "etlantic-duckdb",
+        "outside_0_55_major_minor_rejected": "True"
+      },
+      {
+        "base_distribution": "etlantic",
+        "base_requirement": "<0.56,>=0.55.0",
+        "candidate_base_accepted": "True",
+        "distribution": "etlantic-fastapi",
+        "outside_0_55_major_minor_rejected": "True"
+      },
+      {
+        "base_distribution": "etlantic",
+        "base_requirement": "<0.56,>=0.55.0",
+        "candidate_base_accepted": "True",
+        "distribution": "etlantic-foundry",
+        "outside_0_55_major_minor_rejected": "True"
+      },
+      {
+        "base_distribution": "etlantic",
+        "base_requirement": "<0.56,>=0.55.0",
+        "candidate_base_accepted": "True",
+        "distribution": "etlantic-iceberg",
+        "outside_0_55_major_minor_rejected": "True"
+      },
+      {
+        "base_distribution": "etlantic",
+        "base_requirement": "<0.56,>=0.55.0",
+        "candidate_base_accepted": "True",
+        "distribution": "etlantic-k8s",
+        "outside_0_55_major_minor_rejected": "True"
+      },
+      {
+        "base_distribution": "etlantic",
+        "base_requirement": "<0.56,>=0.55.0",
+        "candidate_base_accepted": "True",
+        "distribution": "etlantic-kafka",
+        "outside_0_55_major_minor_rejected": "True"
+      },
+      {
+        "base_distribution": "etlantic",
+        "base_requirement": "<0.56,>=0.55.0",
+        "candidate_base_accepted": "True",
+        "distribution": "etlantic-keyring",
+        "outside_0_55_major_minor_rejected": "True"
+      },
+      {
+        "base_distribution": "etlantic",
+        "base_requirement": "<0.56,>=0.55.0",
+        "candidate_base_accepted": "True",
+        "distribution": "etlantic-lsp",
+        "outside_0_55_major_minor_rejected": "True"
+      },
+      {
+        "base_distribution": "etlantic",
+        "base_requirement": "<0.56,>=0.55.0",
+        "candidate_base_accepted": "True",
+        "distribution": "etlantic-mcp",
+        "outside_0_55_major_minor_rejected": "True"
+      },
+      {
+        "base_distribution": "etlantic",
+        "base_requirement": "<0.56,>=0.55.0",
+        "candidate_base_accepted": "True",
+        "distribution": "etlantic-openlineage",
+        "outside_0_55_major_minor_rejected": "True"
+      },
+      {
+        "base_distribution": "etlantic",
+        "base_requirement": "<0.56,>=0.55.0",
+        "candidate_base_accepted": "True",
+        "distribution": "etlantic-pandas",
+        "outside_0_55_major_minor_rejected": "True"
+      },
+      {
+        "base_distribution": "etlantic",
+        "base_requirement": "<0.56,>=0.55.0",
+        "candidate_base_accepted": "True",
+        "distribution": "etlantic-polars",
+        "outside_0_55_major_minor_rejected": "True"
+      },
+      {
+        "base_distribution": "etlantic",
+        "base_requirement": "<0.56,>=0.55.0",
+        "candidate_base_accepted": "True",
+        "distribution": "etlantic-prefect",
+        "outside_0_55_major_minor_rejected": "True"
+      },
+      {
+        "base_distribution": "etlantic",
+        "base_requirement": "<0.56,>=0.55.0",
+        "candidate_base_accepted": "True",
+        "distribution": "etlantic-pyspark",
+        "outside_0_55_major_minor_rejected": "True"
+      },
+      {
+        "base_distribution": "etlantic",
+        "base_requirement": "<0.56,>=0.55.0",
+        "candidate_base_accepted": "True",
+        "distribution": "etlantic-s3",
+        "outside_0_55_major_minor_rejected": "True"
+      },
+      {
+        "base_distribution": "etlantic",
+        "base_requirement": "<0.56,>=0.55.0",
+        "candidate_base_accepted": "True",
+        "distribution": "etlantic-schemaregistry",
+        "outside_0_55_major_minor_rejected": "True"
+      },
+      {
+        "base_distribution": "etlantic",
+        "base_requirement": "<0.56,>=0.55.0",
+        "candidate_base_accepted": "True",
+        "distribution": "etlantic-snowflake",
+        "outside_0_55_major_minor_rejected": "True"
+      },
+      {
+        "base_distribution": "etlantic",
+        "base_requirement": "<0.56,>=0.55.0",
+        "candidate_base_accepted": "True",
+        "distribution": "etlantic-spark-connect",
+        "outside_0_55_major_minor_rejected": "True"
+      },
+      {
+        "base_distribution": "medallantic",
+        "base_requirement": "<0.56,>=0.55.0",
+        "candidate_base_accepted": "True",
+        "distribution": "etlantic-sparkforge",
+        "outside_0_55_major_minor_rejected": "True"
+      },
+      {
+        "base_distribution": "etlantic",
+        "base_requirement": "<0.56,>=0.55.0",
+        "candidate_base_accepted": "True",
+        "distribution": "etlantic-sql",
+        "outside_0_55_major_minor_rejected": "True"
+      },
+      {
+        "base_distribution": "etlantic",
+        "base_requirement": "<0.56,>=0.55.0",
+        "candidate_base_accepted": "True",
+        "distribution": "etlantic-sqlmodel",
+        "outside_0_55_major_minor_rejected": "True"
+      },
+      {
+        "base_distribution": "etlantic",
+        "base_requirement": "<0.56,>=0.55.0",
+        "candidate_base_accepted": "True",
+        "distribution": "medallantic",
+        "outside_0_55_major_minor_rejected": "True"
+      }
+    ]
+  },
+  "schema": "etlantic.phase056.package_qualification/1",
+  "status": "passed",
+  "verification_suites": [
+    {
+      "command": [
+        "-m",
+        "pytest",
+        "-q",
+        "tests/sqlmodel/test_cp1_migrations_0_51.py",
+        "tests/fastapi/test_cp1_openapi.py",
+        "tests/fastapi/test_cp_ga_openapi_0_43.py",
+        "tests/plan/test_wire_schemas_0_19.py",
+        "tests/plan/test_schema_version_0_19.py"
+      ],
+      "passed": 34,
+      "skipped": 6,
+      "status": "passed",
+      "summary": "34 passed, 6 skipped",
+      "test_paths": [
+        "tests/sqlmodel/test_cp1_migrations_0_51.py",
+        "tests/fastapi/test_cp1_openapi.py",
+        "tests/fastapi/test_cp_ga_openapi_0_43.py",
+        "tests/plan/test_wire_schemas_0_19.py",
+        "tests/plan/test_schema_version_0_19.py"
+      ]
+    },
+    {
+      "command": [
+        "-m",
+        "pytest",
+        "-q",
+        "tests/compatibility",
+        "tests/connectors/test_connector_configuration_schemas_0_56.py",
+        "tests/schema_drift/test_schema_drift.py",
+        "tests/schema_drift/test_schema_history_hardening_0_34.py"
+      ],
+      "passed": 87,
+      "skipped": 0,
+      "status": "passed",
+      "summary": "87 passed",
+      "test_paths": [
+        "tests/compatibility",
+        "tests/connectors/test_connector_configuration_schemas_0_56.py",
+        "tests/schema_drift/test_schema_drift.py",
+        "tests/schema_drift/test_schema_history_hardening_0_34.py"
+      ]
+    }
+  ]
+}

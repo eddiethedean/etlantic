@@ -6,7 +6,7 @@ from typing import Any
 from urllib.parse import unquote
 
 import anyio
-import httpx
+import httpx2
 import pytest
 from etlantic_foundry.connectors import (
     FoundrySinkConnector,
@@ -68,26 +68,28 @@ def _sink_binding(mode: str = "append", **options: Any) -> dict[str, Any]:
 
 
 def test_source_reads_pinned_paginated_csv_and_records_identity() -> None:
-    requests: list[httpx.Request] = []
+    requests: list[httpx2.Request] = []
     contents = {
         "folder/a.csv": b"id,value\n1,alpha\n",
         "folder/b.csv": b"id,value\n2,beta\n",
     }
 
-    def handler(request: httpx.Request) -> httpx.Response:
+    def handler(request: httpx2.Request) -> httpx2.Response:
         requests.append(request)
         assert request.headers["Authorization"] == f"Bearer {TOKEN}"
         if request.url.path.endswith(f"/transactions/{TRANSACTION}"):
-            return httpx.Response(200, json={"rid": TRANSACTION, "status": "COMMITTED"})
+            return httpx2.Response(
+                200, json={"rid": TRANSACTION, "status": "COMMITTED"}
+            )
         if request.url.path.endswith("/files"):
             if request.url.params.get("pageToken"):
-                return httpx.Response(
+                return httpx2.Response(
                     200,
                     json={
                         "data": [{"path": "folder/b.csv", "sizeBytes": "16"}],
                     },
                 )
-            return httpx.Response(
+            return httpx2.Response(
                 200,
                 json={
                     "data": [{"path": "folder/a.csv", "sizeBytes": "17"}],
@@ -98,10 +100,10 @@ def test_source_reads_pinned_paginated_csv_and_records_identity() -> None:
             path = unquote(
                 request.url.path.split("/files/", 1)[1].removesuffix("/content")
             )
-            return httpx.Response(200, content=contents[path])
+            return httpx2.Response(200, content=contents[path])
         raise AssertionError(f"unexpected request: {request.method} {request.url}")
 
-    connector = FoundrySourceConnector(transport=httpx.MockTransport(handler))
+    connector = FoundrySourceConnector(transport=httpx2.MockTransport(handler))
     binding = _source_binding(path_prefix="folder", batch_size=1)
     context = _secret()
 
@@ -147,20 +149,20 @@ def test_sink_modes_use_open_foundry_transactions(
 ) -> None:
     events: list[tuple[str, str]] = []
 
-    def handler(request: httpx.Request) -> httpx.Response:
+    def handler(request: httpx2.Request) -> httpx2.Response:
         assert request.headers["Authorization"] == f"Bearer {TOKEN}"
         path = request.url.path
         if path.endswith("/transactions"):
             events.append(("create", json.loads(request.content)["transactionType"]))
-            return httpx.Response(
+            return httpx2.Response(
                 200,
                 json={"rid": f"ri.foundry.main.transaction.{mode}", "status": "OPEN"},
             )
         if path.endswith("/files"):
-            return httpx.Response(200, json={"data": []})
+            return httpx2.Response(200, json={"data": []})
         if path.endswith("/upload"):
             events.append(("upload", request.content.decode("utf-8")))
-            return httpx.Response(
+            return httpx2.Response(
                 200,
                 json={
                     "path": unquote(path.split("/files/", 1)[1].removesuffix("/upload"))
@@ -168,10 +170,10 @@ def test_sink_modes_use_open_foundry_transactions(
             )
         if path.endswith("/commit"):
             events.append(("commit", ""))
-            return httpx.Response(200, json={"status": "COMMITTED"})
+            return httpx2.Response(200, json={"status": "COMMITTED"})
         raise AssertionError(f"unexpected request: {request.method} {request.url}")
 
-    connector = FoundrySinkConnector(transport=httpx.MockTransport(handler))
+    connector = FoundrySinkConnector(transport=httpx2.MockTransport(handler))
     binding = _sink_binding(
         mode, file_path="orders/current.csv" if mode == "replace" else None
     )
@@ -200,18 +202,18 @@ def test_sink_modes_use_open_foundry_transactions(
 def test_sink_enforces_byte_bound_during_staging_without_poisoning_session() -> None:
     uploaded: list[bytes] = []
 
-    def handler(request: httpx.Request) -> httpx.Response:
+    def handler(request: httpx2.Request) -> httpx2.Response:
         path = request.url.path
         if path.endswith("/transactions"):
-            return httpx.Response(
+            return httpx2.Response(
                 200,
                 json={"rid": "ri.foundry.main.transaction.bounded", "status": "OPEN"},
             )
         if path.endswith("/files"):
-            return httpx.Response(200, json={"data": []})
+            return httpx2.Response(200, json={"data": []})
         if path.endswith("/upload"):
             uploaded.append(request.content)
-            return httpx.Response(
+            return httpx2.Response(
                 200,
                 json={
                     "path": unquote(path.split("/files/", 1)[1].removesuffix("/upload"))
@@ -219,7 +221,7 @@ def test_sink_enforces_byte_bound_during_staging_without_poisoning_session() -> 
             )
         raise AssertionError(f"unexpected request: {request.method} {request.url}")
 
-    connector = FoundrySinkConnector(transport=httpx.MockTransport(handler))
+    connector = FoundrySinkConnector(transport=httpx2.MockTransport(handler))
     binding = _sink_binding("append", format="json", max_bytes=15)
     binding["format"] = "json"
     context = _secret()
@@ -246,22 +248,22 @@ def test_lost_commit_ack_reconciles_after_connector_restart() -> None:
     transaction_rid = "ri.foundry.main.transaction.lost-ack"
     expected_payload = b"id,value\n1,alpha\n"
 
-    def handler(request: httpx.Request) -> httpx.Response:
+    def handler(request: httpx2.Request) -> httpx2.Response:
         nonlocal committed
         path = request.url.path
         if path.endswith("/transactions"):
-            return httpx.Response(200, json={"rid": transaction_rid, "status": "OPEN"})
+            return httpx2.Response(200, json={"rid": transaction_rid, "status": "OPEN"})
         if path.endswith("/files"):
-            return httpx.Response(200, json={"data": []})
+            return httpx2.Response(200, json={"data": []})
         if path.endswith("/upload"):
             assert request.content == expected_payload
             uploaded_path = unquote(path.split("/files/", 1)[1].removesuffix("/upload"))
-            return httpx.Response(200, json={"path": uploaded_path})
+            return httpx2.Response(200, json={"path": uploaded_path})
         if path.endswith("/commit"):
             committed = True
-            raise httpx.ReadTimeout("simulated lost acknowledgement")
+            raise httpx2.ReadTimeout("simulated lost acknowledgement")
         if path.endswith(f"/transactions/{transaction_rid}"):
-            return httpx.Response(
+            return httpx2.Response(
                 200,
                 json={
                     "rid": transaction_rid,
@@ -270,7 +272,7 @@ def test_lost_commit_ack_reconciles_after_connector_restart() -> None:
             )
         raise AssertionError(f"unexpected request: {request.method} {request.url}")
 
-    transport = httpx.MockTransport(handler)
+    transport = httpx2.MockTransport(handler)
     connector = FoundrySinkConnector(transport=transport)
     context = _secret()
 
@@ -297,11 +299,11 @@ def test_lost_commit_ack_reconciles_after_connector_restart() -> None:
 
 
 def test_lost_transaction_create_ack_is_unknown_and_scoped() -> None:
-    def handler(request: httpx.Request) -> httpx.Response:
+    def handler(request: httpx2.Request) -> httpx2.Response:
         assert request.url.path.endswith("/transactions")
-        raise httpx.ReadTimeout("simulated transaction create acknowledgement loss")
+        raise httpx2.ReadTimeout("simulated transaction create acknowledgement loss")
 
-    connector = FoundrySinkConnector(transport=httpx.MockTransport(handler))
+    connector = FoundrySinkConnector(transport=httpx2.MockTransport(handler))
     context = _secret()
 
     async def write() -> CommitReceipt:
@@ -318,7 +320,7 @@ def test_lost_transaction_create_ack_is_unknown_and_scoped() -> None:
     assert receipt.metadata["dataset_rid"] == DATASET
     assert TOKEN not in repr(receipt.to_dict())
     recovered = anyio.run(
-        lambda: FoundrySinkConnector(transport=httpx.MockTransport(handler)).reconcile(
+        lambda: FoundrySinkConnector(transport=httpx2.MockTransport(handler)).reconcile(
             receipt, context=context
         )
     )
@@ -346,7 +348,7 @@ def test_foundry_scopes_distinct_dataset_and_branch_configurations() -> None:
 
 def test_foundry_rejects_unpinned_source_and_unsafe_paths() -> None:
     source = FoundrySourceConnector(
-        transport=httpx.MockTransport(lambda request: httpx.Response(200))
+        transport=httpx2.MockTransport(lambda request: httpx2.Response(200))
     )
     unpinned = _source_binding()
     del unpinned["config"]["transaction_rid"]
@@ -358,7 +360,7 @@ def test_foundry_rejects_unpinned_source_and_unsafe_paths() -> None:
         anyio.run(make_source_plan)
 
     sink = FoundrySinkConnector(
-        transport=httpx.MockTransport(lambda request: httpx.Response(200))
+        transport=httpx2.MockTransport(lambda request: httpx2.Response(200))
     )
 
     async def make_sink_plan() -> Any:
@@ -374,18 +376,18 @@ def test_foundry_rejects_unpinned_source_and_unsafe_paths() -> None:
 def test_storage_inspection_reads_csv_header_without_mutations() -> None:
     requests: list[str] = []
 
-    def handler(request: httpx.Request) -> httpx.Response:
+    def handler(request: httpx2.Request) -> httpx2.Response:
         requests.append(request.method)
         if request.url.path.endswith("/files"):
-            return httpx.Response(
+            return httpx2.Response(
                 200,
                 json={"data": [{"path": "orders.csv", "sizeBytes": "13"}]},
             )
         if request.url.path.endswith("/content"):
-            return httpx.Response(200, content=b"id,value\n1,a\n")
+            return httpx2.Response(200, content=b"id,value\n1,a\n")
         raise AssertionError(f"unexpected request: {request.method} {request.url}")
 
-    storage = FoundryStorageConnector(transport=httpx.MockTransport(handler))
+    storage = FoundryStorageConnector(transport=httpx2.MockTransport(handler))
     inspection = anyio.run(
         lambda: storage.inspect_schema(
             binding={

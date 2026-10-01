@@ -16,7 +16,7 @@ from typing import Any
 import pytest
 
 pytest.importorskip("fastapi")
-pytest.importorskip("httpx")
+pytest.importorskip("httpx2")
 uvicorn = pytest.importorskip("uvicorn")
 
 from etlantic import Data, Extract, Load, Pipeline

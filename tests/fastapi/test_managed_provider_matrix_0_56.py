@@ -23,7 +23,7 @@ pytest.importorskip("sqlalchemy")
 pytest.importorskip("sqlmodel")
 pytest.importorskip("etlantic_sqlmodel")
 pytest.importorskip("fastapi")
-pytest.importorskip("httpx")
+pytest.importorskip("httpx2")
 pytest.importorskip("semblance")
 
 import sqlalchemy

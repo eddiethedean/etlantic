@@ -83,7 +83,7 @@ listing and content, uploads, and transaction commit/reconciliation over
 loopback HTTP. The required two-scope and managed-worker pairing campaign also
 runs against Semblance; no
 live Foundry account, external credentials, or outbound network access is
-required. `httpx.MockTransport` remains useful for isolated timeout and
+required. `httpx2.MockTransport` remains useful for isolated timeout and
 malformed-response cases.
 
 Run the local simulator suite with `uv run pytest tests/foundry/test_simulator.py`.

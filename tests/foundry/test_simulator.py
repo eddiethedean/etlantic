@@ -5,7 +5,7 @@ from datetime import UTC, datetime, timedelta
 from typing import Any
 
 import anyio
-import httpx
+import httpx2
 import pytest
 from etlantic_foundry.action_handlers import create_action_handlers
 from etlantic_foundry.connectors import (
@@ -122,7 +122,7 @@ def foundry_simulator() -> Any:
 def test_semblance_foundry_api_validates_file_list_and_auth(
     foundry_simulator: Any,
 ) -> None:
-    response = httpx.get(
+    response = httpx2.get(
         f"{foundry_simulator.base_url}/api/v2/datasets/{FOUNDRY_DATASET}/files",
         params={"branchName": "main"},
         headers={"Authorization": f"Bearer {FOUNDRY_TOKEN}"},
@@ -139,7 +139,7 @@ def test_semblance_foundry_api_validates_file_list_and_auth(
     ]
     assert body["nextPageToken"] == "page-2"
 
-    unauthorized = httpx.get(
+    unauthorized = httpx2.get(
         f"{foundry_simulator.base_url}/api/v2/datasets/{FOUNDRY_DATASET}/files",
         timeout=5,
     )
@@ -442,7 +442,7 @@ def test_foundry_sink_modes_use_simulated_transactions_over_loopback(
     assert foundry_simulator.uploaded_files == [(file_path, b"id,value\n1,alpha\n")]
     assert foundry_simulator.last_upload_branch == "main"
     assert foundry_simulator.transactions[receipt.publication_id or ""] == "COMMITTED"
-    listing = httpx.get(
+    listing = httpx2.get(
         f"{foundry_simulator.base_url}/api/v2/datasets/{FOUNDRY_DATASET}/files",
         params={"branchName": "main", "pathPrefix": file_path},
         headers={"Authorization": f"Bearer {FOUNDRY_TOKEN}"},
@@ -741,19 +741,19 @@ def test_independent_semblance_scopes_isolate_dataset_token_branch_and_files() -
         assert mode_outcomes_b == mode_outcomes_a
 
         headers_a = {"Authorization": f"Bearer {token_a}"}
-        branch_listing = httpx.get(
+        branch_listing = httpx2.get(
             f"{url_a}/api/v2/datasets/{dataset_a}/files",
             params={"branchName": "qualification", "pathPrefix": "branch/"},
             headers=headers_a,
             timeout=5,
         )
-        main_listing = httpx.get(
+        main_listing = httpx2.get(
             f"{url_a}/api/v2/datasets/{dataset_a}/files",
             params={"branchName": "main", "pathPrefix": "branch/"},
             headers=headers_a,
             timeout=5,
         )
-        other_scope_listing = httpx.get(
+        other_scope_listing = httpx2.get(
             f"{url_b}/api/v2/datasets/{dataset_b}/files",
             params={"branchName": "main", "pathPrefix": "branch/"},
             headers={"Authorization": f"Bearer {token_b}"},
@@ -790,12 +790,12 @@ def test_independent_semblance_scopes_isolate_dataset_token_branch_and_files() -
         # branchName on the binary read.
         assert scope_a.last_download_branch == ""
 
-        wrong_dataset = httpx.get(
+        wrong_dataset = httpx2.get(
             f"{url_a}/api/v2/datasets/{dataset_b}/files",
             headers=headers_a,
             timeout=5,
         )
-        wrong_token = httpx.get(
+        wrong_token = httpx2.get(
             f"{url_a}/api/v2/datasets/{dataset_a}/files",
             headers={"Authorization": f"Bearer {token_b}"},
             timeout=5,

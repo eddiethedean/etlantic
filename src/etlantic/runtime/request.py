@@ -45,6 +45,7 @@ class RunIntent(StrEnum):
     INCREMENTAL = "incremental"
     REFRESH = "refresh"
     VALIDATE = "validate"
+    REPAIR = "repair"
     BACKFILL = "backfill"
     REPLAY = "replay"
     RESUME = "resume"

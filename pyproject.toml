@@ -82,7 +82,7 @@ Changelog = "https://github.com/eddiethedean/etlantic/blob/main/CHANGELOG.md"
 
 [dependency-groups]
 dev = [
-    "httpx>=0.28.1",
+    "httpx2>=2,<3",
     "hypothesis>=6.100,<7",
     "jsonschema>=4.23,<5",
     "mkdocs>=1.6,<2",

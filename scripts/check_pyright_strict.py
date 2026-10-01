@@ -74,8 +74,12 @@ EXPECTED_DIGESTS = {
     # the reviewed shadow scan remains at 10,563 diagnostics.
     # The 0.52 evidence revision scanner now includes non-ignored untracked
     # source files, shifting diagnostics later in that checker only.
-    "Darwin": "e9629b65f3319727580dbda270263d71af46b5565d1212773e084960660c0e49",
-    "Linux": "e9629b65f3319727580dbda270263d71af46b5565d1212773e084960660c0e49",
+    # This qualification pass fixes the surfaced connector, adaptive-plan,
+    # managed-service and package-qualification typing errors. Reviewing the
+    # changed paths confirms those fixes remove cascaded shadow diagnostics;
+    # the strict inventory falls from 10,563 to 9,832 without new suppressions.
+    "Darwin": "6d162afe0b7ba189b1a27ba2ebd9681babc431700e1bf6ee03b325d3da2e5185",
+    "Linux": "6d162afe0b7ba189b1a27ba2ebd9681babc431700e1bf6ee03b325d3da2e5185",
 }
 
 

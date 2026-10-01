@@ -1,0 +1,91 @@
+{
+  "schema": "etlantic.phase_0_56.managed_execution_matrix/1",
+  "criterion": "AC056-041",
+  "provider_version_tuple": {
+    "etlantic": "0.55.0 workspace candidate",
+    "pandas": "2.3.3",
+    "polars": "1.42.1"
+  },
+  "semantic_cases": [
+    {
+      "id": "local-native-transform-quality-quarantine",
+      "engine": "local",
+      "implementation": "native local transform + etlantic.quality/1 gate",
+      "status": "passed",
+      "tests": [
+        "tests/fastapi/test_managed_backend_0_56.py::test_managed_worker_preserves_native_transform_quality_and_quarantine[local]"
+      ],
+      "observed": "Managed execution converted string identifiers to integers, trimmed names, routed the allowed row to the accepted sink, and routed the disallowed row to the rejected sink."
+    },
+    {
+      "id": "pandas-native-transform-quality-quarantine",
+      "engine": "pandas",
+      "implementation": "native pandas transform + etlantic.quality/1 gate",
+      "status": "passed",
+      "tests": [
+        "tests/fastapi/test_managed_backend_0_56.py::test_managed_worker_preserves_native_transform_quality_and_quarantine[pandas]"
+      ],
+      "observed": "The same accepted/rejected rows and typed output were published through the durable managed worker."
+    },
+    {
+      "id": "polars-native-transform-quality-quarantine",
+      "engine": "polars",
+      "implementation": "native Polars transform + etlantic.quality/1 gate",
+      "status": "passed",
+      "tests": [
+        "tests/fastapi/test_managed_backend_0_56.py::test_managed_worker_preserves_native_transform_quality_and_quarantine[polars]"
+      ],
+      "observed": "The same accepted/rejected rows and typed output were published through the durable managed worker."
+    },
+    {
+      "id": "continuous-spark-streaming",
+      "engine": "pyspark",
+      "implementation": "continuous streaming profile",
+      "status": "unavailable",
+      "tests": [
+        "tests/fastapi/test_managed_backend_0_56.py::test_managed_worker_explains_continuous_streaming_boundary"
+      ],
+      "reason": "The managed worker executes finite runs and does not own a streaming trigger runner or checkpoint lifecycle. The worker rejects this profile before invoking the runtime with that reason."
+    },
+    {
+      "id": "sql-pyspark-datafusion-duckdb-managed-transforms",
+      "engine": [
+        "sql",
+        "pyspark",
+        "datafusion",
+        "duckdb"
+      ],
+      "implementation": "managed transform/quality execution",
+      "status": "unqualified",
+      "reason": "No real managed-worker transform and quality campaign for these engine families is attached to this evidence. Standalone engine qualification is not counted as managed-path proof."
+    },
+    {
+      "id": "dynamic-runtime-expansion",
+      "implementation": "runtime-generated child graph expansion",
+      "status": "unqualified",
+      "reason": "The managed worker campaign does not exercise dynamic runtime graph expansion; static graph serialization is not treated as equivalent evidence."
+    },
+    {
+      "id": "incremental-managed-cursor-advancement",
+      "implementation": "incremental source cursor through durable managed execution",
+      "status": "unqualified",
+      "reason": "Atomic cursor staging is covered by standalone runtime tests, but this campaign does not prove cursor advancement through the durable managed worker.",
+      "tests": [
+        "tests/fastapi/test_managed_backend_0_56.py::test_managed_incremental_cursor_store_persists_and_is_scope_isolated",
+        "tests/runtime/test_incremental_cursor_staging_0_56.py::test_cursor_commits_only_after_both_selected_sinks_publish",
+        "tests/runtime/test_incremental_cursor_staging_0_56.py::test_partial_multi_sink_failure_preserves_committed_cursor"
+      ],
+      "observed": "The worker now installs a per-security-domain, tenant, workspace, and pipeline file cursor store when an accepted plan declares incremental strategies. Store persistence and scope isolation passed; atomic staging and partial-publication barriers passed in standalone runtime tests. End-to-end managed cursor advancement is still unqualified."
+    }
+  ],
+  "secret_scan_regression": {
+    "status": "passed",
+    "tests": [
+      "tests/unit/test_extensions_0_19.py::test_bounded_plugin_authorization_status_is_not_a_credential",
+      "tests/unit/test_extensions_0_19.py::test_plugin_authorization_credential_remains_rejected"
+    ],
+    "observed": "Only the bounded plugin trust status values allowed, denied, skipped, and pending are accepted for the authorization field; credential-bearing values remain rejected."
+  },
+  "acceptance_status": "pending",
+  "open_reason": "Managed transform and quality semantics pass for Local, Pandas, and Polars. SQL, PySpark, DataFusion, DuckDB, dynamic runtime expansion, and end-to-end incremental cursor advancement still lack managed-path qualification."
+}

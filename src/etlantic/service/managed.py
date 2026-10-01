@@ -5,7 +5,7 @@ from __future__ import annotations
 import base64
 import hashlib
 import json
-from collections.abc import Callable, Mapping
+from collections.abc import Callable, Mapping, Sequence
 from contextlib import suppress
 from dataclasses import dataclass, replace
 from datetime import UTC, datetime, timedelta
@@ -52,9 +52,11 @@ from etlantic.control_plane.protocols import (
 from etlantic.control_plane.redaction import redact_control_plane_payload
 from etlantic.control_plane.schedule_models import ScheduleRecord, firing_key
 from etlantic.io_policy import SafeIoPolicy, read_text_safe
+from etlantic.lifecycle.runtime import PipelineRuntime
+from etlantic.plan.adaptive_model import AdaptivePipelinePlan, PlanDocument
 from etlantic.plan.freeze import mutable_copy
 from etlantic.plan.model import PipelinePlan
-from etlantic.plan.serialize import verify_plan_fingerprint
+from etlantic.plan.serialize import plan_from_json, verify_plan_fingerprint
 from etlantic.profile import Profile, resolve_profile
 from etlantic.registry import PlanningContext
 from etlantic.reports.model import PipelineRunReport
@@ -532,15 +534,9 @@ class ManagedApplicationService:
             selection=typed_request.selection.to_plan_selection(graph),
             request=typed_request,
         )
-        if not isinstance(plan, PipelinePlan):
-            raise ControlPlaneError(
-                "This managed service does not qualify adaptive plan schema /2",
-                code="PMADP500",
-                status=501,
-                title="Not Implemented",
-                type="etlantic.control_plane/not_implemented",
-            )
         verify_plan_fingerprint(plan)
+        if isinstance(plan, AdaptivePipelinePlan):
+            self._admit_adaptive_plan(plan, typed_request, profile=profile)
         self._authorize_plan_resources(ctx, plan, action="definition.plan")
         self._authorize_input_resources(ctx, plan)
         return {
@@ -1251,15 +1247,9 @@ class ManagedApplicationService:
         )
         if _preparation_control is not None:
             _preparation_control.check()
-        if not isinstance(plan, PipelinePlan):
-            raise ControlPlaneError(
-                "This managed service does not qualify adaptive plan schema /2",
-                code="PMADP500",
-                status=501,
-                title="Not Implemented",
-                type="etlantic.control_plane/not_implemented",
-            )
         verify_plan_fingerprint(plan)
+        if isinstance(plan, AdaptivePipelinePlan):
+            self._admit_adaptive_plan(plan, typed_request, profile=profile)
         self._authorize_plan_resources(ctx, plan, action="run.submit")
         if _preparation_control is not None:
             _preparation_control.check()
@@ -1269,15 +1259,26 @@ class ManagedApplicationService:
             operation="run.submit",
             idempotency_key=idempotency_key,
         )
+        if isinstance(plan, PipelinePlan):
+            plugin_versions = dict(plan.plugin_versions)
+        else:
+            from etlantic.runtime.adaptive_support import support_row_for
+
+            support_row = support_row_for(plan)
+            plugin_versions = (
+                dict(support_row.version_requirements)
+                if support_row is not None
+                else {}
+            )
         plugin_fingerprint = (
             hashlib.sha256(
                 json.dumps(
-                    dict(plan.plugin_versions),
+                    plugin_versions,
                     sort_keys=True,
                     separators=(",", ":"),
                 ).encode("utf-8")
             ).hexdigest()
-            if plan.plugin_versions
+            if plugin_versions
             else None
         )
         resource_versions = self._resource_versions(plan)
@@ -1517,10 +1518,18 @@ class ManagedApplicationService:
         status = str(record.get("status") or "unknown")
         submission_id = str(record.get("submission_id") or "")
         durable_record: SubmissionRecord | None = None
+        adaptive_plan = False
         if submission_id:
             try:
                 durable_record = self.durable_work.get_submission(ctx, submission_id)
                 status = durable_record.status
+                if durable_record.input_snapshot:
+                    adaptive_plan = (
+                        self._parse_envelope(
+                            durable_record.input_snapshot
+                        ).plan_document.get("schema")
+                        == "etlantic.plan/2"
+                    )
             except ControlPlaneError as exc:
                 if exc.status != 404:
                     raise
@@ -1571,6 +1580,8 @@ class ManagedApplicationService:
             replay_reason = "durable_state_unavailable"
         elif not durable_record.input_snapshot:
             replay_reason = "unverified_execution_envelope"
+        elif adaptive_plan:
+            replay_reason = "adaptive_policy_unsupported"
         else:
             replay_reason = self._rerun_block_reason(ctx, submission_id)
         resume_decision = self.authorizer.authorize(ctx, "run.resume", f"run:{run_id}")
@@ -1582,8 +1593,46 @@ class ManagedApplicationService:
             resume_reason = "durable_state_unavailable"
         elif not durable_record.input_snapshot:
             resume_reason = "unverified_execution_envelope"
+        elif adaptive_plan:
+            resume_reason = "adaptive_policy_unsupported"
         else:
             resume_reason = self._retry_block_reason(ctx, submission_id)
+        repair_decision = self.authorizer.authorize(ctx, "run.repair", f"run:{run_id}")
+        if not repair_decision.allowed:
+            repair_reason: str | None = "not_authorized"
+        elif status not in {"completed", "failed", "cancelled"}:
+            repair_reason = "non_repairable_state"
+        elif not submission_id or durable_record is None:
+            repair_reason = "durable_state_unavailable"
+        elif not durable_record.input_snapshot:
+            repair_reason = "unverified_execution_envelope"
+        elif adaptive_plan:
+            repair_reason = "adaptive_policy_unsupported"
+        else:
+            repair_reason = self._partition_action_block_reason(
+                durable_record.input_snapshot, operation="repair"
+            )
+            if repair_reason is None:
+                repair_reason = self._rerun_block_reason(ctx, submission_id)
+        backfill_decision = self.authorizer.authorize(
+            ctx, "run.backfill", f"run:{run_id}"
+        )
+        if not backfill_decision.allowed:
+            backfill_reason: str | None = "not_authorized"
+        elif status not in {"completed", "failed", "cancelled"}:
+            backfill_reason = "non_backfillable_state"
+        elif not submission_id or durable_record is None:
+            backfill_reason = "durable_state_unavailable"
+        elif not durable_record.input_snapshot:
+            backfill_reason = "unverified_execution_envelope"
+        elif adaptive_plan:
+            backfill_reason = "adaptive_policy_unsupported"
+        else:
+            backfill_reason = self._partition_action_block_reason(
+                durable_record.input_snapshot, operation="backfill"
+            )
+            if backfill_reason is None:
+                backfill_reason = self._rerun_block_reason(ctx, submission_id)
         return {
             "schema": "etlantic.control_plane.run_actions/1",
             "run_id": run_id,
@@ -1604,6 +1653,16 @@ class ManagedApplicationService:
                     "name": "replay",
                     "allowed": replay_reason is None,
                     "reason": replay_reason,
+                },
+                {
+                    "name": "repair",
+                    "allowed": repair_reason is None,
+                    "reason": repair_reason,
+                },
+                {
+                    "name": "backfill",
+                    "allowed": backfill_reason is None,
+                    "reason": backfill_reason,
                 },
                 {
                     "name": "resume",
@@ -1791,6 +1850,11 @@ class ManagedApplicationService:
                 "Legacy accepted work has no verified execution envelope"
             )
         parent_envelope = self._parse_envelope(parent.input_snapshot)
+        if parent_envelope.plan_document.get("schema") == "etlantic.plan/2":
+            raise ControlPlaneError.conflict(
+                "Adaptive execution does not support replay intent",
+                extensions={"reason": "adaptive_policy_unsupported"},
+            )
         request = RunRequest.from_dict(dict(parent_envelope.run_request))
         replay_request = RunRequest(
             selection=request.selection,
@@ -1910,6 +1974,11 @@ class ManagedApplicationService:
             ctx, parent_submission_id, checkpoint_id=checkpoint_id
         )
         envelope = self._parse_envelope(parent.input_snapshot)
+        if envelope.plan_document.get("schema") == "etlantic.plan/2":
+            raise ControlPlaneError.conflict(
+                "Adaptive execution does not support resume intent",
+                extensions={"reason": "adaptive_policy_unsupported"},
+            )
         request = RunRequest.from_dict(dict(envelope.run_request))
         resume_request = RunRequest(
             selection=request.selection,
@@ -1951,6 +2020,289 @@ class ManagedApplicationService:
             parent_submission_id=parent_submission_id,
         )
 
+    def repair_run(
+        self,
+        ctx: ControlPlaneContext,
+        run_id: str,
+        *,
+        idempotency_key: str,
+        invalidated_partition_ids: Mapping[str, Sequence[str]],
+        checkpoint_id: str | None = None,
+        reusable_artifact_ids: Sequence[str] = (),
+    ) -> AcceptReceipt:
+        """Accept a bounded partition repair from a verified parent run.
+
+        Every source and sink in the accepted selection must declare the
+        corresponding partition read/write capability. The worker then calls
+        the provider's explicit partition methods; ordinary whole-resource
+        reads and writes are never used as a fallback.
+        """
+        return self._partition_child_run(
+            ctx,
+            run_id,
+            idempotency_key=idempotency_key,
+            operation="run.repair",
+            partition_ids_by_node=invalidated_partition_ids,
+            checkpoint_id=checkpoint_id,
+            reusable_artifact_ids=reusable_artifact_ids,
+        )
+
+    def backfill_run(
+        self,
+        ctx: ControlPlaneContext,
+        run_id: str,
+        *,
+        idempotency_key: str,
+        partition_ids: Mapping[str, Sequence[str]],
+        checkpoint_id: str | None = None,
+    ) -> AcceptReceipt:
+        """Accept a bounded partition backfill from a verified parent run."""
+        return self._partition_child_run(
+            ctx,
+            run_id,
+            idempotency_key=idempotency_key,
+            operation="run.backfill",
+            partition_ids_by_node=partition_ids,
+            checkpoint_id=checkpoint_id,
+        )
+
+    def _partition_child_run(
+        self,
+        ctx: ControlPlaneContext,
+        run_id: str,
+        *,
+        idempotency_key: str,
+        operation: str,
+        partition_ids_by_node: Mapping[str, Sequence[str]],
+        checkpoint_id: str | None = None,
+        reusable_artifact_ids: Sequence[str] = (),
+    ) -> AcceptReceipt:
+        if operation not in {"run.repair", "run.backfill"}:
+            raise ValueError("unsupported partition lifecycle operation")
+        if (
+            not isinstance(cast(Any, idempotency_key), str)
+            or not idempotency_key.strip()
+        ):
+            raise ControlPlaneError(
+                "Idempotency-Key is required for managed partition commands",
+                code="PMCP400",
+                status=400,
+                title="Bad Request",
+                type="etlantic.control_plane/bad_request",
+            )
+        action = operation.removeprefix("run.")
+        if checkpoint_id is not None and (
+            not isinstance(cast(Any, checkpoint_id), str)
+            or not checkpoint_id.strip()
+            or len(checkpoint_id) > 4096
+        ):
+            raise ControlPlaneError(
+                "checkpoint_id must be a non-blank string of at most 4096 characters",
+                code="PMCP422",
+                status=422,
+                title="Unprocessable Entity",
+                type="etlantic.control_plane/validation_error",
+            )
+        if not isinstance(cast(Any, reusable_artifact_ids), (list, tuple)):
+            raise ControlPlaneError(
+                "reusable_artifact_ids must be an array",
+                code="PMCP422",
+                status=422,
+                title="Unprocessable Entity",
+                type="etlantic.control_plane/validation_error",
+            )
+        reusable_ids = tuple(reusable_artifact_ids)
+        if (
+            len(reusable_ids) > 1000
+            or any(
+                not isinstance(cast(Any, identity), str)
+                or not identity.strip()
+                or len(identity) > 4096
+                for identity in reusable_ids
+            )
+            or len(set(reusable_ids)) != len(reusable_ids)
+        ):
+            raise ControlPlaneError(
+                "reusable_artifact_ids must contain at most 1000 unique, non-blank ids",
+                code="PMCP422",
+                status=422,
+                title="Unprocessable Entity",
+                type="etlantic.control_plane/validation_error",
+            )
+        record = self._authorized_run_record(ctx, operation, run_id)
+        parent_submission_id = str(record.get("submission_id") or "")
+        if not parent_submission_id:
+            raise ControlPlaneError.conflict(
+                "Run record has no durable submission identity"
+            )
+        parent = self.durable_work.get_submission(ctx, parent_submission_id)
+        if parent.status not in {"completed", "failed", "cancelled"}:
+            raise ControlPlaneError.conflict(
+                f"Only terminal runs can be used for {action}"
+            )
+        if not parent.input_snapshot:
+            raise ControlPlaneError.conflict(
+                "Legacy accepted work has no verified execution envelope"
+            )
+        parent_envelope = self._parse_envelope(parent.input_snapshot)
+        if parent_envelope.plan_document.get("schema") == "etlantic.plan/2":
+            raise ControlPlaneError.conflict(
+                f"Adaptive execution does not support {action}",
+                extensions={"reason": "adaptive_policy_unsupported"},
+            )
+        if RunRequest.from_dict(dict(parent_envelope.run_request)).no_write:
+            raise ControlPlaneError.conflict(
+                "A no-write run cannot be repaired or backfilled",
+                extensions={"reason": "no_write_parent"},
+            )
+        plan = _decode_plan_document(parent_envelope.plan_document)
+        if not isinstance(plan, PipelinePlan):
+            raise ControlPlaneError.conflict(
+                "Partition command requires a standard plan"
+            )
+        block_reason = self._partition_action_block_reason(
+            parent.input_snapshot, operation=action
+        )
+        if block_reason is not None:
+            raise ControlPlaneError.conflict(
+                f"Run cannot execute {action} with its accepted provider capabilities",
+                extensions={"reason": block_reason},
+            )
+        selected = set(
+            plan.selected_nodes or tuple(node.name for node in plan.logical_graph.nodes)
+        )
+        required_nodes: set[str] = set()
+        for node in plan.logical_graph.nodes:
+            if node.name not in selected:
+                continue
+            if node.kind.value in {"source", "sink"}:
+                required_nodes.add(node.name)
+        normalized = _validate_partition_ids_by_node(
+            partition_ids_by_node,
+            required_nodes=required_nodes,
+            operation=action,
+        )
+        flattened_ids = tuple(
+            partition_id
+            for node_name in sorted(normalized)
+            for partition_id in normalized[node_name]
+        )
+        if action == "backfill":
+            repair_plan = self.durable_work.plan_backfill(
+                ctx,
+                parent_submission_id,
+                partition_ids=flattened_ids,
+                checkpoint_id=checkpoint_id,
+            )
+        else:
+            repair_plan = self.durable_work.plan_repair(
+                ctx,
+                parent_submission_id,
+                checkpoint_id=checkpoint_id,
+                invalidated_partition_ids=flattened_ids,
+                reusable_artifact_ids=reusable_ids,
+            )
+        if repair_plan.source_plan_fingerprint != parent_envelope.plan_fingerprint:
+            raise ControlPlaneError.conflict(
+                "Partition plan no longer matches the accepted source plan"
+            )
+        effect_reason = self._rerun_block_reason(ctx, parent_submission_id)
+        if effect_reason is not None:
+            raise ControlPlaneError.conflict(
+                "Partition command is blocked until the prior execution effect is reconciled",
+                extensions={"reason": effect_reason},
+            )
+        request = RunRequest.from_dict(dict(parent_envelope.run_request))
+        metadata = dict(request.metadata)
+        metadata["etlantic.control_plane.partition_operation"] = {
+            "command": action,
+            "parent_run_id": run_id,
+            "partition_ids_by_node": {
+                key: list(values) for key, values in normalized.items()
+            },
+            "checkpoint_id": checkpoint_id,
+            "reusable_artifact_ids": list(reusable_ids),
+        }
+        child_request = _request_with_intent(
+            request,
+            intent=RunIntent.REPAIR if action == "repair" else RunIntent.BACKFILL,
+            metadata=metadata,
+        )
+        child_envelope = parent_envelope.with_request(child_request)
+        evidence_refs = dict(child_envelope.evidence_refs or {})
+        evidence_refs.update(
+            {
+                "command": action,
+                "parent_run_id": run_id,
+                "parent_submission_id": parent_submission_id,
+            }
+        )
+        if checkpoint_id:
+            evidence_refs["checkpoint_id"] = checkpoint_id
+            evidence_refs["artifact_parent_run_id"] = run_id
+        child_envelope = ExecutionEnvelope.from_dict(
+            {**child_envelope.to_dict(), "evidence_refs": evidence_refs}
+        )
+        return self._accept_child_run(
+            ctx,
+            idempotency_key=idempotency_key,
+            operation=operation,
+            envelope=child_envelope,
+            parent_run_id=run_id,
+            parent_submission_id=parent_submission_id,
+        )
+
+    def _partition_action_block_reason(
+        self, input_snapshot: str, *, operation: str
+    ) -> str | None:
+        """Require explicit partition methods for each selected source and sink."""
+        try:
+            envelope = self._parse_envelope(input_snapshot)
+            plan = _decode_plan_document(envelope.plan_document)
+        except ControlPlaneError:
+            return "unverified_execution_envelope"
+        try:
+            if RunRequest.from_dict(dict(envelope.run_request)).no_write:
+                return "no_write_parent"
+        except (TypeError, ValueError):
+            return "unverified_execution_envelope"
+        if not isinstance(plan, PipelinePlan):
+            return "provider_unsupported"
+        selected = set(
+            plan.selected_nodes or tuple(node.name for node in plan.logical_graph.nodes)
+        )
+        source_count = 0
+        sink_count = 0
+        for node in plan.logical_graph.nodes:
+            if node.name not in selected or node.kind.value not in {"source", "sink"}:
+                continue
+            requirement = (
+                "source.partitioned"
+                if node.kind.value == "source"
+                else "write.partition_replace"
+            )
+            if node.kind.value == "sink":
+                descriptor_requirements = {
+                    "write.partition_replace",
+                    "idempotency",
+                }
+            else:
+                descriptor_requirements = {requirement}
+            if node.kind.value == "source":
+                source_count += 1
+            else:
+                sink_count += 1
+            descriptor = plan.bindings.get(node.name) or plan.bindings.get(
+                node.binding or node.name
+            )
+            if descriptor is None or not descriptor_requirements.issubset(
+                set(descriptor.required_capabilities)
+            ):
+                return "provider_unsupported"
+        if not source_count or not sink_count:
+            return "provider_unsupported"
+        return None
+
     def _rerun_block_reason(
         self, ctx: ControlPlaneContext, submission_id: str
     ) -> str | None:
@@ -1989,6 +2341,20 @@ class ManagedApplicationService:
         parent_submission_id: str,
     ) -> AcceptReceipt:
         """Idempotently accept a lifecycle command and its verified envelope."""
+        parent_attempt_id: str | None = None
+        list_attempts = getattr(self.durable_work, "list_attempts", None)
+        if callable(list_attempts):
+            parent_attempts = cast(
+                Sequence[Any], list_attempts(ctx, parent_submission_id)
+            )
+            if parent_attempts:
+                parent_attempt_id = parent_attempts[-1].attempt_id
+        if parent_attempt_id:
+            evidence_refs = dict(envelope.evidence_refs or {})
+            evidence_refs["parent_attempt_id"] = parent_attempt_id
+            envelope = ExecutionEnvelope.from_dict(
+                {**envelope.to_dict(), "evidence_refs": evidence_refs}
+            )
         envelope = _with_input_resource_lease(
             ctx,
             envelope,
@@ -2017,7 +2383,7 @@ class ManagedApplicationService:
                 )
                 if prior_envelope.to_json() != legacy_envelope.to_json():
                     raise ControlPlaneError.conflict(
-                        "Idempotency key reuse with a different retry parent or intent"
+                        "Idempotency key reuse with a different lifecycle parent or intent"
                     )
                 envelope = legacy_envelope
                 expected_envelope = envelope.to_json()
@@ -2034,7 +2400,7 @@ class ManagedApplicationService:
             )
             if prior_durable.input_snapshot != legacy_envelope.to_json():
                 raise ControlPlaneError.conflict(
-                    "Idempotency key reuse with a different retry parent or intent"
+                    "Idempotency key reuse with a different lifecycle parent or intent"
                 )
             envelope = legacy_envelope
             expected_envelope = envelope.to_json()
@@ -2066,22 +2432,20 @@ class ManagedApplicationService:
         if prior_durable is not None:
             if prior_durable.input_snapshot != expected_envelope:
                 raise ControlPlaneError.conflict(
-                    "Idempotency key reuse with a different retry parent or intent"
+                    "Idempotency key reuse with a different lifecycle parent or intent"
                 )
             receipt_result = self.submissions.accept(
                 ctx,
                 idempotency_key=idempotency_key,
                 payload=payload,
                 resource_type="run",
-                resource_id=managed_run_id(ctx, idempotency_key),
+                resource_id=managed_run_id(ctx, idempotency_key, operation=operation),
                 submission_id=prior_durable.submission_id,
                 operation=operation,
             )
             return receipt_result.receipt
 
-        input_plan = PipelinePlan.from_dict(
-            mutable_copy(envelope.plan_document), verify=True
-        )
+        input_plan = _decode_plan_document(envelope.plan_document)
         input_lease_id = self._protect_input_resources(
             ctx,
             input_plan,
@@ -2100,7 +2464,7 @@ class ManagedApplicationService:
             idempotency_key=idempotency_key,
             payload=payload,
             resource_type="run",
-            resource_id=managed_run_id(ctx, idempotency_key),
+            resource_id=managed_run_id(ctx, idempotency_key, operation=operation),
             operation=operation,
         )
         try:
@@ -2123,22 +2487,22 @@ class ManagedApplicationService:
                     pass
             if isinstance(exc, ControlPlaneError):
                 raise
-            raise ControlPlaneError(
-                "Durable retry acceptance failed; no receipt was returned",
-                code="PMCP503",
-                status=503,
-                title="Service Unavailable",
-                type="etlantic.control_plane/unavailable",
-                extensions={
-                    "submission_id": receipt_result.receipt.submission_id,
-                    "compensated": receipt_result.created,
-                },
-            ) from exc
+                raise ControlPlaneError(
+                    "Durable lifecycle command acceptance failed; no receipt was returned",
+                    code="PMCP503",
+                    status=503,
+                    title="Service Unavailable",
+                    type="etlantic.control_plane/unavailable",
+                    extensions={
+                        "submission_id": receipt_result.receipt.submission_id,
+                        "compensated": receipt_result.created,
+                    },
+                ) from exc
         if receipt_result.created and self.events is not None:
             with suppress(Exception):
                 self.events.append(
                     ctx,
-                    kind="run.retry.accepted",
+                    kind=f"{operation}.accepted",
                     payload={
                         "run_id": receipt_result.receipt.resource_id,
                         "submission_id": receipt_result.receipt.submission_id,
@@ -2304,14 +2668,15 @@ class ManagedApplicationService:
             if self.report_store_factory is not None
             else managed_report_store(ctx, report_root=self.report_root)
         )
+        submission_id = str(record.get("submission_id") or "")
+        durable = self.durable_work.get_submission(ctx, submission_id)
+        run_id = managed_run_id(ctx, idempotency_key, operation=durable.operation)
         report_store_error: Exception | None = None
         try:
-            result = report_store.get(managed_run_id(ctx, idempotency_key))
+            result = report_store.get(run_id)
         except Exception as exc:
             report_store_error = exc
             result = None
-        submission_id = str(record.get("submission_id") or "")
-        durable = self.durable_work.get_submission(ctx, submission_id)
         if result is None:
             try:
                 publication = self.durable_work.get_latest_result_publication(
@@ -2331,7 +2696,7 @@ class ManagedApplicationService:
                 try:
                     if (
                         publication.submission_id != submission_id
-                        or publication.run_id != managed_run_id(ctx, idempotency_key)
+                        or publication.run_id != run_id
                         or (publication.tenant_id, publication.workspace_id)
                         != (ctx.tenant.tenant_id, ctx.workspace.workspace_id)
                         or hashlib.sha256(
@@ -2557,6 +2922,7 @@ class ManagedApplicationService:
                 envelope = self._parse_envelope(durable.input_snapshot)
                 evidence_refs = envelope.evidence_refs or {}
                 parent_run_id = evidence_refs.get("parent_run_id")
+                parent_attempt_id = evidence_refs.get("parent_attempt_id")
                 command = evidence_refs.get("command")
                 if parent_run_id:
                     nodes.insert(0, {"id": parent_run_id, "kind": "run"})
@@ -2565,6 +2931,23 @@ class ManagedApplicationService:
                             "from": parent_run_id,
                             "to": report["run_id"],
                             "kind": str(command or "child_run"),
+                        }
+                    )
+                if parent_attempt_id:
+                    parent_attempt_node = f"attempt:{parent_attempt_id}"
+                    if not any(node.get("id") == parent_attempt_node for node in nodes):
+                        nodes.append(
+                            {
+                                "id": parent_attempt_node,
+                                "kind": "attempt",
+                                "attempt_id": parent_attempt_id,
+                            }
+                        )
+                    edges.append(
+                        {
+                            "from": parent_attempt_node,
+                            "to": report["run_id"],
+                            "kind": "parent_attempt",
                         }
                     )
         return {
@@ -2818,14 +3201,98 @@ class ManagedApplicationService:
             ) from exc
         return context
 
+    @staticmethod
+    def _admit_adaptive_plan(
+        plan: AdaptivePipelinePlan, request: RunRequest, *, profile: Profile
+    ) -> None:
+        """Run the authoritative, side-effect-free /2 admission before accept."""
+        from etlantic.exceptions import PipelineExecutionError
+        from etlantic.runtime.adaptive_admission import admit_adaptive_plan
+
+        runtime = PipelineRuntime()
+        runtime.ensure_plugins_for_profile(profile)
+        try:
+            admit_adaptive_plan(plan, request=request, runtime=runtime)
+        except PipelineExecutionError as exc:
+            code = exc.code or "PMADP500"
+            status_code = 501 if code in {"PMADP500", "PMADP501"} else 422
+            raise ControlPlaneError(
+                str(exc),
+                code=code,
+                status=status_code,
+                title=(
+                    "Not Implemented" if status_code == 501 else "Unprocessable Entity"
+                ),
+                type=(
+                    "etlantic.control_plane/not_implemented"
+                    if status_code == 501
+                    else "etlantic.control_plane/validation_error"
+                ),
+            ) from exc
+
     def _authorize_plan_resources(
         self,
         ctx: ControlPlaneContext,
-        plan: PipelinePlan,
+        plan: PlanDocument,
         *,
         action: str,
     ) -> None:
         """Authorize every resolved logical resource before disclosure or use."""
+        if isinstance(plan, AdaptivePipelinePlan):
+            # The first managed /2 tuple is intentionally restricted to
+            # process-local memory bindings. Reject any future row that adds
+            # external resources until the managed authorization and lease
+            # projections understand their identity.
+            if any(
+                target.location != "local" or target.resource is not None
+                for target in plan.inventory.targets
+            ):
+                raise ControlPlaneError(
+                    "Managed adaptive execution does not support external resources",
+                    code="PMADP500",
+                    status=501,
+                    title="Not Implemented",
+                    type="etlantic.control_plane/not_implemented",
+                )
+            runtime_record = plan.metadata.get("etlantic.runtime")
+            bindings = (
+                cast(Mapping[str, Any], runtime_record).get("bindings")
+                if isinstance(runtime_record, Mapping)
+                else None
+            )
+            expected_nodes = {
+                node.name
+                for node in plan.logical_graph.nodes
+                if node.kind.value in {"source", "sink"}
+            }
+            if (
+                not isinstance(bindings, Mapping)
+                or set(cast(Mapping[str, Any], bindings)) != expected_nodes
+            ):
+                raise ControlPlaneError(
+                    "Managed adaptive plan lacks complete binding identities",
+                    code="PMADP500",
+                    status=501,
+                    title="Not Implemented",
+                    type="etlantic.control_plane/not_implemented",
+                )
+            for descriptor in cast(Mapping[str, object], bindings).values():
+                if (
+                    not isinstance(descriptor, Mapping)
+                    or cast(Mapping[str, Any], descriptor).get("provider") != "memory"
+                    or cast(Mapping[str, Any], descriptor).get("secret_ref") is not None
+                    or cast(Mapping[str, Any], descriptor).get("location") is not None
+                    or cast(Mapping[str, Any], descriptor).get("root_ref") is not None
+                    or cast(Mapping[str, Any], descriptor).get("config")
+                ):
+                    raise ControlPlaneError(
+                        "Managed adaptive execution currently supports local memory bindings only",
+                        code="PMADP500",
+                        status=501,
+                        title="Not Implemented",
+                        type="etlantic.control_plane/not_implemented",
+                    )
+            return
         resources = {
             str(reference.get("binding") or identity)
             for identity, reference in plan.resource_refs.items()
@@ -2840,7 +3307,7 @@ class ManagedApplicationService:
             )
 
     def _authorize_input_resources(
-        self, ctx: ControlPlaneContext, plan: PipelinePlan
+        self, ctx: ControlPlaneContext, plan: PlanDocument
     ) -> tuple[InputResourceReference, ...]:
         references = _input_resource_references(plan)
         if not references:
@@ -2867,7 +3334,7 @@ class ManagedApplicationService:
     def _protect_input_resources(
         self,
         ctx: ControlPlaneContext,
-        plan: PipelinePlan,
+        plan: PlanDocument,
         *,
         operation: str,
         idempotency_key: str,
@@ -2987,7 +3454,9 @@ class ManagedApplicationService:
         return row
 
     @staticmethod
-    def _resource_versions(plan: PipelinePlan) -> dict[str, str]:
+    def _resource_versions(plan: PlanDocument) -> dict[str, str]:
+        if isinstance(plan, AdaptivePipelinePlan):
+            return {}
         versions: dict[str, str] = {}
         for identity, resource in plan.resource_refs.items():
             version = resource.get("version") or resource.get("fingerprint")
@@ -3105,8 +3574,10 @@ def _require_revision_selector(value: object) -> str:
 
 
 def _input_resource_references(
-    plan: PipelinePlan,
+    plan: PlanDocument,
 ) -> tuple[InputResourceReference, ...]:
+    if isinstance(plan, AdaptivePipelinePlan):
+        return ()
     references: dict[tuple[str, str], InputResourceReference] = {}
     for descriptor in plan.bindings.values():
         config: Mapping[str, object] = cast(Mapping[str, object], descriptor.config)
@@ -3171,7 +3642,7 @@ def _with_input_resource_lease(
     idempotency_key: str,
     legacy_scope: bool = False,
 ) -> ExecutionEnvelope:
-    plan = PipelinePlan.from_dict(mutable_copy(envelope.plan_document), verify=True)
+    plan = _decode_plan_document(envelope.plan_document)
     evidence_refs = dict(envelope.evidence_refs or {})
     if _input_resource_references(plan):
         evidence_refs["input_resource_lease_id"] = _input_resource_lease_id(
@@ -3182,3 +3653,106 @@ def _with_input_resource_lease(
     return ExecutionEnvelope.from_dict(
         {**envelope.to_dict(), "evidence_refs": evidence_refs}
     )
+
+
+def _decode_plan_document(value: Mapping[str, Any]) -> PlanDocument:
+    """Decode the versioned public plan union without weakening fingerprints."""
+    try:
+        encoded = json.dumps(
+            mutable_copy(value),
+            sort_keys=True,
+            separators=(",", ":"),
+            ensure_ascii=False,
+            allow_nan=False,
+        )
+        return plan_from_json(encoded, verify=True)
+    except Exception as exc:
+        raise ControlPlaneError.conflict(
+            "Accepted plan failed integrity verification"
+        ) from exc
+
+
+def _request_with_intent(
+    request: RunRequest,
+    *,
+    intent: RunIntent,
+    metadata: Mapping[str, Any],
+) -> RunRequest:
+    """Copy a request while changing only its lifecycle intent and metadata."""
+    return RunRequest(
+        selection=request.selection,
+        intent=intent,
+        materialization=request.materialization,
+        retry=request.retry,
+        timeout=request.timeout,
+        cancellation=request.cancellation,
+        parameter_overrides=request.parameter_overrides,
+        asset_overrides=request.asset_overrides,
+        implementation_overrides=request.implementation_overrides,
+        invalidation=request.invalidation,
+        no_write=request.no_write,
+        metadata=metadata,
+        extensions=request.extensions,
+        explicit_settings=request.explicit_settings,
+    )
+
+
+def _validate_partition_ids_by_node(
+    value: Mapping[str, Sequence[str]],
+    *,
+    required_nodes: set[str],
+    operation: str,
+) -> dict[str, tuple[str, ...]]:
+    """Validate a bounded, complete per-node partition selector."""
+    if not isinstance(cast(Any, value), Mapping) or set(value) != required_nodes:
+        raise ControlPlaneError(
+            f"{operation} must provide partition ids for every selected source and sink",
+            code="PMCP422",
+            status=422,
+            title="Unprocessable Entity",
+            type="etlantic.control_plane/validation_error",
+        )
+    normalized: dict[str, tuple[str, ...]] = {}
+    total = 0
+    for node_name, raw_ids in value.items():
+        if not isinstance(cast(Any, node_name), str) or not node_name.strip():
+            raise ControlPlaneError(
+                f"{operation} contains an invalid node identity",
+                code="PMCP422",
+                status=422,
+                title="Unprocessable Entity",
+                type="etlantic.control_plane/validation_error",
+            )
+        if not isinstance(raw_ids, (list, tuple)) or not raw_ids:
+            raise ControlPlaneError(
+                f"{operation} requires at least one partition id for {node_name!r}",
+                code="PMCP422",
+                status=422,
+                title="Unprocessable Entity",
+                type="etlantic.control_plane/validation_error",
+            )
+        ids = tuple(raw_ids)
+        if any(
+            not isinstance(cast(Any, partition_id), str)
+            or not partition_id.strip()
+            or len(partition_id) > 4096
+            for partition_id in ids
+        ) or len(set(ids)) != len(ids):
+            raise ControlPlaneError(
+                f"{operation} partition ids must be unique, non-blank strings of at most 4096 characters",
+                code="PMCP422",
+                status=422,
+                title="Unprocessable Entity",
+                type="etlantic.control_plane/validation_error",
+            )
+        total += len(ids)
+        if total > 1000:
+            raise ControlPlaneError(
+                f"{operation} is limited to 1000 partition ids",
+                code="PMCP413",
+                status=413,
+                title="Payload Too Large",
+                type="etlantic.control_plane/payload_too_large",
+            )
+        normalized[node_name] = ids
+    return normalized

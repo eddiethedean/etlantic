@@ -14,7 +14,7 @@ from copy import deepcopy
 from dataclasses import dataclass, field
 from typing import Any, cast
 
-import httpx
+import httpx2
 
 from etlantic.connectors.capabilities import (
     IDEMPOTENCY,
@@ -320,7 +320,7 @@ class _FoundryClient:
     @asynccontextmanager
     async def _client(
         self, cfg: Mapping[str, Any], context: Mapping[str, Any]
-    ) -> AsyncGenerator[httpx.AsyncClient, None]:
+    ) -> AsyncGenerator[httpx2.AsyncClient, None]:
         base_url, _ = _base(cfg)
         timeout = _int_option(
             cfg.get("timeout_seconds"),
@@ -329,10 +329,10 @@ class _FoundryClient:
             maximum=MAX_TIMEOUT,
         )
         headers = {"Authorization": f"Bearer {_token(context)}"}
-        async with httpx.AsyncClient(
+        async with httpx2.AsyncClient(
             base_url=base_url,
             headers=headers,
-            timeout=httpx.Timeout(timeout),
+            timeout=httpx2.Timeout(timeout),
             follow_redirects=False,
             transport=self.transport,
         ) as client:
@@ -349,7 +349,7 @@ class _FoundryClient:
         params: Mapping[str, Any] | None = None,
         json_body: Any | None = None,
         content: bytes | None = None,
-    ) -> httpx.Response:
+    ) -> httpx2.Response:
         try:
             async with self._client(cfg, context) as client:
                 response = await client.request(
@@ -364,7 +364,7 @@ class _FoundryClient:
                         else None
                     ),
                 )
-        except httpx.TimeoutException as exc:
+        except httpx2.TimeoutException as exc:
             error_type = ConnectorWriteError if write else ConnectorReadError
             raise error_type(
                 "Foundry request timed out; operation outcome may require reconciliation",
@@ -372,7 +372,7 @@ class _FoundryClient:
                 provider=PROVIDER,
                 details={"effect_unknown": bool(write)},
             ) from exc
-        except httpx.HTTPError as exc:
+        except httpx2.HTTPError as exc:
             error_type = ConnectorWriteError if write else ConnectorReadError
             raise error_type(
                 "Foundry request failed; response details were redacted",
@@ -545,14 +545,14 @@ class _FoundryClient:
                         )
                     chunks.append(chunk)
                 return b"".join(chunks)
-        except httpx.TimeoutException as exc:
+        except httpx2.TimeoutException as exc:
             raise ConnectorReadError(
                 "Foundry request timed out; operation outcome may require reconciliation",
                 code="PMFND019",
                 provider=PROVIDER,
                 details={"effect_unknown": False},
             ) from exc
-        except httpx.HTTPError as exc:
+        except httpx2.HTTPError as exc:
             raise ConnectorReadError(
                 "Foundry request failed; response details were redacted",
                 code="PMFND020",

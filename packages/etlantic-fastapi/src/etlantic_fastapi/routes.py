@@ -62,7 +62,9 @@ from etlantic_fastapi.schemas import (
     RevisionListResponse,
     RevisionResponse,
     RunActionsResponse,
+    RunBackfillBody,
     RunEventPageResponse,
+    RunRepairBody,
     RunResumeBody,
     RunStatusResponse,
     RunSubmitBody,
@@ -3295,6 +3297,109 @@ def build_control_plane_router(api: ETLanticAPI) -> APIRouter:
         endpoint=resume_run_endpoint,
         methods=["POST"],
         operation_id="cp_resume_run",
+        response_model=AcceptReceiptResponse,
+        status_code=status.HTTP_202_ACCEPTED,
+        tags=["runs"],
+    )
+
+    def repair_run_endpoint(
+        run_id: str,
+        body: RunRepairBody,
+        response: Response,
+        ctx: ControlPlaneContext = Depends(get_ctx),
+        idempotency_key_header: str | None = Header(
+            default=None, alias="Idempotency-Key"
+        ),
+    ) -> AcceptReceiptResponse:
+        if api.managed_service is None:
+            _authorize_run(ctx, "run.repair", run_id)
+            _require_scoped_run_exists(ctx, run_id)
+            raise ControlPlaneError(
+                "Managed run repair is not configured",
+                code="PMCP501",
+                status=501,
+                title="Not Implemented",
+            )
+        idempotency_key = idempotency_key_header or (
+            ctx.idempotency_key.value if ctx.idempotency_key else None
+        )
+        if not idempotency_key:
+            raise ControlPlaneError(
+                "Idempotency-Key is required for managed repair",
+                code="PMCP400",
+                status=400,
+                title="Bad Request",
+                type="etlantic.control_plane/bad_request",
+            )
+        receipt = api.managed_service.repair_run(
+            ctx,
+            run_id,
+            idempotency_key=idempotency_key,
+            invalidated_partition_ids=body.invalidated_partition_ids,
+            checkpoint_id=body.checkpoint_id,
+            reusable_artifact_ids=body.reusable_artifact_ids,
+        )
+        response.status_code = status.HTTP_202_ACCEPTED
+        return AcceptReceiptResponse.model_validate(
+            _receipt_with_urls(receipt).to_dict()
+        )
+
+    router.add_api_route(
+        "/v1/runs/{run_id}/repair",
+        endpoint=repair_run_endpoint,
+        methods=["POST"],
+        operation_id="cp_repair_run",
+        response_model=AcceptReceiptResponse,
+        status_code=status.HTTP_202_ACCEPTED,
+        tags=["runs"],
+    )
+
+    def backfill_run_endpoint(
+        run_id: str,
+        body: RunBackfillBody,
+        response: Response,
+        ctx: ControlPlaneContext = Depends(get_ctx),
+        idempotency_key_header: str | None = Header(
+            default=None, alias="Idempotency-Key"
+        ),
+    ) -> AcceptReceiptResponse:
+        if api.managed_service is None:
+            _authorize_run(ctx, "run.backfill", run_id)
+            _require_scoped_run_exists(ctx, run_id)
+            raise ControlPlaneError(
+                "Managed run backfill is not configured",
+                code="PMCP501",
+                status=501,
+                title="Not Implemented",
+            )
+        idempotency_key = idempotency_key_header or (
+            ctx.idempotency_key.value if ctx.idempotency_key else None
+        )
+        if not idempotency_key:
+            raise ControlPlaneError(
+                "Idempotency-Key is required for managed backfill",
+                code="PMCP400",
+                status=400,
+                title="Bad Request",
+                type="etlantic.control_plane/bad_request",
+            )
+        receipt = api.managed_service.backfill_run(
+            ctx,
+            run_id,
+            idempotency_key=idempotency_key,
+            partition_ids=body.partition_ids,
+            checkpoint_id=body.checkpoint_id,
+        )
+        response.status_code = status.HTTP_202_ACCEPTED
+        return AcceptReceiptResponse.model_validate(
+            _receipt_with_urls(receipt).to_dict()
+        )
+
+    router.add_api_route(
+        "/v1/runs/{run_id}/backfill",
+        endpoint=backfill_run_endpoint,
+        methods=["POST"],
+        operation_id="cp_backfill_run",
         response_model=AcceptReceiptResponse,
         status_code=status.HTTP_202_ACCEPTED,
         tags=["runs"],

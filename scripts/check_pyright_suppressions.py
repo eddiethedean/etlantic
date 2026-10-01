@@ -20,8 +20,9 @@ from pathlib import Path
 # The private-usage exception was removed after exposing the SQLModel durable
 # adapter's same-transaction operation as a public coordination method. The
 # managed preparation service, managed resume command, route and authorization
-# matrix shift existing directives; the reviewed inventory remains 784 entries.
-EXPECTED_DIGEST = "c4e4e6d360a184f2445b7c9e1a1fe5d490559a34f81398df7593af74fe67ccd2"
+# matrix shift existing directives; token review found no additions or removals.
+# Re-pin the 784-entry inventory after these source line shifts.
+EXPECTED_DIGEST = "7de008c4e1605baedc102c32b73f4dd7ad7dff160e3e09cb94e4add29076bd57"
 
 _IGNORED_DIRECTORIES = frozenset(
     {

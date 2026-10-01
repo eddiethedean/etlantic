@@ -8,14 +8,16 @@ import copy
 import uuid
 from dataclasses import dataclass, field, replace
 from pathlib import Path
-from typing import Any, cast
+from typing import Any
 
 import anyio
 
 from etlantic.exceptions import PipelineExecutionError
 from etlantic.lifecycle.runtime import PipelineRuntime
+from etlantic.plan.adaptive_model import AdaptivePipelinePlan, PlanDocument
 from etlantic.plan.model import PipelinePlan
 from etlantic.plan.planner import plan_pipeline
+from etlantic.plan.serialize import verify_plan_fingerprint
 from etlantic.registry import PlanningContext
 from etlantic.reliability_runtime import invalidation_targets
 from etlantic.reports.model import PipelineRunReport
@@ -137,10 +139,8 @@ async def arun_pipeline(
         )
 
     pipeline_for_scheduler: type[Any] | None
-    supplied_plan: PipelinePlan | None = None
-    if isinstance(pipeline_cls, PipelinePlan):
-        from etlantic.plan.serialize import verify_plan_fingerprint
-
+    supplied_plan: PlanDocument | None = None
+    if isinstance(pipeline_cls, (PipelinePlan, AdaptivePipelinePlan)):
         verify_plan_fingerprint(pipeline_cls)
         if pipeline_cls.profile_name != resolved.name:
             raise PipelineExecutionError(
@@ -186,8 +186,8 @@ async def arun_pipeline(
             selection=selection,
             request=request if resolved.execution_strategy == "adaptive" else None,
         )
-        explicit_plan = cast(PipelinePlan, plan)
-    if resolved.execution_strategy != "adaptive":
+        explicit_plan = plan
+    if isinstance(explicit_plan, PipelinePlan):
         request = _merge_plan_policies(request, explicit_plan)
 
     # Adaptive runs are isolated transactions.  Reusing a process-level store

@@ -7,6 +7,7 @@ import json
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
 from time import sleep
+from types import SimpleNamespace
 from typing import Any, cast
 
 import pytest
@@ -15,13 +16,22 @@ pytest.importorskip("sqlalchemy")
 pytest.importorskip("sqlmodel")
 pytest.importorskip("etlantic_sqlmodel")
 pytest.importorskip("fastapi")
-pytest.importorskip("httpx")
+pytest.importorskip("httpx2")
 
 import sqlalchemy
 from fastapi.testclient import TestClient as FastAPITestClient
 from sqlalchemy.engine import Engine
 
-from etlantic import Data, Extract, Load, Pipeline, Profile
+from etlantic import (
+    Data,
+    Extract,
+    Input,
+    Load,
+    Output,
+    Pipeline,
+    Profile,
+    Transformation,
+)
 from etlantic.authoring import definition_from_pipeline
 from etlantic.authoring.serialize import pipeline_to_dict
 from etlantic.connectors.local_files import LocalFilesSourceConnector
@@ -37,6 +47,7 @@ from etlantic.control_plane import (
     WorkspaceRef,
 )
 from etlantic.lifecycle.runtime import PipelineRuntime
+from etlantic.quality import QualityRuleset, make_quality_gate, rule_membership
 from etlantic.registry import BindingDescriptor, PlanningContext
 from etlantic.reports.model import ArtifactResult, PipelineRunReport
 from etlantic.runtime.artifacts import artifact_storage_path
@@ -45,10 +56,12 @@ from etlantic.runtime.managed_errors import ExecutionRejected
 from etlantic.runtime.managed_execution import (
     ManagedExecutionAdapter,
     managed_artifact_workspace,
+    managed_incremental_state_store,
 )
 from etlantic.runtime.request import MaterializationPolicy, RunIntent, RunRequest
 from etlantic.runtime.state import RunStatus
 from etlantic.service import managed as managed_service_module
+from etlantic.transform import functions as F
 from etlantic_fastapi import (
     ManagedBackend,
     ManagedBackendConfig,
@@ -77,6 +90,81 @@ class _ManagedCsvRow(Data):
 class _ManagedCsvPipeline(Pipeline):
     source: Extract[_ManagedCsvRow] = Extract(asset="source")
     result: Load[_ManagedCsvRow] = Load(input=source, asset="result")
+
+
+class _ManagedTransformInput(Data):
+    id: str
+    name: str | None
+
+
+class _ManagedTransformOutput(Data):
+    id: int
+    name: str | None
+
+
+class _NormalizeManagedRows(Transformation):
+    rows: Input[_ManagedTransformInput]
+    result: Output[_ManagedTransformOutput]
+
+
+def _normalize_managed_rows(rows: Any) -> Any:
+    return rows.select(
+        F.col("id").cast("int").alias("id"),
+        F.trim(F.col("name")).alias("name"),
+    )
+
+
+_NormalizeManagedRows.portable(_normalize_managed_rows)
+
+
+def _normalize_managed_rows_local(rows: Any) -> list[dict[str, Any]]:
+    return [
+        {
+            "id": int(row["id"]),
+            "name": row["name"].strip() if row["name"] is not None else None,
+        }
+        for row in rows
+    ]
+
+
+def _normalize_managed_rows_pandas(rows: Any) -> Any:
+    return rows.assign(
+        id=rows["id"].astype("int64"),
+        name=rows["name"].str.strip(),
+    )[["id", "name"]]
+
+
+def _normalize_managed_rows_polars(rows: Any) -> Any:
+    import polars as pl
+
+    return rows.with_columns(
+        pl.col("id").cast(pl.Int64),
+        pl.col("name").str.strip_chars(),
+    ).select("id", "name")
+
+
+_NormalizeManagedRows.implementation("local")(_normalize_managed_rows_local)
+_NormalizeManagedRows.implementation("pandas")(_normalize_managed_rows_pandas)
+_NormalizeManagedRows.implementation("polars")(_normalize_managed_rows_polars)
+
+
+_ManagedNameQuality = make_quality_gate(
+    _ManagedTransformOutput,
+    QualityRuleset(rules=(rule_membership("name", ["Ada"]),)),
+    name="ManagedNameQuality",
+)
+
+
+class _ManagedTransformPipeline(Pipeline):
+    source: Extract[_ManagedTransformInput] = Extract(asset="source")
+    normalized = _NormalizeManagedRows.step(rows=source)
+    checked = _ManagedNameQuality.step(rows=normalized.result)
+    accepted: Load[_ManagedTransformOutput] = Load(
+        input=checked.result, asset="accepted"
+    )
+    rejected: Load[_ManagedTransformOutput] = Load(
+        input=checked.rejected, asset="rejected"
+    )
 
 
 def _context() -> ControlPlaneContext:
@@ -604,6 +692,147 @@ def test_managed_worker_executes_finalized_upload_and_lease_outlives_staging_ttl
         assert len(after_alternate - before_alternate) == 1
     finally:
         backend.close()
+
+
+@pytest.mark.parametrize("engine", ["local", "pandas", "polars"])
+def test_managed_worker_preserves_native_transform_quality_and_quarantine(
+    tmp_path: Path,
+    engine: str,
+) -> None:
+    """The accepted worker plan preserves transform and quality-port semantics."""
+    landing = tmp_path / "semantic-input.csv"
+    landing.write_text("id,name\n42,  Ada  \n43,\n", encoding="utf-8")
+    accepted_path = tmp_path / "accepted.csv"
+    rejected_path = tmp_path / "rejected.csv"
+    ctx = _context()
+    profile = Profile(
+        name="managed-semantic-worker",
+        security_mode="development",
+        dataframe_engine=engine,
+        plugin_allowlist={} if engine == "local" else {f"etlantic-{engine}": None},
+        portable_transform_policy="native",
+        safe_io={"approved_roots": [str(tmp_path)]},
+    )
+
+    def planning_context_factory(
+        _ctx: ControlPlaneContext, effective_profile: Any
+    ) -> PlanningContext:
+        planning = PlanningContext.create(profile=effective_profile)
+        planning.registry.register_binding(
+            BindingDescriptor(
+                binding="source",
+                provider="local-files",
+                location=landing.name,
+                kind="source",
+                config={"format": "csv", "mode": "snapshot", "root": str(tmp_path)},
+            )
+        )
+        planning.registry.register_binding(
+            BindingDescriptor(
+                binding="accepted",
+                provider="csv",
+                location=str(accepted_path),
+                kind="sink",
+            )
+        )
+        planning.registry.register_binding(
+            BindingDescriptor(
+                binding="rejected",
+                provider="csv",
+                location=str(rejected_path),
+                kind="sink",
+            )
+        )
+        return planning
+
+    authorizer = MemoryAuthorizer()
+    authorizer.grant(ctx, "definition.write")
+    authorizer.grant(ctx, "run.submit")
+    authorizer.grant(ctx, "run.read")
+    authorizer.grant(ctx, "run.report")
+    backend = create_managed_backend(
+        ManagedBackendConfig(
+            database_url=_migrated_url(tmp_path),
+            store_id="managed-semantic-worker",
+            profile=profile,
+        ),
+        authorizer=authorizer,
+        context_factory=static_context_factory(
+            tenant_id=ctx.tenant.tenant_id,
+            workspace_id=ctx.workspace.workspace_id,
+            environment=ctx.environment.name,
+            security_domain=ctx.security_domain.domain_id,
+        ),
+        planning_context_factory=planning_context_factory,
+    )
+    try:
+        service = backend.api.managed_service
+        assert service is not None
+        service.register_definition(
+            ctx,
+            "managed-semantic-pipe",
+            pipeline_to_dict(definition_from_pipeline(_ManagedTransformPipeline)),
+        )
+        receipt = service.submit_run(
+            ctx,
+            "managed-semantic-pipe",
+            idempotency_key="managed-transform-quality-run",
+        )
+        assert (
+            backend.create_execution_host(owner_id="managed-semantic-worker").tick(ctx)
+            == 1
+        )
+        assert receipt.resource_id is not None
+        assert service.get_run_report(ctx, receipt.resource_id)["status"] == "succeeded"
+        assert accepted_path.read_text(encoding="utf-8").splitlines() == [
+            "id,name",
+            "42,Ada",
+        ]
+        assert rejected_path.read_text(encoding="utf-8").splitlines() == [
+            "id,name",
+            "43,",
+        ]
+    finally:
+        backend.close()
+
+
+def test_managed_worker_explains_continuous_streaming_boundary() -> None:
+    adapter = ManagedExecutionAdapter()
+    accepted_envelope = SimpleNamespace(profile_name="streaming")
+    streaming_plan = SimpleNamespace(profile_snapshot={"spark_streaming": True})
+    with pytest.raises(
+        ExecutionRejected,
+        match=r"finite batches.*streaming trigger runner and checkpoint owner",
+    ):
+        cast(Any, adapter)._execution_profile(accepted_envelope, streaming_plan)
+
+
+def test_managed_incremental_cursor_store_persists_and_is_scope_isolated(
+    tmp_path: Path,
+) -> None:
+    ctx = _context()
+    store = managed_incremental_state_store(
+        ctx, "managed-pipeline", state_root=tmp_path
+    )
+    store.commit("orders", "cursor-2", reason="published")
+
+    reopened = managed_incremental_state_store(
+        ctx, "managed-pipeline", state_root=tmp_path
+    )
+    cursor = reopened.get("orders")
+    assert cursor is not None and cursor.value == "cursor-2"
+
+    other_scope = ControlPlaneContext(
+        principal=Principal("other-owner"),
+        tenant=TenantRef("other-tenant"),
+        workspace=WorkspaceRef("other-tenant", "other-workspace"),
+        environment=EnvironmentRef("test"),
+        security_domain=SecurityDomain("other-domain"),
+    )
+    isolated = managed_incremental_state_store(
+        other_scope, "managed-pipeline", state_root=tmp_path
+    )
+    assert isolated.get("orders") is None
 
 
 @pytest.mark.parametrize(

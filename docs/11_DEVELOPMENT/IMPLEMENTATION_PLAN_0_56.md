@@ -252,6 +252,16 @@ rerun, replay, resume, repair and backfill are runnable commands with explicit
 new-run versus new-attempt semantics, idempotency and source/parent lineage.
 A generated repair plan is not evidence that a repair executed.
 
+Repair and backfill commands accept a complete per-node partition selector
+against a verified terminal parent run. They create a distinct durable child
+command with parent run/submission/attempt lineage and an immutable selector in
+the accepted execution envelope. Admission requires explicit bounded partition
+read support from every selected source and idempotent partition replacement
+from every selected sink. Workers call those partition-specific provider
+methods and fail closed if a selector or capability is missing; whole-resource
+I/O is never a fallback. Checkpoint and reusable-artifact identities remain
+opaque provider inputs and lineage references.
+
 Include queued cancellation and in-flight cancellation, supported pause/resume,
 and audited amendments. Provider limitations must be truthful; pause may only
 be offered at a qualified checkpoint/quiescence boundary. External business

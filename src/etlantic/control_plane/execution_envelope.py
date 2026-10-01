@@ -15,9 +15,14 @@ from etlantic.authoring.serialize import (
     pipeline_from_dict,
     pipeline_to_dict,
 )
+from etlantic.plan.adaptive_model import (
+    ADAPTIVE_PLAN_SCHEMA,
+    AdaptivePipelinePlan,
+    PlanDocument,
+)
 from etlantic.plan.freeze import deep_freeze, mutable_copy
 from etlantic.plan.model import PipelinePlan
-from etlantic.plan.serialize import verify_plan_fingerprint
+from etlantic.plan.serialize import plan_from_json, verify_plan_fingerprint
 from etlantic.runtime.logging import is_sensitive_key, redact_message
 from etlantic.runtime.request import (
     RunRequest,
@@ -48,6 +53,13 @@ def _validate_secret_free(name: str, value: Any) -> None:
             entries = cast(Mapping[object, Any], current)
             for key, child in entries.items():
                 if is_sensitive_key(key):
+                    if (
+                        str(key).lower() == "authorization"
+                        and ".plugin_trust_records[" in path
+                        and isinstance(child, str)
+                        and child in {"allowed", "denied", "skipped", "pending"}
+                    ):
+                        continue
                     raise ValueError(
                         f"{name} contains a sensitive field at {path}.{key}"
                     )
@@ -68,6 +80,41 @@ def _require_fingerprint(value: Any, name: str) -> str:
     if not isinstance(value, str) or _FINGERPRINT_RE.fullmatch(value) is None:
         raise ValueError(f"{name} must be a lowercase SHA-256 fingerprint")
     return value
+
+
+def _decode_plan(value: Mapping[str, Any]) -> PlanDocument:
+    """Decode a closed, fingerprinted plan document from its schema tag."""
+    payload = _canonical_json(mutable_copy(value))
+    return plan_from_json(payload, verify=True)
+
+
+def _plan_settings(plan: PlanDocument) -> Mapping[str, Any]:
+    """Return settings resolved by a plan family, if it has that contract."""
+    if isinstance(plan, PipelinePlan):
+        return plan.execution_settings
+    return {}
+
+
+def _plan_intents(plan: PlanDocument) -> Mapping[str, Any]:
+    """Return inherited intent defaults for a plan family, if present."""
+    if isinstance(plan, PipelinePlan):
+        return plan.intents
+    return {}
+
+
+def _effective_request(plan: PlanDocument, request: RunRequest) -> RunRequest:
+    """Resolve request defaults and verify adaptive plans bind exact controls."""
+    if isinstance(plan, AdaptivePipelinePlan):
+        runtime_record = plan.metadata.get("etlantic.runtime")
+        stored_request = (
+            cast(Mapping[str, Any], runtime_record).get("request")
+            if isinstance(runtime_record, Mapping)
+            else None
+        )
+        if mutable_copy(stored_request or {}) != request.to_dict():
+            raise ValueError("Adaptive plan does not bind the accepted run request")
+        return request
+    return resolve_request_policies(request, plan.execution_settings, plan.intents)
 
 
 @dataclass(frozen=True, slots=True)
@@ -105,7 +152,7 @@ class ExecutionEnvelope:
         revision_selector: str,
         revision_id: str | None,
         definition: PipelineDefinition,
-        plan: PipelinePlan,
+        plan: PlanDocument,
         profile_name: str,
         request: RunRequest,
         setting_provenance: Mapping[str, str] | None = None,
@@ -115,14 +162,12 @@ class ExecutionEnvelope:
         evidence_refs: Mapping[str, str] | None = None,
     ) -> ExecutionEnvelope:
         """Create an envelope after validating all immutable inputs."""
-        effective_request = resolve_request_policies(
-            request, plan.execution_settings, plan.intents
-        )
+        effective_request = _effective_request(plan, request)
         provenance = request_setting_provenance(
             request,
-            plan.execution_settings,
+            _plan_settings(plan),
             profile_name=profile_name,
-            intents=plan.intents,
+            intents=_plan_intents(plan),
         )
         if setting_provenance is not None and dict(setting_provenance) != provenance:
             raise ValueError(
@@ -142,7 +187,7 @@ class ExecutionEnvelope:
                 "profile_name": profile_name,
                 "run_request": request.to_dict(),
                 "effective_request": effective_request.to_dict(),
-                "effective_settings": dict(plan.execution_settings),
+                "effective_settings": dict(_plan_settings(plan)),
                 "setting_provenance": provenance,
                 "plugin_fingerprint": plugin_fingerprint,
                 "policy_fingerprint": policy_fingerprint,
@@ -273,7 +318,7 @@ class ExecutionEnvelope:
         actual_definition_fingerprint = definition.fingerprint
         if actual_definition_fingerprint != definition_fingerprint:
             raise ValueError("Definition fingerprint does not match its content")
-        plan = PipelinePlan.from_dict(dict(plan_data), verify=True)
+        plan = _decode_plan(plan_data)
         verify_plan_fingerprint(plan)
         if plan.fingerprint != plan_fingerprint:
             raise ValueError("Plan fingerprint does not match its content")
@@ -288,23 +333,23 @@ class ExecutionEnvelope:
         requested_nodes = request.selection.resolve(plan.logical_graph)
         if tuple(selected_nodes) != tuple(requested_nodes):
             raise ValueError("Plan selection does not match the run request")
+        settings = _plan_settings(plan)
+        intents = _plan_intents(plan)
         if _canonical_json(dict(effective_data)) != _canonical_json(
-            mutable_copy(plan.execution_settings)
+            mutable_copy(settings)
         ):
             raise ValueError("Effective settings do not match the verified plan")
         _validate_secret_free("setting_provenance", dict(provenance_data))
         if effective_request_data is not None:
             _validate_secret_free("effective_request", dict(effective_request_data))
 
-        effective_request = resolve_request_policies(
-            request, plan.execution_settings, plan.intents
-        )
+        effective_request = _effective_request(plan, request)
         expected_effective_request = effective_request.to_dict()
         expected_provenance = request_setting_provenance(
             request,
-            plan.execution_settings,
+            settings,
             profile_name=profile_name,
-            intents=plan.intents,
+            intents=intents,
         )
         if schema_raw == EXECUTION_ENVELOPE_SCHEMA:
             if effective_request_data is None or _canonical_json(
@@ -388,6 +433,10 @@ class ExecutionEnvelope:
         """Return a verified envelope with a new request and resolved policies."""
         payload = self.to_dict()
         payload["run_request"] = request.to_dict()
+        if self.plan_document.get("schema") == ADAPTIVE_PLAN_SCHEMA:
+            raise ValueError(
+                "Adaptive plan requests are fingerprint-bound and cannot be amended"
+            )
         payload["effective_request"] = resolve_request_policies(
             request,
             self.effective_settings,

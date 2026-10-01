@@ -1005,6 +1005,196 @@
       ]
     },
     {
+      "operation_id": "cp_backfill_run",
+      "method": "POST",
+      "path": "/v1/runs/{run_id}/backfill",
+      "tag": "runs",
+      "kind": "command",
+      "handler": "backfill_run_endpoint",
+      "coverage": "mapped",
+      "fields": [
+        {
+          "surface": "parameter",
+          "location": "header",
+          "path": "Idempotency-Key",
+          "required": false,
+          "type": "unknown"
+        },
+        {
+          "surface": "parameter",
+          "location": "path",
+          "path": "run_id",
+          "required": true,
+          "type": "string"
+        },
+        {
+          "surface": "request",
+          "media_type": "application/json",
+          "path": "checkpoint_id",
+          "required": false,
+          "type": "object"
+        },
+        {
+          "surface": "request",
+          "media_type": "application/json",
+          "path": "partition_ids",
+          "required": true,
+          "type": "object"
+        },
+        {
+          "surface": "request",
+          "media_type": "application/json",
+          "path": "partition_ids.*",
+          "required": false,
+          "type": "dynamic-map-value"
+        },
+        {
+          "surface": "response",
+          "status_code": "202",
+          "media_type": "application/json",
+          "path": "acceptance_id",
+          "required": true,
+          "type": "string"
+        },
+        {
+          "surface": "response",
+          "status_code": "202",
+          "media_type": "application/json",
+          "path": "created_at",
+          "required": true,
+          "type": "string"
+        },
+        {
+          "surface": "response",
+          "status_code": "202",
+          "media_type": "application/json",
+          "path": "events_url",
+          "required": false,
+          "type": "object"
+        },
+        {
+          "surface": "response",
+          "status_code": "202",
+          "media_type": "application/json",
+          "path": "idempotency_key",
+          "required": true,
+          "type": "string"
+        },
+        {
+          "surface": "response",
+          "status_code": "202",
+          "media_type": "application/json",
+          "path": "resource_id",
+          "required": false,
+          "type": "object"
+        },
+        {
+          "surface": "response",
+          "status_code": "202",
+          "media_type": "application/json",
+          "path": "resource_type",
+          "required": false,
+          "type": "string"
+        },
+        {
+          "surface": "response",
+          "status_code": "202",
+          "media_type": "application/json",
+          "path": "schema",
+          "required": false,
+          "type": "string"
+        },
+        {
+          "surface": "response",
+          "status_code": "202",
+          "media_type": "application/json",
+          "path": "status",
+          "required": false,
+          "type": "string"
+        },
+        {
+          "surface": "response",
+          "status_code": "202",
+          "media_type": "application/json",
+          "path": "status_url",
+          "required": false,
+          "type": "object"
+        },
+        {
+          "surface": "response",
+          "status_code": "202",
+          "media_type": "application/json",
+          "path": "submission_id",
+          "required": true,
+          "type": "string"
+        },
+        {
+          "surface": "response",
+          "status_code": "202",
+          "media_type": "application/json",
+          "path": "tenant_id",
+          "required": true,
+          "type": "string"
+        },
+        {
+          "surface": "response",
+          "status_code": "202",
+          "media_type": "application/json",
+          "path": "workspace_id",
+          "required": true,
+          "type": "string"
+        },
+        {
+          "surface": "response",
+          "status_code": "422",
+          "media_type": "application/json",
+          "path": "detail",
+          "required": false,
+          "type": "array"
+        },
+        {
+          "surface": "response",
+          "status_code": "422",
+          "media_type": "application/json",
+          "path": "detail[].ctx",
+          "required": false,
+          "type": "object"
+        },
+        {
+          "surface": "response",
+          "status_code": "422",
+          "media_type": "application/json",
+          "path": "detail[].input",
+          "required": false,
+          "type": "object"
+        },
+        {
+          "surface": "response",
+          "status_code": "422",
+          "media_type": "application/json",
+          "path": "detail[].loc",
+          "required": true,
+          "type": "array"
+        },
+        {
+          "surface": "response",
+          "status_code": "422",
+          "media_type": "application/json",
+          "path": "detail[].msg",
+          "required": true,
+          "type": "string"
+        },
+        {
+          "surface": "response",
+          "status_code": "422",
+          "media_type": "application/json",
+          "path": "detail[].type",
+          "required": true,
+          "type": "string"
+        }
+      ]
+    },
+    {
       "operation_id": "cp_cancel_run",
       "method": "POST",
       "path": "/v1/runs/{run_id}/cancel",
@@ -7324,6 +7514,203 @@
         {
           "surface": "response",
           "status_code": "200",
+          "media_type": "application/json",
+          "path": "workspace_id",
+          "required": true,
+          "type": "string"
+        },
+        {
+          "surface": "response",
+          "status_code": "422",
+          "media_type": "application/json",
+          "path": "detail",
+          "required": false,
+          "type": "array"
+        },
+        {
+          "surface": "response",
+          "status_code": "422",
+          "media_type": "application/json",
+          "path": "detail[].ctx",
+          "required": false,
+          "type": "object"
+        },
+        {
+          "surface": "response",
+          "status_code": "422",
+          "media_type": "application/json",
+          "path": "detail[].input",
+          "required": false,
+          "type": "object"
+        },
+        {
+          "surface": "response",
+          "status_code": "422",
+          "media_type": "application/json",
+          "path": "detail[].loc",
+          "required": true,
+          "type": "array"
+        },
+        {
+          "surface": "response",
+          "status_code": "422",
+          "media_type": "application/json",
+          "path": "detail[].msg",
+          "required": true,
+          "type": "string"
+        },
+        {
+          "surface": "response",
+          "status_code": "422",
+          "media_type": "application/json",
+          "path": "detail[].type",
+          "required": true,
+          "type": "string"
+        }
+      ]
+    },
+    {
+      "operation_id": "cp_repair_run",
+      "method": "POST",
+      "path": "/v1/runs/{run_id}/repair",
+      "tag": "runs",
+      "kind": "command",
+      "handler": "repair_run_endpoint",
+      "coverage": "mapped",
+      "fields": [
+        {
+          "surface": "parameter",
+          "location": "header",
+          "path": "Idempotency-Key",
+          "required": false,
+          "type": "unknown"
+        },
+        {
+          "surface": "parameter",
+          "location": "path",
+          "path": "run_id",
+          "required": true,
+          "type": "string"
+        },
+        {
+          "surface": "request",
+          "media_type": "application/json",
+          "path": "checkpoint_id",
+          "required": false,
+          "type": "object"
+        },
+        {
+          "surface": "request",
+          "media_type": "application/json",
+          "path": "invalidated_partition_ids",
+          "required": true,
+          "type": "object"
+        },
+        {
+          "surface": "request",
+          "media_type": "application/json",
+          "path": "invalidated_partition_ids.*",
+          "required": false,
+          "type": "dynamic-map-value"
+        },
+        {
+          "surface": "request",
+          "media_type": "application/json",
+          "path": "reusable_artifact_ids",
+          "required": false,
+          "type": "array"
+        },
+        {
+          "surface": "response",
+          "status_code": "202",
+          "media_type": "application/json",
+          "path": "acceptance_id",
+          "required": true,
+          "type": "string"
+        },
+        {
+          "surface": "response",
+          "status_code": "202",
+          "media_type": "application/json",
+          "path": "created_at",
+          "required": true,
+          "type": "string"
+        },
+        {
+          "surface": "response",
+          "status_code": "202",
+          "media_type": "application/json",
+          "path": "events_url",
+          "required": false,
+          "type": "object"
+        },
+        {
+          "surface": "response",
+          "status_code": "202",
+          "media_type": "application/json",
+          "path": "idempotency_key",
+          "required": true,
+          "type": "string"
+        },
+        {
+          "surface": "response",
+          "status_code": "202",
+          "media_type": "application/json",
+          "path": "resource_id",
+          "required": false,
+          "type": "object"
+        },
+        {
+          "surface": "response",
+          "status_code": "202",
+          "media_type": "application/json",
+          "path": "resource_type",
+          "required": false,
+          "type": "string"
+        },
+        {
+          "surface": "response",
+          "status_code": "202",
+          "media_type": "application/json",
+          "path": "schema",
+          "required": false,
+          "type": "string"
+        },
+        {
+          "surface": "response",
+          "status_code": "202",
+          "media_type": "application/json",
+          "path": "status",
+          "required": false,
+          "type": "string"
+        },
+        {
+          "surface": "response",
+          "status_code": "202",
+          "media_type": "application/json",
+          "path": "status_url",
+          "required": false,
+          "type": "object"
+        },
+        {
+          "surface": "response",
+          "status_code": "202",
+          "media_type": "application/json",
+          "path": "submission_id",
+          "required": true,
+          "type": "string"
+        },
+        {
+          "surface": "response",
+          "status_code": "202",
+          "media_type": "application/json",
+          "path": "tenant_id",
+          "required": true,
+          "type": "string"
+        },
+        {
+          "surface": "response",
+          "status_code": "202",
           "media_type": "application/json",
           "path": "workspace_id",
           "required": true,

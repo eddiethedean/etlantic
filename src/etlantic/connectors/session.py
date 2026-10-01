@@ -7,8 +7,9 @@ from collections.abc import Mapping, Sequence
 from dataclasses import dataclass, field
 from typing import TYPE_CHECKING, Any, cast
 
-from etlantic.connectors.errors import ConnectorWriteError
+from etlantic.connectors.errors import ConnectorReadError, ConnectorWriteError
 from etlantic.connectors.models import CommitReceipt, SinkPlan, WriteSession
+from etlantic.runtime.invoke import maybe_await
 
 if TYPE_CHECKING:
     from etlantic.storage.protocol import StorageBinding
@@ -118,7 +119,37 @@ async def write_via_sink_connector(
     provider confirms that abort. A lost commit acknowledgement stays unknown;
     the caller can ask the same connector to reconcile the stable session.
     """
-    plan = await connector.plan_write(binding=binding, context=context)
+    partition_ids = context.get("etlantic.partition_ids")
+    if partition_ids is not None:
+        planner = getattr(connector, "plan_write_partitions", None)
+        if not callable(planner):
+            raise ConnectorWriteError(
+                "Sink connector does not implement bounded partition writes",
+                code="PMCONN802",
+                provider=str(getattr(connector, "name", "sink")),
+            )
+        plan = await maybe_await(
+            planner,
+            binding=binding,
+            context=context,
+            partition_ids=tuple(partition_ids),
+        )
+        required = {"write.partition_replace", "idempotency"}
+        info = connector.info() if callable(getattr(connector, "info", None)) else None
+        plan_capabilities = cast(
+            Sequence[str], getattr(plan, "required_capabilities", ())
+        )
+        info_capabilities = cast(Sequence[str], getattr(info, "capabilities", ()))
+        if not required.issubset(plan_capabilities) or not required.issubset(
+            info_capabilities
+        ):
+            raise ConnectorWriteError(
+                "Sink connector did not prove idempotent partition replacement",
+                code="PMCONN802",
+                provider=str(getattr(connector, "name", "sink")),
+            )
+    else:
+        plan = await connector.plan_write(binding=binding, context=context)
     try:
         session = await connector.begin_write(
             plan=plan, binding=binding, context=context
@@ -205,7 +236,40 @@ async def run_source_connector_extract(
     context: dict[str, Any],
 ) -> tuple[list[Any], Any | None]:
     """Execute plan_read + read_batches for a source connector; return records."""
-    plan = await connector.plan_read(binding=binding, context=context)
+    partition_ids = context.get("etlantic.partition_ids")
+    if partition_ids is not None:
+        planner = getattr(connector, "plan_read_partitions", None)
+        if not callable(planner):
+            raise ConnectorReadError(
+                "Source connector does not implement bounded partition reads",
+                code="PMCONN803",
+                provider=str(getattr(connector, "name", "source")),
+            )
+        plan = await maybe_await(
+            planner,
+            binding=binding,
+            context=context,
+            partition_ids=tuple(partition_ids),
+        )
+        plan_capabilities = cast(
+            Sequence[str], getattr(plan, "required_capabilities", ())
+        )
+        if "source.partitioned" not in plan_capabilities:
+            raise ConnectorReadError(
+                "Source plan did not prove bounded partition reads",
+                code="PMCONN803",
+                provider=str(getattr(connector, "name", "source")),
+            )
+        info = connector.info() if callable(getattr(connector, "info", None)) else None
+        info_capabilities = cast(Sequence[str], getattr(info, "capabilities", ()))
+        if "source.partitioned" not in info_capabilities:
+            raise ConnectorReadError(
+                "Source connector did not advertise bounded partition reads",
+                code="PMCONN803",
+                provider=str(getattr(connector, "name", "source")),
+            )
+    else:
+        plan = await connector.plan_read(binding=binding, context=context)
     records: list[Any] = []
     last_batch = None
     async for batch in connector.read_batches(

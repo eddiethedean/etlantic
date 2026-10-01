@@ -701,13 +701,37 @@ Current index: 40 criteria passed, 4 pending, and 0 blocked of 44.
 - `ruff check .`, `git diff --check`, plugin-manifest checks and `uv lock --check`
   passed.
 
+### Managed engine and quality semantics (AC056-041)
+
+`uv run pytest -q
+tests/fastapi/test_managed_backend_0_56.py::test_managed_worker_preserves_native_transform_quality_and_quarantine
+tests/fastapi/test_managed_backend_0_56.py::test_managed_worker_explains_continuous_streaming_boundary
+tests/unit/test_extensions_0_19.py::test_bounded_plugin_authorization_status_is_not_a_credential
+tests/unit/test_extensions_0_19.py::test_plugin_authorization_credential_remains_rejected`
+— 6 passed. The managed worker executed an accepted CSV pipeline on Local,
+Pandas 2.3.3 and Polars 1.42.1. Each engine cast identifiers, normalized names,
+applied a portable quality expression through the selected engine's native
+implementation, and published accepted and rejected rows to separate sinks.
+This exposed and fixed plan/envelope rejection of the harmless bounded plugin
+trust status `authorization=allowed`; bearer or other credential-bearing
+authorization values remain rejected. Managed continuous Spark streaming now
+fails with a concrete reason: this worker owns finite runs and has no streaming
+trigger runner or checkpoint owner. The detailed rows and current evidence
+limits are in `MANAGED_EXECUTION_MATRIX_0_56.json`. Managed workers now attach
+a durable cursor file scoped by security domain, tenant, workspace and pipeline
+when the accepted plan declares incremental strategies; persistence and scope
+isolation passed, alongside the standalone atomic publication-barrier tests.
+
+The full AC is still open: SQL/PySpark/DataFusion/DuckDB managed transform rows,
+dynamic runtime expansion, and end-to-end cursor advancement through a managed
+worker are not demonstrated by this campaign. Existing standalone engine and
+incremental tests are not counted as managed-path proof.
+
 ## Open release requirements
 
-The remaining four criteria are AC056-031, AC056-040, AC056-041 and AC056-043:
+The remaining three criteria are AC056-031, AC056-041 and AC056-043:
 - AC056-031: expose and qualify managed resume, repair and backfill commands
   with distinct idempotency and complete parent/run/attempt lineage.
-- AC056-040: complete package/export/schema compatibility, version-skew and
-  migration upgrade/rollback qualification from built wheels.
 - AC056-041: qualify the full advertised engine/native/dynamic/incremental/
   streaming combination matrix through the managed path.
 - AC056-043: complete authoritative adaptive `/2` admission and observed
@@ -761,18 +785,16 @@ The remaining four criteria are AC056-031, AC056-040, AC056-041 and AC056-043:
   overlap and effect/reconciliation matrix in two independent loopback scopes;
   live Foundry access is not required.
 - AC056-038–041 and AC056-043–044: full disclosure campaign, PostgreSQL
-  backup/restore/failure, version-skew/rollback,
-  complete advanced engine matrix and managed adaptive `/2` remain open.
+  backup/restore/failure, complete advanced engine matrix and managed adaptive
+  `/2` remain open.
   AC056-044 passed: a standard-library consumer ran through register,
   checkpointed revision, validate, plan, review and submit against an API built
   from fresh core/FastAPI wheel installs. Rejection prevented submit and webhook
   delivery; approval reused the same revision and sent one idempotent event to
   an external loopback webhook. The clean environment imported both packages
   from site-packages with workspace import paths disabled. Core and FastAPI
-  wheel hashes are recorded in the release index. AC056-040 has clean Python
-  3.14.3 wheel-build/install, migration-008, backend-construction and OpenAPI
-  smoke evidence; its complete compatibility, version-skew, migration rollback
-  and package matrix remains open.
+  wheel hashes are recorded in the release index. The earlier AC056-040 wheel
+  smokes are superseded by the all-package compatibility qualification below.
 
 ## Latest candidate verification (2026-09-30)
 
@@ -1045,3 +1067,42 @@ case references, provider tuple and open reason. These limitations keep the
   campaigns cover the new operation. The CP1 and CP-GA OpenAPI snapshot suite
   also passed after recording the 92-operation contract. Ruff, format and
   Pyright checks passed for the completed change.
+
+## AC056-040 package compatibility qualification (2026-10-01)
+
+- `uv build --all-packages --wheel --out-dir /tmp/etlantic-ac056-040-wheels
+  --clear` built all 25 workspace distributions. `WHEEL_MANIFEST.json` records
+  each candidate filename, byte length and SHA-256.
+- All 25 wheels were dependency-resolved and installed together into a fresh
+  Python 3.11.15 virtual environment. Qualification ran with `python -I`; all
+  25 public package roots resolved from that environment's `site-packages`.
+  Every declared `__all__` export resolved (387 exports total).
+- The installed CP1 and CP-GA applications matched their committed OpenAPI 3.1
+  path and operation-ID snapshots. Both expose 57 component schemas; all 161
+  local schema references resolve. Component-schema SHA-256 is
+  `f05f97b9d9a4ae54a96a657f3943b490784a9711131392744a46bfa5d4c6fb70`.
+- Installed metadata for all 24 adapters accepts the candidate base package
+  and rejects 0.54.99 and 0.56.0 under the declared version constraints. The
+  exact 0.55.0 candidate set resolved and installed as one environment. The
+  report records the resolved FastAPI, Pydantic, SQLModel, SQLAlchemy, pandas,
+  Polars, PyArrow, DuckDB, DataFusion, Prefect and PySpark versions.
+- The installed SQLModel migration chain upgraded a fresh database to
+  `012_bounded_event_tombstone_retention_0_56`, then rolled back and upgraded
+  again from every supported CP1 head from 005 through 011. A definition,
+  accepted submission identity and event history survived every round-trip.
+- In the isolated wheel environment,
+  `tests/sqlmodel/test_cp1_migrations_0_51.py`, both FastAPI OpenAPI snapshot
+  tests, and both wire-schema tests passed: 34 passed and 6 PostgreSQL cases
+  skipped because no test database URL was configured. The package/version
+  compatibility, connector-schema and schema-drift suites passed 87 tests.
+  `PACKAGE_COMPATIBILITY_0_56.json` records the environment, wheel-installed
+  exports, version ranges, schema hashes and migration heads. The repeatable
+  install commands are `uv venv --python 3.11 <venv>` followed by
+  `uv pip install --python <venv>/bin/python --find-links <wheel-dir>
+  <wheel-dir>/*.whl`; install `pytest==8.4.2` as the harness, then run
+  `python -I scripts/qualify_phase056_packages.py --repo-root <workspace>
+  --wheel-dir <candidate-wheel-directory> --output <report.json>` from that
+  installed environment. The command verifies the wheel directory against the
+  checked-in size/hash manifest.
+  AC056-040 is passed; this qualification makes no live PostgreSQL migration
+  claim.

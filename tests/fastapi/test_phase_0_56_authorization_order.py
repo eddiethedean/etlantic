@@ -15,7 +15,7 @@ import pytest
 
 pytest.importorskip("fastapi")
 pytest.importorskip("etlantic_fastapi")
-pytest.importorskip("httpx")
+pytest.importorskip("httpx2")
 
 from fastapi.testclient import TestClient
 from scripts.check_phase_0_56_control_coverage import as_list, as_mapping, build_openapi

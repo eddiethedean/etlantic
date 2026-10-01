@@ -280,6 +280,16 @@ def _reject_nested_secret_material(value: Any, *, path: str) -> None:
     if isinstance(value, Mapping):
         for key, child in value.items():
             if _is_secret_like_key(str(key)):
+                # Plugin discovery records a bounded authorization decision
+                # alongside package identity. These enum values are status,
+                # not an authorization header or credential.
+                if (
+                    _normalize_metadata_key(key) == "authorization"
+                    and "plugin_trust_records[" in path
+                    and isinstance(child, str)
+                    and child in {"allowed", "denied", "skipped", "pending"}
+                ):
+                    continue
                 raise ValueError(
                     f"{path} contains forbidden secret-like key {key!r}; "
                     "failing closed under strict production metadata."

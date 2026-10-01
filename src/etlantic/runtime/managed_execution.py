@@ -25,8 +25,9 @@ from etlantic.exceptions import (
     PipelineTimeoutError,
 )
 from etlantic.lifecycle.runtime import PipelineRuntime
+from etlantic.plan.adaptive_model import AdaptivePipelinePlan, PlanDocument
 from etlantic.plan.freeze import mutable_copy
-from etlantic.plan.model import PipelinePlan
+from etlantic.plan.serialize import plan_from_json
 from etlantic.profile import Profile, resolve_profile
 from etlantic.reports.file_store import FileReportStore
 from etlantic.reports.model import PipelineRunReport
@@ -67,15 +68,23 @@ def _record_attempt(execution: dict[str, Any], *, attempt_id: str, role: str) ->
     execution["attempt_history"] = history
 
 
-def managed_run_id(ctx: ControlPlaneContext, idempotency_key: str) -> str:
-    scope = "/".join(
-        (
-            ctx.security_domain.domain_id,
-            ctx.tenant.tenant_id,
-            ctx.workspace.workspace_id,
-            idempotency_key,
-        )
-    )
+def managed_run_id(
+    ctx: ControlPlaneContext,
+    idempotency_key: str,
+    *,
+    operation: str = "run.submit",
+) -> str:
+    parts = [
+        ctx.security_domain.domain_id,
+        ctx.tenant.tenant_id,
+        ctx.workspace.workspace_id,
+    ]
+    # Preserve established run.submit identities while isolating lifecycle
+    # commands that reuse the same idempotency key in another operation scope.
+    if operation != "run.submit":
+        parts.append(operation)
+    parts.append(idempotency_key)
+    scope = "/".join(parts)
     return "run-" + _scope_fragment(scope)
 
 
@@ -113,7 +122,30 @@ def managed_report_store(
     return FileReportStore(scoped_root)
 
 
-def _plan_has_input_resources(plan: PipelinePlan) -> bool:
+def managed_incremental_state_store(
+    ctx: ControlPlaneContext,
+    pipeline_id: str,
+    *,
+    state_root: str | Path | None = None,
+) -> Any:
+    """Return durable incremental cursors scoped to one managed pipeline."""
+    from etlantic.runtime.incremental import FileStateStore
+
+    configured_root = state_root or os.environ.get("ETLANTIC_STATE_DIR")
+    root = Path(configured_root or (Path.home() / ".etlantic" / "state")).expanduser()
+    scoped_root = (
+        root
+        / _scope_fragment(ctx.security_domain.domain_id)
+        / _scope_fragment(ctx.tenant.tenant_id)
+        / _scope_fragment(ctx.workspace.workspace_id)
+        / _scope_fragment(pipeline_id)
+    )
+    return FileStateStore(scoped_root / "incremental-cursors.json")
+
+
+def _plan_has_input_resources(plan: PlanDocument) -> bool:
+    if isinstance(plan, AdaptivePipelinePlan):
+        return False
     return any(
         "input_resource" in descriptor.config for descriptor in plan.bindings.values()
     )
@@ -229,8 +261,15 @@ class ManagedExecutionAdapter:
             raise ExecutionRejected("Accepted revision does not match submission")
 
         try:
-            plan = PipelinePlan.from_dict(
-                mutable_copy(envelope.plan_document), verify=True
+            plan = plan_from_json(
+                json.dumps(
+                    mutable_copy(envelope.plan_document),
+                    sort_keys=True,
+                    separators=(",", ":"),
+                    ensure_ascii=False,
+                    allow_nan=False,
+                ),
+                verify=True,
             )
             request = RunRequest.from_dict(envelope.effective_request)
         except Exception as exc:
@@ -258,7 +297,9 @@ class ManagedExecutionAdapter:
                 )
             leased_reader = cast(Callable[..., bytes], candidate_reader)
 
-        run_id = managed_run_id(ctx, submission.idempotency_key)
+        run_id = managed_run_id(
+            ctx, submission.idempotency_key, operation=submission.operation
+        )
         event_base = {
             "run_id": run_id,
             "submission_id": submission_id,
@@ -315,6 +356,13 @@ class ManagedExecutionAdapter:
             )
 
         runtime = self.runtime_factory()
+        plan_intents = getattr(plan, "intents", {}) or {}
+        incremental_strategies = plan_intents.get("incremental_strategies")
+        if isinstance(incremental_strategies, Mapping) and incremental_strategies:
+            runtime.incremental_state_store = managed_incremental_state_store(
+                ctx,
+                plan.pipeline_id,
+            )
         runtime.reports = reports
         previous_cancel_event = getattr(runtime, "external_cancel_event", None)
         previous_trusted_scope = getattr(runtime, "trusted_execution_scope", None)
@@ -624,9 +672,15 @@ class ManagedExecutionAdapter:
         report_store.put(report)
 
     def _execution_profile(
-        self, envelope: ExecutionEnvelope, plan: PipelinePlan
+        self, envelope: ExecutionEnvelope, plan: PlanDocument
     ) -> str | Profile:
         """Resolve worker runtime policy and reject drift from accepted settings."""
+        snapshot = plan.profile_snapshot or {}
+        if snapshot.get("spark_streaming") is True:
+            raise ExecutionRejected(
+                "Managed worker runs finite batches; continuous Spark streaming "
+                "requires a streaming trigger runner and checkpoint owner"
+            )
         if self.profile is None:
             return envelope.profile_name
         if self.profile.name != envelope.profile_name:
