@@ -33,9 +33,10 @@ Install the managed extra and apply versioned migrations before creating the
 backend. The constructor checks the recorded migration version and fails
 closed when the schema is missing or behind. It creates one SQLAlchemy engine
 for the SQLModel control-plane stores and owns that engine for the backend
-lifetime. The required migration head is `009_event_retention_tombstones_0_56`, which
-adds durable scope-isolated run reports and idempotent lifecycle event delivery
-for managed workers.
+lifetime. The required migration head is
+`012_bounded_event_tombstone_retention_0_56`, which includes durable
+scope-isolated run reports, expiring idempotent lifecycle-event tombstones,
+immutable input resources, and indexed result-retention metadata.
 
 ```bash
 pip install 'etlantic-fastapi[managed]==0.55.0'
@@ -55,6 +56,12 @@ try:
 finally:
     engine.dispose()
 ```
+
+Event idempotency tombstones expire after the configured
+`event_idempotency_retention_seconds` window (90 days by default). A delayed
+publisher is deduplicated during that window; after expiry, the same key may
+append a new event. Expired tombstones are removed in bounded batches during
+event writes and history reads.
 
 For a standalone HTTP process, let the app own the connection pool:
 
@@ -104,6 +111,17 @@ that profile's plan-safe settings with the profile snapshot accepted for each
 run and rejects profile drift before executing effects. Runtime-only I/O roots
 remain deployment configuration and are supplied by that same worker profile;
 absolute host paths are not stored in the accepted plan.
+
+Durable run-output retention is opt-in. Set
+`ManagedBackendConfig.run_artifact_retention_seconds` to a positive number of
+seconds to enable it; `None` leaves durable output files available indefinitely.
+Each execution-worker tick processes a bounded cleanup batch, limited by
+`run_artifact_cleanup_batch_size` (1–1000). Cleanup uses the run's end time,
+keeps report history, records artifact availability and a separate cleanup
+state in report metadata, and resumes `running` or `failed` cleanup on later
+ticks. Headless operators can run the same pass with
+`backend.cleanup_expired_run_artifacts(trusted_worker_context)`. The context
+must be host-derived and scoped to the tenant/workspace being cleaned.
 
 ## Control-plane usage
 
@@ -161,19 +179,26 @@ Unknown or expired cursors fail with `410 Gone`.
 `MemoryEventStore` and `SqlModelEventStore` also implement the public
 `EventRetentionStore` protocol. An operator can call
 `prune_before_sequence(ctx, before_sequence)` to remove older rows while
-preserving the latest sequence anchor. Keyed-event digests remain as tombstones:
-a retry for a pruned key returns `410 Gone` instead of publishing a duplicate,
-and changed content returns `409 Conflict`. The managed backend enforces a
-per-tenant/workspace event window on append and history reads. Its default is
+preserving the latest sequence anchor. Keyed-event digests remain as tombstones
+for the configured idempotency window: a retry for a pruned key returns
+`410 Gone` instead of publishing a duplicate, and changed content returns
+`409 Conflict`. After expiry, the key can be accepted again. The managed
+backend enforces a per-tenant/workspace event window on append and history
+reads. Its default is
 100,000 retained events per scope; set
 `ManagedBackendConfig.event_retention_max_events_per_scope` to a smaller or
 larger positive integer for the deployment. History outside the window returns
-`410 Gone`, while sequence numbers and idempotency tombstones remain intact.
+`410 Gone`, while sequence numbers remain intact.
 Raw event-store constructors accept the same `max_events_per_scope` setting;
 `None` leaves automatic count retention disabled for those explicitly composed
-stores. Idempotency tombstones are intentionally retained after event payloads
-expire so delayed retries cannot recreate pruned lifecycle events; deployments
-that need a tombstone expiry contract must account for that separately.
+stores. `ManagedBackendConfig.event_idempotency_retention_seconds` defaults to
+90 days and controls how long delayed retries are deduplicated. Both event
+stores remove expired tombstones in bounded batches during event writes and
+history reads; operators can also call
+`prune_expired_idempotency(ctx, limit=...)`. Raw event-store constructors accept
+the same `idempotency_retention_seconds` setting. Migration 012 assigns existing
+tombstones the 90-day default expiry; newer tombstones use the configured
+window.
 
 ### Managed rerun and replay commands
 

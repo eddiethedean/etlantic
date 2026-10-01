@@ -8,7 +8,7 @@ from __future__ import annotations
 
 from typing import Any, cast
 
-from sqlalchemy import Column, Integer, String, Text, UniqueConstraint
+from sqlalchemy import Column, Index, Integer, String, Text, UniqueConstraint
 
 from sqlmodel import Field, SQLModel
 
@@ -102,6 +102,12 @@ class EventIdempotencyRow(SQLModel, table=True):
             "event_key",
             name="uq_cp_event_scope_idem",
         ),
+        Index(
+            "ix_cp_event_idem_scope_expires",
+            "tenant_id",
+            "workspace_id",
+            "expires_at",
+        ),
     )
 
     id: int | None = Field(default=None, primary_key=True)
@@ -115,8 +121,13 @@ class EventIdempotencyRow(SQLModel, table=True):
     payload_sha256: str | None = Field(
         default=None, sa_column=Column(String(64), nullable=True)
     )
-    sequence: int | None = Field(default=None, sa_column=Column(Integer(), nullable=True))
+    sequence: int | None = Field(
+        default=None, sa_column=Column(Integer(), nullable=True)
+    )
     cursor: str | None = Field(default=None, sa_column=Column(String(), nullable=True))
+    expires_at: str | None = Field(
+        default=None, sa_column=Column(String(40), nullable=True)
+    )
 
 
 class RunReportRow(SQLModel, table=True):
@@ -130,15 +141,36 @@ class RunReportRow(SQLModel, table=True):
             "run_id",
             name="uq_cp_run_report_scope",
         ),
+        Index(
+            "ix_cp_run_reports_retention",
+            "tenant_id",
+            "workspace_id",
+            "security_domain_id",
+            "run_status",
+            "ended_at",
+            "artifact_retention_state",
+        ),
     )
 
     id: int | None = Field(default=None, primary_key=True)
     tenant_id: str = Field(sa_column=Column(String(), index=True, nullable=False))
     workspace_id: str = Field(sa_column=Column(String(), index=True, nullable=False))
+    security_domain_id: str = Field(
+        default="", sa_column=Column(String(), nullable=False, default="")
+    )
     run_id: str = Field(sa_column=Column(String(), index=True, nullable=False))
     pipeline_id: str = Field(sa_column=Column(String(), index=True, nullable=False))
     plan_fingerprint: str = Field(sa_column=Column(String(), nullable=False))
     report_json: str = Field(sa_column=Column(Text(), nullable=False))
+    run_status: str = Field(
+        default="", sa_column=Column(String(32), nullable=False, default="")
+    )
+    ended_at: str | None = Field(
+        default=None, sa_column=Column(String(64), nullable=True)
+    )
+    artifact_retention_state: str | None = Field(
+        default=None, sa_column=Column(String(16), nullable=True)
+    )
     created_at: str = Field(sa_column=Column(String(), nullable=False))
     updated_at: str = Field(sa_column=Column(String(), nullable=False))
 

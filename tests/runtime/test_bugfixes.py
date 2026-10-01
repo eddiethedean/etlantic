@@ -621,6 +621,33 @@ def test_redact_message_in_report() -> None:
     }
 
 
+def test_log_record_serialization_redacts_mutated_extras() -> None:
+    import json
+
+    from etlantic.runtime.logging import LogRecord
+
+    sentinel = "late-added-private-value"
+    record = LogRecord(level="info", message="finished safely")
+    record.extras["password"] = sentinel
+    record.extras["nested"] = {
+        "safe": "kept",
+        "api_key": sentinel,
+        "details": [f"Authorization: Bearer {sentinel}", f"token={sentinel}"],
+    }
+
+    serialized = record.to_dict()
+    payload = json.dumps(serialized)
+
+    assert sentinel not in payload
+    assert serialized["extras"]["password"] == "***"
+    assert serialized["extras"]["nested"]["api_key"] == "***"
+    assert serialized["extras"]["nested"]["details"] == [
+        "Bearer ***",
+        "token=***",
+    ]
+    assert serialized["extras"]["nested"]["safe"] == "kept"
+
+
 def test_continue_allows_independent_sibling() -> None:
     class Boom(Transformation):
         rows: Input[Row]

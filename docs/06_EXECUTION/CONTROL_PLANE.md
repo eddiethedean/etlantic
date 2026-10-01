@@ -133,6 +133,14 @@ Send `Idempotency-Key`. The effective store key is server-scoped:
 Same scoped key + same request fingerprint → original accept receipt. Same key
 + different fingerprint → conflict.
 
+The managed definition endpoints also return an immutable `revision_id` after a
+ revision-aware write. Consumers can pass it as `revision_selector` to validate
+(`POST /v1/definitions/{id}/validate?revision_selector=…`), plan (request body)
+and submit (`payload.revision_selector`) so an approval callback and accepted
+run refer to the same definition even if `current` changes in between. See the
+[generated-spec consumer example](https://github.com/eddiethedean/etlantic/blob/main/examples/README.md)
+for a headless application flow.
+
 ## SSE resume / `410`
 
 `GET /v1/runs/{run_id}/events` streams `etlantic.control_plane.event/1`

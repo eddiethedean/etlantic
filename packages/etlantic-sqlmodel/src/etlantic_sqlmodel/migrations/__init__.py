@@ -25,6 +25,8 @@ VERSIONS: Sequence[str] = (
     "008_idempotent_run_events_0_56",
     "009_event_retention_tombstones_0_56",
     "010_immutable_input_resources_0_56",
+    "011_run_artifact_retention_0_56",
+    "012_bounded_event_tombstone_retention_0_56",
 )
 
 

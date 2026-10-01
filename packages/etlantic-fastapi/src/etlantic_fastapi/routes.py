@@ -775,10 +775,13 @@ def build_control_plane_router(api: ETLanticAPI) -> APIRouter:
     )
     def validate_definition(
         definition_id: str,
+        revision_selector: str = Query(default="current"),
         ctx: ControlPlaneContext = Depends(get_ctx),
     ) -> ValidateResponse:
         if api.managed_service is not None:
-            result = api.managed_service.validate_definition(ctx, definition_id)
+            result = api.managed_service.validate_definition(
+                ctx, definition_id, revision_selector=revision_selector
+            )
             return ValidateResponse.model_validate(result)
         document = authorized_get_definition(
             api.authorizer,
@@ -787,6 +790,13 @@ def build_control_plane_router(api: ETLanticAPI) -> APIRouter:
             definition_id,
             action="definition.validate",
         )
+        if revision_selector != "current":
+            raise ControlPlaneError(
+                "Exact-revision validation requires the managed authoring service",
+                code="PMCP501",
+                status=501,
+                title="Not Implemented",
+            )
         return _validate_document(document, definition_id, api=api)
 
     @router.post(
@@ -805,12 +815,17 @@ def build_control_plane_router(api: ETLanticAPI) -> APIRouter:
                 ctx,
                 definition_id,
                 request=(body.request if body and body.request is not None else None),
+                revision_selector=(body.revision_selector if body else "current"),
             )
             return PlanResponse(
                 ok=bool(result.get("ok")),
                 definition_id=definition_id,
                 plan=result.get("plan"),
-                metadata={"fingerprint": result.get("fingerprint")},
+                revision_id=result.get("revision_id"),
+                metadata={
+                    "fingerprint": result.get("fingerprint"),
+                    "revision_id": result.get("revision_id"),
+                },
             )
         document = authorized_get_definition(
             api.authorizer,
@@ -819,6 +834,13 @@ def build_control_plane_router(api: ETLanticAPI) -> APIRouter:
             definition_id,
             action="definition.plan",
         )
+        if body is not None and body.revision_selector != "current":
+            raise ControlPlaneError(
+                "Exact-revision planning requires the managed authoring service",
+                code="PMCP501",
+                status=501,
+                title="Not Implemented",
+            )
         return _plan_document(document, definition_id, api=api)
 
     @router.post(
@@ -1413,9 +1435,7 @@ def build_control_plane_router(api: ETLanticAPI) -> APIRouter:
             try:
                 get_run_fn(ctx, run_id)
             except KeyError as exc:
-                raise ControlPlaneError.not_found(
-                    f"Run {run_id!r} not found"
-                ) from exc
+                raise ControlPlaneError.not_found(f"Run {run_id!r} not found") from exc
             if artifact_id:
                 require_authorized(
                     api.authorizer,

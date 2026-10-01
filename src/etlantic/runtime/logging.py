@@ -45,7 +45,10 @@ class LogRecord:
     def to_dict(self) -> dict[str, Any]:
         data = asdict(self)
         data["at"] = self.at.isoformat()
-        return data
+        # Reapply redaction at the serialization boundary: extras is mutable
+        # even though the record dataclass is frozen, and records may be
+        # constructed without going through RunLogger.log.
+        return redact_value(data)
 
 
 _SECRET_INLINE_RE = re.compile(

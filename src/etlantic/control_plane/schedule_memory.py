@@ -273,17 +273,35 @@ class MemoryScheduleStore:
                 return deepcopy(existing), False
             sk = (*scope, schedule_id)
             rec = self._schedules.get(sk)
-            spec = rec.spec if rec is not None else None
+            if rec is None:
+                raise ControlPlaneError.not_found("schedule not found")
+            if rec.status == "deleted":
+                raise ControlPlaneError.conflict(
+                    "Deleted schedules cannot accept a firing",
+                    code="PMFIRE409",
+                    extensions={"reason": "schedule_deleted"},
+                )
+            if rec.revision_id != revision_id:
+                raise ControlPlaneError.conflict(
+                    "Schedule revision changed before firing claim",
+                    code="PMFIRE409",
+                    extensions={"reason": "stale_revision"},
+                )
+            if require_leader_lease and rec.status != "active":
+                raise ControlPlaneError.conflict(
+                    "Only active schedules can accept a scheduled firing",
+                    code="PMFIRE409",
+                    extensions={"reason": "schedule_not_active"},
+                )
+            spec = rec.spec
             nominal_dt = _parse_iso(nominal_fire_time)
             status: FiringStatus = "accepted"
             if skip_status is not None:
                 status = skip_status
-            elif spec is not None and not _in_window(spec, nominal_dt):
+            elif not _in_window(spec, nominal_dt):
                 status = "skipped_window"
-            elif (
-                spec is not None
-                and spec.overlap == "skip"
-                and self._has_inflight_firing(ctx, schedule_id, scope, durable)
+            elif spec.overlap == "skip" and self._has_inflight_firing(
+                ctx, schedule_id, scope, durable
             ):
                 status = "skipped_overlap"
             firing = FiringRecord(
@@ -309,10 +327,9 @@ class MemoryScheduleStore:
                 submission_id = submission.submission_id
             firing = replace(firing, submission_id=submission_id)
             self._firings[firing_scope] = firing
-            if rec is not None:
-                self._schedules[sk] = replace(
-                    rec, next_fire_at=next_fire_at, updated_at=_iso()
-                )
+            self._schedules[sk] = replace(
+                rec, next_fire_at=next_fire_at, updated_at=_iso()
+            )
             return deepcopy(firing), True
 
     def _has_inflight_firing(

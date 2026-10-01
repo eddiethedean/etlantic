@@ -228,6 +228,17 @@ class InputResourceStore(Protocol):
         """Read one finalized version after exact scope/owner/digest checks."""
         ...
 
+    def read_leased(
+        self,
+        ctx: ControlPlaneContext,
+        reference: InputResourceReference,
+        *,
+        lease_id: str,
+        now: datetime | None = None,
+    ) -> bytes:
+        """Read a worker-owned immutable version under its exact live run lease."""
+        ...
+
     def verify_reference(
         self,
         ctx: ControlPlaneContext,
@@ -438,6 +449,38 @@ class MemoryInputResourceStore:
                 )
             return bytes(upload.content)
 
+    def read_leased(
+        self,
+        ctx: ControlPlaneContext,
+        reference: InputResourceReference,
+        *,
+        lease_id: str,
+        now: datetime | None = None,
+    ) -> bytes:
+        if not lease_id.strip():
+            raise ValueError("lease_id must be non-empty")
+        current = _time(now or datetime.now(UTC))
+        with self._lock:
+            upload = self._uploads.get(reference.resource_id)
+            if (
+                upload is None
+                or (upload.tenant_id, upload.workspace_id) != ctx.scope_key
+            ):
+                raise ControlPlaneError.not_found("Input resource not found")
+            self._verify_reference(ctx, upload, reference, allow_different_owner=True)
+            key = (upload.tenant_id, upload.workspace_id, upload.upload_id)
+            expiry = self._leases.get(key, {}).get(lease_id)
+            if expiry is None or _parse_time(expiry) <= current:
+                self._has_live_lease(upload, current)
+                raise _expired_input()
+            if len(upload.content) != reference.byte_length or not hmac.compare_digest(
+                hashlib.sha256(upload.content).hexdigest(), reference.sha256
+            ):
+                raise ControlPlaneError.conflict(
+                    "Stored input resource failed integrity verification"
+                )
+            return bytes(upload.content)
+
     def abort(self, ctx: ControlPlaneContext, upload_id: str) -> None:
         with self._lock:
             upload = self._get_upload(ctx, upload_id)
@@ -555,13 +598,17 @@ class MemoryInputResourceStore:
         ctx: ControlPlaneContext,
         upload: _MemoryUpload,
         reference: InputResourceReference,
+        *,
+        allow_different_owner: bool = False,
     ) -> None:
+        expected_owner = reference.owner_id if allow_different_owner else _owner(ctx)
         if (
             upload.reference is None
             or upload.reference != reference
             or reference.tenant_id != ctx.tenant.tenant_id
             or reference.workspace_id != ctx.workspace.workspace_id
-            or reference.owner_id != _owner(ctx)
+            or reference.owner_id != expected_owner
+            or upload.owner_id != expected_owner
         ):
             raise ControlPlaneError.conflict(
                 "Input resource reference does not match its finalized owner-bound version"

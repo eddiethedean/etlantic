@@ -8,7 +8,7 @@ import json
 import uuid
 from collections.abc import Mapping
 from datetime import UTC, datetime
-from typing import Any
+from typing import Any, cast
 
 from sqlalchemy import (
     Column,
@@ -319,6 +319,61 @@ class SqlModelInputResourceStore:
                 )
             return content
 
+    def read_leased(
+        self,
+        ctx: ControlPlaneContext,
+        reference: InputResourceReference,
+        *,
+        lease_id: str,
+        now: datetime | None = None,
+    ) -> bytes:
+        if not lease_id.strip():
+            raise ValueError("lease_id must be non-empty")
+        current = _iso(now or datetime.now(UTC))
+        with self.engine.begin() as connection:
+            row = (
+                connection.execute(
+                    select(self.uploads).where(
+                        self.uploads.c.upload_id == reference.resource_id,
+                        self.uploads.c.tenant_id == ctx.tenant.tenant_id,
+                        self.uploads.c.workspace_id == ctx.workspace.workspace_id,
+                    )
+                )
+                .mappings()
+                .one_or_none()
+            )
+            if row is None:
+                raise ControlPlaneError.not_found("Input resource not found")
+            self._verify_row_reference(
+                ctx,
+                cast(Mapping[str, Any], row),
+                reference,
+                allow_different_owner=True,
+            )
+            active_lease = connection.execute(
+                select(self.leases.c.id)
+                .where(
+                    self.leases.c.tenant_id == ctx.tenant.tenant_id,
+                    self.leases.c.workspace_id == ctx.workspace.workspace_id,
+                    self.leases.c.owner_id == reference.owner_id,
+                    self.leases.c.upload_id == reference.resource_id,
+                    self.leases.c.lease_id == lease_id,
+                    self.leases.c.retain_until > current,
+                )
+                .limit(1)
+            ).first()
+            if active_lease is None:
+                raise _expired_upload()
+            content = bytes(row["content"])
+            digest = hashlib.sha256(content).hexdigest()
+            if len(content) != reference.byte_length or not hmac.compare_digest(
+                digest, reference.sha256
+            ):
+                raise ControlPlaneError.conflict(
+                    "Stored input resource failed integrity verification"
+                )
+            return content
+
     def verify_reference(
         self,
         ctx: ControlPlaneContext,
@@ -524,6 +579,8 @@ class SqlModelInputResourceStore:
         ctx: ControlPlaneContext,
         row: Mapping[str, Any],
         reference: InputResourceReference,
+        *,
+        allow_different_owner: bool = False,
     ) -> None:
         if row["status"] != "finalized" or not row["reference_json"]:
             raise ControlPlaneError.conflict("Input resource is not finalized")
@@ -535,11 +592,13 @@ class SqlModelInputResourceStore:
             raise ControlPlaneError.conflict(
                 "Stored input resource reference is invalid"
             ) from exc
+        expected_owner = reference.owner_id if allow_different_owner else _owner(ctx)
         if (
             stored != reference
             or stored.tenant_id != ctx.tenant.tenant_id
             or stored.workspace_id != ctx.workspace.workspace_id
-            or stored.owner_id != _owner(ctx)
+            or stored.owner_id != expected_owner
+            or row["owner_id"] != expected_owner
             or row["sha256"] != reference.sha256
             or row["version"] != reference.version
             or row["byte_length"] != reference.byte_length

@@ -17,6 +17,10 @@ from dataclasses import replace
 from datetime import UTC, datetime, timedelta
 from typing import Any
 
+from etlantic.control_plane.action_jobs import (
+    MAX_PREVIEW_RESULT_TTL_SECONDS,
+    MIN_PREVIEW_RESULT_TTL_SECONDS,
+)
 from etlantic.control_plane.durable_models import (
     STATE_NAMESPACES,
     ActionJobRecord,
@@ -102,9 +106,7 @@ class MemoryDurableWorkStore:
         self._shadows: dict[tuple[str, str, str], ShadowRunRecord] = {}
         self._baselines: dict[tuple[str, str, str], BaselineAcknowledgement] = {}
         self._action_jobs: dict[tuple[str, str, str], ActionJobRecord] = {}
-        self._action_idempotency: dict[
-            tuple[str, str, str, str, str, str, str], str
-        ] = {}
+        self._action_idempotency: dict[tuple[str, ...], str] = {}
         self._diagnostics: list[StateDiagnostic] = []
         self._lock = threading.RLock()
 
@@ -434,7 +436,8 @@ class MemoryDurableWorkStore:
                 allow_nan=False,
             ).encode("utf-8")
         ).hexdigest()
-        idem = (
+        owner_id = ctx.resource_owner_id or ctx.principal.subject
+        legacy_idem = (
             *_scope(ctx),
             ctx.principal.issuer or "",
             ctx.principal.kind,
@@ -442,9 +445,33 @@ class MemoryDurableWorkStore:
             action,
             idempotency_key,
         )
-        owner_id = ctx.resource_owner_id or ctx.principal.subject
+        idem = (
+            *_scope(ctx),
+            ctx.security_domain.domain_id,
+            ctx.environment.name,
+            owner_id,
+            ctx.principal.issuer or "",
+            ctx.principal.kind,
+            ctx.principal.subject,
+            action,
+            idempotency_key,
+        )
         with self._lock:
             prior_id = self._action_idempotency.get(idem)
+            if prior_id is None:
+                legacy_prior_id = self._action_idempotency.get(legacy_idem)
+                legacy_prior = (
+                    self._action_jobs.get((*_scope(ctx), legacy_prior_id))
+                    if legacy_prior_id is not None
+                    else None
+                )
+                if (
+                    legacy_prior is not None
+                    and legacy_prior.owner_id == owner_id
+                    and legacy_prior.security_domain_id == ctx.security_domain.domain_id
+                    and legacy_prior.environment == ctx.environment.name
+                ):
+                    prior_id = legacy_prior.action_id
             if prior_id is not None:
                 prior = self._action_jobs[(*_scope(ctx), prior_id)]
                 if prior.request_fingerprint != fingerprint:
@@ -480,7 +507,12 @@ class MemoryDurableWorkStore:
         owner_id = ctx.resource_owner_id or ctx.principal.subject
         with self._lock:
             record = self._action_jobs.get((*_scope(ctx), action_id))
-            if record is None or record.owner_id != owner_id:
+            if (
+                record is None
+                or record.owner_id != owner_id
+                or record.security_domain_id != ctx.security_domain.domain_id
+                or record.environment != ctx.environment.name
+            ):
                 raise ControlPlaneError.not_found("Action job not found")
             return deepcopy(record)
 
@@ -500,7 +532,10 @@ class MemoryDurableWorkStore:
                 (
                     row
                     for key, row in self._action_jobs.items()
-                    if key[:2] == _scope(ctx) and row.owner_id == owner_id
+                    if key[:2] == _scope(ctx)
+                    and row.owner_id == owner_id
+                    and row.security_domain_id == ctx.security_domain.domain_id
+                    and row.environment == ctx.environment.name
                 ),
                 key=lambda row: (row.created_at, row.action_id),
             )
@@ -528,8 +563,7 @@ class MemoryDurableWorkStore:
             scoped = [
                 (key, row)
                 for key, row in self._action_jobs.items()
-                if key[:2] == _scope(ctx)
-                and row.status in {"queued", "running"}
+                if key[:2] == _scope(ctx) and row.status in {"queued", "running"}
             ]
             for key, row in scoped:
                 if _parse(row.deadline_at) <= current:
@@ -606,10 +640,12 @@ class MemoryDurableWorkStore:
             ):
                 raise ControlPlaneError.conflict("Action worker lease is stale")
             if status == "timed_out":
-                if _parse(row.deadline_at) > current:
-                    raise ControlPlaneError.conflict(
-                        "Action deadline has not elapsed"
+                if result_ttl_seconds is not None:
+                    raise ValueError(
+                        "timed-out action jobs cannot retain result payloads"
                     )
+                if _parse(row.deadline_at) > current:
+                    raise ControlPlaneError.conflict("Action deadline has not elapsed")
                 finished = replace(
                     row,
                     status="timed_out",
@@ -632,6 +668,20 @@ class MemoryDurableWorkStore:
                     if row.action == "connector.preview" and result_ttl_seconds is None:
                         raise ValueError(
                             "connector preview results require separate retention"
+                        )
+                    if (
+                        row.action == "connector.preview"
+                        and result_ttl_seconds is not None
+                        and not (
+                            MIN_PREVIEW_RESULT_TTL_SECONDS
+                            <= result_ttl_seconds
+                            <= MAX_PREVIEW_RESULT_TTL_SECONDS
+                        )
+                    ):
+                        raise ValueError(
+                            "connector preview result TTL must be between "
+                            f"{MIN_PREVIEW_RESULT_TTL_SECONDS} and "
+                            f"{MAX_PREVIEW_RESULT_TTL_SECONDS} seconds"
                         )
                     if (
                         row.action != "connector.preview"
@@ -1143,6 +1193,31 @@ class MemoryDurableWorkStore:
     def record_effect(
         self, ctx: ControlPlaneContext, effect: EffectRecord
     ) -> EffectRecord:
+        return self._record_effect(ctx, effect)
+
+    def record_attempt_effect(
+        self,
+        ctx: ControlPlaneContext,
+        effect: EffectRecord,
+        *,
+        attempt_id: str,
+        owner_id: str,
+        fencing_token: int,
+    ) -> EffectRecord:
+        """Record worker outcome only while its exact attempt still owns a lease."""
+        return self._record_effect(
+            ctx,
+            effect,
+            lease_claim=(attempt_id, owner_id, fencing_token),
+        )
+
+    def _record_effect(
+        self,
+        ctx: ControlPlaneContext,
+        effect: EffectRecord,
+        *,
+        lease_claim: tuple[str, str, int] | None = None,
+    ) -> EffectRecord:
         if effect.status not in {
             "none",
             "pending",
@@ -1186,8 +1261,25 @@ class MemoryDurableWorkStore:
             ),
         )
         with self._lock:
-            if (*_scope(ctx), safe_effect.submission_id) not in self._submissions:
+            submission_key = (*_scope(ctx), safe_effect.submission_id)
+            submission = self._submissions.get(submission_key)
+            if submission is None:
                 raise ControlPlaneError.not_found("Submission not found")
+            if lease_claim is not None:
+                attempt_id, owner_id, fencing_token = lease_claim
+                attempt = self._attempts.get((*_scope(ctx), attempt_id))
+                if (
+                    attempt is None
+                    or attempt.submission_id != safe_effect.submission_id
+                    or attempt.status != "running"
+                    or attempt.owner_id != owner_id
+                    or attempt.fencing_token != fencing_token
+                    or submission.status in {"cancelled", "completed", "failed"}
+                ):
+                    raise ControlPlaneError.conflict(
+                        "Execution effect requires the current running attempt"
+                    )
+                self._require_lease(submission_key, owner_id, fencing_token)
             existing = self._effects.get((*_scope(ctx), safe_effect.effect_id))
             if (
                 existing is not None
@@ -1343,8 +1435,25 @@ class MemoryDurableWorkStore:
             source = self._submissions.get((*_scope(ctx), submission_id))
             if source is None:
                 raise ControlPlaneError.not_found("Submission not found")
-            if checkpoint_id and (*_scope(ctx), checkpoint_id) not in self._checkpoints:
-                raise ControlPlaneError.not_found("Checkpoint not found")
+            plan_notes = notes
+            if checkpoint_id:
+                checkpoint = self._checkpoints.get((*_scope(ctx), checkpoint_id))
+                if checkpoint is None:
+                    raise ControlPlaneError.not_found("Checkpoint not found")
+                if checkpoint.submission_id not in {None, submission_id}:
+                    raise ControlPlaneError.conflict(
+                        "Checkpoint belongs to another submission",
+                        extensions={"reason": "checkpoint_submission_mismatch"},
+                    )
+                if (
+                    checkpoint.schema_baseline_id
+                    and source.schema_baseline_id
+                    and checkpoint.schema_baseline_id != source.schema_baseline_id
+                ):
+                    plan_notes = (
+                        *notes,
+                        "checkpoint schema baseline differs from source submission",
+                    )
             return RepairPlan(
                 f"rpl-{uuid.uuid4().hex[:16]}",
                 kind,  # type: ignore[arg-type]
@@ -1358,7 +1467,7 @@ class MemoryDurableWorkStore:
                 invalidated_partition_ids=invalidated_partition_ids,
                 minimum_safe_closure=minimum_safe_closure,
                 schema_baseline_id=source.schema_baseline_id,
-                notes=notes,
+                notes=plan_notes,
             )
 
     def create_preview(

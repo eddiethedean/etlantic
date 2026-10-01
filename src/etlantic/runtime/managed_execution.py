@@ -7,6 +7,7 @@ import json
 import os
 from collections.abc import Callable, Mapping
 from dataclasses import replace
+from datetime import datetime
 from pathlib import Path
 from threading import Event
 from typing import TYPE_CHECKING, Any, cast
@@ -24,6 +25,7 @@ from etlantic.plan.model import PipelinePlan
 from etlantic.profile import Profile, resolve_profile
 from etlantic.reports.file_store import FileReportStore
 from etlantic.reports.model import PipelineRunReport
+from etlantic.reports.retention import ArtifactRetentionResult
 from etlantic.runtime.artifacts import ArtifactStore
 from etlantic.runtime.context import TrustedExecutionScope
 from etlantic.runtime.execute import run_pipeline
@@ -41,9 +43,7 @@ def _scope_fragment(value: str) -> str:
     return hashlib.sha256(value.encode("utf-8")).hexdigest()[:24]
 
 
-def _record_attempt(
-    execution: dict[str, Any], *, attempt_id: str, role: str
-) -> None:
+def _record_attempt(execution: dict[str, Any], *, attempt_id: str, role: str) -> None:
     history: list[dict[str, str]] = []
     prior_history: object = execution.get("attempt_history")
     if isinstance(prior_history, (list, tuple)):
@@ -108,6 +108,12 @@ def managed_report_store(
     return FileReportStore(scoped_root)
 
 
+def _plan_has_input_resources(plan: PipelinePlan) -> bool:
+    return any(
+        "input_resource" in descriptor.config for descriptor in plan.bindings.values()
+    )
+
+
 class ManagedExecutionAdapter:
     """Run verified submissions through the packaged local ETL runtime.
 
@@ -129,7 +135,21 @@ class ManagedExecutionAdapter:
         secret_alias_authorizer: SecretAliasAuthorizer | None = None,
         profile: str | Profile | None = None,
         input_resource_store: InputResourceStore | None = None,
+        run_artifact_retention_seconds: int | None = None,
+        artifact_cleanup_batch_size: int = 100,
     ) -> None:
+        if run_artifact_retention_seconds is not None and (
+            type(run_artifact_retention_seconds) is not int
+            or run_artifact_retention_seconds < 1
+        ):
+            raise ValueError(
+                "run_artifact_retention_seconds must be a positive integer or None"
+            )
+        if (
+            type(artifact_cleanup_batch_size) is not int
+            or not 1 <= artifact_cleanup_batch_size <= 1000
+        ):
+            raise ValueError("artifact_cleanup_batch_size must be between 1 and 1000")
         configured_root = report_root or os.environ.get("ETLANTIC_REPORT_DIR")
         self.report_root = Path(
             configured_root or (Path.home() / ".etlantic" / "reports")
@@ -141,6 +161,34 @@ class ManagedExecutionAdapter:
         self.secret_alias_authorizer = secret_alias_authorizer
         self.profile = resolve_profile(profile) if profile is not None else None
         self.input_resource_store = input_resource_store
+        self.run_artifact_retention_seconds = run_artifact_retention_seconds
+        self.artifact_cleanup_batch_size = artifact_cleanup_batch_size
+
+    def cleanup_expired_run_artifacts(
+        self,
+        ctx: ControlPlaneContext,
+        *,
+        now: datetime | None = None,
+        limit: int | None = None,
+    ) -> ArtifactRetentionResult:
+        """Run one bounded result-retention pass for this trusted scope."""
+        from etlantic.runtime.artifact_retention import cleanup_expired_run_artifacts
+
+        report_store = None
+        if self.run_artifact_retention_seconds is not None:
+            report_store = (
+                self.report_store_factory(ctx)
+                if self.report_store_factory is not None
+                else managed_report_store(ctx, report_root=self.report_root)
+            )
+        return cleanup_expired_run_artifacts(
+            ctx,
+            report_store=report_store,
+            artifact_root=self.artifact_root,
+            retention_seconds=self.run_artifact_retention_seconds,
+            limit=self.artifact_cleanup_batch_size if limit is None else limit,
+            now=now,
+        )
 
     def __call__(
         self,
@@ -182,6 +230,26 @@ class ManagedExecutionAdapter:
                 "Accepted plan or run controls are invalid"
             ) from exc
 
+        has_input_resources = _plan_has_input_resources(plan)
+        input_resource_store = self.input_resource_store
+        input_lease_id = (envelope.evidence_refs or {}).get("input_resource_lease_id")
+        leased_reader: Callable[..., bytes] | None = None
+        if has_input_resources:
+            if (
+                input_resource_store is None
+                or not isinstance(input_lease_id, str)
+                or not input_lease_id.strip()
+            ):
+                raise ExecutionRejected(
+                    "Accepted input resources have no durable worker lease"
+                )
+            candidate_reader = getattr(input_resource_store, "read_leased", None)
+            if not callable(candidate_reader):
+                raise ExecutionRejected(
+                    "Input resource store does not support lease-authorized worker reads"
+                )
+            leased_reader = cast(Callable[..., bytes], candidate_reader)
+
         run_id = managed_run_id(ctx, submission.idempotency_key)
         event_base = {
             "run_id": run_id,
@@ -206,14 +274,10 @@ class ManagedExecutionAdapter:
                 raise ExecutionRejected("Stored result conflicts with accepted plan")
             metadata = dict(existing.metadata)
             execution: dict[str, Any] = {}
-            prior_execution: object = metadata.get(
-                "etlantic.control_plane.execution"
-            )
+            prior_execution: object = metadata.get("etlantic.control_plane.execution")
             if isinstance(prior_execution, Mapping):
                 execution.update(cast(Mapping[str, Any], prior_execution))
-            _record_attempt(
-                execution, attempt_id=attempt_id, role="result_reconciled"
-            )
+            _record_attempt(execution, attempt_id=attempt_id, role="result_reconciled")
             metadata["etlantic.control_plane.execution"] = execution
             existing = replace(existing, metadata=metadata)
             reports.put(existing)
@@ -251,8 +315,9 @@ class ManagedExecutionAdapter:
             else previous_secret_alias_authorizer
         )
         runtime.external_cancel_event = cancel_event
-        input_resource_store = self.input_resource_store
-        if input_resource_store is not None:
+        if has_input_resources:
+            assert leased_reader is not None
+            assert isinstance(input_lease_id, str)
 
             def resolve_input_resource(
                 reference: InputResourceReference | Mapping[str, object],
@@ -262,7 +327,7 @@ class ManagedExecutionAdapter:
                     if isinstance(reference, InputResourceReference)
                     else InputResourceReference.from_dict(reference)
                 )
-                return input_resource_store.read(ctx, immutable)
+                return leased_reader(ctx, immutable, lease_id=input_lease_id)
 
             runtime.input_resource_resolver = resolve_input_resource
         publication_recovered = False
@@ -312,13 +377,34 @@ class ManagedExecutionAdapter:
                     )
                 ):
                     raise
+                report_failure = next(
+                    item for item in persisted.diagnostics if item.code == "PMEXEC410"
+                )
+                original_status_value = report_failure.metadata.get(
+                    "etlantic.report_failure.original_status"
+                )
+                if original_status_value is None:
+                    # Preserve the established recovery behavior for legacy
+                    # reports that predate status metadata.
+                    recovered_status = RunStatus.SUCCEEDED
+                else:
+                    try:
+                        recovered_status = RunStatus(original_status_value)
+                    except (TypeError, ValueError) as exc:
+                        raise UnknownCommitError(
+                            "Managed result recovery found an invalid prior run status"
+                        ) from exc
+                    if recovered_status in (RunStatus.PENDING, RunStatus.RUNNING):
+                        raise UnknownCommitError(
+                            "Managed result recovery found a nonterminal prior run status"
+                        ) from None
                 diagnostics = tuple(
                     replace(
                         item,
                         severity="warning",
                         message=(
-                            "Target publication committed; managed result publication "
-                            "was recovered without rerunning ETL."
+                            "Output publication was observed; the run result was "
+                            "recovered without rerunning ETL."
                         ),
                     )
                     if item.code == "PMEXEC410"
@@ -331,9 +417,7 @@ class ManagedExecutionAdapter:
                     "etlantic.control_plane.execution"
                 )
                 if isinstance(prior_execution, Mapping):
-                    execution_metadata.update(
-                        cast(Mapping[str, Any], prior_execution)
-                    )
+                    execution_metadata.update(cast(Mapping[str, Any], prior_execution))
                 execution_metadata.update(
                     {
                         "submission_id": submission_id,
@@ -343,19 +427,25 @@ class ManagedExecutionAdapter:
                             envelope.canonical_intent_fingerprint
                         ),
                         "no_write": request.no_write,
-                        "effect_status": "none" if request.no_write else "committed",
+                        "effect_status": (
+                            "none"
+                            if request.no_write
+                            else "committed"
+                            if recovered_status is RunStatus.SUCCEEDED
+                            else "unknown"
+                        ),
                         "result_publication_status": "recovered",
                     }
                 )
                 _record_attempt(
                     execution_metadata, attempt_id=attempt_id, role="executed"
                 )
-                recovered_metadata[
-                    "etlantic.control_plane.execution"
-                ] = execution_metadata
+                recovered_metadata["etlantic.control_plane.execution"] = (
+                    execution_metadata
+                )
                 report = replace(
                     persisted,
-                    status=RunStatus.SUCCEEDED,
+                    status=recovered_status,
                     diagnostics=diagnostics,
                     metadata=recovered_metadata,
                 )
@@ -406,7 +496,13 @@ class ManagedExecutionAdapter:
         if publication_recovered:
             execution_metadata.update(
                 {
-                    "effect_status": "none" if request.no_write else "committed",
+                    "effect_status": (
+                        "none"
+                        if request.no_write
+                        else "committed"
+                        if report.status is RunStatus.SUCCEEDED
+                        else "unknown"
+                    ),
                     "result_publication_status": "recovered",
                 }
             )

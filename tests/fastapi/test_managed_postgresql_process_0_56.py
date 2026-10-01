@@ -90,8 +90,7 @@ def _cleanup_scope(engine: sqlalchemy.engine.Engine, store_id: str, scope: str) 
         )
         connection.execute(
             text(
-                "DELETE FROM cp_registry_security_domains "
-                "WHERE domain_id = :domain_id"
+                "DELETE FROM cp_registry_security_domains WHERE domain_id = :domain_id"
             ),
             {"domain_id": f"security-{scope}"},
         )
@@ -158,7 +157,7 @@ def _qualify_managed_service_race(
     ctx = _context(scope)
     engine = sqlalchemy.create_engine(url, pool_pre_ping=True)
     try:
-        assert upgrade(engine) == "010_immutable_input_resources_0_56"
+        assert upgrade(engine) == "012_bounded_event_tombstone_retention_0_56"
     finally:
         engine.dispose()
 
@@ -184,9 +183,7 @@ def _qualify_managed_service_race(
             "postgres-service-pipe",
             pipeline_to_dict(definition_from_pipeline(_ServicePipeline)),
         )
-        definitions = cast(
-            RevisionedDefinitionRepository, service.definitions
-        )
+        definitions = cast(RevisionedDefinitionRepository, service.definitions)
         resolution = definitions.resolve_revision(
             ctx, "postgres-service-pipe", "current"
         )
@@ -212,7 +209,9 @@ def _qualify_managed_service_race(
 def test_postgresql_multiprocess_managed_service_retry_and_intent_conflict() -> None:
     url = os.environ.get("ETLANTIC_CP_TEST_URL")
     if not url:
-        pytest.skip("set ETLANTIC_CP_TEST_URL for live PostgreSQL service qualification")
+        pytest.skip(
+            "set ETLANTIC_CP_TEST_URL for live PostgreSQL service qualification"
+        )
 
     same_store = f"phase056-managed-same-{uuid.uuid4().hex}"
     same_results, same_scope, _same_revision, same_ctx = _qualify_managed_service_race(
@@ -246,9 +245,12 @@ def test_postgresql_multiprocess_managed_service_retry_and_intent_conflict() -> 
         assert record is not None
         assert record.submission_id == same_results[0][1]
         assert len(service.durable_work.pending_outbox(same_ctx)) == 1
-        assert SQLModelQuotaProvider(
-            reopened.engine, store_id=same_store
-        ).get_state(same_ctx).usage["concurrency"] == 1
+        assert (
+            SQLModelQuotaProvider(reopened.engine, store_id=same_store)
+            .get_state(same_ctx)
+            .usage["concurrency"]
+            == 1
+        )
     finally:
         reopened.close()
         cleanup_engine = sqlalchemy.create_engine(url, pool_pre_ping=True)

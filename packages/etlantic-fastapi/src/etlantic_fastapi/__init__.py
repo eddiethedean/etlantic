@@ -5,6 +5,7 @@ The package version is exposed as ``__version__``.
 
 from __future__ import annotations
 
+from etlantic.reports.retention import ArtifactRetentionResult
 from etlantic.service import AuthoringService, PolicyContext
 
 __version__ = "0.55.0"
@@ -48,6 +49,7 @@ from etlantic_fastapi.sse import format_sse_message, sse_streaming_response
 
 __all__ = [
     "AcceptReceiptResponse",
+    "ArtifactRetentionResult",
     "AuthoringService",
     "ContextFactory",
     "ETLanticAPI",

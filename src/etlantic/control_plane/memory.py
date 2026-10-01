@@ -14,6 +14,14 @@ from datetime import UTC, datetime
 from typing import Any, cast
 
 from etlantic.control_plane.errors import ControlPlaneError
+from etlantic.control_plane.event_retention import (
+    DEFAULT_EVENT_IDEMPOTENCY_RETENTION_SECONDS,
+    MAX_EVENT_IDEMPOTENCY_PRUNE_BATCH,
+    event_expiry,
+    event_time,
+    is_event_expired,
+    normalize_event_time,
+)
 from etlantic.control_plane.models import (
     AcceptReceipt,
     AcceptResult,
@@ -35,7 +43,11 @@ def _scope(ctx: ControlPlaneContext) -> tuple[str, str]:
     return ctx.scope_key
 
 
-def _new_idempotent_event_map() -> dict[tuple[str, str, str], tuple[str, str, str]]:
+_IdempotentEventRecord = tuple[str, str, str, str | None]
+_EVENT_IDEMPOTENCY_SWEEP_INTERVAL = 64
+
+
+def _new_idempotent_event_map() -> dict[tuple[str, str, str], _IdempotentEventRecord]:
     return {}
 
 
@@ -161,6 +173,15 @@ class MemoryDefinitionRepository:
         definition_id: str,
         document: Mapping[str, Any],
     ) -> None:
+        self.put_revision(ctx, definition_id, document)
+
+    def put_revision(
+        self,
+        ctx: ControlPlaneContext,
+        definition_id: str,
+        document: Mapping[str, Any],
+    ) -> str:
+        """Store one immutable definition snapshot and return its content id."""
         key = (*_scope(ctx), definition_id)
         document_copy = deepcopy(dict(document))
         revision_digest = hashlib.sha256(
@@ -180,6 +201,7 @@ class MemoryDefinitionRepository:
             # even though its immutable revision id and payload are unchanged.
             revisions.pop(revision_id, None)
             revisions[revision_id] = document_copy
+        return revision_id
 
 
 @dataclass
@@ -363,20 +385,31 @@ class MemoryEventStore:
     _events: dict[tuple[str, str], list[ControlPlaneEvent]] = field(
         default_factory=dict
     )
-    _idempotent_events: dict[tuple[str, str, str], tuple[str, str, str]] = field(
+    _idempotent_events: dict[tuple[str, str, str], _IdempotentEventRecord] = field(
         default_factory=_new_idempotent_event_map
     )
     _event_sequences: dict[tuple[str, str], int] = field(
         default_factory=_new_event_sequence_map
     )
+    _event_idempotency_sweep_counts: dict[tuple[str, str], int] = field(
+        default_factory=_new_event_sequence_map
+    )
     _lock: threading.RLock = field(default_factory=threading.RLock)
     max_events_per_scope: int | None = None
+    idempotency_retention_seconds: int = DEFAULT_EVENT_IDEMPOTENCY_RETENTION_SECONDS
 
     def __post_init__(self) -> None:
         if self.max_events_per_scope is not None and (
             type(self.max_events_per_scope) is not int or self.max_events_per_scope < 1
         ):
             raise ValueError("max_events_per_scope must be a positive integer or None")
+        if (
+            type(self.idempotency_retention_seconds) is not int
+            or self.idempotency_retention_seconds < 1
+        ):
+            raise ValueError(
+                "idempotency_retention_seconds must be a positive integer or None"
+            )
 
     def append(
         self,
@@ -455,10 +488,20 @@ class MemoryEventStore:
                 ensure_ascii=False,
             ).encode("utf-8")
         ).hexdigest()
+        now = normalize_event_time()
         with self._lock:
+            sweep_count = self._event_idempotency_sweep_counts.get(scope, 0) + 1
+            self._event_idempotency_sweep_counts[scope] = sweep_count
+            if sweep_count % _EVENT_IDEMPOTENCY_SWEEP_INTERVAL == 0:
+                self._prune_expired_idempotency_locked(
+                    scope, now=now, limit=MAX_EVENT_IDEMPOTENCY_PRUNE_BATCH
+                )
             previous = self._idempotent_events.get(scoped_key)
+            if previous is not None and is_event_expired(previous[3], now=now):
+                del self._idempotent_events[scoped_key]
+                previous = None
             if previous is not None:
-                previous_kind, previous_payload_digest, cursor = previous
+                previous_kind, previous_payload_digest, cursor, _expires_at = previous
                 if previous_kind != kind or previous_payload_digest != payload_digest:
                     raise ControlPlaneError.conflict(
                         "Event idempotency key was reused with different content",
@@ -480,8 +523,48 @@ class MemoryEventStore:
                 kind,
                 payload_digest,
                 event.cursor,
+                event_expiry(
+                    event_time(event.created_at) or now,
+                    self.idempotency_retention_seconds,
+                ),
             )
             return deepcopy(event)
+
+    def prune_expired_idempotency(
+        self,
+        ctx: ControlPlaneContext,
+        *,
+        limit: int = 1000,
+        now: datetime | None = None,
+    ) -> int:
+        """Remove a bounded number of expired scoped idempotency tombstones."""
+        if (
+            type(limit) is not int
+            or not 1 <= limit <= MAX_EVENT_IDEMPOTENCY_PRUNE_BATCH
+        ):
+            raise ValueError(
+                f"limit must be between 1 and {MAX_EVENT_IDEMPOTENCY_PRUNE_BATCH}"
+            )
+        scope = _scope(ctx)
+        with self._lock:
+            return self._prune_expired_idempotency_locked(
+                scope, now=normalize_event_time(now), limit=limit
+            )
+
+    def _prune_expired_idempotency_locked(
+        self, scope: tuple[str, str], *, now: datetime, limit: int
+    ) -> int:
+        expired_keys: list[tuple[str, str, str]] = []
+        for key, record in self._idempotent_events.items():
+            if key[:2] != scope:
+                continue
+            if is_event_expired(record[3], now=now):
+                expired_keys.append(key)
+                if len(expired_keys) >= limit:
+                    break
+        for key in expired_keys:
+            del self._idempotent_events[key]
+        return len(expired_keys)
 
     def prune_before_sequence(
         self, ctx: ControlPlaneContext, before_sequence: int
@@ -512,7 +595,11 @@ class MemoryEventStore:
         if limit < 1:
             return ()
         with self._lock:
-            bucket = self._events.get(_scope(ctx), [])
+            scope = _scope(ctx)
+            self._prune_expired_idempotency_locked(
+                scope, now=normalize_event_time(), limit=1000
+            )
+            bucket = self._events.get(scope, [])
             start = 0
             if cursor is not None:
                 found = False

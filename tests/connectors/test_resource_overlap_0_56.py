@@ -94,7 +94,11 @@ class Sink:
         self, *, binding: Mapping[str, Any], context: Mapping[str, Any]
     ) -> SinkPlan:
         del context
-        return SinkPlan(provider=PROVIDER, write_mode="append", root_ref=str(binding.get("location")))
+        return SinkPlan(
+            provider=PROVIDER,
+            write_mode="append",
+            root_ref=str(binding.get("location")),
+        )
 
     async def begin_write(
         self,
@@ -112,7 +116,9 @@ class Sink:
     ) -> None:
         del session, batch, context
 
-    async def prepare(self, session: WriteSession, *, context: Mapping[str, Any]) -> None:
+    async def prepare(
+        self, session: WriteSession, *, context: Mapping[str, Any]
+    ) -> None:
         del session, context
 
     async def commit(
@@ -173,7 +179,9 @@ def _run_transfer(
 
 
 def test_managed_connector_write_rejects_same_resolved_resource() -> None:
-    report, sink = _run_transfer(("opaque-source-and-target",), ("opaque-source-and-target",))
+    report, sink = _run_transfer(
+        ("opaque-source-and-target",), ("opaque-source-and-target",)
+    )
 
     assert report.status is RunStatus.PARTIAL
     assert sink.begin_calls == 0

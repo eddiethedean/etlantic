@@ -203,6 +203,15 @@ class DurableWorkStore(Protocol):
     def record_effect(
         self, ctx: ControlPlaneContext, effect: EffectRecord
     ) -> EffectRecord: ...
+    def record_attempt_effect(
+        self,
+        ctx: ControlPlaneContext,
+        effect: EffectRecord,
+        *,
+        attempt_id: str,
+        owner_id: str,
+        fencing_token: int,
+    ) -> EffectRecord: ...
     def replay(
         self,
         ctx: ControlPlaneContext,

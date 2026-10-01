@@ -36,6 +36,8 @@ ProvisionColumnType: TypeAlias = Literal[
 _SAFE_IDENTIFIER = re.compile(r"[A-Za-z0-9][A-Za-z0-9_.:-]{0,255}\Z")
 _SAFE_PROVIDER = re.compile(r"[A-Za-z0-9][A-Za-z0-9_.-]{0,127}\Z")
 _SAFE_CURSOR = re.compile(r"[A-Za-z0-9_-]{1,256}\Z")
+MIN_PREVIEW_RESULT_TTL_SECONDS = 60
+MAX_PREVIEW_RESULT_TTL_SECONDS = 24 * 60 * 60
 _PROVISION_RECEIPT_FIELDS = frozenset(
     {
         "action_id",
@@ -348,6 +350,14 @@ class ProvisionColumn:
                 title="Bad Request",
                 type="etlantic.control_plane/bad_request",
             )
+        if primary_key and nullable:
+            raise ControlPlaneError(
+                "Provision primary key columns cannot be nullable",
+                code="PMCP400",
+                status=400,
+                title="Bad Request",
+                type="etlantic.control_plane/bad_request",
+            )
         return cls(
             _identifier(payload["name"], field="column name"),
             typed_logical_type,
@@ -511,6 +521,8 @@ def verify_provision_parent(
         or parent.tenant_id != ctx.tenant.tenant_id
         or parent.workspace_id != ctx.workspace.workspace_id
         or parent.owner_id != (ctx.resource_owner_id or ctx.principal.subject)
+        or parent.environment != ctx.environment.name
+        or parent.security_domain_id != ctx.security_domain.domain_id
     ):
         raise ControlPlaneError.not_found("Provision effect not found")
     try:
@@ -526,8 +538,7 @@ def verify_provision_parent(
     effect_id = result_payload.get("effect_id")
     if (
         frozenset(result_payload) != _PROVISION_RECEIPT_FIELDS
-        or
-        provision.provider != request.provider
+        or provision.provider != request.provider
         or provision.connection_id != request.connection_id
         or provision.resource_id != request.resource_id
         or result_payload.get("action_id") != parent.action_id
@@ -610,6 +621,8 @@ def connector_action_resources(
 
 
 __all__ = [
+    "MAX_PREVIEW_RESULT_TTL_SECONDS",
+    "MIN_PREVIEW_RESULT_TTL_SECONDS",
     "CatalogConnectorKind",
     "ConnectorActionKind",
     "ConnectorActionRequest",

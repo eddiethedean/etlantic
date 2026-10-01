@@ -80,8 +80,8 @@ def test_migration_apply_on_empty_db_and_round_trip(tmp_path: Path) -> None:
     engine = create_sqlite_engine(f"sqlite:///{db}")
     assert current_version(engine) is None
     applied = apply_migrations(engine)
-    assert applied == "010_immutable_input_resources_0_56"
-    assert current_version(engine) == "010_immutable_input_resources_0_56"
+    assert applied == "012_bounded_event_tombstone_retention_0_56"
+    assert current_version(engine) == "012_bounded_event_tombstone_retention_0_56"
 
     provider = SqlModelRegistryProvider(engine)
     ctx = _ctx()
@@ -114,7 +114,7 @@ def test_migration_apply_on_empty_db_and_round_trip(tmp_path: Path) -> None:
 def test_migration_upgrade_downgrade(tmp_path: Path) -> None:
     engine = create_sqlite_engine(f"sqlite:///{tmp_path / 'mig.db'}")
     upgrade(engine)
-    assert current_version(engine) == "010_immutable_input_resources_0_56"
+    assert current_version(engine) == "012_bounded_event_tombstone_retention_0_56"
     downgrade(engine, target="001_registry_cp2")
     assert current_version(engine) == "001_registry_cp2"
     downgrade(engine, target=None)

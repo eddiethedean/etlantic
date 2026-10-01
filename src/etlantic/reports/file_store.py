@@ -5,6 +5,7 @@ from __future__ import annotations
 import json
 import logging
 from dataclasses import dataclass, field
+from datetime import datetime
 from pathlib import Path
 from typing import Any
 
@@ -69,6 +70,12 @@ class FileReportStore:
         limit: int | None = None,
     ) -> list[PipelineRunReport]:
         return self._memory.list(pipeline_id=pipeline_id, limit=limit)
+
+    def list_expired_artifact_reports(
+        self, *, cutoff: datetime, limit: int
+    ) -> list[PipelineRunReport]:
+        """Return bounded terminal reports past artifact retention."""
+        return self._memory.list_expired_artifact_reports(cutoff=cutoff, limit=limit)
 
 
 def compare_reports(

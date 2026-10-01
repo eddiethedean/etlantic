@@ -6,14 +6,23 @@ import inspect
 from collections.abc import Callable, Mapping
 from contextlib import asynccontextmanager
 from dataclasses import dataclass, field
+from datetime import datetime
 from importlib import import_module
 from typing import TYPE_CHECKING, Any, cast
 
+from etlantic.control_plane.action_jobs import (
+    MAX_PREVIEW_RESULT_TTL_SECONDS,
+    MIN_PREVIEW_RESULT_TTL_SECONDS,
+)
+from etlantic.control_plane.event_retention import (
+    DEFAULT_EVENT_IDEMPOTENCY_RETENTION_SECONDS,
+)
 from etlantic.control_plane.models import ControlPlaneContext
 from etlantic.control_plane.protocols import Authorizer, IdempotentEventStore
 from etlantic.control_plane.registry_definitions import RegistryDefinitionRepository
 from etlantic.profile import Profile, resolve_profile
 from etlantic.registry import PlanningContext
+from etlantic.reports.retention import ArtifactRetentionResult
 from etlantic.runtime.action_execution_host import ActionHandler
 from etlantic_fastapi.api import ETLanticAPI, create_app
 from etlantic_fastapi.auth import (
@@ -61,10 +70,15 @@ class ManagedBackendConfig:
     action_job_max_deadline_seconds: int = 300
     action_job_lease_seconds: int = 330
     preview_result_ttl_seconds: int = 60 * 60
+    run_artifact_retention_seconds: int | None = None
+    run_artifact_cleanup_batch_size: int = 100
     action_handlers: Mapping[str, ActionHandler] = field(
         default_factory=_empty_action_handlers, repr=False
     )
     artifact_root: str | None = field(default=None, repr=False)
+    event_idempotency_retention_seconds: int = (
+        DEFAULT_EVENT_IDEMPOTENCY_RETENTION_SECONDS
+    )
 
     def __post_init__(self) -> None:
         if not self.database_url.strip():
@@ -77,6 +91,13 @@ class ManagedBackendConfig:
         ):
             raise ValueError(
                 "event_retention_max_events_per_scope must be a positive integer"
+            )
+        if (
+            type(self.event_idempotency_retention_seconds) is not int
+            or self.event_idempotency_retention_seconds < 1
+        ):
+            raise ValueError(
+                "event_idempotency_retention_seconds must be a positive integer"
             )
         for name, value in (
             ("max_input_upload_bytes", self.max_input_upload_bytes),
@@ -94,17 +115,36 @@ class ManagedBackendConfig:
             )
         if (
             type(self.action_job_lease_seconds) is not int
-            or self.action_job_lease_seconds
-            <= self.action_job_max_deadline_seconds
+            or self.action_job_lease_seconds <= self.action_job_max_deadline_seconds
         ):
             raise ValueError(
                 "action_job_lease_seconds must exceed the maximum action deadline"
             )
         if (
             type(self.preview_result_ttl_seconds) is not int
-            or not 60 <= self.preview_result_ttl_seconds <= 24 * 60 * 60
+            or not MIN_PREVIEW_RESULT_TTL_SECONDS
+            <= self.preview_result_ttl_seconds
+            <= MAX_PREVIEW_RESULT_TTL_SECONDS
         ):
-            raise ValueError("preview_result_ttl_seconds must be between 60 and 86400")
+            raise ValueError(
+                "preview_result_ttl_seconds must be between "
+                f"{MIN_PREVIEW_RESULT_TTL_SECONDS} and "
+                f"{MAX_PREVIEW_RESULT_TTL_SECONDS}"
+            )
+        if self.run_artifact_retention_seconds is not None and (
+            type(self.run_artifact_retention_seconds) is not int
+            or self.run_artifact_retention_seconds < 1
+        ):
+            raise ValueError(
+                "run_artifact_retention_seconds must be a positive integer or None"
+            )
+        if (
+            type(self.run_artifact_cleanup_batch_size) is not int
+            or not 1 <= self.run_artifact_cleanup_batch_size <= 1000
+        ):
+            raise ValueError(
+                "run_artifact_cleanup_batch_size must be between 1 and 1000"
+            )
         supported_actions = {
             "connector.test",
             "connector.catalog",
@@ -141,6 +181,8 @@ class ManagedBackend:
     )
     action_job_lease_seconds: int = 330
     preview_result_ttl_seconds: int = 60 * 60
+    run_artifact_retention_seconds: int | None = None
+    run_artifact_cleanup_batch_size: int = 100
     execution_profile: Profile | None = field(default=None, repr=False)
     artifact_root: str | None = field(default=None, repr=False)
     _closed: bool = field(default=False, init=False, repr=False)
@@ -186,7 +228,32 @@ class ManagedBackend:
                 event_publisher=publish_event,
                 profile=self.execution_profile,
                 input_resource_store=self.input_resources,
+                run_artifact_retention_seconds=self.run_artifact_retention_seconds,
+                artifact_cleanup_batch_size=self.run_artifact_cleanup_batch_size,
             ),
+        )
+
+    def cleanup_expired_run_artifacts(
+        self,
+        ctx: ControlPlaneContext,
+        *,
+        now: datetime | None = None,
+        limit: int | None = None,
+    ) -> ArtifactRetentionResult:
+        """Run one bounded, operator-invoked durable artifact cleanup pass."""
+        if self._closed:
+            raise RuntimeError("Managed backend is closed")
+        if self.run_artifact_retention_seconds is None:
+            return ArtifactRetentionResult(enabled=False)
+        from etlantic.runtime.artifact_retention import cleanup_expired_run_artifacts
+
+        return cleanup_expired_run_artifacts(
+            ctx,
+            report_store=self.report_store_factory(ctx),
+            artifact_root=self.artifact_root,
+            retention_seconds=self.run_artifact_retention_seconds,
+            limit=(self.run_artifact_cleanup_batch_size if limit is None else limit),
+            now=now,
         )
 
     def create_action_execution_host(
@@ -266,6 +333,9 @@ def create_managed_backend(
             events=stores.SqlModelEventStore(
                 engine,
                 max_events_per_scope=config.event_retention_max_events_per_scope,
+                idempotency_retention_seconds=(
+                    config.event_idempotency_retention_seconds
+                ),
             ),
             registry=registry,
             context_factory=context_factory,
@@ -286,6 +356,9 @@ def create_managed_backend(
         if api.managed_service is not None:
             api.managed_service.report_store_factory = report_store_provider.for_context
             api.managed_service.artifact_root = config.artifact_root
+            api.managed_service.run_artifact_retention_seconds = (
+                config.run_artifact_retention_seconds
+            )
             api.managed_service.action_job_max_deadline_seconds = (
                 config.action_job_max_deadline_seconds
             )
@@ -298,6 +371,8 @@ def create_managed_backend(
             action_handlers=dict(config.action_handlers),
             action_job_lease_seconds=config.action_job_lease_seconds,
             preview_result_ttl_seconds=config.preview_result_ttl_seconds,
+            run_artifact_retention_seconds=config.run_artifact_retention_seconds,
+            run_artifact_cleanup_batch_size=config.run_artifact_cleanup_batch_size,
             execution_profile=execution_profile,
         )
     except BaseException:

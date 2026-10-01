@@ -66,7 +66,7 @@ def _config(
     database_url = f"sqlite:///{tmp_path / 'actions.sqlite'}"
     engine = sqlalchemy.create_engine(database_url)
     try:
-        assert upgrade(engine) == "010_immutable_input_resources_0_56"
+        assert upgrade(engine) == "012_bounded_event_tombstone_retention_0_56"
     finally:
         engine.dispose()
     return ManagedBackendConfig(
@@ -110,9 +110,7 @@ async def _async_action_result(
     return {"ok": True}
 
 
-def _backend(
-    config: ManagedBackendConfig, authorizer: Authorizer
-) -> ManagedBackend:
+def _backend(config: ManagedBackendConfig, authorizer: Authorizer) -> ManagedBackend:
     return create_managed_backend(
         config,
         authorizer=authorizer,
@@ -369,9 +367,7 @@ def test_managed_preview_http_result_expires_after_durable_persistence(
             headers={"X-Principal": "action-owner"},
         )
         assert http_receipt.status_code == 200
-        assert http_receipt.json()["result_expires_at"] == receipt[
-            "result_expires_at"
-        ]
+        assert http_receipt.json()["result_expires_at"] == receipt["result_expires_at"]
         assert http_receipt.json()["result"] == receipt["result"]
 
         expired_at = datetime.now(UTC) + timedelta(minutes=2)
@@ -413,10 +409,10 @@ def test_managed_provision_is_explicit_idempotent_and_compensatable(
     ctx = _context()
     authorized_actions = frozenset(
         (
-        "connector.schema.inspect",
-        "connector.provision",
-        "connector.provision.cleanup",
-        "connector.action.read",
+            "connector.schema.inspect",
+            "connector.provision",
+            "connector.provision.cleanup",
+            "connector.action.read",
         )
     )
 

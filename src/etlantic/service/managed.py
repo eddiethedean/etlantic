@@ -55,6 +55,7 @@ from etlantic.plan.serialize import verify_plan_fingerprint
 from etlantic.profile import resolve_profile
 from etlantic.registry import PlanningContext
 from etlantic.reports.model import PipelineRunReport
+from etlantic.reports.retention import RUN_ARTIFACT_RETENTION_STATE_KEY
 from etlantic.runtime.artifacts import artifact_storage_path
 from etlantic.runtime.logging import redact_message
 from etlantic.runtime.managed_execution import (
@@ -70,6 +71,20 @@ def _mapping(value: object) -> Mapping[str, Any]:
     if isinstance(value, Mapping):
         return cast(Mapping[str, Any], value)
     return {}
+
+
+def _connector_action_cursor_scope(ctx: ControlPlaneContext) -> str:
+    """Fingerprint the complete owner context used by action receipt pages."""
+    scope = [
+        ctx.security_domain.domain_id,
+        ctx.tenant.tenant_id,
+        ctx.workspace.workspace_id,
+        ctx.environment.name,
+        ctx.resource_owner_id or ctx.principal.subject,
+    ]
+    return hashlib.sha256(
+        json.dumps(scope, separators=(",", ":"), ensure_ascii=False).encode("utf-8")
+    ).hexdigest()
 
 
 CONNECTOR_ACTION_TYPES = frozenset(
@@ -114,6 +129,7 @@ class ManagedApplicationService:
     ) = None
     input_resources: InputResourceStore | None = None
     input_resource_retention_seconds: int = 90 * 24 * 60 * 60
+    run_artifact_retention_seconds: int | None = None
     action_job_max_deadline_seconds: int = 300
     artifact_root: str | Path | None = None
 
@@ -133,12 +149,15 @@ class ManagedApplicationService:
         )
         definition = self._decode_definition(document)
         canonical = pipeline_to_dict(definition)
-        self.definitions.put(ctx, definition_id, canonical)
-        return {
+        revision_id = self._store_definition(ctx, definition_id, canonical)
+        result = {
             "definition_id": definition_id,
             "fingerprint": definition.fingerprint or pipeline_fingerprint(definition),
             "document": canonical,
         }
+        if revision_id is not None:
+            result["revision_id"] = revision_id
+        return result
 
     def get_definition(
         self, ctx: ControlPlaneContext, definition_id: str
@@ -229,8 +248,10 @@ class ManagedApplicationService:
             )
             verify_provision_parent(ctx, typed_request, parent)
         deadline_at = (
-            datetime.now(UTC) + timedelta(seconds=deadline_seconds)
-        ).isoformat().replace("+00:00", "Z")
+            (datetime.now(UTC) + timedelta(seconds=deadline_seconds))
+            .isoformat()
+            .replace("+00:00", "Z")
+        )
         return self.durable_work.accept_action_job(
             ctx,
             action=action,
@@ -276,6 +297,7 @@ class ManagedApplicationService:
                 type="etlantic.control_plane/bad_request",
             )
         after: tuple[str, str] | None = None
+        cursor_scope = _connector_action_cursor_scope(ctx)
         if cursor is not None:
             try:
                 if len(cursor) > 2048:
@@ -285,13 +307,20 @@ class ManagedApplicationService:
                 if not isinstance(decoded_payload, list):
                     raise ValueError("cursor payload is invalid")
                 payload = cast(list[Any], decoded_payload)
-                if (
-                    len(payload) != 2
-                    or not isinstance(payload[0], str)
-                    or not isinstance(payload[1], str)
+                if len(payload) == 2 and all(isinstance(item, str) for item in payload):
+                    # Continue accepting previously issued cursors; the query
+                    # still applies the current full receipt scope.
+                    after = (payload[0], payload[1])
+                elif (
+                    len(payload) == 4
+                    and payload[0] == "etlantic.connector_action_cursor/1"
+                    and payload[1] == cursor_scope
+                    and isinstance(payload[2], str)
+                    and isinstance(payload[3], str)
                 ):
+                    after = (payload[2], payload[3])
+                else:
                     raise ValueError("invalid cursor payload")
-                after = (payload[0], payload[1])
             except (ValueError, TypeError, json.JSONDecodeError) as exc:
                 raise ControlPlaneError(
                     "Invalid connector action cursor",
@@ -300,16 +329,20 @@ class ManagedApplicationService:
                     title="Bad Request",
                     type="etlantic.control_plane/bad_request",
                 ) from exc
-        records = self.durable_work.list_action_jobs(
-            ctx, after=after, limit=limit + 1
-        )
+        records = self.durable_work.list_action_jobs(ctx, after=after, limit=limit + 1)
         has_more = len(records) > limit
         page = records[:limit]
         next_cursor = None
         if has_more and page:
             last = page[-1]
             encoded = json.dumps(
-                [last.created_at, last.action_id], separators=(",", ":")
+                [
+                    "etlantic.connector_action_cursor/1",
+                    cursor_scope,
+                    last.created_at,
+                    last.action_id,
+                ],
+                separators=(",", ":"),
             ).encode("utf-8")
             next_cursor = base64.urlsafe_b64encode(encoded).decode("ascii").rstrip("=")
         return {
@@ -383,18 +416,36 @@ class ManagedApplicationService:
                 type="etlantic.control_plane/validation_error",
             ) from exc
         canonical = pipeline_to_dict(result.definition)
-        self.definitions.put(ctx, definition_id, canonical)
-        return {
+        revision_id = self._store_definition(ctx, definition_id, canonical)
+        response = {
             "definition_id": definition_id,
             "fingerprint": result.fingerprint,
             "document": canonical,
         }
+        if revision_id is not None:
+            response["revision_id"] = revision_id
+        return response
 
     def validate_definition(
-        self, ctx: ControlPlaneContext, definition_id: str
+        self,
+        ctx: ControlPlaneContext,
+        definition_id: str,
+        *,
+        revision_selector: str = "current",
     ) -> dict[str, Any]:
         """Run pure static validation without resolving credentials or doing I/O."""
-        document = self._get_document(ctx, definition_id, action="definition.validate")
+        revision_selector = _require_revision_selector(revision_selector)
+        require_authorized(
+            self.authorizer,
+            ctx,
+            "definition.validate",
+            f"definition:{definition_id}",
+            resource_in_caller_scope=False,
+        )
+        resolution = self._resolve_definition_revision(
+            ctx, definition_id, revision_selector
+        )
+        document = resolution.document
         definition = self._decode_definition(document)
         profile = resolve_profile(self.profile, allow_adhoc_profile=False)
         planning_context = self._planning_context(ctx, profile)
@@ -405,8 +456,9 @@ class ManagedApplicationService:
             "ok": not report.has_errors,
             "definition_id": definition_id,
             "fingerprint": definition.fingerprint or pipeline_fingerprint(definition),
+            "revision_id": resolution.revision_id,
             "diagnostics": [item.to_dict() for item in report.diagnostics],
-            "metadata": {},
+            "metadata": {"revision_id": resolution.revision_id},
         }
 
     def plan_definition(
@@ -415,9 +467,21 @@ class ManagedApplicationService:
         definition_id: str,
         *,
         request: RunRequest | Mapping[str, Any] | None = None,
+        revision_selector: str = "current",
     ) -> dict[str, Any]:
         """Build a deterministic verified plan without executing providers."""
-        document = self._get_document(ctx, definition_id, action="definition.plan")
+        revision_selector = _require_revision_selector(revision_selector)
+        require_authorized(
+            self.authorizer,
+            ctx,
+            "definition.plan",
+            f"definition:{definition_id}",
+            resource_in_caller_scope=False,
+        )
+        resolution = self._resolve_definition_revision(
+            ctx, definition_id, revision_selector
+        )
+        document = resolution.document
         definition = self._decode_definition(document)
         profile = resolve_profile(self.profile, allow_adhoc_profile=False)
         typed_request = self._coerce_request(request)
@@ -445,6 +509,7 @@ class ManagedApplicationService:
             "ok": True,
             "definition_id": definition_id,
             "fingerprint": plan.fingerprint,
+            "revision_id": resolution.revision_id,
             "plan": plan.to_dict(),
         }
 
@@ -662,6 +727,11 @@ class ManagedApplicationService:
             plugin_fingerprint=plugin_fingerprint,
             policy_fingerprint=policy_fingerprint,
             resource_versions=resource_versions,
+            evidence_refs=(
+                {"input_resource_lease_id": input_lease_id}
+                if input_lease_id is not None
+                else None
+            ),
         )
         payload = self._acceptance_payload(envelope)
         receipt_result = self.submissions.accept(
@@ -1094,13 +1164,11 @@ class ManagedApplicationService:
         parent_submission_id: str,
     ) -> AcceptReceipt:
         """Idempotently accept a lifecycle command and its verified envelope."""
-        payload = self._acceptance_payload(envelope)
-        payload.update(
-            {
-                "command": operation.removeprefix("run."),
-                "parent_run_id": parent_run_id,
-                "parent_submission_id": parent_submission_id,
-            }
+        envelope = _with_input_resource_lease(
+            ctx,
+            envelope,
+            operation=operation,
+            idempotency_key=idempotency_key,
         )
         prior_receipt = self.submissions.lookup_idempotency(
             ctx, idempotency_key, operation=operation
@@ -1115,9 +1183,45 @@ class ManagedApplicationService:
         if prior_receipt is not None:
             prior_envelope = self._envelope_from_payload(prior_payload)
             if prior_envelope.to_json() != expected_envelope:
+                legacy_envelope = _with_input_resource_lease(
+                    ctx,
+                    envelope,
+                    operation=operation,
+                    idempotency_key=idempotency_key,
+                    legacy_scope=True,
+                )
+                if prior_envelope.to_json() != legacy_envelope.to_json():
+                    raise ControlPlaneError.conflict(
+                        "Idempotency key reuse with a different retry parent or intent"
+                    )
+                envelope = legacy_envelope
+                expected_envelope = envelope.to_json()
+        elif (
+            prior_durable is not None
+            and prior_durable.input_snapshot != expected_envelope
+        ):
+            legacy_envelope = _with_input_resource_lease(
+                ctx,
+                envelope,
+                operation=operation,
+                idempotency_key=idempotency_key,
+                legacy_scope=True,
+            )
+            if prior_durable.input_snapshot != legacy_envelope.to_json():
                 raise ControlPlaneError.conflict(
                     "Idempotency key reuse with a different retry parent or intent"
                 )
+            envelope = legacy_envelope
+            expected_envelope = envelope.to_json()
+        payload = self._acceptance_payload(envelope)
+        payload.update(
+            {
+                "command": operation.removeprefix("run."),
+                "parent_run_id": parent_run_id,
+                "parent_submission_id": parent_submission_id,
+            }
+        )
+        if prior_receipt is not None:
             if prior_durable is None:
                 self._accept_child_durable(
                     ctx,
@@ -1159,6 +1263,13 @@ class ManagedApplicationService:
             operation=operation,
             idempotency_key=idempotency_key,
         )
+        envelope_lease_id = (envelope.evidence_refs or {}).get(
+            "input_resource_lease_id"
+        )
+        if input_lease_id != envelope_lease_id:
+            raise ControlPlaneError.conflict(
+                "Accepted input resource lease does not match its execution envelope"
+            )
         receipt_result = self.submissions.accept(
             ctx,
             idempotency_key=idempotency_key,
@@ -1396,6 +1507,7 @@ class ManagedApplicationService:
         nodes: list[dict[str, Any]] = [{"id": report["run_id"], "kind": "run"}]
         edges: list[dict[str, Any]] = list(report.get("lineage") or [])
         artifacts: list[dict[str, Any]] = report.get("artifacts") or []
+        metadata = _mapping(report.get("metadata"))
         for artifact in artifacts:
             identity = str(artifact.get("identity") or "")
             if not identity:
@@ -1415,7 +1527,47 @@ class ManagedApplicationService:
                     "kind": "produced",
                 }
             )
-        metadata = _mapping(report.get("metadata"))
+        partition_lineage = _mapping(metadata.get("etlantic.partition_lineage"))
+        raw_sources: object = partition_lineage.get("sources")
+        sources: dict[str, dict[str, Any]] = {}
+        if isinstance(raw_sources, (list, tuple)):
+            for raw_source in cast(list[object] | tuple[object, ...], raw_sources):
+                if not isinstance(raw_source, Mapping):
+                    continue
+                source = cast(Mapping[str, Any], raw_source)
+                node_id = source.get("node_id")
+                if isinstance(node_id, str) and node_id:
+                    sources[node_id] = dict(source)
+        partition_nodes: dict[str, dict[str, Any]] = {}
+        for edge in edges:
+            partition_id = edge.get("to")
+            source_id = edge.get("from")
+            if (
+                edge.get("kind") != "observed_partition"
+                or not isinstance(partition_id, str)
+                or not isinstance(source_id, str)
+            ):
+                continue
+            partition_node: dict[str, Any] = {
+                "id": partition_id,
+                "kind": "partition",
+                "status": "observed",
+                "source_node_id": source_id,
+            }
+            ordinal = partition_id.rsplit(":", maxsplit=1)[-1]
+            if ordinal.isdigit():
+                partition_node["ordinal"] = int(ordinal)
+            source = sources.get(source_id)
+            if source is not None:
+                keys: object = source.get("partition_keys")
+                if isinstance(keys, (list, tuple)):
+                    key_items = cast(list[object] | tuple[object, ...], keys)
+                    if all(isinstance(key, str) for key in key_items):
+                        partition_node["partition_keys"] = [
+                            str(key) for key in key_items
+                        ]
+            partition_nodes[partition_id] = partition_node
+        nodes.extend(partition_nodes[key] for key in sorted(partition_nodes))
         execution = _mapping(metadata.get("etlantic.control_plane.execution"))
         submission_id_raw: object = execution.get("submission_id") or record.get(
             "submission_id"
@@ -1527,6 +1679,15 @@ class ManagedApplicationService:
         report: dict[str, Any] = report_model.to_dict()
         items: list[dict[str, Any]] = []
         artifacts: list[dict[str, Any]] = report.get("artifacts") or []
+        retention_state = _mapping(report.get("metadata")).get(
+            RUN_ARTIFACT_RETENTION_STATE_KEY
+        )
+        if not isinstance(retention_state, str):
+            retention_state = (
+                "pending"
+                if self.run_artifact_retention_seconds is not None
+                else "disabled"
+            )
         workspace = managed_artifact_workspace(
             ctx, run_id, artifact_root=self.artifact_root
         )
@@ -1553,6 +1714,8 @@ class ManagedApplicationService:
                 {
                     "artifact_id": identity,
                     "kind": strategy,
+                    "status": artifact.get("status", "available"),
+                    "retention_state": retention_state,
                     "content_available": content_available,
                     "media_type": (
                         "application/json"
@@ -1607,9 +1770,7 @@ class ManagedApplicationService:
             tenant=ctx.tenant.tenant_id,
         )
         try:
-            _resolved, content, _events = read_text_safe(
-                path, policy, run_id=run_id
-            )
+            _resolved, content, _events = read_text_safe(path, policy, run_id=run_id)
         except Exception as exc:
             raise ControlPlaneError(
                 "Run artifact content is unavailable under the configured I/O policy",
@@ -1641,6 +1802,27 @@ class ManagedApplicationService:
             raise ControlPlaneError.not_found(
                 f"Definition {definition_id!r} not found"
             ) from exc
+
+    def _store_definition(
+        self,
+        ctx: ControlPlaneContext,
+        definition_id: str,
+        document: Mapping[str, Any],
+    ) -> str | None:
+        """Store one definition and return its exact revision when available."""
+        append_revision = getattr(self.definitions, "put_revision", None)
+        if not callable(append_revision):
+            self.definitions.put(ctx, definition_id, document)
+            return None
+        revision_id = append_revision(ctx, definition_id, document)
+        if type(revision_id) is not str or not revision_id.strip():
+            raise ControlPlaneError(
+                "Definition repository returned an invalid revision id",
+                code="PMCP500",
+                status=500,
+                title="Internal Server Error",
+            )
+        return revision_id
 
     def _resolve_definition_revision(
         self,
@@ -2041,9 +2223,13 @@ def _input_resource_references(
 
 
 def _input_resource_lease_id(
-    ctx: ControlPlaneContext, operation: str, idempotency_key: str
+    ctx: ControlPlaneContext,
+    operation: str,
+    idempotency_key: str,
+    *,
+    legacy_scope: bool = False,
 ) -> str:
-    scope = {
+    scope: dict[str, object] = {
         "security_domain": ctx.security_domain.domain_id,
         "tenant": ctx.tenant.tenant_id,
         "workspace": ctx.workspace.workspace_id,
@@ -2051,7 +2237,35 @@ def _input_resource_lease_id(
         "operation": operation,
         "idempotency_key": idempotency_key,
     }
+    if not legacy_scope:
+        scope["environment"] = ctx.environment.name
+        scope["principal"] = {
+            "issuer": ctx.principal.issuer or "",
+            "kind": ctx.principal.kind,
+            "subject": ctx.principal.subject,
+        }
     digest = hashlib.sha256(
         json.dumps(scope, sort_keys=True, separators=(",", ":")).encode("utf-8")
     ).hexdigest()
     return f"managed-input:{digest}"
+
+
+def _with_input_resource_lease(
+    ctx: ControlPlaneContext,
+    envelope: ExecutionEnvelope,
+    *,
+    operation: str,
+    idempotency_key: str,
+    legacy_scope: bool = False,
+) -> ExecutionEnvelope:
+    plan = PipelinePlan.from_dict(mutable_copy(envelope.plan_document), verify=True)
+    evidence_refs = dict(envelope.evidence_refs or {})
+    if _input_resource_references(plan):
+        evidence_refs["input_resource_lease_id"] = _input_resource_lease_id(
+            ctx, operation, idempotency_key, legacy_scope=legacy_scope
+        )
+    else:
+        evidence_refs.pop("input_resource_lease_id", None)
+    return ExecutionEnvelope.from_dict(
+        {**envelope.to_dict(), "evidence_refs": evidence_refs}
+    )

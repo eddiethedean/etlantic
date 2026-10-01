@@ -29,6 +29,26 @@ def test_interval_next_fire_and_window() -> None:
     assert next_fire_after(closed, after=after) is None
 
 
+def test_naive_interval_instants_are_interpreted_as_utc() -> None:
+    spec = ScheduleSpec(
+        kind="interval", interval_seconds=60, timezone="America/Los_Angeles"
+    )
+    naive = datetime(2026, 1, 1, 0, 0)
+    aware = naive.replace(tzinfo=UTC)
+
+    assert next_fire_after(spec, after=naive) == next_fire_after(spec, after=aware)
+    assert catch_up_nominals(
+        ScheduleSpec(
+            kind="interval",
+            interval_seconds=60,
+            misfire="catch_up",
+            catch_up_max=3,
+        ),
+        last_nominal=naive,
+        now=naive + timedelta(minutes=2),
+    ) == [aware + timedelta(minutes=1), aware + timedelta(minutes=2)]
+
+
 def test_cron_utc_noon() -> None:
     spec = ScheduleSpec(kind="cron", cron="0 12 * * *", timezone="UTC")
     after = datetime(2026, 1, 1, 0, 0, tzinfo=UTC)

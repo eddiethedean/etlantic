@@ -54,14 +54,13 @@ def main(argv: list[str] | None = None) -> int:
     source_results = run_source_connector_conformance_suite(create_local_files_source())
     exit_code |= _print_results("local-files source", source_results)
 
-    # Optional importable fake sinks (s3 / iceberg / snowflake / postgresql).
-    for module in (
-        "etlantic_s3",
-        "etlantic_iceberg",
-        "etlantic_snowflake",
-        "etlantic_sql.connectors",
-    ):
+    # Optional fake sinks (the PostgreSQL entry-point factory is live, so use
+    # its explicit in-memory test connector for this backend-free gate).
+    for module in ("etlantic_s3", "etlantic_iceberg", "etlantic_snowflake"):
         exit_code |= _try_sink_suite(module)
+    exit_code |= _try_sink_suite(
+        "etlantic_sql.connectors", factory_name="PostgresSinkConnector"
+    )
 
     return exit_code
 

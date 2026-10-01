@@ -24,6 +24,14 @@ from etlantic.control_plane import (
     DefinitionResolution,
     redact_control_plane_payload,
 )
+from etlantic.control_plane.event_retention import (
+    DEFAULT_EVENT_IDEMPOTENCY_RETENTION_SECONDS,
+    MAX_EVENT_IDEMPOTENCY_PRUNE_BATCH,
+    event_expiry,
+    event_time,
+    is_event_expired,
+    normalize_event_time,
+)
 from etlantic_sqlmodel.control_plane.models import (
     DefinitionRow,
     EventIdempotencyRow,
@@ -39,6 +47,7 @@ def _utcnow_iso() -> str:
 
 
 _EVENT_APPEND_MAX_ATTEMPTS = 3
+_EVENT_IDEMPOTENCY_SWEEP_BATCH_SIZE = MAX_EVENT_IDEMPOTENCY_PRUNE_BATCH
 _EVENT_SEQUENCE_CONSTRAINT = "uq_cp_event_scope_seq"
 _EVENT_IDEMPOTENCY_CONSTRAINT = "uq_cp_event_scope_idem"
 
@@ -375,14 +384,26 @@ class SqlModelEventStore:
     """Minimal SQLModel-backed EventStore with tenant/workspace isolation."""
 
     def __init__(
-        self, engine: Engine, *, max_events_per_scope: int | None = None
+        self,
+        engine: Engine,
+        *,
+        max_events_per_scope: int | None = None,
+        idempotency_retention_seconds: int = DEFAULT_EVENT_IDEMPOTENCY_RETENTION_SECONDS,
     ) -> None:
         if max_events_per_scope is not None and (
             type(max_events_per_scope) is not int or max_events_per_scope < 1
         ):
             raise ValueError("max_events_per_scope must be a positive integer or None")
+        if (
+            type(idempotency_retention_seconds) is not int
+            or idempotency_retention_seconds < 1
+        ):
+            raise ValueError(
+                "idempotency_retention_seconds must be a positive integer or None"
+            )
         self._engine = engine
         self.max_events_per_scope = max_events_per_scope
+        self.idempotency_retention_seconds = idempotency_retention_seconds
 
     def append(
         self,
@@ -495,6 +516,13 @@ class SqlModelEventStore:
     ) -> ControlPlaneEvent:
         with session_scope(self._engine) as session:
             self._lock_append_scope(session, ctx)
+            now = normalize_event_time()
+            self._prune_expired_idempotency(
+                session,
+                ctx,
+                now=now,
+                limit=_EVENT_IDEMPOTENCY_SWEEP_BATCH_SIZE,
+            )
             if event_key is not None:
                 existing = session.exec(
                     select(EventIdempotencyRow).where(
@@ -503,6 +531,12 @@ class SqlModelEventStore:
                         EventIdempotencyRow.event_key == event_key,
                     )
                 ).first()
+                if existing is not None and is_event_expired(
+                    existing.expires_at, now=now
+                ):
+                    session.delete(existing)
+                    session.flush()
+                    existing = None
                 if existing is not None:
                     event_row = session.exec(
                         select(EventRow).where(
@@ -582,6 +616,10 @@ class SqlModelEventStore:
                         ).hexdigest(),
                         sequence=sequence,
                         cursor=cursor,
+                        expires_at=event_expiry(
+                            event_time(created) or now,
+                            self.idempotency_retention_seconds,
+                        ),
                     )
                 )
                 session.flush()
@@ -629,6 +667,53 @@ class SqlModelEventStore:
             )
             return int(result.rowcount or 0)
 
+    def prune_expired_idempotency(
+        self,
+        ctx: ControlPlaneContext,
+        *,
+        limit: int = _EVENT_IDEMPOTENCY_SWEEP_BATCH_SIZE,
+        now: datetime | None = None,
+    ) -> int:
+        """Delete a bounded number of expired scoped event-key tombstones."""
+        if (
+            type(limit) is not int
+            or not 1 <= limit <= MAX_EVENT_IDEMPOTENCY_PRUNE_BATCH
+        ):
+            raise ValueError(
+                f"limit must be between 1 and {MAX_EVENT_IDEMPOTENCY_PRUNE_BATCH}"
+            )
+        current = normalize_event_time(now)
+        with session_scope(self._engine) as session:
+            self._lock_append_scope(session, ctx)
+            return self._prune_expired_idempotency(
+                session, ctx, now=current, limit=limit
+            )
+
+    @staticmethod
+    def _prune_expired_idempotency(
+        session: Session,
+        ctx: ControlPlaneContext,
+        *,
+        now: datetime,
+        limit: int,
+    ) -> int:
+        """Delete expired tombstones in the caller's transaction."""
+        boundary = now.isoformat(timespec="microseconds").replace("+00:00", "Z")
+        expired = session.exec(
+            select(EventIdempotencyRow)
+            .where(
+                EventIdempotencyRow.tenant_id == ctx.tenant.tenant_id,
+                EventIdempotencyRow.workspace_id == ctx.workspace.workspace_id,
+                EventIdempotencyRow.expires_at.is_not(None),
+                EventIdempotencyRow.expires_at <= boundary,
+            )
+            .order_by(text("expires_at ASC"))
+            .limit(limit)
+        ).all()
+        for row in expired:
+            session.delete(row)
+        return len(expired)
+
     def _get_event_by_key(
         self, ctx: ControlPlaneContext, event_key: str
     ) -> ControlPlaneEvent | None:
@@ -641,6 +726,8 @@ class SqlModelEventStore:
                 )
             ).first()
             if mapping is None:
+                return None
+            if is_event_expired(mapping.expires_at):
                 return None
             row = session.exec(
                 select(EventRow).where(
@@ -680,6 +767,7 @@ class SqlModelEventStore:
     ) -> Sequence[ControlPlaneEvent]:
         if limit < 1:
             return ()
+        self.prune_expired_idempotency(ctx)
         self._enforce_scope_retention(ctx)
         with session_scope(self._engine) as session:
             start_seq = 0

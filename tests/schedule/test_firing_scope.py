@@ -32,12 +32,17 @@ def context(workspace: str) -> ControlPlaneContext:
     )
 
 
-def claim(store: Any, ctx: ControlPlaneContext, durable: Any = None) -> Any:
+def claim(
+    store: Any,
+    ctx: ControlPlaneContext,
+    revision_id: str,
+    durable: Any = None,
+) -> Any:
     lease = store.acquire_leader_lease(ctx, owner_id="scheduler", ttl_seconds=60)
     return store.claim_firing(
         ctx,
         schedule_id="shared-schedule",
-        revision_id="shared-revision",
+        revision_id=revision_id,
         nominal_fire_time="2026-09-13T00:00:00Z",
         owner_id="scheduler",
         fencing_token=lease.fencing_token,
@@ -85,16 +90,16 @@ def test_firing_and_durable_submission_are_scoped(
         durable = SQLModelDurableWorkStore(engine)
     try:
         contexts = [context("workspace-a"), context("workspace-b")]
-        firings = []
+        firings: list[Any] = []
         for ctx in contexts:
-            schedules.create(
+            schedule = schedules.create(
                 ctx,
                 definition_id="definition",
                 profile_name="production",
                 spec=ScheduleSpec(kind="interval", interval_seconds=60),
                 schedule_id="shared-schedule",
             )
-            firing, created = claim(schedules, ctx, durable)
+            firing, created = claim(schedules, ctx, schedule.revision_id, durable)
             assert created
             assert firing.workspace_id == ctx.workspace.workspace_id
             assert len(durable.pending_outbox(ctx)) == 1
@@ -112,7 +117,7 @@ def test_firing_and_durable_submission_are_scoped(
             schedules = SQLModelScheduleStore(engine)
             durable = SQLModelDurableWorkStore(engine)
         for ctx, original in zip(contexts, firings, strict=True):
-            replay, created = claim(schedules, ctx, durable)
+            replay, created = claim(schedules, ctx, original.revision_id, durable)
             assert not created
             assert replay == original
             assert schedules.list_firings(ctx, "shared-schedule") == (original,)
@@ -124,17 +129,33 @@ def test_firing_and_durable_submission_are_scoped(
 
 def test_legacy_snapshot_preserves_canonical_firing_and_scope() -> None:
     original_store = MemoryScheduleStore()
-    original, created = claim(original_store, context("workspace-a"))
+    first_ctx = context("workspace-a")
+    first_schedule = original_store.create(
+        first_ctx,
+        definition_id="definition",
+        profile_name="production",
+        spec=ScheduleSpec(kind="interval", interval_seconds=60),
+        schedule_id="shared-schedule",
+    )
+    original, created = claim(original_store, first_ctx, first_schedule.revision_id)
     assert created
     legacy = original_store.dump()
     legacy["firings"] = {original.logical_key: original.to_dict()}
 
     restored = MemoryScheduleStore()
     restored.load(legacy)
-    replay, created = claim(restored, context("workspace-a"))
+    replay, created = claim(restored, first_ctx, original.revision_id)
     assert not created
     assert replay == original
-    other, created = claim(restored, context("workspace-b"))
+    other_ctx = context("workspace-b")
+    other_schedule = restored.create(
+        other_ctx,
+        definition_id="definition",
+        profile_name="production",
+        spec=ScheduleSpec(kind="interval", interval_seconds=60),
+        schedule_id="shared-schedule",
+    )
+    other, created = claim(restored, other_ctx, other_schedule.revision_id)
     assert created
     assert other.workspace_id == "workspace-b"
     assert other.firing_id != original.firing_id

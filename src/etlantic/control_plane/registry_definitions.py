@@ -143,6 +143,15 @@ class RegistryDefinitionRepository:
         definition_id: str,
         document: Mapping[str, Any],
     ) -> None:
+        self.put_revision(ctx, definition_id, document)
+
+    def put_revision(
+        self,
+        ctx: ControlPlaneContext,
+        definition_id: str,
+        document: Mapping[str, Any],
+    ) -> str:
+        """Append a definition revision and return its immutable revision id."""
         content = _document_content(document)
         try:
             self.registry.revisions.get_logical(ctx, definition_id)
@@ -168,6 +177,7 @@ class RegistryDefinitionRepository:
             kind=DEFINITION_KIND,
         )
         self.registry.revisions.put_revision(ctx, revision)
+        return revision.revision_id
 
 
 __all__ = ["DEFINITION_KIND", "RegistryDefinitionRepository"]

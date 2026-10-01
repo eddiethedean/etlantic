@@ -128,6 +128,8 @@ from etlantic.sql.protocol import (
 from etlantic.storage.protocol import as_records
 from etlantic.transformation import ImplementationRecord, Transformation
 
+_MAX_PARTITION_LINEAGE_LINKS = 1000
+
 
 def _all_subclasses(cls: type[Any]) -> list[type[Any]]:
     found: list[type[Any]] = []
@@ -275,6 +277,17 @@ class LocalOrchestrator:
     state_store: Any | None = field(default=None, repr=False)
     _state_transitions: list[StateTransitionResult] = field(
         default_factory=list, repr=False
+    )
+    _pending_state_candidates: dict[str, tuple[str, str]] = field(
+        default_factory=lambda: dict[str, tuple[str, str]](), repr=False
+    )
+    _partition_observations: dict[str, tuple[int, tuple[str, ...], tuple[str, ...]]] = (
+        field(
+            default_factory=lambda: dict[
+                str, tuple[int, tuple[str, ...], tuple[str, ...]]
+            ](),
+            repr=False,
+        )
     )
     _pending_source_connector: Any | None = field(default=None, repr=False)
     _pending_source_binding: dict[str, Any] = field(default_factory=dict, repr=False)
@@ -473,13 +486,13 @@ class LocalOrchestrator:
         )
         return write_mode_for_request(self.request, declared=declared)
 
-    def _commit_state_after_write(
+    def _stage_state_after_write(
         self,
         *,
         node: Node,
         run_succeeded_so_far: bool = True,
     ) -> None:
-        """Commit incremental state only after successful materialization."""
+        """Stage cursor candidates until every selected output is published."""
         if self.state_store is None:
             return
         if not may_advance_state(
@@ -506,12 +519,25 @@ class LocalOrchestrator:
                 candidate = raw.get("value")
             if candidate is None:
                 continue
+            self._pending_state_candidates[str(subject_id)] = (
+                str(candidate),
+                f"materialized:{node.name}",
+            )
+
+    def _commit_staged_state_after_publication(self) -> None:
+        """Commit staged cursors after the run's selected outputs all publish."""
+        if self.state_store is None:
+            return
+        for subject_id, (value, reason) in sorted(
+            self._pending_state_candidates.items()
+        ):
             transition = self.state_store.commit(
-                str(subject_id),
-                None if candidate is None else str(candidate),
-                reason=f"materialized:{node.name}",
+                subject_id,
+                value,
+                reason=reason,
             )
             self._state_transitions.append(transition)
+        self._pending_state_candidates.clear()
 
     def _mark_publication(self) -> None:
         self._persistence.publication_committed = True
@@ -542,6 +568,7 @@ class LocalOrchestrator:
             self.runtime.reports.put(report)
         except Exception as exc:
             if self._persistence.publication_committed:
+                result_status_before_report_failure = report.status.value
                 failed_report = replace(
                     report,
                     status=RunStatus.FAILED,
@@ -555,6 +582,11 @@ class LocalOrchestrator:
                                     "Data publication succeeded but run report "
                                     "persistence failed; run marked failed."
                                 ),
+                                metadata={
+                                    "etlantic.report_failure.original_status": (
+                                        result_status_before_report_failure
+                                    )
+                                },
                             ),
                         ]
                     ),
@@ -760,10 +792,23 @@ class LocalOrchestrator:
                 code="PMADP500",
                 stage="admission",
             )
+        self._state_transitions.clear()
+        self._pending_state_candidates.clear()
+        self._partition_observations.clear()
         if self.physical_mode:
             return await self._execute_physical()
         verify_plan_fingerprint(self.plan)
         self._validate_cancellation_policy()
+        concurrency = self.plan.execution_settings.get("concurrency")
+        if concurrency is None:
+            concurrency = self.request.metadata.get("concurrency")
+        if concurrency is None:
+            concurrency = 4
+        if type(concurrency) is not int or concurrency < 1:
+            raise PipelineExecutionError(
+                "Execution concurrency must be a positive integer",
+                stage="admission",
+            )
         run_id = self.run_id or f"run-{uuid.uuid4().hex[:12]}"
         started = datetime.now(UTC)
         logger = RunLogger(
@@ -818,12 +863,7 @@ class LocalOrchestrator:
 
         async def run_body() -> None:
             nonlocal status
-            concurrency = (
-                self.plan.execution_settings.get("concurrency")
-                or self.request.metadata.get("concurrency")
-                or 4
-            )
-            limiter = anyio.CapacityLimiter(int(concurrency))
+            limiter = anyio.CapacityLimiter(concurrency)
             pending = set(selected)
             completed: set[str] = set()
             failed: set[str] = set()
@@ -906,7 +946,12 @@ class LocalOrchestrator:
                         await self.runtime.run_middleware.run(run_context, run_body)
 
             await self._with_managed_cancellation(execute_managed_body)
+            if all(nodes[name].status is StepStatus.SUCCEEDED for name in selected):
+                self._commit_staged_state_after_publication()
+            else:
+                self._pending_state_candidates.clear()
         except TimeoutError as exc:
+            self._pending_state_candidates.clear()
             status = RunStatus.TIMED_OUT
             self._finalize_incomplete_steps(
                 nodes,
@@ -943,6 +988,7 @@ class LocalOrchestrator:
                 code="PMEXEC408",
             ) from exc
         except (cancel_exc, _ManagedCancellation) as exc:
+            self._pending_state_candidates.clear()
             cancelled = True
             status = RunStatus.CANCELLED
             self._finalize_incomplete_steps(
@@ -965,12 +1011,14 @@ class LocalOrchestrator:
                 "Run cancelled", run_id=run_id, report=report, code="PMEXEC409"
             ) from exc
         except PipelineExecutionError as exc:
+            self._pending_state_candidates.clear()
             status = RunStatus.FAILED
             report = getattr(exc, "report", None)
             if report is not None:
                 self._persist_report(report)
             raise
         except Exception as exc:
+            self._pending_state_candidates.clear()
             status = RunStatus.FAILED
             self._finalize_incomplete_steps(
                 nodes,
@@ -1110,6 +1158,7 @@ class LocalOrchestrator:
             status = RunStatus.SUCCEEDED
 
         ended = datetime.now(UTC)
+        partition_edges, partition_summary = self._partition_lineage(selected)
         report = PipelineRunReport(
             pipeline_id=self.plan.pipeline_id,
             plan_id=self.plan.plan_id,
@@ -1144,16 +1193,20 @@ class LocalOrchestrator:
             state_transitions=tuple(self._state_transitions),
             plan_fingerprint=self.plan.fingerprint,
             lineage=tuple(
-                {
-                    "from": f"{e.producer_node}.{e.producer_port}",
-                    "to": f"{e.consumer_node}.{e.consumer_port}",
-                }
-                for e in graph.edges
-                if e.producer_node in selected and e.consumer_node in selected
+                [
+                    {
+                        "from": f"{e.producer_node}.{e.producer_port}",
+                        "to": f"{e.consumer_node}.{e.consumer_port}",
+                    }
+                    for e in graph.edges
+                    if e.producer_node in selected and e.consumer_node in selected
+                ]
+                + partition_edges
             ),
             backend_runs=(),
             metadata={
                 "etlantic.orchestrator": "local",
+                "etlantic.partition_lineage": partition_summary,
                 "etlantic.outbound_events": list(self.outbound_events),
                 "etlantic.unknown_publications": list(self._unknown_publications),
                 "etlantic.cleanup_obligations": list(self._cleanup_obligations),
@@ -1260,13 +1313,19 @@ class LocalOrchestrator:
                             await run_units()
 
             await self._with_managed_cancellation(execute_physical_body)
+            if all(nodes[name].status is StepStatus.SUCCEEDED for name in selected):
+                self._commit_staged_state_after_publication()
+            else:
+                self._pending_state_candidates.clear()
         except (anyio.get_cancelled_exc_class(), _ManagedCancellation) as exc:
+            self._pending_state_candidates.clear()
             status = RunStatus.CANCELLED
             self._finalize_incomplete_steps(
                 nodes, terminal=StepStatus.CANCELLED, message="Run cancelled"
             )
             cancelled = exc
         except TimeoutError:
+            self._pending_state_candidates.clear()
             if self._physical_caller_cancellation is not None:
                 # fail_after may convert the original cancellation to a timeout
                 # when its deadline expires during shielded native cleanup.
@@ -1299,6 +1358,7 @@ class LocalOrchestrator:
                     ),
                 )
         except Exception as exc:
+            self._pending_state_candidates.clear()
             status = (
                 RunStatus.PARTIAL
                 if any(state.status is StepStatus.SUCCEEDED for state in nodes.values())
@@ -1986,7 +2046,7 @@ class LocalOrchestrator:
                     self._notify_publication(
                         run_id=run_id, node=node, attempt=nodes[name].attempts
                     )
-                    self._commit_state_after_write(node=node)
+                    self._stage_state_after_write(node=node)
                     nodes[name].status = StepStatus.SUCCEEDED
                     nodes[name].ended_at = datetime.now(UTC)
                     self.runtime.events.emit(
@@ -2380,6 +2440,7 @@ class LocalOrchestrator:
         cancelled = sum(s.status is StepStatus.CANCELLED for s in states)
         records_in = sum(s.records_in or 0 for s in states) if states else 0
         records_out = sum(s.records_out or 0 for s in states) if states else 0
+        partition_edges, partition_summary = self._partition_lineage(selected)
         return PipelineRunReport(
             pipeline_id=self.plan.pipeline_id,
             plan_id=self.plan.plan_id,
@@ -2415,15 +2476,19 @@ class LocalOrchestrator:
             state_transitions=tuple(self._state_transitions),
             plan_fingerprint=self.plan.fingerprint,
             lineage=tuple(
-                {
-                    "from": f"{e.producer_node}.{e.producer_port}",
-                    "to": f"{e.consumer_node}.{e.consumer_port}",
-                }
-                for e in self.plan.logical_graph.edges
-                if e.producer_node in selected and e.consumer_node in selected
+                [
+                    {
+                        "from": f"{e.producer_node}.{e.producer_port}",
+                        "to": f"{e.consumer_node}.{e.consumer_port}",
+                    }
+                    for e in self.plan.logical_graph.edges
+                    if e.producer_node in selected and e.consumer_node in selected
+                ]
+                + partition_edges
             ),
             metadata={
                 "etlantic.orchestrator": "local",
+                "etlantic.partition_lineage": partition_summary,
                 "etlantic.outbound_events": list(self.outbound_events),
                 "etlantic.unknown_publications": list(self._unknown_publications),
                 "etlantic.cleanup_obligations": list(self._cleanup_obligations),
@@ -2458,6 +2523,52 @@ class LocalOrchestrator:
             implementation=state.implementation,
             metadata=redact_value(dict(state.metadata)),
         )
+
+    def _partition_lineage(
+        self, selected: set[str]
+    ) -> tuple[list[dict[str, str]], dict[str, Any]]:
+        nodes = {node.name: node for node in self.plan.logical_graph.nodes}
+        edges: list[dict[str, str]] = []
+        sources: list[dict[str, Any]] = []
+        observed_count = 0
+        linked_count = 0
+        remaining = _MAX_PARTITION_LINEAGE_LINKS
+        for node_name in sorted(selected):
+            node = nodes.get(node_name)
+            observation = self._partition_observations.get(node_name)
+            if node is None or observation is None:
+                continue
+            count, partition_ids, partition_keys = observation
+            source_id = f"node:{self.plan.pipeline_id}:{node.identity}"
+            linked_ids = partition_ids[:remaining]
+            remaining -= len(linked_ids)
+            observed_count += count
+            linked_count += len(linked_ids)
+            sources.append(
+                {
+                    "node_id": source_id,
+                    "partition_keys": list(partition_keys),
+                    "observed_partitions": count,
+                    "linked_partitions": len(linked_ids),
+                }
+            )
+            edges.extend(
+                {
+                    "from": source_id,
+                    "to": partition_id,
+                    "kind": "observed_partition",
+                }
+                for partition_id in linked_ids
+            )
+        return edges, {
+            "source_nodes": len(sources),
+            "sources": sources,
+            "observed_partitions": observed_count,
+            "linked_partitions": linked_count,
+            "truncated_partitions": observed_count - linked_count,
+            "link_limit": _MAX_PARTITION_LINEAGE_LINKS,
+            "identity_scope": "run",
+        }
 
     def _producers(self, graph: LogicalGraph) -> dict[str, set[str]]:
         producers: dict[str, set[str]] = {n.name: set() for n in graph.nodes}
@@ -2936,7 +3047,7 @@ class LocalOrchestrator:
                         "provider": provider,
                     }
                     self._notify_publication(run_id=run_id, node=node, attempt=attempt)
-                    self._commit_state_after_write(node=node)
+                    self._stage_state_after_write(node=node)
                     return
                 enable_delta = provider == "delta" or write_mode in {
                     "merge",
@@ -3169,7 +3280,7 @@ class LocalOrchestrator:
                 )
             )
             self._mark_publication()
-            self._commit_state_after_write(node=node)
+            self._stage_state_after_write(node=node)
             return
 
         if node.kind is NodeKind.STEP:
@@ -5207,6 +5318,16 @@ class LocalOrchestrator:
                     run_id=run_id,
                     code="PMEXEC404",
                 )
+            if (value.provider, value.name, value.key) != (
+                ref.provider,
+                ref.name,
+                ref.key,
+            ):
+                raise PipelineExecutionError(
+                    "Secret provider returned a value for a different reference",
+                    run_id=run_id,
+                    code="PMEXEC404",
+                )
             if ref.version != "current" and value.version != ref.version:
                 raise PipelineExecutionError(
                     "Secret provider did not return the requested exact version",
@@ -5292,11 +5413,29 @@ class LocalOrchestrator:
         pref = partitions.get(node.name) or partitions.get(node.binding or "")
         if isinstance(pref, PartitionCompletenessExpectation):
             observed: set[str] = set()
+            observed_values: set[tuple[str, ...]] = set()
             for row in as_records(data, None):
                 mapping = row.model_dump() if hasattr(row, "model_dump") else row
                 if isinstance(mapping, dict):
-                    key = "|".join(str(mapping.get(k, "")) for k in pref.partition_keys)
+                    values = tuple(str(mapping.get(k, "")) for k in pref.partition_keys)
+                    key = "|".join(values)
                     observed.add(key)
+                    observed_values.add(values)
+            ordered_values = sorted(observed_values)
+            partition_namespace = hashlib.sha256(
+                f"{run_id}\0{node.identity}\0{pref.identity()}".encode()
+            ).hexdigest()
+            partition_ids = tuple(
+                f"partition:{partition_namespace}:{ordinal}"
+                for ordinal, _values in enumerate(
+                    ordered_values[:_MAX_PARTITION_LINEAGE_LINKS]
+                )
+            )
+            self._partition_observations[node.name] = (
+                len(ordered_values),
+                partition_ids,
+                pref.partition_keys,
+            )
             ok, message = check_partition_completeness(
                 pref, observed_partitions=observed
             )

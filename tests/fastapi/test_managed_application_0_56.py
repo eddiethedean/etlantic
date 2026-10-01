@@ -244,9 +244,7 @@ def test_managed_headless_and_http_command_semantics_match(tmp_path: Path) -> No
     headers = {"X-Principal": "alice"}
     document = pipeline_to_dict(definition_from_pipeline(ManagedPipeline))
 
-    headless_registered = service.register_definition(
-        ctx, "parity-headless", document
-    )
+    headless_registered = service.register_definition(ctx, "parity-headless", document)
     http_registered = client.put(
         "/v1/definitions/parity-http",
         headers=headers,
@@ -297,9 +295,7 @@ def test_managed_headless_and_http_command_semantics_match(tmp_path: Path) -> No
     assert http_edit.status_code == 200
     assert {
         key: value for key, value in http_edit.json().items() if key != "definition_id"
-    } == {
-        key: value for key, value in headless_edit.items() if key != "definition_id"
-    }
+    } == {key: value for key, value in headless_edit.items() if key != "definition_id"}
 
     headless_validation = service.validate_definition(ctx, "parity-headless")
     http_validation = client.post(
@@ -667,7 +663,7 @@ def test_concurrent_changed_intent_conflicts_under_same_idempotency_key(
 def test_submission_authorizes_resolved_resources_before_acceptance(
     tmp_path: Path,
 ) -> None:
-    ctx, authz, _definitions, submissions, durable, _events, service = _wired(tmp_path)
+    ctx, authz, definitions, submissions, durable, events, service = _wired(tmp_path)
 
     class ResourceDenyingAuthorizer(MemoryAuthorizer):
         def __init__(self) -> None:
@@ -714,6 +710,45 @@ def test_submission_authorizes_resolved_resources_before_acceptance(
         durable.get_submission_by_idempotency(
             ctx,
             idempotency_key="resource-denied",
+            operation="run.submit",
+        )
+        is None
+    )
+
+    api = ETLanticAPI(
+        authorizer=scoped_authz,
+        definitions=definitions,
+        submissions=submissions,
+        durable_work=durable,
+        events=events,
+        managed_service=service,
+        context_factory=membership_context_factory(
+            {"alice": ("tenant-a", "ws-1", "development", "default")}
+        ),
+        principal_dependency=principal_from_header,
+    )
+    client = TestClient(create_app(api, with_lifespan=False))
+    denied_http = cast(Any, client).post(
+        "/v1/definitions/file-pipe/runs",
+        headers={
+            "X-Principal": "alice",
+            "Idempotency-Key": "resource-denied-http",
+        },
+        json={},
+    )
+    assert denied_http.status_code == 404
+    assert "resource:file-in" in scoped_authz.resources
+    assert "resource:file-out" not in scoped_authz.resources
+    assert (
+        submissions.lookup_idempotency(
+            ctx, "resource-denied-http", operation="run.submit"
+        )
+        is None
+    )
+    assert (
+        durable.get_submission_by_idempotency(
+            ctx,
+            idempotency_key="resource-denied-http",
             operation="run.submit",
         )
         is None
@@ -1172,7 +1207,9 @@ def test_durable_artifact_content_is_separately_authorized_and_downloadable(
         == 1
     )
     listed = service.list_run_artifacts(ctx, receipt.resource_id)
-    downloadable = next(item for item in listed if item["media_type"] == "application/json")
+    downloadable = next(
+        item for item in listed if item["media_type"] == "application/json"
+    )
     assert downloadable["content_available"] is True
     artifact_id = str(downloadable["artifact_id"])
 

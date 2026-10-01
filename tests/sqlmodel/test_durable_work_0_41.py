@@ -44,8 +44,8 @@ def _ctx(
 
 def test_migration_includes_durable_cp3(tmp_path: Path) -> None:
     engine = create_sqlite_engine(f"sqlite:///{tmp_path / 'd.db'}")
-    assert apply_migrations(engine) == "010_immutable_input_resources_0_56"
-    assert current_version(engine) == "010_immutable_input_resources_0_56"
+    assert apply_migrations(engine) == "012_bounded_event_tombstone_retention_0_56"
+    assert current_version(engine) == "012_bounded_event_tombstone_retention_0_56"
 
 
 def test_sqlmodel_durable_conformance(tmp_path: Path) -> None:

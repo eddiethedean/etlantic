@@ -1,3 +1,7 @@
+---
+status: experimental
+---
+
 # Phase 0.56 Local Qualification
 
 **Decision: OPEN.** This record reports local implementation evidence; it does
@@ -217,8 +221,12 @@ Current index: 11 criteria passed, 31 pending, and 2 blocked of 44.
   The configured automatic-retention path also passed against isolated
   PostgreSQL 16.14: history stayed within two events per scope, expired cursors
   and retries returned 410, and sequence allocation continued after pruning.
-  AC056-019 remains pending for bounded tombstone expiry, result/artifact
-  retention and the full reconnect and cross-scope isolation campaign.
+  Explicit tombstone-prune calls now share a 1,000-row maximum and reject
+  non-integer or out-of-range batch sizes; this bound has not received a
+  focused regression run.
+  AC056-019 remains pending for qualification of the newly implemented bounded
+  tombstone expiry, result/artifact retention and the full reconnect and
+  cross-scope isolation campaign.
 - Durable run-artifact content (AC056-017/019 subrequirement): the managed
   worker writes only explicitly durable JSON outputs into hashed per-run
   directories. Artifact listings report content availability; HTTP and
@@ -236,9 +244,13 @@ Current index: 11 criteria passed, 31 pending, and 2 blocked of 44.
   attempt roles. If a worker dies after report publication and the durable
   completion acknowledgment is recovered after restart, the report and lineage
   retain both the original executing attempt and the result-reconciliation
-  attempt. Partition identities are not emitted because the current worker
-  report has no partition execution records; partition links and result
-  retention remain open.
+  attempt. The worker does not yet emit sink/output partition execution
+  records. Runtime reports now link source
+  nodes to bounded, run-scoped opaque IDs for partitions actually observed
+  during completeness checks; the summary includes key names and counts without
+  serializing partition values. Sink/output partition result records and the
+  result-retention campaign remain open, and this code has not had a focused
+  regression run.
 - Provider-aware run-action reason:
   `uv run pytest -q tests/fastapi/test_managed_control_races_0_56.py::test_action_discovery_reports_unsupported_cancel_provider`
   — 1 passed. The command query now reports `provider_unsupported` when the
@@ -311,18 +323,29 @@ Current index: 11 criteria passed, 31 pending, and 2 blocked of 44.
   [`ACTION_WORKERS_0_56.md`](../../ACTION_WORKERS_0_56.md). This is generic
   action-worker evidence; provider-specific live test/schema/preflight
   integrations remain open, so AC056-020 is still pending.
+  Receipt reads, lists, idempotency, and provision-parent verification now also
+  enforce environment and security-domain scope in addition to tenant,
+  workspace, and owner. New pagination cursors carry that same scope; legacy
+  cursors still query only the current scoped receipt set. This update has not
+  received a focused regression run.
 - Bounded preview and explicit provisioning action contracts (AC056-021/022):
   The same 16-test action suite exercises preview requests containing only
   opaque provider, connection and resource references, bounded row/byte limits
   and redaction fields; inline credential fields are rejected. The separate
   action host applies its own caps, requires declared columns, redacts
   sensitive columns and caller-selected values, and marks truncation. Preview
-  result TTL is configurable; SQLite-backed SQLModel qualification cleared the
-  expired payload, preserved the successful receipt and expiry timestamp, and
-  recovered that state after backend restart. Provisioning uses a separate
+  result TTL is configurable and now constrained to 60–86,400 seconds at the
+  managed-config, action-host, and durable-store boundaries; SQLite-backed
+  SQLModel qualification cleared the expired payload, preserved the successful
+  receipt and expiry timestamp, and recovered that state after backend restart.
+  The store rejects retention for failed and timed-out jobs. These boundary
+  changes have not received a focused regression run.
+  Provisioning uses a separate
   permission, returns the same action receipt on an idempotent retry, forces
   create-only/if-exists-fail behavior, and validates a backend-derived schema
-  fingerprint and matching effect receipt. Cleanup is a separately authorized
+  fingerprint and matching effect receipt. The schema parser now rejects
+  nullable primary-key columns; this validation has not received a focused
+  regression run. Cleanup is a separately authorized
   command tied to a successful same-owner parent action; mismatched and foreign
   parents fail before provider IO. A mock effect store exercised create and
   compensation, while schema inspection was tested without target mutation.
@@ -362,7 +385,10 @@ Current index: 11 criteria passed, 31 pending, and 2 blocked of 44.
   committed effect, full-snapshot replay intent, unknown-effect rejection,
   idempotency, action discovery and OpenAPI registration. AC056-031 remains
   open until checkpoint resume, repair and backfill are executable and the
-  complete lifecycle case is qualified.
+  complete lifecycle case is qualified. Resume/repair/backfill plan creation
+  now rejects a checkpoint linked to another submission and notes a schema
+  baseline mismatch; this change has not received a focused regression run and
+  does not make those plans executable.
 - Revision-pinned admission, resource authorization and concurrent idempotency:
   `uv run pytest -q tests/fastapi/test_managed_application_0_56.py tests/fastapi/test_managed_backend_0_56.py tests/fastapi/test_cp1_full_authz_matrix.py tests/fastapi/test_managed_control_races_0_56.py tests/fastapi/test_managed_rerun_http_0_56.py tests/sqlmodel/test_cp1_migrations_0_51.py tests/sqlmodel/test_registry_stores_0_40.py tests/sqlmodel/test_cp4_stores_0_42.py tests/sqlmodel/test_durable_postgresql_multiprocess_0_56.py`
   — 93 passed, 5 skipped. Managed submission resolves an immutable definition
@@ -405,15 +431,38 @@ Current index: 11 criteria passed, 31 pending, and 2 blocked of 44.
   cache entries are partitioned by principal and full tenant/workspace/
   environment/security-domain/owner scope; a different scope and unscoped
   local runtime cannot reuse the value. The scope is absent from accepted
-  envelopes. AC056-023 remains open for action executors, resource resolvers,
-  tampered-reference policy and complete lifecycle qualification.
+  envelopes. The managed input-resource path now records its deterministic
+  durable lease ID in accepted and lifecycle-command envelopes; the lease ID
+  now binds principal issuer/kind/subject and environment along with its
+  existing domain, tenant, workspace, owner, operation, and idempotency key.
+  This prevents same-owner requests in separate environments or principal
+  identities from sharing a lease. Lifecycle-command idempotency recovery
+  still accepts an already stored legacy lease identity without rewriting the
+  accepted envelope. Standard workers require lease-authorized
+  reads; the memory and SQLModel stores check the exact finalized owner-bound
+  reference, tenant/workspace scope, active lease, and content digest while
+  allowing a different worker owner identity. This scope change has not
+  received a focused runtime or cross-process qualification run. AC056-023
+  remains open for action
+  executors, broader tampered-reference policy, and complete scope-isolation
+  qualification.
 - Secret version selection and audit:
   `uv run pytest -q tests/secrets/test_secrets.py tests/runtime/test_bugfixes.py`
   — 24 passed. Environment and mounted-file providers reject unsupported
   version selectors; managed resolution rejects an unsupported or mismatched
   exact version and records a versioned provider's resolved version in the
-  security event without the value. AC056-024 remains open for authorized
-  late binding, rotation, revocation, expiry, outage and lease qualification.
+  security event without the value. Managed resolution now also rejects a
+  provider result whose provider/name/key differs from the requested
+  reference, before it reaches a binding. This code change has not received a
+  focused regression run. Secret-cache invalidation now clears the matching
+  reference across trusted-scope partitions, and a zero-second TTL expires
+  immediately rather than falling back to the default. The cache also rejects
+  non-finite or negative TTLs and non-positive entry limits, including mutated
+  limits at insertion; zero TTL removes any prior entry without caching the
+  new value. These cache changes have not received a focused regression run.
+  AC056-024 remains open for
+  authorized late binding, rotation, revocation, expiry, outage and lease
+  qualification.
 - Managed late-binding policy and rotation:
   `uv run pytest -q tests/runtime/test_bugfixes.py tests/fastapi/test_managed_rerun_http_0_56.py tests/secrets/test_secrets.py`
   — 28 passed. Managed `current` references now require an injected worker
@@ -505,6 +554,22 @@ Current index: 11 criteria passed, 31 pending, and 2 blocked of 44.
   authorization, specification, admission, worker, result and PostgreSQL
   provider paths have implementation and focused tests, but their full
   criterion-level failure, concurrency and runtime campaigns remain open.
+  AC056-013's local orchestrator now resolves the configured concurrency
+  limit by plan, request metadata, then the default of four, and rejects
+  booleans, non-integers and values below one during admission. Its concurrency
+  limit and the worker/scheduler lease TTLs reject malformed values at
+  admission or construction. Its concurrency campaign, long-work renewal,
+  cancellation/fencing checks, other advertised resource bounds, and a focused
+  regression run for these changes remain pending.
+  AC056-015 worker outcome effects now require the exact running attempt and
+  its live fencing lease in the same durable transaction as the effect write;
+  partial-sink reconciliation and lost-ack qualification remain pending.
+  AC056-016 now stages incremental cursor candidates until every selected node
+  succeeds, discarding staged candidates after failure, timeout or cancellation
+  in both logical and physical execution. This prevents an earlier successful
+  sink from advancing the cursor when a later sink fails. Sequential
+  multi-cursor commit recovery and the criterion's cleanup, drain, interruption,
+  scope and observability campaigns remain unqualified.
 - AC056-017–018: the standard SQLModel backend now persists runtime reports in
   a tenant/workspace-scoped table, and worker recovery reuses a report committed
   before attempt acknowledgment. Explicitly durable JSON artifacts have
@@ -513,10 +578,18 @@ Current index: 11 criteria passed, 31 pending, and 2 blocked of 44.
   bounded headless and HTTP event history reads share authorization and scoped
   cursor semantics. A transient report-write failure after an external sink
   commit now recovers the durable terminal report without rerunning ETL;
-  persistent report-store outage recovery, result retention, and separate
-  result and cleanup state machines remain unqualified. Run lineage now links
+  recovery now records and restores the pre-failure terminal status, with
+  non-success outcomes retaining an unknown effect status. This status-preserving
+  recovery branch has not yet been qualified; persistent report-store outage
+  recovery, result retention, and separate result and cleanup state machines
+  remain unqualified. Bounded artifact cleanup now has focused success,
+  retry-after-filesystem-failure, missing-file, symlink-safety, and managed
+  SQLite scope/restart coverage; the cleanup status preserves the original run
+  outcome. Run lineage now links
   reports to executed nodes and records worker result-reconciliation attempts;
-  partition results remain unmodeled.
+  source partitions observed during completeness checks also have bounded,
+  run-scoped opaque lineage nodes. Sink/output partition result records and
+  focused regression qualification remain open.
 - AC056-007: immutable revision pinning, resource authorization and
   effective-fingerprint policy binding have focused evidence. Complete durable
   resource/version resolution and full disclosure coverage remain open.
@@ -535,8 +608,10 @@ Current index: 11 criteria passed, 31 pending, and 2 blocked of 44.
   open, so this criterion stays pending. AC056-021–022 now have bounded
   preview and explicit create/cleanup contracts with mock-worker evidence;
   provider credential resolution and provider-specific effect qualification
-  remain open. AC056-023–024 retain their open resource-isolation and complete
-  secret lease/rotation lifecycle requirements.
+  remain open. AC056-023 now binds immutable worker input reads to the
+  accepted operation's live lease, while action-executor and broader
+  resource-isolation qualification remain open. AC056-024 retains its
+  complete secret lease/rotation lifecycle requirements.
   AC056-025 has immutable upload, durable lease, bounded cleanup and PostgreSQL
   multiprocess race evidence, but its full worker threat and provider security
   campaign remain open. AC056-026 passed its owner-scoped cleanup,
@@ -545,18 +620,72 @@ Current index: 11 criteria passed, 31 pending, and 2 blocked of 44.
   tamper-rejection worker cases plus resource-retention checks; see the selected PostgreSQL-backed suite above.
 - AC056-027–029 and AC056-031–032: scheduler admission parity,
   checkpoint-resume/repair/backfill, qualified pause/amendment and complete
-  lifecycle qualification remain open. Idempotent rerun and full-snapshot
-  replay commands now share the managed worker path.
+  lifecycle qualification remain open. Firing claims now recheck the current
+  schedule revision and active state in the store transaction, preventing a
+  stale due-schedule scan from admitting new scheduled work after pause or
+  deletion. The focused paused-after-scan regression now passes for the memory
+  and SQLite stores. Schedule clock and catch-up calculations treat naive
+  datetime inputs as UTC, independent of the scheduler host timezone; clock,
+  loop, SQLite pause-race, and firing-scope tests passed in the latest focused
+  run. The outage, DST, catch-up, overlap, PostgreSQL, and complete lifecycle
+  campaigns remain open. Idempotent rerun and full-snapshot replay commands
+  now share the managed worker path.
+- AC056-038: `LogRecord.to_dict()` now reapplies recursive message, inline
+  credential and sensitive-key redaction at serialization, including when
+  extras have changed after record creation. The new mutation-at-serialization
+  regression, HTTP/headless resource-authorization parity case, control-plane
+  redaction, action redaction, event/SSE redaction, and durable-artifact
+  authorization regressions passed in the focused and default suites. The
+  complete cross-owner sentinel campaign across every resource owner, tenant,
+  environment, and security-domain combination remains open.
 - AC056-034 and AC056-036: no isolated live Foundry account is configured.
   The required two independent Foundry scopes and all 12 real-worker pairings
   have not been exercised; mock transport tests do not qualify them.
 - AC056-038–041 and AC056-043–044: full disclosure campaign, PostgreSQL
   backup/restore/failure, version-skew/rollback,
   complete advanced engine matrix, managed adaptive `/2`, and generic consumer
-  evidence remain open. AC056-040 has clean Python 3.14.3 wheel-build/install,
+  qualification remain open. AC056-044 now has a standard-library consumer
+  example that checkpoints the revision from register, then pins
+  validate/plan/submit to it and exposes review and post-acceptance business
+  callbacks; it has not been run against built wheels or an external business
+  orchestrator. AC056-040 has
+  clean Python 3.14.3 wheel-build/install,
   migration-008, backend-construction and OpenAPI smoke evidence; its complete
   compatibility, version-skew, migration rollback and package matrix remains
   open.
+
+## Latest candidate verification (2026-09-30)
+
+- Default non-optional regression:
+  `uv run pytest -q -m "not medallantic and not polars and not pandas and not sql and not spark and not real_pyspark and not airflow and not prefect and not keyring and not sqlmodel and not datafusion"`
+  — 2,856 passed, 72 skipped, and 609 deselected. This clean rerun includes
+  the adaptive-evidence regeneration guard and the firing-scope revisions
+  described above.
+- Cursor, artifact/event retention, and scheduler barriers:
+  `uv run pytest -q tests/schedule/test_clock.py tests/schedule/test_loops.py
+  tests/sqlmodel/test_schedule_store_0_47.py tests/schedule/test_firing_scope.py
+  tests/runtime/test_incremental_cursor_staging_0_56.py
+  tests/runtime/test_artifact_retention_0_56.py
+  tests/control_plane/test_event_idempotency_retention_0_56.py`
+  — 57 passed, 1 skipped. The skip is the PostgreSQL-only schedule scope case;
+  no database test URL is configured in this environment. The new two-sink
+  cursor tests prove that both sinks observe the old cursor before commit and
+  that a failure in the second sink preserves it. Artifact cleanup tests cover
+  bounded batches, retries, missing files, safe symlink handling, and managed
+  SQLite scope/restart. Event tombstone pruning is bounded and scope-isolated
+  for memory and SQLite stores.
+- Broader implemented-feature regression batch — 236 passed, 5 skipped. It
+  covered core/managed artifact retention, event idempotency retention, report
+  stores and migrations, managed HTTP/headless behavior, redaction and the
+  authorization matrix, action jobs, scheduler races, and local-files cursor
+  publication. The skips are PostgreSQL-only cases because database URLs were
+  not configured.
+- Strict static qualification: `scripts/check_pyright.sh` passed. The
+  suppression inventory remained at 781 entries, the strict shadow scan
+  verified the reviewed reduction from 10,432 to 10,425 diagnostics, and the
+  regular Pyright run reported zero errors, warnings, or informational
+  diagnostics. Ruff checks and formatting checks passed for the changed
+  qualification files.
 
 See [`RELEASE_INDEX.json`](RELEASE_INDEX.json) for the per-criterion status,
 case references, provider tuple and open reason. These limitations keep the

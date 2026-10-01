@@ -13,6 +13,8 @@ from datetime import UTC, datetime
 from typing import Any, cast
 
 from etlantic.control_plane.action_jobs import (
+    MAX_PREVIEW_RESULT_TTL_SECONDS,
+    MIN_PREVIEW_RESULT_TTL_SECONDS,
     ConnectorActionKind,
     ConnectorPreviewRequest,
     ConnectorProvisionCleanupRequest,
@@ -82,9 +84,15 @@ class ActionExecutionHost:
             raise ValueError("max_result_items must be a positive integer")
         if (
             type(preview_result_ttl_seconds) is not int
-            or preview_result_ttl_seconds < 60
+            or not MIN_PREVIEW_RESULT_TTL_SECONDS
+            <= preview_result_ttl_seconds
+            <= MAX_PREVIEW_RESULT_TTL_SECONDS
         ):
-            raise ValueError("preview_result_ttl_seconds must be at least 60 seconds")
+            raise ValueError(
+                "preview_result_ttl_seconds must be between "
+                f"{MIN_PREVIEW_RESULT_TTL_SECONDS} and "
+                f"{MAX_PREVIEW_RESULT_TTL_SECONDS} seconds"
+            )
         self.durable = durable
         self.authorizer = authorizer
         self.handlers: dict[str, ActionHandler] = dict(handlers or {})

@@ -13,8 +13,10 @@ import pytest
 from etlantic.control_plane import (
     ControlPlaneContext,
     ControlPlaneError,
+    DurableWorkStore,
     EnvironmentRef,
     FakeScheduleClock,
+    FiringRecord,
     MemoryDurableWorkStore,
     MemoryScheduleStore,
     Principal,
@@ -23,6 +25,7 @@ from etlantic.control_plane import (
     TenantRef,
     WorkspaceRef,
 )
+from etlantic.control_plane.schedule_models import FiringStatus
 from etlantic.reports.model import PipelineRunReport
 from etlantic.runtime.execution_host import ExecutionHost, UnknownCommitError
 from etlantic.runtime.request import RunIntent
@@ -61,6 +64,66 @@ def test_dual_replica_one_durable_firing() -> None:
     firings = store.list_firings(ctx, rec.schedule_id)
     assert len(firings) == 1
     assert len(durable.pending_outbox(ctx)) == 1
+
+
+def test_due_scan_cannot_admit_firing_after_schedule_is_paused() -> None:
+    class PauseBeforeClaimStore(MemoryScheduleStore):
+        pause_before_claim = True
+
+        def claim_firing(
+            self,
+            ctx: ControlPlaneContext,
+            *,
+            schedule_id: str,
+            revision_id: str,
+            nominal_fire_time: str,
+            owner_id: str,
+            fencing_token: int,
+            plan_fingerprint: str,
+            durable: DurableWorkStore | None = None,
+            next_fire_at: str | None = None,
+            require_leader_lease: bool = True,
+            skip_status: FiringStatus | None = None,
+        ) -> tuple[FiringRecord, bool]:
+            if self.pause_before_claim:
+                self.pause_before_claim = False
+                self.pause(ctx, schedule_id)
+            return super().claim_firing(
+                ctx,
+                schedule_id=schedule_id,
+                revision_id=revision_id,
+                nominal_fire_time=nominal_fire_time,
+                owner_id=owner_id,
+                fencing_token=fencing_token,
+                plan_fingerprint=plan_fingerprint,
+                durable=durable,
+                next_fire_at=next_fire_at,
+                require_leader_lease=require_leader_lease,
+                skip_status=skip_status,
+            )
+
+    ctx = _ctx()
+    store = PauseBeforeClaimStore()
+    durable = MemoryDurableWorkStore()
+    due_at = datetime(2026, 1, 1, 0, 1, tzinfo=UTC)
+    rec = store.create(
+        ctx,
+        definition_id="pipe-pause-race",
+        profile_name="test",
+        spec=ScheduleSpec(kind="interval", interval_seconds=60),
+        next_fire_at=due_at.isoformat().replace("+00:00", "Z"),
+    )
+    service = SchedulerService(
+        store,
+        durable=durable,
+        clock=FakeScheduleClock(due_at),
+        owner_id="pause-race-scheduler",
+    )
+
+    assert service.tick(ctx) == 0
+    assert store.get(ctx, rec.schedule_id).status == "paused"
+    assert store.list_firings(ctx, rec.schedule_id) == ()
+    assert durable.pending_outbox(ctx) == []
 
 
 def test_execution_host_uses_the_packaged_runtime_adapter_by_default() -> None:

@@ -109,7 +109,13 @@ class ScheduleStore(Protocol):
         next_fire_at: str | None = None,
         require_leader_lease: bool = True,
         skip_status: FiringStatus | None = None,
-    ) -> tuple[FiringRecord, bool]: ...
+    ) -> tuple[FiringRecord, bool]:
+        """Idempotently claim while checking current schedule state atomically.
+
+        New claims must match the stored revision. Scheduler-owned claims also
+        require an active schedule. Existing logical firings remain replayable.
+        """
+        ...
 
     def list_firings(
         self, ctx: ControlPlaneContext, schedule_id: str

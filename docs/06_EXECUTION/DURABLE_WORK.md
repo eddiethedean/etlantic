@@ -33,9 +33,13 @@ secrets, source rows, or effect payloads.
 
 Checkpoint advancement uses compare-and-swap. A checkpoint tied to an attempt
 also requires the current, unexpired lease token, so a stale or terminal
-attempt cannot advance durable state. External effects may be recorded as
-`unknown`; that is deliberately not an automatic-retry signal. Reconciliation
-or idempotency evidence is required before a provider may safely repeat it.
+attempt cannot advance durable state. Worker outcome effects use
+`record_attempt_effect`, which checks the exact running attempt and its live
+lease in the same store transaction as the effect write. A stale attempt cannot
+replace committed or unknown recovery evidence. External effects may be
+recorded as `unknown`; that is deliberately not an automatic-retry signal.
+Reconciliation or idempotency evidence is required before a provider may safely
+repeat it.
 
 Replay returns the immutable plan, revision, plugin, policy, input snapshot,
 and optional checkpoint selection used by the source submission. Preview

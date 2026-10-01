@@ -69,9 +69,7 @@ def test_first_party_plan_metadata_round_trips_in_production() -> None:
             "sql_schema_mutations": [
                 {"identity": "boundary:publish", "reason": "sink_publication"}
             ],
-            "sql_transaction_scopes": [
-                {"region": "region:sql", "scope": "region"}
-            ],
+            "sql_transaction_scopes": [{"region": "region:sql", "scope": "region"}],
         }
     )
 

@@ -21,12 +21,16 @@ def upgrade(engine: Engine) -> None:
     if not inspector.has_table("cp_event_idempotency"):
         raise RuntimeError("Cannot add event tombstones before migration 008")
 
-    existing_columns = {column["name"] for column in inspector.get_columns("cp_event_idempotency")}
+    existing_columns = {
+        column["name"] for column in inspector.get_columns("cp_event_idempotency")
+    }
     with engine.begin() as connection:
         for name, sql_type in _COLUMNS:
             if name not in existing_columns:
                 connection.execute(
-                    text(f"ALTER TABLE cp_event_idempotency ADD COLUMN {name} {sql_type}")
+                    text(
+                        f"ALTER TABLE cp_event_idempotency ADD COLUMN {name} {sql_type}"
+                    )
                 )
 
         mappings = connection.execute(
@@ -36,18 +40,22 @@ def upgrade(engine: Engine) -> None:
             )
         ).mappings()
         for mapping in mappings:
-            event = connection.execute(
-                text(
-                    "SELECT kind, payload_json, sequence, cursor FROM cp_events "
-                    "WHERE tenant_id = :tenant_id AND workspace_id = :workspace_id "
-                    "AND event_id = :event_id"
-                ),
-                {
-                    "tenant_id": mapping["tenant_id"],
-                    "workspace_id": mapping["workspace_id"],
-                    "event_id": mapping["event_id"],
-                },
-            ).mappings().first()
+            event = (
+                connection.execute(
+                    text(
+                        "SELECT kind, payload_json, sequence, cursor FROM cp_events "
+                        "WHERE tenant_id = :tenant_id AND workspace_id = :workspace_id "
+                        "AND event_id = :event_id"
+                    ),
+                    {
+                        "tenant_id": mapping["tenant_id"],
+                        "workspace_id": mapping["workspace_id"],
+                        "event_id": mapping["event_id"],
+                    },
+                )
+                .mappings()
+                .first()
+            )
             if event is None:
                 raise RuntimeError(
                     "Event idempotency row references missing event history"
@@ -77,7 +85,9 @@ def downgrade(engine: Engine) -> None:
     """Remove only the tombstone metadata, leaving event history and keys."""
     if not inspect(engine).has_table("cp_event_idempotency"):
         return
-    columns = {column["name"] for column in inspect(engine).get_columns("cp_event_idempotency")}
+    columns = {
+        column["name"] for column in inspect(engine).get_columns("cp_event_idempotency")
+    }
     with engine.begin() as connection:
         for name, _sql_type in reversed(_COLUMNS):
             if name in columns:

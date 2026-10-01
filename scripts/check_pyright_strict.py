@@ -26,8 +26,31 @@ EXPECTED_DIGESTS = {
     # change caused by shifted source locations in the existing debt inventory.
     # AC056-017 now records recovered worker attempts and execution-node lineage;
     # the 10,432-diagnostic total is unchanged.
-    "Darwin": "f18972182dfa82b6367a4c7ecc64ce7f89bf167fc55ab95ada5172d9706c2876",
-    "Linux": "f18972182dfa82b6367a4c7ecc64ce7f89bf167fc55ab95ada5172d9706c2876",
+    # AC056-019 adds bounded event-tombstone retention; the 10,432-diagnostic
+    # count is unchanged and source-location fingerprints moved.
+    # AC056-044 revision-aware definition writes shifted MemoryDefinitionRepository
+    # source locations; the 10,432-diagnostic count is unchanged.
+    # AC056-024 validates returned secret-reference identity; source locations
+    # shift in the existing diagnostics, with the 10,432 count unchanged.
+    # AC056-038 reapplies redaction when serializing LogRecord; the diagnostic
+    # fingerprint moved with source lines, while normalized diagnostics and the
+    # 10,432-diagnostic count are unchanged.
+    # AC056-031 validates checkpoint ownership for resume/repair/backfill plans;
+    # the 10,432 strict diagnostics are unchanged apart from shifted locations.
+    # AC056-013 rejects invalid explicit concurrency before runtime side effects;
+    # AC056-015 fences worker effects to the live attempt. All 10,432 diagnostics
+    # match after ignoring shifted source line numbers.
+    # AC056-016 stages incremental cursors until all selected outputs publish;
+    # normalized diagnostics remain unchanged, with the same 10,432 total.
+    # AC056-017/019 add bounded partition lineage and tombstone-prune batches;
+    # normalized diagnostics remain unchanged, with the same 10,432 total.
+    # AC056-018 preserves report status; AC056-020 scopes action receipts by
+    # context. Normalized diagnostics remain unchanged (10,432 total).
+    # With all workspace groups plus the FastAPI and LSP extras installed,
+    # AC056-029 removes seven firing-scope diagnostics (10,402 -> 10,395) and
+    # adds none versus the 0.55 base tree.
+    "Darwin": "d749d46a837fed2eb154301df57b4445a0b05b2e8b73a124cc64242ac79b67b3",
+    "Linux": "d749d46a837fed2eb154301df57b4445a0b05b2e8b73a124cc64242ac79b67b3",
 }
 
 

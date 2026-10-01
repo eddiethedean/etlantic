@@ -38,11 +38,15 @@ from etlantic.control_plane import (
 )
 from etlantic.lifecycle.runtime import PipelineRuntime
 from etlantic.registry import BindingDescriptor, PlanningContext
-from etlantic.reports.model import PipelineRunReport
+from etlantic.reports.model import ArtifactResult, PipelineRunReport
+from etlantic.runtime.artifacts import artifact_storage_path
 from etlantic.runtime.execution_host import ExecutionHost
 from etlantic.runtime.managed_errors import ExecutionRejected
-from etlantic.runtime.managed_execution import ManagedExecutionAdapter
-from etlantic.runtime.request import MaterializationPolicy, RunRequest
+from etlantic.runtime.managed_execution import (
+    ManagedExecutionAdapter,
+    managed_artifact_workspace,
+)
+from etlantic.runtime.request import MaterializationPolicy, RunIntent, RunRequest
 from etlantic.runtime.state import RunStatus
 from etlantic_fastapi import (
     ManagedBackend,
@@ -87,7 +91,7 @@ def _context() -> ControlPlaneContext:
 def _migrated_url(tmp_path: Path) -> str:
     url = f"sqlite:///{tmp_path / 'managed.db'}"
     engine = sqlalchemy.create_engine(url)
-    assert upgrade(engine) == "010_immutable_input_resources_0_56"
+    assert upgrade(engine) == "012_bounded_event_tombstone_retention_0_56"
     engine.dispose()
     return url
 
@@ -865,13 +869,13 @@ def test_standard_backend_worker_persists_queryable_report_in_sqlmodel(
         assert execution["result_publication_status"] == "recovered"
         assert execution["effect_status"] == "committed"
         assert any(
-            diagnostic["code"] == "PMEXEC410"
-            and diagnostic["severity"] == "warning"
+            diagnostic["code"] == "PMEXEC410" and diagnostic["severity"] == "warning"
             for diagnostic in report["diagnostics"]
         )
-        assert durable.get_effect(
-            ctx, f"{receipt.submission_id}:execution"
-        ).status == "committed"
+        assert (
+            durable.get_effect(ctx, f"{receipt.submission_id}:execution").status
+            == "committed"
+        )
         assert target.read_text(encoding="utf-8").splitlines() == ["id", "29"]
     finally:
         backend.close()
@@ -1060,3 +1064,109 @@ def test_managed_backend_rejects_invalid_event_retention_configuration() -> None
             database_url="sqlite:///managed.db",
             event_retention_max_events_per_scope=0,
         )
+
+
+def test_managed_backend_artifact_retention_is_scoped_and_survives_restart(
+    tmp_path: Path,
+) -> None:
+    database_url = _migrated_url(tmp_path)
+    artifact_root = tmp_path / "managed-retention-artifacts"
+    config = ManagedBackendConfig(
+        database_url=database_url,
+        store_id="managed-artifact-retention",
+        artifact_root=str(artifact_root),
+        run_artifact_retention_seconds=60,
+        run_artifact_cleanup_batch_size=1,
+    )
+    backend = _backend(config)
+    ctx = _context()
+    other_ctx = ControlPlaneContext(
+        principal=Principal("other-retention-owner"),
+        tenant=TenantRef("other-retention-tenant"),
+        workspace=WorkspaceRef("other-retention-tenant", "other-retention-workspace"),
+        environment=EnvironmentRef("test"),
+        security_domain=SecurityDomain("other-retention-domain"),
+    )
+    now = datetime(2026, 1, 2, tzinfo=UTC)
+    ended_at = now - timedelta(days=2)
+    try:
+        run_id = "retained-run"
+        identity = "result:private"
+        artifact = artifact_storage_path(
+            managed_artifact_workspace(ctx, run_id, artifact_root=artifact_root),
+            identity,
+        )
+        artifact.parent.mkdir(parents=True, exist_ok=True)
+        artifact.write_text('[{"id": 1}]', encoding="utf-8")
+        report = PipelineRunReport(
+            pipeline_id="retention-pipeline",
+            plan_id="retention-plan",
+            run_id=run_id,
+            intent=RunIntent.STANDARD,
+            profile="test",
+            status=RunStatus.SUCCEEDED,
+            started_at=ended_at - timedelta(minutes=1),
+            ended_at=ended_at,
+            artifacts=(ArtifactResult(identity, "result", "durable"),),
+            plan_fingerprint="b" * 64,
+        )
+        backend.report_store_factory(ctx).put(report)
+
+        other_run_id = "other-scope-retained-run"
+        other_artifact = artifact_storage_path(
+            managed_artifact_workspace(
+                other_ctx, other_run_id, artifact_root=artifact_root
+            ),
+            "result:other",
+        )
+        other_artifact.parent.mkdir(parents=True, exist_ok=True)
+        other_artifact.write_text('[{"id": 2}]', encoding="utf-8")
+        backend.report_store_factory(other_ctx).put(
+            PipelineRunReport(
+                pipeline_id="retention-pipeline",
+                plan_id="retention-plan",
+                run_id=other_run_id,
+                intent=RunIntent.STANDARD,
+                profile="test",
+                status=RunStatus.SUCCEEDED,
+                started_at=ended_at - timedelta(minutes=1),
+                ended_at=ended_at,
+                artifacts=(ArtifactResult("result:other", "result", "durable"),),
+                plan_fingerprint="c" * 64,
+            )
+        )
+
+        first = backend.cleanup_expired_run_artifacts(ctx, now=now)
+        assert first.enabled is True
+        assert first.deleted_artifacts == 1
+        assert first.completed_reports == 1
+        assert first.remaining_candidates is False
+        assert not artifact.exists()
+        assert other_artifact.exists()
+
+        retained = backend.report_store_factory(ctx).get(run_id)
+        assert retained is not None
+        assert retained.status is RunStatus.SUCCEEDED
+        assert retained.artifacts[0].status == "expired"
+        assert retained.metadata["etlantic.control_plane.artifact_retention"] == (
+            "complete"
+        )
+        assert [item.run_id for item in backend.report_store_factory(ctx).list()] == [
+            run_id
+        ]
+    finally:
+        backend.close()
+
+    restarted = _backend(config)
+    try:
+        store = restarted.report_store_factory(ctx)
+        retained = store.get("retained-run")
+        assert retained is not None
+        assert retained.status is RunStatus.SUCCEEDED
+        assert retained.artifacts[0].status == "expired"
+        assert [item.run_id for item in store.list()] == ["retained-run"]
+        repeat = restarted.cleanup_expired_run_artifacts(ctx, now=now)
+        assert repeat.processed_reports == 0
+        assert repeat.deleted_artifacts == 0
+    finally:
+        restarted.close()

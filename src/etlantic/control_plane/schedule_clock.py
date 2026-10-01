@@ -13,6 +13,13 @@ from etlantic.control_plane.schedule_models import ScheduleSpec
 _CRON_FIELDS = ("minute", "hour", "day", "month", "weekday")
 
 
+def _as_utc(value: datetime) -> datetime:
+    """Normalize clock inputs consistently, treating naive values as UTC."""
+    if value.tzinfo is None:
+        return value.replace(tzinfo=UTC)
+    return value.astimezone(UTC)
+
+
 class ScheduleClock(Protocol):
     def now(self) -> datetime: ...
 
@@ -31,10 +38,7 @@ class FakeScheduleClock:
     instant: datetime
 
     def now(self) -> datetime:
-        current = self.instant
-        if current.tzinfo is None:
-            return current.replace(tzinfo=UTC)
-        return current.astimezone(UTC)
+        return _as_utc(self.instant)
 
     def advance(self, delta: timedelta) -> None:
         self.instant = self.now() + delta
@@ -134,14 +138,14 @@ def next_fire_after(
 ) -> datetime | None:
     """Return the next UTC fire instant strictly after ``after``.
 
+    Naive ``after`` and ``last_nominal`` values are interpreted as UTC, matching
+    :class:`FakeScheduleClock` and avoiding host-timezone-dependent occurrences.
     DST gaps (spring-forward) skip the missing local hour. ``misfire=skip``
     drops that slot; ``fire_once`` / ``catch_up`` fire at the first valid
     local instant after the gap while preserving the intended nominal minute.
     """
     tz = ZoneInfo(spec.timezone)
-    cursor = after.astimezone(UTC)
-    if cursor.tzinfo is None:
-        cursor = cursor.replace(tzinfo=UTC)
+    cursor = _as_utc(after)
     if not _in_window(spec, cursor + timedelta(seconds=1)):
         if spec.window_end:
             end = datetime.fromisoformat(spec.window_end.replace("Z", "+00:00"))
@@ -154,10 +158,10 @@ def next_fire_after(
 
     if spec.kind == "interval":
         step = timedelta(seconds=int(spec.interval_seconds or 0))
-        base = last_nominal or after
-        candidate = base.astimezone(UTC) + step
-        if candidate <= after.astimezone(UTC):
-            candidate = after.astimezone(UTC) + step
+        base = _as_utc(last_nominal) if last_nominal is not None else cursor
+        candidate = base + step
+        if candidate <= cursor:
+            candidate = cursor + step
         if spec.jitter_seconds:
             candidate = candidate + timedelta(seconds=spec.jitter_seconds)
         if not _in_window(spec, candidate):
@@ -166,9 +170,7 @@ def next_fire_after(
 
     parsed = parse_cron(spec.cron or "")
     # Walk UTC minutes so spring-forward gaps never produce a local match.
-    probe = after.astimezone(UTC).replace(second=0, microsecond=0) + timedelta(
-        minutes=1
-    )
+    probe = cursor.replace(second=0, microsecond=0) + timedelta(minutes=1)
     limit = 366 * 24 * 60
     for _ in range(limit):
         local = probe.astimezone(tz)
@@ -197,14 +199,18 @@ def catch_up_nominals(
     now: datetime,
 ) -> list[datetime]:
     """Bounded list of missed nominal fire times between last and now."""
+    last_nominal_utc = _as_utc(last_nominal)
+    now_utc = _as_utc(now)
     if spec.misfire != "catch_up":
-        nxt = next_fire_after(spec, after=last_nominal, last_nominal=last_nominal)
-        return [nxt] if nxt and nxt <= now else []
+        nxt = next_fire_after(
+            spec, after=last_nominal_utc, last_nominal=last_nominal_utc
+        )
+        return [nxt] if nxt and nxt <= now_utc else []
     found: list[datetime] = []
-    cursor = last_nominal
+    cursor = last_nominal_utc
     while len(found) < spec.catch_up_max:
         nxt = next_fire_after(spec, after=cursor, last_nominal=cursor)
-        if nxt is None or nxt > now:
+        if nxt is None or nxt > now_utc:
             break
         found.append(nxt)
         cursor = nxt

@@ -11,9 +11,12 @@ from pathlib import Path
 # Pyright/type-ignore comments are temporary compatibility boundaries. Locking
 # their exact inventory prevents a new suppression from silently widening the
 # strict-checking escape hatch; intentional changes must update this digest in
-# the same review. The AC056-017 artifact route and authorization test moved
-# two existing comments; the directive count and comment text are unchanged.
-EXPECTED_DIGEST = "b5d6908bca8616dca19840b7fae3413ba22aa02b10ffa525e2464ac8b4d50243"
+# the same review. AC056-020 action-scope checks shifted later source lines;
+# prior AC056-019/044/031/015 work shifted other positions. AC056-021's
+# validation imports and branches shift locations again. Ruff formatting in
+# this 0.56 worktree moved existing directives too; their count and text remain
+# unchanged at 781.
+EXPECTED_DIGEST = "bc03029d9f381b54aee3f2bf36f57720693e9a8e151891db30b3f8b285bfd230"
 
 _IGNORED_DIRECTORIES = frozenset(
     {

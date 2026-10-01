@@ -80,9 +80,9 @@ def _decode_key(text: str) -> tuple[str, ...]:
 def _dump_store(store: MemoryDurableWorkStore) -> dict[str, Any]:
     return {
         "admission_limit": store.admission_limit,
-    "submissions": {
-        _encode_key(k): asdict(v) for k, v in store._submissions.items()
-    },
+        "submissions": {
+            _encode_key(k): asdict(v) for k, v in store._submissions.items()
+        },
         "action_jobs": {
             _encode_key(k): asdict(v) for k, v in store._action_jobs.items()
         },
@@ -407,6 +407,11 @@ class SQLModelDurableWorkStore:
 
     def record_effect(self, ctx: ControlPlaneContext, effect: EffectRecord):
         return self._txn(lambda m: m.record_effect(ctx, effect))
+
+    def record_attempt_effect(
+        self, ctx: ControlPlaneContext, effect: EffectRecord, **kwargs: Any
+    ):
+        return self._txn(lambda m: m.record_attempt_effect(ctx, effect, **kwargs))
 
     def get_effect(self, ctx: ControlPlaneContext, effect_id: str):
         return self._read_only(lambda m: m.get_effect(ctx, effect_id))

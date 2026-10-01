@@ -1,4 +1,5 @@
 ---
+status: experimental
 title: ETLantic 0.56 Isolated Connector Action Workers
 description: Public action job contract, handler registration, and bounded execution behavior.
 ---
@@ -59,27 +60,33 @@ deadline. The worker also caps each tick at 100 jobs and each result at 64 KiB,
 declared columns; provider-marked sensitive columns and caller-selected fields
 are redacted before byte and row limits are applied. Oversized general results
 fail with `result_limit_exceeded`. Preview results have a separate configurable
-retention window from their durable action receipts (60–86,400 seconds by
-default one hour). Worker maintenance clears expired preview payloads while
-preserving receipt status and expiry metadata.
+retention window from their durable action receipts, bounded to 60–86,400
+seconds (default one hour). Managed configuration, the action host, and the
+durable store enforce the same bounds; only successful preview jobs may retain
+results. Worker maintenance clears expired preview payloads while preserving
+receipt status and expiry metadata.
 
 `connector.provision` is a separate permissioned action. The worker derives a
 schema fingerprint, supplies a stable action id for provider idempotency, and
 forces `mode=create_only` with `if_exists=fail`. A handler must return a
 matching action id, resource id, schema fingerprint, safe effect id, and
 positive create and cleanup flags or the receipt fails with
-`invalid_effect_receipt`. It must not implement replace, alter, or implicit
-create behavior for inspection actions. `connector.provision.cleanup` requires
+`invalid_effect_receipt`. The typed schema rejects nullable primary-key
+columns. Provisioning must not implement replace, alter, or implicit create
+behavior for inspection actions. `connector.provision.cleanup` requires
 a successfully completed provision action owned by the same caller and an
 exact match on provider, connection, resource, schema, and effect receipt.
 Cleanup handlers receive that verified effect id; their response must prove
 which provision action was compensated and that the effect was removed.
 
 Receipts are idempotent by caller, action, and idempotency key, and list/query
-operations remain owner-scoped and paginated. These provider-neutral contracts
-are qualified with local fake handlers. A deployment still needs provider
-integrations that resolve saved connections and execute their provider's
-create and compensation operations in the separately deployed worker role.
+operations remain scoped to the tenant, workspace, owner, environment, and
+security domain. New pagination cursors bind to that same scope; older cursors
+continue to work against the current scoped query. These provider-neutral
+contracts are qualified with local fake handlers. A deployment still needs
+provider integrations that resolve saved connections and execute their
+provider's create and compensation operations in the separately deployed worker
+role.
 
 ```python
 worker = backend.create_action_execution_host(worker_id="connector-actions-1")

@@ -187,7 +187,7 @@ def test_sqlmodel_upload_bytes_and_leases_survive_backend_restart(
         f"sqlite:///{database}", connect_args={"check_same_thread": False}
     )
     try:
-        assert upgrade(engine) == "010_immutable_input_resources_0_56"
+        assert upgrade(engine) == "012_bounded_event_tombstone_retention_0_56"
         first = SqlModelInputResourceStore(engine)
         ctx = _context()
         content = b"id,name\n2,Grace\n"
@@ -208,7 +208,7 @@ def test_sqlmodel_upload_bytes_and_leases_survive_backend_restart(
         with pytest.raises(ControlPlaneError) as missing:
             restarted.read(ctx, reference, now=expired)
         assert missing.value.status == 404
-        assert current_version(engine) == "010_immutable_input_resources_0_56"
+        assert current_version(engine) == "012_bounded_event_tombstone_retention_0_56"
     finally:
         engine.dispose()
 
@@ -218,7 +218,7 @@ def test_sqlmodel_read_rejects_cross_owner_and_changed_blob_bytes(
 ) -> None:
     engine = create_engine(f"sqlite:///{tmp_path / 'tampered-input.db'}")
     try:
-        assert upgrade(engine) == "010_immutable_input_resources_0_56"
+        assert upgrade(engine) == "012_bounded_event_tombstone_retention_0_56"
         store = SqlModelInputResourceStore(engine)
         ctx = _context()
         content = b"id,name\n7,Lin\n"

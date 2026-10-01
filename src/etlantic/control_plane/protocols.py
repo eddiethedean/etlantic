@@ -9,8 +9,12 @@ from __future__ import annotations
 
 from collections.abc import Mapping, Sequence
 from dataclasses import dataclass
+from datetime import datetime
 from typing import Any, Protocol, runtime_checkable
 
+from etlantic.control_plane.event_retention import (
+    MAX_EVENT_IDEMPOTENCY_PRUNE_BATCH,
+)
 from etlantic.control_plane.models import (
     AcceptReceipt,
     AcceptResult,
@@ -176,10 +180,26 @@ class EventRetentionStore(Protocol):
     ) -> int:
         """Prune older events while preserving a sequence anchor.
 
-        Idempotency records survive pruning so a delayed publisher cannot
-        recreate an expired event. Reusing a pruned key returns an explicit
-        expired-history error. The newest event is retained as the sequence
-        anchor, preventing cursor reuse after a complete retention sweep.
+        Unexpired idempotency records survive pruning so a delayed publisher
+        cannot recreate a retained-window event. Reusing a pruned key within
+        its tombstone window returns an expired-history error. Tombstones may
+        be removed after their configured expiry. The newest event is retained
+        as the sequence anchor, preventing cursor reuse after a full sweep.
+        """
+        ...
+
+    def prune_expired_idempotency(
+        self,
+        ctx: ControlPlaneContext,
+        *,
+        limit: int = MAX_EVENT_IDEMPOTENCY_PRUNE_BATCH,
+        now: datetime | None = None,
+    ) -> int:
+        """Remove a bounded number of expired event-delivery tombstones.
+
+        ``limit`` must be between one and the provider's shared maximum batch.
+        Idempotency is guaranteed until the configured tombstone expiry. After
+        expiry, a delayed publisher may create a new event for the same key.
         """
         ...
 

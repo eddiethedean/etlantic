@@ -14,7 +14,7 @@ from etlantic.control_plane.schedule_clock import (
     catch_up_nominals,
     next_fire_after,
 )
-from etlantic.control_plane.schedule_models import ScheduleRecord
+from etlantic.control_plane.schedule_models import FiringStatus, ScheduleRecord
 from etlantic.control_plane.schedule_protocols import (
     PollingWakeTransport,
     ScheduleStore,
@@ -42,6 +42,8 @@ class SchedulerService:
         plan_fingerprint: str = "plan",
         profile: Profile | str | None = None,
     ) -> None:
+        if type(ttl_seconds) is not int or ttl_seconds < 1:
+            raise ValueError("ttl_seconds must be a positive integer")
         if profile is not None:
             from etlantic.control_plane.schedule_trust import validate_schedule_runtime
 
@@ -95,15 +97,11 @@ class SchedulerService:
             return 0
         if rec.spec.misfire == "skip" and due < now:
             nxt = next_fire_after(rec.spec, after=now, last_nominal=due)
-            _firing, created = self.schedule_store.claim_firing(
+            created = self._claim_scheduled_firing(
                 ctx,
-                schedule_id=rec.schedule_id,
-                revision_id=rec.revision_id,
-                nominal_fire_time=_iso(due),
-                owner_id=self.owner_id,
-                fencing_token=fencing_token,
-                plan_fingerprint=self.plan_fingerprint,
-                durable=self.durable,
+                rec,
+                _iso(due),
+                fencing_token,
                 next_fire_at=_iso(nxt) if nxt is not None else None,
                 skip_status="skipped_misfire",
             )
@@ -117,15 +115,11 @@ class SchedulerService:
                 last = due - timedelta(minutes=1)
             if rec.spec.catch_up_max == 0:
                 nxt = next_fire_after(rec.spec, after=now, last_nominal=due)
-                _firing, created = self.schedule_store.claim_firing(
+                created = self._claim_scheduled_firing(
                     ctx,
-                    schedule_id=rec.schedule_id,
-                    revision_id=rec.revision_id,
-                    nominal_fire_time=_iso(due),
-                    owner_id=self.owner_id,
-                    fencing_token=fencing_token,
-                    plan_fingerprint=self.plan_fingerprint,
-                    durable=self.durable,
+                    rec,
+                    _iso(due),
+                    fencing_token,
                     next_fire_at=_iso(nxt) if nxt is not None else None,
                     skip_status="skipped_misfire",
                 )
@@ -136,19 +130,46 @@ class SchedulerService:
         claimed = 0
         for nominal in nominals:
             nxt = next_fire_after(rec.spec, after=nominal, last_nominal=nominal)
-            _firing, created = self.schedule_store.claim_firing(
+            created = self._claim_scheduled_firing(
                 ctx,
-                schedule_id=rec.schedule_id,
-                revision_id=rec.revision_id,
-                nominal_fire_time=_iso(nominal),
-                owner_id=self.owner_id,
-                fencing_token=fencing_token,
-                plan_fingerprint=self.plan_fingerprint,
-                durable=self.durable,
+                rec,
+                _iso(nominal),
+                fencing_token,
                 next_fire_at=_iso(nxt) if nxt is not None else None,
             )
             claimed += int(created)
         return claimed
+
+    def _claim_scheduled_firing(
+        self,
+        ctx: ControlPlaneContext,
+        rec: ScheduleRecord,
+        nominal_fire_time: str,
+        fencing_token: int,
+        *,
+        next_fire_at: str | None,
+        skip_status: FiringStatus | None = None,
+    ) -> bool:
+        try:
+            _firing, created = self.schedule_store.claim_firing(
+                ctx,
+                schedule_id=rec.schedule_id,
+                revision_id=rec.revision_id,
+                nominal_fire_time=nominal_fire_time,
+                owner_id=self.owner_id,
+                fencing_token=fencing_token,
+                plan_fingerprint=self.plan_fingerprint,
+                durable=self.durable,
+                next_fire_at=next_fire_at,
+                skip_status=skip_status,
+            )
+        except ControlPlaneError as exc:
+            # The schedule changed after this scan. A subsequent tick will
+            # reload current state; lease and provider conflicts still surface.
+            if exc.code == "PMFIRE409":
+                return False
+            raise
+        return created
 
 
 __all__ = ["FakeScheduleClock", "SchedulerService"]

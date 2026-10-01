@@ -350,8 +350,7 @@ def test_live_sink_denies_ungranted_write_and_leaves_target_unchanged(
             connection.execute(text(f"CREATE ROLE {quoted_role} LOGIN"))
             connection.execute(
                 text(
-                    "GRANT SELECT ON public.etlantic_phase056_orders "
-                    f"TO {quoted_role}"
+                    f"GRANT SELECT ON public.etlantic_phase056_orders TO {quoted_role}"
                 )
             )
             connection.execute(
@@ -361,8 +360,8 @@ def test_live_sink_denies_ungranted_write_and_leaves_target_unchanged(
                 )
             )
 
-        restricted_url = make_url(URL).set(username=role).render_as_string(
-            hide_password=False
+        restricted_url = (
+            make_url(URL).set(username=role).render_as_string(hide_password=False)
         )
         restricted_context = {
             **secret_context,
@@ -383,9 +382,12 @@ def test_live_sink_denies_ungranted_write_and_leaves_target_unchanged(
         )
         assert result.status == "rolled_back"
         with admin_engine.connect() as connection:
-            assert connection.execute(
-                text("SELECT count(*) FROM public.etlantic_phase056_orders")
-            ).scalar_one() == 0
+            assert (
+                connection.execute(
+                    text("SELECT count(*) FROM public.etlantic_phase056_orders")
+                ).scalar_one()
+                == 0
+            )
     finally:
         with admin_engine.begin() as connection:
             connection.execute(text(f"DROP OWNED BY {quoted_role}"))

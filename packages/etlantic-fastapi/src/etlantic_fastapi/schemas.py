@@ -54,6 +54,7 @@ class DefinitionWriteResponse(BaseModel):
     definition_id: str
     fingerprint: str
     document: dict[str, Any]
+    revision_id: str | None = None
 
 
 class DefinitionEditBody(BaseModel):
@@ -65,6 +66,7 @@ class DefinitionEditBody(BaseModel):
 
 class PlanRequestBody(BaseModel):
     request: dict[str, Any] | None = None
+    revision_selector: str = "current"
 
     model_config = {"extra": "forbid"}
 
@@ -74,6 +76,7 @@ class ValidateResponse(BaseModel):
     definition_id: str
     diagnostics: list[dict[str, Any]] = Field(default_factory=list)
     fingerprint: str | None = None
+    revision_id: str | None = None
     metadata: dict[str, Any] = Field(default_factory=dict)
 
 
@@ -82,6 +85,7 @@ class PlanResponse(BaseModel):
     definition_id: str
     diagnostics: list[dict[str, Any]] = Field(default_factory=list)
     plan: dict[str, Any] | None = None
+    revision_id: str | None = None
     metadata: dict[str, Any] = Field(default_factory=dict)
 
 

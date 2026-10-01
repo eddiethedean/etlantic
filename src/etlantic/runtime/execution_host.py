@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import hashlib
 import inspect
+import logging
 from collections.abc import Callable, Mapping
 from contextlib import suppress
 from datetime import UTC, datetime
@@ -20,6 +21,8 @@ from etlantic.runtime.managed_errors import ExecutionRejected, UnknownCommitErro
 from etlantic.runtime.state import RunStatus
 from etlantic.secrets.provider import SecretAliasAuthorizer
 
+_LOG = logging.getLogger(__name__)
+
 
 class ExecutionHost:
     """Poll CP3 work and run its accepted plan through ETLantic runtime."""
@@ -34,6 +37,8 @@ class ExecutionHost:
         cancel_check: Callable[[ControlPlaneContext, str], bool] | None = None,
         secret_alias_authorizer: SecretAliasAuthorizer | None = None,
     ) -> None:
+        if type(ttl_seconds) is not int or ttl_seconds < 1:
+            raise ValueError("ttl_seconds must be a positive integer")
         if runner is None:
             from etlantic.runtime.managed_execution import ManagedExecutionAdapter
 
@@ -148,6 +153,16 @@ class ExecutionHost:
     def tick(self, ctx: ControlPlaneContext, *, limit: int = 20) -> int:
         if self.draining:
             return 0
+        cleanup_artifacts = getattr(self.runner, "cleanup_expired_run_artifacts", None)
+        if callable(cleanup_artifacts):
+            try:
+                cleanup_artifacts(ctx)
+            except Exception:
+                # Retention has its own durable state and must not block ETL
+                # admission when the result store or artifact filesystem is down.
+                _LOG.warning(
+                    "Run artifact retention pass failed; execution polling continues"
+                )
         self.durable.reconcile_cancelled_submissions(ctx, limit=limit)
         self.durable.reconcile_terminal_outbox(ctx, limit=limit)
         processed = 0
@@ -227,7 +242,12 @@ class ExecutionHost:
                 processed += 1
                 continue
             if runner_error is not None:
-                self._record_unknown_effect(ctx, item.submission_id)
+                self._record_unknown_effect(
+                    ctx,
+                    item.submission_id,
+                    attempt_id=attempt.attempt_id,
+                    fencing_token=lease.fencing_token,
+                )
                 self.durable.finish_attempt(
                     ctx,
                     attempt.attempt_id,
@@ -241,7 +261,12 @@ class ExecutionHost:
                 continue
 
             if not isinstance(outcome, PipelineRunReport):
-                self._record_unknown_effect(ctx, item.submission_id)
+                self._record_unknown_effect(
+                    ctx,
+                    item.submission_id,
+                    attempt_id=attempt.attempt_id,
+                    fencing_token=lease.fencing_token,
+                )
                 self.durable.finish_attempt(
                     ctx,
                     attempt.attempt_id,
@@ -257,16 +282,37 @@ class ExecutionHost:
             if (
                 cancel_event.is_set() and outcome.status is not RunStatus.CANCELLED
             ) or outcome.plan_fingerprint != submission.plan_fingerprint:
-                self._record_unknown_effect(ctx, item.submission_id)
+                self._record_unknown_effect(
+                    ctx,
+                    item.submission_id,
+                    attempt_id=attempt.attempt_id,
+                    fencing_token=lease.fencing_token,
+                )
                 terminal_status = "lost"
             elif outcome.status is RunStatus.SUCCEEDED:
-                self._record_report_effect(ctx, item.submission_id, outcome)
+                self._record_report_effect(
+                    ctx,
+                    item.submission_id,
+                    outcome,
+                    attempt_id=attempt.attempt_id,
+                    fencing_token=lease.fencing_token,
+                )
                 terminal_status = "completed"
             elif outcome.status is RunStatus.CANCELLED:
-                self._record_unknown_effect(ctx, item.submission_id)
+                self._record_unknown_effect(
+                    ctx,
+                    item.submission_id,
+                    attempt_id=attempt.attempt_id,
+                    fencing_token=lease.fencing_token,
+                )
                 terminal_status = "cancelled"
             else:
-                self._record_unknown_effect(ctx, item.submission_id)
+                self._record_unknown_effect(
+                    ctx,
+                    item.submission_id,
+                    attempt_id=attempt.attempt_id,
+                    fencing_token=lease.fencing_token,
+                )
                 terminal_status = "lost"
             self.durable.finish_attempt(
                 ctx,
@@ -281,9 +327,14 @@ class ExecutionHost:
         return processed
 
     def _record_unknown_effect(
-        self, ctx: ControlPlaneContext, submission_id: str
+        self,
+        ctx: ControlPlaneContext,
+        submission_id: str,
+        *,
+        attempt_id: str,
+        fencing_token: int,
     ) -> None:
-        self.durable.record_effect(
+        self.durable.record_attempt_effect(
             ctx,
             EffectRecord(
                 effect_id=f"{submission_id}:execution",
@@ -294,6 +345,9 @@ class ExecutionHost:
                 recorded_at=datetime.now(UTC).isoformat(),
                 authoritative=True,
             ),
+            attempt_id=attempt_id,
+            owner_id=self.owner_id,
+            fencing_token=fencing_token,
         )
 
     def _record_report_effect(
@@ -301,6 +355,9 @@ class ExecutionHost:
         ctx: ControlPlaneContext,
         submission_id: str,
         report: PipelineRunReport,
+        *,
+        attempt_id: str,
+        fencing_token: int,
     ) -> None:
         evidence = hashlib.sha256(
             report.to_json(indent=None).encode("utf-8")
@@ -312,7 +369,7 @@ class ExecutionHost:
         no_write = report.intent.value == "validate" or (
             execution.get("no_write") is True
         )
-        self.durable.record_effect(
+        self.durable.record_attempt_effect(
             ctx,
             EffectRecord(
                 effect_id=f"{submission_id}:execution",
@@ -331,6 +388,9 @@ class ExecutionHost:
                     "plan_fingerprint": report.plan_fingerprint,
                 },
             ),
+            attempt_id=attempt_id,
+            owner_id=self.owner_id,
+            fencing_token=fencing_token,
         )
 
 
