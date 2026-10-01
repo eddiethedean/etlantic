@@ -79,11 +79,11 @@ EXPECTED_DIGESTS = {
     # changed paths confirms those fixes remove cascaded shadow diagnostics;
     # the strict inventory falls from 10,563 to 9,832 without new suppressions.
     # AC056-043 extends managed local adaptive admission and records the
-    # managed qualification path; review of the touched paths leaves 9,846
-    # diagnostics in the suppression-free inventory (including existing
-    # diagnostics in those paths), with no new suppression directives.
-    "Darwin": "96d26954afeb6686503c2599c2b63c0f824fa3c054810435a5c2708ef5111ea0",
-    "Linux": "96d26954afeb6686503c2599c2b63c0f824fa3c054810435a5c2708ef5111ea0",
+    # managed qualification path. Removing an unused pipeline test fixture
+    # eliminates nine diagnostics; the reviewed suppression-free inventory
+    # contains 9,837 diagnostics, with no new suppression directives.
+    "Darwin": "fa1f7ada44ded57548cd43d947ac3f1acbcaade13859266b9a9fc17b40550f45",
+    "Linux": "fa1f7ada44ded57548cd43d947ac3f1acbcaade13859266b9a9fc17b40550f45",
 }
 
 

@@ -189,18 +189,6 @@ class _PortableManagedNormalize(Transformation):
 _PortableManagedNormalize.portable(_normalize_managed_rows)
 
 
-class _PortableManagedTransformPipeline(Pipeline):
-    source: Extract[_ManagedTransformInput] = Extract(asset="source")
-    normalized = _PortableManagedNormalize.step(rows=source)
-    checked = _ManagedNameQuality.step(rows=normalized.result)
-    accepted: Load[_ManagedTransformOutput] = Load(
-        input=checked.result, asset="accepted"
-    )
-    rejected: Load[_ManagedTransformOutput] = Load(
-        input=checked.rejected, asset="rejected"
-    )
-
-
 class _PortableManagedTransformOnlyPipeline(Pipeline):
     source: Extract[_ManagedTransformInput] = Extract(asset="source")
     normalized = _PortableManagedNormalize.step(rows=source)
@@ -857,7 +845,10 @@ def test_managed_worker_preserves_or_explains_transform_quality_engine_limit(
             if isinstance(failure.value, PipelineValidationError):
                 diagnostics = [d.to_dict() for d in failure.value.report.diagnostics]
             else:
-                diagnostics = failure.value.extensions.get("diagnostics")
+                diagnostics = cast(
+                    list[dict[str, Any]],
+                    failure.value.extensions.get("diagnostics"),
+                )
             assert isinstance(diagnostics, list) and diagnostics
             assert any(
                 (
