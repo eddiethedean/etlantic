@@ -9,6 +9,10 @@ from typing import Any
 
 import anyio
 import pytest
+
+pytest.importorskip("sqlalchemy")
+pytest.importorskip("etlantic_sql.live_postgresql")
+
 from sqlalchemy import create_engine, text
 from sqlalchemy.engine import make_url
 

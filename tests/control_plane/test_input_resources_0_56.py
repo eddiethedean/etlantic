@@ -8,7 +8,6 @@ from pathlib import Path
 from typing import Any
 
 import pytest
-from sqlalchemy import create_engine, text
 
 from etlantic.control_plane import (
     ControlPlaneContext,
@@ -23,8 +22,6 @@ from etlantic.control_plane import (
 )
 from etlantic.control_plane.errors import ControlPlaneError
 from etlantic.control_plane.input_resources import InputResourceReference
-from etlantic_sqlmodel.control_plane import SqlModelInputResourceStore
-from etlantic_sqlmodel.migrations import current_version, upgrade
 
 
 def _context(
@@ -182,6 +179,12 @@ def test_upload_rejects_unsupported_media_and_format(
 def test_sqlmodel_upload_bytes_and_leases_survive_backend_restart(
     tmp_path: Path,
 ) -> None:
+    pytest.importorskip("sqlalchemy")
+    from sqlalchemy import create_engine
+
+    from etlantic_sqlmodel.control_plane import SqlModelInputResourceStore
+    from etlantic_sqlmodel.migrations import current_version, upgrade
+
     database = tmp_path / "input-resources.sqlite"
     engine = create_engine(
         f"sqlite:///{database}", connect_args={"check_same_thread": False}
@@ -216,6 +219,12 @@ def test_sqlmodel_upload_bytes_and_leases_survive_backend_restart(
 def test_sqlmodel_read_rejects_cross_owner_and_changed_blob_bytes(
     tmp_path: Path,
 ) -> None:
+    pytest.importorskip("sqlalchemy")
+    from sqlalchemy import create_engine, text
+
+    from etlantic_sqlmodel.control_plane import SqlModelInputResourceStore
+    from etlantic_sqlmodel.migrations import upgrade
+
     engine = create_engine(f"sqlite:///{tmp_path / 'tampered-input.db'}")
     try:
         assert upgrade(engine) == "012_bounded_event_tombstone_retention_0_56"
