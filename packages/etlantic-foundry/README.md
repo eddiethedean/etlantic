@@ -42,8 +42,16 @@ sample file. It does not provision datasets, branches or files.
 
 ## Provider qualification
 
-Unit tests use `httpx.MockTransport` and verify the REST contract without a
-Foundry tenant. Live provider qualification still requires an isolated account
-and dataset with separate read/write scopes, exact Foundry version, overlap,
+Connector tests use a local Semblance-backed Foundry API to verify JSON response
+schemas, bearer authentication, file listing and content, uploads, and
+transaction commit/reconciliation over loopback HTTP. The simulator requires no
+Foundry account, external credentials, or outbound network access.
+`httpx.MockTransport` remains useful for isolated timeout and malformed-response
+cases.
+
+Run the local simulator suite with `uv run pytest tests/foundry/test_simulator.py`.
+
+Live provider qualification still requires an isolated account and dataset
+with separate read/write scopes, exact Foundry version, overlap,
 permission-denial, lost-ack, and reconciliation evidence. The package and
 entry points are Experimental until that Gate E evidence is recorded.

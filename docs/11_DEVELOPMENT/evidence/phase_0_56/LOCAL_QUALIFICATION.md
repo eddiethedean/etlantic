@@ -640,7 +640,10 @@ Current index: 11 criteria passed, 31 pending, and 2 blocked of 44.
   environment, and security-domain combination remains open.
 - AC056-034 and AC056-036: no isolated live Foundry account is configured.
   The required two independent Foundry scopes and all 12 real-worker pairings
-  have not been exercised; mock transport tests do not qualify them.
+  have not been exercised. A Semblance-backed Foundry API now covers the local
+  connector HTTP contract, transactions, and lost-ack reconciliation over
+  loopback without a cloud account; this does not qualify live provider
+  behavior or the real-worker pairing matrix.
 - AC056-038–041 and AC056-043–044: full disclosure campaign, PostgreSQL
   backup/restore/failure, version-skew/rollback,
   complete advanced engine matrix, managed adaptive `/2`, and generic consumer

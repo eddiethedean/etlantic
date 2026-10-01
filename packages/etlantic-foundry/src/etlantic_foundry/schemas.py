@@ -6,8 +6,8 @@ _BASE = {
     "base_url": {
         "type": "string",
         "format": "uri",
-        "pattern": "^https://",
-        "description": "HTTPS origin of the Foundry deployment.",
+        "pattern": "^(https://|http://(localhost|127\\.0\\.0\\.1|\\[::1\\])(:[0-9]+)?/?$)",
+        "description": "HTTPS origin of the Foundry deployment, or HTTP loopback origin for local testing.",
     },
     "dataset_rid": {
         "type": "string",

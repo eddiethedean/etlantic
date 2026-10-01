@@ -158,8 +158,13 @@ def _base(cfg: Mapping[str, Any]) -> tuple[str, str]:
         raise ConnectorConfigError(
             "invalid Foundry base_url", code="PMFND004", provider=PROVIDER
         ) from exc
+    local_http = parsed.scheme == "http" and parsed.hostname in {
+        "localhost",
+        "127.0.0.1",
+        "::1",
+    }
     if (
-        parsed.scheme != "https"
+        (parsed.scheme != "https" and not local_http)
         or not parsed.hostname
         or parsed.username is not None
         or parsed.password is not None
@@ -1539,7 +1544,9 @@ def _serialize_records(
         if not rows:
             return b""
         if any(
-            not isinstance(column, str) or not column for row in rows for column in row
+            not isinstance(column, str) or not column
+            for row in rows
+            for column in cast(Iterable[Any], row)
         ):
             raise ConnectorWriteError(
                 "Foundry CSV column names must be nonempty strings",

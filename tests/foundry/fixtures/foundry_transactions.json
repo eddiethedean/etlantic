@@ -1,0 +1,8 @@
+{
+  "transactions": [
+    {
+      "rid": "ri.foundry.main.transaction.pinned",
+      "status": "COMMITTED"
+    }
+  ]
+}
