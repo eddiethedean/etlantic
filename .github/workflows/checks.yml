@@ -1060,7 +1060,7 @@ jobs:
           github-token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Sync with fastapi extra
-        run: uv sync --locked --extra fastapi --group sqlmodel
+        run: uv sync --locked --extra fastapi --extra dataframes --group sqlmodel
 
       - name: Pytest FastAPI reference suite
         env:
@@ -1152,6 +1152,10 @@ jobs:
           PYTHON_VERSION="$(python -c 'import sys; print(f"{sys.version_info.major}.{sys.version_info.minor}")')"
           CONSTRAINT_URL="https://raw.githubusercontent.com/apache/airflow/constraints-${AIRFLOW_VERSION}/constraints-${PYTHON_VERSION}.txt"
           uv pip install "apache-airflow==${AIRFLOW_VERSION}" --constraint "$CONSTRAINT_URL"
+          # The Airflow constraints pin idna below the version required by
+          # ETLantic's locked httpx2 dependency. Keep the integration test
+          # environment compatible with both sets of requirements.
+          uv pip install "idna>=3.18"
           uv pip check
 
       - name: Compile and import generated DAG
