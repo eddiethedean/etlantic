@@ -138,7 +138,12 @@ class FoundrySimulator:
         catalog = _load_fixture("foundry_file_catalog.json")
         return {
             item["path"]: SimulatedFile(
-                (_FIXTURES / item["content_fixture"]).read_bytes(),
+                (
+                    (_FIXTURES / item["content_fixture"])
+                    .read_bytes()
+                    .replace(b"\r\n", b"\n")
+                    .replace(b"\r", b"\n")
+                ),
                 item["branch_name"],
                 item["transaction_rid"],
             )
