@@ -21,8 +21,10 @@ from pathlib import Path
 # adapter's same-transaction operation as a public coordination method. The
 # managed preparation service, managed resume command, route and authorization
 # matrix shift existing directives; token review found no additions or removals.
-# Re-pin the 784-entry inventory after these source line shifts.
-EXPECTED_DIGEST = "7de008c4e1605baedc102c32b73f4dd7ad7dff160e3e09cb94e4add29076bd57"
+# AC #215 persists the accepted execution scope on CP3 submissions, shifting
+# two existing type-ignore locations. No suppression was added or removed.
+# Re-pin the 784-entry inventory after this source-line shift.
+EXPECTED_DIGEST = "0f4063e11ba215ddbe5756e40c25ef7e7ce84bd3104dc3246f0424ebc6af6115"
 
 _IGNORED_DIRECTORIES = frozenset(
     {

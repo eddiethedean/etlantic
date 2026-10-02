@@ -85,8 +85,10 @@ EXPECTED_DIGESTS = {
     # The final managed partition repair/backfill qualification adds 19
     # suppression-free diagnostics in its new provider and lifecycle tests;
     # the regular strict Pyright run remains clean. Reviewed at 9,856.
-    "Darwin": "19ef2b969589d14179cf37325de1f3ec0c4f345fb679112e0ac470d5ad5fa854",
-    "Linux": "19ef2b969589d14179cf37325de1f3ec0c4f345fb679112e0ac470d5ad5fa854",
+    # AC #215 persists accepted worker authority and adds typed regressions;
+    # existing diagnostic locations shift, while the reviewed count remains 9,856.
+    "Darwin": "549f04f059507acd0628293809b59a5552d3a57ed160f05f53a8b76a8f5b64e6",
+    "Linux": "549f04f059507acd0628293809b59a5552d3a57ed160f05f53a8b76a8f5b64e6",
 }
 
 

@@ -54,6 +54,41 @@ def test_sqlmodel_durable_conformance(tmp_path: Path) -> None:
     run_durable_work_conformance_suite(SQLModelDurableWorkStore(engine))
 
 
+def test_sqlmodel_snapshot_preserves_accepted_execution_authority(
+    tmp_path: Path,
+) -> None:
+    engine = create_sqlite_engine(f"sqlite:///{tmp_path / 'authority.db'}")
+    apply_migrations(engine)
+    store = SQLModelDurableWorkStore(engine)
+    base = _ctx()
+    accepted_ctx = ControlPlaneContext(
+        principal=Principal(
+            "nightly-pipeline", issuer="trusted-scheduler", kind="workload"
+        ),
+        tenant=base.tenant,
+        workspace=base.workspace,
+        environment=EnvironmentRef("production"),
+        security_domain=SecurityDomain("regulated"),
+        resource_owner_id="data-owner",
+    )
+    accepted, created = store.accept(
+        accepted_ctx,
+        idempotency_key="authority",
+        operation="run.submit",
+        plan_fingerprint="plan",
+    )
+    assert created
+
+    restarted = SQLModelDurableWorkStore(engine)
+    restored = restarted.get_submission(accepted_ctx, accepted.submission_id)
+    assert restored.principal_subject == "nightly-pipeline"
+    assert restored.principal_issuer == "trusted-scheduler"
+    assert restored.principal_kind == "workload"
+    assert restored.environment == "production"
+    assert restored.security_domain_id == "regulated"
+    assert restored.resource_owner_id == "data-owner"
+
+
 def test_outbox_crash_point_and_duplicate_publish(tmp_path: Path) -> None:
     engine = create_sqlite_engine(f"sqlite:///{tmp_path / 'o.db'}")
     apply_migrations(engine)

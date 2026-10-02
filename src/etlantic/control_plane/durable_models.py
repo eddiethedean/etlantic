@@ -96,6 +96,9 @@ class SubmissionRecord:
     schema_observation_fingerprint: str | None = None
     schema_baseline_id: str | None = None
     metadata: Mapping[str, Any] = field(default_factory=dict)
+    environment: str | None = None
+    security_domain_id: str | None = None
+    resource_owner_id: str | None = None
 
     def to_dict(self) -> dict[str, Any]:
         payload = asdict(self)

@@ -3015,3 +3015,98 @@ def test_managed_run_preparation_operations_query_cancel_and_execute(
         )
         is None
     )
+
+
+def test_managed_execution_uses_authority_persisted_at_acceptance(
+    tmp_path: Path,
+) -> None:
+    from collections.abc import Awaitable, Callable
+    from dataclasses import replace
+
+    from etlantic.runtime.context import TrustedExecutionScope
+    from etlantic.runtime.managed_errors import ExecutionRejected
+
+    ctx, _authz, _definitions, _submissions, durable, _events, service = _wired(
+        tmp_path
+    )
+    accepted_ctx = ControlPlaneContext(
+        principal=Principal(
+            subject="nightly-pipeline",
+            issuer="trusted-scheduler",
+            kind="workload",
+        ),
+        tenant=ctx.tenant,
+        workspace=ctx.workspace,
+        environment=EnvironmentRef("production"),
+        security_domain=SecurityDomain("regulated"),
+        resource_owner_id="data-owner",
+    )
+    receipt = service.submit_run(
+        accepted_ctx, "pipe", idempotency_key="accepted-authority"
+    )
+    submission = durable.get_submission(accepted_ctx, receipt.submission_id)
+    assert submission.environment == "production"
+    assert submission.security_domain_id == "regulated"
+    assert submission.resource_owner_id == "data-owner"
+
+    runtime = PipelineRuntime()
+    runtime.ensure_plugins_for_profile(resolve_profile("development"))
+    observed_scopes: list[TrustedExecutionScope] = []
+
+    async def capture_scope(
+        _context: Any, call_next: Callable[[], Awaitable[Any]]
+    ) -> Any:
+        scope = runtime.trusted_execution_scope
+        assert scope is not None
+        observed_scopes.append(scope)
+        return await call_next()
+
+    runtime.add_run_middleware(capture_scope, name="capture-accepted-authority")
+    worker_ctx = ControlPlaneContext(
+        principal=Principal(
+            subject="etl-worker",
+            issuer="worker-service",
+            kind="service",
+        ),
+        tenant=ctx.tenant,
+        workspace=ctx.workspace,
+        environment=EnvironmentRef("development"),
+        security_domain=SecurityDomain("worker-default"),
+        resource_owner_id="worker-owner",
+    )
+    runner = ManagedExecutionAdapter(
+        runtime_factory=lambda: runtime,
+        report_root=tmp_path / "reports",
+    )
+    host = ExecutionHost(
+        durable,
+        owner_id="managed-worker",
+        runner=runner,
+    )
+
+    assert host.tick(worker_ctx) == 1
+    assert len(observed_scopes) == 1
+    scope = observed_scopes[0]
+    assert scope.principal_id == "nightly-pipeline"
+    assert scope.principal_kind == "workload"
+    assert scope.principal_issuer == "trusted-scheduler"
+    assert scope.tenant_id == "tenant-a"
+    assert scope.workspace_id == "ws-1"
+    assert scope.environment == "production"
+    assert scope.security_domain_id == "regulated"
+    assert scope.resource_owner_id == "data-owner"
+
+    legacy_submission = replace(
+        submission,
+        environment=None,
+        security_domain_id=None,
+        resource_owner_id=None,
+    )
+    with pytest.raises(ExecutionRejected, match="durable execution authority"):
+        runner(
+            worker_ctx,
+            submission=legacy_submission,
+            submission_id=submission.submission_id,
+            attempt_id="legacy-attempt",
+            fencing_token=1,
+        )

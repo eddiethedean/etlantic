@@ -156,6 +156,9 @@ class MemoryDurableWorkStore:
             safe_input_snapshot,
             schema_observation_fingerprint,
             schema_baseline_id,
+            ctx.environment.name,
+            ctx.security_domain.domain_id,
+            ctx.resource_owner_id,
         )
         with self._lock:
             existing_id = self._idempotency.get(idem)
@@ -169,6 +172,9 @@ class MemoryDurableWorkStore:
                     prior.input_snapshot,
                     prior.schema_observation_fingerprint,
                     prior.schema_baseline_id,
+                    prior.environment,
+                    prior.security_domain_id,
+                    prior.resource_owner_id,
                 )
                 if actual != requested:
                     raise ControlPlaneError.conflict(
@@ -211,6 +217,9 @@ class MemoryDurableWorkStore:
                 ctx.principal.kind,
                 schema_observation_fingerprint=schema_observation_fingerprint,
                 schema_baseline_id=schema_baseline_id,
+                environment=ctx.environment.name,
+                security_domain_id=ctx.security_domain.domain_id,
+                resource_owner_id=ctx.resource_owner_id,
             )
             payload = hashlib.sha256(
                 "|".join(str(v or "") for v in requested).encode()

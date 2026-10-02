@@ -18,7 +18,14 @@ from etlantic.control_plane.input_resources import (
     InputResourceReference,
     InputResourceStore,
 )
-from etlantic.control_plane.models import ControlPlaneContext
+from etlantic.control_plane.models import (
+    ControlPlaneContext,
+    EnvironmentRef,
+    Principal,
+    SecurityDomain,
+    TenantRef,
+    WorkspaceRef,
+)
 from etlantic.exceptions import (
     PipelineCancelledError,
     PipelineExecutionError,
@@ -243,6 +250,7 @@ class ManagedExecutionAdapter:
     ) -> PipelineRunReport:
         if submission.submission_id != submission_id:
             raise ExecutionRejected("Submission identity does not match the lease")
+        ctx = self._accepted_execution_context(ctx, submission)
         if not submission.input_snapshot:
             raise ExecutionRejected(
                 "Accepted submission has no verified execution envelope"
@@ -760,6 +768,49 @@ class ManagedExecutionAdapter:
             kind=kind,
             payload={**event_base, "status": status},
         )
+
+    @staticmethod
+    def _accepted_execution_context(
+        worker_ctx: ControlPlaneContext, submission: SubmissionRecord
+    ) -> ControlPlaneContext:
+        """Rebuild provider authority from the durable accepted submission."""
+        if (submission.tenant_id, submission.workspace_id) != (
+            worker_ctx.tenant.tenant_id,
+            worker_ctx.workspace.workspace_id,
+        ):
+            raise ExecutionRejected(
+                "Accepted tenant/workspace does not match the worker lease"
+            )
+        if (
+            not submission.environment
+            or not submission.security_domain_id
+            or not submission.principal_subject
+        ):
+            raise ExecutionRejected(
+                "Accepted submission has no durable execution authority"
+            )
+        try:
+            principal = Principal.from_dict(
+                {
+                    "subject": submission.principal_subject,
+                    "issuer": submission.principal_issuer,
+                    "kind": submission.principal_kind,
+                }
+            )
+            tenant = TenantRef(submission.tenant_id)
+            workspace = WorkspaceRef(submission.tenant_id, submission.workspace_id)
+            environment = EnvironmentRef(submission.environment)
+            security_domain = SecurityDomain(submission.security_domain_id)
+            return ControlPlaneContext(
+                principal=principal,
+                tenant=tenant,
+                workspace=workspace,
+                environment=environment,
+                security_domain=security_domain,
+                resource_owner_id=submission.resource_owner_id,
+            )
+        except (KeyError, TypeError, ValueError) as exc:
+            raise ExecutionRejected("Accepted execution authority is invalid") from exc
 
 
 class _ResultRecoveryReportStore:
