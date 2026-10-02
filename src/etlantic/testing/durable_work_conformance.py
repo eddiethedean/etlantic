@@ -187,7 +187,16 @@ def run_durable_work_conformance_suite(store: Any) -> None:
         plan_fingerprint="scope-plan",
     )
     assert accepted_scope_created
-    scopes = store.list_execution_scopes(context)
+    scopes: list[ControlPlaneContext] = []
+    scope_cursor = None
+    while True:
+        page = store.list_execution_scopes(
+            context, after_submission_id=scope_cursor, limit=1
+        )
+        scopes.extend(page.scopes)
+        scope_cursor = page.next_cursor
+        if scope_cursor is None:
+            break
     assert {
         (
             scope.principal.subject,

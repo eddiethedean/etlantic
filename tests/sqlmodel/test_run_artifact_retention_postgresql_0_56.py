@@ -51,7 +51,7 @@ def test_postgresql_artifact_retention_failure_retry_survives_restart(
         pytest.skip("ETLANTIC_CP_TEST_URL must point to isolated PostgreSQL")
 
     engine = sqlalchemy.create_engine(database_url)
-    assert upgrade(engine) == "012_bounded_event_tombstone_retention_0_56"
+    assert upgrade(engine) == "013_durable_submission_scope_backfill_0_56"
     ctx = _context()
     run_id = f"retention-{uuid4().hex}"
     identity = "result:managed-output"

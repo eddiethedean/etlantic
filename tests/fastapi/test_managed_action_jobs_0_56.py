@@ -83,7 +83,7 @@ def _config(
     database_url = f"sqlite:///{tmp_path / 'actions.sqlite'}"
     engine = sqlalchemy.create_engine(database_url)
     try:
-        assert upgrade(engine) == "012_bounded_event_tombstone_retention_0_56"
+        assert upgrade(engine) == "013_durable_submission_scope_backfill_0_56"
     finally:
         engine.dispose()
     return ManagedBackendConfig(

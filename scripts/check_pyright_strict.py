@@ -88,8 +88,12 @@ EXPECTED_DIGESTS = {
     # AC #215 preserves accepted scope through report recovery and retention;
     # AC #226 enumerates full accepted scopes through the provider contract.
     # Normalized diagnostics are unchanged at 9,856; only source locations move.
-    "Darwin": "4a2ba4befb9adf4535f322a31add422a2ab129a871f041de91ac1f4bb320cdff",
-    "Linux": "4a2ba4befb9adf4535f322a31add422a2ab129a871f041de91ac1f4bb320cdff",
+    # AC #227 adds bounded scope pages and a legacy submission-mirror backfill.
+    # Typed pagination removes seven shadow diagnostics from SQLModel tests;
+    # no new diagnostics are introduced. The inventory remains 9,856, with the
+    # fingerprint refreshed for source-location shifts.
+    "Darwin": "9fa3f72cac7dd1b0a359c9ac52e907edc07080e000ad27ed3700543090cea676",
+    "Linux": "9fa3f72cac7dd1b0a359c9ac52e907edc07080e000ad27ed3700543090cea676",
 }
 
 

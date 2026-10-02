@@ -13,6 +13,7 @@ from typing import Any, cast
 
 from etlantic.control_plane.durable_models import (
     EffectRecord,
+    ExecutionScopePage,
     ResultPublicationRecord,
 )
 from etlantic.control_plane.durable_protocols import DurableWorkStore
@@ -25,6 +26,7 @@ from etlantic.runtime.state import RunStatus
 from etlantic.secrets.provider import SecretAliasAuthorizer
 
 _LOG = logging.getLogger(__name__)
+_RETENTION_SCOPE_PAGE_SIZE = 20
 
 
 def _execution_scope_key(
@@ -70,6 +72,9 @@ class ExecutionHost:
         self.runner = runner
         self.cancel_check = cancel_check
         self.draining = False
+        self._retention_scope_workspace: tuple[str, str] | None = None
+        self._retention_scope_cursor: str | None = None
+        self._retention_seen_keys: set[object] = set()
 
     def _start_lease_monitor(
         self,
@@ -216,10 +221,25 @@ class ExecutionHost:
         if self.draining:
             return 0
         cleanup_artifacts = getattr(self.runner, "cleanup_expired_run_artifacts", None)
-        if callable(cleanup_artifacts):
-            cleanup_contexts = {_execution_scope_key(ctx): ctx}
+        retention_enabled = getattr(
+            self.runner, "run_artifact_retention_enabled", True
+        )
+        if callable(cleanup_artifacts) and retention_enabled is not False:
+            workspace = (ctx.tenant.tenant_id, ctx.workspace.workspace_id)
+            if workspace != self._retention_scope_workspace:
+                self._retention_scope_workspace = workspace
+                self._retention_scope_cursor = None
+                self._retention_seen_keys.clear()
+            cleanup_contexts: dict[object, ControlPlaneContext] = {}
+            page: ExecutionScopePage | None = None
             try:
-                for accepted_ctx in self.durable.list_execution_scopes(ctx):
+                page = self.durable.list_execution_scopes(
+                    ctx,
+                    after_submission_id=self._retention_scope_cursor,
+                    limit=_RETENTION_SCOPE_PAGE_SIZE,
+                )
+                self._retention_scope_cursor = page.next_cursor
+                for accepted_ctx in page.scopes:
                     if (
                         accepted_ctx.tenant.tenant_id,
                         accepted_ctx.workspace.workspace_id,
@@ -232,19 +252,28 @@ class ExecutionHost:
                         )
                         continue
                     cleanup_contexts.setdefault(
-                        _execution_scope_key(accepted_ctx), accepted_ctx
+                        self._retention_scope_key(accepted_ctx), accepted_ctx
                     )
             except Exception:
                 _LOG.warning("Could not list accepted scopes for artifact retention")
-            for scope_key in sorted(cleanup_contexts):
+            cleanup_contexts.setdefault(self._retention_scope_key(ctx), ctx)
+            for scope_key, cleanup_ctx in cleanup_contexts.items():
+                if scope_key in self._retention_seen_keys:
+                    continue
+                self._retention_seen_keys.add(scope_key)
                 try:
-                    cleanup_artifacts(cleanup_contexts[scope_key])
+                    cleanup_artifacts(cleanup_ctx)
                 except Exception:
                     # Retention has its own durable state and must not block
                     # ETL admission when a report store or filesystem is down.
                     _LOG.warning(
                         "Run artifact retention pass failed; execution polling continues"
                     )
+            if page is not None and page.next_cursor is None:
+                # Begin another round next tick. The cursor bounds each query,
+                # while this set avoids scanning the same storage partition
+                # once for every accepted authority variant in this round.
+                self._retention_seen_keys.clear()
         self.durable.reconcile_cancelled_submissions(ctx, limit=limit)
         self.durable.reconcile_terminal_outbox(ctx, limit=limit)
         self._reconcile_result_publications(ctx, limit=limit)
@@ -408,6 +437,20 @@ class ExecutionHost:
             self._release_lease(ctx, item.submission_id, lease.fencing_token)
             processed += 1
         return processed
+
+    def _retention_scope_key(self, ctx: ControlPlaneContext) -> object:
+        key_builder = getattr(self.runner, "artifact_retention_scope_key", None)
+        if callable(key_builder):
+            try:
+                key = key_builder(ctx)
+                hash(key)
+                return key
+            except Exception:
+                _LOG.warning(
+                    "Could not determine artifact retention storage scope; "
+                    "using complete accepted authority"
+                )
+        return _execution_scope_key(ctx)
 
     def _reconcile_result_publications(
         self, ctx: ControlPlaneContext, *, limit: int

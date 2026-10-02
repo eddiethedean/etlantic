@@ -14,6 +14,7 @@ from etlantic.control_plane.durable_models import (
     CheckpointRecord,
     DiffRecord,
     EffectRecord,
+    ExecutionScopePage,
     LeaseRecord,
     OutboxRecord,
     PreviewWorkspace,
@@ -123,8 +124,12 @@ class DurableWorkStore(Protocol):
         submission_id: str | None = None,
     ) -> tuple[SubmissionRecord, bool]: ...
     def list_execution_scopes(
-        self, ctx: ControlPlaneContext
-    ) -> Sequence[ControlPlaneContext]: ...
+        self,
+        ctx: ControlPlaneContext,
+        *,
+        after_submission_id: str | None = None,
+        limit: int = 100,
+    ) -> ExecutionScopePage: ...
     def pending_outbox(
         self, ctx: ControlPlaneContext, *, limit: int = 100
     ) -> Sequence[OutboxRecord]: ...

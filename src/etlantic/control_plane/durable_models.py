@@ -14,6 +14,14 @@ from dataclasses import asdict, dataclass, field
 from datetime import UTC, datetime
 from typing import Any, Literal, cast
 
+from etlantic.control_plane.models import (
+    ControlPlaneContext,
+    EnvironmentRef,
+    Principal,
+    SecurityDomain,
+    TenantRef,
+    WorkspaceRef,
+)
 from etlantic.control_plane.redaction import (
     redact_control_plane_payload,
     redact_control_plane_text,
@@ -110,6 +118,50 @@ class SubmissionRecord:
             **payload,
             "metadata": _metadata(self.metadata),
         }
+
+
+@dataclass(frozen=True, slots=True)
+class ExecutionScopePage:
+    """A bounded page of accepted execution scopes.
+
+    ``next_cursor`` is the last scanned submission ID when more submissions
+    remain in the workspace, or ``None`` when this page completes the scan.
+    """
+
+    scopes: tuple[ControlPlaneContext, ...]
+    next_cursor: str | None = None
+
+
+def execution_context_from_submission(
+    submission: SubmissionRecord,
+) -> ControlPlaneContext | None:
+    """Build accepted authority from a durable submission, if it is complete."""
+    if (
+        not submission.tenant_id
+        or not submission.workspace_id
+        or not submission.principal_subject
+        or not submission.environment
+        or not submission.security_domain_id
+    ):
+        return None
+    try:
+        return ControlPlaneContext(
+            principal=Principal.from_dict(
+                {
+                    "subject": submission.principal_subject,
+                    "issuer": submission.principal_issuer,
+                    "kind": submission.principal_kind,
+                }
+            ),
+            tenant=TenantRef(submission.tenant_id),
+            workspace=WorkspaceRef(submission.tenant_id, submission.workspace_id),
+            environment=EnvironmentRef(submission.environment),
+            security_domain=SecurityDomain(submission.security_domain_id),
+            resource_owner_id=submission.resource_owner_id,
+        )
+    except (KeyError, TypeError, ValueError):
+        # Historical or malformed authority data must not select a store.
+        return None
 
 
 @dataclass(frozen=True, slots=True)

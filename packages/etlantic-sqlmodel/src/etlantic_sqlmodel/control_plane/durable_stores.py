@@ -28,6 +28,7 @@ from etlantic.control_plane.durable_models import (
     CheckpointRecord,
     DiffRecord,
     EffectRecord,
+    ExecutionScopePage,
     LeaseRecord,
     OutboxRecord,
     PreviewWorkspace,
@@ -35,6 +36,7 @@ from etlantic.control_plane.durable_models import (
     ShadowRunRecord,
     StateDiagnostic,
     SubmissionRecord,
+    execution_context_from_submission,
 )
 from etlantic.control_plane.errors import ControlPlaneError
 from etlantic.control_plane.models import ControlPlaneContext
@@ -334,9 +336,49 @@ class SQLModelDurableWorkStore:
         return self._txn(lambda m: m.accept(ctx, **kwargs))
 
     def list_execution_scopes(
-        self, ctx: ControlPlaneContext
-    ) -> tuple[ControlPlaneContext, ...]:
-        return self._read_only(lambda m: m.list_execution_scopes(ctx))
+        self,
+        ctx: ControlPlaneContext,
+        *,
+        after_submission_id: str | None = None,
+        limit: int = 100,
+    ) -> ExecutionScopePage:
+        """Read a bounded scope page from the normalized submission mirror."""
+        if type(limit) is not int or not 1 <= limit <= 1000:
+            raise ValueError("limit must be between 1 and 1000")
+        stmt = select(DurableSubmissionEntityRow).where(
+            DurableSubmissionEntityRow.store_id == self.store_id,
+            DurableSubmissionEntityRow.tenant_id == ctx.tenant.tenant_id,
+            DurableSubmissionEntityRow.workspace_id == ctx.workspace.workspace_id,
+        )
+        if after_submission_id is not None:
+            stmt = stmt.where(
+                DurableSubmissionEntityRow.submission_id > after_submission_id
+            )
+        stmt = stmt.order_by(DurableSubmissionEntityRow.submission_id).limit(limit + 1)
+        with session_scope(self.engine) as session:
+            rows = [
+                (row.submission_id, row.payload_json)
+                for row in session.exec(stmt).all()
+            ]
+
+        has_more = len(rows) > limit
+        selected = rows[:limit]
+        scopes: list[ControlPlaneContext] = []
+        seen: set[ControlPlaneContext] = set()
+        for _submission_id, payload_json in selected:
+            try:
+                submission = SubmissionRecord(**json.loads(payload_json))
+            except (json.JSONDecodeError, TypeError, ValueError):
+                # A corrupt mirror row cannot safely choose an artifact store.
+                continue
+            accepted_ctx = execution_context_from_submission(submission)
+            if accepted_ctx is not None and accepted_ctx not in seen:
+                seen.add(accepted_ctx)
+                scopes.append(accepted_ctx)
+        return ExecutionScopePage(
+            scopes=tuple(scopes),
+            next_cursor=selected[-1][0] if has_more and selected else None,
+        )
 
     def pending_outbox(self, ctx: ControlPlaneContext, *, limit: int = 100):
         return self._read_only(lambda m: m.pending_outbox(ctx, limit=limit))

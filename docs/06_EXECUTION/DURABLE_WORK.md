@@ -10,10 +10,16 @@ in one provider transaction; dispatchers publish the outbox after commit.
 Execution hosts lease a submission before starting an attempt, and every host
 write carries a monotonically increasing fencing token.
 
-Durable providers expose `list_execution_scopes(ctx)` for managed artifact
-retention. It returns the unique accepted authority contexts in that tenant
-workspace, including completed submissions, so retention can select the same
-report and artifact stores used during execution.
+Durable providers expose paginated `list_execution_scopes(ctx, limit=...,
+after_submission_id=...)` for managed artifact retention. Each call returns a
+bounded page of unique, complete authority contexts plus a cursor for the next
+page. The SQLModel provider uses a bounded keyset query over the normalized
+submission mirror. The execution host rotates that cursor across ticks, so
+retention eventually visits completed submissions without loading the full
+SQLModel snapshot or repeating scans for contexts that share a retention store.
+Adapters with retention disabled skip scope discovery. SQLModel migration
+`013_durable_submission_scope_backfill_0_56` backfills normalized submission
+rows from existing snapshots before workers rely on the keyset pages.
 
 ## State-machine invariants
 

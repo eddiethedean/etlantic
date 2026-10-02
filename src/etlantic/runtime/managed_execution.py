@@ -12,7 +12,10 @@ from pathlib import Path
 from threading import Event
 from typing import TYPE_CHECKING, Any, cast
 
-from etlantic.control_plane.durable_models import ResultPublicationRecord
+from etlantic.control_plane.durable_models import (
+    ResultPublicationRecord,
+    execution_context_from_submission,
+)
 from etlantic.control_plane.execution_envelope import ExecutionEnvelope
 from etlantic.control_plane.input_resources import (
     InputResourceReference,
@@ -20,11 +23,6 @@ from etlantic.control_plane.input_resources import (
 )
 from etlantic.control_plane.models import (
     ControlPlaneContext,
-    EnvironmentRef,
-    Principal,
-    SecurityDomain,
-    TenantRef,
-    WorkspaceRef,
 )
 from etlantic.exceptions import (
     PipelineCancelledError,
@@ -169,36 +167,12 @@ def accepted_execution_context(
         raise ExecutionRejected(
             "Accepted tenant/workspace does not match the worker lease"
         )
-    if (
-        not submission.environment
-        or not submission.security_domain_id
-        or not submission.principal_subject
-    ):
+    accepted_ctx = execution_context_from_submission(submission)
+    if accepted_ctx is None:
         raise ExecutionRejected(
             "Accepted submission has no durable execution authority"
         )
-    try:
-        principal = Principal.from_dict(
-            {
-                "subject": submission.principal_subject,
-                "issuer": submission.principal_issuer,
-                "kind": submission.principal_kind,
-            }
-        )
-        tenant = TenantRef(submission.tenant_id)
-        workspace = WorkspaceRef(submission.tenant_id, submission.workspace_id)
-        environment = EnvironmentRef(submission.environment)
-        security_domain = SecurityDomain(submission.security_domain_id)
-        return ControlPlaneContext(
-            principal=principal,
-            tenant=tenant,
-            workspace=workspace,
-            environment=environment,
-            security_domain=security_domain,
-            resource_owner_id=submission.resource_owner_id,
-        )
-    except (KeyError, TypeError, ValueError) as exc:
-        raise ExecutionRejected("Accepted execution authority is invalid") from exc
+    return accepted_ctx
 
 
 class ManagedExecutionAdapter:
@@ -250,6 +224,33 @@ class ManagedExecutionAdapter:
         self.input_resource_store = input_resource_store
         self.run_artifact_retention_seconds = run_artifact_retention_seconds
         self.artifact_cleanup_batch_size = artifact_cleanup_batch_size
+
+    @property
+    def run_artifact_retention_enabled(self) -> bool:
+        """Whether this adapter has artifact retention configured."""
+        return self.run_artifact_retention_seconds is not None
+
+    def artifact_retention_scope_key(
+        self, ctx: ControlPlaneContext
+    ) -> tuple[str | tuple[bool, str], ...]:
+        """Return the dimensions that select this adapter's retention stores."""
+        if self.report_store_factory is not None:
+            return (
+                ctx.tenant.tenant_id,
+                ctx.workspace.workspace_id,
+                (ctx.principal.issuer is not None, ctx.principal.issuer or ""),
+                ctx.principal.kind,
+                ctx.principal.subject,
+                ctx.environment.name,
+                ctx.security_domain.domain_id,
+                (ctx.resource_owner_id is not None, ctx.resource_owner_id or ""),
+            )
+        # The managed report store and artifact workspace share these bounds.
+        return (
+            ctx.tenant.tenant_id,
+            ctx.workspace.workspace_id,
+            ctx.security_domain.domain_id,
+        )
 
     def cleanup_expired_run_artifacts(
         self,

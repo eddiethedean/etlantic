@@ -30,6 +30,7 @@ from etlantic.control_plane.durable_models import (
     CheckpointRecord,
     DiffRecord,
     EffectRecord,
+    ExecutionScopePage,
     LeaseRecord,
     OutboxRecord,
     PreviewWorkspace,
@@ -40,15 +41,11 @@ from etlantic.control_plane.durable_models import (
     StateDiagnostic,
     StateTransitionExplanation,
     SubmissionRecord,
+    execution_context_from_submission,
 )
 from etlantic.control_plane.errors import ControlPlaneError
 from etlantic.control_plane.models import (
     ControlPlaneContext,
-    EnvironmentRef,
-    Principal,
-    SecurityDomain,
-    TenantRef,
-    WorkspaceRef,
 )
 from etlantic.control_plane.redaction import (
     redact_control_plane_payload,
@@ -250,66 +247,41 @@ class MemoryDurableWorkStore:
                 raise ValueError(f"{name} must not be empty")
 
     def list_execution_scopes(
-        self, ctx: ControlPlaneContext
-    ) -> tuple[ControlPlaneContext, ...]:
-        """Return unique, complete accepted execution scopes for this workspace."""
+        self,
+        ctx: ControlPlaneContext,
+        *,
+        after_submission_id: str | None = None,
+        limit: int = 100,
+    ) -> ExecutionScopePage:
+        """Return a bounded page of complete accepted execution scopes."""
+        if type(limit) is not int or not 1 <= limit <= 1000:
+            raise ValueError("limit must be between 1 and 1000")
         with self._lock:
-            fields = {
+            candidates = sorted(
                 (
-                    row.principal_subject,
-                    row.principal_issuer,
-                    row.principal_kind,
-                    row.environment,
-                    row.security_domain_id,
-                    row.resource_owner_id,
-                )
-                for key, row in self._submissions.items()
-                if key[:2] == _scope(ctx)
-            }
-
-        scopes: list[ControlPlaneContext] = []
-        ordered_fields = sorted(
-            fields,
-            key=lambda values: tuple(
-                (value is not None, value or "") for value in values
-            ),
-        )
-        for (
-            principal_subject,
-            principal_issuer,
-            principal_kind,
-            environment_name,
-            security_domain_id,
-            resource_owner_id,
-        ) in ordered_fields:
-            # Historical submissions without persisted execution authority
-            # cannot safely select a report or artifact store.
-            if not principal_subject or not environment_name or not security_domain_id:
-                continue
-            try:
-                principal = Principal.from_dict(
-                    {
-                        "subject": principal_subject,
-                        "issuer": principal_issuer,
-                        "kind": principal_kind,
-                    }
-                )
-                scopes.append(
-                    ControlPlaneContext(
-                        principal=principal,
-                        tenant=TenantRef(ctx.tenant.tenant_id),
-                        workspace=WorkspaceRef(
-                            ctx.tenant.tenant_id, ctx.workspace.workspace_id
-                        ),
-                        environment=EnvironmentRef(environment_name),
-                        security_domain=SecurityDomain(security_domain_id),
-                        resource_owner_id=resource_owner_id,
+                    (key[2], row)
+                    for key, row in self._submissions.items()
+                    if key[:2] == _scope(ctx)
+                    and (
+                        after_submission_id is None
+                        or key[2] > after_submission_id
                     )
-                )
-            except (KeyError, TypeError, ValueError):
-                # Do not clean up through malformed or legacy authority data.
-                continue
-        return tuple(scopes)
+                ),
+                key=lambda item: item[0],
+            )
+        has_more = len(candidates) > limit
+        selected = candidates[:limit]
+        scopes: list[ControlPlaneContext] = []
+        seen: set[ControlPlaneContext] = set()
+        for _submission_id, submission in selected:
+            accepted_ctx = execution_context_from_submission(submission)
+            if accepted_ctx is not None and accepted_ctx not in seen:
+                seen.add(accepted_ctx)
+                scopes.append(accepted_ctx)
+        return ExecutionScopePage(
+            scopes=tuple(scopes),
+            next_cursor=selected[-1][0] if has_more and selected else None,
+        )
 
     def pending_outbox(
         self, ctx: ControlPlaneContext, *, limit: int = 100
