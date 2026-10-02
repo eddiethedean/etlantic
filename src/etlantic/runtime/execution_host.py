@@ -5,6 +5,7 @@ from __future__ import annotations
 import hashlib
 import inspect
 import logging
+from collections import deque
 from collections.abc import Callable, Mapping
 from contextlib import suppress
 from datetime import UTC, datetime
@@ -27,6 +28,8 @@ from etlantic.secrets.provider import SecretAliasAuthorizer
 
 _LOG = logging.getLogger(__name__)
 _RETENTION_SCOPE_PAGE_SIZE = 20
+_RETENTION_RETRY_CAPACITY = 100
+_RETENTION_RETRY_BUDGET = 10
 
 
 def _execution_scope_key(
@@ -74,6 +77,9 @@ class ExecutionHost:
         self.draining = False
         self._retention_scope_workspace: tuple[str, str] | None = None
         self._retention_scope_cursor: str | None = None
+        self._retention_retry_keys: deque[object] = deque()
+        self._retention_retry_contexts: dict[object, ControlPlaneContext] = {}
+        self._retention_single_slot_turn = False
 
     def _start_lease_monitor(
         self,
@@ -228,45 +234,60 @@ class ExecutionHost:
             if workspace != self._retention_scope_workspace:
                 self._retention_scope_workspace = workspace
                 self._retention_scope_cursor = None
-            cleanup_contexts: dict[object, ControlPlaneContext] = {}
-            page: ExecutionScopePage | None = None
-            try:
-                page = self.durable.list_execution_scopes(
-                    ctx,
-                    after_submission_id=self._retention_scope_cursor,
-                    limit=_RETENTION_SCOPE_PAGE_SIZE,
+            attempted_keys = self._retry_retention_scopes(
+                cleanup_artifacts, budget=_RETENTION_RETRY_BUDGET
+            )
+            pending_count = len(self._retention_retry_contexts)
+            available_slots = _RETENTION_RETRY_CAPACITY - pending_count
+            cleanup_budget = _RETENTION_SCOPE_PAGE_SIZE - len(attempted_keys)
+            new_scope_budget = min(cleanup_budget, available_slots)
+            if new_scope_budget > 0:
+                # Keep one slot for the worker scope when possible. With only
+                # one slot, alternate between the worker and accepted scopes
+                # so neither can starve while the retry queue is nearly full.
+                include_worker_scope = new_scope_budget > 1
+                if new_scope_budget == 1:
+                    include_worker_scope = self._retention_single_slot_turn
+                    self._retention_single_slot_turn = not self._retention_single_slot_turn
+                page_limit = min(
+                    _RETENTION_SCOPE_PAGE_SIZE,
+                    new_scope_budget - int(include_worker_scope),
                 )
-                self._retention_scope_cursor = page.next_cursor
-                for accepted_ctx in page.scopes:
-                    if (
-                        accepted_ctx.tenant.tenant_id,
-                        accepted_ctx.workspace.workspace_id,
-                    ) != (
-                        ctx.tenant.tenant_id,
-                        ctx.workspace.workspace_id,
-                    ):
-                        _LOG.warning(
-                            "Skipping accepted execution scope outside the worker workspace"
+                cleanup_contexts: dict[object, ControlPlaneContext] = {}
+                if page_limit > 0:
+                    try:
+                        page: ExecutionScopePage = self.durable.list_execution_scopes(
+                            ctx,
+                            after_submission_id=self._retention_scope_cursor,
+                            limit=page_limit,
                         )
-                        continue
-                    cleanup_contexts.setdefault(
-                        self._retention_scope_key(accepted_ctx), accepted_ctx
-                    )
-            except Exception:
-                _LOG.warning("Could not list accepted scopes for artifact retention")
-            cleanup_contexts.setdefault(self._retention_scope_key(ctx), ctx)
-            # Deduplicate only within this tick. Remembering keys across the
-            # complete history scan can delay the next cleanup batch for a
-            # partition by thousands of ticks, or forever under steady intake.
-            for cleanup_ctx in cleanup_contexts.values():
-                try:
-                    cleanup_artifacts(cleanup_ctx)
-                except Exception:
-                    # Retention has its own durable state and must not block
-                    # ETL admission when a report store or filesystem is down.
-                    _LOG.warning(
-                        "Run artifact retention pass failed; execution polling continues"
-                    )
+                        self._retention_scope_cursor = page.next_cursor
+                        for accepted_ctx in page.scopes:
+                            if (
+                                accepted_ctx.tenant.tenant_id,
+                                accepted_ctx.workspace.workspace_id,
+                            ) != (
+                                ctx.tenant.tenant_id,
+                                ctx.workspace.workspace_id,
+                            ):
+                                _LOG.warning(
+                                    "Skipping accepted execution scope outside the worker workspace"
+                                )
+                                continue
+                            key = self._retention_scope_key(accepted_ctx)
+                            if key not in attempted_keys:
+                                cleanup_contexts.setdefault(key, accepted_ctx)
+                    except Exception:
+                        _LOG.warning(
+                            "Could not list accepted scopes for artifact retention"
+                        )
+                if include_worker_scope:
+                    worker_key = self._retention_scope_key(ctx)
+                    if worker_key not in attempted_keys:
+                        cleanup_contexts.setdefault(worker_key, ctx)
+                for key, cleanup_ctx in cleanup_contexts.items():
+                    if self._cleanup_retention_scope(cleanup_artifacts, cleanup_ctx):
+                        self._queue_retention_retry(key, cleanup_ctx)
         self.durable.reconcile_cancelled_submissions(ctx, limit=limit)
         self.durable.reconcile_terminal_outbox(ctx, limit=limit)
         self._reconcile_result_publications(ctx, limit=limit)
@@ -430,6 +451,51 @@ class ExecutionHost:
             self._release_lease(ctx, item.submission_id, lease.fencing_token)
             processed += 1
         return processed
+
+    def _retry_retention_scopes(
+        self, cleanup_artifacts: Callable[[ControlPlaneContext], Any], *, budget: int
+    ) -> set[object]:
+        """Retry a bounded number of scopes, rotating unresolved work fairly."""
+        attempted: set[object] = set()
+        retry_count = min(budget, len(self._retention_retry_keys))
+        for _ in range(retry_count):
+            key = self._retention_retry_keys.popleft()
+            cleanup_ctx = self._retention_retry_contexts.pop(key)
+            attempted.add(key)
+            if self._cleanup_retention_scope(cleanup_artifacts, cleanup_ctx):
+                self._queue_retention_retry(key, cleanup_ctx)
+        return attempted
+
+    @staticmethod
+    def _cleanup_retention_scope(
+        cleanup_artifacts: Callable[[ControlPlaneContext], Any],
+        ctx: ControlPlaneContext,
+    ) -> bool:
+        """Return whether this store still needs a later cleanup pass."""
+        try:
+            outcome = cleanup_artifacts(ctx)
+        except Exception:
+            # Retention has its own durable state and must not block ETL
+            # admission when a report store or artifact filesystem is down.
+            _LOG.warning(
+                "Run artifact retention pass failed; execution polling continues"
+            )
+            return True
+        return getattr(outcome, "remaining_candidates", False) is True
+
+    def _queue_retention_retry(
+        self, key: object, ctx: ControlPlaneContext
+    ) -> None:
+        """Remember unresolved cleanup while keeping retry state bounded."""
+        if key in self._retention_retry_contexts:
+            return
+        if len(self._retention_retry_contexts) >= _RETENTION_RETRY_CAPACITY:
+            # Scope discovery reserves queue slots before advancing its cursor.
+            # This guard keeps a custom runner from growing state without bound.
+            _LOG.warning("Artifact-retention retry queue is full")
+            return
+        self._retention_retry_contexts[key] = ctx
+        self._retention_retry_keys.append(key)
 
     def _retention_scope_key(self, ctx: ControlPlaneContext) -> object:
         key_builder = getattr(self.runner, "artifact_retention_scope_key", None)
