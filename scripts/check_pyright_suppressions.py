@@ -25,7 +25,7 @@ from pathlib import Path
 # it through report recovery and artifact retention. AC #226 enumerates full
 # accepted scopes through the durable provider contract. Source lines shifted,
 # with no suppression added or removed; the 784-entry inventory is re-pinned.
-EXPECTED_DIGEST = "5e07e3cb5cec3b414c881847885f1789aeff02b8512d7ac407132dae83c9bdea"
+EXPECTED_DIGEST = "317b8c89e2af3f43882a313c1cab4a7fb5aa2f902c6f0f315c61148306733f94"
 
 _IGNORED_DIRECTORIES = frozenset(
     {

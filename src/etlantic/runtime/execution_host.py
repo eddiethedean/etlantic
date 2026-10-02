@@ -27,17 +27,19 @@ from etlantic.secrets.provider import SecretAliasAuthorizer
 _LOG = logging.getLogger(__name__)
 
 
-def _execution_scope_key(ctx: ControlPlaneContext) -> tuple[str, ...]:
+def _execution_scope_key(
+    ctx: ControlPlaneContext,
+) -> tuple[str | tuple[bool, str], ...]:
     """Identify the persisted authority dimensions used by managed providers."""
     return (
         ctx.tenant.tenant_id,
         ctx.workspace.workspace_id,
-        ctx.principal.issuer or "",
+        (ctx.principal.issuer is not None, ctx.principal.issuer or ""),
         ctx.principal.kind,
         ctx.principal.subject,
         ctx.environment.name,
         ctx.security_domain.domain_id,
-        ctx.resource_owner_id or "",
+        (ctx.resource_owner_id is not None, ctx.resource_owner_id or ""),
     )
 
 

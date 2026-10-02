@@ -88,8 +88,8 @@ EXPECTED_DIGESTS = {
     # AC #215 preserves accepted scope through report recovery and retention;
     # AC #226 enumerates full accepted scopes through the provider contract.
     # Normalized diagnostics are unchanged at 9,856; only source locations move.
-    "Darwin": "36a5ed42c4ae5093c9eeaaf763f4f2b798e3eb39784880d2fd9608de301ea6f1",
-    "Linux": "36a5ed42c4ae5093c9eeaaf763f4f2b798e3eb39784880d2fd9608de301ea6f1",
+    "Darwin": "4a2ba4befb9adf4535f322a31add422a2ab129a871f041de91ac1f4bb320cdff",
+    "Linux": "4a2ba4befb9adf4535f322a31add422a2ab129a871f041de91ac1f4bb320cdff",
 }
 
 

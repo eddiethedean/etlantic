@@ -269,7 +269,10 @@ class MemoryDurableWorkStore:
 
         scopes: list[ControlPlaneContext] = []
         ordered_fields = sorted(
-            fields, key=lambda values: tuple(value or "" for value in values)
+            fields,
+            key=lambda values: tuple(
+                (value is not None, value or "") for value in values
+            ),
         )
         for (
             principal_subject,
