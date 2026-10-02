@@ -98,8 +98,10 @@ EXPECTED_DIGESTS = {
     # AC #216 adds principal-scoped run IDs and retention pagination coverage.
     # The normalized diagnostic set is unchanged at 9,856; fingerprints moved
     # with the reviewed source and test edits.
-    "Darwin": "c2ff1dfcf206a167148564298a4ba38b657f66424bb2fb2f6cc3c283d9418e5c",
-    "Linux": "c2ff1dfcf206a167148564298a4ba38b657f66424bb2fb2f6cc3c283d9418e5c",
+    # The benchmark gate selects an Apple Silicon reference on macOS; strict
+    # diagnostics remain unchanged, with fingerprints shifted by the selector.
+    "Darwin": "c91698c6d844f3209b6eff3c6c363de42c0521abc7721f68fbd62080aadadddc",
+    "Linux": "c91698c6d844f3209b6eff3c6c363de42c0521abc7721f68fbd62080aadadddc",
 }
 
 
