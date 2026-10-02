@@ -128,6 +128,7 @@ class DurableWorkStore(Protocol):
         ctx: ControlPlaneContext,
         *,
         after_submission_id: str | None = None,
+        through_submission_id: str | None = None,
         limit: int = 100,
     ) -> ExecutionScopePage: ...
     def pending_outbox(

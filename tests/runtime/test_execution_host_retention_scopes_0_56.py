@@ -38,11 +38,15 @@ class _CountingStore(MemoryDurableWorkStore):
         ctx: ControlPlaneContext,
         *,
         after_submission_id: str | None = None,
+        through_submission_id: str | None = None,
         limit: int = 100,
     ) -> ExecutionScopePage:
         self.scope_pages.append((after_submission_id, limit))
         return super().list_execution_scopes(
-            ctx, after_submission_id=after_submission_id, limit=limit
+            ctx,
+            after_submission_id=after_submission_id,
+            through_submission_id=through_submission_id,
+            limit=limit,
         )
 
 

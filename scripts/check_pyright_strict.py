@@ -92,8 +92,11 @@ EXPECTED_DIGESTS = {
     # Typed pagination removes seven shadow diagnostics from SQLModel tests;
     # no new diagnostics are introduced. The inventory remains 9,856, with the
     # fingerprint refreshed for source-location shifts.
-    "Darwin": "9fa3f72cac7dd1b0a359c9ac52e907edc07080e000ad27ed3700543090cea676",
-    "Linux": "9fa3f72cac7dd1b0a359c9ac52e907edc07080e000ad27ed3700543090cea676",
+    # AC #230 bounds scope scans with an insertion-sequence watermark so
+    # retry-queue saturation cannot hold the cursor. The strict inventory
+    # remains 9,856; fingerprints move with source-location shifts.
+    "Darwin": "750effa220e899e948e2d1cfe0684b7ae4728d0434c97bf87334f3686b46144f",
+    "Linux": "750effa220e899e948e2d1cfe0684b7ae4728d0434c97bf87334f3686b46144f",
 }
 
 

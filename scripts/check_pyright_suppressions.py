@@ -28,7 +28,10 @@ from pathlib import Path
 # AC #227 paginates retention scope discovery and centralizes accepted-context
 # reconstruction. No suppression was added or removed; the 784-entry inventory
 # is re-pinned after source-line shifts.
-EXPECTED_DIGEST = "e76413443b413c05e957b486df6283fbdb670bef21758b1caea559e4b732281a"
+# AC #230 bounds paginated scope scans with a high watermark so a full retry
+# queue cannot stall discovery. No suppression was added or removed; the
+# inventory is re-pinned after source-line shifts.
+EXPECTED_DIGEST = "376bb7a13f0d5f117535659cd4149dc48b65630b776b9ec525bed93cc1939e33"
 
 _IGNORED_DIRECTORIES = frozenset(
     {

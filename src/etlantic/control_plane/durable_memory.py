@@ -251,24 +251,41 @@ class MemoryDurableWorkStore:
         ctx: ControlPlaneContext,
         *,
         after_submission_id: str | None = None,
+        through_submission_id: str | None = None,
         limit: int = 100,
     ) -> ExecutionScopePage:
         """Return a bounded page of complete accepted execution scopes."""
         if type(limit) is not int or not 1 <= limit <= 1000:
             raise ValueError("limit must be between 1 and 1000")
         with self._lock:
-            candidates = sorted(
+            scope = _scope(ctx)
+            workspace_rows = [
+                (key[2], row)
+                for key, row in self._submissions.items()
+                if key[:2] == scope
+            ]
+            high_watermark = through_submission_id
+            if high_watermark is None and workspace_rows:
+                high_watermark = workspace_rows[-1][0]
+            watermark_index = next(
                 (
-                    (key[2], row)
-                    for key, row in self._submissions.items()
-                    if key[:2] == _scope(ctx)
-                    and (
-                        after_submission_id is None
-                        or key[2] > after_submission_id
-                    )
+                    index
+                    for index, (submission_id, _row) in enumerate(workspace_rows)
+                    if submission_id == high_watermark
                 ),
-                key=lambda item: item[0],
+                -1,
             )
+            candidates = []
+            if watermark_index >= 0:
+                candidates = sorted(
+                    (
+                        item
+                        for item in workspace_rows[: watermark_index + 1]
+                        if after_submission_id is None
+                        or item[0] > after_submission_id
+                    ),
+                    key=lambda item: item[0],
+                )
         has_more = len(candidates) > limit
         selected = candidates[:limit]
         scopes: list[ControlPlaneContext] = []
@@ -281,6 +298,7 @@ class MemoryDurableWorkStore:
         return ExecutionScopePage(
             scopes=tuple(scopes),
             next_cursor=selected[-1][0] if has_more and selected else None,
+            high_watermark=high_watermark,
         )
 
     def pending_outbox(

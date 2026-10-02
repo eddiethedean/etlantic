@@ -46,7 +46,7 @@ from etlantic_sqlmodel.control_plane.models import (
     DurableSubmissionEntityRow,
 )
 from etlantic_sqlmodel.control_plane.session import session_scope
-from sqlmodel import Session, SQLModel, delete, select
+from sqlmodel import Session, SQLModel, select
 
 T = TypeVar("T")
 
@@ -298,39 +298,70 @@ class SQLModelDurableWorkStore:
     def _sync_entity_tables(
         self, session: Session, store: MemoryDurableWorkStore
     ) -> None:
-        """Dual-write normalized submission/outbox rows (041-P1-01)."""
-        session.exec(
-            delete(DurableSubmissionEntityRow).where(
+        """Dual-write mirrors while preserving IDs used by bounded keyset scans."""
+        submission_rows = session.exec(
+            select(DurableSubmissionEntityRow).where(
                 DurableSubmissionEntityRow.store_id == self.store_id
             )
-        )
-        session.exec(
-            delete(DurableOutboxEntityRow).where(
-                DurableOutboxEntityRow.store_id == self.store_id
-            )
-        )
+        ).all()
+        existing_submissions = {
+            (row.tenant_id, row.workspace_id, row.submission_id): row
+            for row in submission_rows
+        }
+        current_submission_keys: set[tuple[str, str, str]] = set()
         for key, submission in store._submissions.items():
             tenant_id, workspace_id, submission_id = key
-            session.add(
-                DurableSubmissionEntityRow(
-                    store_id=self.store_id,
-                    tenant_id=tenant_id,
-                    workspace_id=workspace_id,
-                    submission_id=submission_id,
-                    payload_json=json.dumps(asdict(submission), sort_keys=True),
+            row_key = (tenant_id, workspace_id, submission_id)
+            current_submission_keys.add(row_key)
+            payload_json = json.dumps(asdict(submission), sort_keys=True)
+            row = existing_submissions.get(row_key)
+            if row is None:
+                session.add(
+                    DurableSubmissionEntityRow(
+                        store_id=self.store_id,
+                        tenant_id=tenant_id,
+                        workspace_id=workspace_id,
+                        submission_id=submission_id,
+                        payload_json=payload_json,
+                    )
                 )
+            else:
+                row.payload_json = payload_json
+        for row_key, row in existing_submissions.items():
+            if row_key not in current_submission_keys:
+                session.delete(row)
+
+        outbox_rows = session.exec(
+            select(DurableOutboxEntityRow).where(
+                DurableOutboxEntityRow.store_id == self.store_id
             )
+        ).all()
+        existing_outbox = {
+            (row.tenant_id, row.workspace_id, row.outbox_id): row
+            for row in outbox_rows
+        }
+        current_outbox_keys: set[tuple[str, str, str]] = set()
         for key, outbox in store._outbox.items():
             tenant_id, workspace_id, outbox_id = key
-            session.add(
-                DurableOutboxEntityRow(
-                    store_id=self.store_id,
-                    tenant_id=tenant_id,
-                    workspace_id=workspace_id,
-                    outbox_id=outbox_id,
-                    payload_json=json.dumps(asdict(outbox), sort_keys=True),
+            row_key = (tenant_id, workspace_id, outbox_id)
+            current_outbox_keys.add(row_key)
+            payload_json = json.dumps(asdict(outbox), sort_keys=True)
+            row = existing_outbox.get(row_key)
+            if row is None:
+                session.add(
+                    DurableOutboxEntityRow(
+                        store_id=self.store_id,
+                        tenant_id=tenant_id,
+                        workspace_id=workspace_id,
+                        outbox_id=outbox_id,
+                        payload_json=payload_json,
+                    )
                 )
-            )
+            else:
+                row.payload_json = payload_json
+        for row_key, row in existing_outbox.items():
+            if row_key not in current_outbox_keys:
+                session.delete(row)
 
     def accept(self, ctx: ControlPlaneContext, **kwargs: Any):
         return self._txn(lambda m: m.accept(ctx, **kwargs))
@@ -340,34 +371,62 @@ class SQLModelDurableWorkStore:
         ctx: ControlPlaneContext,
         *,
         after_submission_id: str | None = None,
+        through_submission_id: str | None = None,
         limit: int = 100,
     ) -> ExecutionScopePage:
         """Read a bounded scope page from the normalized submission mirror."""
         if type(limit) is not int or not 1 <= limit <= 1000:
             raise ValueError("limit must be between 1 and 1000")
-        stmt = select(DurableSubmissionEntityRow).where(
+        workspace_filter = (
             DurableSubmissionEntityRow.store_id == self.store_id,
             DurableSubmissionEntityRow.tenant_id == ctx.tenant.tenant_id,
             DurableSubmissionEntityRow.workspace_id == ctx.workspace.workspace_id,
         )
-        if after_submission_id is not None:
-            stmt = stmt.where(
-                DurableSubmissionEntityRow.submission_id > after_submission_id
-            )
-        stmt = stmt.order_by(DurableSubmissionEntityRow.submission_id).limit(limit + 1)
         with session_scope(self.engine) as session:
-            rows = [
-                (row.submission_id, row.payload_json)
-                for row in session.exec(stmt).all()
-            ]
+            high_watermark = through_submission_id
+            watermark_row_id: int | None = None
+            if high_watermark is None:
+                last_row = session.exec(
+                    select(
+                        DurableSubmissionEntityRow.id,
+                        DurableSubmissionEntityRow.submission_id,
+                    )
+                    .where(*workspace_filter)
+                    .order_by(DurableSubmissionEntityRow.id.desc())
+                    .limit(1)
+                ).first()
+                if last_row is not None:
+                    watermark_row_id, high_watermark = last_row
+            elif high_watermark is not None:
+                watermark_row_id = session.exec(
+                    select(DurableSubmissionEntityRow.id)
+                    .where(
+                        *workspace_filter,
+                        DurableSubmissionEntityRow.submission_id == high_watermark,
+                    )
+                    .limit(1)
+                ).first()
+            stmt = select(DurableSubmissionEntityRow).where(*workspace_filter)
+            if watermark_row_id is not None:
+                stmt = stmt.where(DurableSubmissionEntityRow.id <= watermark_row_id)
+            else:
+                stmt = stmt.where(False)
+            if after_submission_id is not None:
+                stmt = stmt.where(
+                    DurableSubmissionEntityRow.submission_id > after_submission_id
+                )
+            stmt = stmt.order_by(
+                DurableSubmissionEntityRow.submission_id
+            ).limit(limit + 1)
+            rows = session.exec(stmt).all()
 
         has_more = len(rows) > limit
         selected = rows[:limit]
         scopes: list[ControlPlaneContext] = []
         seen: set[ControlPlaneContext] = set()
-        for _submission_id, payload_json in selected:
+        for row in selected:
             try:
-                submission = SubmissionRecord(**json.loads(payload_json))
+                submission = SubmissionRecord(**json.loads(row.payload_json))
             except (json.JSONDecodeError, TypeError, ValueError):
                 # A corrupt mirror row cannot safely choose an artifact store.
                 continue
@@ -377,7 +436,8 @@ class SQLModelDurableWorkStore:
                 scopes.append(accepted_ctx)
         return ExecutionScopePage(
             scopes=tuple(scopes),
-            next_cursor=selected[-1][0] if has_more and selected else None,
+            next_cursor=selected[-1].submission_id if has_more and selected else None,
+            high_watermark=high_watermark,
         )
 
     def pending_outbox(self, ctx: ControlPlaneContext, *, limit: int = 100):

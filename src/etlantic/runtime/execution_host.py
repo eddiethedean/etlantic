@@ -77,6 +77,7 @@ class ExecutionHost:
         self.draining = False
         self._retention_scope_workspace: tuple[str, str] | None = None
         self._retention_scope_cursor: str | None = None
+        self._retention_scope_high_watermark: str | None = None
         self._retention_retry_keys: deque[object] = deque()
         self._retention_retry_contexts: dict[object, ControlPlaneContext] = {}
         self._retention_single_slot_turn = False
@@ -234,13 +235,15 @@ class ExecutionHost:
             if workspace != self._retention_scope_workspace:
                 self._retention_scope_workspace = workspace
                 self._retention_scope_cursor = None
+                self._retention_scope_high_watermark = None
             attempted_keys = self._retry_retention_scopes(
                 cleanup_artifacts, budget=_RETENTION_RETRY_BUDGET
             )
-            pending_count = len(self._retention_retry_contexts)
-            available_slots = _RETENTION_RETRY_CAPACITY - pending_count
             cleanup_budget = _RETENTION_SCOPE_PAGE_SIZE - len(attempted_keys)
-            new_scope_budget = min(cleanup_budget, available_slots)
+            # Discovery continues even if the retry queue is full. A snapshot
+            # watermark bounds each sweep, so scopes that cannot be queued are
+            # rediscovered on a later sweep instead of blocking later scopes.
+            new_scope_budget = cleanup_budget
             if new_scope_budget > 0:
                 # Keep one slot for the worker scope when possible. With only
                 # one slot, alternate between the worker and accepted scopes
@@ -259,9 +262,13 @@ class ExecutionHost:
                         page: ExecutionScopePage = self.durable.list_execution_scopes(
                             ctx,
                             after_submission_id=self._retention_scope_cursor,
+                            through_submission_id=self._retention_scope_high_watermark,
                             limit=page_limit,
                         )
+                        self._retention_scope_high_watermark = page.high_watermark
                         self._retention_scope_cursor = page.next_cursor
+                        if page.next_cursor is None:
+                            self._retention_scope_high_watermark = None
                         for accepted_ctx in page.scopes:
                             if (
                                 accepted_ctx.tenant.tenant_id,
@@ -490,8 +497,8 @@ class ExecutionHost:
         if key in self._retention_retry_contexts:
             return
         if len(self._retention_retry_contexts) >= _RETENTION_RETRY_CAPACITY:
-            # Scope discovery reserves queue slots before advancing its cursor.
-            # This guard keeps a custom runner from growing state without bound.
+            # The active scope sweep is bounded by its high-watermark. A scope
+            # omitted here will be discovered again on a later sweep.
             _LOG.warning("Artifact-retention retry queue is full")
             return
         self._retention_retry_contexts[key] = ctx

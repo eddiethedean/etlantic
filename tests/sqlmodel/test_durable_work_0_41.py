@@ -199,7 +199,10 @@ def test_sqlmodel_execution_scope_pages_bypass_snapshot_load(
     event.listen(engine, "before_cursor_execute", record_statement)
     first = store.list_execution_scopes(base, limit=2)
     second = store.list_execution_scopes(
-        base, after_submission_id=first.next_cursor, limit=2
+        base,
+        after_submission_id=first.next_cursor,
+        through_submission_id=first.high_watermark,
+        limit=2,
     )
     event.remove(engine, "before_cursor_execute", record_statement)
 
@@ -208,6 +211,7 @@ def test_sqlmodel_execution_scope_pages_bypass_snapshot_load(
         "pipeline-b",
     ]
     assert first.next_cursor == "submission-b"
+    assert first.high_watermark == "submission-c"
     assert [scope.principal.subject for scope in second.scopes] == ["pipeline-c"]
     assert second.next_cursor is None
     assert all("cp_durable_snapshot" not in statement for statement in statements)

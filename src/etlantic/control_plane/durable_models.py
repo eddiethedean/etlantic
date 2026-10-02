@@ -125,11 +125,14 @@ class ExecutionScopePage:
     """A bounded page of accepted execution scopes.
 
     ``next_cursor`` is the last scanned submission ID when more submissions
-    remain in the workspace, or ``None`` when this page completes the scan.
+    remain through ``high_watermark``, or ``None`` when this snapshot is
+    complete. The watermark records the newest insertion at scan start and
+    keeps later submissions from extending the scan.
     """
 
     scopes: tuple[ControlPlaneContext, ...]
     next_cursor: str | None = None
+    high_watermark: str | None = None
 
 
 def execution_context_from_submission(
