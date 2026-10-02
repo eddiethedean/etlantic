@@ -1,37 +1,33 @@
 ---
-title: Release artifact verification for 0.55.0
-status: published
-current_minor: "0.55"
+title: Release artifact verification for 0.56.0
+status: candidate
+current_minor: "0.56"
 ---
 
-# Release artifact verification for 0.55.0
+# Release artifact verification for 0.56.0
 
-> **Status: ETLantic 0.55.0 is published.** The GitHub release contains the
-> per-artifact manifest `release-artifacts.json` (48 package archives) and
-> `sbom-warning.txt`; it does not contain a CycloneDX SBOM.
+> **Status: 0.56.0 is a qualification candidate and has not been published.**
+> The supported published line remains 0.55.x.
 
-The release workflow is configured to build the core and first-party
-distributions, publish a per-artifact SHA-256 manifest, and attest build
-provenance. CycloneDX SBOM generation is optional. The published release
-contains `sbom-warning.txt`, not a CycloneDX SBOM.
+## Verify candidate wheels
 
-## Verify published assets
+The phase qualification builds all lockstep candidate wheels and records each
+archive digest in the [0.56 wheel manifest](../11_DEVELOPMENT/evidence/phase_0_56/WHEEL_MANIFEST.json).
+The package compatibility report records the isolated installation, runtime
+resolution, compatibility checks, and schema snapshots.
 
-1. Open the [v0.55.0 GitHub Release](https://github.com/eddiethedean/etlantic/releases/tag/v0.55.0)
-   and download a wheel and `release-artifacts.json`.
-2. Compare the wheel's SHA-256 digest with its entry in the manifest, then
-   verify build provenance for the downloaded wheel:
+Rebuild the candidate wheel set from the repository root with:
 
-   ```bash
-   gh attestation verify path/to/etlantic-0.55.0-*.whl \
-     --owner eddiethedean \
-     --repo etlantic
-   ```
+```bash
+uv build --all-packages --wheel --out-dir /tmp/etlantic-phase056-candidate-wheels --clear
+uv run python scripts/qualify_phase056_packages.py \
+  --repo-root . \
+  --wheel-dir /tmp/etlantic-phase056-candidate-wheels \
+  --output docs/11_DEVELOPMENT/evidence/phase_0_56/PACKAGE_COMPATIBILITY_0_56.json
+```
 
-3. The release contains `sbom-warning.txt`; no CycloneDX SBOM asset was
-   published.
-4. Prefer exact pins such as `etlantic==0.55.0` and matching first-party
-   plugins in lockfiles.
-
-The release asset list and per-artifact digests are recorded in the GitHub
-release manifest.
+Before any future publication, the release workflow must produce
+`release-artifacts.json`, a per-artifact SHA-256 manifest, and provenance
+attestations for the published `0.56.0` assets. The workflow may also emit
+`sbom-warning.txt` if SBOM generation is unavailable.
+This candidate record does not imply those release assets exist.

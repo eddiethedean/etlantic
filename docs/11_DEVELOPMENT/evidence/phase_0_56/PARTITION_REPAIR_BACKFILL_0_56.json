@@ -1,0 +1,45 @@
+{
+  "schema": "etlantic.phase_0_56.partition_repair_backfill/1",
+  "status": "passed",
+  "environment": {
+    "os": "Darwin 25.5.0",
+    "architecture": "arm64",
+    "python": "3.11.15",
+    "postgresql": "16.13 isolated loopback Homebrew cluster"
+  },
+  "command": "ETLANTIC_SQL_TEST_URL=postgresql+psycopg://etlantic_test@127.0.0.1:55433/postgres uv run pytest -q tests/sql/test_postgresql_partition_plans_0_56.py tests/sql/test_postgresql_live_0_56.py tests/fastapi/test_managed_partition_lifecycle_0_56.py tests/fastapi/test_managed_rerun_http_0_56.py",
+  "result": {
+    "passed": 16,
+    "failed": 0,
+    "skipped": 0
+  },
+  "cases": [
+    {
+      "test": "tests/sql/test_postgresql_partition_plans_0_56.py",
+      "observed": "Partition read/write plans bind validated selectors and required capabilities; missing partition_column and empty/duplicate selectors fail closed."
+    },
+    {
+      "test": "tests/sql/test_postgresql_live_0_56.py::test_live_postgresql_partition_read_and_atomic_replace",
+      "observed": "Reads only selected partitions within configured row/byte bounds. Replacement preserves untouched partitions and atomically replaces selected rows."
+    },
+    {
+      "test": "tests/sql/test_postgresql_live_0_56.py::test_live_postgresql_partition_replace_rejects_rows_outside_selector",
+      "observed": "Out-of-selector rows are rejected and the target transaction rolls back."
+    },
+    {
+      "test": "tests/fastapi/test_managed_partition_lifecycle_0_56.py::test_managed_repair_and_backfill_execute_selected_postgresql_partitions",
+      "observed": "A managed HTTP repair and headless backfill execute against live PostgreSQL; duplicate backfill idempotency returns the same child; only selected partitions change; report/status and parent, submission, attempt and lineage identities are persisted."
+    },
+    {
+      "test": "tests/fastapi/test_managed_rerun_http_0_56.py",
+      "observed": "Existing managed rerun/replay lifecycle remains green alongside repair/backfill."
+    }
+  ],
+  "safety_boundaries": [
+    "Provider must configure partition_column.",
+    "Selectors are bounded and validated before admission/execution.",
+    "Required provider capabilities are explicit; unsupported bindings fail closed.",
+    "Replacement and effect receipt share the target transaction.",
+    "No secret values or source rows are recorded in this evidence."
+  ]
+}

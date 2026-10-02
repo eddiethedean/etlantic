@@ -96,10 +96,21 @@ def main() -> int:
     if f"[{version}]:" not in changelog:
         errors.append(f"CHANGELOG.md missing footer link [{version}]:")
 
+    facts = json.loads((ROOT / "docs" / "release-facts.json").read_text())
     security = (ROOT / "SECURITY.md").read_text(encoding="utf-8")
     major_minor = ".".join(version.split(".")[:2])
-    if f"| {major_minor}.x |" not in security:
-        errors.append(f"SECURITY.md missing current supported line {major_minor}.x")
+    security_line = (
+        major_minor
+        if facts.get("publication_status") == "published"
+        else str(facts.get("support_line", "")).removesuffix(".x")
+    )
+    if f"| {security_line}.x |" not in security:
+        errors.append(f"SECURITY.md missing supported line {security_line}.x")
+    if (
+        facts.get("publication_status") != "published"
+        and f"| {major_minor}.x |" not in security
+    ):
+        errors.append(f"SECURITY.md missing candidate line {major_minor}.x")
 
     for pkg in PACKAGES:
         path = ROOT / "packages" / pkg / "pyproject.toml"

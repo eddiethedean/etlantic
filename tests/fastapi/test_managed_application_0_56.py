@@ -2740,9 +2740,15 @@ def test_managed_accept_reconciles_commit_when_durable_ack_is_lost(
     assert recovered.submission_id == receipt.submission_id
     assert service.get_run_status(ctx, receipt.resource_id)["status"] == "accepted"
     assert len(durable.pending_outbox(ctx)) == 1
-    host = ExecutionHost(durable, owner_id="lost-ack-recovery-worker")
+    host = ExecutionHost(
+        durable,
+        owner_id="lost-ack-recovery-worker",
+        runner=ManagedExecutionAdapter(report_root=tmp_path / "reports"),
+    )
     assert host.tick(ctx) == 1
-    assert service.get_run_status(ctx, receipt.resource_id)["status"] == "completed"
+    final_status = service.get_run_status(ctx, receipt.resource_id)
+    attempts = durable.list_attempts(ctx, receipt.submission_id)
+    assert final_status["status"] == "completed", (final_status, attempts)
     assert (
         service.submit_run(ctx, "pipe", idempotency_key="managed-lost-ack") == receipt
     )

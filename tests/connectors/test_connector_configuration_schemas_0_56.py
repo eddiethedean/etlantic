@@ -14,6 +14,10 @@ from etlantic.connectors.negotiate import (
 )
 from etlantic.exceptions import PipelineValidationError
 from etlantic.registry import BindingDescriptor
+from etlantic_sql.live_postgresql import (
+    LivePostgresSinkConnector,
+    LivePostgresSourceConnector,
+)
 
 
 def test_connector_info_configuration_schema_round_trips() -> None:
@@ -29,6 +33,16 @@ def test_connector_info_configuration_schema_round_trips() -> None:
     serialized = info.to_dict()
     serialized["configuration_schema"]["properties"].clear()
     assert "transaction_rid" in info.configuration_schema["properties"]
+
+
+def test_postgresql_partition_options_are_in_the_installed_schema() -> None:
+    source = LivePostgresSourceConnector().info()
+    sink = LivePostgresSinkConnector().info()
+
+    assert "source.partitioned" in source.capabilities
+    assert "partition_column" in source.configuration_schema["properties"]
+    assert "write.partition_replace" in sink.capabilities
+    assert "partition_column" in sink.configuration_schema["properties"]
 
 
 def test_installed_schema_rejects_unknown_option_without_echoing_values() -> None:

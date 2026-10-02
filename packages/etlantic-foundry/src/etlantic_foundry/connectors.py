@@ -58,7 +58,7 @@ from etlantic_foundry.schemas import (
 )
 
 PROVIDER = "foundry"
-PACKAGE_VERSION = "0.55.0"
+PACKAGE_VERSION = "0.56.0"
 DEFAULT_TIMEOUT = 20
 MAX_TIMEOUT = 60
 DEFAULT_PAGE_SIZE = 200

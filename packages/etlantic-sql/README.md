@@ -11,8 +11,8 @@ pipelines need `Profile(sql_engine="sql")`, SQL→SQL fusion, or Experimental
 ## Install
 
 ```bash
-pip install 'etlantic-sql==0.55.0'
-# pip install 'etlantic==0.55.0'
+pip install 'etlantic-sql==0.56.0'
+# pip install 'etlantic==0.56.0'
 export ETLANTIC_SQL_URL=postgresql+psycopg://user:pass@localhost:5432/etlantic
 # Or use SQLite:
 # export ETLANTIC_SQL_URL=sqlite+pysqlite:///:memory:
@@ -107,6 +107,16 @@ transaction. Reconciliation consults that row; an unavailable ledger returns
 SQLite-backed fake remains available as `FakePostgresConnection` for fast
 connector unit tests; it is not registered as the PostgreSQL provider.
 
+Managed repair and backfill use bounded partition operations when both
+PostgreSQL bindings configure `partition_column` and declare
+`source.partitioned` or `write.partition_replace` plus `idempotency` as
+required capabilities. Partition IDs are opaque strings matched to the
+configured column's text representation. Source reads filter to those values;
+sink publication deletes and replaces only those values in the same
+transaction as its effect-ledger row. Empty output clears the selected
+partitions. Rows outside the accepted selector are rejected before commit.
+Bindings without the column configuration cannot admit repair or backfill.
+
 During managed execution, PostgreSQL source and sink connectors also provide
 opaque resource identities to the worker. Before opening a sink write session,
 the runtime compares source and target identities, including the live server
@@ -163,7 +173,7 @@ python examples/sql_failure_recovery.py
 
 ## Links
 
-[SQL tutorial](https://etlantic.readthedocs.io/en/v0.55.0/06_EXECUTION/SQL_TUTORIAL/) ·
-[SQL hello](https://etlantic.readthedocs.io/en/v0.55.0/06_EXECUTION/SQL_HELLO_PYPI/) ·
+[SQL tutorial](https://etlantic.readthedocs.io/en/v0.56.0/06_EXECUTION/SQL_TUTORIAL/) ·
+[SQL hello](https://etlantic.readthedocs.io/en/v0.56.0/06_EXECUTION/SQL_HELLO_PYPI/) ·
 [Source](https://github.com/eddiethedean/etlantic/tree/main/packages/etlantic-sql) ·
 [Issues](https://github.com/eddiethedean/etlantic/issues)

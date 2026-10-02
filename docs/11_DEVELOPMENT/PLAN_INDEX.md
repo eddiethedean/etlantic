@@ -13,7 +13,7 @@ ETLantic's planning documents describe intended outcomes, dependencies, and
 release gates. They are **not** a substitute for current product documentation.
 
 !!! important "Use the right source of truth"
-    - To learn what **ETLantic 0.55 can do now**, use
+    - To learn what **ETLantic 0.56 can do now**, use
       [Capabilities](../01_GETTING_STARTED/CAPABILITIES.md), the
       [CLI reference](../10_REFERENCE/CLI.md), and the
       [Python API reference](../10_REFERENCE/API_REFERENCE.md).
@@ -78,7 +78,7 @@ evidence remains in **0.38**.
 
 | Plan | Status | Current boundary | Next horizon or gate |
 |---|---|---|---|
-| [Main roadmap](https://github.com/eddiethedean/etlantic/blob/main/ROADMAP.md) | Current sequence | 0.55 inferred authoring published; 0.56 complete application backend planned | [ROADMAP](https://github.com/eddiethedean/etlantic/blob/main/ROADMAP.md) §§ 0.55–0.60 |
+| [Main roadmap](https://github.com/eddiethedean/etlantic/blob/main/ROADMAP.md) | Current sequence | 0.55 inferred authoring published; 0.56 application backend candidate | [ROADMAP](https://github.com/eddiethedean/etlantic/blob/main/ROADMAP.md) §§ 0.55–0.60 |
 | [0.49 implementation plan](IMPLEMENTATION_PLAN_0_49.md) | Implemented qualified subset | Optional DuckDB engine package, embedded runtime, dialect/compiler subset, security policy, and qualification evidence; advanced matrix/release evidence remains tracked in the exit gate | [Exit gate 0.49](EXIT_GATE_0_49.md) · [findings ledger](FINDINGS_0_49.md) · [epic #110](https://github.com/eddiethedean/etlantic/issues/110) |
 | [0.50 implementation plan](IMPLEMENTATION_PLAN_0_50.md) | Published; technical qualification complete | Frozen seven-engine baseline, pushdown conformance, and requirement-level evidence generated for 0.51 consumption | [Exit gate 0.50](EXIT_GATE_0_50.md) · [evidence index](evidence/portable_0_50/portable_evidence_index_0_50.json) |
 | [0.51 implementation plan](IMPLEMENTATION_PLAN_0_51.md) | Foundation published; adaptive qualification pending | Profile policy, report metadata migration, and closed `/2` wire model are implemented; candidate discovery, solver, and runtime remain unavailable | [ADR-025](adr/ADR-025-ADAPTIVE-EXECUTION-AND-PHYSICAL-DAG.md) · [Exit gate 0.51](EXIT_GATE_0_51.md) · [epic #30](https://github.com/eddiethedean/etlantic/issues/30) |
@@ -86,7 +86,7 @@ evidence remains in **0.38**.
 | [0.53 implementation plan](IMPLEMENTATION_PLAN_0_53.md) | Planned | Whole-DAG admission and fixture-qualified local physical execution; availability remains gated | Adaptive program Phases 8–9 / I2 |
 | [0.54 implementation plan](IMPLEMENTATION_PLAN_0_54.md) | Published 0.54.0; adaptive graduation pending | Public conformance, differential/security qualification, and exact-matrix graduation | Adaptive program Phase 10 / I3 |
 | [0.55 inferred model authoring plan](IMPLEMENTATION_PLAN_0_55.md) · [execution plan](EXECUTION_PLAN_0_55.md) · [remediation plan](INFERENCE_REMEDIATION_PLAN_0_55.md) · [full review fix plan](REVIEW_FIX_PLAN_0_55.md) | Scoped qualification complete; 0.55.0 published | Experimental source inference, portable transfer, target inspection, and SQLite reference write modes; other adapters retain their documented limits | [Exit gate 0.55](EXIT_GATE_0_55.md) · [evidence index](evidence/inference_0_55/index.json) |
-| [0.56 complete application backend](IMPLEMENTATION_PLAN_0_56.md) · [execution plan](EXECUTION_PLAN_0_56.md) · [source review](FINDINGS_0_56.md) | Planned; starts from v0.55.0 | Twelve reconciled backend gaps, full developer control, real workers/results/actions, live PostgreSQL/CSV and Semblance-backed Foundry qualification | Gate A contract freeze, B1–E1 integration checkpoints, Gates A–F and AC056-001–044; no shipped claim |
+| [0.56 complete application backend](IMPLEMENTATION_PLAN_0_56.md) · [execution plan](EXECUTION_PLAN_0_56.md) · [source review](FINDINGS_0_56.md) · [exit gate](EXIT_GATE_0_56.md) | Candidate implementation; starts from v0.55.0 | Twelve reconciled backend gaps, full developer control, real workers/results/actions, live PostgreSQL/CSV and Semblance-backed Foundry qualification | Gate A contract freeze, B1–E1 integration checkpoints, Gates A–F and AC056-001–044; no shipped claim |
 | [ADR-025: Adaptive execution and physical DAG](adr/ADR-025-ADAPTIVE-EXECUTION-AND-PHYSICAL-DAG.md) | Accepted | `/1` preservation, opt-in `/2`, portable-only candidates, physical-DAG authority, and fail-closed consumers | 0.51 Phase 0 |
 | [0.48 implementation plan](IMPLEMENTATION_PLAN_0_48.md) | Gate-ready milestone | Human-governed AI proposals; reuse 0.42 approvals | [EXIT_GATE_0_48](EXIT_GATE_0_48.md) |
 | [ADR-024: Human-governed AI](adr/ADR-024-HUMAN-GOVERNED-AI.md) | Accepted | Proposals untrusted; read-only default; no vendor SDK in core | 0.48 |

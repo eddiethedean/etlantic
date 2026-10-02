@@ -25,12 +25,14 @@ from etlantic.connectors.capabilities import (
     PUBLICATION_ATOMIC,
     RECONCILIATION,
     SOURCE_BATCH_SNAPSHOT,
+    SOURCE_PARTITIONED,
     SOURCE_SCHEMA_DISCOVERY,
     SOURCE_STATISTICS_BOUNDED,
     TRANSACTIONS,
     WRITE_APPEND,
     WRITE_MERGE,
     WRITE_OVERWRITE,
+    WRITE_PARTITION_REPLACE,
 )
 from etlantic.connectors.errors import (
     ConnectorConfigError,
@@ -63,7 +65,7 @@ from etlantic_sql.configuration_schemas import (
 )
 
 PROVIDER = "postgresql"
-PACKAGE_VERSION = "0.55.0"
+PACKAGE_VERSION = "0.56.0"
 _RESOURCE_IDENTITY_KEY = secrets.token_bytes(32)
 DEFAULT_ROW_LIMIT = 10_000
 MAX_ROW_LIMIT = 100_000
@@ -80,6 +82,7 @@ SOURCE_CAPS = frozenset(
         SOURCE_BATCH_SNAPSHOT,
         SOURCE_SCHEMA_DISCOVERY,
         SOURCE_STATISTICS_BOUNDED,
+        SOURCE_PARTITIONED,
     }
 )
 SINK_CAPS = frozenset(
@@ -91,6 +94,7 @@ SINK_CAPS = frozenset(
         TRANSACTIONS,
         RECONCILIATION,
         IDEMPOTENCY,
+        WRITE_PARTITION_REPLACE,
     }
 )
 
@@ -103,6 +107,7 @@ _SOURCE_KEYS = {
     "batch_size",
     "max_bytes",
     "timeout_seconds",
+    "partition_column",
 }
 _SINK_KEYS = {
     "schema",
@@ -111,6 +116,7 @@ _SINK_KEYS = {
     "key_columns",
     "effect_table",
     "timeout_seconds",
+    "partition_column",
 }
 _STORAGE_KEYS = {"schema", "table", "timeout_seconds"}
 _SENSITIVE_CONFIG_KEYS = {"url", "dsn", "database_url", "connection_string"}
@@ -365,6 +371,26 @@ def _json_bytes(row: Mapping[str, Any]) -> int:
         ) from exc
 
 
+def _normalize_partition_ids(partition_ids: Sequence[str]) -> tuple[str, ...]:
+    """Validate opaque partition identifiers at the provider boundary."""
+    if (
+        not isinstance(partition_ids, (list, tuple))
+        or not partition_ids
+        or len(partition_ids) > 1000
+        or any(
+            not isinstance(value, str) or not value.strip() or len(value) > 4096
+            for value in partition_ids
+        )
+        or len(set(partition_ids)) != len(partition_ids)
+    ):
+        raise ConnectorConfigError(
+            "PostgreSQL partition ids must be 1-1000 unique non-blank strings",
+            code="PMCONN887",
+            provider=PROVIDER,
+        )
+    return tuple(partition_ids)
+
+
 @dataclass
 class LivePostgresSourceConnector:
     """Bounded table snapshots read from a live PostgreSQL database."""
@@ -450,6 +476,45 @@ class LivePostgresSourceConnector:
             secret_refs=_secret_ref_names(binding),
         )
 
+    async def plan_read_partitions(
+        self,
+        *,
+        binding: Mapping[str, Any],
+        context: Mapping[str, Any],
+        partition_ids: tuple[str, ...],
+    ) -> SourcePlan:
+        """Plan a bounded PostgreSQL read using configured partition values."""
+        cfg = _config(binding, _SOURCE_KEYS)
+        partition_column = cfg.get("partition_column")
+        if not isinstance(partition_column, str) or not _IDENTIFIER.fullmatch(
+            partition_column
+        ):
+            raise ConnectorConfigError(
+                "PostgreSQL partition reads require a valid partition_column",
+                code="PMCONN880",
+                provider=PROVIDER,
+            )
+        normalized_ids = _normalize_partition_ids(partition_ids)
+        base = await self.plan_read(binding=binding, context=context)
+        intent = dict(base.listing_intent)
+        intent.update(
+            {
+                "partition_column": partition_column,
+                "partition_ids": list(normalized_ids),
+            }
+        )
+        return SourcePlan(
+            provider=base.provider,
+            protocol=base.protocol,
+            mode=base.mode,
+            identity_scheme="postgresql_partition_snapshot/1",
+            listing_intent=intent,
+            required_capabilities=(SOURCE_PARTITIONED,),
+            config_fingerprint=base.config_fingerprint,
+            root_ref=base.root_ref,
+            secret_refs=base.secret_refs,
+        )
+
     async def read_batches(
         self,
         *,
@@ -489,7 +554,21 @@ class LivePostgresSourceConnector:
                 code="PMCONN875",
                 provider=PROVIDER,
             )
-        expected_plan = await self.plan_read(binding=binding, context=context)
+        partition_ids = context.get("etlantic.partition_ids")
+        if partition_ids is not None:
+            if not isinstance(partition_ids, (list, tuple)):
+                raise ConnectorReadError(
+                    "PostgreSQL partition selector is invalid",
+                    code="PMCONN881",
+                    provider=PROVIDER,
+                )
+            expected_plan = await self.plan_read_partitions(
+                binding=binding,
+                context=context,
+                partition_ids=tuple(cast(Sequence[str], partition_ids)),
+            )
+        else:
+            expected_plan = await self.plan_read(binding=binding, context=context)
         if (
             plan.listing_intent != expected_plan.listing_intent
             or plan.root_ref != expected_plan.root_ref
@@ -511,7 +590,25 @@ class LivePostgresSourceConnector:
                         table = Table(
                             table_name, MetaData(), schema=schema, autoload_with=conn
                         )
-                        result = conn.execute(select(table).limit(row_limit + 1))
+                        query = select(table)
+                        partition_ids = intent.get("partition_ids")
+                        if partition_ids is not None:
+                            from sqlalchemy import Text
+                            from sqlalchemy import cast as sql_cast
+
+                            partition_column = str(intent["partition_column"])
+                            if partition_column not in table.c:
+                                raise ConnectorReadError(
+                                    "PostgreSQL partition column is missing",
+                                    code="PMCONN882",
+                                    provider=PROVIDER,
+                                )
+                            query = query.where(
+                                sql_cast(table.c[partition_column], Text).in_(
+                                    list(cast(Sequence[str], partition_ids))
+                                )
+                            )
+                        result = conn.execute(query.limit(row_limit + 1))
                         rows: list[dict[str, Any]] = [
                             dict(cast(Mapping[str, Any], row._mapping))
                             for row in result
@@ -676,6 +773,44 @@ class LivePostgresSinkConnector:
             },
         )
 
+    async def plan_write_partitions(
+        self,
+        *,
+        binding: Mapping[str, Any],
+        context: Mapping[str, Any],
+        partition_ids: tuple[str, ...],
+    ) -> SinkPlan:
+        """Plan atomic replacement of the selected partition values."""
+        cfg = _config(binding, _SINK_KEYS)
+        partition_column = cfg.get("partition_column")
+        if not isinstance(partition_column, str) or not _IDENTIFIER.fullmatch(
+            partition_column
+        ):
+            raise ConnectorConfigError(
+                "PostgreSQL partition replacement requires a valid partition_column",
+                code="PMCONN883",
+                provider=PROVIDER,
+            )
+        normalized_ids = _normalize_partition_ids(partition_ids)
+        base = await self.plan_write(binding=binding, context=context)
+        metadata = dict(base.metadata)
+        metadata.update(
+            {
+                "partition_column": partition_column,
+                "partition_ids": list(normalized_ids),
+            }
+        )
+        return SinkPlan(
+            provider=base.provider,
+            protocol=base.protocol,
+            write_mode="partition_replace",
+            required_capabilities=(WRITE_PARTITION_REPLACE, IDEMPOTENCY),
+            config_fingerprint=base.config_fingerprint,
+            root_ref=base.root_ref,
+            secret_refs=base.secret_refs,
+            metadata=metadata,
+        )
+
     async def begin_write(
         self,
         *,
@@ -684,7 +819,21 @@ class LivePostgresSinkConnector:
         context: Mapping[str, Any],
     ) -> WriteSession:
         cfg = _config(binding, _SINK_KEYS)
-        expected_plan = await self.plan_write(binding=binding, context=context)
+        partition_ids = context.get("etlantic.partition_ids")
+        if partition_ids is not None:
+            if not isinstance(partition_ids, (list, tuple)):
+                raise ConnectorWriteError(
+                    "PostgreSQL partition selector is invalid",
+                    code="PMCONN884",
+                    provider=PROVIDER,
+                )
+            expected_plan = await self.plan_write_partitions(
+                binding=binding,
+                context=context,
+                partition_ids=tuple(cast(Sequence[str], partition_ids)),
+            )
+        else:
+            expected_plan = await self.plan_write(binding=binding, context=context)
         if (
             plan != expected_plan
             or plan.config_fingerprint != fingerprint_public_config(cfg)
@@ -879,6 +1028,39 @@ class LivePostgresSinkConnector:
                 schema=str(meta["schema"]),
                 autoload_with=connection,
             )
+            mode = str(plan.write_mode or "append")
+            if mode == "partition_replace":
+                from sqlalchemy import Text, delete
+                from sqlalchemy import cast as sql_cast
+
+                partition_column = str(meta.get("partition_column") or "")
+                partition_ids = _normalize_partition_ids(
+                    cast(Sequence[str], meta.get("partition_ids") or ())
+                )
+                if not partition_column or partition_column not in target.c:
+                    raise ConnectorWriteError(
+                        "PostgreSQL partition column is missing",
+                        code="PMCONN885",
+                        provider=PROVIDER,
+                    )
+                if any(
+                    partition_column not in row
+                    or row[partition_column] is None
+                    or str(row[partition_column]) not in partition_ids
+                    for row in rows
+                ):
+                    raise ConnectorWriteError(
+                        "PostgreSQL partition replacement rows do not match the selected partitions",
+                        code="PMCONN886",
+                        provider=PROVIDER,
+                    )
+                connection.execute(
+                    delete(target).where(
+                        sql_cast(target.c[partition_column], Text).in_(
+                            list(partition_ids)
+                        )
+                    )
+                )
             if rows:
                 supplied_columns: set[str] = {column for row in rows for column in row}
                 target_columns = set(target.c.keys())
@@ -912,7 +1094,6 @@ class LivePostgresSinkConnector:
                         code="PMCONN868",
                         provider=PROVIDER,
                     )
-            mode = str(plan.write_mode or "append")
             if mode in {"overwrite", "replace"}:
                 from sqlalchemy import delete
 

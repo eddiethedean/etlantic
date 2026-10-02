@@ -82,8 +82,11 @@ EXPECTED_DIGESTS = {
     # managed qualification path. Removing an unused pipeline test fixture
     # eliminates nine diagnostics; the reviewed suppression-free inventory
     # contains 9,837 diagnostics, with no new suppression directives.
-    "Darwin": "fa1f7ada44ded57548cd43d947ac3f1acbcaade13859266b9a9fc17b40550f45",
-    "Linux": "fa1f7ada44ded57548cd43d947ac3f1acbcaade13859266b9a9fc17b40550f45",
+    # The final managed partition repair/backfill qualification adds 19
+    # suppression-free diagnostics in its new provider and lifecycle tests;
+    # the regular strict Pyright run remains clean. Reviewed at 9,856.
+    "Darwin": "19ef2b969589d14179cf37325de1f3ec0c4f345fb679112e0ac470d5ad5fa854",
+    "Linux": "19ef2b969589d14179cf37325de1f3ec0c4f345fb679112e0ac470d5ad5fa854",
 }
 
 

@@ -4,8 +4,9 @@ ETLantic **0.35.0** closed **Migration Completion and Joint Freeze (M7)**.
 **0.36.0** closed joint compatibility burn-in. **0.37** closed the
 stable-foundation gate. **0.38.0** closed the connectivity line.
 **0.39.0** closed CP1 incubation. **0.40.0** closed CP2 registry incubation.
-**0.55.0** is the current published **Beta release**, with scoped Experimental
-inferred-model authoring qualification. Adaptive graduation remains pending. The 0.54
+**0.55.0** is the latest published **Beta release**, with scoped Experimental
+inferred-model authoring qualification. Phase 0.56 is a package candidate undergoing
+final release review; it is not yet published. Adaptive graduation remains pending. The 0.54
 release added public conformance and the bounded source/fusion reference; its
 local adaptive physical-DAG execution is Experimental and fixture-qualified.
 The 0.55 release does not include adaptive execution. Fresh package-matched
@@ -45,14 +46,14 @@ For the status, current boundary, and owner of every domain plan, use the
 | Previous | 0.52 | Adaptive planning, physical lowering, and explain/diff | Implemented on main; executable evidence generated — [plan](IMPLEMENTATION_PLAN_0_52.md), [evidence](evidence/adaptive_0_51/FINDINGS.md), governed by [ADR-025](adr/ADR-025-ADAPTIVE-EXECUTION-AND-PHYSICAL-DAG.md) |
 | Previous | 0.53 | Local adaptive physical-DAG execution | Published Experimental / fixture-qualified — [plan](IMPLEMENTATION_PLAN_0_53.md), [exit gate](EXIT_GATE_0_53.md), and [qualification evidence](evidence/adaptive_0_53/README.md) |
 | Previous | 0.54 | Adaptive conformance and bounded scan/filter/project implementation | Published Beta; graduation pending — [plan](IMPLEMENTATION_PLAN_0_54.md), [exit gate](EXIT_GATE_0_54.md) |
-| Current | 0.55 | Scoped Experimental inferred-model authoring | Published — [exit gate](EXIT_GATE_0_55.md) |
-| Next | 0.56 | Complete application ETL backend with full specification and run control | Planned — [implementation](IMPLEMENTATION_PLAN_0_56.md), [execution](EXECUTION_PLAN_0_56.md), [review](FINDINGS_0_56.md) |
+| Previous | 0.55 | Scoped Experimental inferred-model authoring | Published — [exit gate](EXIT_GATE_0_55.md) |
+| Current | 0.56 | Complete application ETL backend with full specification and run control | Candidate qualification complete; publication pending — [exit gate](EXIT_GATE_0_56.md) |
 | Later | 0.57 | Brownfield adoption bridges | Planning freeze — [implementation plan](IMPLEMENTATION_PLAN_0_57.md) |
 | Later | 0.58 | Operator console | Planned — [implementation plan](IMPLEMENTATION_PLAN_0_58.md) |
 | Later | 0.59 | Managed runtime and enterprise provider packs | Planned — [implementation plan](IMPLEMENTATION_PLAN_0_59.md) |
 | Later | 0.60 | TransformationModel incubation | Proposed — [implementation plan](IMPLEMENTATION_PLAN_0_60.md) |
 | Foundation | 0.36–0.37 | Joint burn-in → stable foundation | Gate-ready (0.37) |
-| Post-foundation | 0.38–0.60 | Connectivity → control plane → intelligence → federation → governed AI → DuckDB package → portable-engine baseline → adaptive execution → inferred model authoring → complete application backend → adoption → operations → providers → modeling incubation | In progress (0.55 published Beta; adaptive graduation pending) |
+| Post-foundation | 0.38–0.60 | Connectivity → control plane → intelligence → federation → governed AI → DuckDB package → portable-engine baseline → adaptive execution → inferred model authoring → complete application backend → adoption → operations → providers → modeling incubation | Candidate review (0.55 remains published Beta; adaptive graduation pending) |
 
 “Planned” records capability order only. It does not imply a release date or
 that the capability is available in the current package.

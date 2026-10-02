@@ -7,11 +7,11 @@
       "evidence_artifacts": [
         {
           "path": "docs/11_DEVELOPMENT/evidence/phase_0_56/LOCAL_QUALIFICATION.md",
-          "sha256": "6b758f154997200707600e886f42247bdb7ba615eb7cff07e1ab110f05bf195a"
+          "sha256": "569c271c0368160da2f709796eb732a17a5f63b21a167d42be7d6e311b260280"
         },
         {
           "path": "docs/11_DEVELOPMENT/evidence/phase_0_56/WHEEL_MANIFEST.json",
-          "sha256": "d416a52721f2e1aa2bf74e151d637d8408f7b20bbe7d65c88b0b99e1aa3d3786"
+          "sha256": "8070b20da74609a8e2a6f22d81b8d2e8ec5d291468e2ce1e8a07ea8c0502af3e"
         }
       ],
       "id": "AC056-001",
@@ -19,7 +19,7 @@
       "open_reason": "",
       "owner": "056-SVC",
       "provider_version_tuple": [
-        "source candidate; workspace package version 0.55.0"
+        "source candidate; workspace package version 0.56.0"
       ],
       "status": "passed",
       "supporting_cases": [
@@ -34,11 +34,11 @@
       "evidence_artifacts": [
         {
           "path": "docs/11_DEVELOPMENT/evidence/phase_0_56/LOCAL_QUALIFICATION.md",
-          "sha256": "6b758f154997200707600e886f42247bdb7ba615eb7cff07e1ab110f05bf195a"
+          "sha256": "569c271c0368160da2f709796eb732a17a5f63b21a167d42be7d6e311b260280"
         },
         {
           "path": "docs/11_DEVELOPMENT/evidence/phase_0_56/WHEEL_MANIFEST.json",
-          "sha256": "d416a52721f2e1aa2bf74e151d637d8408f7b20bbe7d65c88b0b99e1aa3d3786"
+          "sha256": "8070b20da74609a8e2a6f22d81b8d2e8ec5d291468e2ce1e8a07ea8c0502af3e"
         }
       ],
       "id": "AC056-002",
@@ -46,7 +46,7 @@
       "open_reason": "",
       "owner": "056-SVC",
       "provider_version_tuple": [
-        "source candidate; workspace package version 0.55.0"
+        "source candidate; workspace package version 0.56.0"
       ],
       "status": "passed",
       "supporting_cases": [
@@ -64,11 +64,11 @@
       "evidence_artifacts": [
         {
           "path": "docs/11_DEVELOPMENT/evidence/phase_0_56/LOCAL_QUALIFICATION.md",
-          "sha256": "6b758f154997200707600e886f42247bdb7ba615eb7cff07e1ab110f05bf195a"
+          "sha256": "569c271c0368160da2f709796eb732a17a5f63b21a167d42be7d6e311b260280"
         },
         {
           "path": "docs/11_DEVELOPMENT/evidence/phase_0_56/WHEEL_MANIFEST.json",
-          "sha256": "d416a52721f2e1aa2bf74e151d637d8408f7b20bbe7d65c88b0b99e1aa3d3786"
+          "sha256": "8070b20da74609a8e2a6f22d81b8d2e8ec5d291468e2ce1e8a07ea8c0502af3e"
         }
       ],
       "id": "AC056-003",
@@ -76,7 +76,7 @@
       "open_reason": "",
       "owner": "056-SVC",
       "provider_version_tuple": [
-        "source candidate; workspace package version 0.55.0"
+        "source candidate; workspace package version 0.56.0"
       ],
       "status": "passed",
       "supporting_cases": [
@@ -92,7 +92,7 @@
       "evidence_artifacts": [
         {
           "path": "docs/11_DEVELOPMENT/evidence/phase_0_56/LOCAL_QUALIFICATION.md",
-          "sha256": "6b758f154997200707600e886f42247bdb7ba615eb7cff07e1ab110f05bf195a"
+          "sha256": "569c271c0368160da2f709796eb732a17a5f63b21a167d42be7d6e311b260280"
         },
         {
           "path": "docs/11_DEVELOPMENT/evidence/phase_0_56/PUBLIC_CONTROL_COVERAGE_0_56.json",
@@ -100,7 +100,7 @@
         },
         {
           "path": "docs/11_DEVELOPMENT/evidence/phase_0_56/WHEEL_MANIFEST.json",
-          "sha256": "d416a52721f2e1aa2bf74e151d637d8408f7b20bbe7d65c88b0b99e1aa3d3786"
+          "sha256": "8070b20da74609a8e2a6f22d81b8d2e8ec5d291468e2ce1e8a07ea8c0502af3e"
         }
       ],
       "id": "AC056-004",
@@ -108,7 +108,7 @@
       "open_reason": "",
       "owner": "056-SPEC",
       "provider_version_tuple": [
-        "source candidate; workspace package version 0.55.0"
+        "source candidate; workspace package version 0.56.0"
       ],
       "status": "passed",
       "supporting_cases": [
@@ -126,11 +126,11 @@
       "evidence_artifacts": [
         {
           "path": "docs/11_DEVELOPMENT/evidence/phase_0_56/LOCAL_QUALIFICATION.md",
-          "sha256": "6b758f154997200707600e886f42247bdb7ba615eb7cff07e1ab110f05bf195a"
+          "sha256": "569c271c0368160da2f709796eb732a17a5f63b21a167d42be7d6e311b260280"
         },
         {
           "path": "docs/11_DEVELOPMENT/evidence/phase_0_56/WHEEL_MANIFEST.json",
-          "sha256": "d416a52721f2e1aa2bf74e151d637d8408f7b20bbe7d65c88b0b99e1aa3d3786"
+          "sha256": "8070b20da74609a8e2a6f22d81b8d2e8ec5d291468e2ce1e8a07ea8c0502af3e"
         }
       ],
       "id": "AC056-005",
@@ -138,7 +138,7 @@
       "open_reason": "",
       "owner": "056-SPEC",
       "provider_version_tuple": [
-        "etlantic==0.55.0 workspace candidate",
+        "etlantic==0.56.0 workspace candidate",
         "Python 3.11.15",
         "etlantic.execution_envelope/2"
       ],
@@ -157,11 +157,11 @@
       "evidence_artifacts": [
         {
           "path": "docs/11_DEVELOPMENT/evidence/phase_0_56/LOCAL_QUALIFICATION.md",
-          "sha256": "6b758f154997200707600e886f42247bdb7ba615eb7cff07e1ab110f05bf195a"
+          "sha256": "569c271c0368160da2f709796eb732a17a5f63b21a167d42be7d6e311b260280"
         },
         {
           "path": "docs/11_DEVELOPMENT/evidence/phase_0_56/WHEEL_MANIFEST.json",
-          "sha256": "d416a52721f2e1aa2bf74e151d637d8408f7b20bbe7d65c88b0b99e1aa3d3786"
+          "sha256": "8070b20da74609a8e2a6f22d81b8d2e8ec5d291468e2ce1e8a07ea8c0502af3e"
         }
       ],
       "id": "AC056-006",
@@ -169,9 +169,9 @@
       "open_reason": "",
       "owner": "056-SPEC",
       "provider_version_tuple": [
-        "etlantic==0.55.0",
-        "etlantic-fastapi==0.55.0",
-        "etlantic-foundry==0.55.0",
+        "etlantic==0.56.0",
+        "etlantic-fastapi==0.56.0",
+        "etlantic-foundry==0.56.0",
         "Foundry source/sink/storage protocols"
       ],
       "status": "passed",
@@ -193,11 +193,11 @@
       "evidence_artifacts": [
         {
           "path": "docs/11_DEVELOPMENT/evidence/phase_0_56/LOCAL_QUALIFICATION.md",
-          "sha256": "6b758f154997200707600e886f42247bdb7ba615eb7cff07e1ab110f05bf195a"
+          "sha256": "569c271c0368160da2f709796eb732a17a5f63b21a167d42be7d6e311b260280"
         },
         {
           "path": "docs/11_DEVELOPMENT/evidence/phase_0_56/WHEEL_MANIFEST.json",
-          "sha256": "d416a52721f2e1aa2bf74e151d637d8408f7b20bbe7d65c88b0b99e1aa3d3786"
+          "sha256": "8070b20da74609a8e2a6f22d81b8d2e8ec5d291468e2ce1e8a07ea8c0502af3e"
         }
       ],
       "id": "AC056-007",
@@ -205,7 +205,7 @@
       "open_reason": "",
       "owner": "056-ADMIT",
       "provider_version_tuple": [
-        "source candidate; workspace package version 0.55.0"
+        "source candidate; workspace package version 0.56.0"
       ],
       "status": "passed",
       "supporting_cases": [
@@ -224,11 +224,11 @@
       "evidence_artifacts": [
         {
           "path": "docs/11_DEVELOPMENT/evidence/phase_0_56/LOCAL_QUALIFICATION.md",
-          "sha256": "6b758f154997200707600e886f42247bdb7ba615eb7cff07e1ab110f05bf195a"
+          "sha256": "569c271c0368160da2f709796eb732a17a5f63b21a167d42be7d6e311b260280"
         },
         {
           "path": "docs/11_DEVELOPMENT/evidence/phase_0_56/WHEEL_MANIFEST.json",
-          "sha256": "d416a52721f2e1aa2bf74e151d637d8408f7b20bbe7d65c88b0b99e1aa3d3786"
+          "sha256": "8070b20da74609a8e2a6f22d81b8d2e8ec5d291468e2ce1e8a07ea8c0502af3e"
         }
       ],
       "id": "AC056-008",
@@ -236,7 +236,7 @@
       "open_reason": "",
       "owner": "056-ADMIT",
       "provider_version_tuple": [
-        "source candidate; workspace package version 0.55.0",
+        "source candidate; workspace package version 0.56.0",
         "PostgreSQL 16.13 loopback"
       ],
       "status": "passed",
@@ -256,11 +256,11 @@
       "evidence_artifacts": [
         {
           "path": "docs/11_DEVELOPMENT/evidence/phase_0_56/LOCAL_QUALIFICATION.md",
-          "sha256": "6b758f154997200707600e886f42247bdb7ba615eb7cff07e1ab110f05bf195a"
+          "sha256": "569c271c0368160da2f709796eb732a17a5f63b21a167d42be7d6e311b260280"
         },
         {
           "path": "docs/11_DEVELOPMENT/evidence/phase_0_56/WHEEL_MANIFEST.json",
-          "sha256": "d416a52721f2e1aa2bf74e151d637d8408f7b20bbe7d65c88b0b99e1aa3d3786"
+          "sha256": "8070b20da74609a8e2a6f22d81b8d2e8ec5d291468e2ce1e8a07ea8c0502af3e"
         }
       ],
       "id": "AC056-009",
@@ -268,7 +268,7 @@
       "open_reason": "",
       "owner": "056-ADMIT",
       "provider_version_tuple": [
-        "source candidate; workspace package version 0.55.0"
+        "source candidate; workspace package version 0.56.0"
       ],
       "status": "passed",
       "supporting_cases": [
@@ -291,11 +291,11 @@
       "evidence_artifacts": [
         {
           "path": "docs/11_DEVELOPMENT/evidence/phase_0_56/LOCAL_QUALIFICATION.md",
-          "sha256": "6b758f154997200707600e886f42247bdb7ba615eb7cff07e1ab110f05bf195a"
+          "sha256": "569c271c0368160da2f709796eb732a17a5f63b21a167d42be7d6e311b260280"
         },
         {
           "path": "docs/11_DEVELOPMENT/evidence/phase_0_56/WHEEL_MANIFEST.json",
-          "sha256": "d416a52721f2e1aa2bf74e151d637d8408f7b20bbe7d65c88b0b99e1aa3d3786"
+          "sha256": "8070b20da74609a8e2a6f22d81b8d2e8ec5d291468e2ce1e8a07ea8c0502af3e"
         }
       ],
       "id": "AC056-010",
@@ -304,7 +304,7 @@
       "owner": "056-ADMIT",
       "provider_version_tuple": [
         "PostgreSQL 16.13 isolated loopback",
-        "SQLModel candidate 0.55.0"
+        "SQLModel candidate 0.56.0"
       ],
       "status": "passed",
       "supporting_cases": [
@@ -326,11 +326,11 @@
       "evidence_artifacts": [
         {
           "path": "docs/11_DEVELOPMENT/evidence/phase_0_56/LOCAL_QUALIFICATION.md",
-          "sha256": "6b758f154997200707600e886f42247bdb7ba615eb7cff07e1ab110f05bf195a"
+          "sha256": "569c271c0368160da2f709796eb732a17a5f63b21a167d42be7d6e311b260280"
         },
         {
           "path": "docs/11_DEVELOPMENT/evidence/phase_0_56/WHEEL_MANIFEST.json",
-          "sha256": "d416a52721f2e1aa2bf74e151d637d8408f7b20bbe7d65c88b0b99e1aa3d3786"
+          "sha256": "8070b20da74609a8e2a6f22d81b8d2e8ec5d291468e2ce1e8a07ea8c0502af3e"
         }
       ],
       "id": "AC056-011",
@@ -358,11 +358,11 @@
       "evidence_artifacts": [
         {
           "path": "docs/11_DEVELOPMENT/evidence/phase_0_56/LOCAL_QUALIFICATION.md",
-          "sha256": "6b758f154997200707600e886f42247bdb7ba615eb7cff07e1ab110f05bf195a"
+          "sha256": "569c271c0368160da2f709796eb732a17a5f63b21a167d42be7d6e311b260280"
         },
         {
           "path": "docs/11_DEVELOPMENT/evidence/phase_0_56/WHEEL_MANIFEST.json",
-          "sha256": "d416a52721f2e1aa2bf74e151d637d8408f7b20bbe7d65c88b0b99e1aa3d3786"
+          "sha256": "8070b20da74609a8e2a6f22d81b8d2e8ec5d291468e2ce1e8a07ea8c0502af3e"
         }
       ],
       "id": "AC056-012",
@@ -370,7 +370,7 @@
       "open_reason": "",
       "owner": "056-WORKER",
       "provider_version_tuple": [
-        "source candidate; workspace package version 0.55.0"
+        "source candidate; workspace package version 0.56.0"
       ],
       "status": "passed",
       "supporting_cases": [
@@ -388,11 +388,11 @@
       "evidence_artifacts": [
         {
           "path": "docs/11_DEVELOPMENT/evidence/phase_0_56/LOCAL_QUALIFICATION.md",
-          "sha256": "6b758f154997200707600e886f42247bdb7ba615eb7cff07e1ab110f05bf195a"
+          "sha256": "569c271c0368160da2f709796eb732a17a5f63b21a167d42be7d6e311b260280"
         },
         {
           "path": "docs/11_DEVELOPMENT/evidence/phase_0_56/WHEEL_MANIFEST.json",
-          "sha256": "d416a52721f2e1aa2bf74e151d637d8408f7b20bbe7d65c88b0b99e1aa3d3786"
+          "sha256": "8070b20da74609a8e2a6f22d81b8d2e8ec5d291468e2ce1e8a07ea8c0502af3e"
         }
       ],
       "id": "AC056-013",
@@ -400,7 +400,7 @@
       "open_reason": "",
       "owner": "056-WORKER",
       "provider_version_tuple": [
-        "source candidate; workspace package version 0.55.0"
+        "source candidate; workspace package version 0.56.0"
       ],
       "status": "passed",
       "supporting_cases": [
@@ -429,11 +429,11 @@
       "evidence_artifacts": [
         {
           "path": "docs/11_DEVELOPMENT/evidence/phase_0_56/LOCAL_QUALIFICATION.md",
-          "sha256": "6b758f154997200707600e886f42247bdb7ba615eb7cff07e1ab110f05bf195a"
+          "sha256": "569c271c0368160da2f709796eb732a17a5f63b21a167d42be7d6e311b260280"
         },
         {
           "path": "docs/11_DEVELOPMENT/evidence/phase_0_56/WHEEL_MANIFEST.json",
-          "sha256": "d416a52721f2e1aa2bf74e151d637d8408f7b20bbe7d65c88b0b99e1aa3d3786"
+          "sha256": "8070b20da74609a8e2a6f22d81b8d2e8ec5d291468e2ce1e8a07ea8c0502af3e"
         }
       ],
       "id": "AC056-014",
@@ -441,7 +441,7 @@
       "open_reason": "",
       "owner": "056-WORKER",
       "provider_version_tuple": [
-        "source candidate; workspace package version 0.55.0"
+        "source candidate; workspace package version 0.56.0"
       ],
       "status": "passed",
       "supporting_cases": [
@@ -457,11 +457,11 @@
       "evidence_artifacts": [
         {
           "path": "docs/11_DEVELOPMENT/evidence/phase_0_56/LOCAL_QUALIFICATION.md",
-          "sha256": "6b758f154997200707600e886f42247bdb7ba615eb7cff07e1ab110f05bf195a"
+          "sha256": "569c271c0368160da2f709796eb732a17a5f63b21a167d42be7d6e311b260280"
         },
         {
           "path": "docs/11_DEVELOPMENT/evidence/phase_0_56/WHEEL_MANIFEST.json",
-          "sha256": "d416a52721f2e1aa2bf74e151d637d8408f7b20bbe7d65c88b0b99e1aa3d3786"
+          "sha256": "8070b20da74609a8e2a6f22d81b8d2e8ec5d291468e2ce1e8a07ea8c0502af3e"
         }
       ],
       "id": "AC056-015",
@@ -490,11 +490,11 @@
       "evidence_artifacts": [
         {
           "path": "docs/11_DEVELOPMENT/evidence/phase_0_56/LOCAL_QUALIFICATION.md",
-          "sha256": "6b758f154997200707600e886f42247bdb7ba615eb7cff07e1ab110f05bf195a"
+          "sha256": "569c271c0368160da2f709796eb732a17a5f63b21a167d42be7d6e311b260280"
         },
         {
           "path": "docs/11_DEVELOPMENT/evidence/phase_0_56/WHEEL_MANIFEST.json",
-          "sha256": "d416a52721f2e1aa2bf74e151d637d8408f7b20bbe7d65c88b0b99e1aa3d3786"
+          "sha256": "8070b20da74609a8e2a6f22d81b8d2e8ec5d291468e2ce1e8a07ea8c0502af3e"
         }
       ],
       "id": "AC056-016",
@@ -522,11 +522,11 @@
       "evidence_artifacts": [
         {
           "path": "docs/11_DEVELOPMENT/evidence/phase_0_56/LOCAL_QUALIFICATION.md",
-          "sha256": "6b758f154997200707600e886f42247bdb7ba615eb7cff07e1ab110f05bf195a"
+          "sha256": "569c271c0368160da2f709796eb732a17a5f63b21a167d42be7d6e311b260280"
         },
         {
           "path": "docs/11_DEVELOPMENT/evidence/phase_0_56/WHEEL_MANIFEST.json",
-          "sha256": "d416a52721f2e1aa2bf74e151d637d8408f7b20bbe7d65c88b0b99e1aa3d3786"
+          "sha256": "8070b20da74609a8e2a6f22d81b8d2e8ec5d291468e2ce1e8a07ea8c0502af3e"
         }
       ],
       "id": "AC056-017",
@@ -534,7 +534,7 @@
       "open_reason": "",
       "owner": "056-RESULT",
       "provider_version_tuple": [
-        "source candidate; workspace package version 0.55.0"
+        "source candidate; workspace package version 0.56.0"
       ],
       "status": "passed",
       "supporting_cases": [
@@ -554,11 +554,11 @@
       "evidence_artifacts": [
         {
           "path": "docs/11_DEVELOPMENT/evidence/phase_0_56/LOCAL_QUALIFICATION.md",
-          "sha256": "6b758f154997200707600e886f42247bdb7ba615eb7cff07e1ab110f05bf195a"
+          "sha256": "569c271c0368160da2f709796eb732a17a5f63b21a167d42be7d6e311b260280"
         },
         {
           "path": "docs/11_DEVELOPMENT/evidence/phase_0_56/WHEEL_MANIFEST.json",
-          "sha256": "d416a52721f2e1aa2bf74e151d637d8408f7b20bbe7d65c88b0b99e1aa3d3786"
+          "sha256": "8070b20da74609a8e2a6f22d81b8d2e8ec5d291468e2ce1e8a07ea8c0502af3e"
         }
       ],
       "id": "AC056-018",
@@ -587,11 +587,11 @@
       "evidence_artifacts": [
         {
           "path": "docs/11_DEVELOPMENT/evidence/phase_0_56/LOCAL_QUALIFICATION.md",
-          "sha256": "6b758f154997200707600e886f42247bdb7ba615eb7cff07e1ab110f05bf195a"
+          "sha256": "569c271c0368160da2f709796eb732a17a5f63b21a167d42be7d6e311b260280"
         },
         {
           "path": "docs/11_DEVELOPMENT/evidence/phase_0_56/WHEEL_MANIFEST.json",
-          "sha256": "d416a52721f2e1aa2bf74e151d637d8408f7b20bbe7d65c88b0b99e1aa3d3786"
+          "sha256": "8070b20da74609a8e2a6f22d81b8d2e8ec5d291468e2ce1e8a07ea8c0502af3e"
         }
       ],
       "id": "AC056-019",
@@ -599,7 +599,7 @@
       "open_reason": "",
       "owner": "056-RESULT",
       "provider_version_tuple": [
-        "source candidate; workspace package version 0.55.0",
+        "source candidate; workspace package version 0.56.0",
         "PostgreSQL 16.13 loopback qualification"
       ],
       "status": "passed",
@@ -638,11 +638,11 @@
       "evidence_artifacts": [
         {
           "path": "docs/11_DEVELOPMENT/evidence/phase_0_56/LOCAL_QUALIFICATION.md",
-          "sha256": "6b758f154997200707600e886f42247bdb7ba615eb7cff07e1ab110f05bf195a"
+          "sha256": "569c271c0368160da2f709796eb732a17a5f63b21a167d42be7d6e311b260280"
         },
         {
           "path": "docs/11_DEVELOPMENT/evidence/phase_0_56/WHEEL_MANIFEST.json",
-          "sha256": "d416a52721f2e1aa2bf74e151d637d8408f7b20bbe7d65c88b0b99e1aa3d3786"
+          "sha256": "8070b20da74609a8e2a6f22d81b8d2e8ec5d291468e2ce1e8a07ea8c0502af3e"
         }
       ],
       "id": "AC056-020",
@@ -650,7 +650,7 @@
       "open_reason": "",
       "owner": "056-ACTION",
       "provider_version_tuple": [
-        "etlantic-foundry==0.55.0 workspace candidate",
+        "etlantic-foundry==0.56.0 workspace candidate",
         "Semblance==0.9.0 loopback API simulator"
       ],
       "status": "passed",
@@ -668,11 +668,11 @@
       "evidence_artifacts": [
         {
           "path": "docs/11_DEVELOPMENT/evidence/phase_0_56/LOCAL_QUALIFICATION.md",
-          "sha256": "6b758f154997200707600e886f42247bdb7ba615eb7cff07e1ab110f05bf195a"
+          "sha256": "569c271c0368160da2f709796eb732a17a5f63b21a167d42be7d6e311b260280"
         },
         {
           "path": "docs/11_DEVELOPMENT/evidence/phase_0_56/WHEEL_MANIFEST.json",
-          "sha256": "d416a52721f2e1aa2bf74e151d637d8408f7b20bbe7d65c88b0b99e1aa3d3786"
+          "sha256": "8070b20da74609a8e2a6f22d81b8d2e8ec5d291468e2ce1e8a07ea8c0502af3e"
         }
       ],
       "id": "AC056-021",
@@ -680,7 +680,7 @@
       "open_reason": "",
       "owner": "056-ACTION",
       "provider_version_tuple": [
-        "etlantic-foundry==0.55.0 workspace candidate",
+        "etlantic-foundry==0.56.0 workspace candidate",
         "Semblance==0.9.0 loopback API simulator",
         "preview result TTL 60 seconds in SQLModel persistence test"
       ],
@@ -701,11 +701,11 @@
       "evidence_artifacts": [
         {
           "path": "docs/11_DEVELOPMENT/evidence/phase_0_56/LOCAL_QUALIFICATION.md",
-          "sha256": "6b758f154997200707600e886f42247bdb7ba615eb7cff07e1ab110f05bf195a"
+          "sha256": "569c271c0368160da2f709796eb732a17a5f63b21a167d42be7d6e311b260280"
         },
         {
           "path": "docs/11_DEVELOPMENT/evidence/phase_0_56/WHEEL_MANIFEST.json",
-          "sha256": "d416a52721f2e1aa2bf74e151d637d8408f7b20bbe7d65c88b0b99e1aa3d3786"
+          "sha256": "8070b20da74609a8e2a6f22d81b8d2e8ec5d291468e2ce1e8a07ea8c0502af3e"
         }
       ],
       "id": "AC056-022",
@@ -713,7 +713,7 @@
       "open_reason": "",
       "owner": "056-ACTION",
       "provider_version_tuple": [
-        "etlantic-sql==0.55.0 workspace candidate",
+        "etlantic-sql==0.56.0 workspace candidate",
         "SQLAlchemy PostgreSQL provider",
         "PostgreSQL 16.13 isolated loopback qualification",
         "Semblance==0.9.0 Foundry REST API simulator for Foundry read-only inspection"
@@ -734,11 +734,11 @@
       "evidence_artifacts": [
         {
           "path": "docs/11_DEVELOPMENT/evidence/phase_0_56/LOCAL_QUALIFICATION.md",
-          "sha256": "6b758f154997200707600e886f42247bdb7ba615eb7cff07e1ab110f05bf195a"
+          "sha256": "569c271c0368160da2f709796eb732a17a5f63b21a167d42be7d6e311b260280"
         },
         {
           "path": "docs/11_DEVELOPMENT/evidence/phase_0_56/WHEEL_MANIFEST.json",
-          "sha256": "d416a52721f2e1aa2bf74e151d637d8408f7b20bbe7d65c88b0b99e1aa3d3786"
+          "sha256": "8070b20da74609a8e2a6f22d81b8d2e8ec5d291468e2ce1e8a07ea8c0502af3e"
         }
       ],
       "id": "AC056-023",
@@ -746,7 +746,7 @@
       "open_reason": "",
       "owner": "056-SECRET",
       "provider_version_tuple": [
-        "source candidate; workspace package version 0.55.0"
+        "source candidate; workspace package version 0.56.0"
       ],
       "status": "passed",
       "supporting_cases": [
@@ -769,11 +769,11 @@
       "evidence_artifacts": [
         {
           "path": "docs/11_DEVELOPMENT/evidence/phase_0_56/LOCAL_QUALIFICATION.md",
-          "sha256": "6b758f154997200707600e886f42247bdb7ba615eb7cff07e1ab110f05bf195a"
+          "sha256": "569c271c0368160da2f709796eb732a17a5f63b21a167d42be7d6e311b260280"
         },
         {
           "path": "docs/11_DEVELOPMENT/evidence/phase_0_56/WHEEL_MANIFEST.json",
-          "sha256": "d416a52721f2e1aa2bf74e151d637d8408f7b20bbe7d65c88b0b99e1aa3d3786"
+          "sha256": "8070b20da74609a8e2a6f22d81b8d2e8ec5d291468e2ce1e8a07ea8c0502af3e"
         }
       ],
       "id": "AC056-024",
@@ -807,11 +807,11 @@
       "evidence_artifacts": [
         {
           "path": "docs/11_DEVELOPMENT/evidence/phase_0_56/LOCAL_QUALIFICATION.md",
-          "sha256": "6b758f154997200707600e886f42247bdb7ba615eb7cff07e1ab110f05bf195a"
+          "sha256": "569c271c0368160da2f709796eb732a17a5f63b21a167d42be7d6e311b260280"
         },
         {
           "path": "docs/11_DEVELOPMENT/evidence/phase_0_56/WHEEL_MANIFEST.json",
-          "sha256": "d416a52721f2e1aa2bf74e151d637d8408f7b20bbe7d65c88b0b99e1aa3d3786"
+          "sha256": "8070b20da74609a8e2a6f22d81b8d2e8ec5d291468e2ce1e8a07ea8c0502af3e"
         }
       ],
       "id": "AC056-025",
@@ -819,7 +819,7 @@
       "open_reason": "",
       "owner": "056-RESOURCE",
       "provider_version_tuple": [
-        "etlantic==0.55.0 workspace candidate",
+        "etlantic==0.56.0 workspace candidate",
         "SQLite-backed managed input store",
         "PostgreSQL 16.13 isolated lease/cleanup qualification",
         "Python 3.14.3 clean-wheel smoke for migration 010 and leased reads"
@@ -840,11 +840,11 @@
       "evidence_artifacts": [
         {
           "path": "docs/11_DEVELOPMENT/evidence/phase_0_56/LOCAL_QUALIFICATION.md",
-          "sha256": "6b758f154997200707600e886f42247bdb7ba615eb7cff07e1ab110f05bf195a"
+          "sha256": "569c271c0368160da2f709796eb732a17a5f63b21a167d42be7d6e311b260280"
         },
         {
           "path": "docs/11_DEVELOPMENT/evidence/phase_0_56/WHEEL_MANIFEST.json",
-          "sha256": "d416a52721f2e1aa2bf74e151d637d8408f7b20bbe7d65c88b0b99e1aa3d3786"
+          "sha256": "8070b20da74609a8e2a6f22d81b8d2e8ec5d291468e2ce1e8a07ea8c0502af3e"
         }
       ],
       "id": "AC056-026",
@@ -852,7 +852,7 @@
       "open_reason": "",
       "owner": "056-RESOURCE",
       "provider_version_tuple": [
-        "source candidate; workspace package version 0.55.0"
+        "source candidate; workspace package version 0.56.0"
       ],
       "status": "passed",
       "supporting_cases": [
@@ -871,11 +871,11 @@
       "evidence_artifacts": [
         {
           "path": "docs/11_DEVELOPMENT/evidence/phase_0_56/LOCAL_QUALIFICATION.md",
-          "sha256": "6b758f154997200707600e886f42247bdb7ba615eb7cff07e1ab110f05bf195a"
+          "sha256": "569c271c0368160da2f709796eb732a17a5f63b21a167d42be7d6e311b260280"
         },
         {
           "path": "docs/11_DEVELOPMENT/evidence/phase_0_56/WHEEL_MANIFEST.json",
-          "sha256": "d416a52721f2e1aa2bf74e151d637d8408f7b20bbe7d65c88b0b99e1aa3d3786"
+          "sha256": "8070b20da74609a8e2a6f22d81b8d2e8ec5d291468e2ce1e8a07ea8c0502af3e"
         }
       ],
       "id": "AC056-027",
@@ -883,7 +883,7 @@
       "open_reason": "",
       "owner": "056-SCHEDULE",
       "provider_version_tuple": [
-        "source candidate; workspace package version 0.55.0"
+        "source candidate; workspace package version 0.56.0"
       ],
       "status": "passed",
       "supporting_cases": [
@@ -902,11 +902,11 @@
       "evidence_artifacts": [
         {
           "path": "docs/11_DEVELOPMENT/evidence/phase_0_56/LOCAL_QUALIFICATION.md",
-          "sha256": "6b758f154997200707600e886f42247bdb7ba615eb7cff07e1ab110f05bf195a"
+          "sha256": "569c271c0368160da2f709796eb732a17a5f63b21a167d42be7d6e311b260280"
         },
         {
           "path": "docs/11_DEVELOPMENT/evidence/phase_0_56/WHEEL_MANIFEST.json",
-          "sha256": "d416a52721f2e1aa2bf74e151d637d8408f7b20bbe7d65c88b0b99e1aa3d3786"
+          "sha256": "8070b20da74609a8e2a6f22d81b8d2e8ec5d291468e2ce1e8a07ea8c0502af3e"
         }
       ],
       "id": "AC056-028",
@@ -914,7 +914,7 @@
       "open_reason": "",
       "owner": "056-SCHEDULE",
       "provider_version_tuple": [
-        "source candidate; workspace package version 0.55.0"
+        "source candidate; workspace package version 0.56.0"
       ],
       "status": "passed",
       "supporting_cases": [
@@ -933,11 +933,11 @@
       "evidence_artifacts": [
         {
           "path": "docs/11_DEVELOPMENT/evidence/phase_0_56/LOCAL_QUALIFICATION.md",
-          "sha256": "6b758f154997200707600e886f42247bdb7ba615eb7cff07e1ab110f05bf195a"
+          "sha256": "569c271c0368160da2f709796eb732a17a5f63b21a167d42be7d6e311b260280"
         },
         {
           "path": "docs/11_DEVELOPMENT/evidence/phase_0_56/WHEEL_MANIFEST.json",
-          "sha256": "d416a52721f2e1aa2bf74e151d637d8408f7b20bbe7d65c88b0b99e1aa3d3786"
+          "sha256": "8070b20da74609a8e2a6f22d81b8d2e8ec5d291468e2ce1e8a07ea8c0502af3e"
         }
       ],
       "id": "AC056-029",
@@ -945,7 +945,7 @@
       "open_reason": "",
       "owner": "056-SCHEDULE",
       "provider_version_tuple": [
-        "source candidate; workspace package version 0.55.0"
+        "source candidate; workspace package version 0.56.0"
       ],
       "status": "passed",
       "supporting_cases": [
@@ -966,11 +966,11 @@
       "evidence_artifacts": [
         {
           "path": "docs/11_DEVELOPMENT/evidence/phase_0_56/LOCAL_QUALIFICATION.md",
-          "sha256": "6b758f154997200707600e886f42247bdb7ba615eb7cff07e1ab110f05bf195a"
+          "sha256": "569c271c0368160da2f709796eb732a17a5f63b21a167d42be7d6e311b260280"
         },
         {
           "path": "docs/11_DEVELOPMENT/evidence/phase_0_56/WHEEL_MANIFEST.json",
-          "sha256": "d416a52721f2e1aa2bf74e151d637d8408f7b20bbe7d65c88b0b99e1aa3d3786"
+          "sha256": "8070b20da74609a8e2a6f22d81b8d2e8ec5d291468e2ce1e8a07ea8c0502af3e"
         }
       ],
       "id": "AC056-030",
@@ -978,7 +978,7 @@
       "open_reason": "",
       "owner": "056-CONTROL",
       "provider_version_tuple": [
-        "source candidate; workspace package version 0.55.0"
+        "source candidate; workspace package version 0.56.0"
       ],
       "status": "passed",
       "supporting_cases": [
@@ -996,28 +996,34 @@
       "evidence_artifacts": [
         {
           "path": "docs/11_DEVELOPMENT/evidence/phase_0_56/LOCAL_QUALIFICATION.md",
-          "sha256": "6b758f154997200707600e886f42247bdb7ba615eb7cff07e1ab110f05bf195a"
+          "sha256": "569c271c0368160da2f709796eb732a17a5f63b21a167d42be7d6e311b260280"
         },
         {
           "path": "docs/11_DEVELOPMENT/evidence/phase_0_56/WHEEL_MANIFEST.json",
-          "sha256": "d416a52721f2e1aa2bf74e151d637d8408f7b20bbe7d65c88b0b99e1aa3d3786"
+          "sha256": "8070b20da74609a8e2a6f22d81b8d2e8ec5d291468e2ce1e8a07ea8c0502af3e"
+        },
+        {
+          "path": "docs/11_DEVELOPMENT/evidence/phase_0_56/PARTITION_REPAIR_BACKFILL_0_56.json",
+          "sha256": "92b52fd0db20d2334b39211794cc455ddfe4d67dd35309af959f5f736ecb7cdd"
         }
       ],
       "id": "AC056-031",
-      "observed_result": "A managed checkpoint-resume command validates that a checkpoint belongs to the parent submission, admits an idempotent child submission with a distinct run identity, and preserves command, checkpoint, parent-run and parent-submission references in the immutable execution envelope. The child executes a real JSON-to-CSV managed pipeline through the durable worker, persists a successful report, and records a resume parent-to-child lineage edge. Named runtime artifacts resolve in the parent run’s scoped artifact workspace. State-aware run actions advertise resume only for failed/cancelled runs with a verified envelope and no unresolved effect. Memory qualification covers worker interruption after checkpoint creation, HTTP acceptance, idempotent retry after parent state changes, missing-checkpoint rejection and unknown-effect blocking. Repair/backfill commands and their full lifecycle semantics are still unimplemented; no complete AC-level pass is asserted.",
-      "open_reason": "Managed checkpoint resume is implemented and locally qualified. Executable repair/backfill semantics, attempt lineage for the full command family and the complete lifecycle case remain pending.",
+      "observed_result": "The live PostgreSQL managed lifecycle now executes repair and backfill as idempotent child runs. HTTP repair and headless backfill update only selected partitions, persist successful run status and reports, and retain parent run/submission/attempt references and lineage edges; a repeated backfill key returns the same child. Provider tests verify bounded/validated selector planning, explicit partition capabilities, atomic selected-partition replacement, untouched-partition preservation, empty replacement and rollback on out-of-selector rows. The focused PostgreSQL provider and managed recovery suite passed 16 tests with no skips. Full observations and safety boundaries are in PARTITION_REPAIR_BACKFILL_0_56.json.",
+      "open_reason": "",
       "owner": "056-CONTROL",
       "provider_version_tuple": [
-        "source candidate; workspace package version 0.55.0"
+        "etlantic==0.56.0 candidate",
+        "etlantic-sql==0.56.0 candidate",
+        "Python 3.11.15",
+        "PostgreSQL 16.13 isolated loopback cluster"
       ],
-      "status": "pending",
+      "status": "passed",
       "supporting_cases": [
-        "tests/fastapi/test_managed_application_0_56.py",
-        "tests/schedule/test_loops.py",
-        "tests/fastapi/test_managed_control_races_0_56.py",
-        "tests/fastapi/test_managed_rerun_http_0_56.py",
-        "tests/fastapi/test_managed_application_0_56.py::test_managed_resume_admits_checkpoint_linked_child_and_is_idempotent",
-        "tests/fastapi/test_managed_application_0_56.py::test_managed_resume_rejects_unlinked_or_missing_checkpoint"
+        "tests/sql/test_postgresql_partition_plans_0_56.py",
+        "tests/sql/test_postgresql_live_0_56.py::test_live_postgresql_partition_read_and_atomic_replace",
+        "tests/sql/test_postgresql_live_0_56.py::test_live_postgresql_partition_replace_rejects_rows_outside_selector",
+        "tests/fastapi/test_managed_partition_lifecycle_0_56.py::test_managed_repair_and_backfill_execute_selected_postgresql_partitions",
+        "tests/fastapi/test_managed_rerun_http_0_56.py"
       ]
     },
     {
@@ -1027,7 +1033,7 @@
       "evidence_artifacts": [
         {
           "path": "docs/11_DEVELOPMENT/evidence/phase_0_56/LOCAL_QUALIFICATION.md",
-          "sha256": "6b758f154997200707600e886f42247bdb7ba615eb7cff07e1ab110f05bf195a"
+          "sha256": "569c271c0368160da2f709796eb732a17a5f63b21a167d42be7d6e311b260280"
         },
         {
           "path": "docs/11_DEVELOPMENT/evidence/phase_0_56/PUBLIC_CONTROL_COVERAGE_0_56.json",
@@ -1047,7 +1053,7 @@
       "open_reason": "",
       "owner": "056-CONTROL",
       "provider_version_tuple": [
-        "source candidate; workspace package version 0.55.0"
+        "source candidate; workspace package version 0.56.0"
       ],
       "status": "passed",
       "supporting_cases": [
@@ -1068,11 +1074,11 @@
       "evidence_artifacts": [
         {
           "path": "docs/11_DEVELOPMENT/evidence/phase_0_56/LOCAL_QUALIFICATION.md",
-          "sha256": "6b758f154997200707600e886f42247bdb7ba615eb7cff07e1ab110f05bf195a"
+          "sha256": "569c271c0368160da2f709796eb732a17a5f63b21a167d42be7d6e311b260280"
         },
         {
           "path": "docs/11_DEVELOPMENT/evidence/phase_0_56/WHEEL_MANIFEST.json",
-          "sha256": "d416a52721f2e1aa2bf74e151d637d8408f7b20bbe7d65c88b0b99e1aa3d3786"
+          "sha256": "8070b20da74609a8e2a6f22d81b8d2e8ec5d291468e2ce1e8a07ea8c0502af3e"
         }
       ],
       "id": "AC056-033",
@@ -1081,7 +1087,7 @@
       "owner": "056-PROVIDER",
       "provider_version_tuple": [
         "PostgreSQL 16.14",
-        "etlantic-sql workspace candidate 0.55.0"
+        "etlantic-sql workspace candidate 0.56.0"
       ],
       "status": "passed",
       "supporting_cases": [
@@ -1101,7 +1107,7 @@
       "evidence_artifacts": [
         {
           "path": "docs/11_DEVELOPMENT/evidence/phase_0_56/LOCAL_QUALIFICATION.md",
-          "sha256": "6b758f154997200707600e886f42247bdb7ba615eb7cff07e1ab110f05bf195a"
+          "sha256": "569c271c0368160da2f709796eb732a17a5f63b21a167d42be7d6e311b260280"
         },
         {
           "path": "docs/11_DEVELOPMENT/evidence/phase_0_56/SIMULATOR_QUALIFICATION_0_56.json",
@@ -1109,7 +1115,7 @@
         },
         {
           "path": "docs/11_DEVELOPMENT/evidence/phase_0_56/WHEEL_MANIFEST.json",
-          "sha256": "d416a52721f2e1aa2bf74e151d637d8408f7b20bbe7d65c88b0b99e1aa3d3786"
+          "sha256": "8070b20da74609a8e2a6f22d81b8d2e8ec5d291468e2ce1e8a07ea8c0502af3e"
         }
       ],
       "id": "AC056-034",
@@ -1117,7 +1123,7 @@
       "open_reason": "",
       "owner": "056-PROVIDER",
       "provider_version_tuple": [
-        "etlantic-foundry==0.55.0",
+        "etlantic-foundry==0.56.0",
         "Semblance 0.9.0 loopback API simulator"
       ],
       "status": "passed",
@@ -1135,11 +1141,11 @@
       "evidence_artifacts": [
         {
           "path": "docs/11_DEVELOPMENT/evidence/phase_0_56/LOCAL_QUALIFICATION.md",
-          "sha256": "6b758f154997200707600e886f42247bdb7ba615eb7cff07e1ab110f05bf195a"
+          "sha256": "569c271c0368160da2f709796eb732a17a5f63b21a167d42be7d6e311b260280"
         },
         {
           "path": "docs/11_DEVELOPMENT/evidence/phase_0_56/WHEEL_MANIFEST.json",
-          "sha256": "d416a52721f2e1aa2bf74e151d637d8408f7b20bbe7d65c88b0b99e1aa3d3786"
+          "sha256": "8070b20da74609a8e2a6f22d81b8d2e8ec5d291468e2ce1e8a07ea8c0502af3e"
         }
       ],
       "id": "AC056-035",
@@ -1149,7 +1155,7 @@
       "provider_version_tuple": [
         "PostgreSQL 16.13",
         "SQLite",
-        "source candidate; workspace package version 0.55.0"
+        "source candidate; workspace package version 0.56.0"
       ],
       "status": "passed",
       "supporting_cases": [
@@ -1168,7 +1174,7 @@
       "evidence_artifacts": [
         {
           "path": "docs/11_DEVELOPMENT/evidence/phase_0_56/LOCAL_QUALIFICATION.md",
-          "sha256": "6b758f154997200707600e886f42247bdb7ba615eb7cff07e1ab110f05bf195a"
+          "sha256": "569c271c0368160da2f709796eb732a17a5f63b21a167d42be7d6e311b260280"
         },
         {
           "path": "docs/11_DEVELOPMENT/evidence/phase_0_56/MANAGED_PROVIDER_MATRIX_0_56.json",
@@ -1185,8 +1191,8 @@
       "owner": "056-PROVIDER",
       "provider_version_tuple": [
         "PostgreSQL 16.13 (Homebrew)",
-        "etlantic-sql 0.55.0",
-        "etlantic-foundry 0.55.0",
+        "etlantic-sql 0.56.0",
+        "etlantic-foundry 0.56.0",
         "Semblance 0.9.0; two independently configured loopback scopes"
       ],
       "status": "passed",
@@ -1205,11 +1211,11 @@
       "evidence_artifacts": [
         {
           "path": "docs/11_DEVELOPMENT/evidence/phase_0_56/LOCAL_QUALIFICATION.md",
-          "sha256": "6b758f154997200707600e886f42247bdb7ba615eb7cff07e1ab110f05bf195a"
+          "sha256": "569c271c0368160da2f709796eb732a17a5f63b21a167d42be7d6e311b260280"
         },
         {
           "path": "docs/11_DEVELOPMENT/evidence/phase_0_56/WHEEL_MANIFEST.json",
-          "sha256": "d416a52721f2e1aa2bf74e151d637d8408f7b20bbe7d65c88b0b99e1aa3d3786"
+          "sha256": "8070b20da74609a8e2a6f22d81b8d2e8ec5d291468e2ce1e8a07ea8c0502af3e"
         },
         {
           "path": "docs/11_DEVELOPMENT/evidence/phase_0_56/PRIVATE_PROVIDER_QUALIFICATION.json",
@@ -1221,7 +1227,7 @@
       "open_reason": "",
       "owner": "056-QUALIFY",
       "provider_version_tuple": [
-        "etlantic==0.55.0",
+        "etlantic==0.56.0",
         "etlantic-private-ac056037==1.0.0",
         "Python 3.11.15"
       ],
@@ -1239,11 +1245,11 @@
       "evidence_artifacts": [
         {
           "path": "docs/11_DEVELOPMENT/evidence/phase_0_56/LOCAL_QUALIFICATION.md",
-          "sha256": "6b758f154997200707600e886f42247bdb7ba615eb7cff07e1ab110f05bf195a"
+          "sha256": "569c271c0368160da2f709796eb732a17a5f63b21a167d42be7d6e311b260280"
         },
         {
           "path": "docs/11_DEVELOPMENT/evidence/phase_0_56/WHEEL_MANIFEST.json",
-          "sha256": "d416a52721f2e1aa2bf74e151d637d8408f7b20bbe7d65c88b0b99e1aa3d3786"
+          "sha256": "8070b20da74609a8e2a6f22d81b8d2e8ec5d291468e2ce1e8a07ea8c0502af3e"
         }
       ],
       "id": "AC056-038",
@@ -1251,7 +1257,7 @@
       "open_reason": "",
       "owner": "056-QUALIFY",
       "provider_version_tuple": [
-        "source candidate; workspace package version 0.55.0"
+        "source candidate; workspace package version 0.56.0"
       ],
       "status": "passed",
       "supporting_cases": [
@@ -1276,11 +1282,11 @@
       "evidence_artifacts": [
         {
           "path": "docs/11_DEVELOPMENT/evidence/phase_0_56/LOCAL_QUALIFICATION.md",
-          "sha256": "6b758f154997200707600e886f42247bdb7ba615eb7cff07e1ab110f05bf195a"
+          "sha256": "569c271c0368160da2f709796eb732a17a5f63b21a167d42be7d6e311b260280"
         },
         {
           "path": "docs/11_DEVELOPMENT/evidence/phase_0_56/WHEEL_MANIFEST.json",
-          "sha256": "d416a52721f2e1aa2bf74e151d637d8408f7b20bbe7d65c88b0b99e1aa3d3786"
+          "sha256": "8070b20da74609a8e2a6f22d81b8d2e8ec5d291468e2ce1e8a07ea8c0502af3e"
         }
       ],
       "id": "AC056-039",
@@ -1289,7 +1295,7 @@
       "owner": "056-QUALIFY",
       "provider_version_tuple": [
         "PostgreSQL 16.13 loopback",
-        "SQLModel candidate 0.55.0"
+        "SQLModel candidate 0.56.0"
       ],
       "status": "passed",
       "supporting_cases": [
@@ -1307,19 +1313,19 @@
       "evidence_artifacts": [
         {
           "path": "docs/11_DEVELOPMENT/evidence/phase_0_56/LOCAL_QUALIFICATION.md",
-          "sha256": "6b758f154997200707600e886f42247bdb7ba615eb7cff07e1ab110f05bf195a"
+          "sha256": "569c271c0368160da2f709796eb732a17a5f63b21a167d42be7d6e311b260280"
         },
         {
           "path": "docs/11_DEVELOPMENT/evidence/phase_0_56/WHEEL_MANIFEST.json",
-          "sha256": "d416a52721f2e1aa2bf74e151d637d8408f7b20bbe7d65c88b0b99e1aa3d3786"
+          "sha256": "8070b20da74609a8e2a6f22d81b8d2e8ec5d291468e2ce1e8a07ea8c0502af3e"
         },
         {
           "path": "docs/11_DEVELOPMENT/evidence/phase_0_56/PACKAGE_COMPATIBILITY_0_56.json",
-          "sha256": "d69213bd25c6c20cccbd636e9d1fb5f85cdb788322018946ff55eb8ba35aaf38"
+          "sha256": "509b7c389391aae71ca9acd606f3f36605eaa2d9268d5da7e28ac9df021dca06"
         },
         {
           "path": "scripts/qualify_phase056_packages.py",
-          "sha256": "3b07d1f23bee4645ec523be17fd355211407f5e68107d8581b98325f22be4aa5"
+          "sha256": "75bec389d07dcdeb164613b4395ca1a35bfb74633b42af12f9d251a7a46ba18d"
         },
         {
           "path": "tests/fastapi/openapi_cp1_snapshot.json",
@@ -1331,12 +1337,12 @@
         }
       ],
       "id": "AC056-040",
-      "observed_result": "All 25 candidate wheels built and dependency-resolved together into a fresh isolated CPython 3.11.15 environment. All 25 installed public package roots and 387 declared exports resolved from site-packages. All 24 adapter base-package constraints accepted the installed 0.55.0 core (or medallantic for SparkForge) and rejected 0.54.99 and 0.56.0. Installed CP1 and CP-GA OpenAPI 3.1 matched the committed path and operation-ID snapshots; both had 57 component schemas and 161 resolving local schema references, with matching component hashes. The installed SQLModel migration chain upgraded to 012 and completed rollback/re-upgrade from each supported CP1 head 005–011 while preserving a definition, submission identity and event history. In the isolated wheel environment, the migration/OpenAPI/wire-schema suites passed 34 tests with 6 PostgreSQL cases skipped because no test database URL was configured; package/version, connector-schema and schema-drift suites passed 87 tests. Resolved runtime dependency versions, exact wheel hashes, package exports, compatibility results and the repeatable qualification command are recorded in the referenced evidence artifacts.",
+      "observed_result": "All 25 candidate wheels built and dependency-resolved together into a fresh isolated CPython 3.11.15 environment. All 25 installed public package roots and 387 declared exports resolved from site-packages. All 24 adapter base-package constraints accepted the installed 0.56.0 core (or medallantic for SparkForge) and rejected 0.55.99 and 0.57.0. Installed CP1 and CP-GA OpenAPI 3.1 matched the committed path and operation-ID snapshots; both had 57 component schemas and 161 resolving local schema references, with matching component hashes. The installed SQLModel migration chain upgraded to 012 and completed rollback/re-upgrade from each supported CP1 head 005\u2013011 while preserving a definition, submission identity and event history. In the isolated wheel environment, the migration/OpenAPI/wire-schema suites passed 34 tests with 6 PostgreSQL cases skipped because no test database URL was configured; package/version, connector-schema and schema-drift suites passed 87 tests. Resolved runtime dependency versions, exact wheel hashes, package exports, compatibility results and the repeatable qualification command are recorded in the referenced evidence artifacts.",
       "open_reason": "",
       "owner": "056-QUALIFY",
       "provider_version_tuple": [
         "CPython 3.11.15; macOS arm64; isolated virtual environment",
-        "25 workspace wheels at 0.55.0; dependency-resolved installation",
+        "25 workspace wheels at 0.56.0; dependency-resolved installation",
         "pytest 8.4.2; SQLite migration round-trip"
       ],
       "status": "passed",
@@ -1362,7 +1368,7 @@
       "evidence_artifacts": [
         {
           "path": "docs/11_DEVELOPMENT/evidence/phase_0_56/LOCAL_QUALIFICATION.md",
-          "sha256": "6b758f154997200707600e886f42247bdb7ba615eb7cff07e1ab110f05bf195a"
+          "sha256": "569c271c0368160da2f709796eb732a17a5f63b21a167d42be7d6e311b260280"
         },
         {
           "path": "docs/11_DEVELOPMENT/evidence/phase_0_56/MANAGED_EXECUTION_MATRIX_0_56.json",
@@ -1370,7 +1376,7 @@
         },
         {
           "path": "docs/11_DEVELOPMENT/evidence/phase_0_56/WHEEL_MANIFEST.json",
-          "sha256": "d416a52721f2e1aa2bf74e151d637d8408f7b20bbe7d65c88b0b99e1aa3d3786"
+          "sha256": "8070b20da74609a8e2a6f22d81b8d2e8ec5d291468e2ce1e8a07ea8c0502af3e"
         }
       ],
       "id": "AC056-041",
@@ -1378,7 +1384,7 @@
       "open_reason": "Managed execution intentionally does not support the listed portable compiler combinations, runtime-generated dynamic expansion, or continuous Spark streaming; each is unavailable with an explicit capability or runtime-owner reason in the matrix. No unqualified advertised combination remains.",
       "owner": "056-QUALIFY",
       "provider_version_tuple": [
-        "source candidate; workspace package version 0.55.0",
+        "source candidate; workspace package version 0.56.0",
         "pandas 2.3.3",
         "polars 1.42.1"
       ],
@@ -1400,11 +1406,11 @@
       "evidence_artifacts": [
         {
           "path": "docs/11_DEVELOPMENT/evidence/phase_0_56/LOCAL_QUALIFICATION.md",
-          "sha256": "6b758f154997200707600e886f42247bdb7ba615eb7cff07e1ab110f05bf195a"
+          "sha256": "569c271c0368160da2f709796eb732a17a5f63b21a167d42be7d6e311b260280"
         },
         {
           "path": "docs/11_DEVELOPMENT/evidence/phase_0_56/WHEEL_MANIFEST.json",
-          "sha256": "d416a52721f2e1aa2bf74e151d637d8408f7b20bbe7d65c88b0b99e1aa3d3786"
+          "sha256": "8070b20da74609a8e2a6f22d81b8d2e8ec5d291468e2ce1e8a07ea8c0502af3e"
         }
       ],
       "id": "AC056-042",
@@ -1414,7 +1420,7 @@
       "provider_version_tuple": [
         "PostgreSQL 16.13",
         "SQLite",
-        "SQLModel candidate 0.55.0"
+        "SQLModel candidate 0.56.0"
       ],
       "status": "passed",
       "supporting_cases": [
@@ -1429,23 +1435,23 @@
       "evidence_artifacts": [
         {
           "path": "docs/11_DEVELOPMENT/evidence/phase_0_56/LOCAL_QUALIFICATION.md",
-          "sha256": "6b758f154997200707600e886f42247bdb7ba615eb7cff07e1ab110f05bf195a"
+          "sha256": "569c271c0368160da2f709796eb732a17a5f63b21a167d42be7d6e311b260280"
         },
         {
           "path": "docs/11_DEVELOPMENT/evidence/phase_0_56/MANAGED_ADAPTIVE_QUALIFICATION_0_56.json",
-          "sha256": "fea1a9b043222b9c35a201c9315192dd030fca5b1e6f71d68c521bbbba40eadd"
+          "sha256": "1f89b036161471b6d4ec03526e2576fe7109c4cf0a65af4745d870d52f107864"
         },
         {
           "path": "docs/11_DEVELOPMENT/evidence/phase_0_56/WHEEL_MANIFEST.json",
-          "sha256": "d416a52721f2e1aa2bf74e151d637d8408f7b20bbe7d65c88b0b99e1aa3d3786"
+          "sha256": "8070b20da74609a8e2a6f22d81b8d2e8ec5d291468e2ce1e8a07ea8c0502af3e"
         }
       ],
       "id": "AC056-043",
-      "observed_result": "The managed service authoritatively admitted the exact etlantic.plan/2 tuple local-static:chain/1:local on ETLantic 0.55.0, then a durable managed worker published the seeded id=73 row and reported success. The candidate remains Experimental with graduation pending; every other packaged candidate tuple retains its 0.54.0 ETLantic pin and fails exact version admission in this environment.",
+      "observed_result": "The managed service authoritatively admitted the exact etlantic.plan/2 tuple local-static:chain/1:local on ETLantic 0.56.0, then a durable managed worker published the seeded id=73 row and reported success. The candidate remains Experimental with graduation pending; every other packaged candidate tuple retains its 0.54.0 ETLantic pin and fails exact version admission in this environment.",
       "open_reason": "",
       "owner": "056-QUALIFY",
       "provider_version_tuple": [
-        "etlantic 0.55.0",
+        "etlantic 0.56.0",
         "Python 3.11.15",
         "macOS arm64",
         "etlantic.plan/2",
@@ -1467,11 +1473,11 @@
       "evidence_artifacts": [
         {
           "path": "docs/11_DEVELOPMENT/evidence/phase_0_56/LOCAL_QUALIFICATION.md",
-          "sha256": "6b758f154997200707600e886f42247bdb7ba615eb7cff07e1ab110f05bf195a"
+          "sha256": "569c271c0368160da2f709796eb732a17a5f63b21a167d42be7d6e311b260280"
         },
         {
           "path": "docs/11_DEVELOPMENT/evidence/phase_0_56/WHEEL_MANIFEST.json",
-          "sha256": "d416a52721f2e1aa2bf74e151d637d8408f7b20bbe7d65c88b0b99e1aa3d3786"
+          "sha256": "8070b20da74609a8e2a6f22d81b8d2e8ec5d291468e2ce1e8a07ea8c0502af3e"
         }
       ],
       "id": "AC056-044",
@@ -1480,8 +1486,8 @@
       "owner": "056-CONTROL",
       "provider_version_tuple": [
         "Python 3.11.15 clean virtual environment",
-        "etlantic 0.55.0 wheel SHA-256 480ef308d24ade6ffd18106defc299136c0ccd14f7fbe9e0828385a49474bb08",
-        "etlantic-fastapi 0.55.0 wheel SHA-256 c53c177a8fda08d6b9cfd1638da1820c40f61af430eea376fdf8846908dc37c3",
+        "etlantic 0.56.0 wheel SHA-256 7a697e990617bbc259e94365b049d4d6a360c06266fd66693b52a46d572a4139",
+        "etlantic-fastapi 0.56.0 wheel SHA-256 051b49662238d1a9e55095048bf25758078f2ae1d9d886eb7997f7c22cb50174",
         "FastAPI/uvicorn managed API and loopback business webhook"
       ],
       "status": "passed",
@@ -1495,7 +1501,7 @@
   "artifacts": [
     {
       "path": "docs/11_DEVELOPMENT/evidence/phase_0_56/LOCAL_QUALIFICATION.md",
-      "sha256": "6b758f154997200707600e886f42247bdb7ba615eb7cff07e1ab110f05bf195a"
+      "sha256": "569c271c0368160da2f709796eb732a17a5f63b21a167d42be7d6e311b260280"
     },
     {
       "path": "docs/11_DEVELOPMENT/evidence/phase_0_56/MANAGED_EXECUTION_MATRIX_0_56.json",
@@ -1507,7 +1513,7 @@
     },
     {
       "path": "docs/11_DEVELOPMENT/evidence/phase_0_56/PACKAGE_COMPATIBILITY_0_56.json",
-      "sha256": "d69213bd25c6c20cccbd636e9d1fb5f85cdb788322018946ff55eb8ba35aaf38"
+      "sha256": "509b7c389391aae71ca9acd606f3f36605eaa2d9268d5da7e28ac9df021dca06"
     },
     {
       "path": "docs/11_DEVELOPMENT/evidence/phase_0_56/PRIVATE_PROVIDER_QUALIFICATION.json",
@@ -1523,11 +1529,11 @@
     },
     {
       "path": "docs/11_DEVELOPMENT/evidence/phase_0_56/WHEEL_MANIFEST.json",
-      "sha256": "d416a52721f2e1aa2bf74e151d637d8408f7b20bbe7d65c88b0b99e1aa3d3786"
+      "sha256": "8070b20da74609a8e2a6f22d81b8d2e8ec5d291468e2ce1e8a07ea8c0502af3e"
     },
     {
       "path": "scripts/qualify_phase056_packages.py",
-      "sha256": "3b07d1f23bee4645ec523be17fd355211407f5e68107d8581b98325f22be4aa5"
+      "sha256": "75bec389d07dcdeb164613b4395ca1a35bfb74633b42af12f9d251a7a46ba18d"
     },
     {
       "path": "tests/fastapi/openapi_cp1_snapshot.json",
@@ -1536,18 +1542,22 @@
     {
       "path": "tests/fastapi/openapi_cp_ga_snapshot.json",
       "sha256": "874e6c0b33e5eb984b085e5b559f2fd41b9759897fe26980e578d6029dd6068a"
+    },
+    {
+      "path": "docs/11_DEVELOPMENT/evidence/phase_0_56/PARTITION_REPAIR_BACKFILL_0_56.json",
+      "sha256": "92b52fd0db20d2334b39211794cc455ddfe4d67dd35309af959f5f736ecb7cdd"
     }
   ],
   "candidate": {
     "base_commit": "e7fd6b866dbecab646cf68b73405ee06ea4437e5",
     "branch": "codex/phase-0-56",
-    "implementation_patch_sha256_before_index": "4c6bdde4732267df3a560fb029e69ff35b24d492cabb4c44530cf08dd38e63d9",
+    "implementation_patch_sha256_before_index": "f5726acbd3face96fa8ddcc0be3f441b4e8c0577b20048e81005eafbc12bce24",
     "package_versions": {
-      "etlantic": "0.55.0",
-      "etlantic-fastapi": "0.55.0",
-      "etlantic-foundry": "0.55.0",
-      "etlantic-sql": "0.55.0",
-      "etlantic-sqlmodel": "0.55.0"
+      "etlantic": "0.56.0",
+      "etlantic-fastapi": "0.56.0",
+      "etlantic-foundry": "0.56.0",
+      "etlantic-sql": "0.56.0",
+      "etlantic-sqlmodel": "0.56.0"
     },
     "patch_hash_scope": "SHA-256 over the binary Git diff from base_commit for tracked worktree changes excluding RELEASE_INDEX.json, followed by sorted binary new-file diffs for untracked files; the index is excluded to avoid self-reference"
   },
@@ -1559,13 +1569,13 @@
     "python": "3.11.15",
     "foundry_qualification_target": "Semblance 0.9.0 loopback API simulator; no live Foundry account required"
   },
-  "generated_at_utc": "2026-10-01T19:20:18Z",
+  "generated_at_utc": "2026-10-02T01:49:50Z",
   "phase": "0.56",
   "release_decision": "OPEN",
   "schema": "etlantic.phase_0_56.release_index/1",
   "summary": {
-    "passed": 41,
-    "pending": 3,
+    "passed": 44,
+    "pending": 0,
     "blocked": 0,
     "total": 44
   }

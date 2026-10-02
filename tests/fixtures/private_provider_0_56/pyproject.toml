@@ -6,7 +6,7 @@ build-backend = "setuptools.build_meta"
 name = "etlantic-private-ac056037"
 version = "1.0.0"
 requires-python = ">=3.11"
-dependencies = ["etlantic==0.55.0"]
+dependencies = ["etlantic==0.56.0"]
 description = "Independent AC056-037 provider qualification fixture"
 
 [project.entry-points."etlantic.source_connectors"]

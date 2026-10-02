@@ -7,7 +7,7 @@ Requires:
 
 Or from published packages:
 
-    pip install 'etlantic[dataframes]==0.55.0'
+    pip install 'etlantic[dataframes]'
 
 Run with:
 
@@ -85,7 +85,7 @@ def _require_plugins() -> dict[str, Any]:
             "Missing dataframe plugin(s): "
             + ", ".join(missing)
             + ". Install with: uv sync --group dataframes "
-            "or pip install 'etlantic[dataframes]==0.55.0'"
+            "or pip install 'etlantic[dataframes]'"
         )
     return found
 

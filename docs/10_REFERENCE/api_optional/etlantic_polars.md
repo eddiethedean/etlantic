@@ -1,7 +1,7 @@
 ---
 status: available
 since: "0.43.0"
-current_minor: "0.55"
+current_minor: "0.56"
 audience: developer
 ---
 

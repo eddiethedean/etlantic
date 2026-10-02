@@ -49,6 +49,11 @@ SOURCE_CONFIG_SCHEMA = {
             "maximum": 256 * 1024 * 1024,
             "default": 64 * 1024 * 1024,
         },
+        "partition_column": {
+            "type": "string",
+            "minLength": 1,
+            "description": "Column used for explicit bounded partition reads.",
+        },
     },
 }
 
@@ -71,6 +76,11 @@ SINK_CONFIG_SCHEMA = {
             "type": "string",
             "minLength": 1,
             "default": "etlantic_connector_effects",
+        },
+        "partition_column": {
+            "type": "string",
+            "minLength": 1,
+            "description": "Column used for atomic partition replacement.",
         },
     },
     "allOf": [

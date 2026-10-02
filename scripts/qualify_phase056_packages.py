@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Qualify installed ETLantic 0.55 wheels outside the workspace source tree.
+"""Qualify installed ETLantic 0.56 wheels outside the workspace source tree.
 
 Run this script with ``python -I`` from a clean environment that installed the
 candidate wheel set. The report is safe to publish: it contains package names,
@@ -110,7 +110,7 @@ def _wheel_report(repo: Path, wheel_dir: Path) -> dict[str, Any]:
             for field in ("sha256", "size_bytes")
         ):
             raise RuntimeError(f"Built wheel hash/size differs for {filename}")
-    if any(row["version"] != "0.55.0" for row in observed.values()):
+    if any(row["version"] != "0.56.0" for row in observed.values()):
         raise RuntimeError("Candidate wheel set has an unexpected package version")
     return {
         "package_count": len(observed),
@@ -262,7 +262,7 @@ def _package_report(repo: Path) -> dict[str, Any]:
     package_rows: list[dict[str, Any]] = []
     for distribution, module_name in PACKAGES.items():
         installed_version = metadata.version(distribution)
-        if installed_version != "0.55.0":
+        if installed_version != "0.56.0":
             raise RuntimeError(
                 f"Unexpected installed version for {distribution}: {installed_version}"
             )
@@ -323,9 +323,9 @@ def _package_report(repo: Path) -> dict[str, Any]:
                 "base_distribution": base_distribution,
                 "base_requirement": str(requirement.specifier),
                 "candidate_base_accepted": str(installed_base in requirement.specifier),
-                "outside_0_55_major_minor_rejected": str(
-                    Version("0.54.99") not in requirement.specifier
-                    and Version("0.56.0") not in requirement.specifier
+                "outside_0_56_major_minor_rejected": str(
+                    Version("0.55.99") not in requirement.specifier
+                    and Version("0.57.0") not in requirement.specifier
                 ),
             }
         )

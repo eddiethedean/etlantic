@@ -11,7 +11,7 @@
     "source_sink_provider": "implicit process-local memory",
     "execution_strategy": "adaptive",
     "engine": "local",
-    "etlantic": "0.55.0",
+    "etlantic": "0.56.0",
     "python": "3.11.15",
     "platform": "macOS arm64"
   },
@@ -34,7 +34,7 @@
     ]
   },
   "fail_closed_scope": {
-    "candidate_rows": "Only chain/1:local is pinned to ETLantic 0.55.0. Every other packaged candidate row remains pinned to 0.54.0 and cannot pass exact runtime version admission in this 0.55.0 environment.",
+    "candidate_rows": "Only chain/1:local is pinned to ETLantic 0.56.0. Every other packaged candidate row remains pinned to 0.54.0 and cannot pass exact runtime version admission in this 0.56.0 environment.",
     "external_or_partial_bindings": "Managed adaptive execution rejects external resources and incomplete binding snapshots before accepting a run.",
     "wire_boundary": "The CP1 versioned submit surface continues to reject adaptive plan/2 payloads; plan/2 is admitted only by the managed service path qualified here."
   },

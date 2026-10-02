@@ -171,6 +171,164 @@ def test_live_append_upsert_replace_and_idempotent_replay(
     engine.dispose()
 
 
+def test_live_postgresql_partition_read_and_atomic_replace(
+    secret_context: dict[str, Any],
+) -> None:
+    assert URL is not None
+    engine = create_engine(URL, hide_parameters=True)
+    with engine.begin() as connection:
+        connection.execute(
+            text("DROP TABLE IF EXISTS public.etlantic_phase056_partition_orders")
+        )
+        connection.execute(
+            text(
+                "CREATE TABLE public.etlantic_phase056_partition_orders "
+                "(id text PRIMARY KEY, payload text NOT NULL, partition_key text)"
+            )
+        )
+        connection.execute(
+            text(
+                "INSERT INTO public.etlantic_phase056_partition_orders "
+                "(id, payload, partition_key) VALUES "
+                "('old-a', 'old', 'a'), ('keep-b', 'keep', 'b')"
+            )
+        )
+
+    source = LivePostgresSourceConnector()
+    source_binding = {
+        "provider": "postgresql",
+        "location": "etlantic_phase056_partition_orders",
+        "config": {"partition_column": "partition_key"},
+    }
+    source_context = {**secret_context, "etlantic.partition_ids": ["a"]}
+
+    async def read_selected() -> list[dict[str, Any]]:
+        plan = await source.plan_read_partitions(
+            binding=source_binding,
+            context=source_context,
+            partition_ids=("a",),
+        )
+        batches = [
+            batch
+            async for batch in source.read_batches(
+                plan=plan, binding=source_binding, context=source_context
+            )
+        ]
+        return [dict(row) for batch in batches for row in batch.records]
+
+    assert anyio.run(read_selected) == [
+        {"id": "old-a", "payload": "old", "partition_key": "a"}
+    ]
+
+    sink = LivePostgresSinkConnector()
+    sink_binding = {
+        "provider": "postgresql",
+        "location": "etlantic_phase056_partition_orders",
+        "config": {
+            "mode": "append",
+            "partition_column": "partition_key",
+            "effect_table": "public.etlantic_connector_effects",
+        },
+    }
+    sink_context = {
+        **secret_context,
+        "run_id": f"partition-{uuid.uuid4().hex}",
+        "etlantic.partition_ids": ["a"],
+    }
+    receipt = _write(
+        sink,
+        sink_binding,
+        sink_context,
+        [{"id": "new-a", "payload": "new", "partition_key": "a"}],
+    )
+    assert receipt.status == "committed"
+    with engine.connect() as connection:
+        rows = connection.execute(
+            text(
+                "SELECT id, payload, partition_key "
+                "FROM public.etlantic_phase056_partition_orders ORDER BY id"
+            )
+        ).all()
+    assert rows == [("keep-b", "keep", "b"), ("new-a", "new", "a")]
+
+    empty_context = {
+        **secret_context,
+        "run_id": f"partition-empty-{uuid.uuid4().hex}",
+        "etlantic.partition_ids": ["a"],
+    }
+    empty_receipt = _write(sink, sink_binding, empty_context, [])
+    assert empty_receipt.status == "committed"
+    with engine.connect() as connection:
+        rows = connection.execute(
+            text(
+                "SELECT id, payload, partition_key "
+                "FROM public.etlantic_phase056_partition_orders ORDER BY id"
+            )
+        ).all()
+    assert rows == [("keep-b", "keep", "b")]
+    with engine.begin() as connection:
+        connection.execute(
+            text("DROP TABLE IF EXISTS public.etlantic_phase056_partition_orders")
+        )
+    engine.dispose()
+
+
+def test_live_postgresql_partition_replace_rejects_rows_outside_selector(
+    secret_context: dict[str, Any],
+) -> None:
+    assert URL is not None
+    engine = create_engine(URL, hide_parameters=True)
+    with engine.begin() as connection:
+        connection.execute(
+            text("DROP TABLE IF EXISTS public.etlantic_phase056_partition_orders")
+        )
+        connection.execute(
+            text(
+                "CREATE TABLE public.etlantic_phase056_partition_orders "
+                "(id text PRIMARY KEY, payload text NOT NULL, partition_key text)"
+            )
+        )
+        connection.execute(
+            text(
+                "INSERT INTO public.etlantic_phase056_partition_orders "
+                "(id, payload, partition_key) VALUES ('keep-b', 'keep', 'b')"
+            )
+        )
+    context = {
+        **secret_context,
+        "run_id": f"partition-invalid-{uuid.uuid4().hex}",
+        "etlantic.partition_ids": ["a"],
+    }
+    receipt = _write(
+        LivePostgresSinkConnector(),
+        {
+            "provider": "postgresql",
+            "location": "etlantic_phase056_partition_orders",
+            "config": {
+                "mode": "append",
+                "partition_column": "partition_key",
+                "effect_table": "public.etlantic_connector_effects",
+            },
+        },
+        context,
+        [{"id": "wrong", "payload": "wrong", "partition_key": "b"}],
+    )
+    assert receipt.status == "rolled_back"
+    with engine.connect() as connection:
+        rows = connection.execute(
+            text(
+                "SELECT id, payload, partition_key "
+                "FROM public.etlantic_phase056_partition_orders"
+            )
+        ).all()
+    assert rows == [("keep-b", "keep", "b")]
+    with engine.begin() as connection:
+        connection.execute(
+            text("DROP TABLE IF EXISTS public.etlantic_phase056_partition_orders")
+        )
+    engine.dispose()
+
+
 def test_live_source_and_storage_inspection_are_bounded_and_read_only(
     secret_context: dict[str, Any],
 ) -> None:

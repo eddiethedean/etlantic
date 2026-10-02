@@ -4,23 +4,20 @@ status: experimental
 
 # Phase 0.56 Local Qualification
 
-**Decision: OPEN.** This record reports local implementation evidence; it does
-not claim that AC056-001–044 have all passed. The evidence index marks a
-criterion passed only after its complete documented case has been observed.
+**Decision: candidate qualification complete; release review remains open.** This record reports local implementation evidence; it does not claim publication. The evidence index marks each criterion passed only after its complete documented case has been observed.
 
-Current index: 40 criteria passed, 4 pending, and 0 blocked of 44.
+Current index: 44 criteria passed, 0 pending, and 0 blocked of 44.
 
 ## Candidate environment
 
-- Date: 2026-10-01
+- Date: 2026-10-02
 - Host: macOS 25.5.0, arm64
 - Python: 3.11.15
 - Live databases: earlier isolated PostgreSQL 16.14 container evidence; the
   current input-resource race and migration qualification used a temporary
   loopback PostgreSQL 16.13 Homebrew cluster.
 - Workspace base: `e7fd6b866dbecab646cf68b73405ee06ea4437e5`
-- Candidate packages: core and companions currently build as 0.55.0; this is
-  implementation work against the 0.55 compatibility baseline, not a release.
+- Candidate packages: core and companions build as 0.56.0 in lockstep. This is an unpublished qualification candidate against the published 0.55.x compatibility baseline.
 
 ## Executed evidence
 
@@ -123,15 +120,15 @@ Current index: 40 criteria passed, 4 pending, and 0 blocked of 44.
   cross-scope credential denial, pinned-read isolation and lost-ack recovery
   tests provide the associated provider security and reconciliation evidence.
 - Clean installed-wheel smoke:
-  rebuilt core, FastAPI and SQLModel 0.55.0 candidate wheels were installed
+  rebuilt core, FastAPI and SQLModel 0.56.0 candidate wheels were installed
   into a fresh Python 3.14.3 virtual environment without workspace path
   injection. Migration 009 applied, idempotent event replay survived engine
   disposal/reopen, pruning rejected stale cursors and duplicate replay, the
   standard managed backend constructed and closed, and generated OpenAPI
   included `/v1/runs/{run_id}/events/history`. Exact wheel sizes and SHA-256
-  values are recorded in `WHEEL_MANIFEST.json`. This is
-  useful AC056-040 evidence; complete package/export/schema compatibility,
-  version skew and upgrade/rollback qualification remain pending. The latest
+  values are recorded in `WHEEL_MANIFEST.json`. This contributes to AC056-040 alongside the final isolated-wheel
+  export/schema, version-skew, and migration rollback qualification recorded in
+  `PACKAGE_COMPATIBILITY_0_56.json`. The latest
   rebuilt core, FastAPI and SQLModel wheels also passed a fresh Python 3.14.3
   managed-backend smoke: after migration to head, a backend configured with a
   two-event scope limit retained sequences 2 and 3 from three published events.
@@ -497,15 +494,13 @@ Current index: 40 criteria passed, 4 pending, and 0 blocked of 44.
   — 69 passed. A packaged worker performed both accepted child transfers from
   the immutable parent snapshot, and tests cover explicit rerun after a
   committed effect, full-snapshot replay intent, unknown-effect rejection,
-  idempotency, action discovery and OpenAPI registration. AC056-031 remains
-  open. Managed checkpoint resume validates the linked checkpoint and creates
+  idempotency, action discovery and OpenAPI registration. AC056-031 now also includes managed partition repair and backfill qualification. Managed checkpoint resume validates the linked checkpoint and creates
   an idempotent child run using the parent's scoped artifact workspace. The
   real managed worker completed the child JSON-to-CSV pipeline, published its
   report, and recorded the parent-to-child resume edge. Focused cases also
   cover checkpoint creation before worker failure, HTTP replay of the same
   command, unknown-effect blocking and missing-checkpoint rejection.
-  Executable repair/backfill semantics and complete lifecycle qualification
-  remain pending.
+  Executable repair/backfill semantics are qualified in the later AC056-031 section below.
 - Revision-pinned admission, resource authorization and concurrent idempotency:
   `uv run pytest -q tests/fastapi/test_managed_application_0_56.py tests/fastapi/test_managed_backend_0_56.py tests/fastapi/test_cp1_full_authz_matrix.py tests/fastapi/test_managed_control_races_0_56.py tests/fastapi/test_managed_rerun_http_0_56.py tests/sqlmodel/test_cp1_migrations_0_51.py tests/sqlmodel/test_registry_stores_0_40.py tests/sqlmodel/test_cp4_stores_0_42.py tests/sqlmodel/test_durable_postgresql_multiprocess_0_56.py`
   — 93 passed, 5 skipped. Managed submission resolves an immutable definition
@@ -745,11 +740,11 @@ for the combinations the managed worker cannot run.
 `tests/fastapi/test_managed_backend_0_56.py::test_managed_adaptive_local_chain_is_admitted_and_observed`
 qualified one exact tuple through the managed service: plan schema
 `etlantic.plan/2`, support row `local-static:chain/1:local`, local engine,
-implicit process-local memory bindings, and ETLantic 0.55.0 on Python 3.11.15.
+implicit process-local memory bindings, and ETLantic 0.56.0 on Python 3.11.15.
 The service admitted the plan during both planning and submission, and a durable
 worker completed the run and published the seeded row to its memory sink.
 
-Only that candidate row is pinned to 0.55.0. Every other packaged candidate
+Only that candidate row is pinned to 0.56.0. Every other packaged candidate
 row retains its 0.54.0 pin and fails exact runtime version admission in this
 environment. External or partial binding snapshots remain rejected. The
 candidate remains Experimental with graduation pending; this observed managed
@@ -757,13 +752,12 @@ execution does not claim an Available maturity or independent graduation.
 Detailed tuple and test evidence is recorded in
 `MANAGED_ADAPTIVE_QUALIFICATION_0_56.json`.
 
-## Open release requirements
+## Incremental qualification notes
 
-The remaining open criteria include AC056-031 and AC056-041:
-- AC056-031: expose and qualify managed resume, repair and backfill commands
-  with distinct idempotency and complete parent/run/attempt lineage.
-- AC056-041: qualify the full advertised engine/native/dynamic/incremental/
-  streaming combination matrix through the managed path.
+The following notes record focused evidence gathered as implementation landed;
+open-scope language in this chronological log reflects those intermediate
+checkpoints. The final release index and disposition below record the completed
+qualification state.
 - AC056-043 passed for the exact local-memory tuple documented above;
   candidate graduation and other package tuples remain pending or fail closed.
   checked against finalized owner-bound references and live operation leases,
@@ -1114,7 +1108,7 @@ case references, provider tuple and open reason. These limitations keep the
   `f05f97b9d9a4ae54a96a657f3943b490784a9711131392744a46bfa5d4c6fb70`.
 - Installed metadata for all 24 adapters accepts the candidate base package
   and rejects 0.54.99 and 0.56.0 under the declared version constraints. The
-  exact 0.55.0 candidate set resolved and installed as one environment. The
+  exact 0.56.0 candidate set resolved and installed as one environment. The
   report records the resolved FastAPI, Pydantic, SQLModel, SQLAlchemy, pandas,
   Polars, PyArrow, DuckDB, DataFusion, Prefect and PySpark versions.
 - The installed SQLModel migration chain upgraded a fresh database to
@@ -1137,3 +1131,27 @@ case references, provider tuple and open reason. These limitations keep the
   checked-in size/hash manifest.
   AC056-040 is passed; this qualification makes no live PostgreSQL migration
   claim.
+
+
+## Partition repair and backfill qualification (AC056-031)
+
+- Isolated PostgreSQL 16.13 loopback cluster, CPython 3.11.15, macOS arm64.
+- `ETLANTIC_SQL_TEST_URL=... uv run pytest -q tests/sql/test_postgresql_partition_plans_0_56.py tests/sql/test_postgresql_live_0_56.py tests/fastapi/test_managed_partition_lifecycle_0_56.py tests/fastapi/test_managed_rerun_http_0_56.py` — 16 passed.
+- The managed lifecycle case submits a parent run, edits partition `a`, issues repair through HTTP and backfill through the service, retries the same backfill idempotency key, and verifies both child runs, final selected rows, statuses, report state and parent/submission/attempt lineage. Provider cases verify bounded selector plans, fail-closed configuration, selected-partition replacement, empty replacement, preservation of untouched partitions and rollback for rows outside the selector.
+- Detailed observations and safety boundaries are recorded in `PARTITION_REPAIR_BACKFILL_0_56.json`. The temporary database contained only test fixtures and was isolated from application data.
+
+
+- Final default non-optional regression after the 0.56 package, checker and repair/backfill changes:
+  `uv run pytest -q -m "not medallantic and not polars and not pandas and not sql and not spark and not real_pyspark and not airflow and not prefect and not keyring and not sqlmodel and not datafusion"` — 2,983 passed, 105 skipped, 605 deselected in 4m44s; exit code 0. This includes the refreshed 0.52 adaptive evidence regeneration check.
+
+
+## Final candidate disposition
+
+All 44 acceptance criteria passed. The 2,983-test default regression passed
+with 105 skipped and 605 deselected, and the focused live PostgreSQL repair,
+backfill and provider suite passed all 16 cases. All 25 lockstep 0.56.0 wheels
+installed and passed isolated compatibility, schema and migration checks. The
+release decision remains open for independent release review; no package tag or
+publication is claimed. The published supported line remains 0.55.x.
+
+- Static and documentation gates: `uv run pyright` — 0 errors; `uv run ruff check .` and `uv run ruff format --check .` passed; `uv run python scripts/check_docs.py` passed; `uv run mkdocs build --strict` built the site successfully; `uv run python scripts/check_release.py` passed all in-repository release checks and reported the expected 24 unpublished candidate distributions missing from PyPI.

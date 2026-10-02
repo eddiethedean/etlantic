@@ -8,6 +8,7 @@ from importlib.metadata import version as pkg_version
 from pathlib import Path
 from typing import Any
 
+from etlantic import __version__ as module_version
 from etlantic.control_plane import (
     ControlPlaneContext,
     ControlPlaneError,
@@ -105,7 +106,9 @@ def run_compat_campaign() -> dict[str, Any]:
     cases.append(
         {
             "id": "compat_floor",
-            "status": "pass" if major_minor == "0.55" else "fail",
+            "status": "pass"
+            if major_minor == ".".join(module_version.split(".")[:2])
+            else "fail",
             "policy": f">={major_minor}.0,<{next_minor}",
             "installed": installed,
         }

@@ -7,7 +7,7 @@ listing, file content, upload, and transaction create/commit/abort/status.
 Install it alongside the matching ETLantic core version:
 
 ```bash
-pip install 'etlantic-foundry==0.55.0'
+pip install 'etlantic-foundry==0.56.0'
 ```
 
 ## Configuration

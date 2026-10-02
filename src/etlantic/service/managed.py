@@ -2299,6 +2299,14 @@ class ManagedApplicationService:
                 set(descriptor.required_capabilities)
             ):
                 return "provider_unsupported"
+            if str(descriptor.provider or "").lower() == "postgresql":
+                config = descriptor.config or {}
+                partition_column = config.get("partition_column")
+                if (
+                    not isinstance(partition_column, str)
+                    or not partition_column.strip()
+                ):
+                    return "provider_unsupported"
         if not source_count or not sink_count:
             return "provider_unsupported"
         return None

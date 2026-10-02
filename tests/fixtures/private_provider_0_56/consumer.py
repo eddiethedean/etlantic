@@ -47,7 +47,7 @@ profile = Profile(
     name="independent-provider-production",
     security_mode="production",
     plugin_allowlist={
-        "etlantic": "==0.55.0",
+        "etlantic": "==0.56.0",
         "etlantic-private-ac056037": "==1.0.0",
         "etlantic-local": "==0.50.0",
     },
