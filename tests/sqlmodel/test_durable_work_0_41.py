@@ -87,6 +87,7 @@ def test_sqlmodel_snapshot_preserves_accepted_execution_authority(
     assert restored.environment == "production"
     assert restored.security_domain_id == "regulated"
     assert restored.resource_owner_id == "data-owner"
+    assert restarted.list_execution_security_domains(accepted_ctx) == ("regulated",)
 
 
 def test_outbox_crash_point_and_duplicate_publish(tmp_path: Path) -> None:

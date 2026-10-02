@@ -3110,3 +3110,194 @@ def test_managed_execution_uses_authority_persisted_at_acceptance(
             attempt_id="legacy-attempt",
             fencing_token=1,
         )
+
+
+def test_result_publication_recovery_uses_accepted_scope(tmp_path: Path) -> None:
+    from datetime import UTC, datetime
+    from hashlib import sha256
+
+    from etlantic.control_plane.durable_models import ResultPublicationRecord
+    from etlantic.reports.model import PipelineRunReport
+    from etlantic.runtime.request import RunIntent
+    from etlantic.runtime.state import RunStatus
+
+    ctx, _authz, _definitions, _submissions, durable, _events, _service = _wired(
+        tmp_path
+    )
+    accepted_ctx = ControlPlaneContext(
+        principal=Principal(
+            "nightly-pipeline", issuer="trusted-scheduler", kind="workload"
+        ),
+        tenant=ctx.tenant,
+        workspace=ctx.workspace,
+        environment=EnvironmentRef("production"),
+        security_domain=SecurityDomain("regulated"),
+        resource_owner_id="data-owner",
+    )
+    worker_ctx = ControlPlaneContext(
+        principal=Principal("etl-worker", issuer="worker-service", kind="service"),
+        tenant=ctx.tenant,
+        workspace=ctx.workspace,
+        environment=EnvironmentRef("development"),
+        security_domain=SecurityDomain("worker-default"),
+        resource_owner_id="worker-owner",
+    )
+    submission, _created = durable.accept(
+        accepted_ctx,
+        idempotency_key="recovered-publication",
+        operation="run.submit",
+        plan_fingerprint="a" * 64,
+    )
+    outbox = durable.pending_outbox(worker_ctx)[0]
+    durable.mark_published(worker_ctx, outbox.outbox_id)
+    lease = durable.acquire_lease(
+        worker_ctx, submission.submission_id, owner_id="crashed-worker", ttl_seconds=30
+    )
+    attempt = durable.start_attempt(
+        worker_ctx,
+        submission.submission_id,
+        owner_id="crashed-worker",
+        fencing_token=lease.fencing_token,
+    )
+    report = PipelineRunReport(
+        pipeline_id="pipe",
+        plan_id="plan",
+        run_id="accepted-run-id",
+        intent=RunIntent.STANDARD,
+        profile="development",
+        status=RunStatus.SUCCEEDED,
+        started_at=datetime.now(UTC),
+        ended_at=datetime.now(UTC),
+        plan_fingerprint=submission.plan_fingerprint,
+    )
+    report_json = report.to_json(indent=None)
+    publication = ResultPublicationRecord(
+        submission_id=submission.submission_id,
+        attempt_id=attempt.attempt_id,
+        run_id=report.run_id,
+        tenant_id=worker_ctx.tenant.tenant_id,
+        workspace_id=worker_ctx.workspace.workspace_id,
+        report_json=report_json,
+        report_sha256=sha256(report_json.encode("utf-8")).hexdigest(),
+        created_at=datetime.now(UTC).isoformat(),
+    )
+    durable.record_result_publication(
+        worker_ctx,
+        publication,
+        owner_id="crashed-worker",
+        fencing_token=lease.fencing_token,
+    )
+    durable.finish_attempt(
+        worker_ctx,
+        attempt.attempt_id,
+        owner_id="crashed-worker",
+        fencing_token=lease.fencing_token,
+        status="completed",
+    )
+
+    stores: dict[str, dict[str, PipelineRunReport]] = {}
+    observed_domains: list[str] = []
+
+    class MemoryReportStore:
+        def __init__(self, domain_id: str) -> None:
+            self.domain_id = domain_id
+
+        def put(self, value: PipelineRunReport) -> None:
+            stores.setdefault(self.domain_id, {})[value.run_id] = value
+
+    def report_store_factory(scope: ControlPlaneContext) -> MemoryReportStore:
+        observed_domains.append(scope.security_domain.domain_id)
+        return MemoryReportStore(scope.security_domain.domain_id)
+
+    runner = ManagedExecutionAdapter(report_store_factory=report_store_factory)
+    host = ExecutionHost(durable, owner_id="recovery-worker", runner=runner)
+
+    assert host.tick(worker_ctx) == 0
+    assert observed_domains == ["regulated"]
+    assert stores["regulated"][report.run_id].status is RunStatus.SUCCEEDED
+    assert not durable.pending_result_publications(worker_ctx)
+
+
+def test_managed_execution_host_retains_accepted_scope_artifacts(
+    tmp_path: Path,
+) -> None:
+    from datetime import UTC, datetime, timedelta
+
+    from etlantic.reports.model import ArtifactResult, PipelineRunReport
+    from etlantic.runtime.artifacts import artifact_storage_path
+    from etlantic.runtime.managed_execution import (
+        ManagedExecutionAdapter,
+        managed_artifact_workspace,
+        managed_report_store,
+    )
+    from etlantic.runtime.request import RunIntent
+    from etlantic.runtime.state import RunStatus
+
+    ctx, _authz, _definitions, _submissions, durable, _events, _service = _wired(
+        tmp_path
+    )
+    accepted_ctx = ControlPlaneContext(
+        principal=Principal(
+            "nightly-pipeline", issuer="trusted-scheduler", kind="workload"
+        ),
+        tenant=ctx.tenant,
+        workspace=ctx.workspace,
+        environment=EnvironmentRef("production"),
+        security_domain=SecurityDomain("regulated"),
+        resource_owner_id="data-owner",
+    )
+    worker_ctx = ControlPlaneContext(
+        principal=Principal("etl-worker", issuer="worker-service", kind="service"),
+        tenant=ctx.tenant,
+        workspace=ctx.workspace,
+        environment=EnvironmentRef("development"),
+        security_domain=SecurityDomain("worker-default"),
+        resource_owner_id="worker-owner",
+    )
+    submission, _created = durable.accept(
+        accepted_ctx,
+        idempotency_key="retention-scope",
+        operation="run.submit",
+        plan_fingerprint="b" * 64,
+    )
+    outbox = durable.pending_outbox(worker_ctx)[0]
+    durable.mark_published(worker_ctx, outbox.outbox_id)
+
+    artifact_root = tmp_path / "artifacts"
+    report_root = tmp_path / "reports"
+    run_id = "accepted-scope-run"
+    artifact_identity = "result:private"
+    artifact = artifact_storage_path(
+        managed_artifact_workspace(accepted_ctx, run_id, artifact_root=artifact_root),
+        artifact_identity,
+    )
+    artifact.parent.mkdir(parents=True, exist_ok=True)
+    artifact.write_text('[{"id":1}]', encoding="utf-8")
+    ended_at = datetime.now(UTC) - timedelta(days=2)
+    report = PipelineRunReport(
+        pipeline_id="pipe",
+        plan_id="plan",
+        run_id=run_id,
+        intent=RunIntent.STANDARD,
+        profile="development",
+        status=RunStatus.SUCCEEDED,
+        started_at=ended_at - timedelta(minutes=1),
+        ended_at=ended_at,
+        artifacts=(ArtifactResult(artifact_identity, "result", "durable"),),
+        plan_fingerprint=submission.plan_fingerprint,
+    )
+    managed_report_store(accepted_ctx, report_root=report_root).put(report)
+
+    runner = ManagedExecutionAdapter(
+        report_root=report_root,
+        artifact_root=artifact_root,
+        run_artifact_retention_seconds=1,
+    )
+    host = ExecutionHost(durable, owner_id="retention-worker", runner=runner)
+
+    assert host.tick(worker_ctx) == 0
+    assert not artifact.exists()
+    retained = managed_report_store(accepted_ctx, report_root=report_root).get(run_id)
+    assert retained is not None
+    assert retained.artifacts[0].status == "expired"
+    assert retained.metadata["etlantic.control_plane.artifact_retention"] == "complete"

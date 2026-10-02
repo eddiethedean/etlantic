@@ -242,6 +242,20 @@ class MemoryDurableWorkStore:
             if not value.strip():
                 raise ValueError(f"{name} must not be empty")
 
+    def list_execution_security_domains(
+        self, ctx: ControlPlaneContext
+    ) -> tuple[str, ...]:
+        """Return accepted report/artifact domains in this tenant workspace."""
+        with self._lock:
+            domains = {
+                row.security_domain_id
+                for key, row in self._submissions.items()
+                if key[:2] == _scope(ctx)
+                and row.security_domain_id is not None
+                and row.security_domain_id.strip()
+            }
+        return tuple(sorted(domains))
+
     def pending_outbox(
         self, ctx: ControlPlaneContext, *, limit: int = 100
     ) -> list[OutboxRecord]:

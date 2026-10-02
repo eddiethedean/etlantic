@@ -5,8 +5,9 @@ from __future__ import annotations
 import hashlib
 import inspect
 import logging
-from collections.abc import Callable, Mapping
+from collections.abc import Callable, Mapping, Sequence
 from contextlib import suppress
+from dataclasses import replace
 from datetime import UTC, datetime
 from threading import Event, Thread
 from typing import Any, cast
@@ -17,7 +18,7 @@ from etlantic.control_plane.durable_models import (
 )
 from etlantic.control_plane.durable_protocols import DurableWorkStore
 from etlantic.control_plane.errors import ControlPlaneError
-from etlantic.control_plane.models import ControlPlaneContext
+from etlantic.control_plane.models import ControlPlaneContext, SecurityDomain
 from etlantic.control_plane.schedule_diagnostics import fed_diagnostic
 from etlantic.reports.model import PipelineRunReport
 from etlantic.runtime.managed_errors import ExecutionRejected, UnknownCommitError
@@ -201,14 +202,34 @@ class ExecutionHost:
             return 0
         cleanup_artifacts = getattr(self.runner, "cleanup_expired_run_artifacts", None)
         if callable(cleanup_artifacts):
-            try:
-                cleanup_artifacts(ctx)
-            except Exception:
-                # Retention has its own durable state and must not block ETL
-                # admission when the result store or artifact filesystem is down.
-                _LOG.warning(
-                    "Run artifact retention pass failed; execution polling continues"
-                )
+            cleanup_contexts = {ctx.security_domain.domain_id: ctx}
+            list_domains = getattr(
+                self.durable, "list_execution_security_domains", None
+            )
+            if callable(list_domains):
+                try:
+                    domain_lister = cast(
+                        Callable[[ControlPlaneContext], Sequence[str]], list_domains
+                    )
+                    for domain_id in domain_lister(ctx):
+                        if domain_id.strip():
+                            cleanup_contexts.setdefault(
+                                domain_id,
+                                replace(ctx, security_domain=SecurityDomain(domain_id)),
+                            )
+                except Exception:
+                    _LOG.warning(
+                        "Could not list accepted scopes for artifact retention"
+                    )
+            for domain_id in sorted(cleanup_contexts):
+                try:
+                    cleanup_artifacts(cleanup_contexts[domain_id])
+                except Exception:
+                    # Retention has its own durable state and must not block
+                    # ETL admission when a report store or filesystem is down.
+                    _LOG.warning(
+                        "Run artifact retention pass failed; execution polling continues"
+                    )
         self.durable.reconcile_cancelled_submissions(ctx, limit=limit)
         self.durable.reconcile_terminal_outbox(ctx, limit=limit)
         self._reconcile_result_publications(ctx, limit=limit)
@@ -379,6 +400,8 @@ class ExecutionHost:
         publish = getattr(self.runner, "publish_result_publication", None)
         if not callable(publish):
             return
+        from etlantic.runtime.managed_execution import accepted_execution_context
+
         try:
             records = self.durable.pending_result_publications(ctx, limit=limit)
         except Exception:
@@ -386,7 +409,9 @@ class ExecutionHost:
             return
         for record in records:
             try:
-                publish(ctx, record)
+                submission = self.durable.get_submission(ctx, record.submission_id)
+                accepted_ctx = accepted_execution_context(ctx, submission)
+                publish(accepted_ctx, record)
                 self.durable.mark_result_publication_published(
                     ctx,
                     record.submission_id,

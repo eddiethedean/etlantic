@@ -333,6 +333,11 @@ class SQLModelDurableWorkStore:
     def accept(self, ctx: ControlPlaneContext, **kwargs: Any):
         return self._txn(lambda m: m.accept(ctx, **kwargs))
 
+    def list_execution_security_domains(
+        self, ctx: ControlPlaneContext
+    ) -> tuple[str, ...]:
+        return self._read_only(lambda m: m.list_execution_security_domains(ctx))
+
     def pending_outbox(self, ctx: ControlPlaneContext, *, limit: int = 100):
         return self._read_only(lambda m: m.pending_outbox(ctx, limit=limit))
 
