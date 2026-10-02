@@ -79,18 +79,44 @@ def managed_run_id(
     *,
     operation: str = "run.submit",
 ) -> str:
+    """Return a stable run ID for the full accepted authority and command scope."""
+    identity = {
+        "security_domain_id": ctx.security_domain.domain_id,
+        "tenant_id": ctx.tenant.tenant_id,
+        "workspace_id": ctx.workspace.workspace_id,
+        "principal": {
+            "issuer": ctx.principal.issuer or "",
+            "kind": ctx.principal.kind,
+            "subject": ctx.principal.subject,
+        },
+        "operation": operation,
+        "idempotency_key": idempotency_key,
+    }
+    scope = json.dumps(
+        identity,
+        sort_keys=True,
+        separators=(",", ":"),
+        ensure_ascii=False,
+    )
+    return "run-" + _scope_fragment(scope)
+
+
+def legacy_managed_run_id(
+    ctx: ControlPlaneContext,
+    idempotency_key: str,
+    *,
+    operation: str = "run.submit",
+) -> str:
+    """Reproduce run IDs from submissions accepted before principal scoping."""
     parts = [
         ctx.security_domain.domain_id,
         ctx.tenant.tenant_id,
         ctx.workspace.workspace_id,
     ]
-    # Preserve established run.submit identities while isolating lifecycle
-    # commands that reuse the same idempotency key in another operation scope.
     if operation != "run.submit":
         parts.append(operation)
     parts.append(idempotency_key)
-    scope = "/".join(parts)
-    return "run-" + _scope_fragment(scope)
+    return "run-" + _scope_fragment("/".join(parts))
 
 
 def managed_artifact_workspace(
@@ -353,7 +379,7 @@ class ManagedExecutionAdapter:
                 )
             leased_reader = cast(Callable[..., bytes], candidate_reader)
 
-        run_id = managed_run_id(
+        run_id = submission.run_id or legacy_managed_run_id(
             ctx, submission.idempotency_key, operation=submission.operation
         )
         event_base = {

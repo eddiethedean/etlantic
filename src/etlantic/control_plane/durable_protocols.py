@@ -122,6 +122,7 @@ class DurableWorkStore(Protocol):
         schema_observation_fingerprint: str | None = None,
         schema_baseline_id: str | None = None,
         submission_id: str | None = None,
+        run_id: str | None = None,
     ) -> tuple[SubmissionRecord, bool]: ...
     def list_execution_scopes(
         self,

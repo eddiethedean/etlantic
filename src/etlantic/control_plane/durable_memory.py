@@ -132,6 +132,7 @@ class MemoryDurableWorkStore:
         schema_observation_fingerprint: str | None = None,
         schema_baseline_id: str | None = None,
         submission_id: str | None = None,
+        run_id: str | None = None,
     ) -> tuple[SubmissionRecord, bool]:
         self._require_nonempty(
             idempotency_key,
@@ -143,6 +144,8 @@ class MemoryDurableWorkStore:
         )
         if submission_id is not None:
             self._require_nonempty(submission_id, "submission_id")
+        if run_id is not None:
+            self._require_nonempty(run_id, "run_id")
         idem = (
             *_scope(ctx),
             ctx.principal.issuer or "",
@@ -188,6 +191,14 @@ class MemoryDurableWorkStore:
                     raise ControlPlaneError.conflict(
                         "Idempotency key reuse with different submission_id"
                     )
+                if (
+                    run_id is not None
+                    and prior.run_id is not None
+                    and run_id != prior.run_id
+                ):
+                    raise ControlPlaneError.conflict(
+                        "Idempotency key reuse with different run_id"
+                    )
                 return deepcopy(prior), False
             if self.admission_limit is not None:
                 in_flight = sum(
@@ -224,6 +235,7 @@ class MemoryDurableWorkStore:
                 environment=ctx.environment.name,
                 security_domain_id=ctx.security_domain.domain_id,
                 resource_owner_id=ctx.resource_owner_id,
+                run_id=run_id,
             )
             payload = hashlib.sha256(
                 "|".join(str(v or "") for v in requested).encode()
