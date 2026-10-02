@@ -107,7 +107,7 @@ def test_retention_pages_are_bounded_and_rotate_fairly() -> None:
     assert durable.scope_pages == [(None, 20)]
 
     host.tick(base)
-    assert len(runner.cleaned) == 26
+    assert len(runner.cleaned) == 27  # worker scope is revisited on this tick
     assert durable.scope_pages == [(None, 20), ("submission-19", 20)]
     assert {ctx.principal.subject for ctx in runner.cleaned} == {
         "worker",
@@ -115,7 +115,7 @@ def test_retention_pages_are_bounded_and_rotate_fairly() -> None:
     }
 
 
-def test_retention_deduplicates_storage_partitions_across_pages() -> None:
+def test_retention_deduplicates_per_tick_and_revisits_partitions() -> None:
     base = _ctx()
     durable = _CountingStore()
     for index in range(25):
@@ -128,8 +128,8 @@ def test_retention_deduplicates_storage_partitions_across_pages() -> None:
 
     assert [ctx.security_domain.domain_id for ctx in runner.cleaned].count(
         "shared-domain"
-    ) == 1
+    ) == 2
     assert [ctx.security_domain.domain_id for ctx in runner.cleaned].count(
         "worker-domain"
-    ) == 1
+    ) == 2
     assert durable.scope_pages == [(None, 20), ("submission-19", 20)]

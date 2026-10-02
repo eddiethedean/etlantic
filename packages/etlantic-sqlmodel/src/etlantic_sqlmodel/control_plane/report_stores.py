@@ -221,6 +221,15 @@ class SqlModelRunReportStoreProvider:
     def for_context(self, ctx: ControlPlaneContext) -> SqlModelRunReportStore:
         return SqlModelRunReportStore(self._engine, ctx)
 
+    @staticmethod
+    def retention_scope_key(ctx: ControlPlaneContext) -> tuple[str, str, str]:
+        """Return the storage dimensions shared by report-store instances."""
+        return (
+            ctx.tenant.tenant_id,
+            ctx.workspace.workspace_id,
+            ctx.security_domain.domain_id,
+        )
+
 
 __all__ = [
     "SqlModelRunReportStore",

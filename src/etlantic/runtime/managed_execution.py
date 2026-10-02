@@ -189,6 +189,7 @@ class ManagedExecutionAdapter:
         report_root: str | Path | None = None,
         artifact_root: str | Path | None = None,
         report_store_factory: Callable[[ControlPlaneContext], Any] | None = None,
+        report_store_scope_key: Callable[[ControlPlaneContext], object] | None = None,
         event_publisher: (
             Callable[[ControlPlaneContext, str, str, Mapping[str, Any]], None] | None
         ) = None,
@@ -217,6 +218,7 @@ class ManagedExecutionAdapter:
         ).expanduser()
         self.artifact_root = artifact_root
         self.report_store_factory = report_store_factory
+        self.report_store_scope_key = report_store_scope_key
         self.event_publisher = event_publisher
         self.runtime_factory = runtime_factory
         self.secret_alias_authorizer = secret_alias_authorizer
@@ -232,9 +234,11 @@ class ManagedExecutionAdapter:
 
     def artifact_retention_scope_key(
         self, ctx: ControlPlaneContext
-    ) -> tuple[str | tuple[bool, str], ...]:
+    ) -> object:
         """Return the dimensions that select this adapter's retention stores."""
         if self.report_store_factory is not None:
+            if self.report_store_scope_key is not None:
+                return self.report_store_scope_key(ctx)
             return (
                 ctx.tenant.tenant_id,
                 ctx.workspace.workspace_id,

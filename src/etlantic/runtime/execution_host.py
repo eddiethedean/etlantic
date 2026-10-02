@@ -74,7 +74,6 @@ class ExecutionHost:
         self.draining = False
         self._retention_scope_workspace: tuple[str, str] | None = None
         self._retention_scope_cursor: str | None = None
-        self._retention_seen_keys: set[object] = set()
 
     def _start_lease_monitor(
         self,
@@ -229,7 +228,6 @@ class ExecutionHost:
             if workspace != self._retention_scope_workspace:
                 self._retention_scope_workspace = workspace
                 self._retention_scope_cursor = None
-                self._retention_seen_keys.clear()
             cleanup_contexts: dict[object, ControlPlaneContext] = {}
             page: ExecutionScopePage | None = None
             try:
@@ -257,10 +255,10 @@ class ExecutionHost:
             except Exception:
                 _LOG.warning("Could not list accepted scopes for artifact retention")
             cleanup_contexts.setdefault(self._retention_scope_key(ctx), ctx)
-            for scope_key, cleanup_ctx in cleanup_contexts.items():
-                if scope_key in self._retention_seen_keys:
-                    continue
-                self._retention_seen_keys.add(scope_key)
+            # Deduplicate only within this tick. Remembering keys across the
+            # complete history scan can delay the next cleanup batch for a
+            # partition by thousands of ticks, or forever under steady intake.
+            for cleanup_ctx in cleanup_contexts.values():
                 try:
                     cleanup_artifacts(cleanup_ctx)
                 except Exception:
@@ -269,11 +267,6 @@ class ExecutionHost:
                     _LOG.warning(
                         "Run artifact retention pass failed; execution polling continues"
                     )
-            if page is not None and page.next_cursor is None:
-                # Begin another round next tick. The cursor bounds each query,
-                # while this set avoids scanning the same storage partition
-                # once for every accepted authority variant in this round.
-                self._retention_seen_keys.clear()
         self.durable.reconcile_cancelled_submissions(ctx, limit=limit)
         self.durable.reconcile_terminal_outbox(ctx, limit=limit)
         self._reconcile_result_publications(ctx, limit=limit)

@@ -272,6 +272,12 @@ def test_managed_app_shares_stores_and_preserves_accepted_work_on_shutdown(
         assert service is not None
         durable_work = backend.api.durable_work
         assert durable_work is not None
+        retention_runner = cast(Any, backend.create_execution_host().runner)
+        assert callable(retention_runner)
+        storage_scope_key = retention_runner.artifact_retention_scope_key
+        assert storage_scope_key(_context()) == storage_scope_key(
+            replace(_context(), principal=Principal("another-accepted-caller"))
+        )
         submission, created = durable_work.accept(
             _context(),
             idempotency_key="accepted-before-shutdown",
