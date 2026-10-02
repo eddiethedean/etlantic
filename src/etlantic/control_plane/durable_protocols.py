@@ -122,6 +122,9 @@ class DurableWorkStore(Protocol):
         schema_baseline_id: str | None = None,
         submission_id: str | None = None,
     ) -> tuple[SubmissionRecord, bool]: ...
+    def list_execution_scopes(
+        self, ctx: ControlPlaneContext
+    ) -> Sequence[ControlPlaneContext]: ...
     def pending_outbox(
         self, ctx: ControlPlaneContext, *, limit: int = 100
     ) -> Sequence[OutboxRecord]: ...

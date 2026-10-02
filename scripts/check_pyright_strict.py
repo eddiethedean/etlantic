@@ -86,9 +86,10 @@ EXPECTED_DIGESTS = {
     # suppression-free diagnostics in its new provider and lifecycle tests;
     # the regular strict Pyright run remains clean. Reviewed at 9,856.
     # AC #215 preserves accepted scope through report recovery and retention;
-    # typed regressions shift existing diagnostic locations, with 9,856 unchanged.
-    "Darwin": "a3087f7c658c477993c3ffb03a804670e5697a59e963c5a2e5ea773490666b4a",
-    "Linux": "a3087f7c658c477993c3ffb03a804670e5697a59e963c5a2e5ea773490666b4a",
+    # AC #226 enumerates full accepted scopes through the provider contract.
+    # Normalized diagnostics are unchanged at 9,856; only source locations move.
+    "Darwin": "36a5ed42c4ae5093c9eeaaf763f4f2b798e3eb39784880d2fd9608de301ea6f1",
+    "Linux": "36a5ed42c4ae5093c9eeaaf763f4f2b798e3eb39784880d2fd9608de301ea6f1",
 }
 
 

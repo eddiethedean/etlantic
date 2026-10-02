@@ -5,9 +5,8 @@ from __future__ import annotations
 import hashlib
 import inspect
 import logging
-from collections.abc import Callable, Mapping, Sequence
+from collections.abc import Callable, Mapping
 from contextlib import suppress
-from dataclasses import replace
 from datetime import UTC, datetime
 from threading import Event, Thread
 from typing import Any, cast
@@ -18,7 +17,7 @@ from etlantic.control_plane.durable_models import (
 )
 from etlantic.control_plane.durable_protocols import DurableWorkStore
 from etlantic.control_plane.errors import ControlPlaneError
-from etlantic.control_plane.models import ControlPlaneContext, SecurityDomain
+from etlantic.control_plane.models import ControlPlaneContext
 from etlantic.control_plane.schedule_diagnostics import fed_diagnostic
 from etlantic.reports.model import PipelineRunReport
 from etlantic.runtime.managed_errors import ExecutionRejected, UnknownCommitError
@@ -26,6 +25,20 @@ from etlantic.runtime.state import RunStatus
 from etlantic.secrets.provider import SecretAliasAuthorizer
 
 _LOG = logging.getLogger(__name__)
+
+
+def _execution_scope_key(ctx: ControlPlaneContext) -> tuple[str, ...]:
+    """Identify the persisted authority dimensions used by managed providers."""
+    return (
+        ctx.tenant.tenant_id,
+        ctx.workspace.workspace_id,
+        ctx.principal.issuer or "",
+        ctx.principal.kind,
+        ctx.principal.subject,
+        ctx.environment.name,
+        ctx.security_domain.domain_id,
+        ctx.resource_owner_id or "",
+    )
 
 
 class ExecutionHost:
@@ -202,28 +215,28 @@ class ExecutionHost:
             return 0
         cleanup_artifacts = getattr(self.runner, "cleanup_expired_run_artifacts", None)
         if callable(cleanup_artifacts):
-            cleanup_contexts = {ctx.security_domain.domain_id: ctx}
-            list_domains = getattr(
-                self.durable, "list_execution_security_domains", None
-            )
-            if callable(list_domains):
-                try:
-                    domain_lister = cast(
-                        Callable[[ControlPlaneContext], Sequence[str]], list_domains
+            cleanup_contexts = {_execution_scope_key(ctx): ctx}
+            try:
+                for accepted_ctx in self.durable.list_execution_scopes(ctx):
+                    if (
+                        accepted_ctx.tenant.tenant_id,
+                        accepted_ctx.workspace.workspace_id,
+                    ) != (
+                        ctx.tenant.tenant_id,
+                        ctx.workspace.workspace_id,
+                    ):
+                        _LOG.warning(
+                            "Skipping accepted execution scope outside the worker workspace"
+                        )
+                        continue
+                    cleanup_contexts.setdefault(
+                        _execution_scope_key(accepted_ctx), accepted_ctx
                     )
-                    for domain_id in domain_lister(ctx):
-                        if domain_id.strip():
-                            cleanup_contexts.setdefault(
-                                domain_id,
-                                replace(ctx, security_domain=SecurityDomain(domain_id)),
-                            )
-                except Exception:
-                    _LOG.warning(
-                        "Could not list accepted scopes for artifact retention"
-                    )
-            for domain_id in sorted(cleanup_contexts):
+            except Exception:
+                _LOG.warning("Could not list accepted scopes for artifact retention")
+            for scope_key in sorted(cleanup_contexts):
                 try:
-                    cleanup_artifacts(cleanup_contexts[domain_id])
+                    cleanup_artifacts(cleanup_contexts[scope_key])
                 except Exception:
                     # Retention has its own durable state and must not block
                     # ETL admission when a report store or filesystem is down.

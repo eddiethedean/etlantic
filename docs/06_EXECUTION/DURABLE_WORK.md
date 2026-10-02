@@ -10,6 +10,11 @@ in one provider transaction; dispatchers publish the outbox after commit.
 Execution hosts lease a submission before starting an attempt, and every host
 write carries a monotonically increasing fencing token.
 
+Durable providers expose `list_execution_scopes(ctx)` for managed artifact
+retention. It returns the unique accepted authority contexts in that tenant
+workspace, including completed submissions, so retention can select the same
+report and artifact stores used during execution.
+
 ## State-machine invariants
 
 - Idempotency is scoped by tenant, workspace, operation, and the authenticated

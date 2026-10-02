@@ -42,7 +42,14 @@ from etlantic.control_plane.durable_models import (
     SubmissionRecord,
 )
 from etlantic.control_plane.errors import ControlPlaneError
-from etlantic.control_plane.models import ControlPlaneContext
+from etlantic.control_plane.models import (
+    ControlPlaneContext,
+    EnvironmentRef,
+    Principal,
+    SecurityDomain,
+    TenantRef,
+    WorkspaceRef,
+)
 from etlantic.control_plane.redaction import (
     redact_control_plane_payload,
     redact_control_plane_text,
@@ -242,19 +249,64 @@ class MemoryDurableWorkStore:
             if not value.strip():
                 raise ValueError(f"{name} must not be empty")
 
-    def list_execution_security_domains(
+    def list_execution_scopes(
         self, ctx: ControlPlaneContext
-    ) -> tuple[str, ...]:
-        """Return accepted report/artifact domains in this tenant workspace."""
+    ) -> tuple[ControlPlaneContext, ...]:
+        """Return unique, complete accepted execution scopes for this workspace."""
         with self._lock:
-            domains = {
-                row.security_domain_id
+            fields = {
+                (
+                    row.principal_subject,
+                    row.principal_issuer,
+                    row.principal_kind,
+                    row.environment,
+                    row.security_domain_id,
+                    row.resource_owner_id,
+                )
                 for key, row in self._submissions.items()
                 if key[:2] == _scope(ctx)
-                and row.security_domain_id is not None
-                and row.security_domain_id.strip()
             }
-        return tuple(sorted(domains))
+
+        scopes: list[ControlPlaneContext] = []
+        ordered_fields = sorted(
+            fields, key=lambda values: tuple(value or "" for value in values)
+        )
+        for (
+            principal_subject,
+            principal_issuer,
+            principal_kind,
+            environment_name,
+            security_domain_id,
+            resource_owner_id,
+        ) in ordered_fields:
+            # Historical submissions without persisted execution authority
+            # cannot safely select a report or artifact store.
+            if not principal_subject or not environment_name or not security_domain_id:
+                continue
+            try:
+                principal = Principal.from_dict(
+                    {
+                        "subject": principal_subject,
+                        "issuer": principal_issuer,
+                        "kind": principal_kind,
+                    }
+                )
+                scopes.append(
+                    ControlPlaneContext(
+                        principal=principal,
+                        tenant=TenantRef(ctx.tenant.tenant_id),
+                        workspace=WorkspaceRef(
+                            ctx.tenant.tenant_id, ctx.workspace.workspace_id
+                        ),
+                        environment=EnvironmentRef(environment_name),
+                        security_domain=SecurityDomain(security_domain_id),
+                        resource_owner_id=resource_owner_id,
+                    )
+                )
+            except (KeyError, TypeError, ValueError):
+                # Do not clean up through malformed or legacy authority data.
+                continue
+        return tuple(scopes)
 
     def pending_outbox(
         self, ctx: ControlPlaneContext, *, limit: int = 100

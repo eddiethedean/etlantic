@@ -3288,14 +3288,32 @@ def test_managed_execution_host_retains_accepted_scope_artifacts(
     )
     managed_report_store(accepted_ctx, report_root=report_root).put(report)
 
+    observed_scopes: list[tuple[str, str, str, str | None]] = []
+
+    def report_store_factory(scope: ControlPlaneContext):
+        observed_scopes.append(
+            (
+                scope.principal.subject,
+                scope.environment.name,
+                scope.security_domain.domain_id,
+                scope.resource_owner_id,
+            )
+        )
+        return managed_report_store(scope, report_root=report_root)
+
     runner = ManagedExecutionAdapter(
         report_root=report_root,
         artifact_root=artifact_root,
+        report_store_factory=report_store_factory,
         run_artifact_retention_seconds=1,
     )
     host = ExecutionHost(durable, owner_id="retention-worker", runner=runner)
 
     assert host.tick(worker_ctx) == 0
+    assert set(observed_scopes) == {
+        ("nightly-pipeline", "production", "regulated", "data-owner"),
+        ("etl-worker", "development", "worker-default", "worker-owner"),
+    }
     assert not artifact.exists()
     retained = managed_report_store(accepted_ctx, report_root=report_root).get(run_id)
     assert retained is not None

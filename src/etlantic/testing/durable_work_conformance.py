@@ -171,3 +171,33 @@ def run_durable_work_conformance_suite(store: Any) -> None:
         submission_id=submission.submission_id,
     )
     assert ack.version == 1
+
+    accepted_scope = ControlPlaneContext(
+        principal=Principal("nightly", issuer="conformance", kind="workload"),
+        tenant=context.tenant,
+        workspace=context.workspace,
+        environment=EnvironmentRef("production"),
+        security_domain=SecurityDomain("regulated"),
+        resource_owner_id="owner-a",
+    )
+    _accepted_scope_submission, accepted_scope_created = store.accept(
+        accepted_scope,
+        idempotency_key="conf-scope-1",
+        operation="run.submit",
+        plan_fingerprint="scope-plan",
+    )
+    assert accepted_scope_created
+    scopes = store.list_execution_scopes(context)
+    assert {
+        (
+            scope.principal.subject,
+            scope.principal.issuer,
+            scope.environment.name,
+            scope.security_domain.domain_id,
+            scope.resource_owner_id,
+        )
+        for scope in scopes
+    } == {
+        ("worker-a", "conformance", "dev", "internal", None),
+        ("nightly", "conformance", "production", "regulated", "owner-a"),
+    }
