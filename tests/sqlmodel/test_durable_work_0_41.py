@@ -9,12 +9,12 @@ from time import sleep
 from typing import Any
 
 import pytest
-from sqlalchemy import event
 
-from sqlmodel import Session
-
+pytest.importorskip("sqlalchemy")
 pytest.importorskip("sqlmodel")
 pytest.importorskip("etlantic_sqlmodel")
+
+from sqlalchemy import event
 
 from etlantic.control_plane import (
     ControlPlaneContext,
@@ -37,6 +37,7 @@ from etlantic_sqlmodel.migrations import (
     downgrade,
     upgrade,
 )
+from sqlmodel import Session
 
 pytestmark = pytest.mark.sqlmodel
 
