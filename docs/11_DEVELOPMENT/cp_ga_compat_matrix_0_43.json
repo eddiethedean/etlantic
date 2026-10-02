@@ -9,7 +9,7 @@
     {
       "id": "sqlmodel_migrations_fresh",
       "status": "pass",
-      "version": "012_bounded_event_tombstone_retention_0_56"
+      "version": "013_durable_submission_scope_backfill_0_56"
     },
     {
       "id": "compat_floor",

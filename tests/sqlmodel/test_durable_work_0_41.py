@@ -3,10 +3,15 @@
 
 from __future__ import annotations
 
+import json
 from pathlib import Path
 from time import sleep
+from typing import Any
 
 import pytest
+from sqlalchemy import event
+
+from sqlmodel import Session
 
 pytest.importorskip("sqlmodel")
 pytest.importorskip("etlantic_sqlmodel")
@@ -25,7 +30,13 @@ from etlantic_sqlmodel.control_plane import (
     SQLModelDurableWorkStore,
     create_sqlite_engine,
 )
-from etlantic_sqlmodel.migrations import apply_migrations, current_version
+from etlantic_sqlmodel.control_plane.models import DurableSnapshotRow
+from etlantic_sqlmodel.migrations import (
+    apply_migrations,
+    current_version,
+    downgrade,
+    upgrade,
+)
 
 pytestmark = pytest.mark.sqlmodel
 
@@ -44,14 +55,166 @@ def _ctx(
 
 def test_migration_includes_durable_cp3(tmp_path: Path) -> None:
     engine = create_sqlite_engine(f"sqlite:///{tmp_path / 'd.db'}")
-    assert apply_migrations(engine) == "012_bounded_event_tombstone_retention_0_56"
-    assert current_version(engine) == "012_bounded_event_tombstone_retention_0_56"
+    assert apply_migrations(engine) == "013_durable_submission_scope_backfill_0_56"
+    assert current_version(engine) == "013_durable_submission_scope_backfill_0_56"
+
+
+def test_scope_backfill_migration_restores_legacy_snapshot_submissions(
+    tmp_path: Path,
+) -> None:
+    engine = create_sqlite_engine(f"sqlite:///{tmp_path / 'legacy-snapshot.db'}")
+    upgrade(engine, target="002_durable_cp3")
+    submission: dict[str, object] = {
+        "submission_id": "legacy-submission",
+        "tenant_id": "tenant-a",
+        "workspace_id": "workspace-a",
+        "principal_subject": "legacy-scheduler",
+        "principal_issuer": "tests",
+        "principal_kind": "workload",
+        "operation": "run.submit",
+        "idempotency_key": "legacy-idempotency",
+        "created_at": "2026-01-01T00:00:00Z",
+        "plan_fingerprint": "plan",
+        "status": "completed",
+        "metadata": {},
+        "environment": "production",
+        "security_domain_id": "regulated",
+        "resource_owner_id": "owner-a",
+    }
+    with Session(engine) as session:
+        session.add(
+            DurableSnapshotRow(
+                store_id="default",
+                payload_json=json.dumps(
+                    {
+                        "submissions": {
+                            '["tenant-a","workspace-a","legacy-submission"]': submission
+                        }
+                    }
+                ),
+                payload_version=1,
+            )
+        )
+        session.commit()
+
+    assert upgrade(engine) == "013_durable_submission_scope_backfill_0_56"
+    assert (
+        downgrade(engine, target="012_bounded_event_tombstone_retention_0_56")
+        == "012_bounded_event_tombstone_retention_0_56"
+    )
+    assert upgrade(engine) == "013_durable_submission_scope_backfill_0_56"
+    page = SQLModelDurableWorkStore(engine).list_execution_scopes(_ctx())
+
+    assert page.next_cursor is None
+    assert len(page.scopes) == 1
+    assert page.scopes[0].principal == Principal(
+        "legacy-scheduler", issuer="tests", kind="workload"
+    )
+    assert page.scopes[0].security_domain == SecurityDomain("regulated")
+    assert page.scopes[0].resource_owner_id == "owner-a"
 
 
 def test_sqlmodel_durable_conformance(tmp_path: Path) -> None:
     engine = create_sqlite_engine(f"sqlite:///{tmp_path / 'c.db'}")
     apply_migrations(engine)
     run_durable_work_conformance_suite(SQLModelDurableWorkStore(engine))
+
+
+def test_sqlmodel_snapshot_preserves_accepted_execution_authority(
+    tmp_path: Path,
+) -> None:
+    engine = create_sqlite_engine(f"sqlite:///{tmp_path / 'authority.db'}")
+    apply_migrations(engine)
+    store = SQLModelDurableWorkStore(engine)
+    base = _ctx()
+    accepted_ctx = ControlPlaneContext(
+        principal=Principal(
+            "nightly-pipeline", issuer="trusted-scheduler", kind="workload"
+        ),
+        tenant=base.tenant,
+        workspace=base.workspace,
+        environment=EnvironmentRef("production"),
+        security_domain=SecurityDomain("regulated"),
+        resource_owner_id="data-owner",
+    )
+    accepted, created = store.accept(
+        accepted_ctx,
+        idempotency_key="authority",
+        operation="run.submit",
+        plan_fingerprint="plan",
+    )
+    assert created
+
+    restarted = SQLModelDurableWorkStore(engine)
+    restored = restarted.get_submission(accepted_ctx, accepted.submission_id)
+    assert restored.principal_subject == "nightly-pipeline"
+    assert restored.principal_issuer == "trusted-scheduler"
+    assert restored.principal_kind == "workload"
+    assert restored.environment == "production"
+    assert restored.security_domain_id == "regulated"
+    assert restored.resource_owner_id == "data-owner"
+    scopes = restarted.list_execution_scopes(accepted_ctx).scopes
+    assert len(scopes) == 1
+    assert scopes[0].principal == accepted_ctx.principal
+    assert scopes[0].environment == accepted_ctx.environment
+    assert scopes[0].security_domain == accepted_ctx.security_domain
+    assert scopes[0].resource_owner_id == accepted_ctx.resource_owner_id
+
+
+def test_sqlmodel_execution_scope_pages_bypass_snapshot_load(
+    tmp_path: Path,
+) -> None:
+    engine = create_sqlite_engine(f"sqlite:///{tmp_path / 'scope-pages.db'}")
+    apply_migrations(engine)
+    store = SQLModelDurableWorkStore(engine)
+    base = _ctx()
+    for suffix in ("a", "b", "c"):
+        accepted_ctx = ControlPlaneContext(
+            principal=Principal(f"pipeline-{suffix}", issuer="scheduler"),
+            tenant=base.tenant,
+            workspace=base.workspace,
+            environment=EnvironmentRef("production"),
+            security_domain=SecurityDomain("regulated"),
+        )
+        store.accept(
+            accepted_ctx,
+            idempotency_key=f"scope-{suffix}",
+            operation="run.submit",
+            plan_fingerprint="plan",
+            submission_id=f"submission-{suffix}",
+        )
+
+    statements: list[str] = []
+
+    def record_statement(
+        _connection: Any,
+        _cursor: Any,
+        statement: str,
+        _parameters: Any,
+        _context: Any,
+        _executemany: bool,
+    ) -> None:
+        statements.append(statement.lower())
+
+    event.listen(engine, "before_cursor_execute", record_statement)
+    first = store.list_execution_scopes(base, limit=2)
+    second = store.list_execution_scopes(
+        base,
+        after_submission_id=first.next_cursor,
+        through_submission_id=first.high_watermark,
+        limit=2,
+    )
+    event.remove(engine, "before_cursor_execute", record_statement)
+
+    assert [scope.principal.subject for scope in first.scopes] == [
+        "pipeline-a",
+        "pipeline-b",
+    ]
+    assert first.next_cursor == "submission-b"
+    assert first.high_watermark == "submission-c"
+    assert [scope.principal.subject for scope in second.scopes] == ["pipeline-c"]
+    assert second.next_cursor is None
+    assert all("cp_durable_snapshot" not in statement for statement in statements)
 
 
 def test_outbox_crash_point_and_duplicate_publish(tmp_path: Path) -> None:

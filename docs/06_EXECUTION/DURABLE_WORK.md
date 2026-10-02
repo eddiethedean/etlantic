@@ -10,6 +10,23 @@ in one provider transaction; dispatchers publish the outbox after commit.
 Execution hosts lease a submission before starting an attempt, and every host
 write carries a monotonically increasing fencing token.
 
+Durable providers expose paginated `list_execution_scopes(ctx, limit=...,
+after_submission_id=..., through_submission_id=...)` for managed artifact
+retention. Each call returns a bounded page of unique, complete authority
+contexts, a submission-ID cursor, and the newest insertion captured at scan
+start. The SQLModel provider preserves row IDs in its normalized submission
+mirror and uses bounded keyset queries over submission IDs, capped by that
+snapshot watermark. The execution host rotates the cursor across ticks, so
+new submissions cannot extend the active scan indefinitely, regardless of
+their caller-supplied IDs. Each tick deduplicates scopes that share a retention
+store. A bounded retry queue
+revisits scopes whose cleanup failed or reported more candidates. When the
+queue is full, discovery continues and the watermark ensures omitted scopes
+are picked up in a later sweep.
+Adapters with retention disabled skip scope discovery. SQLModel migration
+`013_durable_submission_scope_backfill_0_56` backfills normalized submission
+rows from existing snapshots before workers rely on the keyset pages.
+
 ## State-machine invariants
 
 - Idempotency is scoped by tenant, workspace, operation, and the authenticated

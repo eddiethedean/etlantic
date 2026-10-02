@@ -210,7 +210,7 @@ def _context() -> ControlPlaneContext:
 def _migrated_url(tmp_path: Path) -> str:
     url = f"sqlite:///{tmp_path / 'managed.db'}"
     engine = sqlalchemy.create_engine(url)
-    assert upgrade(engine) == "012_bounded_event_tombstone_retention_0_56"
+    assert upgrade(engine) == "013_durable_submission_scope_backfill_0_56"
     engine.dispose()
     return url
 
@@ -272,6 +272,11 @@ def test_managed_app_shares_stores_and_preserves_accepted_work_on_shutdown(
         assert service is not None
         durable_work = backend.api.durable_work
         assert durable_work is not None
+        retention_runner = backend.create_execution_host().runner
+        storage_scope_key = retention_runner.artifact_retention_scope_key
+        assert storage_scope_key(_context()) == storage_scope_key(
+            replace(_context(), principal=Principal("another-accepted-caller"))
+        )
         submission, created = durable_work.accept(
             _context(),
             idempotency_key="accepted-before-shutdown",
@@ -345,6 +350,77 @@ def test_managed_backend_persists_and_resolves_definition_revision(
         )
         assert pinned.revision_id == resolution.revision_id
         assert pinned.document == resolution.document
+    finally:
+        restarted.close()
+
+
+def test_sqlmodel_run_ids_are_principal_scoped_and_survive_restart(
+    tmp_path: Path,
+) -> None:
+    config = ManagedBackendConfig(
+        database_url=_migrated_url(tmp_path),
+        store_id="managed-backend-principal-run-ids",
+    )
+    ctx = _context()
+    other_ctx = replace(ctx, principal=Principal("managed-backend-other-principal"))
+    backend = _backend(config)
+    try:
+        authorizer = cast(MemoryAuthorizer, backend.api.authorizer)
+        for accepted_ctx in (ctx, other_ctx):
+            for action in ("definition.write", "definition.read", "run.submit"):
+                authorizer.grant(accepted_ctx, action)
+        service = backend.api.managed_service
+        assert service is not None
+        service.register_definition(
+            ctx,
+            "principal-scoped-pipe",
+            pipeline_to_dict(definition_from_pipeline(_ManagedBackendPipeline)),
+        )
+        alice = service.submit_run(
+            ctx, "principal-scoped-pipe", idempotency_key="shared-key"
+        )
+        bob = service.submit_run(
+            other_ctx, "principal-scoped-pipe", idempotency_key="shared-key"
+        )
+        assert alice.resource_id is not None
+        assert bob.resource_id is not None
+        assert alice.submission_id != bob.submission_id
+        assert alice.resource_id != bob.resource_id
+        submissions = cast(Any, backend.api.submissions)
+        assert submissions.get_run(ctx, alice.resource_id)["submission_id"] == (
+            alice.submission_id
+        )
+        assert submissions.get_run(other_ctx, bob.resource_id)["submission_id"] == (
+            bob.submission_id
+        )
+        durable = backend.api.durable_work
+        assert durable is not None
+        assert durable.get_submission(ctx, alice.submission_id).run_id == (
+            alice.resource_id
+        )
+        assert durable.get_submission(other_ctx, bob.submission_id).run_id == (
+            bob.resource_id
+        )
+    finally:
+        backend.close()
+
+    restarted = _backend(config)
+    try:
+        submissions = cast(Any, restarted.api.submissions)
+        assert submissions.get_run(ctx, alice.resource_id)["submission_id"] == (
+            alice.submission_id
+        )
+        assert submissions.get_run(other_ctx, bob.resource_id)["submission_id"] == (
+            bob.submission_id
+        )
+        durable = restarted.api.durable_work
+        assert durable is not None
+        assert durable.get_submission(ctx, alice.submission_id).run_id == (
+            alice.resource_id
+        )
+        assert durable.get_submission(other_ctx, bob.submission_id).run_id == (
+            bob.resource_id
+        )
     finally:
         restarted.close()
 

@@ -7,6 +7,7 @@ import asyncio
 import json
 from collections.abc import Mapping
 from concurrent.futures import ThreadPoolExecutor
+from dataclasses import replace
 from datetime import UTC, datetime
 from pathlib import Path
 from threading import Barrier, Event, Thread
@@ -1624,6 +1625,33 @@ def test_concurrent_changed_intent_conflicts_under_same_idempotency_key(
     assert quota.get_state(ctx).usage["concurrency"] == 1
 
 
+def test_same_idempotency_key_has_principal_scoped_run_ids(
+    tmp_path: Path,
+) -> None:
+    ctx, authz, _definitions, submissions, durable, _events, service = _wired(tmp_path)
+    other_ctx = replace(ctx, principal=Principal("bob"))
+    for action in ("definition.read", "run.submit"):
+        authz.grant(other_ctx, action)
+
+    alice = service.submit_run(ctx, "pipe", idempotency_key="shared-key")
+    bob = service.submit_run(other_ctx, "pipe", idempotency_key="shared-key")
+
+    assert alice.submission_id != bob.submission_id
+    assert alice.resource_id != bob.resource_id
+    assert alice.resource_id is not None
+    assert bob.resource_id is not None
+    assert submissions.get_run(ctx, alice.resource_id)["submission_id"] == (
+        alice.submission_id
+    )
+    assert submissions.get_run(other_ctx, bob.resource_id)["submission_id"] == (
+        bob.submission_id
+    )
+    assert durable.get_submission(ctx, alice.submission_id).run_id == alice.resource_id
+    assert (
+        durable.get_submission(other_ctx, bob.submission_id).run_id == bob.resource_id
+    )
+
+
 def test_submission_authorizes_resolved_resources_before_acceptance(
     tmp_path: Path,
 ) -> None:
@@ -3015,3 +3043,307 @@ def test_managed_run_preparation_operations_query_cancel_and_execute(
         )
         is None
     )
+
+
+def test_managed_execution_uses_authority_persisted_at_acceptance(
+    tmp_path: Path,
+) -> None:
+    from collections.abc import Awaitable, Callable
+    from dataclasses import replace
+
+    from etlantic.runtime.context import TrustedExecutionScope
+    from etlantic.runtime.managed_errors import ExecutionRejected
+
+    ctx, _authz, _definitions, _submissions, durable, _events, service = _wired(
+        tmp_path
+    )
+    accepted_ctx = ControlPlaneContext(
+        principal=Principal(
+            subject="nightly-pipeline",
+            issuer="trusted-scheduler",
+            kind="workload",
+        ),
+        tenant=ctx.tenant,
+        workspace=ctx.workspace,
+        environment=EnvironmentRef("production"),
+        security_domain=SecurityDomain("regulated"),
+        resource_owner_id="data-owner",
+    )
+    receipt = service.submit_run(
+        accepted_ctx, "pipe", idempotency_key="accepted-authority"
+    )
+    submission = durable.get_submission(accepted_ctx, receipt.submission_id)
+    assert submission.environment == "production"
+    assert submission.security_domain_id == "regulated"
+    assert submission.resource_owner_id == "data-owner"
+
+    runtime = PipelineRuntime()
+    runtime.ensure_plugins_for_profile(resolve_profile("development"))
+    observed_scopes: list[TrustedExecutionScope] = []
+
+    async def capture_scope(
+        _context: Any, call_next: Callable[[], Awaitable[Any]]
+    ) -> Any:
+        scope = runtime.trusted_execution_scope
+        assert scope is not None
+        observed_scopes.append(scope)
+        return await call_next()
+
+    runtime.add_run_middleware(capture_scope, name="capture-accepted-authority")
+    worker_ctx = ControlPlaneContext(
+        principal=Principal(
+            subject="etl-worker",
+            issuer="worker-service",
+            kind="service",
+        ),
+        tenant=ctx.tenant,
+        workspace=ctx.workspace,
+        environment=EnvironmentRef("development"),
+        security_domain=SecurityDomain("worker-default"),
+        resource_owner_id="worker-owner",
+    )
+    runner = ManagedExecutionAdapter(
+        runtime_factory=lambda: runtime,
+        report_root=tmp_path / "reports",
+    )
+    host = ExecutionHost(
+        durable,
+        owner_id="managed-worker",
+        runner=runner,
+    )
+
+    assert host.tick(worker_ctx) == 1
+    assert len(observed_scopes) == 1
+    scope = observed_scopes[0]
+    assert scope.principal_id == "nightly-pipeline"
+    assert scope.principal_kind == "workload"
+    assert scope.principal_issuer == "trusted-scheduler"
+    assert scope.tenant_id == "tenant-a"
+    assert scope.workspace_id == "ws-1"
+    assert scope.environment == "production"
+    assert scope.security_domain_id == "regulated"
+    assert scope.resource_owner_id == "data-owner"
+
+    legacy_submission = replace(
+        submission,
+        environment=None,
+        security_domain_id=None,
+        resource_owner_id=None,
+    )
+    with pytest.raises(ExecutionRejected, match="durable execution authority"):
+        runner(
+            worker_ctx,
+            submission=legacy_submission,
+            submission_id=submission.submission_id,
+            attempt_id="legacy-attempt",
+            fencing_token=1,
+        )
+
+
+def test_result_publication_recovery_uses_accepted_scope(tmp_path: Path) -> None:
+    from datetime import UTC, datetime
+    from hashlib import sha256
+
+    from etlantic.control_plane.durable_models import ResultPublicationRecord
+    from etlantic.reports.model import PipelineRunReport
+    from etlantic.runtime.request import RunIntent
+    from etlantic.runtime.state import RunStatus
+
+    ctx, _authz, _definitions, _submissions, durable, _events, _service = _wired(
+        tmp_path
+    )
+    accepted_ctx = ControlPlaneContext(
+        principal=Principal(
+            "nightly-pipeline", issuer="trusted-scheduler", kind="workload"
+        ),
+        tenant=ctx.tenant,
+        workspace=ctx.workspace,
+        environment=EnvironmentRef("production"),
+        security_domain=SecurityDomain("regulated"),
+        resource_owner_id="data-owner",
+    )
+    worker_ctx = ControlPlaneContext(
+        principal=Principal("etl-worker", issuer="worker-service", kind="service"),
+        tenant=ctx.tenant,
+        workspace=ctx.workspace,
+        environment=EnvironmentRef("development"),
+        security_domain=SecurityDomain("worker-default"),
+        resource_owner_id="worker-owner",
+    )
+    submission, _created = durable.accept(
+        accepted_ctx,
+        idempotency_key="recovered-publication",
+        operation="run.submit",
+        plan_fingerprint="a" * 64,
+    )
+    outbox = durable.pending_outbox(worker_ctx)[0]
+    durable.mark_published(worker_ctx, outbox.outbox_id)
+    lease = durable.acquire_lease(
+        worker_ctx, submission.submission_id, owner_id="crashed-worker", ttl_seconds=30
+    )
+    attempt = durable.start_attempt(
+        worker_ctx,
+        submission.submission_id,
+        owner_id="crashed-worker",
+        fencing_token=lease.fencing_token,
+    )
+    report = PipelineRunReport(
+        pipeline_id="pipe",
+        plan_id="plan",
+        run_id="accepted-run-id",
+        intent=RunIntent.STANDARD,
+        profile="development",
+        status=RunStatus.SUCCEEDED,
+        started_at=datetime.now(UTC),
+        ended_at=datetime.now(UTC),
+        plan_fingerprint=submission.plan_fingerprint,
+    )
+    report_json = report.to_json(indent=None)
+    publication = ResultPublicationRecord(
+        submission_id=submission.submission_id,
+        attempt_id=attempt.attempt_id,
+        run_id=report.run_id,
+        tenant_id=worker_ctx.tenant.tenant_id,
+        workspace_id=worker_ctx.workspace.workspace_id,
+        report_json=report_json,
+        report_sha256=sha256(report_json.encode("utf-8")).hexdigest(),
+        created_at=datetime.now(UTC).isoformat(),
+    )
+    durable.record_result_publication(
+        worker_ctx,
+        publication,
+        owner_id="crashed-worker",
+        fencing_token=lease.fencing_token,
+    )
+    durable.finish_attempt(
+        worker_ctx,
+        attempt.attempt_id,
+        owner_id="crashed-worker",
+        fencing_token=lease.fencing_token,
+        status="completed",
+    )
+
+    stores: dict[str, dict[str, PipelineRunReport]] = {}
+    observed_domains: list[str] = []
+
+    class MemoryReportStore:
+        def __init__(self, domain_id: str) -> None:
+            self.domain_id = domain_id
+
+        def put(self, value: PipelineRunReport) -> None:
+            stores.setdefault(self.domain_id, {})[value.run_id] = value
+
+    def report_store_factory(scope: ControlPlaneContext) -> MemoryReportStore:
+        observed_domains.append(scope.security_domain.domain_id)
+        return MemoryReportStore(scope.security_domain.domain_id)
+
+    runner = ManagedExecutionAdapter(report_store_factory=report_store_factory)
+    host = ExecutionHost(durable, owner_id="recovery-worker", runner=runner)
+
+    assert host.tick(worker_ctx) == 0
+    assert observed_domains == ["regulated"]
+    assert stores["regulated"][report.run_id].status is RunStatus.SUCCEEDED
+    assert not durable.pending_result_publications(worker_ctx)
+
+
+def test_managed_execution_host_retains_accepted_scope_artifacts(
+    tmp_path: Path,
+) -> None:
+    from datetime import UTC, datetime, timedelta
+
+    from etlantic.reports.model import ArtifactResult, PipelineRunReport
+    from etlantic.runtime.artifacts import artifact_storage_path
+    from etlantic.runtime.managed_execution import (
+        ManagedExecutionAdapter,
+        managed_artifact_workspace,
+        managed_report_store,
+    )
+    from etlantic.runtime.request import RunIntent
+    from etlantic.runtime.state import RunStatus
+
+    ctx, _authz, _definitions, _submissions, durable, _events, _service = _wired(
+        tmp_path
+    )
+    accepted_ctx = ControlPlaneContext(
+        principal=Principal(
+            "nightly-pipeline", issuer="trusted-scheduler", kind="workload"
+        ),
+        tenant=ctx.tenant,
+        workspace=ctx.workspace,
+        environment=EnvironmentRef("production"),
+        security_domain=SecurityDomain("regulated"),
+        resource_owner_id="data-owner",
+    )
+    worker_ctx = ControlPlaneContext(
+        principal=Principal("etl-worker", issuer="worker-service", kind="service"),
+        tenant=ctx.tenant,
+        workspace=ctx.workspace,
+        environment=EnvironmentRef("development"),
+        security_domain=SecurityDomain("worker-default"),
+        resource_owner_id="worker-owner",
+    )
+    submission, _created = durable.accept(
+        accepted_ctx,
+        idempotency_key="retention-scope",
+        operation="run.submit",
+        plan_fingerprint="b" * 64,
+    )
+    outbox = durable.pending_outbox(worker_ctx)[0]
+    durable.mark_published(worker_ctx, outbox.outbox_id)
+
+    artifact_root = tmp_path / "artifacts"
+    report_root = tmp_path / "reports"
+    run_id = "accepted-scope-run"
+    artifact_identity = "result:private"
+    artifact = artifact_storage_path(
+        managed_artifact_workspace(accepted_ctx, run_id, artifact_root=artifact_root),
+        artifact_identity,
+    )
+    artifact.parent.mkdir(parents=True, exist_ok=True)
+    artifact.write_text('[{"id":1}]', encoding="utf-8")
+    ended_at = datetime.now(UTC) - timedelta(days=2)
+    report = PipelineRunReport(
+        pipeline_id="pipe",
+        plan_id="plan",
+        run_id=run_id,
+        intent=RunIntent.STANDARD,
+        profile="development",
+        status=RunStatus.SUCCEEDED,
+        started_at=ended_at - timedelta(minutes=1),
+        ended_at=ended_at,
+        artifacts=(ArtifactResult(artifact_identity, "result", "durable"),),
+        plan_fingerprint=submission.plan_fingerprint,
+    )
+    managed_report_store(accepted_ctx, report_root=report_root).put(report)
+
+    observed_scopes: list[tuple[str, str, str, str | None]] = []
+
+    def report_store_factory(scope: ControlPlaneContext):
+        observed_scopes.append(
+            (
+                scope.principal.subject,
+                scope.environment.name,
+                scope.security_domain.domain_id,
+                scope.resource_owner_id,
+            )
+        )
+        return managed_report_store(scope, report_root=report_root)
+
+    runner = ManagedExecutionAdapter(
+        report_root=report_root,
+        artifact_root=artifact_root,
+        report_store_factory=report_store_factory,
+        run_artifact_retention_seconds=1,
+    )
+    host = ExecutionHost(durable, owner_id="retention-worker", runner=runner)
+
+    assert host.tick(worker_ctx) == 0
+    assert set(observed_scopes) == {
+        ("nightly-pipeline", "production", "regulated", "data-owner"),
+        ("etl-worker", "development", "worker-default", "worker-owner"),
+    }
+    assert not artifact.exists()
+    retained = managed_report_store(accepted_ctx, report_root=report_root).get(run_id)
+    assert retained is not None
+    assert retained.artifacts[0].status == "expired"
+    assert retained.metadata["etlantic.control_plane.artifact_retention"] == "complete"

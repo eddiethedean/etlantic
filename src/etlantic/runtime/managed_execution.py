@@ -12,13 +12,18 @@ from pathlib import Path
 from threading import Event
 from typing import TYPE_CHECKING, Any, cast
 
-from etlantic.control_plane.durable_models import ResultPublicationRecord
+from etlantic.control_plane.durable_models import (
+    ResultPublicationRecord,
+    execution_context_from_submission,
+)
 from etlantic.control_plane.execution_envelope import ExecutionEnvelope
 from etlantic.control_plane.input_resources import (
     InputResourceReference,
     InputResourceStore,
 )
-from etlantic.control_plane.models import ControlPlaneContext
+from etlantic.control_plane.models import (
+    ControlPlaneContext,
+)
 from etlantic.exceptions import (
     PipelineCancelledError,
     PipelineExecutionError,
@@ -74,18 +79,44 @@ def managed_run_id(
     *,
     operation: str = "run.submit",
 ) -> str:
+    """Return a stable run ID for the full accepted authority and command scope."""
+    identity = {
+        "security_domain_id": ctx.security_domain.domain_id,
+        "tenant_id": ctx.tenant.tenant_id,
+        "workspace_id": ctx.workspace.workspace_id,
+        "principal": {
+            "issuer": ctx.principal.issuer or "",
+            "kind": ctx.principal.kind,
+            "subject": ctx.principal.subject,
+        },
+        "operation": operation,
+        "idempotency_key": idempotency_key,
+    }
+    scope = json.dumps(
+        identity,
+        sort_keys=True,
+        separators=(",", ":"),
+        ensure_ascii=False,
+    )
+    return "run-" + _scope_fragment(scope)
+
+
+def legacy_managed_run_id(
+    ctx: ControlPlaneContext,
+    idempotency_key: str,
+    *,
+    operation: str = "run.submit",
+) -> str:
+    """Reproduce run IDs from submissions accepted before principal scoping."""
     parts = [
         ctx.security_domain.domain_id,
         ctx.tenant.tenant_id,
         ctx.workspace.workspace_id,
     ]
-    # Preserve established run.submit identities while isolating lifecycle
-    # commands that reuse the same idempotency key in another operation scope.
     if operation != "run.submit":
         parts.append(operation)
     parts.append(idempotency_key)
-    scope = "/".join(parts)
-    return "run-" + _scope_fragment(scope)
+    return "run-" + _scope_fragment("/".join(parts))
 
 
 def managed_artifact_workspace(
@@ -151,6 +182,25 @@ def _plan_has_input_resources(plan: PlanDocument) -> bool:
     )
 
 
+def accepted_execution_context(
+    worker_ctx: ControlPlaneContext, submission: SubmissionRecord
+) -> ControlPlaneContext:
+    """Rebuild provider authority from the durable accepted submission."""
+    if (submission.tenant_id, submission.workspace_id) != (
+        worker_ctx.tenant.tenant_id,
+        worker_ctx.workspace.workspace_id,
+    ):
+        raise ExecutionRejected(
+            "Accepted tenant/workspace does not match the worker lease"
+        )
+    accepted_ctx = execution_context_from_submission(submission)
+    if accepted_ctx is None:
+        raise ExecutionRejected(
+            "Accepted submission has no durable execution authority"
+        )
+    return accepted_ctx
+
+
 class ManagedExecutionAdapter:
     """Run verified submissions through the packaged local ETL runtime.
 
@@ -165,6 +215,7 @@ class ManagedExecutionAdapter:
         report_root: str | Path | None = None,
         artifact_root: str | Path | None = None,
         report_store_factory: Callable[[ControlPlaneContext], Any] | None = None,
+        report_store_scope_key: Callable[[ControlPlaneContext], object] | None = None,
         event_publisher: (
             Callable[[ControlPlaneContext, str, str, Mapping[str, Any]], None] | None
         ) = None,
@@ -193,6 +244,7 @@ class ManagedExecutionAdapter:
         ).expanduser()
         self.artifact_root = artifact_root
         self.report_store_factory = report_store_factory
+        self.report_store_scope_key = report_store_scope_key
         self.event_publisher = event_publisher
         self.runtime_factory = runtime_factory
         self.secret_alias_authorizer = secret_alias_authorizer
@@ -200,6 +252,33 @@ class ManagedExecutionAdapter:
         self.input_resource_store = input_resource_store
         self.run_artifact_retention_seconds = run_artifact_retention_seconds
         self.artifact_cleanup_batch_size = artifact_cleanup_batch_size
+
+    @property
+    def run_artifact_retention_enabled(self) -> bool:
+        """Whether this adapter has artifact retention configured."""
+        return self.run_artifact_retention_seconds is not None
+
+    def artifact_retention_scope_key(self, ctx: ControlPlaneContext) -> object:
+        """Return the dimensions that select this adapter's retention stores."""
+        if self.report_store_factory is not None:
+            if self.report_store_scope_key is not None:
+                return self.report_store_scope_key(ctx)
+            return (
+                ctx.tenant.tenant_id,
+                ctx.workspace.workspace_id,
+                (ctx.principal.issuer is not None, ctx.principal.issuer or ""),
+                ctx.principal.kind,
+                ctx.principal.subject,
+                ctx.environment.name,
+                ctx.security_domain.domain_id,
+                (ctx.resource_owner_id is not None, ctx.resource_owner_id or ""),
+            )
+        # The managed report store and artifact workspace share these bounds.
+        return (
+            ctx.tenant.tenant_id,
+            ctx.workspace.workspace_id,
+            ctx.security_domain.domain_id,
+        )
 
     def cleanup_expired_run_artifacts(
         self,
@@ -243,6 +322,7 @@ class ManagedExecutionAdapter:
     ) -> PipelineRunReport:
         if submission.submission_id != submission_id:
             raise ExecutionRejected("Submission identity does not match the lease")
+        ctx = accepted_execution_context(ctx, submission)
         if not submission.input_snapshot:
             raise ExecutionRejected(
                 "Accepted submission has no verified execution envelope"
@@ -297,7 +377,7 @@ class ManagedExecutionAdapter:
                 )
             leased_reader = cast(Callable[..., bytes], candidate_reader)
 
-        run_id = managed_run_id(
+        run_id = submission.run_id or legacy_managed_run_id(
             ctx, submission.idempotency_key, operation=submission.operation
         )
         event_base = {

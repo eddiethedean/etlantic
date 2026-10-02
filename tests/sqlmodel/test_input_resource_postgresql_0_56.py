@@ -125,7 +125,7 @@ def postgres_input_resources() -> Iterator[tuple[str, str, Engine]]:
             database_url,
             connect_args={"options": f"-csearch_path={schema}"},
         )
-        assert upgrade(engine) == "012_bounded_event_tombstone_retention_0_56"
+        assert upgrade(engine) == "013_durable_submission_scope_backfill_0_56"
         yield database_url, schema, engine
     finally:
         if engine is not None:

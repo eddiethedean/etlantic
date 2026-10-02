@@ -30,6 +30,7 @@ from etlantic.control_plane.durable_models import (
     CheckpointRecord,
     DiffRecord,
     EffectRecord,
+    ExecutionScopePage,
     LeaseRecord,
     OutboxRecord,
     PreviewWorkspace,
@@ -40,9 +41,12 @@ from etlantic.control_plane.durable_models import (
     StateDiagnostic,
     StateTransitionExplanation,
     SubmissionRecord,
+    execution_context_from_submission,
 )
 from etlantic.control_plane.errors import ControlPlaneError
-from etlantic.control_plane.models import ControlPlaneContext
+from etlantic.control_plane.models import (
+    ControlPlaneContext,
+)
 from etlantic.control_plane.redaction import (
     redact_control_plane_payload,
     redact_control_plane_text,
@@ -128,6 +132,7 @@ class MemoryDurableWorkStore:
         schema_observation_fingerprint: str | None = None,
         schema_baseline_id: str | None = None,
         submission_id: str | None = None,
+        run_id: str | None = None,
     ) -> tuple[SubmissionRecord, bool]:
         self._require_nonempty(
             idempotency_key,
@@ -139,6 +144,8 @@ class MemoryDurableWorkStore:
         )
         if submission_id is not None:
             self._require_nonempty(submission_id, "submission_id")
+        if run_id is not None:
+            self._require_nonempty(run_id, "run_id")
         idem = (
             *_scope(ctx),
             ctx.principal.issuer or "",
@@ -156,6 +163,9 @@ class MemoryDurableWorkStore:
             safe_input_snapshot,
             schema_observation_fingerprint,
             schema_baseline_id,
+            ctx.environment.name,
+            ctx.security_domain.domain_id,
+            ctx.resource_owner_id,
         )
         with self._lock:
             existing_id = self._idempotency.get(idem)
@@ -169,6 +179,9 @@ class MemoryDurableWorkStore:
                     prior.input_snapshot,
                     prior.schema_observation_fingerprint,
                     prior.schema_baseline_id,
+                    prior.environment,
+                    prior.security_domain_id,
+                    prior.resource_owner_id,
                 )
                 if actual != requested:
                     raise ControlPlaneError.conflict(
@@ -177,6 +190,14 @@ class MemoryDurableWorkStore:
                 if submission_id is not None and submission_id != existing_id:
                     raise ControlPlaneError.conflict(
                         "Idempotency key reuse with different submission_id"
+                    )
+                if (
+                    run_id is not None
+                    and prior.run_id is not None
+                    and run_id != prior.run_id
+                ):
+                    raise ControlPlaneError.conflict(
+                        "Idempotency key reuse with different run_id"
                     )
                 return deepcopy(prior), False
             if self.admission_limit is not None:
@@ -211,6 +232,10 @@ class MemoryDurableWorkStore:
                 ctx.principal.kind,
                 schema_observation_fingerprint=schema_observation_fingerprint,
                 schema_baseline_id=schema_baseline_id,
+                environment=ctx.environment.name,
+                security_domain_id=ctx.security_domain.domain_id,
+                resource_owner_id=ctx.resource_owner_id,
+                run_id=run_id,
             )
             payload = hashlib.sha256(
                 "|".join(str(v or "") for v in requested).encode()
@@ -232,6 +257,60 @@ class MemoryDurableWorkStore:
         for value, name in zip(values[::2], values[1::2], strict=True):
             if not value.strip():
                 raise ValueError(f"{name} must not be empty")
+
+    def list_execution_scopes(
+        self,
+        ctx: ControlPlaneContext,
+        *,
+        after_submission_id: str | None = None,
+        through_submission_id: str | None = None,
+        limit: int = 100,
+    ) -> ExecutionScopePage:
+        """Return a bounded page of complete accepted execution scopes."""
+        if type(limit) is not int or not 1 <= limit <= 1000:
+            raise ValueError("limit must be between 1 and 1000")
+        with self._lock:
+            scope = _scope(ctx)
+            workspace_rows = [
+                (key[2], row)
+                for key, row in self._submissions.items()
+                if key[:2] == scope
+            ]
+            high_watermark = through_submission_id
+            if high_watermark is None and workspace_rows:
+                high_watermark = workspace_rows[-1][0]
+            watermark_index = next(
+                (
+                    index
+                    for index, (submission_id, _row) in enumerate(workspace_rows)
+                    if submission_id == high_watermark
+                ),
+                -1,
+            )
+            candidates = []
+            if watermark_index >= 0:
+                candidates = sorted(
+                    (
+                        item
+                        for item in workspace_rows[: watermark_index + 1]
+                        if after_submission_id is None or item[0] > after_submission_id
+                    ),
+                    key=lambda item: item[0],
+                )
+        has_more = len(candidates) > limit
+        selected = candidates[:limit]
+        scopes: list[ControlPlaneContext] = []
+        seen: set[ControlPlaneContext] = set()
+        for _submission_id, submission in selected:
+            accepted_ctx = execution_context_from_submission(submission)
+            if accepted_ctx is not None and accepted_ctx not in seen:
+                seen.add(accepted_ctx)
+                scopes.append(accepted_ctx)
+        return ExecutionScopePage(
+            scopes=tuple(scopes),
+            next_cursor=selected[-1][0] if has_more and selected else None,
+            high_watermark=high_watermark,
+        )
 
     def pending_outbox(
         self, ctx: ControlPlaneContext, *, limit: int = 100

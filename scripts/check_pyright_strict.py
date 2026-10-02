@@ -85,8 +85,23 @@ EXPECTED_DIGESTS = {
     # The final managed partition repair/backfill qualification adds 19
     # suppression-free diagnostics in its new provider and lifecycle tests;
     # the regular strict Pyright run remains clean. Reviewed at 9,856.
-    "Darwin": "19ef2b969589d14179cf37325de1f3ec0c4f345fb679112e0ac470d5ad5fa854",
-    "Linux": "19ef2b969589d14179cf37325de1f3ec0c4f345fb679112e0ac470d5ad5fa854",
+    # AC #215 preserves accepted scope through report recovery and retention;
+    # AC #226 enumerates full accepted scopes through the provider contract.
+    # Normalized diagnostics are unchanged at 9,856; only source locations move.
+    # AC #227 adds bounded scope pages and a legacy submission-mirror backfill.
+    # Typed pagination removes seven shadow diagnostics from SQLModel tests;
+    # no new diagnostics are introduced. The inventory remains 9,856, with the
+    # fingerprint refreshed for source-location shifts.
+    # AC #230 bounds scope scans with an insertion-sequence watermark so
+    # retry-queue saturation cannot hold the cursor. The strict inventory
+    # remains 9,856; fingerprints move with source-location shifts.
+    # AC #216 adds principal-scoped run IDs and retention pagination coverage.
+    # The normalized diagnostic set is unchanged at 9,856; fingerprints moved
+    # with the reviewed source and test edits.
+    # The benchmark gate selects an Apple Silicon reference on macOS; strict
+    # diagnostics remain unchanged, with fingerprints shifted by the selector.
+    "Darwin": "c91698c6d844f3209b6eff3c6c363de42c0521abc7721f68fbd62080aadadddc",
+    "Linux": "c91698c6d844f3209b6eff3c6c363de42c0521abc7721f68fbd62080aadadddc",
 }
 
 
