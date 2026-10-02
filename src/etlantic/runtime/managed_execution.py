@@ -258,9 +258,7 @@ class ManagedExecutionAdapter:
         """Whether this adapter has artifact retention configured."""
         return self.run_artifact_retention_seconds is not None
 
-    def artifact_retention_scope_key(
-        self, ctx: ControlPlaneContext
-    ) -> object:
+    def artifact_retention_scope_key(self, ctx: ControlPlaneContext) -> object:
         """Return the dimensions that select this adapter's retention stores."""
         if self.report_store_factory is not None:
             if self.report_store_scope_key is not None:

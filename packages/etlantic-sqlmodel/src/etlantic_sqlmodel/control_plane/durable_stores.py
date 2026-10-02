@@ -337,8 +337,7 @@ class SQLModelDurableWorkStore:
             )
         ).all()
         existing_outbox = {
-            (row.tenant_id, row.workspace_id, row.outbox_id): row
-            for row in outbox_rows
+            (row.tenant_id, row.workspace_id, row.outbox_id): row for row in outbox_rows
         }
         current_outbox_keys: set[tuple[str, str, str]] = set()
         for key, outbox in store._outbox.items():
@@ -415,18 +414,18 @@ class SQLModelDurableWorkStore:
                 stmt = stmt.where(
                     DurableSubmissionEntityRow.submission_id > after_submission_id
                 )
-            stmt = stmt.order_by(
-                DurableSubmissionEntityRow.submission_id
-            ).limit(limit + 1)
+            stmt = stmt.order_by(DurableSubmissionEntityRow.submission_id).limit(
+                limit + 1
+            )
             rows = session.exec(stmt).all()
+            selected = [(row.submission_id, row.payload_json) for row in rows[:limit]]
 
         has_more = len(rows) > limit
-        selected = rows[:limit]
         scopes: list[ControlPlaneContext] = []
         seen: set[ControlPlaneContext] = set()
-        for row in selected:
+        for _submission_id, payload_json in selected:
             try:
-                submission = SubmissionRecord(**json.loads(row.payload_json))
+                submission = SubmissionRecord(**json.loads(payload_json))
             except (json.JSONDecodeError, TypeError, ValueError):
                 # A corrupt mirror row cannot safely choose an artifact store.
                 continue
@@ -436,7 +435,7 @@ class SQLModelDurableWorkStore:
                 scopes.append(accepted_ctx)
         return ExecutionScopePage(
             scopes=tuple(scopes),
-            next_cursor=selected[-1].submission_id if has_more and selected else None,
+            next_cursor=selected[-1][0] if has_more and selected else None,
             high_watermark=high_watermark,
         )
 

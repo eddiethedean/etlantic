@@ -95,8 +95,11 @@ EXPECTED_DIGESTS = {
     # AC #230 bounds scope scans with an insertion-sequence watermark so
     # retry-queue saturation cannot hold the cursor. The strict inventory
     # remains 9,856; fingerprints move with source-location shifts.
-    "Darwin": "750effa220e899e948e2d1cfe0684b7ae4728d0434c97bf87334f3686b46144f",
-    "Linux": "750effa220e899e948e2d1cfe0684b7ae4728d0434c97bf87334f3686b46144f",
+    # AC #216 adds principal-scoped run IDs and retention pagination coverage.
+    # The normalized diagnostic set is unchanged at 9,856; fingerprints moved
+    # with the reviewed source and test edits.
+    "Darwin": "c2ff1dfcf206a167148564298a4ba38b657f66424bb2fb2f6cc3c283d9418e5c",
+    "Linux": "c2ff1dfcf206a167148564298a4ba38b657f66424bb2fb2f6cc3c283d9418e5c",
 }
 
 

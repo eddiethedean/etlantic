@@ -80,7 +80,6 @@ class ExecutionHost:
         self._retention_scope_high_watermark: str | None = None
         self._retention_retry_keys: deque[object] = deque()
         self._retention_retry_contexts: dict[object, ControlPlaneContext] = {}
-        self._retention_single_slot_turn = False
 
     def _start_lease_monitor(
         self,
@@ -227,9 +226,7 @@ class ExecutionHost:
         if self.draining:
             return 0
         cleanup_artifacts = getattr(self.runner, "cleanup_expired_run_artifacts", None)
-        retention_enabled = getattr(
-            self.runner, "run_artifact_retention_enabled", True
-        )
+        retention_enabled = getattr(self.runner, "run_artifact_retention_enabled", True)
         if callable(cleanup_artifacts) and retention_enabled is not False:
             workspace = (ctx.tenant.tenant_id, ctx.workspace.workspace_id)
             if workspace != self._retention_scope_workspace:
@@ -245,17 +242,10 @@ class ExecutionHost:
             # rediscovered on a later sweep instead of blocking later scopes.
             new_scope_budget = cleanup_budget
             if new_scope_budget > 0:
-                # Keep one slot for the worker scope when possible. With only
-                # one slot, alternate between the worker and accepted scopes
-                # so neither can starve while the retry queue is nearly full.
-                include_worker_scope = new_scope_budget > 1
-                if new_scope_budget == 1:
-                    include_worker_scope = self._retention_single_slot_turn
-                    self._retention_single_slot_turn = not self._retention_single_slot_turn
-                page_limit = min(
-                    _RETENTION_SCOPE_PAGE_SIZE,
-                    new_scope_budget - int(include_worker_scope),
-                )
+                # Page size bounds accepted-scope discovery. The worker's own
+                # storage scope is an additional cleanup candidate, as it is
+                # not part of the durable submission page.
+                page_limit = min(_RETENTION_SCOPE_PAGE_SIZE, new_scope_budget)
                 cleanup_contexts: dict[object, ControlPlaneContext] = {}
                 if page_limit > 0:
                     try:
@@ -288,10 +278,9 @@ class ExecutionHost:
                         _LOG.warning(
                             "Could not list accepted scopes for artifact retention"
                         )
-                if include_worker_scope:
-                    worker_key = self._retention_scope_key(ctx)
-                    if worker_key not in attempted_keys:
-                        cleanup_contexts.setdefault(worker_key, ctx)
+                worker_key = self._retention_scope_key(ctx)
+                if worker_key not in attempted_keys:
+                    cleanup_contexts.setdefault(worker_key, ctx)
                 for key, cleanup_ctx in cleanup_contexts.items():
                     if self._cleanup_retention_scope(cleanup_artifacts, cleanup_ctx):
                         self._queue_retention_retry(key, cleanup_ctx)
@@ -490,9 +479,7 @@ class ExecutionHost:
             return True
         return getattr(outcome, "remaining_candidates", False) is True
 
-    def _queue_retention_retry(
-        self, key: object, ctx: ControlPlaneContext
-    ) -> None:
+    def _queue_retention_retry(self, key: object, ctx: ControlPlaneContext) -> None:
         """Remember unresolved cleanup while keeping retry state bounded."""
         if key in self._retention_retry_contexts:
             return

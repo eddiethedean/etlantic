@@ -7,6 +7,7 @@ import asyncio
 import json
 from collections.abc import Mapping
 from concurrent.futures import ThreadPoolExecutor
+from dataclasses import replace
 from datetime import UTC, datetime
 from pathlib import Path
 from threading import Barrier, Event, Thread
@@ -1622,6 +1623,33 @@ def test_concurrent_changed_intent_conflicts_under_same_idempotency_key(
     assert persisted is not None
     assert accepted.submission_id == persisted.submission_id
     assert quota.get_state(ctx).usage["concurrency"] == 1
+
+
+def test_same_idempotency_key_has_principal_scoped_run_ids(
+    tmp_path: Path,
+) -> None:
+    ctx, authz, _definitions, submissions, durable, _events, service = _wired(tmp_path)
+    other_ctx = replace(ctx, principal=Principal("bob"))
+    for action in ("definition.read", "run.submit"):
+        authz.grant(other_ctx, action)
+
+    alice = service.submit_run(ctx, "pipe", idempotency_key="shared-key")
+    bob = service.submit_run(other_ctx, "pipe", idempotency_key="shared-key")
+
+    assert alice.submission_id != bob.submission_id
+    assert alice.resource_id != bob.resource_id
+    assert alice.resource_id is not None
+    assert bob.resource_id is not None
+    assert submissions.get_run(ctx, alice.resource_id)["submission_id"] == (
+        alice.submission_id
+    )
+    assert submissions.get_run(other_ctx, bob.resource_id)["submission_id"] == (
+        bob.submission_id
+    )
+    assert durable.get_submission(ctx, alice.submission_id).run_id == alice.resource_id
+    assert (
+        durable.get_submission(other_ctx, bob.submission_id).run_id == bob.resource_id
+    )
 
 
 def test_submission_authorizes_resolved_resources_before_acceptance(

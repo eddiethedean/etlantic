@@ -293,8 +293,7 @@ class MemoryDurableWorkStore:
                     (
                         item
                         for item in workspace_rows[: watermark_index + 1]
-                        if after_submission_id is None
-                        or item[0] > after_submission_id
+                        if after_submission_id is None or item[0] > after_submission_id
                     ),
                     key=lambda item: item[0],
                 )

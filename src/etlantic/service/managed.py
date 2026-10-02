@@ -2435,9 +2435,7 @@ class ManagedApplicationService:
                     envelope=envelope,
                     submission_id=prior_receipt.submission_id,
                     run_id=prior_receipt.resource_id
-                    or legacy_managed_run_id(
-                        ctx, idempotency_key, operation=operation
-                    ),
+                    or legacy_managed_run_id(ctx, idempotency_key, operation=operation),
                 )
             elif (
                 prior_durable.submission_id != prior_receipt.submission_id

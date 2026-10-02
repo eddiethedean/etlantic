@@ -354,6 +354,77 @@ def test_managed_backend_persists_and_resolves_definition_revision(
         restarted.close()
 
 
+def test_sqlmodel_run_ids_are_principal_scoped_and_survive_restart(
+    tmp_path: Path,
+) -> None:
+    config = ManagedBackendConfig(
+        database_url=_migrated_url(tmp_path),
+        store_id="managed-backend-principal-run-ids",
+    )
+    ctx = _context()
+    other_ctx = replace(ctx, principal=Principal("managed-backend-other-principal"))
+    backend = _backend(config)
+    try:
+        authorizer = cast(MemoryAuthorizer, backend.api.authorizer)
+        for accepted_ctx in (ctx, other_ctx):
+            for action in ("definition.write", "definition.read", "run.submit"):
+                authorizer.grant(accepted_ctx, action)
+        service = backend.api.managed_service
+        assert service is not None
+        service.register_definition(
+            ctx,
+            "principal-scoped-pipe",
+            pipeline_to_dict(definition_from_pipeline(_ManagedBackendPipeline)),
+        )
+        alice = service.submit_run(
+            ctx, "principal-scoped-pipe", idempotency_key="shared-key"
+        )
+        bob = service.submit_run(
+            other_ctx, "principal-scoped-pipe", idempotency_key="shared-key"
+        )
+        assert alice.resource_id is not None
+        assert bob.resource_id is not None
+        assert alice.submission_id != bob.submission_id
+        assert alice.resource_id != bob.resource_id
+        submissions = cast(Any, backend.api.submissions)
+        assert submissions.get_run(ctx, alice.resource_id)["submission_id"] == (
+            alice.submission_id
+        )
+        assert submissions.get_run(other_ctx, bob.resource_id)["submission_id"] == (
+            bob.submission_id
+        )
+        durable = backend.api.durable_work
+        assert durable is not None
+        assert durable.get_submission(ctx, alice.submission_id).run_id == (
+            alice.resource_id
+        )
+        assert durable.get_submission(other_ctx, bob.submission_id).run_id == (
+            bob.resource_id
+        )
+    finally:
+        backend.close()
+
+    restarted = _backend(config)
+    try:
+        submissions = cast(Any, restarted.api.submissions)
+        assert submissions.get_run(ctx, alice.resource_id)["submission_id"] == (
+            alice.submission_id
+        )
+        assert submissions.get_run(other_ctx, bob.resource_id)["submission_id"] == (
+            bob.submission_id
+        )
+        durable = restarted.api.durable_work
+        assert durable is not None
+        assert durable.get_submission(ctx, alice.submission_id).run_id == (
+            alice.resource_id
+        )
+        assert durable.get_submission(other_ctx, bob.submission_id).run_id == (
+            bob.resource_id
+        )
+    finally:
+        restarted.close()
+
+
 def test_standard_worker_reads_configured_csv_and_does_not_retain_row_content(
     tmp_path: Path,
 ) -> None:
