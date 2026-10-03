@@ -22,9 +22,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Recovery of an unreported worker attempt records an unknown execution effect
   that survives durable-store snapshots and blocks retry until provider
-  reconciliation proves no commit. Confirmed commits remain eligible for an
-  explicit rerun, while pre-execution rejections retain safe retry behavior
-  (#217).
+  reconciliation proves no commit. Recovery preserves confirmed commits and
+  finalizes the attempt even when provider confirmation arrives concurrently,
+  allowing an explicit rerun. Pre-execution rejections retain safe retry
+  behavior (#217).
 - Recovery cancellation preserves unknown effects. Reconciliation requires
   nonblank evidence and cannot change an existing effect's submission identity
   or authority (#217).

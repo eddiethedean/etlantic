@@ -30,7 +30,7 @@ from etlantic.control_plane.durable_models import EffectStatus
 from etlantic.profile import Profile
 from etlantic.registry import BindingDescriptor, PlanningContext
 from etlantic.reports.model import PipelineRunReport
-from etlantic.runtime.execution_host import ExecutionHost
+from etlantic.runtime.execution_host import ExecutionHost, UnknownCommitError
 from etlantic.runtime.managed_errors import ExecutionRejected
 from etlantic.runtime.managed_execution import ManagedExecutionAdapter
 from etlantic.runtime.state import RunStatus
@@ -61,13 +61,17 @@ class CrashBeforeReport:
     "store_kind", ["memory", pytest.param("sqlmodel", marks=pytest.mark.sqlmodel)]
 )
 @pytest.mark.parametrize("write_mode", ["append", "skip_if_exists"])
-@pytest.mark.parametrize("target_committed", [True, False])
+@pytest.mark.parametrize(
+    ("target_committed", "prior_commit_confirmed"),
+    [(True, False), (False, False), (True, True)],
+)
 @pytest.mark.parametrize("recovery_cancelled", [False, True])
 def test_unreported_attempt_blocks_retry_until_provider_reconciliation(
     tmp_path: Path,
     store_kind: str,
     write_mode: str,
     target_committed: bool,
+    prior_commit_confirmed: bool,
     recovery_cancelled: bool,
 ) -> None:
     def open_store() -> DurableWorkStore:
@@ -171,6 +175,20 @@ def test_unreported_attempt_blocks_retry_until_provider_reconciliation(
     )
     durable = restart(durable)
     service.durable_work = durable
+    confirmed = None
+    if prior_commit_confirmed:
+        confirmed = durable.record_effect(
+            ctx,
+            EffectRecord(
+                effect_id=f"{parent.submission_id}:execution",
+                submission_id=parent.submission_id,
+                tenant_id=ctx.tenant.tenant_id,
+                workspace_id=ctx.workspace.workspace_id,
+                status="committed",
+                recorded_at=prior.started_at,
+                reconciliation_evidence="provider confirmed the prior target commit",
+            ),
+        )
     recovery = ExecutionHost(
         durable,
         owner_id="recovery-worker",
@@ -184,11 +202,13 @@ def test_unreported_attempt_blocks_retry_until_provider_reconciliation(
         "cancelled" if recovery_cancelled else "lost"
     )
     effect = durable.get_effect(ctx, f"{parent.submission_id}:execution")
-    assert effect.status == "unknown"
+    assert effect.status == ("committed" if prior_commit_confirmed else "unknown")
+    if confirmed is not None:
+        assert effect == confirmed
     assert effect.authoritative
     durable = restart(durable)
     service.durable_work = durable
-    assert durable.get_effect(ctx, effect.effect_id).status == "unknown"
+    assert durable.get_effect(ctx, effect.effect_id) == effect
     assert service.get_run_actions(ctx, run_id)["actions"][1] == {
         "name": "retry",
         "allowed": False,
@@ -200,42 +220,48 @@ def test_unreported_attempt_blocks_retry_until_provider_reconciliation(
         ControlPlaneError, match=r"Only failed runs|effect is reconciled"
     ):
         service.retry_run(ctx, run_id, idempotency_key="unsafe-retry")
-    with pytest.raises(ControlPlaneError, match="effect is reconciled"):
-        service.rerun_run(ctx, run_id, idempotency_key="unsafe-rerun")
     assert not durable.pending_outbox(ctx)
+    assert recovery.tick(ctx) == 0
+    if not prior_commit_confirmed:
+        with pytest.raises(ControlPlaneError, match="effect is reconciled"):
+            service.rerun_run(ctx, run_id, idempotency_key="unsafe-rerun")
 
-    unrelated, _ = durable.accept(
-        ctx,
-        idempotency_key="unrelated",
-        operation="run.submit",
-        plan_fingerprint="unrelated-plan",
-    )
-    durable.cancel_submission(ctx, unrelated.submission_id)
-    # Provider capability or idempotency alone cannot prove a new child safe.
-    for safe_status in ("none", "not_committed", "failed"):
-        for invalid in (
-            replace(
-                effect, status=safe_status, idempotency_evidence="idempotent provider"
-            ),
-            replace(effect, status=safe_status, reconciliation_evidence="   "),
-            replace(
-                effect,
-                status=safe_status,
-                authoritative=False,
-                reconciliation_evidence="non-authoritative observation",
-            ),
-            replace(
-                effect,
-                status=safe_status,
-                submission_id=unrelated.submission_id,
-                reconciliation_evidence="provider confirms unrelated run did not commit",
-            ),
-        ):
-            with pytest.raises(ControlPlaneError):
-                durable.record_effect(ctx, invalid)
-            assert durable.get_effect(ctx, effect.effect_id) == effect
-            with pytest.raises(ControlPlaneError, match="effect is reconciled"):
-                service.rerun_run(ctx, run_id, idempotency_key="unsafe-reconciliation")
+        unrelated, _ = durable.accept(
+            ctx,
+            idempotency_key="unrelated",
+            operation="run.submit",
+            plan_fingerprint="unrelated-plan",
+        )
+        durable.cancel_submission(ctx, unrelated.submission_id)
+        # Provider capability or idempotency alone cannot prove a new child safe.
+        for safe_status in ("none", "not_committed", "failed"):
+            for invalid in (
+                replace(
+                    effect,
+                    status=safe_status,
+                    idempotency_evidence="idempotent provider",
+                ),
+                replace(effect, status=safe_status, reconciliation_evidence="   "),
+                replace(
+                    effect,
+                    status=safe_status,
+                    authoritative=False,
+                    reconciliation_evidence="non-authoritative observation",
+                ),
+                replace(
+                    effect,
+                    status=safe_status,
+                    submission_id=unrelated.submission_id,
+                    reconciliation_evidence="provider confirms unrelated run did not commit",
+                ),
+            ):
+                with pytest.raises(ControlPlaneError):
+                    durable.record_effect(ctx, invalid)
+                assert durable.get_effect(ctx, effect.effect_id) == effect
+                with pytest.raises(ControlPlaneError, match="effect is reconciled"):
+                    service.rerun_run(
+                        ctx, run_id, idempotency_key="unsafe-reconciliation"
+                    )
     assert target.exists() is target_committed
     if target_committed:
         assert target.read_text().splitlines() == ["id", "7"]
@@ -271,7 +297,11 @@ def test_unreported_attempt_blocks_retry_until_provider_reconciliation(
     assert target.read_text().splitlines() == expected
 
 
-def test_recovery_rejection_cannot_erase_prior_execution_uncertainty() -> None:
+@pytest.mark.parametrize("confirmed_commit", [False, True])
+@pytest.mark.parametrize("rejection", [ExecutionRejected, UnknownCommitError])
+def test_recovery_rejection_cannot_erase_prior_execution_uncertainty(
+    confirmed_commit: bool, rejection: type[Exception]
+) -> None:
     ctx = ControlPlaneContext(
         principal=Principal("worker"),
         tenant=TenantRef("tenant"),
@@ -299,14 +329,32 @@ def test_recovery_rejection_cannot_erase_prior_execution_uncertainty() -> None:
         fencing_token=lease.fencing_token,
     )
 
+    confirmed = None
+    if confirmed_commit:
+        confirmed = durable.record_effect(
+            ctx,
+            EffectRecord(
+                effect_id=f"{parent.submission_id}:execution",
+                submission_id=parent.submission_id,
+                tenant_id=ctx.tenant.tenant_id,
+                workspace_id=ctx.workspace.workspace_id,
+                status="committed",
+                recorded_at=parent.created_at,
+                reconciliation_evidence="provider confirmed the prior commit",
+            ),
+        )
+
     def reject(*_args: Any, **_kwargs: Any) -> None:
-        raise ExecutionRejected("recovery cannot validate the accepted envelope")
+        raise rejection("recovery cannot validate the accepted envelope")
 
     assert ExecutionHost(durable, owner_id="recovery", runner=reject).tick(ctx) == 1
-    assert (
-        durable.get_effect(ctx, f"{parent.submission_id}:execution").status == "unknown"
-    )
+    effect = durable.get_effect(ctx, f"{parent.submission_id}:execution")
+    assert effect.status == ("committed" if confirmed_commit else "unknown")
+    if confirmed is not None:
+        assert effect == confirmed
     assert durable.list_attempts(ctx, parent.submission_id)[-1].status == "lost"
+    assert durable.get_submission(ctx, parent.submission_id).status == "failed"
+    assert not durable.pending_outbox(ctx)
 
 
 @pytest.mark.parametrize("prior_effect", ["none", "unknown", "committed"])
@@ -459,3 +507,77 @@ def test_lifecycle_admission_rejects_invalid_provider_receipts(
     with pytest.raises(ControlPlaneError, match="effect is reconciled"):
         service.rerun_run(ctx, run_id, idempotency_key="unsafe-rerun")
     assert not durable.pending_outbox(ctx)
+
+
+def test_provider_commit_during_unknown_recording_does_not_stall_recovery() -> None:
+    class ReconcilingStore(MemoryDurableWorkStore):
+        confirmed: EffectRecord | None = None
+
+        def record_attempt_effect(
+            self,
+            ctx: ControlPlaneContext,
+            effect: EffectRecord,
+            *,
+            attempt_id: str,
+            owner_id: str,
+            fencing_token: int,
+        ) -> EffectRecord:
+            # Model a provider confirming the prior commit after the runner
+            # reports uncertainty but before the worker's effect write.
+            self.confirmed = self.record_effect(
+                ctx,
+                replace(
+                    effect,
+                    status="committed",
+                    reconciliation_evidence="concurrent provider target probe",
+                    metadata={"provider_receipt": "prior-commit"},
+                ),
+            )
+            return super().record_attempt_effect(
+                ctx,
+                effect,
+                attempt_id=attempt_id,
+                owner_id=owner_id,
+                fencing_token=fencing_token,
+            )
+
+    ctx = ControlPlaneContext(
+        principal=Principal("worker"),
+        tenant=TenantRef("tenant"),
+        workspace=WorkspaceRef("tenant", "workspace"),
+        environment=EnvironmentRef("development"),
+        security_domain=SecurityDomain("default"),
+    )
+    durable = ReconcilingStore()
+    parent, _ = durable.accept(
+        ctx, idempotency_key="race", operation="run.submit", plan_fingerprint="plan"
+    )
+    lease = durable.acquire_lease(
+        ctx, parent.submission_id, owner_id="dead-worker", ttl_seconds=60
+    )
+    durable.start_attempt(
+        ctx,
+        parent.submission_id,
+        owner_id="dead-worker",
+        fencing_token=lease.fencing_token,
+    )
+    durable.release_lease(
+        ctx,
+        parent.submission_id,
+        owner_id="dead-worker",
+        fencing_token=lease.fencing_token,
+    )
+
+    def unknown(*_args: Any, **_kwargs: Any) -> None:
+        raise UnknownCommitError("unreported prior attempt")
+
+    host = ExecutionHost(durable, owner_id="recovery", runner=unknown)
+    assert host.tick(ctx) == 1
+    assert (
+        durable.get_effect(ctx, f"{parent.submission_id}:execution")
+        == durable.confirmed
+    )
+    assert durable.list_attempts(ctx, parent.submission_id)[-1].status == "lost"
+    assert durable.get_submission(ctx, parent.submission_id).status == "failed"
+    assert not durable.pending_outbox(ctx)
+    assert host.tick(ctx) == 0

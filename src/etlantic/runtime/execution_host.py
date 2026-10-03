@@ -460,26 +460,12 @@ class ExecutionHost:
         recovered: bool,
     ) -> None:
         if recovered:
-            try:
-                effect = self.durable.get_effect(ctx, f"{submission_id}:execution")
-            except ControlPlaneError as exc:
-                if exc.status != 404:
-                    raise
-                effect = None
-            # A confirmed commit is already fenced against retry. Cancellation
-            # must preserve that stronger evidence instead of downgrading it.
-            if (
-                effect is None
-                or effect.status != "committed"
-                or not effect.authoritative
-                or effect.submission_id != submission_id
-            ):
-                self._record_unknown_effect(
-                    ctx,
-                    submission_id,
-                    attempt_id=attempt_id,
-                    fencing_token=fencing_token,
-                )
+            self._record_unknown_effect(
+                ctx,
+                submission_id,
+                attempt_id=attempt_id,
+                fencing_token=fencing_token,
+            )
         self.durable.finish_attempt(
             ctx,
             attempt_id,
@@ -584,21 +570,41 @@ class ExecutionHost:
         attempt_id: str,
         fencing_token: int,
     ) -> None:
-        self.durable.record_attempt_effect(
-            ctx,
-            EffectRecord(
-                effect_id=f"{submission_id}:execution",
-                submission_id=submission_id,
-                tenant_id=ctx.tenant.tenant_id,
-                workspace_id=ctx.workspace.workspace_id,
-                status="unknown",
-                recorded_at=datetime.now(UTC).isoformat(),
-                authoritative=True,
-            ),
-            attempt_id=attempt_id,
-            owner_id=self.owner_id,
-            fencing_token=fencing_token,
-        )
+        effect_id = f"{submission_id}:execution"
+        try:
+            self.durable.record_attempt_effect(
+                ctx,
+                EffectRecord(
+                    effect_id=effect_id,
+                    submission_id=submission_id,
+                    tenant_id=ctx.tenant.tenant_id,
+                    workspace_id=ctx.workspace.workspace_id,
+                    status="unknown",
+                    recorded_at=datetime.now(UTC).isoformat(),
+                    authoritative=True,
+                ),
+                attempt_id=attempt_id,
+                owner_id=self.owner_id,
+                fencing_token=fencing_token,
+            )
+        except ControlPlaneError as exc:
+            if exc.status != 409:
+                raise
+            # A provider may confirm the prior commit before or during recovery.
+            # Preserve that stronger receipt, including a concurrent update that
+            # rejected this write; attempt finalization still checks the lease.
+            try:
+                existing = self.durable.get_effect(ctx, effect_id)
+            except ControlPlaneError as lookup_error:
+                if lookup_error.status == 404:
+                    raise exc from None
+                raise
+            if (
+                existing.status != "committed"
+                or not existing.authoritative
+                or existing.submission_id != submission_id
+            ):
+                raise
 
     def _record_report_effect(
         self,
