@@ -64,6 +64,7 @@ from etlantic.reports.retention import RUN_ARTIFACT_RETENTION_STATE_KEY
 from etlantic.runtime.artifacts import artifact_storage_path
 from etlantic.runtime.logging import redact_message
 from etlantic.runtime.managed_execution import (
+    legacy_managed_run_id,
     managed_artifact_workspace,
     managed_report_store,
     managed_run_id,
@@ -1166,6 +1167,8 @@ class ManagedApplicationService:
                     idempotency_key=idempotency_key,
                     envelope=envelope,
                     submission_id=prior_receipt.submission_id,
+                    run_id=prior_receipt.resource_id
+                    or legacy_managed_run_id(ctx, idempotency_key),
                 )
             elif prior_durable.submission_id != prior_receipt.submission_id:
                 raise ControlPlaneError.conflict(
@@ -1204,7 +1207,8 @@ class ManagedApplicationService:
                 idempotency_key=idempotency_key,
                 payload=payload,
                 resource_type="run",
-                resource_id=managed_run_id(ctx, idempotency_key),
+                resource_id=prior_durable.run_id
+                or legacy_managed_run_id(ctx, idempotency_key),
                 submission_id=prior_durable.submission_id,
                 operation="run.submit",
             )
@@ -1414,6 +1418,8 @@ class ManagedApplicationService:
                 idempotency_key=idempotency_key,
                 envelope=envelope,
                 submission_id=receipt_result.receipt.submission_id,
+                run_id=receipt_result.receipt.resource_id
+                or managed_run_id(ctx, idempotency_key),
             )
         except Exception as exc:
             # Durable acceptance and its outbox are committed atomically by
@@ -2428,6 +2434,8 @@ class ManagedApplicationService:
                     operation=operation,
                     envelope=envelope,
                     submission_id=prior_receipt.submission_id,
+                    run_id=prior_receipt.resource_id
+                    or legacy_managed_run_id(ctx, idempotency_key, operation=operation),
                 )
             elif (
                 prior_durable.submission_id != prior_receipt.submission_id
@@ -2447,7 +2455,8 @@ class ManagedApplicationService:
                 idempotency_key=idempotency_key,
                 payload=payload,
                 resource_type="run",
-                resource_id=managed_run_id(ctx, idempotency_key, operation=operation),
+                resource_id=prior_durable.run_id
+                or legacy_managed_run_id(ctx, idempotency_key, operation=operation),
                 submission_id=prior_durable.submission_id,
                 operation=operation,
             )
@@ -2482,6 +2491,8 @@ class ManagedApplicationService:
                 operation=operation,
                 envelope=envelope,
                 submission_id=receipt_result.receipt.submission_id,
+                run_id=receipt_result.receipt.resource_id
+                or managed_run_id(ctx, idempotency_key, operation=operation),
             )
         except Exception as exc:
             if receipt_result.created:
@@ -2528,6 +2539,7 @@ class ManagedApplicationService:
         operation: str,
         envelope: ExecutionEnvelope,
         submission_id: str,
+        run_id: str,
     ) -> SubmissionRecord:
         row, _created = self.durable_work.accept(
             ctx,
@@ -2539,6 +2551,7 @@ class ManagedApplicationService:
             policy_fingerprint=envelope.policy_fingerprint,
             input_snapshot=envelope.to_json(),
             submission_id=submission_id,
+            run_id=run_id,
         )
         return row
 
@@ -2678,6 +2691,11 @@ class ManagedApplicationService:
         )
         submission_id = str(record.get("submission_id") or "")
         durable = self.durable_work.get_submission(ctx, submission_id)
+        run_id = (
+            durable.run_id
+            or str(record.get("resource_id") or "")
+            or legacy_managed_run_id(ctx, idempotency_key, operation=durable.operation)
+        )
         report_store_error: Exception | None = None
         try:
             result = report_store.get(run_id)
@@ -3451,6 +3469,7 @@ class ManagedApplicationService:
         idempotency_key: str,
         envelope: ExecutionEnvelope,
         submission_id: str,
+        run_id: str,
     ) -> SubmissionRecord:
         row, _created = self.durable_work.accept(
             ctx,
@@ -3462,6 +3481,7 @@ class ManagedApplicationService:
             policy_fingerprint=envelope.policy_fingerprint,
             input_snapshot=envelope.to_json(),
             submission_id=submission_id,
+            run_id=run_id,
         )
         return row
 

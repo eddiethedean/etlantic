@@ -13,6 +13,19 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 BASELINE_PATH = ROOT / "benchmarks" / "baselines" / "core.json"
+DARWIN_ARM64_BASELINE_PATH = (
+    ROOT / "benchmarks" / "baselines" / "core.darwin-arm64.json"
+)
+
+
+def _baseline_path() -> Path:
+    if platform.system() == "Darwin" and platform.machine().lower() in {
+        "arm64",
+        "aarch64",
+    }:
+        return DARWIN_ARM64_BASELINE_PATH
+    return BASELINE_PATH
+
 
 BENCH_MODULES = (
     ROOT / "benchmarks" / "modeling" / "microbench.py",
@@ -72,8 +85,9 @@ def main() -> int:
         sys.path.insert(0, str(ROOT))
 
     observed = _collect_results()
+    baseline_path = _baseline_path()
     if os.environ.get("ETLANTIC_BENCHMARK_UPDATE") == "1":
-        baseline = json.loads(BASELINE_PATH.read_text(encoding="utf-8"))
+        baseline = json.loads(baseline_path.read_text(encoding="utf-8"))
         scenarios = baseline.setdefault("scenarios", {})
         for name, seconds in sorted(observed.items()):
             entry = scenarios.setdefault(name, {})
@@ -85,14 +99,14 @@ def main() -> int:
             "python": platform.python_version(),
             "platform": platform.platform(),
         }
-        BASELINE_PATH.write_text(
+        baseline_path.write_text(
             json.dumps(baseline, indent=2, sort_keys=True) + "\n",
             encoding="utf-8",
         )
-        print(f"Updated baseline at {BASELINE_PATH}")
+        print(f"Updated baseline at {baseline_path}")
         return 0
 
-    baseline = json.loads(BASELINE_PATH.read_text(encoding="utf-8"))
+    baseline = json.loads(baseline_path.read_text(encoding="utf-8"))
     if baseline.get("schema") != "etlantic.benchmark_baseline/1":
         print("Unexpected baseline schema", file=sys.stderr)
         return 1

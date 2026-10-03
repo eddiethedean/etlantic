@@ -27,6 +27,7 @@ VERSIONS: Sequence[str] = (
     "010_immutable_input_resources_0_56",
     "011_run_artifact_retention_0_56",
     "012_bounded_event_tombstone_retention_0_56",
+    "013_durable_submission_scope_backfill_0_56",
 )
 
 

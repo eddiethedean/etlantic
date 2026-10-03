@@ -34,7 +34,7 @@ backend. The constructor checks the recorded migration version and fails
 closed when the schema is missing or behind. It creates one SQLAlchemy engine
 for the SQLModel control-plane stores and owns that engine for the backend
 lifetime. The required migration head is
-`012_bounded_event_tombstone_retention_0_56`, which includes durable
+`013_durable_submission_scope_backfill_0_56`, which includes durable
 scope-isolated run reports, expiring idempotent lifecycle-event tombstones,
 immutable input resources, and indexed result-retention metadata.
 

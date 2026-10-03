@@ -5,6 +5,7 @@ from __future__ import annotations
 import hashlib
 import inspect
 import logging
+from collections import deque
 from collections.abc import Callable, Mapping
 from contextlib import suppress
 from datetime import UTC, datetime
@@ -13,6 +14,7 @@ from typing import Any, cast
 
 from etlantic.control_plane.durable_models import (
     EffectRecord,
+    ExecutionScopePage,
     ResultPublicationRecord,
 )
 from etlantic.control_plane.durable_protocols import DurableWorkStore
@@ -25,6 +27,25 @@ from etlantic.runtime.state import RunStatus
 from etlantic.secrets.provider import SecretAliasAuthorizer
 
 _LOG = logging.getLogger(__name__)
+_RETENTION_SCOPE_PAGE_SIZE = 20
+_RETENTION_RETRY_CAPACITY = 100
+_RETENTION_RETRY_BUDGET = 10
+
+
+def _execution_scope_key(
+    ctx: ControlPlaneContext,
+) -> tuple[str | tuple[bool, str], ...]:
+    """Identify the persisted authority dimensions used by managed providers."""
+    return (
+        ctx.tenant.tenant_id,
+        ctx.workspace.workspace_id,
+        (ctx.principal.issuer is not None, ctx.principal.issuer or ""),
+        ctx.principal.kind,
+        ctx.principal.subject,
+        ctx.environment.name,
+        ctx.security_domain.domain_id,
+        (ctx.resource_owner_id is not None, ctx.resource_owner_id or ""),
+    )
 
 
 class ExecutionHost:
@@ -54,6 +75,11 @@ class ExecutionHost:
         self.runner = runner
         self.cancel_check = cancel_check
         self.draining = False
+        self._retention_scope_workspace: tuple[str, str] | None = None
+        self._retention_scope_cursor: str | None = None
+        self._retention_scope_high_watermark: str | None = None
+        self._retention_retry_keys: deque[object] = deque()
+        self._retention_retry_contexts: dict[object, ControlPlaneContext] = {}
 
     def _start_lease_monitor(
         self,
@@ -200,15 +226,64 @@ class ExecutionHost:
         if self.draining:
             return 0
         cleanup_artifacts = getattr(self.runner, "cleanup_expired_run_artifacts", None)
-        if callable(cleanup_artifacts):
-            try:
-                cleanup_artifacts(ctx)
-            except Exception:
-                # Retention has its own durable state and must not block ETL
-                # admission when the result store or artifact filesystem is down.
-                _LOG.warning(
-                    "Run artifact retention pass failed; execution polling continues"
-                )
+        retention_enabled = getattr(self.runner, "run_artifact_retention_enabled", True)
+        if callable(cleanup_artifacts) and retention_enabled is not False:
+            workspace = (ctx.tenant.tenant_id, ctx.workspace.workspace_id)
+            if workspace != self._retention_scope_workspace:
+                self._retention_scope_workspace = workspace
+                self._retention_scope_cursor = None
+                self._retention_scope_high_watermark = None
+            attempted_keys = self._retry_retention_scopes(
+                cleanup_artifacts, budget=_RETENTION_RETRY_BUDGET
+            )
+            cleanup_budget = _RETENTION_SCOPE_PAGE_SIZE - len(attempted_keys)
+            # Discovery continues even if the retry queue is full. A snapshot
+            # watermark bounds each sweep, so scopes that cannot be queued are
+            # rediscovered on a later sweep instead of blocking later scopes.
+            new_scope_budget = cleanup_budget
+            if new_scope_budget > 0:
+                # Page size bounds accepted-scope discovery. The worker's own
+                # storage scope is an additional cleanup candidate, as it is
+                # not part of the durable submission page.
+                page_limit = min(_RETENTION_SCOPE_PAGE_SIZE, new_scope_budget)
+                cleanup_contexts: dict[object, ControlPlaneContext] = {}
+                if page_limit > 0:
+                    try:
+                        page: ExecutionScopePage = self.durable.list_execution_scopes(
+                            ctx,
+                            after_submission_id=self._retention_scope_cursor,
+                            through_submission_id=self._retention_scope_high_watermark,
+                            limit=page_limit,
+                        )
+                        self._retention_scope_high_watermark = page.high_watermark
+                        self._retention_scope_cursor = page.next_cursor
+                        if page.next_cursor is None:
+                            self._retention_scope_high_watermark = None
+                        for accepted_ctx in page.scopes:
+                            if (
+                                accepted_ctx.tenant.tenant_id,
+                                accepted_ctx.workspace.workspace_id,
+                            ) != (
+                                ctx.tenant.tenant_id,
+                                ctx.workspace.workspace_id,
+                            ):
+                                _LOG.warning(
+                                    "Skipping accepted execution scope outside the worker workspace"
+                                )
+                                continue
+                            key = self._retention_scope_key(accepted_ctx)
+                            if key not in attempted_keys:
+                                cleanup_contexts.setdefault(key, accepted_ctx)
+                    except Exception:
+                        _LOG.warning(
+                            "Could not list accepted scopes for artifact retention"
+                        )
+                worker_key = self._retention_scope_key(ctx)
+                if worker_key not in attempted_keys:
+                    cleanup_contexts.setdefault(worker_key, ctx)
+                for key, cleanup_ctx in cleanup_contexts.items():
+                    if self._cleanup_retention_scope(cleanup_artifacts, cleanup_ctx):
+                        self._queue_retention_retry(key, cleanup_ctx)
         self.durable.reconcile_cancelled_submissions(ctx, limit=limit)
         self.durable.reconcile_terminal_outbox(ctx, limit=limit)
         self._reconcile_result_publications(ctx, limit=limit)
@@ -373,12 +448,71 @@ class ExecutionHost:
             processed += 1
         return processed
 
+    def _retry_retention_scopes(
+        self, cleanup_artifacts: Callable[[ControlPlaneContext], Any], *, budget: int
+    ) -> set[object]:
+        """Retry a bounded number of scopes, rotating unresolved work fairly."""
+        attempted: set[object] = set()
+        retry_count = min(budget, len(self._retention_retry_keys))
+        for _ in range(retry_count):
+            key = self._retention_retry_keys.popleft()
+            cleanup_ctx = self._retention_retry_contexts.pop(key)
+            attempted.add(key)
+            if self._cleanup_retention_scope(cleanup_artifacts, cleanup_ctx):
+                self._queue_retention_retry(key, cleanup_ctx)
+        return attempted
+
+    @staticmethod
+    def _cleanup_retention_scope(
+        cleanup_artifacts: Callable[[ControlPlaneContext], Any],
+        ctx: ControlPlaneContext,
+    ) -> bool:
+        """Return whether this store still needs a later cleanup pass."""
+        try:
+            outcome = cleanup_artifacts(ctx)
+        except Exception:
+            # Retention has its own durable state and must not block ETL
+            # admission when a report store or artifact filesystem is down.
+            _LOG.warning(
+                "Run artifact retention pass failed; execution polling continues"
+            )
+            return True
+        return getattr(outcome, "remaining_candidates", False) is True
+
+    def _queue_retention_retry(self, key: object, ctx: ControlPlaneContext) -> None:
+        """Remember unresolved cleanup while keeping retry state bounded."""
+        if key in self._retention_retry_contexts:
+            return
+        if len(self._retention_retry_contexts) >= _RETENTION_RETRY_CAPACITY:
+            # The active scope sweep is bounded by its high-watermark. A scope
+            # omitted here will be discovered again on a later sweep.
+            _LOG.warning("Artifact-retention retry queue is full")
+            return
+        self._retention_retry_contexts[key] = ctx
+        self._retention_retry_keys.append(key)
+
+    def _retention_scope_key(self, ctx: ControlPlaneContext) -> object:
+        key_builder = getattr(self.runner, "artifact_retention_scope_key", None)
+        if callable(key_builder):
+            try:
+                key = key_builder(ctx)
+                hash(key)
+                return key
+            except Exception:
+                _LOG.warning(
+                    "Could not determine artifact retention storage scope; "
+                    "using complete accepted authority"
+                )
+        return _execution_scope_key(ctx)
+
     def _reconcile_result_publications(
         self, ctx: ControlPlaneContext, *, limit: int
     ) -> None:
         publish = getattr(self.runner, "publish_result_publication", None)
         if not callable(publish):
             return
+        from etlantic.runtime.managed_execution import accepted_execution_context
+
         try:
             records = self.durable.pending_result_publications(ctx, limit=limit)
         except Exception:
@@ -386,7 +520,9 @@ class ExecutionHost:
             return
         for record in records:
             try:
-                publish(ctx, record)
+                submission = self.durable.get_submission(ctx, record.submission_id)
+                accepted_ctx = accepted_execution_context(ctx, submission)
+                publish(accepted_ctx, record)
                 self.durable.mark_result_publication_published(
                     ctx,
                     record.submission_id,

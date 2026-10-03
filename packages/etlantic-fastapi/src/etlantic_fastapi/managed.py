@@ -186,6 +186,9 @@ class ManagedBackend:
     run_artifact_cleanup_batch_size: int = 100
     execution_profile: Profile | None = field(default=None, repr=False)
     artifact_root: str | None = field(default=None, repr=False)
+    report_store_scope_key: Callable[[ControlPlaneContext], object] | None = field(
+        default=None, repr=False
+    )
     _closed: bool = field(default=False, init=False, repr=False)
 
     def close(self) -> None:
@@ -225,6 +228,7 @@ class ManagedBackend:
             ttl_seconds=ttl_seconds,
             runner=ManagedExecutionAdapter(
                 report_store_factory=self.report_store_factory,
+                report_store_scope_key=self.report_store_scope_key,
                 artifact_root=self.artifact_root,
                 event_publisher=publish_event,
                 profile=self.execution_profile,
@@ -401,6 +405,7 @@ def create_managed_backend(
             report_store_factory=report_store_provider.for_context,
             input_resources=input_resources,
             artifact_root=config.artifact_root,
+            report_store_scope_key=report_store_provider.retention_scope_key,
             action_handlers=dict(config.action_handlers),
             action_job_lease_seconds=config.action_job_lease_seconds,
             preview_result_ttl_seconds=config.preview_result_ttl_seconds,

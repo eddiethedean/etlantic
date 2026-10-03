@@ -64,7 +64,7 @@ def test_006_migration_imports_legacy_definitions_as_immutable_revisions(
     }
     legacy.put(ctx, "legacy-orders", document)
 
-    assert upgrade(engine) == "012_bounded_event_tombstone_retention_0_56"
+    assert upgrade(engine) == "013_durable_submission_scope_backfill_0_56"
     registry = cast(RegistryProvider, SqlModelRegistryProvider(engine))
     definitions = RegistryDefinitionRepository(registry)
     current = definitions.resolve_revision(ctx, "legacy-orders", "current")
@@ -128,8 +128,8 @@ def _ctx(
 def test_latest_migration_provisions_cp1_and_report_tables(tmp_path: Path) -> None:
     engine = create_sqlite_engine(f"sqlite:///{tmp_path / 'cp1.db'}")
 
-    assert apply_migrations(engine) == "012_bounded_event_tombstone_retention_0_56"
-    assert current_version(engine) == "012_bounded_event_tombstone_retention_0_56"
+    assert apply_migrations(engine) == "013_durable_submission_scope_backfill_0_56"
+    assert current_version(engine) == "013_durable_submission_scope_backfill_0_56"
     assert {
         "cp_definitions",
         "cp_submissions",
@@ -183,11 +183,12 @@ def test_upgrade_from_published_head_adds_managed_reports_without_replacing_sche
     assert upgrade(engine, target=previous_head) == previous_head
     before = set(inspect(engine).get_table_names())
     if previous_head in {
-        "009_event_retention_tombstones_0_56",
         "007_managed_run_reports_0_56",
         "008_idempotent_run_events_0_56",
+        "009_event_retention_tombstones_0_56",
         "010_immutable_input_resources_0_56",
         "011_run_artifact_retention_0_56",
+        "012_bounded_event_tombstone_retention_0_56",
     }:
         assert "cp_run_reports" in before
     else:
@@ -197,6 +198,7 @@ def test_upgrade_from_published_head_adds_managed_reports_without_replacing_sche
         "009_event_retention_tombstones_0_56",
         "010_immutable_input_resources_0_56",
         "011_run_artifact_retention_0_56",
+        "012_bounded_event_tombstone_retention_0_56",
     }:
         assert "cp_event_idempotency" in before
         assert {
@@ -213,7 +215,7 @@ def test_upgrade_from_published_head_adds_managed_reports_without_replacing_sche
     else:
         assert "cp_event_idempotency" not in before
 
-    assert upgrade(engine) == "012_bounded_event_tombstone_retention_0_56"
+    assert upgrade(engine) == "013_durable_submission_scope_backfill_0_56"
     tables = set(inspect(engine).get_table_names())
     assert before.issubset(tables)
     assert {
@@ -240,7 +242,7 @@ def test_managed_report_migration_downgrade_preserves_prior_tables(
     tmp_path: Path,
 ) -> None:
     engine = create_sqlite_engine(f"sqlite:///{tmp_path / 'report-migration.db'}")
-    assert upgrade(engine) == "012_bounded_event_tombstone_retention_0_56"
+    assert upgrade(engine) == "013_durable_submission_scope_backfill_0_56"
 
     assert downgrade(engine, target="006_managed_definition_revisions_0_56") == (
         "006_managed_definition_revisions_0_56"
@@ -253,7 +255,7 @@ def test_managed_report_migration_downgrade_preserves_prior_tables(
         "cp_registry_revisions",
     }.issubset(tables)
 
-    assert upgrade(engine) == "012_bounded_event_tombstone_retention_0_56"
+    assert upgrade(engine) == "013_durable_submission_scope_backfill_0_56"
     assert "cp_run_reports" in set(inspect(engine).get_table_names())
 
 
@@ -261,7 +263,7 @@ def test_idempotent_event_migration_round_trip_preserves_event_history(
     tmp_path: Path,
 ) -> None:
     engine = create_sqlite_engine(f"sqlite:///{tmp_path / 'event-migration.db'}")
-    assert upgrade(engine) == "012_bounded_event_tombstone_retention_0_56"
+    assert upgrade(engine) == "013_durable_submission_scope_backfill_0_56"
     ctx = _ctx()
     events = SqlModelEventStore(engine)
     original = events.append(
@@ -272,7 +274,7 @@ def test_idempotent_event_migration_round_trip_preserves_event_history(
         "007_managed_run_reports_0_56"
     )
     assert "cp_event_idempotency" not in set(inspect(engine).get_table_names())
-    assert upgrade(engine) == "012_bounded_event_tombstone_retention_0_56"
+    assert upgrade(engine) == "013_durable_submission_scope_backfill_0_56"
     assert "cp_event_idempotency" in set(inspect(engine).get_table_names())
     events = SqlModelEventStore(engine)
     repeated = events.append_once(
@@ -347,7 +349,7 @@ def test_event_retention_migration_backfills_previously_published_keys(
             },
         )
 
-    assert upgrade(engine) == "012_bounded_event_tombstone_retention_0_56"
+    assert upgrade(engine) == "013_durable_submission_scope_backfill_0_56"
     repeated = SqlModelEventStore(engine).append_once(
         ctx,
         event_key=key,
@@ -374,7 +376,7 @@ def test_bounded_event_tombstone_rollback_and_upgrade_preserve_delivery_keys(
     engine = create_sqlite_engine(
         f"sqlite:///{tmp_path / 'bounded-event-tombstone-round-trip.db'}"
     )
-    assert upgrade(engine) == "012_bounded_event_tombstone_retention_0_56"
+    assert upgrade(engine) == "013_durable_submission_scope_backfill_0_56"
     ctx = _ctx()
     events = SqlModelEventStore(engine)
     original = events.append_once(
@@ -428,7 +430,7 @@ def test_bounded_event_tombstone_rollback_and_upgrade_preserve_delivery_keys(
     assert retained_event_id == original.event_id
     assert retained_delivery_key == original.event_id
 
-    assert upgrade(engine) == "012_bounded_event_tombstone_retention_0_56"
+    assert upgrade(engine) == "013_durable_submission_scope_backfill_0_56"
     replayed = SqlModelEventStore(engine).append_once(
         ctx,
         event_key="bounded-event-round-trip",
@@ -519,8 +521,8 @@ def test_postgresql_migration_provisions_and_persists_cp1_stores(
                 },
             )
 
-    assert upgrade(engine) == "012_bounded_event_tombstone_retention_0_56"
-    assert current_version(engine) == "012_bounded_event_tombstone_retention_0_56"
+    assert upgrade(engine) == "013_durable_submission_scope_backfill_0_56"
+    assert current_version(engine) == "013_durable_submission_scope_backfill_0_56"
     tables = set(inspect(engine).get_table_names())
     assert {
         "cp_definitions",
@@ -566,7 +568,7 @@ def test_postgresql_concurrent_event_appends_allocate_ordered_sequences(
     postgres_engine_factory: Callable[[], Engine],
 ) -> None:
     engine = postgres_engine_factory()
-    assert upgrade(engine) == "012_bounded_event_tombstone_retention_0_56"
+    assert upgrade(engine) == "013_durable_submission_scope_backfill_0_56"
     engine.dispose()
 
     ctx = _ctx()
@@ -612,7 +614,7 @@ def test_postgresql_event_retention_expires_cursors_without_duplicate_delivery(
     postgres_engine_factory: Callable[[], Engine],
 ) -> None:
     engine = postgres_engine_factory()
-    assert upgrade(engine) == "012_bounded_event_tombstone_retention_0_56"
+    assert upgrade(engine) == "013_durable_submission_scope_backfill_0_56"
     ctx = _ctx()
     events = SqlModelEventStore(engine)
     expired = events.append_once(
@@ -651,7 +653,7 @@ def test_postgresql_event_retention_policy_bounds_each_scope_and_keeps_keys(
     postgres_engine_factory: Callable[[], Engine],
 ) -> None:
     engine = postgres_engine_factory()
-    assert upgrade(engine) == "012_bounded_event_tombstone_retention_0_56"
+    assert upgrade(engine) == "013_durable_submission_scope_backfill_0_56"
     ctx = _ctx()
     events = SqlModelEventStore(engine, max_events_per_scope=2)
     expired = events.append_once(
@@ -688,7 +690,7 @@ def test_postgresql_event_tombstone_pruning_is_bounded_scoped_and_durable(
     postgres_engine_factory: Callable[[], Engine],
 ) -> None:
     engine = postgres_engine_factory()
-    assert upgrade(engine) == "012_bounded_event_tombstone_retention_0_56"
+    assert upgrade(engine) == "013_durable_submission_scope_backfill_0_56"
     ctx = _ctx()
     other = _ctx("tenant-b", "workspace-b")
     events = SqlModelEventStore(engine, idempotency_retention_seconds=1)
