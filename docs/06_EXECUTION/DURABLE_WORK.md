@@ -42,6 +42,14 @@ rows from existing snapshots before workers rely on the keyset pages.
 - Preview expiry must be in the future at creation time. Cleanup is reserved for
   previews that expire after they were successfully recorded.
 
+Managed lifecycle commands retain CP1 receipts and immutable input leases when
+durable acceptance is unresolved. Retry the same command and idempotency key to
+recover acceptance. Cancellation returns `PMCP503` while the durable submission
+is absent; it does not acknowledge an observation-only cancellation that a
+concurrent recovery could bypass. After acceptance is reconciled, retry
+cancellation to persist it in the durable store. CP1-only receipts cancelled by
+older service versions cannot be recovered into runnable lifecycle work.
+
 `etlantic.control_plane.DurableWorkStore` is the provider contract. Its
 `MemoryDurableWorkStore` implementation is suitable for local development and
 conformance tests; production deployments must use a transactional provider.

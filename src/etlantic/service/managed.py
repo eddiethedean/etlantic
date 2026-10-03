@@ -1548,6 +1548,8 @@ class ManagedApplicationService:
             reason = "not_authorized"
         elif not provider_supports_cancel:
             reason = "provider_unsupported"
+        elif durable_record is None:
+            reason = "durable_state_unavailable"
         elif status == "cancel_requested":
             reason = "already_requested"
         elif not state_allows_cancel:
@@ -2488,39 +2490,15 @@ class ManagedApplicationService:
             resource_id=managed_run_id(ctx, idempotency_key, operation=operation),
             operation=operation,
         )
-        try:
-            self._accept_child_durable(
-                ctx,
-                idempotency_key=idempotency_key,
-                operation=operation,
-                envelope=envelope,
-                submission_id=receipt_result.receipt.submission_id,
-                run_id=receipt_result.receipt.resource_id
-                or managed_run_id(ctx, idempotency_key, operation=operation),
-            )
-        except Exception as exc:
-            if receipt_result.created:
-                try:
-                    record, changed = self._cancel_cp1(
-                        ctx, receipt_result.receipt.resource_id
-                    )
-                    if changed or record.get("status") == "cancelled":
-                        self._release_input_lease(ctx, input_lease_id)
-                except Exception:
-                    pass
-            if isinstance(exc, ControlPlaneError):
-                raise
-                raise ControlPlaneError(
-                    "Durable lifecycle command acceptance failed; no receipt was returned",
-                    code="PMCP503",
-                    status=503,
-                    title="Service Unavailable",
-                    type="etlantic.control_plane/unavailable",
-                    extensions={
-                        "submission_id": receipt_result.receipt.submission_id,
-                        "compensated": receipt_result.created,
-                    },
-                ) from exc
+        self._accept_child_durable(
+            ctx,
+            idempotency_key=idempotency_key,
+            operation=operation,
+            envelope=envelope,
+            submission_id=receipt_result.receipt.submission_id,
+            run_id=receipt_result.receipt.resource_id
+            or managed_run_id(ctx, idempotency_key, operation=operation),
+        )
         if receipt_result.created and self.events is not None:
             with suppress(Exception):
                 self.events.append(
@@ -2545,19 +2523,83 @@ class ManagedApplicationService:
         submission_id: str,
         run_id: str,
     ) -> SubmissionRecord:
-        row, _created = self.durable_work.accept(
-            ctx,
-            idempotency_key=idempotency_key,
-            operation=operation,
-            plan_fingerprint=envelope.plan_fingerprint,
-            revision_id=envelope.revision_id,
-            plugin_fingerprint=envelope.plugin_fingerprint,
-            policy_fingerprint=envelope.policy_fingerprint,
-            input_snapshot=envelope.to_json(),
-            submission_id=submission_id,
-            run_id=run_id,
+        get_run_value = getattr(self.submissions, "get_run", None)
+        if not callable(get_run_value):
+            raise ControlPlaneError(
+                "Submission provider does not support run observation",
+                code="PMCP501",
+                status=501,
+                title="Not Implemented",
+            )
+        get_run = cast(
+            Callable[[ControlPlaneContext, str], dict[str, Any]],
+            get_run_value,
         )
-        return row
+        if get_run(ctx, run_id).get("status") in {"cancel_requested", "cancelled"}:
+            raise ControlPlaneError.conflict(
+                "Cancelled lifecycle acceptance cannot be recovered"
+            )
+        try:
+            row, _created = self.durable_work.accept(
+                ctx,
+                idempotency_key=idempotency_key,
+                operation=operation,
+                plan_fingerprint=envelope.plan_fingerprint,
+                revision_id=envelope.revision_id,
+                plugin_fingerprint=envelope.plugin_fingerprint,
+                policy_fingerprint=envelope.policy_fingerprint,
+                input_snapshot=envelope.to_json(),
+                submission_id=submission_id,
+                run_id=run_id,
+            )
+            return row
+        except Exception as exc:
+            # Acceptance and its outbox may have committed before the provider
+            # lost the acknowledgement. Reconcile the scoped command identity
+            # before returning the original receipt.
+            recovered: SubmissionRecord | None = None
+            reconciliation_available = False
+            with suppress(Exception):
+                recovered = self.durable_work.get_submission_by_idempotency(
+                    ctx, idempotency_key=idempotency_key, operation=operation
+                )
+                reconciliation_available = True
+            if recovered is not None:
+                if (
+                    recovered.submission_id != submission_id
+                    or recovered.operation != operation
+                    or recovered.input_snapshot != envelope.to_json()
+                    or (recovered.run_id is not None and recovered.run_id != run_id)
+                ):
+                    raise ControlPlaneError.conflict(
+                        "Durable lifecycle acceptance conflicts with the CP1 receipt"
+                    ) from exc
+                return recovered
+
+            # Even a successful absence lookup cannot fence another caller
+            # from accepting this shared command immediately afterwards. Keep
+            # its CP1 receipt and input leases available for same-key recovery;
+            # configured input retention bounds their eventual cleanup.
+            provider_rejected = (
+                reconciliation_available
+                and isinstance(exc, ControlPlaneError)
+                and exc.status < 500
+            )
+            if provider_rejected:
+                raise
+            raise ControlPlaneError(
+                "Durable lifecycle acceptance acknowledgement is uncertain; retry "
+                "the same idempotency key to reconcile",
+                code="PMCP503",
+                status=503,
+                title="Service Unavailable",
+                type="etlantic.control_plane/unavailable",
+                extensions={
+                    "submission_id": submission_id,
+                    "acceptance_uncertain": True,
+                    "compensated": False,
+                },
+            ) from exc
 
     def cancel_run(self, ctx: ControlPlaneContext, run_id: str) -> dict[str, Any]:
         """Request cancellation through the same authorized service as HTTP."""
@@ -2582,14 +2624,26 @@ class ManagedApplicationService:
             ],
             cancel,
         )
-        durable_status: str | None = None
+        durable_status: str
         try:
             durable = self.durable_work.cancel_submission(ctx, submission_id)
             durable_status = durable.status
         except ControlPlaneError as exc:
             if exc.status == 404:
-                # Legacy CP1-only records retain their observation-level cancel.
-                pass
+                # CP1 cannot fence a concurrent durable acceptance. Do not
+                # acknowledge cancellation until CP3 can persist it.
+                raise ControlPlaneError(
+                    "Durable acceptance is unresolved; retry cancellation after "
+                    "the same idempotency key has been reconciled",
+                    code="PMCP503",
+                    status=503,
+                    title="Service Unavailable",
+                    type="etlantic.control_plane/unavailable",
+                    extensions={
+                        "submission_id": submission_id,
+                        "cancellation_uncertain": True,
+                    },
+                ) from exc
             elif exc.status == 409:
                 durable = self.durable_work.get_submission(ctx, submission_id)
                 durable_status = durable.status
@@ -2609,8 +2663,7 @@ class ManagedApplicationService:
         else:
             updated, changed = result, True
         response = dict(updated)
-        if durable_status is not None:
-            response["status"] = durable_status
+        response["status"] = durable_status
         if changed and self.events is not None:
             with suppress(Exception):
                 self.events.append(
