@@ -2678,7 +2678,6 @@ class ManagedApplicationService:
         )
         submission_id = str(record.get("submission_id") or "")
         durable = self.durable_work.get_submission(ctx, submission_id)
-        run_id = managed_run_id(ctx, idempotency_key, operation=durable.operation)
         report_store_error: Exception | None = None
         try:
             result = report_store.get(run_id)

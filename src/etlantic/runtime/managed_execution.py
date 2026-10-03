@@ -18,7 +18,7 @@ from etlantic.control_plane.input_resources import (
     InputResourceReference,
     InputResourceStore,
 )
-from etlantic.control_plane.models import ControlPlaneContext
+from etlantic.control_plane.models import ControlPlaneContext, Principal
 from etlantic.exceptions import (
     PipelineCancelledError,
     PipelineExecutionError,
@@ -302,8 +302,19 @@ class ManagedExecutionAdapter:
                 )
             leased_reader = cast(Callable[..., bytes], candidate_reader)
 
+        # Run identity belongs to the accepted submitter, independently of
+        # which worker executes or recovers the submission.
+        submitter = Principal.from_dict(
+            {
+                "subject": submission.principal_subject,
+                "issuer": submission.principal_issuer,
+                "kind": submission.principal_kind,
+            }
+        )
         run_id = managed_run_id(
-            ctx, submission.idempotency_key, operation=submission.operation
+            replace(ctx, principal=submitter),
+            submission.idempotency_key,
+            operation=submission.operation,
         )
         event_base = {
             "run_id": run_id,
