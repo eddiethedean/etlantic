@@ -436,3 +436,210 @@ def test_invalid_storage_identity_never_marks_files_cleaned(tmp_path: Path) -> N
     saved = store.get("invalid")
     assert saved is not None and saved.artifacts[0].status == "available"
     assert saved.metadata.get(RUN_ARTIFACT_RETENTION_STATE_KEY) != "complete"
+
+
+def _publish_shared_child(
+    artifact_root: str,
+    report_root: str,
+    report_json: str,
+    ready: Any,
+    release: Any,
+    crash: bool = False,
+) -> None:
+    from etlantic.reports.file_store import FileReportStore
+    from etlantic.reports.model import PipelineRunReport
+    from etlantic.runtime.artifact_coordination import artifact_workspace_lock
+
+    workspace = managed_artifact_workspace(
+        _ctx(), "parent", artifact_root=artifact_root
+    )
+    with artifact_workspace_lock(workspace):
+        ready.set()
+        if crash:
+            import os
+
+            os._exit(7)
+        if not release.wait(15):
+            raise TimeoutError("Test publisher was not released")
+        import json
+
+        FileReportStore(Path(report_root)).put(
+            PipelineRunReport.from_dict(json.loads(report_json))
+        )
+
+
+def test_cleanup_coordinates_with_another_process_and_refreshes_file_inventory(
+    tmp_path: Path,
+) -> None:
+    import multiprocessing
+    from dataclasses import replace
+
+    from etlantic.reports.file_store import FileReportStore
+    from etlantic.reports.retention import ARTIFACT_STORAGE_RUN_ID_KEY
+
+    ctx = _ctx()
+    now = datetime.now(UTC)
+    root = tmp_path / "artifacts"
+    reports = tmp_path / "reports"
+    path = _write_artifact(ctx, root, "parent", "shared")
+    parent = _report(
+        "parent",
+        ended_at=now - timedelta(days=2),
+        artifacts=(ArtifactResult("shared", "output", "durable"),),
+    )
+    store = FileReportStore(reports)
+    store.put(parent)
+    child = replace(
+        parent,
+        run_id="child",
+        ended_at=now,
+        metadata={ARTIFACT_STORAGE_RUN_ID_KEY: "parent"},
+    )
+    process_context = multiprocessing.get_context("spawn")
+    ready = process_context.Event()
+    release = process_context.Event()
+    publisher = process_context.Process(
+        target=_publish_shared_child,
+        args=(str(root), str(reports), child.to_json(), ready, release),
+    )
+    publisher.start()
+    try:
+        assert ready.wait(10)
+        busy = cleanup_expired_run_artifacts(
+            ctx, report_store=store, artifact_root=root, retention_seconds=60, now=now
+        )
+        assert busy.remaining_candidates and busy.processed_reports == 0
+        assert path.is_file()
+        release.set()
+        publisher.join(10)
+        assert publisher.exitcode == 0
+        # This instance was opened before the other process wrote the child.
+        assert store.get("child") is None
+        finished = cleanup_expired_run_artifacts(
+            ctx, report_store=store, artifact_root=root, retention_seconds=60, now=now
+        )
+        assert finished.completed_reports == 1 and finished.deleted_artifacts == 0
+        fresh = FileReportStore(reports)
+        old = fresh.get("parent")
+        retained = fresh.get("child")
+        assert old is not None and old.artifacts[0].status == "expired"
+        assert retained is not None and retained.artifacts[0].status == "available"
+        assert path.is_file()
+        # An abruptly exited publisher must not leave a permanent reservation.
+        ready.clear()
+        release.clear()
+        publisher = process_context.Process(
+            target=_publish_shared_child,
+            args=(str(root), str(reports), child.to_json(), ready, release, True),
+        )
+        publisher.start()
+        assert ready.wait(10)
+        publisher.join(10)
+        assert publisher.exitcode == 7
+        after_crash = cleanup_expired_run_artifacts(
+            ctx,
+            report_store=store,
+            artifact_root=root,
+            retention_seconds=60,
+            now=now + timedelta(days=1),
+        )
+        assert after_crash.deleted_artifacts == 1 and not path.exists()
+    finally:
+        release.set()
+        if publisher.is_alive():
+            publisher.terminate()
+        publisher.join(10)
+
+
+def test_unpublished_child_ownership_survives_and_eventually_expires(
+    tmp_path: Path,
+) -> None:
+    from dataclasses import replace
+
+    from etlantic.reports.file_store import FileReportStore
+    from etlantic.reports.retention import ARTIFACT_STORAGE_RUN_ID_KEY
+    from etlantic.runtime.artifact_coordination import (
+        artifact_workspace_lock,
+        record_artifact_ownership,
+    )
+
+    ctx = _ctx()
+    now = datetime.now(UTC)
+    root = tmp_path / "artifacts"
+    shared = _write_artifact(ctx, root, "parent", "shared")
+    reports = tmp_path / "reports"
+    store = FileReportStore(reports)
+    parent = _report(
+        "parent",
+        ended_at=now - timedelta(days=2),
+        artifacts=(ArtifactResult("shared", "output", "durable"),),
+    )
+    store.put(parent)
+    child = replace(
+        parent,
+        run_id="unpublished-child",
+        ended_at=now,
+        metadata={ARTIFACT_STORAGE_RUN_ID_KEY: "parent"},
+    )
+    workspace = managed_artifact_workspace(ctx, "parent", artifact_root=root)
+    with artifact_workspace_lock(workspace):
+        record_artifact_ownership(workspace, child)
+    assert store.get(child.run_id) is None
+    first = cleanup_expired_run_artifacts(
+        ctx, report_store=store, artifact_root=root, retention_seconds=60, now=now
+    )
+    expired = store.get("parent")
+    assert expired is not None and expired.artifacts[0].status == "expired"
+    assert shared.is_file() and first.deleted_artifacts == 0
+    assert first.remaining_candidates and first.completed_reports == 0
+    # Even if the provider never recovers, the deferred physical cleanup must
+    # complete after the ownership window, including across process restarts.
+    restarted = FileReportStore(reports)
+    final = cleanup_expired_run_artifacts(
+        ctx,
+        report_store=restarted,
+        artifact_root=root,
+        retention_seconds=60,
+        now=now + timedelta(days=1),
+    )
+    assert final.completed_reports == 1 and final.deleted_artifacts == 1
+    assert not shared.exists() and not final.remaining_candidates
+
+
+@pytest.mark.parametrize("intent", [RunIntent.STANDARD, RunIntent.RESUME])
+def test_legacy_accepted_report_without_envelope_only_owns_its_run_workspace(
+    intent: RunIntent,
+) -> None:
+    from dataclasses import replace
+
+    from etlantic.control_plane.durable_models import SubmissionRecord
+    from etlantic.reports.retention import artifact_storage_run_id
+    from etlantic.runtime.managed_execution import resolve_managed_artifact_report
+
+    now = datetime.now(UTC)
+    report = replace(
+        _report(
+            "legacy",
+            ended_at=now,
+            artifacts=(ArtifactResult("result", "output", "durable"),),
+        ),
+        intent=intent,
+    )
+    ctx = _ctx()
+    submission = SubmissionRecord(
+        submission_id="legacy-submission",
+        tenant_id=ctx.tenant.tenant_id,
+        workspace_id=ctx.workspace.workspace_id,
+        principal_subject=ctx.principal.subject,
+        operation="run.submit",
+        idempotency_key="legacy",
+        created_at=now.isoformat(),
+        plan_fingerprint=report.plan_fingerprint or "",
+        run_id=report.run_id,
+    )
+    if intent is RunIntent.RESUME:
+        with pytest.raises(ValueError, match="storage evidence"):
+            resolve_managed_artifact_report(report, submission)
+    else:
+        resolved = resolve_managed_artifact_report(report, submission)
+        assert artifact_storage_run_id(resolved) == report.run_id

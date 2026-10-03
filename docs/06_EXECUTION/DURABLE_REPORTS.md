@@ -62,9 +62,32 @@ status. A file shared with a still-retained report remains on disk until its
 last retained reference expires. An expired reference cannot download that
 file, even while another report retains it. Cleanup continues to limit the
 number of artifacts touched per pass and records failures for later retry.
-Reference checks use the scoped report provider's current report inventory.
-Legacy ordinary reports default to their own run workspace; managed queries
-recover an absent storage tag from the immutable accepted execution envelope.
+A process-owned filesystem lock coordinates execution and result publication
+with cleanup for each artifact workspace. Cleanup skips a busy workspace and
+refreshes its scoped report inventory under the lock, including file providers
+opened before another worker published a child. Workers sharing artifact files
+must use the same artifact root; independent workspaces still execute in parallel.
+
+Before report persistence, execution records hashed artifact ownership under the
+workspace. An unexpired child remains visible to cleanup even while its result
+exists only in durable publication. Cleanup keeps deferred physical work pending
+until that child is published or its retention window ends, including across
+restarts, so an unavailable report provider cannot cause either early deletion
+or a permanent file leak.
+
+Reference expiry also writes a hashed tombstone under the artifact workspace.
+Queries and result reconciliation consult this record, so an immutable fallback
+snapshot cannot revive an expired reference during a report-provider outage.
+These small metadata records survive process restarts and remain with retained
+report history; they contain neither source rows nor credentials.
+
+Managed cleanup resolves untagged legacy reports from their accepted submission.
+It retries references incorrectly marked expired or complete by the old child-
+workspace cleanup. The packaged backend supplies this resolver automatically;
+standalone cleanup callers can supply `report_resolver`, and execution hosts
+resolve legacy final reports through their recorded submission ID. Unverifiable
+legacy lifecycle reports fail closed. Ordinary legacy reports retain their own
+workspace, and managed queries recover their storage tag from accepted evidence.
 
 ## CLI process boundaries
 

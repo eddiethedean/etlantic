@@ -65,6 +65,7 @@ from etlantic.reports.retention import (
     RUN_ARTIFACT_RETENTION_STATE_KEY,
     artifact_storage_run_id,
 )
+from etlantic.runtime.artifact_coordination import apply_artifact_expiry
 from etlantic.runtime.artifacts import artifact_storage_path
 from etlantic.runtime.logging import redact_message
 from etlantic.runtime.managed_execution import (
@@ -73,6 +74,7 @@ from etlantic.runtime.managed_execution import (
     managed_artifact_workspace,
     managed_report_store,
     managed_run_id,
+    resolve_managed_artifact_report,
 )
 from etlantic.runtime.request import RunIntent, RunRequest
 from etlantic.secrets.ref import SecretRef
@@ -2737,6 +2739,40 @@ class ManagedApplicationService:
             "has_more": next_cursor is not None,
         }
 
+    def resolve_artifact_report(
+        self, ctx: ControlPlaneContext, report: PipelineRunReport
+    ) -> PipelineRunReport:
+        """Resolve scoped accepted ownership for worker retention of legacy reports."""
+        if ARTIFACT_STORAGE_RUN_ID_KEY in report.metadata:
+            artifact_storage_run_id(report)
+            return report
+        getter = getattr(self.submissions, "get_run", None)
+        if not callable(getter):
+            raise ValueError(
+                "Submission provider cannot resolve legacy artifact ownership"
+            )
+        get_run = cast(Callable[[ControlPlaneContext, str], dict[str, Any]], getter)
+        try:
+            record = get_run(ctx, report.run_id)
+        except (KeyError, ControlPlaneError) as exc:
+            missing = isinstance(exc, KeyError) or exc.status == 404
+            if (
+                missing
+                and report.intent is RunIntent.STANDARD
+                and "etlantic.control_plane.execution" not in report.metadata
+            ):
+                # Scoped providers also support ordinary SDK reports, which
+                # have no accepted submission and own their run workspace.
+                return report
+            raise ValueError(
+                "Legacy managed artifact ownership is unavailable"
+            ) from exc
+        submission_id = str(record.get("submission_id") or "")
+        if not submission_id:
+            raise ValueError("Managed report has no accepted submission")
+        submission = self.durable_work.get_submission(ctx, submission_id)
+        return resolve_managed_artifact_report(report, submission)
+
     def _runtime_report(
         self,
         ctx: ControlPlaneContext,
@@ -2849,23 +2885,23 @@ class ManagedApplicationService:
                 status=500,
                 title="Internal Server Error",
             )
-        # Legacy resumed reports predate the storage tag. Recover it from the
-        # immutable accepted envelope, never from a caller-supplied path.
-        if ARTIFACT_STORAGE_RUN_ID_KEY not in result.metadata:
-            evidence = (
-                self._parse_envelope(durable.input_snapshot).evidence_refs or {}
-                if durable.input_snapshot
-                else {}
-            )
-            result = replace(
+        try:
+            result = resolve_managed_artifact_report(result, durable)
+            result = apply_artifact_expiry(
+                managed_artifact_workspace(
+                    ctx,
+                    artifact_storage_run_id(result),
+                    artifact_root=self.artifact_root,
+                ),
                 result,
-                metadata={
-                    **result.metadata,
-                    ARTIFACT_STORAGE_RUN_ID_KEY: managed_artifact_run_id(
-                        result.run_id, evidence
-                    ),
-                },
             )
+        except Exception as exc:
+            raise ControlPlaneError(
+                "Artifact ownership or expiry evidence is unavailable",
+                code="PMCP503",
+                status=503,
+                title="Service Unavailable",
+            ) from exc
         return record, result
 
     def get_run_lineage(self, ctx: ControlPlaneContext, run_id: str) -> dict[str, Any]:

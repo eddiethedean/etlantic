@@ -30,7 +30,10 @@ from etlantic.profile import Profile
 from etlantic.registry import BindingDescriptor, PlanningContext
 from etlantic.reports.file_store import FileReportStore
 from etlantic.reports.model import PipelineRunReport
-from etlantic.reports.retention import ARTIFACT_STORAGE_RUN_ID_KEY
+from etlantic.reports.retention import (
+    ARTIFACT_STORAGE_RUN_ID_KEY,
+    RUN_ARTIFACT_RETENTION_STATE_KEY,
+)
 from etlantic.runtime.artifact_retention import cleanup_expired_run_artifacts
 from etlantic.runtime.artifacts import artifact_storage_path
 from etlantic.runtime.execution_host import ExecutionHost
@@ -53,11 +56,18 @@ class ArtifactPipeline(Pipeline):
     output: Load[Row] = Load(input=source, asset="output")
 
 
+@pytest.mark.parametrize(
+    "legacy_state", ["current", "untagged", "false-complete", "partial-expired"]
+)
 @pytest.mark.parametrize("generations", [1, 2])
 @pytest.mark.parametrize("publication_fallback", [False, True])
 @pytest.mark.parametrize("shared_reference", [False, True])
 def test_resumed_artifacts_download_and_cleanup_the_authoritative_workspace(
-    tmp_path: Path, generations: int, publication_fallback: bool, shared_reference: bool
+    tmp_path: Path,
+    generations: int,
+    publication_fallback: bool,
+    shared_reference: bool,
+    legacy_state: str,
 ) -> None:
     ctx = ControlPlaneContext(
         principal=Principal("artifact-owner"),
@@ -156,6 +166,11 @@ def test_resumed_artifacts_download_and_cleanup_the_authoritative_workspace(
 
     class RecordingStore(FileReportStore):
         def put(self, report: PipelineRunReport) -> None:
+            owner_root = (
+                managed_artifact_workspace(ctx, storage_id, artifact_root=artifact_root)
+                / ".artifact-owners"
+            )
+            assert any(owner_root.glob("*.json"))
             first_writes.append(report)
             if publication_fallback:
                 raise OSError("report provider unavailable")
@@ -207,13 +222,34 @@ def test_resumed_artifacts_download_and_cleanup_the_authoritative_workspace(
         started_at=old_end - timedelta(minutes=1),
         ended_at=old_end,
     )
+    if legacy_state != "current":
+        metadata = dict(persisted.metadata)
+        metadata.pop(ARTIFACT_STORAGE_RUN_ID_KEY)
+        if legacy_state in {"false-complete", "partial-expired"}:
+            metadata[RUN_ARTIFACT_RETENTION_STATE_KEY] = (
+                "complete" if legacy_state == "false-complete" else "running"
+            )
+            persisted = replace(
+                persisted,
+                artifacts=tuple(
+                    replace(item, status="expired") for item in persisted.artifacts
+                ),
+            )
+        persisted = replace(persisted, metadata=metadata)
     stored.put(persisted)
     if shared_reference:
-        stored.put(replace(persisted, run_id="still-retained", ended_at=now))
+        stored.put(
+            replace(
+                PipelineRunReport.from_dict(report),
+                run_id="still-retained",
+                ended_at=now,
+            )
+        )
     restarted = managed_report_store(ctx, report_root=report_root)
     result = cleanup_expired_run_artifacts(
         ctx,
         report_store=restarted,
+        report_resolver=lambda item: service.resolve_artifact_report(ctx, item),
         artifact_root=artifact_root,
         retention_seconds=1,
         now=now,
@@ -229,10 +265,45 @@ def test_resumed_artifacts_download_and_cleanup_the_authoritative_workspace(
         service.get_run_artifact_content(
             ctx, child.resource_id, listed[0]["artifact_id"]
         )
+    if shared_reference and publication_fallback:
+
+        class UnavailableStore:
+            def get(self, _run_id: str) -> PipelineRunReport | None:
+                raise OSError("report provider temporarily unavailable")
+
+        service.report_store_factory = lambda _context: UnavailableStore()
+        assert not service.list_run_artifacts(ctx, child.resource_id)[0][
+            "content_available"
+        ]
+        with pytest.raises(ControlPlaneError, match="artifact"):
+            service.get_run_artifact_content(
+                ctx, child.resource_id, listed[0]["artifact_id"]
+            )
+        fallback = service.get_run_report(ctx, child.resource_id)
+        assert fallback["artifacts"][0]["status"] == "expired"
+        service.report_store_factory = None
+        publication = durable.get_latest_result_publication(
+            ctx,
+            str(
+                fallback["metadata"]["etlantic.control_plane.execution"][
+                    "submission_id"
+                ]
+            ),
+        )
+        assert publication is not None
+        # Reconciliation must not overwrite expiry with the immutable old copy.
+        adapter.report_store_factory = None
+        adapter.publish_result_publication(ctx, publication)
+        recovered = managed_report_store(ctx, report_root=report_root).get(
+            child.resource_id
+        )
+        assert recovered is not None and recovered.artifacts[0].status == "expired"
+
     if shared_reference:
         final = cleanup_expired_run_artifacts(
             ctx,
             report_store=restarted,
+            report_resolver=lambda item: service.resolve_artifact_report(ctx, item),
             artifact_root=artifact_root,
             retention_seconds=1,
             now=now + timedelta(days=1),

@@ -39,13 +39,19 @@ from etlantic.reports.model import PipelineRunReport
 from etlantic.reports.retention import (
     ARTIFACT_STORAGE_RUN_ID_KEY,
     ArtifactRetentionResult,
+    artifact_storage_run_id,
+)
+from etlantic.runtime.artifact_coordination import (
+    apply_artifact_expiry,
+    artifact_workspace_lock,
+    record_artifact_ownership,
 )
 from etlantic.runtime.artifacts import ArtifactStore
 from etlantic.runtime.context import TrustedExecutionScope
 from etlantic.runtime.execute import run_pipeline
 from etlantic.runtime.faults import active_faults
 from etlantic.runtime.managed_errors import ExecutionRejected, UnknownCommitError
-from etlantic.runtime.request import RunRequest
+from etlantic.runtime.request import RunIntent, RunRequest
 from etlantic.runtime.state import RunStatus
 from etlantic.secrets.provider import SecretAliasAuthorizer
 
@@ -128,6 +134,37 @@ def managed_artifact_run_id(
     """Select storage identity from trusted accepted execution evidence."""
     parent = (evidence_refs or {}).get("artifact_parent_run_id")
     return parent if isinstance(parent, str) and parent.strip() else run_id
+
+
+def resolve_managed_artifact_report(
+    report: PipelineRunReport, submission: SubmissionRecord
+) -> PipelineRunReport:
+    """Resolve legacy report storage from its immutable accepted submission."""
+    if (
+        submission.run_id is not None and submission.run_id != report.run_id
+    ) or submission.plan_fingerprint != report.plan_fingerprint:
+        raise ValueError("Report does not match its accepted submission")
+    if not submission.input_snapshot:
+        if (
+            report.intent is not RunIntent.STANDARD
+            or artifact_storage_run_id(report) != report.run_id
+        ):
+            raise ValueError("Legacy lifecycle report has no accepted storage evidence")
+        return replace(
+            report,
+            metadata={**report.metadata, ARTIFACT_STORAGE_RUN_ID_KEY: report.run_id},
+        )
+    envelope = ExecutionEnvelope.from_json(submission.input_snapshot)
+    if envelope.plan_fingerprint != submission.plan_fingerprint:
+        raise ValueError("Accepted artifact storage evidence is invalid")
+    storage_id = managed_artifact_run_id(report.run_id, envelope.evidence_refs)
+    if ARTIFACT_STORAGE_RUN_ID_KEY in report.metadata:
+        if artifact_storage_run_id(report) != storage_id:
+            raise ValueError("Report artifact storage conflicts with accepted evidence")
+        return report
+    return replace(
+        report, metadata={**report.metadata, ARTIFACT_STORAGE_RUN_ID_KEY: storage_id}
+    )
 
 
 def managed_artifact_workspace(
@@ -236,6 +273,10 @@ class ManagedExecutionAdapter:
         input_resource_store: InputResourceStore | None = None,
         run_artifact_retention_seconds: int | None = None,
         artifact_cleanup_batch_size: int = 100,
+        artifact_report_resolver: Callable[
+            [ControlPlaneContext, PipelineRunReport], PipelineRunReport
+        ]
+        | None = None,
     ) -> None:
         if run_artifact_retention_seconds is not None and (
             type(run_artifact_retention_seconds) is not int
@@ -263,6 +304,7 @@ class ManagedExecutionAdapter:
         self.input_resource_store = input_resource_store
         self.run_artifact_retention_seconds = run_artifact_retention_seconds
         self.artifact_cleanup_batch_size = artifact_cleanup_batch_size
+        self.artifact_report_resolver = artifact_report_resolver
 
     @property
     def run_artifact_retention_enabled(self) -> bool:
@@ -297,6 +339,7 @@ class ManagedExecutionAdapter:
         *,
         now: datetime | None = None,
         limit: int | None = None,
+        submission_reader: Callable[[str], SubmissionRecord] | None = None,
     ) -> ArtifactRetentionResult:
         """Run one bounded result-retention pass for this trusted scope."""
         from etlantic.runtime.artifact_retention import cleanup_expired_run_artifacts
@@ -308,16 +351,94 @@ class ManagedExecutionAdapter:
                 if self.report_store_factory is not None
                 else managed_report_store(ctx, report_root=self.report_root)
             )
+
+        def resolve(report: PipelineRunReport) -> PipelineRunReport:
+            if self.artifact_report_resolver is not None:
+                return self.artifact_report_resolver(ctx, report)
+            if ARTIFACT_STORAGE_RUN_ID_KEY in report.metadata:
+                return report
+            execution: object = report.metadata.get(
+                "etlantic.control_plane.execution", {}
+            )
+            submission_id = (
+                cast(dict[str, Any], execution).get("submission_id")
+                if isinstance(execution, dict)
+                else None
+            )
+            if isinstance(submission_id, str) and submission_reader is not None:
+                return resolve_managed_artifact_report(
+                    report, submission_reader(submission_id)
+                )
+            if report.intent.value in {"resume", "repair", "backfill"} or submission_id:
+                raise ValueError(
+                    "Legacy managed report requires accepted storage evidence"
+                )
+            return report
+
+        store_factory = self.report_store_factory
         return cleanup_expired_run_artifacts(
             ctx,
             report_store=report_store,
             artifact_root=self.artifact_root,
             retention_seconds=self.run_artifact_retention_seconds,
+            report_resolver=resolve,
+            report_store_factory=(lambda: store_factory(ctx))
+            if store_factory is not None
+            else (lambda: managed_report_store(ctx, report_root=self.report_root)),
             limit=self.artifact_cleanup_batch_size if limit is None else limit,
             now=now,
         )
 
     def __call__(
+        self,
+        ctx: ControlPlaneContext,
+        *,
+        submission: SubmissionRecord,
+        submission_id: str,
+        attempt_id: str,
+        fencing_token: int,
+        recovered_attempt: bool = False,
+        cancel_event: Event | None = None,
+        result_publisher: Callable[[PipelineRunReport], ResultPublicationRecord]
+        | None = None,
+        result_reader: Callable[[], ResultPublicationRecord | None] | None = None,
+    ) -> PipelineRunReport:
+        if submission.submission_id != submission_id:
+            raise ExecutionRejected("Submission identity does not match the lease")
+        ctx = accepted_execution_context(ctx, submission)
+        if not submission.input_snapshot:
+            raise ExecutionRejected(
+                "Accepted submission has no verified execution envelope"
+            )
+        try:
+            envelope = ExecutionEnvelope.from_json(submission.input_snapshot)
+        except Exception as exc:
+            raise ExecutionRejected("Accepted execution envelope is invalid") from exc
+        if envelope.plan_fingerprint != submission.plan_fingerprint:
+            raise ExecutionRejected(
+                "Accepted plan fingerprint does not match submission"
+            )
+        run_id = submission.run_id or legacy_managed_run_id(
+            ctx, submission.idempotency_key, operation=submission.operation
+        )
+        storage_id = managed_artifact_run_id(run_id, envelope.evidence_refs)
+        workspace = managed_artifact_workspace(
+            ctx, storage_id, artifact_root=self.artifact_root
+        )
+        with artifact_workspace_lock(workspace):
+            return self._execute(
+                ctx,
+                submission=submission,
+                submission_id=submission_id,
+                attempt_id=attempt_id,
+                fencing_token=fencing_token,
+                recovered_attempt=recovered_attempt,
+                cancel_event=cancel_event,
+                result_publisher=result_publisher,
+                result_reader=result_reader,
+            )
+
+    def _execute(
         self,
         ctx: ControlPlaneContext,
         *,
@@ -410,7 +531,12 @@ class ManagedExecutionAdapter:
             else managed_report_store(ctx, report_root=self.report_root)
         )
         reports = _ResultRecoveryReportStore(
-            report_store, result_publisher, artifact_run_id=artifact_run_id
+            report_store,
+            result_publisher,
+            artifact_run_id=artifact_run_id,
+            workspace=managed_artifact_workspace(
+                ctx, artifact_run_id, artifact_root=self.artifact_root
+            ),
         )
         try:
             existing = reports.get(run_id)
@@ -437,7 +563,12 @@ class ManagedExecutionAdapter:
             if recovered_publication:
                 execution["result_publication_status"] = "pending"
             metadata["etlantic.control_plane.execution"] = execution
-            existing = replace(existing, metadata=metadata)
+            existing = apply_artifact_expiry(
+                managed_artifact_workspace(
+                    ctx, artifact_run_id, artifact_root=self.artifact_root
+                ),
+                replace(existing, metadata=metadata),
+            )
             if not recovered_publication:
                 reports.put(existing)
             elif result_publisher is not None:
@@ -735,7 +866,11 @@ class ManagedExecutionAdapter:
         return published
 
     def publish_result_publication(
-        self, ctx: ControlPlaneContext, record: ResultPublicationRecord
+        self,
+        ctx: ControlPlaneContext,
+        record: ResultPublicationRecord,
+        *,
+        submission_reader: Callable[[str], SubmissionRecord] | None = None,
     ) -> None:
         """Copy a previously fenced report into the queryable report store."""
         if (record.tenant_id, record.workspace_id) != (
@@ -744,6 +879,21 @@ class ManagedExecutionAdapter:
         ):
             raise ExecutionRejected("Durable run result has an invalid owner scope")
         report = _decode_result_publication(record)
+        if self.artifact_report_resolver is not None:
+            report = self.artifact_report_resolver(ctx, report)
+        elif ARTIFACT_STORAGE_RUN_ID_KEY not in report.metadata:
+            if submission_reader is not None:
+                accepted = submission_reader(record.submission_id)
+                if accepted.input_snapshot:
+                    report = resolve_managed_artifact_report(report, accepted)
+                elif report.intent.value in {"resume", "repair", "backfill"}:
+                    raise ExecutionRejected(
+                        "Legacy lifecycle result has no accepted storage evidence"
+                    )
+            elif report.intent.value in {"resume", "repair", "backfill"}:
+                raise ExecutionRejected(
+                    "Legacy resumed result requires accepted storage evidence"
+                )
         metadata = dict(report.metadata)
         execution: dict[str, Any] = {}
         prior_execution: object = metadata.get("etlantic.control_plane.execution")
@@ -752,12 +902,18 @@ class ManagedExecutionAdapter:
         execution["result_publication_status"] = "published"
         metadata["etlantic.control_plane.execution"] = execution
         report = replace(report, metadata=metadata)
-        report_store = (
-            self.report_store_factory(ctx)
-            if self.report_store_factory is not None
-            else managed_report_store(ctx, report_root=self.report_root)
+        workspace = managed_artifact_workspace(
+            ctx, artifact_storage_run_id(report), artifact_root=self.artifact_root
         )
-        report_store.put(report)
+        with artifact_workspace_lock(workspace):
+            report = apply_artifact_expiry(workspace, report)
+            report_store = (
+                self.report_store_factory(ctx)
+                if self.report_store_factory is not None
+                else managed_report_store(ctx, report_root=self.report_root)
+            )
+            record_artifact_ownership(workspace, report)
+            report_store.put(report)
 
     def _execution_profile(
         self, envelope: ExecutionEnvelope, plan: PlanDocument
@@ -859,10 +1015,12 @@ class _ResultRecoveryReportStore:
         publisher: Callable[[PipelineRunReport], ResultPublicationRecord] | None,
         *,
         artifact_run_id: str,
+        workspace: Path,
     ) -> None:
         self._store = store
         self._publisher = publisher
         self._artifact_run_id = artifact_run_id
+        self._workspace = workspace
 
     def get(self, run_id: str) -> PipelineRunReport | None:
         try:
@@ -883,6 +1041,7 @@ class _ResultRecoveryReportStore:
                 ARTIFACT_STORAGE_RUN_ID_KEY: self._artifact_run_id,
             },
         )
+        record_artifact_ownership(self._workspace, report)
         try:
             self._store.put(report)
         except Exception:

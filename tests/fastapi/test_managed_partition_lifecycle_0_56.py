@@ -383,12 +383,20 @@ def test_managed_repair_and_backfill_execute_selected_postgresql_partitions(
         ended = now - timedelta(days=2)
         reports.put(
             replace(
-                repair_report, started_at=ended - timedelta(minutes=1), ended_at=ended
+                repair_report,
+                started_at=ended - timedelta(minutes=1),
+                ended_at=ended,
+                metadata={
+                    key: value
+                    for key, value in repair_report.metadata.items()
+                    if key != ARTIFACT_STORAGE_RUN_ID_KEY
+                },
             )
         )
         cleanup = cleanup_expired_run_artifacts(
             ctx,
             report_store=reports,
+            report_resolver=lambda report: service.resolve_artifact_report(ctx, report),
             artifact_root=tmp_path / "artifacts",
             retention_seconds=60,
             now=now,

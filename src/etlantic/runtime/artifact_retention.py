@@ -2,20 +2,30 @@
 
 from __future__ import annotations
 
+import hashlib
 import os
+from collections.abc import Callable
 from dataclasses import replace
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
 from typing import Any, cast
 
 from etlantic.control_plane.models import ControlPlaneContext
+from etlantic.reports.file_store import FileReportStore
 from etlantic.reports.model import PipelineRunReport
 from etlantic.reports.retention import (
+    ARTIFACT_STORAGE_RUN_ID_KEY,
     RUN_ARTIFACT_RETENTION_DETAILS_KEY,
     RUN_ARTIFACT_RETENTION_STATE_KEY,
     TERMINAL_RUN_STATUSES,
     ArtifactRetentionResult,
     artifact_storage_run_id,
+)
+from etlantic.runtime.artifact_coordination import (
+    apply_artifact_expiry,
+    artifact_workspace_lock,
+    expire_artifact_reference,
+    retained_artifact_ownership,
 )
 from etlantic.runtime.artifacts import artifact_storage_path
 from etlantic.runtime.managed_execution import managed_artifact_workspace
@@ -31,6 +41,8 @@ def cleanup_expired_run_artifacts(
     retention_seconds: int | None,
     limit: int = 100,
     now: datetime | None = None,
+    report_resolver: Callable[[PipelineRunReport], PipelineRunReport] | None = None,
+    report_store_factory: Callable[[], Any] | None = None,
 ) -> ArtifactRetentionResult:
     """Expire old artifact references and remove files without retained owners.
 
@@ -56,30 +68,86 @@ def cleanup_expired_run_artifacts(
         else current.astimezone(UTC)
     )
     cutoff = current - timedelta(seconds=retention_seconds)
+
+    def inventory() -> list[PipelineRunReport]:
+        # File providers cache their inventory. Reopen inside the workspace
+        # lock so a completed child published by another process is visible.
+        if report_store_factory is not None:
+            return report_store_factory().list()
+        if isinstance(report_store, FileReportStore):
+            return FileReportStore(report_store.root, policy=report_store.policy).list()
+        return report_store.list()
+
+    def normalize(report: PipelineRunReport) -> PipelineRunReport:
+        missing = ARTIFACT_STORAGE_RUN_ID_KEY not in report.metadata
+        resolved = report_resolver(report) if report_resolver is not None else report
+        if (
+            missing
+            and report.intent.value in {"resume", "repair", "backfill"}
+            and ARTIFACT_STORAGE_RUN_ID_KEY not in resolved.metadata
+        ):
+            raise ValueError(
+                "Legacy lifecycle report requires accepted storage evidence"
+            )
+        if (
+            missing
+            and artifact_storage_run_id(resolved) != report.run_id
+            and (
+                report.metadata.get(RUN_ARTIFACT_RETENTION_STATE_KEY) == "complete"
+                or any(
+                    artifact.strategy == "durable" and artifact.status == "expired"
+                    for artifact in report.artifacts
+                )
+            )
+        ):
+            # Old cleanup marked the child directory complete without touching
+            # its actual files. Requeue those references during normalization.
+            resolved = replace(
+                resolved,
+                artifacts=tuple(
+                    replace(artifact, status="available")
+                    if artifact.strategy == "durable"
+                    else artifact
+                    for artifact in resolved.artifacts
+                ),
+                metadata={
+                    **resolved.metadata,
+                    RUN_ARTIFACT_RETENTION_STATE_KEY: "pending",
+                },
+            )
+        return resolved
+
+    def eligible(report: PipelineRunReport) -> bool:
+        ended = report.ended_at
+        if ended is not None and ended.tzinfo is None:
+            ended = ended.replace(tzinfo=UTC)
+        return (
+            report.status.value in TERMINAL_RUN_STATUSES
+            and ended is not None
+            and ended <= cutoff
+            and report.metadata.get(RUN_ARTIFACT_RETENTION_STATE_KEY) != "complete"
+        )
+
     candidates: list[PipelineRunReport] = report_store.list_expired_artifact_reports(
         cutoff=cutoff, limit=limit
     )
+    if (
+        report_resolver is not None
+        or report_store_factory is not None
+        or isinstance(report_store, FileReportStore)
+    ):
+        normalized: list[PipelineRunReport] = [normalize(item) for item in inventory()]
+        candidates = sorted(
+            (report for report in normalized if eligible(report)),
+            key=lambda report: (
+                (report.ended_at or cutoff).replace(tzinfo=UTC)
+                if (report.ended_at or cutoff).tzinfo is None
+                else report.ended_at or cutoff,
+                report.run_id,
+            ),
+        )[:limit]
     if not candidates:
         return ArtifactRetentionResult(enabled=True)
-    # A child and its parent can name the same physical file. Retire an old
-    # report's reference while leaving bytes owned by a still-retained report.
-    protected: set[tuple[str, str]] = set()
-    for retained in report_store.list():
-        ended = retained.ended_at
-        if ended is not None:
-            ended = ended.replace(tzinfo=UTC) if ended.tzinfo is None else ended
-        if (
-            retained.status.value in TERMINAL_RUN_STATUSES
-            and ended is not None
-            and ended <= cutoff
-        ):
-            continue
-        storage_id = artifact_storage_run_id(retained)
-        protected.update(
-            (storage_id, artifact.identity)
-            for artifact in retained.artifacts
-            if artifact.strategy == "durable" and artifact.status != "expired"
-        )
 
     processed_reports = 0
     completed_reports = 0
@@ -87,92 +155,162 @@ def cleanup_expired_run_artifacts(
     failed_artifacts = 0
     touched_artifacts = 0
 
-    for report_index, report in enumerate(candidates):
-        if report.metadata.get(RUN_ARTIFACT_RETENTION_STATE_KEY) == "complete":
-            continue
-
-        metadata = dict(report.metadata)
-        old_details: object = metadata.get(RUN_ARTIFACT_RETENTION_DETAILS_KEY)
-        details: dict[str, Any] = (
-            cast(dict[str, Any], old_details) if isinstance(old_details, dict) else {}
+    busy = False
+    for report_index, candidate in enumerate(candidates):
+        candidate = normalize(candidate)
+        workspace = managed_artifact_workspace(
+            ctx, artifact_storage_run_id(candidate), artifact_root=artifact_root
         )
-        attempts: object = details.get("attempts", 0)
-        attempts = attempts + 1 if type(attempts) is int and attempts >= 0 else 1
-        details.update(
-            {
-                "attempts": attempts,
-                "updated_at": current.isoformat(),
-                "failure_code": None,
-                "failed_artifacts": 0,
-            }
-        )
-        metadata[RUN_ARTIFACT_RETENTION_STATE_KEY] = "running"
-        metadata[RUN_ARTIFACT_RETENTION_DETAILS_KEY] = details
-        working = replace(report, metadata=metadata)
-        report_store.put(working)
-        processed_reports += 1
-
-        report_failed = 0
-        interrupted = False
-        artifacts = list(working.artifacts)
-        for artifact_index, artifact in enumerate(artifacts):
-            if artifact.strategy != "durable" or artifact.status == "expired":
+        with artifact_workspace_lock(workspace, blocking=False) as acquired:
+            if not acquired:
+                busy = True
                 continue
-            if touched_artifacts >= limit:
-                interrupted = True
+            reports = [normalize(item) for item in inventory()]
+            report = next(
+                (item for item in reports if item.run_id == candidate.run_id), None
+            )
+            if report is None or not eligible(report):
+                continue
+            if artifact_storage_run_id(report) != artifact_storage_run_id(candidate):
+                raise ValueError("Artifact workspace changed during cleanup")
+            protected: set[tuple[str, str]] = set()
+            for retained in reports:
+                ended = retained.ended_at
+                if ended is not None and ended.tzinfo is None:
+                    ended = ended.replace(tzinfo=UTC)
+                if (
+                    retained.status.value in TERMINAL_RUN_STATUSES
+                    and ended is not None
+                    and ended <= cutoff
+                ):
+                    continue
+                storage_id = artifact_storage_run_id(retained)
+                if storage_id != artifact_storage_run_id(report):
+                    continue
+                retained = apply_artifact_expiry(workspace, retained)
+                protected.update(
+                    (storage_id, artifact.identity)
+                    for artifact in retained.artifacts
+                    if artifact.strategy == "durable" and artifact.status != "expired"
+                )
+
+            unpublished = retained_artifact_ownership(
+                workspace, cutoff, report_run_ids={item.run_id for item in reports}
+            )
+
+            metadata = dict(report.metadata)
+            old_details: object = metadata.get(RUN_ARTIFACT_RETENTION_DETAILS_KEY)
+            details: dict[str, Any] = (
+                cast(dict[str, Any], old_details)
+                if isinstance(old_details, dict)
+                else {}
+            )
+            attempts: object = details.get("attempts", 0)
+            attempts = attempts + 1 if type(attempts) is int and attempts >= 0 else 1
+            details.update(
+                {
+                    "attempts": attempts,
+                    "updated_at": current.isoformat(),
+                    "failure_code": None,
+                    "failed_artifacts": 0,
+                }
+            )
+            metadata[RUN_ARTIFACT_RETENTION_STATE_KEY] = "running"
+            metadata[RUN_ARTIFACT_RETENTION_DETAILS_KEY] = details
+            working = replace(report, metadata=metadata)
+            report_store.put(working)
+            processed_reports += 1
+
+            report_failed = 0
+            interrupted = False
+            artifacts = list(working.artifacts)
+            old_deferred = details.get("deferred_artifact_ids", [])
+            deferred = (
+                {str(item) for item in cast(list[object], old_deferred)}
+                if isinstance(old_deferred, list)
+                else set[str]()
+            )
+            for artifact_index, artifact in enumerate(artifacts):
+                if artifact.strategy != "durable" or (
+                    artifact.status == "expired" and artifact.identity not in deferred
+                ):
+                    continue
+                if touched_artifacts >= limit:
+                    interrupted = True
+                    break
+
+                touched_artifacts += 1
+                path = artifact_storage_path(workspace, artifact.identity)
+                try:
+                    removed = (
+                        False
+                        if (artifact_storage_run_id(working), artifact.identity)
+                        in protected
+                        or hashlib.sha256(artifact.identity.encode()).hexdigest()
+                        in unpublished
+                        else _remove_artifact_file(path)
+                    )
+                    if removed:
+                        deleted_artifacts += 1
+                    expire_artifact_reference(
+                        workspace, working.run_id, artifact.identity
+                    )
+                except (OSError, RuntimeError, ValueError):
+                    report_failed += 1
+                    failed_artifacts += 1
+                    continue
+
+                if (
+                    hashlib.sha256(artifact.identity.encode()).hexdigest()
+                    in unpublished
+                    and (artifact_storage_run_id(working), artifact.identity)
+                    not in protected
+                ):
+                    deferred.add(artifact.identity)
+                else:
+                    deferred.discard(artifact.identity)
+                artifacts[artifact_index] = replace(artifact, status="expired")
+                metadata = dict(working.metadata)
+                progress = dict(metadata.get(RUN_ARTIFACT_RETENTION_DETAILS_KEY) or {})
+                progress["deferred_artifact_ids"] = sorted(deferred)
+                metadata[RUN_ARTIFACT_RETENTION_DETAILS_KEY] = progress
+                working = replace(
+                    working, artifacts=tuple(artifacts), metadata=metadata
+                )
+                report_store.put(working)
+
+            if interrupted:
+                # Keep the durable running marker so the next bounded pass resumes.
                 break
 
-            touched_artifacts += 1
-            workspace = managed_artifact_workspace(
-                ctx, artifact_storage_run_id(working), artifact_root=artifact_root
+            metadata = dict(working.metadata)
+            details = dict(metadata.get(RUN_ARTIFACT_RETENTION_DETAILS_KEY) or {})
+            details.update(
+                {
+                    "updated_at": current.isoformat(),
+                    "failed_artifacts": report_failed,
+                    "failure_code": (
+                        "filesystem_cleanup_failed" if report_failed else None
+                    ),
+                }
             )
-            path = artifact_storage_path(workspace, artifact.identity)
-            try:
-                removed = (
-                    False
-                    if (artifact_storage_run_id(working), artifact.identity)
-                    in protected
-                    else _remove_artifact_file(path)
-                )
-            except (OSError, RuntimeError, ValueError):
-                report_failed += 1
-                failed_artifacts += 1
-                continue
+            metadata[RUN_ARTIFACT_RETENTION_DETAILS_KEY] = details
+            if report_failed:
+                metadata[RUN_ARTIFACT_RETENTION_STATE_KEY] = "failed"
+            elif deferred:
+                # An unpublished owner's files still need a later physical
+                # cleanup if that owner never reaches the report provider.
+                metadata[RUN_ARTIFACT_RETENTION_STATE_KEY] = "running"
+            else:
+                metadata[RUN_ARTIFACT_RETENTION_STATE_KEY] = "complete"
+                completed_reports += 1
+            report_store.put(replace(working, metadata=metadata))
 
-            if removed:
-                deleted_artifacts += 1
-            artifacts[artifact_index] = replace(artifact, status="expired")
-            working = replace(working, artifacts=tuple(artifacts))
-            report_store.put(working)
+            if touched_artifacts >= limit and report_index + 1 < len(candidates):
+                break
 
-        if interrupted:
-            # Keep the durable running marker so the next bounded pass resumes.
-            break
-
-        metadata = dict(working.metadata)
-        details = dict(metadata.get(RUN_ARTIFACT_RETENTION_DETAILS_KEY) or {})
-        details.update(
-            {
-                "updated_at": current.isoformat(),
-                "failed_artifacts": report_failed,
-                "failure_code": (
-                    "filesystem_cleanup_failed" if report_failed else None
-                ),
-            }
-        )
-        metadata[RUN_ARTIFACT_RETENTION_DETAILS_KEY] = details
-        if report_failed:
-            metadata[RUN_ARTIFACT_RETENTION_STATE_KEY] = "failed"
-        else:
-            metadata[RUN_ARTIFACT_RETENTION_STATE_KEY] = "complete"
-            completed_reports += 1
-        report_store.put(replace(working, metadata=metadata))
-
-        if touched_artifacts >= limit and report_index + 1 < len(candidates):
-            break
-
-    remaining_candidates = bool(
-        report_store.list_expired_artifact_reports(cutoff=cutoff, limit=1)
+    remaining_candidates = busy or any(
+        eligible(normalize(report)) for report in inventory()
     )
 
     return ArtifactRetentionResult(

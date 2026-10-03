@@ -16,6 +16,7 @@ from etlantic.control_plane.durable_models import (
     EffectRecord,
     ExecutionScopePage,
     ResultPublicationRecord,
+    SubmissionRecord,
 )
 from etlantic.control_plane.durable_protocols import DurableWorkStore
 from etlantic.control_plane.errors import ControlPlaneError
@@ -490,14 +491,24 @@ class ExecutionHost:
                 self._queue_retention_retry(key, cleanup_ctx)
         return attempted
 
-    @staticmethod
     def _cleanup_retention_scope(
-        cleanup_artifacts: Callable[[ControlPlaneContext], Any],
+        self,
+        cleanup_artifacts: Callable[..., Any],
         ctx: ControlPlaneContext,
     ) -> bool:
         """Return whether this store still needs a later cleanup pass."""
+
+        def submission_reader(identity: str) -> SubmissionRecord:
+            return self.durable.get_submission(ctx, identity)
+
         try:
-            outcome = cleanup_artifacts(ctx)
+            if _accepts_keyword(cleanup_artifacts, "submission_reader"):
+                outcome = cleanup_artifacts(
+                    ctx,
+                    submission_reader=submission_reader,
+                )
+            else:
+                outcome = cleanup_artifacts(ctx)
         except Exception:
             # Retention has its own durable state and must not block ETL
             # admission when a report store or artifact filesystem is down.
@@ -546,11 +557,22 @@ class ExecutionHost:
         except Exception:
             _LOG.warning("Could not inspect pending run-result publications")
             return
+
+        def read_submission(identity: str) -> SubmissionRecord:
+            return self.durable.get_submission(ctx, identity)
+
         for record in records:
             try:
                 submission = self.durable.get_submission(ctx, record.submission_id)
                 accepted_ctx = accepted_execution_context(ctx, submission)
-                publish(accepted_ctx, record)
+                if _accepts_keyword(publish, "submission_reader"):
+                    publish(
+                        accepted_ctx,
+                        record,
+                        submission_reader=read_submission,
+                    )
+                else:
+                    publish(accepted_ctx, record)
                 self.durable.mark_result_publication_published(
                     ctx,
                     record.submission_id,
