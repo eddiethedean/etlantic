@@ -18,6 +18,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Prepare the core and first-party packages on the lockstep 0.56.0 candidate
   line, with plugin dependency ranges and manifests aligned to that line.
 
+### Fixed
+
+- Recovery of an unreported worker attempt records an unknown execution effect
+  that survives durable-store snapshots and blocks retry until provider
+  reconciliation proves no commit. Confirmed commits remain eligible for an
+  explicit rerun, while pre-execution rejections retain safe retry behavior
+  (#217).
+
 ## [0.55.0] - 2026-09-29
 
 ### Added

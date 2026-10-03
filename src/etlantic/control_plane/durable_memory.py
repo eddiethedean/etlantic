@@ -1669,7 +1669,11 @@ class MemoryDurableWorkStore:
                 existing is not None
                 and existing.status == "unknown"
                 and (
-                    safe_effect.status in {"none", "pending", "not_committed"}
+                    safe_effect.status == "pending"
+                    or (
+                        safe_effect.status in {"none", "not_committed", "failed"}
+                        and not safe_effect.reconciliation_evidence
+                    )
                     or (
                         safe_effect.status == "committed"
                         and not (
@@ -2011,6 +2015,10 @@ class MemoryDurableWorkStore:
                     json.dumps(list(key)): row.to_dict()
                     for key, row in self._attempts.items()
                 },
+                "effects": {
+                    json.dumps(list(key)): row.to_dict()
+                    for key, row in self._effects.items()
+                },
             }
 
     def load(self, payload: Mapping[str, Any]) -> None:
@@ -2036,6 +2044,7 @@ class MemoryDurableWorkStore:
             self._outbox = _rows(payload.get("outbox") or {}, OutboxRecord)
             self._leases = _rows(payload.get("leases") or {}, LeaseRecord)
             self._attempts = _rows(payload.get("attempts") or {}, AttemptRecord)
+            self._effects = _rows(payload.get("effects") or {}, EffectRecord)
 
 
 __all__ = ["MemoryDurableWorkStore"]

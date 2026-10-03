@@ -101,10 +101,10 @@ EXPECTED_DIGESTS = {
     # The durable-work test now guards SQLAlchemy/SQLModel imports before use;
     # the reviewed 9,856 diagnostics are unchanged, with the import location
     # refreshed in this fingerprint.
-    # The benchmark gate selects an Apple Silicon reference on macOS; strict
-    # diagnostics remain unchanged, with fingerprints shifted by the selector.
-    "Darwin": "0a5416ac19e4e1cbbf734b6aec0cc27e3a94ba494ff0f4a9e2f2a8aaa0cd73ca",
-    "Linux": "0a5416ac19e4e1cbbf734b6aec0cc27e3a94ba494ff0f4a9e2f2a8aaa0cd73ca",
+    # Issue #217 shifts durable effect locations and adds typed crash regressions.
+    # Receipt assertions remove three inherited errors; reviewed total: 9,856.
+    "Darwin": "f4cebd02dd2b34c5d46cddf0c3185616db66a761a7ccd783a91b74e612f67321",
+    "Linux": "f4cebd02dd2b34c5d46cddf0c3185616db66a761a7ccd783a91b74e612f67321",
 }
 
 

@@ -351,7 +351,9 @@ class ExecutionHost:
                 processed += 1
                 continue
 
-            if isinstance(runner_error, ExecutionRejected):
+            if _is_preexecution_rejection(
+                runner_error, recovered=bool(previous_attempts)
+            ):
                 self.durable.finish_attempt(
                     ctx,
                     attempt.attempt_id,
@@ -600,6 +602,13 @@ class ExecutionHost:
             owner_id=self.owner_id,
             fencing_token=fencing_token,
         )
+
+
+def _is_preexecution_rejection(error: Exception | None, *, recovered: bool) -> bool:
+    # A rejection by the recovery worker says nothing about the previous
+    # worker's effects. Preserve that uncertainty even if its envelope or
+    # configured authority can no longer be validated.
+    return isinstance(error, ExecutionRejected) and not recovered
 
 
 def unknown_commit_message() -> str:

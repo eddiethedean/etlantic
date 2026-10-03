@@ -431,7 +431,7 @@ class ManagedExecutionAdapter:
             self._publish_report_event(ctx, event_base, existing)
             return existing
         if recovered_attempt:
-            raise ExecutionRejected(
+            raise UnknownCommitError(
                 "A prior worker attempt has no durable report; reconcile its effects before retry"
             )
 
