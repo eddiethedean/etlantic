@@ -71,7 +71,7 @@ from etlantic.profile import Profile, resolve_profile
 from etlantic.registry import BindingDescriptor, PlanningContext
 from etlantic.runtime.action_execution_host import ActionExecutionHost
 from etlantic.runtime.execution_host import ExecutionHost
-from etlantic.runtime.managed_execution import ManagedExecutionAdapter
+from etlantic.runtime.managed_execution import ManagedExecutionAdapter, managed_run_id
 from etlantic.runtime.request import (
     MaterializationPolicy,
     RunRequest,
@@ -199,6 +199,149 @@ def _accepted_envelope(
     record = durable.get_submission(ctx, submission_id)
     assert record.input_snapshot is not None
     return ExecutionEnvelope.from_json(record.input_snapshot)
+
+
+def test_managed_run_identity_is_scoped_to_principal_and_operation(
+    tmp_path: Path,
+) -> None:
+    ctx, authz, _definitions, submissions, _durable, _events, service = _wired(tmp_path)
+    other_principal = replace(ctx, principal=Principal(subject="bob"))
+    authz.grant(other_principal, "run.submit")
+
+    alice = service.submit_run(ctx, "pipe", idempotency_key="shared-key")
+    bob = service.submit_run(other_principal, "pipe", idempotency_key="shared-key")
+
+    assert alice.resource_id != bob.resource_id
+    assert alice.submission_id != bob.submission_id
+    assert (
+        submissions.get_run(ctx, alice.resource_id)["submission_id"]
+        == alice.submission_id
+    )
+    assert (
+        submissions.get_run(other_principal, bob.resource_id)["submission_id"]
+        == bob.submission_id
+    )
+    assert managed_run_id(ctx, "shared-key", operation="run.retry") != alice.resource_id
+    assert managed_run_id(ctx, "run.retry/child") != managed_run_id(
+        ctx, "child", operation="run.retry"
+    )
+
+
+@pytest.mark.parametrize("backend", ["memory", "sqlmodel"])
+def test_managed_reports_preserve_submitter_identity_across_workers_and_readers(
+    tmp_path: Path,
+    backend: str,
+) -> None:
+    ctx, authz, _definitions, _submissions, _durable, _events, service = _wired(
+        tmp_path
+    )
+    engine = None
+    report_store_factory = None
+    if backend == "sqlmodel":
+        pytest.importorskip("etlantic_sqlmodel")
+        from etlantic_sqlmodel.control_plane import (
+            SQLModelDurableWorkStore,
+            SQLModelSubmissionStore,
+            create_control_plane_tables,
+            create_durable_tables,
+            create_run_report_tables,
+            create_sqlite_engine,
+        )
+        from etlantic_sqlmodel.control_plane.report_stores import SqlModelRunReportStore
+
+        engine = create_sqlite_engine(f"sqlite:///{tmp_path / 'identity.db'}")
+        create_control_plane_tables(engine)
+        create_durable_tables(engine)
+        create_run_report_tables(engine)
+        service.submissions = SQLModelSubmissionStore(engine)
+        service.durable_work = SQLModelDurableWorkStore(engine)
+
+        def sqlmodel_reports(caller: ControlPlaneContext) -> Any:
+            return SqlModelRunReportStore(engine, caller)
+
+        report_store_factory = sqlmodel_reports
+        service.report_store_factory = report_store_factory
+
+    source = tmp_path / "source.json"
+    source.write_text('[{"id": 7}]', encoding="utf-8")
+
+    def planning_context(
+        _ctx: ControlPlaneContext, profile: Profile
+    ) -> PlanningContext:
+        planning = PlanningContext.create(profile=profile)
+        planning.registry.register_binding(
+            BindingDescriptor(
+                binding="file-in", provider="json", location=str(source), kind="source"
+            )
+        )
+        planning.registry.register_binding(
+            BindingDescriptor(
+                binding="file-out",
+                provider="csv",
+                location=str(tmp_path / "output.csv"),
+                kind="sink",
+            )
+        )
+        return planning
+
+    service.planning_context_factory = planning_context
+    service.register_definition(
+        ctx,
+        "identity-pipe",
+        pipeline_to_dict(definition_from_pipeline(ManagedFilePipeline)),
+    )
+    bob = replace(ctx, principal=Principal("bob", issuer="submitters", kind="workload"))
+    authz.grant(bob, "run.submit")
+    authz.grant(bob, "run.report")
+    receipts = [
+        service.submit_run(
+            caller,
+            "identity-pipe",
+            idempotency_key="shared-key",
+            request=RunRequest(metadata={"submitter": caller.principal.subject}),
+        )
+        for caller in (ctx, bob)
+    ]
+    runner = ManagedExecutionAdapter(
+        report_root=tmp_path / "reports", report_store_factory=report_store_factory
+    )
+    try:
+        worker = replace(
+            ctx, principal=Principal("worker", issuer="workers", kind="service")
+        )
+        assert ExecutionHost(service.durable_work, runner=runner).tick(worker) == 2
+        recovery_worker = replace(worker, principal=Principal("recovery-worker"))
+        for receipt in receipts:
+            recovered = runner(
+                recovery_worker,
+                submission=service.durable_work.get_submission(
+                    ctx, receipt.submission_id
+                ),
+                submission_id=receipt.submission_id,
+                attempt_id="recovered-attempt",
+                fencing_token=1,
+                recovered_attempt=True,
+            )
+            assert recovered.run_id == receipt.resource_id
+            assert (
+                recovered.metadata["etlantic.control_plane.execution"]["submission_id"]
+                == receipt.submission_id
+            )
+        for reader in (ctx, bob):
+            for receipt in receipts:
+                report = service.get_run_report(reader, receipt.resource_id)
+                assert report["status"] == "succeeded"
+                assert report["run_id"] == receipt.resource_id
+                assert (
+                    report["metadata"]["etlantic.control_plane.execution"][
+                        "submission_id"
+                    ]
+                    == receipt.submission_id
+                )
+        assert receipts[0].resource_id != receipts[1].resource_id
+    finally:
+        if engine is not None:
+            engine.dispose()
 
 
 def test_managed_schedule_trigger_uses_pinned_managed_admission(
