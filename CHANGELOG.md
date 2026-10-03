@@ -20,6 +20,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- Lifecycle commands reconcile lost durable acceptance acknowledgements before
+  returning a receipt. Uncertain acceptance returns a typed unavailable error
+  and preserves the receipt and immutable input leases for same-key recovery;
+  only confirmed rejection permits compensation (#218).
 - Recovery of an unreported worker attempt records an unknown execution effect
   that survives durable-store snapshots and blocks retry until provider
   reconciliation proves no commit. Recovery preserves confirmed commits and

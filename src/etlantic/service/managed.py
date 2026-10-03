@@ -2488,39 +2488,17 @@ class ManagedApplicationService:
             resource_id=managed_run_id(ctx, idempotency_key, operation=operation),
             operation=operation,
         )
-        try:
-            self._accept_child_durable(
-                ctx,
-                idempotency_key=idempotency_key,
-                operation=operation,
-                envelope=envelope,
-                submission_id=receipt_result.receipt.submission_id,
-                run_id=receipt_result.receipt.resource_id
-                or managed_run_id(ctx, idempotency_key, operation=operation),
-            )
-        except Exception as exc:
-            if receipt_result.created:
-                try:
-                    record, changed = self._cancel_cp1(
-                        ctx, receipt_result.receipt.resource_id
-                    )
-                    if changed or record.get("status") == "cancelled":
-                        self._release_input_lease(ctx, input_lease_id)
-                except Exception:
-                    pass
-            if isinstance(exc, ControlPlaneError):
-                raise
-                raise ControlPlaneError(
-                    "Durable lifecycle command acceptance failed; no receipt was returned",
-                    code="PMCP503",
-                    status=503,
-                    title="Service Unavailable",
-                    type="etlantic.control_plane/unavailable",
-                    extensions={
-                        "submission_id": receipt_result.receipt.submission_id,
-                        "compensated": receipt_result.created,
-                    },
-                ) from exc
+        self._accept_child_durable(
+            ctx,
+            idempotency_key=idempotency_key,
+            operation=operation,
+            envelope=envelope,
+            submission_id=receipt_result.receipt.submission_id,
+            run_id=receipt_result.receipt.resource_id
+            or managed_run_id(ctx, idempotency_key, operation=operation),
+            compensate_on_rejection=receipt_result.created,
+            input_lease_id=input_lease_id,
+        )
         if receipt_result.created and self.events is not None:
             with suppress(Exception):
                 self.events.append(
@@ -2544,20 +2522,75 @@ class ManagedApplicationService:
         envelope: ExecutionEnvelope,
         submission_id: str,
         run_id: str,
+        compensate_on_rejection: bool = False,
+        input_lease_id: str | None = None,
     ) -> SubmissionRecord:
-        row, _created = self.durable_work.accept(
-            ctx,
-            idempotency_key=idempotency_key,
-            operation=operation,
-            plan_fingerprint=envelope.plan_fingerprint,
-            revision_id=envelope.revision_id,
-            plugin_fingerprint=envelope.plugin_fingerprint,
-            policy_fingerprint=envelope.policy_fingerprint,
-            input_snapshot=envelope.to_json(),
-            submission_id=submission_id,
-            run_id=run_id,
-        )
-        return row
+        try:
+            row, _created = self.durable_work.accept(
+                ctx,
+                idempotency_key=idempotency_key,
+                operation=operation,
+                plan_fingerprint=envelope.plan_fingerprint,
+                revision_id=envelope.revision_id,
+                plugin_fingerprint=envelope.plugin_fingerprint,
+                policy_fingerprint=envelope.policy_fingerprint,
+                input_snapshot=envelope.to_json(),
+                submission_id=submission_id,
+                run_id=run_id,
+            )
+            return row
+        except Exception as exc:
+            # Acceptance and its outbox may have committed before the provider
+            # lost the acknowledgement. Reconcile the scoped command identity
+            # before cancelling a receipt or releasing its immutable inputs.
+            recovered: SubmissionRecord | None = None
+            reconciliation_available = False
+            with suppress(Exception):
+                recovered = self.durable_work.get_submission_by_idempotency(
+                    ctx, idempotency_key=idempotency_key, operation=operation
+                )
+                reconciliation_available = True
+            if recovered is not None:
+                if (
+                    recovered.submission_id != submission_id
+                    or recovered.operation != operation
+                    or recovered.input_snapshot != envelope.to_json()
+                    or (recovered.run_id is not None and recovered.run_id != run_id)
+                ):
+                    raise ControlPlaneError.conflict(
+                        "Durable lifecycle acceptance conflicts with the CP1 receipt"
+                    ) from exc
+                return recovered
+
+            definite_rejection = (
+                reconciliation_available
+                and isinstance(exc, ControlPlaneError)
+                and exc.status < 500
+            )
+            compensated = False
+            if compensate_on_rejection and definite_rejection:
+                try:
+                    record, changed = self._cancel_cp1(ctx, run_id)
+                    compensated = changed or record.get("status") == "cancelled"
+                    if compensated:
+                        self._release_input_lease(ctx, input_lease_id)
+                except Exception:
+                    pass
+            if definite_rejection:
+                raise
+            raise ControlPlaneError(
+                "Durable lifecycle acceptance acknowledgement is uncertain; retry "
+                "the same idempotency key to reconcile",
+                code="PMCP503",
+                status=503,
+                title="Service Unavailable",
+                type="etlantic.control_plane/unavailable",
+                extensions={
+                    "submission_id": submission_id,
+                    "acceptance_uncertain": True,
+                    "compensated": compensated,
+                },
+            ) from exc
 
     def cancel_run(self, ctx: ControlPlaneContext, run_id: str) -> dict[str, Any]:
         """Request cancellation through the same authorized service as HTTP."""
