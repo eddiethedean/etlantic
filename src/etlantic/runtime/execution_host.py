@@ -313,15 +313,14 @@ class ExecutionHost:
             if self.cancel_check is not None and self.cancel_check(
                 ctx, item.submission_id
             ):
-                self.durable.finish_attempt(
+                self._finish_cancelled_attempt(
                     ctx,
-                    attempt.attempt_id,
-                    owner_id=self.owner_id,
+                    submission_id=item.submission_id,
+                    outbox_id=item.outbox_id,
+                    attempt_id=attempt.attempt_id,
                     fencing_token=lease.fencing_token,
-                    status="cancelled",
+                    recovered=bool(previous_attempts),
                 )
-                self.durable.mark_published(ctx, item.outbox_id)
-                self._release_lease(ctx, item.submission_id, lease.fencing_token)
                 processed += 1
                 continue
             stop_monitor, cancel_event, lease_lost, monitor_thread = (
@@ -449,6 +448,47 @@ class ExecutionHost:
             self._release_lease(ctx, item.submission_id, lease.fencing_token)
             processed += 1
         return processed
+
+    def _finish_cancelled_attempt(
+        self,
+        ctx: ControlPlaneContext,
+        *,
+        submission_id: str,
+        outbox_id: str,
+        attempt_id: str,
+        fencing_token: int,
+        recovered: bool,
+    ) -> None:
+        if recovered:
+            try:
+                effect = self.durable.get_effect(ctx, f"{submission_id}:execution")
+            except ControlPlaneError as exc:
+                if exc.status != 404:
+                    raise
+                effect = None
+            # A confirmed commit is already fenced against retry. Cancellation
+            # must preserve that stronger evidence instead of downgrading it.
+            if (
+                effect is None
+                or effect.status != "committed"
+                or not effect.authoritative
+                or effect.submission_id != submission_id
+            ):
+                self._record_unknown_effect(
+                    ctx,
+                    submission_id,
+                    attempt_id=attempt_id,
+                    fencing_token=fencing_token,
+                )
+        self.durable.finish_attempt(
+            ctx,
+            attempt_id,
+            owner_id=self.owner_id,
+            fencing_token=fencing_token,
+            status="cancelled",
+        )
+        self.durable.mark_published(ctx, outbox_id)
+        self._release_lease(ctx, submission_id, fencing_token)
 
     def _retry_retention_scopes(
         self, cleanup_artifacts: Callable[[ControlPlaneContext], Any], *, budget: int

@@ -101,10 +101,10 @@ EXPECTED_DIGESTS = {
     # The durable-work test now guards SQLAlchemy/SQLModel imports before use;
     # the reviewed 9,856 diagnostics are unchanged, with the import location
     # refreshed in this fingerprint.
-    # Issue #217 shifts durable effect locations and adds typed crash regressions.
-    # Receipt assertions remove three inherited errors; reviewed total: 9,856.
-    "Darwin": "f4cebd02dd2b34c5d46cddf0c3185616db66a761a7ccd783a91b74e612f67321",
-    "Linux": "f4cebd02dd2b34c5d46cddf0c3185616db66a761a7ccd783a91b74e612f67321",
+    # Issue #217 scopes recovery effects and requires authoritative reconciliation.
+    # The follow-up adds no diagnostics; reviewed strict total remains 9,856.
+    "Darwin": "349eaaefe960eb641706fee312688793fb319b94fb4301173fae3bd10e5548bc",
+    "Linux": "349eaaefe960eb641706fee312688793fb319b94fb4301173fae3bd10e5548bc",
 }
 
 

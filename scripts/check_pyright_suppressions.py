@@ -33,7 +33,7 @@ from pathlib import Path
 # inventory is re-pinned after source-line shifts.
 # Issue #217 preserves unknown effects through recovery and store snapshots.
 # No suppression changed; the 784-entry inventory is re-pinned after line shifts.
-EXPECTED_DIGEST = "67d4dc1bec1b57d9737573b8bebdb668fdcd5e294a59fc66f7a8544f3a5fd7e2"
+EXPECTED_DIGEST = "5794e45f7cb7706fe23a6ada7e0efffb9266424c942d8d74ef9de94a227705a0"
 
 _IGNORED_DIRECTORIES = frozenset(
     {

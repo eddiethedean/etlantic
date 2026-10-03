@@ -1636,6 +1636,10 @@ class MemoryDurableWorkStore:
                 else None
             ),
         )
+        reconciliation_proven = bool(
+            (safe_effect.reconciliation_evidence or "").strip()
+        )
+        idempotency_proven = bool((safe_effect.idempotency_evidence or "").strip())
         with self._lock:
             submission_key = (*_scope(ctx), safe_effect.submission_id)
             submission = self._submissions.get(submission_key)
@@ -1657,6 +1661,18 @@ class MemoryDurableWorkStore:
                     )
                 self._require_lease(submission_key, owner_id, fencing_token)
             existing = self._effects.get((*_scope(ctx), safe_effect.effect_id))
+            if existing is not None and (
+                existing.submission_id != safe_effect.submission_id
+            ):
+                raise ControlPlaneError.conflict(
+                    "External effect submission identity cannot be changed"
+                )
+            if existing is not None and (
+                existing.authoritative != safe_effect.authoritative
+            ):
+                raise ControlPlaneError.conflict(
+                    "External effect authority cannot be changed"
+                )
             if (
                 existing is not None
                 and existing.status == "committed"
@@ -1672,14 +1688,11 @@ class MemoryDurableWorkStore:
                     safe_effect.status == "pending"
                     or (
                         safe_effect.status in {"none", "not_committed", "failed"}
-                        and not safe_effect.reconciliation_evidence
+                        and not reconciliation_proven
                     )
                     or (
                         safe_effect.status == "committed"
-                        and not (
-                            safe_effect.reconciliation_evidence
-                            or safe_effect.idempotency_evidence
-                        )
+                        and not (reconciliation_proven or idempotency_proven)
                     )
                 )
             ):

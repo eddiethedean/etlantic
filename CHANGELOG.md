@@ -25,6 +25,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   reconciliation proves no commit. Confirmed commits remain eligible for an
   explicit rerun, while pre-execution rejections retain safe retry behavior
   (#217).
+- Recovery cancellation preserves unknown effects. Reconciliation requires
+  nonblank evidence and cannot change an existing effect's submission identity
+  or authority (#217).
 
 ## [0.55.0] - 2026-09-29
 
