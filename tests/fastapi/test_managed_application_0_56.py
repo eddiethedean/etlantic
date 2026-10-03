@@ -7,6 +7,7 @@ import asyncio
 import json
 from collections.abc import Mapping
 from concurrent.futures import ThreadPoolExecutor
+from dataclasses import replace
 from datetime import UTC, datetime
 from pathlib import Path
 from threading import Barrier, Event, Thread
@@ -70,7 +71,7 @@ from etlantic.profile import Profile, resolve_profile
 from etlantic.registry import BindingDescriptor, PlanningContext
 from etlantic.runtime.action_execution_host import ActionExecutionHost
 from etlantic.runtime.execution_host import ExecutionHost
-from etlantic.runtime.managed_execution import ManagedExecutionAdapter
+from etlantic.runtime.managed_execution import ManagedExecutionAdapter, managed_run_id
 from etlantic.runtime.request import (
     MaterializationPolicy,
     RunRequest,
@@ -198,6 +199,32 @@ def _accepted_envelope(
     record = durable.get_submission(ctx, submission_id)
     assert record.input_snapshot is not None
     return ExecutionEnvelope.from_json(record.input_snapshot)
+
+
+def test_managed_run_identity_is_scoped_to_principal_and_operation(
+    tmp_path: Path,
+) -> None:
+    ctx, authz, _definitions, submissions, _durable, _events, service = _wired(tmp_path)
+    other_principal = replace(ctx, principal=Principal(subject="bob"))
+    authz.grant(other_principal, "run.submit")
+
+    alice = service.submit_run(ctx, "pipe", idempotency_key="shared-key")
+    bob = service.submit_run(other_principal, "pipe", idempotency_key="shared-key")
+
+    assert alice.resource_id != bob.resource_id
+    assert alice.submission_id != bob.submission_id
+    assert (
+        submissions.get_run(ctx, alice.resource_id)["submission_id"]
+        == alice.submission_id
+    )
+    assert (
+        submissions.get_run(other_principal, bob.resource_id)["submission_id"]
+        == bob.submission_id
+    )
+    assert managed_run_id(ctx, "shared-key", operation="run.retry") != alice.resource_id
+    assert managed_run_id(ctx, "run.retry/child") != managed_run_id(
+        ctx, "child", operation="run.retry"
+    )
 
 
 def test_managed_schedule_trigger_uses_pinned_managed_admission(

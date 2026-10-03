@@ -4,6 +4,7 @@
 from __future__ import annotations
 
 from concurrent.futures import ThreadPoolExecutor
+from dataclasses import replace
 from pathlib import Path
 
 import pytest
@@ -22,6 +23,7 @@ from etlantic.control_plane import (
     TenantRef,
     WorkspaceRef,
 )
+from etlantic.runtime.managed_execution import managed_run_id
 from etlantic_sqlmodel.control_plane import (
     SQLModelDefinitionRepository,
     SqlModelEventStore,
@@ -64,6 +66,42 @@ def test_sqlite_restart_preserves_accept(tmp_path: Path) -> None:
     assert found.submission_id == first.receipt.submission_id
     run = store2.get_run(ctx, first.receipt.resource_id or first.receipt.submission_id)
     assert run["status"] == "accepted"
+
+
+def test_sqlite_acceptance_keeps_same_key_isolated_by_principal(
+    tmp_path: Path,
+) -> None:
+    engine = create_sqlite_engine(f"sqlite:///{tmp_path / 'cp-principal-scope.db'}")
+    create_control_plane_tables(engine)
+    store = SQLModelSubmissionStore(engine)
+    alice = _ctx()
+    bob = replace(alice, principal=Principal(subject="bob"))
+
+    alice_run_id = managed_run_id(alice, "shared-key")
+    bob_run_id = managed_run_id(bob, "shared-key")
+    alice_result = store.accept(
+        alice,
+        idempotency_key="shared-key",
+        payload={"definition_id": "pipe", "owner": "alice"},
+        resource_id=alice_run_id,
+    )
+    bob_result = store.accept(
+        bob,
+        idempotency_key="shared-key",
+        payload={"definition_id": "pipe", "owner": "bob"},
+        resource_id=bob_run_id,
+    )
+
+    assert alice_run_id != bob_run_id
+    assert alice_result.receipt.submission_id != bob_result.receipt.submission_id
+    assert (
+        store.get_run(alice, alice_run_id)["submission_id"]
+        == alice_result.receipt.submission_id
+    )
+    assert (
+        store.get_run(bob, bob_run_id)["submission_id"]
+        == bob_result.receipt.submission_id
+    )
 
 
 def test_sqlite_event_store_restart(tmp_path: Path) -> None:

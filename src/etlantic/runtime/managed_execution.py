@@ -74,17 +74,22 @@ def managed_run_id(
     *,
     operation: str = "run.submit",
 ) -> str:
-    parts = [
-        ctx.security_domain.domain_id,
-        ctx.tenant.tenant_id,
-        ctx.workspace.workspace_id,
-    ]
-    # Preserve established run.submit identities while isolating lifecycle
-    # commands that reuse the same idempotency key in another operation scope.
-    if operation != "run.submit":
-        parts.append(operation)
-    parts.append(idempotency_key)
-    scope = "/".join(parts)
+    # Encode the complete idempotency scope with unambiguous component
+    # boundaries. The principal and operation are part of the caller's
+    # idempotency identity, so they must also distinguish managed run IDs.
+    scope = json.dumps(
+        [
+            ctx.security_domain.domain_id,
+            ctx.tenant.tenant_id,
+            ctx.workspace.workspace_id,
+            ctx.principal.to_dict(),
+            operation,
+            idempotency_key,
+        ],
+        ensure_ascii=False,
+        separators=(",", ":"),
+        sort_keys=True,
+    )
     return "run-" + _scope_fragment(scope)
 
 
