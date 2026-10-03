@@ -213,6 +213,43 @@ class ActionExecutionHost:
                 self._finish_timeout(ctx, job)
                 processed += 1
                 continue
+            if isinstance(
+                typed_request,
+                (ConnectorProvisionRequest, ConnectorProvisionCleanupRequest),
+            ):
+                # Worker-only controls are never accepted from or persisted in
+                # the public action request.
+                request["_deadline_at"] = job.deadline_at
+
+                def retain_effect(
+                    result: Mapping[str, Any],
+                    effect_request: ConnectorProvisionRequest
+                    | ConnectorProvisionCleanupRequest = typed_request,
+                    effect_job: ActionJobRecord = job,
+                    effect_ctx: ControlPlaneContext = action_ctx,
+                    parent_effect: Mapping[str, Any] | None = provision_effect,
+                ) -> None:
+                    valid = (
+                        self._valid_provision_effect(
+                            effect_request, effect_job.action_id, result
+                        )
+                        if isinstance(effect_request, ConnectorProvisionRequest)
+                        else self._valid_cleanup_effect(
+                            effect_request, effect_job.action_id, parent_effect, result
+                        )
+                    )
+                    if not valid:
+                        raise ValueError("invalid late action effect receipt")
+                    self.durable.finish_action_job(
+                        effect_ctx,
+                        effect_job.action_id,
+                        worker_id=self.worker_id,
+                        fencing_token=effect_job.fencing_token,
+                        status="succeeded",
+                        result=self._bounded_result(result),
+                    )
+
+                request["_retain_effect"] = retain_effect
             try:
                 result = asyncio.run(
                     asyncio.wait_for(handler(action_ctx, request), timeout=remaining)
@@ -596,14 +633,25 @@ class ActionExecutionHost:
         return safe_result
 
     def _finish_timeout(self, ctx: ControlPlaneContext, job: ActionJobRecord) -> None:
-        self.durable.finish_action_job(
-            ctx,
-            job.action_id,
-            worker_id=self.worker_id,
-            fencing_token=job.fencing_token,
-            status="timed_out",
-            error_code="deadline_exceeded",
-        )
+        try:
+            self.durable.finish_action_job(
+                ctx,
+                job.action_id,
+                worker_id=self.worker_id,
+                fencing_token=job.fencing_token,
+                status="timed_out",
+                error_code="deadline_exceeded",
+            )
+        except ControlPlaneError as exc:
+            # A late verified effect may have finalized the same fenced job
+            # while its deadline handler was unwinding.
+            current = self.durable.get_action_job(ctx, job.action_id)
+            if not (
+                exc.status == 409
+                and current.fencing_token == job.fencing_token
+                and current.status in {"timed_out", "cancelled"}
+            ):
+                raise
 
     async def _catalog_page(
         self, _ctx: ControlPlaneContext, request: Mapping[str, Any]

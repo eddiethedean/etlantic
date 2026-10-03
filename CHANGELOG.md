@@ -20,6 +20,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- SQL provision and cleanup actions propagate deadlines to database work, abort
+  expired transactions, and keep workers responsive during blocked provider IO.
+  Verified committed effects remain available after a timeout; same-key recovery
+  reconciles uncertain effects before authorized compensation (#219).
 - Lifecycle commands reconcile lost durable acceptance acknowledgements before
   returning a receipt. Durable admission failures preserve shared receipts and
   immutable input leases for same-key recovery, including concurrent callers;

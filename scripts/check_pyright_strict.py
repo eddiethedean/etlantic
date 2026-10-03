@@ -103,8 +103,10 @@ EXPECTED_DIGESTS = {
     # refreshed in this fingerprint.
     # Issue #217 scopes recovery effects and requires authoritative reconciliation.
     # The follow-up adds no diagnostics; reviewed strict total remains 9,856.
-    "Darwin": "349eaaefe960eb641706fee312688793fb319b94fb4301173fae3bd10e5548bc",
-    "Linux": "349eaaefe960eb641706fee312688793fb319b94fb4301173fae3bd10e5548bc",
+    # Issue #219 adds no shadow diagnostics; normalized debt is unchanged
+    # at 9,856. Existing diagnostic source locations moved.
+    "Darwin": "d6109287c2548d9894ecc62a45e824af2040788cbed9ffd674df7580ba4799bb",
+    "Linux": "d6109287c2548d9894ecc62a45e824af2040788cbed9ffd674df7580ba4799bb",
 }
 
 

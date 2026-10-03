@@ -561,6 +561,26 @@ class MemoryDurableWorkStore:
                     raise ControlPlaneError.conflict(
                         "Action idempotency key reuse has different inputs"
                     )
+                if (
+                    prior.action
+                    in {"connector.provision", "connector.provision.cleanup"}
+                    and prior.result_json is None
+                    and prior.status in {"timed_out", "failed"}
+                    and prior.error_code
+                    in {"deadline_exceeded", "action_failed", "provider_timeout"}
+                ):
+                    # Explicit same-key recovery keeps the provider action ID
+                    # and immutable intent. The next claim obtains a new fence
+                    # and recovers the registry before attempting create-only IO.
+                    prior = replace(
+                        prior,
+                        status="queued",
+                        phase="queued",
+                        deadline_at=deadline_at,
+                        completed_at=None,
+                        error_code=None,
+                    )
+                    self._action_jobs[(*_scope(ctx), prior_id)] = prior
                 return deepcopy(prior)
             record = ActionJobRecord(
                 action_id=f"act-{uuid.uuid4().hex[:24]}",
@@ -879,6 +899,36 @@ class MemoryDurableWorkStore:
             row = self._action_jobs.get(key)
             if row is None:
                 raise ControlPlaneError.not_found("Action job not found")
+            retains_effect = (
+                row.action in {"connector.provision", "connector.provision.cleanup"}
+                and status == "succeeded"
+                and result is not None
+                and result_ttl_seconds is None
+            )
+            effect_json = (
+                json.dumps(
+                    redact_control_plane_payload(dict(result or {})),
+                    sort_keys=True,
+                    separators=(",", ":"),
+                    allow_nan=False,
+                )
+                if retains_effect
+                else None
+            )
+            if (
+                row.status in {"timed_out", "cancelled"}
+                and row.fencing_token == fencing_token
+                and row.started_at is not None
+                and retains_effect
+            ):
+                # An effect receipt describes a committed mutation, not a
+                # successful deadline outcome. Preserve the terminal outcome
+                # while making the exact fenced effect available for cleanup.
+                if row.result_json is not None and row.result_json != effect_json:
+                    raise ControlPlaneError.conflict("Action effect receipt conflicts")
+                finished = replace(row, result_json=effect_json)
+                self._action_jobs[key] = finished
+                return deepcopy(finished)
             if (
                 row.status not in {"running", "cancel_requested"}
                 or row.worker_id != worker_id
@@ -895,7 +945,7 @@ class MemoryDurableWorkStore:
                     completed_at=_iso(current),
                     worker_id=None,
                     lease_expires_at=None,
-                    result_json=None,
+                    result_json=effect_json,
                     result_expires_at=None,
                     error_code=None,
                 )
@@ -922,6 +972,7 @@ class MemoryDurableWorkStore:
                     worker_id=None,
                     lease_expires_at=None,
                     error_code="deadline_exceeded",
+                    result_json=effect_json,
                 )
             else:
                 if status == "succeeded":
