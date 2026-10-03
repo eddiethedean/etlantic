@@ -2496,8 +2496,6 @@ class ManagedApplicationService:
             submission_id=receipt_result.receipt.submission_id,
             run_id=receipt_result.receipt.resource_id
             or managed_run_id(ctx, idempotency_key, operation=operation),
-            compensate_on_rejection=receipt_result.created,
-            input_lease_id=input_lease_id,
         )
         if receipt_result.created and self.events is not None:
             with suppress(Exception):
@@ -2522,8 +2520,6 @@ class ManagedApplicationService:
         envelope: ExecutionEnvelope,
         submission_id: str,
         run_id: str,
-        compensate_on_rejection: bool = False,
-        input_lease_id: str | None = None,
     ) -> SubmissionRecord:
         try:
             row, _created = self.durable_work.accept(
@@ -2542,7 +2538,7 @@ class ManagedApplicationService:
         except Exception as exc:
             # Acceptance and its outbox may have committed before the provider
             # lost the acknowledgement. Reconcile the scoped command identity
-            # before cancelling a receipt or releasing its immutable inputs.
+            # before returning the original receipt.
             recovered: SubmissionRecord | None = None
             reconciliation_available = False
             with suppress(Exception):
@@ -2562,21 +2558,16 @@ class ManagedApplicationService:
                     ) from exc
                 return recovered
 
-            definite_rejection = (
+            # Even a successful absence lookup cannot fence another caller
+            # from accepting this shared command immediately afterwards. Keep
+            # its CP1 receipt and input leases available for same-key recovery;
+            # configured input retention bounds their eventual cleanup.
+            provider_rejected = (
                 reconciliation_available
                 and isinstance(exc, ControlPlaneError)
                 and exc.status < 500
             )
-            compensated = False
-            if compensate_on_rejection and definite_rejection:
-                try:
-                    record, changed = self._cancel_cp1(ctx, run_id)
-                    compensated = changed or record.get("status") == "cancelled"
-                    if compensated:
-                        self._release_input_lease(ctx, input_lease_id)
-                except Exception:
-                    pass
-            if definite_rejection:
+            if provider_rejected:
                 raise
             raise ControlPlaneError(
                 "Durable lifecycle acceptance acknowledgement is uncertain; retry "
@@ -2588,7 +2579,7 @@ class ManagedApplicationService:
                 extensions={
                     "submission_id": submission_id,
                     "acceptance_uncertain": True,
-                    "compensated": compensated,
+                    "compensated": False,
                 },
             ) from exc
 

@@ -3,9 +3,11 @@
 from __future__ import annotations
 
 import hashlib
+from concurrent.futures import ThreadPoolExecutor
 from dataclasses import dataclass, replace
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
+from threading import Event, get_ident
 from typing import Any, cast
 
 import pytest
@@ -293,9 +295,7 @@ def test_lifecycle_acceptance_reconciles_without_cancelling_committed_work(
     receipt = app.submissions.lookup_idempotency(app.ctx, key, operation=operation)
     assert receipt is not None and receipt.resource_id is not None
     cp1 = app.submissions.get_run(app.ctx, receipt.resource_id)
-    assert cp1["status"] == (
-        "cancel_requested" if failure == "rejected" else "accepted"
-    )
+    assert cp1["status"] == "accepted"
     child = lookup(app.ctx, idempotency_key=key, operation=operation)
     assert (child is not None) is committed
     assert len(app.durable.pending_outbox(app.ctx)) == int(committed)
@@ -306,10 +306,6 @@ def test_lifecycle_acceptance_reconciles_without_cancelling_committed_work(
     ]
     assert len(accepted_events) == int(recovered)
     lease_id = _child_lease(app, key, operation)
-    if failure == "rejected":
-        with pytest.raises(ControlPlaneError):
-            app.inputs.read_leased(app.ctx, app.reference, lease_id=lease_id)
-        return
     assert (
         app.inputs.read_leased(app.ctx, app.reference, lease_id=lease_id) == b"id\n7\n"
     )
@@ -318,7 +314,7 @@ def test_lifecycle_acceptance_reconciles_without_cancelling_committed_work(
         with pytest.raises(ControlPlaneError) as replay_error:
             _command(app, command, key)
         assert replay_error.value.status == (
-            409 if failure == "rejected_lookup" else 503
+            409 if failure in {"rejected", "rejected_lookup"} else 503
         )
         assert (
             app.submissions.get_run(app.ctx, receipt.resource_id)["status"]
@@ -416,3 +412,114 @@ def test_lifecycle_acceptance_rejects_conflicting_reconciliation_receipt(
     monkeypatch.setattr(app.durable, "accept", accept)
     monkeypatch.setattr(app.durable, "get_submission_by_idempotency", lookup)
     assert _command(app, "rerun", "conflicting-child") == receipt
+
+
+@pytest.mark.parametrize(
+    "store_kind", ["memory", pytest.param("sqlmodel", marks=pytest.mark.sqlmodel)]
+)
+@pytest.mark.parametrize(
+    "command", ["retry", "rerun", "replay", "resume", "repair", "backfill"]
+)
+@pytest.mark.parametrize("commit_timing", ["during_lookup", "after_error"])
+def test_rejected_caller_preserves_concurrently_accepted_child_and_inputs(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    store_kind: str,
+    command: str,
+    commit_timing: str,
+) -> None:
+    app = _application(tmp_path, store_kind)
+
+    def qualified_provider(
+        _self: ManagedApplicationService, _snapshot: str, *, operation: str
+    ) -> str | None:
+        return None
+
+    monkeypatch.setattr(
+        ManagedApplicationService, "_partition_action_block_reason", qualified_provider
+    )
+    accept, lookup = app.durable.accept, app.durable.get_submission_by_idempotency
+    first_thread_id: int | None = None
+    rejected, absent_observed, first_finished, child_accepted, second_started = (
+        Event(),
+        Event(),
+        Event(),
+        Event(),
+        Event(),
+    )
+
+    def reject_first_caller(*args: Any, **kwargs: Any) -> tuple[SubmissionRecord, bool]:
+        if get_ident() == first_thread_id:
+            rejected.set()
+            raise ControlPlaneError.conflict("transient durable admission conflict")
+        return accept(*args, **kwargs)
+
+    def pause_absence_lookup(*args: Any, **kwargs: Any) -> SubmissionRecord | None:
+        row = lookup(*args, **kwargs)
+        if get_ident() == first_thread_id and rejected.is_set():
+            assert row is None
+            absent_observed.set()
+            if commit_timing == "during_lookup":
+                assert child_accepted.wait(10)
+        return row
+
+    monkeypatch.setattr(app.durable, "accept", reject_first_caller)
+    monkeypatch.setattr(
+        app.durable, "get_submission_by_idempotency", pause_absence_lookup
+    )
+
+    def first_caller() -> int:
+        nonlocal first_thread_id
+        first_thread_id = get_ident()
+        assert second_started.wait(10)
+        try:
+            with pytest.raises(ControlPlaneError) as error:
+                _command(app, command, "concurrent-child")
+            return error.value.status
+        finally:
+            first_finished.set()
+
+    def second_caller() -> AcceptReceipt:
+        second_started.set()
+        assert absent_observed.wait(10)
+        if commit_timing == "after_error":
+            assert first_finished.wait(10)
+        try:
+            return _command(app, command, "concurrent-child")
+        finally:
+            child_accepted.set()
+
+    with ThreadPoolExecutor(max_workers=2) as executor:
+        first = executor.submit(first_caller)
+        second = executor.submit(second_caller)
+        assert first.result(timeout=20) == 409
+        receipt = second.result(timeout=20)
+    assert receipt.resource_id is not None
+    assert app.submissions.get_run(app.ctx, receipt.resource_id)["status"] == "accepted"
+    operation = f"run.{command}"
+    child = lookup(app.ctx, idempotency_key="concurrent-child", operation=operation)
+    assert child is not None and child.status == "accepted"
+    assert child.submission_id == receipt.submission_id
+    assert len(app.durable.pending_outbox(app.ctx)) == 1
+    lease_id = _child_lease(app, "concurrent-child", operation)
+    assert (
+        app.inputs.read_leased(app.ctx, app.reference, lease_id=lease_id) == b"id\n7\n"
+    )
+    monkeypatch.setattr(app.durable, "accept", accept)
+    monkeypatch.setattr(app.durable, "get_submission_by_idempotency", lookup)
+    assert _command(app, command, "concurrent-child") == receipt
+    if command not in {"repair", "backfill"}:
+        host = ExecutionHost(
+            app.durable,
+            owner_id="child-worker",
+            runner=ManagedExecutionAdapter(
+                report_root=tmp_path / "reports", input_resource_store=app.inputs
+            ),
+        )
+        assert host.tick(app.ctx) == 1
+        assert (
+            app.service.get_run_status(app.ctx, receipt.resource_id)["status"]
+            == "completed"
+        )
+        assert app.target.read_text().splitlines() == ["id", "7"]
+        assert host.tick(app.ctx) == 0
