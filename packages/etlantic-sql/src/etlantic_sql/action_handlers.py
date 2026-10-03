@@ -6,7 +6,11 @@ import asyncio
 import hashlib
 import json
 import re
+import threading
 from collections.abc import Callable, Mapping
+from concurrent.futures import Future
+from contextlib import suppress
+from datetime import UTC, datetime
 from typing import Any, cast
 
 from sqlalchemy import (
@@ -317,27 +321,56 @@ def create_action_handlers(resolve_engine: EngineResolver) -> dict[str, ActionHa
     lifecycle remain outside action requests and receipts.
     """
 
+    # One abandoned operation must not create an unbounded executor backlog.
+    slot = threading.BoundedSemaphore(1)
+
+    async def invoke(
+        ctx: ControlPlaneContext, request: Mapping[str, Any], *, cleanup: bool
+    ) -> Mapping[str, Any]:
+        operation = _ActionOperation(request)
+        while not slot.acquire(blocking=False):
+            operation.check()
+            await asyncio.sleep(0.01)
+        future: Future[Mapping[str, Any]] = Future()
+        operation.future = future
+
+        def run() -> None:
+            try:
+                operation.check()
+                engine = resolve_engine(ctx, str(request["connection_id"]))
+                operation.check()
+                result = _execute(engine, ctx, request, operation, cleanup=cleanup)
+            except BaseException as exc:
+                slot.release()
+                future.set_exception(exc)
+            else:
+                slot.release()
+                future.set_result(result)
+            operation.retain_if_cancelled()
+
+        threading.Thread(target=run, name="etlantic-sql-action", daemon=True).start()
+        wrapped = asyncio.wrap_future(future)
+
+        def consume_result(completed: asyncio.Future[Mapping[str, Any]]) -> None:
+            if not completed.cancelled():
+                completed.exception()
+
+        wrapped.add_done_callback(consume_result)
+        try:
+            return await asyncio.shield(wrapped)
+        except asyncio.CancelledError:
+            operation.cancel()
+            raise
+
     async def provision(
         ctx: ControlPlaneContext, request: Mapping[str, Any]
     ) -> Mapping[str, Any]:
-        engine = resolve_engine(ctx, str(request["connection_id"]))
-        return await asyncio.to_thread(
-            _provision,
-            engine,
-            ctx,
-            request,
-        )
+        return await invoke(ctx, request, cleanup=False)
 
     async def cleanup(
         ctx: ControlPlaneContext, request: Mapping[str, Any]
     ) -> Mapping[str, Any]:
-        engine = resolve_engine(ctx, str(request["connection_id"]))
-        return await asyncio.to_thread(
-            _cleanup,
-            engine,
-            ctx,
-            request,
-        )
+        return await invoke(ctx, request, cleanup=True)
 
     return {
         "connector.provision": provision,
@@ -345,30 +378,181 @@ def create_action_handlers(resolve_engine: EngineResolver) -> dict[str, ActionHa
     }
 
 
-def _provision(
-    engine: Engine,
-    ctx: ControlPlaneContext,
-    request: Mapping[str, Any],
-) -> dict[str, Any]:
-    metadata = MetaData()
-    registry = _registry(metadata)
-    metadata.create_all(engine, tables=[registry], checkfirst=True)
-    with engine.begin() as connection:
-        return _create_table_effect(
-            connection,
-            engine=engine,
-            ctx=ctx,
-            request=request,
+class _ActionOperation:
+    def __init__(self, request: Mapping[str, Any]) -> None:
+        value = request.get("_deadline_at")
+        self.deadline = (
+            datetime.fromisoformat(str(value).replace("Z", "+00:00"))
+            if value is not None
+            else None
         )
+        if self.deadline is not None and self.deadline.tzinfo is None:
+            raise ValueError("SQL action deadline must be timezone aware")
+        callback = request.get("_retain_effect")
+        self.retain = (
+            cast(Callable[[Mapping[str, Any]], None], callback)
+            if callable(callback)
+            else None
+        )
+        self.cancelled = threading.Event()
+        self.lock = threading.Lock()
+        self.driver_lock = threading.Lock()
+        self.driver: Any = None
+        self.future: Future[Mapping[str, Any]] = Future()
+        self.retained = False
+
+    def check(self) -> None:
+        if self.cancelled.is_set() or (
+            self.deadline is not None and datetime.now(UTC) >= self.deadline
+        ):
+            raise TimeoutError("SQL action deadline exceeded")
+
+    def cancel(self) -> None:
+        self.cancelled.set()
+
+        def interrupt() -> None:
+            # Keep the connection out of the pool until cancellation completes;
+            # a delayed cancel must never target its next borrower.
+            with self.driver_lock:
+                if self.driver is not None:
+                    callback = getattr(self.driver, "cancel", None) or getattr(
+                        self.driver, "interrupt", None
+                    )
+                    if callable(callback):
+                        with suppress(Exception):
+                            callback()
+
+        threading.Thread(
+            target=interrupt, name="etlantic-sql-cancel", daemon=True
+        ).start()
+        self.retain_if_cancelled()
+
+    def retain_if_cancelled(self) -> None:
+        with self.lock:
+            if not self.cancelled.is_set() or not self.future.done() or self.retained:
+                return
+            self.retained = True
+        try:
+            result = self.future.result()
+        except BaseException:
+            return
+        if self.retain is not None:
+            # A stale worker cannot publish through a newer fencing token.
+            with suppress(Exception):
+                self.retain(result)
 
 
-def _cleanup(
+def _execute(
     engine: Engine,
     ctx: ControlPlaneContext,
     request: Mapping[str, Any],
+    operation: _ActionOperation,
+    *,
+    cleanup: bool,
 ) -> dict[str, Any]:
-    with engine.begin() as connection:
-        return _remove_table_effect(connection, ctx=ctx, request=request)
+    if engine.dialect.name not in {"postgresql", "sqlite"}:
+        raise ValueError("SQL provisioning dialect is unsupported")
+    operation.check()
+    result: dict[str, Any] | None = None
+    try:
+        with engine.connect() as connection:
+            with operation.driver_lock:
+                operation.driver = connection.connection.driver_connection
+            try:
+                operation.check()
+                if engine.dialect.name == "postgresql":
+                    # An application-owned engine may use AUTOCOMMIT. Retain
+                    # its database isolation level while requiring a real
+                    # transaction for DDL and the effect registry.
+                    connection.execution_options(
+                        isolation_level=connection.get_isolation_level()
+                    )
+                    operation.check()
+                with connection.begin():
+                    if engine.dialect.name == "sqlite":
+                        # SQLite's legacy transaction mode otherwise commits
+                        # DDL independently of rollback and the registry.
+                        connection.exec_driver_sql("BEGIN")
+                    elif operation.deadline is not None:
+                        milliseconds = max(
+                            1,
+                            int(
+                                (operation.deadline - datetime.now(UTC)).total_seconds()
+                                * 1000
+                            ),
+                        )
+                        connection.exec_driver_sql(
+                            f"SET LOCAL statement_timeout = {milliseconds}"
+                        )
+                        connection.exec_driver_sql(
+                            f"SET LOCAL lock_timeout = {milliseconds}"
+                        )
+                    operation.check()
+                    result = (
+                        _remove_table_effect(connection, ctx=ctx, request=request)
+                        if cleanup
+                        else _create_table_effect(
+                            connection, engine=engine, ctx=ctx, request=request
+                        )
+                    )
+                    operation.check()
+                # Return the receipt only after the actual transaction commit.
+                return result
+            finally:
+                with operation.driver_lock:
+                    operation.driver = None
+    except Exception:
+        # COMMIT acknowledgement loss is not proof of rollback. Verify the
+        # effect with a fresh, bounded read before discarding its receipt.
+        if result is not None and _committed_effect(
+            engine, ctx, request, result, cleanup=cleanup
+        ):
+            return result
+        raise
+
+
+def _committed_effect(
+    engine: Engine,
+    ctx: ControlPlaneContext,
+    request: Mapping[str, Any],
+    result: Mapping[str, Any],
+    *,
+    cleanup: bool,
+) -> bool:
+    registry = _registry(MetaData())
+    with engine.connect() as connection:
+        if engine.dialect.name == "postgresql":
+            connection.execution_options(
+                isolation_level=connection.get_isolation_level()
+            )
+            connection.exec_driver_sql("SET LOCAL statement_timeout = 1000")
+            connection.exec_driver_sql("SET LOCAL lock_timeout = 1000")
+        if not inspect(connection).has_table(_REGISTRY_NAME):
+            return False
+        row = (
+            connection.execute(
+                select(registry).where(
+                    registry.c.connection_id == request["connection_id"],
+                    registry.c.resource_id == request["resource_id"],
+                )
+            )
+            .mappings()
+            .first()
+        )
+        if row is None:
+            return False
+        return (
+            row["scope_id"] == _scope_id(ctx)
+            and row["provider"] == "postgresql"
+            and row["provision_action_id"]
+            == request["provision_action_id" if cleanup else "action_id"]
+            and row["effect_id"] == result["effect_id"]
+            and row["schema_fingerprint"] == request["schema_fingerprint"]
+            and row["target_kind"] == "table"
+            and row["state"] == ("removed" if cleanup else "created")
+            and inspect(connection).has_table(str(request["resource_id"]))
+            is not cleanup
+        )
 
 
 __all__ = ["EngineResolver", "create_action_handlers"]

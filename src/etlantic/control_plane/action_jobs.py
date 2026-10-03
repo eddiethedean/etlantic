@@ -516,7 +516,7 @@ def verify_provision_parent(
     if (
         parent.action_id != request.provision_action_id
         or parent.action != "connector.provision"
-        or parent.status != "succeeded"
+        or parent.status not in {"succeeded", "timed_out", "cancelled"}
         or parent.result_json is None
         or parent.tenant_id != ctx.tenant.tenant_id
         or parent.workspace_id != ctx.workspace.workspace_id

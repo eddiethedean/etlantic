@@ -33,7 +33,9 @@ from pathlib import Path
 # inventory is re-pinned after source-line shifts.
 # Issue #217 preserves unknown effects through recovery and store snapshots.
 # No suppression changed; the 784-entry inventory is re-pinned after line shifts.
-EXPECTED_DIGEST = "5794e45f7cb7706fe23a6ada7e0efffb9266424c942d8d74ef9de94a227705a0"
+# Issue #219 retains fenced late action effects; existing suppression locations
+# shift, with no directives added or removed (784 entries).
+EXPECTED_DIGEST = "7539d452f435aad54eec7c0b5502479e9e77825f0bf763408ab0a2d35495b913"
 
 _IGNORED_DIRECTORIES = frozenset(
     {

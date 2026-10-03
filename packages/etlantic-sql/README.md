@@ -139,12 +139,29 @@ Provisioning is create-only. The handler accepts only a typed table schema
 with safe identifiers, refuses an existing unmanaged table, and records the
 action ID, owner scope, schema fingerprint and effect ID in the same database.
 Retries of one accepted action recover the recorded receipt instead of
-recreating the table. Cleanup requires the worker-verified successful parent
+recreating the table. Cleanup requires a worker-verified committed parent
 provision receipt and removes only that exact effect; its tombstone makes a
 cleanup retry idempotent. The action factory performs no database writes when
 constructed, and the Foundry storage inspection handler remains read-only.
 The SQLite-backed unit case and isolated PostgreSQL loopback qualification
 exercise create-only conflict, receipt recovery and compensation.
+
+The worker deadline covers the SQL transaction. PostgreSQL actions use local
+statement and lock timeouts, driver cancellation, and a deadline check before
+commit. SQLite qualification uses an explicit transaction so rollback also
+removes DDL. Provider work uses a bounded dedicated daemon thread rather than
+asyncio's shutdown-blocking default executor. Each handler factory permits one
+SQL operation at a time; a settling operation cannot create an unbounded queue
+of database threads. Keep the application-owned engine alive until its pending
+operation settles.
+
+A confirmed commit retains its verified effect receipt even if acknowledgement
+arrives after the action deadline. The action remains `timed_out`, and that
+receipt can authorize cleanup. If an execution timeout or provider failure has
+no verified receipt, resubmit the identical action with its original idempotency
+key and a new deadline. The action keeps its ID, obtains a new worker fence, and
+recovers its effect registry before create-only provisioning or cleanup. Unknown
+effects never authorize cleanup without the matching verified receipt.
 
 | Capability | Source | Sink | Storage | Notes |
 |---|:---:|:---:|:---:|---|

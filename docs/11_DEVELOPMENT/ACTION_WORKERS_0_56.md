@@ -74,10 +74,30 @@ positive create and cleanup flags or the receipt fails with
 `invalid_effect_receipt`. The typed schema rejects nullable primary-key
 columns. Provisioning must not implement replace, alter, or implicit create
 behavior for inspection actions. `connector.provision.cleanup` requires
-a successfully completed provision action owned by the same caller and an
+a verified committed provision receipt owned by the same caller and an
 exact match on provider, connection, resource, schema, and effect receipt.
 Cleanup handlers receive that verified effect id; their response must prove
 which provision action was compensated and that the effect was removed.
+
+For provision and cleanup, worker-only `_deadline_at` and `_retain_effect`
+controls accompany the handler request; they are never accepted from clients or
+persisted in the request JSON. A provider that confirms a commit after coroutine
+cancellation can publish its receipt through `_retain_effect`. The host repeats
+effect validation and result bounds, and the durable store preserves the receipt
+only for the matching worker fence. Confirmed effect receipts survive a timeout
+without changing its terminal status and can authorize compensation. Preview
+and other action payloads remain unavailable after timeout.
+
+An explicit same-key resubmission renews the deadline for provision or cleanup
+that timed out or failed during provider execution without a verified receipt.
+The immutable intent and action ID stay fixed; the next worker claim advances
+the fence. Providers must reconcile that action ID before performing create-only
+or idempotent cleanup work. Completed receipts and authorization, validation, or
+receipt-validation failures remain idempotent and are not renewed. The built-in
+SQL handlers bound database statements, cancel active operations and check the
+deadline before commit; uncertain commit acknowledgements are reconciled with
+the owned effect registry. A blocked database call cannot hold the host through
+asyncio executor shutdown.
 
 Receipts are idempotent by caller, action, and idempotency key, and list/query
 operations remain scoped to the tenant, workspace, owner, environment, and
