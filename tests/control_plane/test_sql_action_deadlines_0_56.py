@@ -13,6 +13,9 @@ from time import monotonic
 from typing import Any, cast
 
 import pytest
+
+pytest.importorskip("sqlalchemy")
+
 from sqlalchemy import create_engine, event, inspect, text
 from sqlalchemy.engine import Engine
 
@@ -240,6 +243,8 @@ def test_committed_effect_remains_verifiable_after_timeout_and_next_job(
 ) -> None:
     reopen: Callable[[], DurableWorkStore] | None = None
     if store_kind == "sqlmodel":
+        pytest.importorskip("sqlmodel")
+
         from etlantic_sqlmodel.control_plane import (
             SQLModelDurableWorkStore,
             create_sqlite_engine,
