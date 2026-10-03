@@ -18,6 +18,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Prepare the core and first-party packages on the lockstep 0.56.0 candidate
   line, with plugin dependency ranges and manifests aligned to that line.
 
+### Fixed
+
+- Recovery of an unreported worker attempt records an unknown execution effect
+  that survives durable-store snapshots and blocks retry until provider
+  reconciliation proves no commit. Recovery preserves confirmed commits and
+  finalizes the attempt even when provider confirmation arrives concurrently,
+  allowing an explicit rerun. Pre-execution rejections retain safe retry
+  behavior (#217).
+- Recovery cancellation preserves unknown effects. Reconciliation requires
+  nonblank evidence and cannot change an existing effect's submission identity
+  or authority (#217).
+
 ## [0.55.0] - 2026-09-29
 
 ### Added

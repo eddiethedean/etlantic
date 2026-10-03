@@ -31,9 +31,9 @@ from pathlib import Path
 # AC #230 bounds paginated scope scans with a high watermark so a full retry
 # queue cannot stall discovery. No suppression was added or removed; the
 # inventory is re-pinned after source-line shifts.
-# AC #216 scopes managed run IDs to full principal authority. No suppression
-# was added or removed; the 784-entry inventory is re-pinned after line shifts.
-EXPECTED_DIGEST = "2391b92110f0f6410f1dc8be13f25ef2366dd8757f5df20d94fbde8790da975d"
+# Issue #217 preserves unknown effects through recovery and store snapshots.
+# No suppression changed; the 784-entry inventory is re-pinned after line shifts.
+EXPECTED_DIGEST = "5794e45f7cb7706fe23a6ada7e0efffb9266424c942d8d74ef9de94a227705a0"
 
 _IGNORED_DIRECTORIES = frozenset(
     {

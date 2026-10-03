@@ -211,6 +211,8 @@ def test_managed_run_identity_is_scoped_to_principal_and_operation(
     alice = service.submit_run(ctx, "pipe", idempotency_key="shared-key")
     bob = service.submit_run(other_principal, "pipe", idempotency_key="shared-key")
 
+    assert alice.resource_id is not None
+    assert bob.resource_id is not None
     assert alice.resource_id != bob.resource_id
     assert alice.submission_id != bob.submission_id
     assert (
@@ -329,6 +331,7 @@ def test_managed_reports_preserve_submitter_identity_across_workers_and_readers(
             )
         for reader in (ctx, bob):
             for receipt in receipts:
+                assert receipt.resource_id is not None
                 report = service.get_run_report(reader, receipt.resource_id)
                 assert report["status"] == "succeeded"
                 assert report["run_id"] == receipt.resource_id

@@ -2326,6 +2326,8 @@ class ManagedApplicationService:
             if exc.status == 404:
                 return None
             raise
+        if effect.submission_id != submission_id or not effect.authoritative:
+            return "effect_requires_reconciliation"
         if effect.status in {"none", "not_committed", "failed", "committed"}:
             return None
         return "effect_requires_reconciliation"
@@ -2340,6 +2342,8 @@ class ManagedApplicationService:
                 # A failed attempt rejected before execution has no effect row.
                 return None
             raise
+        if effect.submission_id != submission_id or not effect.authoritative:
+            return "effect_requires_reconciliation"
         if effect.status in {"none", "not_committed", "failed"}:
             return None
         return "effect_requires_reconciliation"

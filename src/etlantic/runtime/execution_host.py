@@ -313,15 +313,14 @@ class ExecutionHost:
             if self.cancel_check is not None and self.cancel_check(
                 ctx, item.submission_id
             ):
-                self.durable.finish_attempt(
+                self._finish_cancelled_attempt(
                     ctx,
-                    attempt.attempt_id,
-                    owner_id=self.owner_id,
+                    submission_id=item.submission_id,
+                    outbox_id=item.outbox_id,
+                    attempt_id=attempt.attempt_id,
                     fencing_token=lease.fencing_token,
-                    status="cancelled",
+                    recovered=bool(previous_attempts),
                 )
-                self.durable.mark_published(ctx, item.outbox_id)
-                self._release_lease(ctx, item.submission_id, lease.fencing_token)
                 processed += 1
                 continue
             stop_monitor, cancel_event, lease_lost, monitor_thread = (
@@ -351,7 +350,9 @@ class ExecutionHost:
                 processed += 1
                 continue
 
-            if isinstance(runner_error, ExecutionRejected):
+            if _is_preexecution_rejection(
+                runner_error, recovered=bool(previous_attempts)
+            ):
                 self.durable.finish_attempt(
                     ctx,
                     attempt.attempt_id,
@@ -448,6 +449,33 @@ class ExecutionHost:
             processed += 1
         return processed
 
+    def _finish_cancelled_attempt(
+        self,
+        ctx: ControlPlaneContext,
+        *,
+        submission_id: str,
+        outbox_id: str,
+        attempt_id: str,
+        fencing_token: int,
+        recovered: bool,
+    ) -> None:
+        if recovered:
+            self._record_unknown_effect(
+                ctx,
+                submission_id,
+                attempt_id=attempt_id,
+                fencing_token=fencing_token,
+            )
+        self.durable.finish_attempt(
+            ctx,
+            attempt_id,
+            owner_id=self.owner_id,
+            fencing_token=fencing_token,
+            status="cancelled",
+        )
+        self.durable.mark_published(ctx, outbox_id)
+        self._release_lease(ctx, submission_id, fencing_token)
+
     def _retry_retention_scopes(
         self, cleanup_artifacts: Callable[[ControlPlaneContext], Any], *, budget: int
     ) -> set[object]:
@@ -542,21 +570,41 @@ class ExecutionHost:
         attempt_id: str,
         fencing_token: int,
     ) -> None:
-        self.durable.record_attempt_effect(
-            ctx,
-            EffectRecord(
-                effect_id=f"{submission_id}:execution",
-                submission_id=submission_id,
-                tenant_id=ctx.tenant.tenant_id,
-                workspace_id=ctx.workspace.workspace_id,
-                status="unknown",
-                recorded_at=datetime.now(UTC).isoformat(),
-                authoritative=True,
-            ),
-            attempt_id=attempt_id,
-            owner_id=self.owner_id,
-            fencing_token=fencing_token,
-        )
+        effect_id = f"{submission_id}:execution"
+        try:
+            self.durable.record_attempt_effect(
+                ctx,
+                EffectRecord(
+                    effect_id=effect_id,
+                    submission_id=submission_id,
+                    tenant_id=ctx.tenant.tenant_id,
+                    workspace_id=ctx.workspace.workspace_id,
+                    status="unknown",
+                    recorded_at=datetime.now(UTC).isoformat(),
+                    authoritative=True,
+                ),
+                attempt_id=attempt_id,
+                owner_id=self.owner_id,
+                fencing_token=fencing_token,
+            )
+        except ControlPlaneError as exc:
+            if exc.status != 409:
+                raise
+            # A provider may confirm the prior commit before or during recovery.
+            # Preserve that stronger receipt, including a concurrent update that
+            # rejected this write; attempt finalization still checks the lease.
+            try:
+                existing = self.durable.get_effect(ctx, effect_id)
+            except ControlPlaneError as lookup_error:
+                if lookup_error.status == 404:
+                    raise exc from None
+                raise
+            if (
+                existing.status != "committed"
+                or not existing.authoritative
+                or existing.submission_id != submission_id
+            ):
+                raise
 
     def _record_report_effect(
         self,
@@ -600,6 +648,13 @@ class ExecutionHost:
             owner_id=self.owner_id,
             fencing_token=fencing_token,
         )
+
+
+def _is_preexecution_rejection(error: Exception | None, *, recovered: bool) -> bool:
+    # A rejection by the recovery worker says nothing about the previous
+    # worker's effects. Preserve that uncertainty even if its envelope or
+    # configured authority can no longer be validated.
+    return isinstance(error, ExecutionRejected) and not recovered
 
 
 def unknown_commit_message() -> str:
