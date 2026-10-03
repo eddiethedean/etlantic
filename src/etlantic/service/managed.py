@@ -60,11 +60,16 @@ from etlantic.plan.serialize import plan_from_json, verify_plan_fingerprint
 from etlantic.profile import Profile, resolve_profile
 from etlantic.registry import PlanningContext
 from etlantic.reports.model import PipelineRunReport
-from etlantic.reports.retention import RUN_ARTIFACT_RETENTION_STATE_KEY
+from etlantic.reports.retention import (
+    ARTIFACT_STORAGE_RUN_ID_KEY,
+    RUN_ARTIFACT_RETENTION_STATE_KEY,
+    artifact_storage_run_id,
+)
 from etlantic.runtime.artifacts import artifact_storage_path
 from etlantic.runtime.logging import redact_message
 from etlantic.runtime.managed_execution import (
     legacy_managed_run_id,
+    managed_artifact_run_id,
     managed_artifact_workspace,
     managed_report_store,
     managed_run_id,
@@ -2013,7 +2018,9 @@ class ManagedApplicationService:
                 "parent_run_id": run_id,
                 "parent_submission_id": parent_submission_id,
                 "checkpoint_id": checkpoint_id,
-                "artifact_parent_run_id": run_id,
+                "artifact_parent_run_id": managed_artifact_run_id(
+                    run_id, envelope.evidence_refs
+                ),
             }
         )
         resumed = ExecutionEnvelope.from_dict(
@@ -2247,7 +2254,9 @@ class ManagedApplicationService:
         )
         if checkpoint_id:
             evidence_refs["checkpoint_id"] = checkpoint_id
-            evidence_refs["artifact_parent_run_id"] = run_id
+            evidence_refs["artifact_parent_run_id"] = managed_artifact_run_id(
+                run_id, parent_envelope.evidence_refs
+            )
         child_envelope = ExecutionEnvelope.from_dict(
             {**child_envelope.to_dict(), "evidence_refs": evidence_refs}
         )
@@ -2840,6 +2849,23 @@ class ManagedApplicationService:
                 status=500,
                 title="Internal Server Error",
             )
+        # Legacy resumed reports predate the storage tag. Recover it from the
+        # immutable accepted envelope, never from a caller-supplied path.
+        if ARTIFACT_STORAGE_RUN_ID_KEY not in result.metadata:
+            evidence = (
+                self._parse_envelope(durable.input_snapshot).evidence_refs or {}
+                if durable.input_snapshot
+                else {}
+            )
+            result = replace(
+                result,
+                metadata={
+                    **result.metadata,
+                    ARTIFACT_STORAGE_RUN_ID_KEY: managed_artifact_run_id(
+                        result.run_id, evidence
+                    ),
+                },
+            )
         return record, result
 
     def get_run_lineage(self, ctx: ControlPlaneContext, run_id: str) -> dict[str, Any]:
@@ -3059,7 +3085,7 @@ class ManagedApplicationService:
                 else "disabled"
             )
         workspace = managed_artifact_workspace(
-            ctx, run_id, artifact_root=self.artifact_root
+            ctx, artifact_storage_run_id(report_model), artifact_root=self.artifact_root
         )
         for artifact in artifacts:
             identity = str(artifact.get("identity") or "")
@@ -3078,7 +3104,10 @@ class ManagedApplicationService:
             strategy = artifact.get("strategy", "output")
             path = artifact_storage_path(workspace, identity)
             content_available = (
-                strategy == "durable" and path.is_file() and not path.is_symlink()
+                strategy == "durable"
+                and artifact.get("status") != "expired"
+                and path.is_file()
+                and not path.is_symlink()
             )
             items.append(
                 {
@@ -3122,6 +3151,7 @@ class ManagedApplicationService:
                 for item in report_model.to_dict().get("artifacts", [])
                 if item.get("identity") == artifact_id
                 and item.get("strategy") == "durable"
+                and item.get("status") != "expired"
             ),
             None,
         )
@@ -3129,7 +3159,7 @@ class ManagedApplicationService:
             raise ControlPlaneError.not_found("Run artifact not found")
 
         workspace = managed_artifact_workspace(
-            ctx, run_id, artifact_root=self.artifact_root
+            ctx, artifact_storage_run_id(report_model), artifact_root=self.artifact_root
         )
         path = artifact_storage_path(workspace, artifact_id)
         if path.is_symlink() or not path.is_file():

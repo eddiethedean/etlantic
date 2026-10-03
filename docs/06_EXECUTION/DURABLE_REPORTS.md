@@ -47,6 +47,25 @@ Choose a directory with appropriate access control. Reports are designed to be
 secret-free, but they can contain pipeline identities, diagnostics, artifact
 references, and operational metadata.
 
+## Managed artifact workspaces
+
+Managed resume and checkpoint-backed repair can use their parent's artifact
+workspace while retaining a distinct child run ID. Their reports record the
+storage run ID in `etlantic.control_plane.artifact_storage_run_id` before the
+first durable report write, including the result-publication fallback. Chained
+resumes preserve that workspace identity. Listing, download, and artifact
+retention resolve the same workspace inside the accepted tenant, workspace,
+and security domain; the metadata contains no filesystem path or credentials.
+
+Artifact retention expires each report's references separately from its run
+status. A file shared with a still-retained report remains on disk until its
+last retained reference expires. An expired reference cannot download that
+file, even while another report retains it. Cleanup continues to limit the
+number of artifacts touched per pass and records failures for later retry.
+Reference checks use the scoped report provider's current report inventory.
+Legacy ordinary reports default to their own run workspace; managed queries
+recover an absent storage tag from the immutable accepted execution envelope.
+
 ## CLI process boundaries
 
 Use `--ephemeral` when you intentionally want process-local report storage

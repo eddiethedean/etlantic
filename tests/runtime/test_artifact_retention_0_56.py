@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from collections.abc import Callable
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
 from typing import Any
@@ -311,3 +312,127 @@ def test_disabled_artifact_cleanup_does_not_open_a_report_store() -> None:
     )
     assert result.enabled is False
     assert result.processed_reports == 0
+
+
+@pytest.mark.parametrize("young_run", ["parent", "child"])
+@pytest.mark.parametrize(
+    "store_kind",
+    ["memory", "file", pytest.param("sqlmodel", marks=pytest.mark.sqlmodel)],
+)
+def test_shared_artifacts_survive_until_the_last_retained_reference_expires(
+    tmp_path: Path, young_run: str, store_kind: str
+) -> None:
+    from dataclasses import replace
+
+    from etlantic.reports.file_store import FileReportStore
+    from etlantic.reports.retention import ARTIFACT_STORAGE_RUN_ID_KEY
+
+    ctx = _ctx()
+    now = datetime(2026, 1, 2, tzinfo=UTC)
+    reopen: Callable[[], Any] | None = None
+    if store_kind == "sqlmodel":
+        pytest.importorskip("sqlalchemy")
+        pytest.importorskip("sqlmodel")
+        from etlantic_sqlmodel.control_plane import (
+            SqlModelRunReportStore,
+            create_sqlite_engine,
+        )
+        from etlantic_sqlmodel.migrations import apply_migrations
+
+        engine = create_sqlite_engine(f"sqlite:///{tmp_path / 'reports.db'}")
+        apply_migrations(engine)
+        store = SqlModelRunReportStore(engine, ctx)
+
+        def reopen_store() -> Any:
+            return SqlModelRunReportStore(engine, ctx)
+
+        reopen = reopen_store
+    elif store_kind == "file":
+        store = FileReportStore(tmp_path / "reports")
+    else:
+        store = ReportStore()
+    root = tmp_path / "artifacts"
+    shared = _write_artifact(ctx, root, "parent", "shared")
+    unrelated = _write_artifact(ctx, root, "unrelated", "shared")
+    for run_id in ("parent", "child", "unrelated"):
+        report = _report(
+            run_id,
+            ended_at=now if run_id == young_run else now - timedelta(days=2),
+            artifacts=(ArtifactResult("shared", "output", "durable"),),
+        )
+        if run_id == "child":
+            report = replace(report, metadata={ARTIFACT_STORAGE_RUN_ID_KEY: "parent"})
+        store.put(report)
+
+    first = cleanup_expired_run_artifacts(
+        ctx,
+        report_store=store,
+        artifact_root=root,
+        retention_seconds=60,
+        limit=1,
+        now=now,
+    )
+    assert first.completed_reports == 1
+    assert shared.exists()
+    # Complete the other old report, even with a one-artifact deletion budget.
+    cleanup_expired_run_artifacts(
+        ctx,
+        report_store=store,
+        artifact_root=root,
+        retention_seconds=60,
+        limit=1,
+        now=now,
+    )
+    assert shared.exists() and not unrelated.exists()
+    old_run = "child" if young_run == "parent" else "parent"
+    expired = store.get(old_run)
+    retained = store.get(young_run)
+    assert expired is not None and expired.artifacts[0].status == "expired"
+    assert retained is not None and retained.artifacts[0].status == "available"
+    if store_kind == "file":
+        store = FileReportStore(tmp_path / "reports")
+    elif reopen is not None:
+        store = reopen()
+    last = cleanup_expired_run_artifacts(
+        ctx,
+        report_store=store,
+        artifact_root=root,
+        retention_seconds=60,
+        limit=1,
+        now=now + timedelta(days=1),
+    )
+    assert last.deleted_artifacts == 1 and last.completed_reports == 1
+    assert not shared.exists()
+    assert last.remaining_candidates is False
+
+
+def test_invalid_storage_identity_never_marks_files_cleaned(tmp_path: Path) -> None:
+    from dataclasses import replace
+
+    from etlantic.reports.retention import ARTIFACT_STORAGE_RUN_ID_KEY
+
+    ctx = _ctx()
+    now = datetime(2026, 1, 2, tzinfo=UTC)
+    path = _write_artifact(ctx, tmp_path, "invalid", "result")
+    report = replace(
+        _report(
+            "invalid",
+            ended_at=now - timedelta(days=2),
+            artifacts=(ArtifactResult("result", "output", "durable"),),
+        ),
+        metadata={ARTIFACT_STORAGE_RUN_ID_KEY: ""},
+    )
+    store = ReportStore()
+    store.put(report)
+    with pytest.raises(ValueError, match="storage run identity"):
+        cleanup_expired_run_artifacts(
+            ctx,
+            report_store=store,
+            artifact_root=tmp_path,
+            retention_seconds=60,
+            now=now,
+        )
+    assert path.exists()
+    saved = store.get("invalid")
+    assert saved is not None and saved.artifacts[0].status == "available"
+    assert saved.metadata.get(RUN_ARTIFACT_RETENTION_STATE_KEY) != "complete"

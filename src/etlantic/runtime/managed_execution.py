@@ -36,7 +36,10 @@ from etlantic.plan.serialize import plan_from_json
 from etlantic.profile import Profile, resolve_profile
 from etlantic.reports.file_store import FileReportStore
 from etlantic.reports.model import PipelineRunReport
-from etlantic.reports.retention import ArtifactRetentionResult
+from etlantic.reports.retention import (
+    ARTIFACT_STORAGE_RUN_ID_KEY,
+    ArtifactRetentionResult,
+)
 from etlantic.runtime.artifacts import ArtifactStore
 from etlantic.runtime.context import TrustedExecutionScope
 from etlantic.runtime.execute import run_pipeline
@@ -117,6 +120,14 @@ def legacy_managed_run_id(
         parts.append(operation)
     parts.append(idempotency_key)
     return "run-" + _scope_fragment("/".join(parts))
+
+
+def managed_artifact_run_id(
+    run_id: str, evidence_refs: Mapping[str, str] | None
+) -> str:
+    """Select storage identity from trusted accepted execution evidence."""
+    parent = (evidence_refs or {}).get("artifact_parent_run_id")
+    return parent if isinstance(parent, str) and parent.strip() else run_id
 
 
 def managed_artifact_workspace(
@@ -380,6 +391,7 @@ class ManagedExecutionAdapter:
         run_id = submission.run_id or legacy_managed_run_id(
             ctx, submission.idempotency_key, operation=submission.operation
         )
+        artifact_run_id = managed_artifact_run_id(run_id, envelope.evidence_refs)
         event_base = {
             "run_id": run_id,
             "submission_id": submission_id,
@@ -397,7 +409,9 @@ class ManagedExecutionAdapter:
             if self.report_store_factory is not None
             else managed_report_store(ctx, report_root=self.report_root)
         )
-        reports = _ResultRecoveryReportStore(report_store, result_publisher)
+        reports = _ResultRecoveryReportStore(
+            report_store, result_publisher, artifact_run_id=artifact_run_id
+        )
         try:
             existing = reports.get(run_id)
         except Exception:
@@ -414,6 +428,7 @@ class ManagedExecutionAdapter:
             if existing.plan_fingerprint != envelope.plan_fingerprint:
                 raise ExecutionRejected("Stored result conflicts with accepted plan")
             metadata = dict(existing.metadata)
+            metadata[ARTIFACT_STORAGE_RUN_ID_KEY] = artifact_run_id
             execution: dict[str, Any] = {}
             prior_execution: object = metadata.get("etlantic.control_plane.execution")
             if isinstance(prior_execution, Mapping):
@@ -484,14 +499,6 @@ class ManagedExecutionAdapter:
                 return leased_reader(ctx, immutable, lease_id=input_lease_id)
 
             runtime.input_resource_resolver = resolve_input_resource
-        evidence_refs = envelope.evidence_refs or {}
-        artifact_parent_run_id = evidence_refs.get("artifact_parent_run_id")
-        artifact_run_id = (
-            artifact_parent_run_id
-            if isinstance(artifact_parent_run_id, str)
-            and artifact_parent_run_id.strip()
-            else run_id
-        )
         publication_recovered = False
         try:
             try:
@@ -686,6 +693,7 @@ class ManagedExecutionAdapter:
             runtime.input_resource_resolver = previous_input_resource_resolver
 
         metadata = dict(report.metadata)
+        metadata[ARTIFACT_STORAGE_RUN_ID_KEY] = artifact_run_id
         execution_metadata: dict[str, Any] = {}
         previous_execution: object = metadata.get("etlantic.control_plane.execution")
         if isinstance(previous_execution, Mapping):
@@ -849,9 +857,12 @@ class _ResultRecoveryReportStore:
         self,
         store: Any,
         publisher: Callable[[PipelineRunReport], ResultPublicationRecord] | None,
+        *,
+        artifact_run_id: str,
     ) -> None:
         self._store = store
         self._publisher = publisher
+        self._artifact_run_id = artifact_run_id
 
     def get(self, run_id: str) -> PipelineRunReport | None:
         try:
@@ -863,6 +874,15 @@ class _ResultRecoveryReportStore:
             return None
 
     def put(self, report: PipelineRunReport) -> None:
+        # Stamp even the runtime's first write and publication fallback. A
+        # process can die before the adapter adds its final execution metadata.
+        report = replace(
+            report,
+            metadata={
+                **report.metadata,
+                ARTIFACT_STORAGE_RUN_ID_KEY: self._artifact_run_id,
+            },
+        )
         try:
             self._store.put(report)
         except Exception:

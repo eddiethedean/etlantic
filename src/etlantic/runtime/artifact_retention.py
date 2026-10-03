@@ -13,7 +13,9 @@ from etlantic.reports.model import PipelineRunReport
 from etlantic.reports.retention import (
     RUN_ARTIFACT_RETENTION_DETAILS_KEY,
     RUN_ARTIFACT_RETENTION_STATE_KEY,
+    TERMINAL_RUN_STATUSES,
     ArtifactRetentionResult,
+    artifact_storage_run_id,
 )
 from etlantic.runtime.artifacts import artifact_storage_path
 from etlantic.runtime.managed_execution import managed_artifact_workspace
@@ -30,12 +32,13 @@ def cleanup_expired_run_artifacts(
     limit: int = 100,
     now: datetime | None = None,
 ) -> ArtifactRetentionResult:
-    """Expire old durable output files while retaining their run reports.
+    """Expire old artifact references and remove files without retained owners.
 
     The report's run status remains an execution result. Cleanup progresses in
     its own metadata state machine (running, failed, complete), and each
     removed artifact is recorded before the next file is touched. Missing
     files are treated as already-cleaned work, making process recovery safe.
+    Shared files remain available through their unexpired report references.
     """
     if retention_seconds is not None and (
         type(retention_seconds) is not int or retention_seconds < 1
@@ -56,6 +59,27 @@ def cleanup_expired_run_artifacts(
     candidates: list[PipelineRunReport] = report_store.list_expired_artifact_reports(
         cutoff=cutoff, limit=limit
     )
+    if not candidates:
+        return ArtifactRetentionResult(enabled=True)
+    # A child and its parent can name the same physical file. Retire an old
+    # report's reference while leaving bytes owned by a still-retained report.
+    protected: set[tuple[str, str]] = set()
+    for retained in report_store.list():
+        ended = retained.ended_at
+        if ended is not None:
+            ended = ended.replace(tzinfo=UTC) if ended.tzinfo is None else ended
+        if (
+            retained.status.value in TERMINAL_RUN_STATUSES
+            and ended is not None
+            and ended <= cutoff
+        ):
+            continue
+        storage_id = artifact_storage_run_id(retained)
+        protected.update(
+            (storage_id, artifact.identity)
+            for artifact in retained.artifacts
+            if artifact.strategy == "durable" and artifact.status != "expired"
+        )
 
     processed_reports = 0
     completed_reports = 0
@@ -100,11 +124,16 @@ def cleanup_expired_run_artifacts(
 
             touched_artifacts += 1
             workspace = managed_artifact_workspace(
-                ctx, working.run_id, artifact_root=artifact_root
+                ctx, artifact_storage_run_id(working), artifact_root=artifact_root
             )
             path = artifact_storage_path(workspace, artifact.identity)
             try:
-                removed = _remove_artifact_file(path)
+                removed = (
+                    False
+                    if (artifact_storage_run_id(working), artifact.identity)
+                    in protected
+                    else _remove_artifact_file(path)
+                )
             except (OSError, RuntimeError, ValueError):
                 report_failed += 1
                 failed_artifacts += 1
