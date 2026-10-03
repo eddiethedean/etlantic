@@ -1548,6 +1548,8 @@ class ManagedApplicationService:
             reason = "not_authorized"
         elif not provider_supports_cancel:
             reason = "provider_unsupported"
+        elif durable_record is None:
+            reason = "durable_state_unavailable"
         elif status == "cancel_requested":
             reason = "already_requested"
         elif not state_allows_cancel:
@@ -2521,6 +2523,22 @@ class ManagedApplicationService:
         submission_id: str,
         run_id: str,
     ) -> SubmissionRecord:
+        get_run_value = getattr(self.submissions, "get_run", None)
+        if not callable(get_run_value):
+            raise ControlPlaneError(
+                "Submission provider does not support run observation",
+                code="PMCP501",
+                status=501,
+                title="Not Implemented",
+            )
+        get_run = cast(
+            Callable[[ControlPlaneContext, str], dict[str, Any]],
+            get_run_value,
+        )
+        if get_run(ctx, run_id).get("status") in {"cancel_requested", "cancelled"}:
+            raise ControlPlaneError.conflict(
+                "Cancelled lifecycle acceptance cannot be recovered"
+            )
         try:
             row, _created = self.durable_work.accept(
                 ctx,
@@ -2606,14 +2624,26 @@ class ManagedApplicationService:
             ],
             cancel,
         )
-        durable_status: str | None = None
+        durable_status: str
         try:
             durable = self.durable_work.cancel_submission(ctx, submission_id)
             durable_status = durable.status
         except ControlPlaneError as exc:
             if exc.status == 404:
-                # Legacy CP1-only records retain their observation-level cancel.
-                pass
+                # CP1 cannot fence a concurrent durable acceptance. Do not
+                # acknowledge cancellation until CP3 can persist it.
+                raise ControlPlaneError(
+                    "Durable acceptance is unresolved; retry cancellation after "
+                    "the same idempotency key has been reconciled",
+                    code="PMCP503",
+                    status=503,
+                    title="Service Unavailable",
+                    type="etlantic.control_plane/unavailable",
+                    extensions={
+                        "submission_id": submission_id,
+                        "cancellation_uncertain": True,
+                    },
+                ) from exc
             elif exc.status == 409:
                 durable = self.durable_work.get_submission(ctx, submission_id)
                 durable_status = durable.status
@@ -2633,8 +2663,7 @@ class ManagedApplicationService:
         else:
             updated, changed = result, True
         response = dict(updated)
-        if durable_status is not None:
-            response["status"] = durable_status
+        response["status"] = durable_status
         if changed and self.events is not None:
             with suppress(Exception):
                 self.events.append(

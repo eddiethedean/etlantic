@@ -23,7 +23,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Lifecycle commands reconcile lost durable acceptance acknowledgements before
   returning a receipt. Durable admission failures preserve shared receipts and
   immutable input leases for same-key recovery, including concurrent callers;
-  unresolved acceptance returns a typed unavailable error (#218).
+  unresolved acceptance returns a typed unavailable error. Cancellation waits
+  for durable acceptance and cannot revive a previously cancelled receipt (#218).
 - Recovery of an unreported worker attempt records an unknown execution effect
   that survives durable-store snapshots and blocks retry until provider
   reconciliation proves no commit. Recovery preserves confirmed commits and

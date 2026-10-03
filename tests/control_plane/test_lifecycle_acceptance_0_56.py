@@ -88,6 +88,8 @@ def _application(tmp_path: Path, store_kind: str) -> Application:
         "definition.write",
         "run.submit",
         "run.read",
+        "run.actions",
+        "run.cancel",
         "input.read",
         "run.retry",
         "run.rerun",
@@ -361,6 +363,238 @@ def test_lifecycle_acceptance_reconciles_without_cancelling_committed_work(
         )
         assert app.target.read_text().splitlines() == ["id", "7"]
         assert host.tick(app.ctx) == 0
+
+
+def _qualified_partition_provider(
+    _self: ManagedApplicationService, _snapshot: str, *, operation: str
+) -> str | None:
+    return None
+
+
+@pytest.mark.parametrize(
+    "store_kind", ["memory", pytest.param("sqlmodel", marks=pytest.mark.sqlmodel)]
+)
+@pytest.mark.parametrize(
+    "command", ["retry", "rerun", "replay", "resume", "repair", "backfill"]
+)
+@pytest.mark.parametrize("failure", ["before", "rejected", "lookup_after"])
+def test_cancellation_is_acknowledged_only_when_durable_work_can_record_it(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    store_kind: str,
+    command: str,
+    failure: str,
+) -> None:
+    app = _application(tmp_path, store_kind)
+    monkeypatch.setattr(
+        ManagedApplicationService,
+        "_partition_action_block_reason",
+        _qualified_partition_provider,
+    )
+    operation, key = f"run.{command}", "cancel-recovery"
+    accept, lookup = app.durable.accept, app.durable.get_submission_by_idempotency
+    issued = False
+
+    def lose_acceptance(*args: Any, **kwargs: Any) -> tuple[SubmissionRecord, bool]:
+        nonlocal issued
+        issued = True
+        if failure == "lookup_after":
+            accept(*args, **kwargs)
+        if failure == "rejected":
+            raise ControlPlaneError.conflict("durable admission rejected")
+        raise RuntimeError("lost durable acknowledgement")
+
+    def unavailable_lookup(*args: Any, **kwargs: Any) -> SubmissionRecord | None:
+        if issued and failure == "lookup_after":
+            raise RuntimeError("reconciliation unavailable")
+        return lookup(*args, **kwargs)
+
+    monkeypatch.setattr(app.durable, "accept", lose_acceptance)
+    monkeypatch.setattr(
+        app.durable, "get_submission_by_idempotency", unavailable_lookup
+    )
+    with pytest.raises(ControlPlaneError):
+        _command(app, command, key)
+    monkeypatch.setattr(app.durable, "accept", accept)
+    monkeypatch.setattr(app.durable, "get_submission_by_idempotency", lookup)
+    receipt = app.submissions.lookup_idempotency(app.ctx, key, operation=operation)
+    assert receipt is not None and receipt.resource_id is not None
+    lease_id = _child_lease(app, key, operation)
+    if failure != "lookup_after":
+        assert app.service.get_run_actions(app.ctx, receipt.resource_id)["actions"][
+            0
+        ] == {
+            "name": "cancel",
+            "allowed": False,
+            "reason": "durable_state_unavailable",
+        }
+        with pytest.raises(ControlPlaneError) as error:
+            app.service.cancel_run(app.ctx, receipt.resource_id)
+        assert error.value.status == 503 and error.value.code == "PMCP503"
+        assert error.value.extensions["cancellation_uncertain"] is True
+        assert (
+            app.submissions.get_run(app.ctx, receipt.resource_id)["status"]
+            == "accepted"
+        )
+        assert not [
+            event
+            for event in app.events.list_after_cursor(app.ctx, None)
+            if event.kind == "run.cancel_requested"
+        ]
+        assert lookup(app.ctx, idempotency_key=key, operation=operation) is None
+        assert _command(app, command, key) == receipt
+    assert (
+        app.inputs.read_leased(app.ctx, app.reference, lease_id=lease_id) == b"id\n7\n"
+    )
+    assert (
+        app.service.cancel_run(app.ctx, receipt.resource_id)["status"]
+        == "cancel_requested"
+    )
+    assert _command(app, command, key) == receipt
+    host = ExecutionHost(
+        app.durable,
+        owner_id="cancelled-worker",
+        runner=ManagedExecutionAdapter(
+            report_root=tmp_path / "reports", input_resource_store=app.inputs
+        ),
+    )
+    assert host.tick(app.ctx) == 0
+    assert (
+        app.durable.get_submission(app.ctx, receipt.submission_id).status == "cancelled"
+    )
+    assert not app.durable.pending_outbox(app.ctx)
+    assert not app.durable.list_attempts(app.ctx, receipt.submission_id)
+    assert not app.target.exists()
+
+
+@pytest.mark.parametrize(
+    "store_kind", ["memory", pytest.param("sqlmodel", marks=pytest.mark.sqlmodel)]
+)
+@pytest.mark.parametrize(
+    "command", ["retry", "rerun", "replay", "resume", "repair", "backfill"]
+)
+def test_previously_cancelled_cp1_only_receipt_cannot_be_recovered(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    store_kind: str,
+    command: str,
+) -> None:
+    app = _application(tmp_path, store_kind)
+    monkeypatch.setattr(
+        ManagedApplicationService,
+        "_partition_action_block_reason",
+        _qualified_partition_provider,
+    )
+    accept = app.durable.accept
+
+    def reject(*args: Any, **kwargs: Any) -> tuple[SubmissionRecord, bool]:
+        raise ControlPlaneError.conflict("durable admission rejected")
+
+    monkeypatch.setattr(app.durable, "accept", reject)
+    with pytest.raises(ControlPlaneError):
+        _command(app, command, "legacy-cancelled")
+    receipt = app.submissions.lookup_idempotency(
+        app.ctx, "legacy-cancelled", operation=f"run.{command}"
+    )
+    assert receipt is not None and receipt.resource_id is not None
+    # Reproduce a cancellation recorded by the previous service version.
+    app.submissions.cancel_run(app.ctx, receipt.resource_id)
+    monkeypatch.setattr(app.durable, "accept", accept)
+    with pytest.raises(
+        ControlPlaneError, match="Cancelled lifecycle acceptance"
+    ) as error:
+        _command(app, command, "legacy-cancelled")
+    assert error.value.status == 409
+    assert (
+        app.durable.get_submission_by_idempotency(
+            app.ctx, idempotency_key="legacy-cancelled", operation=f"run.{command}"
+        )
+        is None
+    )
+    assert not app.durable.pending_outbox(app.ctx)
+    assert not app.target.exists()
+
+
+@pytest.mark.parametrize(
+    "store_kind", ["memory", pytest.param("sqlmodel", marks=pytest.mark.sqlmodel)]
+)
+@pytest.mark.parametrize(
+    "command", ["retry", "rerun", "replay", "resume", "repair", "backfill"]
+)
+def test_cancellation_does_not_acknowledge_a_stale_absence_lookup(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    store_kind: str,
+    command: str,
+) -> None:
+    app = _application(tmp_path, store_kind)
+    monkeypatch.setattr(
+        ManagedApplicationService,
+        "_partition_action_block_reason",
+        _qualified_partition_provider,
+    )
+    accept = app.durable.accept
+
+    def reject(*args: Any, **kwargs: Any) -> tuple[SubmissionRecord, bool]:
+        raise ControlPlaneError.conflict("durable admission rejected")
+
+    monkeypatch.setattr(app.durable, "accept", reject)
+    with pytest.raises(ControlPlaneError):
+        _command(app, command, "racing-cancel")
+    receipt = app.submissions.lookup_idempotency(
+        app.ctx, "racing-cancel", operation=f"run.{command}"
+    )
+    assert receipt is not None and receipt.resource_id is not None
+    monkeypatch.setattr(app.durable, "accept", accept)
+    cancel = app.durable.cancel_submission
+    missing, accepted = Event(), Event()
+
+    def pause_missing_cancel(
+        ctx: ControlPlaneContext, submission_id: str
+    ) -> SubmissionRecord:
+        try:
+            return cancel(ctx, submission_id)
+        except ControlPlaneError as exc:
+            assert exc.status == 404
+            missing.set()
+            assert accepted.wait(10)
+            raise
+
+    monkeypatch.setattr(app.durable, "cancel_submission", pause_missing_cancel)
+
+    def cancel_caller() -> int:
+        with pytest.raises(ControlPlaneError) as error:
+            app.service.cancel_run(app.ctx, str(receipt.resource_id))
+        return error.value.status
+
+    def recover_caller() -> AcceptReceipt:
+        assert missing.wait(10)
+        try:
+            return _command(app, command, "racing-cancel")
+        finally:
+            accepted.set()
+
+    with ThreadPoolExecutor(max_workers=2) as executor:
+        cancellation = executor.submit(cancel_caller)
+        recovery = executor.submit(recover_caller)
+        assert cancellation.result(timeout=20) == 503
+        assert recovery.result(timeout=20) == receipt
+    assert app.submissions.get_run(app.ctx, receipt.resource_id)["status"] == "accepted"
+    assert (
+        app.durable.get_submission(app.ctx, receipt.submission_id).status == "accepted"
+    )
+    monkeypatch.setattr(app.durable, "cancel_submission", cancel)
+    assert (
+        app.service.cancel_run(app.ctx, receipt.resource_id)["status"]
+        == "cancel_requested"
+    )
+    host = ExecutionHost(app.durable, owner_id="cancelled-worker")
+    assert host.tick(app.ctx) == 0
+    assert (
+        app.durable.get_submission(app.ctx, receipt.submission_id).status == "cancelled"
+    )
+    assert not app.durable.list_attempts(app.ctx, receipt.submission_id)
+    assert not app.target.exists()
 
 
 @pytest.mark.parametrize(
