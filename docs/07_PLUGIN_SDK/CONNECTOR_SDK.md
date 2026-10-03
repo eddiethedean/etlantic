@@ -57,6 +57,24 @@ Profile(
 Static plans record identity **scheme** only — never a live file list.
 Runtime evidence uses `LandingReadManifest`.
 
+## Managed provider schemas
+
+The managed CP1 application service exposes the profile-authorized installed
+connector catalog at `GET /v1/connectors` and through
+`ManagedApplicationService.get_connector_catalog(context)`. Each entry reports
+its source/sink/storage family, package and protocol versions, maturity,
+capabilities, and JSON Schema for its configuration. The schema carries field
+types, defaults and constraints; secret-like options are marked
+`x-sensitive: true`, with sensitive samples removed. Credential-named members
+inside nested samples are removed recursively. Providers that are not loadable
+under the active profile do not appear as available.
+The caller needs the `connector.catalog` action on `connector:*` within their
+scope, and profile trust policy is applied before provider code is loaded.
+
+Planning validates binding options against the installed provider schema.
+Undeclared options fail with the stable `PMCONN880` diagnostic and the
+diagnostic omits submitted configuration values.
+
 ## Conformance
 
 ```bash

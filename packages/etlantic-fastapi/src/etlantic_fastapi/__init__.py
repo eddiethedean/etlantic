@@ -5,9 +5,10 @@ The package version is exposed as ``__version__``.
 
 from __future__ import annotations
 
+from etlantic.reports.retention import ArtifactRetentionResult
 from etlantic.service import AuthoringService, PolicyContext
 
-__version__ = "0.55.0"
+__version__ = "0.56.0"
 from etlantic_fastapi.api import ETLanticAPI, create_app, include_router
 from etlantic_fastapi.auth import (
     ContextFactory,
@@ -32,6 +33,12 @@ from etlantic_fastapi.landing_sensor import (
     local_files_binding_ref,
     make_testclient_submit_run,
 )
+from etlantic_fastapi.managed import (
+    ManagedBackend,
+    ManagedBackendConfig,
+    create_managed_app,
+    create_managed_backend,
+)
 from etlantic_fastapi.reference import create_reference_app
 from etlantic_fastapi.schemas import (
     AcceptReceiptResponse,
@@ -42,11 +49,14 @@ from etlantic_fastapi.sse import format_sse_message, sse_streaming_response
 
 __all__ = [
     "AcceptReceiptResponse",
+    "ArtifactRetentionResult",
     "AuthoringService",
     "ContextFactory",
     "ETLanticAPI",
     "HealthResponse",
     "LandingWatchSubmitter",
+    "ManagedBackend",
+    "ManagedBackendConfig",
     "MembershipMap",
     "PolicyContext",
     "PrincipalDependency",
@@ -56,6 +66,8 @@ __all__ = [
     "assert_path_scope",
     "control_plane_error_handler",
     "create_app",
+    "create_managed_app",
+    "create_managed_backend",
     "create_reference_app",
     "format_sse_message",
     "include_router",

@@ -2,7 +2,7 @@
 
 > **Status: ETLantic 0.55.0 Beta release.**
 
-This section separates ETLantic **0.55** Experimental behavior from proposed
+This section separates ETLantic **0.56** candidate behavior from proposed
 0.x interfaces.
 
 ## Shipped

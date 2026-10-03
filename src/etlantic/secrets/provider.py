@@ -6,8 +6,10 @@ from __future__ import annotations
 from collections.abc import Mapping
 from contextlib import AbstractAsyncContextManager
 from dataclasses import dataclass, field
+from datetime import datetime
 from typing import Any, Protocol, runtime_checkable
 
+from etlantic.runtime.context import TrustedExecutionScope
 from etlantic.secrets.ref import SecretRef
 from etlantic.secrets.value import SecretValue
 
@@ -64,6 +66,60 @@ class SecretResolutionContext:
     attempt: int = 1
     purpose: str | None = None
     metadata: Mapping[str, Any] = field(default_factory=dict)
+    trusted_scope: TrustedExecutionScope | None = None
+    late_binding_authorized: bool = False
+
+
+@dataclass(frozen=True, slots=True)
+class SecretLease:
+    """Provider-issued runtime value with a renewable, revocable lifetime."""
+
+    lease_id: str
+    value: SecretValue
+    expires_at: datetime
+
+    def __post_init__(self) -> None:
+        if not self.lease_id.strip():
+            raise ValueError("secret lease ID must be non-empty")
+        if self.expires_at.tzinfo is None or self.expires_at.utcoffset() is None:
+            raise ValueError("secret lease expiry must include a timezone")
+
+
+@runtime_checkable
+class LeasedSecretProvider(Protocol):
+    """Secret provider contract for short-lived credential leases."""
+
+    async def acquire_lease(
+        self, reference: SecretRef, context: SecretResolutionContext
+    ) -> SecretLease: ...
+
+    async def renew_lease(
+        self, lease_id: str, context: SecretResolutionContext
+    ) -> SecretLease:
+        """Extend a lease, preserving its ID and credential version."""
+        ...
+
+    async def revoke_lease(
+        self, lease_id: str, context: SecretResolutionContext
+    ) -> None: ...
+
+
+@runtime_checkable
+class SecretAliasAuthorizer(Protocol):
+    """Worker policy that approves runtime resolution of a moving alias.
+
+    Implementations must evaluate the authenticated scope and reference on
+    every call. The decision is deliberately made before the runtime cache is
+    consulted, so a revoked grant cannot reuse an earlier cached value.
+    """
+
+    async def authorize_late_binding(
+        self,
+        reference: SecretRef,
+        context: SecretResolutionContext,
+    ) -> bool:
+        """Return whether ``reference.version == 'current'`` may be resolved."""
+        ...
 
 
 @dataclass(frozen=True, slots=True)

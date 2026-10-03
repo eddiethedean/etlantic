@@ -715,6 +715,41 @@ def _build_plan(
         intents["retry"] = {"max_attempts": profile.retry_max_attempts}
     if profile.timeout_seconds is not None:
         intents["timeout"] = {"seconds": profile.timeout_seconds}
+    if definition is not None:
+        incremental = dict(getattr(definition, "extensions", {}) or {}).get(
+            "etlantic.incremental"
+        )
+        if incremental is not None:
+            if not isinstance(incremental, Mapping):
+                raise ValueError("etlantic.incremental must be an object")
+            strategies = incremental.get("strategies")
+            if not isinstance(strategies, Mapping) or not strategies:
+                raise ValueError(
+                    "etlantic.incremental.strategies must be a non-empty object"
+                )
+            from etlantic.runtime.incremental import IncrementalStrategy
+
+            normalized: dict[str, dict[str, Any]] = {}
+            for subject_id, raw in strategies.items():
+                if (
+                    not isinstance(subject_id, str)
+                    or not subject_id.strip()
+                    or not isinstance(raw, Mapping)
+                ):
+                    raise ValueError(
+                        "Incremental strategies require named object entries"
+                    )
+                typed = IncrementalStrategy.from_dict(
+                    {**dict(raw), "subject_id": subject_id}
+                )
+                if typed.kind.value in {"watermark", "cursor", "change_feed"} and (
+                    not typed.column
+                ):
+                    raise ValueError(
+                        f"Incremental strategy {subject_id!r} requires a field"
+                    )
+                normalized[subject_id] = typed.to_dict()
+            intents["incremental_strategies"] = normalized
 
     from etlantic.engines import get_engine_registry
     from etlantic.extensions import namespaced_extension_items

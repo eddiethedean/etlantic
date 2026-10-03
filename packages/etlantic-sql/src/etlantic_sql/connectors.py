@@ -1,4 +1,4 @@
-"""PostgreSQL source/sink connectors for etlantic-sql (fake/sqlite CI path)."""
+"""PostgreSQL connector test doubles and public entry-point factories."""
 
 from __future__ import annotations
 
@@ -38,9 +38,14 @@ from etlantic.connectors.models import (
     WriteSession,
     fingerprint_public_config,
 )
+from etlantic_sql.live_postgresql import (
+    LivePostgresSinkConnector,
+    LivePostgresSourceConnector,
+    LivePostgresStorageConnector,
+)
 
 PROVIDER = "postgresql"
-PACKAGE_VERSION = "0.55.0"
+PACKAGE_VERSION = "0.56.0"
 
 SOURCE_CAPS = frozenset(
     {
@@ -486,23 +491,26 @@ class PostgresStorageConnector:
         )
 
 
-def create_source() -> PostgresSourceConnector:
-    """Entry-point factory for ``etlantic.source_connectors`` (postgresql)."""
-    return PostgresSourceConnector()
+def create_source() -> LivePostgresSourceConnector:
+    """Entry-point factory for the live ``postgresql`` source connector."""
+    return LivePostgresSourceConnector()
 
 
-def create_sink() -> PostgresSinkConnector:
-    """Entry-point factory for ``etlantic.sink_connectors`` (postgresql)."""
-    return PostgresSinkConnector()
+def create_sink() -> LivePostgresSinkConnector:
+    """Entry-point factory for the live ``postgresql`` sink connector."""
+    return LivePostgresSinkConnector()
 
 
-def create_storage() -> PostgresStorageConnector:
-    """Entry-point factory for ``etlantic.storage_connectors`` (postgresql)."""
-    return PostgresStorageConnector()
+def create_storage() -> LivePostgresStorageConnector:
+    """Entry-point factory for the live ``postgresql`` storage connector."""
+    return LivePostgresStorageConnector()
 
 
 __all__ = [
     "FakePostgresConnection",
+    "LivePostgresSinkConnector",
+    "LivePostgresSourceConnector",
+    "LivePostgresStorageConnector",
     "PostgresSinkConnector",
     "PostgresSourceConnector",
     "PostgresStorageConnector",

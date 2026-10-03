@@ -7,11 +7,13 @@ from collections.abc import Mapping
 from dataclasses import asdict, dataclass, field
 from typing import Any, Literal
 
+from etlantic.control_plane.models import Principal
 from etlantic.control_plane.redaction import (
     redact_control_plane_payload,
     redact_control_plane_text,
 )
 from etlantic.control_plane.schedule_diagnostics import fire_diagnostic
+from etlantic.secrets.ref import SecretRef
 
 SCHEDULE_SCHEMA = "etlantic.schedule/1"
 FIRING_SCHEMA = "etlantic.firing/1"
@@ -23,6 +25,7 @@ OverlapPolicy = Literal["skip", "queue"]
 FiringStatus = Literal[
     "accepted", "skipped_overlap", "skipped_misfire", "skipped_window"
 ]
+ScheduleRevisionPolicy = Literal["pinned", "latest-approved"]
 
 FORBIDDEN_SCHEDULE_KEYS = frozenset(
     {"payload", "secret", "password", "token", "row", "event", "body"}
@@ -45,8 +48,11 @@ def assert_schedule_payload_clean(data: Mapping[str, Any]) -> None:
                 path = f"{prefix}.{key}" if prefix else str(key)
                 if lower in FORBIDDEN_SCHEDULE_KEYS:
                     hits.append(path)
-                if isinstance(val, str) and any(
-                    token in val.lower() for token in ("payload", "secret")
+                is_secret_reference = path.startswith("secret_refs.")
+                if (
+                    isinstance(val, str)
+                    and not is_secret_reference
+                    and any(token in val.lower() for token in ("payload", "secret"))
                 ):
                     hits.append(path)
                 _walk(val, path)
@@ -55,6 +61,28 @@ def assert_schedule_payload_clean(data: Mapping[str, Any]) -> None:
                 _walk(item, f"{prefix}[{i}]")
 
     _walk(data, "")
+    refs = data.get("secret_refs")
+    if refs is not None:
+        if not isinstance(refs, Mapping):
+            hits.append("secret_refs")
+        else:
+            for alias, raw_ref in refs.items():
+                if not isinstance(alias, str) or not isinstance(raw_ref, Mapping):
+                    if isinstance(alias, str) and isinstance(raw_ref, str):
+                        # Older reference schedules used opaque URI strings.
+                        # Managed schedules require structured SecretRef values.
+                        if "://" not in raw_ref or "@" in raw_ref or "?" in raw_ref:
+                            hits.append(f"secret_refs.{alias}")
+                        continue
+                    hits.append(f"secret_refs.{alias}")
+                    continue
+                try:
+                    allowed = {"provider", "name", "key", "version", "purpose"}
+                    if set(raw_ref) - allowed:
+                        raise ValueError("unexpected reference fields")
+                    SecretRef.from_dict(dict(raw_ref))
+                except (KeyError, TypeError, ValueError):
+                    hits.append(f"secret_refs.{alias}")
     if hits:
         diag = fire_diagnostic(
             "payload_leak",
@@ -156,9 +184,31 @@ class ScheduleRecord:
     updated_at: str
     status: ScheduleStatus = "active"
     next_fire_at: str | None = None
+    # Managed schedules pin an immutable definition revision at creation.
+    # Legacy/reference schedule stores may leave this unset.
+    definition_revision_id: str | None = None
     parameter_refs: Mapping[str, str] = field(default_factory=dict)
-    secret_refs: Mapping[str, str] = field(default_factory=dict)
+    secret_refs: Mapping[str, Mapping[str, Any] | str] = field(default_factory=dict)
     metadata: Mapping[str, Any] = field(default_factory=dict)
+    revision_policy: ScheduleRevisionPolicy = "pinned"
+    workload_identity: Principal | None = None
+    # Runtime-only values are attached after an occurrence has been claimed.
+    # They are never emitted by to_dict or persisted in the schedule snapshot.
+    occurrence_snapshot: Mapping[str, Any] | None = field(
+        default=None, repr=False, compare=False
+    )
+    occurrence_inputs: Mapping[str, Any] | None = field(
+        default=None, repr=False, compare=False
+    )
+
+    def __post_init__(self) -> None:
+        if self.revision_policy not in ("pinned", "latest-approved"):
+            raise ValueError("schedule revision_policy is unsupported")
+        if self.workload_identity is not None and self.workload_identity.kind not in (
+            "workload",
+            "service",
+        ):
+            raise ValueError("schedule workload_identity must be workload or service")
 
     def to_dict(self) -> dict[str, Any]:
         payload = {
@@ -175,9 +225,16 @@ class ScheduleRecord:
             "updated_at": self.updated_at,
             "status": self.status,
             "next_fire_at": self.next_fire_at,
+            "definition_revision_id": self.definition_revision_id,
             "parameter_refs": dict(self.parameter_refs),
             "secret_refs": dict(self.secret_refs),
             "metadata": _metadata(self.metadata),
+            "revision_policy": self.revision_policy,
+            "workload_identity": (
+                self.workload_identity.to_dict()
+                if self.workload_identity is not None
+                else None
+            ),
         }
         assert_schedule_payload_clean(payload)
         return payload
@@ -198,9 +255,23 @@ class ScheduleRecord:
             updated_at=str(data["updated_at"]),
             status=str(data.get("status") or "active"),  # type: ignore[arg-type]
             next_fire_at=data.get("next_fire_at"),
+            definition_revision_id=(
+                str(data["definition_revision_id"])
+                if data.get("definition_revision_id") is not None
+                else None
+            ),
             parameter_refs=dict(data.get("parameter_refs") or {}),
-            secret_refs=dict(data.get("secret_refs") or {}),
+            secret_refs={
+                str(name): dict(value) if isinstance(value, Mapping) else str(value)
+                for name, value in dict(data.get("secret_refs") or {}).items()
+            },
             metadata=_metadata(data.get("metadata")),
+            revision_policy=str(data.get("revision_policy") or "pinned"),  # type: ignore[arg-type]
+            workload_identity=(
+                Principal.from_dict(data["workload_identity"])
+                if isinstance(data.get("workload_identity"), Mapping)
+                else None
+            ),
         )
 
 

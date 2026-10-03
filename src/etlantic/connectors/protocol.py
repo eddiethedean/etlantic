@@ -63,6 +63,21 @@ class SourceConnector(Protocol):
 
 
 @runtime_checkable
+class PartitionedSourceConnector(SourceConnector, Protocol):
+    """Source connector that can restrict extraction to opaque partition ids."""
+
+    async def plan_read_partitions(
+        self,
+        *,
+        binding: Mapping[str, Any],
+        context: Mapping[str, Any],
+        partition_ids: tuple[str, ...],
+    ) -> SourcePlan:
+        """Plan a bounded read of only the selected partitions."""
+        ...
+
+
+@runtime_checkable
 class SinkConnector(Protocol):
     """Stage, commit, abort, and reconcile writes (``etlantic.sink/1``)."""
 
@@ -146,6 +161,21 @@ class SinkConnector(Protocol):
 
 
 @runtime_checkable
+class PartitionedSinkConnector(SinkConnector, Protocol):
+    """Sink connector that atomically replaces or repairs selected partitions."""
+
+    async def plan_write_partitions(
+        self,
+        *,
+        binding: Mapping[str, Any],
+        context: Mapping[str, Any],
+        partition_ids: tuple[str, ...],
+    ) -> SinkPlan:
+        """Plan a bounded, idempotent partition publication."""
+        ...
+
+
+@runtime_checkable
 class StorageConnector(Protocol):
     """Object/table storage primitives used by connectors (``etlantic.storage/1``)."""
 
@@ -163,10 +193,32 @@ class StorageConnector(Protocol):
         ...
 
 
+@runtime_checkable
+class ResourceIdentityConnector(Protocol):
+    """Optional connector contract for runtime overlap detection.
+
+    Returned values are opaque equality tokens. Connectors must not include
+    credentials or raw resource names; the runtime keeps tokens in memory and
+    rejects a write when a source and sink resolve to the same identity.
+    """
+
+    async def resource_identities(
+        self,
+        *,
+        binding: Mapping[str, Any],
+        context: Mapping[str, Any],
+    ) -> tuple[str, ...]:
+        """Return opaque identities for the bound resource and its aliases."""
+        ...
+
+
 __all__ = [
     "SINK_PROTOCOL",
     "SOURCE_PROTOCOL",
     "STORAGE_PROTOCOL",
+    "PartitionedSinkConnector",
+    "PartitionedSourceConnector",
+    "ResourceIdentityConnector",
     "SinkConnector",
     "SourceConnector",
     "StorageConnector",

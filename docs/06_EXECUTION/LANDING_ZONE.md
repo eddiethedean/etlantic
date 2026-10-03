@@ -20,6 +20,22 @@ vs landing vs experimental cloud connectors:
 Switch `snapshot` / `incremental` on the **profile binding** — do not rewrite
 `Extract` topology.
 
+## CSV parsing
+
+Parsing is explicit and deterministic: `encoding` defaults to `utf-8` and
+supports `utf-8-sig`, `latin-1`, and `cp1252`; `delimiter` defaults to comma and
+supports semicolon, tab, or pipe. Both values are recorded in the source plan;
+the connector does not guess from file contents. Headers must be non-empty and
+unique, every row must match the header width, and malformed quoting, decoding,
+or contract values fail the read. File-count, per-file byte, total-byte, and row
+limits apply before records are returned. The connector hashes each selected
+file and verifies its identity again before parsing it.
+
+The directory/glob connector records selection intent and resolves matching
+files when the worker runs. It is useful for controlled landing zones; it does
+not provide the owner-scoped immutable upload reference and retention lease
+required by managed CSV upload workflows.
+
 ## Profile example
 
 ```python
@@ -37,6 +53,8 @@ Profile(
             "mode": "incremental",
             "consume": "ledger",
             "checkpoint": "landing_csv_checkpoint",
+            "encoding": "utf-8",
+            "delimiter": ",",
         },
         "curated": "memory://curated",
     },

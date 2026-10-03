@@ -18,6 +18,7 @@ from typing import Any, cast
 
 from etlantic.control_plane.errors import ControlPlaneError
 from etlantic.control_plane.models import ControlPlaneContext
+from etlantic.control_plane.protocols import DefinitionResolution
 from etlantic.control_plane.registry_memory import (
     content_fingerprint,
     safe_registry_content,
@@ -62,6 +63,70 @@ class RegistryDefinitionRepository:
             raise ControlPlaneError.not_found(f"Definition {definition_id!r} not found")
         return deepcopy(dict(document))
 
+    def resolve_revision(
+        self,
+        ctx: ControlPlaneContext,
+        definition_id: str,
+        selector: str,
+    ) -> DefinitionResolution:
+        """Resolve one scoped immutable definition revision.
+
+        ``current`` selects the newest append-only revision. Other selectors
+        first match an exact revision id and then a configured registry alias;
+        this supports operator-maintained selectors such as
+        ``latest-approved`` without trusting caller-supplied content hashes.
+        """
+        if selector == "current":
+            revisions = self.registry.revisions.list_revisions(ctx, definition_id)
+            if not revisions:
+                raise ControlPlaneError.not_found(
+                    f"Definition {definition_id!r} not found"
+                )
+            revision = max(
+                revisions,
+                key=lambda rev: (rev.created_at or "", rev.revision_id),
+            )
+        else:
+            try:
+                revision = self.registry.revisions.get_revision(ctx, selector)
+            except ControlPlaneError as exc:
+                if getattr(exc, "status", None) != 404:
+                    raise
+                try:
+                    revision = self.registry.revisions.resolve_alias(ctx, selector)
+                except ControlPlaneError as alias_exc:
+                    if getattr(alias_exc, "status", None) != 404:
+                        raise
+                    raise ControlPlaneError.not_found(
+                        "Definition revision was not found",
+                        extensions={"definition_id": definition_id},
+                    ) from alias_exc
+
+        if revision.logical_id != definition_id or revision.kind != DEFINITION_KIND:
+            raise ControlPlaneError.not_found(
+                "Definition revision was not found",
+                extensions={"definition_id": definition_id},
+            )
+        document = revision.content.get("document")
+        recorded_fingerprint = revision.content.get("document_fingerprint")
+        if not isinstance(document, Mapping) or not isinstance(
+            recorded_fingerprint, str
+        ):
+            raise ControlPlaneError.conflict(
+                "Definition revision content fingerprint mismatch (tamper detected)",
+                extensions={"revision_id": revision.revision_id},
+            )
+        document_mapping = cast(Mapping[str, Any], document)
+        if recorded_fingerprint != content_fingerprint(document_mapping):
+            raise ControlPlaneError.conflict(
+                "Definition revision content fingerprint mismatch (tamper detected)",
+                extensions={"revision_id": revision.revision_id},
+            )
+        return DefinitionResolution(
+            revision_id=revision.revision_id,
+            document=deepcopy(dict(document_mapping)),
+        )
+
     def list(self, ctx: ControlPlaneContext) -> Sequence[str]:
         list_logical = getattr(self.registry.revisions, "list_logical", None)
         if callable(list_logical):
@@ -78,6 +143,15 @@ class RegistryDefinitionRepository:
         definition_id: str,
         document: Mapping[str, Any],
     ) -> None:
+        self.put_revision(ctx, definition_id, document)
+
+    def put_revision(
+        self,
+        ctx: ControlPlaneContext,
+        definition_id: str,
+        document: Mapping[str, Any],
+    ) -> str:
+        """Append a definition revision and return its immutable revision id."""
         content = _document_content(document)
         try:
             self.registry.revisions.get_logical(ctx, definition_id)
@@ -103,6 +177,7 @@ class RegistryDefinitionRepository:
             kind=DEFINITION_KIND,
         )
         self.registry.revisions.put_revision(ctx, revision)
+        return revision.revision_id
 
 
 __all__ = ["DEFINITION_KIND", "RegistryDefinitionRepository"]

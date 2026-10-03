@@ -1,0 +1,477 @@
+"""Standard SQLModel-backed managed application constructors."""
+
+from __future__ import annotations
+
+import asyncio
+import inspect
+from collections.abc import Callable, Mapping
+from contextlib import asynccontextmanager
+from dataclasses import dataclass, field
+from datetime import datetime
+from importlib import import_module
+from typing import TYPE_CHECKING, Any, cast
+
+from etlantic.control_plane.action_jobs import (
+    MAX_PREVIEW_RESULT_TTL_SECONDS,
+    MIN_PREVIEW_RESULT_TTL_SECONDS,
+)
+from etlantic.control_plane.event_retention import (
+    DEFAULT_EVENT_IDEMPOTENCY_RETENTION_SECONDS,
+)
+from etlantic.control_plane.models import ControlPlaneContext
+from etlantic.control_plane.protocols import Authorizer, IdempotentEventStore
+from etlantic.control_plane.registry_definitions import RegistryDefinitionRepository
+from etlantic.profile import Profile, resolve_profile
+from etlantic.registry import PlanningContext
+from etlantic.reports.retention import ArtifactRetentionResult
+from etlantic.runtime.action_execution_host import ActionHandler
+from etlantic_fastapi.api import ETLanticAPI, create_app
+from etlantic_fastapi.auth import (
+    ContextFactory,
+    PrincipalDependency,
+    principal_from_header,
+)
+from fastapi import FastAPI
+
+if TYPE_CHECKING:
+    from sqlalchemy.engine import Engine
+
+    from etlantic.runtime.action_execution_host import ActionExecutionHost
+
+
+def _empty_engine_options() -> dict[str, Any]:
+    return {}
+
+
+def _empty_action_handlers() -> dict[str, ActionHandler]:
+    return {}
+
+
+@dataclass(frozen=True, slots=True)
+class ManagedBackendConfig:
+    """Configuration for the standard relational managed backend.
+
+    The URL and engine options are excluded from repr because they may contain
+    authentication material. Schema migrations are an explicit deployment
+    step; constructors reject missing or behind-version schemas.
+    """
+
+    database_url: str = field(repr=False)
+    store_id: str = "default"
+    profile: Any = field(default="development", repr=False)
+    engine_options: Mapping[str, Any] = field(
+        default_factory=_empty_engine_options, repr=False
+    )
+    title: str = "ETLantic Control Plane"
+    version: str | None = None
+    event_retention_max_events_per_scope: int = 100_000
+    max_input_upload_bytes: int = 64 * 1024 * 1024
+    input_upload_ttl_seconds: int = 60 * 60
+    input_resource_retention_seconds: int = 90 * 24 * 60 * 60
+    action_job_max_deadline_seconds: int = 300
+    action_job_lease_seconds: int = 330
+    preview_result_ttl_seconds: int = 60 * 60
+    run_artifact_retention_seconds: int | None = None
+    run_artifact_cleanup_batch_size: int = 100
+    action_handlers: Mapping[str, ActionHandler] = field(
+        default_factory=_empty_action_handlers, repr=False
+    )
+    artifact_root: str | None = field(default=None, repr=False)
+    event_idempotency_retention_seconds: int = (
+        DEFAULT_EVENT_IDEMPOTENCY_RETENTION_SECONDS
+    )
+
+    def __post_init__(self) -> None:
+        if not self.database_url.strip():
+            raise ValueError("database_url must be a non-empty SQLAlchemy URL")
+        if not self.store_id.strip():
+            raise ValueError("store_id must be non-empty")
+        if (
+            type(self.event_retention_max_events_per_scope) is not int
+            or self.event_retention_max_events_per_scope < 1
+        ):
+            raise ValueError(
+                "event_retention_max_events_per_scope must be a positive integer"
+            )
+        if (
+            type(self.event_idempotency_retention_seconds) is not int
+            or self.event_idempotency_retention_seconds < 1
+        ):
+            raise ValueError(
+                "event_idempotency_retention_seconds must be a positive integer"
+            )
+        for name, value in (
+            ("max_input_upload_bytes", self.max_input_upload_bytes),
+            ("input_upload_ttl_seconds", self.input_upload_ttl_seconds),
+            ("input_resource_retention_seconds", self.input_resource_retention_seconds),
+        ):
+            if type(value) is not int or value < 1:
+                raise ValueError(f"{name} must be a positive integer")
+        if (
+            type(self.action_job_max_deadline_seconds) is not int
+            or not 1 <= self.action_job_max_deadline_seconds <= 300
+        ):
+            raise ValueError(
+                "action_job_max_deadline_seconds must be between 1 and 300"
+            )
+        if (
+            type(self.action_job_lease_seconds) is not int
+            or self.action_job_lease_seconds <= self.action_job_max_deadline_seconds
+        ):
+            raise ValueError(
+                "action_job_lease_seconds must exceed the maximum action deadline"
+            )
+        if (
+            type(self.preview_result_ttl_seconds) is not int
+            or not MIN_PREVIEW_RESULT_TTL_SECONDS
+            <= self.preview_result_ttl_seconds
+            <= MAX_PREVIEW_RESULT_TTL_SECONDS
+        ):
+            raise ValueError(
+                "preview_result_ttl_seconds must be between "
+                f"{MIN_PREVIEW_RESULT_TTL_SECONDS} and "
+                f"{MAX_PREVIEW_RESULT_TTL_SECONDS}"
+            )
+        if self.run_artifact_retention_seconds is not None and (
+            type(self.run_artifact_retention_seconds) is not int
+            or self.run_artifact_retention_seconds < 1
+        ):
+            raise ValueError(
+                "run_artifact_retention_seconds must be a positive integer or None"
+            )
+        if (
+            type(self.run_artifact_cleanup_batch_size) is not int
+            or not 1 <= self.run_artifact_cleanup_batch_size <= 1000
+        ):
+            raise ValueError(
+                "run_artifact_cleanup_batch_size must be between 1 and 1000"
+            )
+        supported_actions = {
+            "connector.test",
+            "connector.catalog",
+            "connector.schema.inspect",
+            "connector.preflight",
+            "connector.preview",
+            "connector.provision",
+            "connector.provision.cleanup",
+        }
+        unsupported_actions = set(self.action_handlers) - supported_actions
+        if unsupported_actions:
+            raise ValueError(
+                "action_handlers contains unsupported action(s): "
+                + ", ".join(sorted(unsupported_actions))
+            )
+        for action, handler in self.action_handlers.items():
+            if not callable(handler) or not (
+                inspect.iscoroutinefunction(handler)
+                or inspect.iscoroutinefunction(type(handler).__call__)
+            ):
+                raise TypeError(f"action handler {action!r} must be asynchronous")
+
+
+@dataclass(slots=True)
+class ManagedBackend:
+    """Headless services and their explicitly owned shared SQL engine."""
+
+    api: ETLanticAPI = field(repr=False)
+    engine: Engine = field(repr=False)
+    report_store_factory: Callable[[ControlPlaneContext], Any] = field(repr=False)
+    input_resources: Any = field(repr=False)
+    action_handlers: Mapping[str, ActionHandler] = field(
+        default_factory=_empty_action_handlers, repr=False
+    )
+    action_job_lease_seconds: int = 330
+    preview_result_ttl_seconds: int = 60 * 60
+    run_artifact_retention_seconds: int | None = None
+    run_artifact_cleanup_batch_size: int = 100
+    execution_profile: Profile | None = field(default=None, repr=False)
+    artifact_root: str | None = field(default=None, repr=False)
+    report_store_scope_key: Callable[[ControlPlaneContext], object] | None = field(
+        default=None, repr=False
+    )
+    _closed: bool = field(default=False, init=False, repr=False)
+
+    def close(self) -> None:
+        """Dispose idle database connections without deleting accepted work."""
+        if self._closed:
+            return
+        self.engine.dispose()
+        self._closed = True
+
+    def create_execution_host(
+        self, *, owner_id: str = "managed-worker", ttl_seconds: int = 30
+    ) -> Any:
+        """Create the standard worker using this backend's durable result store."""
+        if self._closed:
+            raise RuntimeError("Managed backend is closed")
+        durable = self.api.durable_work
+        if durable is None:
+            raise RuntimeError("Managed backend has no durable work store")
+        from etlantic.runtime.execution_host import ExecutionHost
+        from etlantic.runtime.managed_execution import ManagedExecutionAdapter
+
+        event_store = cast(IdempotentEventStore, self.api.events)
+
+        def publish_event(
+            ctx: ControlPlaneContext,
+            event_key: str,
+            kind: str,
+            payload: Mapping[str, Any],
+        ) -> None:
+            event_store.append_once(
+                ctx, event_key=event_key, kind=kind, payload=payload
+            )
+
+        return ExecutionHost(
+            durable,
+            owner_id=owner_id,
+            ttl_seconds=ttl_seconds,
+            runner=ManagedExecutionAdapter(
+                report_store_factory=self.report_store_factory,
+                report_store_scope_key=self.report_store_scope_key,
+                artifact_root=self.artifact_root,
+                event_publisher=publish_event,
+                profile=self.execution_profile,
+                input_resource_store=self.input_resources,
+                run_artifact_retention_seconds=self.run_artifact_retention_seconds,
+                artifact_cleanup_batch_size=self.run_artifact_cleanup_batch_size,
+            ),
+        )
+
+    def cleanup_expired_run_artifacts(
+        self,
+        ctx: ControlPlaneContext,
+        *,
+        now: datetime | None = None,
+        limit: int | None = None,
+    ) -> ArtifactRetentionResult:
+        """Run one bounded, operator-invoked durable artifact cleanup pass."""
+        if self._closed:
+            raise RuntimeError("Managed backend is closed")
+        if self.run_artifact_retention_seconds is None:
+            return ArtifactRetentionResult(enabled=False)
+        from etlantic.runtime.artifact_retention import cleanup_expired_run_artifacts
+
+        return cleanup_expired_run_artifacts(
+            ctx,
+            report_store=self.report_store_factory(ctx),
+            artifact_root=self.artifact_root,
+            retention_seconds=self.run_artifact_retention_seconds,
+            limit=(self.run_artifact_cleanup_batch_size if limit is None else limit),
+            now=now,
+        )
+
+    def create_action_execution_host(
+        self, *, worker_id: str = "action-worker-1"
+    ) -> ActionExecutionHost:
+        """Create the separate worker for connector inspection/action jobs."""
+        if self._closed:
+            raise RuntimeError("Managed backend is closed")
+        durable = self.api.durable_work
+        if durable is None:
+            raise RuntimeError("Managed backend has no durable work store")
+        from etlantic.runtime.action_execution_host import ActionExecutionHost
+
+        handlers = dict(self.action_handlers)
+        if self.api.managed_service is not None:
+            handlers["run.prepare"] = self._run_preparation_action
+        return ActionExecutionHost(
+            durable,
+            handlers=handlers,
+            authorizer=self.api.authorizer,
+            profile=self.execution_profile,
+            worker_id=worker_id,
+            lease_seconds=self.action_job_lease_seconds,
+            preview_result_ttl_seconds=self.preview_result_ttl_seconds,
+        )
+
+    async def _run_preparation_action(
+        self,
+        ctx: ControlPlaneContext,
+        request: Mapping[str, Any],
+    ) -> Mapping[str, Any]:
+        service = self.api.managed_service
+        if service is None:
+            raise RuntimeError("Managed run preparation is not configured")
+        operation_id = request.get("_operation_id")
+        worker_id = request.get("_worker_id")
+        fencing_token = request.get("_fencing_token")
+        cancel_event = request.get("_cancel_event")
+        if (
+            not isinstance(operation_id, str)
+            or not isinstance(worker_id, str)
+            or type(fencing_token) is not int
+            or not callable(getattr(cancel_event, "is_set", None))
+        ):
+            raise ValueError("invalid preparation worker context")
+        return await asyncio.to_thread(
+            service.execute_run_preparation,
+            ctx,
+            operation_id,
+            worker_id=worker_id,
+            fencing_token=fencing_token,
+            request=request,
+            is_cancelled=cancel_event.is_set,
+        )
+
+
+def create_managed_backend(
+    config: ManagedBackendConfig,
+    *,
+    authorizer: Authorizer,
+    context_factory: ContextFactory,
+    principal_dependency: PrincipalDependency | None = None,
+    planning_context_factory: (Callable[[Any, Any], PlanningContext] | None) = None,
+) -> ManagedBackend:
+    """Construct shared headless services over the migrated SQLModel stores.
+
+    Install the optional ``etlantic-fastapi[managed]`` extra. The function
+    creates one engine shared by definition, submission, event and durable-work
+    stores, and disposes it if any later initialization step fails.
+    """
+    try:
+        from sqlalchemy import create_engine, inspect
+    except ImportError as exc:
+        raise RuntimeError(
+            "The managed SQL backend requires etlantic-fastapi[managed]"
+        ) from exc
+
+    engine: Engine | None = None
+    try:
+        engine_options: dict[str, Any] = dict(config.engine_options)
+        engine_options.setdefault("pool_pre_ping", True)
+        engine = create_engine(config.database_url, **engine_options)
+
+        migrations = cast(Any, import_module("etlantic_sqlmodel.migrations"))
+        if not inspect(engine).has_table("etlantic_sqlmodel_schema_version"):
+            raise RuntimeError(
+                "The SQLModel schema is not migrated; apply the versioned "
+                "etlantic_sqlmodel migrations before starting the backend"
+            )
+        schema_version = migrations.current_version(engine)
+        latest_version = migrations.VERSIONS[-1]
+        if schema_version != latest_version:
+            raise RuntimeError(
+                f"SQLModel schema version {schema_version!r} does not match "
+                f"required version {latest_version!r}"
+            )
+
+        stores = cast(Any, import_module("etlantic_sqlmodel.control_plane"))
+        registry = stores.SqlModelRegistryProvider(engine)
+        report_store_provider = stores.SqlModelRunReportStoreProvider(engine)
+        input_resources = stores.SqlModelInputResourceStore(
+            engine, max_upload_bytes=config.max_input_upload_bytes
+        )
+        execution_profile = resolve_profile(config.profile, allow_adhoc_profile=False)
+        api = ETLanticAPI(
+            authorizer=authorizer,
+            definitions=RegistryDefinitionRepository(registry),
+            submissions=stores.SQLModelSubmissionStore(engine),
+            events=stores.SqlModelEventStore(
+                engine,
+                max_events_per_scope=config.event_retention_max_events_per_scope,
+                idempotency_retention_seconds=(
+                    config.event_idempotency_retention_seconds
+                ),
+            ),
+            registry=registry,
+            context_factory=context_factory,
+            principal_dependency=principal_dependency or principal_from_header,
+            profile=execution_profile,
+            durable_work=stores.SQLModelDurableWorkStore(
+                engine, store_id=config.store_id
+            ),
+            input_resources=input_resources,
+            input_upload_ttl_seconds=config.input_upload_ttl_seconds,
+            input_resource_retention_seconds=config.input_resource_retention_seconds,
+            planning_context_factory=planning_context_factory,
+            title=config.title,
+        )
+        if config.version is not None:
+            api.version = config.version
+        api.enable_managed_execution()
+        if api.managed_service is not None:
+            api.managed_service.report_store_factory = report_store_provider.for_context
+            api.managed_service.artifact_root = config.artifact_root
+            api.managed_service.run_artifact_retention_seconds = (
+                config.run_artifact_retention_seconds
+            )
+            api.managed_service.action_job_max_deadline_seconds = (
+                config.action_job_max_deadline_seconds
+            )
+        return ManagedBackend(
+            api=api,
+            engine=engine,
+            report_store_factory=report_store_provider.for_context,
+            input_resources=input_resources,
+            artifact_root=config.artifact_root,
+            report_store_scope_key=report_store_provider.retention_scope_key,
+            action_handlers=dict(config.action_handlers),
+            action_job_lease_seconds=config.action_job_lease_seconds,
+            preview_result_ttl_seconds=config.preview_result_ttl_seconds,
+            run_artifact_retention_seconds=config.run_artifact_retention_seconds,
+            run_artifact_cleanup_batch_size=config.run_artifact_cleanup_batch_size,
+            execution_profile=execution_profile,
+        )
+    except BaseException:
+        if engine is not None:
+            engine.dispose()
+        raise
+
+
+def create_managed_app(
+    config: ManagedBackendConfig,
+    *,
+    authorizer: Authorizer,
+    context_factory: ContextFactory,
+    principal_dependency: PrincipalDependency | None = None,
+    planning_context_factory: (Callable[[Any, Any], PlanningContext] | None) = None,
+    install_handlers: bool = True,
+) -> FastAPI:
+    """Create a managed HTTP app and own its engine for the app lifespan.
+
+    The same :class:`ManagedApplicationService` remains available through
+    ``app.state.managed_backend.api.managed_service`` to headless callers. A
+    shutdown or partial startup failure disposes only the shared connection
+    pool; committed definitions and accepted work remain in the database.
+    """
+    backend = create_managed_backend(
+        config,
+        authorizer=authorizer,
+        context_factory=context_factory,
+        principal_dependency=principal_dependency,
+        planning_context_factory=planning_context_factory,
+    )
+    try:
+        app = create_app(
+            backend.api,
+            install_handlers=install_handlers,
+            with_lifespan=True,
+        )
+        app.state.managed_backend = backend
+        api_lifespan = app.router.lifespan_context
+
+        @asynccontextmanager
+        async def lifespan(app: FastAPI):
+            try:
+                async with api_lifespan(app):
+                    if not app.state.control_plane_ready:
+                        raise RuntimeError("Managed backend stores are not ready")
+                    yield
+            finally:
+                app.state.control_plane_ready = False
+                backend.close()
+
+        app.router.lifespan_context = lifespan
+        return app
+    except BaseException:
+        backend.close()
+        raise
+
+
+__all__ = [
+    "ManagedBackend",
+    "ManagedBackendConfig",
+    "create_managed_app",
+    "create_managed_backend",
+]

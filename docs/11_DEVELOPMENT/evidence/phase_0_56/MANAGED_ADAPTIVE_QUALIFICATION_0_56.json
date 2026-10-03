@@ -1,0 +1,49 @@
+{
+  "schema": "etlantic.phase_0_56.managed_adaptive_runtime_qualification/1",
+  "criterion": "AC056-043",
+  "status": "passed",
+  "qualification_scope": "one exact managed adaptive plan/2 tuple; remaining candidate tuples remain version-gated",
+  "tuple": {
+    "plan_schema": "etlantic.plan/2",
+    "support_row_id": "local-static:chain/1:local",
+    "pattern": "chain/1",
+    "target_family": "local",
+    "source_sink_provider": "implicit process-local memory",
+    "execution_strategy": "adaptive",
+    "engine": "local",
+    "etlantic": "0.56.0",
+    "python": "3.11.15",
+    "platform": "macOS arm64"
+  },
+  "authority": {
+    "admission": "authoritative etlantic.runtime.adaptive_admission.admit_adaptive_plan invoked during managed planning and submission",
+    "candidate_maturity": "Experimental",
+    "candidate_authority": "development-candidate",
+    "graduation": "pending",
+    "available_status_claimed": false
+  },
+  "observed_run": {
+    "test": "tests/fastapi/test_managed_backend_0_56.py::test_managed_adaptive_local_chain_is_admitted_and_observed",
+    "plan_and_submission_admitted": true,
+    "durable_worker_report_status": "succeeded",
+    "input_rows": 1,
+    "published_memory_sink_rows": [
+      {
+        "id": 73
+      }
+    ]
+  },
+  "fail_closed_scope": {
+    "candidate_rows": "Only chain/1:local is pinned to ETLantic 0.56.0. Every other packaged candidate row remains pinned to 0.54.0 and cannot pass exact runtime version admission in this 0.56.0 environment.",
+    "external_or_partial_bindings": "Managed adaptive execution rejects external resources and incomplete binding snapshots before accepting a run.",
+    "wire_boundary": "The CP1 versioned submit surface continues to reject adaptive plan/2 payloads; plan/2 is admitted only by the managed service path qualified here."
+  },
+  "verification": {
+    "tests": [
+      "tests/fastapi/test_managed_backend_0_56.py::test_managed_adaptive_local_chain_is_admitted_and_observed",
+      "tests/adaptive_conformance",
+      "tests/fastapi/test_cp1_submit_hardening.py::test_submit_rejects_adaptive_plan_before_acceptance"
+    ],
+    "result": "The focused managed/adaptive matrix passed: 234 passed, 11 skipped; the additional focused CP1 adaptive rejection test passed."
+  }
+}

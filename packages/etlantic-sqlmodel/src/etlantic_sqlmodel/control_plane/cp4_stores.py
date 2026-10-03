@@ -5,9 +5,10 @@ from __future__ import annotations
 import json
 from collections.abc import Callable, Mapping, Sequence
 from datetime import UTC, datetime
-from typing import Any, TypeVar
+from typing import Any, TypeVar, cast
 
 from sqlalchemy.engine import Engine
+from sqlalchemy.exc import IntegrityError
 
 from etlantic.control_plane.approval_memory import MemoryApprovalStore
 from etlantic.control_plane.approval_models import (
@@ -36,7 +37,12 @@ from etlantic.control_plane.objective_models import (
 )
 from etlantic.control_plane.policy_memory import MemoryPolicyProvider
 from etlantic.control_plane.quota_memory import MemoryQuotaProvider
-from etlantic.control_plane.quota_models import QuotaState
+from etlantic.control_plane.quota_models import (
+    QuotaDecision,
+    QuotaEffect,
+    QuotaResource,
+    QuotaState,
+)
 from etlantic_sqlmodel.control_plane.models import Cp4GovernanceSnapshotRow
 from etlantic_sqlmodel.control_plane.session import session_scope
 from sqlmodel import Session, SQLModel, select
@@ -112,6 +118,7 @@ class _SnapshotBackedStore:
 
     def _txn(self, fn: Callable[[Any], T]) -> T:
         with session_scope(self.engine) as session:
+            self._ensure_snapshot_row(session)
             mem, version = self._read(session, for_update=True)
             result = fn(mem)
             self._write(session, mem, expected_version=version)
@@ -136,6 +143,45 @@ class _SnapshotBackedStore:
         return self._load(json.loads(row.payload_json or "{}")), int(
             row.payload_version or 0
         )
+
+    def _ensure_snapshot_row(self, session: Session) -> None:
+        """Create a version-zero lock row without racing on first use.
+
+        ``SELECT FOR UPDATE`` cannot lock a row that does not exist. When two
+        processes perform the first governance write at once, both would
+        otherwise observe absence and race to insert the unique
+        ``(store_id, kind)`` row. Insert under a savepoint so the loser can
+        recover from that uniqueness race and continue by locking the winner's
+        committed row.
+        """
+        statement = (
+            select(Cp4GovernanceSnapshotRow)
+            .where(Cp4GovernanceSnapshotRow.store_id == self.store_id)
+            .where(Cp4GovernanceSnapshotRow.kind == self.kind)
+        )
+        if session.exec(statement).first() is not None:
+            return
+
+        try:
+            with session.begin_nested():
+                session.add(
+                    Cp4GovernanceSnapshotRow(
+                        store_id=self.store_id,
+                        kind=self.kind,
+                        payload_json=json.dumps(
+                            self._dump(self._empty()), sort_keys=True, default=str
+                        ),
+                        payload_version=0,
+                        updated_at=_utcnow_iso(),
+                    )
+                )
+                session.flush()
+        except IntegrityError:
+            # The conflict is recoverable only when another transaction created
+            # the exact scoped snapshot row. Other integrity errors still fail
+            # closed.
+            if session.exec(statement).first() is None:
+                raise
 
     def _write(self, session: Session, store: Any, *, expected_version: int) -> None:
         payload = json.dumps(self._dump(store), sort_keys=True, default=str)
@@ -321,6 +367,14 @@ class SQLModelQuotaProvider(_SnapshotBackedStore):
             "default_limits": dict(mem.default_limits),
             "weights": {f"{t}|{w}": wt for (t, w), wt in mem.weights.items()},
             "states": {f"{t}|{w}": s.to_dict() for (t, w), s in mem._states.items()},
+            "admissions": {
+                f"{t}|{w}|{key}": {
+                    "resource": resource,
+                    "units": units,
+                    "decision": decision.to_dict(),
+                }
+                for (t, w, key), (resource, units, decision) in mem._admissions.items()
+            },
             "rr_cursor": int(mem._rr_cursor),
             "shared_pressure": bool(getattr(mem, "shared_pressure", False)),
         }
@@ -347,6 +401,21 @@ class SQLModelQuotaProvider(_SnapshotBackedStore):
                 updated_at=datetime.fromisoformat(str(raw["updated_at"]))
                 if raw.get("updated_at")
                 else datetime.now(UTC),
+            )
+        for key, raw in dict(payload.get("admissions") or {}).items():
+            t, w, idem = str(key).split("|", 2)
+            decision = raw["decision"]
+            mem._admissions[(t, w, idem)] = (
+                cast(QuotaResource, str(raw["resource"])),
+                int(raw["units"]),
+                QuotaDecision(
+                    effect=cast(QuotaEffect, str(decision["effect"])),
+                    resource=cast(QuotaResource, str(decision["resource"])),
+                    limit=int(decision["limit"]),
+                    used=int(decision["used"]),
+                    reason=str(decision["reason"]),
+                    metadata=dict(decision.get("metadata") or {}),
+                ),
             )
         mem._rr_cursor = int(payload.get("rr_cursor") or 0)
         mem.shared_pressure = bool(payload.get("shared_pressure"))

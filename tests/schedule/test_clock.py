@@ -29,6 +29,26 @@ def test_interval_next_fire_and_window() -> None:
     assert next_fire_after(closed, after=after) is None
 
 
+def test_naive_interval_instants_are_interpreted_as_utc() -> None:
+    spec = ScheduleSpec(
+        kind="interval", interval_seconds=60, timezone="America/Los_Angeles"
+    )
+    naive = datetime(2026, 1, 1, 0, 0)
+    aware = naive.replace(tzinfo=UTC)
+
+    assert next_fire_after(spec, after=naive) == next_fire_after(spec, after=aware)
+    assert catch_up_nominals(
+        ScheduleSpec(
+            kind="interval",
+            interval_seconds=60,
+            misfire="catch_up",
+            catch_up_max=3,
+        ),
+        last_nominal=naive,
+        now=naive + timedelta(minutes=2),
+    ) == [aware + timedelta(minutes=1), aware + timedelta(minutes=2)]
+
+
 def test_cron_utc_noon() -> None:
     spec = ScheduleSpec(kind="cron", cron="0 12 * * *", timezone="UTC")
     after = datetime(2026, 1, 1, 0, 0, tzinfo=UTC)
@@ -76,6 +96,20 @@ def test_america_new_york_spring_forward_skips_missing_hour() -> None:
     assert nxt is not None
     local = nxt.astimezone(tz)
     assert not (local.month == 3 and local.day == 8 and local.hour == 2)
+
+
+def test_america_new_york_fall_back_keeps_both_distinct_utc_occurrences() -> None:
+    """A repeated local 01:30 maps to two unique UTC firing identities."""
+    spec = ScheduleSpec(kind="cron", cron="30 1 * * *", timezone="America/New_York")
+    first = next_fire_after(
+        spec,
+        after=datetime(2026, 11, 1, 4, 59, tzinfo=UTC),
+    )
+    assert first is not None
+    assert first == datetime(2026, 11, 1, 5, 30, tzinfo=UTC)
+    second = next_fire_after(spec, after=first)
+    assert second == datetime(2026, 11, 1, 6, 30, tzinfo=UTC)
+    assert first != second
 
 
 def test_fake_clock_advance() -> None:

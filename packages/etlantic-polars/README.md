@@ -11,10 +11,10 @@ compilation on Polars. Keep the pin matched to core.
 ## Install
 
 ```bash
-pip install 'etlantic-polars==0.55.0'
+pip install 'etlantic-polars==0.56.0'
 # Optional Arrow interchange:
-pip install 'etlantic-polars[arrow]==0.55.0'
-# pip install 'etlantic==0.55.0'
+pip install 'etlantic-polars[arrow]==0.56.0'
+# pip install 'etlantic==0.56.0'
 ```
 
 ## Dataframe plugin
@@ -54,8 +54,8 @@ Runnable example: `examples/portable_polars_kernel.py` in the ETLantic repo.
 Window V1, complex-type/value, and conversion profiles are available in the
 current compiler; explicit window frames and Window V2 remain capability-gated.
 See the
-[compiler protocol](https://etlantic.readthedocs.io/en/v0.55.0/07_PLUGIN_SDK/PORTABLE_TRANSFORM_COMPILER/)
-and [compatibility matrix](https://etlantic.readthedocs.io/en/v0.55.0/10_REFERENCE/COMPATIBILITY/).
+[compiler protocol](https://etlantic.readthedocs.io/en/v0.56.0/07_PLUGIN_SDK/PORTABLE_TRANSFORM_COMPILER/)
+and [compatibility matrix](https://etlantic.readthedocs.io/en/v0.56.0/10_REFERENCE/COMPATIBILITY/).
 
 ## Bounded Parquet snapshots
 
@@ -79,6 +79,6 @@ snapshots create no disk cleanup obligations; unknown cleanup tokens reject.
 
 ## Links
 
-[Polars tutorial](https://etlantic.readthedocs.io/en/v0.55.0/06_EXECUTION/POLARS_TUTORIAL/) ·
+[Polars tutorial](https://etlantic.readthedocs.io/en/v0.56.0/06_EXECUTION/POLARS_TUTORIAL/) ·
 [Source](https://github.com/eddiethedean/etlantic/tree/main/packages/etlantic-polars) ·
 [Issues](https://github.com/eddiethedean/etlantic/issues)

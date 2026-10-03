@@ -2,12 +2,12 @@
 
 from __future__ import annotations
 
-from collections.abc import Sequence
+from collections.abc import Mapping, Sequence
 from dataclasses import dataclass
 from typing import Protocol, runtime_checkable
 
 from etlantic.control_plane.durable_protocols import DurableWorkStore
-from etlantic.control_plane.models import ControlPlaneContext
+from etlantic.control_plane.models import ControlPlaneContext, Principal
 from etlantic.control_plane.schedule_models import (
     FiringRecord,
     FiringStatus,
@@ -51,8 +51,11 @@ class ScheduleStore(Protocol):
         spec: ScheduleSpec,
         schedule_id: str | None = None,
         policy_fingerprint: str = "",
+        definition_revision_id: str | None = None,
         parameter_refs: dict[str, str] | None = None,
-        secret_refs: dict[str, str] | None = None,
+        secret_refs: dict[str, Mapping[str, object] | str] | None = None,
+        revision_policy: str = "pinned",
+        workload_identity: Principal | None = None,
         next_fire_at: str | None = None,
     ) -> ScheduleRecord: ...
 
@@ -63,6 +66,17 @@ class ScheduleStore(Protocol):
     def pause(self, ctx: ControlPlaneContext, schedule_id: str) -> ScheduleRecord: ...
 
     def resume(self, ctx: ControlPlaneContext, schedule_id: str) -> ScheduleRecord: ...
+
+    def amend(
+        self,
+        ctx: ControlPlaneContext,
+        schedule_id: str,
+        *,
+        expected_revision_id: str,
+        spec: ScheduleSpec,
+        next_fire_at: str | None,
+        durable: DurableWorkStore | None = None,
+    ) -> ScheduleRecord: ...
 
     def delete(self, ctx: ControlPlaneContext, schedule_id: str) -> ScheduleRecord: ...
 
@@ -108,8 +122,26 @@ class ScheduleStore(Protocol):
         durable: DurableWorkStore | None = None,
         next_fire_at: str | None = None,
         require_leader_lease: bool = True,
+        admit_submission: bool = True,
         skip_status: FiringStatus | None = None,
-    ) -> tuple[FiringRecord, bool]: ...
+        metadata: Mapping[str, object] | None = None,
+    ) -> tuple[FiringRecord, bool]:
+        """Idempotently claim while checking current schedule state atomically.
+
+        New claims must match the stored revision. Scheduler-owned claims also
+        require an active schedule. Existing logical firings remain replayable.
+        """
+        ...
+
+    def link_firing_submission(
+        self,
+        ctx: ControlPlaneContext,
+        firing_id: str,
+        *,
+        submission_id: str,
+        plan_fingerprint: str,
+        durable: DurableWorkStore,
+    ) -> FiringRecord: ...
 
     def list_firings(
         self, ctx: ControlPlaneContext, schedule_id: str

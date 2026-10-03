@@ -12,7 +12,7 @@ from etlantic.spark.provider import (
     SparkSessionRequest,
 )
 
-_PKG_VERSION = "0.55.0"
+_PKG_VERSION = "0.56.0"
 
 
 def live_configured() -> bool:

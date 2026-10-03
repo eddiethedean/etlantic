@@ -3,19 +3,130 @@
 
 from __future__ import annotations
 
+import math
 import pickle
-from dataclasses import asdict
+from dataclasses import asdict, replace
 from pathlib import Path
 
 import anyio
 import pytest
 
 from etlantic.exceptions import PipelineExecutionError
+from etlantic.runtime.context import TrustedExecutionScope
+from etlantic.secrets.cache import SecretCache
 from etlantic.secrets.env import EnvSecretProvider
 from etlantic.secrets.file import MountedFileSecretProvider
 from etlantic.secrets.provider import SecretResolutionContext
 from etlantic.secrets.ref import SecretRef
 from etlantic.secrets.value import SecretSerializationError, SecretValue
+
+
+def test_managed_secret_cache_is_partitioned_by_trusted_scope() -> None:
+    cache = SecretCache()
+    reference = SecretRef(provider="vault", name="database", key="password")
+    value = SecretValue(
+        _value="scope-a-secret",
+        provider="vault",
+        name="database",
+        key="password",
+    )
+    scope_a = TrustedExecutionScope(
+        principal_id="worker-a",
+        principal_kind="workload",
+        tenant_id="tenant-a",
+        workspace_id="workspace-a",
+        environment="production",
+        security_domain_id="domain-a",
+        resource_owner_id="owner-a",
+    )
+    scope_b = TrustedExecutionScope(
+        principal_id="worker-b",
+        principal_kind="workload",
+        tenant_id="tenant-a",
+        workspace_id="workspace-a",
+        environment="production",
+        security_domain_id="domain-a",
+        resource_owner_id="owner-b",
+    )
+
+    cache.put(reference, value, trusted_scope=scope_a)
+
+    assert cache.get(reference, trusted_scope=scope_a) is value
+    assert cache.get(reference, trusted_scope=scope_b) is None
+    assert cache.get(reference) is None
+
+
+@pytest.mark.parametrize(
+    ("field", "value"),
+    [
+        ("principal_id", "worker-b"),
+        ("principal_kind", "service"),
+        ("principal_issuer", "issuer-b"),
+        ("tenant_id", "tenant-b"),
+        ("workspace_id", "workspace-b"),
+        ("environment", "staging"),
+        ("security_domain_id", "domain-b"),
+        ("resource_owner_id", "owner-b"),
+    ],
+)
+def test_managed_secret_cache_partitions_every_authority_field(
+    field: str, value: str
+) -> None:
+    cache = SecretCache()
+    reference = SecretRef(provider="vault", name="warehouse", key="token")
+    scope = TrustedExecutionScope(
+        principal_id="worker-a",
+        principal_kind="workload",
+        principal_issuer="issuer-a",
+        tenant_id="tenant-a",
+        workspace_id="workspace-a",
+        environment="production",
+        security_domain_id="domain-a",
+        resource_owner_id="owner-a",
+    )
+    neighboring_scope = replace(scope, **{field: value})
+    secret = SecretValue(
+        _value="private-cache-value",
+        provider="vault",
+        name="warehouse",
+        key="token",
+    )
+
+    cache.put(reference, secret, trusted_scope=scope)
+
+    assert cache.get(reference, trusted_scope=scope) is secret
+    assert cache.get(reference, trusted_scope=neighboring_scope) is None
+    assert cache.get(reference) is None
+
+
+@pytest.mark.parametrize("ttl", [-1, math.nan, math.inf, "60"])
+def test_secret_cache_rejects_invalid_default_ttl(ttl: object) -> None:
+    with pytest.raises(ValueError, match="default_ttl_seconds"):
+        SecretCache(default_ttl_seconds=ttl)
+
+
+@pytest.mark.parametrize("capacity", [0, -1, True, 1.5])
+def test_secret_cache_rejects_invalid_capacity(capacity: object) -> None:
+    with pytest.raises(ValueError, match="max_entries"):
+        SecretCache(max_entries=capacity)
+
+
+def test_secret_cache_zero_ttl_does_not_retain_values() -> None:
+    cache = SecretCache()
+    reference = SecretRef(provider="vault", name="database", key="password")
+    value = SecretValue(
+        _value="short-lived", provider="vault", name="database", key="password"
+    )
+
+    cache.put(reference, value, ttl_seconds=0)
+
+    assert cache.get(reference) is None
+    assert cache.stats()["entries"] == 0
+
+
+def test_secret_ref_rejects_blank_version() -> None:
+    with pytest.raises(ValueError, match="version"):
+        SecretRef(provider="env", name="database", key="password", version=" ")
 
 
 def test_env_provider_fail_closed() -> None:
@@ -28,6 +139,27 @@ def test_env_provider_fail_closed() -> None:
         )
 
     with pytest.raises(PipelineExecutionError):
+        anyio.run(_run)
+
+
+def test_env_provider_rejects_unsupported_version(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setenv("DATABASE_PASSWORD", "present")
+    provider = EnvSecretProvider()
+
+    async def _run() -> None:
+        await provider.resolve(
+            SecretRef(
+                provider="env",
+                name="DATABASE_PASSWORD",
+                key="value",
+                version="v7",
+            ),
+            SecretResolutionContext(run_id="r", pipeline_id="p"),
+        )
+
+    with pytest.raises(PipelineExecutionError, match="does not support version"):
         anyio.run(_run)
 
 
@@ -46,6 +178,25 @@ def test_file_provider_round_trip(tmp_path: Path) -> None:
     assert value.get_secret_value() == "s3cr3t"
     with pytest.raises(SecretSerializationError):
         value.to_dict()
+
+
+def test_file_provider_rejects_unsupported_version(tmp_path: Path) -> None:
+    (tmp_path / "db_password").write_text("present", encoding="utf-8")
+    provider = MountedFileSecretProvider(root=tmp_path)
+
+    async def _run() -> None:
+        await provider.resolve(
+            SecretRef(
+                provider="file",
+                name="db_password",
+                key="value",
+                version="v7",
+            ),
+            SecretResolutionContext(run_id="r", pipeline_id="p"),
+        )
+
+    with pytest.raises(PipelineExecutionError, match="does not support version"):
+        anyio.run(_run)
 
 
 def test_file_provider_rejects_path_traversal(tmp_path: Path) -> None:

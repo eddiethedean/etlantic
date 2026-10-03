@@ -2,7 +2,9 @@
 
 from __future__ import annotations
 
+from collections.abc import Callable
 from datetime import datetime
+from typing import Any, cast
 
 from etlantic.control_plane.durable_protocols import DurableWorkStore
 from etlantic.control_plane.errors import ControlPlaneError
@@ -14,7 +16,11 @@ from etlantic.control_plane.schedule_clock import (
     catch_up_nominals,
     next_fire_after,
 )
-from etlantic.control_plane.schedule_models import ScheduleRecord
+from etlantic.control_plane.schedule_models import (
+    FiringRecord,
+    FiringStatus,
+    ScheduleRecord,
+)
 from etlantic.control_plane.schedule_protocols import (
     PollingWakeTransport,
     ScheduleStore,
@@ -40,8 +46,20 @@ class SchedulerService:
         ttl_seconds: int = 30,
         wake: WakeTransport | None = None,
         plan_fingerprint: str = "plan",
+        run_submitter: (
+            Callable[[ControlPlaneContext, ScheduleRecord, str], tuple[str, str]] | None
+        ) = None,
+        occurrence_preparer: (
+            Callable[
+                [ControlPlaneContext, ScheduleRecord, str, FiringRecord | None],
+                ScheduleRecord,
+            ]
+            | None
+        ) = None,
         profile: Profile | str | None = None,
     ) -> None:
+        if type(ttl_seconds) is not int or ttl_seconds < 1:
+            raise ValueError("ttl_seconds must be a positive integer")
         if profile is not None:
             from etlantic.control_plane.schedule_trust import validate_schedule_runtime
 
@@ -53,6 +71,26 @@ class SchedulerService:
         self.ttl_seconds = ttl_seconds
         self.wake = wake or PollingWakeTransport()
         self.plan_fingerprint = plan_fingerprint
+        self.run_submitter = run_submitter
+        inferred_preparer: (
+            Callable[
+                [ControlPlaneContext, ScheduleRecord, str, FiringRecord | None],
+                ScheduleRecord,
+            ]
+            | None
+        ) = occurrence_preparer
+        if inferred_preparer is None and run_submitter is not None:
+            submitter_owner = getattr(run_submitter, "__self__", None)
+            candidate = getattr(submitter_owner, "prepare_scheduled_occurrence", None)
+            if callable(candidate):
+                inferred_preparer = cast(
+                    Callable[
+                        [ControlPlaneContext, ScheduleRecord, str, FiringRecord | None],
+                        ScheduleRecord,
+                    ],
+                    candidate,
+                )
+        self.occurrence_preparer = inferred_preparer
         self._lease_token: int | None = None
         self.draining = False
 
@@ -74,12 +112,39 @@ class SchedulerService:
             return 0
         self._lease_token = lease.fencing_token
         now = self.clock.now()
+        self._reconcile_unlinked_firings(ctx)
         due = self.schedule_store.due_schedules(ctx, now=_iso(now))
         claimed = 0
         for rec in due:
             claimed += self._fire_due(ctx, rec, now, lease.fencing_token)
         self.wake.notify()
         return claimed
+
+    def _reconcile_unlinked_firings(self, ctx: ControlPlaneContext) -> None:
+        """Retry managed submissions for durable occurrences not yet linked."""
+        if self.run_submitter is None or self.durable is None:
+            return
+        for schedule in self.schedule_store.list_schedules(ctx):
+            for firing in self.schedule_store.list_firings(ctx, schedule.schedule_id):
+                if firing.status != "accepted" or firing.submission_id is not None:
+                    continue
+                prepared = (
+                    self.occurrence_preparer(
+                        ctx, schedule, firing.nominal_fire_time, firing
+                    )
+                    if self.occurrence_preparer is not None
+                    else schedule
+                )
+                submission_id, fingerprint = self.run_submitter(
+                    ctx, prepared, firing.nominal_fire_time
+                )
+                self.schedule_store.link_firing_submission(
+                    ctx,
+                    firing.firing_id,
+                    submission_id=submission_id,
+                    plan_fingerprint=fingerprint,
+                    durable=self.durable,
+                )
 
     def _fire_due(
         self,
@@ -95,15 +160,11 @@ class SchedulerService:
             return 0
         if rec.spec.misfire == "skip" and due < now:
             nxt = next_fire_after(rec.spec, after=now, last_nominal=due)
-            _firing, created = self.schedule_store.claim_firing(
+            created = self._claim_scheduled_firing(
                 ctx,
-                schedule_id=rec.schedule_id,
-                revision_id=rec.revision_id,
-                nominal_fire_time=_iso(due),
-                owner_id=self.owner_id,
-                fencing_token=fencing_token,
-                plan_fingerprint=self.plan_fingerprint,
-                durable=self.durable,
+                rec,
+                _iso(due),
+                fencing_token,
                 next_fire_at=_iso(nxt) if nxt is not None else None,
                 skip_status="skipped_misfire",
             )
@@ -117,15 +178,11 @@ class SchedulerService:
                 last = due - timedelta(minutes=1)
             if rec.spec.catch_up_max == 0:
                 nxt = next_fire_after(rec.spec, after=now, last_nominal=due)
-                _firing, created = self.schedule_store.claim_firing(
+                created = self._claim_scheduled_firing(
                     ctx,
-                    schedule_id=rec.schedule_id,
-                    revision_id=rec.revision_id,
-                    nominal_fire_time=_iso(due),
-                    owner_id=self.owner_id,
-                    fencing_token=fencing_token,
-                    plan_fingerprint=self.plan_fingerprint,
-                    durable=self.durable,
+                    rec,
+                    _iso(due),
+                    fencing_token,
                     next_fire_at=_iso(nxt) if nxt is not None else None,
                     skip_status="skipped_misfire",
                 )
@@ -136,19 +193,81 @@ class SchedulerService:
         claimed = 0
         for nominal in nominals:
             nxt = next_fire_after(rec.spec, after=nominal, last_nominal=nominal)
-            _firing, created = self.schedule_store.claim_firing(
+            created = self._claim_scheduled_firing(
                 ctx,
-                schedule_id=rec.schedule_id,
-                revision_id=rec.revision_id,
-                nominal_fire_time=_iso(nominal),
-                owner_id=self.owner_id,
-                fencing_token=fencing_token,
-                plan_fingerprint=self.plan_fingerprint,
-                durable=self.durable,
+                rec,
+                _iso(nominal),
+                fencing_token,
                 next_fire_at=_iso(nxt) if nxt is not None else None,
             )
             claimed += int(created)
         return claimed
+
+    def _claim_scheduled_firing(
+        self,
+        ctx: ControlPlaneContext,
+        rec: ScheduleRecord,
+        nominal_fire_time: str,
+        fencing_token: int,
+        *,
+        next_fire_at: str | None,
+        skip_status: FiringStatus | None = None,
+    ) -> bool:
+        prepared = (
+            self.occurrence_preparer(ctx, rec, nominal_fire_time, None)
+            if self.occurrence_preparer is not None
+            else rec
+        )
+        claim_options: dict[str, Any] = {}
+        if prepared.occurrence_snapshot is not None:
+            claim_options["metadata"] = dict(prepared.occurrence_snapshot)
+        try:
+            firing, created = self.schedule_store.claim_firing(
+                ctx,
+                schedule_id=rec.schedule_id,
+                revision_id=rec.revision_id,
+                nominal_fire_time=nominal_fire_time,
+                owner_id=self.owner_id,
+                fencing_token=fencing_token,
+                plan_fingerprint=(
+                    "managed-admission-pending"
+                    if self.run_submitter is not None
+                    else self.plan_fingerprint
+                ),
+                durable=self.durable,
+                next_fire_at=next_fire_at,
+                admit_submission=self.run_submitter is None,
+                skip_status=skip_status,
+                **claim_options,
+            )
+        except ControlPlaneError as exc:
+            # The schedule changed after this scan. A subsequent tick will
+            # reload current state; lease and provider conflicts still surface.
+            if exc.code == "PMFIRE409":
+                return False
+            raise
+        if (
+            created
+            and firing.status == "accepted"
+            and self.run_submitter is not None
+            and self.durable is not None
+        ):
+            prepared = (
+                self.occurrence_preparer(ctx, rec, nominal_fire_time, firing)
+                if self.occurrence_preparer is not None
+                else prepared
+            )
+            submission_id, fingerprint = self.run_submitter(
+                ctx, prepared, nominal_fire_time
+            )
+            self.schedule_store.link_firing_submission(
+                ctx,
+                firing.firing_id,
+                submission_id=submission_id,
+                plan_fingerprint=fingerprint,
+                durable=self.durable,
+            )
+        return created
 
 
 __all__ = ["FakeScheduleClock", "SchedulerService"]

@@ -4,23 +4,35 @@
 from __future__ import annotations
 
 import hashlib
+import json
 import threading
 import uuid
 from collections.abc import Mapping, Sequence
 from copy import deepcopy
 from dataclasses import dataclass, field
 from datetime import UTC, datetime
-from typing import Any
+from typing import Any, cast
 
 from etlantic.control_plane.errors import ControlPlaneError
+from etlantic.control_plane.event_retention import (
+    DEFAULT_EVENT_IDEMPOTENCY_RETENTION_SECONDS,
+    MAX_EVENT_IDEMPOTENCY_PRUNE_BATCH,
+    event_expiry,
+    event_time,
+    is_event_expired,
+    normalize_event_time,
+)
 from etlantic.control_plane.models import (
     AcceptReceipt,
     AcceptResult,
     ControlPlaneContext,
     ControlPlaneEvent,
 )
-from etlantic.control_plane.protocols import AuthzDecision
-from etlantic.control_plane.redaction import redact_control_plane_payload
+from etlantic.control_plane.protocols import AuthzDecision, DefinitionResolution
+from etlantic.control_plane.redaction import (
+    redact_control_plane_payload,
+    redact_or_preserve_execution_envelope,
+)
 
 
 def _utcnow_iso() -> str:
@@ -29,6 +41,18 @@ def _utcnow_iso() -> str:
 
 def _scope(ctx: ControlPlaneContext) -> tuple[str, str]:
     return ctx.scope_key
+
+
+_IdempotentEventRecord = tuple[str, str, str, str | None]
+_EVENT_IDEMPOTENCY_SWEEP_INTERVAL = 64
+
+
+def _new_idempotent_event_map() -> dict[tuple[str, str, str], _IdempotentEventRecord]:
+    return {}
+
+
+def _new_event_sequence_map() -> dict[tuple[str, str], int]:
+    return {}
 
 
 def _idem_key(
@@ -95,6 +119,9 @@ class MemoryDefinitionRepository:
     """In-memory definition store keyed by (tenant, workspace, definition_id)."""
 
     _docs: dict[tuple[str, str, str], dict[str, Any]] = field(default_factory=dict)
+    _revisions: dict[tuple[str, str, str], dict[str, dict[str, Any]]] = field(
+        default_factory=lambda: dict[tuple[str, str, str], dict[str, dict[str, Any]]]()
+    )
     _lock: threading.RLock = field(default_factory=threading.RLock)
 
     def get(self, ctx: ControlPlaneContext, definition_id: str) -> Mapping[str, Any]:
@@ -116,15 +143,65 @@ class MemoryDefinitionRepository:
                 if t == tenant_id and w == workspace_id
             )
 
+    def resolve_revision(
+        self,
+        ctx: ControlPlaneContext,
+        definition_id: str,
+        selector: str,
+    ) -> DefinitionResolution:
+        """Resolve an immutable in-memory snapshot by selector or content id."""
+        key = (*_scope(ctx), definition_id)
+        with self._lock:
+            revisions: dict[str, dict[str, Any]] = self._revisions.get(key, {})
+            if selector == "current":
+                revision_id = next(reversed(revisions), None)
+            else:
+                revision_id = selector if selector in revisions else None
+            if revision_id is None:
+                raise ControlPlaneError.not_found(
+                    "Definition revision was not found",
+                    extensions={"definition_id": definition_id},
+                )
+            return DefinitionResolution(
+                revision_id=revision_id,
+                document=deepcopy(revisions[revision_id]),
+            )
+
     def put(
         self,
         ctx: ControlPlaneContext,
         definition_id: str,
         document: Mapping[str, Any],
     ) -> None:
+        self.put_revision(ctx, definition_id, document)
+
+    def put_revision(
+        self,
+        ctx: ControlPlaneContext,
+        definition_id: str,
+        document: Mapping[str, Any],
+    ) -> str:
+        """Store one immutable definition snapshot and return its content id."""
         key = (*_scope(ctx), definition_id)
+        document_copy = deepcopy(dict(document))
+        revision_digest = hashlib.sha256(
+            json.dumps(
+                document_copy,
+                sort_keys=True,
+                separators=(",", ":"),
+                ensure_ascii=False,
+                allow_nan=False,
+            ).encode("utf-8")
+        ).hexdigest()
+        revision_id = f"defrev-{revision_digest}"
         with self._lock:
-            self._docs[key] = deepcopy(dict(document))
+            self._docs[key] = document_copy
+            revisions = self._revisions.setdefault(key, {})
+            # Re-inserting an earlier content digest is a new current selection
+            # even though its immutable revision id and payload are unchanged.
+            revisions.pop(revision_id, None)
+            revisions[revision_id] = document_copy
+        return revision_id
 
 
 @dataclass
@@ -157,6 +234,18 @@ class MemorySubmissionStore:
             receipt = self._by_id.get(key)
             return deepcopy(receipt) if receipt is not None else None
 
+    def lookup_idempotency_payload(
+        self,
+        ctx: ControlPlaneContext,
+        idempotency_key: str,
+        *,
+        operation: str = "run.submit",
+    ) -> Mapping[str, Any] | None:
+        key = _idem_key(ctx, idempotency_key, operation=operation)
+        with self._lock:
+            payload = self._payloads.get(key)
+            return deepcopy(payload) if payload is not None else None
+
     def accept(
         self,
         ctx: ControlPlaneContext,
@@ -165,12 +254,18 @@ class MemorySubmissionStore:
         payload: Mapping[str, Any],
         resource_type: str = "run",
         resource_id: str | None = None,
+        submission_id: str | None = None,
         operation: str = "run.submit",
     ) -> AcceptResult:
         key = _idem_key(ctx, idempotency_key, operation=operation)
         safe_payload = redact_control_plane_payload(deepcopy(dict(payload)))
         if not isinstance(safe_payload, dict):
             safe_payload = {}
+        execution_envelope = payload.get("execution_envelope")
+        if isinstance(execution_envelope, str):
+            safe_payload["execution_envelope"] = redact_or_preserve_execution_envelope(
+                execution_envelope
+            )
         with self._lock:
             existing = self._by_id.get(key)
             if existing is not None:
@@ -180,10 +275,24 @@ class MemorySubmissionStore:
                         "Idempotency key reuse with a different payload",
                         extensions={"idempotency_key": idempotency_key},
                     )
+                if (
+                    submission_id is not None
+                    and existing.submission_id != submission_id
+                ):
+                    raise ControlPlaneError.conflict(
+                        "Idempotency key is bound to a different submission"
+                    )
                 return AcceptResult(receipt=deepcopy(existing), created=False)
 
             acceptance_id = f"acc-{uuid.uuid4().hex[:16]}"
-            submission_id = f"sub-{uuid.uuid4().hex[:16]}"
+            submission_id = submission_id or f"sub-{uuid.uuid4().hex[:16]}"
+            if any(
+                receipt.submission_id == submission_id
+                for receipt in self._by_id.values()
+            ):
+                raise ControlPlaneError.conflict(
+                    "submission_id is already bound to an acceptance"
+                )
             run_id = resource_id or submission_id
             created = _utcnow_iso()
             receipt = AcceptReceipt(
@@ -276,7 +385,31 @@ class MemoryEventStore:
     _events: dict[tuple[str, str], list[ControlPlaneEvent]] = field(
         default_factory=dict
     )
+    _idempotent_events: dict[tuple[str, str, str], _IdempotentEventRecord] = field(
+        default_factory=_new_idempotent_event_map
+    )
+    _event_sequences: dict[tuple[str, str], int] = field(
+        default_factory=_new_event_sequence_map
+    )
+    _event_idempotency_sweep_counts: dict[tuple[str, str], int] = field(
+        default_factory=_new_event_sequence_map
+    )
     _lock: threading.RLock = field(default_factory=threading.RLock)
+    max_events_per_scope: int | None = None
+    idempotency_retention_seconds: int = DEFAULT_EVENT_IDEMPOTENCY_RETENTION_SECONDS
+
+    def __post_init__(self) -> None:
+        if self.max_events_per_scope is not None and (
+            type(self.max_events_per_scope) is not int or self.max_events_per_scope < 1
+        ):
+            raise ValueError("max_events_per_scope must be a positive integer or None")
+        if (
+            type(self.idempotency_retention_seconds) is not int
+            or self.idempotency_retention_seconds < 1
+        ):
+            raise ValueError(
+                "idempotency_retention_seconds must be a positive integer or None"
+            )
 
     def append(
         self,
@@ -291,7 +424,14 @@ class MemoryEventStore:
             safe_payload = {}
         with self._lock:
             bucket = self._events.setdefault(scope, [])
-            sequence = len(bucket) + 1
+            sequence = (
+                max(
+                    self._event_sequences.get(scope, 0),
+                    max((event.sequence for event in bucket), default=0),
+                )
+                + 1
+            )
+            self._event_sequences[scope] = sequence
             cursor = hashlib.sha256(
                 f"{scope[0]}:{scope[1]}:{sequence}".encode()
             ).hexdigest()[:24]
@@ -313,7 +453,137 @@ class MemoryEventStore:
                 },
             )
             bucket.append(event)
+            if (
+                self.max_events_per_scope is not None
+                and len(bucket) > self.max_events_per_scope
+            ):
+                del bucket[: -self.max_events_per_scope]
             return deepcopy(event)
+
+    def append_once(
+        self,
+        ctx: ControlPlaneContext,
+        *,
+        event_key: str,
+        kind: str,
+        payload: Mapping[str, Any] | None = None,
+    ) -> ControlPlaneEvent:
+        """Append once per trusted scope and key; reject key reuse with new content."""
+        if not event_key.strip():
+            raise ValueError("event_key must not be empty")
+        scope = _scope(ctx)
+        redacted_payload = redact_control_plane_payload(deepcopy(dict(payload or {})))
+        safe_payload = (
+            cast(dict[str, Any], redacted_payload)
+            if isinstance(redacted_payload, dict)
+            else {}
+        )
+        event_key_digest = hashlib.sha256(event_key.encode("utf-8")).hexdigest()
+        scoped_key = (*scope, event_key_digest)
+        payload_digest = hashlib.sha256(
+            json.dumps(
+                safe_payload,
+                sort_keys=True,
+                separators=(",", ":"),
+                ensure_ascii=False,
+            ).encode("utf-8")
+        ).hexdigest()
+        now = normalize_event_time()
+        with self._lock:
+            sweep_count = self._event_idempotency_sweep_counts.get(scope, 0) + 1
+            self._event_idempotency_sweep_counts[scope] = sweep_count
+            if sweep_count % _EVENT_IDEMPOTENCY_SWEEP_INTERVAL == 0:
+                self._prune_expired_idempotency_locked(
+                    scope, now=now, limit=MAX_EVENT_IDEMPOTENCY_PRUNE_BATCH
+                )
+            previous = self._idempotent_events.get(scoped_key)
+            if previous is not None and is_event_expired(previous[3], now=now):
+                del self._idempotent_events[scoped_key]
+                previous = None
+            if previous is not None:
+                previous_kind, previous_payload_digest, cursor, _expires_at = previous
+                if previous_kind != kind or previous_payload_digest != payload_digest:
+                    raise ControlPlaneError.conflict(
+                        "Event idempotency key was reused with different content",
+                        extensions={"operation": "event.append_once"},
+                    )
+                retained = self._events.get(scope, [])
+                event = next((item for item in retained if item.cursor == cursor), None)
+                if event is None:
+                    raise ControlPlaneError.gone(
+                        "Previously delivered event is outside retained history",
+                        extensions={
+                            "hint": "event_expired",
+                            "operation": "event.append_once",
+                        },
+                    )
+                return deepcopy(event)
+            event = self.append(ctx, kind=kind, payload=safe_payload)
+            self._idempotent_events[scoped_key] = (
+                kind,
+                payload_digest,
+                event.cursor,
+                event_expiry(
+                    event_time(event.created_at) or now,
+                    self.idempotency_retention_seconds,
+                ),
+            )
+            return deepcopy(event)
+
+    def prune_expired_idempotency(
+        self,
+        ctx: ControlPlaneContext,
+        *,
+        limit: int = 1000,
+        now: datetime | None = None,
+    ) -> int:
+        """Remove a bounded number of expired scoped idempotency tombstones."""
+        if (
+            type(limit) is not int
+            or not 1 <= limit <= MAX_EVENT_IDEMPOTENCY_PRUNE_BATCH
+        ):
+            raise ValueError(
+                f"limit must be between 1 and {MAX_EVENT_IDEMPOTENCY_PRUNE_BATCH}"
+            )
+        scope = _scope(ctx)
+        with self._lock:
+            return self._prune_expired_idempotency_locked(
+                scope, now=normalize_event_time(now), limit=limit
+            )
+
+    def _prune_expired_idempotency_locked(
+        self, scope: tuple[str, str], *, now: datetime, limit: int
+    ) -> int:
+        expired_keys: list[tuple[str, str, str]] = []
+        for key, record in self._idempotent_events.items():
+            if key[:2] != scope:
+                continue
+            if is_event_expired(record[3], now=now):
+                expired_keys.append(key)
+                if len(expired_keys) >= limit:
+                    break
+        for key in expired_keys:
+            del self._idempotent_events[key]
+        return len(expired_keys)
+
+    def prune_before_sequence(
+        self, ctx: ControlPlaneContext, before_sequence: int
+    ) -> int:
+        """Prune old scoped events while keeping the high-water anchor."""
+        if before_sequence < 1:
+            raise ValueError("before_sequence must be at least 1")
+        scope = _scope(ctx)
+        with self._lock:
+            bucket = self._events.get(scope, [])
+            if len(bucket) < 2:
+                return 0
+            latest = max(event.sequence for event in bucket)
+            cutoff = min(before_sequence, latest)
+            retained = [event for event in bucket if event.sequence >= cutoff]
+            pruned = len(bucket) - len(retained)
+            if pruned:
+                self._events[scope] = retained
+            return pruned
 
     def list_after_cursor(
         self,
@@ -325,7 +595,11 @@ class MemoryEventStore:
         if limit < 1:
             return ()
         with self._lock:
-            bucket = self._events.get(_scope(ctx), [])
+            scope = _scope(ctx)
+            self._prune_expired_idempotency_locked(
+                scope, now=normalize_event_time(), limit=1000
+            )
+            bucket = self._events.get(scope, [])
             start = 0
             if cursor is not None:
                 found = False

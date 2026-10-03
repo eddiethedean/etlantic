@@ -7,7 +7,7 @@ plan_last_reviewed: v0.55.0
 
 # ETLantic 0.56 — Complete Application ETL Backend
 
-**Status: planned; no implementation or qualification is claimed.** This phase
+**Status: implementation in progress; qualification remains open.** This phase
 follows 0.55 inferred-model authoring. Brownfield bridges move to 0.57, the
 operator console to 0.58, managed-runtime/provider packs to 0.59 and
 TransformationModel incubation to 0.60. Their existing scope is preserved.
@@ -252,6 +252,16 @@ rerun, replay, resume, repair and backfill are runnable commands with explicit
 new-run versus new-attempt semantics, idempotency and source/parent lineage.
 A generated repair plan is not evidence that a repair executed.
 
+Repair and backfill commands accept a complete per-node partition selector
+against a verified terminal parent run. They create a distinct durable child
+command with parent run/submission/attempt lineage and an immutable selector in
+the accepted execution envelope. Admission requires explicit bounded partition
+read support from every selected source and idempotent partition replacement
+from every selected sink. Workers call those partition-specific provider
+methods and fail closed if a selector or capability is missing; whole-resource
+I/O is never a fallback. Checkpoint and reusable-artifact identities remain
+opaque provider inputs and lineage references.
+
 Include queued cancellation and in-flight cancellation, supported pause/resume,
 and audited amendments. Provider limitations must be truthful; pause may only
 be offered at a qualified checkpoint/quiescence boundary. External business
@@ -268,9 +278,11 @@ effect reconciliation and step execution.
 | CSV uploads | Immutable staged reference consumed by the worker; encoding/delimiter/header/type policies, bounded parsing, validation, malformed-input outcomes and cleanup |
 | Existing execution providers | Preserve qualified explicit SQL/PySpark and other engine/compiler controls, portable quality/transforms, native extensions and dynamic/incremental/streaming semantics in the managed service matrix |
 
-MSS and MCS-COP are two Foundry configurations. Qualification must cover distinct
-endpoints, credentials and namespaces, including same-provider transfers, with
-no product imports. The minimum adopter matrix has four source configurations
+MSS and MCS-COP are two Foundry configurations. Qualification uses two
+independently configured Semblance-backed Foundry API simulator instances, with
+distinct endpoints, bearer tokens and namespaces, including same-provider
+transfers, with no product imports. A live Foundry account is not required.
+The minimum adopter matrix has four source configurations
 (two Foundry, PostgreSQL, CSV) × three destinations (two Foundry, PostgreSQL):
 **12 pairings**, expanded by each destination's advertised write modes. Reject
 unsafe source/target overlap before mutation, including aliases to the same
@@ -289,10 +301,12 @@ provider advertises for that exact tuple. PostgreSQL append, keyed upsert and
 atomic replacement, and Foundry destination file replacement are minimum
 required modes; a capability declaration cannot remove them from the release
 floor. Each pair/mode needs a successful real-worker run and a provider-relevant
-failure observation. Record separate overlap rejection, credential denial,
-commit uncertainty and recovery scenarios with the exact provider versions,
-resource identities and effect receipts. Unqualified optional combinations
-remain unavailable with a reason; they do not count as passing required rows.
+failure observation. Foundry API calls run against Semblance-backed loopback
+simulators; a live Foundry account is not required. Record separate overlap
+rejection, credential denial, commit uncertainty and recovery scenarios with
+the exact provider and simulator versions, resource identities and effect
+receipts. Unqualified optional combinations remain unavailable with a reason;
+they do not count as passing required rows.
 
 ## Acceptance criteria
 
@@ -335,9 +349,9 @@ provider matrix or substitute a stub for an implemented service.
 | AC056-031 | Retry/rerun/replay/resume/repair/backfill enqueue and execute qualified work, with distinct command identity, idempotency and parent/run/attempt lineage | 056-CONTROL |
 | AC056-032 | Cancel, qualified pause/resume and safe amendments have tested boundaries; accepted snapshots and old attempts remain immutable | 056-CONTROL |
 | AC056-033 | Live PostgreSQL append/upsert/replace, key/schema validation, permissions, overlaps, staged failure and commit/reconciliation cases pass | 056-PROVIDER |
-| AC056-034 | Live Foundry dataset/branch/file operations, all declared write modes, overlap and effect/reconciliation cases pass in an isolated account/project | 056-PROVIDER |
+| AC056-034 | Foundry connector tests pass against the Semblance-backed API simulator for dataset/branch/file operations, all declared write modes, overlap, and effect/reconciliation in independently configured loopback scopes | 056-PROVIDER |
 | AC056-035 | Immutable CSV inputs exercise parsing/type/encoding choices, empty/malformed/oversize data and resource retention through the real worker | 056-PROVIDER |
-| AC056-036 | All 12 minimum source/destination pairings and advertised modes have success/failure evidence, including two independently scoped Foundry configurations | 056-PROVIDER |
+| AC056-036 | All 12 minimum source/destination pairings and advertised modes pass through the managed worker with success/failure evidence, using live PostgreSQL, immutable CSV fixtures, and two independently configured Semblance-backed Foundry scopes | 056-PROVIDER |
 | AC056-037 | An independently built private provider installs without an adopter or core edit; its schema/options/native references survive authoring, submission and execution | 056-QUALIFY |
 | AC056-038 | Issue #150 disclosure regression and the complete multi-tenant/owner redaction campaign pass for services, HTTP, actions, events and artifacts | 056-QUALIFY |
 | AC056-039 | Real PostgreSQL control-plane persistence passes multi-process accept/race/restart/backup/restore and failure campaigns; memory/SQLite remain separately labelled | 056-QUALIFY |
@@ -351,12 +365,14 @@ provider matrix or substitute a stub for an implemented service.
 
 The [execution plan](EXECUTION_PLAN_0_56.md) defines Gates A–F. The release index
 must join each AC ID to its case, environment, provider/version tuple, result
-and immutable evidence artifact. A skipped required case is an unmet gate.
+and immutable evidence artifact. For Foundry qualification, record the
+Semblance version and simulator configuration; no live Foundry environment is
+required. A skipped required case is an unmet gate.
 
 Required artifacts are the frozen public API/control-coverage inventory;
 ownership/state-machine ADRs; schema and package compatibility report;
 authorization/redaction report; durable failure/recovery campaign; live
-PostgreSQL/Foundry/CSV pairing matrix; transform/quality and advanced-control
+PostgreSQL plus Semblance-backed Foundry and CSV pairing matrix; transform/quality and advanced-control
 matrix; private-extension example; generic headless and HTTP consumer examples;
 deployment/operations runbook; migration/rollback report; and signed release
 decision with exact supported versus Experimental/unavailable claims.

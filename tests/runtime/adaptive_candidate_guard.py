@@ -7,8 +7,14 @@ from etlantic.runtime.adaptive_support import candidate_bundle
 
 _bundle, _ = candidate_bundle()
 _local_etlantic_pin = _bundle["rows"]["chain/1:local"]["versions"]["etlantic"]
+_all_rows_match_package = all(
+    row["versions"]["etlantic"] == etlantic_version for row in _bundle["rows"].values()
+)
 
-ADAPTIVE_CANDIDATE_MATCHES_PACKAGE = etlantic_version == _local_etlantic_pin
+ADAPTIVE_LOCAL_CHAIN_MATCHES_PACKAGE = etlantic_version == _local_etlantic_pin
+ADAPTIVE_CANDIDATE_MATCHES_PACKAGE = ADAPTIVE_LOCAL_CHAIN_MATCHES_PACKAGE and (
+    _all_rows_match_package
+)
 ADAPTIVE_CANDIDATE_MISMATCH_REASON = (
     "the packaged adaptive candidate is not qualified for this ETLantic version"
 )

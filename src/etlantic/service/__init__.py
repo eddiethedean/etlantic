@@ -26,6 +26,7 @@ from etlantic.lifecycle.runtime import PipelineRuntime
 from etlantic.plan.model import PipelinePlan
 from etlantic.reports.model import PipelineRunReport
 from etlantic.runtime.execute import run_pipeline
+from etlantic.service.managed import ManagedApplicationService
 
 
 @dataclass(frozen=True, slots=True)
@@ -414,6 +415,7 @@ class AuthoringService:
 # Re-export helpers used by OpenAPI adapters
 __all__ = [
     "AuthoringService",
+    "ManagedApplicationService",
     "PipelinePlan",
     "PolicyContext",
     "RunJob",

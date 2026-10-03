@@ -3,12 +3,16 @@
 
 from __future__ import annotations
 
+import hashlib
 import os
 import uuid
 from collections.abc import Callable, Iterator
 from concurrent.futures import ThreadPoolExecutor
+from datetime import UTC, datetime, timedelta
+from importlib import import_module
 from pathlib import Path
 from threading import Barrier
+from typing import cast
 
 import pytest
 
@@ -20,8 +24,11 @@ from sqlalchemy.schema import CreateSchema, DropSchema
 
 from etlantic.control_plane import (
     ControlPlaneContext,
+    ControlPlaneError,
     EnvironmentRef,
     Principal,
+    RegistryDefinitionRepository,
+    RegistryProvider,
     SecurityDomain,
     TenantRef,
     WorkspaceRef,
@@ -29,6 +36,7 @@ from etlantic.control_plane import (
 from etlantic_sqlmodel.control_plane import (
     SQLModelDefinitionRepository,
     SqlModelEventStore,
+    SqlModelRegistryProvider,
     SQLModelSubmissionStore,
     create_sqlite_engine,
 )
@@ -36,10 +44,41 @@ from etlantic_sqlmodel.migrations import (
     VERSIONS,
     apply_migrations,
     current_version,
+    downgrade,
     upgrade,
 )
 
 pytestmark = pytest.mark.sqlmodel
+
+
+def test_006_migration_imports_legacy_definitions_as_immutable_revisions(
+    tmp_path: Path,
+) -> None:
+    engine = create_sqlite_engine(f"sqlite:///{tmp_path / 'legacy-definitions.db'}")
+    assert upgrade(engine, target="005_cp1_reference") == "005_cp1_reference"
+    ctx = _ctx()
+    legacy = SQLModelDefinitionRepository(engine)
+    document = {
+        "name": "orders",
+        "authoring_id": "natural metadata remains intact",
+    }
+    legacy.put(ctx, "legacy-orders", document)
+
+    assert upgrade(engine) == "013_durable_submission_scope_backfill_0_56"
+    registry = cast(RegistryProvider, SqlModelRegistryProvider(engine))
+    definitions = RegistryDefinitionRepository(registry)
+    current = definitions.resolve_revision(ctx, "legacy-orders", "current")
+    exact = definitions.resolve_revision(ctx, "legacy-orders", current.revision_id)
+    assert current.document == document
+    assert exact == current
+    assert legacy.get(ctx, "legacy-orders") == document
+
+    # Re-applying its backfill is idempotent and keeps the immutable revision.
+    migration = import_module(
+        "etlantic_sqlmodel.migrations.versions.006_managed_definition_revisions_0_56"
+    )
+    migration.upgrade(engine)
+    assert definitions.resolve_revision(ctx, "legacy-orders", "current") == current
 
 
 @pytest.fixture
@@ -86,15 +125,16 @@ def _ctx(
     )
 
 
-def test_latest_migration_provisions_all_cp1_store_tables(tmp_path: Path) -> None:
+def test_latest_migration_provisions_cp1_and_report_tables(tmp_path: Path) -> None:
     engine = create_sqlite_engine(f"sqlite:///{tmp_path / 'cp1.db'}")
 
-    assert apply_migrations(engine) == "005_cp1_reference"
-    assert current_version(engine) == "005_cp1_reference"
+    assert apply_migrations(engine) == "013_durable_submission_scope_backfill_0_56"
+    assert current_version(engine) == "013_durable_submission_scope_backfill_0_56"
     assert {
         "cp_definitions",
         "cp_submissions",
         "cp_events",
+        "cp_run_reports",
     }.issubset(set(inspect(engine).get_table_names()))
     constraints = {
         constraint["name"]
@@ -132,7 +172,7 @@ def test_latest_migration_provisions_all_cp1_store_tables(tmp_path: Path) -> Non
 
 
 @pytest.mark.parametrize("previous_head", VERSIONS[:-1])
-def test_upgrade_from_published_head_adds_cp1_tables_without_replacing_existing_schema(
+def test_upgrade_from_published_head_adds_managed_reports_without_replacing_schema(
     tmp_path: Path,
     previous_head: str,
 ) -> None:
@@ -142,16 +182,315 @@ def test_upgrade_from_published_head_adds_cp1_tables_without_replacing_existing_
 
     assert upgrade(engine, target=previous_head) == previous_head
     before = set(inspect(engine).get_table_names())
-    assert "cp_events" not in before
+    if previous_head in {
+        "007_managed_run_reports_0_56",
+        "008_idempotent_run_events_0_56",
+        "009_event_retention_tombstones_0_56",
+        "010_immutable_input_resources_0_56",
+        "011_run_artifact_retention_0_56",
+        "012_bounded_event_tombstone_retention_0_56",
+    }:
+        assert "cp_run_reports" in before
+    else:
+        assert "cp_run_reports" not in before
+    if previous_head in {
+        "008_idempotent_run_events_0_56",
+        "009_event_retention_tombstones_0_56",
+        "010_immutable_input_resources_0_56",
+        "011_run_artifact_retention_0_56",
+        "012_bounded_event_tombstone_retention_0_56",
+    }:
+        assert "cp_event_idempotency" in before
+        assert {
+            "tenant_id",
+            "workspace_id",
+            "event_key",
+            "event_id",
+        }.issubset(
+            {
+                column["name"]
+                for column in inspect(engine).get_columns("cp_event_idempotency")
+            }
+        )
+    else:
+        assert "cp_event_idempotency" not in before
 
-    assert upgrade(engine) == "005_cp1_reference"
+    assert upgrade(engine) == "013_durable_submission_scope_backfill_0_56"
     tables = set(inspect(engine).get_table_names())
     assert before.issubset(tables)
     assert {
         "cp_definitions",
         "cp_submissions",
         "cp_events",
+        "cp_run_reports",
+        "cp_event_idempotency",
     }.issubset(tables)
+    assert {
+        "event_kind",
+        "payload_sha256",
+        "sequence",
+        "cursor",
+    }.issubset(
+        {
+            column["name"]
+            for column in inspect(engine).get_columns("cp_event_idempotency")
+        }
+    )
+
+
+def test_managed_report_migration_downgrade_preserves_prior_tables(
+    tmp_path: Path,
+) -> None:
+    engine = create_sqlite_engine(f"sqlite:///{tmp_path / 'report-migration.db'}")
+    assert upgrade(engine) == "013_durable_submission_scope_backfill_0_56"
+
+    assert downgrade(engine, target="006_managed_definition_revisions_0_56") == (
+        "006_managed_definition_revisions_0_56"
+    )
+    tables = set(inspect(engine).get_table_names())
+    assert "cp_run_reports" not in tables
+    assert {
+        "cp_definitions",
+        "cp_events",
+        "cp_registry_revisions",
+    }.issubset(tables)
+
+    assert upgrade(engine) == "013_durable_submission_scope_backfill_0_56"
+    assert "cp_run_reports" in set(inspect(engine).get_table_names())
+
+
+def test_idempotent_event_migration_round_trip_preserves_event_history(
+    tmp_path: Path,
+) -> None:
+    engine = create_sqlite_engine(f"sqlite:///{tmp_path / 'event-migration.db'}")
+    assert upgrade(engine) == "013_durable_submission_scope_backfill_0_56"
+    ctx = _ctx()
+    events = SqlModelEventStore(engine)
+    original = events.append(
+        ctx, kind="run.accepted", payload={"run_id": "run-migration"}
+    )
+
+    assert downgrade(engine, target="007_managed_run_reports_0_56") == (
+        "007_managed_run_reports_0_56"
+    )
+    assert "cp_event_idempotency" not in set(inspect(engine).get_table_names())
+    assert upgrade(engine) == "013_durable_submission_scope_backfill_0_56"
+    assert "cp_event_idempotency" in set(inspect(engine).get_table_names())
+    events = SqlModelEventStore(engine)
+    repeated = events.append_once(
+        ctx,
+        event_key="run-migration:attempt-1:started",
+        kind="run.started",
+        payload={"run_id": "run-migration", "attempt_id": "attempt-1"},
+    )
+    same = events.append_once(
+        ctx,
+        event_key="run-migration:attempt-1:started",
+        kind="run.started",
+        payload={"run_id": "run-migration", "attempt_id": "attempt-1"},
+    )
+    assert same.event_id == repeated.event_id
+    retained = events.list_after_cursor(ctx, None, limit=10)
+    assert retained[0].event_id == original.event_id
+    assert [event.kind for event in retained] == [
+        "run.accepted",
+        "run.started",
+    ]
+
+
+def test_event_retention_migration_backfills_previously_published_keys(
+    tmp_path: Path,
+) -> None:
+    engine = create_sqlite_engine(
+        f"sqlite:///{tmp_path / 'event-tombstone-backfill.db'}"
+    )
+    assert upgrade(engine, target="008_idempotent_run_events_0_56") == (
+        "008_idempotent_run_events_0_56"
+    )
+    ctx = _ctx()
+    key = "legacy-key-started"
+    payload = '{"run_id": "legacy-key-run"}'
+    prior_event_id = "evt-legacy-event-1"
+    prior_cursor = "legacy-cursor-1"
+    prior_sequence = 1
+    with engine.begin() as connection:
+        # Seed the v8 schema directly: the current store expects v9/v12
+        # tombstone columns and must only be used after the migration chain.
+        connection.execute(
+            text(
+                "INSERT INTO cp_events "
+                "(tenant_id, workspace_id, event_id, sequence, cursor, kind, "
+                "created_at, payload_json, correlation_id) VALUES "
+                "(:tenant_id, :workspace_id, :event_id, :sequence, :cursor, "
+                ":kind, :created_at, :payload_json, NULL)"
+            ),
+            {
+                "tenant_id": ctx.tenant.tenant_id,
+                "workspace_id": ctx.workspace.workspace_id,
+                "event_id": prior_event_id,
+                "sequence": prior_sequence,
+                "cursor": prior_cursor,
+                "kind": "run.started",
+                "created_at": "2026-09-01T00:00:00Z",
+                "payload_json": payload,
+            },
+        )
+        connection.execute(
+            text(
+                "INSERT INTO cp_event_idempotency "
+                "(tenant_id, workspace_id, event_key, event_id) "
+                "VALUES (:tenant_id, :workspace_id, :event_key, :event_id)"
+            ),
+            {
+                "tenant_id": ctx.tenant.tenant_id,
+                "workspace_id": ctx.workspace.workspace_id,
+                "event_key": hashlib.sha256(key.encode()).hexdigest(),
+                "event_id": prior_event_id,
+            },
+        )
+
+    assert upgrade(engine) == "013_durable_submission_scope_backfill_0_56"
+    repeated = SqlModelEventStore(engine).append_once(
+        ctx,
+        event_key=key,
+        kind="run.started",
+        payload={"run_id": "legacy-key-run"},
+    )
+    assert repeated.event_id == prior_event_id
+    with engine.connect() as connection:
+        metadata = connection.execute(
+            text(
+                "SELECT event_kind, payload_sha256, sequence, cursor "
+                "FROM cp_event_idempotency WHERE event_key = :event_key"
+            ),
+            {"event_key": hashlib.sha256(key.encode()).hexdigest()},
+        ).one()
+    assert metadata[0] == "run.started"
+    assert metadata[1] == hashlib.sha256(payload.encode()).hexdigest()
+    assert metadata[2:] == (prior_sequence, prior_cursor)
+
+
+def test_bounded_event_tombstone_rollback_and_upgrade_preserve_delivery_keys(
+    tmp_path: Path,
+) -> None:
+    engine = create_sqlite_engine(
+        f"sqlite:///{tmp_path / 'bounded-event-tombstone-round-trip.db'}"
+    )
+    assert upgrade(engine) == "013_durable_submission_scope_backfill_0_56"
+    ctx = _ctx()
+    events = SqlModelEventStore(engine)
+    original = events.append_once(
+        ctx,
+        event_key="bounded-event-round-trip",
+        kind="run.accepted",
+        payload={"run_id": "bounded-event-round-trip"},
+    )
+    with engine.connect() as connection:
+        original_expiry = connection.execute(
+            text(
+                "SELECT expires_at FROM cp_event_idempotency "
+                "WHERE tenant_id = :tenant_id AND workspace_id = :workspace_id"
+            ),
+            {
+                "tenant_id": ctx.tenant.tenant_id,
+                "workspace_id": ctx.workspace.workspace_id,
+            },
+        ).scalar_one()
+    assert isinstance(original_expiry, str)
+
+    # Rolling back only 012 removes the expiry index/column while retaining
+    # published events and their idempotency keys from migration 008 onward.
+    assert downgrade(engine, target="011_run_artifact_retention_0_56") == (
+        "011_run_artifact_retention_0_56"
+    )
+    assert "expires_at" not in {
+        column["name"] for column in inspect(engine).get_columns("cp_event_idempotency")
+    }
+    with engine.connect() as connection:
+        retained_event_id = connection.execute(
+            text(
+                "SELECT event_id FROM cp_events "
+                "WHERE tenant_id = :tenant_id AND workspace_id = :workspace_id"
+            ),
+            {
+                "tenant_id": ctx.tenant.tenant_id,
+                "workspace_id": ctx.workspace.workspace_id,
+            },
+        ).scalar_one()
+        retained_delivery_key = connection.execute(
+            text(
+                "SELECT event_id FROM cp_event_idempotency "
+                "WHERE tenant_id = :tenant_id AND workspace_id = :workspace_id"
+            ),
+            {
+                "tenant_id": ctx.tenant.tenant_id,
+                "workspace_id": ctx.workspace.workspace_id,
+            },
+        ).scalar_one()
+    assert retained_event_id == original.event_id
+    assert retained_delivery_key == original.event_id
+
+    assert upgrade(engine) == "013_durable_submission_scope_backfill_0_56"
+    replayed = SqlModelEventStore(engine).append_once(
+        ctx,
+        event_key="bounded-event-round-trip",
+        kind="run.accepted",
+        payload={"run_id": "bounded-event-round-trip"},
+    )
+    assert replayed.event_id == original.event_id
+    with engine.connect() as connection:
+        restored_expiry = connection.execute(
+            text(
+                "SELECT expires_at FROM cp_event_idempotency "
+                "WHERE tenant_id = :tenant_id AND workspace_id = :workspace_id"
+            ),
+            {
+                "tenant_id": ctx.tenant.tenant_id,
+                "workspace_id": ctx.workspace.workspace_id,
+            },
+        ).scalar_one()
+    assert isinstance(restored_expiry, str)
+
+
+@pytest.mark.parametrize("rollback_head", VERSIONS[4:-1])
+def test_supported_cp1_rollback_heads_upgrade_again_with_core_records(
+    tmp_path: Path,
+    rollback_head: str,
+) -> None:
+    """Exercise every published CP1 rollback boundary and subsequent upgrade."""
+    database_path = tmp_path / ("rollback-" + rollback_head.replace("/", "-") + ".db")
+    engine = create_sqlite_engine(f"sqlite:///{database_path}")
+    assert upgrade(engine) == VERSIONS[-1]
+    ctx = _ctx()
+    definition_store = SQLModelDefinitionRepository(engine)
+    submission_store = SQLModelSubmissionStore(engine)
+    event_store = SqlModelEventStore(engine)
+    definition_store.put(ctx, "rollback-definition", {"name": "orders"})
+    accepted = submission_store.accept(
+        ctx,
+        idempotency_key="rollback-submission",
+        payload={"definition_id": "rollback-definition"},
+    )
+    accepted_receipt = accepted.receipt
+    assert accepted_receipt is not None
+    event = event_store.append(
+        ctx,
+        kind="run.accepted",
+        payload={"submission_id": accepted_receipt.submission_id},
+    )
+
+    assert downgrade(engine, target=rollback_head) == rollback_head
+    assert upgrade(engine) == VERSIONS[-1]
+    assert SQLModelDefinitionRepository(engine).get(ctx, "rollback-definition") == {
+        "name": "orders"
+    }
+    receipt = SQLModelSubmissionStore(engine).lookup_idempotency(
+        ctx, "rollback-submission"
+    )
+    assert receipt is not None
+    assert receipt.submission_id == accepted_receipt.submission_id
+    replayed = SqlModelEventStore(engine).list_after_cursor(ctx, None, limit=10)
+    assert [item.event_id for item in replayed] == [event.event_id]
 
 
 @pytest.mark.parametrize(
@@ -182,13 +521,14 @@ def test_postgresql_migration_provisions_and_persists_cp1_stores(
                 },
             )
 
-    assert upgrade(engine) == "005_cp1_reference"
-    assert current_version(engine) == "005_cp1_reference"
+    assert upgrade(engine) == "013_durable_submission_scope_backfill_0_56"
+    assert current_version(engine) == "013_durable_submission_scope_backfill_0_56"
     tables = set(inspect(engine).get_table_names())
     assert {
         "cp_definitions",
         "cp_submissions",
         "cp_events",
+        "cp_run_reports",
     }.issubset(tables)
     if starting_head is not None:
         with engine.connect() as connection:
@@ -228,7 +568,7 @@ def test_postgresql_concurrent_event_appends_allocate_ordered_sequences(
     postgres_engine_factory: Callable[[], Engine],
 ) -> None:
     engine = postgres_engine_factory()
-    assert upgrade(engine) == "005_cp1_reference"
+    assert upgrade(engine) == "013_durable_submission_scope_backfill_0_56"
     engine.dispose()
 
     ctx = _ctx()
@@ -268,3 +608,133 @@ def test_postgresql_concurrent_event_appends_allocate_ordered_sequences(
     )
     assert isolated.sequence == 1
     assert isolated.cursor not in {event.cursor for event in events}
+
+
+def test_postgresql_event_retention_expires_cursors_without_duplicate_delivery(
+    postgres_engine_factory: Callable[[], Engine],
+) -> None:
+    engine = postgres_engine_factory()
+    assert upgrade(engine) == "013_durable_submission_scope_backfill_0_56"
+    ctx = _ctx()
+    events = SqlModelEventStore(engine)
+    expired = events.append_once(
+        ctx,
+        event_key="attempt-start-retention",
+        kind="run.started",
+        payload={"run_id": "retention-run"},
+    )
+    events.append(ctx, kind="run.progress", payload={"run_id": "retention-run"})
+    anchor = events.append(
+        ctx, kind="run.completed", payload={"run_id": "retention-run"}
+    )
+
+    assert events.prune_before_sequence(ctx, before_sequence=3) == 2
+    with pytest.raises(ControlPlaneError) as cursor_error:
+        events.list_after_cursor(ctx, expired.cursor)
+    assert cursor_error.value.status == 410
+    with pytest.raises(ControlPlaneError) as duplicate_error:
+        events.append_once(
+            ctx,
+            event_key="attempt-start-retention",
+            kind="run.started",
+            payload={"run_id": "retention-run"},
+        )
+    assert duplicate_error.value.status == 410
+
+    appended = events.append(ctx, kind="run.recovered")
+    assert appended.sequence == anchor.sequence + 1 == 4
+    assert [item.event_id for item in events.list_after_cursor(ctx, None)] == [
+        anchor.event_id,
+        appended.event_id,
+    ]
+
+
+def test_postgresql_event_retention_policy_bounds_each_scope_and_keeps_keys(
+    postgres_engine_factory: Callable[[], Engine],
+) -> None:
+    engine = postgres_engine_factory()
+    assert upgrade(engine) == "013_durable_submission_scope_backfill_0_56"
+    ctx = _ctx()
+    events = SqlModelEventStore(engine, max_events_per_scope=2)
+    expired = events.append_once(
+        ctx,
+        event_key="attempt-start-policy-retention",
+        kind="run.started",
+        payload={"run_id": "policy-run"},
+    )
+    events.append(ctx, kind="run.progress", payload={"run_id": "policy-run"})
+    anchor = events.append(ctx, kind="run.completed", payload={"run_id": "policy-run"})
+
+    assert [item.sequence for item in events.list_after_cursor(ctx, None)] == [2, 3]
+    with pytest.raises(ControlPlaneError) as cursor_error:
+        events.list_after_cursor(ctx, expired.cursor)
+    assert cursor_error.value.status == 410
+    with pytest.raises(ControlPlaneError) as retry_error:
+        events.append_once(
+            ctx,
+            event_key="attempt-start-policy-retention",
+            kind="run.started",
+            payload={"run_id": "policy-run"},
+        )
+    assert retry_error.value.status == 410
+
+    next_event = events.append(ctx, kind="run.recovered")
+    assert next_event.sequence == anchor.sequence + 1 == 4
+    assert [item.sequence for item in events.list_after_cursor(ctx, None)] == [3, 4]
+    isolated = events.append(_ctx("tenant-b", "workspace-b"), kind="other.scope")
+    assert isolated.sequence == 1
+    assert events.list_after_cursor(_ctx("tenant-b", "workspace-b"), None) == [isolated]
+
+
+def test_postgresql_event_tombstone_pruning_is_bounded_scoped_and_durable(
+    postgres_engine_factory: Callable[[], Engine],
+) -> None:
+    engine = postgres_engine_factory()
+    assert upgrade(engine) == "013_durable_submission_scope_backfill_0_56"
+    ctx = _ctx()
+    other = _ctx("tenant-b", "workspace-b")
+    events = SqlModelEventStore(engine, idempotency_retention_seconds=1)
+    for event_key in ("one", "two", "three"):
+        events.append_once(
+            ctx,
+            event_key=event_key,
+            kind="run.started",
+            payload={"key": event_key},
+        )
+    other_event = events.append_once(
+        other,
+        event_key="other-scope",
+        kind="run.started",
+        payload={"key": "other-scope"},
+    )
+    expired_at = datetime.now(UTC) + timedelta(seconds=6)
+
+    assert events.prune_expired_idempotency(ctx, limit=2, now=expired_at) == 2
+    assert events.prune_expired_idempotency(ctx, limit=2, now=expired_at) == 1
+    assert events.prune_expired_idempotency(ctx, limit=2, now=expired_at) == 0
+    replacement = events.append_once(
+        ctx,
+        event_key="one",
+        kind="run.started",
+        payload={"key": "one"},
+    )
+    assert replacement.sequence == 4
+
+    engine.dispose()
+    restarted = postgres_engine_factory()
+    durable = SqlModelEventStore(restarted, idempotency_retention_seconds=1)
+    assert (
+        durable.append_once(
+            other,
+            event_key="other-scope",
+            kind="run.started",
+            payload={"key": "other-scope"},
+        ).event_id
+        == other_event.event_id
+    )
+    assert [item.sequence for item in durable.list_after_cursor(ctx, None)] == [
+        1,
+        2,
+        3,
+        4,
+    ]

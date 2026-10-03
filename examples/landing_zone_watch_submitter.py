@@ -22,9 +22,9 @@ from pathlib import Path
 from typing import Any
 
 try:
-    import httpx
+    import httpx2
 except ImportError:  # pragma: no cover - example-only dependency
-    print("httpx is required for this example: pip install httpx", file=sys.stderr)
+    print("httpx2 is required for this example: pip install httpx2", file=sys.stderr)
     raise SystemExit(1) from None
 
 from etlantic_fastapi.landing_sensor import (
@@ -51,7 +51,7 @@ def main() -> int:
         payload: dict[str, Any],
         idempotency_key: str,
     ) -> dict[str, Any]:
-        resp = httpx.post(
+        resp = httpx2.post(
             f"{args.base_url.rstrip('/')}/v1/definitions/{definition_id}/runs",
             headers={
                 "X-Principal": args.principal,

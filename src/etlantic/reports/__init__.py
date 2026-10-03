@@ -17,6 +17,7 @@ from etlantic.reports.model import (
     ValidationResult,
 )
 from etlantic.reports.render import render_html, render_text
+from etlantic.reports.retention import ArtifactRetentionResult
 from etlantic.reports.store import ReportStore
 from etlantic.reports.streaming import (
     STREAM_OPS_KEY,
@@ -28,6 +29,7 @@ __all__ = [
     "REPORT_SCHEMA",
     "STREAM_OPS_KEY",
     "ArtifactResult",
+    "ArtifactRetentionResult",
     "BackendRunReference",
     "FileReportStore",
     "PipelineRunReport",

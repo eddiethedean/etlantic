@@ -7,7 +7,7 @@ import pytest
 
 pytest.importorskip("fastapi")
 pytest.importorskip("etlantic_fastapi")
-pytest.importorskip("httpx")
+pytest.importorskip("httpx2")
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
 from fastapi.testclient import TestClient
@@ -83,7 +83,7 @@ def test_safe_body_query_header_validation_in_direct_and_embedded_apps(
             response = client.get(prefix + "/v1/definitions")
         elif probe == "query":
             # Capture adapter logging only, not the HTTP client's request-URL log.
-            with caplog.at_level(logging.WARNING, logger="httpx"):
+            with caplog.at_level(logging.WARNING, logger="httpx2"):
                 response = client.get(
                     prefix + "/v1/audit", params={"limit": SECRET}, headers=headers
                 )
@@ -176,7 +176,7 @@ def test_public_handler_can_be_registered_explicitly_without_body_logging(caplog
     def host(number: int):
         return {"number": number}
 
-    with caplog.at_level(logging.WARNING, logger="httpx"), TestClient(app) as client:
+    with caplog.at_level(logging.WARNING, logger="httpx2"), TestClient(app) as client:
         response = client.get("/host", params={"number": SECRET})
     assert response.status_code == 422 and response.json() == SAFE
     assert SECRET not in caplog.text

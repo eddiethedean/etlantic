@@ -231,6 +231,31 @@ def test_successful_attempt_publishes_all_ports_and_retains_borrowed_inputs(
     anyio.run(exercise)
 
 
+def test_attempt_preserves_private_managed_artifact_filenames(tmp_path: Path) -> None:
+    from etlantic.plan.artifacts import ArtifactRef, ArtifactStrategy
+    from etlantic.runtime.artifacts import (
+        ArtifactStore,
+        AttemptArtifactStore,
+        artifact_storage_path,
+    )
+
+    async def exercise() -> None:
+        parent = ArtifactStore(workspace=tmp_path, hash_identities=True)
+        attempt = AttemptArtifactStore(parent)
+        ref = ArtifactRef(
+            "private:/output",
+            "result.rows",
+            ArtifactStrategy.DURABLE,
+        )
+        attempt.put(ref, [{"id": 4}], durable=True)
+        await attempt.commit()
+        assert artifact_storage_path(tmp_path, ref.identity).is_file()
+        assert not (tmp_path / "private__output.json").exists()
+        assert parent.get("result.rows") == [{"id": 4}]
+
+    anyio.run(exercise)
+
+
 def test_cancelled_queued_native_work_never_starts() -> None:
     async def exercise() -> None:
         limiter = current_default_thread_limiter()
@@ -439,7 +464,7 @@ def test_staged_checkpoint_deadline_restores_files(
     old_bytes = existing.read_bytes()
     new = tmp_path / "checkpoint-new.json"
     original = artifact_module.write_text_safe
-    deadline_scope: anyio.CancelScope
+    deadline_scope: anyio.CancelScope | None = None
 
     def persist(path: Path, *args: Any, **kwargs: Any) -> Any:
         result = original(path, *args, **kwargs)
@@ -448,6 +473,7 @@ def test_staged_checkpoint_deadline_restores_files(
                 original(existing, '{"records": [{"id": 2}]}', args[1])
 
             def expire_after_preparation() -> None:
+                assert deadline_scope is not None
                 deadline_scope.deadline = anyio.current_time() + 0.1
 
             # Arm the deadline at the operation under test. Thread startup and

@@ -1,5 +1,8 @@
 # Support
 
+> **Version boundary:** 0.56.0 is a qualification candidate; 0.55.x remains the published supported line.
+
+
 ETLantic **0.55.0** is the current Beta release. The 0.55 line
 targets documented single-tenant pilots and retains **Supported** isolation
 profiles (`isolated-deployment`, `dedicated-schema`). There is no hosted

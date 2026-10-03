@@ -7,7 +7,7 @@ import pytest
 
 pytest.importorskip("fastapi")
 pytest.importorskip("etlantic_fastapi")
-pytest.importorskip("httpx")
+pytest.importorskip("httpx2")
 
 from fastapi.testclient import TestClient
 
@@ -50,16 +50,37 @@ CROSS_TENANT_404_CASES: list[tuple[str, str, str, dict | None]] = [
     ),
     ("cp_submit_run", "POST", "/v1/definitions/{definition_id}/runs", {}),
     ("cp_get_run", "GET", "/v1/runs/{run_id}", None),
+    ("cp_get_run_actions", "GET", "/v1/runs/{run_id}/actions", None),
+    ("cp_retry_run", "POST", "/v1/runs/{run_id}/retry", None),
+    (
+        "cp_resume_run",
+        "POST",
+        "/v1/runs/{run_id}/resume",
+        {"checkpoint_id": "checkpoint-matrix"},
+    ),
     ("cp_cancel_run", "POST", "/v1/runs/{run_id}/cancel", None),
     ("cp_stream_run_events", "GET", "/v1/runs/{run_id}/events", None),
+    (
+        "cp_list_run_events",
+        "GET",
+        "/v1/runs/{run_id}/events/history",
+        None,
+    ),
     ("cp_get_run_report", "GET", "/v1/runs/{run_id}/report", None),
     ("cp_list_run_artifacts", "GET", "/v1/runs/{run_id}/artifacts", None),
+    (
+        "cp_get_run_artifact_content",
+        "GET",
+        "/v1/runs/{run_id}/artifacts/content",
+        None,
+    ),
     ("cp_get_run_lineage", "GET", "/v1/runs/{run_id}/lineage", None),
 ]
 
 # Caller-scoped list/ack ops: allow in-tenant; never leak foreign ids.
 SCOPED_LIST_CASES: list[tuple[str, str, str, dict | None]] = [
     ("cp_list_definitions", "GET", "/v1/definitions", None),
+    ("cp_list_connector_catalog", "GET", "/v1/connectors", None),
     ("cp_list_schema_observations", "GET", "/v1/schema/observations", None),
     (
         "cp_ack_schema_observation",
@@ -75,13 +96,18 @@ PUBLIC_OPERATION_IDS = {"cp_health", "cp_ready"}
 ACTIONS = (
     "definition.list",
     "definition.read",
+    "connector.catalog",
     "definition.validate",
     "definition.plan",
     "run.submit",
     "run.read",
     "run.cancel",
+    "run.actions",
+    "run.retry",
+    "run.resume",
     "run.report",
     "run.artifacts",
+    "run.artifact.content",
     "run.lineage",
     "run.events",
     "schema.observations.list",
@@ -173,11 +199,10 @@ def test_cross_tenant_resource_is_404(
     template: str,
     body: dict | None,
 ) -> None:
-    del operation_id
     client, run_id, _ = _build()
     path = _path(template, definition_id="pipe-a", run_id=run_id)
     headers = {"X-Principal": "bob"}
-    if template.endswith("/runs") and method == "POST":
+    if method == "POST" and operation_id in {"cp_submit_run", "cp_resume_run"}:
         headers["Idempotency-Key"] = "bob-cross"
     resp = client.request(method, path, headers=headers, json=body)
     assert resp.status_code == 404, (method, path, resp.status_code, resp.text)
@@ -194,11 +219,10 @@ def test_cross_workspace_same_tenant_is_404(
     template: str,
     body: dict | None,
 ) -> None:
-    del operation_id
     client, run_id, _ = _build()
     path = _path(template, definition_id="pipe-a", run_id=run_id)
     headers = {"X-Principal": "alice-ws2"}
-    if template.endswith("/runs") and method == "POST":
+    if method == "POST" and operation_id in {"cp_submit_run", "cp_resume_run"}:
         headers["Idempotency-Key"] = "alice-ws2-cross"
     resp = client.request(method, path, headers=headers, json=body)
     assert resp.status_code == 404, (method, path, resp.status_code, resp.text)
@@ -218,10 +242,22 @@ def test_in_tenant_allow(
     client, run_id, _ = _build()
     path = _path(template, definition_id="pipe-a", run_id=run_id)
     headers = {"X-Principal": "alice"}
-    if operation_id == "cp_submit_run":
+    if operation_id in {"cp_submit_run", "cp_resume_run"}:
         headers["Idempotency-Key"] = "alice-allow"
     resp = client.request(method, path, headers=headers, json=body)
-    assert resp.status_code in {200, 202}, (
+    expected_statuses = (
+        {501}
+        if operation_id
+        in {
+            "cp_get_run_actions",
+            "cp_retry_run",
+            "cp_resume_run",
+            "cp_list_connector_catalog",
+            "cp_get_run_artifact_content",
+        }
+        else {200, 202}
+    )
+    assert resp.status_code in expected_statuses, (
         operation_id,
         method,
         path,

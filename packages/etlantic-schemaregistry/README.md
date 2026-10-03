@@ -1,6 +1,6 @@
 # etlantic-schemaregistry (Experimental / Preview)
 
-Version **0.55.0** (lockstep with ETLantic core).
+Version **0.56.0** (lockstep with ETLantic core).
 Confluent-compatible schema-registry adapter over the core wire protocol.
 The read-only HTTP adapter fetches one bounded subject version from a
 Confluent-compatible registry. It never registers schemas or stores documents
@@ -11,10 +11,10 @@ in inference observations.
 ## Install
 
 ```bash
-pip install 'etlantic-schemaregistry==0.55.0'
+pip install 'etlantic-schemaregistry==0.56.0'
 ```
 
-Core dependency: `etlantic>=0.55.0,<0.56`. Production profiles require
+Core dependency: `etlantic>=0.56.0,<0.57`. Production profiles require
 `Profile.schema_registry_allowlist`.
 
 ```python

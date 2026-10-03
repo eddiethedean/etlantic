@@ -6,11 +6,12 @@ from __future__ import annotations
 import contextlib
 import hashlib
 import inspect
+import json
 import threading
 import uuid
-from collections.abc import Mapping
+from collections.abc import Awaitable, Callable, Mapping, Sequence
 from dataclasses import dataclass, field, replace
-from datetime import UTC, datetime
+from datetime import UTC, datetime, timedelta
 from pathlib import Path
 from typing import Annotated, Any, cast, get_args, get_origin
 
@@ -78,7 +79,7 @@ from etlantic.runtime.faults import (
 from etlantic.runtime.incremental import MemoryStateStore, may_advance_state
 from etlantic.runtime.invoke import maybe_await
 from etlantic.runtime.logging import RunLogger, redact_message, redact_value
-from etlantic.runtime.request import MaterializationPolicy, RunRequest
+from etlantic.runtime.request import MaterializationPolicy, RunIntent, RunRequest
 from etlantic.runtime.spark_exec import (
     acquire_session,
     cancel_spark_jobs,
@@ -115,8 +116,13 @@ from etlantic.schema_policy import (
     SchemaDriftPolicy,
     evaluate_drift,
 )
-from etlantic.secrets.provider import SecretResolutionContext
+from etlantic.secrets.provider import (
+    LeasedSecretProvider,
+    SecretLease,
+    SecretResolutionContext,
+)
 from etlantic.secrets.ref import SecretRef
+from etlantic.secrets.value import SecretValue
 from etlantic.spark.provider import SparkSessionHandle
 from etlantic.sql.protocol import (
     RelationRef,
@@ -126,6 +132,8 @@ from etlantic.sql.protocol import (
 )
 from etlantic.storage.protocol import as_records
 from etlantic.transformation import ImplementationRecord, Transformation
+
+_MAX_PARTITION_LINEAGE_LINKS = 1000
 
 
 def _all_subclasses(cls: type[Any]) -> list[type[Any]]:
@@ -152,6 +160,36 @@ def _logical_type_of(value: Any) -> str:
     if isinstance(value, (list, tuple)):
         return "array"
     return type(value).__name__
+
+
+def _new_string_set() -> set[str]:
+    return set()
+
+
+class _ManagedCancellation(Exception):
+    """Internal signal that a managed worker requested runtime cancellation."""
+
+
+class _SecretLeaseLost(Exception):
+    """Internal signal for expired or unrenewable provider credentials."""
+
+
+class _SecretLeaseRevocationFailed(Exception):
+    """Internal signal for a failed provider-owned cleanup obligation."""
+
+
+@dataclass
+class _ActiveSecretLease:
+    """A run-scoped secret lease and its provider-owned renewal schedule."""
+
+    provider: LeasedSecretProvider
+    context: SecretResolutionContext
+    reference: SecretRef
+    lease: SecretLease
+    renew_at: datetime
+    renewal_required: bool
+    revocation_required: bool
+    supports_versions: bool
 
 
 def _observe_records_schema(
@@ -267,9 +305,37 @@ class LocalOrchestrator:
     _state_transitions: list[StateTransitionResult] = field(
         default_factory=list, repr=False
     )
+    _pending_state_candidates: dict[str, tuple[str, str]] = field(
+        default_factory=lambda: dict[str, tuple[str, str]](), repr=False
+    )
+    _partition_observations: dict[str, tuple[int, tuple[str, ...], tuple[str, ...]]] = (
+        field(
+            default_factory=lambda: dict[
+                str, tuple[int, tuple[str, ...], tuple[str, ...]]
+            ](),
+            repr=False,
+        )
+    )
+    _output_partition_observations: dict[
+        str, tuple[int, tuple[str, ...], tuple[str, ...]]
+    ] = field(
+        default_factory=lambda: dict[
+            str, tuple[int, tuple[str, ...], tuple[str, ...]]
+        ](),
+        repr=False,
+    )
     _pending_source_connector: Any | None = field(default=None, repr=False)
     _pending_source_binding: dict[str, Any] = field(default_factory=dict, repr=False)
     _pending_source_context: dict[str, Any] = field(default_factory=dict, repr=False)
+    _connector_source_providers: set[str] = field(
+        default_factory=_new_string_set, repr=False
+    )
+    _unverified_connector_source_providers: set[str] = field(
+        default_factory=_new_string_set, repr=False
+    )
+    _source_resource_identities: set[str] = field(
+        default_factory=_new_string_set, repr=False
+    )
     _sink_commit_receipts: list[Any] = field(default_factory=list, repr=False)
     _expected_sink_commits: int = field(default=0, repr=False)
     _publication_barrier: Any | None = field(default=None, repr=False)
@@ -285,6 +351,12 @@ class LocalOrchestrator:
         default=None, init=False, repr=False
     )
     _cleanup_obligations: list[dict[str, Any]] = field(default_factory=list, repr=False)
+    _secret_leases: list[_ActiveSecretLease] = field(default_factory=list, repr=False)
+    _secret_lease_lock: threading.RLock = field(
+        default_factory=threading.RLock, repr=False
+    )
+    _secret_lease_failure: bool = field(default=False, repr=False)
+    _secret_lease_cleanup_failure: bool = field(default=False, repr=False)
     _publication_receipt_summaries: list[dict[str, Any]] = field(
         default_factory=list, repr=False
     )
@@ -455,13 +527,13 @@ class LocalOrchestrator:
         )
         return write_mode_for_request(self.request, declared=declared)
 
-    def _commit_state_after_write(
+    def _stage_state_after_write(
         self,
         *,
         node: Node,
         run_succeeded_so_far: bool = True,
     ) -> None:
-        """Commit incremental state only after successful materialization."""
+        """Stage cursor candidates until every selected output is published."""
         if self.state_store is None:
             return
         if not may_advance_state(
@@ -472,15 +544,15 @@ class LocalOrchestrator:
         ):
             return
         strategies = self.plan.intents.get("incremental_strategies") or {}
-        if not isinstance(strategies, dict):
+        if not isinstance(strategies, Mapping):
             return
         for subject_id, raw in strategies.items():
-            if not isinstance(raw, dict):
+            if not isinstance(raw, Mapping):
                 continue
             # Prefer candidate from request metadata, else strategy metadata.
             candidate = None
             candidates = self.request.metadata.get("state_candidates") or {}
-            if isinstance(candidates, dict) and subject_id in candidates:
+            if isinstance(candidates, Mapping) and subject_id in candidates:
                 candidate = candidates[subject_id]
             elif "candidate" in raw:
                 candidate = raw.get("candidate")
@@ -488,12 +560,38 @@ class LocalOrchestrator:
                 candidate = raw.get("value")
             if candidate is None:
                 continue
-            transition = self.state_store.commit(
-                str(subject_id),
-                None if candidate is None else str(candidate),
-                reason=f"materialized:{node.name}",
+            self._pending_state_candidates[str(subject_id)] = (
+                str(candidate),
+                f"materialized:{node.name}",
             )
-            self._state_transitions.append(transition)
+
+    def _commit_staged_state_after_publication(self) -> None:
+        """Commit staged cursors after the run's selected outputs all publish."""
+        if self.state_store is None:
+            return
+        if not self._pending_state_candidates:
+            return
+        commit_many = getattr(self.state_store, "commit_many", None)
+        if not callable(commit_many):
+            if len(self._pending_state_candidates) != 1:
+                raise RuntimeError(
+                    "State provider must support atomic multi-cursor commits"
+                )
+            subject_id, (value, reason) = next(
+                iter(self._pending_state_candidates.items())
+            )
+            transitions = [self.state_store.commit(subject_id, value, reason=reason)]
+        else:
+            commit_many_typed = cast(
+                Callable[
+                    [Mapping[str, tuple[str | None, str | None]]],
+                    Sequence[StateTransitionResult],
+                ],
+                commit_many,
+            )
+            transitions = commit_many_typed(self._pending_state_candidates)
+        self._state_transitions.extend(transitions)
+        self._pending_state_candidates.clear()
 
     def _mark_publication(self) -> None:
         self._persistence.publication_committed = True
@@ -524,6 +622,7 @@ class LocalOrchestrator:
             self.runtime.reports.put(report)
         except Exception as exc:
             if self._persistence.publication_committed:
+                result_status_before_report_failure = report.status.value
                 failed_report = replace(
                     report,
                     status=RunStatus.FAILED,
@@ -537,6 +636,11 @@ class LocalOrchestrator:
                                     "Data publication succeeded but run report "
                                     "persistence failed; run marked failed."
                                 ),
+                                metadata={
+                                    "etlantic.report_failure.original_status": (
+                                        result_status_before_report_failure
+                                    )
+                                },
                             ),
                         ]
                     ),
@@ -604,6 +708,218 @@ class LocalOrchestrator:
         async with anyio.create_task_group() as wave:
             for name in ready:
                 wave.start_soon(run_one, name)
+
+    async def _with_managed_cancellation(
+        self, operation: Callable[[], Awaitable[None]]
+    ) -> None:
+        """Watch cancellation and provider leases during the complete run body."""
+        cancellation = getattr(self.runtime, "external_cancel_event", None)
+        if cancellation is not None and not callable(
+            getattr(cancellation, "is_set", None)
+        ):
+            raise PipelineExecutionError(
+                "Managed cancellation token does not support is_set()",
+                code="PMEXEC411",
+                stage="admission",
+            )
+        if cancellation is not None and cancellation.is_set():
+            raise _ManagedCancellation
+
+        stop_monitor = anyio.Event()
+        self._secret_lease_failure = False
+        self._secret_lease_cleanup_failure = False
+
+        async def renew_due_leases(scope: anyio.CancelScope) -> None:
+            while not stop_monitor.is_set():
+                if cancellation is not None and cancellation.is_set():
+                    scope.cancel()
+                    return
+                now = datetime.now(UTC)
+                with self._secret_lease_lock:
+                    leases = tuple(self._secret_leases)
+                for active in leases:
+                    if active.lease.expires_at.astimezone(UTC) <= now:
+                        self._secret_lease_failure = True
+                        scope.cancel()
+                        return
+                    if not active.renewal_required or now < active.renew_at:
+                        continue
+                    try:
+                        remaining = max(
+                            0.05,
+                            (
+                                active.lease.expires_at.astimezone(UTC) - now
+                            ).total_seconds(),
+                        )
+                        with anyio.fail_after(remaining):
+                            renewed = await active.provider.renew_lease(
+                                active.lease.lease_id, active.context
+                            )
+                        self._validate_secret_lease(
+                            active.reference,
+                            renewed,
+                            supports_versions=active.supports_versions,
+                        )
+                        if renewed.lease_id != active.lease.lease_id:
+                            raise ValueError("renewed secret lease changed identity")
+                        if (
+                            renewed.value.provider,
+                            renewed.value.name,
+                            renewed.value.key,
+                            renewed.value.version,
+                        ) != (
+                            active.lease.value.provider,
+                            active.lease.value.name,
+                            active.lease.value.key,
+                            active.lease.value.version,
+                        ):
+                            raise ValueError("renewed secret identity changed")
+                        old_expiry = active.lease.expires_at.astimezone(UTC)
+                        new_expiry = renewed.expires_at.astimezone(UTC)
+                        lifetime = (new_expiry - old_expiry).total_seconds()
+                        if lifetime <= 0:
+                            raise ValueError(
+                                "secret lease renewal did not extend expiry"
+                            )
+                        active.lease = renewed
+                        active.renew_at = now + timedelta(
+                            seconds=max(0.0, lifetime * (2.0 / 3.0))
+                        )
+                    except Exception:
+                        # Provider exception text may contain credential data.
+                        self._secret_lease_failure = True
+                        scope.cancel()
+                        return
+                with anyio.move_on_after(0.05):
+                    await stop_monitor.wait()
+
+        try:
+            with anyio.CancelScope() as execution_scope:
+                try:
+                    async with anyio.create_task_group() as task_group:
+                        task_group.start_soon(renew_due_leases, execution_scope)
+                        try:
+                            await operation()
+                        finally:
+                            stop_monitor.set()
+                except BaseExceptionGroup as exc:
+                    # A task group wraps a single exception from its body in
+                    # an ExceptionGroup. Preserve the public timeout,
+                    # cancellation and execution error types consumed by the
+                    # outer run state machine; multiple independent failures
+                    # remain grouped for diagnosis.
+                    while (
+                        isinstance(exc, BaseExceptionGroup) and len(exc.exceptions) == 1
+                    ):
+                        inner = exc.exceptions[0]
+                        if not isinstance(inner, BaseExceptionGroup):
+                            raise inner from exc
+                        exc = inner
+                    raise
+        finally:
+            # Revocation is a provider call and must still be attempted after
+            # a worker cancellation or an operation error.
+            with anyio.CancelScope(shield=True):
+                await self._revoke_secret_leases()
+        if execution_scope.cancel_called:
+            if cancellation is not None and cancellation.is_set():
+                raise _ManagedCancellation
+            if self._secret_lease_failure:
+                raise _SecretLeaseLost
+            raise _ManagedCancellation
+        if self._secret_lease_cleanup_failure:
+            raise _SecretLeaseRevocationFailed
+
+    def _validate_secret_lease(
+        self,
+        reference: SecretRef,
+        lease: Any,
+        *,
+        supports_versions: bool,
+    ) -> None:
+        if not isinstance(lease, SecretLease) or not isinstance(
+            lease.value, SecretValue
+        ):
+            raise ValueError("secret provider returned an invalid lease")
+        if lease.expires_at.astimezone(UTC) <= datetime.now(UTC):
+            raise ValueError("secret lease is already expired")
+        value = lease.value
+        if (value.provider, value.name, value.key) != (
+            reference.provider,
+            reference.name,
+            reference.key,
+        ):
+            raise ValueError("secret lease belongs to a different reference")
+        if reference.version != "current" and value.version != reference.version:
+            raise ValueError("secret lease did not return the requested version")
+        if supports_versions and (
+            not value.version.strip()
+            or (reference.version == "current" and value.version == "current")
+        ):
+            raise ValueError("versioned secret lease omitted its actual version")
+        if redact_message(value.version) != value.version:
+            raise ValueError("secret lease returned an unsafe version identifier")
+
+    def _track_secret_lease(
+        self,
+        provider: LeasedSecretProvider,
+        context: SecretResolutionContext,
+        reference: SecretRef,
+        lease: SecretLease,
+        *,
+        renewal_required: bool,
+        revocation_required: bool,
+        supports_versions: bool,
+    ) -> None:
+        now = datetime.now(UTC)
+        lifetime = max(0.0, (lease.expires_at.astimezone(UTC) - now).total_seconds())
+        active = _ActiveSecretLease(
+            provider=provider,
+            context=context,
+            reference=reference,
+            lease=lease,
+            renew_at=now + timedelta(seconds=lifetime * (2.0 / 3.0)),
+            renewal_required=renewal_required,
+            revocation_required=revocation_required,
+            supports_versions=supports_versions,
+        )
+        with self._secret_lease_lock:
+            self._secret_leases.append(active)
+
+    async def _revoke_secret_leases(self) -> None:
+        with self._secret_lease_lock:
+            leases = tuple(reversed(self._secret_leases))
+            self._secret_leases.clear()
+        for active in leases:
+            if not active.revocation_required:
+                continue
+            try:
+                with anyio.fail_after(5.0):
+                    await active.provider.revoke_lease(
+                        active.lease.lease_id, active.context
+                    )
+            except Exception:
+                self._secret_lease_cleanup_failure = True
+                self._cleanup_obligations.append(
+                    {
+                        "status": "unknown",
+                        "kind": "secret_lease_revocation",
+                        "provider": active.reference.provider,
+                        "secret_identity": active.reference.identity(),
+                        "code": "PMEXEC406",
+                    }
+                )
+                self.runtime.events.emit(
+                    SecurityEvent(
+                        kind="secret_lease_revocation",
+                        run_id=self.run_id or "",
+                        provider=active.reference.provider,
+                        secret_identity=active.reference.identity(),
+                        outcome="failure",
+                        step_name=active.context.step_name,
+                        message="Secret lease revocation failed.",
+                    )
+                )
 
     def _index_transformations(self, pipeline_cls: type[Any]) -> None:
         members = getattr(pipeline_cls, "__pipeline_members__", {})
@@ -705,10 +1021,24 @@ class LocalOrchestrator:
                 code="PMADP500",
                 stage="admission",
             )
+        self._state_transitions.clear()
+        self._pending_state_candidates.clear()
+        self._partition_observations.clear()
+        self._output_partition_observations.clear()
         if self.physical_mode:
             return await self._execute_physical()
         verify_plan_fingerprint(self.plan)
         self._validate_cancellation_policy()
+        concurrency = self.plan.execution_settings.get("concurrency")
+        if concurrency is None:
+            concurrency = self.request.metadata.get("concurrency")
+        if concurrency is None:
+            concurrency = 4
+        if type(concurrency) is not int or concurrency < 1:
+            raise PipelineExecutionError(
+                "Execution concurrency must be a positive integer",
+                stage="admission",
+            )
         run_id = self.run_id or f"run-{uuid.uuid4().hex[:12]}"
         started = datetime.now(UTC)
         logger = RunLogger(
@@ -763,12 +1093,7 @@ class LocalOrchestrator:
 
         async def run_body() -> None:
             nonlocal status
-            concurrency = (
-                self.plan.execution_settings.get("concurrency")
-                or self.request.metadata.get("concurrency")
-                or 4
-            )
-            limiter = anyio.CapacityLimiter(int(concurrency))
+            limiter = anyio.CapacityLimiter(concurrency)
             pending = set(selected)
             completed: set[str] = set()
             failed: set[str] = set()
@@ -840,14 +1165,54 @@ class LocalOrchestrator:
 
         cancel_exc = anyio.get_cancelled_exc_class()
         try:
-            async with run_lifespan(self.runtime, run_id):
-                timeout = self.request.timeout.run_seconds
-                if timeout is not None:
-                    with anyio.fail_after(timeout):
+
+            async def execute_managed_body() -> None:
+                async with run_lifespan(self.runtime, run_id):
+                    timeout = self.request.timeout.run_seconds
+                    if timeout is not None:
+                        with anyio.fail_after(timeout):
+                            await self.runtime.run_middleware.run(run_context, run_body)
+                    else:
                         await self.runtime.run_middleware.run(run_context, run_body)
-                else:
-                    await self.runtime.run_middleware.run(run_context, run_body)
-        except (TimeoutError, anyio.get_cancelled_exc_class()) as exc:
+
+            await self._with_managed_cancellation(execute_managed_body)
+            if all(nodes[name].status is StepStatus.SUCCEEDED for name in selected):
+                self._commit_staged_state_after_publication()
+            else:
+                self._pending_state_candidates.clear()
+        except (_SecretLeaseLost, _SecretLeaseRevocationFailed) as exc:
+            self._pending_state_candidates.clear()
+            status = RunStatus.FAILED
+            lease_lost = isinstance(exc, _SecretLeaseLost)
+            code = "PMEXEC405" if lease_lost else "PMEXEC406"
+            message = (
+                "Secret lease expired or renewal failed; execution was cancelled."
+                if lease_lost
+                else "Secret lease revocation failed; cleanup reconciliation is required."
+            )
+            self._finalize_incomplete_steps(
+                nodes, terminal=StepStatus.FAILED, message=message
+            )
+            self._append_diagnostic(
+                diagnostics,
+                RunDiagnostic(code=code, severity="error", message=message),
+            )
+            report = self._build_report(
+                run_id=run_id,
+                started=started,
+                nodes=nodes,
+                validations=validations,
+                diagnostics=diagnostics,
+                schema_obs=schema_obs,
+                artifacts=artifacts,
+                status=status,
+            )
+            self._persist_report(report)
+            raise PipelineExecutionError(
+                message, run_id=run_id, report=report, code=code
+            ) from exc
+        except TimeoutError as exc:
+            self._pending_state_candidates.clear()
             status = RunStatus.TIMED_OUT
             self._finalize_incomplete_steps(
                 nodes,
@@ -883,7 +1248,8 @@ class LocalOrchestrator:
                 report=report,
                 code="PMEXEC408",
             ) from exc
-        except cancel_exc as exc:
+        except (cancel_exc, _ManagedCancellation) as exc:
+            self._pending_state_candidates.clear()
             cancelled = True
             status = RunStatus.CANCELLED
             self._finalize_incomplete_steps(
@@ -906,12 +1272,14 @@ class LocalOrchestrator:
                 "Run cancelled", run_id=run_id, report=report, code="PMEXEC409"
             ) from exc
         except PipelineExecutionError as exc:
+            self._pending_state_candidates.clear()
             status = RunStatus.FAILED
             report = getattr(exc, "report", None)
             if report is not None:
                 self._persist_report(report)
             raise
         except Exception as exc:
+            self._pending_state_candidates.clear()
             status = RunStatus.FAILED
             self._finalize_incomplete_steps(
                 nodes,
@@ -1051,6 +1419,7 @@ class LocalOrchestrator:
             status = RunStatus.SUCCEEDED
 
         ended = datetime.now(UTC)
+        partition_edges, partition_summary = self._partition_lineage(selected)
         report = PipelineRunReport(
             pipeline_id=self.plan.pipeline_id,
             plan_id=self.plan.plan_id,
@@ -1085,16 +1454,20 @@ class LocalOrchestrator:
             state_transitions=tuple(self._state_transitions),
             plan_fingerprint=self.plan.fingerprint,
             lineage=tuple(
-                {
-                    "from": f"{e.producer_node}.{e.producer_port}",
-                    "to": f"{e.consumer_node}.{e.consumer_port}",
-                }
-                for e in graph.edges
-                if e.producer_node in selected and e.consumer_node in selected
+                [
+                    {
+                        "from": f"{e.producer_node}.{e.producer_port}",
+                        "to": f"{e.consumer_node}.{e.consumer_port}",
+                    }
+                    for e in graph.edges
+                    if e.producer_node in selected and e.consumer_node in selected
+                ]
+                + partition_edges
             ),
             backend_runs=(),
             metadata={
                 "etlantic.orchestrator": "local",
+                "etlantic.partition_lineage": partition_summary,
                 "etlantic.outbound_events": list(self.outbound_events),
                 "etlantic.unknown_publications": list(self._unknown_publications),
                 "etlantic.cleanup_obligations": list(self._cleanup_obligations),
@@ -1190,21 +1563,30 @@ class LocalOrchestrator:
                     unit_trace=unit_trace,
                 )
 
-            timeout = self.request.timeout.run_seconds
-            if timeout is None:
-                async with run_lifespan(self.runtime, run_id):
-                    await run_units()
-            else:
-                with anyio.fail_after(timeout):
+            async def execute_physical_body() -> None:
+                timeout = self.request.timeout.run_seconds
+                if timeout is None:
                     async with run_lifespan(self.runtime, run_id):
                         await run_units()
-        except anyio.get_cancelled_exc_class() as exc:
+                else:
+                    with anyio.fail_after(timeout):
+                        async with run_lifespan(self.runtime, run_id):
+                            await run_units()
+
+            await self._with_managed_cancellation(execute_physical_body)
+            if all(nodes[name].status is StepStatus.SUCCEEDED for name in selected):
+                self._commit_staged_state_after_publication()
+            else:
+                self._pending_state_candidates.clear()
+        except (anyio.get_cancelled_exc_class(), _ManagedCancellation) as exc:
+            self._pending_state_candidates.clear()
             status = RunStatus.CANCELLED
             self._finalize_incomplete_steps(
                 nodes, terminal=StepStatus.CANCELLED, message="Run cancelled"
             )
             cancelled = exc
         except TimeoutError:
+            self._pending_state_candidates.clear()
             if self._physical_caller_cancellation is not None:
                 # fail_after may convert the original cancellation to a timeout
                 # when its deadline expires during shielded native cleanup.
@@ -1237,6 +1619,7 @@ class LocalOrchestrator:
                     ),
                 )
         except Exception as exc:
+            self._pending_state_candidates.clear()
             status = (
                 RunStatus.PARTIAL
                 if any(state.status is StepStatus.SUCCEEDED for state in nodes.values())
@@ -1924,7 +2307,7 @@ class LocalOrchestrator:
                     self._notify_publication(
                         run_id=run_id, node=node, attempt=nodes[name].attempts
                     )
-                    self._commit_state_after_write(node=node)
+                    self._stage_state_after_write(node=node)
                     nodes[name].status = StepStatus.SUCCEEDED
                     nodes[name].ended_at = datetime.now(UTC)
                     self.runtime.events.emit(
@@ -2318,6 +2701,7 @@ class LocalOrchestrator:
         cancelled = sum(s.status is StepStatus.CANCELLED for s in states)
         records_in = sum(s.records_in or 0 for s in states) if states else 0
         records_out = sum(s.records_out or 0 for s in states) if states else 0
+        partition_edges, partition_summary = self._partition_lineage(selected)
         return PipelineRunReport(
             pipeline_id=self.plan.pipeline_id,
             plan_id=self.plan.plan_id,
@@ -2353,15 +2737,19 @@ class LocalOrchestrator:
             state_transitions=tuple(self._state_transitions),
             plan_fingerprint=self.plan.fingerprint,
             lineage=tuple(
-                {
-                    "from": f"{e.producer_node}.{e.producer_port}",
-                    "to": f"{e.consumer_node}.{e.consumer_port}",
-                }
-                for e in self.plan.logical_graph.edges
-                if e.producer_node in selected and e.consumer_node in selected
+                [
+                    {
+                        "from": f"{e.producer_node}.{e.producer_port}",
+                        "to": f"{e.consumer_node}.{e.consumer_port}",
+                    }
+                    for e in self.plan.logical_graph.edges
+                    if e.producer_node in selected and e.consumer_node in selected
+                ]
+                + partition_edges
             ),
             metadata={
                 "etlantic.orchestrator": "local",
+                "etlantic.partition_lineage": partition_summary,
                 "etlantic.outbound_events": list(self.outbound_events),
                 "etlantic.unknown_publications": list(self._unknown_publications),
                 "etlantic.cleanup_obligations": list(self._cleanup_obligations),
@@ -2395,6 +2783,158 @@ class LocalOrchestrator:
             records_out=state.records_out,
             implementation=state.implementation,
             metadata=redact_value(dict(state.metadata)),
+        )
+
+    def _partition_lineage(
+        self, selected: set[str]
+    ) -> tuple[list[dict[str, str]], dict[str, Any]]:
+        nodes = {node.name: node for node in self.plan.logical_graph.nodes}
+        edges: list[dict[str, str]] = []
+        sources: list[dict[str, Any]] = []
+        outputs: list[dict[str, Any]] = []
+        observed_count = 0
+        linked_count = 0
+        output_count = 0
+        output_linked_count = 0
+        remaining = _MAX_PARTITION_LINEAGE_LINKS
+        for node_name in sorted(selected):
+            node = nodes.get(node_name)
+            observation = self._partition_observations.get(node_name)
+            if node is None or observation is None:
+                continue
+            count, partition_ids, partition_keys = observation
+            source_id = f"node:{self.plan.pipeline_id}:{node.identity}"
+            linked_ids = partition_ids[:remaining]
+            remaining -= len(linked_ids)
+            observed_count += count
+            linked_count += len(linked_ids)
+            sources.append(
+                {
+                    "node_id": source_id,
+                    "partition_keys": list(partition_keys),
+                    "observed_partitions": count,
+                    "linked_partitions": len(linked_ids),
+                }
+            )
+            edges.extend(
+                {
+                    "from": source_id,
+                    "to": partition_id,
+                    "kind": "observed_partition",
+                }
+                for partition_id in linked_ids
+            )
+        for node_name in sorted(selected):
+            node = nodes.get(node_name)
+            observation = self._output_partition_observations.get(node_name)
+            if node is None or observation is None:
+                continue
+            count, partition_ids, partition_keys = observation
+            output_id = f"node:{self.plan.pipeline_id}:{node.identity}"
+            linked_ids = partition_ids[:remaining]
+            remaining -= len(linked_ids)
+            output_count += count
+            output_linked_count += len(linked_ids)
+            outputs.append(
+                {
+                    "node_id": output_id,
+                    "partition_keys": list(partition_keys),
+                    "produced_partitions": count,
+                    "linked_partitions": len(linked_ids),
+                }
+            )
+            edges.extend(
+                {
+                    "from": output_id,
+                    "to": partition_id,
+                    "kind": "produced_partition",
+                }
+                for partition_id in linked_ids
+            )
+        return edges, {
+            "source_nodes": len(sources),
+            "sources": sources,
+            "output_nodes": len(outputs),
+            "outputs": outputs,
+            "observed_partitions": observed_count,
+            "linked_partitions": linked_count,
+            "truncated_partitions": observed_count - linked_count,
+            "output_partitions": output_count,
+            "output_linked_partitions": output_linked_count,
+            "truncated_output_partitions": output_count - output_linked_count,
+            "link_limit": _MAX_PARTITION_LINEAGE_LINKS,
+            "identity_scope": "run",
+        }
+
+    def _observe_output_partitions(self, node: Node, data: Any, *, run_id: str) -> None:
+        """Record bounded opaque partition identities for a committed sink."""
+        expected_keys = {
+            key
+            for _count, _identities, keys in self._partition_observations.values()
+            for key in keys
+        }
+        binding_name = self.request.binding_overrides.get(
+            node.name, node.binding or node.name
+        )
+        descriptor = self._binding_descriptor(node, binding_name)
+        metadata = dict(descriptor.metadata or {}) if descriptor is not None else {}
+        configured_keys = metadata.get("partition_by") or metadata.get("partition_keys")
+        if isinstance(configured_keys, (list, tuple)):
+            expected_keys.update(
+                key for key in configured_keys if isinstance(key, str) and key.strip()
+            )
+        if not expected_keys:
+            return
+        try:
+            records = as_records(data, None)
+        except Exception:
+            return
+        if not isinstance(records, Sequence) or isinstance(records, (str, bytes)):
+            return
+        mappings: list[Mapping[str, Any]] = []
+        for record in records:
+            if isinstance(record, Mapping):
+                mappings.append(record)
+                continue
+            model_dump = getattr(record, "model_dump", None)
+            if callable(model_dump):
+                row = model_dump()
+            else:
+                legacy_dump = getattr(record, "dict", None)
+                row = legacy_dump() if callable(legacy_dump) else None
+            if isinstance(row, Mapping):
+                mappings.append(row)
+        if not mappings:
+            return
+        available_keys = set(mappings[0])
+        for mapping in mappings[1:]:
+            available_keys.intersection_update(mapping)
+        partition_keys = tuple(sorted(expected_keys & available_keys))
+        if not partition_keys:
+            return
+        values = sorted(
+            {
+                tuple(str(mapping.get(key, "")) for key in partition_keys)
+                for mapping in mappings
+            }
+        )
+        namespace = hashlib.sha256(
+            "\0".join(
+                (
+                    run_id,
+                    node.identity,
+                    json.dumps(partition_keys, separators=(",", ":")),
+                )
+            ).encode("utf-8")
+        ).hexdigest()
+        partition_ids = tuple(
+            f"partition:{namespace}:{ordinal}"
+            for ordinal, _value in enumerate(values[:_MAX_PARTITION_LINEAGE_LINKS])
+        )
+        self._output_partition_observations[node.name] = (
+            len(values),
+            partition_ids,
+            partition_keys,
         )
 
     def _producers(self, graph: LogicalGraph) -> dict[str, set[str]]:
@@ -2739,6 +3279,17 @@ class LocalOrchestrator:
         elif node.kind is NodeKind.STEP:
             await maybe_inject_async(FaultBoundary.TRANSFORM, step_name=node.name)
         if node.kind is NodeKind.SOURCE:
+            if self._partition_ids_for_node(node.name) and (
+                is_spark_engine(self._engine_for(node.name))
+                or self._is_sql_engine(self._engine_for(node.name))
+            ):
+                raise NodeExecutionError(
+                    "This engine does not implement bounded partition reads",
+                    node_name=node.name,
+                    stage=FailureStage.READ.value,
+                    run_id=run_id,
+                    code="PMEXEC457",
+                )
             if is_spark_engine(self._engine_for(node.name)):
                 plugin = resolve_spark_plugin(
                     "pyspark",
@@ -2874,7 +3425,7 @@ class LocalOrchestrator:
                         "provider": provider,
                     }
                     self._notify_publication(run_id=run_id, node=node, attempt=attempt)
-                    self._commit_state_after_write(node=node)
+                    self._stage_state_after_write(node=node)
                     return
                 enable_delta = provider == "delta" or write_mode in {
                     "merge",
@@ -2928,6 +3479,8 @@ class LocalOrchestrator:
                 state.metadata["etlantic.spark"] = result.metrics.to_dict()
                 if result.schema_observation:
                     state.metadata["etlantic.spark_schema"] = result.schema_observation
+                if isinstance(payload, list):
+                    self._observe_output_partitions(node, payload, run_id=run_id)
                 self._notify_publication(run_id=run_id, node=node, attempt=attempt)
                 return
             if self._is_sql_engine(self._engine_for(node.name)) and not isinstance(
@@ -2999,6 +3552,7 @@ class LocalOrchestrator:
                     )
                 )
                 self._mark_publication()
+                self._observe_output_partitions(node, payload, run_id=run_id)
                 return
             # SQL-region sink with Python list payload: load directly into target.
             if self._is_sql_engine(self._engine_for(node.name)) and isinstance(
@@ -3068,6 +3622,7 @@ class LocalOrchestrator:
                     )
                 )
                 self._mark_publication()
+                self._observe_output_partitions(node, payload, run_id=run_id)
                 return
             # SQL IR into a non-sql storage sink must not silently ignore the IR.
             if isinstance(payload, (RelationRef, SqlQuery)):
@@ -3107,7 +3662,7 @@ class LocalOrchestrator:
                 )
             )
             self._mark_publication()
-            self._commit_state_after_write(node=node)
+            self._stage_state_after_write(node=node)
             return
 
         if node.kind is NodeKind.STEP:
@@ -4277,7 +4832,141 @@ class LocalOrchestrator:
                     return desc
         return self.plan.bindings.get(node.name) or self.plan.bindings.get(binding_name)
 
+    def _partition_ids_for_node(self, node_name: str) -> tuple[str, ...]:
+        """Return the immutable partition selector for one lifecycle command."""
+        operation_key = "etlantic.control_plane.partition_operation"
+        if operation_key not in self.request.metadata:
+            return ()
+        operation = self.request.metadata.get(operation_key)
+        expected_intent = {
+            "repair": RunIntent.REPAIR,
+            "backfill": RunIntent.BACKFILL,
+        }
+        if (
+            not isinstance(operation, Mapping)
+            or not isinstance(operation.get("command"), str)
+            or operation.get("command") not in expected_intent
+            or self.request.intent
+            is not expected_intent.get(cast(str, operation.get("command")))
+            or not isinstance(operation.get("parent_run_id"), str)
+            or not operation.get("parent_run_id", "").strip()
+        ):
+            raise NodeExecutionError(
+                "Accepted partition operation metadata is invalid",
+                node_name=node_name,
+                stage=FailureStage.ORCHESTRATOR.value,
+                code="PMEXEC458",
+            )
+        by_node = operation.get("partition_ids_by_node")
+        if not isinstance(by_node, Mapping):
+            raise NodeExecutionError(
+                "Accepted partition selector is missing",
+                node_name=node_name,
+                stage=FailureStage.ORCHESTRATOR.value,
+                code="PMEXEC458",
+            )
+        values = by_node.get(node_name)
+        if not isinstance(values, (list, tuple)):
+            raise NodeExecutionError(
+                "Accepted partition selector is missing for this node",
+                node_name=node_name,
+                stage=FailureStage.ORCHESTRATOR.value,
+                code="PMEXEC458",
+            )
+        if (
+            not values
+            or any(
+                not isinstance(value, str) or not value.strip() or len(value) > 4096
+                for value in values
+            )
+            or len(set(values)) != len(values)
+        ):
+            raise NodeExecutionError(
+                "Accepted partition selector is invalid",
+                node_name=node_name,
+                stage=FailureStage.ORCHESTRATOR.value,
+                code="PMEXEC458",
+            )
+        return tuple(values)
+
+    def _partition_provider_metadata(self, node_name: str) -> dict[str, Any]:
+        """Pass opaque lifecycle qualifiers to the provider for this node."""
+        operation = self.request.metadata.get(
+            "etlantic.control_plane.partition_operation"
+        )
+        if not isinstance(operation, Mapping):
+            return {}
+        partition_ids = self._partition_ids_for_node(node_name)
+        if not partition_ids:
+            return {}
+        return {
+            "etlantic.partition_operation": {
+                key: operation.get(key)
+                for key in (
+                    "command",
+                    "parent_run_id",
+                    "checkpoint_id",
+                    "reusable_artifact_ids",
+                )
+            }
+        }
+
+    def _trusted_scope_context(self) -> dict[str, Any]:
+        """Return server-derived identity for provider calls, if managed."""
+        scope = self.runtime.trusted_execution_scope
+        if scope is None:
+            return {}
+        return {"etlantic.control_plane_scope": scope.to_dict()}
+
+    async def _connector_resource_identities(
+        self,
+        connector: Any,
+        *,
+        binding: Mapping[str, Any],
+        context: Mapping[str, Any],
+        node_name: str,
+        stage: str,
+    ) -> tuple[str, ...]:
+        """Resolve optional opaque provider identities without exposing them."""
+        resolver = getattr(connector, "resource_identities", None)
+        if not callable(resolver):
+            return ()
+        try:
+            raw = await maybe_await(resolver, binding=binding, context=context)
+        except Exception:
+            raise NodeExecutionError(
+                "Provider resource overlap could not be verified",
+                node_name=node_name,
+                stage=stage,
+                code="PMEXEC435",
+            ) from None
+        if isinstance(raw, str):
+            identities: tuple[object, ...] = (raw,)
+        elif isinstance(raw, Sequence) and not isinstance(raw, (bytes, bytearray)):
+            identities = tuple(cast(Sequence[object], raw))
+        else:
+            identities = ()
+        if not identities:
+            raise NodeExecutionError(
+                "Provider returned no verifiable resource identity",
+                node_name=node_name,
+                stage=stage,
+                code="PMEXEC435",
+            )
+        normalized: list[str] = []
+        for identity in identities:
+            if not isinstance(identity, str) or not identity.strip():
+                raise NodeExecutionError(
+                    "Provider returned no verifiable resource identity",
+                    node_name=node_name,
+                    stage=stage,
+                    code="PMEXEC435",
+                )
+            normalized.append(identity)
+        return tuple(sorted(set(normalized)))
+
     async def _read_source(self, node: Node, *, run_id: str) -> Any:
+        partition_ids = self._partition_ids_for_node(node.name)
         binding_name = node.binding or node.name
         binding_name = self.request.binding_overrides.get(node.name, binding_name)
         descriptor = self._binding_descriptor(node, binding_name)
@@ -4304,7 +4993,14 @@ class LocalOrchestrator:
                 "pipeline_id": self.plan.pipeline_id,
                 "contract_type": node.contract_type,
                 "extract_id": node.name,
+                **self._trusted_scope_context(),
             }
+            if partition_ids:
+                context["etlantic.partition_ids"] = list(partition_ids)
+                context.update(self._partition_provider_metadata(node.name))
+            input_resource_resolver = self.runtime.input_resource_resolver
+            if input_resource_resolver is not None:
+                context["input_resource_resolver"] = input_resource_resolver
             profile = getattr(self.runtime, "_active_profile", None)
             if profile is not None and getattr(profile, "safe_io", None):
                 from etlantic.io_policy import SafeIoPolicy
@@ -4323,6 +5019,17 @@ class LocalOrchestrator:
                     descriptor.secret_ref, run_id=run_id, step=node.name
                 )
             try:
+                identities = await self._connector_resource_identities(
+                    connector,
+                    binding=binding_payload,
+                    context=context,
+                    node_name=node.name,
+                    stage=FailureStage.READ.value,
+                )
+                self._connector_source_providers.add(provider_name)
+                if not identities:
+                    self._unverified_connector_source_providers.add(provider_name)
+                self._source_resource_identities.update(identities)
                 records, _batch = await run_source_connector_extract(
                     connector,
                     binding=binding_payload,
@@ -4370,7 +5077,14 @@ class LocalOrchestrator:
                     code="PMEXEC430",
                 )
         location = descriptor.location if descriptor is not None else None
-        context = {"run_id": run_id, "node": node.name}
+        context = {
+            "run_id": run_id,
+            "node": node.name,
+            **self._trusted_scope_context(),
+        }
+        if partition_ids:
+            context["etlantic.partition_ids"] = list(partition_ids)
+            context.update(self._partition_provider_metadata(node.name))
         if descriptor is not None and descriptor.secret_ref is not None:
             context["secret"] = await self._resolve_secret(
                 descriptor.secret_ref, run_id=run_id, step=node.name
@@ -4393,6 +5107,24 @@ class LocalOrchestrator:
                     stage=FailureStage.READ.value,
                     code="PMEXEC432",
                 ) from exc
+        if partition_ids:
+            reader = getattr(storage, "read_partitions", None)
+            if not callable(reader):
+                raise NodeExecutionError(
+                    "Storage provider does not implement bounded partition reads",
+                    node_name=node.name,
+                    stage=FailureStage.READ.value,
+                    run_id=run_id,
+                    code="PMEXEC457",
+                )
+            return await maybe_await(
+                reader,
+                binding=binding_name,
+                location=location,
+                contract_type=node.contract_type,
+                context=context,
+                partition_ids=partition_ids,
+            )
         return await storage.read(
             binding=binding_name,
             location=location,
@@ -4526,7 +5258,112 @@ class LocalOrchestrator:
                 context=self._pending_source_context,
             )
 
+    async def _write_with_sink_connector(
+        self,
+        connector: Any,
+        *,
+        provider_name: str,
+        binding_payload: Mapping[str, Any],
+        data: Any,
+        context: Mapping[str, Any],
+        binding_name: str,
+        node_name: str,
+    ) -> None:
+        from etlantic.connectors.session import write_via_sink_connector
+
+        try:
+            if self._connector_source_providers:
+                sink_identities = await self._connector_resource_identities(
+                    connector,
+                    binding=binding_payload,
+                    context=context,
+                    node_name=node_name,
+                    stage=FailureStage.WRITE.value,
+                )
+                if provider_name in self._connector_source_providers and (
+                    provider_name in self._unverified_connector_source_providers
+                    or not sink_identities
+                ):
+                    raise NodeExecutionError(
+                        "Same-provider source and sink overlap cannot be verified",
+                        node_name=node_name,
+                        stage=FailureStage.WRITE.value,
+                        code="PMEXEC435",
+                    )
+                if self._source_resource_identities.intersection(sink_identities):
+                    raise NodeExecutionError(
+                        "Source and sink resolve to the same resource; publication was prevented",
+                        node_name=node_name,
+                        stage=FailureStage.WRITE.value,
+                        code="PMEXEC435",
+                    )
+            receipt = await write_via_sink_connector(
+                connector,
+                binding=binding_payload,
+                data=data,
+                context=context,
+            )
+        except Exception as exc:
+            raise NodeExecutionError(
+                redact_message(str(exc)),
+                node_name=node_name,
+                stage=FailureStage.WRITE.value,
+                code=getattr(exc, "code", None) or "PMEXEC431",
+            ) from exc
+        if receipt.status == "unknown":
+            receipt = await self._reconcile_unknown_receipt(
+                receipt,
+                provider_name=provider_name,
+                storage=None,
+                context=context,
+            )
+        publication_unit = next(
+            (
+                unit.identity
+                for unit in self.plan.physical_units
+                if unit.metadata.get("etlantic.physical_kind") == "publication"
+                and unit.metadata.get("etlantic.logical_node") == node_name
+            ),
+            node_name,
+        )
+        self._sink_commit_receipts.append(receipt)
+        self._publication_receipt_summaries.append(
+            {
+                "status": receipt.status,
+                "publication_id": receipt.publication_id,
+                "unit_id": publication_unit,
+                "provider": provider_name,
+            }
+        )
+        if receipt.status == "unknown":
+            self._unknown_publications.append(
+                {
+                    "status": "unknown",
+                    "code": "PMADP524",
+                    "publication_id": receipt.publication_id,
+                    "binding": binding_name,
+                    "provider": provider_name,
+                }
+            )
+            raise NodeExecutionError(
+                "Publication acknowledgement was not received; reconciliation required",
+                node_name=node_name,
+                stage=FailureStage.WRITE.value,
+                code="PMADP524",
+            )
+        if receipt.status != "committed":
+            raise NodeExecutionError(
+                "Sink publication was rolled back",
+                node_name=node_name,
+                stage=FailureStage.WRITE.value,
+                code="PMEXEC433",
+            )
+        if self._publication_barrier is not None:
+            self._publication_barrier.record(receipt)
+            await self._finalize_landing_after_commit(receipt)
+
     async def _write_sink(self, node: Node, data: Any, *, run_id: str) -> None:
+        partition_ids = self._partition_ids_for_node(node.name)
         binding_name = node.binding or node.name
         binding_name = self.request.binding_overrides.get(node.name, binding_name)
         mode = self._effective_write_mode(node, binding_name)
@@ -4590,10 +5427,12 @@ class LocalOrchestrator:
             if self.physical_storage_pins is not None
             else self.runtime.storage
         ).get(provider_name)
+        sink_connectors = getattr(self.runtime, "sink_connectors", None) or {}
+        sink_connector = sink_connectors.get(provider_name)
         if storage is None:
             if provider_name == "memory":
                 storage = self.runtime.memory
-            else:
+            elif sink_connector is None:
                 raise NodeExecutionError(
                     f"Unknown storage provider {provider_name!r} for "
                     f"sink {node.name!r}",
@@ -4607,7 +5446,19 @@ class LocalOrchestrator:
             "node": node.name,
             "write_mode": mode.value,
             "contract_type": node.contract_type,
+            **self._trusted_scope_context(),
         }
+        if partition_ids:
+            if sink_connector is None:
+                raise NodeExecutionError(
+                    "Sink provider does not implement bounded partition writes",
+                    node_name=node.name,
+                    stage=FailureStage.WRITE.value,
+                    run_id=run_id,
+                    code="PMEXEC459",
+                )
+            context["etlantic.partition_ids"] = list(partition_ids)
+            context.update(self._partition_provider_metadata(node.name))
         profile = getattr(self.runtime, "_active_profile", None)
         safe_io = (
             (self.plan.profile_snapshot or {}).get("safe_io")
@@ -4630,9 +5481,25 @@ class LocalOrchestrator:
             context["secret"] = await self._resolve_secret(
                 descriptor.secret_ref, run_id=run_id, step=node.name
             )
+        if sink_connector is not None and provider_name != "null":
+            await self._write_with_sink_connector(
+                sink_connector,
+                provider_name=provider_name,
+                binding_payload=self._connector_binding_payload(
+                    descriptor, binding_name=binding_name
+                ),
+                data=data,
+                context=context,
+                binding_name=binding_name,
+                node_name=node.name,
+            )
+            self._observe_output_partitions(node, data, run_id=run_id)
+            return
         # Prefer CommitReceipt barrier when a landing source is pending.
-        if self._pending_source_connector is not None and provider_name != "null":
+        pending_source_connector = self._pending_source_connector
+        if pending_source_connector is not None and provider_name != "null":
             from etlantic.connectors.session import write_via_storage_session
+            from etlantic.storage.protocol import StorageBinding
 
             binding_payload = {
                 "binding": binding_name,
@@ -4642,15 +5509,15 @@ class LocalOrchestrator:
             }
             try:
                 receipt = await write_via_storage_session(
-                    storage,
+                    cast(StorageBinding, storage),
                     binding=binding_payload,
                     data=data,
                     context=context,
                 )
             except Exception as exc:
                 # Write raised before a receipt — nothing published; discard OK.
-                if hasattr(self._pending_source_connector, "discard_proposal"):
-                    self._pending_source_connector.discard_proposal()
+                if hasattr(pending_source_connector, "discard_proposal"):
+                    pending_source_connector.discard_proposal()
                 raise NodeExecutionError(
                     redact_message(str(exc)),
                     node_name=node.name,
@@ -4670,8 +5537,8 @@ class LocalOrchestrator:
             self._sink_commit_receipts.append(receipt)
             status = getattr(receipt, "status", None)
             if status == "rolled_back":
-                if hasattr(self._pending_source_connector, "discard_proposal"):
-                    self._pending_source_connector.discard_proposal()
+                if hasattr(pending_source_connector, "discard_proposal"):
+                    pending_source_connector.discard_proposal()
                 raise NodeExecutionError(
                     redact_message(
                         receipt.message or f"Sink commit status={receipt.status}"
@@ -4691,8 +5558,8 @@ class LocalOrchestrator:
                     code="PMEXEC433",
                 )
             if status != "committed":
-                if hasattr(self._pending_source_connector, "discard_proposal"):
-                    self._pending_source_connector.discard_proposal()
+                if hasattr(pending_source_connector, "discard_proposal"):
+                    pending_source_connector.discard_proposal()
                 raise NodeExecutionError(
                     redact_message(
                         receipt.message or f"Sink commit status={receipt.status}"
@@ -4703,6 +5570,7 @@ class LocalOrchestrator:
                 )
             # Finalize only when every required sink has committed.
             await self._finalize_landing_after_commit(receipt)
+            self._observe_output_partitions(node, data, run_id=run_id)
             return
         publication_id = ""
         try:
@@ -4737,6 +5605,13 @@ class LocalOrchestrator:
                     publication_id=publication_id,
                 )
             else:
+                if storage is None:
+                    raise NodeExecutionError(
+                        "A storage binding is required for this sink",
+                        node_name=node.name,
+                        stage=FailureStage.WRITE.value,
+                        code="PMEXEC431",
+                    )
                 receipt = await storage.write(
                     binding=binding_name,
                     location=location,
@@ -4822,11 +5697,11 @@ class LocalOrchestrator:
                 stage=FailureStage.WRITE.value,
                 code="PMADP524",
             ) from exc
+        if provider_name != "null" and mode is not WriteMode.NO_WRITE:
+            self._observe_output_partitions(node, data, run_id=run_id)
 
     async def _resolve_secret(self, ref: SecretRef, *, run_id: str, step: str) -> Any:
-        cached = self.runtime.secret_cache.get(ref)
-        if cached is not None:
-            return cached
+        trusted_scope = self.runtime.trusted_execution_scope
         provider = self.runtime.secret_providers.get(ref.provider)
         if provider is None:
             raise PipelineExecutionError(
@@ -4834,14 +5709,211 @@ class LocalOrchestrator:
                 run_id=run_id,
                 code="PMEXEC400",
             )
-        context = SecretResolutionContext(
-            run_id=run_id,
-            pipeline_id=self.plan.pipeline_id,
-            step_name=step,
-            purpose=ref.purpose,
-        )
         try:
-            value = await provider.resolve(ref, context)
+            capabilities = provider.descriptor.capabilities
+            if ref.version != "current" and not capabilities.versions:
+                raise PipelineExecutionError(
+                    "Secret provider does not support exact version selection",
+                    run_id=run_id,
+                    code="PMEXEC403",
+                )
+            if (
+                ref.version == "current"
+                and capabilities.versions
+                and not capabilities.aliases
+            ):
+                raise PipelineExecutionError(
+                    "Secret provider does not support current-version aliases",
+                    run_id=run_id,
+                    code="PMEXEC403",
+                )
+
+            context = SecretResolutionContext(
+                run_id=run_id,
+                pipeline_id=self.plan.pipeline_id,
+                step_name=step,
+                purpose=ref.purpose,
+                trusted_scope=trusted_scope,
+            )
+            late_binding_authorized = False
+            if ref.version == "current" and trusted_scope is not None:
+                authorizer = self.runtime.secret_alias_authorizer
+                if authorizer is None:
+                    raise PipelineExecutionError(
+                        "Managed current-version secret resolution requires an "
+                        "explicit worker authorization policy",
+                        run_id=run_id,
+                        code="PMEXEC403",
+                    )
+                try:
+                    late_binding_authorized = bool(
+                        await authorizer.authorize_late_binding(ref, context)
+                    )
+                except Exception as exc:
+                    raise PipelineExecutionError(
+                        "Managed current-version secret authorization failed",
+                        run_id=run_id,
+                        code="PMEXEC403",
+                    ) from exc
+                if not late_binding_authorized:
+                    raise PipelineExecutionError(
+                        "Managed current-version secret resolution was denied",
+                        run_id=run_id,
+                        code="PMEXEC403",
+                    )
+                context = SecretResolutionContext(
+                    run_id=context.run_id,
+                    pipeline_id=context.pipeline_id,
+                    step_name=context.step_name,
+                    attempt=context.attempt,
+                    purpose=context.purpose,
+                    metadata=context.metadata,
+                    trusted_scope=context.trusted_scope,
+                    late_binding_authorized=True,
+                )
+            if (capabilities.renewal or capabilities.revocation) and not (
+                capabilities.leases
+            ):
+                raise PipelineExecutionError(
+                    "Secret provider advertises an incomplete lease capability set",
+                    run_id=run_id,
+                    code="PMEXEC404",
+                )
+            leased_provider: LeasedSecretProvider | None = None
+            if capabilities.leases:
+                acquire_lease = getattr(provider, "acquire_lease", None)
+                renew_lease = getattr(provider, "renew_lease", None)
+                revoke_lease = getattr(provider, "revoke_lease", None)
+                if (
+                    not callable(acquire_lease)
+                    or (capabilities.renewal and not callable(renew_lease))
+                    or (capabilities.revocation and not callable(revoke_lease))
+                ):
+                    raise PipelineExecutionError(
+                        "Secret provider lease capabilities are not implemented",
+                        run_id=run_id,
+                        code="PMEXEC404",
+                    )
+                leased_provider = cast(LeasedSecretProvider, provider)
+
+            # Alias values can rotate without changing the accepted reference.
+            # Managed aliases bypass cache so authorization and version choice
+            # are evaluated for every operation.
+            cache_enabled = capabilities.in_memory_cache and not (
+                capabilities.leases
+                or (
+                    trusted_scope is not None
+                    and ref.version == "current"
+                    and capabilities.aliases
+                )
+            )
+            if cache_enabled:
+                cached = self.runtime.secret_cache.get(ref, trusted_scope=trusted_scope)
+                if cached is not None:
+                    self.runtime.events.emit(
+                        SecurityEvent(
+                            kind="secret_resolution",
+                            run_id=run_id,
+                            provider=ref.provider,
+                            secret_identity=ref.identity(),
+                            outcome="success",
+                            step_name=step,
+                            metadata={
+                                "requested_version": ref.version,
+                                "resolved_version": (
+                                    cached.version
+                                    if cached.version != "current"
+                                    else None
+                                ),
+                                "cache_hit": True,
+                                **(
+                                    {"late_binding_authorized": True}
+                                    if late_binding_authorized
+                                    else {}
+                                ),
+                            },
+                        )
+                    )
+                    return cached
+            lease: SecretLease | None = None
+            if leased_provider is not None:
+                try:
+                    lease = await leased_provider.acquire_lease(ref, context)
+                except Exception:
+                    raise PipelineExecutionError(
+                        "Secret lease acquisition failed",
+                        run_id=run_id,
+                        code="PMEXEC404",
+                    ) from None
+                try:
+                    self._validate_secret_lease(
+                        ref, lease, supports_versions=capabilities.versions
+                    )
+                except Exception:
+                    if capabilities.revocation and isinstance(lease, SecretLease):
+                        try:
+                            await leased_provider.revoke_lease(lease.lease_id, context)
+                        except Exception:
+                            self._secret_lease_cleanup_failure = True
+                            self._cleanup_obligations.append(
+                                {
+                                    "status": "unknown",
+                                    "kind": "secret_lease_revocation",
+                                    "provider": ref.provider,
+                                    "secret_identity": ref.identity(),
+                                    "code": "PMEXEC406",
+                                }
+                            )
+                    raise
+                self._track_secret_lease(
+                    leased_provider,
+                    context,
+                    ref,
+                    lease,
+                    renewal_required=capabilities.renewal,
+                    revocation_required=capabilities.revocation,
+                    supports_versions=capabilities.versions,
+                )
+                value = lease.value
+            else:
+                value = await provider.resolve(ref, context)
+            if not isinstance(value, SecretValue):
+                raise PipelineExecutionError(
+                    "Secret provider returned an invalid value",
+                    run_id=run_id,
+                    code="PMEXEC404",
+                )
+            if (value.provider, value.name, value.key) != (
+                ref.provider,
+                ref.name,
+                ref.key,
+            ):
+                raise PipelineExecutionError(
+                    "Secret provider returned a value for a different reference",
+                    run_id=run_id,
+                    code="PMEXEC404",
+                )
+            if ref.version != "current" and value.version != ref.version:
+                raise PipelineExecutionError(
+                    "Secret provider did not return the requested exact version",
+                    run_id=run_id,
+                    code="PMEXEC404",
+                )
+            if capabilities.versions and (
+                not value.version.strip()
+                or (ref.version == "current" and value.version == "current")
+            ):
+                raise PipelineExecutionError(
+                    "Versioned secret provider did not report the resolved version",
+                    run_id=run_id,
+                    code="PMEXEC404",
+                )
+            if redact_message(value.version) != value.version:
+                raise PipelineExecutionError(
+                    "Secret provider returned an unsafe version identifier",
+                    run_id=run_id,
+                    code="PMEXEC404",
+                )
         except Exception as exc:
             self.runtime.events.emit(
                 SecurityEvent(
@@ -4855,7 +5927,8 @@ class LocalOrchestrator:
                 )
             )
             raise
-        self.runtime.secret_cache.put(ref, value)
+        if cache_enabled:
+            self.runtime.secret_cache.put(ref, value, trusted_scope=trusted_scope)
         self.runtime.events.emit(
             SecurityEvent(
                 kind="secret_resolution",
@@ -4864,6 +5937,19 @@ class LocalOrchestrator:
                 secret_identity=ref.identity(),
                 outcome="success",
                 step_name=step,
+                metadata={
+                    "requested_version": ref.version,
+                    "resolved_version": (
+                        value.version if value.version != "current" else None
+                    ),
+                    "cache_hit": False,
+                    **({"leased": True} if lease is not None else {}),
+                    **(
+                        {"late_binding_authorized": True}
+                        if late_binding_authorized
+                        else {}
+                    ),
+                },
             )
         )
         return value
@@ -4891,13 +5977,67 @@ class LocalOrchestrator:
                 )
         partitions = self.request.metadata.get("partitions") or {}
         pref = partitions.get(node.name) or partitions.get(node.binding or "")
+        if isinstance(pref, Mapping):
+            raw_subject = pref.get("subject_id")
+            raw_keys = pref.get("partition_keys")
+            raw_lateness = pref.get("allowed_lateness_seconds", 0)
+            raw_minimum = pref.get("minimum_count")
+            raw_metadata = pref.get("metadata", {})
+            if (
+                not isinstance(raw_subject, str)
+                or not isinstance(raw_keys, (list, tuple))
+                or not raw_keys
+                or not all(isinstance(key, str) and key for key in raw_keys)
+                or isinstance(raw_lateness, bool)
+                or not isinstance(raw_lateness, (int, float))
+                or (
+                    raw_minimum is not None
+                    and (
+                        isinstance(raw_minimum, bool)
+                        or not isinstance(raw_minimum, int)
+                    )
+                )
+                or not isinstance(raw_metadata, Mapping)
+            ):
+                raise NodeExecutionError(
+                    "Invalid partition completeness expectation",
+                    node_name=node.name,
+                    stage=FailureStage.FRESHNESS.value,
+                    run_id=run_id,
+                    code="PMEXEC351",
+                )
+            pref = PartitionCompletenessExpectation(
+                subject_id=raw_subject,
+                partition_keys=tuple(cast(Sequence[str], raw_keys)),
+                allowed_lateness_seconds=float(raw_lateness),
+                minimum_count=raw_minimum,
+                metadata=dict(cast(Mapping[str, Any], raw_metadata)),
+            )
         if isinstance(pref, PartitionCompletenessExpectation):
             observed: set[str] = set()
+            observed_values: set[tuple[str, ...]] = set()
             for row in as_records(data, None):
                 mapping = row.model_dump() if hasattr(row, "model_dump") else row
                 if isinstance(mapping, dict):
-                    key = "|".join(str(mapping.get(k, "")) for k in pref.partition_keys)
+                    values = tuple(str(mapping.get(k, "")) for k in pref.partition_keys)
+                    key = "|".join(values)
                     observed.add(key)
+                    observed_values.add(values)
+            ordered_values = sorted(observed_values)
+            partition_namespace = hashlib.sha256(
+                f"{run_id}\0{node.identity}\0{pref.identity()}".encode()
+            ).hexdigest()
+            partition_ids = tuple(
+                f"partition:{partition_namespace}:{ordinal}"
+                for ordinal, _values in enumerate(
+                    ordered_values[:_MAX_PARTITION_LINEAGE_LINKS]
+                )
+            )
+            self._partition_observations[node.name] = (
+                len(ordered_values),
+                partition_ids,
+                pref.partition_keys,
+            )
             ok, message = check_partition_completeness(
                 pref, observed_partitions=observed
             )

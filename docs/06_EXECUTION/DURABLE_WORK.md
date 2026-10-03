@@ -10,6 +10,23 @@ in one provider transaction; dispatchers publish the outbox after commit.
 Execution hosts lease a submission before starting an attempt, and every host
 write carries a monotonically increasing fencing token.
 
+Durable providers expose paginated `list_execution_scopes(ctx, limit=...,
+after_submission_id=..., through_submission_id=...)` for managed artifact
+retention. Each call returns a bounded page of unique, complete authority
+contexts, a submission-ID cursor, and the newest insertion captured at scan
+start. The SQLModel provider preserves row IDs in its normalized submission
+mirror and uses bounded keyset queries over submission IDs, capped by that
+snapshot watermark. The execution host rotates the cursor across ticks, so
+new submissions cannot extend the active scan indefinitely, regardless of
+their caller-supplied IDs. Each tick deduplicates scopes that share a retention
+store. A bounded retry queue
+revisits scopes whose cleanup failed or reported more candidates. When the
+queue is full, discovery continues and the watermark ensures omitted scopes
+are picked up in a later sweep.
+Adapters with retention disabled skip scope discovery. SQLModel migration
+`013_durable_submission_scope_backfill_0_56` backfills normalized submission
+rows from existing snapshots before workers rely on the keyset pages.
+
 ## State-machine invariants
 
 - Idempotency is scoped by tenant, workspace, operation, and the authenticated
@@ -25,6 +42,14 @@ write carries a monotonically increasing fencing token.
 - Preview expiry must be in the future at creation time. Cleanup is reserved for
   previews that expire after they were successfully recorded.
 
+Managed lifecycle commands retain CP1 receipts and immutable input leases when
+durable acceptance is unresolved. Retry the same command and idempotency key to
+recover acceptance. Cancellation returns `PMCP503` while the durable submission
+is absent; it does not acknowledge an observation-only cancellation that a
+concurrent recovery could bypass. After acceptance is reconciled, retry
+cancellation to persist it in the durable store. CP1-only receipts cancelled by
+older service versions cannot be recovered into runnable lifecycle work.
+
 `etlantic.control_plane.DurableWorkStore` is the provider contract. Its
 `MemoryDurableWorkStore` implementation is suitable for local development and
 conformance tests; production deployments must use a transactional provider.
@@ -33,9 +58,13 @@ secrets, source rows, or effect payloads.
 
 Checkpoint advancement uses compare-and-swap. A checkpoint tied to an attempt
 also requires the current, unexpired lease token, so a stale or terminal
-attempt cannot advance durable state. External effects may be recorded as
-`unknown`; that is deliberately not an automatic-retry signal. Reconciliation
-or idempotency evidence is required before a provider may safely repeat it.
+attempt cannot advance durable state. Worker outcome effects use
+`record_attempt_effect`, which checks the exact running attempt and its live
+lease in the same store transaction as the effect write. A stale attempt cannot
+replace committed or unknown recovery evidence. External effects may be
+recorded as `unknown`; that is deliberately not an automatic-retry signal.
+Reconciliation or idempotency evidence is required before a provider may safely
+repeat it.
 
 Replay returns the immutable plan, revision, plugin, policy, input snapshot,
 and optional checkpoint selection used by the source submission. Preview

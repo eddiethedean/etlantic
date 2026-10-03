@@ -26,6 +26,7 @@ from etlantic.control_plane import (
     WorkspaceRef,
     authorized_get_definition,
     map_deny_disclosure,
+    require_authorized_run,
 )
 from etlantic.control_plane.errors import CONTROL_PLANE_ERROR_SCHEMA
 from etlantic.control_plane.models import (
@@ -41,6 +42,7 @@ def _ctx(
     workspace: str = "ws-1",
     subject: str = "user-a",
     idempotency: str | None = None,
+    resource_owner_id: str | None = None,
 ) -> ControlPlaneContext:
     return ControlPlaneContext(
         principal=Principal(
@@ -55,16 +57,18 @@ def _ctx(
             IdempotencyKey(value=idempotency) if idempotency is not None else None
         ),
         request_id="req-1",
+        resource_owner_id=resource_owner_id,
     )
 
 
 def test_context_round_trip_stable() -> None:
-    ctx = _ctx(idempotency="idem-1")
+    ctx = _ctx(idempotency="idem-1", resource_owner_id="owner-1")
     payload = ctx.to_dict()
     assert payload["schema"] == CONTROL_PLANE_CONTEXT_SCHEMA
     restored = ControlPlaneContext.from_dict(payload)
     assert restored.to_dict() == payload
     assert restored.scope_key == ("tenant-a", "ws-1")
+    assert restored.resource_owner_id == "owner-1"
 
 
 def test_accept_receipt_and_event_round_trip() -> None:
@@ -115,6 +119,125 @@ def test_memory_event_store_concurrent_append() -> None:
     assert len(listed) == 40
     sequences = [e.sequence for e in listed]
     assert sequences == list(range(1, 41))
+
+
+def test_memory_event_store_append_once_is_scoped_and_conflict_checked() -> None:
+    events = MemoryEventStore()
+    ctx = _ctx()
+    event = events.append_once(
+        ctx,
+        event_key="submission-1:attempt-1:started",
+        kind="run.started",
+        payload={"run_id": "run-1", "attempt_id": "attempt-1"},
+    )
+    repeated = events.append_once(
+        ctx,
+        event_key="submission-1:attempt-1:started",
+        kind="run.started",
+        payload={"run_id": "run-1", "attempt_id": "attempt-1"},
+    )
+
+    assert repeated.event_id == event.event_id
+    assert len(events.list_after_cursor(ctx, None)) == 1
+    with pytest.raises(ControlPlaneError) as caught:
+        events.append_once(
+            ctx,
+            event_key="submission-1:attempt-1:started",
+            kind="run.started",
+            payload={"run_id": "other-run"},
+        )
+    assert caught.value.status == 409
+    assert len(events.list_after_cursor(ctx, None)) == 1
+
+    isolated = events.append_once(
+        _ctx(tenant="tenant-b", workspace="ws-2"),
+        event_key="submission-1:attempt-1:started",
+        kind="run.started",
+        payload={"run_id": "run-1", "attempt_id": "attempt-1"},
+    )
+    assert isolated.event_id != event.event_id
+
+
+def test_memory_event_retention_expires_cursors_without_reusing_sequences() -> None:
+    events = MemoryEventStore()
+    ctx = _ctx()
+    expired = events.append_once(
+        ctx,
+        event_key="stable-attempt-start",
+        kind="run.started",
+        payload={"run_id": "run-1"},
+    )
+    events.append(ctx, kind="run.progress", payload={"run_id": "run-1"})
+    anchor = events.append(ctx, kind="run.completed", payload={"run_id": "run-1"})
+    other_scope = events.append(_ctx(tenant="tenant-b"), kind="other.scope")
+
+    assert events.prune_before_sequence(ctx, before_sequence=3) == 2
+    with pytest.raises(ControlPlaneError) as cursor_error:
+        events.list_after_cursor(ctx, expired.cursor)
+    assert cursor_error.value.status == 410
+    with pytest.raises(ControlPlaneError) as retry_error:
+        events.append_once(
+            ctx,
+            event_key="stable-attempt-start",
+            kind="run.started",
+            payload={"run_id": "run-1"},
+        )
+    assert retry_error.value.status == 410
+    with pytest.raises(ControlPlaneError) as conflict:
+        events.append_once(
+            ctx,
+            event_key="stable-attempt-start",
+            kind="run.started",
+            payload={"run_id": "different"},
+        )
+    assert conflict.value.status == 409
+
+    appended = events.append(ctx, kind="run.recovered")
+    assert appended.sequence == anchor.sequence + 1 == 4
+    assert [event.event_id for event in events.list_after_cursor(ctx, None)] == [
+        anchor.event_id,
+        appended.event_id,
+    ]
+    assert events.list_after_cursor(_ctx(tenant="tenant-b"), None) == [other_scope]
+
+
+def test_memory_event_retention_policy_bounds_each_scope() -> None:
+    events = MemoryEventStore(max_events_per_scope=2)
+    ctx = _ctx()
+    expired = events.append_once(
+        ctx,
+        event_key="start-1",
+        kind="run.started",
+        payload={"run_id": "run-1", "result": "private-event-payload"},
+    )
+    events.append(ctx, kind="run.progress", payload={"run_id": "run-1"})
+    anchor = events.append(ctx, kind="run.completed", payload={"run_id": "run-1"})
+
+    retained = events.list_after_cursor(ctx, None)
+    assert [event.sequence for event in retained] == [2, 3]
+    with pytest.raises(ControlPlaneError) as cursor_error:
+        events.list_after_cursor(ctx, expired.cursor)
+    assert cursor_error.value.status == 410
+    with pytest.raises(ControlPlaneError) as retry_error:
+        events.append_once(
+            ctx,
+            event_key="start-1",
+            kind="run.started",
+            payload={"run_id": "run-1", "result": "private-event-payload"},
+        )
+    assert retry_error.value.status == 410
+    assert "private-event-payload" not in repr(events)
+
+    other_scope = events.append(_ctx(tenant="tenant-b"), kind="other.scope")
+    next_event = events.append(ctx, kind="run.recovered")
+    assert next_event.sequence == anchor.sequence + 1 == 4
+    assert [event.sequence for event in events.list_after_cursor(ctx, None)] == [3, 4]
+    assert events.list_after_cursor(_ctx(tenant="tenant-b"), None) == [other_scope]
+
+
+def test_memory_event_store_rejects_invalid_retention_policy() -> None:
+    with pytest.raises(ValueError, match="positive integer"):
+        MemoryEventStore(max_events_per_scope=0)
 
 
 def test_memory_store_empty_positive_limits_return_lists() -> None:
@@ -179,6 +302,7 @@ def test_serialized_context_has_no_secrets() -> None:
         "correlation_key",
         "idempotency_key",
         "request_id",
+        "resource_owner_id",
     }
 
 
@@ -261,6 +385,34 @@ def test_authorizer_in_scope_forbidden_disclosure() -> None:
         )
         == "not_found"
     )
+
+
+def test_run_explicit_not_found_deny_does_not_probe_existence() -> None:
+    class ExplicitNotFoundAuthorizer:
+        def authorize(
+            self, ctx: ControlPlaneContext, action: str, resource: str
+        ) -> AuthzDecision:
+            _ = ctx, action, resource
+            return AuthzDecision(
+                allowed=False,
+                reason="opaque denial",
+                disclosure="not_found",
+            )
+
+    def fail_if_probed() -> bool:
+        raise AssertionError("existence probe must not run after explicit not_found")
+
+    with pytest.raises(ControlPlaneError) as caught:
+        require_authorized_run(
+            ExplicitNotFoundAuthorizer(),
+            _ctx(),
+            "run.read",
+            "run-secret",
+            probe_exists=fail_if_probed,
+        )
+
+    assert caught.value.status == 404
+    assert caught.value.detail == "opaque denial"
 
 
 def test_idempotency_same_key_same_receipt() -> None:

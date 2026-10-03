@@ -210,6 +210,47 @@ def test_partition_completeness_minimum_count() -> None:
     assert any(d.code == "PMEXEC351" for d in bad_report.diagnostics)
 
 
+def test_partition_lineage_links_committed_output_without_row_values() -> None:
+    runtime = PipelineRuntime()
+    private_regions = ("private-region-alpha", "private-region-beta")
+    runtime.memory.seed(
+        "rows",
+        [
+            Row(id=1, name="a", region=private_regions[0]),
+            Row(id=2, name="b", region=private_regions[1]),
+        ],
+    )
+    report = SimplePipeline.run(
+        profile="development",
+        runtime=runtime,
+        request=RunRequest(
+            metadata={
+                "partitions": {
+                    "raw": PartitionCompletenessExpectation(
+                        subject_id="raw",
+                        partition_keys=("region",),
+                        minimum_count=2,
+                    )
+                }
+            }
+        ),
+    )
+
+    assert report.status is RunStatus.SUCCEEDED
+    partition_lineage = report.metadata["etlantic.partition_lineage"]
+    assert partition_lineage["source_nodes"] == 1
+    assert partition_lineage["output_nodes"] == 1
+    assert partition_lineage["outputs"][0]["partition_keys"] == ["region"]
+    assert partition_lineage["outputs"][0]["produced_partitions"] == 2
+    produced_edges = [
+        edge for edge in report.lineage if edge.get("kind") == "produced_partition"
+    ]
+    assert len(produced_edges) == 2
+    assert all(edge["from"].startswith("node:") for edge in produced_edges)
+    serialized_report = report.to_json()
+    assert all(value not in serialized_report for value in private_regions)
+
+
 def test_retry_safety_blocks_unsafe_retry() -> None:
     class Boom(Transformation):
         rows: Input[Row]

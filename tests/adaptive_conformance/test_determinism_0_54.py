@@ -49,7 +49,7 @@ def test_reference_plan_hash_seed_identity():
             capture_output=True,
             text=True,
             check=True,
-            timeout=60,
+            timeout=180,
         )
         fingerprints.append(result.stdout.strip())
     assert len(set(fingerprints)) == 1

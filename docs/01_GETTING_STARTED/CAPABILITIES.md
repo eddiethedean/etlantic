@@ -1,17 +1,21 @@
 # Current Capabilities and Limitations
 
-> **Status: ETLantic 0.55.0 Beta release.** This page records
-> the published 0.55 envelope, including the scoped Experimental qualification
+> **Version boundary:** 0.56.0 is a qualification candidate; 0.55.x remains the published supported line.
+
+
+> **Status: 0.56.0 is a qualification candidate; 0.55.x remains the published supported line.** This page records
+> the published 0.55 envelope and the 0.56 candidate boundary
 > for controlled single-tenant pilots and Supported isolation profiles.
 
 !!! tip "Adopter brief"
     Read **What works today** and **Limits** first. Residual gaps and CI
     starter JSON are further down for evaluators.
 
-## What works today (0.55)
+## What works today (0.56)
 
-ETLantic 0.55.0 is the current **Beta release** for documented, controlled,
-single-tenant pilots. Install `etlantic==0.55.0` from PyPI. You can embed an
+ETLantic 0.56.0 is a qualification candidate. The published 0.55.x line
+remains the supported **Beta release** for documented, controlled, single-tenant
+pilots. Install the latest published `etlantic` package from PyPI. You can embed an
 HTTP control plane with **Supported** isolation profiles
 (`isolated-deployment`, `dedicated-schema`). There is no hosted multi-tenant
 SaaS and no SLA. It validates and
@@ -119,7 +123,7 @@ Public surface classes:
 |---|---|
 | `etlantic.schedule/1` + `etlantic.firing/1` + injectable clock | Available (`etlantic.control_plane`) |
 | `ScheduleStore` + `MemoryScheduleStore` (tests/dev) | Available; production rejects memory (`PMSVC100`) |
-| SQLModel CP1–CP4 stores + migration `005_cp1_reference` | Available (`etlantic-sqlmodel`) |
+| SQLModel CP1–CP4 stores + migration `013_durable_submission_scope_backfill_0_56` | Available (`etlantic-sqlmodel`) |
 | Scheduler leader + due-timer loop (`etlantic scheduler serve`) | Available |
 | Execution host (`etlantic worker serve`) wrapping CP3 | Available; no FastAPI import |
 | FastAPI `/v1/schedules*` + definition schedules + health | Available (`etlantic-fastapi`; gateway only) |
@@ -142,7 +146,7 @@ Public surface classes:
 | Attestations + signed schema observations | Available |
 | `AuditEvidenceStore` hash chain | Available |
 | FastAPI `/v1/policy|approvals|quotas|erasure|audit|attestations|objectives` | Available (`etlantic-fastapi`) |
-| SQLModel CP4 snapshot stores + migration `003_cp4_governance` | Available (`etlantic-sqlmodel`; superseded head is `005_cp1_reference`) |
+| SQLModel CP4 snapshot stores + migration `003_cp4_governance` | Available (`etlantic-sqlmodel`; superseded head is `013_durable_submission_scope_backfill_0_56`) |
 | CP4 conformance + outage matrix evidence | Available (`etlantic.testing` / `check_cp4_chaos.py`) |
 
 ### Control-plane durable work (CP3)
@@ -275,7 +279,7 @@ See also [Experimental surfaces](EXPERIMENTAL_SURFACES.md).
 | Data-first authoring and inferred data models | **Experimental, scoped qualification in 0.55** for bounded records, CSV, JSON, Pandas, and Polars inference; portable transfer; metadata-only provider inspection; and transactional SQLite write-mode checks. See the [0.55 exit gate](../11_DEVELOPMENT/EXIT_GATE_0_55.md) and [evidence index](../11_DEVELOPMENT/evidence/inference_0_55/index.json). |
 | Bounded dynamic mapping/reduction and explicit conditional/failure/compensation branches | **Supported** (core) in 0.46 — [exit gate](../11_DEVELOPMENT/EXIT_GATE_0_46.md) / [ADR-022](../11_DEVELOPMENT/adr/ADR-022-DYNAMIC-CONTROL-AND-STREAMING.md) |
 | Streaming poison-record/DLQ policy and schema-registry interoperability | **Supported** core policy/protocol in 0.46; Kafka (`etlantic-kafka`) and Confluent adapter (`etlantic-schemaregistry`) remain **Experimental** — never Available-in-core |
-| Complete application ETL backend | **Planned for 0.56** — shared authorized services, real managed execution/results, full specification/run controls and live PostgreSQL/Foundry/CSV qualification; see [plan](../11_DEVELOPMENT/IMPLEMENTATION_PLAN_0_56.md) and [reviewed gaps](../11_DEVELOPMENT/FINDINGS_0_56.md) |
+| Complete application ETL backend | **Candidate qualified for 0.56** — shared authorized services, real managed execution/results, full specification/run controls, live PostgreSQL/CSV qualification and Semblance-backed Foundry API qualification; no live Foundry account required. See [plan](../11_DEVELOPMENT/IMPLEMENTATION_PLAN_0_56.md) and [reviewed gaps](../11_DEVELOPMENT/FINDINGS_0_56.md) |
 | Dagster / expanded Prefect / Argo compilers | Planned brownfield bridges in 0.57 |
 | Read-only-first operator console | Planned first-class for 0.58 |
 | AWS/Azure/GCP/Vault secret-provider packs | Planned as optional providers in 0.59 |

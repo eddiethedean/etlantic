@@ -4,8 +4,13 @@
 from __future__ import annotations
 
 from dataclasses import dataclass, field
+from datetime import UTC, datetime
 
 from etlantic.reports.model import PipelineRunReport
+from etlantic.reports.retention import (
+    RUN_ARTIFACT_RETENTION_STATE_KEY,
+    TERMINAL_RUN_STATUSES,
+)
 
 
 @dataclass
@@ -37,3 +42,34 @@ class ReportStore:
         if limit is not None:
             items = items[:limit]
         return items
+
+    def list_expired_artifact_reports(
+        self, *, cutoff: datetime, limit: int
+    ) -> list[PipelineRunReport]:
+        """Return oldest terminal reports whose artifact window has elapsed."""
+        if limit < 1:
+            return []
+
+        def ended_at(report: PipelineRunReport) -> datetime | None:
+            value = report.ended_at
+            if value is None:
+                return None
+            if value.tzinfo is None:
+                return value.replace(tzinfo=UTC)
+            return value.astimezone(UTC)
+
+        boundary = (
+            cutoff.astimezone(UTC) if cutoff.tzinfo else cutoff.replace(tzinfo=UTC)
+        )
+        candidates = [
+            report
+            for report in self.list()
+            if report.status.value in TERMINAL_RUN_STATUSES
+            and report.metadata.get(RUN_ARTIFACT_RETENTION_STATE_KEY) != "complete"
+            and (finished := ended_at(report)) is not None
+            and finished <= boundary
+        ]
+        candidates.sort(
+            key=lambda report: (ended_at(report) or boundary, report.run_id)
+        )
+        return candidates[:limit]

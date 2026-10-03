@@ -116,6 +116,46 @@ an Extract kind. Posts `local-files` binding refs, never file bytes. See
 [Landing zone](https://etlantic.readthedocs.io/en/latest/06_EXECUTION/LANDING_ZONE/)
 and [Embeddable HTTP API](https://etlantic.readthedocs.io/en/stable/06_EXECUTION/CONTROL_PLANE/).
 
+## Generated-spec managed consumer (docs / local)
+
+```bash
+# start a managed CP1 app with a principal mapped to a tenant/workspace
+uv run python examples/pipeline_definition_json.py
+cat > consumer-spec.json <<'JSON'
+{
+  "definition_id": "customer_refresh",
+  "definition_file": "pipeline.definition.json",
+  "idempotency_key": "customer-refresh:batch-2026-09-30",
+  "request": {},
+  "business_context": {"change_request": "CR-1842"}
+}
+JSON
+uv run python examples/managed_consumer_0_56.py consumer-spec.json \
+  --base-url http://127.0.0.1:8000 --principal alice --require-review \
+  --business-webhook https://workflow.example.com/events/etlantic
+```
+
+This consumer uses only the managed HTTP commands and Python's standard
+library. It registers the generated definition, captures the returned immutable
+revision ID, validates and plans that exact revision, optionally asks for
+approval, then submits the same revision with the supplied idempotency key. It
+stores that revision ID back into the consumer spec before review or submission,
+so a retry reuses the same run intent and recovers the same receipt. Its
+post-acceptance callback receives the receipt and opaque `business_context` so a
+host application can enqueue its own workflow; transformation logic stays in
+the generated ETLantic definition. Scope comes from the server's authenticated
+principal mapping, not tenant/workspace headers supplied by the consumer.
+
+The Python entry point also exposes `consume_generated_spec(...)` for host
+applications to supply their own review and business-orchestration callbacks.
+The optional webhook receives an idempotent `etlantic.run.accepted` event; its
+bearer token is read from `ETLANTIC_BUSINESS_WEBHOOK_TOKEN` and is never logged.
+The 0.56 qualification runs this CLI against built core and FastAPI wheels in a
+clean Python environment, verifies review rejection prevents submission, then
+approves the pinned revision and delivers the acceptance event to an external
+loopback webhook receiver. The consumer script itself uses only the standard
+library and public HTTP commands.
+
 ## Dataframe parity (CI)
 
 ```bash

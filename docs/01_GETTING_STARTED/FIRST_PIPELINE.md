@@ -1,5 +1,8 @@
 # Your First Pipeline
 
+> **Version boundary:** 0.56.0 is a qualification candidate; 0.55.x remains the published supported line.
+
+
 > **Status: ETLantic 0.55.0 Beta release.** Extends the project from
 > [Quickstart](QUICKSTART.md). Local Python + JSON assets only.
 

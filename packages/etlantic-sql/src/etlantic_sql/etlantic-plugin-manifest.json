@@ -3,12 +3,14 @@
     "sql",
     "portable",
     "source.batch_snapshot",
+    "source.partitioned",
     "write.append",
     "write.overwrite",
+    "write.partition_replace",
     "publication.atomic",
     "transactions"
   ],
-  "digest": "sha256:4292c2006eaac2590378d6cbcfc8a7319ec9f01dc86ee4b513f33a88180f12b8",
+  "digest": "sha256:0573106a69ce5a48f4f14953b2ad2be83f81fa0d50d721f390bea34d7366c65b",
   "entries": [
     {
       "capabilities": [
@@ -34,8 +36,9 @@
     {
       "capabilities": [
         "source.batch_snapshot",
+        "source.partitioned",
         "source.schema_discovery",
-        "idempotency"
+        "source.statistics_bounded"
       ],
       "engine": "postgresql",
       "group": "etlantic.source_connectors",
@@ -51,7 +54,8 @@
         "publication.atomic",
         "transactions",
         "reconciliation",
-        "idempotency"
+        "idempotency",
+        "write.partition_replace"
       ],
       "engine": "postgresql",
       "group": "etlantic.sink_connectors",
@@ -80,5 +84,5 @@
     "publisher": "etlantic"
   },
   "schema": "etlantic.plugin_manifest/1",
-  "version": "0.55.0"
+  "version": "0.56.0"
 }

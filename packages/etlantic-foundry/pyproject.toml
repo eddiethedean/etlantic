@@ -1,0 +1,38 @@
+[project]
+name = "etlantic-foundry"
+version = "0.56.0"
+description = "Foundry dataset and file connectors for ETLantic."
+readme = "README.md"
+license = "MIT"
+requires-python = ">=3.11"
+authors = [{ name = "Odo Matthews", email = "odosmatthews@gmail.com" }]
+classifiers = ["Development Status :: 4 - Beta"]
+dependencies = [
+    "etlantic>=0.56.0,<0.57",
+    "httpx2>=2,<3",
+]
+
+[project.urls]
+Homepage = "https://github.com/eddiethedean/etlantic"
+Documentation = "https://github.com/eddiethedean/etlantic/tree/main/docs"
+Repository = "https://github.com/eddiethedean/etlantic"
+Issues = "https://github.com/eddiethedean/etlantic/issues"
+
+[project.entry-points."etlantic.source_connectors"]
+foundry = "etlantic_foundry.connectors:create_source"
+
+[project.entry-points."etlantic.sink_connectors"]
+foundry = "etlantic_foundry.connectors:create_sink"
+
+[project.entry-points."etlantic.storage_connectors"]
+foundry = "etlantic_foundry.connectors:create_storage"
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/etlantic_foundry"]
+
+[tool.hatch.build.targets.wheel.force-include]
+"src/etlantic_foundry/etlantic-plugin-manifest.json" = "etlantic_foundry/etlantic-plugin-manifest.json"

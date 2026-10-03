@@ -5,7 +5,39 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
+## [0.56.0] - Unreleased candidate (not published)
+
+### Added
+
+- Managed partition repair and backfill now use configured, bounded PostgreSQL
+  partition reads and transactional idempotent replacement, with parent and
+  attempt lineage through the shared service and HTTP command surfaces.
+
+### Changed
+
+- Prepare the core and first-party packages on the lockstep 0.56.0 candidate
+  line, with plugin dependency ranges and manifests aligned to that line.
+
+### Fixed
+
+- SQL provision and cleanup actions propagate deadlines to database work, abort
+  expired transactions, and keep workers responsive during blocked provider IO.
+  Verified committed effects remain available after a timeout; same-key recovery
+  reconciles uncertain effects before authorized compensation (#219).
+- Lifecycle commands reconcile lost durable acceptance acknowledgements before
+  returning a receipt. Durable admission failures preserve shared receipts and
+  immutable input leases for same-key recovery, including concurrent callers;
+  unresolved acceptance returns a typed unavailable error. Cancellation waits
+  for durable acceptance and cannot revive a previously cancelled receipt (#218).
+- Recovery of an unreported worker attempt records an unknown execution effect
+  that survives durable-store snapshots and blocks retry until provider
+  reconciliation proves no commit. Recovery preserves confirmed commits and
+  finalizes the attempt even when provider confirmation arrives concurrently,
+  allowing an explicit rerun. Pre-execution rejections retain safe retry
+  behavior (#217).
+- Recovery cancellation preserves unknown effects. Reconciliation requires
+  nonblank evidence and cannot change an existing effect's submission identity
+  or authority (#217).
 
 ## [0.55.0] - 2026-09-29
 
@@ -92,6 +124,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Require exact candidate pins and semantically verified, row-bound evidence;
   normalize source ordering and relative evidence paths across platforms.
 
+[0.56.0]: https://github.com/eddiethedean/etlantic/compare/v0.55.0...v0.56.0
 [0.55.0]: https://github.com/eddiethedean/etlantic/compare/v0.54.0...v0.55.0
 [0.54.0]: https://github.com/eddiethedean/etlantic/releases/tag/v0.54.0
 

@@ -9,8 +9,12 @@ from __future__ import annotations
 
 from collections.abc import Mapping, Sequence
 from dataclasses import dataclass
+from datetime import datetime
 from typing import Any, Protocol, runtime_checkable
 
+from etlantic.control_plane.event_retention import (
+    MAX_EVENT_IDEMPOTENCY_PRUNE_BATCH,
+)
 from etlantic.control_plane.models import (
     AcceptReceipt,
     AcceptResult,
@@ -50,6 +54,14 @@ class Authorizer(Protocol):
         ...
 
 
+@dataclass(frozen=True, slots=True)
+class DefinitionResolution:
+    """One verified definition snapshot selected for an operation."""
+
+    revision_id: str
+    document: Mapping[str, Any]
+
+
 @runtime_checkable
 class DefinitionRepository(Protocol):
     """Workspace-scoped pipeline/definition registry."""
@@ -73,6 +85,20 @@ class DefinitionRepository(Protocol):
 
 
 @runtime_checkable
+class RevisionedDefinitionRepository(Protocol):
+    """Optional extension for repositories that resolve immutable revisions."""
+
+    def resolve_revision(
+        self,
+        ctx: ControlPlaneContext,
+        definition_id: str,
+        selector: str,
+    ) -> DefinitionResolution:
+        """Resolve ``current``, a revision id, or a configured revision alias."""
+        ...
+
+
+@runtime_checkable
 class SubmissionStore(Protocol):
     """Durable acceptance and scoped idempotency lookup.
 
@@ -89,6 +115,7 @@ class SubmissionStore(Protocol):
         payload: Mapping[str, Any],
         resource_type: str = "run",
         resource_id: str | None = None,
+        submission_id: str | None = None,
         operation: str = "run.submit",
     ) -> AcceptResult:
         """Durably accept work; same ADR tuple returns the original receipt."""
@@ -102,6 +129,16 @@ class SubmissionStore(Protocol):
         operation: str = "run.submit",
     ) -> AcceptReceipt | None:
         """Return a prior acceptance for the ADR-016 idempotency tuple."""
+        ...
+
+    def lookup_idempotency_payload(
+        self,
+        ctx: ControlPlaneContext,
+        idempotency_key: str,
+        *,
+        operation: str = "run.submit",
+    ) -> Mapping[str, Any] | None:
+        """Return the secret-free canonical payload for a prior acceptance."""
         ...
 
 
@@ -134,10 +171,63 @@ class EventStore(Protocol):
         ...
 
 
+@runtime_checkable
+class EventRetentionStore(Protocol):
+    """Optional scoped event-history retention operations."""
+
+    def prune_before_sequence(
+        self, ctx: ControlPlaneContext, before_sequence: int
+    ) -> int:
+        """Prune older events while preserving a sequence anchor.
+
+        Unexpired idempotency records survive pruning so a delayed publisher
+        cannot recreate a retained-window event. Reusing a pruned key within
+        its tombstone window returns an expired-history error. Tombstones may
+        be removed after their configured expiry. The newest event is retained
+        as the sequence anchor, preventing cursor reuse after a full sweep.
+        """
+        ...
+
+    def prune_expired_idempotency(
+        self,
+        ctx: ControlPlaneContext,
+        *,
+        limit: int = MAX_EVENT_IDEMPOTENCY_PRUNE_BATCH,
+        now: datetime | None = None,
+    ) -> int:
+        """Remove a bounded number of expired event-delivery tombstones.
+
+        ``limit`` must be between one and the provider's shared maximum batch.
+        Idempotency is guaranteed until the configured tombstone expiry. After
+        expiry, a delayed publisher may create a new event for the same key.
+        """
+        ...
+
+
+@runtime_checkable
+class IdempotentEventStore(Protocol):
+    """Optional EventStore extension with crash-safe keyed event delivery."""
+
+    def append_once(
+        self,
+        ctx: ControlPlaneContext,
+        *,
+        event_key: str,
+        kind: str,
+        payload: Mapping[str, Any] | None = None,
+    ) -> ControlPlaneEvent:
+        """Return the matching event or append it once inside this scope."""
+        ...
+
+
 __all__ = [
     "Authorizer",
     "AuthzDecision",
     "DefinitionRepository",
+    "DefinitionResolution",
+    "EventRetentionStore",
     "EventStore",
+    "IdempotentEventStore",
+    "RevisionedDefinitionRepository",
     "SubmissionStore",
 ]

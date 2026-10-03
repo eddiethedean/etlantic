@@ -219,9 +219,9 @@ Security requirements:
 
 Recommended package:
 
-- `httpx`
+- `httpx2`
 
-Use HTTPX for explicitly enabled remote references, callbacks, webhooks, and
+Use HTTPX2 for explicitly enabled remote references, callbacks, webhooks, and
 remote providers because it offers synchronous and asynchronous clients with a
 consistent API.
 
@@ -597,7 +597,7 @@ dependencies = [
 yaml = ["ruamel.yaml>=0.18,<0.20"]
 jsonschema = ["jsonschema>=4.25,<5", "referencing>=0.36,<1"]
 cli = ["cyclopts>=4,<5", "rich>=14,<15"]
-http = ["httpx>=0.28,<1"]
+http = ["httpx2>=2,<3"]
 observability = ["opentelemetry-api>=1.36,<2"]
 notebook = ["ipython>=8,<11", "ipywidgets>=8,<9"]
 docs-rendering = [
@@ -626,7 +626,7 @@ them in the core project's optional-dependency table.
 | ruamel.yaml | Extra | Adopt for source-preserving YAML |
 | jsonschema + referencing | Extra | Adopt for portable schema validation |
 | Cyclopts + Rich | CLI extra | Adopt |
-| HTTPX | HTTP extra | Adopt behind network policy |
+| HTTPX2 | HTTP extra | Adopt behind network policy |
 | OpenTelemetry API | Observability extra | Adopt |
 | IPython | Notebook extra | Adopt for rich display integration |
 | Ipywidgets | Notebook extra | Adopt for optional interactive controls |

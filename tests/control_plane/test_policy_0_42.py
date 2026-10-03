@@ -18,6 +18,8 @@ from etlantic.control_plane import (
     WorkspaceRef,
     gate_pre_submit,
 )
+from etlantic.control_plane.attestation_memory import MemoryAttestationStore
+from etlantic.control_plane.attestation_models import Attestation
 from etlantic.testing import run_policy_conformance_suite
 
 
@@ -117,3 +119,75 @@ def test_policy_fingerprint_stable() -> None:
     a = policy.decide(c, hook="pre_plan", plan_fingerprint="plan")
     b = policy.decide(c, hook="pre_plan", plan_fingerprint="plan")
     assert a.policy_fingerprint == b.policy_fingerprint
+
+
+def test_pre_submit_attestations_are_fresh_and_bound_to_effective_fingerprint() -> None:
+    c = ctx()
+    store = MemoryAttestationStore.for_tests()
+    for kind, subject in (
+        ("plan", "effective-plan"),
+        ("revision", "rev-1"),
+        ("policy_bundle", "unsigned"),
+    ):
+        store.put(
+            c,
+            attestation=store.make_attestation(
+                c, kind=kind, subject_fingerprint=subject
+            ),
+        )
+
+    gate_pre_submit(
+        c,
+        policy=None,
+        attestations=store,
+        plan_fingerprint="raw-plan",
+        effective_fingerprint="effective-plan",
+        revision_id="rev-1",
+        require_attestations=True,
+        attestation_max_age_seconds=60,
+    )
+
+
+def test_plan_attestation_created_at_is_signed_and_stale_evidence_fails_closed() -> (
+    None
+):
+    from dataclasses import replace
+    from datetime import UTC, datetime
+
+    c = ctx()
+    store = MemoryAttestationStore.for_tests()
+    stale = Attestation(
+        attestation_id="stale-plan",
+        kind="plan",
+        subject_fingerprint="plan",
+        signature="",
+        signer_id="tests",
+        tenant_id=c.tenant.tenant_id,
+        workspace_id=c.workspace.workspace_id,
+        environment=c.environment.name,
+        created_at=datetime.now(UTC) - timedelta(hours=2),
+    )
+    store.put(c, attestation=store.sign(stale))
+    for kind, subject in (("revision", "rev"), ("policy_bundle", "policy")):
+        store.put(
+            c,
+            attestation=store.make_attestation(
+                c, kind=kind, subject_fingerprint=subject
+            ),
+        )
+
+    results = store.verify_plan(
+        c,
+        plan_fingerprint="plan",
+        revision_id="rev",
+        policy_fingerprint="policy",
+        plugin_fingerprints=(),
+        max_age_seconds=60,
+    )
+    assert [result.ok for result in results] == [False, True, True]
+    assert results[0].reasons == ("stale plan attestation",)
+
+    # Timestamp edits invalidate the signature, so freshness cannot be reset
+    # by rewriting the public created_at field.
+    with pytest.raises(ControlPlaneError, match="invalid attestation signature"):
+        store.put(c, attestation=replace(stale, created_at=datetime.now(UTC)))

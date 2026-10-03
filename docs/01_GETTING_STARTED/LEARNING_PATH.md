@@ -42,7 +42,7 @@ pilot. Details: [Capabilities](CAPABILITIES.md).
 
 ## Reference after first success
 
-- [Current 0.55 Guide](CURRENT_VERSION.md) — task table
+- [Current 0.56 Guide](CURRENT_VERSION.md) — task table
 - [Cheatsheet](../10_REFERENCE/CHEATSHEET.md)
 - [FAQ](FAQ.md) / [Troubleshooting](TROUBLESHOOTING.md) / [Upgrade](UPGRADE.md)
 - Evaluators: [Evaluator Brief](EVALUATOR.md) → [Enterprise evaluation](ENTERPRISE_EVALUATION.md)

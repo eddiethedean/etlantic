@@ -11,10 +11,10 @@ compilation on Pandas. Keep the pin matched to core.
 ## Install
 
 ```bash
-pip install 'etlantic-pandas==0.55.0'
+pip install 'etlantic-pandas==0.56.0'
 # Optional Arrow interchange:
-pip install 'etlantic-pandas[arrow]==0.55.0'
-# pip install 'etlantic==0.55.0'
+pip install 'etlantic-pandas[arrow]==0.56.0'
+# pip install 'etlantic==0.56.0'
 ```
 
 ## Dataframe plugin
@@ -60,7 +60,7 @@ run_portable_transform_conformance_suite(create_transform_compiler())
 
 ## Links
 
-[Pandas tutorial](https://etlantic.readthedocs.io/en/v0.55.0/06_EXECUTION/PANDAS_TUTORIAL/) ·
-[Compatibility](https://etlantic.readthedocs.io/en/v0.55.0/10_REFERENCE/COMPATIBILITY/) ·
+[Pandas tutorial](https://etlantic.readthedocs.io/en/v0.56.0/06_EXECUTION/PANDAS_TUTORIAL/) ·
+[Compatibility](https://etlantic.readthedocs.io/en/v0.56.0/10_REFERENCE/COMPATIBILITY/) ·
 [Source](https://github.com/eddiethedean/etlantic/tree/main/packages/etlantic-pandas) ·
 [Issues](https://github.com/eddiethedean/etlantic/issues)
