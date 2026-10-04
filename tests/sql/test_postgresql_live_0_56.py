@@ -307,6 +307,96 @@ def test_live_upsert_duplicate_keys_are_stable_across_chunks(
         engine.dispose()
 
 
+def test_live_upsert_does_not_retry_trigger_cardinality_errors(
+    secret_context: dict[str, Any],
+) -> None:
+    assert URL is not None
+    engine = create_engine(URL, hide_parameters=True)
+    suffix = uuid.uuid4().hex
+    target = f"etlantic_trigger_{suffix}"
+    effects = f"etlantic_effects_{suffix}"
+    trigger_function = f"etlantic_single_row_{suffix}"
+    binding = {
+        "provider": "postgresql",
+        "location": target,
+        "config": {
+            "mode": "upsert",
+            "key_columns": ["id"],
+            "effect_table": effects,
+        },
+    }
+    context = {
+        **secret_context,
+        "run_id": f"trigger-cardinality-{suffix}",
+        "node": "trigger-cardinality-upsert",
+    }
+    sink = LivePostgresSinkConnector()
+    try:
+        with engine.begin() as connection:
+            connection.execute(
+                text(
+                    f"CREATE TABLE public.{target} ("
+                    "id integer PRIMARY KEY, payload text NOT NULL)"
+                )
+            )
+            connection.execute(
+                text(
+                    f"CREATE TABLE public.{effects} ("
+                    "effect_id text PRIMARY KEY, intent_fingerprint text NOT NULL, "
+                    "publication_id text NOT NULL UNIQUE, row_count bigint NOT NULL)"
+                )
+            )
+            connection.execute(
+                text(
+                    f"CREATE FUNCTION public.{trigger_function}() RETURNS trigger "
+                    "LANGUAGE plpgsql AS $$ BEGIN "
+                    "PERFORM (SELECT id FROM inserted_rows); RETURN NULL; END $$"
+                )
+            )
+            connection.execute(
+                text(
+                    f"CREATE TRIGGER reject_multirow_insert AFTER INSERT ON public.{target} "
+                    "REFERENCING NEW TABLE AS inserted_rows "
+                    f"FOR EACH STATEMENT EXECUTE FUNCTION public.{trigger_function}()"
+                )
+            )
+
+        async def reject_trigger_cardinality_error() -> ConnectorWriteError:
+            plan = await sink.plan_write(binding=binding, context=context)
+            session = await sink.begin_write(
+                plan=plan, binding=binding, context=context
+            )
+            await sink.write_batch(
+                session,
+                [{"id": 1, "payload": "first"}, {"id": 2, "payload": "second"}],
+                context=context,
+            )
+            with pytest.raises(ConnectorWriteError) as failure:
+                await sink.prepare(session, context=context)
+            await sink.abort(session, context=context)
+            return failure.value
+
+        failure = anyio.run(reject_trigger_cardinality_error)
+        assert failure.code == "PMCONN876"
+        with engine.connect() as connection:
+            target_rows = connection.execute(
+                text(f"SELECT count(*) FROM public.{target}")
+            ).scalar_one()
+            effect_rows = connection.execute(
+                text(f"SELECT count(*) FROM public.{effects}")
+            ).scalar_one()
+        assert target_rows == 0
+        assert effect_rows == 0
+    finally:
+        with engine.begin() as connection:
+            connection.execute(text(f"DROP TABLE IF EXISTS public.{effects}"))
+            connection.execute(text(f"DROP TABLE IF EXISTS public.{target}"))
+            connection.execute(
+                text(f"DROP FUNCTION IF EXISTS public.{trigger_function}()")
+            )
+        engine.dispose()
+
+
 def test_live_upsert_rolls_back_when_a_later_chunk_fails(
     secret_context: dict[str, Any],
 ) -> None:

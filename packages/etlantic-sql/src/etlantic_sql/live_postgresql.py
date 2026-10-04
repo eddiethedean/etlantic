@@ -1166,10 +1166,18 @@ class LivePostgresSinkConnector:
                             sqlstate = getattr(original, "sqlstate", None) or getattr(
                                 original, "pgcode", None
                             )
+                            diagnostic = getattr(original, "diag", None)
+                            source_function = getattr(
+                                diagnostic, "source_function", None
+                            )
                             # PostgreSQL cannot update one conflict key twice in a
                             # single statement. Split only that chunk so duplicate
                             # keys keep their input order across statement boundaries.
-                            if sqlstate != "21000" or len(chunk) < 2:
+                            if (
+                                sqlstate != "21000"
+                                or source_function != "ExecOnConflictUpdate"
+                                or len(chunk) < 2
+                            ):
                                 raise
                             midpoint = len(chunk) // 2
                             execute_upsert_chunk(chunk[:midpoint])
