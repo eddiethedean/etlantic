@@ -1139,6 +1139,7 @@ class LivePostgresSinkConnector:
                             code="PMCONN888",
                             provider=PROVIDER,
                         )
+
                     def execute_upsert_chunk(
                         chunk: Sequence[Mapping[str, Any]],
                     ) -> None:
@@ -1186,9 +1187,7 @@ class LivePostgresSinkConnector:
                             savepoint.commit()
 
                     for offset in range(0, len(rows), rows_per_statement):
-                        execute_upsert_chunk(
-                            rows[offset : offset + rows_per_statement]
-                        )
+                        execute_upsert_chunk(rows[offset : offset + rows_per_statement])
                 else:
                     connection.execute(target.insert(), rows)
 

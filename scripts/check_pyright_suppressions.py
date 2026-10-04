@@ -35,7 +35,9 @@ from pathlib import Path
 # No suppression changed; the 784-entry inventory is re-pinned after line shifts.
 # Issue #219 retains fenced late action effects; existing suppression locations
 # shift, with no directives added or removed (784 entries).
-EXPECTED_DIGEST = "7539d452f435aad54eec7c0b5502479e9e77825f0bf763408ab0a2d35495b913"
+# Phase 0.56 #221/222 update control-plane and SQLModel sources, shifting
+# existing suppression locations without adding or removing directives.
+EXPECTED_DIGEST = "edace1ffca3fa1325fde6a2880a821b8b750d3af40fcac9b21df4eeaa30360bf"
 
 _IGNORED_DIRECTORIES = frozenset(
     {

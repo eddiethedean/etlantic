@@ -105,8 +105,11 @@ EXPECTED_DIGESTS = {
     # The follow-up adds no diagnostics; reviewed strict total remains 9,856.
     # Issue #219 adds no shadow diagnostics; normalized debt is unchanged
     # at 9,856. Existing diagnostic source locations moved.
-    "Darwin": "d6109287c2548d9894ecc62a45e824af2040788cbed9ffd674df7580ba4799bb",
-    "Linux": "d6109287c2548d9894ecc62a45e824af2040788cbed9ffd674df7580ba4799bb",
+    # Issues #220-222 revise durable workspace recovery, definition CAS,
+    # registry storage and PostgreSQL batching. The reviewed shadow scan has
+    # 9,868 diagnostics; the regular strict Pyright run remains clean.
+    "Darwin": "353e8bd9ba3c922f66fa62e051e42609b895ddccf8f128a0db2797e4ac270f69",
+    "Linux": "353e8bd9ba3c922f66fa62e051e42609b895ddccf8f128a0db2797e4ac270f69",
 }
 
 
