@@ -1614,6 +1614,8 @@ class ManagedApplicationService:
             resume_reason = "adaptive_policy_unsupported"
         else:
             resume_reason = self._retry_block_reason(ctx, submission_id)
+            if resume_reason is None:
+                resume_reason = "checkpoint_restore_unavailable"
         repair_decision = self.authorizer.authorize(ctx, "run.repair", f"run:{run_id}")
         if not repair_decision.allowed:
             repair_reason: str | None = "not_authorized"
@@ -1995,6 +1997,17 @@ class ManagedApplicationService:
             raise ControlPlaneError.conflict(
                 "Adaptive execution does not support resume intent",
                 extensions={"reason": "adaptive_policy_unsupported"},
+            )
+        # CP3 checkpoints currently persist a state fingerprint and lineage,
+        # not a runtime-restorable value or graph boundary. Do not accept a
+        # new lifecycle child that would merely rerun the original graph from
+        # its sources while claiming to resume from that checkpoint. Existing
+        # idempotency keys still flow through child acceptance below so callers
+        # can recover receipts for children accepted by an older version.
+        if prior_receipt is None and prior_durable is None:
+            raise ControlPlaneError.conflict(
+                "Managed execution cannot restore the selected checkpoint",
+                extensions={"reason": "checkpoint_restore_unavailable"},
             )
         request = RunRequest.from_dict(dict(envelope.run_request))
         resume_request = RunRequest(

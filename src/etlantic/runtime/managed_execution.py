@@ -546,6 +546,16 @@ class ManagedExecutionAdapter:
                 "Accepted plan or run controls are invalid"
             ) from exc
 
+        if request.intent is RunIntent.RESUME or submission.operation == "run.resume":
+            # Older service versions could accept a resume child backed only
+            # by checkpoint metadata. Refuse those queued submissions before
+            # input resources or source bindings are read; running the normal
+            # plan would silently turn a claimed checkpoint resume into a full
+            # execution.
+            raise ExecutionRejected(
+                "Managed execution cannot restore the selected checkpoint"
+            )
+
         has_input_resources = _plan_has_input_resources(plan)
         input_resource_store = self.input_resource_store
         input_lease_id = (envelope.evidence_refs or {}).get("input_resource_lease_id")

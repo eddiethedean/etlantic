@@ -2607,12 +2607,12 @@ def test_replay_uses_accepted_snapshot_and_changed_intent_conflicts(tmp_path) ->
         )
 
 
-def test_managed_resume_admits_checkpoint_linked_child_and_is_idempotent(
+def test_managed_resume_rejects_checkpoint_without_runtime_restore_state(
     tmp_path: Path,
 ) -> None:
     from etlantic.runtime.managed_errors import ExecutionRejected
 
-    ctx, authz, definitions, submissions, durable, events, service = _wired(tmp_path)
+    ctx, authz, definitions, _submissions, durable, _events, service = _wired(tmp_path)
     authz.grant(ctx, "run.resume")
     source = tmp_path / "resume-source.json"
     target = tmp_path / "resume-target.csv"
@@ -2679,107 +2679,22 @@ def test_managed_resume_admits_checkpoint_linked_child_and_is_idempotent(
     assert service.get_run_status(ctx, parent.resource_id)["status"] == "failed"
     assert service.get_run_actions(ctx, parent.resource_id)["actions"][-1] == {
         "name": "resume",
-        "allowed": True,
-        "reason": None,
-    }
-
-    resumed = service.resume_run(
-        ctx,
-        parent.resource_id,
-        idempotency_key="resume-child",
-        checkpoint_id=checkpoint_id,
-    )
-    assert (
-        service.resume_run(
-            ctx,
-            parent.resource_id,
-            idempotency_key="resume-child",
-            checkpoint_id=checkpoint_id,
-        ).to_dict()
-        == resumed.to_dict()
-    )
-    child = durable.get_submission(ctx, resumed.submission_id)
-    envelope = ExecutionEnvelope.from_json(child.input_snapshot)
-    assert child.operation == "run.resume"
-    assert envelope.run_request["intent"] == "resume"
-    assert envelope.evidence_refs["command"] == "resume"
-    assert envelope.evidence_refs["checkpoint_id"] == checkpoint_id
-    assert envelope.evidence_refs["parent_run_id"] == parent.resource_id
-    assert envelope.evidence_refs["parent_submission_id"] == parent.submission_id
-    assert envelope.evidence_refs["artifact_parent_run_id"] == parent.resource_id
-    assert len(durable.pending_outbox(ctx)) == 1
-
-    api = ETLanticAPI(
-        authorizer=authz,
-        definitions=definitions,
-        submissions=submissions,
-        events=events,
-        durable_work=durable,
-        managed_service=service,
-        profile="development",
-        context_factory=membership_context_factory(
-            {"alice": ("tenant-a", "ws-1", "development", "default")}
-        ),
-        principal_dependency=principal_from_header,
-    )
-    client: Any = cast(Any, TestClient(create_app(api)))
-    response: Any = client.post(
-        f"/v1/runs/{parent.resource_id}/resume",
-        headers={"X-Principal": "alice", "Idempotency-Key": "resume-child"},
-        json={"checkpoint_id": checkpoint_id},
-    )
-    assert response.status_code == 202
-    assert response.json()["submission_id"] == resumed.submission_id
-    assert (
-        ExecutionHost(
-            durable,
-            owner_id="resume-child-worker",
-            runner=ManagedExecutionAdapter(report_root=tmp_path / "reports"),
-        ).tick(ctx)
-        == 1
-    )
-    assert service.get_run_status(ctx, resumed.resource_id)["status"] == "completed"
-    assert target.read_text(encoding="utf-8").splitlines() == ["id", "42"]
-    assert {
-        "from": parent.resource_id,
-        "to": resumed.resource_id,
-        "kind": "resume",
-    } in service.get_run_lineage(ctx, resumed.resource_id)["edges"]
-    from etlantic.control_plane.durable_models import EffectRecord
-
-    parent_record = durable.get_submission(ctx, parent.submission_id)
-    durable.record_effect(
-        ctx,
-        EffectRecord(
-            effect_id=f"{parent.submission_id}:execution",
-            submission_id=parent.submission_id,
-            tenant_id=ctx.tenant.tenant_id,
-            workspace_id=ctx.workspace.workspace_id,
-            status="unknown",
-            recorded_at=parent_record.created_at,
-        ),
-    )
-    assert service.get_run_actions(ctx, parent.resource_id)["actions"][-1] == {
-        "name": "resume",
         "allowed": False,
-        "reason": "effect_requires_reconciliation",
+        "reason": "checkpoint_restore_unavailable",
     }
-    assert (
+
+    pending_outbox = tuple(durable.pending_outbox(ctx))
+    with pytest.raises(ControlPlaneError, match="cannot restore") as error:
         service.resume_run(
             ctx,
             parent.resource_id,
             idempotency_key="resume-child",
-            checkpoint_id=checkpoint_id,
-        ).to_dict()
-        == resumed.to_dict()
-    )
-    with pytest.raises(ControlPlaneError, match="effect is reconciled"):
-        service.resume_run(
-            ctx,
-            parent.resource_id,
-            idempotency_key="resume-unsafe",
             checkpoint_id=checkpoint_id,
         )
+    assert error.value.extensions["reason"] == "checkpoint_restore_unavailable"
+    assert tuple(durable.pending_outbox(ctx)) == pending_outbox
+    assert service.get_run_status(ctx, parent.resource_id)["status"] == "failed"
+    assert not target.exists()
 
 
 def test_managed_resume_rejects_unlinked_or_missing_checkpoint(tmp_path: Path) -> None:
