@@ -196,6 +196,24 @@ def test_memory_vs_sqlmodel_promote_suspend_conformance() -> None:
         with pytest.raises(ControlPlaneError) as exc:
             provider.workspaces.list(ctx)
         assert exc.value.status == 403, label
+        replacement = RegistryRevision(
+            logical_id="logic-x",
+            revision_id="rev-x2",
+            tenant_id="tenant-a",
+            workspace_id="ws-1",
+            content_fingerprint=content_fingerprint({"backend": "updated"}),
+            content={"backend": "updated"},
+        )
+        cas_statuses = []
+        for expected in ("0" * 64, content_fingerprint(content)):
+            with pytest.raises(ControlPlaneError) as cas_error:
+                provider.revisions.put_revision_if_current(
+                    ctx,
+                    replacement,
+                    expected_current_fingerprint=expected,
+                )
+            cas_statuses.append(cas_error.value.status)
+        assert cas_statuses == [403, 403], label
 
 
 def test_registry_definition_repository_round_trip(

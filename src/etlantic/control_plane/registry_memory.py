@@ -514,7 +514,16 @@ class MemoryRevisionRegistry:
         expected_current_fingerprint: str,
     ) -> None:
         """Atomically check a logical head and append its next revision."""
+        if (
+            revision.tenant_id != ctx.tenant.tenant_id
+            or revision.workspace_id != ctx.workspace.workspace_id
+        ):
+            raise ControlPlaneError.not_found(
+                "Revision not found",
+                extensions={"revision_id": revision.revision_id},
+            )
         with self._lock:
+            self._assert_scope_active(ctx)
             current = max(
                 (
                     item
@@ -533,9 +542,7 @@ class MemoryRevisionRegistry:
                 raise ControlPlaneError.conflict(
                     "Definition changed since the edit was prepared"
                 )
-            self.put_revision(
-                ctx, revision
-            )
+            self.put_revision(ctx, revision)
 
     def get_revision(
         self,
