@@ -449,7 +449,7 @@ class ManagedExecutionAdapter:
                     verify=True,
                 )
                 durable_artifacts = (
-                    True
+                    False
                     if isinstance(plan, AdaptivePipelinePlan)
                     else any(
                         resolution.artifact.strategy.value == "durable"
