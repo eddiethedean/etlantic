@@ -1139,10 +1139,11 @@ class LivePostgresSinkConnector:
                             code="PMCONN888",
                             provider=PROVIDER,
                         )
-                    for offset in range(0, len(rows), rows_per_statement):
-                        statement = insert(target).values(
-                            rows[offset : offset + rows_per_statement]
-                        )
+                    def execute_upsert_chunk(
+                        chunk: Sequence[Mapping[str, Any]],
+                    ) -> None:
+                        savepoint = connection.begin_nested()
+                        statement = insert(target).values(list(chunk))
                         updates = {
                             column: getattr(statement.excluded, column)
                             for column in rows[0]
@@ -1157,7 +1158,29 @@ class LivePostgresSinkConnector:
                             statement = statement.on_conflict_do_nothing(
                                 index_elements=[target.c[key] for key in keys]
                             )
-                        connection.execute(statement)
+                        try:
+                            connection.execute(statement)
+                        except Exception as exc:
+                            savepoint.rollback()
+                            original = getattr(exc, "orig", None)
+                            sqlstate = getattr(original, "sqlstate", None) or getattr(
+                                original, "pgcode", None
+                            )
+                            # PostgreSQL cannot update one conflict key twice in a
+                            # single statement. Split only that chunk so duplicate
+                            # keys keep their input order across statement boundaries.
+                            if sqlstate != "21000" or len(chunk) < 2:
+                                raise
+                            midpoint = len(chunk) // 2
+                            execute_upsert_chunk(chunk[:midpoint])
+                            execute_upsert_chunk(chunk[midpoint:])
+                        else:
+                            savepoint.commit()
+
+                    for offset in range(0, len(rows), rows_per_statement):
+                        execute_upsert_chunk(
+                            rows[offset : offset + rows_per_statement]
+                        )
                 else:
                     connection.execute(target.insert(), rows)
 

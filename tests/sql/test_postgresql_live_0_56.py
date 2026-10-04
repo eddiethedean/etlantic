@@ -240,6 +240,73 @@ def test_live_upsert_respects_bind_parameter_limit(
         engine.dispose()
 
 
+@pytest.mark.parametrize("duplicate_index", [1, 9_999])
+def test_live_upsert_duplicate_keys_are_stable_across_chunks(
+    secret_context: dict[str, Any], duplicate_index: int
+) -> None:
+    assert URL is not None
+    engine = create_engine(URL, hide_parameters=True)
+    suffix = uuid.uuid4().hex
+    target = f"etlantic_duplicate_{suffix}"
+    effects = f"etlantic_effects_{suffix}"
+    binding = {
+        "provider": "postgresql",
+        "location": target,
+        "config": {
+            "mode": "upsert",
+            "key_columns": ["id"],
+            "effect_table": effects,
+        },
+    }
+    context = {
+        **secret_context,
+        "run_id": f"duplicate-key-{suffix}",
+        "node": "duplicate-key-upsert",
+    }
+    rows = [
+        {"id": index, **{f"c{column}": column for column in range(1, 7)}}
+        for index in range(10_000)
+    ]
+    rows[duplicate_index]["id"] = 0
+    rows[duplicate_index]["c1"] = 99
+    try:
+        with engine.begin() as connection:
+            connection.execute(
+                text(
+                    f"CREATE TABLE public.{target} ("
+                    "id integer PRIMARY KEY, "
+                    "c1 integer NOT NULL, c2 integer NOT NULL, "
+                    "c3 integer NOT NULL, c4 integer NOT NULL, "
+                    "c5 integer NOT NULL, c6 integer NOT NULL)"
+                )
+            )
+            connection.execute(
+                text(
+                    f"CREATE TABLE public.{effects} ("
+                    "effect_id text PRIMARY KEY, intent_fingerprint text NOT NULL, "
+                    "publication_id text NOT NULL UNIQUE, row_count bigint NOT NULL)"
+                )
+            )
+
+        receipt = _write(LivePostgresSinkConnector(), binding, context, rows)
+        assert receipt.status == "committed"
+        assert receipt.metadata["row_count"] == len(rows)
+        with engine.connect() as connection:
+            target_rows = connection.execute(
+                text(f"SELECT count(*) FROM public.{target}")
+            ).scalar_one()
+            duplicate_value = connection.execute(
+                text(f"SELECT c1 FROM public.{target} WHERE id = 0")
+            ).scalar_one()
+        assert target_rows == len(rows) - 1
+        assert duplicate_value == 99
+    finally:
+        with engine.begin() as connection:
+            connection.execute(text(f"DROP TABLE IF EXISTS public.{effects}"))
+            connection.execute(text(f"DROP TABLE IF EXISTS public.{target}"))
+        engine.dispose()
+
+
 def test_live_upsert_rolls_back_when_a_later_chunk_fails(
     secret_context: dict[str, Any],
 ) -> None:
