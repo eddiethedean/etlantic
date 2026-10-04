@@ -2799,6 +2799,76 @@ def test_legacy_resume_recovers_a_published_result_before_rejecting_execution(
     )
 
 
+def test_legacy_resume_rerun_preserves_idempotency(tmp_path: Path) -> None:
+    ctx, authz, _definitions, _submissions, durable, _events, service = _wired(tmp_path)
+    authz.grant(ctx, "run.rerun")
+    parent = service.submit_run(ctx, "pipe", idempotency_key="rerun-resume-parent")
+    parent_envelope = _accepted_envelope(durable, ctx, parent.submission_id)
+    resume_envelope = parent_envelope.with_request(RunRequest(intent=RunIntent.RESUME))
+    legacy_service: Any = service
+    legacy_resume = legacy_service._accept_child_run(
+        ctx,
+        idempotency_key="rerun-resume-child",
+        operation="run.resume",
+        envelope=resume_envelope,
+        parent_run_id=parent.resource_id,
+        parent_submission_id=parent.submission_id,
+    )
+    for outbox in durable.pending_outbox(ctx):
+        if outbox.submission_id == parent.submission_id:
+            durable.mark_published(ctx, outbox.outbox_id)
+    assert (
+        ExecutionHost(
+            durable,
+            owner_id="rerun-resume-worker",
+            runner=ManagedExecutionAdapter(
+                report_root=tmp_path / "reports",
+                artifact_root=tmp_path / "artifacts",
+            ),
+        ).tick(ctx)
+        == 1
+    )
+    assert durable.get_submission(ctx, legacy_resume.submission_id).status == "failed"
+
+    rerun = service.rerun_run(
+        ctx, legacy_resume.resource_id, idempotency_key="rerun-resume-new"
+    )
+    repeated = service.rerun_run(
+        ctx, legacy_resume.resource_id, idempotency_key="rerun-resume-new"
+    )
+    assert repeated.to_dict() == rerun.to_dict()
+    assert (
+        _accepted_envelope(durable, ctx, rerun.submission_id).effective_request[
+            "intent"
+        ]
+        == RunIntent.STANDARD.value
+    )
+
+    legacy_rerun_envelope = ExecutionEnvelope.from_dict(
+        {
+            **resume_envelope.to_dict(),
+            "evidence_refs": {
+                **dict(resume_envelope.evidence_refs or {}),
+                "command": "rerun",
+                "parent_run_id": legacy_resume.resource_id,
+                "parent_submission_id": legacy_resume.submission_id,
+            },
+        }
+    )
+    old_receipt = legacy_service._accept_child_run(
+        ctx,
+        idempotency_key="rerun-resume-old",
+        operation="run.rerun",
+        envelope=legacy_rerun_envelope,
+        parent_run_id=legacy_resume.resource_id,
+        parent_submission_id=legacy_resume.submission_id,
+    )
+    recovered = service.rerun_run(
+        ctx, legacy_resume.resource_id, idempotency_key="rerun-resume-old"
+    )
+    assert recovered.to_dict() == old_receipt.to_dict()
+
+
 def test_managed_accept_recovers_lost_cp1_ack_without_duplicate_receipt(
     tmp_path, monkeypatch
 ) -> None:

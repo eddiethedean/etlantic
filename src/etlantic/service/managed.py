@@ -1825,6 +1825,15 @@ class ManagedApplicationService:
                 "Legacy accepted work has no verified execution envelope"
             )
         parent_envelope = self._parse_envelope(parent.input_snapshot)
+        parent_request = RunRequest.from_dict(dict(parent_envelope.run_request))
+        if parent_request.intent is RunIntent.RESUME:
+            parent_envelope = parent_envelope.with_request(
+                _request_with_intent(
+                    parent_request,
+                    intent=RunIntent.STANDARD,
+                    metadata=parent_request.metadata,
+                )
+            )
         envelope_data = parent_envelope.to_dict()
         evidence_refs = dict(envelope_data.get("evidence_refs") or {})
         evidence_refs.update(
@@ -1844,25 +1853,6 @@ class ManagedApplicationService:
             ctx, idempotency_key=idempotency_key, operation="run.rerun"
         )
         if prior_receipt is None and prior_durable is None:
-            parent_request = RunRequest.from_dict(dict(parent_envelope.run_request))
-            if parent_request.intent is RunIntent.RESUME:
-                rerun_request = RunRequest(
-                    selection=parent_request.selection,
-                    intent=RunIntent.STANDARD,
-                    materialization=parent_request.materialization,
-                    retry=parent_request.retry,
-                    timeout=parent_request.timeout,
-                    cancellation=parent_request.cancellation,
-                    parameter_overrides=parent_request.parameter_overrides,
-                    asset_overrides=parent_request.asset_overrides,
-                    implementation_overrides=parent_request.implementation_overrides,
-                    invalidation=parent_request.invalidation,
-                    no_write=parent_request.no_write,
-                    metadata=parent_request.metadata,
-                    extensions=parent_request.extensions,
-                    explicit_settings=parent_request.explicit_settings,
-                )
-                envelope = envelope.with_request(rerun_request)
             rerun_reason = self._rerun_block_reason(ctx, parent_submission_id)
             if rerun_reason is not None:
                 raise ControlPlaneError.conflict(
@@ -3690,6 +3680,22 @@ class ManagedApplicationService:
         accepted: ExecutionEnvelope, requested: ExecutionEnvelope
     ) -> bool:
         """Compare lifecycle intent while preserving persisted admission evidence."""
+        accepted_request = RunRequest.from_dict(dict(accepted.run_request))
+        requested_request = RunRequest.from_dict(dict(requested.run_request))
+        accepted_command = (accepted.evidence_refs or {}).get("command")
+        requested_command = (requested.evidence_refs or {}).get("command")
+        if (
+            accepted_command == requested_command == "rerun"
+            and accepted_request.intent is RunIntent.RESUME
+            and requested_request.intent is RunIntent.STANDARD
+        ):
+            accepted = accepted.with_request(
+                _request_with_intent(
+                    accepted_request,
+                    intent=RunIntent.STANDARD,
+                    metadata=accepted_request.metadata,
+                )
+            )
         requested_with_admission = ExecutionEnvelope.from_dict(
             {
                 **requested.to_dict(),
