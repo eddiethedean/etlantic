@@ -7,12 +7,17 @@ import hashlib
 import os
 from collections.abc import Generator
 from contextlib import contextmanager, suppress
-from dataclasses import replace
-from datetime import UTC, datetime
+from dataclasses import dataclass, replace
+from datetime import UTC, datetime, timedelta
 from pathlib import Path
 from typing import Any, cast
 
-from etlantic.io_policy import SafeIoPolicy, read_text_safe, write_text_safe
+from etlantic.io_policy import (
+    SafeIoPolicy,
+    read_text_safe,
+    resolve_under_policy,
+    write_text_safe,
+)
 from etlantic.reports.model import ArtifactResult, PipelineRunReport
 from etlantic.reports.retention import (
     RUN_ARTIFACT_RETENTION_DETAILS_KEY,
@@ -194,14 +199,67 @@ def record_artifact_ownership(workspace: Path, report: PipelineRunReport) -> Non
     )
 
 
-def retained_artifact_ownership(
-    workspace: Path, cutoff: datetime, *, report_run_ids: set[str]
-) -> set[str]:
-    """Read ownership missing from the provider's fresh scoped inventory."""
+@dataclass(frozen=True)
+class ExpiredArtifactOwnership:
+    """One unpublished reference awaiting bounded expiry and physical cleanup."""
+
+    identity: str
+    expiry: str
+    owner: Path
+    payload: dict[str, Any]
+
+
+@dataclass(frozen=True)
+class ArtifactOwnershipInventory:
+    """Protection and pending cleanup from scoped filesystem ownership records."""
+
+    protected: set[str]
+    expired: tuple[ExpiredArtifactOwnership, ...]
+    retry_after: dict[str, datetime | None]
+
+
+def discover_artifact_workspaces(scope: Path) -> list[Path]:
+    """Discover managed workspace directories without relying on report rows."""
+    if not scope.exists():
+        return []
+    resolve_under_policy(
+        scope, SafeIoPolicy.for_root(scope.parents[2]), run_id="artifact-retention"
+    )
+    # Enumeration does not grant access: each workspace is subsequently opened
+    # through the no-follow OS guard before ownership or artifact IO.
+    return sorted(
+        path
+        for path in scope.iterdir()
+        if len(path.name) == 24
+        and all(ch in "0123456789abcdef" for ch in path.name)
+        and path.is_dir()
+        and not path.is_symlink()
+        and (path / ".artifact-owners").exists()
+    )
+
+
+def _is_hash(value: object) -> bool:
+    return (
+        isinstance(value, str)
+        and len(value) == 64
+        and all(ch in "0123456789abcdef" for ch in value)
+    )
+
+
+def read_artifact_ownership(
+    workspace: Path,
+    cutoff: datetime,
+    *,
+    report_run_ids: set[str],
+    retention_seconds: int = 0,
+) -> ArtifactOwnershipInventory:
+    """Read unpublished protection and cleanup work while holding the guard."""
     import json
 
     known = {hashlib.sha256(run_id.encode()).hexdigest() for run_id in report_run_ids}
     protected: set[str] = set()
+    expired_references: list[ExpiredArtifactOwnership] = []
+    retry_after: dict[str, datetime | None] = {}
     policy = SafeIoPolicy.for_root(workspace.parents[3])
     for path in (workspace / ".artifact-owners").glob("*.json"):
         if path.stem in known:
@@ -218,12 +276,19 @@ def retained_artifact_ownership(
         ):
             raise ValueError("Artifact ownership record is invalid")
         expired = False
+        expires_at: datetime | None = None
         if terminal and isinstance(ended, str):
             ended_at = datetime.fromisoformat(ended)
             ended_at = (
                 ended_at.replace(tzinfo=UTC) if ended_at.tzinfo is None else ended_at
             )
             expired = ended_at <= cutoff
+            expires_at = ended_at + timedelta(seconds=retention_seconds)
+        cleaned = data.get("cleaned_artifact_ids", [])
+        if not isinstance(cleaned, list) or not all(
+            _is_hash(item) for item in cast(list[object], cleaned)
+        ):
+            raise ValueError("Artifact ownership cleanup record is invalid")
         references = data.get("references")
         if not isinstance(references, list):
             raise ValueError("Artifact ownership references are invalid")
@@ -232,26 +297,73 @@ def retained_artifact_ownership(
                 raise ValueError("Artifact ownership reference is invalid")
             reference = cast(dict[str, object], value)
             identity, expiry = reference.get("identity"), reference.get("expiry")
-            if not all(
-                isinstance(item, str)
-                and len(item) == 64
-                and all(ch in "0123456789abcdef" for ch in item)
-                for item in (identity, expiry)
-            ):
+            if not all(_is_hash(item) for item in (identity, expiry)):
                 raise ValueError("Artifact ownership reference is invalid")
+            identity, expiry = cast(str, identity), cast(str, expiry)
             marker = workspace / ".expired-references" / f"{expiry}.json"
-            if marker.exists() or marker.is_symlink():
+            marked = marker.exists() or marker.is_symlink()
+            if marked:
                 _, status, _ = read_text_safe(
                     marker, policy, run_id="artifact-retention"
                 )
                 if status != '"expired"':
                     raise ValueError("Artifact reference expiry record is invalid")
-                continue
             if expired:
-                # Publication snapshots are immutable. Expire their references
-                # before forgetting ownership, even if another report retains
-                # the same physical bytes.
-                _write_expiry(workspace, marker, "artifact-retention")
+                if identity not in cleaned:
+                    expired_references.append(
+                        ExpiredArtifactOwnership(identity, expiry, path, data)
+                    )
                 continue
-            protected.add(cast(str, identity))
-    return protected
+            if marked:
+                continue
+            protected.add(identity)
+            if identity not in retry_after:
+                retry_after[identity] = expires_at
+            else:
+                previous = retry_after[identity]
+                retry_after[identity] = (
+                    max(previous, expires_at)
+                    if previous is not None and expires_at is not None
+                    else None
+                )
+    return ArtifactOwnershipInventory(protected, tuple(expired_references), retry_after)
+
+
+def expire_unpublished_artifact(
+    workspace: Path, reference: ExpiredArtifactOwnership
+) -> None:
+    """Make one fallback reference unavailable before physical cleanup."""
+    _write_expiry(
+        workspace,
+        workspace / ".expired-references" / f"{reference.expiry}.json",
+        "artifact-retention",
+    )
+
+
+def complete_unpublished_artifact(
+    workspace: Path, reference: ExpiredArtifactOwnership
+) -> None:
+    """Persist successful cleanup or transfer to another retained owner."""
+    import json
+
+    cleaned = reference.payload.setdefault("cleaned_artifact_ids", [])
+    if reference.identity not in cleaned:
+        cleaned.append(reference.identity)
+    write_text_safe(
+        reference.owner,
+        json.dumps(reference.payload, sort_keys=True),
+        replace(SafeIoPolicy.for_root(workspace.parents[3]), enable_locking=False),
+        run_id="artifact-retention",
+    )
+
+
+def retained_artifact_ownership(
+    workspace: Path, cutoff: datetime, *, report_run_ids: set[str]
+) -> set[str]:
+    """Read protection and expire unpublished references under the guard."""
+    inventory = read_artifact_ownership(
+        workspace, cutoff, report_run_ids=report_run_ids
+    )
+    for reference in inventory.expired:
+        expire_unpublished_artifact(workspace, reference)
+    return inventory.protected

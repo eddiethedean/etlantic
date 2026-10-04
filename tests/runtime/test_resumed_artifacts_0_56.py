@@ -56,6 +56,140 @@ class ArtifactPipeline(Pipeline):
     output: Load[Row] = Load(input=source, asset="output")
 
 
+@pytest.mark.parametrize("generations", [1, 2])
+def test_fallback_only_artifacts_expire_without_published_report_rows(
+    tmp_path: Path, generations: int
+) -> None:
+    ctx, service, durable, adapter, child_run_id, _, report, listed, paths = (
+        _execute_resumed_run(tmp_path, generations, publication_fallback=True)
+    )
+    root = tmp_path / "artifacts"
+    report_root = tmp_path / "reports"
+    store = managed_report_store(ctx, report_root=report_root)
+    assert store.list() == []
+    first = cleanup_expired_run_artifacts(
+        ctx, report_store=store, artifact_root=root, retention_seconds=60
+    )
+    assert first.deleted_artifacts == 0 and all(path.is_file() for path in paths)
+    now = datetime.now(UTC) + timedelta(days=2)
+    expired = cleanup_expired_run_artifacts(
+        ctx,
+        report_store=store,
+        artifact_root=root,
+        retention_seconds=60,
+        now=now,
+        limit=1,
+    )
+    assert expired.processed_reports == 0
+    assert expired.deleted_artifacts == len(paths)
+    assert not expired.remaining_candidates and not any(path.exists() for path in paths)
+    assert (
+        service.get_run_report(ctx, child_run_id)["artifacts"][0]["status"] == "expired"
+    )
+    with pytest.raises(ControlPlaneError) as failure:
+        service.get_run_artifact_content(ctx, child_run_id, listed[0]["artifact_id"])
+    assert failure.value.status == 404
+    # Missing report rows and restarts cannot cause completed ownership work
+    # to consume every later cleanup batch, or revive the fallback reference.
+    repeated = cleanup_expired_run_artifacts(
+        ctx,
+        report_store=managed_report_store(ctx, report_root=report_root),
+        artifact_root=root,
+        retention_seconds=60,
+        now=now,
+        limit=1,
+    )
+    assert repeated.deleted_artifacts == 0 and not repeated.remaining_candidates
+    publication = durable.get_latest_result_publication(
+        ctx,
+        str(report["metadata"]["etlantic.control_plane.execution"]["submission_id"]),
+    )
+    assert publication is not None
+    adapter.report_store_factory = None
+    assert adapter.publish_result_publication(ctx, publication)
+    assert (
+        service.get_run_report(ctx, child_run_id)["artifacts"][0]["status"] == "expired"
+    )
+
+
+def test_pending_publication_skips_busy_workspace_and_executes_independent_run(
+    tmp_path: Path,
+) -> None:
+    from threading import Event, Thread
+
+    from etlantic.control_plane.durable_models import (
+        ResultPublicationRecord,
+    )
+    from etlantic.runtime.artifact_coordination import artifact_workspace_lock
+
+    ctx, service, durable, _, _, storage_id, report, _, _ = _execute_resumed_run(
+        tmp_path, generations=1, publication_fallback=True
+    )
+    parent_submission = str(
+        report["metadata"]["etlantic.control_plane.execution"]["submission_id"]
+    )
+    assert durable.pending_result_publications(ctx, limit=20)
+    ready = service.submit_run(
+        ctx,
+        "pipe",
+        idempotency_key="independent",
+        request=RunRequest(materialization=MaterializationPolicy.DURABLE),
+    )
+    assert ready.resource_id is not None
+    ready_submission = ready.submission_id
+    finished = Event()
+    results: list[int] = []
+    errors: list[Exception] = []
+    skipped: list[bool] = []
+
+    class ObservedAdapter(ManagedExecutionAdapter):
+        def publish_result_publication(
+            self,
+            ctx: ControlPlaneContext,
+            record: ResultPublicationRecord,
+            *,
+            submission_reader: Any = None,
+        ) -> bool:
+            published = super().publish_result_publication(
+                ctx, record, submission_reader=submission_reader
+            )
+            skipped.append(not published)
+            return published
+
+    runner = ObservedAdapter(
+        report_root=tmp_path / "reports", artifact_root=tmp_path / "artifacts"
+    )
+    host = ExecutionHost(durable, owner_id="other-worker", runner=runner)
+
+    def tick() -> None:
+        try:
+            results.append(host.tick(ctx))
+        except Exception as exc:
+            errors.append(exc)
+        finally:
+            finished.set()
+
+    workspace = managed_artifact_workspace(
+        ctx, storage_id, artifact_root=tmp_path / "artifacts"
+    )
+    worker = Thread(target=tick, daemon=True)
+    try:
+        with artifact_workspace_lock(workspace):
+            worker.start()
+            assert finished.wait(3)
+            assert not errors and results == [1] and skipped == [True]
+            assert durable.get_submission(ctx, ready_submission).status == "completed"
+            publication = durable.get_latest_result_publication(ctx, parent_submission)
+            assert publication is not None and publication.published_at is None
+    finally:
+        worker.join(10)
+    assert not worker.is_alive()
+    assert host.tick(ctx) == 0
+    publication = durable.get_latest_result_publication(ctx, parent_submission)
+    assert publication is not None and publication.published_at is not None
+    assert len(durable.list_attempts(ctx, ready_submission)) == 1
+
+
 @pytest.mark.parametrize("has_cleanup_candidate", [False, True])
 def test_expired_unpublished_child_cannot_download_retained_shared_bytes(
     tmp_path: Path, has_cleanup_candidate: bool

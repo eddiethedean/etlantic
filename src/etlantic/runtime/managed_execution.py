@@ -873,8 +873,8 @@ class ManagedExecutionAdapter:
         record: ResultPublicationRecord,
         *,
         submission_reader: Callable[[str], SubmissionRecord] | None = None,
-    ) -> None:
-        """Copy a previously fenced report into the queryable report store."""
+    ) -> bool:
+        """Publish a fenced report, or return False when its workspace is busy."""
         if (record.tenant_id, record.workspace_id) != (
             ctx.tenant.tenant_id,
             ctx.workspace.workspace_id,
@@ -907,7 +907,9 @@ class ManagedExecutionAdapter:
         workspace = managed_artifact_workspace(
             ctx, artifact_storage_run_id(report), artifact_root=self.artifact_root
         )
-        with artifact_workspace_lock(workspace):
+        with artifact_workspace_lock(workspace, blocking=False) as acquired:
+            if not acquired:
+                return False
             report_store = (
                 self.report_store_factory(ctx)
                 if self.report_store_factory is not None
@@ -941,6 +943,7 @@ class ManagedExecutionAdapter:
             report = apply_artifact_expiry(workspace, report)
             record_artifact_ownership(workspace, report)
             report_store.put(report)
+        return True
 
     def _execution_profile(
         self, envelope: ExecutionEnvelope, plan: PlanDocument

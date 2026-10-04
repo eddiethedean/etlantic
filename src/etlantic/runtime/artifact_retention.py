@@ -24,8 +24,11 @@ from etlantic.reports.retention import (
 from etlantic.runtime.artifact_coordination import (
     apply_artifact_expiry,
     artifact_workspace_lock,
+    complete_unpublished_artifact,
+    discover_artifact_workspaces,
     expire_artifact_reference,
-    retained_artifact_ownership,
+    expire_unpublished_artifact,
+    read_artifact_ownership,
 )
 from etlantic.runtime.artifacts import artifact_storage_path
 from etlantic.runtime.managed_execution import managed_artifact_workspace
@@ -117,7 +120,7 @@ def cleanup_expired_run_artifacts(
             )
         return resolved
 
-    def eligible(report: PipelineRunReport) -> bool:
+    def pending(report: PipelineRunReport) -> bool:
         ended = report.ended_at
         if ended is not None and ended.tzinfo is None:
             ended = ended.replace(tzinfo=UTC)
@@ -128,50 +131,50 @@ def cleanup_expired_run_artifacts(
             and report.metadata.get(RUN_ARTIFACT_RETENTION_STATE_KEY) != "complete"
         )
 
-    candidates: list[PipelineRunReport] = report_store.list_expired_artifact_reports(
-        cutoff=cutoff, limit=limit
-    )
-    if (
-        report_resolver is not None
-        or report_store_factory is not None
-        or isinstance(report_store, FileReportStore)
-    ):
-        normalized: list[PipelineRunReport] = [normalize(item) for item in inventory()]
-        candidates = sorted(
-            (report for report in normalized if eligible(report)),
-            key=lambda report: (
-                (report.ended_at or cutoff).replace(tzinfo=UTC)
-                if (report.ended_at or cutoff).tzinfo is None
-                else report.ended_at or cutoff,
-                report.run_id,
-            ),
-        )[:limit]
-    if not candidates:
-        # A child can remain solely in durable publication after the provider
-        # has completed every known report's cleanup. Its references still
-        # need tombstones when that child's ownership window expires.
-        reports = inventory()
-        workspaces = {
-            managed_artifact_workspace(
-                ctx,
-                artifact_storage_run_id(normalize(report)),
-                artifact_root=artifact_root,
-            )
-            for report in reports
-            if any(artifact.strategy == "durable" for artifact in report.artifacts)
-        }
-        busy = False
-        for workspace in sorted(workspaces):
-            with artifact_workspace_lock(workspace, blocking=False) as acquired:
-                if not acquired:
-                    busy = True
-                    continue
-                retained_artifact_ownership(
-                    workspace,
-                    cutoff,
-                    report_run_ids={item.run_id for item in inventory()},
+    def eligible(report: PipelineRunReport) -> bool:
+        if not pending(report):
+            return False
+        raw_details: object = report.metadata.get(RUN_ARTIFACT_RETENTION_DETAILS_KEY)
+        if raw_details is not None and not isinstance(raw_details, dict):
+            raise ValueError("Artifact cleanup details are invalid")
+        details = cast(dict[str, Any], raw_details) if raw_details is not None else {}
+        retry_after: object = details.get("retry_after")
+        if retry_after is None:
+            return True
+        if not isinstance(retry_after, str):
+            raise ValueError("Artifact cleanup retry time is invalid")
+        retry = datetime.fromisoformat(retry_after)
+        retry = retry.replace(tzinfo=UTC) if retry.tzinfo is None else retry
+        return retry <= current
+
+    def protected_references(
+        reports: list[PipelineRunReport], workspace: Path
+    ) -> set[str]:
+        protected: set[str] = set()
+        for retained in reports:
+            ended = retained.ended_at
+            if ended is not None and ended.tzinfo is None:
+                ended = ended.replace(tzinfo=UTC)
+            if (
+                retained.status.value in TERMINAL_RUN_STATUSES
+                and ended is not None
+                and ended <= cutoff
+            ):
+                continue
+            if (
+                managed_artifact_workspace(
+                    ctx, artifact_storage_run_id(retained), artifact_root=artifact_root
                 )
-        return ArtifactRetentionResult(enabled=True, remaining_candidates=busy)
+                != workspace
+            ):
+                continue
+            retained = apply_artifact_expiry(workspace, retained)
+            protected.update(
+                hashlib.sha256(artifact.identity.encode()).hexdigest()
+                for artifact in retained.artifacts
+                if artifact.strategy == "durable" and artifact.status != "expired"
+            )
+        return protected
 
     processed_reports = 0
     completed_reports = 0
@@ -180,7 +183,60 @@ def cleanup_expired_run_artifacts(
     touched_artifacts = 0
 
     busy = False
+    orphan_remaining = False
+    scope = managed_artifact_workspace(
+        ctx, "discovery", artifact_root=artifact_root
+    ).parent
+    for workspace in discover_artifact_workspaces(scope):
+        if touched_artifacts >= limit:
+            orphan_remaining = True
+            break
+        with artifact_workspace_lock(workspace, blocking=False) as acquired:
+            if not acquired:
+                busy = True
+                continue
+            reports = [normalize(item) for item in inventory()]
+            ownership = read_artifact_ownership(
+                workspace,
+                cutoff,
+                report_run_ids={item.run_id for item in reports},
+                retention_seconds=retention_seconds,
+            )
+            protected = protected_references(reports, workspace) | ownership.protected
+            for reference in ownership.expired:
+                if touched_artifacts >= limit:
+                    orphan_remaining = True
+                    break
+                touched_artifacts += 1
+                try:
+                    expire_unpublished_artifact(workspace, reference)
+                    if reference.identity not in protected and _remove_artifact_file(
+                        workspace / f"{reference.identity}.json"
+                    ):
+                        deleted_artifacts += 1
+                    complete_unpublished_artifact(workspace, reference)
+                except (OSError, RuntimeError, ValueError):
+                    failed_artifacts += 1
+                    orphan_remaining = True
+
+    # Fresh rows may have changed while orphan work was processed. Filter
+    # deferred retry times before truncating, so they cannot hide ready rows.
+    candidates = sorted(
+        (
+            report
+            for report in (normalize(item) for item in inventory())
+            if eligible(report)
+        ),
+        key=lambda report: (
+            (report.ended_at or cutoff).replace(tzinfo=UTC)
+            if (report.ended_at or cutoff).tzinfo is None
+            else report.ended_at or cutoff,
+            report.run_id,
+        ),
+    )[:limit]
     for report_index, candidate in enumerate(candidates):
+        if touched_artifacts >= limit:
+            break
         candidate = normalize(candidate)
         workspace = managed_artifact_workspace(
             ctx, artifact_storage_run_id(candidate), artifact_root=artifact_root
@@ -197,30 +253,14 @@ def cleanup_expired_run_artifacts(
                 continue
             if artifact_storage_run_id(report) != artifact_storage_run_id(candidate):
                 raise ValueError("Artifact workspace changed during cleanup")
-            protected: set[tuple[str, str]] = set()
-            for retained in reports:
-                ended = retained.ended_at
-                if ended is not None and ended.tzinfo is None:
-                    ended = ended.replace(tzinfo=UTC)
-                if (
-                    retained.status.value in TERMINAL_RUN_STATUSES
-                    and ended is not None
-                    and ended <= cutoff
-                ):
-                    continue
-                storage_id = artifact_storage_run_id(retained)
-                if storage_id != artifact_storage_run_id(report):
-                    continue
-                retained = apply_artifact_expiry(workspace, retained)
-                protected.update(
-                    (storage_id, artifact.identity)
-                    for artifact in retained.artifacts
-                    if artifact.strategy == "durable" and artifact.status != "expired"
-                )
-
-            unpublished = retained_artifact_ownership(
-                workspace, cutoff, report_run_ids={item.run_id for item in reports}
+            protected = protected_references(reports, workspace)
+            ownership = read_artifact_ownership(
+                workspace,
+                cutoff,
+                report_run_ids={item.run_id for item in reports},
+                retention_seconds=retention_seconds,
             )
+            unpublished = ownership.protected
 
             metadata = dict(report.metadata)
             old_details: object = metadata.get(RUN_ARTIFACT_RETENTION_DETAILS_KEY)
@@ -239,6 +279,7 @@ def cleanup_expired_run_artifacts(
                     "failed_artifacts": 0,
                 }
             )
+            details.pop("retry_after", None)
             metadata[RUN_ARTIFACT_RETENTION_STATE_KEY] = "running"
             metadata[RUN_ARTIFACT_RETENTION_DETAILS_KEY] = details
             working = replace(report, metadata=metadata)
@@ -259,6 +300,16 @@ def cleanup_expired_run_artifacts(
                     artifact.status == "expired" and artifact.identity not in deferred
                 ):
                     continue
+                identity_hash = hashlib.sha256(artifact.identity.encode()).hexdigest()
+                if (
+                    artifact.status == "expired"
+                    and artifact.identity in deferred
+                    and identity_hash in unpublished
+                    and identity_hash not in protected
+                ):
+                    # No new expiry or deletion is possible for this reference.
+                    # Keep the budget for unfinished references in this report.
+                    continue
                 if touched_artifacts >= limit:
                     interrupted = True
                     break
@@ -268,10 +319,7 @@ def cleanup_expired_run_artifacts(
                 try:
                     removed = (
                         False
-                        if (artifact_storage_run_id(working), artifact.identity)
-                        in protected
-                        or hashlib.sha256(artifact.identity.encode()).hexdigest()
-                        in unpublished
+                        if identity_hash in protected or identity_hash in unpublished
                         else _remove_artifact_file(path)
                     )
                     if removed:
@@ -284,12 +332,7 @@ def cleanup_expired_run_artifacts(
                     failed_artifacts += 1
                     continue
 
-                if (
-                    hashlib.sha256(artifact.identity.encode()).hexdigest()
-                    in unpublished
-                    and (artifact_storage_run_id(working), artifact.identity)
-                    not in protected
-                ):
+                if identity_hash in unpublished and identity_hash not in protected:
                     deferred.add(artifact.identity)
                 else:
                     deferred.discard(artifact.identity)
@@ -325,6 +368,18 @@ def cleanup_expired_run_artifacts(
                 # An unpublished owner's files still need a later physical
                 # cleanup if that owner never reaches the report provider.
                 metadata[RUN_ARTIFACT_RETENTION_STATE_KEY] = "running"
+                retries = [
+                    ownership.retry_after.get(
+                        hashlib.sha256(identity.encode()).hexdigest()
+                    )
+                    for identity in deferred
+                ]
+                details["retry_after"] = min(
+                    retry
+                    if retry is not None
+                    else current + timedelta(seconds=min(60, retention_seconds))
+                    for retry in retries
+                ).isoformat()
             else:
                 metadata[RUN_ARTIFACT_RETENTION_STATE_KEY] = "complete"
                 completed_reports += 1
@@ -333,8 +388,10 @@ def cleanup_expired_run_artifacts(
             if touched_artifacts >= limit and report_index + 1 < len(candidates):
                 break
 
-    remaining_candidates = busy or any(
-        eligible(normalize(report)) for report in inventory()
+    remaining_candidates = (
+        busy
+        or orphan_remaining
+        or any(pending(normalize(report)) for report in inventory())
     )
 
     return ArtifactRetentionResult(

@@ -566,13 +566,17 @@ class ExecutionHost:
                 submission = self.durable.get_submission(ctx, record.submission_id)
                 accepted_ctx = accepted_execution_context(ctx, submission)
                 if _accepts_keyword(publish, "submission_reader"):
-                    publish(
+                    published = publish(
                         accepted_ctx,
                         record,
                         submission_reader=read_submission,
                     )
                 else:
-                    publish(accepted_ctx, record)
+                    published = publish(accepted_ctx, record)
+                if published is False:
+                    # A managed publisher skips a busy artifact workspace.
+                    # Legacy sinks returning None still acknowledge success.
+                    continue
                 self.durable.mark_result_publication_published(
                     ctx,
                     record.submission_id,

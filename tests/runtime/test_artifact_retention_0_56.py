@@ -75,6 +75,289 @@ def _write_artifact(
     return path
 
 
+def test_unpublished_only_cleanup_is_bounded_and_resumes_after_restart(
+    tmp_path: Path,
+) -> None:
+    from etlantic.reports.file_store import FileReportStore
+    from etlantic.runtime.artifact_coordination import (
+        artifact_workspace_lock,
+        record_artifact_ownership,
+    )
+
+    ctx, now = _ctx(), datetime.now(UTC)
+    root = tmp_path / "artifacts"
+    identities = ("one", "two", "three")
+    paths = [_write_artifact(ctx, root, "orphan", identity) for identity in identities]
+    report = _report(
+        "orphan",
+        ended_at=now - timedelta(days=2),
+        artifacts=tuple(
+            ArtifactResult(identity, identity, "durable") for identity in identities
+        ),
+    )
+    workspace = managed_artifact_workspace(ctx, report.run_id, artifact_root=root)
+    with artifact_workspace_lock(workspace):
+        record_artifact_ownership(workspace, report)
+    for index in range(len(paths)):
+        result = cleanup_expired_run_artifacts(
+            ctx,
+            report_store=FileReportStore(tmp_path / "reports"),
+            artifact_root=root,
+            retention_seconds=60,
+            now=now,
+            limit=1,
+        )
+        assert result.deleted_artifacts == 1 and result.failed_artifacts == 0
+        assert result.processed_reports == 0 and result.completed_reports == 0
+        assert sum(path.exists() for path in paths) == len(paths) - index - 1
+        assert result.remaining_candidates == (index + 1 < len(paths))
+    final = cleanup_expired_run_artifacts(
+        ctx,
+        report_store=FileReportStore(tmp_path / "reports"),
+        artifact_root=root,
+        retention_seconds=60,
+        now=now,
+        limit=1,
+    )
+    assert not final.remaining_candidates and final.deleted_artifacts == 0
+
+
+def test_unpublished_cleanup_transfers_shared_file_to_retained_owner(
+    tmp_path: Path,
+) -> None:
+    from dataclasses import replace
+
+    from etlantic.runtime.artifact_coordination import (
+        apply_artifact_expiry,
+        artifact_workspace_lock,
+        record_artifact_ownership,
+    )
+
+    ctx, now = _ctx(), datetime.now(UTC)
+    path = _write_artifact(ctx, tmp_path, "workspace", "shared")
+    old = _report(
+        "expired-owner",
+        ended_at=now - timedelta(days=2),
+        artifacts=(ArtifactResult("shared", "output", "durable"),),
+    )
+    young = replace(old, run_id="young-owner", ended_at=now)
+    workspace = managed_artifact_workspace(ctx, "workspace", artifact_root=tmp_path)
+    with artifact_workspace_lock(workspace):
+        record_artifact_ownership(workspace, old)
+        record_artifact_ownership(workspace, young)
+    first = cleanup_expired_run_artifacts(
+        ctx,
+        report_store=ReportStore(),
+        artifact_root=tmp_path,
+        retention_seconds=60,
+        now=now,
+        limit=1,
+    )
+    assert first.deleted_artifacts == 0 and path.is_file()
+    assert apply_artifact_expiry(workspace, old).artifacts[0].status == "expired"
+    assert apply_artifact_expiry(workspace, young).artifacts[0].status == "available"
+    final = cleanup_expired_run_artifacts(
+        ctx,
+        report_store=ReportStore(),
+        artifact_root=tmp_path,
+        retention_seconds=60,
+        now=now + timedelta(days=1),
+        limit=1,
+    )
+    assert final.deleted_artifacts == 1 and not path.exists()
+    assert not final.remaining_candidates
+
+
+def test_unpublished_cleanup_retries_failed_deletion_without_reviving_reference(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    from typing import cast
+
+    import etlantic.runtime.artifact_retention as retention
+    from etlantic.runtime.artifact_coordination import (
+        apply_artifact_expiry,
+        artifact_workspace_lock,
+        record_artifact_ownership,
+    )
+
+    ctx, now = _ctx(), datetime.now(UTC)
+    path = _write_artifact(ctx, tmp_path, "orphan", "result")
+    report = _report(
+        "orphan",
+        ended_at=now - timedelta(days=2),
+        artifacts=(ArtifactResult("result", "output", "durable"),),
+    )
+    workspace = managed_artifact_workspace(ctx, "orphan", artifact_root=tmp_path)
+    with artifact_workspace_lock(workspace):
+        record_artifact_ownership(workspace, report)
+    remove = cast(Callable[[Path], bool], vars(retention)["_remove_artifact_file"])
+
+    def fail(_path: Path) -> bool:
+        raise OSError("transient deletion failure")
+
+    monkeypatch.setattr(retention, "_remove_artifact_file", fail)
+    first = cleanup_expired_run_artifacts(
+        ctx,
+        report_store=ReportStore(),
+        artifact_root=tmp_path,
+        retention_seconds=60,
+        now=now,
+        limit=1,
+    )
+    assert first.failed_artifacts == 1 and first.remaining_candidates and path.exists()
+    assert apply_artifact_expiry(workspace, report).artifacts[0].status == "expired"
+    monkeypatch.setattr(retention, "_remove_artifact_file", remove)
+    final = cleanup_expired_run_artifacts(
+        ctx,
+        report_store=ReportStore(),
+        artifact_root=tmp_path,
+        retention_seconds=60,
+        now=now,
+        limit=1,
+    )
+    assert (
+        final.deleted_artifacts == 1
+        and not final.remaining_candidates
+        and not path.exists()
+    )
+
+
+@pytest.mark.parametrize("scope_dimension", ["tenant", "workspace", "security_domain"])
+def test_unpublished_workspace_discovery_stays_inside_accepted_scope(
+    tmp_path: Path,
+    scope_dimension: str,
+) -> None:
+    from dataclasses import replace
+
+    from etlantic.runtime.artifact_coordination import (
+        artifact_workspace_lock,
+        record_artifact_ownership,
+    )
+
+    ctx, now = _ctx(), datetime.now(UTC)
+    foreign = (
+        replace(
+            ctx, tenant=TenantRef("other"), workspace=WorkspaceRef("other", "workspace")
+        )
+        if scope_dimension == "tenant"
+        else replace(ctx, workspace=WorkspaceRef(ctx.tenant.tenant_id, "other"))
+        if scope_dimension == "workspace"
+        else replace(ctx, security_domain=SecurityDomain("other"))
+    )
+    paths: list[Path] = []
+    for scope in (ctx, foreign):
+        paths.append(_write_artifact(scope, tmp_path, "orphan", "result"))
+        workspace = managed_artifact_workspace(scope, "orphan", artifact_root=tmp_path)
+        with artifact_workspace_lock(workspace):
+            record_artifact_ownership(
+                workspace,
+                _report(
+                    "orphan",
+                    ended_at=now - timedelta(days=2),
+                    artifacts=(ArtifactResult("result", "output", "durable"),),
+                ),
+            )
+    result = cleanup_expired_run_artifacts(
+        ctx,
+        report_store=ReportStore(),
+        artifact_root=tmp_path,
+        retention_seconds=60,
+        now=now,
+    )
+    assert (
+        result.deleted_artifacts == 1 and not paths[0].exists() and paths[1].is_file()
+    )
+
+
+@pytest.mark.parametrize("store_kind", ["memory", "file"])
+def test_deferred_references_do_not_hide_unfinished_or_unrelated_cleanup(
+    tmp_path: Path,
+    store_kind: str,
+) -> None:
+    from dataclasses import replace
+
+    from etlantic.reports.file_store import FileReportStore
+    from etlantic.reports.retention import ARTIFACT_STORAGE_RUN_ID_KEY
+    from etlantic.runtime.artifact_coordination import (
+        artifact_workspace_lock,
+        record_artifact_ownership,
+    )
+
+    ctx, now = _ctx(), datetime.now(UTC)
+    root = tmp_path / "artifacts"
+    shared = tuple(
+        _write_artifact(ctx, root, "oldest", str(index)) for index in range(3)
+    )
+    ready_path = _write_artifact(ctx, root, "ready", "ready")
+    parent = _report(
+        "oldest",
+        ended_at=now - timedelta(days=3),
+        artifacts=tuple(
+            ArtifactResult(str(index), str(index), "durable") for index in range(3)
+        ),
+    )
+    child = replace(
+        parent,
+        run_id="unpublished",
+        ended_at=now,
+        metadata={ARTIFACT_STORAGE_RUN_ID_KEY: parent.run_id},
+    )
+    store = (
+        FileReportStore(tmp_path / "reports") if store_kind == "file" else ReportStore()
+    )
+    store.put(parent)
+    store.put(
+        _report(
+            "ready",
+            ended_at=now - timedelta(days=2),
+            artifacts=(ArtifactResult("ready", "output", "durable"),),
+        )
+    )
+    workspace = managed_artifact_workspace(ctx, parent.run_id, artifact_root=root)
+    with artifact_workspace_lock(workspace):
+        record_artifact_ownership(workspace, child)
+    for index in range(4):
+        result = cleanup_expired_run_artifacts(
+            ctx,
+            report_store=store,
+            artifact_root=root,
+            retention_seconds=86400,
+            limit=1,
+            now=now + timedelta(seconds=index),
+        )
+        assert result.deleted_artifacts <= 1 and result.failed_artifacts == 0
+    assert not ready_path.exists() and all(path.is_file() for path in shared)
+    persisted = store.get(parent.run_id)
+    assert persisted is not None
+    assert all(artifact.status == "expired" for artifact in persisted.artifacts)
+    assert persisted.metadata[RUN_ARTIFACT_RETENTION_DETAILS_KEY]["attempts"] == 3
+    assert (
+        persisted.metadata[RUN_ARTIFACT_RETENTION_DETAILS_KEY]["retry_after"]
+        == (now + timedelta(days=1)).isoformat()
+    )
+    # Deferred work survives restart and becomes eligible at its protecting
+    # owner's expiry. No individual pass may exceed the shared file budget.
+    if store_kind == "file":
+        store = FileReportStore(tmp_path / "reports")
+    deleted = 0
+    remaining = True
+    for _ in range(6):
+        result = cleanup_expired_run_artifacts(
+            ctx,
+            report_store=store,
+            artifact_root=root,
+            retention_seconds=86400,
+            limit=1,
+            now=now + timedelta(days=2),
+        )
+        assert result.deleted_artifacts <= 1
+        deleted += result.deleted_artifacts
+        remaining = result.remaining_candidates
+    assert deleted == 3 and not any(path.exists() for path in shared)
+    assert not remaining
+
+
 def _crash_during_coordination_write(workspace: Path, kind: str) -> None:
     import os
 

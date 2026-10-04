@@ -62,18 +62,25 @@ status. A file shared with a still-retained report remains on disk until its
 last retained reference expires. An expired reference cannot download that
 file, even while another report retains it. Cleanup continues to limit the
 number of artifacts touched per pass and records failures for later retry.
+Deferred reports receive a retry time before batch selection, and already
+expired pinned references do not hide unfinished or unrelated cleanup work.
 A process-owned filesystem lock coordinates execution and result publication
 with cleanup for each artifact workspace. Cleanup skips a busy workspace and
 refreshes its scoped report inventory under the lock, including file providers
 opened before another worker published a child. Workers sharing artifact files
 must use the same artifact root; independent workspaces still execute in parallel.
+Result reconciliation also skips busy workspaces, leaving their publication
+records pending while the worker processes other publications and accepted runs.
 
 Before report persistence, execution records hashed artifact ownership under the
 workspace. An unexpired child remains visible to cleanup even while its result
 exists only in durable publication. Cleanup keeps deferred physical work pending
 until that child is published or its retention window ends, including across
 restarts, so an unavailable report provider cannot cause either early deletion
-or a permanent file leak.
+or a permanent file leak. Cleanup discovers ownership records directly inside
+the accepted artifact scope, including workspaces with no published report rows.
+Unpublished cleanup shares the artifact batch limit and persists progress for
+restart and deletion-failure recovery.
 Result reconciliation preserves cleanup progress from the current report row;
 reference tombstones alone never prove that deferred file deletion completed.
 

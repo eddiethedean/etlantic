@@ -27,7 +27,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   across processes; legacy cleanup is repaired, and reference expiry survives
   report-provider outages and result reconciliation. Reconciliation preserves
   deferred deletion, unpublished expiry denies fallback downloads, and metadata
-  writes recover after worker crashes without stale nested locks.
+  writes recover after worker crashes without stale nested locks. Scoped ownership
+  discovery cleans fallback-only runs, deferred references cannot starve cleanup,
+  and busy publication workspaces leave independent worker runs responsive.
 - SQL provision and cleanup actions propagate deadlines to database work, abort
   expired transactions, and keep workers responsive during blocked provider IO.
   Verified committed effects remain available after a timeout; same-key recovery
