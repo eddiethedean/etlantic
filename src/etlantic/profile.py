@@ -725,7 +725,11 @@ class Profile:
                 (delegates to :meth:`from_dict`).
             KeyError: When ``name`` is missing from ``data``.
         """
-        snap = dict(data)
+        # Plans deeply freeze nested mappings; profile parsing expects ordinary
+        # mutable containers, especially for SecretRef objects under `secrets`.
+        from etlantic.plan.freeze import mutable_copy
+
+        snap = dict(mutable_copy(data))
         if "assets" not in snap and "bindings" in snap:
             snap["assets"] = dict(snap.get("bindings") or {})
         # Plan wire uses ``bindings`` intentionally; never treat as adopter JSON.
