@@ -73,6 +73,7 @@ DEFAULT_BATCH_SIZE = 1_000
 MAX_BATCH_SIZE = 10_000
 DEFAULT_BYTE_LIMIT = 64 * 1024 * 1024
 MAX_BYTE_LIMIT = 256 * 1024 * 1024
+_MAX_BIND_PARAMETERS = 65_535
 DEFAULT_EFFECT_TABLE = "etlantic_connector_effects"
 DEFAULT_TIMEOUT_SECONDS = 30
 MAX_TIMEOUT_SECONDS = 300
@@ -1128,22 +1129,66 @@ class LivePostgresSinkConnector:
                             code="PMCONN870",
                             provider=PROVIDER,
                         )
-                    statement = insert(target).values(rows)
-                    updates = {
-                        column: getattr(statement.excluded, column)
-                        for column in rows[0]
-                        if column not in keys
-                    }
-                    if updates:
-                        statement = statement.on_conflict_do_update(
-                            index_elements=[target.c[key] for key in keys],
-                            set_=updates,
+                    bind_parameters_per_row = len(rows[0])
+                    rows_per_statement = _MAX_BIND_PARAMETERS // max(
+                        bind_parameters_per_row, 1
+                    )
+                    if rows_per_statement == 0:
+                        raise ConnectorWriteError(
+                            "PostgreSQL upsert row exceeds the bind-parameter limit",
+                            code="PMCONN888",
+                            provider=PROVIDER,
                         )
-                    else:
-                        statement = statement.on_conflict_do_nothing(
-                            index_elements=[target.c[key] for key in keys]
+                    def execute_upsert_chunk(
+                        chunk: Sequence[Mapping[str, Any]],
+                    ) -> None:
+                        savepoint = connection.begin_nested()
+                        statement = insert(target).values(list(chunk))
+                        updates = {
+                            column: getattr(statement.excluded, column)
+                            for column in rows[0]
+                            if column not in keys
+                        }
+                        if updates:
+                            statement = statement.on_conflict_do_update(
+                                index_elements=[target.c[key] for key in keys],
+                                set_=updates,
+                            )
+                        else:
+                            statement = statement.on_conflict_do_nothing(
+                                index_elements=[target.c[key] for key in keys]
+                            )
+                        try:
+                            connection.execute(statement)
+                        except Exception as exc:
+                            savepoint.rollback()
+                            original = getattr(exc, "orig", None)
+                            sqlstate = getattr(original, "sqlstate", None) or getattr(
+                                original, "pgcode", None
+                            )
+                            diagnostic = getattr(original, "diag", None)
+                            source_function = getattr(
+                                diagnostic, "source_function", None
+                            )
+                            # PostgreSQL cannot update one conflict key twice in a
+                            # single statement. Split only that chunk so duplicate
+                            # keys keep their input order across statement boundaries.
+                            if (
+                                sqlstate != "21000"
+                                or source_function != "ExecOnConflictUpdate"
+                                or len(chunk) < 2
+                            ):
+                                raise
+                            midpoint = len(chunk) // 2
+                            execute_upsert_chunk(chunk[:midpoint])
+                            execute_upsert_chunk(chunk[midpoint:])
+                        else:
+                            savepoint.commit()
+
+                    for offset in range(0, len(rows), rows_per_statement):
+                        execute_upsert_chunk(
+                            rows[offset : offset + rows_per_statement]
                         )
-                    connection.execute(statement)
                 else:
                     connection.execute(target.insert(), rows)
 
