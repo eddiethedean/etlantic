@@ -2515,32 +2515,28 @@ class ManagedApplicationService:
             raise ControlPlaneError.conflict(
                 "Accepted input resource lease does not match its execution envelope"
             )
-        try:
-            decision, _quota = gate_pre_submit(
-                ctx,
-                policy=self.policy,
-                approvals=self.approvals,
-                quotas=self.quotas,
-                audit=self.audit,
-                attestations=self.attestations,
-                plan_fingerprint=envelope.plan_fingerprint,
-                effective_fingerprint=envelope.effective_fingerprint,
-                revision_id=envelope.revision_id,
-                quota_idempotency_key=self._quota_idempotency_key(
-                    ctx, idempotency_key, operation=operation
-                ),
-                plugin_fingerprints=(
-                    [envelope.plugin_fingerprint]
-                    if envelope.plugin_fingerprint is not None
-                    else None
-                ),
-                require_policy=self.policy is not None,
-                require_attestations=self.require_attestations,
-            )
-        except Exception:
-            with suppress(Exception):
-                self._release_input_lease(ctx, input_lease_id)
-            raise
+        decision, _quota = gate_pre_submit(
+            ctx,
+            policy=self.policy,
+            approvals=self.approvals,
+            quotas=self.quotas,
+            audit=self.audit,
+            attestations=self.attestations,
+            plan_fingerprint=envelope.plan_fingerprint,
+            effective_fingerprint=envelope.effective_fingerprint,
+            revision_id=envelope.revision_id,
+            quota_idempotency_key=self._quota_idempotency_key(
+                ctx, idempotency_key, operation=operation
+            ),
+            plugin_fingerprints=(
+                [envelope.plugin_fingerprint]
+                if envelope.plugin_fingerprint is not None
+                else None
+            ),
+            require_policy=self.policy is not None,
+            require_attestations=self.require_attestations,
+            audit_before_quota=True,
+        )
         envelope = ExecutionEnvelope.from_dict(
             {
                 **envelope.to_dict(),
@@ -3615,18 +3611,13 @@ class ManagedApplicationService:
                 title="Service Unavailable",
                 type="etlantic.control_plane/unavailable",
             )
-        try:
-            for reference in references:
-                self.input_resources.acquire_lease(
-                    ctx,
-                    reference,
-                    lease_id=lease_id,
-                    retain_until=retain_until,
-                )
-        except Exception:
-            with suppress(Exception):
-                self.input_resources.release_lease(ctx, lease_id=lease_id)
-            raise
+        for reference in references:
+            self.input_resources.acquire_lease(
+                ctx,
+                reference,
+                lease_id=lease_id,
+                retain_until=retain_until,
+            )
         return lease_id
 
     def _release_input_lease(

@@ -3878,3 +3878,183 @@ def test_managed_rerun_input_lease_failure_does_not_charge_quota(
     )
     assert recovered.resource_id is not None
     assert quota.get_state(ctx).usage["concurrency"] == 1
+
+
+def test_managed_rerun_lease_failure_cannot_revoke_concurrent_acceptance(
+    tmp_path: Path,
+) -> None:
+    from datetime import UTC, datetime, timedelta
+    from hashlib import sha256
+
+    from etlantic.control_plane import MemoryInputResourceStore
+
+    class DelayedLeaseFailureStore(MemoryInputResourceStore):
+        fail_next = False
+        failure_acquired = Event()
+        release_failure = Event()
+
+        def acquire_lease(
+            self,
+            ctx: ControlPlaneContext,
+            reference: Any,
+            *,
+            lease_id: str,
+            retain_until: datetime,
+        ) -> None:
+            if self.fail_next:
+                self.fail_next = False
+                super().acquire_lease(
+                    ctx, reference, lease_id=lease_id, retain_until=retain_until
+                )
+                self.failure_acquired.set()
+                assert self.release_failure.wait(timeout=10)
+                raise ControlPlaneError(
+                    "Input lease acknowledgement was lost",
+                    code="PMRES503",
+                    status=503,
+                    title="Service Unavailable",
+                )
+            super().acquire_lease(
+                ctx, reference, lease_id=lease_id, retain_until=retain_until
+            )
+
+    ctx, authz, _definitions, submissions, durable, _events, service = _wired(tmp_path)
+    authz.grant(ctx, "run.rerun")
+    authz.grant(ctx, "input.read")
+    store = DelayedLeaseFailureStore()
+    service.input_resources = store
+    content = b"id\n42\n"
+    staged = store.stage(
+        ctx,
+        content,
+        media_type="text/csv",
+        format="csv",
+        expires_at=datetime.now(UTC) + timedelta(hours=1),
+    )
+    reference = store.finalize(
+        ctx,
+        staged.upload_id,
+        expected_sha256=sha256(content).hexdigest(),
+        expected_byte_length=len(content),
+    )
+
+    def planning_context(
+        _ctx: ControlPlaneContext, profile: Profile
+    ) -> PlanningContext:
+        planning = PlanningContext.create(profile=profile)
+        planning.registry.register_binding(
+            BindingDescriptor(
+                binding="file-in",
+                provider="local-files",
+                kind="source",
+                format="csv",
+                config={"input_resource": reference.to_dict()},
+            )
+        )
+        planning.registry.register_binding(
+            BindingDescriptor(
+                binding="file-out",
+                provider="csv",
+                kind="sink",
+                location=str(tmp_path / "out.csv"),
+            )
+        )
+        return planning
+
+    service.planning_context_factory = planning_context
+    service.register_definition(
+        ctx,
+        "concurrent-input-pipe",
+        pipeline_to_dict(definition_from_pipeline(ManagedFilePipeline)),
+    )
+    parent = service.submit_run(
+        ctx, "concurrent-input-pipe", idempotency_key="concurrent-input-parent"
+    )
+    assert parent.resource_id is not None
+    _complete_managed_submission(durable, ctx, parent)
+    store.fail_next = True
+
+    with ThreadPoolExecutor(max_workers=2) as pool:
+        failing = pool.submit(
+            service.rerun_run,
+            ctx,
+            parent.resource_id,
+            idempotency_key="concurrent-input-child",
+        )
+        assert store.failure_acquired.wait(timeout=10)
+        accepted = service.rerun_run(
+            ctx, parent.resource_id, idempotency_key="concurrent-input-child"
+        )
+        accepted_snapshot = durable.get_submission(
+            ctx, accepted.submission_id
+        ).input_snapshot
+        assert accepted_snapshot is not None
+        accepted_envelope = ExecutionEnvelope.from_json(accepted_snapshot)
+        lease_id = (accepted_envelope.evidence_refs or {}).get(
+            "input_resource_lease_id"
+        )
+        assert isinstance(lease_id, str)
+        store.release_failure.set()
+        with pytest.raises(ControlPlaneError, match="Input lease acknowledgement"):
+            failing.result(timeout=10)
+
+    assert store.read_leased(ctx, reference, lease_id=lease_id) == content
+    assert (
+        submissions.lookup_idempotency(
+            ctx, "concurrent-input-child", operation="run.rerun"
+        )
+        is not None
+    )
+
+
+def test_managed_rerun_audit_failure_does_not_charge_quota(
+    tmp_path: Path,
+) -> None:
+    class FailingAuditStore:
+        def __init__(self) -> None:
+            self.unavailable = True
+            self.entries: list[dict[str, Any]] = []
+
+        def append(self, _ctx: ControlPlaneContext, **_kwargs: Any) -> Any:
+            if self.unavailable:
+                raise ControlPlaneError(
+                    "Audit evidence store unavailable",
+                    code="PMCP503",
+                    status=503,
+                    title="Service Unavailable",
+                )
+            self.entries.append(_kwargs)
+            return None
+
+    ctx, authz, _definitions, submissions, durable, _events, service = _wired(tmp_path)
+    authz.grant(ctx, "run.rerun")
+    parent = service.submit_run(ctx, "pipe", idempotency_key="audit-parent")
+    assert parent.resource_id is not None
+    _complete_managed_submission(durable, ctx, parent)
+    quota = MemoryQuotaProvider(default_limits={"concurrency": 1})
+    service.quotas = quota
+    audit = FailingAuditStore()
+    service.audit = audit
+
+    with pytest.raises(ControlPlaneError, match="Audit evidence store unavailable"):
+        service.rerun_run(ctx, parent.resource_id, idempotency_key="audit-child")
+
+    assert quota.get_state(ctx).usage.get("concurrency", 0) == 0
+    assert (
+        submissions.lookup_idempotency(ctx, "audit-child", operation="run.rerun")
+        is None
+    )
+    assert (
+        durable.get_submission_by_idempotency(
+            ctx, idempotency_key="audit-child", operation="run.rerun"
+        )
+        is None
+    )
+
+    audit.unavailable = False
+    accepted = service.rerun_run(
+        ctx, parent.resource_id, idempotency_key="healthy-after-audit-failure"
+    )
+    assert accepted.resource_id is not None
+    assert quota.get_state(ctx).usage["concurrency"] == 1
+    assert audit.entries[-1]["metadata"]["quota_effect"] == "pending"
