@@ -73,6 +73,7 @@ DEFAULT_BATCH_SIZE = 1_000
 MAX_BATCH_SIZE = 10_000
 DEFAULT_BYTE_LIMIT = 64 * 1024 * 1024
 MAX_BYTE_LIMIT = 256 * 1024 * 1024
+_MAX_BIND_PARAMETERS = 65_535
 DEFAULT_EFFECT_TABLE = "etlantic_connector_effects"
 DEFAULT_TIMEOUT_SECONDS = 30
 MAX_TIMEOUT_SECONDS = 300
@@ -1128,22 +1129,35 @@ class LivePostgresSinkConnector:
                             code="PMCONN870",
                             provider=PROVIDER,
                         )
-                    statement = insert(target).values(rows)
-                    updates = {
-                        column: getattr(statement.excluded, column)
-                        for column in rows[0]
-                        if column not in keys
-                    }
-                    if updates:
-                        statement = statement.on_conflict_do_update(
-                            index_elements=[target.c[key] for key in keys],
-                            set_=updates,
+                    bind_parameters_per_row = len(rows[0])
+                    rows_per_statement = _MAX_BIND_PARAMETERS // max(
+                        bind_parameters_per_row, 1
+                    )
+                    if rows_per_statement == 0:
+                        raise ConnectorWriteError(
+                            "PostgreSQL upsert row exceeds the bind-parameter limit",
+                            code="PMCONN888",
+                            provider=PROVIDER,
                         )
-                    else:
-                        statement = statement.on_conflict_do_nothing(
-                            index_elements=[target.c[key] for key in keys]
+                    for offset in range(0, len(rows), rows_per_statement):
+                        statement = insert(target).values(
+                            rows[offset : offset + rows_per_statement]
                         )
-                    connection.execute(statement)
+                        updates = {
+                            column: getattr(statement.excluded, column)
+                            for column in rows[0]
+                            if column not in keys
+                        }
+                        if updates:
+                            statement = statement.on_conflict_do_update(
+                                index_elements=[target.c[key] for key in keys],
+                                set_=updates,
+                            )
+                        else:
+                            statement = statement.on_conflict_do_nothing(
+                                index_elements=[target.c[key] for key in keys]
+                            )
+                        connection.execute(statement)
                 else:
                     connection.execute(target.insert(), rows)
 

@@ -17,7 +17,7 @@ from sqlalchemy import create_engine, text
 from sqlalchemy.engine import make_url
 
 from etlantic import Data, Extract, Load, Pipeline, PipelineRuntime, Profile
-from etlantic.connectors.errors import ConnectorReadError
+from etlantic.connectors.errors import ConnectorReadError, ConnectorWriteError
 from etlantic.connectors.models import CommitReceipt
 from etlantic.connectors.session import write_via_sink_connector
 from etlantic.registry import BindingDescriptor, PlanningContext
@@ -169,6 +169,157 @@ def test_live_append_upsert_replace_and_idempotent_replay(
         ).all()
     assert rows == [("3", "replacement")]
     engine.dispose()
+
+
+@pytest.mark.parametrize("row_count", [9_000, 10_000])
+def test_live_upsert_respects_bind_parameter_limit(
+    secret_context: dict[str, Any], row_count: int
+) -> None:
+    assert URL is not None
+    engine = create_engine(URL, hide_parameters=True)
+    suffix = uuid.uuid4().hex
+    target = f"etlantic_bulk_{suffix}"
+    effects = f"etlantic_effects_{suffix}"
+    binding = {
+        "provider": "postgresql",
+        "location": target,
+        "config": {
+            "mode": "upsert",
+            "key_columns": ["id"],
+            "effect_table": effects,
+        },
+    }
+    context = {
+        **secret_context,
+        "run_id": f"bind-limit-{suffix}",
+        "node": "bulk-upsert",
+    }
+    rows = [
+        {"id": index, **{f"c{column}": column for column in range(1, 7)}}
+        for index in range(row_count)
+    ]
+    try:
+        with engine.begin() as connection:
+            connection.execute(
+                text(
+                    f"CREATE TABLE public.{target} ("
+                    "id integer PRIMARY KEY, "
+                    "c1 integer NOT NULL, c2 integer NOT NULL, "
+                    "c3 integer NOT NULL, c4 integer NOT NULL, "
+                    "c5 integer NOT NULL, c6 integer NOT NULL)"
+                )
+            )
+            connection.execute(
+                text(
+                    f"CREATE TABLE public.{effects} ("
+                    "effect_id text PRIMARY KEY, intent_fingerprint text NOT NULL, "
+                    "publication_id text NOT NULL UNIQUE, row_count bigint NOT NULL)"
+                )
+            )
+
+        receipt = _write(LivePostgresSinkConnector(), binding, context, rows)
+        assert receipt.status == "committed"
+        assert receipt.metadata["row_count"] == row_count
+        with engine.connect() as connection:
+            target_rows = connection.execute(
+                text(f"SELECT count(*) FROM public.{target}")
+            ).scalar_one()
+            effect_rows = connection.execute(
+                text(
+                    f"SELECT row_count FROM public.{effects} "
+                    "WHERE effect_id = :effect_id"
+                ),
+                {"effect_id": receipt.session_id},
+            ).scalar_one()
+        assert target_rows == row_count
+        assert effect_rows == row_count
+    finally:
+        with engine.begin() as connection:
+            connection.execute(text(f"DROP TABLE IF EXISTS public.{effects}"))
+            connection.execute(text(f"DROP TABLE IF EXISTS public.{target}"))
+        engine.dispose()
+
+
+def test_live_upsert_rolls_back_when_a_later_chunk_fails(
+    secret_context: dict[str, Any],
+) -> None:
+    assert URL is not None
+    engine = create_engine(URL, hide_parameters=True)
+    suffix = uuid.uuid4().hex
+    target = f"etlantic_bulk_{suffix}"
+    effects = f"etlantic_effects_{suffix}"
+    binding = {
+        "provider": "postgresql",
+        "location": target,
+        "config": {
+            "mode": "upsert",
+            "key_columns": ["id"],
+            "effect_table": effects,
+        },
+    }
+    context = {
+        **secret_context,
+        "run_id": f"later-chunk-failure-{suffix}",
+        "node": "bulk-upsert",
+    }
+    rows = [
+        {"id": index, **{f"c{column}": column for column in range(1, 7)}}
+        for index in range(10_000)
+    ]
+    rows[-1]["c1"] = -1
+    sink = LivePostgresSinkConnector()
+    try:
+        with engine.begin() as connection:
+            connection.execute(
+                text(
+                    f"CREATE TABLE public.{target} ("
+                    "id integer PRIMARY KEY, "
+                    "c1 integer NOT NULL, c2 integer NOT NULL, "
+                    "c3 integer NOT NULL, c4 integer NOT NULL, "
+                    "c5 integer NOT NULL, c6 integer NOT NULL, "
+                    "CONSTRAINT ck_reject_negative CHECK (c1 >= 0))"
+                )
+            )
+            connection.execute(
+                text(
+                    f"CREATE TABLE public.{effects} ("
+                    "effect_id text PRIMARY KEY, intent_fingerprint text NOT NULL, "
+                    "publication_id text NOT NULL UNIQUE, row_count bigint NOT NULL)"
+                )
+            )
+
+        async def fail_in_later_chunk() -> tuple[Any, ConnectorWriteError]:
+            plan = await sink.plan_write(binding=binding, context=context)
+            session = await sink.begin_write(
+                plan=plan, binding=binding, context=context
+            )
+            await sink.write_batch(session, rows, context=context)
+            with pytest.raises(ConnectorWriteError) as failure:
+                await sink.prepare(session, context=context)
+            await sink.abort(session, context=context)
+            return session, failure.value
+
+        _session, failure = anyio.run(fail_in_later_chunk)
+        cause_text = str(failure)
+        cause = failure.__cause__
+        while cause is not None:
+            cause_text += "\n" + str(cause)
+            cause = cause.__cause__
+        assert "ck_reject_negative" in cause_text
+        with engine.connect() as connection:
+            target_rows = connection.execute(
+                text(f"SELECT count(*) FROM public.{target}")
+            ).scalar_one()
+            effect_rows = connection.execute(
+                text(f"SELECT count(*) FROM public.{effects}")
+            ).scalar_one()
+        assert target_rows == 0
+        assert effect_rows == 0
+    finally:
+        with engine.begin() as connection:
+            connection.execute(text(f"DROP TABLE IF EXISTS public.{effects}"))
+            connection.execute(text(f"DROP TABLE IF EXISTS public.{target}"))
+        engine.dispose()
 
 
 def test_live_postgresql_partition_read_and_atomic_replace(
