@@ -47,6 +47,66 @@ Choose a directory with appropriate access control. Reports are designed to be
 secret-free, but they can contain pipeline identities, diagnostics, artifact
 references, and operational metadata.
 
+## Managed artifact workspaces
+
+Managed resume and checkpoint-backed repair can use their parent's artifact
+workspace while retaining a distinct child run ID. Their reports record the
+storage run ID in `etlantic.control_plane.artifact_storage_run_id` before the
+first durable report write, including the result-publication fallback. Chained
+resumes preserve that workspace identity. Listing, download, and artifact
+retention resolve the same workspace inside the accepted tenant, workspace,
+and security domain; the metadata contains no filesystem path or credentials.
+
+Artifact retention expires each report's references separately from its run
+status. A file shared with a still-retained report remains on disk until its
+last retained reference expires. An expired reference cannot download that
+file, even while another report retains it. Cleanup continues to limit the
+number of artifacts touched per pass and records failures for later retry.
+Deferred reports receive a retry time before batch selection, and already
+expired pinned references do not hide unfinished or unrelated cleanup work.
+A process-owned filesystem lock coordinates execution and result publication
+with cleanup for each artifact workspace. Cleanup skips a busy workspace and
+refreshes its scoped report inventory under the lock, including file providers
+opened before another worker published a child. Workers sharing artifact files
+must use the same artifact root; independent workspaces still execute in parallel.
+Busy reports do not consume the processed-report batch limit, so cleanup
+continues in other workspaces even when the oldest reports remain locked.
+Execution lock waits observe cancellation and lease loss before ETL starts.
+Cancellation finishes without requiring lock release; an unstarted attempt
+adds no unknown effect, while prior attempts still require reconciliation.
+Workers that lose their lease leave the outbox available for recovery.
+Result reconciliation also skips busy workspaces, leaving their publication
+records pending while the worker processes other publications and accepted runs.
+
+Before report persistence, execution records hashed artifact ownership under the
+workspace. An unexpired child remains visible to cleanup even while its result
+exists only in durable publication. Cleanup keeps deferred physical work pending
+until that child is published or its retention window ends, including across
+restarts, so an unavailable report provider cannot cause either early deletion
+or a permanent file leak. Cleanup discovers ownership records directly inside
+the accepted artifact scope, including workspaces with no published report rows.
+Unpublished cleanup shares the artifact batch limit and persists progress for
+restart and deletion-failure recovery.
+Result reconciliation preserves cleanup progress from the current report row;
+reference tombstones alone never prove that deferred file deletion completed.
+
+Reference expiry also writes a hashed tombstone under the artifact workspace.
+Queries and result reconciliation consult this record, so an immutable fallback
+snapshot cannot revive an expired reference during a report-provider outage.
+Expired unpublished owners receive tombstones even when no stored report needs
+file cleanup. Ownership and tombstone writes use the workspace's process-owned
+lock, without additional lock files that could block recovery after a crash.
+These small metadata records survive process restarts and remain with retained
+report history; they contain neither source rows nor credentials.
+
+Managed cleanup resolves untagged legacy reports from their accepted submission.
+It retries references incorrectly marked expired or complete by the old child-
+workspace cleanup. The packaged backend supplies this resolver automatically;
+standalone cleanup callers can supply `report_resolver`, and execution hosts
+resolve legacy final reports through their recorded submission ID. Unverifiable
+legacy lifecycle reports fail closed. Ordinary legacy reports retain their own
+workspace, and managed queries recover their storage tag from accepted evidence.
+
 ## CLI process boundaries
 
 Use `--ephemeral` when you intentionally want process-local report storage

@@ -16,13 +16,18 @@ from etlantic.control_plane.durable_models import (
     EffectRecord,
     ExecutionScopePage,
     ResultPublicationRecord,
+    SubmissionRecord,
 )
 from etlantic.control_plane.durable_protocols import DurableWorkStore
 from etlantic.control_plane.errors import ControlPlaneError
 from etlantic.control_plane.models import ControlPlaneContext
 from etlantic.control_plane.schedule_diagnostics import fed_diagnostic
 from etlantic.reports.model import PipelineRunReport
-from etlantic.runtime.managed_errors import ExecutionRejected, UnknownCommitError
+from etlantic.runtime.managed_errors import (
+    ExecutionCancelled,
+    ExecutionRejected,
+    UnknownCommitError,
+)
 from etlantic.runtime.state import RunStatus
 from etlantic.secrets.provider import SecretAliasAuthorizer
 
@@ -350,18 +355,15 @@ class ExecutionHost:
                 processed += 1
                 continue
 
-            if _is_preexecution_rejection(
-                runner_error, recovered=bool(previous_attempts)
+            if self._finish_preexecution_attempt(
+                ctx,
+                error=runner_error,
+                submission_id=item.submission_id,
+                outbox_id=item.outbox_id,
+                attempt_id=attempt.attempt_id,
+                fencing_token=lease.fencing_token,
+                recovered=bool(previous_attempts),
             ):
-                self.durable.finish_attempt(
-                    ctx,
-                    attempt.attempt_id,
-                    owner_id=self.owner_id,
-                    fencing_token=lease.fencing_token,
-                    status="failed",
-                )
-                self.durable.mark_published(ctx, item.outbox_id)
-                self._release_lease(ctx, item.submission_id, lease.fencing_token)
                 processed += 1
                 continue
             if runner_error is not None:
@@ -449,6 +451,42 @@ class ExecutionHost:
             processed += 1
         return processed
 
+    def _finish_preexecution_attempt(
+        self,
+        ctx: ControlPlaneContext,
+        *,
+        error: Exception | None,
+        submission_id: str,
+        outbox_id: str,
+        attempt_id: str,
+        fencing_token: int,
+        recovered: bool,
+    ) -> bool:
+        """Acknowledge classified stops before this attempt entered execution."""
+        if isinstance(error, ExecutionCancelled):
+            # Prior attempts still require conservative effect reconciliation.
+            self._finish_cancelled_attempt(
+                ctx,
+                submission_id=submission_id,
+                outbox_id=outbox_id,
+                attempt_id=attempt_id,
+                fencing_token=fencing_token,
+                recovered=recovered,
+            )
+            return True
+        if not _is_preexecution_rejection(error, recovered=recovered):
+            return False
+        self.durable.finish_attempt(
+            ctx,
+            attempt_id,
+            owner_id=self.owner_id,
+            fencing_token=fencing_token,
+            status="failed",
+        )
+        self.durable.mark_published(ctx, outbox_id)
+        self._release_lease(ctx, submission_id, fencing_token)
+        return True
+
     def _finish_cancelled_attempt(
         self,
         ctx: ControlPlaneContext,
@@ -490,14 +528,24 @@ class ExecutionHost:
                 self._queue_retention_retry(key, cleanup_ctx)
         return attempted
 
-    @staticmethod
     def _cleanup_retention_scope(
-        cleanup_artifacts: Callable[[ControlPlaneContext], Any],
+        self,
+        cleanup_artifacts: Callable[..., Any],
         ctx: ControlPlaneContext,
     ) -> bool:
         """Return whether this store still needs a later cleanup pass."""
+
+        def submission_reader(identity: str) -> SubmissionRecord:
+            return self.durable.get_submission(ctx, identity)
+
         try:
-            outcome = cleanup_artifacts(ctx)
+            if _accepts_keyword(cleanup_artifacts, "submission_reader"):
+                outcome = cleanup_artifacts(
+                    ctx,
+                    submission_reader=submission_reader,
+                )
+            else:
+                outcome = cleanup_artifacts(ctx)
         except Exception:
             # Retention has its own durable state and must not block ETL
             # admission when a report store or artifact filesystem is down.
@@ -546,11 +594,26 @@ class ExecutionHost:
         except Exception:
             _LOG.warning("Could not inspect pending run-result publications")
             return
+
+        def read_submission(identity: str) -> SubmissionRecord:
+            return self.durable.get_submission(ctx, identity)
+
         for record in records:
             try:
                 submission = self.durable.get_submission(ctx, record.submission_id)
                 accepted_ctx = accepted_execution_context(ctx, submission)
-                publish(accepted_ctx, record)
+                if _accepts_keyword(publish, "submission_reader"):
+                    published = publish(
+                        accepted_ctx,
+                        record,
+                        submission_reader=read_submission,
+                    )
+                else:
+                    published = publish(accepted_ctx, record)
+                if published is False:
+                    # A managed publisher skips a busy artifact workspace.
+                    # Legacy sinks returning None still acknowledge success.
+                    continue
                 self.durable.mark_result_publication_published(
                     ctx,
                     record.submission_id,
