@@ -21,6 +21,7 @@ from etlantic.control_plane.models import ControlPlaneContext
 from etlantic.control_plane.protocols import DefinitionResolution
 from etlantic.control_plane.registry_memory import (
     content_fingerprint,
+    revision_order_key,
     safe_registry_content,
 )
 from etlantic.control_plane.registry_models import (
@@ -52,11 +53,9 @@ class RegistryDefinitionRepository:
         revisions = self.registry.revisions.list_revisions(ctx, definition_id)
         if not revisions:
             raise ControlPlaneError.not_found(f"Definition {definition_id!r} not found")
-        # Prefer newest created_at; revision_id sort alone is not chronological
-        # when ids are UUID-based.
         latest = max(
             revisions,
-            key=lambda rev: (rev.created_at or "", rev.revision_id),
+            key=lambda rev: revision_order_key(rev.created_at, rev.revision_id),
         )
         document = latest.content.get("document")
         if not isinstance(document, Mapping):
@@ -84,7 +83,7 @@ class RegistryDefinitionRepository:
                 )
             revision = max(
                 revisions,
-                key=lambda rev: (rev.created_at or "", rev.revision_id),
+                key=lambda rev: revision_order_key(rev.created_at, rev.revision_id),
             )
         else:
             try:
@@ -177,6 +176,42 @@ class RegistryDefinitionRepository:
             kind=DEFINITION_KIND,
         )
         self.registry.revisions.put_revision(ctx, revision)
+        return revision.revision_id
+
+    def compare_and_swap(
+        self,
+        ctx: ControlPlaneContext,
+        definition_id: str,
+        expected_document: Mapping[str, Any],
+        document: Mapping[str, Any],
+    ) -> str:
+        """Append a definition revision against an atomically checked head."""
+        expected_content = _document_content(expected_document)
+        content = _document_content(document)
+        revision = RegistryRevision(
+            logical_id=definition_id,
+            revision_id=f"defrev-{uuid.uuid4().hex[:16]}",
+            tenant_id=ctx.tenant.tenant_id,
+            workspace_id=ctx.workspace.workspace_id,
+            content_fingerprint=content_fingerprint(content),
+            content=content,
+            kind=DEFINITION_KIND,
+        )
+        put_if_current = getattr(
+            self.registry.revisions, "put_revision_if_current", None
+        )
+        if not callable(put_if_current):
+            raise ControlPlaneError(
+                "Registry provider does not support atomic definition edits",
+                code="PMCP501",
+                status=501,
+                title="Not Implemented",
+            )
+        put_if_current(
+            ctx,
+            revision,
+            expected_current_fingerprint=content_fingerprint(expected_content),
+        )
         return revision.revision_id
 
 

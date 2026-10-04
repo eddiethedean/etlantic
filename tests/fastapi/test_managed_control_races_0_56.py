@@ -2,13 +2,15 @@
 
 from __future__ import annotations
 
+from concurrent.futures import ThreadPoolExecutor
+from threading import Barrier
 from typing import Any, cast
 
 import pytest
 
 from etlantic import Data, Extract, Load, Pipeline
 from etlantic.authoring import definition_from_pipeline
-from etlantic.authoring.serialize import pipeline_to_dict
+from etlantic.authoring.serialize import pipeline_fingerprint, pipeline_to_dict
 from etlantic.control_plane import (
     AcceptReceipt,
     ControlPlaneContext,
@@ -18,8 +20,10 @@ from etlantic.control_plane import (
     MemoryAuthorizer,
     MemoryDefinitionRepository,
     MemoryDurableWorkStore,
+    MemoryRegistryProvider,
     MemorySubmissionStore,
     Principal,
+    RegistryDefinitionRepository,
     SecurityDomain,
     SubmissionStore,
     TenantRef,
@@ -380,3 +384,106 @@ def test_rerun_blocks_unknown_parent_effect() -> None:
 
     assert error.value.extensions["reason"] == "effect_requires_reconciliation"
     assert durable.pending_outbox(ctx) == pending_before
+
+
+def test_concurrent_definition_edits_use_repository_compare_and_swap() -> None:
+    ctx = _context()
+    authorizer = MemoryAuthorizer()
+    authorizer.grant(ctx, "definition.write")
+    authorizer.grant(ctx, "definition.edit")
+    durable = MemoryDurableWorkStore()
+    submissions = MemorySubmissionStore()
+    barrier = Barrier(2)
+
+    class RacingDefinitions(MemoryDefinitionRepository):
+        synchronize_reads = False
+
+        def get(self, ctx: ControlPlaneContext, definition_id: str) -> Any:
+            document = super().get(ctx, definition_id)
+            if self.synchronize_reads:
+                barrier.wait(timeout=10)
+            return document
+
+    definitions = RacingDefinitions()
+    service = _service(authorizer, submissions, durable, definitions)
+    definition = definition_from_pipeline(_RerunPipeline)
+    service.register_definition(ctx, "race", pipeline_to_dict(definition))
+    fingerprint = pipeline_fingerprint(definition)
+    original_nodes = definitions.get(ctx, "race")["nodes"]
+    definitions.synchronize_reads = True
+
+    def edit(index: int) -> str:
+        node = dict(original_nodes[index])
+        node["asset"] = f"edited-{index}"
+        try:
+            service.edit_definition(
+                ctx,
+                "race",
+                {
+                    "op": "update_node",
+                    "payload": {"name": node["name"], "node": node},
+                },
+                expected_fingerprint=fingerprint,
+            )
+        except ControlPlaneError as exc:
+            return f"conflict:{exc.status}"
+        return "accepted"
+
+    with ThreadPoolExecutor(max_workers=2) as pool:
+        results = list(pool.map(edit, (0, 1)))
+
+    definitions.synchronize_reads = False
+    assert sorted(results) == ["accepted", "conflict:409"]
+    final_assets = {
+        node["name"]: node.get("asset")
+        for node in definitions.get(ctx, "race")["nodes"]
+    }
+    assert (
+        sum(asset in {"edited-0", "edited-1"} for asset in final_assets.values()) == 1
+    )
+
+
+def test_revision_repository_compare_and_swap_rejects_stale_head(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    ctx = _context()
+    definitions = RegistryDefinitionRepository(MemoryRegistryProvider())
+    original = {"name": "pipe", "version": 1}
+    monkeypatch.setattr(
+        "etlantic.control_plane.registry_memory._utcnow_iso",
+        lambda: "2000-01-01T00:00:00Z",
+    )
+    definitions.put(ctx, "revision-race", original)
+    barrier = Barrier(2)
+
+    def edit(version: int) -> str:
+        barrier.wait(timeout=10)
+        try:
+            definitions.compare_and_swap(
+                ctx,
+                "revision-race",
+                original,
+                {"name": "pipe", "version": version},
+            )
+        except ControlPlaneError as exc:
+            return f"conflict:{exc.status}"
+        return "accepted"
+
+    with ThreadPoolExecutor(max_workers=2) as pool:
+        results = list(pool.map(edit, (2, 3)))
+
+    assert sorted(results) == ["accepted", "conflict:409"]
+    winning_document = definitions.get(ctx, "revision-race")
+    assert winning_document["version"] in {2, 3}
+
+    registered = {"name": "pipe", "version": 4}
+    definitions.put(ctx, "revision-race", registered)
+    with pytest.raises(ControlPlaneError) as stale:
+        definitions.compare_and_swap(
+            ctx,
+            "revision-race",
+            winning_document,
+            {"name": "pipe", "version": 5},
+        )
+    assert stale.value.status == 409
+    assert definitions.get(ctx, "revision-race") == registered

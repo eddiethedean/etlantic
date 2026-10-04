@@ -152,6 +152,21 @@ class RevisionRegistry(Protocol):
 
 
 @runtime_checkable
+class CompareAndSwapRevisionRegistry(Protocol):
+    """Optional registry extension for atomic append against the current head."""
+
+    def put_revision_if_current(
+        self,
+        ctx: ControlPlaneContext,
+        revision: RegistryRevision,
+        *,
+        expected_current_fingerprint: str,
+    ) -> None:
+        """Append only when the current content fingerprint still matches."""
+        ...
+
+
+@runtime_checkable
 class RegistryProvider(Protocol):
     """Façade composing directory and revision registries (histories later)."""
 
@@ -204,6 +219,7 @@ class RegistryProvider(Protocol):
 
 
 __all__ = [
+    "CompareAndSwapRevisionRegistry",
     "RegistryProvider",
     "RevisionRegistry",
     "TenantDirectory",

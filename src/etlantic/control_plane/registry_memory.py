@@ -10,7 +10,7 @@ import uuid
 from collections.abc import Mapping, Sequence
 from copy import deepcopy
 from dataclasses import dataclass, field, replace
-from datetime import UTC, datetime
+from datetime import UTC, datetime, timedelta
 from typing import Any
 
 from etlantic.control_plane.errors import ControlPlaneError
@@ -34,6 +34,45 @@ from etlantic.control_plane.registry_models import (
 
 def _utcnow_iso() -> str:
     return datetime.now(UTC).isoformat().replace("+00:00", "Z")
+
+
+def _timestamp_after_current(current: str | None, candidate: str | None) -> str:
+    """Choose a revision timestamp that sorts after the current head."""
+    try:
+        timestamp = datetime.fromisoformat(
+            (candidate or _utcnow_iso()).replace("Z", "+00:00")
+        )
+        if timestamp.tzinfo is None:
+            timestamp = timestamp.replace(tzinfo=UTC)
+        if current is not None:
+            current_timestamp = datetime.fromisoformat(current.replace("Z", "+00:00"))
+            if current_timestamp.tzinfo is None:
+                current_timestamp = current_timestamp.replace(tzinfo=UTC)
+            if timestamp <= current_timestamp:
+                timestamp = current_timestamp + timedelta(microseconds=1)
+    except ValueError as exc:
+        raise ControlPlaneError.conflict(
+            "Definition revision has an invalid timestamp"
+        ) from exc
+    return timestamp.astimezone(UTC).isoformat().replace("+00:00", "Z")
+
+
+def revision_order_key(
+    created_at: str | None,
+    revision_id: str,
+) -> tuple[datetime, str]:
+    """Order revisions by parsed UTC time, with IDs resolving equal timestamps."""
+    if created_at is None:
+        return datetime.min.replace(tzinfo=UTC), revision_id
+    try:
+        timestamp = datetime.fromisoformat(created_at.replace("Z", "+00:00"))
+    except ValueError as exc:
+        raise ControlPlaneError.conflict(
+            "Definition revision has an invalid timestamp"
+        ) from exc
+    if timestamp.tzinfo is None:
+        timestamp = timestamp.replace(tzinfo=UTC)
+    return timestamp.astimezone(UTC), revision_id
 
 
 def content_fingerprint(content: Mapping[str, Any]) -> str:
@@ -435,11 +474,25 @@ class MemoryRevisionRegistry:
                     },
                 )
             safe_content = safe_registry_content(revision.content)
+            current = max(
+                (
+                    item
+                    for item in self._revisions.values()
+                    if item.tenant_id == ctx.tenant.tenant_id
+                    and item.workspace_id == ctx.workspace.workspace_id
+                    and item.logical_id == revision.logical_id
+                ),
+                key=lambda item: revision_order_key(item.created_at, item.revision_id),
+                default=None,
+            )
             stored = replace(
                 revision,
                 content=safe_content,
                 content_fingerprint=content_fingerprint(safe_content),
-                created_at=revision.created_at or _utcnow_iso(),
+                created_at=_timestamp_after_current(
+                    current.created_at if current is not None else None,
+                    revision.created_at,
+                ),
                 signature_placeholder=(
                     redact_control_plane_text(revision.signature_placeholder)
                     if revision.signature_placeholder is not None
@@ -452,6 +505,44 @@ class MemoryRevisionRegistry:
                 ),
             )
             self._revisions[key] = stored
+
+    def put_revision_if_current(
+        self,
+        ctx: ControlPlaneContext,
+        revision: RegistryRevision,
+        *,
+        expected_current_fingerprint: str,
+    ) -> None:
+        """Atomically check a logical head and append its next revision."""
+        if (
+            revision.tenant_id != ctx.tenant.tenant_id
+            or revision.workspace_id != ctx.workspace.workspace_id
+        ):
+            raise ControlPlaneError.not_found(
+                "Revision not found",
+                extensions={"revision_id": revision.revision_id},
+            )
+        with self._lock:
+            self._assert_scope_active(ctx)
+            current = max(
+                (
+                    item
+                    for item in self._revisions.values()
+                    if item.tenant_id == ctx.tenant.tenant_id
+                    and item.workspace_id == ctx.workspace.workspace_id
+                    and item.logical_id == revision.logical_id
+                ),
+                key=lambda item: revision_order_key(item.created_at, item.revision_id),
+                default=None,
+            )
+            if (
+                current is None
+                or current.content_fingerprint != expected_current_fingerprint
+            ):
+                raise ControlPlaneError.conflict(
+                    "Definition changed since the edit was prepared"
+                )
+            self.put_revision(ctx, revision)
 
     def get_revision(
         self,
@@ -563,6 +654,17 @@ class MemoryRevisionRegistry:
                     extensions={"revision_id": from_revision_id},
                 )
             source_snapshot = deepcopy(source)
+            current = max(
+                (
+                    item
+                    for item in self._revisions.values()
+                    if item.tenant_id == ctx.tenant.tenant_id
+                    and item.workspace_id == ctx.workspace.workspace_id
+                    and item.logical_id == logical_id
+                ),
+                key=lambda item: revision_order_key(item.created_at, item.revision_id),
+                default=None,
+            )
             requested_body = (
                 deepcopy(dict(content))
                 if content is not None
@@ -578,7 +680,9 @@ class MemoryRevisionRegistry:
                 workspace_id=ctx.workspace.workspace_id,
                 content_fingerprint=content_fingerprint(body),
                 content=body,
-                created_at=created,
+                created_at=_timestamp_after_current(
+                    current.created_at if current is not None else None, created
+                ),
                 kind=source.kind,
                 signature_placeholder=source.signature_placeholder,
                 provenance_placeholder={
@@ -790,5 +894,6 @@ __all__ = [
     "MemoryTenantDirectory",
     "MemoryWorkspaceDirectory",
     "content_fingerprint",
+    "revision_order_key",
     "safe_registry_content",
 ]

@@ -143,6 +143,34 @@ class SQLModelDefinitionRepository:
                 row.document_json = payload
                 session.add(row)
 
+    def compare_and_swap(
+        self,
+        ctx: ControlPlaneContext,
+        definition_id: str,
+        expected_document: Mapping[str, Any],
+        document: Mapping[str, Any],
+    ) -> None:
+        """Atomically replace the row only while its source JSON is unchanged."""
+        expected = json.dumps(dict(expected_document), sort_keys=True)
+        payload = json.dumps(dict(document), sort_keys=True)
+        statement = text(
+            "UPDATE cp_definitions SET document_json = :document_json "
+            "WHERE tenant_id = :tenant_id AND workspace_id = :workspace_id "
+            "AND definition_id = :definition_id AND document_json = :expected_document"
+        ).bindparams(
+            document_json=payload,
+            tenant_id=ctx.tenant.tenant_id,
+            workspace_id=ctx.workspace.workspace_id,
+            definition_id=definition_id,
+            expected_document=expected,
+        )
+        with self._engine.begin() as connection:
+            result = connection.execute(statement)
+            if result.rowcount != 1:
+                raise ControlPlaneError.conflict(
+                    "Definition changed since the edit was prepared"
+                )
+
     @staticmethod
     def _get_row(
         session: Session, ctx: ControlPlaneContext, definition_id: str

@@ -203,6 +203,27 @@ class MemoryDefinitionRepository:
             revisions[revision_id] = document_copy
         return revision_id
 
+    def compare_and_swap(
+        self,
+        ctx: ControlPlaneContext,
+        definition_id: str,
+        expected_document: Mapping[str, Any],
+        document: Mapping[str, Any],
+    ) -> str:
+        """Atomically compare and append a new current definition revision."""
+        key = (*_scope(ctx), definition_id)
+        with self._lock:
+            current = self._docs.get(key)
+            if current is None:
+                raise ControlPlaneError.not_found(
+                    f"Definition {definition_id!r} not found"
+                )
+            if current != dict(expected_document):
+                raise ControlPlaneError.conflict(
+                    "Definition changed since the edit was prepared"
+                )
+            return self.put_revision(ctx, definition_id, document)
+
 
 @dataclass
 class MemorySubmissionStore:

@@ -233,6 +233,7 @@ from etlantic.control_plane.policy_protocols import PolicyProvider
 from etlantic.control_plane.protocols import (
     Authorizer,
     AuthzDecision,
+    CompareAndSwapDefinitionRepository,
     DefinitionRepository,
     DefinitionResolution,
     EventRetentionStore,
@@ -267,6 +268,7 @@ from etlantic.control_plane.registry_memory import (
     MemoryTenantDirectory,
     MemoryWorkspaceDirectory,
     content_fingerprint,
+    revision_order_key,
 )
 from etlantic.control_plane.registry_models import (
     ALIAS_RECORD_SCHEMA,
@@ -295,6 +297,7 @@ from etlantic.control_plane.registry_ops import (
     search_revisions,
 )
 from etlantic.control_plane.registry_protocols import (
+    CompareAndSwapRevisionRegistry,
     RegistryProvider,
     RevisionRegistry,
     TenantDirectory,
@@ -438,6 +441,7 @@ __all__ = [  # noqa: RUF022
     "CorrelationKey",
     "DefinitionResolution",
     "DefinitionRepository",
+    "CompareAndSwapDefinitionRepository",
     "RevisionedDefinitionRepository",
     "DeliveryObjective",
     "DiffRecord",
@@ -520,6 +524,7 @@ __all__ = [  # noqa: RUF022
     "QuotaProvider",
     "QuotaState",
     "RegistryDefinitionRepository",
+    "CompareAndSwapRevisionRegistry",
     "RegistryProvider",
     "RegistryRevision",
     "ReliabilityObservationRecord",
@@ -570,6 +575,7 @@ __all__ = [  # noqa: RUF022
     "compute_policy_fingerprint",
     "compute_record_hash",
     "content_fingerprint",
+    "revision_order_key",
     "decision_allows",
     "decision_requires_approval",
     "enforce_policy_decision",
