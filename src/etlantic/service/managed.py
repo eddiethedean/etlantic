@@ -1163,6 +1163,16 @@ class ManagedApplicationService:
             ctx, idempotency_key=idempotency_key, operation="run.submit"
         )
 
+        if (
+            typed_request.intent is RunIntent.RESUME
+            and prior_receipt is None
+            and prior_durable is None
+        ):
+            raise ControlPlaneError.conflict(
+                "Managed execution cannot restore a checkpoint without a qualified resume command",
+                extensions={"reason": "checkpoint_restore_unavailable"},
+            )
+
         if prior_receipt is not None:
             envelope = self._envelope_from_payload(prior_payload)
             self._require_same_intent(envelope, intent_fingerprint)
@@ -1577,6 +1587,13 @@ class ManagedApplicationService:
             retry_reason = "unverified_execution_envelope"
         else:
             retry_reason = self._retry_block_reason(ctx, submission_id)
+            if retry_reason is None:
+                parent_envelope = self._parse_envelope(durable_record.input_snapshot)
+                if (
+                    RunRequest.from_dict(dict(parent_envelope.run_request)).intent
+                    is RunIntent.RESUME
+                ):
+                    retry_reason = "checkpoint_restore_unavailable"
         rerun_decision = self.authorizer.authorize(ctx, "run.rerun", f"run:{run_id}")
         if not rerun_decision.allowed:
             rerun_reason: str | None = "not_authorized"
@@ -1614,6 +1631,8 @@ class ManagedApplicationService:
             resume_reason = "adaptive_policy_unsupported"
         else:
             resume_reason = self._retry_block_reason(ctx, submission_id)
+            if resume_reason is None:
+                resume_reason = "checkpoint_restore_unavailable"
         repair_decision = self.authorizer.authorize(ctx, "run.repair", f"run:{run_id}")
         if not repair_decision.allowed:
             repair_reason: str | None = "not_authorized"
@@ -1683,7 +1702,7 @@ class ManagedApplicationService:
                 },
                 {
                     "name": "resume",
-                    "allowed": resume_reason is None,
+                    "allowed": False,
                     "reason": resume_reason,
                 },
             ],
@@ -1726,6 +1745,22 @@ class ManagedApplicationService:
                 "Legacy accepted work has no verified execution envelope"
             )
         parent_envelope = self._parse_envelope(parent.input_snapshot)
+        prior_receipt = self.submissions.lookup_idempotency(
+            ctx, idempotency_key, operation="run.retry"
+        )
+        prior_durable = self.durable_work.get_submission_by_idempotency(
+            ctx, idempotency_key=idempotency_key, operation="run.retry"
+        )
+        if (
+            RunRequest.from_dict(dict(parent_envelope.run_request)).intent
+            is RunIntent.RESUME
+            and prior_receipt is None
+            and prior_durable is None
+        ):
+            raise ControlPlaneError.conflict(
+                "Managed execution cannot retry a checkpoint resume without restorable state",
+                extensions={"reason": "checkpoint_restore_unavailable"},
+            )
         envelope_data = parent_envelope.to_dict()
         evidence_refs = dict(envelope_data.get("evidence_refs") or {})
         evidence_refs.update(
@@ -1737,12 +1772,6 @@ class ManagedApplicationService:
         )
         envelope_data["evidence_refs"] = evidence_refs
         envelope = ExecutionEnvelope.from_dict(envelope_data)
-        prior_receipt = self.submissions.lookup_idempotency(
-            ctx, idempotency_key, operation="run.retry"
-        )
-        prior_durable = self.durable_work.get_submission_by_idempotency(
-            ctx, idempotency_key=idempotency_key, operation="run.retry"
-        )
         if prior_receipt is None and prior_durable is None:
             retry_reason = self._retry_block_reason(ctx, parent_submission_id)
             if retry_reason is not None:
@@ -1796,6 +1825,15 @@ class ManagedApplicationService:
                 "Legacy accepted work has no verified execution envelope"
             )
         parent_envelope = self._parse_envelope(parent.input_snapshot)
+        parent_request = RunRequest.from_dict(dict(parent_envelope.run_request))
+        if parent_request.intent is RunIntent.RESUME:
+            parent_envelope = parent_envelope.with_request(
+                _request_with_intent(
+                    parent_request,
+                    intent=RunIntent.STANDARD,
+                    metadata=parent_request.metadata,
+                )
+            )
         envelope_data = parent_envelope.to_dict()
         evidence_refs = dict(envelope_data.get("evidence_refs") or {})
         evidence_refs.update(
@@ -1995,6 +2033,17 @@ class ManagedApplicationService:
             raise ControlPlaneError.conflict(
                 "Adaptive execution does not support resume intent",
                 extensions={"reason": "adaptive_policy_unsupported"},
+            )
+        # CP3 checkpoints currently persist a state fingerprint and lineage,
+        # not a runtime-restorable value or graph boundary. Do not accept a
+        # new lifecycle child that would merely rerun the original graph from
+        # its sources while claiming to resume from that checkpoint. Existing
+        # idempotency keys still flow through child acceptance below so callers
+        # can recover receipts for children accepted by an older version.
+        if prior_receipt is None and prior_durable is None:
+            raise ControlPlaneError.conflict(
+                "Managed execution cannot restore the selected checkpoint",
+                extensions={"reason": "checkpoint_restore_unavailable"},
             )
         request = RunRequest.from_dict(dict(envelope.run_request))
         resume_request = RunRequest(
@@ -3631,6 +3680,22 @@ class ManagedApplicationService:
         accepted: ExecutionEnvelope, requested: ExecutionEnvelope
     ) -> bool:
         """Compare lifecycle intent while preserving persisted admission evidence."""
+        accepted_request = RunRequest.from_dict(dict(accepted.run_request))
+        requested_request = RunRequest.from_dict(dict(requested.run_request))
+        accepted_command = (accepted.evidence_refs or {}).get("command")
+        requested_command = (requested.evidence_refs or {}).get("command")
+        if (
+            accepted_command == requested_command == "rerun"
+            and accepted_request.intent is RunIntent.RESUME
+            and requested_request.intent is RunIntent.STANDARD
+        ):
+            accepted = accepted.with_request(
+                _request_with_intent(
+                    accepted_request,
+                    intent=RunIntent.STANDARD,
+                    metadata=accepted_request.metadata,
+                )
+            )
         requested_with_admission = ExecutionEnvelope.from_dict(
             {
                 **requested.to_dict(),

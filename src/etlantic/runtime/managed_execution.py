@@ -638,6 +638,14 @@ class ManagedExecutionAdapter:
                 "A prior worker attempt has no durable report; reconcile its effects before retry"
             )
 
+        if request.intent is RunIntent.RESUME or submission.operation == "run.resume":
+            # Older service versions could accept a resume child backed only
+            # by checkpoint metadata. Preserve any already-published result
+            # above, then reject before starting a fresh execution from source.
+            raise ExecutionRejected(
+                "Managed execution cannot restore the selected checkpoint"
+            )
+
         runtime = self.runtime_factory()
         plan_intents = getattr(plan, "intents", {}) or {}
         incremental_strategies = plan_intents.get("incremental_strategies")
