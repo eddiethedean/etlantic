@@ -3493,3 +3493,152 @@ def test_managed_execution_host_retains_accepted_scope_artifacts(
     assert retained is not None
     assert retained.artifacts[0].status == "expired"
     assert retained.metadata["etlantic.control_plane.artifact_retention"] == "complete"
+
+
+def test_managed_rerun_rechecks_admission_and_charges_quota_once(
+    tmp_path: Path,
+) -> None:
+    ctx, authz, _definitions, submissions, durable, _events, service = _wired(tmp_path)
+    authz.grant(ctx, "run.rerun")
+    policy = MemoryPolicyProvider()
+    policy.set_rule("pre_submit", "allow")
+    quota = MemoryQuotaProvider()
+    service.policy = policy
+    service.quotas = quota
+
+    shared_key = "shared-admission-key"
+    original = service.submit_run(ctx, "pipe", idempotency_key=shared_key)
+    assert original.resource_id is not None
+    parent_lease = durable.acquire_lease(
+        ctx,
+        original.submission_id,
+        owner_id="review-parent-worker",
+        ttl_seconds=30,
+    )
+    parent_attempt = durable.start_attempt(
+        ctx,
+        original.submission_id,
+        owner_id="review-parent-worker",
+        fencing_token=parent_lease.fencing_token,
+    )
+    durable.finish_attempt(
+        ctx,
+        parent_attempt.attempt_id,
+        owner_id="review-parent-worker",
+        fencing_token=parent_lease.fencing_token,
+        status="completed",
+    )
+    assert quota.get_state(ctx).usage["concurrency"] == 1
+
+    policy.set_rule("pre_submit", "deny")
+    with pytest.raises(ControlPlaneError, match="policy denied"):
+        service.rerun_run(ctx, original.resource_id, idempotency_key="rerun-denied")
+    assert quota.get_state(ctx).usage["concurrency"] == 1
+    assert (
+        submissions.lookup_idempotency(ctx, "rerun-denied", operation="run.rerun")
+        is None
+    )
+
+    policy.set_rule("pre_submit", "allow")
+    rerun = service.rerun_run(ctx, original.resource_id, idempotency_key=shared_key)
+    assert quota.get_state(ctx).usage["concurrency"] == 2
+    accepted = durable.get_submission(ctx, rerun.submission_id)
+    assert accepted.policy_fingerprint is not None
+
+    policy.set_rule("pre_submit", "deny")
+    assert (
+        service.rerun_run(
+            ctx, original.resource_id, idempotency_key=shared_key
+        ).to_dict()
+        == rerun.to_dict()
+    )
+    assert quota.get_state(ctx).usage["concurrency"] == 2
+
+
+def test_managed_rerun_authorizes_plan_resources_before_acceptance(
+    tmp_path: Path,
+) -> None:
+    ctx, authz, _definitions, submissions, durable, _events, service = _wired(tmp_path)
+    authz.grant(ctx, "run.rerun")
+    source = tmp_path / "rerun-source.json"
+    target = tmp_path / "rerun-target.csv"
+    source.write_text('[{"id": 42}]', encoding="utf-8")
+
+    def planning_context(
+        _ctx: ControlPlaneContext, profile: Profile
+    ) -> PlanningContext:
+        planning = PlanningContext.create(profile=profile)
+        planning.registry.register_binding(
+            BindingDescriptor(
+                binding="file-in",
+                provider="json",
+                location=str(source),
+                kind="source",
+            )
+        )
+        planning.registry.register_binding(
+            BindingDescriptor(
+                binding="file-out",
+                provider="csv",
+                location=str(target),
+                kind="sink",
+            )
+        )
+        return planning
+
+    service.planning_context_factory = planning_context
+    service.register_definition(
+        ctx,
+        "rerun-file-pipe",
+        pipeline_to_dict(definition_from_pipeline(ManagedFilePipeline)),
+    )
+    original = service.submit_run(
+        ctx, "rerun-file-pipe", idempotency_key="rerun-resource-parent"
+    )
+    assert original.resource_id is not None
+    parent_lease = durable.acquire_lease(
+        ctx,
+        original.submission_id,
+        owner_id="review-parent-worker",
+        ttl_seconds=30,
+    )
+    parent_attempt = durable.start_attempt(
+        ctx,
+        original.submission_id,
+        owner_id="review-parent-worker",
+        fencing_token=parent_lease.fencing_token,
+    )
+    durable.finish_attempt(
+        ctx,
+        parent_attempt.attempt_id,
+        owner_id="review-parent-worker",
+        fencing_token=parent_lease.fencing_token,
+        status="completed",
+    )
+    authz.forbidden_resources.add(
+        (
+            ctx.tenant.tenant_id,
+            ctx.workspace.workspace_id,
+            "run.submit",
+            "resource:file-in",
+        )
+    )
+
+    with pytest.raises(ControlPlaneError):
+        service.rerun_run(
+            ctx, original.resource_id, idempotency_key="rerun-resource-denied"
+        )
+    assert (
+        submissions.lookup_idempotency(
+            ctx, "rerun-resource-denied", operation="run.rerun"
+        )
+        is None
+    )
+    assert (
+        durable.get_submission_by_idempotency(
+            ctx,
+            idempotency_key="rerun-resource-denied",
+            operation="run.rerun",
+        )
+        is None
+    )

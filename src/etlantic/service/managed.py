@@ -2388,6 +2388,9 @@ class ManagedApplicationService:
             envelope = ExecutionEnvelope.from_dict(
                 {**envelope.to_dict(), "evidence_refs": evidence_refs}
             )
+        input_plan = _decode_plan_document(envelope.plan_document)
+        self._authorize_plan_resources(ctx, input_plan, action="run.submit")
+        self._authorize_input_resources(ctx, input_plan)
         envelope = _with_input_resource_lease(
             ctx,
             envelope,
@@ -2481,7 +2484,43 @@ class ManagedApplicationService:
             )
             return receipt_result.receipt
 
-        input_plan = _decode_plan_document(envelope.plan_document)
+        decision, _quota = gate_pre_submit(
+            ctx,
+            policy=self.policy,
+            approvals=self.approvals,
+            quotas=self.quotas,
+            audit=self.audit,
+            attestations=self.attestations,
+            plan_fingerprint=envelope.plan_fingerprint,
+            effective_fingerprint=envelope.effective_fingerprint,
+            revision_id=envelope.revision_id,
+            quota_idempotency_key=self._quota_idempotency_key(
+                ctx, idempotency_key, operation=operation
+            ),
+            plugin_fingerprints=(
+                [envelope.plugin_fingerprint]
+                if envelope.plugin_fingerprint is not None
+                else None
+            ),
+            require_policy=self.policy is not None,
+            require_attestations=self.require_attestations,
+        )
+        envelope = ExecutionEnvelope.from_dict(
+            {
+                **envelope.to_dict(),
+                "policy_fingerprint": (
+                    decision.policy_fingerprint if decision is not None else None
+                ),
+            }
+        )
+        payload = self._acceptance_payload(envelope)
+        payload.update(
+            {
+                "command": operation.removeprefix("run."),
+                "parent_run_id": parent_run_id,
+                "parent_submission_id": parent_submission_id,
+            }
+        )
         input_lease_id = self._protect_input_resources(
             ctx,
             input_plan,
@@ -3658,7 +3697,12 @@ class ManagedApplicationService:
         return versions
 
     @staticmethod
-    def _quota_idempotency_key(ctx: ControlPlaneContext, idempotency_key: str) -> str:
+    def _quota_idempotency_key(
+        ctx: ControlPlaneContext,
+        idempotency_key: str,
+        *,
+        operation: str = "run.submit",
+    ) -> str:
         """Derive a secret-safe quota reservation key from the CP1 scope."""
         value = {
             "scope": list(ctx.scope_key),
@@ -3667,7 +3711,7 @@ class ManagedApplicationService:
                 ctx.principal.kind,
                 ctx.principal.subject,
             ],
-            "operation": "run.submit",
+            "operation": operation,
             "idempotency_key": idempotency_key,
         }
         return hashlib.sha256(
