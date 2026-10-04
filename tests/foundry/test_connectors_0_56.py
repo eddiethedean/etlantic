@@ -14,7 +14,11 @@ from etlantic_foundry.connectors import (
     FoundryStorageConnector,
 )
 
-from etlantic.connectors.errors import ConnectorConfigError, ConnectorWriteError
+from etlantic.connectors.errors import (
+    ConnectorConfigError,
+    ConnectorReadError,
+    ConnectorWriteError,
+)
 from etlantic.connectors.models import CommitReceipt
 from etlantic.connectors.session import write_via_sink_connector
 from etlantic.secrets import SecretValue
@@ -138,6 +142,129 @@ def test_source_reads_pinned_paginated_csv_and_records_identity() -> None:
         request.url.params.get("branchName") is None for request in listing_requests
     )
     assert "Bearer" not in repr(batches)
+
+
+@pytest.mark.parametrize("announced_size", [None, "1"])
+def test_source_stops_streaming_when_file_budget_is_exceeded(
+    announced_size: str | None,
+) -> None:
+    chunks_read: list[int] = []
+
+    class OversizedStream(httpx2.AsyncByteStream):
+        async def __aiter__(self):
+            for index in range(8):
+                chunks_read.append(index)
+                yield b"id\n1\n"
+
+    def handler(request: httpx2.Request) -> httpx2.Response:
+        if request.url.path.endswith(f"/transactions/{TRANSACTION}"):
+            return httpx2.Response(200, json={"status": "COMMITTED"})
+        if request.url.path.endswith("/files"):
+            item: dict[str, Any] = {"path": "large.csv"}
+            if announced_size is not None:
+                item["sizeBytes"] = announced_size
+            return httpx2.Response(200, json={"data": [item]})
+        if request.url.path.endswith("/content"):
+            return httpx2.Response(200, stream=OversizedStream())
+        raise AssertionError(f"unexpected request: {request.method} {request.url}")
+
+    connector = FoundrySourceConnector(transport=httpx2.MockTransport(handler))
+    binding = _source_binding(max_file_bytes=8, max_total_bytes=8)
+    context = _secret()
+
+    async def run() -> None:
+        plan = await connector.plan_read(binding=binding, context=context)
+        async for _ in connector.read_batches(
+            plan=plan, binding=binding, context=context
+        ):
+            pass
+
+    with pytest.raises(ConnectorReadError, match="content exceeds max_bytes"):
+        anyio.run(run)
+    assert len(chunks_read) == 2
+
+
+def test_source_caps_each_download_to_remaining_total_budget() -> None:
+    content_requests: list[str] = []
+    second_file_chunks: list[int] = []
+
+    class FirstFileStream(httpx2.AsyncByteStream):
+        async def __aiter__(self):
+            yield b"id\n1\n"
+
+    class SecondFileStream(httpx2.AsyncByteStream):
+        async def __aiter__(self):
+            for index in range(8):
+                second_file_chunks.append(index)
+                yield b"id\n2\n"
+
+    def handler(request: httpx2.Request) -> httpx2.Response:
+        if request.url.path.endswith(f"/transactions/{TRANSACTION}"):
+            return httpx2.Response(200, json={"status": "COMMITTED"})
+        if request.url.path.endswith("/files"):
+            return httpx2.Response(
+                200,
+                json={"data": [{"path": "first.csv"}, {"path": "second.csv"}]},
+            )
+        if request.url.path.endswith("/content"):
+            path = unquote(
+                request.url.path.split("/files/", 1)[1].removesuffix("/content")
+            )
+            content_requests.append(path)
+            stream = FirstFileStream() if path == "first.csv" else SecondFileStream()
+            return httpx2.Response(200, stream=stream)
+        raise AssertionError(f"unexpected request: {request.method} {request.url}")
+
+    connector = FoundrySourceConnector(transport=httpx2.MockTransport(handler))
+    binding = _source_binding(max_file_bytes=8, max_total_bytes=9)
+    context = _secret()
+
+    async def run() -> None:
+        plan = await connector.plan_read(binding=binding, context=context)
+        async for _ in connector.read_batches(
+            plan=plan, binding=binding, context=context
+        ):
+            pass
+
+    with pytest.raises(ConnectorReadError, match="content exceeds max_bytes"):
+        anyio.run(run)
+    assert content_requests == ["first.csv", "second.csv"]
+    assert len(second_file_chunks) == 1
+
+
+def test_source_does_not_start_another_file_after_total_budget_is_exhausted() -> None:
+    content_requests: list[str] = []
+
+    def handler(request: httpx2.Request) -> httpx2.Response:
+        if request.url.path.endswith(f"/transactions/{TRANSACTION}"):
+            return httpx2.Response(200, json={"status": "COMMITTED"})
+        if request.url.path.endswith("/files"):
+            return httpx2.Response(
+                200,
+                json={"data": [{"path": "first.csv"}, {"path": "second.csv"}]},
+            )
+        if request.url.path.endswith("/content"):
+            path = unquote(
+                request.url.path.split("/files/", 1)[1].removesuffix("/content")
+            )
+            content_requests.append(path)
+            return httpx2.Response(200, content=b"id\n1\n")
+        raise AssertionError(f"unexpected request: {request.method} {request.url}")
+
+    connector = FoundrySourceConnector(transport=httpx2.MockTransport(handler))
+    binding = _source_binding(max_file_bytes=8, max_total_bytes=5)
+    context = _secret()
+
+    async def run() -> None:
+        plan = await connector.plan_read(binding=binding, context=context)
+        async for _ in connector.read_batches(
+            plan=plan, binding=binding, context=context
+        ):
+            pass
+
+    with pytest.raises(ConnectorReadError, match="source exceeds max_total_bytes"):
+        anyio.run(run)
+    assert content_requests == ["first.csv"]
 
 
 @pytest.mark.parametrize(
