@@ -572,16 +572,11 @@ class SqlModelRevisionRegistry:
                         "Revision is immutable; cannot overwrite",
                         extensions={"revision_id": revision.revision_id},
                     )
-                session.connection().execute(
-                    text(
-                        "UPDATE cp_registry_logical SET metadata_json = metadata_json "
-                        "WHERE tenant_id = :tenant_id AND workspace_id = :workspace_id "
-                        "AND logical_id = :logical_id"
-                    ).bindparams(
-                        tenant_id=ctx.tenant.tenant_id,
-                        workspace_id=ctx.workspace.workspace_id,
-                        logical_id=revision.logical_id,
-                    )
+                self._lock_logical_row(
+                    session,
+                    ctx.tenant.tenant_id,
+                    ctx.workspace.workspace_id,
+                    revision.logical_id,
                 )
                 logical = self._logical_row(
                     session,
@@ -609,6 +604,12 @@ class SqlModelRevisionRegistry:
                             "revision_kind": revision.kind,
                         },
                     )
+                latest = self._latest_revision_row(
+                    session,
+                    ctx.tenant.tenant_id,
+                    ctx.workspace.workspace_id,
+                    revision.logical_id,
+                )
                 session.add(
                     RevisionRow(
                         tenant_id=revision.tenant_id,
@@ -617,7 +618,10 @@ class SqlModelRevisionRegistry:
                         revision_id=revision.revision_id,
                         content_fingerprint=content_fingerprint(safe_content),
                         content_json=json.dumps(safe_content, sort_keys=True),
-                        created_at=revision.created_at or _utcnow_iso(),
+                        created_at=_timestamp_after_current(
+                            latest.created_at if latest is not None else None,
+                            revision.created_at,
+                        ),
                         kind=revision.kind,
                         signature_placeholder=(
                             redact_control_plane_text(revision.signature_placeholder)
@@ -662,18 +666,14 @@ class SqlModelRevisionRegistry:
         try:
             with session_scope(self.engine) as session:
                 self._assert_scope_active(ctx)
-                # The no-op update acquires a row write lock on databases that
-                # support it and serializes SQLite writers as well.
-                lock_stmt = text(
-                    "UPDATE cp_registry_logical SET metadata_json = metadata_json "
-                    "WHERE tenant_id = :tenant_id AND workspace_id = :workspace_id "
-                    "AND logical_id = :logical_id"
-                ).bindparams(
-                    tenant_id=ctx.tenant.tenant_id,
-                    workspace_id=ctx.workspace.workspace_id,
-                    logical_id=revision.logical_id,
+                # All revision append paths take this lock before checking the
+                # head, so registrations and promotions cannot bypass a CAS.
+                self._lock_logical_row(
+                    session,
+                    ctx.tenant.tenant_id,
+                    ctx.workspace.workspace_id,
+                    revision.logical_id,
                 )
-                session.connection().execute(lock_stmt)
                 logical = self._logical_row(
                     session,
                     ctx.tenant.tenant_id,
@@ -686,19 +686,11 @@ class SqlModelRevisionRegistry:
                     raise ControlPlaneError.conflict(
                         "Definition changed since the edit was prepared"
                     )
-                revisions = session.exec(
-                    select(RevisionRow).where(
-                        RevisionRow.tenant_id == ctx.tenant.tenant_id,
-                        RevisionRow.workspace_id == ctx.workspace.workspace_id,
-                        RevisionRow.logical_id == revision.logical_id,
-                    )
-                ).all()
-                latest = max(
-                    revisions,
-                    key=lambda item: revision_order_key(
-                        item.created_at, item.revision_id
-                    ),
-                    default=None,
+                latest = self._latest_revision_row(
+                    session,
+                    ctx.tenant.tenant_id,
+                    ctx.workspace.workspace_id,
+                    revision.logical_id,
                 )
                 if (
                     latest is None
@@ -884,6 +876,12 @@ class SqlModelRevisionRegistry:
     ) -> PromotionRecord:
         with session_scope(self.engine) as session:
             self._assert_scope_active(ctx)
+            self._lock_logical_row(
+                session,
+                ctx.tenant.tenant_id,
+                ctx.workspace.workspace_id,
+                logical_id,
+            )
             source_row = self._revision_row(
                 session,
                 ctx.tenant.tenant_id,
@@ -904,7 +902,16 @@ class SqlModelRevisionRegistry:
             )
             body = safe_registry_content(requested_body)
             new_revision_id = f"rev-{uuid.uuid4().hex[:16]}"
-            created = _utcnow_iso()
+            latest = self._latest_revision_row(
+                session,
+                ctx.tenant.tenant_id,
+                ctx.workspace.workspace_id,
+                logical_id,
+            )
+            created = _timestamp_after_current(
+                latest.created_at if latest is not None else None,
+                _utcnow_iso(),
+            )
             new_rev = RegistryRevision(
                 logical_id=logical_id,
                 revision_id=new_revision_id,
@@ -1010,6 +1017,40 @@ class SqlModelRevisionRegistry:
                 LogicalIdentityRow.logical_id == logical_id,
             )
         ).first()
+
+    @staticmethod
+    def _lock_logical_row(
+        session: Session, tenant_id: str, workspace_id: str, logical_id: str
+    ) -> None:
+        """Serialize appends for one logical identity across database writers."""
+        session.connection().execute(
+            text(
+                "UPDATE cp_registry_logical SET metadata_json = metadata_json "
+                "WHERE tenant_id = :tenant_id AND workspace_id = :workspace_id "
+                "AND logical_id = :logical_id"
+            ).bindparams(
+                tenant_id=tenant_id,
+                workspace_id=workspace_id,
+                logical_id=logical_id,
+            )
+        )
+
+    @staticmethod
+    def _latest_revision_row(
+        session: Session, tenant_id: str, workspace_id: str, logical_id: str
+    ) -> RevisionRow | None:
+        revisions = session.exec(
+            select(RevisionRow).where(
+                RevisionRow.tenant_id == tenant_id,
+                RevisionRow.workspace_id == workspace_id,
+                RevisionRow.logical_id == logical_id,
+            )
+        ).all()
+        return max(
+            revisions,
+            key=lambda item: revision_order_key(item.created_at, item.revision_id),
+            default=None,
+        )
 
     @staticmethod
     def _revision_row(

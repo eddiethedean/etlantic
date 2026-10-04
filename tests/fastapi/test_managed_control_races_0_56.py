@@ -473,4 +473,17 @@ def test_revision_repository_compare_and_swap_rejects_stale_head(
         results = list(pool.map(edit, (2, 3)))
 
     assert sorted(results) == ["accepted", "conflict:409"]
-    assert definitions.get(ctx, "revision-race")["version"] in {2, 3}
+    winning_document = definitions.get(ctx, "revision-race")
+    assert winning_document["version"] in {2, 3}
+
+    registered = {"name": "pipe", "version": 4}
+    definitions.put(ctx, "revision-race", registered)
+    with pytest.raises(ControlPlaneError) as stale:
+        definitions.compare_and_swap(
+            ctx,
+            "revision-race",
+            winning_document,
+            {"name": "pipe", "version": 5},
+        )
+    assert stale.value.status == 409
+    assert definitions.get(ctx, "revision-race") == registered

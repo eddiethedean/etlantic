@@ -474,11 +474,25 @@ class MemoryRevisionRegistry:
                     },
                 )
             safe_content = safe_registry_content(revision.content)
+            current = max(
+                (
+                    item
+                    for item in self._revisions.values()
+                    if item.tenant_id == ctx.tenant.tenant_id
+                    and item.workspace_id == ctx.workspace.workspace_id
+                    and item.logical_id == revision.logical_id
+                ),
+                key=lambda item: revision_order_key(item.created_at, item.revision_id),
+                default=None,
+            )
             stored = replace(
                 revision,
                 content=safe_content,
                 content_fingerprint=content_fingerprint(safe_content),
-                created_at=revision.created_at or _utcnow_iso(),
+                created_at=_timestamp_after_current(
+                    current.created_at if current is not None else None,
+                    revision.created_at,
+                ),
                 signature_placeholder=(
                     redact_control_plane_text(revision.signature_placeholder)
                     if revision.signature_placeholder is not None
@@ -520,13 +534,7 @@ class MemoryRevisionRegistry:
                     "Definition changed since the edit was prepared"
                 )
             self.put_revision(
-                ctx,
-                replace(
-                    revision,
-                    created_at=_timestamp_after_current(
-                        current.created_at, revision.created_at
-                    ),
-                ),
+                ctx, revision
             )
 
     def get_revision(
@@ -639,6 +647,17 @@ class MemoryRevisionRegistry:
                     extensions={"revision_id": from_revision_id},
                 )
             source_snapshot = deepcopy(source)
+            current = max(
+                (
+                    item
+                    for item in self._revisions.values()
+                    if item.tenant_id == ctx.tenant.tenant_id
+                    and item.workspace_id == ctx.workspace.workspace_id
+                    and item.logical_id == logical_id
+                ),
+                key=lambda item: revision_order_key(item.created_at, item.revision_id),
+                default=None,
+            )
             requested_body = (
                 deepcopy(dict(content))
                 if content is not None
@@ -654,7 +673,9 @@ class MemoryRevisionRegistry:
                 workspace_id=ctx.workspace.workspace_id,
                 content_fingerprint=content_fingerprint(body),
                 content=body,
-                created_at=created,
+                created_at=_timestamp_after_current(
+                    current.created_at if current is not None else None, created
+                ),
                 kind=source.kind,
                 signature_placeholder=source.signature_placeholder,
                 provenance_placeholder={

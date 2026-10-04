@@ -223,7 +223,31 @@ def test_registry_definition_repository_round_trip(
         defs.compare_and_swap(ctx, "def-1", doc, {**doc, "name": "stale"})
     assert stale.value.status == 409
     assert defs.get(ctx, "def-1")["name"] == "demo-v2"
-    assert len(provider.revisions.list_revisions(ctx, "def-1")) == 2
+    registered = {**doc, "name": "demo-v3"}
+    defs.put(ctx, "def-1", registered)
+    with pytest.raises(ControlPlaneError) as stale_edit:
+        defs.compare_and_swap(ctx, "def-1", updated, {**doc, "name": "stale-edit"})
+    assert stale_edit.value.status == 409
+    assert defs.get(ctx, "def-1") == registered
+    registered_revision = defs.resolve_revision(ctx, "def-1", "current")
+    promoted = {**doc, "name": "demo-v4"}
+    provider.revisions.promote(
+        ctx,
+        logical_id="def-1",
+        from_revision_id=registered_revision.revision_id,
+        from_environment="development",
+        to_environment="production",
+        content={
+            "document": promoted,
+            "document_fingerprint": content_fingerprint(promoted),
+            "kind": "definition",
+        },
+    )
+    with pytest.raises(ControlPlaneError) as stale_promotion:
+        defs.compare_and_swap(ctx, "def-1", registered, {**doc, "name": "stale"})
+    assert stale_promotion.value.status == 409
+    assert defs.get(ctx, "def-1") == promoted
+    assert len(provider.revisions.list_revisions(ctx, "def-1")) == 4
 
 
 def test_sqlmodel_alias_and_immutability() -> None:
