@@ -21,6 +21,7 @@ from etlantic.control_plane.models import ControlPlaneContext
 from etlantic.control_plane.protocols import DefinitionResolution
 from etlantic.control_plane.registry_memory import (
     content_fingerprint,
+    revision_order_key,
     safe_registry_content,
 )
 from etlantic.control_plane.registry_models import (
@@ -52,11 +53,9 @@ class RegistryDefinitionRepository:
         revisions = self.registry.revisions.list_revisions(ctx, definition_id)
         if not revisions:
             raise ControlPlaneError.not_found(f"Definition {definition_id!r} not found")
-        # Prefer newest created_at; revision_id sort alone is not chronological
-        # when ids are UUID-based.
         latest = max(
             revisions,
-            key=lambda rev: (rev.created_at or "", rev.revision_id),
+            key=lambda rev: revision_order_key(rev.created_at, rev.revision_id),
         )
         document = latest.content.get("document")
         if not isinstance(document, Mapping):
@@ -84,7 +83,7 @@ class RegistryDefinitionRepository:
                 )
             revision = max(
                 revisions,
-                key=lambda rev: (rev.created_at or "", rev.revision_id),
+                key=lambda rev: revision_order_key(rev.created_at, rev.revision_id),
             )
         else:
             try:

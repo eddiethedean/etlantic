@@ -449,11 +449,11 @@ def test_revision_repository_compare_and_swap_rejects_stale_head(
     ctx = _context()
     definitions = RegistryDefinitionRepository(MemoryRegistryProvider())
     original = {"name": "pipe", "version": 1}
-    definitions.put(ctx, "revision-race", original)
     monkeypatch.setattr(
         "etlantic.control_plane.registry_memory._utcnow_iso",
         lambda: "2000-01-01T00:00:00Z",
     )
+    definitions.put(ctx, "revision-race", original)
     barrier = Barrier(2)
 
     def edit(version: int) -> str:

@@ -34,7 +34,10 @@ from etlantic.control_plane import (
     redact_control_plane_payload,
 )
 from etlantic.control_plane.redaction import redact_control_plane_text
-from etlantic.control_plane.registry_memory import safe_registry_content
+from etlantic.control_plane.registry_memory import (
+    revision_order_key,
+    safe_registry_content,
+)
 from etlantic_sqlmodel.control_plane.models import (
     AliasRow,
     EnvironmentRow,
@@ -683,18 +686,20 @@ class SqlModelRevisionRegistry:
                     raise ControlPlaneError.conflict(
                         "Definition changed since the edit was prepared"
                     )
-                latest = session.exec(
-                    select(RevisionRow)
-                    .where(
+                revisions = session.exec(
+                    select(RevisionRow).where(
                         RevisionRow.tenant_id == ctx.tenant.tenant_id,
                         RevisionRow.workspace_id == ctx.workspace.workspace_id,
                         RevisionRow.logical_id == revision.logical_id,
                     )
-                    .order_by(
-                        text("created_at DESC NULLS LAST"),
-                        text("revision_id DESC"),
-                    )
-                ).first()
+                ).all()
+                latest = max(
+                    revisions,
+                    key=lambda item: revision_order_key(
+                        item.created_at, item.revision_id
+                    ),
+                    default=None,
+                )
                 if (
                     latest is None
                     or latest.content_fingerprint != expected_current_fingerprint

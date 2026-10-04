@@ -57,6 +57,24 @@ def _timestamp_after_current(current: str | None, candidate: str | None) -> str:
     return timestamp.astimezone(UTC).isoformat().replace("+00:00", "Z")
 
 
+def revision_order_key(
+    created_at: str | None,
+    revision_id: str,
+) -> tuple[datetime, str]:
+    """Order revisions by parsed UTC time, with IDs resolving equal timestamps."""
+    if created_at is None:
+        return datetime.min.replace(tzinfo=UTC), revision_id
+    try:
+        timestamp = datetime.fromisoformat(created_at.replace("Z", "+00:00"))
+    except ValueError as exc:
+        raise ControlPlaneError.conflict(
+            "Definition revision has an invalid timestamp"
+        ) from exc
+    if timestamp.tzinfo is None:
+        timestamp = timestamp.replace(tzinfo=UTC)
+    return timestamp.astimezone(UTC), revision_id
+
+
 def content_fingerprint(content: Mapping[str, Any]) -> str:
     """Deterministic fingerprint of a secret-free metadata document."""
     payload = json.dumps(dict(content), sort_keys=True, separators=(",", ":"))
@@ -491,7 +509,7 @@ class MemoryRevisionRegistry:
                     and item.workspace_id == ctx.workspace.workspace_id
                     and item.logical_id == revision.logical_id
                 ),
-                key=lambda item: (item.created_at or "", item.revision_id),
+                key=lambda item: revision_order_key(item.created_at, item.revision_id),
                 default=None,
             )
             if (
@@ -848,5 +866,6 @@ __all__ = [
     "MemoryTenantDirectory",
     "MemoryWorkspaceDirectory",
     "content_fingerprint",
+    "revision_order_key",
     "safe_registry_content",
 ]

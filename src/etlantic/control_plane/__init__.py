@@ -268,6 +268,7 @@ from etlantic.control_plane.registry_memory import (
     MemoryTenantDirectory,
     MemoryWorkspaceDirectory,
     content_fingerprint,
+    revision_order_key,
 )
 from etlantic.control_plane.registry_models import (
     ALIAS_RECORD_SCHEMA,
@@ -574,6 +575,7 @@ __all__ = [  # noqa: RUF022
     "compute_policy_fingerprint",
     "compute_record_hash",
     "content_fingerprint",
+    "revision_order_key",
     "decision_allows",
     "decision_requires_approval",
     "enforce_policy_decision",
