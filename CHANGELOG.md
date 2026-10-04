@@ -20,6 +20,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- Managed resume and checkpoint-backed repair reports persist their artifact
+  workspace identity for listing, download and retention. Cleanup preserves
+  files referenced by still-retained reports and denies downloads through
+  expired references (#220). Shared workspace execution and cleanup coordinate
+  across processes; legacy cleanup is repaired, and reference expiry survives
+  report-provider outages and result reconciliation. Reconciliation preserves
+  deferred deletion, unpublished expiry denies fallback downloads, and metadata
+  writes recover after worker crashes without stale nested locks. Scoped ownership
+  discovery cleans fallback-only runs, deferred references cannot starve cleanup,
+  and busy publication workspaces leave independent worker runs responsive.
+  Busy cleanup candidates leave the batch budget available for other workspaces;
+  execution lock waits stop on cancellation or lease loss before ETL begins.
 - SQL provision and cleanup actions propagate deadlines to database work, abort
   expired transactions, and keep workers responsive during blocked provider IO.
   Verified committed effects remain available after a timeout; same-key recovery

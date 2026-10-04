@@ -5,7 +5,10 @@ from __future__ import annotations
 import json
 import os
 import uuid
+from dataclasses import replace
+from datetime import UTC, datetime, timedelta
 from pathlib import Path
+from typing import Any
 
 import pytest
 
@@ -34,8 +37,17 @@ from etlantic.control_plane import (
     MemorySubmissionStore,
 )
 from etlantic.registry import BindingDescriptor, PlanningContext
+from etlantic.reports.model import PipelineRunReport
+from etlantic.reports.retention import ARTIFACT_STORAGE_RUN_ID_KEY
+from etlantic.runtime.artifact_retention import cleanup_expired_run_artifacts
+from etlantic.runtime.artifacts import artifact_storage_path
 from etlantic.runtime.execution_host import ExecutionHost
-from etlantic.runtime.managed_execution import ManagedExecutionAdapter
+from etlantic.runtime.managed_execution import (
+    ManagedExecutionAdapter,
+    managed_artifact_workspace,
+    managed_report_store,
+)
+from etlantic.runtime.request import MaterializationPolicy, RunRequest
 from etlantic.service import ManagedApplicationService
 from etlantic_fastapi import (
     ETLanticAPI,
@@ -140,6 +152,8 @@ def test_managed_repair_and_backfill_execute_selected_postgresql_partitions(
         "run.lineage",
         "run.repair",
         "run.backfill",
+        "run.artifacts",
+        "run.artifact.content",
     ):
         authz.grant(ctx, action)
 
@@ -155,6 +169,7 @@ def test_managed_repair_and_backfill_execute_selected_postgresql_partitions(
         events=events,
         profile="development",
         report_root=tmp_path / "reports",
+        artifact_root=tmp_path / "artifacts",
     )
 
     def planning_context(
@@ -200,18 +215,40 @@ def test_managed_repair_and_backfill_execute_selected_postgresql_partitions(
         runtime.register_sink_connector("postgresql", LivePostgresSinkConnector())
         return runtime
 
+    adapter = ManagedExecutionAdapter(
+        runtime_factory=runtime_factory,
+        report_root=tmp_path / "reports",
+        artifact_root=tmp_path / "artifacts",
+    )
+    checkpoint_id = f"checkpoint:{schema_suffix}"
+
+    def checkpointed_runner(
+        worker_ctx: ControlPlaneContext, **kwargs: Any
+    ) -> PipelineRunReport:
+        report = adapter(worker_ctx, **kwargs)
+        if kwargs["submission"].operation == "run.submit":
+            durable.compare_and_swap_checkpoint(
+                worker_ctx,
+                checkpoint_id,
+                expected_version=None,
+                value_fingerprint="a" * 64,
+                attempt_id=kwargs["attempt_id"],
+                fencing_token=kwargs["fencing_token"],
+            )
+        return report
+
     host = ExecutionHost(
         durable,
         owner_id=f"partition-worker-{schema_suffix}",
-        runner=ManagedExecutionAdapter(
-            runtime_factory=runtime_factory,
-            report_root=tmp_path / "reports",
-        ),
+        runner=checkpointed_runner,
     )
 
     try:
         parent = service.submit_run(
-            ctx, "partition-pipeline", idempotency_key=f"parent-{schema_suffix}"
+            ctx,
+            "partition-pipeline",
+            idempotency_key=f"parent-{schema_suffix}",
+            request=RunRequest(materialization=MaterializationPolicy.DURABLE),
         )
         assert isinstance(parent.resource_id, str)
         assert host.tick(ctx) == 1
@@ -245,7 +282,10 @@ def test_managed_repair_and_backfill_execute_selected_postgresql_partitions(
                 "X-Principal": "alice",
                 "Idempotency-Key": f"repair-{schema_suffix}",
             },
-            json={"invalidated_partition_ids": {"source": ["a"], "result": ["a"]}},
+            json={
+                "invalidated_partition_ids": {"source": ["a"], "result": ["a"]},
+                "checkpoint_id": checkpoint_id,
+            },
         )
         assert response.status_code == 202, response.text
         repair = response.json()
@@ -253,6 +293,16 @@ def test_managed_repair_and_backfill_execute_selected_postgresql_partitions(
         repair_run_id = repair["resource_id"]
         assert isinstance(repair_run_id, str)
         assert service.get_run_status(ctx, repair_run_id)["status"] == "completed"
+        artifacts = service.list_run_artifacts(ctx, repair_run_id)
+        assert artifacts and all(item["content_available"] for item in artifacts)
+        for artifact in artifacts:
+            content, media_type = service.get_run_artifact_content(
+                ctx, repair_run_id, artifact["artifact_id"]
+            )
+            assert media_type == "application/json"
+            assert json.loads(content) == [
+                {"id": "a-old", "payload": "repaired-a", "partition_key": "a"}
+            ]
         repair_record = durable.get_submission(ctx, repair["submission_id"])
         repair_envelope = json.loads(repair_record.input_snapshot or "{}")
         evidence_refs = repair_envelope["evidence_refs"]
@@ -310,6 +360,50 @@ def test_managed_repair_and_backfill_execute_selected_postgresql_partitions(
             "to": backfill.resource_id,
             "kind": "backfill",
         } in service.get_run_lineage(ctx, backfill.resource_id)["edges"]
+        reports = managed_report_store(ctx, report_root=tmp_path / "reports")
+        repair_report = reports.get(repair_run_id)
+        parent_report = reports.get(parent.resource_id)
+        assert repair_report is not None and parent_report is not None
+        assert repair_report.metadata[ARTIFACT_STORAGE_RUN_ID_KEY] == parent.resource_id
+        workspace = managed_artifact_workspace(
+            ctx, parent.resource_id, artifact_root=tmp_path / "artifacts"
+        )
+        parent_files = [
+            artifact_storage_path(workspace, item.identity)
+            for item in parent_report.artifacts
+            if item.strategy == "durable"
+        ]
+        repair_files = [
+            artifact_storage_path(workspace, item.identity)
+            for item in repair_report.artifacts
+            if item.strategy == "durable"
+        ]
+        assert parent_files and repair_files
+        now = datetime.now(UTC)
+        ended = now - timedelta(days=2)
+        reports.put(
+            replace(
+                repair_report,
+                started_at=ended - timedelta(minutes=1),
+                ended_at=ended,
+                metadata={
+                    key: value
+                    for key, value in repair_report.metadata.items()
+                    if key != ARTIFACT_STORAGE_RUN_ID_KEY
+                },
+            )
+        )
+        cleanup = cleanup_expired_run_artifacts(
+            ctx,
+            report_store=reports,
+            report_resolver=lambda report: service.resolve_artifact_report(ctx, report),
+            artifact_root=tmp_path / "artifacts",
+            retention_seconds=60,
+            now=now,
+        )
+        assert cleanup.completed_reports == 1
+        assert all(path.exists() for path in parent_files)
+        assert not any(path.exists() for path in repair_files)
     finally:
         with engine.begin() as connection:
             for table in (

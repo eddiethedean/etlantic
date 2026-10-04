@@ -230,6 +230,9 @@ class ManagedBackend:
                 report_store_factory=self.report_store_factory,
                 report_store_scope_key=self.report_store_scope_key,
                 artifact_root=self.artifact_root,
+                artifact_report_resolver=self.api.managed_service.resolve_artifact_report
+                if self.api.managed_service is not None
+                else None,
                 event_publisher=publish_event,
                 profile=self.execution_profile,
                 input_resource_store=self.input_resources,
@@ -252,11 +255,18 @@ class ManagedBackend:
             return ArtifactRetentionResult(enabled=False)
         from etlantic.runtime.artifact_retention import cleanup_expired_run_artifacts
 
+        service = self.api.managed_service
         return cleanup_expired_run_artifacts(
             ctx,
             report_store=self.report_store_factory(ctx),
             artifact_root=self.artifact_root,
             retention_seconds=self.run_artifact_retention_seconds,
+            report_resolver=(
+                lambda report: service.resolve_artifact_report(ctx, report)
+            )
+            if service is not None
+            else None,
+            report_store_factory=lambda: self.report_store_factory(ctx),
             limit=(self.run_artifact_cleanup_batch_size if limit is None else limit),
             now=now,
         )
