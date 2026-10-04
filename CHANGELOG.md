@@ -32,8 +32,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   and busy publication workspaces leave independent worker runs responsive.
   Busy cleanup candidates leave the batch budget available for other workspaces;
   execution lock waits stop on cancellation or lease loss before ETL begins.
-  Runs without durable artifacts avoid artifact-root coordination writes, and
-  idle retention scans avoid refreshing report inventory for every workspace.
+  In-memory plans avoid artifact-root coordination, and idle retention retires
+  completed ownership records without refreshing inventory per workspace.
 - SQL provision and cleanup actions propagate deadlines to database work, abort
   expired transactions, and keep workers responsive during blocked provider IO.
   Verified committed effects remain available after a timeout; same-key recovery

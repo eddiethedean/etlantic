@@ -428,7 +428,38 @@ class ManagedExecutionAdapter:
         workspace = managed_artifact_workspace(
             ctx, storage_id, artifact_root=self.artifact_root
         )
-        request = RunRequest.from_dict(envelope.effective_request)
+        try:
+            request = RunRequest.from_dict(envelope.effective_request)
+            if request.materialization in {
+                MaterializationPolicy.NONE,
+                MaterializationPolicy.DURABLE,
+            }:
+                durable_artifacts = (
+                    request.materialization is MaterializationPolicy.DURABLE
+                )
+            else:
+                plan = plan_from_json(
+                    json.dumps(
+                        mutable_copy(envelope.plan_document),
+                        sort_keys=True,
+                        separators=(",", ":"),
+                        ensure_ascii=False,
+                        allow_nan=False,
+                    ),
+                    verify=True,
+                )
+                durable_artifacts = (
+                    True
+                    if isinstance(plan, AdaptivePipelinePlan)
+                    else any(
+                        resolution.artifact.strategy.value == "durable"
+                        for resolution in plan.output_resolutions
+                    )
+                )
+        except Exception as exc:
+            raise ExecutionRejected(
+                "Accepted plan or run controls are invalid"
+            ) from exc
         evidence = envelope.evidence_refs or {}
         shared_workspace = any(
             isinstance(evidence.get(key), str) and evidence[key].strip()
@@ -439,11 +470,7 @@ class ManagedExecutionAdapter:
             RunIntent.REPAIR,
             RunIntent.BACKFILL,
         } or submission.operation in {"run.resume", "run.repair", "run.backfill"}
-        if (
-            request.materialization is MaterializationPolicy.NONE
-            and not shared_workspace
-            and not lifecycle_request
-        ):
+        if not durable_artifacts and not shared_workspace and not lifecycle_request:
             return self._execute(
                 ctx,
                 submission=submission,

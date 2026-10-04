@@ -5,6 +5,7 @@ from __future__ import annotations
 import hashlib
 import os
 from collections.abc import Callable
+from contextlib import nullcontext
 from dataclasses import replace
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
@@ -205,18 +206,28 @@ def cleanup_expired_run_artifacts(
             )
             if not ownership.expired:
                 continue
-            # Provider reports are needed only when an expired unpublished
-            # reference may share bytes with a published owner. Keep the
-            # inventory refresh inside the workspace lock so a just-published
-            # child report cannot be missed by cleanup.
-            reports = [normalize(item) for item in inventory()]
-            ownership = read_artifact_ownership(
-                workspace,
-                cutoff,
-                report_run_ids={item.run_id for item in reports},
-                retention_seconds=retention_seconds,
+            artifact_files_exist = any(
+                (workspace / f"{reference.identity}.json").exists()
+                or (workspace / f"{reference.identity}.json").is_symlink()
+                for reference in ownership.expired
             )
-            protected = protected_references(reports, workspace) | ownership.protected
+            if artifact_files_exist:
+                # Refresh inside the workspace lock before touching existing
+                # bytes: a just-published child may share this artifact.
+                reports = [normalize(item) for item in inventory()]
+                ownership = read_artifact_ownership(
+                    workspace,
+                    cutoff,
+                    report_run_ids={item.run_id for item in reports},
+                    retention_seconds=retention_seconds,
+                )
+                protected = (
+                    protected_references(reports, workspace) | ownership.protected
+                )
+            else:
+                # Missing bytes cannot be downloaded or removed. Retire stale
+                # owner references without reloading the provider inventory.
+                protected = ownership.protected
             for reference in ownership.expired:
                 if touched_artifacts >= limit:
                     orphan_remaining = True
@@ -257,7 +268,15 @@ def cleanup_expired_run_artifacts(
         )
         if workspace in busy_workspaces:
             continue
-        with artifact_workspace_lock(workspace, blocking=False) as acquired:
+        has_durable_artifacts = any(
+            artifact.strategy == "durable" for artifact in candidate.artifacts
+        )
+        workspace_guard = (
+            artifact_workspace_lock(workspace, blocking=False)
+            if has_durable_artifacts
+            else nullcontext(True)
+        )
+        with workspace_guard as acquired:
             if not acquired:
                 busy = True
                 busy_workspaces.add(workspace)
@@ -267,6 +286,12 @@ def cleanup_expired_run_artifacts(
                 (item for item in reports if item.run_id == candidate.run_id), None
             )
             if report is None or not eligible(report):
+                continue
+            if not has_durable_artifacts and any(
+                artifact.strategy == "durable" for artifact in report.artifacts
+            ):
+                # The provider row gained durable references after the initial
+                # candidate snapshot. Defer it to a pass that takes the lock.
                 continue
             if artifact_storage_run_id(report) != artifact_storage_run_id(candidate):
                 raise ValueError("Artifact workspace changed during cleanup")

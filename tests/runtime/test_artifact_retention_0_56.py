@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import os
 from collections.abc import Callable
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
@@ -194,6 +195,7 @@ def test_idle_orphan_scan_inventory_does_not_scale_with_workspace_count(
         workspace = managed_artifact_workspace(ctx, run_id, artifact_root=artifact_root)
         record_artifact_ownership(workspace, report)
         store.put(report)
+        _write_artifact(ctx, artifact_root, run_id, f"artifact-{index}")
 
     inventory_reads = 0
 
@@ -215,6 +217,58 @@ def test_idle_orphan_scan_inventory_does_not_scale_with_workspace_count(
     # The pass performs bounded final inventory checks, not one refresh per
     # workspace with a live owner.
     assert inventory_reads <= 2
+
+    expired_at = now + timedelta(days=2)
+    completed = cleanup_expired_run_artifacts(
+        ctx,
+        report_store=store,
+        artifact_root=artifact_root,
+        retention_seconds=60,
+        report_store_factory=fresh_store,
+        now=expired_at,
+    )
+    assert completed.completed_reports == 20
+    assert completed.deleted_artifacts == 20
+    assert not completed.remaining_candidates
+
+    inventory_reads = 0
+    idle = cleanup_expired_run_artifacts(
+        ctx,
+        report_store=store,
+        artifact_root=artifact_root,
+        retention_seconds=60,
+        report_store_factory=fresh_store,
+        now=expired_at,
+    )
+    assert not idle.remaining_candidates
+    # Completed owners now have no artifact bytes and must not force a report
+    # inventory reload for every old workspace on subsequent polls.
+    assert inventory_reads <= 2
+
+
+@pytest.mark.skipif(os.name != "posix", reason="POSIX read-only mode")
+def test_cleanup_without_durable_artifacts_does_not_create_workspace(
+    tmp_path: Path,
+) -> None:
+    ctx, now = _ctx(), datetime.now(UTC)
+    store = ReportStore()
+    store.put(_report("memory-only", ended_at=now - timedelta(days=2), artifacts=()))
+    artifact_root = tmp_path / "readonly-artifacts"
+    artifact_root.mkdir()
+    artifact_root.chmod(0o555)
+    try:
+        result = cleanup_expired_run_artifacts(
+            ctx,
+            report_store=store,
+            artifact_root=artifact_root,
+            retention_seconds=60,
+            now=now,
+        )
+        assert result.completed_reports == 1
+        assert not result.remaining_candidates
+        assert list(artifact_root.iterdir()) == []
+    finally:
+        artifact_root.chmod(0o755)
 
 
 def test_unpublished_only_cleanup_is_bounded_and_resumes_after_restart(

@@ -58,6 +58,10 @@ class ArtifactPipeline(Pipeline):
     output: Load[Row] = Load(input=source, asset="output")
 
 
+class SourceOnlyPipeline(Pipeline):
+    source: Extract[Row] = Extract(asset="input")
+
+
 @pytest.mark.parametrize("generations", [1, 2])
 def test_fallback_only_artifacts_expire_without_published_report_rows(
     tmp_path: Path, generations: int
@@ -593,6 +597,47 @@ def test_non_durable_run_does_not_write_to_artifact_root(tmp_path: Path) -> None
         host = ExecutionHost(
             durable,
             owner_id="in-memory-worker",
+            runner=ManagedExecutionAdapter(
+                artifact_root=readonly_root,
+                report_store_factory=lambda _context: reports,
+            ),
+        )
+        assert host.tick(ctx) == 1
+        assert (
+            durable.get_submission(ctx, submission.submission_id).status == "completed"
+        )
+        assert submission.resource_id is not None
+        report = reports.get(submission.resource_id)
+        assert report is not None and report.status.value == "succeeded"
+        assert not any(artifact.strategy == "durable" for artifact in report.artifacts)
+        assert list(readonly_root.iterdir()) == []
+    finally:
+        readonly_root.chmod(0o755)
+
+
+@pytest.mark.skipif(os.name != "posix", reason="POSIX read-only mode")
+def test_default_in_memory_plan_does_not_write_to_artifact_root(
+    tmp_path: Path,
+) -> None:
+    ctx, service, durable, _, _, _, _, _, _ = _execute_resumed_run(
+        tmp_path, generations=1, publication_fallback=False
+    )
+    service.register_definition(
+        ctx,
+        "source-only",
+        pipeline_to_dict(definition_from_pipeline(SourceOnlyPipeline)),
+    )
+    readonly_root = tmp_path / "readonly-artifacts"
+    readonly_root.mkdir()
+    readonly_root.chmod(0o555)
+    reports = ReportStore()
+    try:
+        submission = service.submit_run(
+            ctx, "source-only", idempotency_key="default-in-memory"
+        )
+        host = ExecutionHost(
+            durable,
+            owner_id="default-in-memory-worker",
             runner=ManagedExecutionAdapter(
                 artifact_root=readonly_root,
                 report_store_factory=lambda _context: reports,
