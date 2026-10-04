@@ -179,5 +179,41 @@ class RegistryDefinitionRepository:
         self.registry.revisions.put_revision(ctx, revision)
         return revision.revision_id
 
+    def compare_and_swap(
+        self,
+        ctx: ControlPlaneContext,
+        definition_id: str,
+        expected_document: Mapping[str, Any],
+        document: Mapping[str, Any],
+    ) -> str:
+        """Append a definition revision against an atomically checked head."""
+        expected_content = _document_content(expected_document)
+        content = _document_content(document)
+        revision = RegistryRevision(
+            logical_id=definition_id,
+            revision_id=f"defrev-{uuid.uuid4().hex[:16]}",
+            tenant_id=ctx.tenant.tenant_id,
+            workspace_id=ctx.workspace.workspace_id,
+            content_fingerprint=content_fingerprint(content),
+            content=content,
+            kind=DEFINITION_KIND,
+        )
+        put_if_current = getattr(
+            self.registry.revisions, "put_revision_if_current", None
+        )
+        if not callable(put_if_current):
+            raise ControlPlaneError(
+                "Registry provider does not support atomic definition edits",
+                code="PMCP501",
+                status=501,
+                title="Not Implemented",
+            )
+        put_if_current(
+            ctx,
+            revision,
+            expected_current_fingerprint=content_fingerprint(expected_content),
+        )
+        return revision.revision_id
+
 
 __all__ = ["DEFINITION_KIND", "RegistryDefinitionRepository"]

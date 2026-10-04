@@ -85,6 +85,21 @@ class DefinitionRepository(Protocol):
 
 
 @runtime_checkable
+class CompareAndSwapDefinitionRepository(Protocol):
+    """Optional repository extension for atomic definition edits."""
+
+    def compare_and_swap(
+        self,
+        ctx: ControlPlaneContext,
+        definition_id: str,
+        expected_document: Mapping[str, Any],
+        document: Mapping[str, Any],
+    ) -> str | None:
+        """Atomically replace the current document when it matches the snapshot."""
+        ...
+
+
+@runtime_checkable
 class RevisionedDefinitionRepository(Protocol):
     """Optional extension for repositories that resolve immutable revisions."""
 

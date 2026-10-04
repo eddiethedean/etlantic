@@ -358,5 +358,10 @@ def test_definition_repo_scoped(tmp_path: Path) -> None:
     assert repo.get(a, "pipe")["owner"] == "a"
     assert repo.get(b, "pipe")["owner"] == "b"
     assert list(repo.list(a)) == ["pipe"]
+    repo.compare_and_swap(a, "pipe", {"owner": "a"}, {"owner": "a-edited"})
+    with pytest.raises(ControlPlaneError) as stale:
+        repo.compare_and_swap(a, "pipe", {"owner": "a"}, {"owner": "stale"})
+    assert stale.value.status == 409
+    assert repo.get(a, "pipe")["owner"] == "a-edited"
     with pytest.raises(ControlPlaneError):
         repo.get(a, "missing")

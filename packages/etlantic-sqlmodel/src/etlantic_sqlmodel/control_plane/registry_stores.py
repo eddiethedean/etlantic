@@ -16,6 +16,7 @@ from typing import Any
 
 from sqlalchemy.engine import Engine
 from sqlalchemy.exc import IntegrityError
+from sqlalchemy.sql import text
 
 from etlantic.control_plane import (
     AliasRecord,
@@ -547,6 +548,17 @@ class SqlModelRevisionRegistry:
                         "Revision is immutable; cannot overwrite",
                         extensions={"revision_id": revision.revision_id},
                     )
+                session.connection().execute(
+                    text(
+                        "UPDATE cp_registry_logical SET metadata_json = metadata_json "
+                        "WHERE tenant_id = :tenant_id AND workspace_id = :workspace_id "
+                        "AND logical_id = :logical_id"
+                    ).bindparams(
+                        tenant_id=ctx.tenant.tenant_id,
+                        workspace_id=ctx.workspace.workspace_id,
+                        logical_id=revision.logical_id,
+                    )
+                )
                 logical = self._logical_row(
                     session,
                     ctx.tenant.tenant_id,
@@ -572,6 +584,112 @@ class SqlModelRevisionRegistry:
                             "logical_kind": logical.kind,
                             "revision_kind": revision.kind,
                         },
+                    )
+                session.add(
+                    RevisionRow(
+                        tenant_id=revision.tenant_id,
+                        workspace_id=revision.workspace_id,
+                        logical_id=revision.logical_id,
+                        revision_id=revision.revision_id,
+                        content_fingerprint=content_fingerprint(safe_content),
+                        content_json=json.dumps(safe_content, sort_keys=True),
+                        created_at=revision.created_at or _utcnow_iso(),
+                        kind=revision.kind,
+                        signature_placeholder=(
+                            redact_control_plane_text(revision.signature_placeholder)
+                            if revision.signature_placeholder is not None
+                            else None
+                        ),
+                        provenance_json=(
+                            _meta(revision.provenance_placeholder)
+                            if revision.provenance_placeholder is not None
+                            else None
+                        ),
+                    )
+                )
+        except IntegrityError as exc:
+            raise ControlPlaneError.conflict(
+                "Revision is immutable; cannot overwrite",
+                extensions={"revision_id": revision.revision_id},
+            ) from exc
+
+    def put_revision_if_current(
+        self,
+        ctx: ControlPlaneContext,
+        revision: RegistryRevision,
+        *,
+        expected_current_fingerprint: str,
+    ) -> None:
+        """Lock the logical identity, verify its head, and append atomically."""
+        if (
+            revision.tenant_id != ctx.tenant.tenant_id
+            or revision.workspace_id != ctx.workspace.workspace_id
+        ):
+            raise ControlPlaneError.not_found(
+                "Revision not found",
+                extensions={"revision_id": revision.revision_id},
+            )
+        if revision.content_fingerprint != content_fingerprint(revision.content):
+            raise ControlPlaneError.conflict(
+                "Revision content fingerprint mismatch",
+                extensions={"revision_id": revision.revision_id},
+            )
+        safe_content = safe_registry_content(revision.content)
+        try:
+            with session_scope(self.engine) as session:
+                self._assert_scope_active(ctx)
+                # The no-op update acquires a row write lock on databases that
+                # support it and serializes SQLite writers as well.
+                lock_stmt = text(
+                    "UPDATE cp_registry_logical SET metadata_json = metadata_json "
+                    "WHERE tenant_id = :tenant_id AND workspace_id = :workspace_id "
+                    "AND logical_id = :logical_id"
+                ).bindparams(
+                    tenant_id=ctx.tenant.tenant_id,
+                    workspace_id=ctx.workspace.workspace_id,
+                    logical_id=revision.logical_id,
+                )
+                session.connection().execute(lock_stmt)
+                logical = self._logical_row(
+                    session,
+                    ctx.tenant.tenant_id,
+                    ctx.workspace.workspace_id,
+                    revision.logical_id,
+                )
+                if logical is None or (
+                    revision.kind is not None and logical.kind != revision.kind
+                ):
+                    raise ControlPlaneError.conflict(
+                        "Definition changed since the edit was prepared"
+                    )
+                latest = session.exec(
+                    select(RevisionRow)
+                    .where(
+                        RevisionRow.tenant_id == ctx.tenant.tenant_id,
+                        RevisionRow.workspace_id == ctx.workspace.workspace_id,
+                        RevisionRow.logical_id == revision.logical_id,
+                    )
+                    .order_by(text("created_at DESC"), text("revision_id DESC"))
+                ).first()
+                if (
+                    latest is None
+                    or latest.content_fingerprint != expected_current_fingerprint
+                ):
+                    raise ControlPlaneError.conflict(
+                        "Definition changed since the edit was prepared"
+                    )
+                if (
+                    self._revision_row(
+                        session,
+                        ctx.tenant.tenant_id,
+                        ctx.workspace.workspace_id,
+                        revision.revision_id,
+                    )
+                    is not None
+                ):
+                    raise ControlPlaneError.conflict(
+                        "Revision is immutable; cannot overwrite",
+                        extensions={"revision_id": revision.revision_id},
                     )
                 session.add(
                     RevisionRow(

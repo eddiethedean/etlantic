@@ -120,6 +120,21 @@ class RevisionRegistry(Protocol):
         """List revisions for a logical identity inside ``ctx`` scope."""
         ...
 
+
+@runtime_checkable
+class CompareAndSwapRevisionRegistry(Protocol):
+    """Optional registry extension for atomic append against the current head."""
+
+    def put_revision_if_current(
+        self,
+        ctx: ControlPlaneContext,
+        revision: RegistryRevision,
+        *,
+        expected_current_fingerprint: str,
+    ) -> None:
+        """Append only when the current content fingerprint still matches."""
+        ...
+
     def put_alias(self, ctx: ControlPlaneContext, alias: AliasRecord) -> AliasRecord:
         """Create or replace an alias mapping to a revision; return stored record."""
         ...

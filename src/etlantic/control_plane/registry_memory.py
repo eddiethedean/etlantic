@@ -453,6 +453,35 @@ class MemoryRevisionRegistry:
             )
             self._revisions[key] = stored
 
+    def put_revision_if_current(
+        self,
+        ctx: ControlPlaneContext,
+        revision: RegistryRevision,
+        *,
+        expected_current_fingerprint: str,
+    ) -> None:
+        """Atomically check a logical head and append its next revision."""
+        with self._lock:
+            current = max(
+                (
+                    item
+                    for item in self._revisions.values()
+                    if item.tenant_id == ctx.tenant.tenant_id
+                    and item.workspace_id == ctx.workspace.workspace_id
+                    and item.logical_id == revision.logical_id
+                ),
+                key=lambda item: (item.created_at or "", item.revision_id),
+                default=None,
+            )
+            if (
+                current is None
+                or current.content_fingerprint != expected_current_fingerprint
+            ):
+                raise ControlPlaneError.conflict(
+                    "Definition changed since the edit was prepared"
+                )
+            self.put_revision(ctx, revision)
+
     def get_revision(
         self,
         ctx: ControlPlaneContext,

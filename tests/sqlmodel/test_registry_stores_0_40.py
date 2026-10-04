@@ -207,7 +207,11 @@ def test_registry_definition_repository_round_trip() -> None:
     defs.put(ctx, "def-1", doc)
     assert defs.get(ctx, "def-1") == doc
     assert defs.list(ctx) == ["def-1"]
-    defs.put(ctx, "def-1", {**doc, "name": "demo-v2"})
+    updated = {**doc, "name": "demo-v2"}
+    defs.compare_and_swap(ctx, "def-1", doc, updated)
+    with pytest.raises(ControlPlaneError) as stale:
+        defs.compare_and_swap(ctx, "def-1", doc, {**doc, "name": "stale"})
+    assert stale.value.status == 409
     assert defs.get(ctx, "def-1")["name"] == "demo-v2"
     assert len(provider.revisions.list_revisions(ctx, "def-1")) == 2
 

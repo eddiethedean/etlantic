@@ -464,7 +464,9 @@ class ManagedApplicationService:
                 type="etlantic.control_plane/validation_error",
             ) from exc
         canonical = pipeline_to_dict(result.definition)
-        revision_id = self._store_definition(ctx, definition_id, canonical)
+        revision_id = self._compare_and_swap_definition(
+            ctx, definition_id, document, canonical
+        )
         response = {
             "definition_id": definition_id,
             "fingerprint": result.fingerprint,
@@ -3251,6 +3253,34 @@ class ManagedApplicationService:
             self.definitions.put(ctx, definition_id, document)
             return None
         revision_id = append_revision(ctx, definition_id, document)
+        if type(revision_id) is not str or not revision_id.strip():
+            raise ControlPlaneError(
+                "Definition repository returned an invalid revision id",
+                code="PMCP500",
+                status=500,
+                title="Internal Server Error",
+            )
+        return revision_id
+
+    def _compare_and_swap_definition(
+        self,
+        ctx: ControlPlaneContext,
+        definition_id: str,
+        expected_document: Mapping[str, Any],
+        document: Mapping[str, Any],
+    ) -> str | None:
+        """Persist an edit only if its source snapshot remains current."""
+        compare_and_swap = getattr(self.definitions, "compare_and_swap", None)
+        if not callable(compare_and_swap):
+            raise ControlPlaneError(
+                "Definition repository does not support atomic edits",
+                code="PMCP501",
+                status=501,
+                title="Not Implemented",
+            )
+        revision_id = compare_and_swap(ctx, definition_id, expected_document, document)
+        if revision_id is None:
+            return None
         if type(revision_id) is not str or not revision_id.strip():
             raise ControlPlaneError(
                 "Definition repository returned an invalid revision id",
