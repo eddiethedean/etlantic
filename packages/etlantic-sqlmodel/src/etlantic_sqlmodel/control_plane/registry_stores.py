@@ -11,7 +11,7 @@ import uuid
 from collections.abc import Mapping, Sequence
 from copy import deepcopy
 from dataclasses import dataclass
-from datetime import UTC, datetime
+from datetime import UTC, datetime, timedelta
 from typing import Any
 
 from sqlalchemy.engine import Engine
@@ -51,6 +51,27 @@ from sqlmodel import Session, SQLModel, select
 
 def _utcnow_iso() -> str:
     return datetime.now(UTC).isoformat().replace("+00:00", "Z")
+
+
+def _timestamp_after_current(current: str | None, candidate: str | None) -> str:
+    """Choose a revision timestamp that sorts after the current head."""
+    try:
+        timestamp = datetime.fromisoformat(
+            (candidate or _utcnow_iso()).replace("Z", "+00:00")
+        )
+        if timestamp.tzinfo is None:
+            timestamp = timestamp.replace(tzinfo=UTC)
+        if current is not None:
+            current_timestamp = datetime.fromisoformat(current.replace("Z", "+00:00"))
+            if current_timestamp.tzinfo is None:
+                current_timestamp = current_timestamp.replace(tzinfo=UTC)
+            if timestamp <= current_timestamp:
+                timestamp = current_timestamp + timedelta(microseconds=1)
+    except ValueError as exc:
+        raise ControlPlaneError.conflict(
+            "Definition revision has an invalid timestamp"
+        ) from exc
+    return timestamp.astimezone(UTC).isoformat().replace("+00:00", "Z")
 
 
 def _require_active(lifecycle: LifecycleState | str, *, resource: str) -> None:
@@ -669,7 +690,10 @@ class SqlModelRevisionRegistry:
                         RevisionRow.workspace_id == ctx.workspace.workspace_id,
                         RevisionRow.logical_id == revision.logical_id,
                     )
-                    .order_by(text("created_at DESC"), text("revision_id DESC"))
+                    .order_by(
+                        text("created_at DESC NULLS LAST"),
+                        text("revision_id DESC"),
+                    )
                 ).first()
                 if (
                     latest is None
@@ -678,6 +702,9 @@ class SqlModelRevisionRegistry:
                     raise ControlPlaneError.conflict(
                         "Definition changed since the edit was prepared"
                     )
+                created_at = _timestamp_after_current(
+                    latest.created_at, revision.created_at
+                )
                 if (
                     self._revision_row(
                         session,
@@ -699,7 +726,7 @@ class SqlModelRevisionRegistry:
                         revision_id=revision.revision_id,
                         content_fingerprint=content_fingerprint(safe_content),
                         content_json=json.dumps(safe_content, sort_keys=True),
-                        created_at=revision.created_at or _utcnow_iso(),
+                        created_at=created_at,
                         kind=revision.kind,
                         signature_placeholder=(
                             redact_control_plane_text(revision.signature_placeholder)

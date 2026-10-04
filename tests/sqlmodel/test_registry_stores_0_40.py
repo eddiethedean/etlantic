@@ -12,6 +12,7 @@ pytest.importorskip("etlantic_sqlmodel")
 
 from etlantic.control_plane import (
     AliasRecord,
+    CompareAndSwapRevisionRegistry,
     ControlPlaneContext,
     ControlPlaneError,
     EnvironmentRef,
@@ -20,6 +21,7 @@ from etlantic.control_plane import (
     Principal,
     RegistryDefinitionRepository,
     RegistryRevision,
+    RevisionRegistry,
     SecurityDomain,
     TenantRecord,
     TenantRef,
@@ -196,17 +198,25 @@ def test_memory_vs_sqlmodel_promote_suspend_conformance() -> None:
         assert exc.value.status == 403, label
 
 
-def test_registry_definition_repository_round_trip() -> None:
+def test_registry_definition_repository_round_trip(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
     engine = create_sqlite_engine("sqlite://")
     apply_migrations(engine)
     provider = SqlModelRegistryProvider(engine)
     ctx = _ctx()
     _seed(provider, ctx)
+    assert isinstance(provider.revisions, RevisionRegistry)
+    assert isinstance(provider.revisions, CompareAndSwapRevisionRegistry)
     defs = RegistryDefinitionRepository(provider)
     doc = {"schema": "etlantic.pipeline/1", "name": "demo", "nodes": []}
     defs.put(ctx, "def-1", doc)
     assert defs.get(ctx, "def-1") == doc
     assert defs.list(ctx) == ["def-1"]
+    monkeypatch.setattr(
+        "etlantic_sqlmodel.control_plane.registry_stores._utcnow_iso",
+        lambda: "2000-01-01T00:00:00Z",
+    )
     updated = {**doc, "name": "demo-v2"}
     defs.compare_and_swap(ctx, "def-1", doc, updated)
     with pytest.raises(ControlPlaneError) as stale:

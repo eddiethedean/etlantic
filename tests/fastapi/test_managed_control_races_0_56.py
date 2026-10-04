@@ -443,11 +443,17 @@ def test_concurrent_definition_edits_use_repository_compare_and_swap() -> None:
     )
 
 
-def test_revision_repository_compare_and_swap_rejects_stale_head() -> None:
+def test_revision_repository_compare_and_swap_rejects_stale_head(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
     ctx = _context()
     definitions = RegistryDefinitionRepository(MemoryRegistryProvider())
     original = {"name": "pipe", "version": 1}
     definitions.put(ctx, "revision-race", original)
+    monkeypatch.setattr(
+        "etlantic.control_plane.registry_memory._utcnow_iso",
+        lambda: "2000-01-01T00:00:00Z",
+    )
     barrier = Barrier(2)
 
     def edit(version: int) -> str:

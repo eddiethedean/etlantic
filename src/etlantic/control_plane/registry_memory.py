@@ -10,7 +10,7 @@ import uuid
 from collections.abc import Mapping, Sequence
 from copy import deepcopy
 from dataclasses import dataclass, field, replace
-from datetime import UTC, datetime
+from datetime import UTC, datetime, timedelta
 from typing import Any
 
 from etlantic.control_plane.errors import ControlPlaneError
@@ -34,6 +34,27 @@ from etlantic.control_plane.registry_models import (
 
 def _utcnow_iso() -> str:
     return datetime.now(UTC).isoformat().replace("+00:00", "Z")
+
+
+def _timestamp_after_current(current: str | None, candidate: str | None) -> str:
+    """Choose a revision timestamp that sorts after the current head."""
+    try:
+        timestamp = datetime.fromisoformat(
+            (candidate or _utcnow_iso()).replace("Z", "+00:00")
+        )
+        if timestamp.tzinfo is None:
+            timestamp = timestamp.replace(tzinfo=UTC)
+        if current is not None:
+            current_timestamp = datetime.fromisoformat(current.replace("Z", "+00:00"))
+            if current_timestamp.tzinfo is None:
+                current_timestamp = current_timestamp.replace(tzinfo=UTC)
+            if timestamp <= current_timestamp:
+                timestamp = current_timestamp + timedelta(microseconds=1)
+    except ValueError as exc:
+        raise ControlPlaneError.conflict(
+            "Definition revision has an invalid timestamp"
+        ) from exc
+    return timestamp.astimezone(UTC).isoformat().replace("+00:00", "Z")
 
 
 def content_fingerprint(content: Mapping[str, Any]) -> str:
@@ -480,7 +501,15 @@ class MemoryRevisionRegistry:
                 raise ControlPlaneError.conflict(
                     "Definition changed since the edit was prepared"
                 )
-            self.put_revision(ctx, revision)
+            self.put_revision(
+                ctx,
+                replace(
+                    revision,
+                    created_at=_timestamp_after_current(
+                        current.created_at, revision.created_at
+                    ),
+                ),
+            )
 
     def get_revision(
         self,
