@@ -1040,12 +1040,11 @@ class ManagedExecutionAdapter:
         try:
             configured_snapshot = self.profile.to_plan_snapshot()
             accepted_secrets = dict(accepted_snapshot.get("secrets") or {})
-            configured_secrets = dict(configured_snapshot.get("secrets") or {})
-            configured_snapshot["secrets"] = {
-                key: configured_secrets[key]
-                for key in accepted_secrets
-                if key in configured_secrets
-            }
+            # Secret references may be authorized per scheduled occurrence.
+            # They are frozen into its accepted plan, so compare the worker's
+            # non-secret policy with the accepted profile and execute using the
+            # plan's references rather than the worker's base-profile values.
+            configured_snapshot["secrets"] = accepted_secrets
             configured = json.dumps(
                 configured_snapshot,
                 sort_keys=True,
@@ -1066,7 +1065,12 @@ class ManagedExecutionAdapter:
             raise ExecutionRejected(
                 "Configured worker profile differs from the accepted plan"
             )
-        return self.profile
+        try:
+            execution_profile = self.profile.to_dict()
+            execution_profile["secrets"] = accepted_secrets
+            return Profile.from_dict(execution_profile)
+        except Exception as exc:
+            raise ExecutionRejected("Accepted worker profile is invalid") from exc
 
     def _publish_event(
         self,
