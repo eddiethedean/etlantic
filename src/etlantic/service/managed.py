@@ -2390,7 +2390,7 @@ class ManagedApplicationService:
             )
         input_plan = _decode_plan_document(envelope.plan_document)
         self._authorize_plan_resources(ctx, input_plan, action="run.submit")
-        self._authorize_input_resources(ctx, input_plan)
+        self._authorize_input_resources(ctx, input_plan, verify_references=False)
         envelope = _with_input_resource_lease(
             ctx,
             envelope,
@@ -2409,7 +2409,7 @@ class ManagedApplicationService:
         expected_envelope = envelope.to_json()
         if prior_receipt is not None:
             prior_envelope = self._envelope_from_payload(prior_payload)
-            if prior_envelope.to_json() != expected_envelope:
+            if not self._lifecycle_envelopes_match(prior_envelope, envelope):
                 legacy_envelope = _with_input_resource_lease(
                     ctx,
                     envelope,
@@ -2417,16 +2417,21 @@ class ManagedApplicationService:
                     idempotency_key=idempotency_key,
                     legacy_scope=True,
                 )
-                if prior_envelope.to_json() != legacy_envelope.to_json():
+                if not self._lifecycle_envelopes_match(prior_envelope, legacy_envelope):
                     raise ControlPlaneError.conflict(
                         "Idempotency key reuse with a different lifecycle parent or intent"
                     )
-                envelope = legacy_envelope
-                expected_envelope = envelope.to_json()
+            envelope = prior_envelope
+            expected_envelope = envelope.to_json()
         elif (
             prior_durable is not None
             and prior_durable.input_snapshot != expected_envelope
         ):
+            prior_snapshot = prior_durable.input_snapshot
+            if not prior_snapshot:
+                raise ControlPlaneError.conflict(
+                    "Legacy accepted work has no verified execution envelope"
+                )
             legacy_envelope = _with_input_resource_lease(
                 ctx,
                 envelope,
@@ -2434,11 +2439,22 @@ class ManagedApplicationService:
                 idempotency_key=idempotency_key,
                 legacy_scope=True,
             )
-            if prior_durable.input_snapshot != legacy_envelope.to_json():
+            prior_envelope = self._parse_envelope(prior_snapshot)
+            if not self._lifecycle_envelopes_match(
+                prior_envelope, envelope
+            ) and not self._lifecycle_envelopes_match(prior_envelope, legacy_envelope):
                 raise ControlPlaneError.conflict(
                     "Idempotency key reuse with a different lifecycle parent or intent"
                 )
-            envelope = legacy_envelope
+            envelope = prior_envelope
+            expected_envelope = envelope.to_json()
+        elif prior_durable is not None:
+            prior_snapshot = prior_durable.input_snapshot
+            if not prior_snapshot:
+                raise ControlPlaneError.conflict(
+                    "Legacy accepted work has no verified execution envelope"
+                )
+            envelope = self._parse_envelope(prior_snapshot)
             expected_envelope = envelope.to_json()
         payload = self._acceptance_payload(envelope)
         payload.update(
@@ -2484,27 +2500,47 @@ class ManagedApplicationService:
             )
             return receipt_result.receipt
 
-        decision, _quota = gate_pre_submit(
+        input_lease_id = self._protect_input_resources(
             ctx,
-            policy=self.policy,
-            approvals=self.approvals,
-            quotas=self.quotas,
-            audit=self.audit,
-            attestations=self.attestations,
-            plan_fingerprint=envelope.plan_fingerprint,
-            effective_fingerprint=envelope.effective_fingerprint,
-            revision_id=envelope.revision_id,
-            quota_idempotency_key=self._quota_idempotency_key(
-                ctx, idempotency_key, operation=operation
-            ),
-            plugin_fingerprints=(
-                [envelope.plugin_fingerprint]
-                if envelope.plugin_fingerprint is not None
-                else None
-            ),
-            require_policy=self.policy is not None,
-            require_attestations=self.require_attestations,
+            input_plan,
+            operation=operation,
+            idempotency_key=idempotency_key,
         )
+        envelope_lease_id = (envelope.evidence_refs or {}).get(
+            "input_resource_lease_id"
+        )
+        if input_lease_id != envelope_lease_id:
+            with suppress(Exception):
+                self._release_input_lease(ctx, input_lease_id)
+            raise ControlPlaneError.conflict(
+                "Accepted input resource lease does not match its execution envelope"
+            )
+        try:
+            decision, _quota = gate_pre_submit(
+                ctx,
+                policy=self.policy,
+                approvals=self.approvals,
+                quotas=self.quotas,
+                audit=self.audit,
+                attestations=self.attestations,
+                plan_fingerprint=envelope.plan_fingerprint,
+                effective_fingerprint=envelope.effective_fingerprint,
+                revision_id=envelope.revision_id,
+                quota_idempotency_key=self._quota_idempotency_key(
+                    ctx, idempotency_key, operation=operation
+                ),
+                plugin_fingerprints=(
+                    [envelope.plugin_fingerprint]
+                    if envelope.plugin_fingerprint is not None
+                    else None
+                ),
+                require_policy=self.policy is not None,
+                require_attestations=self.require_attestations,
+            )
+        except Exception:
+            with suppress(Exception):
+                self._release_input_lease(ctx, input_lease_id)
+            raise
         envelope = ExecutionEnvelope.from_dict(
             {
                 **envelope.to_dict(),
@@ -2521,19 +2557,6 @@ class ManagedApplicationService:
                 "parent_submission_id": parent_submission_id,
             }
         )
-        input_lease_id = self._protect_input_resources(
-            ctx,
-            input_plan,
-            operation=operation,
-            idempotency_key=idempotency_key,
-        )
-        envelope_lease_id = (envelope.evidence_refs or {}).get(
-            "input_resource_lease_id"
-        )
-        if input_lease_id != envelope_lease_id:
-            raise ControlPlaneError.conflict(
-                "Accepted input resource lease does not match its execution envelope"
-            )
         receipt_result = self.submissions.accept(
             ctx,
             idempotency_key=idempotency_key,
@@ -3529,19 +3552,15 @@ class ManagedApplicationService:
             )
 
     def _authorize_input_resources(
-        self, ctx: ControlPlaneContext, plan: PlanDocument
+        self,
+        ctx: ControlPlaneContext,
+        plan: PlanDocument,
+        *,
+        verify_references: bool = True,
     ) -> tuple[InputResourceReference, ...]:
         references = _input_resource_references(plan)
         if not references:
             return ()
-        if self.input_resources is None:
-            raise ControlPlaneError(
-                "Immutable input resources are unavailable on this backend",
-                code="PMRES503",
-                status=503,
-                title="Service Unavailable",
-                type="etlantic.control_plane/unavailable",
-            )
         for reference in references:
             require_authorized(
                 self.authorizer,
@@ -3550,7 +3569,17 @@ class ManagedApplicationService:
                 f"input-resource:{reference.resource_id}",
                 resource_in_caller_scope=False,
             )
-            self.input_resources.verify_reference(ctx, reference)
+        if verify_references:
+            if self.input_resources is None:
+                raise ControlPlaneError(
+                    "Immutable input resources are unavailable on this backend",
+                    code="PMRES503",
+                    status=503,
+                    title="Service Unavailable",
+                    type="etlantic.control_plane/unavailable",
+                )
+            for reference in references:
+                self.input_resources.verify_reference(ctx, reference)
         return references
 
     def _protect_input_resources(
@@ -3586,13 +3615,18 @@ class ManagedApplicationService:
                 title="Service Unavailable",
                 type="etlantic.control_plane/unavailable",
             )
-        for reference in references:
-            self.input_resources.acquire_lease(
-                ctx,
-                reference,
-                lease_id=lease_id,
-                retain_until=retain_until,
-            )
+        try:
+            for reference in references:
+                self.input_resources.acquire_lease(
+                    ctx,
+                    reference,
+                    lease_id=lease_id,
+                    retain_until=retain_until,
+                )
+        except Exception:
+            with suppress(Exception):
+                self.input_resources.release_lease(ctx, lease_id=lease_id)
+            raise
         return lease_id
 
     def _release_input_lease(
@@ -3600,6 +3634,19 @@ class ManagedApplicationService:
     ) -> None:
         if lease_id is not None and self.input_resources is not None:
             self.input_resources.release_lease(ctx, lease_id=lease_id)
+
+    @staticmethod
+    def _lifecycle_envelopes_match(
+        accepted: ExecutionEnvelope, requested: ExecutionEnvelope
+    ) -> bool:
+        """Compare lifecycle intent while preserving persisted admission evidence."""
+        requested_with_admission = ExecutionEnvelope.from_dict(
+            {
+                **requested.to_dict(),
+                "policy_fingerprint": accepted.policy_fingerprint,
+            }
+        )
+        return accepted.to_json() == requested_with_admission.to_json()
 
     @staticmethod
     def _acceptance_payload(envelope: ExecutionEnvelope) -> dict[str, Any]:

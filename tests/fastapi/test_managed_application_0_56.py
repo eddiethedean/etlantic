@@ -3642,3 +3642,239 @@ def test_managed_rerun_authorizes_plan_resources_before_acceptance(
         )
         is None
     )
+
+
+def _complete_managed_submission(
+    durable: MemoryDurableWorkStore,
+    ctx: ControlPlaneContext,
+    receipt: Any,
+) -> None:
+    lease = durable.acquire_lease(
+        ctx, receipt.submission_id, owner_id="review-worker", ttl_seconds=30
+    )
+    attempt = durable.start_attempt(
+        ctx,
+        receipt.submission_id,
+        owner_id="review-worker",
+        fencing_token=lease.fencing_token,
+    )
+    durable.finish_attempt(
+        ctx,
+        attempt.attempt_id,
+        owner_id="review-worker",
+        fencing_token=lease.fencing_token,
+        status="completed",
+    )
+
+
+def test_managed_replay_retry_reuses_accepted_policy_evidence(
+    tmp_path: Path,
+) -> None:
+    ctx, authz, _definitions, _submissions, durable, _events, service = _wired(tmp_path)
+    authz.grant(ctx, "run.replay")
+    policy = MemoryPolicyProvider()
+    policy.set_rule("pre_submit", "allow")
+    service.policy = policy
+    parent = service.submit_run(ctx, "pipe", idempotency_key="replay-policy-parent")
+    assert parent.resource_id is not None
+    _complete_managed_submission(durable, ctx, parent)
+
+    first = service.replay_run(
+        ctx, parent.resource_id, idempotency_key="replay-policy-child"
+    )
+    policy.set_rule("pre_submit", "deny")
+    retry = service.replay_run(
+        ctx, parent.resource_id, idempotency_key="replay-policy-child"
+    )
+
+    assert retry.to_dict() == first.to_dict()
+
+
+def test_managed_rerun_retry_does_not_verify_input_during_provider_outage(
+    tmp_path: Path,
+) -> None:
+    from datetime import UTC, datetime, timedelta
+    from hashlib import sha256
+
+    from etlantic.control_plane import MemoryInputResourceStore
+
+    class OutageInputStore(MemoryInputResourceStore):
+        offline = False
+
+        def verify_reference(
+            self,
+            ctx: ControlPlaneContext,
+            reference: Any,
+            *,
+            now: datetime | None = None,
+        ) -> None:
+            if self.offline:
+                raise ControlPlaneError(
+                    "Input provider temporarily unavailable",
+                    code="PMRES503",
+                    status=503,
+                    title="Service Unavailable",
+                )
+            return super().verify_reference(ctx, reference, now=now)
+
+    ctx, authz, _definitions, _submissions, durable, _events, service = _wired(tmp_path)
+    authz.grant(ctx, "run.rerun")
+    authz.grant(ctx, "input.read")
+    store = OutageInputStore()
+    service.input_resources = store
+    content = b"id\n42\n"
+    staged = store.stage(
+        ctx,
+        content,
+        media_type="text/csv",
+        format="csv",
+        expires_at=datetime.now(UTC) + timedelta(hours=1),
+    )
+    reference = store.finalize(
+        ctx,
+        staged.upload_id,
+        expected_sha256=sha256(content).hexdigest(),
+        expected_byte_length=len(content),
+    )
+
+    def planning_context(
+        _ctx: ControlPlaneContext, profile: Profile
+    ) -> PlanningContext:
+        planning = PlanningContext.create(profile=profile)
+        planning.registry.register_binding(
+            BindingDescriptor(
+                binding="file-in",
+                provider="local-files",
+                kind="source",
+                format="csv",
+                config={"input_resource": reference.to_dict()},
+            )
+        )
+        planning.registry.register_binding(
+            BindingDescriptor(
+                binding="file-out",
+                provider="csv",
+                kind="sink",
+                location=str(tmp_path / "out.csv"),
+            )
+        )
+        return planning
+
+    service.planning_context_factory = planning_context
+    service.register_definition(
+        ctx,
+        "uploaded-input-pipe",
+        pipeline_to_dict(definition_from_pipeline(ManagedFilePipeline)),
+    )
+    parent = service.submit_run(
+        ctx, "uploaded-input-pipe", idempotency_key="input-parent"
+    )
+    assert parent.resource_id is not None
+    _complete_managed_submission(durable, ctx, parent)
+    first = service.rerun_run(
+        ctx, parent.resource_id, idempotency_key="input-rerun-child"
+    )
+
+    store.offline = True
+    retry = service.rerun_run(
+        ctx, parent.resource_id, idempotency_key="input-rerun-child"
+    )
+
+    assert retry.to_dict() == first.to_dict()
+
+
+def test_managed_rerun_input_lease_failure_does_not_charge_quota(
+    tmp_path: Path,
+) -> None:
+    from datetime import UTC, datetime, timedelta
+    from hashlib import sha256
+
+    from etlantic.control_plane import MemoryInputResourceStore
+
+    class LeaseFailureInputStore(MemoryInputResourceStore):
+        fail_leases = False
+
+        def acquire_lease(self, *args: Any, **kwargs: Any) -> Any:
+            if self.fail_leases:
+                raise ControlPlaneError(
+                    "Input lease temporarily unavailable",
+                    code="PMRES503",
+                    status=503,
+                    title="Service Unavailable",
+                )
+            return super().acquire_lease(*args, **kwargs)
+
+    ctx, authz, _definitions, submissions, durable, _events, service = _wired(tmp_path)
+    authz.grant(ctx, "run.rerun")
+    authz.grant(ctx, "input.read")
+    store = LeaseFailureInputStore()
+    service.input_resources = store
+    content = b"id\n42\n"
+    staged = store.stage(
+        ctx,
+        content,
+        media_type="text/csv",
+        format="csv",
+        expires_at=datetime.now(UTC) + timedelta(hours=1),
+    )
+    reference = store.finalize(
+        ctx,
+        staged.upload_id,
+        expected_sha256=sha256(content).hexdigest(),
+        expected_byte_length=len(content),
+    )
+
+    def planning_context(
+        _ctx: ControlPlaneContext, profile: Profile
+    ) -> PlanningContext:
+        planning = PlanningContext.create(profile=profile)
+        planning.registry.register_binding(
+            BindingDescriptor(
+                binding="file-in",
+                provider="local-files",
+                kind="source",
+                format="csv",
+                config={"input_resource": reference.to_dict()},
+            )
+        )
+        planning.registry.register_binding(
+            BindingDescriptor(
+                binding="file-out",
+                provider="csv",
+                kind="sink",
+                location=str(tmp_path / "out.csv"),
+            )
+        )
+        return planning
+
+    service.planning_context_factory = planning_context
+    service.register_definition(
+        ctx,
+        "lease-input-pipe",
+        pipeline_to_dict(definition_from_pipeline(ManagedFilePipeline)),
+    )
+    parent = service.submit_run(ctx, "lease-input-pipe", idempotency_key="lease-parent")
+    assert parent.resource_id is not None
+    _complete_managed_submission(durable, ctx, parent)
+    quota = MemoryQuotaProvider(default_limits={"concurrency": 1})
+    service.quotas = quota
+    store.fail_leases = True
+
+    with pytest.raises(ControlPlaneError, match="Input lease temporarily unavailable"):
+        service.rerun_run(
+            ctx, parent.resource_id, idempotency_key="lease-failure-child"
+        )
+    assert quota.get_state(ctx).usage.get("concurrency", 0) == 0
+    assert (
+        submissions.lookup_idempotency(
+            ctx, "lease-failure-child", operation="run.rerun"
+        )
+        is None
+    )
+
+    store.fail_leases = False
+    recovered = service.rerun_run(
+        ctx, parent.resource_id, idempotency_key="healthy-after-lease-failure"
+    )
+    assert recovered.resource_id is not None
+    assert quota.get_state(ctx).usage["concurrency"] == 1
