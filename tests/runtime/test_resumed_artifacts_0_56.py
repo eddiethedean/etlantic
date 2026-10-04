@@ -1,4 +1,4 @@
-"""Managed resume resolves durable files and retires shared references safely."""
+"""Managed artifact workspace recovery and retention behavior."""
 
 from __future__ import annotations
 
@@ -17,6 +17,7 @@ from etlantic.authoring.serialize import pipeline_to_dict
 from etlantic.control_plane import (
     ControlPlaneContext,
     EnvironmentRef,
+    ExecutionEnvelope,
     MemoryAuthorizer,
     MemoryDefinitionRepository,
     MemoryDurableWorkStore,
@@ -63,11 +64,11 @@ class SourceOnlyPipeline(Pipeline):
 
 
 @pytest.mark.parametrize("generations", [1, 2])
-def test_fallback_only_artifacts_expire_without_published_report_rows(
+def test_fallback_only_rerun_artifacts_expire_without_published_report_rows(
     tmp_path: Path, generations: int
 ) -> None:
     ctx, service, durable, adapter, child_run_id, _, report, listed, paths = (
-        _execute_resumed_run(tmp_path, generations, publication_fallback=True)
+        _execute_shared_workspace_run(tmp_path, generations, publication_fallback=True)
     )
     root = tmp_path / "artifacts"
     report_root = tmp_path / "reports"
@@ -128,8 +129,10 @@ def test_pending_publication_skips_busy_workspace_and_executes_independent_run(
     )
     from etlantic.runtime.artifact_coordination import artifact_workspace_lock
 
-    ctx, service, durable, _, _, storage_id, report, _, _ = _execute_resumed_run(
-        tmp_path, generations=1, publication_fallback=True
+    ctx, service, durable, _, _, storage_id, report, _, _ = (
+        _execute_shared_workspace_run(
+            tmp_path, generations=1, publication_fallback=True
+        )
     )
     parent_submission = str(
         report["metadata"]["etlantic.control_plane.execution"]["submission_id"]
@@ -208,11 +211,18 @@ def test_workspace_wait_stops_before_execution_on_cancel_or_lease_loss(
     import etlantic.runtime.managed_execution as managed
     from etlantic.runtime.artifact_coordination import artifact_workspace_lock
 
-    ctx, service, durable, _, _, storage_id, _, _, paths = _execute_resumed_run(
-        tmp_path, generations=1, publication_fallback=False
+    ctx, service, durable, _, _, storage_id, _, _, paths = (
+        _execute_shared_workspace_run(
+            tmp_path, generations=1, publication_fallback=False
+        )
     )
-    waiting = service.resume_run(
-        ctx, storage_id, idempotency_key="waiting", checkpoint_id="checkpoint:parent"
+    waiting = _accept_artifact_child(
+        ctx,
+        service,
+        durable,
+        parent_run_id=storage_id,
+        artifact_parent_run_id=storage_id,
+        idempotency_key="waiting",
     )
     assert waiting.resource_id is not None
     if stop_reason == "cancel_recovered":
@@ -348,7 +358,9 @@ def test_expired_unpublished_child_cannot_download_retained_shared_bytes(
     tmp_path: Path, has_cleanup_candidate: bool
 ) -> None:
     ctx, service, durable, adapter, child_run_id, storage_id, report, listed, paths = (
-        _execute_resumed_run(tmp_path, generations=1, publication_fallback=True)
+        _execute_shared_workspace_run(
+            tmp_path, generations=1, publication_fallback=True
+        )
     )
     artifact_root = tmp_path / "artifacts"
     report_root = tmp_path / "reports"
@@ -407,7 +419,7 @@ def test_expired_unpublished_child_cannot_download_retained_shared_bytes(
     assert not any(path.exists() for path in paths)
 
 
-def _execute_resumed_run(
+def _execute_shared_workspace_run(
     tmp_path: Path,
     generations: int,
     publication_fallback: bool,
@@ -438,7 +450,7 @@ def _execute_resumed_run(
         "run.submit",
         "run.read",
         "run.report",
-        "run.resume",
+        "run.rerun",
         "run.artifacts",
         "run.artifact.content",
     ):
@@ -483,37 +495,30 @@ def _execute_resumed_run(
     )
     assert parent.resource_id is not None
     storage_id = parent.resource_id
-    checkpoint_id = "checkpoint:parent"
 
-    def checkpoint_then_fail(worker_ctx: ControlPlaneContext, **kwargs: Any) -> None:
-        durable.compare_and_swap_checkpoint(
-            worker_ctx,
-            checkpoint_id,
-            expected_version=None,
-            value_fingerprint="a" * 64,
-            attempt_id=kwargs["attempt_id"],
-            fencing_token=kwargs["fencing_token"],
-        )
+    def fail_before_writes(_worker_ctx: ControlPlaneContext, **_kwargs: Any) -> None:
         raise ExecutionRejected("before any writes")
 
     child = parent
     for generation in range(generations):
         assert (
             ExecutionHost(
-                durable, owner_id=f"failed-{generation}", runner=checkpoint_then_fail
+                durable, owner_id=f"failed-{generation}", runner=fail_before_writes
             ).tick(ctx)
             == 1
         )
-        child = service.resume_run(
+        child = _accept_artifact_child(
             ctx,
-            parent.resource_id,
+            service,
+            durable,
+            parent_run_id=parent.resource_id,
+            artifact_parent_run_id=storage_id,
             idempotency_key=f"child-{generation}",
-            checkpoint_id=checkpoint_id,
         )
         if generation + 1 < generations:
             parent = child
             assert parent.resource_id is not None
-            checkpoint_id = f"checkpoint:child-{generation}"
+    assert child.resource_id is not None
 
     first_writes: list[PipelineRunReport] = []
 
@@ -578,9 +583,50 @@ def _execute_resumed_run(
     )
 
 
+def _accept_artifact_child(
+    ctx: ControlPlaneContext,
+    service: ManagedApplicationService,
+    durable: MemoryDurableWorkStore,
+    *,
+    parent_run_id: str,
+    artifact_parent_run_id: str,
+    idempotency_key: str,
+) -> Any:
+    """Seed a legacy rerun envelope that shares its parent's artifact workspace."""
+    legacy_service: Any = service
+    parent_record = legacy_service._authorized_run_record(
+        ctx, "run.rerun", parent_run_id
+    )
+    parent_submission_id = str(parent_record["submission_id"])
+    parent = durable.get_submission(ctx, parent_submission_id)
+    assert parent.input_snapshot is not None
+    envelope = ExecutionEnvelope.from_json(parent.input_snapshot)
+    envelope_data = envelope.to_dict()
+    evidence_refs = dict(envelope_data.get("evidence_refs") or {})
+    evidence_refs.update(
+        {
+            "command": "rerun",
+            "parent_run_id": parent_run_id,
+            "parent_submission_id": parent_submission_id,
+            "artifact_parent_run_id": artifact_parent_run_id,
+        }
+    )
+    envelope = ExecutionEnvelope.from_dict(
+        {**envelope_data, "evidence_refs": evidence_refs}
+    )
+    return legacy_service._accept_child_run(
+        ctx,
+        idempotency_key=idempotency_key,
+        operation="run.rerun",
+        envelope=envelope,
+        parent_run_id=parent_run_id,
+        parent_submission_id=parent_submission_id,
+    )
+
+
 @pytest.mark.skipif(os.name != "posix", reason="POSIX read-only mode")
 def test_non_durable_run_does_not_write_to_artifact_root(tmp_path: Path) -> None:
-    ctx, service, durable, _, _, _, _, _, _ = _execute_resumed_run(
+    ctx, service, durable, _, _, _, _, _, _ = _execute_shared_workspace_run(
         tmp_path, generations=1, publication_fallback=False
     )
     readonly_root = tmp_path / "readonly-artifacts"
@@ -619,7 +665,7 @@ def test_non_durable_run_does_not_write_to_artifact_root(tmp_path: Path) -> None
 def test_default_in_memory_plan_does_not_write_to_artifact_root(
     tmp_path: Path,
 ) -> None:
-    ctx, service, durable, _, _, _, _, _, _ = _execute_resumed_run(
+    ctx, service, durable, _, _, _, _, _, _ = _execute_shared_workspace_run(
         tmp_path, generations=1, publication_fallback=False
     )
     service.register_definition(
@@ -662,7 +708,7 @@ def test_default_in_memory_plan_does_not_write_to_artifact_root(
 @pytest.mark.parametrize("generations", [1, 2])
 @pytest.mark.parametrize("publication_fallback", [False, True])
 @pytest.mark.parametrize("shared_reference", [False, True])
-def test_resumed_artifacts_download_and_cleanup_the_authoritative_workspace(
+def test_rerun_artifacts_download_and_cleanup_the_authoritative_workspace(
     tmp_path: Path,
     generations: int,
     publication_fallback: bool,
@@ -670,7 +716,7 @@ def test_resumed_artifacts_download_and_cleanup_the_authoritative_workspace(
     legacy_state: str,
 ) -> None:
     ctx, service, durable, adapter, child_run_id, _, report, listed, paths = (
-        _execute_resumed_run(tmp_path, generations, publication_fallback)
+        _execute_shared_workspace_run(tmp_path, generations, publication_fallback)
     )
     artifact_root = tmp_path / "artifacts"
     report_root = tmp_path / "reports"

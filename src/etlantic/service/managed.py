@@ -1163,6 +1163,16 @@ class ManagedApplicationService:
             ctx, idempotency_key=idempotency_key, operation="run.submit"
         )
 
+        if (
+            typed_request.intent is RunIntent.RESUME
+            and prior_receipt is None
+            and prior_durable is None
+        ):
+            raise ControlPlaneError.conflict(
+                "Managed execution cannot restore a checkpoint without a qualified resume command",
+                extensions={"reason": "checkpoint_restore_unavailable"},
+            )
+
         if prior_receipt is not None:
             envelope = self._envelope_from_payload(prior_payload)
             self._require_same_intent(envelope, intent_fingerprint)
@@ -1685,7 +1695,7 @@ class ManagedApplicationService:
                 },
                 {
                     "name": "resume",
-                    "allowed": resume_reason is None,
+                    "allowed": False,
                     "reason": resume_reason,
                 },
             ],

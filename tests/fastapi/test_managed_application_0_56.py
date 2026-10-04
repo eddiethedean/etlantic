@@ -74,6 +74,7 @@ from etlantic.runtime.execution_host import ExecutionHost
 from etlantic.runtime.managed_execution import ManagedExecutionAdapter, managed_run_id
 from etlantic.runtime.request import (
     MaterializationPolicy,
+    RunIntent,
     RunRequest,
     TimeoutPolicy,
 )
@@ -2612,7 +2613,7 @@ def test_managed_resume_rejects_checkpoint_without_runtime_restore_state(
 ) -> None:
     from etlantic.runtime.managed_errors import ExecutionRejected
 
-    ctx, authz, definitions, _submissions, durable, _events, service = _wired(tmp_path)
+    ctx, authz, _definitions, _submissions, durable, _events, service = _wired(tmp_path)
     authz.grant(ctx, "run.resume")
     source = tmp_path / "resume-source.json"
     target = tmp_path / "resume-target.csv"
@@ -2696,6 +2697,18 @@ def test_managed_resume_rejects_checkpoint_without_runtime_restore_state(
     assert service.get_run_status(ctx, parent.resource_id)["status"] == "failed"
     assert not target.exists()
 
+    with pytest.raises(
+        ControlPlaneError, match="cannot restore a checkpoint"
+    ) as direct:
+        service.submit_run(
+            ctx,
+            "resume-pipe",
+            idempotency_key="resume-intent-submit",
+            request=RunRequest(intent=RunIntent.RESUME),
+        )
+    assert direct.value.extensions["reason"] == "checkpoint_restore_unavailable"
+    assert tuple(durable.pending_outbox(ctx)) == pending_outbox
+
 
 def test_managed_resume_rejects_unlinked_or_missing_checkpoint(tmp_path: Path) -> None:
     ctx, authz, _definitions, _submissions, durable, _events, service = _wired(tmp_path)
@@ -2709,6 +2722,81 @@ def test_managed_resume_rejects_unlinked_or_missing_checkpoint(tmp_path: Path) -
             checkpoint_id="checkpoint:missing",
         )
     assert durable.get_submission(ctx, parent.submission_id).status == "accepted"
+
+
+def test_legacy_resume_recovers_a_published_result_before_rejecting_execution(
+    tmp_path: Path,
+) -> None:
+    from etlantic.reports.model import PipelineRunReport
+    from etlantic.runtime.managed_execution import managed_report_store
+    from etlantic.runtime.state import RunStatus
+
+    ctx, _authz, _definitions, _submissions, durable, _events, service = _wired(
+        tmp_path
+    )
+    parent = service.submit_run(ctx, "pipe", idempotency_key="resume-recovery-parent")
+    parent_submission = durable.get_submission(ctx, parent.submission_id)
+    assert parent_submission.input_snapshot is not None
+    envelope = ExecutionEnvelope.from_json(
+        parent_submission.input_snapshot
+    ).with_request(RunRequest(intent=RunIntent.RESUME))
+    child, _created = durable.accept(
+        ctx,
+        idempotency_key="legacy-resume-child",
+        operation="run.resume",
+        plan_fingerprint=envelope.plan_fingerprint,
+        revision_id=envelope.revision_id,
+        input_snapshot=envelope.to_json(),
+        run_id="legacy-resume-run",
+    )
+    for outbox in durable.pending_outbox(ctx):
+        if outbox.submission_id == parent.submission_id:
+            durable.mark_published(ctx, outbox.outbox_id)
+
+    stored_report = PipelineRunReport(
+        pipeline_id=str(envelope.plan_document["pipeline_id"]),
+        plan_id=str(envelope.plan_document["plan_id"]),
+        run_id="legacy-resume-run",
+        intent=RunIntent.RESUME,
+        profile="development",
+        status=RunStatus.SUCCEEDED,
+        started_at=datetime.now(UTC),
+        ended_at=datetime.now(UTC),
+        plan_fingerprint=envelope.plan_fingerprint,
+    )
+    managed_report_store(ctx, report_root=tmp_path / "reports").put(stored_report)
+
+    lease = durable.acquire_lease(
+        ctx, child.submission_id, owner_id="interrupted-worker", ttl_seconds=30
+    )
+    durable.start_attempt(
+        ctx,
+        child.submission_id,
+        owner_id="interrupted-worker",
+        fencing_token=lease.fencing_token,
+    )
+    durable.release_lease(
+        ctx,
+        child.submission_id,
+        owner_id="interrupted-worker",
+        fencing_token=lease.fencing_token,
+    )
+
+    assert (
+        ExecutionHost(
+            durable,
+            owner_id="recovery-worker",
+            runner=ManagedExecutionAdapter(
+                report_root=tmp_path / "reports",
+                artifact_root=tmp_path / "artifacts",
+            ),
+        ).tick(ctx)
+        == 1
+    )
+    assert durable.get_submission(ctx, child.submission_id).status == "completed"
+    assert durable.get_effect(ctx, f"{child.submission_id}:execution").status == (
+        "committed"
+    )
 
 
 def test_managed_accept_recovers_lost_cp1_ack_without_duplicate_receipt(
