@@ -17,12 +17,14 @@ from etlantic.control_plane import (
     TenantRef,
     WorkspaceRef,
 )
+from etlantic.reports.file_store import FileReportStore
 from etlantic.reports.model import ArtifactResult, PipelineRunReport
 from etlantic.reports.retention import (
     RUN_ARTIFACT_RETENTION_DETAILS_KEY,
     RUN_ARTIFACT_RETENTION_STATE_KEY,
 )
 from etlantic.reports.store import ReportStore
+from etlantic.runtime.artifact_coordination import record_artifact_ownership
 from etlantic.runtime.artifact_retention import (
     cleanup_expired_run_artifacts,
 )
@@ -173,6 +175,46 @@ def test_cleanup_still_bounds_processed_reports_without_durable_references(
         assert result.processed_reports == result.completed_reports == 1
         assert result.deleted_artifacts == 0
         assert result.remaining_candidates == (index < 2)
+
+
+def test_idle_orphan_scan_inventory_does_not_scale_with_workspace_count(
+    tmp_path: Path,
+) -> None:
+    ctx, now = _ctx(), datetime.now(UTC)
+    artifact_root = tmp_path / "artifacts"
+    report_root = tmp_path / "reports"
+    store = FileReportStore(report_root)
+    for index in range(20):
+        run_id = f"fresh-{index}"
+        report = _report(
+            run_id,
+            ended_at=now,
+            artifacts=(ArtifactResult(f"artifact-{index}", "output", "durable"),),
+        )
+        workspace = managed_artifact_workspace(ctx, run_id, artifact_root=artifact_root)
+        record_artifact_ownership(workspace, report)
+        store.put(report)
+
+    inventory_reads = 0
+
+    def fresh_store() -> FileReportStore:
+        nonlocal inventory_reads
+        inventory_reads += 1
+        return FileReportStore(report_root)
+
+    result = cleanup_expired_run_artifacts(
+        ctx,
+        report_store=store,
+        artifact_root=artifact_root,
+        retention_seconds=60,
+        report_store_factory=fresh_store,
+        now=now,
+    )
+
+    assert not result.remaining_candidates
+    # The pass performs bounded final inventory checks, not one refresh per
+    # workspace with a live owner.
+    assert inventory_reads <= 2
 
 
 def test_unpublished_only_cleanup_is_bounded_and_resumes_after_restart(

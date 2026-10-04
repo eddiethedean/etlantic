@@ -190,22 +190,23 @@ def record_artifact_ownership(workspace: Path, report: PipelineRunReport) -> Non
 
     from etlantic.reports.retention import TERMINAL_RUN_STATUSES
 
+    references = [
+        {
+            "identity": hashlib.sha256(artifact.identity.encode()).hexdigest(),
+            "expiry": _expiry_path(workspace, report.run_id, artifact.identity).stem,
+        }
+        for artifact in report.artifacts
+        if artifact.strategy == "durable" and artifact.status != "expired"
+    ]
+    if not references:
+        return
     owner = hashlib.sha256(report.run_id.encode()).hexdigest()
     payload = {
         "ended_at": report.ended_at.isoformat()
         if report.ended_at is not None
         else None,
         "terminal": report.status.value in TERMINAL_RUN_STATUSES,
-        "references": [
-            {
-                "identity": hashlib.sha256(artifact.identity.encode()).hexdigest(),
-                "expiry": _expiry_path(
-                    workspace, report.run_id, artifact.identity
-                ).stem,
-            }
-            for artifact in report.artifacts
-            if artifact.strategy == "durable" and artifact.status != "expired"
-        ],
+        "references": references,
     }
     write_text_safe(
         workspace / ".artifact-owners" / f"{owner}.json",

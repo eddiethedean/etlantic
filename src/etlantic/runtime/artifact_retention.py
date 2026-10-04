@@ -197,6 +197,18 @@ def cleanup_expired_run_artifacts(
                 busy = True
                 busy_workspaces.add(workspace)
                 continue
+            ownership = read_artifact_ownership(
+                workspace,
+                cutoff,
+                report_run_ids=set(),
+                retention_seconds=retention_seconds,
+            )
+            if not ownership.expired:
+                continue
+            # Provider reports are needed only when an expired unpublished
+            # reference may share bytes with a published owner. Keep the
+            # inventory refresh inside the workspace lock so a just-published
+            # child report cannot be missed by cleanup.
             reports = [normalize(item) for item in inventory()]
             ownership = read_artifact_ownership(
                 workspace,

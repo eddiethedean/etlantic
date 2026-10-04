@@ -6,6 +6,7 @@ import hashlib
 import json
 import os
 from collections.abc import Callable, Mapping
+from contextlib import nullcontext
 from dataclasses import replace
 from datetime import datetime
 from pathlib import Path
@@ -53,7 +54,7 @@ from etlantic.runtime.context import TrustedExecutionScope
 from etlantic.runtime.execute import run_pipeline
 from etlantic.runtime.faults import active_faults
 from etlantic.runtime.managed_errors import ExecutionRejected, UnknownCommitError
-from etlantic.runtime.request import RunIntent, RunRequest
+from etlantic.runtime.request import MaterializationPolicy, RunIntent, RunRequest
 from etlantic.runtime.state import RunStatus
 from etlantic.secrets.provider import SecretAliasAuthorizer
 
@@ -427,6 +428,33 @@ class ManagedExecutionAdapter:
         workspace = managed_artifact_workspace(
             ctx, storage_id, artifact_root=self.artifact_root
         )
+        request = RunRequest.from_dict(envelope.effective_request)
+        evidence = envelope.evidence_refs or {}
+        shared_workspace = any(
+            isinstance(evidence.get(key), str) and evidence[key].strip()
+            for key in ("artifact_parent_run_id", "checkpoint_id")
+        )
+        lifecycle_request = request.intent in {
+            RunIntent.RESUME,
+            RunIntent.REPAIR,
+            RunIntent.BACKFILL,
+        } or submission.operation in {"run.resume", "run.repair", "run.backfill"}
+        if (
+            request.materialization is MaterializationPolicy.NONE
+            and not shared_workspace
+            and not lifecycle_request
+        ):
+            return self._execute(
+                ctx,
+                submission=submission,
+                submission_id=submission_id,
+                attempt_id=attempt_id,
+                fencing_token=fencing_token,
+                recovered_attempt=recovered_attempt,
+                cancel_event=cancel_event,
+                result_publisher=result_publisher,
+                result_reader=result_reader,
+            )
         with artifact_workspace_lock(workspace, cancel_event=cancel_event):
             return self._execute(
                 ctx,
@@ -907,7 +935,15 @@ class ManagedExecutionAdapter:
         workspace = managed_artifact_workspace(
             ctx, artifact_storage_run_id(report), artifact_root=self.artifact_root
         )
-        with artifact_workspace_lock(workspace, blocking=False) as acquired:
+        has_durable_artifacts = any(
+            artifact.strategy == "durable" for artifact in report.artifacts
+        )
+        lock = (
+            artifact_workspace_lock(workspace, blocking=False)
+            if has_durable_artifacts
+            else nullcontext(True)
+        )
+        with lock as acquired:
             if not acquired:
                 return False
             report_store = (

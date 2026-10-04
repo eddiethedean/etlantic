@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import os
 from dataclasses import replace
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
@@ -34,6 +35,7 @@ from etlantic.reports.retention import (
     ARTIFACT_STORAGE_RUN_ID_KEY,
     RUN_ARTIFACT_RETENTION_STATE_KEY,
 )
+from etlantic.reports.store import ReportStore
 from etlantic.runtime.artifact_retention import cleanup_expired_run_artifacts
 from etlantic.runtime.artifacts import artifact_storage_path
 from etlantic.runtime.execution_host import ExecutionHost
@@ -570,6 +572,43 @@ def _execute_resumed_run(
         listed,
         paths,
     )
+
+
+@pytest.mark.skipif(os.name != "posix", reason="POSIX read-only mode")
+def test_non_durable_run_does_not_write_to_artifact_root(tmp_path: Path) -> None:
+    ctx, service, durable, _, _, _, _, _, _ = _execute_resumed_run(
+        tmp_path, generations=1, publication_fallback=False
+    )
+    readonly_root = tmp_path / "readonly-artifacts"
+    readonly_root.mkdir()
+    readonly_root.chmod(0o555)
+    reports = ReportStore()
+    try:
+        submission = service.submit_run(
+            ctx,
+            "pipe",
+            idempotency_key="in-memory-only",
+            request=RunRequest(materialization=MaterializationPolicy.NONE),
+        )
+        host = ExecutionHost(
+            durable,
+            owner_id="in-memory-worker",
+            runner=ManagedExecutionAdapter(
+                artifact_root=readonly_root,
+                report_store_factory=lambda _context: reports,
+            ),
+        )
+        assert host.tick(ctx) == 1
+        assert (
+            durable.get_submission(ctx, submission.submission_id).status == "completed"
+        )
+        assert submission.resource_id is not None
+        report = reports.get(submission.resource_id)
+        assert report is not None and report.status.value == "succeeded"
+        assert not any(artifact.strategy == "durable" for artifact in report.artifacts)
+        assert list(readonly_root.iterdir()) == []
+    finally:
+        readonly_root.chmod(0o755)
 
 
 @pytest.mark.parametrize(
