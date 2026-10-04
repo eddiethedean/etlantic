@@ -25,7 +25,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   files referenced by still-retained reports and denies downloads through
   expired references (#220). Shared workspace execution and cleanup coordinate
   across processes; legacy cleanup is repaired, and reference expiry survives
-  report-provider outages and result reconciliation.
+  report-provider outages and result reconciliation. Reconciliation preserves
+  deferred deletion, unpublished expiry denies fallback downloads, and metadata
+  writes recover after worker crashes without stale nested locks.
 - SQL provision and cleanup actions propagate deadlines to database work, abort
   expired transactions, and keep workers responsive during blocked provider IO.
   Verified committed effects remain available after a timeout; same-key recovery

@@ -147,7 +147,31 @@ def cleanup_expired_run_artifacts(
             ),
         )[:limit]
     if not candidates:
-        return ArtifactRetentionResult(enabled=True)
+        # A child can remain solely in durable publication after the provider
+        # has completed every known report's cleanup. Its references still
+        # need tombstones when that child's ownership window expires.
+        reports = inventory()
+        workspaces = {
+            managed_artifact_workspace(
+                ctx,
+                artifact_storage_run_id(normalize(report)),
+                artifact_root=artifact_root,
+            )
+            for report in reports
+            if any(artifact.strategy == "durable" for artifact in report.artifacts)
+        }
+        busy = False
+        for workspace in sorted(workspaces):
+            with artifact_workspace_lock(workspace, blocking=False) as acquired:
+                if not acquired:
+                    busy = True
+                    continue
+                retained_artifact_ownership(
+                    workspace,
+                    cutoff,
+                    report_run_ids={item.run_id for item in inventory()},
+                )
+        return ArtifactRetentionResult(enabled=True, remaining_candidates=busy)
 
     processed_reports = 0
     completed_reports = 0

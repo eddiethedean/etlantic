@@ -74,10 +74,15 @@ exists only in durable publication. Cleanup keeps deferred physical work pending
 until that child is published or its retention window ends, including across
 restarts, so an unavailable report provider cannot cause either early deletion
 or a permanent file leak.
+Result reconciliation preserves cleanup progress from the current report row;
+reference tombstones alone never prove that deferred file deletion completed.
 
 Reference expiry also writes a hashed tombstone under the artifact workspace.
 Queries and result reconciliation consult this record, so an immutable fallback
 snapshot cannot revive an expired reference during a report-provider outage.
+Expired unpublished owners receive tombstones even when no stored report needs
+file cleanup. Ownership and tombstone writes use the workspace's process-owned
+lock, without additional lock files that could block recovery after a crash.
 These small metadata records survive process restarts and remain with retained
 report history; they contain neither source rows nor credentials.
 

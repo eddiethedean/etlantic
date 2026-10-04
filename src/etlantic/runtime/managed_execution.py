@@ -38,6 +38,8 @@ from etlantic.reports.file_store import FileReportStore
 from etlantic.reports.model import PipelineRunReport
 from etlantic.reports.retention import (
     ARTIFACT_STORAGE_RUN_ID_KEY,
+    RUN_ARTIFACT_RETENTION_DETAILS_KEY,
+    RUN_ARTIFACT_RETENTION_STATE_KEY,
     ArtifactRetentionResult,
     artifact_storage_run_id,
 )
@@ -906,12 +908,37 @@ class ManagedExecutionAdapter:
             ctx, artifact_storage_run_id(report), artifact_root=self.artifact_root
         )
         with artifact_workspace_lock(workspace):
-            report = apply_artifact_expiry(workspace, report)
             report_store = (
                 self.report_store_factory(ctx)
                 if self.report_store_factory is not None
                 else managed_report_store(ctx, report_root=self.report_root)
             )
+            get_report = getattr(report_store, "get", None)
+            current = get_report(report.run_id) if callable(get_report) else None
+            if current is not None:
+                if not isinstance(current, PipelineRunReport):
+                    raise ExecutionRejected("Stored run report schema is invalid")
+                if (
+                    current.run_id != report.run_id
+                    or current.plan_fingerprint != report.plan_fingerprint
+                ):
+                    raise ExecutionRejected("Stored run report identity is invalid")
+                if ARTIFACT_STORAGE_RUN_ID_KEY in current.metadata:
+                    if artifact_storage_run_id(current) != artifact_storage_run_id(
+                        report
+                    ):
+                        raise ExecutionRejected("Stored artifact workspace is invalid")
+                    # Cleanup state belongs to the current provider row, not
+                    # the immutable execution result being reconciled.
+                    metadata = dict(report.metadata)
+                    for key in (
+                        RUN_ARTIFACT_RETENTION_STATE_KEY,
+                        RUN_ARTIFACT_RETENTION_DETAILS_KEY,
+                    ):
+                        if key in current.metadata:
+                            metadata[key] = current.metadata[key]
+                    report = replace(report, metadata=metadata)
+            report = apply_artifact_expiry(workspace, report)
             record_artifact_ownership(workspace, report)
             report_store.put(report)
 

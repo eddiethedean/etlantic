@@ -14,7 +14,10 @@ from typing import Any, cast
 
 from etlantic.io_policy import SafeIoPolicy, read_text_safe, write_text_safe
 from etlantic.reports.model import ArtifactResult, PipelineRunReport
-from etlantic.reports.retention import RUN_ARTIFACT_RETENTION_STATE_KEY
+from etlantic.reports.retention import (
+    RUN_ARTIFACT_RETENTION_DETAILS_KEY,
+    RUN_ARTIFACT_RETENTION_STATE_KEY,
+)
 
 
 def _open_lock(workspace: Path) -> int:
@@ -109,10 +112,16 @@ def _expiry_path(workspace: Path, run_id: str, identity: str) -> Path:
 
 def expire_artifact_reference(workspace: Path, run_id: str, identity: str) -> None:
     """Persist a tombstone before publishing reference expiry to report stores."""
+    _write_expiry(workspace, _expiry_path(workspace, run_id, identity), run_id)
+
+
+def _write_expiry(workspace: Path, path: Path, run_id: str) -> None:
+    # Writers already hold the process-owned workspace lock. SafeIo's
+    # exclusive-create locks survive crashes and would prevent later recovery.
     write_text_safe(
-        _expiry_path(workspace, run_id, identity),
+        path,
         '"expired"',
-        SafeIoPolicy.for_root(workspace.parents[3]),
+        replace(SafeIoPolicy.for_root(workspace.parents[3]), enable_locking=False),
         run_id=run_id,
     )
 
@@ -123,6 +132,7 @@ def apply_artifact_expiry(
     """Keep reference expiry authoritative over stale result-publication copies."""
     artifacts: list[ArtifactResult] = []
     changed = False
+    expired: set[str] = set()
     policy = SafeIoPolicy.for_root(workspace.parents[3])
     for artifact in report.artifacts:
         path = _expiry_path(workspace, report.run_id, artifact.identity)
@@ -133,13 +143,23 @@ def apply_artifact_expiry(
             if artifact.status != "expired":
                 artifact = replace(artifact, status="expired")
                 changed = True
+                expired.add(artifact.identity)
         artifacts.append(artifact)
     if not changed:
         return report
     metadata = dict(report.metadata)
-    durable = [artifact for artifact in artifacts if artifact.strategy == "durable"]
-    if durable and all(artifact.status == "expired" for artifact in durable):
-        metadata[RUN_ARTIFACT_RETENTION_STATE_KEY] = "complete"
+    if metadata.get(RUN_ARTIFACT_RETENTION_STATE_KEY) != "complete":
+        # Tombstones prove reference expiry, not physical deletion. A stale
+        # snapshot must leave these files eligible for a guarded cleanup pass.
+        details = dict(metadata.get(RUN_ARTIFACT_RETENTION_DETAILS_KEY) or {})
+        deferred = details.get("deferred_artifact_ids", [])
+        if not isinstance(deferred, list):
+            raise ValueError("Deferred artifact cleanup record is invalid")
+        details["deferred_artifact_ids"] = sorted(
+            {str(item) for item in cast(list[object], deferred)} | expired
+        )
+        metadata[RUN_ARTIFACT_RETENTION_DETAILS_KEY] = details
+        metadata.setdefault(RUN_ARTIFACT_RETENTION_STATE_KEY, "pending")
     return replace(report, artifacts=tuple(artifacts), metadata=metadata)
 
 
@@ -169,7 +189,7 @@ def record_artifact_ownership(workspace: Path, report: PipelineRunReport) -> Non
     write_text_safe(
         workspace / ".artifact-owners" / f"{owner}.json",
         json.dumps(payload, sort_keys=True),
-        SafeIoPolicy.for_root(workspace.parents[3]),
+        replace(SafeIoPolicy.for_root(workspace.parents[3]), enable_locking=False),
         run_id=report.run_id,
     )
 
@@ -197,13 +217,13 @@ def retained_artifact_ownership(
             ended is not None and not isinstance(ended, str)
         ):
             raise ValueError("Artifact ownership record is invalid")
+        expired = False
         if terminal and isinstance(ended, str):
             ended_at = datetime.fromisoformat(ended)
             ended_at = (
                 ended_at.replace(tzinfo=UTC) if ended_at.tzinfo is None else ended_at
             )
-            if ended_at <= cutoff:
-                continue
+            expired = ended_at <= cutoff
         references = data.get("references")
         if not isinstance(references, list):
             raise ValueError("Artifact ownership references are invalid")
@@ -226,6 +246,12 @@ def retained_artifact_ownership(
                 )
                 if status != '"expired"':
                     raise ValueError("Artifact reference expiry record is invalid")
+                continue
+            if expired:
+                # Publication snapshots are immutable. Expire their references
+                # before forgetting ownership, even if another report retains
+                # the same physical bytes.
+                _write_expiry(workspace, marker, "artifact-retention")
                 continue
             protected.add(cast(str, identity))
     return protected

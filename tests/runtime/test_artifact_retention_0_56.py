@@ -75,6 +75,90 @@ def _write_artifact(
     return path
 
 
+def _crash_during_coordination_write(workspace: Path, kind: str) -> None:
+    import os
+
+    import etlantic.io_policy as io
+    from etlantic.runtime.artifact_coordination import (
+        artifact_workspace_lock,
+        expire_artifact_reference,
+        record_artifact_ownership,
+    )
+
+    def crash_before_replace(*_args: Any) -> None:
+        os._exit(7)
+
+    monkeypatch = pytest.MonkeyPatch()
+    monkeypatch.setattr(io, "_replace_with_retry", crash_before_replace)
+    with artifact_workspace_lock(workspace):
+        if kind == "ownership":
+            record_artifact_ownership(
+                workspace,
+                _report(
+                    "crashed",
+                    ended_at=datetime.now(UTC),
+                    artifacts=(ArtifactResult("shared", "output", "durable"),),
+                ),
+            )
+        else:
+            expire_artifact_reference(workspace, "crashed", "shared")
+
+
+@pytest.mark.parametrize("kind", ["ownership", "expiry"])
+def test_coordination_writes_recover_after_process_death(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    kind: str,
+) -> None:
+    import multiprocessing
+    from dataclasses import replace
+
+    import etlantic.runtime.artifact_coordination as coordination
+    from etlantic.io_policy import SafeIoPolicy, write_text_safe
+
+    workspace = managed_artifact_workspace(_ctx(), "crashed", artifact_root=tmp_path)
+    process = multiprocessing.get_context("spawn").Process(
+        target=_crash_during_coordination_write, args=(workspace, kind)
+    )
+    process.start()
+    process.join(10)
+    if process.is_alive():
+        process.terminate()
+        process.join(10)
+    assert process.exitcode == 7
+
+    def short_lock_write(
+        path: str | Path, text: str, policy: SafeIoPolicy, *, run_id: str
+    ) -> Any:
+        return write_text_safe(
+            path, text, replace(policy, lock_timeout_seconds=0.1), run_id=run_id
+        )
+
+    monkeypatch.setattr(coordination, "write_text_safe", short_lock_write)
+    # Also tolerate an orphaned exclusive-create lock from the previous
+    # implementation, rather than requiring operators to remove it manually.
+    for temporary in workspace.rglob("*.tmp"):
+        filename = temporary.name.removeprefix(".").split(".json.")[0] + ".json.lock"
+        (temporary.parent / filename).write_text("dead-worker", encoding="utf-8")
+    with coordination.artifact_workspace_lock(workspace, blocking=False) as acquired:
+        assert acquired
+        report = _report(
+            "crashed",
+            ended_at=datetime.now(UTC),
+            artifacts=(ArtifactResult("shared", "output", "durable"),),
+        )
+        coordination.record_artifact_ownership(workspace, report)
+        coordination.expire_artifact_reference(workspace, report.run_id, "shared")
+        expired = coordination.apply_artifact_expiry(workspace, report)
+        assert expired.artifacts[0].status == "expired"
+        assert (
+            coordination.retained_artifact_ownership(
+                workspace, datetime.now(UTC) - timedelta(days=1), report_run_ids=set()
+            )
+            == set()
+        )
+
+
 def test_artifact_cleanup_is_bounded_resumable_and_preserves_run_result(
     tmp_path: Path,
 ) -> None:
@@ -551,8 +635,10 @@ def test_cleanup_coordinates_with_another_process_and_refreshes_file_inventory(
         publisher.join(10)
 
 
+@pytest.mark.parametrize("reconcile_parent", [False, True])
 def test_unpublished_child_ownership_survives_and_eventually_expires(
     tmp_path: Path,
+    reconcile_parent: bool,
 ) -> None:
     from dataclasses import replace
 
@@ -574,6 +660,7 @@ def test_unpublished_child_ownership_survives_and_eventually_expires(
         ended_at=now - timedelta(days=2),
         artifacts=(ArtifactResult("shared", "output", "durable"),),
     )
+    parent = replace(parent, metadata={ARTIFACT_STORAGE_RUN_ID_KEY: "parent"})
     store.put(parent)
     child = replace(
         parent,
@@ -592,6 +679,34 @@ def test_unpublished_child_ownership_survives_and_eventually_expires(
     assert expired is not None and expired.artifacts[0].status == "expired"
     assert shared.is_file() and first.deleted_artifacts == 0
     assert first.remaining_candidates and first.completed_reports == 0
+    if reconcile_parent:
+        import hashlib
+
+        from etlantic.control_plane.durable_models import ResultPublicationRecord
+        from etlantic.runtime.managed_execution import ManagedExecutionAdapter
+
+        snapshot = parent.to_json()
+        publication = ResultPublicationRecord(
+            submission_id="parent-submission",
+            attempt_id="parent-attempt",
+            run_id=parent.run_id,
+            tenant_id=ctx.tenant.tenant_id,
+            workspace_id=ctx.workspace.workspace_id,
+            report_json=snapshot,
+            report_sha256=hashlib.sha256(snapshot.encode()).hexdigest(),
+            created_at=parent.ended_at.isoformat() if parent.ended_at else "",
+        )
+        ManagedExecutionAdapter(
+            artifact_root=root,
+            report_store_factory=lambda _: FileReportStore(reports),
+        ).publish_result_publication(ctx, publication)
+        reconciled = FileReportStore(reports).get(parent.run_id)
+        assert reconciled is not None
+        assert reconciled.metadata[RUN_ARTIFACT_RETENTION_STATE_KEY] == "running"
+        assert reconciled.metadata[RUN_ARTIFACT_RETENTION_DETAILS_KEY]["attempts"] == 1
+        assert reconciled.metadata[RUN_ARTIFACT_RETENTION_DETAILS_KEY][
+            "deferred_artifact_ids"
+        ] == ["shared"]
     # Even if the provider never recovers, the deferred physical cleanup must
     # complete after the ownership window, including across process restarts.
     restarted = FileReportStore(reports)
