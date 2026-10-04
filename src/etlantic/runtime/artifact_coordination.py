@@ -10,6 +10,7 @@ from contextlib import contextmanager, suppress
 from dataclasses import dataclass, replace
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
+from threading import Event
 from typing import Any, cast
 
 from etlantic.io_policy import (
@@ -23,6 +24,7 @@ from etlantic.reports.retention import (
     RUN_ARTIFACT_RETENTION_DETAILS_KEY,
     RUN_ARTIFACT_RETENTION_STATE_KEY,
 )
+from etlantic.runtime.managed_errors import ExecutionCancelled
 
 
 def _open_lock(workspace: Path) -> int:
@@ -58,43 +60,57 @@ def _open_lock(workspace: Path) -> int:
 
 @contextmanager
 def artifact_workspace_lock(
-    workspace: Path, *, blocking: bool = True
+    workspace: Path, *, blocking: bool = True, cancel_event: Event | None = None
 ) -> Generator[bool]:
     """Serialize workspace execution/publication with cleanup across processes.
 
     Cleanup uses a nonblocking acquisition so a running child never stalls
     worker polling. OS ownership is released even if an execution process dies;
-    the persistent lock file must never be unlinked or replaced.
+    the persistent lock file must never be unlinked or replaced. A supplied
+    cancellation event interrupts blocking waits before execution begins.
     """
+    if cancel_event is not None and cancel_event.is_set():
+        raise ExecutionCancelled("Artifact workspace wait was cancelled")
     descriptor = _open_lock(workspace)
     acquired = False
     try:
-        if os.name == "posix":
-            import fcntl
+        nonblocking = not blocking or cancel_event is not None
+        while True:
+            if os.name == "posix":
+                import fcntl
 
-            try:
-                fcntl.flock(
-                    descriptor, fcntl.LOCK_EX | (0 if blocking else fcntl.LOCK_NB)
-                )
-                acquired = True
-            except BlockingIOError:
-                pass
-        else:
-            import msvcrt
+                try:
+                    fcntl.flock(
+                        descriptor,
+                        fcntl.LOCK_EX | (fcntl.LOCK_NB if nonblocking else 0),
+                    )
+                    acquired = True
+                except BlockingIOError:
+                    pass
+            else:
+                import msvcrt
 
-            # Windows locks a byte range, including a byte beyond EOF.
-            try:
-                msvcrt.locking(
-                    descriptor, msvcrt.LK_LOCK if blocking else msvcrt.LK_NBLCK, 1
-                )
-                acquired = True
-            except OSError as exc:
-                if blocking or exc.errno not in (
-                    errno.EACCES,
-                    errno.EAGAIN,
-                    errno.EDEADLK,
-                ):
-                    raise
+                # Windows locks a byte range, including a byte beyond EOF.
+                try:
+                    msvcrt.locking(
+                        descriptor,
+                        msvcrt.LK_NBLCK if nonblocking else msvcrt.LK_LOCK,
+                        1,
+                    )
+                    acquired = True
+                except OSError as exc:
+                    if not nonblocking or exc.errno not in (
+                        errno.EACCES,
+                        errno.EAGAIN,
+                        errno.EDEADLK,
+                    ):
+                        raise
+            if acquired or not blocking:
+                break
+            if cancel_event is not None and cancel_event.wait(0.05):
+                raise ExecutionCancelled("Artifact workspace wait was cancelled")
+        if cancel_event is not None and cancel_event.is_set():
+            raise ExecutionCancelled("Artifact workspace wait was cancelled")
         yield acquired
     finally:
         if acquired:

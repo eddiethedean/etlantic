@@ -190,6 +190,153 @@ def test_pending_publication_skips_busy_workspace_and_executes_independent_run(
     assert len(durable.list_attempts(ctx, ready_submission)) == 1
 
 
+@pytest.mark.parametrize("stop_reason", ["cancel", "cancel_recovered", "lease_loss"])
+def test_workspace_wait_stops_before_execution_on_cancel_or_lease_loss(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, stop_reason: str
+) -> None:
+    from collections.abc import Generator
+    from contextlib import contextmanager
+    from threading import Event, Thread
+    from typing import NoReturn
+
+    import etlantic.runtime.managed_execution as managed
+    from etlantic.runtime.artifact_coordination import artifact_workspace_lock
+
+    ctx, service, durable, _, _, storage_id, _, _, paths = _execute_resumed_run(
+        tmp_path, generations=1, publication_fallback=False
+    )
+    waiting = service.resume_run(
+        ctx, storage_id, idempotency_key="waiting", checkpoint_id="checkpoint:parent"
+    )
+    assert waiting.resource_id is not None
+    if stop_reason == "cancel_recovered":
+        lease = durable.acquire_lease(
+            ctx, waiting.submission_id, owner_id="prior", ttl_seconds=3
+        )
+        durable.start_attempt(
+            ctx,
+            waiting.submission_id,
+            owner_id="prior",
+            fencing_token=lease.fencing_token,
+        )
+        durable.release_lease(
+            ctx,
+            waiting.submission_id,
+            owner_id="prior",
+            fencing_token=lease.fencing_token,
+        )
+    independent = (
+        service.submit_run(
+            ctx,
+            "pipe",
+            idempotency_key="independent-after-cancel",
+            request=RunRequest(materialization=MaterializationPolicy.DURABLE),
+        )
+        if stop_reason != "lease_loss"
+        else None
+    )
+    if stop_reason == "lease_loss":
+
+        def lose_lease(*_args: object, **_kwargs: object) -> NoReturn:
+            raise OSError("Worker cannot prove lease ownership")
+
+        monkeypatch.setattr(durable, "heartbeat", lose_lease)
+    entered, finished = Event(), Event()
+    events: list[Event] = []
+    results: list[int] = []
+    failures: list[Exception] = []
+    original_lock = managed.artifact_workspace_lock
+
+    @contextmanager
+    def observed_lock(
+        workspace: Path, *, blocking: bool = True, cancel_event: Event | None = None
+    ) -> Generator[bool]:
+        if cancel_event is not None:
+            events.append(cancel_event)
+            entered.set()
+        with original_lock(
+            workspace, blocking=blocking, cancel_event=cancel_event
+        ) as acquired:
+            yield acquired
+
+    monkeypatch.setattr(managed, "artifact_workspace_lock", observed_lock)
+    host = ExecutionHost(
+        durable,
+        owner_id="waiting-worker",
+        ttl_seconds=3,
+        runner=ManagedExecutionAdapter(
+            report_root=tmp_path / "reports", artifact_root=tmp_path / "artifacts"
+        ),
+    )
+
+    def tick() -> None:
+        try:
+            results.append(host.tick(ctx))
+        except Exception as exc:
+            failures.append(exc)
+        finally:
+            finished.set()
+
+    worker = Thread(target=tick, daemon=True)
+    workspace = managed_artifact_workspace(
+        ctx, storage_id, artifact_root=tmp_path / "artifacts"
+    )
+    original_bytes = [path.read_bytes() for path in paths]
+    try:
+        with artifact_workspace_lock(workspace):
+            worker.start()
+            assert entered.wait(5)
+            if stop_reason != "lease_loss":
+                durable.cancel_submission(ctx, waiting.submission_id)
+            assert events[0].wait(5)
+            assert finished.wait(5), (
+                "Cancelled/fenced wait must finish before lock release"
+            )
+            assert not failures
+            assert [path.read_bytes() for path in paths] == original_bytes
+            assert (
+                managed_report_store(ctx, report_root=tmp_path / "reports").get(
+                    waiting.resource_id
+                )
+                is None
+            )
+            assert (
+                durable.get_latest_result_publication(ctx, waiting.submission_id)
+                is None
+            )
+            attempts = durable.list_attempts(ctx, waiting.submission_id)
+            if stop_reason == "lease_loss":
+                assert results == [1] and attempts[-1].status == "running"
+                assert any(
+                    item.submission_id == waiting.submission_id
+                    for item in durable.pending_outbox(ctx)
+                )
+            else:
+                assert results == [2] and attempts[-1].status == "cancelled"
+                assert (
+                    durable.get_submission(ctx, waiting.submission_id).status
+                    == "cancelled"
+                )
+                assert not durable.pending_outbox(ctx)
+                assert independent is not None
+                assert (
+                    durable.get_submission(ctx, independent.submission_id).status
+                    == "completed"
+                )
+            if stop_reason == "cancel_recovered":
+                assert (
+                    durable.get_effect(ctx, f"{waiting.submission_id}:execution").status
+                    == "unknown"
+                )
+            else:
+                with pytest.raises(ControlPlaneError) as missing:
+                    durable.get_effect(ctx, f"{waiting.submission_id}:execution")
+                assert missing.value.status == 404
+    finally:
+        worker.join(10)
+        assert not worker.is_alive()
+
+
 @pytest.mark.parametrize("has_cleanup_candidate", [False, True])
 def test_expired_unpublished_child_cannot_download_retained_shared_bytes(
     tmp_path: Path, has_cleanup_candidate: bool

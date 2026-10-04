@@ -183,6 +183,7 @@ def cleanup_expired_run_artifacts(
     touched_artifacts = 0
 
     busy = False
+    busy_workspaces: set[Path] = set()
     orphan_remaining = False
     scope = managed_artifact_workspace(
         ctx, "discovery", artifact_root=artifact_root
@@ -194,6 +195,7 @@ def cleanup_expired_run_artifacts(
         with artifact_workspace_lock(workspace, blocking=False) as acquired:
             if not acquired:
                 busy = True
+                busy_workspaces.add(workspace)
                 continue
             reports = [normalize(item) for item in inventory()]
             ownership = read_artifact_ownership(
@@ -233,17 +235,20 @@ def cleanup_expired_run_artifacts(
             else report.ended_at or cutoff,
             report.run_id,
         ),
-    )[:limit]
-    for report_index, candidate in enumerate(candidates):
-        if touched_artifacts >= limit:
+    )
+    for candidate in candidates:
+        if touched_artifacts >= limit or processed_reports >= limit:
             break
         candidate = normalize(candidate)
         workspace = managed_artifact_workspace(
             ctx, artifact_storage_run_id(candidate), artifact_root=artifact_root
         )
+        if workspace in busy_workspaces:
+            continue
         with artifact_workspace_lock(workspace, blocking=False) as acquired:
             if not acquired:
                 busy = True
+                busy_workspaces.add(workspace)
                 continue
             reports = [normalize(item) for item in inventory()]
             report = next(
@@ -384,9 +389,6 @@ def cleanup_expired_run_artifacts(
                 metadata[RUN_ARTIFACT_RETENTION_STATE_KEY] = "complete"
                 completed_reports += 1
             report_store.put(replace(working, metadata=metadata))
-
-            if touched_artifacts >= limit and report_index + 1 < len(candidates):
-                break
 
     remaining_candidates = (
         busy

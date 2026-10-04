@@ -23,7 +23,11 @@ from etlantic.control_plane.errors import ControlPlaneError
 from etlantic.control_plane.models import ControlPlaneContext
 from etlantic.control_plane.schedule_diagnostics import fed_diagnostic
 from etlantic.reports.model import PipelineRunReport
-from etlantic.runtime.managed_errors import ExecutionRejected, UnknownCommitError
+from etlantic.runtime.managed_errors import (
+    ExecutionCancelled,
+    ExecutionRejected,
+    UnknownCommitError,
+)
 from etlantic.runtime.state import RunStatus
 from etlantic.secrets.provider import SecretAliasAuthorizer
 
@@ -351,18 +355,15 @@ class ExecutionHost:
                 processed += 1
                 continue
 
-            if _is_preexecution_rejection(
-                runner_error, recovered=bool(previous_attempts)
+            if self._finish_preexecution_attempt(
+                ctx,
+                error=runner_error,
+                submission_id=item.submission_id,
+                outbox_id=item.outbox_id,
+                attempt_id=attempt.attempt_id,
+                fencing_token=lease.fencing_token,
+                recovered=bool(previous_attempts),
             ):
-                self.durable.finish_attempt(
-                    ctx,
-                    attempt.attempt_id,
-                    owner_id=self.owner_id,
-                    fencing_token=lease.fencing_token,
-                    status="failed",
-                )
-                self.durable.mark_published(ctx, item.outbox_id)
-                self._release_lease(ctx, item.submission_id, lease.fencing_token)
                 processed += 1
                 continue
             if runner_error is not None:
@@ -449,6 +450,42 @@ class ExecutionHost:
             self._release_lease(ctx, item.submission_id, lease.fencing_token)
             processed += 1
         return processed
+
+    def _finish_preexecution_attempt(
+        self,
+        ctx: ControlPlaneContext,
+        *,
+        error: Exception | None,
+        submission_id: str,
+        outbox_id: str,
+        attempt_id: str,
+        fencing_token: int,
+        recovered: bool,
+    ) -> bool:
+        """Acknowledge classified stops before this attempt entered execution."""
+        if isinstance(error, ExecutionCancelled):
+            # Prior attempts still require conservative effect reconciliation.
+            self._finish_cancelled_attempt(
+                ctx,
+                submission_id=submission_id,
+                outbox_id=outbox_id,
+                attempt_id=attempt_id,
+                fencing_token=fencing_token,
+                recovered=recovered,
+            )
+            return True
+        if not _is_preexecution_rejection(error, recovered=recovered):
+            return False
+        self.durable.finish_attempt(
+            ctx,
+            attempt_id,
+            owner_id=self.owner_id,
+            fencing_token=fencing_token,
+            status="failed",
+        )
+        self.durable.mark_published(ctx, outbox_id)
+        self._release_lease(ctx, submission_id, fencing_token)
+        return True
 
     def _finish_cancelled_attempt(
         self,

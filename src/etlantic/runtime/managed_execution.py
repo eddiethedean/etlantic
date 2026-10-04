@@ -427,7 +427,7 @@ class ManagedExecutionAdapter:
         workspace = managed_artifact_workspace(
             ctx, storage_id, artifact_root=self.artifact_root
         )
-        with artifact_workspace_lock(workspace):
+        with artifact_workspace_lock(workspace, cancel_event=cancel_event):
             return self._execute(
                 ctx,
                 submission=submission,

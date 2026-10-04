@@ -75,6 +75,106 @@ def _write_artifact(
     return path
 
 
+@pytest.mark.parametrize("store_kind", ["memory", "file"])
+@pytest.mark.parametrize("busy_reports", [1, 3])
+def test_busy_workspace_does_not_consume_ready_report_batch(
+    tmp_path: Path, store_kind: str, busy_reports: int
+) -> None:
+    from dataclasses import replace
+
+    from etlantic.reports.file_store import FileReportStore
+    from etlantic.reports.retention import ARTIFACT_STORAGE_RUN_ID_KEY
+    from etlantic.runtime.artifact_coordination import artifact_workspace_lock
+
+    ctx, now = _ctx(), datetime.now(UTC)
+    root = tmp_path / "artifacts"
+    store = (
+        FileReportStore(tmp_path / "reports") if store_kind == "file" else ReportStore()
+    )
+    pinned = _write_artifact(ctx, root, "busy", "shared")
+    for index in range(busy_reports):
+        store.put(
+            replace(
+                _report(
+                    f"busy-{index}",
+                    ended_at=now - timedelta(days=3),
+                    artifacts=(ArtifactResult("shared", "output", "durable"),),
+                ),
+                metadata={ARTIFACT_STORAGE_RUN_ID_KEY: "busy"},
+            )
+        )
+    ready = [
+        _write_artifact(ctx, root, f"ready-{index}", "output") for index in range(2)
+    ]
+    for index in range(2):
+        store.put(
+            _report(
+                f"ready-{index}",
+                ended_at=now - timedelta(days=2),
+                artifacts=(ArtifactResult("output", "output", "durable"),),
+            )
+        )
+    workspace = managed_artifact_workspace(ctx, "busy", artifact_root=root)
+    with artifact_workspace_lock(workspace):
+        for index in range(2):
+            result = cleanup_expired_run_artifacts(
+                ctx,
+                report_store=store,
+                artifact_root=root,
+                retention_seconds=60,
+                limit=1,
+                now=now,
+            )
+            assert result.processed_reports == result.completed_reports == 1
+            assert result.deleted_artifacts == 1 and result.remaining_candidates
+            assert not ready[index].exists() and pinned.is_file()
+            if index == 0:
+                assert ready[1].is_file()
+        for index in range(busy_reports):
+            saved = store.get(f"busy-{index}")
+            assert saved is not None and saved.artifacts[0].status == "available"
+    for _ in range(busy_reports):
+        result = cleanup_expired_run_artifacts(
+            ctx,
+            report_store=store,
+            artifact_root=root,
+            retention_seconds=60,
+            limit=1,
+            now=now,
+        )
+        assert result.processed_reports == 1
+    assert not pinned.exists()
+    assert not cleanup_expired_run_artifacts(
+        ctx,
+        report_store=store,
+        artifact_root=root,
+        retention_seconds=60,
+        limit=1,
+        now=now,
+    ).remaining_candidates
+
+
+def test_cleanup_still_bounds_processed_reports_without_durable_references(
+    tmp_path: Path,
+) -> None:
+    ctx, now = _ctx(), datetime.now(UTC)
+    store = ReportStore()
+    for index in range(3):
+        store.put(_report(str(index), ended_at=now - timedelta(days=2), artifacts=()))
+    for index in range(3):
+        result = cleanup_expired_run_artifacts(
+            ctx,
+            report_store=store,
+            artifact_root=tmp_path,
+            retention_seconds=60,
+            limit=1,
+            now=now,
+        )
+        assert result.processed_reports == result.completed_reports == 1
+        assert result.deleted_artifacts == 0
+        assert result.remaining_candidates == (index < 2)
+
+
 def test_unpublished_only_cleanup_is_bounded_and_resumes_after_restart(
     tmp_path: Path,
 ) -> None:

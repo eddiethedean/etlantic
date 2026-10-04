@@ -69,6 +69,12 @@ with cleanup for each artifact workspace. Cleanup skips a busy workspace and
 refreshes its scoped report inventory under the lock, including file providers
 opened before another worker published a child. Workers sharing artifact files
 must use the same artifact root; independent workspaces still execute in parallel.
+Busy reports do not consume the processed-report batch limit, so cleanup
+continues in other workspaces even when the oldest reports remain locked.
+Execution lock waits observe cancellation and lease loss before ETL starts.
+Cancellation finishes without requiring lock release; an unstarted attempt
+adds no unknown effect, while prior attempts still require reconciliation.
+Workers that lose their lease leave the outbox available for recovery.
 Result reconciliation also skips busy workspaces, leaving their publication
 records pending while the worker processes other publications and accepted runs.
 
