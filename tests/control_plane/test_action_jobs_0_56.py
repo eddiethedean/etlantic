@@ -9,6 +9,7 @@ from datetime import UTC, datetime, timedelta
 from threading import Event, Thread
 from time import sleep
 from typing import Any, cast
+from unittest.mock import patch
 
 import pytest
 
@@ -64,6 +65,17 @@ def _accepted(
         request=request,
         deadline_at=(created + timedelta(minutes=2)).isoformat(),
     )
+
+
+def _provision_effect(request: Mapping[str, Any]) -> dict[str, Any]:
+    return {
+        "action_id": request["action_id"],
+        "effect_id": "committed-fixture-effect",
+        "resource_id": request["resource_id"],
+        "schema_fingerprint": request["schema_fingerprint"],
+        "created": True,
+        "cleanup_supported": True,
+    }
 
 
 def test_action_job_acceptance_is_redacted_idempotent_and_owner_scoped() -> None:
@@ -262,6 +274,236 @@ def test_run_preparation_worker_renews_lease_during_long_preparation() -> None:
     assert not process.is_alive()
     assert result == [1]
     assert store.get_action_job(ctx, job.action_id).status == "succeeded"
+
+
+def test_action_worker_renews_lease_during_long_connector_handler() -> None:
+    store = MemoryDurableWorkStore()
+    ctx = _context()
+    authorizer = MemoryAuthorizer()
+    authorizer.grant(ctx, "connector.test")
+    job = _accepted(
+        store,
+        ctx,
+        key="connector-long-running",
+        request={"provider": "mock", "connection_id": "slow"},
+    )
+    started = Event()
+
+    async def long_handler(
+        _action_ctx: ControlPlaneContext, _request: Mapping[str, Any]
+    ) -> dict[str, bool]:
+        started.set()
+        await asyncio.sleep(1.6)
+        return {"ok": True}
+
+    worker = ActionExecutionHost(
+        store,
+        handlers={"connector.test": long_handler},
+        authorizer=authorizer,
+        worker_id="long-connector-worker",
+        lease_seconds=1,
+    )
+    result: list[int] = []
+    process = Thread(target=lambda: result.append(worker.tick(ctx, limit=1)))
+    process.start()
+    assert started.wait(timeout=3)
+    sleep(1.1)
+    assert (
+        store.claim_action_job(ctx, worker_id="competing-worker", lease_seconds=1)
+        is None
+    )
+    process.join(timeout=5)
+    assert not process.is_alive()
+    assert result == [1]
+    assert store.get_action_job(ctx, job.action_id).status == "succeeded"
+
+
+def test_action_worker_cancels_handler_when_lease_renewal_fails() -> None:
+    store = MemoryDurableWorkStore()
+    ctx = _context()
+    authorizer = MemoryAuthorizer()
+    authorizer.grant(ctx, "connector.test")
+    job = _accepted(
+        store,
+        ctx,
+        key="connector-heartbeat-failure",
+        request={"provider": "mock", "connection_id": "slow"},
+    )
+    started = Event()
+    cancelled = Event()
+
+    async def cancellable_handler(
+        _action_ctx: ControlPlaneContext, _request: Mapping[str, Any]
+    ) -> dict[str, bool]:
+        started.set()
+        try:
+            await asyncio.sleep(5)
+        except asyncio.CancelledError:
+            cancelled.set()
+            raise
+        return {"ok": True}
+
+    worker = ActionExecutionHost(
+        store,
+        handlers={"connector.test": cancellable_handler},
+        authorizer=authorizer,
+        worker_id="heartbeat-failure-worker",
+        lease_seconds=1,
+    )
+    result: list[int] = []
+    heartbeat_error = ControlPlaneError.conflict("injected heartbeat failure")
+    with patch.object(
+        store,
+        "heartbeat_action_job",
+        side_effect=heartbeat_error,
+    ) as heartbeat:
+        process = Thread(target=lambda: result.append(worker.tick(ctx, limit=1)))
+        process.start()
+        assert started.wait(timeout=3)
+        process.join(timeout=5)
+        assert not process.is_alive()
+        heartbeat.assert_called_once()
+    assert cancelled.is_set()
+    assert result == [1]
+    still_claimed = store.get_action_job(ctx, job.action_id)
+    assert still_claimed.status == "running"
+    replacement = store.claim_action_job(
+        ctx,
+        worker_id="replacement-worker",
+        lease_seconds=10,
+        now=datetime.now(UTC) + timedelta(seconds=2),
+    )
+    assert replacement is not None
+    assert replacement.action_id == job.action_id
+    assert replacement.fencing_token == still_claimed.fencing_token + 1
+
+
+def test_action_worker_retains_effect_if_claimant_times_out_during_cleanup() -> None:
+    store = MemoryDurableWorkStore()
+    ctx = _context()
+    authorizer = MemoryAuthorizer()
+    authorizer.grant(ctx, "connector.provision")
+    job = store.accept_action_job(
+        ctx,
+        action="connector.provision",
+        idempotency_key="committed-before-deadline",
+        request={
+            "provider": "mock",
+            "connection_id": "db",
+            "resource_id": "committed-table",
+            "columns": [{"name": "id", "logical_type": "integer"}],
+        },
+        deadline_at=(datetime.now(UTC) + timedelta(milliseconds=100)).isoformat(),
+    )
+
+    cancelled = Event()
+
+    async def committed_on_cancel(
+        _action_ctx: ControlPlaneContext, request: Mapping[str, Any]
+    ) -> dict[str, Any]:
+        try:
+            await asyncio.sleep(5)
+        except asyncio.CancelledError:
+            cancelled.set()
+            await asyncio.sleep(1.2)
+            return _provision_effect(request)
+        raise AssertionError("provision handler was not cancelled")
+
+    worker = ActionExecutionHost(
+        store,
+        handlers={"connector.provision": committed_on_cancel},
+        authorizer=authorizer,
+        lease_seconds=1,
+    )
+    result: list[int] = []
+    process = Thread(target=lambda: result.append(worker.tick(ctx, limit=1)))
+    process.start()
+    assert cancelled.wait(timeout=3)
+    assert (
+        store.claim_action_job(ctx, worker_id="competing-worker", lease_seconds=1)
+        is None
+    )
+    timed_out = store.get_action_job(ctx, job.action_id)
+    assert timed_out.status == "timed_out"
+    process.join(timeout=5)
+    assert not process.is_alive()
+    assert result == [1]
+    receipt = store.get_action_job(ctx, job.action_id)
+    assert receipt.status == "timed_out"
+    assert receipt.error_code == "deadline_exceeded"
+    effect = json.loads(receipt.result_json or "{}")
+    assert effect["action_id"] == job.action_id
+    assert effect["effect_id"] == "committed-fixture-effect"
+    assert effect["resource_id"] == "committed-table"
+    assert len(effect["schema_fingerprint"]) == 64
+    assert effect["created"] is True
+    assert effect["cleanup_supported"] is True
+
+
+@pytest.mark.parametrize("takeover", [False, True])
+def test_action_worker_fences_effect_returned_after_heartbeat_failure(
+    takeover: bool,
+) -> None:
+    store = MemoryDurableWorkStore()
+    ctx = _context()
+    authorizer = MemoryAuthorizer()
+    authorizer.grant(ctx, "connector.provision")
+    job = _accepted(
+        store,
+        ctx,
+        key=f"heartbeat-provision-{takeover}",
+        action="connector.provision",
+        request={
+            "provider": "mock",
+            "connection_id": "db",
+            "resource_id": "heartbeat-table",
+            "columns": [{"name": "id", "logical_type": "integer"}],
+        },
+    )
+    cancelled = Event()
+
+    async def committed_on_cancel(
+        _action_ctx: ControlPlaneContext, request: Mapping[str, Any]
+    ) -> dict[str, Any]:
+        try:
+            await asyncio.sleep(5)
+        except asyncio.CancelledError:
+            cancelled.set()
+            return _provision_effect(request)
+        raise AssertionError("provision handler was not cancelled")
+
+    worker = ActionExecutionHost(
+        store,
+        handlers={"connector.provision": committed_on_cancel},
+        authorizer=authorizer,
+        lease_seconds=1,
+    )
+
+    def fail_heartbeat(*_args: Any, **_kwargs: Any) -> None:
+        if takeover:
+            replacement = store.claim_action_job(
+                ctx,
+                worker_id="replacement-worker",
+                lease_seconds=10,
+                now=datetime.now(UTC) + timedelta(seconds=2),
+            )
+            assert replacement is not None
+            assert replacement.action_id == job.action_id
+        raise ControlPlaneError.conflict("injected heartbeat failure")
+
+    with patch.object(store, "heartbeat_action_job", side_effect=fail_heartbeat):
+        assert worker.tick(ctx, limit=1) == 1
+    assert cancelled.is_set()
+    receipt = store.get_action_job(ctx, job.action_id)
+    if takeover:
+        assert receipt.status == "running"
+        assert receipt.worker_id == "replacement-worker"
+        assert receipt.result_json is None
+    else:
+        assert receipt.status == "succeeded"
+        assert json.loads(receipt.result_json or "{}")["effect_id"] == (
+            "committed-fixture-effect"
+        )
 
 
 def test_run_preparation_worker_enforces_deadline_at_cancellation_checkpoint() -> None:

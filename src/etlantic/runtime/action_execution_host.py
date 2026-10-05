@@ -10,6 +10,7 @@ import json
 import re
 import threading
 from collections.abc import Awaitable, Callable, Mapping
+from contextlib import suppress
 from datetime import UTC, datetime
 from typing import Any, cast
 
@@ -47,6 +48,14 @@ _MAX_RESULT_DEPTH = 32
 _MAX_TICK_LIMIT = 100
 _SAFE_EFFECT_ID = re.compile(r"[A-Za-z0-9][A-Za-z0-9_.:-]{0,255}\Z")
 _SAFE_PREVIEW_COLUMN = re.compile(r"[A-Za-z0-9][A-Za-z0-9_.:-]{0,255}\Z")
+
+
+class _ActionLeaseLost(Exception):
+    """Raised when an ordinary action handler can no longer renew its lease."""
+
+    def __init__(self, result: Mapping[str, Any] | None = None) -> None:
+        super().__init__("Action worker lease renewal failed")
+        self.result = result
 
 
 def _now() -> datetime:
@@ -162,6 +171,7 @@ class ActionExecutionHost:
                 processed += 1
                 continue
             provision_effect: Mapping[str, Any] | None = None
+            retain_effect_callback: Callable[[Mapping[str, Any]], None] | None = None
             try:
                 if isinstance(typed_request, ConnectorProvisionCleanupRequest):
                     parent = self.durable.get_action_job(
@@ -250,10 +260,21 @@ class ActionExecutionHost:
                     )
 
                 request["_retain_effect"] = retain_effect
+                retain_effect_callback = retain_effect
             try:
                 result = asyncio.run(
-                    asyncio.wait_for(handler(action_ctx, request), timeout=remaining)
+                    self._run_action_handler(
+                        action_ctx, job, handler, request, deadline=deadline
+                    )
                 )
+            except _ActionLeaseLost as lost:
+                # A cancelled provision may still return proof of a committed
+                # effect. Retain it only through the original worker fence.
+                if lost.result is not None and retain_effect_callback is not None:
+                    with suppress(Exception):
+                        retain_effect_callback(lost.result)
+                processed += 1
+                continue
             except TimeoutError:
                 if (
                     datetime.fromisoformat(job.deadline_at.replace("Z", "+00:00"))
@@ -318,6 +339,99 @@ class ActionExecutionHost:
             )
             processed += 1
         return processed
+
+    async def _run_action_handler(
+        self,
+        ctx: ControlPlaneContext,
+        job: ActionJobRecord,
+        handler: ActionHandler,
+        request: Mapping[str, Any],
+        *,
+        deadline: datetime,
+    ) -> Mapping[str, Any]:
+        """Run an ordinary handler while renewing its fenced action lease."""
+
+        async def invoke() -> Mapping[str, Any]:
+            return await handler(ctx, request)
+
+        task = asyncio.create_task(invoke())
+        interval = min(1.0, max(0.05, self.lease_seconds / 3))
+        while not task.done():
+            remaining = (deadline - _now()).total_seconds()
+            if remaining <= 0:
+                task.cancel()
+                try:
+                    return await self._await_cancelled_action_handler(ctx, job, task)
+                except _ActionLeaseLost:
+                    raise
+                except (asyncio.CancelledError, Exception):
+                    raise TimeoutError from None
+            await asyncio.wait({task}, timeout=min(interval, remaining))
+            if task.done():
+                break
+            if _now() >= deadline:
+                continue
+            try:
+                self.durable.heartbeat_action_job(
+                    ctx,
+                    job.action_id,
+                    worker_id=self.worker_id,
+                    fencing_token=job.fencing_token,
+                    lease_seconds=self.lease_seconds,
+                )
+            except Exception as exc:
+                task.cancel()
+                try:
+                    result = await task
+                except (asyncio.CancelledError, Exception):
+                    raise _ActionLeaseLost from exc
+                raise _ActionLeaseLost(result) from exc
+        return await task
+
+    async def _await_cancelled_action_handler(
+        self,
+        ctx: ControlPlaneContext,
+        job: ActionJobRecord,
+        task: asyncio.Task[Mapping[str, Any]],
+    ) -> Mapping[str, Any]:
+        """Drain a cancelled handler without letting its lease expire."""
+        interval = min(1.0, max(0.05, self.lease_seconds / 3))
+        while not task.done():
+            await asyncio.wait({task}, timeout=interval)
+            if task.done():
+                break
+            try:
+                self.durable.heartbeat_action_job(
+                    ctx,
+                    job.action_id,
+                    worker_id=self.worker_id,
+                    fencing_token=job.fencing_token,
+                    lease_seconds=self.lease_seconds,
+                )
+            except Exception as exc:
+                try:
+                    current = self.durable.get_action_job(ctx, job.action_id)
+                except Exception:
+                    current = None
+                if (
+                    current is not None
+                    and current.fencing_token == job.fencing_token
+                    and current.status in {"timed_out", "cancelled"}
+                ):
+                    # Keep draining when another claimant terminalized this
+                    # expired job under the same fence.
+                    try:
+                        result = await task
+                    except (asyncio.CancelledError, Exception):
+                        raise _ActionLeaseLost from exc
+                    raise _ActionLeaseLost(result) from exc
+                task.cancel()
+                try:
+                    result = await task
+                except (asyncio.CancelledError, Exception):
+                    raise _ActionLeaseLost from exc
+                raise _ActionLeaseLost(result) from exc
+        return await task
 
     def _execute_run_preparation(
         self,
