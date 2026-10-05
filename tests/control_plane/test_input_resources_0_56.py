@@ -173,6 +173,26 @@ def test_default_input_owner_is_issuer_and_kind_qualified(
     assert _finalize(store, other, b"id,name\\n2,Grace\\n").owner_id != reference.owner_id
 
 
+def test_legacy_subject_owner_requires_trusted_mapping_for_existing_resources() -> None:
+    store = MemoryInputResourceStore()
+    legacy_writer = replace(
+        _context(),
+        principal=Principal(subject="uploads-owner", issuer="issuer-a", kind="human"),
+        resource_owner_id="uploads-owner",
+    )
+    current = replace(legacy_writer, resource_owner_id=None)
+    reference = _finalize(store, legacy_writer, b"id,name\\n1,Ada\\n")
+
+    with pytest.raises(ControlPlaneError) as denied:
+        store.read(current, reference)
+    assert denied.value.status == 404
+
+    # Deployments can preserve access by supplying a trusted, server-side
+    # owner mapping while legacy references remain in circulation.
+    mapped = replace(current, resource_owner_id="uploads-owner")
+    assert store.read(mapped, reference) == b"id,name\\n1,Ada\\n"
+
+
 def test_sqlmodel_default_input_owner_is_issuer_qualified(tmp_path: Path) -> None:
     pytest.importorskip("sqlalchemy")
     from sqlalchemy import create_engine
