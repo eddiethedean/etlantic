@@ -971,12 +971,29 @@ class FoundrySourceConnector(_FoundryClient):
         source_format = str(intent["format"])
         for item in files:
             relative_path = str(item["path"])
-            payload = await self._file_content(
-                cfg=cfg,
-                context=context,
-                path=relative_path,
-                transaction_rid=transaction,
-            )
+            remaining_total_bytes = max_total_bytes - total_bytes
+            if remaining_total_bytes <= 0:
+                raise ConnectorReadError(
+                    f"Foundry source exceeds max_total_bytes ({max_total_bytes})",
+                    code="PMFND033",
+                    provider=PROVIDER,
+                )
+            try:
+                payload = await self._file_content(
+                    cfg=cfg,
+                    context=context,
+                    path=relative_path,
+                    transaction_rid=transaction,
+                    max_bytes=min(max_file_bytes, remaining_total_bytes),
+                )
+            except ConnectorReadError as exc:
+                if remaining_total_bytes < max_file_bytes and exc.code == "PMFND032":
+                    raise ConnectorReadError(
+                        f"Foundry source exceeds max_total_bytes ({max_total_bytes})",
+                        code="PMFND033",
+                        provider=PROVIDER,
+                    ) from exc
+                raise
             if len(payload) > max_file_bytes:
                 raise ConnectorReadError(
                     f"Foundry file exceeds max_file_bytes ({max_file_bytes})",
