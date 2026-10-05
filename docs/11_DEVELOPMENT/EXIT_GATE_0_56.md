@@ -6,16 +6,18 @@ current_minor: "0.56"
 
 # ETLantic 0.56 Exit Gate — Complete Application ETL Backend
 
-**Decision: candidate qualification is complete; publication remains pending
-release review.** This gate records in-tree implementation and local evidence
-for the phase. It does not claim that 0.56.0 has been published.
+**Decision: candidate qualification is incomplete; AC056-031 remains open.**
+This gate records the in-tree implementation and local evidence for the phase.
+The published 0.56.0 release remains pending.
 
 ## Evidence
 
 The machine-readable [0.56 release index](evidence/phase_0_56/RELEASE_INDEX.json)
-tracks all 44 acceptance criteria. Its linked artifacts include the package
-compatibility report, wheel manifest, local qualification record, live
-PostgreSQL partition tests and managed repair/backfill lifecycle tests.
+tracks all 44 acceptance criteria: 43 are passed and AC056-031 remains open
+until managed checkpoint restoration is executable and qualified. Its linked
+artifacts include the package compatibility report, wheel manifest, local
+qualification record, live PostgreSQL partition tests and managed
+repair/backfill lifecycle tests.
 
 Candidate qualification commands and environment details are recorded in the
 [local qualification record](evidence/phase_0_56/LOCAL_QUALIFICATION.md).
