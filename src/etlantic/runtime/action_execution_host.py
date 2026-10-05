@@ -53,6 +53,10 @@ _SAFE_PREVIEW_COLUMN = re.compile(r"[A-Za-z0-9][A-Za-z0-9_.:-]{0,255}\Z")
 class _ActionLeaseLost(Exception):
     """Raised when an ordinary action handler can no longer renew its lease."""
 
+    def __init__(self, result: Mapping[str, Any] | None = None) -> None:
+        super().__init__("Action worker lease renewal failed")
+        self.result = result
+
 
 def _now() -> datetime:
     return datetime.now(UTC)
@@ -167,6 +171,7 @@ class ActionExecutionHost:
                 processed += 1
                 continue
             provision_effect: Mapping[str, Any] | None = None
+            retain_effect_callback: Callable[[Mapping[str, Any]], None] | None = None
             try:
                 if isinstance(typed_request, ConnectorProvisionCleanupRequest):
                     parent = self.durable.get_action_job(
@@ -255,16 +260,19 @@ class ActionExecutionHost:
                     )
 
                 request["_retain_effect"] = retain_effect
+                retain_effect_callback = retain_effect
             try:
                 result = asyncio.run(
                     self._run_action_handler(
                         action_ctx, job, handler, request, deadline=deadline
                     )
                 )
-            except _ActionLeaseLost:
-                # The handler was cancelled after renewal failed. Leave the
-                # claimed record fenced so another worker can retry it once
-                # the current lease expires.
+            except _ActionLeaseLost as lost:
+                # A cancelled provision may still return proof of a committed
+                # effect. Retain it only through the original worker fence.
+                if lost.result is not None and retain_effect_callback is not None:
+                    with suppress(Exception):
+                        retain_effect_callback(lost.result)
                 processed += 1
                 continue
             except TimeoutError:
@@ -352,9 +360,10 @@ class ActionExecutionHost:
             remaining = (deadline - _now()).total_seconds()
             if remaining <= 0:
                 task.cancel()
-                with suppress(asyncio.CancelledError, Exception):
-                    await task
-                raise TimeoutError
+                try:
+                    return await task
+                except (asyncio.CancelledError, Exception):
+                    raise TimeoutError from None
             await asyncio.wait({task}, timeout=min(interval, remaining))
             if task.done():
                 break
@@ -370,9 +379,11 @@ class ActionExecutionHost:
                 )
             except Exception as exc:
                 task.cancel()
-                with suppress(asyncio.CancelledError, Exception):
-                    await task
-                raise _ActionLeaseLost from exc
+                try:
+                    result = await task
+                except (asyncio.CancelledError, Exception):
+                    raise _ActionLeaseLost from exc
+                raise _ActionLeaseLost(result) from exc
         return await task
 
     def _execute_run_preparation(
