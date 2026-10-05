@@ -5,6 +5,7 @@ from __future__ import annotations
 
 import asyncio
 import json
+import time
 from collections.abc import Mapping
 from concurrent.futures import ThreadPoolExecutor
 from dataclasses import replace
@@ -3215,6 +3216,7 @@ def test_managed_run_preparation_operations_query_cancel_and_execute(
         f"/v1/preparations/{run_operation_id}", headers=run_headers
     ).json()
     assert completed["status"] == "succeeded"
+    assert completed["result"] is not None, completed
     assert completed["result"]["submission_id"]
     assert len(durable.pending_outbox(ctx)) == 1
 
@@ -4177,3 +4179,58 @@ def test_managed_rerun_audit_failure_does_not_charge_quota(
     assert accepted.resource_id is not None
     assert quota.get_state(ctx).usage["concurrency"] == 1
     assert audit.entries[-1]["metadata"]["quota_effect"] == "pending"
+
+
+def test_preparation_deadline_retains_late_durable_acceptance_receipt(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    ctx, authz, _definitions, submissions, durable, _events, service = _wired(tmp_path)
+    request = RunRequest()
+    operation = service.start_run_preparation(
+        ctx,
+        "pipe",
+        idempotency_key="late-acceptance",
+        request=request,
+        deadline_seconds=1,
+    )
+    accept = submissions.accept
+
+    def slow_accept(*args: Any, **kwargs: Any) -> Any:
+        time.sleep(1.2)
+        return accept(*args, **kwargs)
+
+    monkeypatch.setattr(submissions, "accept", slow_accept)
+
+    async def prepare(action_ctx: ControlPlaneContext, values: Mapping[str, Any]):
+        return await asyncio.to_thread(
+            service.execute_run_preparation,
+            action_ctx,
+            str(values["_operation_id"]),
+            worker_id=str(values["_worker_id"]),
+            fencing_token=int(values["_fencing_token"]),
+            request=values,
+            is_cancelled=values["_cancel_event"].is_set,
+        )
+
+    worker = ActionExecutionHost(
+        durable,
+        handlers={"run.prepare": prepare},
+        authorizer=authz,
+        worker_id="late-acceptance-worker",
+        lease_seconds=5,
+    )
+    assert worker.tick(ctx) == 1
+    completed = service.get_run_preparation(ctx, operation["operation_id"])
+    assert completed["status"] == "timed_out"
+    assert completed["result"]["submission_id"]
+    assert len(durable.pending_outbox(ctx)) == 1
+
+    recovered = service.start_run_preparation(
+        ctx,
+        "pipe",
+        idempotency_key="late-acceptance",
+        request=request,
+        deadline_seconds=1,
+    )
+    assert recovered["operation_id"] == operation["operation_id"]
+    assert recovered["result"] == completed["result"]

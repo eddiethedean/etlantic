@@ -900,7 +900,8 @@ class MemoryDurableWorkStore:
             if row is None:
                 raise ControlPlaneError.not_found("Action job not found")
             retains_effect = (
-                row.action in {"connector.provision", "connector.provision.cleanup"}
+                row.action
+                in {"connector.provision", "connector.provision.cleanup", "run.prepare"}
                 and status == "succeeded"
                 and result is not None
                 and result_ttl_seconds is None
@@ -921,9 +922,9 @@ class MemoryDurableWorkStore:
                 and row.started_at is not None
                 and retains_effect
             ):
-                # An effect receipt describes a committed mutation, not a
-                # successful deadline outcome. Preserve the terminal outcome
-                # while making the exact fenced effect available for cleanup.
+                # A receipt describes a committed mutation, not a successful
+                # deadline outcome. Preserve the terminal status while keeping
+                # the exact fenced effect available for recovery.
                 if row.result_json is not None and row.result_json != effect_json:
                     raise ControlPlaneError.conflict("Action effect receipt conflicts")
                 finished = replace(row, result_json=effect_json)
