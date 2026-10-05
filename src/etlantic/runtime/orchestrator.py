@@ -5310,6 +5310,23 @@ class LocalOrchestrator:
                 stage=FailureStage.WRITE.value,
                 code=getattr(exc, "code", None) or "PMEXEC431",
             ) from exc
+        except BaseException as exc:
+            # A commit-time cancellation carries a shield-reconciled receipt.
+            # Keep that effect evidence on the run before preserving cancel.
+            receipt = getattr(exc, "commit_receipt", None)
+            if receipt is not None:
+                self._sink_commit_receipts.append(receipt)
+                if getattr(receipt, "status", None) == "unknown":
+                    self._unknown_publications.append(
+                        {
+                            "status": "unknown",
+                            "code": "PMADP524",
+                            "publication_id": getattr(receipt, "publication_id", None),
+                            "binding": binding_name,
+                            "provider": provider_name,
+                        }
+                    )
+            raise
         if receipt.status == "unknown":
             receipt = await self._reconcile_unknown_receipt(
                 receipt,
