@@ -684,6 +684,7 @@ nav:
           - Archive index: 11_DEVELOPMENT/ARCHIVE_INDEX.md
   - Development:
       - Phase 0.56 implementation plan: 11_DEVELOPMENT/IMPLEMENTATION_PLAN_0_56.md
+      - Phase 0.56 standalone compatibility reset: 11_DEVELOPMENT/EXECUTION_PLAN_0_56_STANDALONE.md
       - Phase 0.56 action workers: 11_DEVELOPMENT/ACTION_WORKERS_0_56.md
       - Phase 0.56 qualification: 11_DEVELOPMENT/evidence/phase_0_56/LOCAL_QUALIFICATION.md
       - Portable 0.50 plan: 11_DEVELOPMENT/IMPLEMENTATION_PLAN_0_50.md
