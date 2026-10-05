@@ -1395,9 +1395,15 @@ class FoundrySinkConnector(_FoundryClient):
                 # new batch's interior plus its closing bracket.
                 next_bytes = state["payload_bytes"] + len(batch_payload)
                 if rows:
-                    next_bytes -= 1
+                    # Each independently encoded UTF-8-sig batch carries a
+                    # BOM, while the combined JSON document has only one.
+                    next_bytes -= 1 + _repeated_bom_bytes(encoding)
             else:
                 next_bytes = state["payload_bytes"] + len(batch_payload)
+                if rows:
+                    # JSONL batches concatenate directly, so discard only the
+                    # BOM repeated at the start of this subsequent batch.
+                    next_bytes -= _repeated_bom_bytes(encoding)
             if next_bytes > int(meta["max_bytes"]):
                 raise ConnectorWriteError(
                     "Foundry sink exceeds max_bytes",
@@ -1923,6 +1929,11 @@ def _csv_header_bytes(columns: Sequence[str], *, encoding: str, delimiter: str) 
     writer = csv.writer(stream, delimiter=delimiter, lineterminator="\n")
     writer.writerow(columns)
     return len(stream.getvalue().encode(encoding))
+
+
+def _repeated_bom_bytes(encoding: str) -> int:
+    normalized = encoding.lower().replace("_", "-")
+    return len(b"\xef\xbb\xbf") if normalized == "utf-8-sig" else 0
 
 
 def create_source() -> FoundrySourceConnector:

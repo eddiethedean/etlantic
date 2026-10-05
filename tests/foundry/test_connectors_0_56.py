@@ -373,6 +373,68 @@ def test_sink_enforces_byte_bound_during_staging_without_poisoning_session() -> 
     assert uploaded == [b'[{"value":"x"}]']
 
 
+@pytest.mark.parametrize("file_format", ["json", "jsonl"])
+def test_sink_counts_utf8_sig_bom_once_across_batches(file_format: str) -> None:
+    uploaded: list[bytes] = []
+    rows = [{"value": "a"}, {"value": "b"}]
+    if file_format == "json":
+        expected = json.dumps(
+            rows, sort_keys=True, separators=(",", ":"), ensure_ascii=False
+        ).encode("utf-8-sig")
+    else:
+        expected = "".join(
+            json.dumps(row, sort_keys=True, separators=(",", ":"), ensure_ascii=False)
+            + "\n"
+            for row in rows
+        ).encode("utf-8-sig")
+
+    def handler(request: httpx2.Request) -> httpx2.Response:
+        path = request.url.path
+        if path.endswith("/transactions"):
+            return httpx2.Response(
+                200,
+                json={"rid": "ri.foundry.main.transaction.bom", "status": "OPEN"},
+            )
+        if path.endswith("/files"):
+            return httpx2.Response(200, json={"data": []})
+        if path.endswith("/upload"):
+            uploaded.append(request.content)
+            return httpx2.Response(
+                200,
+                json={
+                    "path": unquote(path.split("/files/", 1)[1].removesuffix("/upload"))
+                },
+            )
+        if path.endswith("/commit"):
+            return httpx2.Response(200, json={"status": "COMMITTED"})
+        raise AssertionError(f"unexpected request: {request.method} {request.url}")
+
+    connector = FoundrySinkConnector(transport=httpx2.MockTransport(handler))
+    binding = _sink_binding(
+        "append",
+        format=file_format,
+        encoding="utf-8-sig",
+        max_bytes=len(expected),
+    )
+    binding["format"] = file_format
+    context = _secret()
+
+    async def run() -> Any:
+        plan = await connector.plan_write(binding=binding, context=context)
+        session = await connector.begin_write(
+            plan=plan, binding=binding, context=context
+        )
+        await connector.write_batch(session, rows[:1], context=context)
+        await connector.write_batch(session, rows[1:], context=context)
+        await connector.prepare(session, context=context)
+        return await connector.commit(session, context=context)
+
+    receipt = anyio.run(run)
+
+    assert receipt.status == "committed"
+    assert uploaded == [expected]
+
+
 def test_lost_commit_ack_reconciles_after_connector_restart() -> None:
     committed = False
     transaction_rid = "ri.foundry.main.transaction.lost-ack"
