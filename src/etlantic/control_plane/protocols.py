@@ -119,8 +119,15 @@ class SubmissionStore(Protocol):
 
     Effective store keys follow ADR-016::
 
-        (tenant_id, workspace_id, principal_issuer, principal_kind,
-        principal_subject, operation, idempotency_key)
+        (
+            tenant_id,
+            workspace_id,
+            principal_issuer,
+            principal_kind,
+            principal_subject,
+            operation,
+            idempotency_key,
+        )
     """
 
     def accept(

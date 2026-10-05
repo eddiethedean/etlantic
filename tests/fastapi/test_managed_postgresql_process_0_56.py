@@ -220,7 +220,9 @@ def test_postgresql_managed_accept_recovers_cp1_and_cp3_lost_acknowledgements(
     ctx = _context(scope)
     migration_engine = sqlalchemy.create_engine(url, pool_pre_ping=True)
     try:
-        assert upgrade(migration_engine) == "014_cp1_complete_principal_idempotency_0_56"
+        assert (
+            upgrade(migration_engine) == "014_cp1_complete_principal_idempotency_0_56"
+        )
     finally:
         migration_engine.dispose()
 

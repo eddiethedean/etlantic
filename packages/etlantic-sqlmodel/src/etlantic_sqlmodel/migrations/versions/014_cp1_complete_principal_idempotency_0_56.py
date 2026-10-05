@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+from typing import cast
 
 from sqlalchemy import inspect, text
 from sqlalchemy.engine import Engine
@@ -21,9 +22,7 @@ def _cp3_principal_identities(
     """Find principal identities that CP3 can verify for legacy CP1 rows."""
     if not inspect(engine).has_table("cp_durable_snapshot"):
         return {}
-    identities: dict[
-        tuple[str, str, str, str, str], set[tuple[str, str, str]]
-    ] = {}
+    identities: dict[tuple[str, str, str, str, str], set[tuple[str, str, str]]] = {}
     with engine.connect() as connection:
         snapshots = connection.execute(
             text("SELECT payload_json FROM cp_durable_snapshot")
@@ -36,34 +35,42 @@ def _cp3_principal_identities(
                     "Cannot resolve CP1 principals from a malformed CP3 snapshot"
                 ) from exc
             if not isinstance(payload, dict):
-                raise RuntimeError("Cannot resolve CP1 principals from a malformed CP3 snapshot")
-            submissions = payload.get("submissions") or {}
+                raise RuntimeError(
+                    "Cannot resolve CP1 principals from a malformed CP3 snapshot"
+                )
+            payload_data = cast(dict[str, object], payload)
+            submissions: object = payload_data.get("submissions") or {}
             if not isinstance(submissions, dict):
-                raise RuntimeError("Cannot resolve CP1 principals from a malformed CP3 snapshot")
-            for raw in submissions.values():
-                if not isinstance(raw, dict):
+                raise RuntimeError(
+                    "Cannot resolve CP1 principals from a malformed CP3 snapshot"
+                )
+            raw_submissions = cast(dict[str, object], submissions)
+            for raw_value in raw_submissions.values():
+                if not isinstance(raw_value, dict):
                     continue
+                raw = cast(dict[str, object], raw_value)
                 tenant_id = raw.get("tenant_id")
-                workspace_id = raw.get("workspace_id")
-                submission_id = raw.get("submission_id")
-                operation = raw.get("operation")
-                idempotency_key = raw.get("idempotency_key")
-                subject = raw.get("principal_subject")
-                kind = raw.get("principal_kind")
-                issuer = raw.get("principal_issuer")
-                if not all(
-                    isinstance(value, str) and value
-                    for value in (
-                        tenant_id,
-                        workspace_id,
-                        submission_id,
-                        operation,
-                        idempotency_key,
-                        subject,
-                        kind,
-                    )
-                ):
+                if not isinstance(tenant_id, str) or not tenant_id:
                     continue
+                workspace_id = raw.get("workspace_id")
+                if not isinstance(workspace_id, str) or not workspace_id:
+                    continue
+                submission_id = raw.get("submission_id")
+                if not isinstance(submission_id, str) or not submission_id:
+                    continue
+                operation = raw.get("operation")
+                if not isinstance(operation, str) or not operation:
+                    continue
+                idempotency_key = raw.get("idempotency_key")
+                if not isinstance(idempotency_key, str) or not idempotency_key:
+                    continue
+                subject = raw.get("principal_subject")
+                if not isinstance(subject, str) or not subject:
+                    continue
+                kind = raw.get("principal_kind")
+                if not isinstance(kind, str) or not kind:
+                    continue
+                issuer = raw.get("principal_issuer")
                 if issuer is not None and not isinstance(issuer, str):
                     continue
                 identity = (issuer or "", kind, subject)
@@ -80,7 +87,9 @@ def _cp3_principal_identities(
     return identities
 
 
-def _restore_legacy_identities(engine: Engine, *, sqlite_table: str | None = None) -> None:
+def _restore_legacy_identities(
+    engine: Engine, *, sqlite_table: str | None = None
+) -> None:
     """Backfill provable identities; mark every other old receipt unresolved."""
     identities = _cp3_principal_identities(engine)
     table = sqlite_table or "cp_submissions"
@@ -116,20 +125,22 @@ def _restore_legacy_identities(engine: Engine, *, sqlite_table: str | None = Non
                     )
                     continue
             connection.execute(
-                text(
-                    f"UPDATE {table} SET principal_kind = :kind WHERE id = :id"
-                ),
+                text(f"UPDATE {table} SET principal_kind = :kind WHERE id = :id"),
                 {"kind": _UNRESOLVED_PRINCIPAL_KIND, "id": row.id},
             )
 
 
 def _rebuild_sqlite(engine: Engine, *, downgrade: bool = False) -> None:
     target = "cp_submissions_legacy" if downgrade else "cp_submissions_v14"
-    columns = _OLD_COLUMNS if downgrade else (
-        "id, tenant_id, workspace_id, principal_issuer, principal_kind, "
-        "principal_subject, operation, idempotency_key, acceptance_id, "
-        "submission_id, created_at, status, resource_type, resource_id, "
-        "payload_json, run_status, updated_at, definition_id"
+    columns = (
+        _OLD_COLUMNS
+        if downgrade
+        else (
+            "id, tenant_id, workspace_id, principal_issuer, principal_kind, "
+            "principal_subject, operation, idempotency_key, acceptance_id, "
+            "submission_id, created_at, status, resource_type, resource_id, "
+            "payload_json, run_status, updated_at, definition_id"
+        )
     )
     with engine.begin() as connection:
         connection.execute(text(f"DROP TABLE IF EXISTS {target}"))
@@ -182,9 +193,7 @@ def _rebuild_sqlite(engine: Engine, *, downgrade: bool = False) -> None:
                 )
             )
         connection.execute(text("DROP TABLE cp_submissions"))
-        connection.execute(
-            text(f"ALTER TABLE {target} RENAME TO cp_submissions")
-        )
+        connection.execute(text(f"ALTER TABLE {target} RENAME TO cp_submissions"))
         for column in (
             "tenant_id",
             "workspace_id",

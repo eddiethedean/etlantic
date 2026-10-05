@@ -37,7 +37,9 @@ from pathlib import Path
 # shift, with no directives added or removed (784 entries).
 # Phase 0.56 #221/222 update control-plane and SQLModel sources, shifting
 # existing suppression locations without adding or removing directives.
-EXPECTED_DIGEST = "edace1ffca3fa1325fde6a2880a821b8b750d3af40fcac9b21df4eeaa30360bf"
+# Issue #243 completes principal-scoped idempotency. No suppression was added
+# or removed; the 784-entry inventory is re-pinned after source-line shifts.
+EXPECTED_DIGEST = "80435ee511f6057e5189eabdb12b75e276e428c57302c917a6f029cd1379b02c"
 
 _IGNORED_DIRECTORIES = frozenset(
     {

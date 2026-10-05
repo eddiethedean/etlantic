@@ -3638,9 +3638,7 @@ def test_managed_rerun_rechecks_admission_and_charges_quota_once(
 def test_managed_submit_idempotency_uses_complete_principal_identity(
     tmp_path: Path, principal: Principal
 ) -> None:
-    ctx, _authz, _definitions, submissions, durable, _events, service = _wired(
-        tmp_path
-    )
+    ctx, _authz, _definitions, submissions, durable, _events, service = _wired(tmp_path)
     first_identity = replace(
         ctx,
         principal=Principal(subject="same-subject", issuer="issuer-a", kind="human"),
@@ -3654,18 +3652,27 @@ def test_managed_submit_idempotency_uses_complete_principal_identity(
     assert first.submission_id != second.submission_id
     assert service.submit_run(first_identity, "pipe", idempotency_key=key) == first
     assert service.submit_run(second_identity, "pipe", idempotency_key=key) == second
-    assert submissions.lookup_idempotency(
-        first_identity, key, operation="run.submit"
-    ) == first
-    assert submissions.lookup_idempotency(
-        second_identity, key, operation="run.submit"
-    ) == second
-    assert durable.get_submission_by_idempotency(
-        first_identity, idempotency_key=key, operation="run.submit"
-    ) is not None
-    assert durable.get_submission_by_idempotency(
-        second_identity, idempotency_key=key, operation="run.submit"
-    ) is not None
+    assert (
+        submissions.lookup_idempotency(first_identity, key, operation="run.submit")
+        == first
+    )
+    assert (
+        submissions.lookup_idempotency(second_identity, key, operation="run.submit")
+        == second
+    )
+    assert (
+        durable.get_submission_by_idempotency(
+            first_identity, idempotency_key=key, operation="run.submit"
+        )
+        is not None
+    )
+    assert (
+        durable.get_submission_by_idempotency(
+            second_identity, idempotency_key=key, operation="run.submit"
+        )
+        is not None
+    )
+
 
 def test_managed_rerun_authorizes_plan_resources_before_acceptance(
     tmp_path: Path,

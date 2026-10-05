@@ -134,12 +134,18 @@ def test_sqlite_acceptance_scopes_idempotency_to_complete_principal(
     assert first.submission_id != second.submission_id
     assert store.lookup_idempotency(base, "shared-key") == first
     assert store.lookup_idempotency(other, "shared-key") == second
-    assert store.accept(
-        base, idempotency_key="shared-key", payload={"definition_id": "pipe"}
-    ).receipt == first
-    assert store.accept(
-        other, idempotency_key="shared-key", payload={"definition_id": "pipe"}
-    ).receipt == second
+    assert (
+        store.accept(
+            base, idempotency_key="shared-key", payload={"definition_id": "pipe"}
+        ).receipt
+        == first
+    )
+    assert (
+        store.accept(
+            other, idempotency_key="shared-key", payload={"definition_id": "pipe"}
+        ).receipt
+        == second
+    )
 
 
 def _insert_legacy_cp1_receipt(engine, ctx: ControlPlaneContext) -> None:
