@@ -109,18 +109,37 @@ class ConnectorTestRequest:
 
 @dataclass(frozen=True, slots=True)
 class ConnectorCatalogRequest:
-    """Read one bounded page of the installed, profile-authorized catalog."""
+    """Read installed connector metadata or one saved connection's resources."""
 
     limit: int = 50
     cursor: str | None = None
     kind: CatalogConnectorKind | None = None
+    provider: str | None = None
+    connection_id: str | None = None
 
     @classmethod
     def from_dict(cls, payload: dict[str, Any]) -> ConnectorCatalogRequest:
-        _fields(payload, required=set(), optional={"limit", "cursor", "kind"})
+        _fields(
+            payload,
+            required=set(),
+            optional={"limit", "cursor", "kind", "provider", "connection_id"},
+        )
         limit = payload.get("limit", 50)
         cursor = payload.get("cursor")
         kind = payload.get("kind")
+        provider = payload.get("provider")
+        connection_id = payload.get("connection_id")
+        if (provider is None) != (connection_id is None):
+            raise ControlPlaneError(
+                "Live catalog requests require both provider and connection_id",
+                code="PMCP400",
+                status=400,
+                title="Bad Request",
+                type="etlantic.control_plane/bad_request",
+            )
+        if provider is not None:
+            provider = _provider(provider)
+            connection_id = _identifier(connection_id, field="connection_id")
         if type(limit) is not int or not 1 <= limit <= 100:
             raise ControlPlaneError(
                 "Connector catalog page limit must be between 1 and 100",
@@ -147,10 +166,21 @@ class ConnectorCatalogRequest:
                 title="Bad Request",
                 type="etlantic.control_plane/bad_request",
             )
-        return cls(limit, cursor, kind)
+        return cls(limit, cursor, kind, provider, connection_id)
 
     def to_dict(self) -> dict[str, Any]:
-        return {"limit": self.limit, "cursor": self.cursor, "kind": self.kind}
+        payload: dict[str, Any] = {
+            "limit": self.limit,
+            "cursor": self.cursor,
+            "kind": self.kind,
+        }
+        # Preserve the historical canonical request for installed-catalog jobs.
+        # These fields were added later, and explicit nulls change the persisted
+        # idempotency fingerprint for older accepted requests.
+        if self.provider is not None and self.connection_id is not None:
+            payload["provider"] = self.provider
+            payload["connection_id"] = self.connection_id
+        return payload
 
 
 @dataclass(frozen=True, slots=True)
@@ -599,6 +629,11 @@ def connector_action_resources(
     """Return every object reference a worker must authorize before provider IO."""
     if isinstance(request, ConnectorTestRequest | ConnectorSchemaInspectionRequest):
         return (f"connector:{request.provider}", f"connection:{request.connection_id}")
+    if isinstance(request, ConnectorCatalogRequest) and request.provider is not None:
+        return (
+            f"connector:{request.provider}",
+            f"connection:{request.connection_id}",
+        )
     if isinstance(
         request,
         ConnectorPreviewRequest

@@ -439,16 +439,38 @@ class SQLModelDurableWorkStore:
             high_watermark=high_watermark,
         )
 
-    def pending_outbox(self, ctx: ControlPlaneContext, *, limit: int = 100):
-        return self._read_only(lambda m: m.pending_outbox(ctx, limit=limit))
+    def pending_outbox(
+        self,
+        ctx: ControlPlaneContext,
+        *,
+        limit: int = 100,
+        include_terminal: bool = False,
+        terminal_only: bool = False,
+    ):
+        return self._read_only(
+            lambda m: m.pending_outbox(
+                ctx,
+                limit=limit,
+                include_terminal=include_terminal,
+                terminal_only=terminal_only,
+            )
+        )
 
     def reconcile_terminal_outbox(self, ctx: ControlPlaneContext, *, limit: int = 100):
         return self._txn(lambda m: m.reconcile_terminal_outbox(ctx, limit=limit))
 
     def reconcile_cancelled_submissions(
-        self, ctx: ControlPlaneContext, *, limit: int = 100
+        self,
+        ctx: ControlPlaneContext,
+        *,
+        limit: int = 100,
+        acknowledge_outbox: bool = True,
     ):
-        return self._txn(lambda m: m.reconcile_cancelled_submissions(ctx, limit=limit))
+        return self._txn(
+            lambda m: m.reconcile_cancelled_submissions(
+                ctx, limit=limit, acknowledge_outbox=acknowledge_outbox
+            )
+        )
 
     def get_submission(self, ctx: ControlPlaneContext, submission_id: str):
         return self._read_only(lambda m: m.get_submission(ctx, submission_id))

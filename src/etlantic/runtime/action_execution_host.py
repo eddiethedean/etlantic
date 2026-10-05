@@ -18,6 +18,7 @@ from etlantic.control_plane.action_jobs import (
     MAX_PREVIEW_RESULT_TTL_SECONDS,
     MIN_PREVIEW_RESULT_TTL_SECONDS,
     ConnectorActionKind,
+    ConnectorCatalogRequest,
     ConnectorPreviewRequest,
     ConnectorProvisionCleanupRequest,
     ConnectorProvisionRequest,
@@ -217,6 +218,13 @@ class ActionExecutionHost:
                 self._finish_failure(ctx, job, "invalid_action_request")
                 processed += 1
                 continue
+            if (
+                isinstance(typed_request, ConnectorCatalogRequest)
+                and typed_request.provider == "postgresql"
+            ):
+                # The PostgreSQL handler receives the trusted job deadline,
+                # never a caller-supplied internal execution control.
+                request["_deadline_at"] = job.deadline_at
             deadline = datetime.fromisoformat(job.deadline_at.replace("Z", "+00:00"))
             remaining = (deadline - _now()).total_seconds()
             if remaining <= 0:
@@ -773,9 +781,15 @@ class ActionExecutionHost:
                 raise
 
     async def _catalog_page(
-        self, _ctx: ControlPlaneContext, request: Mapping[str, Any]
+        self, ctx: ControlPlaneContext, request: Mapping[str, Any]
     ) -> Mapping[str, Any]:
         """Return one stable page of profile-authorized installed connectors."""
+        provider = request.get("provider")
+        if isinstance(provider, str):
+            handler = self.handlers.get(f"connector.catalog.{provider}")
+            if handler is None:
+                raise ValueError("live catalog is unavailable for this provider")
+            return await handler(ctx, request)
         from etlantic.connectors.catalog import connector_catalog_for_profile
         from etlantic.profile import resolve_profile
 

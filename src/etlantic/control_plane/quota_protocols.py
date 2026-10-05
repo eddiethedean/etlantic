@@ -34,8 +34,16 @@ class QuotaProvider(Protocol):
         resource: QuotaResource,
         units: int = 1,
         idempotency_key: str | None = None,
+        claim_id: str | None = None,
     ) -> QuotaDecision:
-        """Admit or deny consumption; keyed retries consume once."""
+        """Admit or deny consumption; keyed retries share an active reservation.
+
+        An allowed keyed decision includes a ``reservation_key`` in metadata.
+        After its keyed release, admission may charge a fresh reservation with
+        a new identity, subject to the current budget and suspension policy.
+        An optional ``claim_id`` atomically registers a submission attempt as
+        an owner of that reservation, including on a cached allowed decision.
+        """
         ...
 
     def release(
@@ -44,8 +52,15 @@ class QuotaProvider(Protocol):
         *,
         resource: QuotaResource,
         units: int = 1,
+        idempotency_key: str | None = None,
+        claim_id: str | None = None,
     ) -> QuotaState:
-        """Release previously admitted units."""
+        """Release units once using ``<reservation_key>:release`` as the key.
+
+        With ``claim_id``, abandon only that attempt's claim and release units
+        only when no owners remain. Without it, terminal execution cleanup
+        releases the whole reservation. Duplicate abandonment is a no-op.
+        """
         ...
 
     def set_suspended(self, ctx: ControlPlaneContext, *, suspended: bool) -> QuotaState:

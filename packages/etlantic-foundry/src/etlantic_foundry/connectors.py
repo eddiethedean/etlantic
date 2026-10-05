@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import base64
 import csv
 import hashlib
 import io
@@ -1755,6 +1756,162 @@ class FoundryStorageConnector(_FoundryClient):
             metadata={"api": "foundry-datasets-v2", "read_only_inspection": True},
             configuration_schema=deepcopy(STORAGE_CONFIG_SCHEMA),
         )
+
+    async def list_catalog(
+        self,
+        *,
+        binding: Mapping[str, Any],
+        context: Mapping[str, Any],
+        limit: int = 50,
+        cursor: str | None = None,
+    ) -> dict[str, Any]:
+        """List a bounded page of files in the configured dataset branch."""
+        if type(limit) is not int or not 1 <= limit <= 100:
+            raise ValueError("limit must be between 1 and 100")
+        cfg = _config(binding, _STORAGE_KEYS)
+        _, dataset = _base(cfg)
+        provider_cursor = self._decode_catalog_cursor(cursor)
+        files, next_provider_cursor = await self._list_catalog_page(
+            cfg=cfg,
+            context=context,
+            limit=limit,
+            cursor=provider_cursor,
+            path_prefix=(
+                _safe_path(cfg["path_prefix"], prefix=True)
+                if cfg.get("path_prefix")
+                else None
+            ),
+            branch=True,
+        )
+        has_more = next_provider_cursor is not None
+        return {
+            "schema": "etlantic.connector_resource_page/1",
+            "provider": PROVIDER,
+            "items": [
+                {"resource_id": str(item["path"]), "kind": "file"} for item in files
+            ],
+            "next_cursor": (
+                self._encode_catalog_cursor(next_provider_cursor)
+                if next_provider_cursor is not None
+                else None
+            ),
+            "has_more": has_more,
+            "metadata": {"dataset_rid": dataset, "branch_name": cfg["branch_name"]},
+        }
+
+    async def _list_catalog_page(
+        self,
+        *,
+        cfg: Mapping[str, Any],
+        context: Mapping[str, Any],
+        limit: int,
+        cursor: str | None,
+        path_prefix: str | None,
+        branch: bool,
+    ) -> tuple[list[dict[str, Any]], str | None]:
+        """Fetch one provider page so catalog paging work stays page-bounded."""
+        _, dataset_rid = _base(cfg)
+        params: dict[str, Any] = {"pageSize": limit}
+        if branch:
+            params["branchName"] = cfg["branch_name"]
+        if path_prefix:
+            params["pathPrefix"] = path_prefix
+        if cursor is not None:
+            params["pageToken"] = cursor
+        response = await self._request(
+            cfg=cfg,
+            context=context,
+            method="GET",
+            path=f"/api/v2/datasets/{_rid_path(dataset_rid)}/files",
+            write=False,
+            params=params,
+        )
+        try:
+            body: Any = response.json()
+        except ValueError as exc:
+            raise ConnectorReadError(
+                "Foundry file listing returned invalid JSON",
+                code="PMFND022",
+                provider=PROVIDER,
+            ) from exc
+        body_map: Mapping[str, Any] = (
+            cast(Mapping[str, Any], body)
+            if isinstance(body, Mapping)
+            else cast(Mapping[str, Any], {})
+        )
+        raw_page: Any = body_map.get("data")
+        if not isinstance(raw_page, list):
+            raise ConnectorReadError(
+                "Foundry file listing returned an invalid or oversized page",
+                code="PMFND023",
+                provider=PROVIDER,
+            )
+        page_value: list[Any] = cast(list[Any], raw_page)
+        if len(page_value) > limit:
+            raise ConnectorReadError(
+                "Foundry file listing returned an invalid or oversized page",
+                code="PMFND023",
+                provider=PROVIDER,
+            )
+        page: list[dict[str, Any]] = []
+        for raw_file in page_value:
+            if not isinstance(raw_file, Mapping):
+                raise ConnectorReadError(
+                    "Foundry file listing contained an invalid entry",
+                    code="PMFND024",
+                    provider=PROVIDER,
+                )
+            file_entry = cast(Mapping[str, Any], raw_file)
+            file_path = file_entry.get("path")
+            if not isinstance(file_path, str):
+                raise ConnectorReadError(
+                    "Foundry file listing contained an invalid entry",
+                    code="PMFND024",
+                    provider=PROVIDER,
+                )
+            _safe_path(file_path)
+            page.append(dict(file_entry))
+        raw_cursor = body_map.get("nextPageToken")
+        if raw_cursor is not None and not isinstance(raw_cursor, str):
+            raise ConnectorReadError(
+                "Foundry returned an invalid page cursor",
+                code="PMFND027",
+                provider=PROVIDER,
+            )
+        next_cursor = raw_cursor or None
+        if next_cursor is not None and next_cursor == cursor:
+            raise ConnectorReadError(
+                "Foundry returned a repeated pagination token",
+                code="PMFND026",
+                provider=PROVIDER,
+            )
+        return page, next_cursor
+
+    @staticmethod
+    def _encode_catalog_cursor(cursor: str) -> str:
+        encoded = base64.urlsafe_b64encode(cursor.encode("utf-8")).decode("ascii")
+        encoded = encoded.rstrip("=")
+        if not 1 <= len(encoded) <= 256:
+            raise ConnectorReadError(
+                "Foundry catalog cursor exceeds the supported bound",
+                code="PMFND027",
+                provider=PROVIDER,
+            )
+        return encoded
+
+    @staticmethod
+    def _decode_catalog_cursor(cursor: str | None) -> str | None:
+        if cursor is None:
+            return None
+        if not re.fullmatch(r"[A-Za-z0-9_-]{1,256}", cursor):
+            raise ValueError("catalog cursor is invalid")
+        padded = cursor + "=" * (-len(cursor) % 4)
+        try:
+            return base64.b64decode(padded, altchars=b"-_", validate=True).decode(
+                "utf-8"
+            )
+        except (ValueError, UnicodeDecodeError) as exc:
+            raise ValueError("catalog cursor is invalid") from exc
 
     async def inspect_schema(
         self, *, binding: Mapping[str, Any], context: Mapping[str, Any]

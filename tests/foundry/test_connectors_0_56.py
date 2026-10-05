@@ -71,6 +71,83 @@ def _sink_binding(mode: str = "append", **options: Any) -> dict[str, Any]:
     }
 
 
+def _catalog_binding() -> dict[str, Any]:
+    return {
+        "provider": "foundry",
+        "config": {
+            "base_url": BASE,
+            "dataset_rid": DATASET,
+            "branch_name": "main",
+        },
+    }
+
+
+@pytest.mark.parametrize("files", [[], [{"path": "a.csv"}]])
+def test_catalog_accepts_a_single_terminal_page(files: list[dict[str, str]]) -> None:
+    def handler(request: httpx2.Request) -> httpx2.Response:
+        assert request.url.params["pageSize"] == "1"
+        assert request.url.params["branchName"] == "main"
+        assert "pageToken" not in request.url.params
+        return httpx2.Response(200, json={"data": files})
+
+    connector = FoundryStorageConnector(transport=httpx2.MockTransport(handler))
+
+    async def run() -> dict[str, Any]:
+        return await connector.list_catalog(
+            binding=_catalog_binding(), context=_secret(), limit=1
+        )
+
+    page = anyio.run(run)
+    assert page["items"] == [
+        {"resource_id": item["path"], "kind": "file"} for item in files
+    ]
+    assert page["next_cursor"] is None
+    assert page["has_more"] is False
+
+
+@pytest.mark.parametrize("repeated_token", [False, True])
+def test_catalog_continuation_accepts_exhaustion_and_rejects_repeated_tokens(
+    repeated_token: bool,
+) -> None:
+    requests: list[httpx2.Request] = []
+
+    def handler(request: httpx2.Request) -> httpx2.Response:
+        requests.append(request)
+        if request.url.params.get("pageToken") is None:
+            return httpx2.Response(
+                200, json={"data": [{"path": "a.csv"}], "nextPageToken": "next"}
+            )
+        assert request.url.params["pageToken"] == "next"
+        body: dict[str, Any] = {"data": [{"path": "b.csv"}]}
+        if repeated_token:
+            body["nextPageToken"] = "next"
+        return httpx2.Response(200, json=body)
+
+    connector = FoundryStorageConnector(transport=httpx2.MockTransport(handler))
+
+    async def run() -> dict[str, Any]:
+        first = await connector.list_catalog(
+            binding=_catalog_binding(), context=_secret(), limit=1
+        )
+        assert first["has_more"] is True
+        return await connector.list_catalog(
+            binding=_catalog_binding(),
+            context=_secret(),
+            limit=1,
+            cursor=first["next_cursor"],
+        )
+
+    if repeated_token:
+        with pytest.raises(ConnectorReadError, match="repeated pagination token"):
+            anyio.run(run)
+    else:
+        page = anyio.run(run)
+        assert page["items"] == [{"resource_id": "b.csv", "kind": "file"}]
+        assert page["next_cursor"] is None
+        assert page["has_more"] is False
+    assert len(requests) == 2
+
+
 def test_source_reads_pinned_paginated_csv_and_records_identity() -> None:
     requests: list[httpx2.Request] = []
     contents = {

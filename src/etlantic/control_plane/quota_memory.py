@@ -7,6 +7,7 @@ import threading
 from copy import deepcopy
 from dataclasses import dataclass, field, replace
 from datetime import UTC, datetime
+from uuid import uuid4
 
 from etlantic.control_plane.errors import ControlPlaneError
 from etlantic.control_plane.models import ControlPlaneContext
@@ -48,6 +49,10 @@ class MemoryQuotaProvider:
             tuple[str, str, str], tuple[QuotaResource, int, QuotaDecision]
         ]()
     )
+    _releases: dict[tuple[str, str, str], tuple[QuotaResource, int]] = field(
+        default_factory=dict
+    )
+    _claims: dict[tuple[str, str, str], set[str]] = field(default_factory=dict)
     _lock: threading.RLock = field(default_factory=threading.RLock, repr=False)
     _rr_cursor: int = 0
 
@@ -76,10 +81,13 @@ class MemoryQuotaProvider:
         resource: QuotaResource,
         units: int = 1,
         idempotency_key: str | None = None,
+        claim_id: str | None = None,
     ) -> QuotaDecision:
         self.require_available(ctx)
         if units < 1:
             raise ControlPlaneError.conflict("units must be positive")
+        if claim_id is not None and (not claim_id or idempotency_key is None):
+            raise ControlPlaneError.conflict("Quota claims require a keyed admission")
         with self._lock:
             admission_key: tuple[str, str, str] | None = None
             if idempotency_key is not None:
@@ -93,7 +101,17 @@ class MemoryQuotaProvider:
                         raise ControlPlaneError.conflict(
                             "Quota idempotency key reused with different admission"
                         )
-                    return deepcopy(prior[2])
+                    reservation_key = prior[2].metadata.get(
+                        "reservation_key", idempotency_key
+                    )
+                    release_key = (*_scope(ctx), f"{reservation_key}:release")
+                    if release_key not in self._releases:
+                        # An admission without a claim (including legacy
+                        # snapshots) has an independent owner. The empty-string
+                        # claim survives individual attempt compensation and
+                        # is removed only by terminal release.
+                        self._claims.setdefault(release_key, {""}).add(claim_id or "")
+                        return deepcopy(prior[2])
             state = self._ensure(ctx)
             budget = self.get_budget(ctx, resource=resource)
             if state.suspended:
@@ -150,10 +168,18 @@ class MemoryQuotaProvider:
                     "rr_cursor": self._rr_cursor,
                     "weight": budget.weight,
                     "shared_pressure": self.shared_pressure,
+                    **(
+                        {"reservation_key": f"{idempotency_key}:{uuid4().hex}"}
+                        if idempotency_key is not None
+                        else {}
+                    ),
                 },
             )
             if admission_key is not None:
                 self._admissions[admission_key] = (resource, units, decision)
+                self._claims[
+                    (*scope, f"{decision.metadata['reservation_key']}:release")
+                ] = {claim_id or ""}
             return decision
 
     def _wrr_allows(
@@ -207,14 +233,45 @@ class MemoryQuotaProvider:
         *,
         resource: QuotaResource,
         units: int = 1,
+        idempotency_key: str | None = None,
+        claim_id: str | None = None,
     ) -> QuotaState:
         self.require_available(ctx)
+        if claim_id is not None and (
+            not claim_id
+            or idempotency_key is None
+            or not idempotency_key.endswith(":release")
+        ):
+            raise ControlPlaneError.conflict("Quota claims require a keyed release")
         with self._lock:
+            release_key = (
+                (*_scope(ctx), idempotency_key) if idempotency_key is not None else None
+            )
+            if release_key is not None:
+                prior = self._releases.get(release_key)
+                if prior is not None:
+                    if prior != (resource, units):
+                        raise ControlPlaneError.conflict(
+                            "Quota release key reused with different release"
+                        )
+                    return deepcopy(self._ensure(ctx))
+                if claim_id is not None:
+                    claims = self._claims.get(release_key)
+                    if claims is None or claim_id not in claims:
+                        # Duplicate compensation, or a claimant that never
+                        # acquired this reservation, cannot reduce usage.
+                        return deepcopy(self._ensure(ctx))
+                    claims.remove(claim_id)
+                    if claims:
+                        return deepcopy(self._ensure(ctx))
             state = self._ensure(ctx)
             usage = dict(state.usage)
             usage[resource] = max(0, int(usage.get(resource, 0)) - units)
             updated = replace(state, usage=usage, updated_at=_now())
             self._states[_scope(ctx)] = updated
+            if release_key is not None:
+                self._releases[release_key] = (resource, units)
+                self._claims.pop(release_key, None)
             return deepcopy(updated)
 
     def set_suspended(self, ctx: ControlPlaneContext, *, suspended: bool) -> QuotaState:

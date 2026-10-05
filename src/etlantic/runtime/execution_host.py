@@ -65,6 +65,7 @@ class ExecutionHost:
         runner: Callable[..., Any] | None = None,
         cancel_check: Callable[[ControlPlaneContext, str], bool] | None = None,
         secret_alias_authorizer: SecretAliasAuthorizer | None = None,
+        quota_provider: Any | None = None,
     ) -> None:
         if type(ttl_seconds) is not int or ttl_seconds < 1:
             raise ValueError("ttl_seconds must be a positive integer")
@@ -79,6 +80,7 @@ class ExecutionHost:
         self.ttl_seconds = ttl_seconds
         self.runner = runner
         self.cancel_check = cancel_check
+        self.quota_provider = quota_provider
         self.draining = False
         self._retention_scope_workspace: tuple[str, str] | None = None
         self._retention_scope_cursor: str | None = None
@@ -289,8 +291,10 @@ class ExecutionHost:
                 for key, cleanup_ctx in cleanup_contexts.items():
                     if self._cleanup_retention_scope(cleanup_artifacts, cleanup_ctx):
                         self._queue_retention_retry(key, cleanup_ctx)
-        self.durable.reconcile_cancelled_submissions(ctx, limit=limit)
-        self.durable.reconcile_terminal_outbox(ctx, limit=limit)
+        self.durable.reconcile_cancelled_submissions(
+            ctx, limit=limit, acknowledge_outbox=False
+        )
+        self._reconcile_terminal_work(ctx, limit=limit)
         self._reconcile_result_publications(ctx, limit=limit)
         processed = 0
         for item in self.durable.pending_outbox(ctx, limit=limit):
@@ -328,26 +332,13 @@ class ExecutionHost:
                 )
                 processed += 1
                 continue
-            stop_monitor, cancel_event, lease_lost, monitor_thread = (
-                self._start_lease_monitor(ctx, item.submission_id, lease.fencing_token)
+            outcome, runner_error, lease_lost, cancel_event = self._run_attempt(
+                ctx,
+                submission=submission,
+                attempt_id=attempt.attempt_id,
+                fencing_token=lease.fencing_token,
+                recovered=bool(previous_attempts),
             )
-            outcome: Any = None
-            runner_error: Exception | None = None
-            try:
-                outcome = self._invoke_runner(
-                    ctx,
-                    submission=submission,
-                    submission_id=item.submission_id,
-                    attempt_id=attempt.attempt_id,
-                    fencing_token=lease.fencing_token,
-                    recovered_attempt=bool(previous_attempts),
-                    cancel_event=cancel_event,
-                )
-            except Exception as exc:
-                runner_error = exc
-            finally:
-                stop_monitor.set()
-                monitor_thread.join(timeout=max(1.0, self.ttl_seconds / 2))
 
             if lease_lost.is_set():
                 # The new lease holder owns recovery. Leave its outbox item
@@ -373,6 +364,10 @@ class ExecutionHost:
                     attempt_id=attempt.attempt_id,
                     fencing_token=lease.fencing_token,
                 )
+                if not self._release_submission_quota(ctx, submission):
+                    self._release_lease(ctx, item.submission_id, lease.fencing_token)
+                    processed += 1
+                    continue
                 self.durable.finish_attempt(
                     ctx,
                     attempt.attempt_id,
@@ -392,6 +387,10 @@ class ExecutionHost:
                     attempt_id=attempt.attempt_id,
                     fencing_token=lease.fencing_token,
                 )
+                if not self._release_submission_quota(ctx, submission):
+                    self._release_lease(ctx, item.submission_id, lease.fencing_token)
+                    processed += 1
+                    continue
                 self.durable.finish_attempt(
                     ctx,
                     attempt.attempt_id,
@@ -439,6 +438,13 @@ class ExecutionHost:
                     fencing_token=lease.fencing_token,
                 )
                 terminal_status = "lost"
+            if not self._release_submission_quota(ctx, submission):
+                # Keep the outbox recoverable. A later attempt will recover the
+                # published report without repeating ETL and retry this keyed
+                # release before making the execution terminal.
+                self._release_lease(ctx, item.submission_id, lease.fencing_token)
+                processed += 1
+                continue
             self.durable.finish_attempt(
                 ctx,
                 attempt.attempt_id,
@@ -450,6 +456,72 @@ class ExecutionHost:
             self._release_lease(ctx, item.submission_id, lease.fencing_token)
             processed += 1
         return processed
+
+    def _run_attempt(
+        self,
+        ctx: ControlPlaneContext,
+        *,
+        submission: SubmissionRecord,
+        attempt_id: str,
+        fencing_token: int,
+        recovered: bool,
+    ) -> tuple[Any, Exception | None, Event, Event]:
+        """Run ETL while monitoring cancellation and the worker's lease."""
+        stop, cancel, lease_lost, monitor = self._start_lease_monitor(
+            ctx, submission.submission_id, fencing_token
+        )
+        outcome: Any = None
+        error: Exception | None = None
+        try:
+            outcome = self._invoke_runner(
+                ctx,
+                submission=submission,
+                submission_id=submission.submission_id,
+                attempt_id=attempt_id,
+                fencing_token=fencing_token,
+                recovered_attempt=recovered,
+                cancel_event=cancel,
+            )
+        except Exception as exc:
+            error = exc
+        finally:
+            stop.set()
+            monitor.join(timeout=max(1.0, self.ttl_seconds / 2))
+        return outcome, error, lease_lost, cancel
+
+    def _reconcile_terminal_work(self, ctx: ControlPlaneContext, *, limit: int) -> None:
+        """Acknowledge terminal work only after its quota cleanup is durable."""
+        for item in self.durable.pending_outbox(ctx, limit=limit, terminal_only=True):
+            submission = self.durable.get_submission(ctx, item.submission_id)
+            if submission.status not in {"cancelled", "completed", "failed"}:
+                continue
+            # Keep the outbox pending on failure so a restart retries release.
+            if self._release_submission_quota(ctx, submission):
+                self.durable.mark_published(ctx, item.outbox_id)
+
+    def _release_submission_quota(
+        self, ctx: ControlPlaneContext, submission: SubmissionRecord
+    ) -> bool:
+        """Release an accepted concurrency reservation exactly once."""
+        if self.quota_provider is None or not submission.input_snapshot:
+            return True
+        try:
+            from etlantic.control_plane.execution_envelope import ExecutionEnvelope
+
+            envelope = ExecutionEnvelope.from_json(submission.input_snapshot)
+            key = (envelope.evidence_refs or {}).get("quota_reservation_key")
+            if not isinstance(key, str) or not key:
+                return True
+            self.quota_provider.release(
+                ctx,
+                resource="concurrency",
+                units=1,
+                idempotency_key=f"{key}:release",
+            )
+            return True
+        except Exception:
+            _LOG.warning("Could not release completed run concurrency quota")
+            return False
 
     def _finish_preexecution_attempt(
         self,
@@ -476,6 +548,13 @@ class ExecutionHost:
             return True
         if not _is_preexecution_rejection(error, recovered=recovered):
             return False
+        try:
+            submission = self.durable.get_submission(ctx, submission_id)
+        except Exception:
+            return False
+        if not self._release_submission_quota(ctx, submission):
+            self._release_lease(ctx, submission_id, fencing_token)
+            return True
         self.durable.finish_attempt(
             ctx,
             attempt_id,
@@ -497,6 +576,13 @@ class ExecutionHost:
         fencing_token: int,
         recovered: bool,
     ) -> None:
+        try:
+            submission = self.durable.get_submission(ctx, submission_id)
+        except Exception:
+            return
+        if not self._release_submission_quota(ctx, submission):
+            self._release_lease(ctx, submission_id, fencing_token)
+            return
         if recovered:
             self._record_unknown_effect(
                 ctx,

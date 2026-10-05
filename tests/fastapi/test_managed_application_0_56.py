@@ -11,7 +11,7 @@ from concurrent.futures import ThreadPoolExecutor
 from dataclasses import replace
 from datetime import UTC, datetime
 from pathlib import Path
-from threading import Barrier, Event, Thread
+from threading import Barrier, Event, Lock, Thread, current_thread
 from typing import Any, cast
 
 import anyio
@@ -201,6 +201,502 @@ def _accepted_envelope(
     record = durable.get_submission(ctx, submission_id)
     assert record.input_snapshot is not None
     return ExecutionEnvelope.from_json(record.input_snapshot)
+
+
+def _p1_recovery_stores(service, tmp_path: Path, backend: str):
+    """Reopen adapters during recovery to exercise durable bookkeeping."""
+    if backend == "memory":
+        quota = MemoryQuotaProvider(default_limits={"concurrency": 1})
+    else:
+        pytest.importorskip("etlantic_sqlmodel")
+        from etlantic_sqlmodel.control_plane import (
+            SQLModelDurableWorkStore,
+            SQLModelSubmissionStore,
+            create_control_plane_tables,
+            create_durable_tables,
+            create_sqlite_engine,
+        )
+        from etlantic_sqlmodel.control_plane.cp4_stores import (
+            SQLModelQuotaProvider,
+            create_cp4_tables,
+        )
+
+        engine = create_sqlite_engine(f"sqlite:///{tmp_path / 'p1-recovery.db'}")
+        create_control_plane_tables(engine)
+        create_durable_tables(engine)
+        create_cp4_tables(engine)
+        service.submissions = SQLModelSubmissionStore(engine)
+        service.durable_work = SQLModelDurableWorkStore(engine)
+        quota = SQLModelQuotaProvider(engine)
+    service.quotas = quota
+    return quota
+
+
+@pytest.mark.parametrize("backend", ["memory", "sqlmodel"])
+def test_compensation_cancels_concurrent_cp1_receipt_recovery(
+    tmp_path: Path, monkeypatch, backend: str
+) -> None:
+    ctx, _authz, _definitions, _submissions, _durable, _events, service = _wired(
+        tmp_path
+    )
+    quota = _p1_recovery_stores(service, tmp_path, backend)
+    accept = service.durable_work.accept
+    first_at_cp3 = Event()
+    second_at_cp3 = Event()
+    reject_first = Event()
+    accept_second = Event()
+    outcomes: list[ControlPlaneError | object] = []
+
+    def ordered_accept(*args, **kwargs):
+        if current_thread().name == "first-submitter":
+            first_at_cp3.set()
+            assert reject_first.wait(timeout=10)
+            raise ControlPlaneError.conflict("first durable rejection")
+        second_at_cp3.set()
+        assert accept_second.wait(timeout=10)
+        return accept(*args, **kwargs)
+
+    monkeypatch.setattr(service.durable_work, "accept", ordered_accept)
+
+    def submit() -> None:
+        try:
+            outcomes.append(
+                service.submit_run(ctx, "pipe", idempotency_key="cancel-race")
+            )
+        except ControlPlaneError as exc:
+            outcomes.append(exc)
+
+    first = Thread(target=submit, name="first-submitter")
+    second = Thread(target=submit, name="second-submitter")
+    first.start()
+    try:
+        assert first_at_cp3.wait(timeout=10)
+        second.start()
+        assert second_at_cp3.wait(timeout=10)
+        # The replay has checked CP1 and claimed the original reservation,
+        # but its CP3 write waits until cancellation commits.
+        reject_first.set()
+        first.join(timeout=10)
+        assert not first.is_alive()
+    finally:
+        reject_first.set()
+        accept_second.set()
+        first.join(timeout=10)
+        if second.ident is not None:
+            second.join(timeout=10)
+    assert not second.is_alive()
+    assert len(outcomes) == 2
+    assert all(isinstance(outcome, ControlPlaneError) for outcome in outcomes)
+    assert quota.get_state(ctx).usage["concurrency"] == 1
+    pending = service.durable_work.pending_outbox(ctx, include_terminal=True)
+    assert len(pending) == 1
+    assert (
+        service.durable_work.get_submission(ctx, pending[0].submission_id).status
+        == "cancel_requested"
+    )
+    ExecutionHost(service.durable_work, quota_provider=quota).tick(ctx)
+    assert quota.get_state(ctx).usage["concurrency"] == 0
+    assert service.durable_work.pending_outbox(ctx, include_terminal=True) == []
+
+
+@pytest.mark.parametrize("backend", ["memory", "sqlmodel"])
+@pytest.mark.parametrize("already_cancelled", [False, True])
+def test_compensated_receipt_cannot_restore_work_without_quota(
+    tmp_path: Path, monkeypatch, backend: str, already_cancelled: bool
+) -> None:
+    ctx, _authz, _definitions, _submissions, _durable, _events, service = _wired(
+        tmp_path
+    )
+    quota = _p1_recovery_stores(service, tmp_path, backend)
+    accept = service.durable_work.accept
+
+    def reject(*args, **kwargs):
+        if already_cancelled:
+            service.submissions.cancel_run(ctx, kwargs["run_id"])
+        raise ControlPlaneError.conflict("definite durable rejection")
+
+    monkeypatch.setattr(service.durable_work, "accept", reject)
+    with pytest.raises(ControlPlaneError, match="definite durable rejection"):
+        service.submit_run(ctx, "pipe", idempotency_key="compensated-cp1")
+    assert quota.get_state(ctx).usage["concurrency"] == 0
+    assert (
+        service.submissions.lookup_idempotency(
+            ctx, "compensated-cp1", operation="run.submit"
+        )
+        is not None
+    )
+    monkeypatch.setattr(service.durable_work, "accept", accept)
+    budget = quota.get_budget(ctx, resource="concurrency").limit
+    quota.admit(ctx, resource="concurrency", units=budget)
+    with pytest.raises(
+        ControlPlaneError, match="Cancelled or terminal acceptance cannot be recovered"
+    ):
+        service.submit_run(ctx, "pipe", idempotency_key="compensated-cp1")
+    assert service.durable_work.pending_outbox(ctx) == []
+    quota.release(ctx, resource="concurrency", units=budget)
+    # The cancellation, not current capacity, bars the old CP1 receipt.
+    with pytest.raises(
+        ControlPlaneError, match="Cancelled or terminal acceptance cannot be recovered"
+    ):
+        service.submit_run(ctx, "pipe", idempotency_key="compensated-cp1")
+    service.submit_run(ctx, "pipe", idempotency_key="fresh-after-compensation")
+    assert quota.get_state(ctx).usage["concurrency"] == 1
+
+
+@pytest.mark.parametrize("backend", ["memory", "sqlmodel"])
+def test_rejected_duplicate_cannot_release_another_submitters_quota(
+    tmp_path: Path, monkeypatch, backend: str
+) -> None:
+    ctx, _authz, _definitions, _submissions, _durable, _events, service = _wired(
+        tmp_path
+    )
+    quota = _p1_recovery_stores(service, tmp_path, backend)
+    budget = quota.get_budget(ctx, resource="concurrency").limit
+    if budget > 1:
+        quota.admit(ctx, resource="concurrency", units=budget - 1)
+    if backend == "sqlmodel":
+        from etlantic_sqlmodel.control_plane.cp4_stores import SQLModelQuotaProvider
+
+        # Different application instances share persisted reservation claims.
+        other_quota = SQLModelQuotaProvider(quota.engine)
+    else:
+        other_quota = quota
+    other_service = replace(service, quotas=other_quota)
+    admission_lock = Lock()
+    compensations = []
+    for provider in {id(quota): quota, id(other_quota): other_quota}.values():
+        admit = provider.admit
+        release = provider.release
+
+        def ordered_admit(*args, _admit=admit, **kwargs):
+            # Arrange two successful admissions before either CP1 outcome.
+            # Avoid depending on SQLite's concurrent snapshot write behavior.
+            with admission_lock:
+                return _admit(*args, **kwargs)
+
+        def record_release(*args, _release=release, **kwargs):
+            compensations.append(dict(kwargs))
+            return _release(*args, **kwargs)
+
+        monkeypatch.setattr(provider, "admit", ordered_admit)
+        monkeypatch.setattr(provider, "release", record_release)
+
+    accept = service.submissions.accept
+    arrived = Barrier(2)
+    rejected = Event()
+    count_lock = Lock()
+    calls = 0
+
+    def reject_first(*args, **kwargs):
+        nonlocal calls
+        with count_lock:
+            calls += 1
+            index = calls
+        arrived.wait(timeout=10)
+        if index == 1:
+            raise ControlPlaneError.conflict("definite rejection")
+        assert rejected.wait(timeout=10)
+        return accept(*args, **kwargs)
+
+    monkeypatch.setattr(service.submissions, "accept", reject_first)
+
+    def submit(application):
+        try:
+            return application.submit_run(ctx, "pipe", idempotency_key="shared-race")
+        except ControlPlaneError as exc:
+            rejected.set()
+            return exc
+
+    with ThreadPoolExecutor(max_workers=2) as pool:
+        results = list(pool.map(submit, (service, other_service)))
+    receipts = [item for item in results if not isinstance(item, ControlPlaneError)]
+    errors = [item for item in results if isinstance(item, ControlPlaneError)]
+    assert len(receipts) == len(errors) == 1
+    assert str(errors[0]) == "definite rejection"
+    assert quota.get_state(ctx).usage["concurrency"] == budget
+    # Repeating the rejected attempt's compensation must still preserve the
+    # accepted attempt's claim, including through another provider instance.
+    other_quota.release(ctx, **compensations[0])
+    assert quota.get_state(ctx).usage["concurrency"] == budget
+    monkeypatch.setattr(service.submissions, "accept", accept)
+    with pytest.raises(ControlPlaneError, match="quota deny"):
+        service.submit_run(ctx, "pipe", idempotency_key="over-budget")
+    assert len(service.durable_work.pending_outbox(ctx)) == 1
+    service.cancel_run(ctx, receipts[0].resource_id)
+    ExecutionHost(service.durable_work, quota_provider=other_quota).tick(ctx)
+    assert quota.get_state(ctx).usage["concurrency"] == budget - 1
+
+
+@pytest.mark.parametrize("backend", ["memory", "sqlmodel"])
+def test_quota_claim_compensation_releases_only_the_last_owner(
+    tmp_path: Path, backend: str
+) -> None:
+    ctx, _authz, _definitions, _submissions, _durable, _events, service = _wired(
+        tmp_path
+    )
+    quota = _p1_recovery_stores(service, tmp_path, backend)
+    first = quota.admit(
+        ctx, resource="concurrency", idempotency_key="claims", claim_id="first"
+    )
+    second = quota.admit(
+        ctx, resource="concurrency", idempotency_key="claims", claim_id="second"
+    )
+    assert first == second
+    release_key = f"{first.metadata['reservation_key']}:release"
+    if backend == "sqlmodel":
+        from etlantic_sqlmodel.control_plane.cp4_stores import SQLModelQuotaProvider
+
+        quota = SQLModelQuotaProvider(quota.engine)
+    for claim in ("unknown", "first", "first"):
+        quota.release(
+            ctx, resource="concurrency", idempotency_key=release_key, claim_id=claim
+        )
+        assert quota.get_state(ctx).usage["concurrency"] == 1
+    quota.release(
+        ctx, resource="concurrency", idempotency_key=release_key, claim_id="second"
+    )
+    assert quota.get_state(ctx).usage["concurrency"] == 0
+    fresh = quota.admit(
+        ctx, resource="concurrency", idempotency_key="claims", claim_id="fresh"
+    )
+    assert fresh.metadata["reservation_key"] != first.metadata["reservation_key"]
+    quota.release(
+        ctx, resource="concurrency", idempotency_key=release_key, claim_id="second"
+    )
+    assert quota.get_state(ctx).usage["concurrency"] == 1
+    # Terminal release removes the entire reservation even with live claims.
+    quota.release(
+        ctx,
+        resource="concurrency",
+        idempotency_key=f"{fresh.metadata['reservation_key']}:release",
+    )
+    assert quota.get_state(ctx).usage["concurrency"] == 0
+    legacy = quota.admit(ctx, resource="concurrency", idempotency_key="unclaimed")
+    quota.admit(
+        ctx, resource="concurrency", idempotency_key="unclaimed", claim_id="late"
+    )
+    quota.release(
+        ctx,
+        resource="concurrency",
+        idempotency_key=f"{legacy.metadata['reservation_key']}:release",
+        claim_id="late",
+    )
+    assert quota.get_state(ctx).usage["concurrency"] == 1
+
+
+@pytest.mark.parametrize("backend", ["memory", "sqlmodel"])
+def test_cancelled_quota_cleanup_is_not_blocked_by_earlier_leased_work(
+    tmp_path: Path, backend: str
+) -> None:
+    ctx, _authz, _definitions, _submissions, _durable, _events, service = _wired(
+        tmp_path
+    )
+    quota = _p1_recovery_stores(service, tmp_path, backend)
+    if backend == "memory":
+        quota.default_limits["concurrency"] = 2
+    budget = quota.get_budget(ctx, resource="concurrency").limit
+    if budget > 2:
+        quota.admit(ctx, resource="concurrency", units=budget - 2)
+    active = service.submit_run(ctx, "pipe", idempotency_key="earlier-active")
+    cancelled = service.submit_run(ctx, "pipe", idempotency_key="later-cancelled")
+    service.durable_work.acquire_lease(
+        ctx, active.submission_id, owner_id="other-host", ttl_seconds=3600
+    )
+    service.cancel_run(ctx, cancelled.resource_id)
+    host = ExecutionHost(service.durable_work, quota_provider=quota)
+    for _ in range(3):
+        assert host.tick(ctx, limit=1) == 0
+        assert (
+            service.durable_work.get_submission(ctx, cancelled.submission_id).status
+            == "cancelled"
+        )
+        assert quota.get_state(ctx).usage["concurrency"] == budget - 1
+        assert service.durable_work.pending_outbox(ctx, terminal_only=True) == []
+    assert len(service.durable_work.pending_outbox(ctx, include_terminal=True)) == 1
+    service.submit_run(ctx, "pipe", idempotency_key="after-cancelled")
+    assert quota.get_state(ctx).usage["concurrency"] == budget
+
+
+@pytest.mark.parametrize("backend", ["memory", "sqlmodel"])
+def test_rejected_submission_reacquires_quota_before_same_key_retry(
+    tmp_path: Path, monkeypatch, backend: str
+) -> None:
+    ctx, _authz, _definitions, _submissions, _durable, _events, service = _wired(
+        tmp_path
+    )
+    quota = _p1_recovery_stores(service, tmp_path, backend)
+    budget = quota.get_budget(ctx, resource="concurrency").limit
+    accept = service.submissions.accept
+    release = quota.release
+    released_keys = []
+
+    def record_release(*args, **kwargs):
+        released_keys.append(kwargs.get("idempotency_key"))
+        return release(*args, **kwargs)
+
+    monkeypatch.setattr(quota, "release", record_release)
+
+    def reject(*args, **kwargs):
+        raise ControlPlaneError.conflict("definite rejection")
+
+    monkeypatch.setattr(service.submissions, "accept", reject)
+    with pytest.raises(ControlPlaneError, match="definite rejection"):
+        service.submit_run(ctx, "pipe", idempotency_key="rejected-quota")
+    assert quota.get_state(ctx).usage["concurrency"] == 0
+    # Another admission can consume the freed capacity. The old allow decision
+    # must not let a retry bypass the current budget.
+    quota.admit(ctx, resource="concurrency", units=budget, idempotency_key="blocker")
+    monkeypatch.setattr(service.submissions, "accept", accept)
+    with pytest.raises(ControlPlaneError, match="quota deny"):
+        service.submit_run(ctx, "pipe", idempotency_key="rejected-quota")
+    quota.release(ctx, resource="concurrency", units=budget)
+    receipt = service.submit_run(ctx, "pipe", idempotency_key="rejected-quota")
+    assert quota.get_state(ctx).usage["concurrency"] == 1
+    assert service.submit_run(ctx, "pipe", idempotency_key="rejected-quota") == receipt
+    release(ctx, resource="concurrency", idempotency_key=released_keys[0])
+    assert quota.get_state(ctx).usage["concurrency"] == 1
+    # Cancellation releases the NEW reservation, even though the failed first
+    # attempt already recorded a keyed release for this command.
+    service.cancel_run(ctx, receipt.resource_id)
+    ExecutionHost(service.durable_work, quota_provider=quota).tick(ctx)
+    assert quota.get_state(ctx).usage["concurrency"] == 0
+
+
+@pytest.mark.parametrize("backend", ["memory", "sqlmodel"])
+@pytest.mark.parametrize("lost_release_ack", [False, True])
+def test_cancelled_run_retries_quota_cleanup_after_worker_restart(
+    tmp_path: Path, monkeypatch, backend: str, lost_release_ack: bool
+) -> None:
+    ctx, _authz, _definitions, _submissions, _durable, _events, service = _wired(
+        tmp_path
+    )
+    quota = _p1_recovery_stores(service, tmp_path, backend)
+    receipt = service.submit_run(ctx, "pipe", idempotency_key="queued-cancel-quota")
+    service.cancel_run(ctx, receipt.resource_id)
+    release = quota.release
+
+    def unavailable(*args, **kwargs):
+        if lost_release_ack:
+            release(*args, **kwargs)
+        raise OSError("quota provider unavailable")
+
+    monkeypatch.setattr(quota, "release", unavailable)
+    ExecutionHost(service.durable_work, quota_provider=quota).tick(ctx)
+    assert (
+        service.durable_work.get_submission(ctx, receipt.submission_id).status
+        == "cancelled"
+    )
+    assert quota.get_state(ctx).usage["concurrency"] == (0 if lost_release_ack else 1)
+    assert len(service.durable_work.pending_outbox(ctx, include_terminal=True)) == 1
+    monkeypatch.setattr(quota, "release", release)
+    if backend == "memory":
+        recovered = MemoryDurableWorkStore()
+        recovered.load(service.durable_work.dump())
+    else:
+        from etlantic_sqlmodel.control_plane import SQLModelDurableWorkStore
+        from etlantic_sqlmodel.control_plane.cp4_stores import SQLModelQuotaProvider
+
+        recovered = SQLModelDurableWorkStore(service.durable_work.engine)
+        quota = SQLModelQuotaProvider(quota.engine)
+    if lost_release_ack:
+        quota.admit(ctx, resource="concurrency", idempotency_key="other-run")
+    worker = ExecutionHost(recovered, quota_provider=quota)
+    worker.tick(ctx)
+    assert quota.get_state(ctx).usage["concurrency"] == (1 if lost_release_ack else 0)
+    assert recovered.pending_outbox(ctx, include_terminal=True) == []
+    if lost_release_ack:
+        quota.release(ctx, resource="concurrency")
+    service.durable_work = recovered
+    service.quotas = quota
+    service.submit_run(ctx, "pipe", idempotency_key="after-cancellation")
+    worker.tick(ctx, limit=0)
+    assert quota.get_state(ctx).usage["concurrency"] == 1
+
+
+@pytest.mark.parametrize("backend", ["memory", "sqlmodel"])
+@pytest.mark.parametrize("failure", ["link_ack", "durable_accept"])
+def test_scheduler_recovers_accepted_snapshot_without_resolving_parameters(
+    tmp_path: Path, monkeypatch, backend: str, failure: str
+) -> None:
+    ctx, authz, _definitions, _submissions, _durable, _events, service = _wired(
+        tmp_path
+    )
+    quota = _p1_recovery_stores(service, tmp_path, backend)
+    service.register_definition(
+        ctx,
+        "pipe",
+        pipeline_to_dict(definition_from_pipeline(ParameterManagedPipeline)),
+    )
+    revision, profile = service.pin_schedule_definition_revision(ctx, "pipe")
+    calls = []
+
+    def resolve(_ctx, _refs):
+        calls.append(True)
+        return {"limited": {"limit": 10}}
+
+    service.schedule_parameter_resolver = resolve
+    schedules = MemoryScheduleStore()
+    schedule = schedules.create(
+        ctx,
+        definition_id="pipe",
+        definition_revision_id=revision,
+        profile_name=profile,
+        spec=ScheduleSpec(kind="interval", interval_seconds=60, overlap="queue"),
+        parameter_refs={"limited.limit": "param://limit@v1"},
+        next_fire_at="2026-10-01T12:00:00Z",
+    )
+    due = datetime(2026, 10, 1, 12, 0, tzinfo=UTC)
+    link = schedules.link_firing_submission
+    accept = service.durable_work.accept
+
+    def lose_link(*args, **kwargs):
+        raise OSError("lost firing link acknowledgement")
+
+    def unavailable(*args, **kwargs):
+        raise OSError("durable acceptance unavailable")
+
+    if failure == "link_ack":
+        monkeypatch.setattr(schedules, "link_firing_submission", lose_link)
+    else:
+        monkeypatch.setattr(service.durable_work, "accept", unavailable)
+    scheduler = SchedulerService(
+        schedules,
+        durable=service.durable_work,
+        clock=FakeScheduleClock(due),
+        run_submitter=service.submit_scheduled_run,
+    )
+    with pytest.raises((OSError, ControlPlaneError)):
+        scheduler.tick(ctx)
+    assert schedules.list_firings(ctx, schedule.schedule_id)[0].submission_id is None
+    monkeypatch.setattr(schedules, "link_firing_submission", link)
+    monkeypatch.setattr(service.durable_work, "accept", accept)
+    resolve_count = len(calls)
+
+    def unavailable_parameters(*args, **kwargs):
+        raise AssertionError("accepted occurrence must not resolve parameter sources")
+
+    service.schedule_parameter_resolver = unavailable_parameters
+    # Reconstruct the scheduler to model a process restart. Receipt recovery
+    # repairs CP1-only acceptance before linking the original occurrence.
+    restarted = SchedulerService(
+        schedules,
+        durable=service.durable_work,
+        clock=FakeScheduleClock(due),
+        run_submitter=service.submit_scheduled_run,
+    )
+    assert restarted.tick(ctx) == 0
+    firing = schedules.list_firings(ctx, schedule.schedule_id)[0]
+    assert firing.submission_id is not None
+    assert len(calls) == resolve_count
+    assert len(service.durable_work.pending_outbox(ctx)) == 1
+    envelope = _accepted_envelope(service.durable_work, ctx, firing.submission_id)
+    assert envelope.run_request["parameter_overrides"] == {"limited": {"limit": 10}}
+    assert quota.get_state(ctx).usage["concurrency"] == 1
+    assert restarted.tick(ctx) == 0
+    # A saved receipt cannot bypass a revoked submission permission.
+    authz.forbidden_resources.add((*ctx.scope_key, "run.submit", "definition:pipe"))
+    with pytest.raises(ControlPlaneError):
+        service.submit_scheduled_run(ctx, schedule, firing.nominal_fire_time)
 
 
 def test_managed_run_identity_is_scoped_to_principal_and_operation(

@@ -108,6 +108,7 @@ def gate_pre_submit(
     effective_fingerprint: str | None = None,
     revision_id: str | None = None,
     quota_idempotency_key: str | None = None,
+    quota_claim_id: str | None = None,
     plugin_fingerprints: list[str] | None = None,
     sbom_digest: str | None = None,
     require_policy: bool = False,
@@ -175,6 +176,14 @@ def gate_pre_submit(
         quotas.require_available(ctx)
         if quota_idempotency_key is None:
             quota_decision = quotas.admit(ctx, resource=resource, units=1)
+        elif quota_claim_id is not None:
+            quota_decision = quotas.admit(
+                ctx,
+                resource=resource,
+                units=1,
+                idempotency_key=quota_idempotency_key,
+                claim_id=quota_claim_id,
+            )
         else:
             quota_decision = quotas.admit(
                 ctx,
