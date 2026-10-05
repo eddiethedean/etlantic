@@ -14,7 +14,8 @@ TransformationModel incubation to 0.60. Their existing scope is preserved.
 
 Read the [source review](FINDINGS_0_56.md) for the original 0.55 candidate audit
 and final-tag reconciliation, the [execution sequence](EXECUTION_PLAN_0_56.md)
-for work dependencies, and the
+for work dependencies, the [standalone compatibility reset](EXECUTION_PLAN_0_56_STANDALONE.md)
+for the 0.56 legacy-support boundary, and the
 [shared delivery contract](FORWARD_IMPLEMENTATION_PLANS.md) for release rules.
 The source review identifies twelve integration/coverage gaps. Every gap is
 required work in this phase; priorities determine ordering, not optionality.
@@ -68,6 +69,10 @@ private package; operator trust policy and conformance still apply.
 - Use public exports and versioned schemas. Proposed names in implementation
   discussions become public only after the contract review. Freeze exact
   signatures, sync/async behavior, ownership and compatibility at Gate A.
+- Apply the [standalone compatibility reset](EXECUTION_PLAN_0_56_STANDALONE.md):
+  do not add runtime readers, fallbacks, or replay support for pre-0.56
+  authoring payloads or durable state. Keep compatibility within the declared
+  current 0.56 public protocols and package set.
 - Preserve explicit portable execution and native extension paths. Adaptive
   `/2` stays opt-in and governed by its own admission/evidence contracts;
   qualify the managed path for an exact supported tuple rather than bypassing
@@ -355,9 +360,9 @@ provider matrix or substitute a stub for an implemented service.
 | AC056-037 | An independently built private provider installs without an adopter or core edit; its schema/options/native references survive authoring, submission and execution | 056-QUALIFY |
 | AC056-038 | Issue #150 disclosure regression and the complete multi-tenant/owner redaction campaign pass for services, HTTP, actions, events and artifacts | 056-QUALIFY |
 | AC056-039 | Real PostgreSQL control-plane persistence passes multi-process accept/race/restart/backup/restore and failure campaigns; memory/SQLite remain separately labelled | 056-QUALIFY |
-| AC056-040 | Built wheels install in a clean environment; package/export/schema/OpenAPI compatibility, migrations, version skew and upgrade/rollback behavior are recorded | 056-QUALIFY |
+| AC056-040 | Built wheels install in a clean environment; current 0.56 package/export/schema/OpenAPI contracts and fresh-store migration behavior are recorded; pre-0.56 runtime compatibility is rejected | 056-QUALIFY |
 | AC056-041 | Mandatory transforms/quality and every advertised engine/native/dynamic/incremental/streaming combination retain their semantics through the managed path; unsupported combinations explain their real limit | 056-QUALIFY |
-| AC056-042 | Existing 0.55 definitions/runs/stores migrate; legacy incomplete payloads cannot execute under fabricated fingerprints or silently receive new semantics | 056-ADMIT |
+| AC056-042 | Pre-0.56 definitions/runs/stores are rejected before execution or mutation; any approved offline converter is separately qualified and emits canonical 0.56 state | 056-ADMIT |
 | AC056-043 | At least one exact managed adaptive tuple passes authoritative `/2` admission/runtime and observed qualification; all other tuples remain truthful and fail closed | 056-QUALIFY |
 | AC056-044 | A generated-spec consumer performs optional review/approval and external business orchestration using public commands alone, with no ETL implementation in its application path | 056-CONTROL |
 

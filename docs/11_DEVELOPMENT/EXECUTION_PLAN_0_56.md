@@ -14,6 +14,11 @@ are normative; this sequence does not narrow their scope. The
 [findings ledger](FINDINGS_0_56.md) records the reviewed source, not a claim that
 these features have shipped.
 
+The [standalone compatibility reset](EXECUTION_PLAN_0_56_STANDALONE.md) is a
+release-contract overlay: it replaces 0.55 upgrade/read compatibility with a
+canonical 0.56 state boundary. Backend feature delivery and current 0.56
+security, recovery, and provider qualification remain in force.
+
 ## Entry and release boundary
 
 The 0.55.0 release is published. Implementation starts from the final
@@ -195,8 +200,10 @@ builder, worker callback or connector implementation is required.
   artifacts, event history, caches, denied lookups and uploaded references.
 - Install wheels in clean environments and inspect public imports, generated
   schemas/OpenAPI, optional dependency boundaries and matched-minor packaging.
-- Qualify upgrade from the final 0.55 release, interrupted migrations and the
-  documented rollback/recovery route. No automatic claim of downgrade safety.
+- Qualify clean initialization and current-state recovery. Reject 0.55 state
+  before execution or mutation; qualify an offline converter only if Step 0 of
+  the [standalone reset](EXECUTION_PLAN_0_56_STANDALONE.md) approves one. No
+  automatic claim of downgrade safety.
 - Publish per-feature and per-provider availability, limitations and diagnostics.
   Required live or adaptive observation cases cannot be converted to skips to
   obtain a green release decision.
