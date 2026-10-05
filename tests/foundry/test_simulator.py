@@ -451,6 +451,77 @@ def test_foundry_sink_modes_use_simulated_transactions_over_loopback(
     assert [item["path"] for item in listing.json()["data"]] == [file_path]
 
 
+def test_simulator_models_append_update_snapshot_and_pinned_history(
+    foundry_simulator: Any,
+) -> None:
+    headers = {"Authorization": f"Bearer {FOUNDRY_TOKEN}"}
+    dataset_url = f"{foundry_simulator.base_url}/api/v2/datasets/{FOUNDRY_DATASET}"
+
+    def transact(transaction_type: str, path: str, content: bytes) -> tuple[str, int]:
+        created = httpx2.post(
+            f"{dataset_url}/transactions",
+            params={"branchName": "main"},
+            json={"transactionType": transaction_type},
+            headers=headers,
+            timeout=5,
+        )
+        assert created.status_code == 201
+        transaction = created.json()["rid"]
+        uploaded = httpx2.post(
+            f"{dataset_url}/files/{path}/upload",
+            params={"branchName": "main", "transactionRid": transaction},
+            content=content,
+            headers=headers,
+            timeout=5,
+        )
+        if uploaded.status_code != 200:
+            return transaction, uploaded.status_code
+        committed = httpx2.post(
+            f"{dataset_url}/transactions/{transaction}/commit",
+            headers=headers,
+            timeout=5,
+        )
+        return transaction, committed.status_code
+
+    update_transaction, update_status = transact(
+        "UPDATE", "folder/a.csv", b"id,value\n3,updated\n"
+    )
+    assert update_status == 200
+    assert foundry_simulator.files[("main", "folder/a.csv")].content == (
+        b"id,value\n3,updated\n"
+    )
+    assert ("main", "folder/b.csv") in foundry_simulator.files
+
+    append_transaction, append_status = transact(
+        "APPEND", "folder/a.csv", b"id,value\n4,duplicate\n"
+    )
+    assert append_status == 409
+    assert foundry_simulator.transactions[append_transaction] == "OPEN"
+
+    snapshot_transaction, snapshot_status = transact(
+        "SNAPSHOT", "snapshot.csv", b"id,value\n5,snapshot\n"
+    )
+    assert snapshot_status == 200
+    assert foundry_simulator.transaction_types[update_transaction] == "UPDATE"
+    assert foundry_simulator.transaction_types[append_transaction] == "APPEND"
+    assert foundry_simulator.transaction_types[snapshot_transaction] == "SNAPSHOT"
+    assert set(foundry_simulator.files) == {("main", "snapshot.csv")}
+
+    pinned_listing = httpx2.get(
+        f"{dataset_url}/files",
+        params={"endTransactionRid": PINNED_TRANSACTION, "pathPrefix": "folder/"},
+        headers=headers,
+        timeout=5,
+    )
+    assert [item["path"] for item in pinned_listing.json()["data"]] == ["folder/a.csv"]
+    assert (
+        foundry_simulator.transaction_snapshots[PINNED_TRANSACTION][
+            ("main", "folder/a.csv")
+        ].content
+        != foundry_simulator.files[("main", "snapshot.csv")].content
+    )
+
+
 def test_lost_commit_ack_reconciles_against_simulated_foundry_state(
     foundry_simulator: Any,
 ) -> None:
