@@ -4,6 +4,7 @@
 from __future__ import annotations
 
 from collections.abc import Mapping, Sequence
+from contextlib import suppress
 from dataclasses import dataclass, field
 from typing import TYPE_CHECKING, Any, cast
 
@@ -220,6 +221,34 @@ async def write_via_sink_connector(
             message="Sink commit acknowledgement was not received",
             metadata=dict(session.metadata),
         )
+    except BaseException as exc:
+        # Commit may have taken effect before cancellation reached the caller.
+        # Never abort after commit starts; reconcile under a shield and attach
+        # the classified outcome to the cancellation for the orchestrator.
+        receipt = CommitReceipt(
+            status="unknown",
+            session_id=session.session_id,
+            provider=session.provider,
+            message="Sink commit was cancelled before its outcome was acknowledged",
+            metadata=dict(session.metadata),
+        )
+        reconcile = getattr(connector, "reconcile", None)
+        if callable(reconcile):
+            try:
+                with anyio.CancelScope(shield=True):
+                    result = await maybe_await(
+                        reconcile, receipt, context=context
+                    )
+                if (
+                    isinstance(result, CommitReceipt)
+                    and result.status in {"committed", "rolled_back", "unknown"}
+                ):
+                    receipt = result
+            except BaseException:
+                pass
+        with suppress(AttributeError, TypeError):
+            exc.commit_receipt = receipt
+        raise
     if not isinstance(receipt, CommitReceipt):
         return CommitReceipt(
             status="unknown",
