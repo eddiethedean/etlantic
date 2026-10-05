@@ -613,6 +613,67 @@ def test_cancelled_run_retries_quota_cleanup_after_worker_restart(
     assert quota.get_state(ctx).usage["concurrency"] == 1
 
 
+def test_legacy_envelope_quota_cleanup_derives_admission_key(tmp_path: Path) -> None:
+    ctx, _authz, _definitions, _submissions, durable, _events, service = _wired(
+        tmp_path
+    )
+    quota = _p1_recovery_stores(service, tmp_path, "memory")
+    receipt = service.submit_run(ctx, "pipe", idempotency_key="legacy-quota-release")
+    record = durable.get_submission(ctx, receipt.submission_id)
+    assert record.input_snapshot is not None
+    envelope = ExecutionEnvelope.from_json(record.input_snapshot)
+    legacy_envelope = ExecutionEnvelope.from_dict(
+        {**envelope.to_dict(), "evidence_refs": {}}
+    )
+    legacy_record = replace(record, input_snapshot=legacy_envelope.to_json())
+    row_key = next(
+        key for key, value in durable._submissions.items()
+        if value.submission_id == receipt.submission_id
+    )
+    durable._submissions[row_key] = legacy_record
+
+    service.cancel_run(ctx, receipt.resource_id)
+    host = ExecutionHost(durable, quota_provider=quota)
+    host.tick(ctx)
+
+    assert quota.get_state(ctx).usage["concurrency"] == 0
+    assert durable.pending_outbox(ctx, include_terminal=True) == []
+
+
+def test_cp1_only_legacy_envelope_recovers_quota_admission(tmp_path: Path) -> None:
+    ctx, _authz, _definitions, _submissions, durable, _events, service = _wired(
+        tmp_path
+    )
+    quota = _p1_recovery_stores(service, tmp_path, "memory")
+    service.quotas = quota
+    receipt = service.submit_run(ctx, "pipe", idempotency_key="legacy-quota-recovery")
+    record = durable.get_submission(ctx, receipt.submission_id)
+    assert record.input_snapshot is not None
+    envelope = ExecutionEnvelope.from_json(record.input_snapshot)
+    legacy_envelope = ExecutionEnvelope.from_dict(
+        {**envelope.to_dict(), "evidence_refs": {}}
+    )
+    row_key = next(
+        key for key, value in durable._submissions.items()
+        if value.submission_id == receipt.submission_id
+    )
+    del durable._submissions[row_key]
+    for key, submission_id in tuple(durable._idempotency.items()):
+        if submission_id == receipt.submission_id:
+            del durable._idempotency[key]
+
+    service._recover_cp1_only_submission(
+        ctx,
+        idempotency_key="legacy-quota-recovery",
+        envelope=legacy_envelope,
+        receipt=receipt,
+    )
+
+    recovered = durable.get_submission(ctx, receipt.submission_id)
+    assert recovered.input_snapshot == legacy_envelope.to_json()
+    assert quota.get_state(ctx).usage["concurrency"] == 1
+
+
 @pytest.mark.parametrize("backend", ["memory", "sqlmodel"])
 @pytest.mark.parametrize("failure", ["link_ack", "durable_accept"])
 def test_scheduler_recovers_accepted_snapshot_without_resolving_parameters(

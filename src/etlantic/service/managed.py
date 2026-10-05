@@ -50,7 +50,7 @@ from etlantic.control_plane.protocols import (
     EventStore,
     SubmissionStore,
 )
-from etlantic.control_plane.quota_models import QuotaDecision
+from etlantic.control_plane.quota_models import QuotaDecision, quota_idempotency_key
 from etlantic.control_plane.redaction import redact_control_plane_payload
 from etlantic.control_plane.schedule_models import ScheduleRecord, firing_key
 from etlantic.io_policy import SafeIoPolicy, read_text_safe
@@ -4001,10 +4001,6 @@ class ManagedApplicationService:
         reservation_key: str | None = None
         if self.quotas is not None:
             accepted_key = (envelope.evidence_refs or {}).get("quota_reservation_key")
-            if not isinstance(accepted_key, str) or not accepted_key:
-                raise ControlPlaneError.conflict(
-                    "Accepted run has no verified quota reservation"
-                )
             admission_key = self._quota_idempotency_key(ctx, idempotency_key)
             claim_id = uuid4().hex
             self.quotas.require_available(ctx)
@@ -4021,7 +4017,11 @@ class ManagedApplicationService:
                     extensions=decision.to_dict(),
                 )
             reservation_key = self._quota_reservation_key(decision, admission_key)
-            if reservation_key != accepted_key:
+            if (
+                isinstance(accepted_key, str)
+                and accepted_key
+                and reservation_key != accepted_key
+            ):
                 # A compensated receipt still exists in CP1, but admission
                 # assigned a new generation after its old reservation ended.
                 self._release_quota_reservation(ctx, reservation_key, claim_id)
@@ -4105,19 +4105,7 @@ class ManagedApplicationService:
         operation: str = "run.submit",
     ) -> str:
         """Derive a secret-safe quota reservation key from the CP1 scope."""
-        value = {
-            "scope": list(ctx.scope_key),
-            "principal": [
-                ctx.principal.issuer or "",
-                ctx.principal.kind,
-                ctx.principal.subject,
-            ],
-            "operation": operation,
-            "idempotency_key": idempotency_key,
-        }
-        return hashlib.sha256(
-            json.dumps(value, sort_keys=True, separators=(",", ":")).encode("utf-8")
-        ).hexdigest()
+        return quota_idempotency_key(ctx, idempotency_key, operation=operation)
 
     def _cancel_cp1(
         self, ctx: ControlPlaneContext, run_id: str | None

@@ -21,6 +21,7 @@ from etlantic.control_plane.durable_models import (
 from etlantic.control_plane.durable_protocols import DurableWorkStore
 from etlantic.control_plane.errors import ControlPlaneError
 from etlantic.control_plane.models import ControlPlaneContext
+from etlantic.control_plane.quota_models import quota_idempotency_key
 from etlantic.control_plane.schedule_diagnostics import fed_diagnostic
 from etlantic.reports.model import PipelineRunReport
 from etlantic.runtime.managed_errors import (
@@ -503,15 +504,24 @@ class ExecutionHost:
         self, ctx: ControlPlaneContext, submission: SubmissionRecord
     ) -> bool:
         """Release an accepted concurrency reservation exactly once."""
-        if self.quota_provider is None or not submission.input_snapshot:
+        if self.quota_provider is None:
             return True
         try:
-            from etlantic.control_plane.execution_envelope import ExecutionEnvelope
+            key: object = None
+            if submission.input_snapshot:
+                from etlantic.control_plane.execution_envelope import ExecutionEnvelope
 
-            envelope = ExecutionEnvelope.from_json(submission.input_snapshot)
-            key = (envelope.evidence_refs or {}).get("quota_reservation_key")
+                envelope = ExecutionEnvelope.from_json(submission.input_snapshot)
+                key = (envelope.evidence_refs or {}).get("quota_reservation_key")
             if not isinstance(key, str) or not key:
-                return True
+                # Older accepted envelopes persisted the command identity but
+                # not its reservation key. Their admission key was derived
+                # from this same scoped command and remains releasable.
+                key = quota_idempotency_key(
+                    ctx,
+                    submission.idempotency_key,
+                    operation=submission.operation,
+                )
             self.quota_provider.release(
                 ctx,
                 resource="concurrency",
