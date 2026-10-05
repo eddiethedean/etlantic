@@ -157,7 +157,7 @@ def _qualify_managed_service_race(
     ctx = _context(scope)
     engine = sqlalchemy.create_engine(url, pool_pre_ping=True)
     try:
-        assert upgrade(engine) == "013_durable_submission_scope_backfill_0_56"
+        assert upgrade(engine) == "014_cp1_complete_principal_idempotency_0_56"
     finally:
         engine.dispose()
 
@@ -220,7 +220,7 @@ def test_postgresql_managed_accept_recovers_cp1_and_cp3_lost_acknowledgements(
     ctx = _context(scope)
     migration_engine = sqlalchemy.create_engine(url, pool_pre_ping=True)
     try:
-        assert upgrade(migration_engine) == "013_durable_submission_scope_backfill_0_56"
+        assert upgrade(migration_engine) == "014_cp1_complete_principal_idempotency_0_56"
     finally:
         migration_engine.dispose()
 

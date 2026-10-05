@@ -3617,7 +3617,6 @@ def test_managed_rerun_rechecks_admission_and_charges_quota_once(
     assert quota.get_state(ctx).usage["concurrency"] == 2
     accepted = durable.get_submission(ctx, rerun.submission_id)
     assert accepted.policy_fingerprint is not None
-
     policy.set_rule("pre_submit", "deny")
     assert (
         service.rerun_run(
@@ -3627,6 +3626,46 @@ def test_managed_rerun_rechecks_admission_and_charges_quota_once(
     )
     assert quota.get_state(ctx).usage["concurrency"] == 2
 
+
+@pytest.mark.parametrize(
+    "principal",
+    [
+        Principal(subject="same-subject", issuer="issuer-b", kind="human"),
+        Principal(subject="same-subject", issuer="issuer-a", kind="workload"),
+    ],
+    ids=["different-issuer", "different-kind"],
+)
+def test_managed_submit_idempotency_uses_complete_principal_identity(
+    tmp_path: Path, principal: Principal
+) -> None:
+    ctx, _authz, _definitions, submissions, durable, _events, service = _wired(
+        tmp_path
+    )
+    first_identity = replace(
+        ctx,
+        principal=Principal(subject="same-subject", issuer="issuer-a", kind="human"),
+    )
+    second_identity = replace(ctx, principal=principal)
+    key = "shared-principal-key"
+
+    first = service.submit_run(first_identity, "pipe", idempotency_key=key)
+    second = service.submit_run(second_identity, "pipe", idempotency_key=key)
+
+    assert first.submission_id != second.submission_id
+    assert service.submit_run(first_identity, "pipe", idempotency_key=key) == first
+    assert service.submit_run(second_identity, "pipe", idempotency_key=key) == second
+    assert submissions.lookup_idempotency(
+        first_identity, key, operation="run.submit"
+    ) == first
+    assert submissions.lookup_idempotency(
+        second_identity, key, operation="run.submit"
+    ) == second
+    assert durable.get_submission_by_idempotency(
+        first_identity, idempotency_key=key, operation="run.submit"
+    ) is not None
+    assert durable.get_submission_by_idempotency(
+        second_identity, idempotency_key=key, operation="run.submit"
+    ) is not None
 
 def test_managed_rerun_authorizes_plan_resources_before_acceptance(
     tmp_path: Path,

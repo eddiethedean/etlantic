@@ -258,6 +258,8 @@ class SQLModelSubmissionStore:
                 row = SubmissionRow(
                     tenant_id=ctx.tenant.tenant_id,
                     workspace_id=ctx.workspace.workspace_id,
+                    principal_issuer=ctx.principal.issuer or "",
+                    principal_kind=ctx.principal.kind,
                     principal_subject=ctx.principal.subject,
                     operation=operation,
                     idempotency_key=idempotency_key,
@@ -355,6 +357,8 @@ class SQLModelSubmissionStore:
         statement = select(SubmissionRow).where(
             SubmissionRow.tenant_id == ctx.tenant.tenant_id,
             SubmissionRow.workspace_id == ctx.workspace.workspace_id,
+            SubmissionRow.principal_issuer == (ctx.principal.issuer or ""),
+            SubmissionRow.principal_kind == ctx.principal.kind,
             SubmissionRow.principal_subject == ctx.principal.subject,
             SubmissionRow.operation == operation,
             SubmissionRow.idempotency_key == idempotency_key,

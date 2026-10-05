@@ -119,7 +119,8 @@ class SubmissionStore(Protocol):
 
     Effective store keys follow ADR-016::
 
-        (tenant_id, workspace_id, principal_subject, operation, idempotency_key)
+        (tenant_id, workspace_id, principal_issuer, principal_kind,
+        principal_subject, operation, idempotency_key)
     """
 
     def accept(
@@ -143,7 +144,7 @@ class SubmissionStore(Protocol):
         *,
         operation: str = "run.submit",
     ) -> AcceptReceipt | None:
-        """Return a prior acceptance for the ADR-016 idempotency tuple."""
+        """Return a prior acceptance for the complete principal identity tuple."""
         ...
 
     def lookup_idempotency_payload(

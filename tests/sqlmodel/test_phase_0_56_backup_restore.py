@@ -101,7 +101,7 @@ def test_postgresql_cp3_failure_atomicity_and_backup_restore(
         source_engine = sqlalchemy.create_engine(
             _database_uri(base_url, source_database)
         )
-        assert upgrade(source_engine) == "013_durable_submission_scope_backfill_0_56"
+        assert upgrade(source_engine) == "014_cp1_complete_principal_idempotency_0_56"
         store_id = f"phase056-backup-{suffix}"
         store = SQLModelDurableWorkStore(source_engine, store_id=store_id)
         ctx = _context()

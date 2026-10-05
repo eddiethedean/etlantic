@@ -37,6 +37,8 @@ class SubmissionRow(SQLModel, table=True):
         UniqueConstraint(
             "tenant_id",
             "workspace_id",
+            "principal_issuer",
+            "principal_kind",
             "principal_subject",
             "operation",
             "idempotency_key",
@@ -51,6 +53,8 @@ class SubmissionRow(SQLModel, table=True):
         sa_column=Column(String(), index=True, nullable=False),
         default="",
     )
+    principal_issuer: str = Field(default="", index=True)
+    principal_kind: str = Field(default="human", index=True)
     operation: str = Field(
         sa_column=Column(String(), index=True, nullable=False),
         default="run.submit",
