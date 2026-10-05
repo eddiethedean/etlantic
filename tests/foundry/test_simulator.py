@@ -521,6 +521,47 @@ def test_simulator_models_append_update_snapshot_and_pinned_history(
         != foundry_simulator.files[("main", "snapshot.csv")].content
     )
 
+    qualified_create = httpx2.post(
+        f"{dataset_url}/transactions",
+        params={"branchName": "qualification"},
+        json={"transactionType": "UPDATE"},
+        headers=headers,
+        timeout=5,
+    )
+    assert qualified_create.status_code == 201
+    qualified_transaction = qualified_create.json()["rid"]
+    qualified_upload = httpx2.post(
+        f"{dataset_url}/files/folder/a.csv/upload",
+        params={"branchName": "qualification", "transactionRid": qualified_transaction},
+        content=b"id,value\n9,qualification\n",
+        headers=headers,
+        timeout=5,
+    )
+    assert qualified_upload.status_code == 200
+    qualified_commit = httpx2.post(
+        f"{dataset_url}/transactions/{qualified_transaction}/commit",
+        headers=headers,
+        timeout=5,
+    )
+    assert qualified_commit.status_code == 200
+
+    qualified_listing = httpx2.get(
+        f"{dataset_url}/files",
+        params={"endTransactionRid": qualified_transaction, "pathPrefix": "folder/"},
+        headers=headers,
+        timeout=5,
+    )
+    assert [item["path"] for item in qualified_listing.json()["data"]] == [
+        "folder/a.csv"
+    ]
+    qualified_content = httpx2.get(
+        f"{dataset_url}/files/folder/a.csv/content",
+        params={"endTransactionRid": qualified_transaction},
+        headers=headers,
+        timeout=5,
+    )
+    assert qualified_content.content == b"id,value\n9,qualification\n"
+
 
 def test_lost_commit_ack_reconciles_against_simulated_foundry_state(
     foundry_simulator: Any,

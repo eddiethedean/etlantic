@@ -144,7 +144,9 @@ class FoundrySimulator:
         self.transaction_datasets: dict[str, str] = {pinned_transaction: dataset_rid}
         self.transaction_branches: dict[str, str] = {pinned_transaction: "main"}
         self.transaction_snapshots: dict[str, dict[tuple[str, str], SimulatedFile]] = {
-            pinned_transaction: dict(self.files)
+            pinned_transaction: {
+                key: file for key, file in self.files.items() if key[0] == "main"
+            }
         }
         self.pending_files: dict[str, dict[str, tuple[str, bytes]]] = {}
         self.list_queries: list[dict[str, Any]] = []
@@ -229,7 +231,11 @@ class FoundrySimulator:
 
     def _file_list_response(self, query: dict[str, Any]) -> dict[str, Any]:
         transaction = query.get("endTransactionRid")
-        branch = str(query.get("branchName") or "main")
+        branch = str(
+            self.transaction_branches.get(str(transaction), "main")
+            if transaction
+            else query.get("branchName") or "main"
+        )
         prefix = query.get("pathPrefix")
         visible_files = (
             self.transaction_snapshots.get(str(transaction), {})
@@ -245,7 +251,7 @@ class FoundrySimulator:
                 "transactionRid": file.transaction_rid,
             }
             for (file_branch, path), file in sorted(visible_files.items())
-            if (transaction or file_branch == branch)
+            if file_branch == branch
             and (not prefix or path.startswith(str(prefix)))
         ]
         requested_page_size = query.get("pageSize", self.page_size)
@@ -400,7 +406,9 @@ class FoundrySimulator:
                 self.files[(file_branch, path)] = SimulatedFile(
                     content, file_branch, transaction_rid
                 )
-            self.transaction_snapshots[transaction_rid] = dict(self.files)
+            self.transaction_snapshots[transaction_rid] = {
+                key: file for key, file in self.files.items() if key[0] == branch
+            }
             if self.drop_commit_ack:
                 self.drop_commit_ack = False
                 return JSONResponse(
