@@ -226,8 +226,11 @@ def test_source_caps_each_download_to_remaining_total_budget() -> None:
         ):
             pass
 
-    with pytest.raises(ConnectorReadError, match="content exceeds max_bytes"):
+    with pytest.raises(
+        ConnectorReadError, match="source exceeds max_total_bytes"
+    ) as oversized:
         anyio.run(run)
+    assert oversized.value.code == "PMFND033"
     assert content_requests == ["first.csv", "second.csv"]
     assert len(second_file_chunks) == 1
 
