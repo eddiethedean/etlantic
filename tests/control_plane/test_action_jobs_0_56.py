@@ -402,6 +402,7 @@ def test_action_worker_retains_provision_effect_returned_after_deadline() -> Non
         try:
             await asyncio.sleep(5)
         except asyncio.CancelledError:
+            await asyncio.sleep(1.2)
             return _provision_effect(request)
         raise AssertionError("provision handler was not cancelled")
 

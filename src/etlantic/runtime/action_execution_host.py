@@ -361,7 +361,9 @@ class ActionExecutionHost:
             if remaining <= 0:
                 task.cancel()
                 try:
-                    return await task
+                    return await self._await_cancelled_action_handler(ctx, job, task)
+                except _ActionLeaseLost:
+                    raise
                 except (asyncio.CancelledError, Exception):
                     raise TimeoutError from None
             await asyncio.wait({task}, timeout=min(interval, remaining))
@@ -369,6 +371,35 @@ class ActionExecutionHost:
                 break
             if _now() >= deadline:
                 continue
+            try:
+                self.durable.heartbeat_action_job(
+                    ctx,
+                    job.action_id,
+                    worker_id=self.worker_id,
+                    fencing_token=job.fencing_token,
+                    lease_seconds=self.lease_seconds,
+                )
+            except Exception as exc:
+                task.cancel()
+                try:
+                    result = await task
+                except (asyncio.CancelledError, Exception):
+                    raise _ActionLeaseLost from exc
+                raise _ActionLeaseLost(result) from exc
+        return await task
+
+    async def _await_cancelled_action_handler(
+        self,
+        ctx: ControlPlaneContext,
+        job: ActionJobRecord,
+        task: asyncio.Task[Mapping[str, Any]],
+    ) -> Mapping[str, Any]:
+        """Drain a cancelled handler without letting its lease expire."""
+        interval = min(1.0, max(0.05, self.lease_seconds / 3))
+        while not task.done():
+            await asyncio.wait({task}, timeout=interval)
+            if task.done():
+                break
             try:
                 self.durable.heartbeat_action_job(
                     ctx,
