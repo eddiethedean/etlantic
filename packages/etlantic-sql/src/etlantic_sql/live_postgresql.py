@@ -609,26 +609,27 @@ class LivePostgresSourceConnector:
                                     list(cast(Sequence[str], partition_ids))
                                 )
                             )
-                        result = conn.execute(query.limit(row_limit + 1))
-                        rows: list[dict[str, Any]] = [
-                            dict(cast(Mapping[str, Any], row._mapping))
-                            for row in result
-                        ]
-                        if len(rows) > row_limit:
-                            raise ConnectorReadError(
-                                f"PostgreSQL snapshot exceeds row_limit ({row_limit})",
-                                code="PMCONN855",
-                                provider=PROVIDER,
-                            )
+                        result = conn.execution_options(stream_results=True).execute(
+                            query.limit(row_limit + 1)
+                        )
+                        rows: list[dict[str, Any]] = []
                         byte_count = 0
-                        for row in rows:
-                            byte_count += _json_bytes(row)
+                        for row in result:
+                            if len(rows) >= row_limit:
+                                raise ConnectorReadError(
+                                    f"PostgreSQL snapshot exceeds row_limit ({row_limit})",
+                                    code="PMCONN855",
+                                    provider=PROVIDER,
+                                )
+                            item = dict(cast(Mapping[str, Any], row._mapping))
+                            byte_count += _json_bytes(item)
                             if byte_count > max_bytes:
                                 raise ConnectorReadError(
                                     f"PostgreSQL snapshot exceeds max_bytes ({max_bytes})",
                                     code="PMCONN856",
                                     provider=PROVIDER,
                                 )
+                            rows.append(item)
                         tx.commit()
                         return rows
                     except Exception:
@@ -1292,6 +1293,14 @@ class LivePostgresSinkConnector:
         state = self._require(session.session_id)
         if state["status"] == "committed":
             return state["receipt"]
+        if state["status"] == "unknown":
+            return CommitReceipt(
+                status="unknown",
+                session_id=session.session_id,
+                provider=PROVIDER,
+                message="PostgreSQL commit outcome still requires reconciliation",
+                metadata=dict(state["session_metadata"]),
+            )
         connection = state.get("connection")
         engine = state.get("engine")
         try:

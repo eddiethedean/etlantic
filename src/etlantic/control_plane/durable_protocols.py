@@ -133,13 +133,29 @@ class DurableWorkStore(Protocol):
         limit: int = 100,
     ) -> ExecutionScopePage: ...
     def pending_outbox(
-        self, ctx: ControlPlaneContext, *, limit: int = 100
-    ) -> Sequence[OutboxRecord]: ...
+        self,
+        ctx: ControlPlaneContext,
+        *,
+        limit: int = 100,
+        include_terminal: bool = False,
+        terminal_only: bool = False,
+    ) -> Sequence[OutboxRecord]:
+        """List unpublished work, filtering status before applying ``limit``.
+
+        ``terminal_only`` selects cancelled, completed and failed submissions
+        regardless of ``include_terminal``; the default selects active work.
+        """
+        ...
+
     def reconcile_terminal_outbox(
         self, ctx: ControlPlaneContext, *, limit: int = 100
     ) -> Sequence[OutboxRecord]: ...
     def reconcile_cancelled_submissions(
-        self, ctx: ControlPlaneContext, *, limit: int = 100
+        self,
+        ctx: ControlPlaneContext,
+        *,
+        limit: int = 100,
+        acknowledge_outbox: bool = True,
     ) -> Sequence[SubmissionRecord]: ...
     def get_submission(
         self, ctx: ControlPlaneContext, submission_id: str

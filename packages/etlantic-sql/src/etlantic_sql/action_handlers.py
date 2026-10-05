@@ -324,6 +324,105 @@ def create_action_handlers(resolve_engine: EngineResolver) -> dict[str, ActionHa
     # One abandoned operation must not create an unbounded executor backlog.
     slot = threading.BoundedSemaphore(1)
 
+    async def catalog(
+        ctx: ControlPlaneContext, request: Mapping[str, Any]
+    ) -> Mapping[str, Any]:
+        if request.get("provider") != "postgresql":
+            raise ValueError("PostgreSQL catalog requires provider='postgresql'")
+        limit = request.get("limit", 50)
+        cursor = request.get("cursor")
+        if type(limit) is not int or not 1 <= limit <= 100:
+            raise ValueError("catalog limit must be between 1 and 100")
+        offset = 0
+        if cursor is not None:
+            if not isinstance(cursor, str) or not cursor.isdecimal() or len(cursor) > 5:
+                raise ValueError("catalog cursor is invalid")
+            offset = int(cursor)
+            if offset > 10_000:
+                raise ValueError("catalog cursor exceeds the supported bound")
+        operation = _ActionOperation(request)
+        while not slot.acquire(blocking=False):
+            operation.check()
+            await asyncio.sleep(0.01)
+        future: Future[Mapping[str, Any]] = Future()
+        operation.future = future
+
+        def run() -> None:
+            from sqlalchemy import text
+
+            try:
+                operation.check()
+                engine = resolve_engine(ctx, str(request["connection_id"]))
+                operation.check()
+                if engine.dialect.name != "postgresql":
+                    raise ValueError("PostgreSQL catalog requires a PostgreSQL engine")
+                with engine.connect() as connection:
+                    with operation.driver_lock:
+                        operation.driver = connection.connection.driver_connection
+                    try:
+                        with connection.begin():
+                            if operation.deadline is not None:
+                                milliseconds = max(
+                                    1,
+                                    int(
+                                        (
+                                            operation.deadline - datetime.now(UTC)
+                                        ).total_seconds()
+                                        * 1000
+                                    ),
+                                )
+                                connection.exec_driver_sql(
+                                    f"SET LOCAL statement_timeout = {milliseconds}"
+                                )
+                            operation.check()
+                            rows = connection.execute(
+                                text(
+                                    "SELECT table_name FROM information_schema.tables "
+                                    "WHERE table_schema = current_schema() "
+                                    "AND table_type = 'BASE TABLE' ORDER BY table_name "
+                                    "LIMIT :limit OFFSET :offset"
+                                ),
+                                {"limit": limit + 1, "offset": offset},
+                            )
+                            names = [str(row[0]) for row in rows]
+                            operation.check()
+                    finally:
+                        with operation.driver_lock:
+                            operation.driver = None
+                has_more = len(names) > limit
+                names = names[:limit]
+                future.set_result(
+                    {
+                        "schema": "etlantic.connector_resource_page/1",
+                        "provider": "postgresql",
+                        "items": [
+                            {"resource_id": name, "kind": "table"} for name in names
+                        ],
+                        "next_cursor": str(offset + limit) if has_more else None,
+                        "has_more": has_more,
+                        "metadata": {"schema": "current_schema"},
+                    }
+                )
+            except BaseException as exc:
+                future.set_exception(exc)
+            finally:
+                slot.release()
+                operation.retain_if_cancelled()
+
+        threading.Thread(target=run, name="etlantic-sql-catalog", daemon=True).start()
+        wrapped = asyncio.wrap_future(future)
+
+        def consume_result(completed: asyncio.Future[Mapping[str, Any]]) -> None:
+            if not completed.cancelled():
+                completed.exception()
+
+        wrapped.add_done_callback(consume_result)
+        try:
+            return await asyncio.shield(wrapped)
+        except asyncio.CancelledError:
+            operation.cancel()
+            raise
+
     async def invoke(
         ctx: ControlPlaneContext, request: Mapping[str, Any], *, cleanup: bool
     ) -> Mapping[str, Any]:
@@ -373,6 +472,7 @@ def create_action_handlers(resolve_engine: EngineResolver) -> dict[str, ActionHa
         return await invoke(ctx, request, cleanup=True)
 
     return {
+        "connector.catalog.postgresql": catalog,
         "connector.provision": provision,
         "connector.provision.cleanup": cleanup,
     }

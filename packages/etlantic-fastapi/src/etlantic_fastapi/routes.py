@@ -1058,6 +1058,18 @@ def build_control_plane_router(api: ETLanticAPI) -> APIRouter:
             f"definition:{definition_id}",
             resource_in_caller_scope=False,
         )
+        # Executable snapshots are issued only by ManagedApplicationService,
+        # after resolving the named definition, planning it, checking policy,
+        # and binding the trusted caller authority. The legacy CP1 endpoint
+        # cannot validate a caller-supplied snapshot against that authority.
+        if "input_snapshot" in payload:
+            raise ControlPlaneError(
+                "Caller-supplied execution snapshots require managed submission",
+                code="PMCP400",
+                status=400,
+                title="Bad Request",
+                type="etlantic.control_plane/bad_request",
+            )
         # Authz before existence disclosure.
         try:
             definition = api.definitions.get(ctx, definition_id)

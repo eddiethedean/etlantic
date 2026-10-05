@@ -7,6 +7,7 @@ from collections.abc import Callable, Mapping, Sequence
 from datetime import UTC, datetime
 from typing import Any, TypeVar, cast
 
+from sqlalchemy import Table, update
 from sqlalchemy.engine import Engine
 from sqlalchemy.exc import IntegrityError
 
@@ -185,31 +186,24 @@ class _SnapshotBackedStore:
 
     def _write(self, session: Session, store: Any, *, expected_version: int) -> None:
         payload = json.dumps(self._dump(store), sort_keys=True, default=str)
-        row = session.exec(
-            select(Cp4GovernanceSnapshotRow)
-            .where(Cp4GovernanceSnapshotRow.store_id == self.store_id)
-            .where(Cp4GovernanceSnapshotRow.kind == self.kind)
-            .with_for_update()
-        ).first()
-        if row is None:
-            if expected_version != 0:
-                raise ControlPlaneError.conflict("CP4 snapshot conflict")
-            session.add(
-                Cp4GovernanceSnapshotRow(
-                    store_id=self.store_id,
-                    kind=self.kind,
-                    payload_json=payload,
-                    payload_version=1,
-                    updated_at=_utcnow_iso(),
-                )
+        # Compare the version in the UPDATE itself. SQLite ignores FOR UPDATE,
+        # so an ORM read followed by a plain write can overwrite another
+        # transaction's quota claims and release the wrong reservation.
+        # SQLModel adds this table attribute when the model class is mapped.
+        table = cast(Table, Cp4GovernanceSnapshotRow.__table__)  # pyright: ignore[reportUnknownMemberType, reportAttributeAccessIssue]
+        result = session.connection().execute(
+            update(table)
+            .where(table.c.store_id == self.store_id)
+            .where(table.c.kind == self.kind)
+            .where(table.c.payload_version == expected_version)
+            .values(
+                payload_json=payload,
+                payload_version=expected_version + 1,
+                updated_at=_utcnow_iso(),
             )
-            return
-        if int(row.payload_version or 0) != expected_version:
+        )
+        if result.rowcount != 1:
             raise ControlPlaneError.conflict("CP4 snapshot conflict")
-        row.payload_json = payload
-        row.payload_version = expected_version + 1
-        row.updated_at = _utcnow_iso()
-        session.add(row)
 
 
 class SQLModelAuditEvidenceStore(_SnapshotBackedStore):
@@ -375,6 +369,14 @@ class SQLModelQuotaProvider(_SnapshotBackedStore):
                 }
                 for (t, w, key), (resource, units, decision) in mem._admissions.items()
             },
+            "releases": {
+                f"{t}|{w}|{key}": {"resource": resource, "units": units}
+                for (t, w, key), (resource, units) in mem._releases.items()  # pyright: ignore[reportPrivateUsage]
+            },
+            "claims": {
+                f"{t}|{w}|{key}": sorted(claims)
+                for (t, w, key), claims in mem._claims.items()  # pyright: ignore[reportPrivateUsage]
+            },
             "rr_cursor": int(mem._rr_cursor),
             "shared_pressure": bool(getattr(mem, "shared_pressure", False)),
         }
@@ -417,7 +419,16 @@ class SQLModelQuotaProvider(_SnapshotBackedStore):
                     metadata=dict(decision.get("metadata") or {}),
                 ),
             )
+        for key, raw in dict(payload.get("releases") or {}).items():
+            t, w, idem = str(key).split("|", 2)
+            mem._releases[(t, w, idem)] = (  # pyright: ignore[reportPrivateUsage]
+                cast(QuotaResource, str(raw["resource"])),
+                int(raw["units"]),
+            )
         mem._rr_cursor = int(payload.get("rr_cursor") or 0)
+        for key, claims in dict(payload.get("claims") or {}).items():
+            t, w, idem = str(key).split("|", 2)
+            mem._claims[(t, w, idem)] = set(claims)  # pyright: ignore[reportPrivateUsage]
         mem.shared_pressure = bool(payload.get("shared_pressure"))
         return mem
 

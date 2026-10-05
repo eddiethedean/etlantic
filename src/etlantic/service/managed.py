@@ -11,6 +11,7 @@ from dataclasses import dataclass, replace
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
 from typing import Any, cast
+from uuid import uuid4
 
 from etlantic.authoring.edits import EditCommand, apply_edit
 from etlantic.authoring.lifecycle import plan_pipeline_like, validate_pipeline_like
@@ -49,6 +50,7 @@ from etlantic.control_plane.protocols import (
     EventStore,
     SubmissionStore,
 )
+from etlantic.control_plane.quota_models import QuotaDecision, quota_idempotency_key
 from etlantic.control_plane.redaction import redact_control_plane_payload
 from etlantic.control_plane.schedule_models import ScheduleRecord, firing_key
 from etlantic.io_policy import SafeIoPolicy, read_text_safe
@@ -658,18 +660,124 @@ class ManagedApplicationService:
             normalized_secrets[alias] = ref.to_dict()
         return normalized_secrets
 
+    def recover_scheduled_occurrence(
+        self,
+        ctx: ControlPlaneContext,
+        schedule: ScheduleRecord,
+        nominal_fire_time: str,
+    ) -> tuple[str, str] | None:
+        """Recover accepted occurrence inputs without resolving external refs."""
+        require_authorized(
+            self.authorizer,
+            ctx,
+            "run.submit",
+            f"definition:{schedule.definition_id}",
+            resource_in_caller_scope=False,
+        )
+        if (
+            schedule.workload_identity is not None
+            and ctx.principal != schedule.workload_identity
+        ):
+            raise ControlPlaneError.not_found("schedule workload identity not found")
+        snapshot = schedule.occurrence_snapshot or {}
+        if (
+            snapshot.get("trigger_principal", ctx.principal.to_dict())
+            != ctx.principal.to_dict()
+        ):
+            raise ControlPlaneError.conflict(
+                "Schedule occurrence belongs to a different workload identity"
+            )
+        occurrence = firing_key(
+            schedule.schedule_id, schedule.revision_id, nominal_fire_time
+        )
+        idempotency_key = (
+            "schedule-" + hashlib.sha256(occurrence.encode("utf-8")).hexdigest()
+        )
+        # A CP1 receipt proves preparation already completed for this stable
+        # occurrence. Recover it before consulting mutable external parameter
+        # sources; the durable envelope is the authority for its values.
+        prior = self.submissions.lookup_idempotency(
+            ctx, idempotency_key, operation="run.submit"
+        )
+        durable = self.durable_work.get_submission_by_idempotency(
+            ctx, idempotency_key=idempotency_key, operation="run.submit"
+        )
+        if prior is not None:
+            envelope = self._envelope_from_payload(
+                self.submissions.lookup_idempotency_payload(
+                    ctx, idempotency_key, operation="run.submit"
+                )
+            )
+        elif durable is not None and durable.input_snapshot:
+            envelope = self._parse_envelope(durable.input_snapshot)
+        elif durable is not None:
+            raise ControlPlaneError.conflict(
+                "Scheduled submission has no verified execution snapshot"
+            )
+        else:
+            return None
+        selected_revision = (
+            snapshot.get("selected_definition_revision_id")
+            or schedule.definition_revision_id
+        )
+        parameter_fingerprint = hashlib.sha256(
+            json.dumps(
+                mutable_copy(envelope.run_request.get("parameter_overrides") or {}),
+                sort_keys=True,
+                separators=(",", ":"),
+                ensure_ascii=False,
+                allow_nan=False,
+            ).encode("utf-8")
+        ).hexdigest()
+        if (
+            envelope.definition_id != schedule.definition_id
+            or envelope.profile_name != schedule.profile_name
+            or (
+                selected_revision is not None
+                and envelope.revision_id != selected_revision
+            )
+            or snapshot.get("parameter_fingerprint", parameter_fingerprint)
+            != parameter_fingerprint
+        ):
+            raise ControlPlaneError.conflict(
+                "Scheduled submission differs from its claimed occurrence"
+            )
+        # The normal replay path repairs CP1-only or CP3-only acceptance from
+        # the immutable envelope and checks the two snapshots for consistency.
+        receipt = self.submit_run(
+            ctx,
+            schedule.definition_id,
+            idempotency_key=idempotency_key,
+            request=RunRequest.from_dict(dict(envelope.run_request)),
+            revision_selector=envelope.revision_selector,
+        )
+        durable = self.durable_work.get_submission(ctx, receipt.submission_id)
+        if (
+            durable.revision_id != envelope.revision_id
+            or durable.plan_fingerprint != envelope.plan_fingerprint
+        ):
+            raise ControlPlaneError.conflict(
+                "Scheduled submission does not match its durable receipt"
+            )
+        return durable.submission_id, durable.plan_fingerprint
+
     def submit_scheduled_run(
         self,
         ctx: ControlPlaneContext,
         schedule: ScheduleRecord,
         nominal_fire_time: str,
     ) -> tuple[str, str]:
-        """Submit one occurrence through the standard managed admission path.
+        """Submit one occurrence through the standard managed admission path."""
+        recovered = self.recover_scheduled_occurrence(ctx, schedule, nominal_fire_time)
+        if recovered is not None:
+            return recovered
+        occurrence = firing_key(
+            schedule.schedule_id, schedule.revision_id, nominal_fire_time
+        )
+        idempotency_key = (
+            "schedule-" + hashlib.sha256(occurrence.encode("utf-8")).hexdigest()
+        )
 
-        The stable occurrence key and firing snapshot make a process restart
-        reuse the revision, workload identity, parameter policy and pinned
-        SecretRef set selected for this occurrence.
-        """
         prepared = schedule
         if prepared.occurrence_inputs is None:
             prepared = self.prepare_scheduled_occurrence(
@@ -685,12 +793,6 @@ class ManagedApplicationService:
             raise ControlPlaneError.conflict(
                 "Managed schedule profile differs from the active managed profile"
             )
-        occurrence = firing_key(
-            prepared.schedule_id, prepared.revision_id, nominal_fire_time
-        )
-        idempotency_key = (
-            "schedule-" + hashlib.sha256(occurrence.encode("utf-8")).hexdigest()
-        )
         receipt = self.submit_run(
             ctx,
             prepared.definition_id,
@@ -1181,13 +1283,11 @@ class ManagedApplicationService:
                     "Idempotency key reuse with a different definition"
                 )
             if prior_durable is None:
-                self._accept_durable(
+                self._recover_cp1_only_submission(
                     ctx,
                     idempotency_key=idempotency_key,
                     envelope=envelope,
-                    submission_id=prior_receipt.submission_id,
-                    run_id=prior_receipt.resource_id
-                    or legacy_managed_run_id(ctx, idempotency_key),
+                    receipt=prior_receipt,
                 )
             elif prior_durable.submission_id != prior_receipt.submission_id:
                 raise ControlPlaneError.conflict(
@@ -1317,6 +1417,14 @@ class ManagedApplicationService:
             resource_versions=resource_versions,
         ).effective_fingerprint
         policy_fingerprint = None
+        quota_key = (
+            self._quota_idempotency_key(ctx, idempotency_key)
+            if self.quotas is not None
+            else None
+        )
+        # Each overlapping attempt owns a separate claim on the shared command
+        # reservation. Rejecting one attempt must not uncharge another owner.
+        quota_claim_id = uuid4().hex if quota_key is not None else None
         if any(
             item is not None
             for item in (
@@ -1337,21 +1445,25 @@ class ManagedApplicationService:
                 plan_fingerprint=plan.fingerprint,
                 effective_fingerprint=effective_fingerprint,
                 revision_id=revision_id,
-                quota_idempotency_key=self._quota_idempotency_key(ctx, idempotency_key),
+                quota_idempotency_key=quota_key,
+                quota_claim_id=quota_claim_id,
                 plugin_fingerprints=(
                     [plugin_fingerprint] if plugin_fingerprint is not None else None
                 ),
                 require_policy=self.policy is not None,
                 require_attestations=self.require_attestations,
+                audit_before_quota=True,
             )
             policy_fingerprint = (
                 decision.policy_fingerprint if decision is not None else None
             )
+            quota_key = self._quota_reservation_key(_quota, quota_key)
         if _preparation_control is not None:
             try:
                 _preparation_control.check()
             except Exception:
                 self._release_input_lease(ctx, input_lease_id)
+                self._release_quota_reservation(ctx, quota_key, quota_claim_id)
                 raise
         envelope = ExecutionEnvelope.create(
             definition_id=definition_id,
@@ -1364,11 +1476,18 @@ class ManagedApplicationService:
             plugin_fingerprint=plugin_fingerprint,
             policy_fingerprint=policy_fingerprint,
             resource_versions=resource_versions,
-            evidence_refs=(
-                {"input_resource_lease_id": input_lease_id}
-                if input_lease_id is not None
-                else None
-            ),
+            evidence_refs={
+                **(
+                    {"input_resource_lease_id": input_lease_id}
+                    if input_lease_id is not None
+                    else {}
+                ),
+                **(
+                    {"quota_reservation_key": quota_key}
+                    if quota_key is not None
+                    else {}
+                ),
+            },
         )
         payload = self._acceptance_payload(envelope)
         if _preparation_control is not None:
@@ -1376,6 +1495,7 @@ class ManagedApplicationService:
                 _preparation_control.begin_acceptance()
             except Exception:
                 self._release_input_lease(ctx, input_lease_id)
+                self._release_quota_reservation(ctx, quota_key, quota_claim_id)
                 raise
         try:
             receipt_result = self.submissions.accept(
@@ -1418,6 +1538,7 @@ class ManagedApplicationService:
                 receipt_result = AcceptResult(receipt=prior_receipt, created=False)
             else:
                 if isinstance(exc, ControlPlaneError) and exc.status < 500:
+                    self._release_quota_reservation(ctx, quota_key, quota_claim_id)
                     raise
                 raise ControlPlaneError(
                     "CP1 acceptance acknowledgement is uncertain; retry the same "
@@ -1480,9 +1601,30 @@ class ManagedApplicationService:
                         record, changed = self._cancel_cp1(
                             ctx, receipt_result.receipt.resource_id
                         )
-                        compensated = changed or record.get("status") == "cancelled"
+                        compensated = changed or record.get("status") in {
+                            "cancel_requested",
+                            "cancelled",
+                        }
                         if compensated:
+                            # A concurrent CP1 replay can accept durable work
+                            # between the earlier reconciliation read and CP1
+                            # cancellation. Request its cancellation as well.
+                            with suppress(Exception):
+                                concurrent = (
+                                    self.durable_work.get_submission_by_idempotency(
+                                        ctx,
+                                        idempotency_key=idempotency_key,
+                                        operation="run.submit",
+                                    )
+                                )
+                                if concurrent is not None:
+                                    self.durable_work.cancel_submission(
+                                        ctx, concurrent.submission_id
+                                    )
                             self._release_input_lease(ctx, input_lease_id)
+                            self._release_quota_reservation(
+                                ctx, quota_key, quota_claim_id
+                            )
                     except Exception:
                         pass
                 if isinstance(exc, ControlPlaneError) and definite_rejection:
@@ -2446,6 +2588,11 @@ class ManagedApplicationService:
             operation=operation,
             idempotency_key=idempotency_key,
         )
+        quota_key = (
+            self._quota_idempotency_key(ctx, idempotency_key, operation=operation)
+            if self.quotas is not None
+            else None
+        )
         prior_receipt = self.submissions.lookup_idempotency(
             ctx, idempotency_key, operation=operation
         )
@@ -2574,9 +2721,7 @@ class ManagedApplicationService:
             plan_fingerprint=envelope.plan_fingerprint,
             effective_fingerprint=envelope.effective_fingerprint,
             revision_id=envelope.revision_id,
-            quota_idempotency_key=self._quota_idempotency_key(
-                ctx, idempotency_key, operation=operation
-            ),
+            quota_idempotency_key=quota_key,
             plugin_fingerprints=(
                 [envelope.plugin_fingerprint]
                 if envelope.plugin_fingerprint is not None
@@ -2592,6 +2737,22 @@ class ManagedApplicationService:
                 "policy_fingerprint": (
                     decision.policy_fingerprint if decision is not None else None
                 ),
+                "evidence_refs": {
+                    **{
+                        key: value
+                        for key, value in (envelope.evidence_refs or {}).items()
+                        if key != "quota_reservation_key"
+                    },
+                    **(
+                        {
+                            "quota_reservation_key": self._quota_reservation_key(
+                                _quota, quota_key
+                            )
+                        }
+                        if quota_key is not None
+                        else {}
+                    ),
+                },
             }
         )
         payload = self._acceptance_payload(envelope)
@@ -3675,6 +3836,33 @@ class ManagedApplicationService:
         if lease_id is not None and self.input_resources is not None:
             self.input_resources.release_lease(ctx, lease_id=lease_id)
 
+    def _release_quota_reservation(
+        self,
+        ctx: ControlPlaneContext,
+        reservation_key: str | None,
+        claim_id: str | None,
+    ) -> None:
+        """Undo a reservation when admission is known not to have committed."""
+        if self.quotas is None or reservation_key is None:
+            return
+        self.quotas.release(
+            ctx,
+            resource="concurrency",
+            units=1,
+            idempotency_key=f"{reservation_key}:release",
+            claim_id=claim_id,
+        )
+
+    @staticmethod
+    def _quota_reservation_key(
+        decision: QuotaDecision | None, admission_key: str | None
+    ) -> str | None:
+        """Keep a reservation's release identity distinct from the command key."""
+        if decision is None:
+            return admission_key
+        key = decision.metadata.get("reservation_key", admission_key)
+        return key if isinstance(key, str) else admission_key
+
     @staticmethod
     def _lifecycle_envelopes_match(
         accepted: ExecutionEnvelope, requested: ExecutionEnvelope
@@ -3700,6 +3888,23 @@ class ManagedApplicationService:
             {
                 **requested.to_dict(),
                 "policy_fingerprint": accepted.policy_fingerprint,
+                "evidence_refs": {
+                    **{
+                        key: value
+                        for key, value in (requested.evidence_refs or {}).items()
+                        if key != "quota_reservation_key"
+                    },
+                    **(
+                        {
+                            "quota_reservation_key": accepted.evidence_refs[
+                                "quota_reservation_key"
+                            ]
+                        }
+                        if accepted.evidence_refs
+                        and "quota_reservation_key" in accepted.evidence_refs
+                        else {}
+                    ),
+                },
             }
         )
         return accepted.to_json() == requested_with_admission.to_json()
@@ -3757,6 +3962,99 @@ class ManagedApplicationService:
                 "Idempotency key reuse with different canonical intent"
             )
 
+    def _recover_cp1_only_submission(
+        self,
+        ctx: ControlPlaneContext,
+        *,
+        idempotency_key: str,
+        envelope: ExecutionEnvelope,
+        receipt: AcceptReceipt,
+    ) -> None:
+        """Repair partial acceptance only while its CP1 and quota claims remain live."""
+        run_id = receipt.resource_id or legacy_managed_run_id(ctx, idempotency_key)
+        get_run_value = getattr(self.submissions, "get_run", None)
+        if not callable(get_run_value):
+            raise ControlPlaneError(
+                "Submission provider does not support run observation",
+                code="PMCP501",
+                status=501,
+                title="Not Implemented",
+            )
+        get_run = cast(
+            Callable[[ControlPlaneContext, str], dict[str, Any]], get_run_value
+        )
+
+        def require_live_receipt() -> None:
+            try:
+                run = get_run(ctx, run_id)
+            except KeyError as exc:
+                raise ControlPlaneError.conflict(
+                    "Accepted run receipt has no recoverable run"
+                ) from exc
+            if run.get("status") != "accepted":
+                raise ControlPlaneError.conflict(
+                    "Cancelled or terminal acceptance cannot be recovered"
+                )
+
+        require_live_receipt()
+        claim_id: str | None = None
+        reservation_key: str | None = None
+        if self.quotas is not None:
+            accepted_key = (envelope.evidence_refs or {}).get("quota_reservation_key")
+            admission_key = self._quota_idempotency_key(ctx, idempotency_key)
+            claim_id = uuid4().hex
+            self.quotas.require_available(ctx)
+            decision = self.quotas.admit(
+                ctx,
+                resource="concurrency",
+                units=1,
+                idempotency_key=admission_key,
+                claim_id=claim_id,
+            )
+            if decision.effect != "allow":
+                raise ControlPlaneError.conflict(
+                    f"quota {decision.effect}: {decision.reason}",
+                    extensions=decision.to_dict(),
+                )
+            reservation_key = self._quota_reservation_key(decision, admission_key)
+            if (
+                isinstance(accepted_key, str)
+                and accepted_key
+                and reservation_key != accepted_key
+            ):
+                # A compensated receipt still exists in CP1, but admission
+                # assigned a new generation after its old reservation ended.
+                self._release_quota_reservation(ctx, reservation_key, claim_id)
+                raise ControlPlaneError.conflict(
+                    "Compensated acceptance cannot be recovered"
+                )
+        accepted_durable = False
+        try:
+            # Recheck after claiming quota: cancellation may have committed
+            # between the first status read and the admission transaction.
+            require_live_receipt()
+            self._accept_durable(
+                ctx,
+                idempotency_key=idempotency_key,
+                envelope=envelope,
+                submission_id=receipt.submission_id,
+                run_id=run_id,
+            )
+            accepted_durable = True
+            # Together with compensation's post-cancel durable check, this
+            # closes either ordering of CP1 cancellation and CP3 acceptance.
+            require_live_receipt()
+        except Exception as exc:
+            if accepted_durable:
+                if isinstance(exc, ControlPlaneError) and exc.status < 500:
+                    with suppress(Exception):
+                        self.durable_work.cancel_submission(ctx, receipt.submission_id)
+                # CP3 accepted work owns its reservation until worker cleanup.
+                raise
+            if isinstance(exc, ControlPlaneError) and exc.status < 500:
+                self._release_quota_reservation(ctx, reservation_key, claim_id)
+            raise
+
     def _accept_durable(
         self,
         ctx: ControlPlaneContext,
@@ -3807,19 +4105,7 @@ class ManagedApplicationService:
         operation: str = "run.submit",
     ) -> str:
         """Derive a secret-safe quota reservation key from the CP1 scope."""
-        value = {
-            "scope": list(ctx.scope_key),
-            "principal": [
-                ctx.principal.issuer or "",
-                ctx.principal.kind,
-                ctx.principal.subject,
-            ],
-            "operation": operation,
-            "idempotency_key": idempotency_key,
-        }
-        return hashlib.sha256(
-            json.dumps(value, sort_keys=True, separators=(",", ":")).encode("utf-8")
-        ).hexdigest()
+        return quota_idempotency_key(ctx, idempotency_key, operation=operation)
 
     def _cancel_cp1(
         self, ctx: ControlPlaneContext, run_id: str | None

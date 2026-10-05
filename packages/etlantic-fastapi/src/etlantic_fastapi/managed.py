@@ -155,7 +155,18 @@ class ManagedBackendConfig:
             "connector.provision",
             "connector.provision.cleanup",
         }
-        unsupported_actions = set(self.action_handlers) - supported_actions
+        unsupported_actions = {
+            action
+            for action in self.action_handlers
+            if action not in supported_actions
+            and not (
+                action.startswith("connector.catalog.")
+                and action.removeprefix("connector.catalog.")
+                .replace("-", "")
+                .replace("_", "")
+                .isalnum()
+            )
+        }
         if unsupported_actions:
             raise ValueError(
                 "action_handlers contains unsupported action(s): "
@@ -239,6 +250,7 @@ class ManagedBackend:
                 run_artifact_retention_seconds=self.run_artifact_retention_seconds,
                 artifact_cleanup_batch_size=self.run_artifact_cleanup_batch_size,
             ),
+            quota_provider=self.api.quotas,
         )
 
     def cleanup_expired_run_artifacts(

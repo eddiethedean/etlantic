@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import logging
 from collections.abc import Callable
+from dataclasses import replace
 from datetime import datetime
 from typing import Any, cast
 
@@ -34,6 +35,9 @@ _LOG = logging.getLogger(__name__)
 
 def _iso(value: datetime) -> str:
     return value.isoformat().replace("+00:00", "Z")
+
+
+_LOG = logging.getLogger(__name__)
 
 
 class SchedulerService:
@@ -75,6 +79,24 @@ class SchedulerService:
         self.wake = wake or PollingWakeTransport()
         self.plan_fingerprint = plan_fingerprint
         self.run_submitter = run_submitter
+        self.occurrence_recoverer: (
+            Callable[[ControlPlaneContext, ScheduleRecord, str], tuple[str, str] | None]
+            | None
+        ) = None
+        if run_submitter is not None:
+            candidate_recoverer = getattr(
+                getattr(run_submitter, "__self__", None),
+                "recover_scheduled_occurrence",
+                None,
+            )
+            if callable(candidate_recoverer):
+                self.occurrence_recoverer = cast(
+                    Callable[
+                        [ControlPlaneContext, ScheduleRecord, str],
+                        tuple[str, str] | None,
+                    ],
+                    candidate_recoverer,
+                )
         inferred_preparer: (
             Callable[
                 [ControlPlaneContext, ScheduleRecord, str, FiringRecord | None],
@@ -140,23 +162,52 @@ class SchedulerService:
             for firing in self.schedule_store.list_firings(ctx, schedule.schedule_id):
                 if firing.status != "accepted" or firing.submission_id is not None:
                     continue
-                prepared = (
-                    self.occurrence_preparer(
-                        ctx, schedule, firing.nominal_fire_time, firing
+                # The firing revision is immutable even if the schedule was
+                # amended after a lost link acknowledgement.
+                occurrence = replace(
+                    schedule,
+                    revision_id=firing.revision_id,
+                    occurrence_snapshot=dict(firing.metadata),
+                    occurrence_inputs=None,
+                )
+                try:
+                    recovered = (
+                        self.occurrence_recoverer(
+                            ctx, occurrence, firing.nominal_fire_time
+                        )
+                        if self.occurrence_recoverer is not None
+                        else None
                     )
-                    if self.occurrence_preparer is not None
-                    else schedule
-                )
-                submission_id, fingerprint = self.run_submitter(
-                    ctx, prepared, firing.nominal_fire_time
-                )
-                self.schedule_store.link_firing_submission(
-                    ctx,
-                    firing.firing_id,
-                    submission_id=submission_id,
-                    plan_fingerprint=fingerprint,
-                    durable=self.durable,
-                )
+                    if recovered is None:
+                        prepared = (
+                            self.occurrence_preparer(
+                                ctx, occurrence, firing.nominal_fire_time, firing
+                            )
+                            if self.occurrence_preparer is not None
+                            else occurrence
+                        )
+                        recovered = self.run_submitter(
+                            ctx, prepared, firing.nominal_fire_time
+                        )
+                    submission_id, fingerprint = recovered
+                    self.schedule_store.link_firing_submission(
+                        ctx,
+                        firing.firing_id,
+                        submission_id=submission_id,
+                        plan_fingerprint=fingerprint,
+                        durable=self.durable,
+                    )
+                except Exception as exc:
+                    # One unavailable parameter source must not prevent other
+                    # schedules from reconciling or firing in this tick.
+                    _LOG.warning(
+                        "Scheduled firing reconciliation failed "
+                        "(schedule=%s firing=%s error=%s)",
+                        schedule.schedule_id,
+                        firing.firing_id,
+                        type(exc).__name__,
+                    )
+                    continue
 
     def _fire_due(
         self,

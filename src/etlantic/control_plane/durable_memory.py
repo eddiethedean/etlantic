@@ -313,7 +313,12 @@ class MemoryDurableWorkStore:
         )
 
     def pending_outbox(
-        self, ctx: ControlPlaneContext, *, limit: int = 100
+        self,
+        ctx: ControlPlaneContext,
+        *,
+        limit: int = 100,
+        include_terminal: bool = False,
+        terminal_only: bool = False,
     ) -> list[OutboxRecord]:
         with self._lock:
             return [
@@ -322,8 +327,14 @@ class MemoryDurableWorkStore:
                 if (t, w) == _scope(ctx)
                 and row.published_at is None
                 and self._submissions.get((t, w, row.submission_id)) is not None
-                and self._submissions[(t, w, row.submission_id)].status
-                not in {"cancelled", "completed", "failed"}
+                and (
+                    self._submissions[(t, w, row.submission_id)].status
+                    in {"cancelled", "completed", "failed"}
+                    if terminal_only
+                    else include_terminal
+                    or self._submissions[(t, w, row.submission_id)].status
+                    not in {"cancelled", "completed", "failed"}
+                )
             ][: max(0, limit)]
 
     def reconcile_terminal_outbox(
@@ -360,7 +371,11 @@ class MemoryDurableWorkStore:
         return reconciled
 
     def reconcile_cancelled_submissions(
-        self, ctx: ControlPlaneContext, *, limit: int = 100
+        self,
+        ctx: ControlPlaneContext,
+        *,
+        limit: int = 100,
+        acknowledge_outbox: bool = True,
     ) -> list[SubmissionRecord]:
         """Finalize cancellation requests after their worker lease expires."""
         reconciled: list[SubmissionRecord] = []
@@ -395,7 +410,8 @@ class MemoryDurableWorkStore:
                     self._record_unknown_effect_locked(ctx, submission.submission_id)
                 cancelled = replace(submission, status="cancelled")
                 self._submissions[key] = cancelled
-                self._ack_submission_outbox_locked(ctx, submission.submission_id)
+                if acknowledge_outbox:
+                    self._ack_submission_outbox_locked(ctx, submission.submission_id)
                 reconciled.append(deepcopy(cancelled))
         return reconciled
 

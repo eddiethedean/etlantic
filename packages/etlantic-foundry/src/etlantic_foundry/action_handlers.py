@@ -52,6 +52,23 @@ def create_action_handlers(
     """
     storage = FoundryStorageConnector()
 
+    async def catalog(
+        ctx: ControlPlaneContext, request: Mapping[str, Any]
+    ) -> Mapping[str, Any]:
+        if request.get("provider") != "foundry":
+            raise ValueError("Foundry catalog requires provider='foundry'")
+        binding, runtime_context = resolve_connection(
+            ctx, str(request["connection_id"])
+        )
+        return await storage.list_catalog(
+            binding=binding,
+            context=runtime_context,
+            limit=int(request.get("limit", 50)),
+            cursor=(
+                str(request["cursor"]) if request.get("cursor") is not None else None
+            ),
+        )
+
     async def inspect(
         ctx: ControlPlaneContext,
         request: Mapping[str, Any],
@@ -92,6 +109,7 @@ def create_action_handlers(
         "connector.test": test_connection,
         "connector.schema.inspect": inspect_schema,
     }
+    handlers["connector.catalog.foundry"] = catalog
     if resolve_preview_resource is not None:
         source = FoundrySourceConnector()
 

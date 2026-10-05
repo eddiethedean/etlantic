@@ -3,11 +3,14 @@
 
 from __future__ import annotations
 
+import hashlib
+import json
 from collections.abc import Mapping
 from dataclasses import dataclass, field
 from datetime import UTC, datetime
 from typing import Any, Literal
 
+from etlantic.control_plane.models import ControlPlaneContext
 from etlantic.control_plane.redaction import redact_control_plane_payload
 
 QUOTA_BUDGET_SCHEMA = "etlantic.control_plane.quota_budget/1"
@@ -22,6 +25,28 @@ QuotaResource = Literal[
     "storage_bytes",
 ]
 QuotaEffect = Literal["allow", "deny", "suspended", "contained"]
+
+
+def quota_idempotency_key(
+    ctx: ControlPlaneContext,
+    idempotency_key: str,
+    *,
+    operation: str = "run.submit",
+) -> str:
+    """Derive the stable, secret-safe quota admission key for a CP1 command."""
+    value = {
+        "scope": list(ctx.scope_key),
+        "principal": [
+            ctx.principal.issuer or "",
+            ctx.principal.kind,
+            ctx.principal.subject,
+        ],
+        "operation": operation,
+        "idempotency_key": idempotency_key,
+    }
+    return hashlib.sha256(
+        json.dumps(value, sort_keys=True, separators=(",", ":")).encode("utf-8")
+    ).hexdigest()
 
 
 def _now() -> datetime:
@@ -94,4 +119,5 @@ __all__ = [
     "QuotaEffect",
     "QuotaResource",
     "QuotaState",
+    "quota_idempotency_key",
 ]
