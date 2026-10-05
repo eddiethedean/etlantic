@@ -378,7 +378,7 @@ def test_action_worker_cancels_handler_when_lease_renewal_fails() -> None:
     assert replacement.fencing_token == still_claimed.fencing_token + 1
 
 
-def test_action_worker_retains_provision_effect_returned_after_deadline() -> None:
+def test_action_worker_retains_effect_if_claimant_times_out_during_cleanup() -> None:
     store = MemoryDurableWorkStore()
     ctx = _context()
     authorizer = MemoryAuthorizer()
@@ -396,12 +396,15 @@ def test_action_worker_retains_provision_effect_returned_after_deadline() -> Non
         deadline_at=(datetime.now(UTC) + timedelta(milliseconds=100)).isoformat(),
     )
 
+    cancelled = Event()
+
     async def committed_on_cancel(
         _action_ctx: ControlPlaneContext, request: Mapping[str, Any]
     ) -> dict[str, Any]:
         try:
             await asyncio.sleep(5)
         except asyncio.CancelledError:
+            cancelled.set()
             await asyncio.sleep(1.2)
             return _provision_effect(request)
         raise AssertionError("provision handler was not cancelled")
@@ -412,7 +415,19 @@ def test_action_worker_retains_provision_effect_returned_after_deadline() -> Non
         authorizer=authorizer,
         lease_seconds=1,
     )
-    assert worker.tick(ctx, limit=1) == 1
+    result: list[int] = []
+    process = Thread(target=lambda: result.append(worker.tick(ctx, limit=1)))
+    process.start()
+    assert cancelled.wait(timeout=3)
+    assert (
+        store.claim_action_job(ctx, worker_id="competing-worker", lease_seconds=1)
+        is None
+    )
+    timed_out = store.get_action_job(ctx, job.action_id)
+    assert timed_out.status == "timed_out"
+    process.join(timeout=5)
+    assert not process.is_alive()
+    assert result == [1]
     receipt = store.get_action_job(ctx, job.action_id)
     assert receipt.status == "timed_out"
     assert receipt.error_code == "deadline_exceeded"

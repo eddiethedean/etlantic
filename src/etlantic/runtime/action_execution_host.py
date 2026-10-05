@@ -409,6 +409,22 @@ class ActionExecutionHost:
                     lease_seconds=self.lease_seconds,
                 )
             except Exception as exc:
+                try:
+                    current = self.durable.get_action_job(ctx, job.action_id)
+                except Exception:
+                    current = None
+                if (
+                    current is not None
+                    and current.fencing_token == job.fencing_token
+                    and current.status in {"timed_out", "cancelled"}
+                ):
+                    # Keep draining when another claimant terminalized this
+                    # expired job under the same fence.
+                    try:
+                        result = await task
+                    except (asyncio.CancelledError, Exception):
+                        raise _ActionLeaseLost from exc
+                    raise _ActionLeaseLost(result) from exc
                 task.cancel()
                 try:
                     result = await task
