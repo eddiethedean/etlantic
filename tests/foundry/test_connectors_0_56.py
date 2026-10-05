@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import asyncio
 import hashlib
 import json
 from typing import Any
@@ -327,6 +328,51 @@ def test_sink_modes_use_open_foundry_transactions(
         assert receipt.metadata["file_path"] == "orders/current.csv"
     else:
         assert receipt.metadata["file_path"].startswith("etlantic/effects/")
+
+
+def test_sink_cancellation_aborts_open_foundry_transaction() -> None:
+    events: list[str] = []
+    preparing = asyncio.Event()
+
+    def handler(request: httpx2.Request) -> httpx2.Response:
+        path = request.url.path
+        if path.endswith("/transactions"):
+            events.append("create")
+            return httpx2.Response(
+                200,
+                json={"rid": "ri.foundry.main.transaction.cancel", "status": "OPEN"},
+            )
+        if path.endswith("/transactions/ri.foundry.main.transaction.cancel/abort"):
+            events.append("abort")
+            return httpx2.Response(
+                200,
+                json={"rid": "ri.foundry.main.transaction.cancel", "status": "ABORTED"},
+            )
+        raise AssertionError(f"unexpected request: {request.method} {request.url}")
+
+    class WaitingSink(FoundrySinkConnector):
+        async def prepare(self, session: Any, *, context: dict[str, Any]) -> None:
+            del session, context
+            preparing.set()
+            await asyncio.Event().wait()
+
+    connector = WaitingSink(transport=httpx2.MockTransport(handler))
+    binding = _sink_binding("append")
+    context = _secret()
+
+    async def run() -> None:
+        task = asyncio.create_task(
+            write_via_sink_connector(
+                connector, binding=binding, data=[{"id": "1"}], context=context
+            )
+        )
+        await preparing.wait()
+        task.cancel()
+        with pytest.raises(asyncio.CancelledError):
+            await task
+
+    anyio.run(run)
+    assert events == ["create", "abort"]
 
 
 def test_sink_enforces_byte_bound_during_staging_without_poisoning_session() -> None:

@@ -7,6 +7,8 @@ from collections.abc import Mapping, Sequence
 from dataclasses import dataclass, field
 from typing import TYPE_CHECKING, Any, cast
 
+import anyio
+
 from etlantic.connectors.errors import ConnectorReadError, ConnectorWriteError
 from etlantic.connectors.models import CommitReceipt, SinkPlan, WriteSession
 from etlantic.runtime.invoke import maybe_await
@@ -181,10 +183,15 @@ async def write_via_sink_connector(
     try:
         await connector.write_batch(session, data, context=context)
         await connector.prepare(session, context=context)
-    except Exception:
+    except BaseException as exc:
         try:
-            aborted = await connector.abort(session, context=context)
-        except Exception:
+            # Cancellation must not interrupt provider rollback after a session
+            # has been created. The caller still observes the original cancel.
+            with anyio.CancelScope(shield=True):
+                aborted = await connector.abort(session, context=context)
+        except BaseException:
+            if not isinstance(exc, Exception):
+                raise exc from None
             return CommitReceipt(
                 status="unknown",
                 session_id=session.session_id,
@@ -192,6 +199,8 @@ async def write_via_sink_connector(
                 message="Sink staging failed and abort could not be confirmed",
                 metadata=dict(session.metadata),
             )
+        if not isinstance(exc, Exception):
+            raise exc from None
         if isinstance(aborted, CommitReceipt) and aborted.status == "rolled_back":
             return aborted
         return CommitReceipt(
