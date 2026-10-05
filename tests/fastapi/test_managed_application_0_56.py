@@ -665,8 +665,9 @@ def test_scheduler_recovers_accepted_snapshot_without_resolving_parameters(
         clock=FakeScheduleClock(due),
         run_submitter=service.submit_scheduled_run,
     )
-    with pytest.raises((OSError, ControlPlaneError)):
-        scheduler.tick(ctx)
+    # SchedulerService isolates this occurrence failure and keeps its durable
+    # firing retryable for the next tick after the dependency recovers.
+    assert scheduler.tick(ctx) == 0
     assert schedules.list_firings(ctx, schedule.schedule_id)[0].submission_id is None
     monkeypatch.setattr(schedules, "link_firing_submission", link)
     monkeypatch.setattr(service.durable_work, "accept", accept)
@@ -1271,7 +1272,7 @@ def test_schedule_occurrence_snapshots_latest_approved_workload_and_refs(
         environment=ctx.environment,
         security_domain=ctx.security_domain,
     )
-    with pytest.raises(OSError, match="scheduler process loss"):
+    assert (
         SchedulerService(
             schedules,
             durable=durable,
@@ -1279,6 +1280,8 @@ def test_schedule_occurrence_snapshots_latest_approved_workload_and_refs(
             owner_id="nightly-scheduler",
             run_submitter=service.submit_scheduled_run,
         ).tick(workload_ctx)
+        == 0
+    )
 
     first_firing = schedules.list_firings(ctx, schedule_id)[0]
     assert first_firing.submission_id is None
@@ -1393,8 +1396,7 @@ def test_managed_scheduler_recovers_occurrence_after_link_ack_loss(
         owner_id="managed-schedule-worker",
         run_submitter=service.submit_scheduled_run,
     )
-    with pytest.raises(OSError, match="process loss"):
-        scheduler.tick(ctx)
+    assert scheduler.tick(ctx) == 0
 
     initial_firing = schedules.list_firings(ctx, schedule.schedule_id)[0]
     assert initial_firing.status == "accepted"
