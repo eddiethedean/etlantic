@@ -61,5 +61,19 @@ defaults preserve existing dispatcher behavior. Custom execution hosts must pass
 their quota provider to `ExecutionHost(quota_provider=...)`. The standard managed
 backend configures this automatically.
 
+## Input-resource owner migration
+
+Input-resource ownership now defaults to a principal identity qualified by
+issuer and principal kind. Deployments that persisted 0.55 resources under the
+principal subject alone must preserve access explicitly: configure the trusted
+server-side `ControlPlaneContext.resource_owner_id` mapping to the legacy owner
+ID for those principals and scopes while old references remain active. Keep
+that mapping out of request-controlled fields. Do not apply a subject-only
+fallback globally: two principals with the same subject but different issuers
+or kinds would otherwise share access to existing resources. New resources
+created while the compatibility mapping is active use that mapped owner ID;
+remove the mapping after old resources and references have expired or have
+been reissued under the new qualified owner identity.
+
 See [What's new in 0.56](../01_GETTING_STARTED/WHATS_NEW_0_56.md) and the
 [phase qualification record](evidence/phase_0_56/LOCAL_QUALIFICATION.md).

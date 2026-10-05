@@ -140,8 +140,14 @@ class FoundrySimulator:
         self.files = self._load_seed_files(seed_files)
         self.reported_size_overrides: dict[str, int] = {}
         self.transactions: dict[str, str] = {pinned_transaction: "COMMITTED"}
+        self.transaction_types: dict[str, str] = {pinned_transaction: "SNAPSHOT"}
         self.transaction_datasets: dict[str, str] = {pinned_transaction: dataset_rid}
         self.transaction_branches: dict[str, str] = {pinned_transaction: "main"}
+        self.transaction_snapshots: dict[str, dict[tuple[str, str], SimulatedFile]] = {
+            pinned_transaction: {
+                key: file for key, file in self.files.items() if key[0] == "main"
+            }
+        }
         self.pending_files: dict[str, dict[str, tuple[str, bytes]]] = {}
         self.list_queries: list[dict[str, Any]] = []
         self.downloaded_paths: list[str] = []
@@ -225,8 +231,17 @@ class FoundrySimulator:
 
     def _file_list_response(self, query: dict[str, Any]) -> dict[str, Any]:
         transaction = query.get("endTransactionRid")
-        branch = str(query.get("branchName") or "main")
+        branch = str(
+            self.transaction_branches.get(str(transaction), "main")
+            if transaction
+            else query.get("branchName") or "main"
+        )
         prefix = query.get("pathPrefix")
+        visible_files = (
+            self.transaction_snapshots.get(str(transaction), {})
+            if transaction
+            else self.files
+        )
         candidates = [
             {
                 "path": path,
@@ -235,12 +250,8 @@ class FoundrySimulator:
                 ),
                 "transactionRid": file.transaction_rid,
             }
-            for (file_branch, path), file in sorted(self.files.items())
-            if (
-                file.transaction_rid == transaction
-                if transaction
-                else file_branch == branch
-            )
+            for (file_branch, path), file in sorted(visible_files.items())
+            if file_branch == branch
             and (not prefix or path.startswith(str(prefix)))
         ]
         requested_page_size = query.get("pageSize", self.page_size)
@@ -271,12 +282,12 @@ class FoundrySimulator:
             if branchName:
                 file = self.files.get((branchName, path))
             elif endTransactionRid:
+                snapshot = self.transaction_snapshots.get(endTransactionRid, {})
                 file = next(
                     (
                         candidate
-                        for (_branch, candidate_path), candidate in self.files.items()
+                        for (_branch, candidate_path), candidate in snapshot.items()
                         if candidate_path == path
-                        and candidate.transaction_rid == endTransactionRid
                     ),
                     None,
                 )
@@ -309,6 +320,7 @@ class FoundrySimulator:
                 f"sim-{self._transaction_sequence}"
             )
             self.transactions[rid] = "OPEN"
+            self.transaction_types[rid] = body.transactionType
             self.transaction_datasets[rid] = dataset_rid
             self.transaction_branches[rid] = branchName
             self.pending_files[rid] = {}
@@ -343,6 +355,11 @@ class FoundrySimulator:
             if branchName != self.transaction_branches.get(transactionRid):
                 return JSONResponse({"errorCode": "BRANCH_MISMATCH"}, status_code=409)
             path = unquote(file_path)
+            if self.transaction_types.get(transactionRid) == "APPEND" and (
+                (branchName, path) in self.files
+                or path in self.pending_files[transactionRid]
+            ):
+                return JSONResponse({"errorCode": "CONFLICT"}, status_code=409)
             content = await request.body()
             self.last_upload_branch = branchName
             self.uploaded_files.append((path, content))
@@ -370,13 +387,28 @@ class FoundrySimulator:
                 return JSONResponse({"errorCode": "NOT_FOUND"}, status_code=404)
             if self.transactions.get(transaction_rid) != "OPEN":
                 return JSONResponse({"errorCode": "CONFLICT"}, status_code=409)
+            transaction_type = self.transaction_types.get(transaction_rid)
+            branch = self.transaction_branches[transaction_rid]
+            pending = self.pending_files.get(transaction_rid, {})
+            if transaction_type == "APPEND" and any(
+                (file_branch, path) in self.files
+                for path, (file_branch, _content) in pending.items()
+            ):
+                return JSONResponse({"errorCode": "CONFLICT"}, status_code=409)
             self.transactions[transaction_rid] = "COMMITTED"
-            for path, (branch, content) in self.pending_files.pop(
+            if transaction_type == "SNAPSHOT":
+                self.files = {
+                    key: file for key, file in self.files.items() if key[0] != branch
+                }
+            for path, (file_branch, content) in self.pending_files.pop(
                 transaction_rid, {}
             ).items():
-                self.files[(branch, path)] = SimulatedFile(
-                    content, branch, transaction_rid
+                self.files[(file_branch, path)] = SimulatedFile(
+                    content, file_branch, transaction_rid
                 )
+            self.transaction_snapshots[transaction_rid] = {
+                key: file for key, file in self.files.items() if key[0] == branch
+            }
             if self.drop_commit_ack:
                 self.drop_commit_ack = False
                 return JSONResponse(

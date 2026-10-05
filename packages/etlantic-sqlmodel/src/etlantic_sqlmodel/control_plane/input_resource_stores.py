@@ -88,7 +88,7 @@ def _iso(value: datetime) -> str:
 
 
 def _owner(ctx: ControlPlaneContext) -> str:
-    return ctx.resource_owner_id or ctx.principal.subject
+    return ctx.resource_owner_id or ctx.principal.identity_key
 
 
 class SqlModelInputResourceStore:

@@ -156,6 +156,9 @@ def test_foundry_action_handlers_run_in_isolated_worker_against_semblance(
         original.branch_name,
         original.transaction_rid,
     )
+    foundry_simulator.transaction_snapshots[PINNED_TRANSACTION][
+        ("main", "folder/a.csv")
+    ] = foundry_simulator.files[("main", "folder/a.csv")]
     ctx = ControlPlaneContext(
         principal=Principal("foundry-action-owner"),
         tenant=TenantRef("foundry-action-tenant"),
@@ -323,6 +326,9 @@ def test_foundry_preview_rejects_oversized_file_before_downloading(
         original.branch_name,
         original.transaction_rid,
     )
+    foundry_simulator.transaction_snapshots[PINNED_TRANSACTION][
+        ("main", "folder/a.csv")
+    ] = foundry_simulator.files[("main", "folder/a.csv")]
 
     async def preview() -> dict[str, Any]:
         return await FoundrySourceConnector().preview(
@@ -352,6 +358,9 @@ def test_foundry_preview_bounds_download_when_server_underreports_file_size(
         original.branch_name,
         original.transaction_rid,
     )
+    foundry_simulator.transaction_snapshots[PINNED_TRANSACTION][
+        ("main", "folder/a.csv")
+    ] = foundry_simulator.files[("main", "folder/a.csv")]
     foundry_simulator.reported_size_overrides["folder/a.csv"] = 1
 
     async def preview() -> dict[str, Any]:
@@ -449,6 +458,118 @@ def test_foundry_sink_modes_use_simulated_transactions_over_loopback(
         timeout=5,
     )
     assert [item["path"] for item in listing.json()["data"]] == [file_path]
+
+
+def test_simulator_models_append_update_snapshot_and_pinned_history(
+    foundry_simulator: Any,
+) -> None:
+    headers = {"Authorization": f"Bearer {FOUNDRY_TOKEN}"}
+    dataset_url = f"{foundry_simulator.base_url}/api/v2/datasets/{FOUNDRY_DATASET}"
+
+    def transact(transaction_type: str, path: str, content: bytes) -> tuple[str, int]:
+        created = httpx2.post(
+            f"{dataset_url}/transactions",
+            params={"branchName": "main"},
+            json={"transactionType": transaction_type},
+            headers=headers,
+            timeout=5,
+        )
+        assert created.status_code == 201
+        transaction = created.json()["rid"]
+        uploaded = httpx2.post(
+            f"{dataset_url}/files/{path}/upload",
+            params={"branchName": "main", "transactionRid": transaction},
+            content=content,
+            headers=headers,
+            timeout=5,
+        )
+        if uploaded.status_code != 200:
+            return transaction, uploaded.status_code
+        committed = httpx2.post(
+            f"{dataset_url}/transactions/{transaction}/commit",
+            headers=headers,
+            timeout=5,
+        )
+        return transaction, committed.status_code
+
+    update_transaction, update_status = transact(
+        "UPDATE", "folder/a.csv", b"id,value\n3,updated\n"
+    )
+    assert update_status == 200
+    assert foundry_simulator.files[("main", "folder/a.csv")].content == (
+        b"id,value\n3,updated\n"
+    )
+    assert ("main", "folder/b.csv") in foundry_simulator.files
+
+    append_transaction, append_status = transact(
+        "APPEND", "folder/a.csv", b"id,value\n4,duplicate\n"
+    )
+    assert append_status == 409
+    assert foundry_simulator.transactions[append_transaction] == "OPEN"
+
+    snapshot_transaction, snapshot_status = transact(
+        "SNAPSHOT", "snapshot.csv", b"id,value\n5,snapshot\n"
+    )
+    assert snapshot_status == 200
+    assert foundry_simulator.transaction_types[update_transaction] == "UPDATE"
+    assert foundry_simulator.transaction_types[append_transaction] == "APPEND"
+    assert foundry_simulator.transaction_types[snapshot_transaction] == "SNAPSHOT"
+    assert set(foundry_simulator.files) == {("main", "snapshot.csv")}
+
+    pinned_listing = httpx2.get(
+        f"{dataset_url}/files",
+        params={"endTransactionRid": PINNED_TRANSACTION, "pathPrefix": "folder/"},
+        headers=headers,
+        timeout=5,
+    )
+    assert [item["path"] for item in pinned_listing.json()["data"]] == ["folder/a.csv"]
+    assert (
+        foundry_simulator.transaction_snapshots[PINNED_TRANSACTION][
+            ("main", "folder/a.csv")
+        ].content
+        != foundry_simulator.files[("main", "snapshot.csv")].content
+    )
+
+    qualified_create = httpx2.post(
+        f"{dataset_url}/transactions",
+        params={"branchName": "qualification"},
+        json={"transactionType": "UPDATE"},
+        headers=headers,
+        timeout=5,
+    )
+    assert qualified_create.status_code == 201
+    qualified_transaction = qualified_create.json()["rid"]
+    qualified_upload = httpx2.post(
+        f"{dataset_url}/files/folder/a.csv/upload",
+        params={"branchName": "qualification", "transactionRid": qualified_transaction},
+        content=b"id,value\n9,qualification\n",
+        headers=headers,
+        timeout=5,
+    )
+    assert qualified_upload.status_code == 200
+    qualified_commit = httpx2.post(
+        f"{dataset_url}/transactions/{qualified_transaction}/commit",
+        headers=headers,
+        timeout=5,
+    )
+    assert qualified_commit.status_code == 200
+
+    qualified_listing = httpx2.get(
+        f"{dataset_url}/files",
+        params={"endTransactionRid": qualified_transaction, "pathPrefix": "folder/"},
+        headers=headers,
+        timeout=5,
+    )
+    assert [item["path"] for item in qualified_listing.json()["data"]] == [
+        "folder/a.csv"
+    ]
+    qualified_content = httpx2.get(
+        f"{dataset_url}/files/folder/a.csv/content",
+        params={"endTransactionRid": qualified_transaction},
+        headers=headers,
+        timeout=5,
+    )
+    assert qualified_content.content == b"id,value\n9,qualification\n"
 
 
 def test_lost_commit_ack_reconciles_against_simulated_foundry_state(
@@ -779,9 +900,7 @@ def test_independent_semblance_scopes_isolate_dataset_token_branch_and_files() -
             headers={"Authorization": f"Bearer {token_b}"},
             timeout=5,
         )
-        assert [item["path"] for item in branch_listing.json()["data"]] == [
-            "branch/output.csv"
-        ]
+        assert branch_listing.json()["data"] == []
         assert main_listing.json()["data"] == []
         assert other_scope_listing.json()["data"] == []
 

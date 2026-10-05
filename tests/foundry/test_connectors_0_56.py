@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import asyncio
 import hashlib
 import json
 from typing import Any
@@ -404,6 +405,118 @@ def test_sink_modes_use_open_foundry_transactions(
         assert receipt.metadata["file_path"] == "orders/current.csv"
     else:
         assert receipt.metadata["file_path"].startswith("etlantic/effects/")
+
+
+def test_sink_cancellation_aborts_open_foundry_transaction() -> None:
+    events: list[str] = []
+    preparing = asyncio.Event()
+
+    def handler(request: httpx2.Request) -> httpx2.Response:
+        path = request.url.path
+        if path.endswith("/transactions"):
+            events.append("create")
+            return httpx2.Response(
+                200,
+                json={"rid": "ri.foundry.main.transaction.cancel", "status": "OPEN"},
+            )
+        if path.endswith("/transactions/ri.foundry.main.transaction.cancel/abort"):
+            events.append("abort")
+            return httpx2.Response(
+                200,
+                json={"rid": "ri.foundry.main.transaction.cancel", "status": "ABORTED"},
+            )
+        raise AssertionError(f"unexpected request: {request.method} {request.url}")
+
+    class WaitingSink(FoundrySinkConnector):
+        async def prepare(self, session: Any, *, context: dict[str, Any]) -> None:
+            del session, context
+            preparing.set()
+            await asyncio.Event().wait()
+
+    connector = WaitingSink(transport=httpx2.MockTransport(handler))
+    binding = _sink_binding("append")
+    context = _secret()
+
+    async def run() -> None:
+        task = asyncio.create_task(
+            write_via_sink_connector(
+                connector, binding=binding, data=[{"id": "1"}], context=context
+            )
+        )
+        await preparing.wait()
+        task.cancel()
+        with pytest.raises(asyncio.CancelledError):
+            await task
+
+    anyio.run(run)
+    assert events == ["create", "abort"]
+
+
+def test_sink_commit_cancellation_reconciles_without_aborting() -> None:
+    events: list[str] = []
+    committing = asyncio.Event()
+
+    def handler(request: httpx2.Request) -> httpx2.Response:
+        path = request.url.path
+        if path.endswith("/transactions"):
+            events.append("create")
+            return httpx2.Response(
+                200,
+                json={"rid": "ri.foundry.main.transaction.commit-cancel", "status": "OPEN"},
+            )
+        if path.endswith("/files"):
+            return httpx2.Response(200, json={"data": []})
+        if path.endswith("/upload"):
+            events.append("upload")
+            return httpx2.Response(
+                200,
+                json={
+                    "path": unquote(
+                        path.split("/files/", 1)[1].removesuffix("/upload")
+                    )
+                },
+            )
+        if path.endswith("/transactions/ri.foundry.main.transaction.commit-cancel/abort"):
+            events.append("abort")
+            return httpx2.Response(200, json={"status": "ABORTED"})
+        raise AssertionError(f"unexpected request: {request.method} {request.url}")
+
+    class WaitingCommitSink(FoundrySinkConnector):
+        async def commit(self, session: Any, *, context: dict[str, Any]) -> CommitReceipt:
+            del context
+            committing.set()
+            await asyncio.Event().wait()
+            return CommitReceipt(status="committed", session_id=session.session_id)
+
+        async def reconcile(
+            self, receipt: CommitReceipt, *, context: dict[str, Any]
+        ) -> CommitReceipt:
+            del context
+            events.append("reconcile")
+            return receipt
+
+    connector = WaitingCommitSink(transport=httpx2.MockTransport(handler))
+    context = _secret()
+
+    async def run() -> None:
+        task = asyncio.create_task(
+            write_via_sink_connector(
+                connector,
+                binding=_sink_binding("append"),
+                data=[{"id": "1"}],
+                context=context,
+            )
+        )
+        await committing.wait()
+        task.cancel()
+        with pytest.raises(asyncio.CancelledError) as cancelled:
+            await task
+        receipt = cancelled.value.commit_receipt
+        assert receipt.status == "unknown"
+        assert receipt.session_id
+
+    anyio.run(run)
+    assert events == ["create", "upload", "reconcile"]
 
 
 def test_sink_enforces_byte_bound_during_staging_without_poisoning_session() -> None:

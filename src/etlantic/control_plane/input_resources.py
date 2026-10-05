@@ -39,7 +39,15 @@ def _parse_time(value: str) -> datetime:
 
 
 def _owner(ctx: ControlPlaneContext) -> str:
-    owner = ctx.resource_owner_id or ctx.principal.subject
+    if ctx.resource_owner_id is None and not ctx.principal.subject.strip():
+        raise ControlPlaneError(
+            "Authenticated resource owner is required",
+            code="PMRES403",
+            status=403,
+            title="Forbidden",
+            type="etlantic.control_plane/forbidden",
+        )
+    owner = ctx.resource_owner_id or ctx.principal.identity_key
     if not owner.strip():
         raise ControlPlaneError(
             "Authenticated resource owner is required",
