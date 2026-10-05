@@ -655,14 +655,34 @@ def test_independent_semblance_scopes_isolate_dataset_token_branch_and_files() -
                 ),
                 context=context_a,
             )
-            return source_ids, same_file_ids, other_branch_ids, other_dataset_ids
+            snapshot_ids = await FoundrySinkConnector().resource_identities(
+                binding=_sink_binding(
+                    url_a,
+                    "snapshot",
+                    dataset_rid=dataset_a,
+                    branch_name="main",
+                ),
+                context=context_a,
+            )
+            return (
+                source_ids,
+                same_file_ids,
+                other_branch_ids,
+                other_dataset_ids,
+                snapshot_ids,
+            )
 
-        source_ids, same_file_ids, other_branch_ids, other_dataset_ids = anyio.run(
-            resolve_overlap_identities
-        )
+        (
+            source_ids,
+            same_file_ids,
+            other_branch_ids,
+            other_dataset_ids,
+            snapshot_ids,
+        ) = anyio.run(resolve_overlap_identities)
         assert set(source_ids).intersection(same_file_ids)
         assert not set(source_ids).intersection(other_branch_ids)
         assert not set(source_ids).intersection(other_dataset_ids)
+        assert set(source_ids).intersection(snapshot_ids)
         assert token_a not in repr(source_ids + same_file_ids)
 
         async def write_branch() -> CommitReceipt:

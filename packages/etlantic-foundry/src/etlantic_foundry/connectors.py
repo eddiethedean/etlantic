@@ -311,6 +311,22 @@ def _resource_identity(
     return f"foundry_file_resource/1:{digest}"
 
 
+def _dataset_branch_identity(
+    *, base_url: str, dataset_rid: str, branch_name: str
+) -> str:
+    """Return the stable mutation identity for a whole dataset branch view."""
+    parsed = urllib.parse.urlsplit(base_url)
+    host = (parsed.hostname or "").lower()
+    if host in {"localhost", "127.0.0.1", "::1"}:
+        host = "loopback"
+    scheme = parsed.scheme.lower()
+    port = parsed.port or (443 if scheme == "https" else 80)
+    origin = f"{scheme}://{host}:{port}"
+    payload = "\0".join((origin, dataset_rid, branch_name, "dataset-branch"))
+    digest = hashlib.sha256(payload.encode("utf-8")).hexdigest()
+    return f"foundry_dataset_branch/1:{digest}"
+
+
 @dataclass
 class _FoundryClient:
     """Scoped HTTP requests; diagnostics never include credentials or bodies."""
@@ -604,8 +620,13 @@ class FoundrySourceConnector(_FoundryClient):
             )
             for item in files
         }
+        branch_identity = _dataset_branch_identity(
+            base_url=str(intent["base_url"]),
+            dataset_rid=dataset,
+            branch_name=str(intent["branch_name"]),
+        )
         if identities:
-            return tuple(sorted(identities))
+            return tuple(sorted({branch_identity, *identities}))
         # An empty, pinned snapshot still has a verifiable identity. It is
         # intentionally distinct from every file identity, while preserving
         # the runtime's fail-closed requirement that providers return proof.
@@ -621,7 +642,7 @@ class FoundrySourceConnector(_FoundryClient):
                 )
             ).encode("utf-8")
         ).hexdigest()
-        return (f"foundry_empty_snapshot/1:{empty_digest}",)
+        return (branch_identity, f"foundry_empty_snapshot/1:{empty_digest}")
 
     async def plan_read(
         self, *, binding: Mapping[str, Any], context: Mapping[str, Any]
@@ -1127,6 +1148,14 @@ class FoundrySinkConnector(_FoundryClient):
         """Resolve the exact branch file the sink will publish."""
         plan = await self.plan_write(binding=binding, context=context)
         metadata = plan.metadata
+        if metadata["mode"] == "snapshot":
+            return (
+                _dataset_branch_identity(
+                    base_url=str(metadata["base_url"]),
+                    dataset_rid=str(metadata["dataset_rid"]),
+                    branch_name=str(metadata["branch_name"]),
+                ),
+            )
         return (
             _resource_identity(
                 base_url=str(metadata["base_url"]),
