@@ -10,6 +10,7 @@ import json
 import re
 import threading
 from collections.abc import Awaitable, Callable, Mapping
+from contextlib import suppress
 from datetime import UTC, datetime
 from typing import Any, cast
 
@@ -47,6 +48,10 @@ _MAX_RESULT_DEPTH = 32
 _MAX_TICK_LIMIT = 100
 _SAFE_EFFECT_ID = re.compile(r"[A-Za-z0-9][A-Za-z0-9_.:-]{0,255}\Z")
 _SAFE_PREVIEW_COLUMN = re.compile(r"[A-Za-z0-9][A-Za-z0-9_.:-]{0,255}\Z")
+
+
+class _ActionLeaseLost(Exception):
+    """Raised when an ordinary action handler can no longer renew its lease."""
 
 
 def _now() -> datetime:
@@ -252,8 +257,16 @@ class ActionExecutionHost:
                 request["_retain_effect"] = retain_effect
             try:
                 result = asyncio.run(
-                    asyncio.wait_for(handler(action_ctx, request), timeout=remaining)
+                    self._run_action_handler(
+                        action_ctx, job, handler, request, deadline=deadline
+                    )
                 )
+            except _ActionLeaseLost:
+                # The handler was cancelled after renewal failed. Leave the
+                # claimed record fenced so another worker can retry it once
+                # the current lease expires.
+                processed += 1
+                continue
             except TimeoutError:
                 if (
                     datetime.fromisoformat(job.deadline_at.replace("Z", "+00:00"))
@@ -318,6 +331,49 @@ class ActionExecutionHost:
             )
             processed += 1
         return processed
+
+    async def _run_action_handler(
+        self,
+        ctx: ControlPlaneContext,
+        job: ActionJobRecord,
+        handler: ActionHandler,
+        request: Mapping[str, Any],
+        *,
+        deadline: datetime,
+    ) -> Mapping[str, Any]:
+        """Run an ordinary handler while renewing its fenced action lease."""
+
+        async def invoke() -> Mapping[str, Any]:
+            return await handler(ctx, request)
+
+        task = asyncio.create_task(invoke())
+        interval = min(1.0, max(0.05, self.lease_seconds / 3))
+        while not task.done():
+            remaining = (deadline - _now()).total_seconds()
+            if remaining <= 0:
+                task.cancel()
+                with suppress(asyncio.CancelledError, Exception):
+                    await task
+                raise TimeoutError
+            await asyncio.wait({task}, timeout=min(interval, remaining))
+            if task.done():
+                break
+            if _now() >= deadline:
+                continue
+            try:
+                self.durable.heartbeat_action_job(
+                    ctx,
+                    job.action_id,
+                    worker_id=self.worker_id,
+                    fencing_token=job.fencing_token,
+                    lease_seconds=self.lease_seconds,
+                )
+            except Exception as exc:
+                task.cancel()
+                with suppress(asyncio.CancelledError, Exception):
+                    await task
+                raise _ActionLeaseLost from exc
+        return await task
 
     def _execute_run_preparation(
         self,

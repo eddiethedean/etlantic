@@ -9,6 +9,7 @@ from datetime import UTC, datetime, timedelta
 from threading import Event, Thread
 from time import sleep
 from typing import Any, cast
+from unittest.mock import patch
 
 import pytest
 
@@ -262,6 +263,108 @@ def test_run_preparation_worker_renews_lease_during_long_preparation() -> None:
     assert not process.is_alive()
     assert result == [1]
     assert store.get_action_job(ctx, job.action_id).status == "succeeded"
+
+
+def test_action_worker_renews_lease_during_long_connector_handler() -> None:
+    store = MemoryDurableWorkStore()
+    ctx = _context()
+    authorizer = MemoryAuthorizer()
+    authorizer.grant(ctx, "connector.test")
+    job = _accepted(
+        store,
+        ctx,
+        key="connector-long-running",
+        request={"provider": "mock", "connection_id": "slow"},
+    )
+    started = Event()
+
+    async def long_handler(
+        _action_ctx: ControlPlaneContext, _request: Mapping[str, Any]
+    ) -> dict[str, bool]:
+        started.set()
+        await asyncio.sleep(1.6)
+        return {"ok": True}
+
+    worker = ActionExecutionHost(
+        store,
+        handlers={"connector.test": long_handler},
+        authorizer=authorizer,
+        worker_id="long-connector-worker",
+        lease_seconds=1,
+    )
+    result: list[int] = []
+    process = Thread(target=lambda: result.append(worker.tick(ctx, limit=1)))
+    process.start()
+    assert started.wait(timeout=3)
+    sleep(1.1)
+    assert (
+        store.claim_action_job(ctx, worker_id="competing-worker", lease_seconds=1)
+        is None
+    )
+    process.join(timeout=5)
+    assert not process.is_alive()
+    assert result == [1]
+    assert store.get_action_job(ctx, job.action_id).status == "succeeded"
+
+
+def test_action_worker_cancels_handler_when_lease_renewal_fails() -> None:
+    store = MemoryDurableWorkStore()
+    ctx = _context()
+    authorizer = MemoryAuthorizer()
+    authorizer.grant(ctx, "connector.test")
+    job = _accepted(
+        store,
+        ctx,
+        key="connector-heartbeat-failure",
+        request={"provider": "mock", "connection_id": "slow"},
+    )
+    started = Event()
+    cancelled = Event()
+
+    async def cancellable_handler(
+        _action_ctx: ControlPlaneContext, _request: Mapping[str, Any]
+    ) -> dict[str, bool]:
+        started.set()
+        try:
+            await asyncio.sleep(5)
+        except asyncio.CancelledError:
+            cancelled.set()
+            raise
+        return {"ok": True}
+
+    worker = ActionExecutionHost(
+        store,
+        handlers={"connector.test": cancellable_handler},
+        authorizer=authorizer,
+        worker_id="heartbeat-failure-worker",
+        lease_seconds=1,
+    )
+    result: list[int] = []
+    heartbeat_error = ControlPlaneError.conflict("injected heartbeat failure")
+    with patch.object(
+        store,
+        "heartbeat_action_job",
+        side_effect=heartbeat_error,
+    ) as heartbeat:
+        process = Thread(target=lambda: result.append(worker.tick(ctx, limit=1)))
+        process.start()
+        assert started.wait(timeout=3)
+        process.join(timeout=5)
+        assert not process.is_alive()
+        heartbeat.assert_called_once()
+    assert cancelled.is_set()
+    assert result == [1]
+    still_claimed = store.get_action_job(ctx, job.action_id)
+    assert still_claimed.status == "running"
+    replacement = store.claim_action_job(
+        ctx,
+        worker_id="replacement-worker",
+        lease_seconds=10,
+        now=datetime.now(UTC) + timedelta(seconds=2),
+    )
+    assert replacement is not None
+    assert replacement.action_id == job.action_id
+    assert replacement.fencing_token == still_claimed.fencing_token + 1
 
 
 def test_run_preparation_worker_enforces_deadline_at_cancellation_checkpoint() -> None:
