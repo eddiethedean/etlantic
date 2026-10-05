@@ -552,7 +552,12 @@ class ActionExecutionHost:
                 raise TimeoutError from None
             raise
         if timed_out or _now() >= deadline:
-            raise TimeoutError
+            operation = self.durable.get_action_job(ctx, job.action_id)
+            if operation.phase != "accepting":
+                raise TimeoutError
+            # Acceptance is a durable side effect. Return its receipt even when
+            # it completed after the deadline; finish_action_job keeps the
+            # operation timed out while retaining that receipt for recovery.
         return result
 
     @staticmethod
