@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import logging
 from collections.abc import Callable
 from datetime import datetime
 from typing import Any, cast
@@ -27,6 +28,8 @@ from etlantic.control_plane.schedule_protocols import (
     WakeTransport,
 )
 from etlantic.profile import Profile
+
+_LOG = logging.getLogger(__name__)
 
 
 def _iso(value: datetime) -> str:
@@ -116,7 +119,16 @@ class SchedulerService:
         due = self.schedule_store.due_schedules(ctx, now=_iso(now))
         claimed = 0
         for rec in due:
-            claimed += self._fire_due(ctx, rec, now, lease.fencing_token)
+            try:
+                claimed += self._fire_due(ctx, rec, now, lease.fencing_token)
+            except Exception as exc:
+                # A bad occurrence must not starve unrelated due schedules.
+                # Keep the schedule cursor unchanged so a later tick can retry.
+                _LOG.warning(
+                    "Scheduled occurrence failed (schedule_id=%s error=%s)",
+                    rec.schedule_id,
+                    type(exc).__name__,
+                )
         self.wake.notify()
         return claimed
 

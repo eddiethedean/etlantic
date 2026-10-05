@@ -134,6 +134,47 @@ def test_wake_outage_after_firing_commit_is_recoverable_without_duplicate() -> N
     ]
 
 
+def test_failed_due_occurrence_does_not_starve_other_schedules() -> None:
+    ctx = _ctx()
+    store = MemoryScheduleStore()
+    due_at = datetime(2026, 1, 1, 0, 1, tzinfo=UTC)
+    broken = store.create(
+        ctx,
+        definition_id="broken-occurrence",
+        profile_name="test",
+        spec=ScheduleSpec(kind="interval", interval_seconds=60),
+        next_fire_at=due_at.isoformat().replace("+00:00", "Z"),
+    )
+    healthy = store.create(
+        ctx,
+        definition_id="healthy-occurrence",
+        profile_name="test",
+        spec=ScheduleSpec(kind="interval", interval_seconds=60),
+        next_fire_at=due_at.isoformat().replace("+00:00", "Z"),
+    )
+
+    def prepare_occurrence(
+        _ctx: ControlPlaneContext,
+        schedule: Any,
+        _nominal_fire_time: str,
+        _firing: FiringRecord | None,
+    ) -> Any:
+        if schedule.definition_id == "broken-occurrence":
+            raise RuntimeError("simulated occurrence preparation failure")
+        return schedule
+
+    service = SchedulerService(
+        store,
+        durable=MemoryDurableWorkStore(),
+        clock=FakeScheduleClock(due_at),
+        occurrence_preparer=prepare_occurrence,
+    )
+
+    assert service.tick(ctx) == 1
+    assert store.list_firings(ctx, broken.schedule_id) == ()
+    assert len(store.list_firings(ctx, healthy.schedule_id)) == 1
+
+
 def test_due_scan_cannot_admit_firing_after_schedule_is_paused() -> None:
     class PauseBeforeClaimStore(MemoryScheduleStore):
         pause_before_claim = True
