@@ -7,6 +7,8 @@ authority only — never credentials, resolved secrets, or source rows.
 
 from __future__ import annotations
 
+import hashlib
+import json
 from collections.abc import Mapping
 from dataclasses import dataclass
 from typing import Any, Literal
@@ -28,6 +30,16 @@ class Principal:
     subject: str
     issuer: str | None = None
     kind: PrincipalKind = "human"
+
+    @property
+    def identity_key(self) -> str:
+        """Opaque stable key for this issuer-qualified principal identity."""
+        identity = json.dumps(
+            [self.kind, self.issuer or "", self.subject],
+            ensure_ascii=False,
+            separators=(",", ":"),
+        ).encode("utf-8")
+        return "principal:" + hashlib.sha256(identity).hexdigest()
 
     def to_dict(self) -> dict[str, Any]:
         return {
