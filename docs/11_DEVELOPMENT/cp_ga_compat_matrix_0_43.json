@@ -9,7 +9,7 @@
     {
       "id": "sqlmodel_migrations_fresh",
       "status": "pass",
-      "version": "013_durable_submission_scope_backfill_0_56"
+      "version": "014_cp1_complete_principal_idempotency_0_56"
     },
     {
       "id": "compat_floor",
