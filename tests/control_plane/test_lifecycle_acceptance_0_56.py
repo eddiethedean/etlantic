@@ -50,6 +50,12 @@ class UploadPipeline(Pipeline):
     result: Load[Row] = Load(input=source, asset="output")
 
 
+# Resume admission requires runtime-restorable checkpoint state, which this
+# generic acceptance fixture intentionally does not create. Resume rejection
+# and legacy receipt recovery are covered by the dedicated managed-resume tests.
+_LIFECYCLE_ACCEPTANCE_COMMANDS = ["retry", "rerun", "replay", "repair", "backfill"]
+
+
 @dataclass
 class Application:
     ctx: ControlPlaneContext
@@ -221,9 +227,7 @@ def _child_lease(app: Application, key: str, operation: str) -> str:
 @pytest.mark.parametrize(
     "store_kind", ["memory", pytest.param("sqlmodel", marks=pytest.mark.sqlmodel)]
 )
-@pytest.mark.parametrize(
-    "command", ["retry", "rerun", "replay", "resume", "repair", "backfill"]
-)
+@pytest.mark.parametrize("command", _LIFECYCLE_ACCEPTANCE_COMMANDS)
 @pytest.mark.parametrize(
     "failure",
     [
@@ -374,9 +378,7 @@ def _qualified_partition_provider(
 @pytest.mark.parametrize(
     "store_kind", ["memory", pytest.param("sqlmodel", marks=pytest.mark.sqlmodel)]
 )
-@pytest.mark.parametrize(
-    "command", ["retry", "rerun", "replay", "resume", "repair", "backfill"]
-)
+@pytest.mark.parametrize("command", _LIFECYCLE_ACCEPTANCE_COMMANDS)
 @pytest.mark.parametrize("failure", ["before", "rejected", "lookup_after"])
 def test_cancellation_is_acknowledged_only_when_durable_work_can_record_it(
     tmp_path: Path,
@@ -470,9 +472,7 @@ def test_cancellation_is_acknowledged_only_when_durable_work_can_record_it(
 @pytest.mark.parametrize(
     "store_kind", ["memory", pytest.param("sqlmodel", marks=pytest.mark.sqlmodel)]
 )
-@pytest.mark.parametrize(
-    "command", ["retry", "rerun", "replay", "resume", "repair", "backfill"]
-)
+@pytest.mark.parametrize("command", _LIFECYCLE_ACCEPTANCE_COMMANDS)
 def test_previously_cancelled_cp1_only_receipt_cannot_be_recovered(
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
@@ -518,9 +518,7 @@ def test_previously_cancelled_cp1_only_receipt_cannot_be_recovered(
 @pytest.mark.parametrize(
     "store_kind", ["memory", pytest.param("sqlmodel", marks=pytest.mark.sqlmodel)]
 )
-@pytest.mark.parametrize(
-    "command", ["retry", "rerun", "replay", "resume", "repair", "backfill"]
-)
+@pytest.mark.parametrize("command", _LIFECYCLE_ACCEPTANCE_COMMANDS)
 def test_cancellation_does_not_acknowledge_a_stale_absence_lookup(
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
@@ -651,9 +649,7 @@ def test_lifecycle_acceptance_rejects_conflicting_reconciliation_receipt(
 @pytest.mark.parametrize(
     "store_kind", ["memory", pytest.param("sqlmodel", marks=pytest.mark.sqlmodel)]
 )
-@pytest.mark.parametrize(
-    "command", ["retry", "rerun", "replay", "resume", "repair", "backfill"]
-)
+@pytest.mark.parametrize("command", _LIFECYCLE_ACCEPTANCE_COMMANDS)
 @pytest.mark.parametrize("commit_timing", ["during_lookup", "after_error"])
 def test_rejected_caller_preserves_concurrently_accepted_child_and_inputs(
     tmp_path: Path,
