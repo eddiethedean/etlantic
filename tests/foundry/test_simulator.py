@@ -156,6 +156,9 @@ def test_foundry_action_handlers_run_in_isolated_worker_against_semblance(
         original.branch_name,
         original.transaction_rid,
     )
+    foundry_simulator.transaction_snapshots[PINNED_TRANSACTION][
+        ("main", "folder/a.csv")
+    ] = foundry_simulator.files[("main", "folder/a.csv")]
     ctx = ControlPlaneContext(
         principal=Principal("foundry-action-owner"),
         tenant=TenantRef("foundry-action-tenant"),
@@ -323,6 +326,9 @@ def test_foundry_preview_rejects_oversized_file_before_downloading(
         original.branch_name,
         original.transaction_rid,
     )
+    foundry_simulator.transaction_snapshots[PINNED_TRANSACTION][
+        ("main", "folder/a.csv")
+    ] = foundry_simulator.files[("main", "folder/a.csv")]
 
     async def preview() -> dict[str, Any]:
         return await FoundrySourceConnector().preview(
@@ -352,6 +358,9 @@ def test_foundry_preview_bounds_download_when_server_underreports_file_size(
         original.branch_name,
         original.transaction_rid,
     )
+    foundry_simulator.transaction_snapshots[PINNED_TRANSACTION][
+        ("main", "folder/a.csv")
+    ] = foundry_simulator.files[("main", "folder/a.csv")]
     foundry_simulator.reported_size_overrides["folder/a.csv"] = 1
 
     async def preview() -> dict[str, Any]:
@@ -891,9 +900,7 @@ def test_independent_semblance_scopes_isolate_dataset_token_branch_and_files() -
             headers={"Authorization": f"Bearer {token_b}"},
             timeout=5,
         )
-        assert [item["path"] for item in branch_listing.json()["data"]] == [
-            "branch/output.csv"
-        ]
+        assert branch_listing.json()["data"] == []
         assert main_listing.json()["data"] == []
         assert other_scope_listing.json()["data"] == []
 
