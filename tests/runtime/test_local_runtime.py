@@ -37,7 +37,7 @@ from etlantic.profile import Profile, resolve_profile
 from etlantic.registry import BindingDescriptor, PlanningContext
 from etlantic.runtime.context import StepContext
 from etlantic.runtime.execute import arun_pipeline, run_pipeline
-from etlantic.runtime.managed_execution import ManagedExecutionAdapter
+from etlantic.runtime.managed_execution import ManagedExecutionAdapter, managed_run_id
 from etlantic.runtime.request import RetryPolicy, RunIntent, RunRequest
 from etlantic.runtime.state import RunStatus
 from etlantic.secrets import SecretValue
@@ -306,6 +306,7 @@ def test_packaged_worker_executes_accepted_envelope_and_recovers_report(
         plan_fingerprint=envelope.plan_fingerprint,
         revision_id="rev-1",
         input_snapshot=envelope.to_json(),
+        run_id=managed_run_id(ctx, "managed-run-1"),
     )
     worker = ManagedExecutionAdapter(
         report_root=tmp_path / "reports", profile=resolve_profile("development")
