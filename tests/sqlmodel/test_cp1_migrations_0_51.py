@@ -35,6 +35,7 @@ from etlantic.control_plane import (
 )
 from etlantic_sqlmodel.control_plane import (
     SQLModelDefinitionRepository,
+    SQLModelDurableWorkStore,
     SqlModelEventStore,
     SqlModelRegistryProvider,
     SQLModelSubmissionStore,
@@ -475,6 +476,13 @@ def test_supported_cp1_rollback_heads_upgrade_again_with_core_records(
     )
     accepted_receipt = accepted.receipt
     assert accepted_receipt is not None
+    SQLModelDurableWorkStore(engine).accept(
+        ctx,
+        idempotency_key="rollback-submission",
+        operation="run.submit",
+        plan_fingerprint="f" * 64,
+        submission_id=accepted_receipt.submission_id,
+    )
     event = event_store.append(
         ctx,
         kind="run.accepted",

@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import json
+
 from sqlalchemy import inspect, text
 from sqlalchemy.engine import Engine
 
@@ -10,6 +12,115 @@ _OLD_COLUMNS = (
     "acceptance_id, submission_id, created_at, status, resource_type, resource_id, "
     "payload_json, run_status, updated_at, definition_id"
 )
+_UNRESOLVED_PRINCIPAL_KIND = "legacy_unresolved"
+
+
+def _cp3_principal_identities(
+    engine: Engine,
+) -> dict[tuple[str, str, str, str, str], set[tuple[str, str, str]]]:
+    """Find principal identities that CP3 can verify for legacy CP1 rows."""
+    if not inspect(engine).has_table("cp_durable_snapshot"):
+        return {}
+    identities: dict[
+        tuple[str, str, str, str, str], set[tuple[str, str, str]]
+    ] = {}
+    with engine.connect() as connection:
+        snapshots = connection.execute(
+            text("SELECT payload_json FROM cp_durable_snapshot")
+        )
+        for (payload_json,) in snapshots:
+            try:
+                payload = json.loads(payload_json or "{}")
+            except (TypeError, json.JSONDecodeError) as exc:
+                raise RuntimeError(
+                    "Cannot resolve CP1 principals from a malformed CP3 snapshot"
+                ) from exc
+            if not isinstance(payload, dict):
+                raise RuntimeError("Cannot resolve CP1 principals from a malformed CP3 snapshot")
+            submissions = payload.get("submissions") or {}
+            if not isinstance(submissions, dict):
+                raise RuntimeError("Cannot resolve CP1 principals from a malformed CP3 snapshot")
+            for raw in submissions.values():
+                if not isinstance(raw, dict):
+                    continue
+                tenant_id = raw.get("tenant_id")
+                workspace_id = raw.get("workspace_id")
+                submission_id = raw.get("submission_id")
+                operation = raw.get("operation")
+                idempotency_key = raw.get("idempotency_key")
+                subject = raw.get("principal_subject")
+                kind = raw.get("principal_kind")
+                issuer = raw.get("principal_issuer")
+                if not all(
+                    isinstance(value, str) and value
+                    for value in (
+                        tenant_id,
+                        workspace_id,
+                        submission_id,
+                        operation,
+                        idempotency_key,
+                        subject,
+                        kind,
+                    )
+                ):
+                    continue
+                if issuer is not None and not isinstance(issuer, str):
+                    continue
+                identity = (issuer or "", kind, subject)
+                identities.setdefault(
+                    (
+                        tenant_id,
+                        workspace_id,
+                        submission_id,
+                        operation,
+                        idempotency_key,
+                    ),
+                    set(),
+                ).add(identity)
+    return identities
+
+
+def _restore_legacy_identities(engine: Engine, *, sqlite_table: str | None = None) -> None:
+    """Backfill provable identities; mark every other old receipt unresolved."""
+    identities = _cp3_principal_identities(engine)
+    table = sqlite_table or "cp_submissions"
+    with engine.begin() as connection:
+        rows = connection.execute(
+            text(
+                f"SELECT id, tenant_id, workspace_id, submission_id, operation, "
+                f"idempotency_key, principal_subject FROM {table} "
+                "WHERE principal_kind = :unresolved"
+            ),
+            {"unresolved": _UNRESOLVED_PRINCIPAL_KIND},
+        ).all()
+        for row in rows:
+            matches = identities.get(
+                (
+                    row.tenant_id,
+                    row.workspace_id,
+                    row.submission_id,
+                    row.operation,
+                    row.idempotency_key,
+                ),
+                set(),
+            )
+            if len(matches) == 1:
+                issuer, kind, subject = next(iter(matches))
+                if subject == row.principal_subject:
+                    connection.execute(
+                        text(
+                            f"UPDATE {table} SET principal_issuer = :issuer, "
+                            "principal_kind = :kind WHERE id = :id"
+                        ),
+                        {"issuer": issuer, "kind": kind, "id": row.id},
+                    )
+                    continue
+            connection.execute(
+                text(
+                    f"UPDATE {table} SET principal_kind = :kind WHERE id = :id"
+                ),
+                {"kind": _UNRESOLVED_PRINCIPAL_KIND, "id": row.id},
+            )
 
 
 def _rebuild_sqlite(engine: Engine, *, downgrade: bool = False) -> None:
@@ -65,7 +176,8 @@ def _rebuild_sqlite(engine: Engine, *, downgrade: bool = False) -> None:
             connection.execute(
                 text(
                     f"INSERT INTO cp_submissions_v14 ({columns}) "
-                    "SELECT id, tenant_id, workspace_id, '', 'human', "
+                    "SELECT id, tenant_id, workspace_id, '', "
+                    "'legacy_unresolved', "
                     f"{_OLD_COLUMNS.split(',', 3)[3]} FROM cp_submissions"
                 )
             )
@@ -95,6 +207,8 @@ def _rebuild_sqlite(engine: Engine, *, downgrade: bool = False) -> None:
                         f"ON cp_submissions ({column})"
                     )
                 )
+    if not downgrade:
+        _restore_legacy_identities(engine)
 
 
 def upgrade(engine: Engine) -> None:
@@ -104,6 +218,7 @@ def upgrade(engine: Engine) -> None:
         return
     columns = {column["name"] for column in inspector.get_columns("cp_submissions")}
     if {"principal_issuer", "principal_kind"}.issubset(columns):
+        _restore_legacy_identities(engine)
         return
     if engine.dialect.name == "sqlite":
         _rebuild_sqlite(engine)
@@ -132,6 +247,9 @@ def upgrade(engine: Engine) -> None:
             )
         )
         connection.execute(
+            text("UPDATE cp_submissions SET principal_kind = 'legacy_unresolved'")
+        )
+        connection.execute(
             text(
                 "CREATE INDEX ix_cp_submissions_principal_issuer "
                 "ON cp_submissions (principal_issuer)"
@@ -143,6 +261,7 @@ def upgrade(engine: Engine) -> None:
                 "ON cp_submissions (principal_kind)"
             )
         )
+    _restore_legacy_identities(engine)
 
 
 def downgrade(engine: Engine) -> None:
