@@ -88,6 +88,129 @@ def _error(message: str) -> PipelineExecutionError:
     return PipelineExecutionError(message, code="PMADP520", stage="execute")
 
 
+def validate_managed_resume_checkpoint(
+    plan: Any, *, checkpoint_id: str, parent_run_id: str, workspace: Path
+) -> str:
+    """Validate that a managed checkpoint names one reusable value in this plan.
+
+    Durable control-plane checkpoint rows contain lineage and fingerprints,
+    while the checkpoint value itself remains in the scoped artifact workspace.
+    The namespaced checkpoint suffix is the physical reuse boundary name.
+    """
+    parts = checkpoint_id.split(":")
+    if len(parts) != 3 or parts[0] != "checkpoint" or parts[1] != parent_run_id:
+        raise ValueError(
+            "Managed resume requires this parent's checkpoint:<run-id>:<name> identity"
+        )
+    name = parts[2]
+    if (
+        not name
+        or len(name) > 128
+        or any(
+            character
+            not in "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789_-"
+            for character in name
+        )
+    ):
+        raise ValueError("Managed checkpoint identifier is not a local checkpoint name")
+    if getattr(plan, "schema", None) != "etlantic.plan/2":
+        raise ValueError("Managed resume requires a qualified adaptive plan")
+    units = getattr(getattr(plan, "physical_dag", None), "units", ())
+    matches: list[tuple[Any, dict[str, Any]]] = []
+    for unit in units:
+        metadata = getattr(unit, "metadata", {})
+        requirement = (
+            metadata.get("etlantic.requirement")
+            if isinstance(metadata, Mapping)
+            else None
+        )
+        if not isinstance(requirement, Mapping) or requirement.get("kind") != "reuse":
+            continue
+        if requirement.get("checkpoint", "memory") == name:
+            matches.append((unit, validate_operation("reuse", requirement)))
+    if len(matches) != 1:
+        raise ValueError("Selected checkpoint must match one reusable plan boundary")
+    unit, _descriptor = matches[0]
+    logical_node = str(unit.metadata.get("etlantic.logical_node") or "")
+    node = plan.logical_graph.node_map().get(logical_node)
+    if node is None:
+        raise ValueError("Selected checkpoint has no logical output")
+    path = Path(workspace) / f"checkpoint-{name}.json"
+    policy = SafeIoPolicy.for_root(Path(workspace))
+    records = _read_checkpoint_records(
+        path,
+        policy=policy,
+        run_id="managed-resume-preflight",
+        plan=plan,
+        contract_id=node.contract_id,
+    )
+    if records is None:
+        raise ValueError("Selected checkpoint value is missing, expired, or stale")
+    return name
+
+
+def _read_checkpoint_records(
+    path: Path,
+    *,
+    policy: SafeIoPolicy,
+    run_id: str,
+    plan: Any,
+    contract_id: str | None,
+) -> list[Any] | None:
+    from etlantic.io_policy import resolve_under_policy
+
+    safe_path, _ = resolve_under_policy(path, policy, run_id=run_id)
+    if not safe_path.exists():
+        return None
+    document = json.loads(safe_path.read_text(encoding="utf-8"))
+    if not isinstance(document, dict) or set(document) != {"metadata", "records"}:
+        raise _error("Checkpoint document is malformed")
+    stored = document["metadata"]
+    expected_fields = {
+        "schema",
+        "digest",
+        "producer_fingerprint",
+        "contract_id",
+        "security_domain",
+        "created_at",
+        "expires_at",
+    }
+    if (
+        not isinstance(stored, dict)
+        or set(stored) != expected_fields
+        or stored.get("schema") != "etlantic.checkpoint/1"
+    ):
+        raise _error("Checkpoint metadata is malformed")
+    for field_name in ("created_at", "expires_at"):
+        timestamp = stored.get(field_name)
+        if timestamp is None and field_name == "expires_at":
+            continue
+        if isinstance(timestamp, bool) or not isinstance(timestamp, (int, float)):
+            raise _error("Checkpoint retention metadata is malformed")
+        try:
+            if not math.isfinite(float(timestamp)):
+                raise _error("Checkpoint retention metadata is malformed")
+        except (OverflowError, ValueError):
+            raise _error("Checkpoint retention metadata is malformed") from None
+    if stored["security_domain"] != plan.security_domain:
+        raise _error("Checkpoint authorization mismatch")
+    raw = json.dumps(
+        document["records"], sort_keys=True, separators=(",", ":"), allow_nan=False
+    )
+    if "sha256:" + hashlib.sha256(raw.encode()).hexdigest() != stored["digest"]:
+        raise _error("Checkpoint content integrity failed")
+    if (
+        stored["producer_fingerprint"] != plan.fingerprint
+        or stored["contract_id"] != contract_id
+        or (stored["expires_at"] is not None and stored["expires_at"] <= time.time())
+    ):
+        return None
+    decoded = json.loads(raw)
+    if not isinstance(decoded, list):
+        raise _error("Checkpoint records are malformed")
+    return decoded
+
+
 async def execute_boundary(
     *,
     kind: str,
@@ -101,6 +224,7 @@ async def execute_boundary(
     artifacts: AttemptArtifactStore,
     artifact_key: str,
     requirement: Mapping[str, Any],
+    required_checkpoint: str | None = None,
 ) -> tuple[Any, dict[str, Any]]:
     descriptor = validate_operation(kind, requirement)
     context = DataframeExecutionContext(
@@ -196,62 +320,28 @@ async def execute_boundary(
         if descriptor.get("ttl_seconds")
         else None,
     }
+    if kind == "materialization" and required_checkpoint == checkpoint:
+        # A resume may pass through the original materialization boundary
+        # before its reuse boundary. Keep the selected parent value immutable
+        # so the following reuse cannot accidentally read this attempt's value.
+        artifacts.put(ref, value, durable=False, ownership="copied")
+        return value, {
+            "operation": "checkpoint",
+            "checkpoint": checkpoint,
+            "selection": "preserved_for_resume",
+        }
     if kind == "reuse":
 
         def read_checkpoint() -> Any:
-            from etlantic.io_policy import resolve_under_policy
-
-            safe_path, _ = resolve_under_policy(path, policy, run_id=run_id)
-            if not safe_path.exists():
-                return None
-            document = json.loads(safe_path.read_text(encoding="utf-8"))
-            if not isinstance(document, dict) or set(document) != {
-                "metadata",
-                "records",
-            }:
-                raise _error("Checkpoint document is malformed")
-            stored = document["metadata"]
-            if (
-                not isinstance(stored, dict)
-                or set(stored) != set(metadata)
-                or stored.get("schema") != metadata["schema"]
-            ):
-                raise _error("Checkpoint metadata is malformed")
-            # JSON accepts non-finite constants by default.  They are not part
-            # of the checkpoint writer's finite timestamp contract and must
-            # never make the expiry comparison below authorize a cache hit.
-            for field_name in ("created_at", "expires_at"):
-                timestamp = stored.get(field_name)
-                if timestamp is None and field_name == "expires_at":
-                    continue
-                if isinstance(timestamp, bool) or not isinstance(
-                    timestamp, (int, float)
-                ):
-                    raise _error("Checkpoint retention metadata is malformed")
-                try:
-                    if not math.isfinite(float(timestamp)):
-                        raise _error("Checkpoint retention metadata is malformed")
-                except (OverflowError, ValueError):
-                    raise _error("Checkpoint retention metadata is malformed") from None
-            if stored["security_domain"] != plan.security_domain:
-                raise _error("Checkpoint authorization mismatch")
-            raw = json.dumps(
-                document["records"],
-                sort_keys=True,
-                separators=(",", ":"),
-                allow_nan=False,
+            decoded = _read_checkpoint_records(
+                path,
+                policy=policy,
+                run_id=run_id,
+                plan=plan,
+                contract_id=node.contract_id,
             )
-            if "sha256:" + hashlib.sha256(raw.encode()).hexdigest() != stored["digest"]:
-                raise _error("Checkpoint content integrity failed")
-            if (
-                stored["producer_fingerprint"] != plan.fingerprint
-                or stored["contract_id"] != node.contract_id
-                or (stored["expires_at"] is not None and stored["expires_at"] <= now)
-            ):
+            if decoded is None:
                 return None
-            decoded = json.loads(raw)
-            if not isinstance(decoded, list):
-                raise _error("Checkpoint records are malformed")
             return plugin.materialize_input(
                 decoded,
                 contract_type=node.contract_type,
@@ -260,6 +350,8 @@ async def execute_boundary(
             )
 
         reused = await run_sync(read_checkpoint)
+        if required_checkpoint == checkpoint and reused is None:
+            raise _error("Selected managed checkpoint is no longer restorable")
         selected = value if reused is None else reused
         artifacts.put(ref, selected, durable=False, ownership="copied")
         return selected, {

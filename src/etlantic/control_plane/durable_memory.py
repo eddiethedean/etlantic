@@ -1525,6 +1525,13 @@ class MemoryDurableWorkStore:
                 attempt.owner_id,
                 fencing_token,
             )
+            if previous is not None and previous.submission_id not in {
+                None,
+                attempt.submission_id,
+            }:
+                raise ControlPlaneError.conflict(
+                    "Checkpoint belongs to another submission"
+                )
             record = CheckpointRecord(
                 checkpoint_id,
                 *_scope(ctx),

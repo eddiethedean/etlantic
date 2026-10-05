@@ -12,6 +12,7 @@ from dataclasses import replace
 from datetime import UTC, datetime
 from pathlib import Path
 from threading import Barrier, Event, Lock, Thread, current_thread
+from types import SimpleNamespace
 from typing import Any, cast
 
 import anyio
@@ -66,6 +67,7 @@ from etlantic.control_plane import (
     TenantRef,
     WorkspaceRef,
 )
+from etlantic.control_plane.durable_models import SubmissionRecord
 from etlantic.control_plane.errors import ControlPlaneError
 from etlantic.lifecycle.runtime import PipelineRuntime
 from etlantic.profile import Profile, resolve_profile
@@ -3173,7 +3175,7 @@ def test_replay_uses_accepted_snapshot_and_changed_intent_conflicts(tmp_path) ->
 
 
 def test_managed_resume_rejects_checkpoint_without_runtime_restore_state(
-    tmp_path: Path,
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     from etlantic.runtime.managed_errors import ExecutionRejected
 
@@ -3248,8 +3250,51 @@ def test_managed_resume_rejects_checkpoint_without_runtime_restore_state(
         "reason": "checkpoint_restore_unavailable",
     }
 
+    # Adaptive resumes are advertised only when checkpoint discovery finds a
+    # CP-linked physical restore value.
+    with monkeypatch.context() as adaptive:
+
+        def adaptive_envelope(_snapshot: str) -> SimpleNamespace:
+            return SimpleNamespace(
+                plan_document={"schema": "etlantic.plan/2"},
+                evidence_refs={},
+                effective_request={},
+            )
+
+        def has_no_checkpoint(*_args: Any, **_kwargs: Any) -> bool:
+            return False
+
+        def has_checkpoint(*_args: Any, **_kwargs: Any) -> bool:
+            return True
+
+        adaptive.setattr(
+            type(service),
+            "_parse_envelope",
+            staticmethod(adaptive_envelope),
+        )
+        adaptive.setattr(
+            type(service),
+            "_has_restorable_managed_checkpoint",
+            staticmethod(has_no_checkpoint),
+        )
+        assert service.get_run_actions(ctx, parent.resource_id)["actions"][-1] == {
+            "name": "resume",
+            "allowed": False,
+            "reason": "checkpoint_restore_unavailable",
+        }
+        adaptive.setattr(
+            type(service),
+            "_has_restorable_managed_checkpoint",
+            staticmethod(has_checkpoint),
+        )
+        assert service.get_run_actions(ctx, parent.resource_id)["actions"][-1] == {
+            "name": "resume",
+            "allowed": True,
+            "reason": None,
+        }
+
     pending_outbox = tuple(durable.pending_outbox(ctx))
-    with pytest.raises(ControlPlaneError, match="cannot restore") as error:
+    with pytest.raises(ControlPlaneError, match="no restorable value") as error:
         service.resume_run(
             ctx,
             parent.resource_id,
@@ -3273,6 +3318,32 @@ def test_managed_resume_rejects_checkpoint_without_runtime_restore_state(
     assert direct.value.extensions["reason"] == "checkpoint_restore_unavailable"
     assert tuple(durable.pending_outbox(ctx)) == pending_outbox
 
+    # An authorized reader can resume the submitter's run; canonical identity
+    # validation must use the durable submitter context, not the caller.
+    delegated = replace(
+        ctx, principal=Principal("resume-operator", issuer="operations")
+    )
+    authz.grant(delegated, "run.resume")
+    from etlantic.runtime import physical_operations
+
+    def validate_checkpoint(*_args: Any, **_kwargs: Any) -> str:
+        return "first"
+
+    monkeypatch.setattr(
+        physical_operations,
+        "validate_managed_resume_checkpoint",
+        validate_checkpoint,
+    )
+    delegated_receipt = service.resume_run(
+        delegated,
+        parent.resource_id,
+        idempotency_key="delegated-resume-child",
+        checkpoint_id=checkpoint_id,
+    )
+    assert delegated_receipt.resource_id == managed_run_id(
+        delegated, "delegated-resume-child", operation="run.resume"
+    )
+
 
 def test_managed_resume_rejects_unlinked_or_missing_checkpoint(tmp_path: Path) -> None:
     ctx, authz, _definitions, _submissions, durable, _events, service = _wired(tmp_path)
@@ -3286,6 +3357,75 @@ def test_managed_resume_rejects_unlinked_or_missing_checkpoint(tmp_path: Path) -
             checkpoint_id="checkpoint:missing",
         )
     assert durable.get_submission(ctx, parent.submission_id).status == "accepted"
+
+
+def test_retry_of_resume_is_blocked_when_checkpoint_is_unavailable(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    ctx, _authz, _definitions, _submissions, durable, _events, service = _wired(
+        tmp_path
+    )
+    accepted = service.submit_run(ctx, "pipe", idempotency_key="retry-resume-parent")
+    parent = durable.get_submission(ctx, accepted.submission_id)
+    assert isinstance(parent.run_id, str)
+    envelope = ExecutionEnvelope.from_json(parent.input_snapshot or "")
+    evidence_refs = dict(envelope.evidence_refs or {})
+    evidence_refs.update(
+        {
+            "checkpoint_parent_run_id": parent.run_id,
+            "checkpoint_id": f"checkpoint:{parent.run_id}:resume-point",
+            "artifact_parent_run_id": parent.run_id,
+        }
+    )
+    resume_envelope = ExecutionEnvelope.from_dict(
+        {**envelope.to_dict(), "evidence_refs": evidence_refs}
+    )
+    failed_resume = replace(
+        parent,
+        operation="run.resume",
+        status="failed",
+        input_snapshot=resume_envelope.to_json(),
+    )
+
+    def read_failed_submission(
+        _ctx: ControlPlaneContext, _submission_id: str
+    ) -> SubmissionRecord:
+        return failed_resume
+
+    def authorized_record(
+        _service: ManagedApplicationService,
+        *_args: Any,
+        **_kwargs: Any,
+    ) -> dict[str, Any]:
+        return {
+            "run_id": failed_resume.run_id,
+            "status": "failed",
+            "submission_id": failed_resume.submission_id,
+        }
+
+    monkeypatch.setattr(durable, "get_submission", read_failed_submission)
+    monkeypatch.setattr(
+        type(service),
+        "_authorized_run_record",
+        authorized_record,
+    )
+
+    actions = service.get_run_actions(ctx, str(failed_resume.run_id))
+    retry_action = next(
+        action for action in actions["actions"] if action["name"] == "retry"
+    )
+    assert retry_action == {
+        "name": "retry",
+        "allowed": False,
+        "reason": "checkpoint_restore_unavailable",
+    }
+    with pytest.raises(ControlPlaneError) as error:
+        service.retry_run(
+            ctx,
+            str(failed_resume.run_id),
+            idempotency_key="retry-resume-child",
+        )
+    assert error.value.extensions["reason"] == "checkpoint_restore_unavailable"
 
 
 def test_legacy_resume_recovers_a_published_result_before_rejecting_execution(
@@ -3304,6 +3444,7 @@ def test_legacy_resume_recovers_a_published_result_before_rejecting_execution(
     envelope = ExecutionEnvelope.from_json(
         parent_submission.input_snapshot
     ).with_request(RunRequest(intent=RunIntent.RESUME))
+    resume_run_id = managed_run_id(ctx, "legacy-resume-child", operation="run.resume")
     child, _created = durable.accept(
         ctx,
         idempotency_key="legacy-resume-child",
@@ -3311,7 +3452,7 @@ def test_legacy_resume_recovers_a_published_result_before_rejecting_execution(
         plan_fingerprint=envelope.plan_fingerprint,
         revision_id=envelope.revision_id,
         input_snapshot=envelope.to_json(),
-        run_id="legacy-resume-run",
+        run_id=resume_run_id,
     )
     for outbox in durable.pending_outbox(ctx):
         if outbox.submission_id == parent.submission_id:
@@ -3320,7 +3461,7 @@ def test_legacy_resume_recovers_a_published_result_before_rejecting_execution(
     stored_report = PipelineRunReport(
         pipeline_id=str(envelope.plan_document["pipeline_id"]),
         plan_id=str(envelope.plan_document["plan_id"]),
-        run_id="legacy-resume-run",
+        run_id=resume_run_id,
         intent=RunIntent.RESUME,
         profile="development",
         status=RunStatus.SUCCEEDED,
@@ -3954,12 +4095,10 @@ def test_result_publication_recovery_uses_accepted_scope(tmp_path: Path) -> None
         security_domain=SecurityDomain("worker-default"),
         resource_owner_id="worker-owner",
     )
-    submission, _created = durable.accept(
-        accepted_ctx,
-        idempotency_key="recovered-publication",
-        operation="run.submit",
-        plan_fingerprint="a" * 64,
+    receipt = _service.submit_run(
+        accepted_ctx, "pipe", idempotency_key="recovered-publication"
     )
+    submission = durable.get_submission(accepted_ctx, receipt.submission_id)
     outbox = durable.pending_outbox(worker_ctx)[0]
     durable.mark_published(worker_ctx, outbox.outbox_id)
     lease = durable.acquire_lease(
@@ -3974,7 +4113,7 @@ def test_result_publication_recovery_uses_accepted_scope(tmp_path: Path) -> None
     report = PipelineRunReport(
         pipeline_id="pipe",
         plan_id="plan",
-        run_id="accepted-run-id",
+        run_id=submission.run_id,
         intent=RunIntent.STANDARD,
         profile="development",
         status=RunStatus.SUCCEEDED,

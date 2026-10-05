@@ -2492,12 +2492,30 @@ class LocalOrchestrator:
                             artifacts=boundary_artifacts,
                             artifact_key=key,
                             requirement=descriptor,
+                            required_checkpoint=self.runtime.managed_checkpoint_restore,
                         )
                         if kind != "collection":
                             self._store_output_port(
                                 logical_node, port, value, boundary_artifacts
                             )
                         await boundary_artifacts.commit()
+                        checkpoint_publisher = getattr(
+                            self.runtime, "managed_checkpoint_publisher", None
+                        )
+                        checkpoint_name = operation.get("checkpoint")
+                        checkpoint_digest = operation.get("digest")
+                        if (
+                            kind == "materialization"
+                            and operation.get("operation") == "checkpoint"
+                            and isinstance(checkpoint_name, str)
+                            and checkpoint_name != "memory"
+                            and isinstance(checkpoint_digest, str)
+                            and callable(checkpoint_publisher)
+                        ):
+                            checkpoint_publisher(
+                                f"checkpoint:{run_id}:{checkpoint_name}",
+                                checkpoint_digest,
+                            )
                     finally:
                         if boundary_artifacts.cleanup_failed:
                             self._cleanup_obligations.append(

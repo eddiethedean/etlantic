@@ -1175,10 +1175,13 @@ def test_unpublished_child_ownership_survives_and_eventually_expires(
             report_sha256=hashlib.sha256(snapshot.encode()).hexdigest(),
             created_at=parent.ended_at.isoformat() if parent.ended_at else "",
         )
-        ManagedExecutionAdapter(
-            artifact_root=root,
-            report_store_factory=lambda _: FileReportStore(reports),
-        ).publish_result_publication(ctx, publication)
+        from etlantic.runtime.managed_errors import ExecutionRejected
+
+        with pytest.raises(ExecutionRejected, match="accepted submission"):
+            ManagedExecutionAdapter(
+                artifact_root=root,
+                report_store_factory=lambda _: FileReportStore(reports),
+            ).publish_result_publication(ctx, publication)
         reconciled = FileReportStore(reports).get(parent.run_id)
         assert reconciled is not None
         assert reconciled.metadata[RUN_ARTIFACT_RETENTION_STATE_KEY] == "running"
@@ -1201,13 +1204,12 @@ def test_unpublished_child_ownership_survives_and_eventually_expires(
 
 
 @pytest.mark.parametrize("intent", [RunIntent.STANDARD, RunIntent.RESUME])
-def test_legacy_accepted_report_without_envelope_only_owns_its_run_workspace(
+def test_accepted_report_without_envelope_is_rejected_for_all_intents(
     intent: RunIntent,
 ) -> None:
     from dataclasses import replace
 
     from etlantic.control_plane.durable_models import SubmissionRecord
-    from etlantic.reports.retention import artifact_storage_run_id
     from etlantic.runtime.managed_execution import resolve_managed_artifact_report
 
     now = datetime.now(UTC)
@@ -1231,9 +1233,165 @@ def test_legacy_accepted_report_without_envelope_only_owns_its_run_workspace(
         plan_fingerprint=report.plan_fingerprint or "",
         run_id=report.run_id,
     )
-    if intent is RunIntent.RESUME:
-        with pytest.raises(ValueError, match="storage evidence"):
-            resolve_managed_artifact_report(report, submission)
-    else:
-        resolved = resolve_managed_artifact_report(report, submission)
-        assert artifact_storage_run_id(resolved) == report.run_id
+    with pytest.raises(ValueError, match="canonical execution envelope"):
+        resolve_managed_artifact_report(report, submission)
+
+
+@pytest.mark.parametrize(
+    "metadata",
+    [
+        (
+            {
+                "etlantic.control_plane.execution": {"submission_id": "accepted"},
+                "etlantic.control_plane.artifact_storage_run_id": "another-run",
+            }
+        ),
+        {"etlantic.control_plane.artifact_storage_run_id": "another-run"},
+    ],
+)
+def test_managed_retention_defers_unverified_artifact_workspace(
+    tmp_path: Path, metadata: dict[str, Any]
+) -> None:
+    from dataclasses import replace
+
+    from etlantic.runtime.managed_execution import ManagedExecutionAdapter
+
+    now = datetime.now(UTC)
+    ctx = _ctx()
+    reports = FileReportStore(tmp_path / "reports")
+    report = replace(
+        _report(
+            "ordinary-run",
+            ended_at=now - timedelta(days=2),
+            artifacts=(ArtifactResult("result", "output", "durable"),),
+        ),
+        metadata=metadata,
+    )
+    reports.put(report)
+    artifact_path = _write_artifact(
+        ctx, tmp_path / "artifacts", "ordinary-run", "result"
+    )
+    adapter = ManagedExecutionAdapter(
+        artifact_root=tmp_path / "artifacts",
+        report_root=tmp_path / "reports",
+        report_store_factory=lambda _: reports,
+        run_artifact_retention_seconds=60,
+    )
+
+    result = adapter.cleanup_expired_run_artifacts(ctx, now=now)
+    assert result.completed_reports == 0
+    assert result.deleted_artifacts == 0
+    assert artifact_path.exists()
+
+
+def test_missing_submission_does_not_abort_retention_inventory(tmp_path: Path) -> None:
+    now = datetime.now(UTC)
+    ctx = _ctx()
+    reports = ReportStore()
+    reports.put(
+        _report(
+            "missing-submission",
+            ended_at=now - timedelta(days=2),
+            artifacts=(ArtifactResult("result", "output", "durable"),),
+        )
+    )
+
+    def missing_submission(_report: PipelineRunReport) -> PipelineRunReport:
+        from etlantic.control_plane.errors import ControlPlaneError
+
+        raise ControlPlaneError.not_found("Submission not found")
+
+    result = cleanup_expired_run_artifacts(
+        ctx,
+        report_store=reports,
+        artifact_root=tmp_path / "artifacts",
+        retention_seconds=60,
+        now=now,
+        report_resolver=missing_submission,
+    )
+    assert result.completed_reports == 0
+    assert result.deleted_artifacts == 0
+
+
+def test_persisted_unverified_marker_does_not_suppress_cleanup(
+    tmp_path: Path,
+) -> None:
+    from dataclasses import replace
+
+    now = datetime.now(UTC)
+    ctx = _ctx()
+    reports = ReportStore()
+    report = replace(
+        _report(
+            "forged-marker",
+            ended_at=now - timedelta(days=2),
+            artifacts=(ArtifactResult("result", "output", "durable"),),
+        ),
+        metadata={"etlantic.internal.artifact_retention_unverified": True},
+    )
+    reports.put(report)
+    artifact_path = _write_artifact(
+        ctx, tmp_path / "artifacts", "forged-marker", "result"
+    )
+
+    result = cleanup_expired_run_artifacts(
+        ctx,
+        report_store=reports,
+        artifact_root=tmp_path / "artifacts",
+        retention_seconds=60,
+        now=now,
+        report_resolver=lambda item: item,
+    )
+
+    assert result.completed_reports == 1
+    assert result.deleted_artifacts == 1
+    assert not artifact_path.exists()
+
+
+def test_unverified_shared_reference_protects_artifact_file(tmp_path: Path) -> None:
+    from dataclasses import replace
+
+    now = datetime.now(UTC)
+    ctx = _ctx()
+    reports = ReportStore()
+    artifact_root = tmp_path / "artifacts"
+    storage_run_id = "parent-workspace"
+    artifact = ArtifactResult("shared-output", "output", "durable")
+    old_report = replace(
+        _report(
+            "expired-owner",
+            ended_at=now - timedelta(days=2),
+            artifacts=(artifact,),
+        ),
+        metadata={"etlantic.control_plane.artifact_storage_run_id": storage_run_id},
+    )
+    retained_reference = replace(
+        _report(
+            "retained-reference",
+            ended_at=now,
+            artifacts=(artifact,),
+        ),
+        metadata={"etlantic.control_plane.artifact_storage_run_id": storage_run_id},
+    )
+    reports.put(old_report)
+    reports.put(retained_reference)
+    artifact_path = _write_artifact(
+        ctx, artifact_root, storage_run_id, artifact.identity
+    )
+
+    def reject_retained_reference(report: PipelineRunReport) -> PipelineRunReport:
+        if report.run_id == retained_reference.run_id:
+            raise ValueError("Unverified retained reference")
+        return report
+
+    result = cleanup_expired_run_artifacts(
+        ctx,
+        report_store=reports,
+        artifact_root=artifact_root,
+        retention_seconds=60,
+        now=now,
+        report_resolver=reject_retained_reference,
+    )
+    assert result.completed_reports == 1
+    assert result.deleted_artifacts == 0
+    assert artifact_path.exists()

@@ -1573,7 +1573,8 @@
   "release_decision": "OPEN",
   "schema": "etlantic.phase_0_56.release_index/1",
   "summary": {
-    "passed": 44,
+    "passed": 43,
+    "open": 1,
     "pending": 0,
     "blocked": 0,
     "total": 44

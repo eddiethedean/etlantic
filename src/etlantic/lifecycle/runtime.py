@@ -116,6 +116,12 @@ class PipelineRuntime:
     input_resource_resolver: Callable[[Any], bytes] | None = field(
         default=None, repr=False
     )
+    # Managed resume workers set this after verifying a selected, scoped
+    # checkpoint. It is runtime authority and is never serialized into a plan.
+    managed_checkpoint_restore: str | None = field(default=None, repr=False)
+    managed_checkpoint_publisher: Callable[[str, str], None] | None = field(
+        default=None, repr=False
+    )
     _observability_bridge: Any = field(default=None, repr=False)
 
     def __post_init__(self) -> None:

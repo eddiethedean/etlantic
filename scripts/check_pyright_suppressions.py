@@ -37,13 +37,15 @@ from pathlib import Path
 # shift, with no directives added or removed (784 entries).
 # Phase 0.56 #221/222 update control-plane and SQLModel sources, shifting
 # existing suppression locations without adding or removing directives.
+# Managed checkpoint persistence shifts existing runtime/service directives;
+# the reviewed 789-entry inventory is re-pinned with no suppression changes.
 # Issue #243 completes principal-scoped idempotency. No suppression was added
 # or removed; the 784-entry inventory is re-pinned after source-line shifts.
 # Merged phase 0.56 quota durability adds five reviewed SQLModel snapshot
 # adapter suppressions: one for the ORM-generated table attribute and four for
 # restoring private MemoryQuotaProvider state as part of the durable snapshot.
 # The 789-entry inventory is pinned after those additions and line shifts.
-EXPECTED_DIGEST = "ae77ae88f5c1c1f885b80a0a0291655c9218fdc23875974871f92dae89a81a58"
+EXPECTED_DIGEST = "80bd46083f7b3dfbed7d1e250f06a742d1af4248b15bda0184a3fcbb032e88a1"
 
 _IGNORED_DIRECTORIES = frozenset(
     {

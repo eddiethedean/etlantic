@@ -116,8 +116,11 @@ EXPECTED_DIGESTS = {
     # tests remove 22, for a net increase of 116. The normal Pyright gate
     # remains clean.
     # The reviewed suppression-free inventory is 10,001 diagnostics.
-    "Darwin": "66d2a57fe31fc286ca859a461b2f0721b2a8acb7c7f313f2ba6ae575a280c51d",
-    "Linux": "66d2a57fe31fc286ca859a461b2f0721b2a8acb7c7f313f2ba6ae575a280c51d",
+    # Managed checkpoint publication coverage adds ten suppression-free test
+    # diagnostics; the changed production code is clean in regular Pyright.
+    # The reviewed inventory is 10,011 diagnostics.
+    "Darwin": "98dafcfb0481a92894cd1b87ed2bd1dc4fbaa734efc9825983964713da125a84",
+    "Linux": "98dafcfb0481a92894cd1b87ed2bd1dc4fbaa734efc9825983964713da125a84",
 }
 
 

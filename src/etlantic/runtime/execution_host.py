@@ -181,7 +181,40 @@ class ExecutionHost:
             kwargs["result_reader"] = lambda: (
                 self.durable.get_latest_result_publication(ctx, submission_id)
             )
+        if _accepts_keyword(runner, "checkpoint_publisher"):
+            kwargs["checkpoint_publisher"] = self._checkpoint_publisher(
+                ctx,
+                attempt_id=attempt_id,
+                fencing_token=fencing_token,
+            )
         return runner(ctx, **kwargs)
+
+    def _checkpoint_publisher(
+        self,
+        ctx: ControlPlaneContext,
+        *,
+        attempt_id: str,
+        fencing_token: int,
+    ) -> Callable[[str, str], None]:
+        """Link a committed physical checkpoint to its fenced CP submission."""
+
+        def publish(checkpoint_id: str, value_fingerprint: str) -> None:
+            transition = self.durable.explain_transition(
+                ctx,
+                checkpoint_id,
+                expected_version=None,
+                value_fingerprint=value_fingerprint,
+            )
+            self.durable.compare_and_swap_checkpoint(
+                ctx,
+                checkpoint_id,
+                expected_version=transition.current_version,
+                value_fingerprint=value_fingerprint,
+                attempt_id=attempt_id,
+                fencing_token=fencing_token,
+            )
+
+        return publish
 
     def _result_publisher(
         self,

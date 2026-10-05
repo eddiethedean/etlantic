@@ -21,6 +21,7 @@ from etlantic.control_plane.execution_envelope import ExecutionEnvelope
 from etlantic.control_plane.input_resources import (
     InputResourceReference,
     InputResourceStore,
+    managed_input_lease_id,
 )
 from etlantic.control_plane.models import (
     ControlPlaneContext,
@@ -113,24 +114,6 @@ def managed_run_id(
     return "run-" + _scope_fragment(scope)
 
 
-def legacy_managed_run_id(
-    ctx: ControlPlaneContext,
-    idempotency_key: str,
-    *,
-    operation: str = "run.submit",
-) -> str:
-    """Reproduce run IDs from submissions accepted before principal scoping."""
-    parts = [
-        ctx.security_domain.domain_id,
-        ctx.tenant.tenant_id,
-        ctx.workspace.workspace_id,
-    ]
-    if operation != "run.submit":
-        parts.append(operation)
-    parts.append(idempotency_key)
-    return "run-" + _scope_fragment("/".join(parts))
-
-
 def managed_artifact_run_id(
     run_id: str, evidence_refs: Mapping[str, str] | None
 ) -> str:
@@ -140,27 +123,38 @@ def managed_artifact_run_id(
 
 
 def resolve_managed_artifact_report(
-    report: PipelineRunReport, submission: SubmissionRecord
+    report: PipelineRunReport,
+    submission: SubmissionRecord,
+    *,
+    allow_shared_reference: bool = False,
 ) -> PipelineRunReport:
-    """Resolve legacy report storage from its immutable accepted submission."""
-    if (
-        submission.run_id is not None and submission.run_id != report.run_id
-    ) or submission.plan_fingerprint != report.plan_fingerprint:
+    """Resolve report storage only from a canonical accepted submission."""
+    if not submission.run_id or submission.plan_fingerprint != report.plan_fingerprint:
         raise ValueError("Report does not match its accepted submission")
     if not submission.input_snapshot:
-        if (
-            report.intent is not RunIntent.STANDARD
-            or artifact_storage_run_id(report) != report.run_id
-        ):
-            raise ValueError("Legacy lifecycle report has no accepted storage evidence")
-        return replace(
-            report,
-            metadata={**report.metadata, ARTIFACT_STORAGE_RUN_ID_KEY: report.run_id},
-        )
+        raise ValueError("Accepted submission has no canonical execution envelope")
     envelope = ExecutionEnvelope.from_json(submission.input_snapshot)
     if envelope.plan_fingerprint != submission.plan_fingerprint:
         raise ValueError("Accepted artifact storage evidence is invalid")
-    storage_id = managed_artifact_run_id(report.run_id, envelope.evidence_refs)
+    accepted_ctx = execution_context_from_submission(submission)
+    if accepted_ctx is None:
+        raise ValueError("Accepted submission has no durable execution authority")
+    canonical_run_id = managed_run_id(
+        accepted_ctx,
+        submission.idempotency_key,
+        operation=submission.operation,
+    )
+    if submission.run_id != canonical_run_id:
+        raise ValueError("Accepted submission has no canonical run identity")
+    storage_id = managed_artifact_run_id(canonical_run_id, envelope.evidence_refs)
+    if report.run_id != canonical_run_id:
+        if (
+            not allow_shared_reference
+            or ARTIFACT_STORAGE_RUN_ID_KEY not in report.metadata
+            or artifact_storage_run_id(report) != storage_id
+        ):
+            raise ValueError("Report does not match its accepted submission")
+        return report
     if ARTIFACT_STORAGE_RUN_ID_KEY in report.metadata:
         if artifact_storage_run_id(report) != storage_id:
             raise ValueError("Report artifact storage conflicts with accepted evidence")
@@ -358,21 +352,28 @@ class ManagedExecutionAdapter:
         def resolve(report: PipelineRunReport) -> PipelineRunReport:
             if self.artifact_report_resolver is not None:
                 return self.artifact_report_resolver(ctx, report)
-            if ARTIFACT_STORAGE_RUN_ID_KEY in report.metadata:
-                return report
-            execution: object = report.metadata.get(
-                "etlantic.control_plane.execution", {}
-            )
-            submission_id = (
-                cast(dict[str, Any], execution).get("submission_id")
-                if isinstance(execution, dict)
-                else None
-            )
-            if isinstance(submission_id, str) and submission_reader is not None:
+            execution_key = "etlantic.control_plane.execution"
+            if execution_key in report.metadata:
+                execution: object = report.metadata[execution_key]
+                if not isinstance(execution, Mapping):
+                    raise ValueError("Managed report execution identity is invalid")
+                submission_id = cast(Mapping[str, Any], execution).get("submission_id")
+                if not isinstance(submission_id, str) or not submission_id:
+                    raise ValueError("Managed report has no accepted submission")
+                if submission_reader is None:
+                    raise ValueError(
+                        "Managed report ownership requires its accepted submission"
+                    )
                 return resolve_managed_artifact_report(
                     report, submission_reader(submission_id)
                 )
-            if report.intent.value in {"resume", "repair", "backfill"} or submission_id:
+            if ARTIFACT_STORAGE_RUN_ID_KEY in report.metadata:
+                if artifact_storage_run_id(report) != report.run_id:
+                    raise ValueError(
+                        "Ordinary report cannot redirect artifact ownership"
+                    )
+                return report
+            if report.intent.value in {"resume", "repair", "backfill"}:
                 raise ValueError(
                     "Legacy managed report requires accepted storage evidence"
                 )
@@ -405,6 +406,7 @@ class ManagedExecutionAdapter:
         result_publisher: Callable[[PipelineRunReport], ResultPublicationRecord]
         | None = None,
         result_reader: Callable[[], ResultPublicationRecord | None] | None = None,
+        checkpoint_publisher: Callable[[str, str], None] | None = None,
     ) -> PipelineRunReport:
         if submission.submission_id != submission_id:
             raise ExecutionRejected("Submission identity does not match the lease")
@@ -421,9 +423,11 @@ class ManagedExecutionAdapter:
             raise ExecutionRejected(
                 "Accepted plan fingerprint does not match submission"
             )
-        run_id = submission.run_id or legacy_managed_run_id(
+        run_id = submission.run_id
+        if not isinstance(run_id, str) or run_id != managed_run_id(
             ctx, submission.idempotency_key, operation=submission.operation
-        )
+        ):
+            raise ExecutionRejected("Accepted submission has no canonical run identity")
         storage_id = managed_artifact_run_id(run_id, envelope.evidence_refs)
         workspace = managed_artifact_workspace(
             ctx, storage_id, artifact_root=self.artifact_root
@@ -481,6 +485,7 @@ class ManagedExecutionAdapter:
                 cancel_event=cancel_event,
                 result_publisher=result_publisher,
                 result_reader=result_reader,
+                checkpoint_publisher=checkpoint_publisher,
             )
         with artifact_workspace_lock(workspace, cancel_event=cancel_event):
             return self._execute(
@@ -493,6 +498,7 @@ class ManagedExecutionAdapter:
                 cancel_event=cancel_event,
                 result_publisher=result_publisher,
                 result_reader=result_reader,
+                checkpoint_publisher=checkpoint_publisher,
             )
 
     def _execute(
@@ -508,6 +514,7 @@ class ManagedExecutionAdapter:
         result_publisher: Callable[[PipelineRunReport], ResultPublicationRecord]
         | None = None,
         result_reader: Callable[[], ResultPublicationRecord | None] | None = None,
+        checkpoint_publisher: Callable[[str, str], None] | None = None,
     ) -> PipelineRunReport:
         if submission.submission_id != submission_id:
             raise ExecutionRejected("Submission identity does not match the lease")
@@ -559,6 +566,14 @@ class ManagedExecutionAdapter:
                 raise ExecutionRejected(
                     "Accepted input resources have no durable worker lease"
                 )
+            if input_lease_id != managed_input_lease_id(
+                ctx,
+                operation=submission.operation,
+                idempotency_key=submission.idempotency_key,
+            ):
+                raise ExecutionRejected(
+                    "Accepted input resource lease has a noncanonical scope"
+                )
             candidate_reader = getattr(input_resource_store, "read_leased", None)
             if not callable(candidate_reader):
                 raise ExecutionRejected(
@@ -566,10 +581,20 @@ class ManagedExecutionAdapter:
                 )
             leased_reader = cast(Callable[..., bytes], candidate_reader)
 
-        run_id = submission.run_id or legacy_managed_run_id(
+        run_id = submission.run_id
+        if not isinstance(run_id, str) or run_id != managed_run_id(
             ctx, submission.idempotency_key, operation=submission.operation
-        )
+        ):
+            raise ExecutionRejected("Accepted submission has no canonical run identity")
         artifact_run_id = managed_artifact_run_id(run_id, envelope.evidence_refs)
+        evidence_refs = envelope.evidence_refs or {}
+        checkpoint_resume = submission.operation == "run.resume" or (
+            submission.operation == "run.retry"
+            and isinstance(evidence_refs.get("checkpoint_parent_run_id"), str)
+        )
+        workspace = managed_artifact_workspace(
+            ctx, artifact_run_id, artifact_root=self.artifact_root
+        )
         event_base = {
             "run_id": run_id,
             "submission_id": submission_id,
@@ -591,9 +616,8 @@ class ManagedExecutionAdapter:
             report_store,
             result_publisher,
             artifact_run_id=artifact_run_id,
-            workspace=managed_artifact_workspace(
-                ctx, artifact_run_id, artifact_root=self.artifact_root
-            ),
+            workspace=workspace,
+            intent_override=(RunIntent.RESUME if checkpoint_resume else None),
         )
         try:
             existing = reports.get(run_id)
@@ -638,13 +662,35 @@ class ManagedExecutionAdapter:
                 "A prior worker attempt has no durable report; reconcile its effects before retry"
             )
 
-        if request.intent is RunIntent.RESUME or submission.operation == "run.resume":
-            # Older service versions could accept a resume child backed only
-            # by checkpoint metadata. Preserve any already-published result
-            # above, then reject before starting a fresh execution from source.
-            raise ExecutionRejected(
-                "Managed execution cannot restore the selected checkpoint"
+        resume_checkpoint: str | None = None
+        if request.intent is RunIntent.RESUME or checkpoint_resume:
+            checkpoint_id = evidence_refs.get("checkpoint_id")
+            checkpoint_parent_run_id = evidence_refs.get(
+                "checkpoint_parent_run_id", evidence_refs.get("parent_run_id")
             )
+            if (
+                not isinstance(plan, AdaptivePipelinePlan)
+                or not isinstance(checkpoint_id, str)
+                or not isinstance(checkpoint_parent_run_id, str)
+            ):
+                raise ExecutionRejected(
+                    "Managed resume has no qualified runtime checkpoint"
+                )
+            try:
+                from etlantic.runtime.physical_operations import (
+                    validate_managed_resume_checkpoint,
+                )
+
+                resume_checkpoint = validate_managed_resume_checkpoint(
+                    plan,
+                    checkpoint_id=checkpoint_id,
+                    parent_run_id=checkpoint_parent_run_id,
+                    workspace=workspace,
+                )
+            except Exception as exc:
+                raise ExecutionRejected(
+                    "Managed resume checkpoint is no longer restorable"
+                ) from exc
 
         runtime = self.runtime_factory()
         plan_intents = getattr(plan, "intents", {}) or {}
@@ -663,6 +709,12 @@ class ManagedExecutionAdapter:
         previous_input_resource_resolver = getattr(
             runtime, "input_resource_resolver", None
         )
+        previous_managed_checkpoint_restore = getattr(
+            runtime, "managed_checkpoint_restore", None
+        )
+        previous_managed_checkpoint_publisher = getattr(
+            runtime, "managed_checkpoint_publisher", None
+        )
         trusted_scope = TrustedExecutionScope(
             principal_id=ctx.principal.subject,
             principal_kind=ctx.principal.kind,
@@ -680,6 +732,8 @@ class ManagedExecutionAdapter:
             else previous_secret_alias_authorizer
         )
         runtime.external_cancel_event = cancel_event
+        runtime.managed_checkpoint_restore = resume_checkpoint
+        runtime.managed_checkpoint_publisher = checkpoint_publisher
         if has_input_resources:
             assert leased_reader is not None
             assert isinstance(input_lease_id, str)
@@ -705,9 +759,7 @@ class ManagedExecutionAdapter:
                     request=request,
                     runtime=runtime,
                     artifact_store=ArtifactStore(
-                        workspace=managed_artifact_workspace(
-                            ctx, artifact_run_id, artifact_root=self.artifact_root
-                        ),
+                        workspace=workspace,
                         hash_identities=True,
                     ),
                     run_id=run_id,
@@ -887,7 +939,11 @@ class ManagedExecutionAdapter:
             runtime.trusted_execution_scope = previous_trusted_scope
             runtime.secret_alias_authorizer = previous_secret_alias_authorizer
             runtime.input_resource_resolver = previous_input_resource_resolver
+            runtime.managed_checkpoint_restore = previous_managed_checkpoint_restore
+            runtime.managed_checkpoint_publisher = previous_managed_checkpoint_publisher
 
+        if checkpoint_resume and report.intent is not RunIntent.RESUME:
+            report = replace(report, intent=RunIntent.RESUME)
         metadata = dict(report.metadata)
         metadata[ARTIFACT_STORAGE_RUN_ID_KEY] = artifact_run_id
         execution_metadata: dict[str, Any] = {}
@@ -944,21 +1000,36 @@ class ManagedExecutionAdapter:
         ):
             raise ExecutionRejected("Durable run result has an invalid owner scope")
         report = _decode_result_publication(record)
+        if submission_reader is None:
+            raise ExecutionRejected(
+                "Managed result publication requires its accepted submission"
+            )
+        accepted = submission_reader(record.submission_id)
+        expected_run_id = managed_run_id(
+            ctx, accepted.idempotency_key, operation=accepted.operation
+        )
+        try:
+            accepted_envelope = ExecutionEnvelope.from_json(
+                accepted.input_snapshot or ""
+            )
+        except Exception as exc:
+            raise ExecutionRejected(
+                "Durable run result has no canonical accepted envelope"
+            ) from exc
+        if (
+            accepted.run_id != expected_run_id
+            or record.run_id != expected_run_id
+            or report.run_id != expected_run_id
+            or accepted_envelope.plan_fingerprint != accepted.plan_fingerprint
+            or report.plan_fingerprint != accepted.plan_fingerprint
+        ):
+            raise ExecutionRejected(
+                "Durable run result has no canonical accepted identity"
+            )
         if self.artifact_report_resolver is not None:
             report = self.artifact_report_resolver(ctx, report)
-        elif ARTIFACT_STORAGE_RUN_ID_KEY not in report.metadata:
-            if submission_reader is not None:
-                accepted = submission_reader(record.submission_id)
-                if accepted.input_snapshot:
-                    report = resolve_managed_artifact_report(report, accepted)
-                elif report.intent.value in {"resume", "repair", "backfill"}:
-                    raise ExecutionRejected(
-                        "Legacy lifecycle result has no accepted storage evidence"
-                    )
-            elif report.intent.value in {"resume", "repair", "backfill"}:
-                raise ExecutionRejected(
-                    "Legacy resumed result requires accepted storage evidence"
-                )
+        else:
+            report = resolve_managed_artifact_report(report, accepted)
         metadata = dict(report.metadata)
         execution: dict[str, Any] = {}
         prior_execution: object = metadata.get("etlantic.control_plane.execution")
@@ -1121,11 +1192,13 @@ class _ResultRecoveryReportStore:
         *,
         artifact_run_id: str,
         workspace: Path,
+        intent_override: RunIntent | None = None,
     ) -> None:
         self._store = store
         self._publisher = publisher
         self._artifact_run_id = artifact_run_id
         self._workspace = workspace
+        self._intent_override = intent_override
 
     def get(self, run_id: str) -> PipelineRunReport | None:
         try:
@@ -1141,6 +1214,7 @@ class _ResultRecoveryReportStore:
         # process can die before the adapter adds its final execution metadata.
         report = replace(
             report,
+            intent=self._intent_override or report.intent,
             metadata={
                 **report.metadata,
                 ARTIFACT_STORAGE_RUN_ID_KEY: self._artifact_run_id,

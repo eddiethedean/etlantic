@@ -9,6 +9,7 @@ from __future__ import annotations
 
 import hashlib
 import hmac
+import json
 import threading
 import uuid
 from collections.abc import Mapping
@@ -57,6 +58,30 @@ def _owner(ctx: ControlPlaneContext) -> str:
             type="etlantic.control_plane/forbidden",
         )
     return owner
+
+
+def managed_input_lease_id(
+    ctx: ControlPlaneContext, *, operation: str, idempotency_key: str
+) -> str:
+    """Derive the canonical, principal-scoped lease for accepted input bytes."""
+    scope = {
+        "security_domain": ctx.security_domain.domain_id,
+        "tenant": ctx.tenant.tenant_id,
+        "workspace": ctx.workspace.workspace_id,
+        "owner": ctx.resource_owner_id or ctx.principal.identity_key,
+        "environment": ctx.environment.name,
+        "principal": {
+            "issuer": ctx.principal.issuer or "",
+            "kind": ctx.principal.kind,
+            "subject": ctx.principal.subject,
+        },
+        "operation": operation,
+        "idempotency_key": idempotency_key,
+    }
+    digest = hashlib.sha256(
+        json.dumps(scope, sort_keys=True, separators=(",", ":")).encode("utf-8")
+    ).hexdigest()
+    return f"managed-input:{digest}"
 
 
 @dataclass(frozen=True, slots=True)
@@ -673,4 +698,5 @@ __all__ = [
     "InputResourceStore",
     "InputUploadReceipt",
     "MemoryInputResourceStore",
+    "managed_input_lease_id",
 ]

@@ -514,7 +514,7 @@ class _FoundryClient:
         path: str,
         transaction_rid: str | None = None,
         branch: bool = False,
-        max_bytes: int | None = None,
+        max_bytes: int,
     ) -> bytes:
         _, dataset_rid = _base(cfg)
         params: dict[str, Any] = {}
@@ -526,16 +526,6 @@ class _FoundryClient:
             f"/api/v2/datasets/{_rid_path(dataset_rid)}/files/"
             f"{_path_path(path)}/content"
         )
-        if max_bytes is None:
-            response = await self._request(
-                cfg=cfg,
-                context=context,
-                method="GET",
-                path=request_path,
-                write=False,
-                params=params,
-            )
-            return bytes(response.content)
         if type(max_bytes) is not int or max_bytes < 1:
             raise ValueError("max_bytes must be a positive integer")
         try:
@@ -1460,6 +1450,7 @@ class FoundrySinkConnector(_FoundryClient):
                 context=state["context"],
                 path=str(meta["file_path"]),
                 branch=True,
+                max_bytes=int(meta["max_bytes"]),
             )
             prior_digest = hashlib.sha256(prior_content).hexdigest()
             if prior_digest == digest:
@@ -1706,6 +1697,12 @@ class FoundrySinkConnector(_FoundryClient):
                 context=context,
                 path=str(effect_path),
                 branch=True,
+                max_bytes=_int_option(
+                    meta.get("max_bytes"),
+                    name="max_bytes",
+                    default=DEFAULT_FILE_BYTES,
+                    maximum=MAX_FILE_BYTES,
+                ),
             )
         except Exception:
             return ReconciliationResult(
@@ -1939,14 +1936,12 @@ class FoundryStorageConnector(_FoundryClient):
                 maximum=MAX_FILE_BYTES,
             )
             raw = await self._file_content(
-                cfg=cfg, context=context, path=path, branch=True
+                cfg=cfg,
+                context=context,
+                path=path,
+                branch=True,
+                max_bytes=max_file_bytes,
             )
-            if len(raw) > max_file_bytes:
-                raise ConnectorReadError(
-                    "Foundry schema sample exceeds max_file_bytes",
-                    code="PMFND050",
-                    provider=PROVIDER,
-                )
             if _format(cfg, binding) == "csv":
                 try:
                     decoded = raw.decode(_encoding(cfg), errors="strict")

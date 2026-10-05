@@ -29,13 +29,18 @@ from etlantic.control_plane.action_jobs import (
     verify_provision_parent,
 )
 from etlantic.control_plane.authz import require_authorized, require_authorized_run
-from etlantic.control_plane.durable_models import ActionJobRecord, SubmissionRecord
+from etlantic.control_plane.durable_models import (
+    ActionJobRecord,
+    SubmissionRecord,
+    execution_context_from_submission,
+)
 from etlantic.control_plane.durable_protocols import DurableWorkStore
 from etlantic.control_plane.errors import ControlPlaneError
 from etlantic.control_plane.execution_envelope import ExecutionEnvelope
 from etlantic.control_plane.input_resources import (
     InputResourceReference,
     InputResourceStore,
+    managed_input_lease_id,
 )
 from etlantic.control_plane.models import (
     AcceptReceipt,
@@ -71,7 +76,6 @@ from etlantic.runtime.artifact_coordination import apply_artifact_expiry
 from etlantic.runtime.artifacts import artifact_storage_path
 from etlantic.runtime.logging import redact_message
 from etlantic.runtime.managed_execution import (
-    legacy_managed_run_id,
     managed_artifact_run_id,
     managed_artifact_workspace,
     managed_report_store,
@@ -1277,6 +1281,11 @@ class ManagedApplicationService:
 
         if prior_receipt is not None:
             envelope = self._envelope_from_payload(prior_payload)
+            expected_run_id = managed_run_id(ctx, idempotency_key)
+            if prior_receipt.resource_id != expected_run_id:
+                raise ControlPlaneError.conflict(
+                    "Accepted receipt has no canonical run identity"
+                )
             self._require_same_intent(envelope, intent_fingerprint)
             if envelope.definition_id != definition_id:
                 raise ControlPlaneError.conflict(
@@ -1292,6 +1301,10 @@ class ManagedApplicationService:
             elif prior_durable.submission_id != prior_receipt.submission_id:
                 raise ControlPlaneError.conflict(
                     "Control-plane and execution submissions are inconsistent"
+                )
+            elif prior_durable.run_id != expected_run_id:
+                raise ControlPlaneError.conflict(
+                    "Control-plane and execution run identities are inconsistent"
                 )
             elif prior_durable.input_snapshot:
                 durable_envelope = self._parse_envelope(prior_durable.input_snapshot)
@@ -1314,6 +1327,10 @@ class ManagedApplicationService:
                 raise ControlPlaneError.conflict(
                     "Legacy accepted work has no verified execution envelope"
                 )
+            if prior_durable.run_id != managed_run_id(ctx, idempotency_key):
+                raise ControlPlaneError.conflict(
+                    "Accepted work has no canonical run identity"
+                )
             envelope = self._parse_envelope(prior_durable.input_snapshot)
             self._require_same_intent(envelope, intent_fingerprint)
             if envelope.definition_id != definition_id:
@@ -1326,8 +1343,7 @@ class ManagedApplicationService:
                 idempotency_key=idempotency_key,
                 payload=payload,
                 resource_type="run",
-                resource_id=prior_durable.run_id
-                or legacy_managed_run_id(ctx, idempotency_key),
+                resource_id=prior_durable.run_id,
                 submission_id=prior_durable.submission_id,
                 operation="run.submit",
             )
@@ -1552,14 +1568,18 @@ class ManagedApplicationService:
                         "acceptance_uncertain": True,
                     },
                 ) from exc
+        expected_run_id = managed_run_id(ctx, idempotency_key)
+        if receipt_result.receipt.resource_id != expected_run_id:
+            raise ControlPlaneError.conflict(
+                "Accepted receipt has no canonical run identity"
+            )
         try:
             self._accept_durable(
                 ctx,
                 idempotency_key=idempotency_key,
                 envelope=envelope,
                 submission_id=receipt_result.receipt.submission_id,
-                run_id=receipt_result.receipt.resource_id
-                or managed_run_id(ctx, idempotency_key),
+                run_id=expected_run_id,
             )
         except Exception as exc:
             # Durable acceptance and its outbox are committed atomically by
@@ -1730,12 +1750,7 @@ class ManagedApplicationService:
         else:
             retry_reason = self._retry_block_reason(ctx, submission_id)
             if retry_reason is None:
-                parent_envelope = self._parse_envelope(durable_record.input_snapshot)
-                if (
-                    RunRequest.from_dict(dict(parent_envelope.run_request)).intent
-                    is RunIntent.RESUME
-                ):
-                    retry_reason = "checkpoint_restore_unavailable"
+                retry_reason = self._retry_checkpoint_block_reason(ctx, durable_record)
         rerun_decision = self.authorizer.authorize(ctx, "run.rerun", f"run:{run_id}")
         if not rerun_decision.allowed:
             rerun_reason: str | None = "not_authorized"
@@ -1769,11 +1784,17 @@ class ManagedApplicationService:
             resume_reason = "durable_state_unavailable"
         elif not durable_record.input_snapshot:
             resume_reason = "unverified_execution_envelope"
-        elif adaptive_plan:
-            resume_reason = "adaptive_policy_unsupported"
         else:
             resume_reason = self._retry_block_reason(ctx, submission_id)
-            if resume_reason is None:
+            if resume_reason is None and (
+                not adaptive_plan
+                or not self._has_restorable_managed_checkpoint(
+                    ctx,
+                    run_id=run_id,
+                    submission_id=submission_id,
+                    durable_record=durable_record,
+                )
+            ):
                 resume_reason = "checkpoint_restore_unavailable"
         repair_decision = self.authorizer.authorize(ctx, "run.repair", f"run:{run_id}")
         if not repair_decision.allowed:
@@ -1844,7 +1865,7 @@ class ManagedApplicationService:
                 },
                 {
                     "name": "resume",
-                    "allowed": False,
+                    "allowed": resume_reason is None,
                     "reason": resume_reason,
                 },
             ],
@@ -1893,16 +1914,6 @@ class ManagedApplicationService:
         prior_durable = self.durable_work.get_submission_by_idempotency(
             ctx, idempotency_key=idempotency_key, operation="run.retry"
         )
-        if (
-            RunRequest.from_dict(dict(parent_envelope.run_request)).intent
-            is RunIntent.RESUME
-            and prior_receipt is None
-            and prior_durable is None
-        ):
-            raise ControlPlaneError.conflict(
-                "Managed execution cannot retry a checkpoint resume without restorable state",
-                extensions={"reason": "checkpoint_restore_unavailable"},
-            )
         envelope_data = parent_envelope.to_dict()
         evidence_refs = dict(envelope_data.get("evidence_refs") or {})
         evidence_refs.update(
@@ -1916,6 +1927,8 @@ class ManagedApplicationService:
         envelope = ExecutionEnvelope.from_dict(envelope_data)
         if prior_receipt is None and prior_durable is None:
             retry_reason = self._retry_block_reason(ctx, parent_submission_id)
+            if retry_reason is None:
+                retry_reason = self._retry_checkpoint_block_reason(ctx, parent)
             if retry_reason is not None:
                 raise ControlPlaneError.conflict(
                     "Retry is blocked until the prior execution effect is reconciled",
@@ -2143,6 +2156,30 @@ class ManagedApplicationService:
                 "Run record has no durable submission identity"
             )
         parent = self.durable_work.get_submission(ctx, parent_submission_id)
+        accepted_ctx = execution_context_from_submission(parent)
+        if (
+            accepted_ctx is None
+            or (
+                accepted_ctx.tenant.tenant_id,
+                accepted_ctx.workspace.workspace_id,
+                accepted_ctx.security_domain.domain_id,
+            )
+            != (
+                ctx.tenant.tenant_id,
+                ctx.workspace.workspace_id,
+                ctx.security_domain.domain_id,
+            )
+            or parent.run_id != run_id
+            or parent.run_id
+            != managed_run_id(
+                accepted_ctx,
+                parent.idempotency_key,
+                operation=parent.operation,
+            )
+        ):
+            raise ControlPlaneError.conflict(
+                "Checkpoint parent has no canonical managed run identity"
+            )
         if parent.status not in {"failed", "cancelled"}:
             raise ControlPlaneError.conflict(
                 "Only failed or cancelled runs can resume from a checkpoint"
@@ -2171,22 +2208,37 @@ class ManagedApplicationService:
             ctx, parent_submission_id, checkpoint_id=checkpoint_id
         )
         envelope = self._parse_envelope(parent.input_snapshot)
-        if envelope.plan_document.get("schema") == "etlantic.plan/2":
-            raise ControlPlaneError.conflict(
-                "Adaptive execution does not support resume intent",
-                extensions={"reason": "adaptive_policy_unsupported"},
-            )
-        # CP3 checkpoints currently persist a state fingerprint and lineage,
-        # not a runtime-restorable value or graph boundary. Do not accept a
-        # new lifecycle child that would merely rerun the original graph from
-        # its sources while claiming to resume from that checkpoint. Existing
-        # idempotency keys still flow through child acceptance below so callers
-        # can recover receipts for children accepted by an older version.
+        plan = plan_from_json(
+            json.dumps(
+                mutable_copy(envelope.plan_document),
+                sort_keys=True,
+                separators=(",", ":"),
+                ensure_ascii=False,
+                allow_nan=False,
+            ),
+            verify=True,
+        )
         if prior_receipt is None and prior_durable is None:
-            raise ControlPlaneError.conflict(
-                "Managed execution cannot restore the selected checkpoint",
-                extensions={"reason": "checkpoint_restore_unavailable"},
+            from etlantic.runtime.physical_operations import (
+                validate_managed_resume_checkpoint,
             )
+
+            storage_id = managed_artifact_run_id(run_id, envelope.evidence_refs)
+            workspace = managed_artifact_workspace(
+                ctx, storage_id, artifact_root=self.artifact_root
+            )
+            try:
+                validate_managed_resume_checkpoint(
+                    plan,
+                    checkpoint_id=checkpoint_id,
+                    parent_run_id=run_id,
+                    workspace=workspace,
+                )
+            except Exception as exc:
+                raise ControlPlaneError.conflict(
+                    "Selected checkpoint has no restorable value in this managed plan",
+                    extensions={"reason": "checkpoint_restore_unavailable"},
+                ) from exc
         request = RunRequest.from_dict(dict(envelope.run_request))
         resume_request = RunRequest(
             selection=request.selection,
@@ -2204,7 +2256,14 @@ class ManagedApplicationService:
             extensions=request.extensions,
             explicit_settings=request.explicit_settings,
         )
-        resumed = envelope.with_request(resume_request)
+        # Adaptive plans bind their complete request into the plan fingerprint.
+        # Keep that accepted request intact and express resume intent through
+        # the lifecycle operation and checkpoint evidence instead.
+        resumed = (
+            envelope
+            if isinstance(plan, AdaptivePipelinePlan)
+            else envelope.with_request(resume_request)
+        )
         envelope_data = resumed.to_dict()
         evidence_refs = dict(envelope_data.get("evidence_refs") or {})
         evidence_refs.update(
@@ -2212,6 +2271,7 @@ class ManagedApplicationService:
                 "command": "resume",
                 "parent_run_id": run_id,
                 "parent_submission_id": parent_submission_id,
+                "checkpoint_parent_run_id": run_id,
                 "checkpoint_id": checkpoint_id,
                 "artifact_parent_run_id": managed_artifact_run_id(
                     run_id, envelope.evidence_refs
@@ -2554,6 +2614,134 @@ class ManagedApplicationService:
             return None
         return "effect_requires_reconciliation"
 
+    def _retry_checkpoint_block_reason(
+        self, ctx: ControlPlaneContext, submission: SubmissionRecord
+    ) -> str | None:
+        """Require a live checkpoint when retrying a resumed execution."""
+        if not submission.input_snapshot:
+            return "unverified_execution_envelope"
+        try:
+            envelope = self._parse_envelope(submission.input_snapshot)
+            evidence_refs = envelope.evidence_refs or {}
+            request = RunRequest.from_dict(envelope.effective_request)
+        except (ControlPlaneError, TypeError, ValueError):
+            return "unverified_execution_envelope"
+
+        checkpoint_parent_run_id = evidence_refs.get("checkpoint_parent_run_id")
+        checkpoint_id = evidence_refs.get("checkpoint_id")
+        requires_checkpoint = (
+            submission.operation == "run.resume"
+            or request.intent is RunIntent.RESUME
+            or isinstance(checkpoint_parent_run_id, str)
+        )
+        if not requires_checkpoint:
+            return None
+        if (
+            not isinstance(submission.run_id, str)
+            or not isinstance(checkpoint_parent_run_id, str)
+            or not isinstance(checkpoint_id, str)
+        ):
+            return "checkpoint_restore_unavailable"
+        try:
+            plan = plan_from_json(
+                json.dumps(
+                    mutable_copy(envelope.plan_document),
+                    sort_keys=True,
+                    separators=(",", ":"),
+                    ensure_ascii=False,
+                    allow_nan=False,
+                ),
+                verify=True,
+            )
+            from etlantic.runtime.physical_operations import (
+                validate_managed_resume_checkpoint,
+            )
+
+            workspace = managed_artifact_workspace(
+                ctx,
+                managed_artifact_run_id(submission.run_id, evidence_refs),
+                artifact_root=self.artifact_root,
+            )
+            validate_managed_resume_checkpoint(
+                plan,
+                checkpoint_id=checkpoint_id,
+                parent_run_id=checkpoint_parent_run_id,
+                workspace=workspace,
+            )
+        except Exception:
+            return "checkpoint_restore_unavailable"
+        return None
+
+    def _has_restorable_managed_checkpoint(
+        self,
+        ctx: ControlPlaneContext,
+        *,
+        run_id: str,
+        submission_id: str,
+        durable_record: SubmissionRecord,
+    ) -> bool:
+        """Return whether an adaptive run has a CP-linked physical restore value."""
+        if not durable_record.input_snapshot:
+            return False
+        try:
+            envelope = self._parse_envelope(durable_record.input_snapshot)
+            plan = plan_from_json(
+                json.dumps(
+                    mutable_copy(envelope.plan_document),
+                    sort_keys=True,
+                    separators=(",", ":"),
+                    ensure_ascii=False,
+                    allow_nan=False,
+                ),
+                verify=True,
+            )
+            if not isinstance(plan, AdaptivePipelinePlan):
+                return False
+            from etlantic.runtime.physical_operations import (
+                validate_managed_resume_checkpoint,
+            )
+
+            workspace = managed_artifact_workspace(
+                ctx,
+                managed_artifact_run_id(run_id, envelope.evidence_refs),
+                artifact_root=self.artifact_root,
+            )
+            checked: set[str] = set()
+            for unit in plan.physical_dag.units:
+                requirement_raw: object = _mapping(unit.metadata).get(
+                    "etlantic.requirement"
+                )
+                if not isinstance(requirement_raw, Mapping):
+                    continue
+                requirement = cast(Mapping[str, Any], requirement_raw)
+                if requirement.get("kind") != "reuse":
+                    continue
+                name = requirement.get("checkpoint", "memory")
+                if not isinstance(name, str) or name == "memory" or name in checked:
+                    continue
+                checked.add(name)
+                checkpoint_id = f"checkpoint:{run_id}:{name}"
+                try:
+                    # A file alone is insufficient: the CP checkpoint must be
+                    # linked to this failed parent submission as well.
+                    self.durable_work.plan_resume(
+                        ctx, submission_id, checkpoint_id=checkpoint_id
+                    )
+                    validate_managed_resume_checkpoint(
+                        plan,
+                        checkpoint_id=checkpoint_id,
+                        parent_run_id=run_id,
+                        workspace=workspace,
+                    )
+                except Exception:
+                    continue
+                return True
+        except Exception:
+            # Action discovery is fail-closed when the accepted plan or its
+            # scoped checkpoint cannot be verified.
+            return False
+        return False
+
     def _accept_child_run(
         self,
         ctx: ControlPlaneContext,
@@ -2603,20 +2791,17 @@ class ManagedApplicationService:
             ctx, idempotency_key=idempotency_key, operation=operation
         )
         expected_envelope = envelope.to_json()
+        expected_run_id = managed_run_id(ctx, idempotency_key, operation=operation)
         if prior_receipt is not None:
+            if prior_receipt.resource_id != expected_run_id:
+                raise ControlPlaneError.conflict(
+                    "Accepted lifecycle receipt has no canonical run identity"
+                )
             prior_envelope = self._envelope_from_payload(prior_payload)
             if not self._lifecycle_envelopes_match(prior_envelope, envelope):
-                legacy_envelope = _with_input_resource_lease(
-                    ctx,
-                    envelope,
-                    operation=operation,
-                    idempotency_key=idempotency_key,
-                    legacy_scope=True,
+                raise ControlPlaneError.conflict(
+                    "Idempotency key reuse with a different lifecycle parent or intent"
                 )
-                if not self._lifecycle_envelopes_match(prior_envelope, legacy_envelope):
-                    raise ControlPlaneError.conflict(
-                        "Idempotency key reuse with a different lifecycle parent or intent"
-                    )
             envelope = prior_envelope
             expected_envelope = envelope.to_json()
         elif (
@@ -2628,17 +2813,8 @@ class ManagedApplicationService:
                 raise ControlPlaneError.conflict(
                     "Legacy accepted work has no verified execution envelope"
                 )
-            legacy_envelope = _with_input_resource_lease(
-                ctx,
-                envelope,
-                operation=operation,
-                idempotency_key=idempotency_key,
-                legacy_scope=True,
-            )
             prior_envelope = self._parse_envelope(prior_snapshot)
-            if not self._lifecycle_envelopes_match(
-                prior_envelope, envelope
-            ) and not self._lifecycle_envelopes_match(prior_envelope, legacy_envelope):
+            if not self._lifecycle_envelopes_match(prior_envelope, envelope):
                 raise ControlPlaneError.conflict(
                     "Idempotency key reuse with a different lifecycle parent or intent"
                 )
@@ -2662,35 +2838,42 @@ class ManagedApplicationService:
         )
         if prior_receipt is not None:
             if prior_durable is None:
+                if not prior_receipt.resource_id:
+                    raise ControlPlaneError.conflict(
+                        "Accepted lifecycle receipt has no canonical run identity"
+                    )
                 self._accept_child_durable(
                     ctx,
                     idempotency_key=idempotency_key,
                     operation=operation,
                     envelope=envelope,
                     submission_id=prior_receipt.submission_id,
-                    run_id=prior_receipt.resource_id
-                    or legacy_managed_run_id(ctx, idempotency_key, operation=operation),
+                    run_id=prior_receipt.resource_id,
                 )
             elif (
                 prior_durable.submission_id != prior_receipt.submission_id
                 or prior_durable.input_snapshot != expected_envelope
+                or prior_durable.run_id != expected_run_id
             ):
                 raise ControlPlaneError.conflict(
                     "Control-plane and execution retry snapshots are inconsistent"
                 )
             return prior_receipt
         if prior_durable is not None:
-            if prior_durable.input_snapshot != expected_envelope:
+            expected_run_id = managed_run_id(ctx, idempotency_key, operation=operation)
+            if (
+                prior_durable.run_id != expected_run_id
+                or prior_durable.input_snapshot != expected_envelope
+            ):
                 raise ControlPlaneError.conflict(
-                    "Idempotency key reuse with a different lifecycle parent or intent"
+                    "Accepted lifecycle work has no canonical identity or its intent differs"
                 )
             receipt_result = self.submissions.accept(
                 ctx,
                 idempotency_key=idempotency_key,
                 payload=payload,
                 resource_type="run",
-                resource_id=prior_durable.run_id
-                or legacy_managed_run_id(ctx, idempotency_key, operation=operation),
+                resource_id=prior_durable.run_id,
                 submission_id=prior_durable.submission_id,
                 operation=operation,
             )
@@ -2771,14 +2954,18 @@ class ManagedApplicationService:
             resource_id=managed_run_id(ctx, idempotency_key, operation=operation),
             operation=operation,
         )
+        expected_run_id = managed_run_id(ctx, idempotency_key, operation=operation)
+        if receipt_result.receipt.resource_id != expected_run_id:
+            raise ControlPlaneError.conflict(
+                "Accepted lifecycle receipt has no canonical run identity"
+            )
         self._accept_child_durable(
             ctx,
             idempotency_key=idempotency_key,
             operation=operation,
             envelope=envelope,
             submission_id=receipt_result.receipt.submission_id,
-            run_id=receipt_result.receipt.resource_id
-            or managed_run_id(ctx, idempotency_key, operation=operation),
+            run_id=expected_run_id,
         )
         if receipt_result.created and self.events is not None:
             with suppress(Exception):
@@ -2804,6 +2991,10 @@ class ManagedApplicationService:
         submission_id: str,
         run_id: str,
     ) -> SubmissionRecord:
+        if run_id != managed_run_id(ctx, idempotency_key, operation=operation):
+            raise ControlPlaneError.conflict(
+                "Accepted lifecycle work has no canonical run identity"
+            )
         get_run_value = getattr(self.submissions, "get_run", None)
         if not callable(get_run_value):
             raise ControlPlaneError(
@@ -3013,9 +3204,26 @@ class ManagedApplicationService:
         self, ctx: ControlPlaneContext, report: PipelineRunReport
     ) -> PipelineRunReport:
         """Resolve scoped accepted ownership for worker retention of legacy reports."""
-        if ARTIFACT_STORAGE_RUN_ID_KEY in report.metadata:
-            artifact_storage_run_id(report)
-            return report
+        execution = _mapping(report.metadata.get("etlantic.control_plane.execution"))
+        submission_id = execution.get("submission_id")
+        if isinstance(submission_id, str) and submission_id:
+            submission = self.durable_work.get_submission(ctx, submission_id)
+            accepted_ctx = execution_context_from_submission(submission)
+            if accepted_ctx is None or (
+                accepted_ctx.tenant.tenant_id,
+                accepted_ctx.workspace.workspace_id,
+            ) != (ctx.tenant.tenant_id, ctx.workspace.workspace_id):
+                raise ValueError("Managed report has no canonical execution authority")
+            expected_run_id = managed_run_id(
+                accepted_ctx,
+                submission.idempotency_key,
+                operation=submission.operation,
+            )
+            if submission.run_id != expected_run_id:
+                raise ValueError("Managed report has no canonical run identity")
+            return resolve_managed_artifact_report(
+                report, submission, allow_shared_reference=True
+            )
         getter = getattr(self.submissions, "get_run", None)
         if not callable(getter):
             raise ValueError(
@@ -3033,15 +3241,36 @@ class ManagedApplicationService:
             ):
                 # Scoped providers also support ordinary SDK reports, which
                 # have no accepted submission and own their run workspace.
+                if (
+                    ARTIFACT_STORAGE_RUN_ID_KEY in report.metadata
+                    and artifact_storage_run_id(report) != report.run_id
+                ):
+                    raise ValueError(
+                        "Ordinary report cannot redirect artifact ownership"
+                    ) from None
                 return report
             raise ValueError(
                 "Legacy managed artifact ownership is unavailable"
             ) from exc
-        submission_id = str(record.get("submission_id") or "")
-        if not submission_id:
+        resolved_submission_id = str(record.get("submission_id") or "")
+        if not resolved_submission_id:
             raise ValueError("Managed report has no accepted submission")
-        submission = self.durable_work.get_submission(ctx, submission_id)
-        return resolve_managed_artifact_report(report, submission)
+        submission = self.durable_work.get_submission(ctx, resolved_submission_id)
+        accepted_ctx = execution_context_from_submission(submission)
+        if accepted_ctx is None or (
+            accepted_ctx.tenant.tenant_id,
+            accepted_ctx.workspace.workspace_id,
+        ) != (ctx.tenant.tenant_id, ctx.workspace.workspace_id):
+            raise ValueError("Managed report has no canonical execution authority")
+        if submission.run_id != managed_run_id(
+            accepted_ctx,
+            submission.idempotency_key,
+            operation=submission.operation,
+        ):
+            raise ValueError("Managed report has no canonical run identity")
+        return resolve_managed_artifact_report(
+            report, submission, allow_shared_reference=True
+        )
 
     def _runtime_report(
         self,
@@ -3063,11 +3292,29 @@ class ManagedApplicationService:
         )
         submission_id = str(record.get("submission_id") or "")
         durable = self.durable_work.get_submission(ctx, submission_id)
-        run_id = (
-            durable.run_id
-            or str(record.get("resource_id") or "")
-            or legacy_managed_run_id(ctx, idempotency_key, operation=durable.operation)
+        if not isinstance(durable.run_id, str):
+            raise ControlPlaneError.conflict(
+                "Durable submission has no canonical managed run identity"
+            )
+        run_id = durable.run_id
+        accepted_ctx = execution_context_from_submission(durable)
+        if accepted_ctx is None or (
+            accepted_ctx.tenant.tenant_id,
+            accepted_ctx.workspace.workspace_id,
+        ) != (ctx.tenant.tenant_id, ctx.workspace.workspace_id):
+            raise ControlPlaneError.conflict(
+                "Durable submission has no canonical execution authority"
+            )
+        expected_run_id = managed_run_id(
+            accepted_ctx, idempotency_key, operation=durable.operation
         )
+        if (
+            run_id != expected_run_id
+            or str(record.get("run_id") or "") != expected_run_id
+        ):
+            raise ControlPlaneError.conflict(
+                "Accepted work has no consistent canonical run identity"
+            )
         report_store_error: Exception | None = None
         try:
             result = report_store.get(run_id)
@@ -3809,7 +4056,9 @@ class ManagedApplicationService:
                 status=500,
                 title="Internal Server Error",
             )
-        lease_id = _input_resource_lease_id(ctx, operation, idempotency_key)
+        lease_id = managed_input_lease_id(
+            ctx, operation=operation, idempotency_key=idempotency_key
+        )
         retain_until = datetime.now(UTC) + timedelta(
             seconds=self.input_resource_retention_seconds
         )
@@ -3971,7 +4220,13 @@ class ManagedApplicationService:
         receipt: AcceptReceipt,
     ) -> None:
         """Repair partial acceptance only while its CP1 and quota claims remain live."""
-        run_id = receipt.resource_id or legacy_managed_run_id(ctx, idempotency_key)
+        run_id = receipt.resource_id
+        if not isinstance(run_id, str) or run_id != managed_run_id(
+            ctx, idempotency_key
+        ):
+            raise ControlPlaneError.conflict(
+                "Accepted run receipt has no canonical run identity"
+            )
         get_run_value = getattr(self.submissions, "get_run", None)
         if not callable(get_run_value):
             raise ControlPlaneError(
@@ -4064,6 +4319,10 @@ class ManagedApplicationService:
         submission_id: str,
         run_id: str,
     ) -> SubmissionRecord:
+        if run_id != managed_run_id(ctx, idempotency_key):
+            raise ControlPlaneError.conflict(
+                "Accepted work has no canonical run identity"
+            )
         row, _created = self.durable_work.accept(
             ctx,
             idempotency_key=idempotency_key,
@@ -4224,47 +4483,18 @@ def _input_resource_references(
     return tuple(references[key] for key in sorted(references))
 
 
-def _input_resource_lease_id(
-    ctx: ControlPlaneContext,
-    operation: str,
-    idempotency_key: str,
-    *,
-    legacy_scope: bool = False,
-) -> str:
-    scope: dict[str, object] = {
-        "security_domain": ctx.security_domain.domain_id,
-        "tenant": ctx.tenant.tenant_id,
-        "workspace": ctx.workspace.workspace_id,
-        "owner": ctx.resource_owner_id or ctx.principal.subject,
-        "operation": operation,
-        "idempotency_key": idempotency_key,
-    }
-    if not legacy_scope:
-        scope["environment"] = ctx.environment.name
-        scope["principal"] = {
-            "issuer": ctx.principal.issuer or "",
-            "kind": ctx.principal.kind,
-            "subject": ctx.principal.subject,
-        }
-    digest = hashlib.sha256(
-        json.dumps(scope, sort_keys=True, separators=(",", ":")).encode("utf-8")
-    ).hexdigest()
-    return f"managed-input:{digest}"
-
-
 def _with_input_resource_lease(
     ctx: ControlPlaneContext,
     envelope: ExecutionEnvelope,
     *,
     operation: str,
     idempotency_key: str,
-    legacy_scope: bool = False,
 ) -> ExecutionEnvelope:
     plan = _decode_plan_document(envelope.plan_document)
     evidence_refs = dict(envelope.evidence_refs or {})
     if _input_resource_references(plan):
-        evidence_refs["input_resource_lease_id"] = _input_resource_lease_id(
-            ctx, operation, idempotency_key, legacy_scope=legacy_scope
+        evidence_refs["input_resource_lease_id"] = managed_input_lease_id(
+            ctx, operation=operation, idempotency_key=idempotency_key
         )
     else:
         evidence_refs.pop("input_resource_lease_id", None)

@@ -11,6 +11,7 @@ from datetime import UTC, datetime, timedelta
 from pathlib import Path
 from typing import Any, cast
 
+from etlantic.control_plane.errors import ControlPlaneError
 from etlantic.control_plane.models import ControlPlaneContext
 from etlantic.reports.file_store import FileReportStore
 from etlantic.reports.model import PipelineRunReport
@@ -35,6 +36,7 @@ from etlantic.runtime.artifacts import artifact_storage_path
 from etlantic.runtime.managed_execution import managed_artifact_workspace
 
 _MAX_BATCH = 1000
+_UNVERIFIED_REFERENCE_KEY = "etlantic.internal.artifact_retention_unverified"
 
 
 def cleanup_expired_run_artifacts(
@@ -83,8 +85,48 @@ def cleanup_expired_run_artifacts(
         return report_store.list()
 
     def normalize(report: PipelineRunReport) -> PipelineRunReport:
+        if _UNVERIFIED_REFERENCE_KEY in report.metadata:
+            report = replace(
+                report,
+                metadata={
+                    key: value
+                    for key, value in report.metadata.items()
+                    if key != _UNVERIFIED_REFERENCE_KEY
+                },
+            )
         missing = ARTIFACT_STORAGE_RUN_ID_KEY not in report.metadata
-        resolved = report_resolver(report) if report_resolver is not None else report
+
+        def defer_unverified() -> PipelineRunReport:
+            # One malformed ownership record must not abort an inventory pass.
+            # Defer that report and preserve its workspace conservatively below.
+            return replace(
+                report,
+                metadata={
+                    **report.metadata,
+                    RUN_ARTIFACT_RETENTION_STATE_KEY: "running",
+                    _UNVERIFIED_REFERENCE_KEY: True,
+                },
+            )
+
+        try:
+            resolved = (
+                report_resolver(report) if report_resolver is not None else report
+            )
+        except ValueError:
+            return defer_unverified()
+        except ControlPlaneError as exc:
+            if exc.status != 404:
+                raise
+            return defer_unverified()
+        if _UNVERIFIED_REFERENCE_KEY in resolved.metadata:
+            resolved = replace(
+                resolved,
+                metadata={
+                    key: value
+                    for key, value in resolved.metadata.items()
+                    if key != _UNVERIFIED_REFERENCE_KEY
+                },
+            )
         if (
             missing
             and report.intent.value in {"resume", "repair", "backfill"}
@@ -130,6 +172,7 @@ def cleanup_expired_run_artifacts(
             and ended is not None
             and ended <= cutoff
             and report.metadata.get(RUN_ARTIFACT_RETENTION_STATE_KEY) != "complete"
+            and report.metadata.get(_UNVERIFIED_REFERENCE_KEY) is not True
         )
 
     def eligible(report: PipelineRunReport) -> bool:
@@ -153,6 +196,13 @@ def cleanup_expired_run_artifacts(
     ) -> set[str]:
         protected: set[str] = set()
         for retained in reports:
+            if retained.metadata.get(_UNVERIFIED_REFERENCE_KEY) is True:
+                # Its storage identity could not be verified. Preserve every
+                # artifact in this workspace until the report can be repaired.
+                protected.update(
+                    path.stem for path in workspace.glob("*.json") if path.is_file()
+                )
+                continue
             ended = retained.ended_at
             if ended is not None and ended.tzinfo is None:
                 ended = ended.replace(tzinfo=UTC)

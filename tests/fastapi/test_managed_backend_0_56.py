@@ -65,7 +65,6 @@ from etlantic.runtime.managed_execution import (
 )
 from etlantic.runtime.request import MaterializationPolicy, RunIntent, RunRequest
 from etlantic.runtime.state import RunStatus
-from etlantic.service import managed as managed_service_module
 from etlantic.transform import functions as F
 from etlantic_fastapi import (
     ManagedBackend,
@@ -559,7 +558,7 @@ def test_standard_worker_reads_configured_csv_and_does_not_retain_row_content(
 
 
 def test_managed_worker_executes_finalized_upload_and_lease_outlives_staging_ttl(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    tmp_path: Path,
 ) -> None:
     database_url = _migrated_url(tmp_path)
     # Keep this managed resource on the explicit legacy owner so the alternate
@@ -678,32 +677,12 @@ def test_managed_worker_executes_finalized_upload_and_lease_outlives_staging_ttl
             "failed"
         )
 
-        # Simulate a prior application version accepting this lifecycle
-        # command before the lease identity included environment and principal.
-        # The current service must still recover that immutable receipt.
-        current_lease_id = managed_service_module.__dict__["_input_resource_lease_id"]
-
-        def legacy_lease_id(
-            context: ControlPlaneContext,
-            operation: str,
-            idempotency_key: str,
-            *,
-            legacy_scope: bool = False,
-        ) -> str:
-            return current_lease_id(
-                context, operation, idempotency_key, legacy_scope=True
-            )
-
-        monkeypatch.setattr(
-            managed_service_module, "_input_resource_lease_id", legacy_lease_id
-        )
+        # Repeating an accepted lifecycle command under its canonical lease
+        # scope recovers the same immutable receipt.
         retry = service.retry_run(
             ctx,
             str(receipt.resource_id),
             idempotency_key="immutable-upload-retry",
-        )
-        monkeypatch.setattr(
-            managed_service_module, "_input_resource_lease_id", current_lease_id
         )
         assert (
             service.retry_run(

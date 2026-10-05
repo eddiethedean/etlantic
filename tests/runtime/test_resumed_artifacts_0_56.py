@@ -113,7 +113,13 @@ def test_fallback_only_rerun_artifacts_expire_without_published_report_rows(
     )
     assert publication is not None
     adapter.report_store_factory = None
-    assert adapter.publish_result_publication(ctx, publication)
+    assert adapter.publish_result_publication(
+        ctx,
+        publication,
+        submission_reader=lambda submission_id: durable.get_submission(
+            ctx, submission_id
+        ),
+    )
     assert (
         service.get_run_report(ctx, child_run_id)["artifacts"][0]["status"] == "expired"
     )
@@ -403,7 +409,13 @@ def test_expired_unpublished_child_cannot_download_retained_shared_bytes(
     assert publication is not None
     service.report_store_factory = None
     adapter.report_store_factory = None
-    adapter.publish_result_publication(ctx, publication)
+    adapter.publish_result_publication(
+        ctx,
+        publication,
+        submission_reader=lambda submission_id: durable.get_submission(
+            ctx, submission_id
+        ),
+    )
     restored = managed_report_store(ctx, report_root=report_root)
     reconciled = restored.get(child_run_id)
     assert reconciled is not None and reconciled.artifacts[0].status == "expired"
@@ -797,7 +809,13 @@ def test_rerun_artifacts_download_and_cleanup_the_authoritative_workspace(
         assert publication is not None
         # Reconciliation must not overwrite expiry with the immutable old copy.
         adapter.report_store_factory = None
-        adapter.publish_result_publication(ctx, publication)
+        adapter.publish_result_publication(
+            ctx,
+            publication,
+            submission_reader=lambda submission_id: durable.get_submission(
+                ctx, submission_id
+            ),
+        )
         recovered = managed_report_store(ctx, report_root=report_root).get(child_run_id)
         assert recovered is not None and recovered.artifacts[0].status == "expired"
 
