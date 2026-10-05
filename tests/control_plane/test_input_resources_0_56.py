@@ -151,17 +151,22 @@ def test_finalized_reference_rejects_forged_version_scope_length_and_owner() -> 
             InputResourceReference.from_dict({**reference.to_dict(), **change})
 
 
-@pytest.mark.parametrize("different_principal", [
-    Principal(subject="uploads-owner", issuer="issuer-b", kind="workload"),
-    Principal(subject="uploads-owner", issuer="issuer-a", kind="service"),
-])
+@pytest.mark.parametrize(
+    "different_principal",
+    [
+        Principal(subject="uploads-owner", issuer="issuer-b", kind="workload"),
+        Principal(subject="uploads-owner", issuer="issuer-a", kind="service"),
+    ],
+)
 def test_default_input_owner_is_issuer_and_kind_qualified(
     different_principal: Principal,
 ) -> None:
     store = MemoryInputResourceStore()
     original = replace(
         _context(),
-        principal=Principal(subject="uploads-owner", issuer="issuer-a", kind="workload"),
+        principal=Principal(
+            subject="uploads-owner", issuer="issuer-a", kind="workload"
+        ),
         resource_owner_id=None,
     )
     other = replace(original, principal=different_principal)
@@ -170,7 +175,9 @@ def test_default_input_owner_is_issuer_and_kind_qualified(
     with pytest.raises(ControlPlaneError) as denied:
         store.read(other, reference)
     assert denied.value.status == 404
-    assert _finalize(store, other, b"id,name\\n2,Grace\\n").owner_id != reference.owner_id
+    assert (
+        _finalize(store, other, b"id,name\\n2,Grace\\n").owner_id != reference.owner_id
+    )
 
 
 def test_legacy_subject_owner_requires_trusted_mapping_for_existing_resources() -> None:
@@ -206,19 +213,26 @@ def test_sqlmodel_default_input_owner_is_issuer_qualified(tmp_path: Path) -> Non
         store = SqlModelInputResourceStore(engine)
         original = replace(
             _context(),
-            principal=Principal(subject="uploads-owner", issuer="issuer-a", kind="human"),
+            principal=Principal(
+                subject="uploads-owner", issuer="issuer-a", kind="human"
+            ),
             resource_owner_id=None,
         )
         other = replace(
             original,
-            principal=Principal(subject="uploads-owner", issuer="issuer-b", kind="human"),
+            principal=Principal(
+                subject="uploads-owner", issuer="issuer-b", kind="human"
+            ),
         )
         reference = _finalize(store, original, b"id,name\\n1,Ada\\n")
 
         with pytest.raises(ControlPlaneError) as denied:
             store.read(other, reference)
         assert denied.value.status == 404
-        assert _finalize(store, other, b"id,name\\n2,Grace\\n").owner_id != reference.owner_id
+        assert (
+            _finalize(store, other, b"id,name\\n2,Grace\\n").owner_id
+            != reference.owner_id
+        )
     finally:
         engine.dispose()
 

@@ -512,7 +512,12 @@ def test_managed_worker_executes_required_provider_pairing(
                 source_simulator = (
                     simulator_a if source_kind == "foundry_a" else simulator_b
                 )
-                source_simulator.files.pop(("main", "seed/input.csv"))
+                # The source is pinned to an immutable transaction snapshot;
+                # removing only the live branch file leaves that snapshot
+                # readable and does not inject the intended source failure.
+                source_simulator.transaction_snapshots[
+                    source_simulator.pinned_transaction
+                ].pop(("main", "seed/input.csv"), None)
             elif source_kind == "postgresql":
                 with pg_engine.begin() as connection:
                     connection.execute(text(f'DROP TABLE public."{source_table}"'))

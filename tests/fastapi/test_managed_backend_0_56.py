@@ -562,7 +562,9 @@ def test_managed_worker_executes_finalized_upload_and_lease_outlives_staging_ttl
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     database_url = _migrated_url(tmp_path)
-    ctx = _context()
+    # Keep this managed resource on the explicit legacy owner so the alternate
+    # trusted context below exercises the documented compatibility mapping.
+    ctx = replace(_context(), resource_owner_id="managed-backend-test")
     target = tmp_path / "immutable-upload-output.csv"
     content = "\ufeffid;name\n91;Gráce\n".encode("utf-8")
     profile = Profile(

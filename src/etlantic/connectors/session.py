@@ -185,6 +185,7 @@ async def write_via_sink_connector(
         await connector.write_batch(session, data, context=context)
         await connector.prepare(session, context=context)
     except BaseException as exc:
+        aborted: object = None
         try:
             # Cancellation must not interrupt provider rollback after a session
             # has been created. The caller still observes the original cancel.
@@ -234,20 +235,20 @@ async def write_via_sink_connector(
         )
         reconcile = getattr(connector, "reconcile", None)
         if callable(reconcile):
+            result: object = None
             try:
                 with anyio.CancelScope(shield=True):
-                    result = await maybe_await(
-                        reconcile, receipt, context=context
-                    )
-                if (
-                    isinstance(result, CommitReceipt)
-                    and result.status in {"committed", "rolled_back", "unknown"}
-                ):
+                    result = await maybe_await(reconcile, receipt, context=context)
+                if isinstance(result, CommitReceipt) and result.status in {
+                    "committed",
+                    "rolled_back",
+                    "unknown",
+                }:
                     receipt = result
             except BaseException:
                 pass
         with suppress(AttributeError, TypeError):
-            exc.commit_receipt = receipt
+            cast(Any, exc).commit_receipt = receipt
         raise
     if not isinstance(receipt, CommitReceipt):
         return CommitReceipt(

@@ -626,11 +626,13 @@ def test_legacy_envelope_quota_cleanup_derives_admission_key(tmp_path: Path) -> 
         {**envelope.to_dict(), "evidence_refs": {}}
     )
     legacy_record = replace(record, input_snapshot=legacy_envelope.to_json())
+    durable_state = cast(Any, durable)
     row_key = next(
-        key for key, value in durable._submissions.items()
+        key
+        for key, value in durable_state._submissions.items()
         if value.submission_id == receipt.submission_id
     )
-    durable._submissions[row_key] = legacy_record
+    durable_state._submissions[row_key] = legacy_record
 
     service.cancel_run(ctx, receipt.resource_id)
     host = ExecutionHost(durable, quota_provider=quota)
@@ -653,16 +655,18 @@ def test_cp1_only_legacy_envelope_recovers_quota_admission(tmp_path: Path) -> No
     legacy_envelope = ExecutionEnvelope.from_dict(
         {**envelope.to_dict(), "evidence_refs": {}}
     )
+    durable_state = cast(Any, durable)
     row_key = next(
-        key for key, value in durable._submissions.items()
+        key
+        for key, value in durable_state._submissions.items()
         if value.submission_id == receipt.submission_id
     )
-    del durable._submissions[row_key]
-    for key, submission_id in tuple(durable._idempotency.items()):
+    del durable_state._submissions[row_key]
+    for key, submission_id in tuple(durable_state._idempotency.items()):
         if submission_id == receipt.submission_id:
-            del durable._idempotency[key]
+            del durable_state._idempotency[key]
 
-    service._recover_cp1_only_submission(
+    cast(Any, service)._recover_cp1_only_submission(
         ctx,
         idempotency_key="legacy-quota-recovery",
         envelope=legacy_envelope,

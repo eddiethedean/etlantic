@@ -39,7 +39,11 @@ from pathlib import Path
 # existing suppression locations without adding or removing directives.
 # Issue #243 completes principal-scoped idempotency. No suppression was added
 # or removed; the 784-entry inventory is re-pinned after source-line shifts.
-EXPECTED_DIGEST = "80435ee511f6057e5189eabdb12b75e276e428c57302c917a6f029cd1379b02c"
+# Merged phase 0.56 quota durability adds five reviewed SQLModel snapshot
+# adapter suppressions: one for the ORM-generated table attribute and four for
+# restoring private MemoryQuotaProvider state as part of the durable snapshot.
+# The 789-entry inventory is pinned after those additions and line shifts.
+EXPECTED_DIGEST = "ae77ae88f5c1c1f885b80a0a0291655c9218fdc23875974871f92dae89a81a58"
 
 _IGNORED_DIRECTORIES = frozenset(
     {

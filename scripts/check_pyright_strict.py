@@ -110,8 +110,14 @@ EXPECTED_DIGESTS = {
     # 9,868 diagnostics; the regular strict Pyright run remains clean.
     # Issue #243 updates a stale test key to the full principal identity,
     # removing one diagnostic; the reviewed inventory is now 9,863.
-    "Darwin": "e2c6f3a533f673b674e537b83f65dd68fe2725aae14baf10f0a32683ea8c95ae",
-    "Linux": "e2c6f3a533f673b674e537b83f65dd68fe2725aae14baf10f0a32683ea8c95ae",
+    # Phase 0.56 adds the managed application recovery/admission contract
+    # matrix. Reviewing the shadow delta against the pre-merge tree attributes
+    # 138 diagnostics to the new tests and quota-memory state; other touched
+    # tests remove 22, for a net increase of 116. The normal Pyright gate
+    # remains clean.
+    # The reviewed suppression-free inventory is 10,001 diagnostics.
+    "Darwin": "66d2a57fe31fc286ca859a461b2f0721b2a8acb7c7f313f2ba6ae575a280c51d",
+    "Linux": "66d2a57fe31fc286ca859a461b2f0721b2a8acb7c7f313f2ba6ae575a280c51d",
 }
 
 

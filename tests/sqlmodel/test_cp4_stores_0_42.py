@@ -6,6 +6,7 @@ from __future__ import annotations
 from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 from threading import Barrier, Event, local
+from typing import Any
 
 import pytest
 
@@ -131,13 +132,20 @@ def test_quota_snapshot_rejects_stale_compensation_after_new_claim(
     thread_state = local()
 
     class CoordinatedQuota(SQLModelQuotaProvider):
-        def _read(self, session, *, for_update):
+        def _read(self, session: Any, *, for_update: bool) -> tuple[Any, int]:
             snapshot = super()._read(session, for_update=for_update)
             if for_update:
                 both_read.wait(timeout=10)
             return snapshot
 
-    def order_updates(_connection, _cursor, statement, _parameters, _context, _many):
+    def order_updates(
+        _connection: Any,
+        _cursor: Any,
+        statement: str,
+        _parameters: Any,
+        _context: Any,
+        _many: bool,
+    ) -> None:
         if (
             not statement.lstrip()
             .upper()

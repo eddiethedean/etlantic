@@ -251,8 +251,7 @@ class FoundrySimulator:
                 "transactionRid": file.transaction_rid,
             }
             for (file_branch, path), file in sorted(visible_files.items())
-            if file_branch == branch
-            and (not prefix or path.startswith(str(prefix)))
+            if file_branch == branch and (not prefix or path.startswith(str(prefix)))
         ]
         requested_page_size = query.get("pageSize", self.page_size)
         if isinstance(requested_page_size, bool) or not isinstance(

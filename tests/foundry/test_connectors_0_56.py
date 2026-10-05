@@ -3,7 +3,8 @@ from __future__ import annotations
 import asyncio
 import hashlib
 import json
-from typing import Any
+from collections.abc import Mapping
+from typing import Any, cast
 from urllib.parse import unquote
 
 import anyio
@@ -20,7 +21,7 @@ from etlantic.connectors.errors import (
     ConnectorReadError,
     ConnectorWriteError,
 )
-from etlantic.connectors.models import CommitReceipt
+from etlantic.connectors.models import CommitReceipt, ReconciliationResult
 from etlantic.connectors.session import write_via_sink_connector
 from etlantic.secrets import SecretValue
 
@@ -428,7 +429,7 @@ def test_sink_cancellation_aborts_open_foundry_transaction() -> None:
         raise AssertionError(f"unexpected request: {request.method} {request.url}")
 
     class WaitingSink(FoundrySinkConnector):
-        async def prepare(self, session: Any, *, context: dict[str, Any]) -> None:
+        async def prepare(self, session: Any, *, context: Mapping[str, Any]) -> None:
             del session, context
             preparing.set()
             await asyncio.Event().wait()
@@ -462,7 +463,10 @@ def test_sink_commit_cancellation_reconciles_without_aborting() -> None:
             events.append("create")
             return httpx2.Response(
                 200,
-                json={"rid": "ri.foundry.main.transaction.commit-cancel", "status": "OPEN"},
+                json={
+                    "rid": "ri.foundry.main.transaction.commit-cancel",
+                    "status": "OPEN",
+                },
             )
         if path.endswith("/files"):
             return httpx2.Response(200, json={"data": []})
@@ -471,29 +475,31 @@ def test_sink_commit_cancellation_reconciles_without_aborting() -> None:
             return httpx2.Response(
                 200,
                 json={
-                    "path": unquote(
-                        path.split("/files/", 1)[1].removesuffix("/upload")
-                    )
+                    "path": unquote(path.split("/files/", 1)[1].removesuffix("/upload"))
                 },
             )
-        if path.endswith("/transactions/ri.foundry.main.transaction.commit-cancel/abort"):
+        if path.endswith(
+            "/transactions/ri.foundry.main.transaction.commit-cancel/abort"
+        ):
             events.append("abort")
             return httpx2.Response(200, json={"status": "ABORTED"})
         raise AssertionError(f"unexpected request: {request.method} {request.url}")
 
     class WaitingCommitSink(FoundrySinkConnector):
-        async def commit(self, session: Any, *, context: dict[str, Any]) -> CommitReceipt:
+        async def commit(
+            self, session: Any, *, context: Mapping[str, Any]
+        ) -> CommitReceipt:
             del context
             committing.set()
             await asyncio.Event().wait()
             return CommitReceipt(status="committed", session_id=session.session_id)
 
         async def reconcile(
-            self, receipt: CommitReceipt, *, context: dict[str, Any]
-        ) -> CommitReceipt:
+            self, receipt: CommitReceipt, *, context: Mapping[str, Any]
+        ) -> ReconciliationResult:
             del context
             events.append("reconcile")
-            return receipt
+            return ReconciliationResult(status=receipt.status)
 
     connector = WaitingCommitSink(transport=httpx2.MockTransport(handler))
     context = _secret()
@@ -511,7 +517,7 @@ def test_sink_commit_cancellation_reconciles_without_aborting() -> None:
         task.cancel()
         with pytest.raises(asyncio.CancelledError) as cancelled:
             await task
-        receipt = cancelled.value.commit_receipt
+        receipt = cast(CommitReceipt, cast(Any, cancelled.value).commit_receipt)
         assert receipt.status == "unknown"
         assert receipt.session_id
 

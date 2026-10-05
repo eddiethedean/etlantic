@@ -37,9 +37,6 @@ def _iso(value: datetime) -> str:
     return value.isoformat().replace("+00:00", "Z")
 
 
-_LOG = logging.getLogger(__name__)
-
-
 class SchedulerService:
     """Leader-elected due-timer scanner. Production must split from FastAPI."""
 
