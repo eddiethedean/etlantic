@@ -108,8 +108,10 @@ EXPECTED_DIGESTS = {
     # Issues #220-222 revise durable workspace recovery, definition CAS,
     # registry storage and PostgreSQL batching. The reviewed shadow scan has
     # 9,868 diagnostics; the regular strict Pyright run remains clean.
-    "Darwin": "353e8bd9ba3c922f66fa62e051e42609b895ddccf8f128a0db2797e4ac270f69",
-    "Linux": "353e8bd9ba3c922f66fa62e051e42609b895ddccf8f128a0db2797e4ac270f69",
+    # Issue #243 updates a stale test key to the full principal identity,
+    # removing one diagnostic; the reviewed inventory is now 9,863.
+    "Darwin": "e2c6f3a533f673b674e537b83f65dd68fe2725aae14baf10f0a32683ea8c95ae",
+    "Linux": "e2c6f3a533f673b674e537b83f65dd68fe2725aae14baf10f0a32683ea8c95ae",
 }
 
 

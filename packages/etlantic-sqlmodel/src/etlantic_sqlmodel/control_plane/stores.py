@@ -50,6 +50,7 @@ _EVENT_APPEND_MAX_ATTEMPTS = 3
 _EVENT_IDEMPOTENCY_SWEEP_BATCH_SIZE = MAX_EVENT_IDEMPOTENCY_PRUNE_BATCH
 _EVENT_SEQUENCE_CONSTRAINT = "uq_cp_event_scope_seq"
 _EVENT_IDEMPOTENCY_CONSTRAINT = "uq_cp_event_scope_idem"
+_UNRESOLVED_PRINCIPAL_KIND = "legacy_unresolved"
 
 
 def _event_idempotency_table() -> Table:
@@ -258,6 +259,8 @@ class SQLModelSubmissionStore:
                 row = SubmissionRow(
                     tenant_id=ctx.tenant.tenant_id,
                     workspace_id=ctx.workspace.workspace_id,
+                    principal_issuer=ctx.principal.issuer or "",
+                    principal_kind=ctx.principal.kind,
                     principal_subject=ctx.principal.subject,
                     operation=operation,
                     idempotency_key=idempotency_key,
@@ -355,11 +358,29 @@ class SQLModelSubmissionStore:
         statement = select(SubmissionRow).where(
             SubmissionRow.tenant_id == ctx.tenant.tenant_id,
             SubmissionRow.workspace_id == ctx.workspace.workspace_id,
+            SubmissionRow.principal_issuer == (ctx.principal.issuer or ""),
+            SubmissionRow.principal_kind == ctx.principal.kind,
             SubmissionRow.principal_subject == ctx.principal.subject,
             SubmissionRow.operation == operation,
             SubmissionRow.idempotency_key == idempotency_key,
         )
-        return session.exec(statement).first()
+        row = session.exec(statement).first()
+        if row is not None:
+            return row
+        unresolved = select(SubmissionRow).where(
+            SubmissionRow.tenant_id == ctx.tenant.tenant_id,
+            SubmissionRow.workspace_id == ctx.workspace.workspace_id,
+            SubmissionRow.principal_kind == _UNRESOLVED_PRINCIPAL_KIND,
+            SubmissionRow.principal_subject == ctx.principal.subject,
+            SubmissionRow.operation == operation,
+            SubmissionRow.idempotency_key == idempotency_key,
+        )
+        if session.exec(unresolved).first() is not None:
+            raise ControlPlaneError.conflict(
+                "Legacy acceptance has no verified principal identity",
+                extensions={"reason": "legacy_principal_unresolved"},
+            )
+        return None
 
     @staticmethod
     def _by_run(

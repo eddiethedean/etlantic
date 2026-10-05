@@ -138,6 +138,8 @@ def test_landing_watch_submitter_e2e(tmp_path: Path) -> None:
     stored_payload = subs._payloads[
         (
             *ctx.scope_key,
+            ctx.principal.issuer or "",
+            ctx.principal.kind,
             ctx.principal.subject,
             "run.submit",
             receipts[0]["idempotency_key"],

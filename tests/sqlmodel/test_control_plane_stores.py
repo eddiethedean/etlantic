@@ -3,8 +3,10 @@
 
 from __future__ import annotations
 
+import json
 from concurrent.futures import ThreadPoolExecutor
 from dataclasses import replace
+from importlib import import_module
 from pathlib import Path
 
 import pytest
@@ -12,6 +14,7 @@ import pytest
 pytest.importorskip("sqlmodel")
 pytest.importorskip("etlantic_sqlmodel")
 
+from sqlalchemy import text
 from sqlalchemy.exc import IntegrityError
 
 from etlantic.control_plane import (
@@ -102,6 +105,151 @@ def test_sqlite_acceptance_keeps_same_key_isolated_by_principal(
         store.get_run(bob, bob_run_id)["submission_id"]
         == bob_result.receipt.submission_id
     )
+
+
+@pytest.mark.parametrize(
+    "other_principal",
+    [
+        Principal(subject="alice", issuer="issuer-b", kind="human"),
+        Principal(subject="alice", issuer="issuer-a", kind="workload"),
+    ],
+    ids=["different-issuer", "different-kind"],
+)
+def test_sqlite_acceptance_scopes_idempotency_to_complete_principal(
+    tmp_path: Path, other_principal: Principal
+) -> None:
+    engine = create_sqlite_engine(f"sqlite:///{tmp_path / 'cp-complete-principal.db'}")
+    create_control_plane_tables(engine)
+    store = SQLModelSubmissionStore(engine)
+    base = replace(_ctx(), principal=Principal(subject="alice", issuer="issuer-a"))
+    other = replace(base, principal=other_principal)
+
+    first = store.accept(
+        base, idempotency_key="shared-key", payload={"definition_id": "pipe"}
+    ).receipt
+    second = store.accept(
+        other, idempotency_key="shared-key", payload={"definition_id": "pipe"}
+    ).receipt
+
+    assert first.submission_id != second.submission_id
+    assert store.lookup_idempotency(base, "shared-key") == first
+    assert store.lookup_idempotency(other, "shared-key") == second
+    assert (
+        store.accept(
+            base, idempotency_key="shared-key", payload={"definition_id": "pipe"}
+        ).receipt
+        == first
+    )
+    assert (
+        store.accept(
+            other, idempotency_key="shared-key", payload={"definition_id": "pipe"}
+        ).receipt
+        == second
+    )
+
+
+def _insert_legacy_cp1_receipt(engine, ctx: ControlPlaneContext) -> None:
+    with engine.begin() as connection:
+        connection.execute(
+            text(
+                "CREATE TABLE cp_submissions (id INTEGER PRIMARY KEY, "
+                "tenant_id VARCHAR NOT NULL, workspace_id VARCHAR NOT NULL, "
+                "principal_subject VARCHAR NOT NULL, operation VARCHAR NOT NULL, "
+                "idempotency_key VARCHAR NOT NULL, acceptance_id VARCHAR NOT NULL, "
+                "submission_id VARCHAR NOT NULL, created_at VARCHAR NOT NULL, "
+                "status VARCHAR NOT NULL, resource_type VARCHAR NOT NULL, "
+                "resource_id VARCHAR, payload_json VARCHAR NOT NULL, "
+                "run_status VARCHAR NOT NULL, updated_at VARCHAR, definition_id VARCHAR, "
+                "CONSTRAINT uq_cp_submission_idem UNIQUE (tenant_id, workspace_id, "
+                "principal_subject, operation, idempotency_key))"
+            )
+        )
+        connection.execute(
+            text(
+                "INSERT INTO cp_submissions "
+                "(tenant_id, workspace_id, principal_subject, operation, "
+                "idempotency_key, acceptance_id, submission_id, created_at, status, "
+                "resource_type, resource_id, payload_json, run_status, updated_at, "
+                "definition_id) VALUES (:tenant, :workspace, :subject, :operation, "
+                ":key, :acceptance, :submission, :created, :status, :resource_type, "
+                ":resource, :payload, :run_status, :updated, :definition)"
+            ),
+            {
+                "tenant": ctx.tenant.tenant_id,
+                "workspace": ctx.workspace.workspace_id,
+                "subject": ctx.principal.subject,
+                "operation": "run.submit",
+                "key": "legacy-key",
+                "acceptance": "acc-legacy",
+                "submission": "sub-legacy",
+                "created": "2026-10-04T00:00:00Z",
+                "status": "accepted",
+                "resource_type": "run",
+                "resource": "run-legacy",
+                "payload": '{"definition_id":"pipe"}',
+                "run_status": "accepted",
+                "updated": "2026-10-04T00:00:00Z",
+                "definition": "pipe",
+            },
+        )
+
+
+def test_sqlite_acceptance_blocks_unresolved_legacy_receipt(tmp_path: Path) -> None:
+    engine = create_sqlite_engine(f"sqlite:///{tmp_path / 'cp-legacy-principal.db'}")
+    ctx = _ctx()
+    _insert_legacy_cp1_receipt(engine, ctx)
+    migration = import_module(
+        "etlantic_sqlmodel.migrations.versions.014_cp1_complete_principal_idempotency_0_56"
+    )
+    migration.upgrade(engine)
+    with pytest.raises(ControlPlaneError, match="no verified principal identity"):
+        SQLModelSubmissionStore(engine).lookup_idempotency(ctx, "legacy-key")
+
+
+def test_sqlite_migration_recovers_legacy_receipt_identity_from_cp3(
+    tmp_path: Path,
+) -> None:
+    engine = create_sqlite_engine(f"sqlite:///{tmp_path / 'cp-recover-principal.db'}")
+    base = _ctx()
+    owner = replace(
+        base,
+        principal=Principal(subject="alice", issuer="issuer-a", kind="workload"),
+    )
+    _insert_legacy_cp1_receipt(engine, base)
+    cp3_submission = {
+        "submission_id": "sub-legacy",
+        "tenant_id": owner.tenant.tenant_id,
+        "workspace_id": owner.workspace.workspace_id,
+        "principal_subject": owner.principal.subject,
+        "principal_issuer": owner.principal.issuer,
+        "principal_kind": owner.principal.kind,
+        "operation": "run.submit",
+        "idempotency_key": "legacy-key",
+    }
+    with engine.begin() as connection:
+        connection.execute(
+            text(
+                "CREATE TABLE cp_durable_snapshot (id INTEGER PRIMARY KEY, "
+                "store_id VARCHAR NOT NULL, payload_json TEXT NOT NULL)"
+            )
+        )
+        connection.execute(
+            text(
+                "INSERT INTO cp_durable_snapshot (store_id, payload_json) "
+                "VALUES (:store_id, :payload)"
+            ),
+            {
+                "store_id": "default",
+                "payload": json.dumps({"submissions": {"entry": cp3_submission}}),
+            },
+        )
+    migration = import_module(
+        "etlantic_sqlmodel.migrations.versions.014_cp1_complete_principal_idempotency_0_56"
+    )
+    migration.upgrade(engine)
+    receipt = SQLModelSubmissionStore(engine).lookup_idempotency(owner, "legacy-key")
+    assert receipt is not None
+    assert receipt.submission_id == "sub-legacy"
 
 
 def test_sqlite_event_store_restart(tmp_path: Path) -> None:

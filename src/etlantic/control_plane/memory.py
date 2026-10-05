@@ -60,11 +60,13 @@ def _idem_key(
     idempotency_key: str,
     *,
     operation: str,
-) -> tuple[str, str, str, str, str]:
-    """ADR-016 scoped idempotency tuple."""
+) -> tuple[str, str, str, str, str, str, str]:
+    """Full principal-scoped idempotency tuple used by CP1 and CP3."""
     return (
         ctx.tenant.tenant_id,
         ctx.workspace.workspace_id,
+        ctx.principal.issuer or "",
+        ctx.principal.kind,
         ctx.principal.subject,
         operation,
         idempotency_key,
@@ -233,10 +235,10 @@ class MemorySubmissionStore:
     is durable store commit only — no pipeline execution and no BackgroundTasks.
     """
 
-    _by_id: dict[tuple[str, str, str, str, str], AcceptReceipt] = field(
+    _by_id: dict[tuple[str, str, str, str, str, str, str], AcceptReceipt] = field(
         default_factory=dict
     )
-    _payloads: dict[tuple[str, str, str, str, str], dict[str, Any]] = field(
+    _payloads: dict[tuple[str, str, str, str, str, str, str], dict[str, Any]] = field(
         default_factory=dict
     )
     _runs: dict[tuple[str, str, str], dict[str, Any]] = field(default_factory=dict)

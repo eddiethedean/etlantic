@@ -56,8 +56,8 @@ def _ctx(
 
 def test_migration_includes_durable_cp3(tmp_path: Path) -> None:
     engine = create_sqlite_engine(f"sqlite:///{tmp_path / 'd.db'}")
-    assert apply_migrations(engine) == "013_durable_submission_scope_backfill_0_56"
-    assert current_version(engine) == "013_durable_submission_scope_backfill_0_56"
+    assert apply_migrations(engine) == "014_cp1_complete_principal_idempotency_0_56"
+    assert current_version(engine) == "014_cp1_complete_principal_idempotency_0_56"
 
 
 def test_scope_backfill_migration_restores_legacy_snapshot_submissions(
@@ -98,12 +98,12 @@ def test_scope_backfill_migration_restores_legacy_snapshot_submissions(
         )
         session.commit()
 
-    assert upgrade(engine) == "013_durable_submission_scope_backfill_0_56"
+    assert upgrade(engine) == "014_cp1_complete_principal_idempotency_0_56"
     assert (
         downgrade(engine, target="012_bounded_event_tombstone_retention_0_56")
         == "012_bounded_event_tombstone_retention_0_56"
     )
-    assert upgrade(engine) == "013_durable_submission_scope_backfill_0_56"
+    assert upgrade(engine) == "014_cp1_complete_principal_idempotency_0_56"
     page = SQLModelDurableWorkStore(engine).list_execution_scopes(_ctx())
 
     assert page.next_cursor is None
