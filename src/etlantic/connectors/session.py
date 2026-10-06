@@ -96,12 +96,41 @@ async def write_via_storage_session(
     session: WriteSession = await adapter.begin_write(
         plan=plan, binding=binding, context=context
     )
+    commit_started = False
     try:
         await adapter.write_batch(session, data, context=context)
         await adapter.prepare(session, context=context)
+        # Once commit starts, a raised exception or cancellation cannot prove
+        # that the legacy StorageBinding had no effect. Never abort that write.
+        commit_started = True
         return await adapter.commit(session, context=context)
-    except Exception as exc:
-        await adapter.abort(session, context=context)
+    except BaseException as exc:
+        if commit_started:
+            receipt = getattr(exc, "commit_receipt", None)
+            if not isinstance(receipt, CommitReceipt):
+                receipt = CommitReceipt(
+                    status="unknown",
+                    session_id=session.session_id,
+                    provider=session.provider,
+                    message="Storage write outcome was not acknowledged",
+                    metadata=dict(session.metadata),
+                )
+            with suppress(AttributeError, TypeError):
+                cast(Any, exc).commit_receipt = receipt
+            if not isinstance(exc, Exception):
+                raise
+            return receipt
+
+        try:
+            # Do not let cancellation interrupt cleanup of the local adapter
+            # session before the external write has started.
+            with anyio.CancelScope(shield=True):
+                await adapter.abort(session, context=context)
+        except BaseException:
+            if not isinstance(exc, Exception):
+                raise exc from None
+        if not isinstance(exc, Exception):
+            raise
         raise ConnectorWriteError(
             str(exc),
             code="PMCONN801",

@@ -122,8 +122,11 @@ EXPECTED_DIGESTS = {
     # The completed AC056-031 resume/reconciliation matrix adds 27 reviewed
     # suppression-free test diagnostics. The runtime changes pass regular
     # Pyright; the shadow inventory is now 10,038.
-    "Darwin": "1c5297872f41d492a32d1e35aec1c4f7f174150ad0ee2c5c5c5ad00d77a7436b",
-    "Linux": "1c5297872f41d492a32d1e35aec1c4f7f174150ad0ee2c5c5c5ad00d77a7436b",
+    # Compatibility cancellation receipts and catalog kind validation shift
+    # existing diagnostic locations. The reviewed normalized inventory is
+    # unchanged at 10,038 diagnostics.
+    "Darwin": "b84604fa7aa081ed11851dbdd6243ee839fa240dca83410c2d1bac4988e92863",
+    "Linux": "b84604fa7aa081ed11851dbdd6243ee839fa240dca83410c2d1bac4988e92863",
 }
 
 

@@ -1188,7 +1188,10 @@ class ManagedExecutionAdapter:
         if report.status is RunStatus.SUCCEEDED:
             status, kind = "completed", "run.completed"
         elif report.status is RunStatus.CANCELLED:
-            status, kind = "cancelled", "run.cancelled"
+            if classify_failed_report_effect(report) == "unknown":
+                status, kind = "unknown", "run.reconciliation_required"
+            else:
+                status, kind = "cancelled", "run.cancelled"
         elif report.status is RunStatus.FAILED:
             if classify_failed_report_effect(report) == "unknown":
                 status, kind = "unknown", "run.reconciliation_required"

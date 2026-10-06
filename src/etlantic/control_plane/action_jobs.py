@@ -158,7 +158,9 @@ class ConnectorCatalogRequest:
                 title="Bad Request",
                 type="etlantic.control_plane/bad_request",
             )
-        if kind is not None and kind not in {"source", "sink", "storage"}:
+        if kind is not None and (
+            not isinstance(kind, str) or kind not in {"source", "sink", "storage"}
+        ):
             raise ControlPlaneError(
                 "Connector catalog kind is invalid",
                 code="PMCP400",
@@ -166,6 +168,7 @@ class ConnectorCatalogRequest:
                 title="Bad Request",
                 type="etlantic.control_plane/bad_request",
             )
+        kind = cast(CatalogConnectorKind | None, kind)
         return cls(limit, cursor, kind, provider, connection_id)
 
     def to_dict(self) -> dict[str, Any]:

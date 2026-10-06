@@ -5549,16 +5549,45 @@ class LocalOrchestrator:
                     data=data,
                     context=context,
                 )
-            except Exception as exc:
-                # Write raised before a receipt — nothing published; discard OK.
-                if hasattr(pending_source_connector, "discard_proposal"):
-                    pending_source_connector.discard_proposal()
-                raise NodeExecutionError(
-                    redact_message(str(exc)),
-                    node_name=node.name,
-                    stage=FailureStage.WRITE.value,
-                    code=getattr(exc, "code", None) or "PMEXEC431",
-                ) from exc
+            except BaseException as exc:
+                # A legacy StorageBinding can be cancelled after its external
+                # write begins. Preserve the unknown receipt in the report and
+                # source barrier before propagating cancellation.
+                receipt = getattr(exc, "commit_receipt", None)
+                if receipt is not None:
+                    if self._publication_barrier is not None:
+                        self._publication_barrier.record(receipt)
+                    self._sink_commit_receipts.append(receipt)
+                    status = getattr(receipt, "status", "unknown")
+                    publication_id = getattr(receipt, "publication_id", None)
+                    self._publication_receipt_summaries.append(
+                        {
+                            "status": status,
+                            "publication_id": publication_id,
+                            "unit_id": node.name,
+                            "provider": provider_name,
+                        }
+                    )
+                    if status == "unknown":
+                        self._unknown_publications.append(
+                            {
+                                "status": "unknown",
+                                "code": "PMADP524",
+                                "publication_id": publication_id,
+                                "binding": binding_name,
+                                "provider": provider_name,
+                            }
+                        )
+                if isinstance(exc, Exception):
+                    if hasattr(pending_source_connector, "discard_proposal"):
+                        pending_source_connector.discard_proposal()
+                    raise NodeExecutionError(
+                        redact_message(str(exc)),
+                        node_name=node.name,
+                        stage=FailureStage.WRITE.value,
+                        code=getattr(exc, "code", None) or "PMEXEC431",
+                    ) from exc
+                raise
             if getattr(receipt, "status", None) == "unknown":
                 receipt = await self._reconcile_unknown_receipt(
                     receipt,
@@ -5571,6 +5600,25 @@ class LocalOrchestrator:
                 barrier.record(receipt)
             self._sink_commit_receipts.append(receipt)
             status = getattr(receipt, "status", None)
+            publication_id = getattr(receipt, "publication_id", None)
+            self._publication_receipt_summaries.append(
+                {
+                    "status": status,
+                    "publication_id": publication_id,
+                    "unit_id": node.name,
+                    "provider": provider_name,
+                }
+            )
+            if status == "unknown":
+                self._unknown_publications.append(
+                    {
+                        "status": "unknown",
+                        "code": "PMADP524",
+                        "publication_id": publication_id,
+                        "binding": binding_name,
+                        "provider": provider_name,
+                    }
+                )
             if status == "rolled_back":
                 if hasattr(pending_source_connector, "discard_proposal"):
                     pending_source_connector.discard_proposal()
