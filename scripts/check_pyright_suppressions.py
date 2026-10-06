@@ -45,7 +45,10 @@ from pathlib import Path
 # adapter suppressions: one for the ORM-generated table attribute and four for
 # restoring private MemoryQuotaProvider state as part of the durable snapshot.
 # The 789-entry inventory is pinned after those additions and line shifts.
-EXPECTED_DIGEST = "80bd46083f7b3dfbed7d1e250f06a742d1af4248b15bda0184a3fcbb032e88a1"
+# AC056-031 effect classification and managed recovery changes shifted existing
+# directives. Token review found no suppressions added or removed; re-pin the
+# 789-entry inventory.
+EXPECTED_DIGEST = "a3f39032344217676bef74f241cc583aee71a559f1e5b5e80d2a04bddd0defd8"
 
 _IGNORED_DIRECTORIES = frozenset(
     {

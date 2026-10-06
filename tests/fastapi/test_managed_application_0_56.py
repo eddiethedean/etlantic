@@ -70,11 +70,15 @@ from etlantic.control_plane import (
 from etlantic.control_plane.durable_models import SubmissionRecord
 from etlantic.control_plane.errors import ControlPlaneError
 from etlantic.lifecycle.runtime import PipelineRuntime
-from etlantic.profile import Profile, resolve_profile
+from etlantic.profile import PlacementTarget, Profile, resolve_profile
 from etlantic.registry import BindingDescriptor, PlanningContext
 from etlantic.runtime.action_execution_host import ActionExecutionHost
 from etlantic.runtime.execution_host import ExecutionHost
-from etlantic.runtime.managed_execution import ManagedExecutionAdapter, managed_run_id
+from etlantic.runtime.managed_execution import (
+    ManagedExecutionAdapter,
+    managed_artifact_workspace,
+    managed_run_id,
+)
 from etlantic.runtime.request import (
     MaterializationPolicy,
     RunIntent,
@@ -115,6 +119,33 @@ class ManagedPipeline(Pipeline):
 class ManagedFilePipeline(Pipeline):
     raw: Extract[Row] = Extract(asset="file-in")
     output: Load[Row] = Load(input=raw, asset="file-out")
+
+
+class ResumeProject(Transformation):
+    rows: Input[Row]
+    result: Output[Row]
+
+
+@ResumeProject.portable
+def _resume_project(rows):
+    return rows.select("id")
+
+
+class ResumeGuard(Transformation):
+    rows: Input[Row]
+    result: Output[Row]
+
+
+@ResumeGuard.portable
+def _resume_guard(rows):
+    return rows.select("id")
+
+
+class ManagedCheckpointResumePipeline(Pipeline):
+    raw: Extract[Row] = Extract(asset="rows")
+    first = ResumeProject.step(rows=raw)
+    second = ResumeGuard.step(rows=first.result)
+    output: Load[Row] = Load(input=second.result, asset="out")
 
 
 class LimitRows(Transformation):
@@ -3318,6 +3349,222 @@ def test_managed_resume_rejects_checkpoint_without_runtime_restore_state(
     assert direct.value.extensions["reason"] == "checkpoint_restore_unavailable"
     assert tuple(durable.pending_outbox(ctx)) == pending_outbox
 
+
+def test_managed_resume_restores_persisted_checkpoint_after_worker_restart(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    ctx, authz, _definitions, _submissions, durable, _events, service = _wired(
+        tmp_path,
+        profile=Profile(
+            name="managed-checkpoint-resume",
+            security_mode="development",
+            execution_strategy="adaptive",
+            portable_transform_policy="require",
+            placement_targets={"local": PlacementTarget(engine="local")},
+            eligible_targets=("local",),
+        ),
+    )
+    authz.grant(ctx, "run.resume")
+    service.report_root = tmp_path / "reports"
+    service.artifact_root = tmp_path / "artifacts"
+
+    definition = definition_from_pipeline(ManagedCheckpointResumePipeline)
+    nodes = []
+    for node in definition.nodes:
+        if node.name == "raw":
+            node = replace(
+                node,
+                metadata={
+                    **dict(node.metadata),
+                    "etlantic.materialization_required": {
+                        "schema": "etlantic.physical_operation/1",
+                        "kind": "materialization",
+                        "checkpoint": "first",
+                    },
+                    "etlantic.reuse_artifact": {
+                        "schema": "etlantic.physical_operation/1",
+                        "kind": "reuse",
+                        "checkpoint": "first",
+                    },
+                },
+            )
+        nodes.append(node)
+    service.register_definition(
+        ctx,
+        "managed-checkpoint-resume-pipe",
+        pipeline_to_dict(replace(definition, nodes=tuple(nodes), fingerprint=None)),
+    )
+    plan = service.plan_definition(ctx, "managed-checkpoint-resume-pipe")["plan"]
+    assert plan["schema"] == "etlantic.plan/2"
+    assert any(
+        unit["kind"] == "materialization"
+        and unit["metadata"].get("etlantic.requirement", {}).get("checkpoint")
+        == "first"
+        for unit in plan["physical_dag"]["units"]
+    )
+
+    parent = service.submit_run(
+        ctx,
+        "managed-checkpoint-resume-pipe",
+        idempotency_key="managed-checkpoint-resume-parent",
+        request=RunRequest(no_write=True),
+    )
+    assert parent.resource_id is not None
+    source_rows = [[{"id": 1}], [{"id": 2}]]
+    latest_runtime: PipelineRuntime | None = None
+
+    def runtime_factory() -> PipelineRuntime:
+        nonlocal latest_runtime
+        latest_runtime = PipelineRuntime()
+        latest_runtime.memory.seed("rows", source_rows.pop(0))
+        return latest_runtime
+
+    adapter = ManagedExecutionAdapter(
+        report_root=service.report_root,
+        artifact_root=service.artifact_root,
+        runtime_factory=runtime_factory,
+        profile=service.profile,
+    )
+    adapter_errors: list[str] = []
+
+    def diagnostic_runner(worker_ctx: ControlPlaneContext, **kwargs: Any) -> Any:
+        try:
+            return adapter(worker_ctx, **kwargs)
+        except Exception as exc:
+            cause = exc.__cause__
+            suffix = (
+                f"; cause={type(cause).__name__}: {cause}" if cause is not None else ""
+            )
+            adapter_errors.append(f"{type(exc).__name__}: {exc}{suffix}")
+            raise
+
+    from etlantic.runtime import dataframe_exec
+
+    execute_portable: Any = cast(Any, dataframe_exec)._execute_portable
+    restored_transform_inputs: list[Any] = []
+
+    async def observe_transform_input(**kwargs: Any) -> Any:
+        result = await execute_portable(**kwargs)
+        if kwargs["node"].name == "first":
+            restored_transform_inputs.append(kwargs["inputs"]["rows"])
+        return result
+
+    monkeypatch.setattr(dataframe_exec, "_execute_portable", observe_transform_input)
+
+    parent_worker = ExecutionHost(
+        durable,
+        owner_id="managed-checkpoint-parent-worker",
+        runner=diagnostic_runner,
+    )
+    base_checkpoint_publisher: Any = cast(Any, parent_worker)._checkpoint_publisher
+
+    def fail_after_checkpoint_commit(*args: Any, **kwargs: Any) -> Any:
+        publish = base_checkpoint_publisher(*args, **kwargs)
+
+        def publish_then_interrupt(checkpoint_id: str, digest: str) -> None:
+            publish(checkpoint_id, digest)
+            raise RuntimeError("simulated worker interruption after checkpoint commit")
+
+        return publish_then_interrupt
+
+    monkeypatch.setattr(
+        parent_worker, "_checkpoint_publisher", fail_after_checkpoint_commit
+    )
+    assert parent_worker.tick(ctx) == 1
+    assert service.get_run_status(ctx, parent.resource_id)["status"] == "failed"
+    checkpoint_id = f"checkpoint:{parent.resource_id}:first"
+    checkpoint_path = (
+        managed_artifact_workspace(
+            ctx, parent.resource_id, artifact_root=service.artifact_root
+        )
+        / "checkpoint-first.json"
+    )
+    assert checkpoint_path.is_file(), adapter_errors
+    checkpoint_document = json.loads(checkpoint_path.read_text(encoding="utf-8"))
+    assert checkpoint_document["records"] == [{"id": 1}]
+    assert (
+        service.durable_work.plan_resume(
+            ctx, parent.submission_id, checkpoint_id=checkpoint_id
+        ).checkpoint_id
+        == checkpoint_id
+    )
+    from etlantic.plan import plan_from_json
+    from etlantic.plan.freeze import mutable_copy
+    from etlantic.runtime.physical_operations import validate_managed_resume_checkpoint
+
+    accepted_submission = durable.get_submission(ctx, parent.submission_id)
+    assert accepted_submission.input_snapshot is not None
+    accepted_envelope = ExecutionEnvelope.from_json(accepted_submission.input_snapshot)
+    accepted_plan = plan_from_json(
+        json.dumps(mutable_copy(accepted_envelope.plan_document)), verify=True
+    )
+    reuse_unit = next(
+        unit
+        for unit in accepted_plan.physical_dag.units
+        if unit.metadata.get("etlantic.requirement", {}).get("kind") == "reuse"
+        and unit.metadata.get("etlantic.requirement", {}).get("checkpoint") == "first"
+    )
+    logical_node = accepted_plan.logical_graph.node_map()[
+        reuse_unit.metadata["etlantic.logical_node"]
+    ]
+    assert (
+        checkpoint_document["metadata"]["producer_fingerprint"]
+        == accepted_plan.fingerprint
+    )
+    output_contract_id = next(
+        port.contract_id for port in logical_node.outputs if port.name == "result"
+    )
+    assert checkpoint_document["metadata"]["contract_id"] == output_contract_id
+    assert (
+        checkpoint_document["metadata"]["security_domain"]
+        == accepted_plan.security_domain
+    )
+    validate_managed_resume_checkpoint(
+        accepted_plan,
+        checkpoint_id=checkpoint_id,
+        parent_run_id=parent.resource_id,
+        workspace=checkpoint_path.parent,
+    )
+    assert any(
+        action["name"] == "resume" and action["allowed"]
+        for action in service.get_run_actions(ctx, parent.resource_id)["actions"]
+    ), [
+        action
+        for action in service.get_run_actions(ctx, parent.resource_id)["actions"]
+        if action["name"] in {"retry", "resume"}
+    ]
+
+    child = service.resume_run(
+        ctx,
+        parent.resource_id,
+        idempotency_key="managed-checkpoint-resume-child",
+        checkpoint_id=checkpoint_id,
+    )
+    child_submission = durable.get_submission(ctx, child.submission_id)
+    assert child_submission.operation == "run.resume"
+    assert child_submission.input_snapshot is not None
+    child_envelope = ExecutionEnvelope.from_json(child_submission.input_snapshot)
+    assert (
+        child_envelope.evidence_refs["checkpoint_parent_run_id"] == parent.resource_id
+    )
+
+    resumed_worker = ExecutionHost(
+        durable, owner_id="managed-checkpoint-resume-worker", runner=diagnostic_runner
+    )
+    assert resumed_worker.tick(ctx) == 1
+    assert service.get_run_report(ctx, str(child.resource_id))["status"] == (
+        "succeeded"
+    )
+    assert latest_runtime is not None
+    resumed_report = service.get_run_report(ctx, str(child.resource_id))
+    assert any(
+        item.get("selection") == "checkpoint"
+        for item in resumed_report["metadata"]["etlantic.physical_trace"]
+    )
+    assert restored_transform_inputs == [[{"id": 1}]]
+    attempts = durable.list_attempts(ctx, child.submission_id)
+    assert len(attempts) == 1 and attempts[0].status == "completed"
+
     # An authorized reader can resume the submitter's run; canonical identity
     # validation must use the durable submitter context, not the caller.
     delegated = replace(
@@ -3343,6 +3590,94 @@ def test_managed_resume_rejects_checkpoint_without_runtime_restore_state(
     assert delegated_receipt.resource_id == managed_run_id(
         delegated, "delegated-resume-child", operation="run.resume"
     )
+
+
+def test_failed_report_with_cleanup_obligation_requires_reconciliation(
+    tmp_path: Path,
+) -> None:
+    from etlantic.reports.model import PipelineRunReport
+    from etlantic.runtime.state import RunStatus
+
+    ctx, *_rest = _wired(tmp_path)
+    effects: list[Any] = []
+
+    class EffectCapture:
+        def record_attempt_effect(self, _ctx: Any, effect: Any, **_kwargs: Any) -> None:
+            effects.append(effect)
+
+    report = PipelineRunReport(
+        pipeline_id="cleanup-pipe",
+        plan_id="cleanup-plan",
+        run_id="cleanup-run",
+        intent=RunIntent.STANDARD,
+        profile="development",
+        status=RunStatus.FAILED,
+        started_at=datetime.now(UTC),
+        metadata={
+            "etlantic.cleanup_obligations": [
+                {
+                    "owner": "etlantic.runtime.secret-lease",
+                    "operation": "revoke",
+                    "status": "unknown",
+                }
+            ]
+        },
+    )
+    record_report_effect: Any = cast(
+        Any, ExecutionHost(cast(Any, EffectCapture()))
+    )._record_report_effect
+    record_report_effect(
+        ctx,
+        "cleanup-submission",
+        report,
+        attempt_id="cleanup-attempt",
+        fencing_token=1,
+    )
+
+    assert len(effects) == 1
+    assert effects[0].status == "unknown"
+    recovered_unknown_report = replace(
+        report,
+        metadata={"etlantic.control_plane.execution": {"effect_status": "unknown"}},
+    )
+    record_report_effect(
+        ctx,
+        "recovered-unknown-submission",
+        recovered_unknown_report,
+        attempt_id="recovered-unknown-attempt",
+        fencing_token=1,
+    )
+    assert [effect.status for effect in effects] == ["unknown", "unknown"]
+    published_events: list[tuple[str, Any]] = []
+    adapter = ManagedExecutionAdapter(
+        event_publisher=lambda _ctx, _key, kind, payload: published_events.append(
+            (kind, payload["status"])
+        )
+    )
+    publish_report_event: Any = cast(Any, adapter)._publish_report_event
+    publish_report_event(
+        ctx,
+        {"submission_id": "clean-submission", "attempt_id": "clean-attempt"},
+        replace(report, metadata={}),
+    )
+    publish_report_event(
+        ctx,
+        {"submission_id": "cleanup-submission", "attempt_id": "cleanup-attempt"},
+        report,
+    )
+    publish_report_event(
+        ctx,
+        {
+            "submission_id": "recovered-unknown-submission",
+            "attempt_id": "recovered-unknown-attempt",
+        },
+        recovered_unknown_report,
+    )
+    assert published_events == [
+        ("run.failed", "failed"),
+        ("run.reconciliation_required", "unknown"),
+        ("run.reconciliation_required", "unknown"),
+    ]
 
 
 def test_managed_resume_rejects_unlinked_or_missing_checkpoint(tmp_path: Path) -> None:

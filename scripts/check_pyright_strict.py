@@ -119,8 +119,11 @@ EXPECTED_DIGESTS = {
     # Managed checkpoint publication coverage adds ten suppression-free test
     # diagnostics; the changed production code is clean in regular Pyright.
     # The reviewed inventory is 10,011 diagnostics.
-    "Darwin": "98dafcfb0481a92894cd1b87ed2bd1dc4fbaa734efc9825983964713da125a84",
-    "Linux": "98dafcfb0481a92894cd1b87ed2bd1dc4fbaa734efc9825983964713da125a84",
+    # The completed AC056-031 resume/reconciliation matrix adds 27 reviewed
+    # suppression-free test diagnostics. The runtime changes pass regular
+    # Pyright; the shadow inventory is now 10,038.
+    "Darwin": "1c5297872f41d492a32d1e35aec1c4f7f174150ad0ee2c5c5c5ad00d77a7436b",
+    "Linux": "1c5297872f41d492a32d1e35aec1c4f7f174150ad0ee2c5c5c5ad00d77a7436b",
 }
 
 

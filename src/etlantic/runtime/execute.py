@@ -240,7 +240,12 @@ async def arun_pipeline(
 
         # Admission is deliberately outside the runtime session: a rejected
         # plan must not enter lifespans, allocate connectors, or emit effects.
-        admit_adaptive_plan(explicit_plan, request=request, runtime=runtime)
+        admit_adaptive_plan(
+            explicit_plan,
+            request=request,
+            runtime=runtime,
+            workspace=Path(workspace) if workspace else store.workspace,
+        )
 
     from etlantic.runtime.scheduler_discovery import resolve_scheduler
 

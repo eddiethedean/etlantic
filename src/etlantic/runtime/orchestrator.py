@@ -5732,6 +5732,34 @@ class LocalOrchestrator:
                 stage=FailureStage.WRITE.value,
                 code="PMADP524",
             ) from exc
+        except Exception as exc:
+            if (
+                self.physical_mode
+                and publication_id
+                and not any(
+                    getattr(receipt, "publication_id", None) == publication_id
+                    for receipt in self._sink_commit_receipts
+                )
+            ):
+                # A provider error without a receipt cannot prove that the
+                # write did not commit. Keep failed execution effects blocked
+                # from retry/resume until reconciliation resolves the write.
+                self._unknown_publications.append(
+                    {
+                        "status": "unknown",
+                        "code": "PMADP524",
+                        "publication_id": publication_id,
+                        "binding": binding_name,
+                        "provider": provider_name,
+                    }
+                )
+                raise NodeExecutionError(
+                    "Publication acknowledgement was not received; reconciliation required",
+                    node_name=node.name,
+                    stage=FailureStage.WRITE.value,
+                    code="PMADP524",
+                ) from exc
+            raise
         if provider_name != "null" and mode is not WriteMode.NO_WRITE:
             self._observe_output_partitions(node, data, run_id=run_id)
 

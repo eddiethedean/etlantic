@@ -135,6 +135,7 @@ def validate_managed_resume_checkpoint(
     node = plan.logical_graph.node_map().get(logical_node)
     if node is None:
         raise ValueError("Selected checkpoint has no logical output")
+    contract_id = _boundary_contract_id(node, _descriptor)
     path = Path(workspace) / f"checkpoint-{name}.json"
     policy = SafeIoPolicy.for_root(Path(workspace))
     records = _read_checkpoint_records(
@@ -142,7 +143,7 @@ def validate_managed_resume_checkpoint(
         policy=policy,
         run_id="managed-resume-preflight",
         plan=plan,
-        contract_id=node.contract_id,
+        contract_id=contract_id,
     )
     if records is None:
         raise ValueError("Selected checkpoint value is missing, expired, or stale")
@@ -209,6 +210,18 @@ def _read_checkpoint_records(
     if not isinstance(decoded, list):
         raise _error("Checkpoint records are malformed")
     return decoded
+
+
+def _boundary_contract_id(node: Any, descriptor: Mapping[str, Any]) -> str | None:
+    """Resolve the contract of the checkpointed output port."""
+    port_name = descriptor.get("port", "result")
+    for output in getattr(node, "outputs", ()):
+        if getattr(output, "name", None) == port_name:
+            contract_id = getattr(output, "contract_id", None)
+            if isinstance(contract_id, str) and contract_id:
+                return contract_id
+    contract_id = getattr(node, "contract_id", None)
+    return contract_id if isinstance(contract_id, str) and contract_id else None
 
 
 async def execute_boundary(
@@ -313,7 +326,7 @@ async def execute_boundary(
         "schema": "etlantic.checkpoint/1",
         "digest": digest,
         "producer_fingerprint": plan.fingerprint,
-        "contract_id": node.contract_id,
+        "contract_id": _boundary_contract_id(node, descriptor),
         "security_domain": plan.security_domain,
         "created_at": now,
         "expires_at": now + descriptor["ttl_seconds"]
@@ -338,7 +351,7 @@ async def execute_boundary(
                 policy=policy,
                 run_id=run_id,
                 plan=plan,
-                contract_id=node.contract_id,
+                contract_id=_boundary_contract_id(node, descriptor),
             )
             if decoded is None:
                 return None

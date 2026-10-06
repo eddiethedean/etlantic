@@ -4,9 +4,9 @@ status: experimental
 
 # Phase 0.56 Local Qualification
 
-**Decision: candidate qualification is incomplete; release review remains open.** This record reports local implementation evidence; it does not claim publication. The evidence index marks each criterion passed only after its complete documented case has been observed.
+**Decision: all acceptance criteria are qualified; release review remains open.** This record reports local implementation evidence; it does not claim publication.
 
-Current index: 43 criteria passed, 1 open, and 0 blocked of 44.
+Current index: 44 criteria passed, 0 open, and 0 blocked of 44.
 
 ## Candidate environment
 
@@ -494,13 +494,10 @@ Current index: 43 criteria passed, 1 open, and 0 blocked of 44.
   — 69 passed. A packaged worker performed both accepted child transfers from
   the immutable parent snapshot, and tests cover explicit rerun after a
   committed effect, full-snapshot replay intent, unknown-effect rejection,
-  idempotency, action discovery and OpenAPI registration. The previously
-  recorded checkpoint-resume observation predates the current fail-closed
-  restore guard and does not qualify the current source. The current managed service
-  rejects new resume commands with `checkpoint_restore_unavailable` because
-  persisted checkpoints lack runtime-restorable state. AC056-031 remains open
-  until restore execution is implemented and qualified. Executable repair and
-  backfill semantics are recorded in the later AC056-031 section below.
+  idempotency, action discovery and OpenAPI registration. At the earlier
+  qualification checkpoint, resume was blocked by the missing runtime restore
+  path; the current implementation and qualification are recorded in the
+  AC056-031 sections below.
 - Revision-pinned admission, resource authorization and concurrent idempotency:
   `uv run pytest -q tests/fastapi/test_managed_application_0_56.py tests/fastapi/test_managed_backend_0_56.py tests/fastapi/test_cp1_full_authz_matrix.py tests/fastapi/test_managed_control_races_0_56.py tests/fastapi/test_managed_rerun_http_0_56.py tests/sqlmodel/test_cp1_migrations_0_51.py tests/sqlmodel/test_registry_stores_0_40.py tests/sqlmodel/test_cp4_stores_0_42.py tests/sqlmodel/test_durable_postgresql_multiprocess_0_56.py`
   — 93 passed, 5 skipped. Managed submission resolves an immutable definition
@@ -1133,12 +1130,21 @@ case references, provider tuple and open reason. These limitations keep the
   claim.
 
 
-## Partition repair and backfill qualification (AC056-031 partial)
+## Partition repair and backfill qualification (AC056-031)
 
 - Isolated PostgreSQL 16.13 loopback cluster, CPython 3.11.15, macOS arm64.
 - `ETLANTIC_SQL_TEST_URL=... uv run pytest -q tests/sql/test_postgresql_partition_plans_0_56.py tests/sql/test_postgresql_live_0_56.py tests/fastapi/test_managed_partition_lifecycle_0_56.py tests/fastapi/test_managed_rerun_http_0_56.py` — 16 passed.
 - The managed lifecycle case submits a parent run, edits partition `a`, issues repair through HTTP and backfill through the service, retries the same backfill idempotency key, and verifies both child runs, final selected rows, statuses, report state and parent/submission/attempt lineage. Provider cases verify bounded selector plans, fail-closed configuration, selected-partition replacement, empty replacement, preservation of untouched partitions and rollback for rows outside the selector.
 - Detailed observations and safety boundaries are recorded in `PARTITION_REPAIR_BACKFILL_0_56.json`. The temporary database contained only test fixtures and was isolated from application data.
+
+## Managed checkpoint resume qualification (AC056-031)
+
+- Fixed adaptive admission to receive the scoped artifact workspace during plan, submit, and runtime admission. Managed resume now validates a persisted checkpoint against the accepted plan and the checkpointed output port's contract ID; plan nodes do not always carry that contract directly.
+- Managed execution now returns a plan/run-bound failed report from `PipelineExecutionError` for effect classification. The worker records no effect only when there are no committed or ambiguous publications, outbound events, or unresolved cleanup obligations; any such evidence keeps retry and resume blocked for reconciliation. The shared classifier emits `run.failed` for clean failures and reserves `run.reconciliation_required` for unresolved effect evidence.
+- The managed resume case interrupts execution immediately after the checkpoint value and CP linkage commit, verifies that the parent fails naturally, then resumes in a new `ExecutionHost`. The child report selects the persisted checkpoint and the downstream transform observes the checkpointed row value. A focused classifier case verifies that an unresolved secret-lease cleanup obligation records an unknown effect.
+- `uv run pytest -q tests/fastapi/test_managed_application_0_56.py tests/fastapi/test_managed_partition_lifecycle_0_56.py tests/fastapi/test_managed_rerun_http_0_56.py tests/runtime/physical/test_qualification_0_53.py` — 83 passed, 57 skipped. The suite exercises the persisted-checkpoint resume path and effect classification along with repair, backfill, rerun and physical-operation cases.
+- Managed result-publication recovery, unknown-attempt effect gating and checkpoint-link regression batch: 44 passed.
+- The same run exercised repair, backfill, rerun and physical-operation qualification cases. PostgreSQL-specific partition tests were not rerun because `ETLANTIC_SQL_TEST_URL` was unset in this environment; the isolated PostgreSQL 16.13 qualification above remains the evidence for those cases.
 
 
 - Final default non-optional regression after the 0.56 package, checker and repair/backfill changes:
@@ -1147,13 +1153,11 @@ case references, provider tuple and open reason. These limitations keep the
 
 ## Final candidate disposition
 
-43 of 44 acceptance criteria are marked passed. AC056-031 remains open because
-managed checkpoint resume cannot restore runtime state; the prior resume
-success observation predates the current fail-closed guard. The historical
-2,983-test default regression, focused live PostgreSQL repair/backfill suite,
-and isolated wheel checks remain evidence for their recorded source state, but
-do not close the missing resume behavior. Candidate qualification is
-incomplete; no package tag or publication is claimed. The published supported
-line remains 0.55.x.
+All 44 acceptance criteria are marked passed. AC056-031 now covers managed
+checkpoint restoration alongside the previously qualified PostgreSQL repair
+and backfill behavior. The historical 2,983-test default regression, the
+focused live PostgreSQL repair/backfill suite, and isolated wheel checks remain
+evidence for their recorded source state. No package tag or publication is
+claimed; the published supported line remains 0.55.x.
 
 - Static and documentation gates: `uv run pyright` — 0 errors; `uv run ruff check .` and `uv run ruff format --check .` passed; `uv run python scripts/check_docs.py` passed; `uv run mkdocs build --strict` built the site successfully; `uv run python scripts/check_release.py` passed all in-repository release checks and reported the expected 24 unpublished candidate distributions missing from PyPI.

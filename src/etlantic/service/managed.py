@@ -552,7 +552,14 @@ class ManagedApplicationService:
         )
         verify_plan_fingerprint(plan)
         if isinstance(plan, AdaptivePipelinePlan):
-            self._admit_adaptive_plan(plan, typed_request, profile=profile)
+            self._admit_adaptive_plan(
+                plan,
+                typed_request,
+                profile=profile,
+                workspace=managed_artifact_workspace(
+                    ctx, "admission", artifact_root=self.artifact_root
+                ),
+            )
         self._authorize_plan_resources(ctx, plan, action="definition.plan")
         self._authorize_input_resources(ctx, plan)
         return {
@@ -1388,7 +1395,14 @@ class ManagedApplicationService:
             _preparation_control.check()
         verify_plan_fingerprint(plan)
         if isinstance(plan, AdaptivePipelinePlan):
-            self._admit_adaptive_plan(plan, typed_request, profile=profile)
+            self._admit_adaptive_plan(
+                plan,
+                typed_request,
+                profile=profile,
+                workspace=managed_artifact_workspace(
+                    ctx, "admission", artifact_root=self.artifact_root
+                ),
+            )
         self._authorize_plan_resources(ctx, plan, action="run.submit")
         if _preparation_control is not None:
             _preparation_control.check()
@@ -3896,7 +3910,11 @@ class ManagedApplicationService:
 
     @staticmethod
     def _admit_adaptive_plan(
-        plan: AdaptivePipelinePlan, request: RunRequest, *, profile: Profile
+        plan: AdaptivePipelinePlan,
+        request: RunRequest,
+        *,
+        profile: Profile,
+        workspace: Path | None = None,
     ) -> None:
         """Run the authoritative, side-effect-free /2 admission before accept."""
         from etlantic.exceptions import PipelineExecutionError
@@ -3905,7 +3923,9 @@ class ManagedApplicationService:
         runtime = PipelineRuntime()
         runtime.ensure_plugins_for_profile(profile)
         try:
-            admit_adaptive_plan(plan, request=request, runtime=runtime)
+            admit_adaptive_plan(
+                plan, request=request, runtime=runtime, workspace=workspace
+            )
         except PipelineExecutionError as exc:
             code = exc.code or "PMADP500"
             status_code = 501 if code in {"PMADP500", "PMADP501"} else 422

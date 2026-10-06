@@ -24,6 +24,7 @@ from etlantic.control_plane.models import ControlPlaneContext
 from etlantic.control_plane.quota_models import quota_idempotency_key
 from etlantic.control_plane.schedule_diagnostics import fed_diagnostic
 from etlantic.reports.model import PipelineRunReport
+from etlantic.runtime.effect_classification import classify_failed_report_effect
 from etlantic.runtime.managed_errors import (
     ExecutionCancelled,
     ExecutionRejected,
@@ -464,6 +465,15 @@ class ExecutionHost:
                     fencing_token=lease.fencing_token,
                 )
                 terminal_status = "cancelled"
+            elif outcome.status is RunStatus.FAILED:
+                self._record_report_effect(
+                    ctx,
+                    item.submission_id,
+                    outcome,
+                    attempt_id=attempt.attempt_id,
+                    fencing_token=lease.fencing_token,
+                )
+                terminal_status = "failed"
             else:
                 self._record_unknown_effect(
                     ctx,
@@ -817,6 +827,9 @@ class ExecutionHost:
         no_write = report.intent.value == "validate" or (
             execution.get("no_write") is True
         )
+        effect_status = "none" if no_write else "committed"
+        if report.status is RunStatus.FAILED:
+            effect_status = classify_failed_report_effect(report)
         self.durable.record_attempt_effect(
             ctx,
             EffectRecord(
@@ -824,12 +837,16 @@ class ExecutionHost:
                 submission_id=submission_id,
                 tenant_id=ctx.tenant.tenant_id,
                 workspace_id=ctx.workspace.workspace_id,
-                status="none" if no_write else "committed",
+                status=effect_status,
                 recorded_at=report.ended_at.isoformat()
                 if report.ended_at is not None
                 else report.started_at.isoformat(),
-                idempotency_evidence=None if no_write else evidence,
-                publication_evidence=None if no_write else evidence,
+                idempotency_evidence=(
+                    evidence if effect_status == "committed" else None
+                ),
+                publication_evidence=(
+                    evidence if effect_status == "committed" else None
+                ),
                 authoritative=True,
                 metadata={
                     "run_id": report.run_id,

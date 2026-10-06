@@ -59,6 +59,14 @@ class _ActionLeaseLost(Exception):
         self.result = result
 
 
+class _ActionDeadlineExceeded(TimeoutError):
+    """Raised after a deadline handler has been drained, preserving its result."""
+
+    def __init__(self, result: Mapping[str, Any]) -> None:
+        super().__init__("Action handler completed after its deadline")
+        self.result = result
+
+
 def _now() -> datetime:
     return datetime.now(UTC)
 
@@ -283,12 +291,21 @@ class ActionExecutionHost:
                         retain_effect_callback(lost.result)
                 processed += 1
                 continue
-            except TimeoutError:
+            except TimeoutError as exc:
                 if (
                     datetime.fromisoformat(job.deadline_at.replace("Z", "+00:00"))
                     <= _now()
                 ):
                     self._finish_timeout(ctx, job)
+                    if (
+                        isinstance(exc, _ActionDeadlineExceeded)
+                        and retain_effect_callback is not None
+                    ):
+                        # A provider may finish a committed provision while
+                        # unwinding cancellation. Keep its fenced effect receipt
+                        # available without changing the timed-out outcome.
+                        with suppress(Exception):
+                            retain_effect_callback(exc.result)
                 else:
                     self._finish_failure(ctx, job, "provider_timeout")
                 processed += 1
@@ -369,11 +386,12 @@ class ActionExecutionHost:
             if remaining <= 0:
                 task.cancel()
                 try:
-                    return await self._await_cancelled_action_handler(ctx, job, task)
+                    result = await self._await_cancelled_action_handler(ctx, job, task)
                 except _ActionLeaseLost:
                     raise
                 except (asyncio.CancelledError, Exception):
                     raise TimeoutError from None
+                raise _ActionDeadlineExceeded(result)
             await asyncio.wait({task}, timeout=min(interval, remaining))
             if task.done():
                 break
@@ -394,7 +412,10 @@ class ActionExecutionHost:
                 except (asyncio.CancelledError, Exception):
                     raise _ActionLeaseLost from exc
                 raise _ActionLeaseLost(result) from exc
-        return await task
+        result = await task
+        if _now() >= deadline:
+            raise _ActionDeadlineExceeded(result)
+        return result
 
     async def _await_cancelled_action_handler(
         self,
