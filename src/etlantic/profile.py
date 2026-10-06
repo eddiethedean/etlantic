@@ -7,7 +7,7 @@ import hashlib
 import json
 import warnings
 from collections.abc import Mapping
-from dataclasses import asdict, dataclass, field, fields
+from dataclasses import asdict, dataclass, field
 from pathlib import Path
 from typing import Any, Literal
 
@@ -184,8 +184,8 @@ _BINDINGS_REMOVED = (
     "See docs/11_DEVELOPMENT/MIGRATION_0_15_TO_0_16.md."
 )
 _LEGACY_BINDINGS_REJECTED = (
-    "PMCFG111: Profile JSON used legacy 'bindings'. Rename to 'assets' or pass "
-    "--accept-legacy-bindings / accept_legacy_bindings=True."
+    "PMCFG111: Profile JSON contains the unsupported legacy 'bindings' key. "
+    "Rename it to 'assets' for ETLantic 0.56."
 )
 _UNKNOWN_PROFILE = (
     "PMCFG100: Unknown profile name {name!r}. Use a built-in template "
@@ -217,25 +217,12 @@ def _coerce_profile_secrets(raw: Any) -> dict[str, SecretRef]:
 def _normalize_assets(
     *,
     assets: dict[str, Any] | None,
-    bindings: dict[str, Any] | None = None,
-    allow_legacy_bindings: bool = False,
 ) -> dict[str, Any]:
     """Normalize public assets= into the internal asset→provider store."""
     from etlantic.bindings import normalize_assets_map
 
     assets_map = normalize_assets_map(dict(assets or {})) if assets else {}
-    bindings_map = normalize_assets_map(dict(bindings or {})) if bindings else {}
-    if bindings_map and not allow_legacy_bindings:
-        raise TypeError(_BINDINGS_REMOVED)
-    if assets_map and bindings_map and assets_map != bindings_map:
-        raise ValueError(
-            "Profile assets and bindings disagree. Provide only assets=. "
-            f"assets={assets_map!r} bindings={bindings_map!r}"
-        )
-    # Prefer non-empty assets; never let empty assets unlock legacy bindings.
-    if assets_map:
-        return assets_map
-    return bindings_map
+    return assets_map
 
 
 @dataclass(frozen=True, slots=True, init=False)
@@ -273,8 +260,8 @@ class Profile:
     spark_udf_policy: str = "warn"
     spark_streaming: bool = False
     # Internal store for logical asset → provider string or structured connector
-    # descriptor (plan wire name: bindings). Values are str or canonical dict.
-    bindings: dict[str, Any] = field(default_factory=dict)
+    # descriptor. The frozen-plan serializer maps this to its wire key.
+    _asset_map: dict[str, Any] = field(default_factory=dict, repr=False)
     implementation_overrides: dict[str, str] = field(default_factory=dict)
     secret_providers: dict[str, str] = field(default_factory=dict)
     resources: dict[str, str] = field(default_factory=dict)
@@ -440,7 +427,7 @@ class Profile:
         object.__setattr__(self, "allow_trusted_sql", allow_trusted_sql)
         object.__setattr__(self, "spark_udf_policy", spark_udf_policy)
         object.__setattr__(self, "spark_streaming", spark_streaming)
-        object.__setattr__(self, "bindings", store)
+        object.__setattr__(self, "_asset_map", store)
         object.__setattr__(
             self, "implementation_overrides", dict(implementation_overrides or {})
         )
@@ -631,7 +618,7 @@ class Profile:
             A shallow copy of the internal asset store (string or structured
             connector descriptor).
         """
-        return dict(self.bindings)
+        return dict(self._asset_map)
 
     def identity(self) -> str:
         """Return the stable profile identity string.
@@ -649,6 +636,7 @@ class Profile:
             ``bindings``). Secret values remain :class:`SecretRef` dicts.
         """
         data = asdict(self)
+        data.pop("_asset_map", None)
         data["secrets"] = {}
         for key, ref in self.secrets.items():
             if not isinstance(ref, SecretRef):
@@ -657,8 +645,7 @@ class Profile:
                     "plaintext values cannot be serialized into plans or profiles"
                 )
             data["secrets"][key] = ref.to_dict()
-        data["assets"] = dict(self.bindings)
-        data.pop("bindings", None)
+        data["assets"] = dict(self._asset_map)
         data["placement_targets"] = {
             key: target.to_dict() for key, target in self.placement_targets.items()
         }
@@ -685,6 +672,7 @@ class Profile:
         from etlantic.io_policy import sanitize_safe_io_for_plan
 
         data = asdict(self)
+        data.pop("_asset_map", None)
         data["secrets"] = {}
         for key, ref in self.secrets.items():
             if not isinstance(ref, SecretRef):
@@ -694,7 +682,7 @@ class Profile:
                 )
             data["secrets"][key] = ref.to_dict()
         # Intentionally omit ``assets`` so equivalent plans keep fingerprints.
-        data["bindings"] = dict(self.bindings)
+        data["bindings"] = dict(self._asset_map)
         data["safe_io"] = sanitize_safe_io_for_plan(dict(self.safe_io or {}))
         if self.execution_strategy == "explicit":
             for key in (
@@ -740,55 +728,32 @@ class Profile:
     def from_dict(
         cls,
         data: dict[str, Any],
-        *,
-        accept_legacy_bindings: bool = False,
     ) -> Profile:
-        """Deserialize a profile mapping.
-
-        Legacy JSON ``bindings`` keys require ``accept_legacy_bindings=True``
-        in 0.21+ (use ``profile migrate`` to rewrite to ``assets``).
+        """Deserialize a canonical 0.56 profile mapping.
 
         Args:
             data: Profile document mapping (must include ``name``).
-            accept_legacy_bindings: When True, allow legacy ``bindings`` keys
-                (emits ``PMCFG110`` warning). Default fail-closed ``PMCFG111``.
 
         Returns:
             A concrete :class:`Profile`.
 
         Raises:
-            ValueError: When secrets are plaintext/invalid, legacy ``bindings``
-                appear without opt-in, or ``security_mode`` /
+            ValueError: When secrets are plaintext/invalid, a legacy
+                ``bindings`` key appears, or ``security_mode`` /
                 ``portable_transform_policy`` are unknown.
             KeyError: When ``name`` is missing from ``data``.
         """
         import warnings
 
+        if "bindings" in data:
+            raise ValueError(_LEGACY_BINDINGS_REJECTED)
+
         secrets_raw = data.get("secrets") or {}
         secrets = _coerce_profile_secrets(secrets_raw)
         assets_raw = data.get("assets")
-        bindings_raw = data.get("bindings")
         has_assets_key = "assets" in data and assets_raw is not None
-        has_bindings_key = "bindings" in data and bindings_raw is not None
         assets_map_preview = dict(assets_raw or {}) if has_assets_key else {}
-        bindings_map_preview = dict(bindings_raw or {}) if has_bindings_key else {}
-        # Empty assets must not unlock legacy bindings (PMCFG111).
-        needs_legacy_opt_in = bool(bindings_map_preview) or (
-            has_bindings_key and not assets_map_preview
-        )
-        if needs_legacy_opt_in:
-            if not accept_legacy_bindings:
-                raise ValueError(_LEGACY_BINDINGS_REJECTED)
-            warnings.warn(
-                "PMCFG110: legacy 'bindings' loaded; migrate to 'assets'.",
-                UserWarning,
-                stacklevel=2,
-            )
-        store = _normalize_assets(
-            assets=assets_map_preview if has_assets_key else None,
-            bindings=bindings_map_preview if has_bindings_key else None,
-            allow_legacy_bindings=True,
-        )
+        store = _normalize_assets(assets=assets_map_preview if has_assets_key else None)
         security_mode = data.get("security_mode")
         if security_mode is None:
             security_mode = _infer_security_mode(
@@ -900,7 +865,7 @@ class Profile:
                 appear in ``kwargs``.
             ValueError: When updated values fail :meth:`from_dict` validation.
         """
-        known = {f.name for f in fields(self)} | {"assets"}
+        known = set(self.to_dict())
         # Reject public bindings= authoring; internal snapshot still uses bindings.
         if "bindings" in kwargs:
             raise TypeError(_BINDINGS_REMOVED)
@@ -1200,18 +1165,13 @@ def write_profile(profile: Profile, path: str | Path) -> Path:
 
 def load_profile(
     path: str | Path,
-    *,
-    accept_legacy_bindings: bool = False,
 ) -> Profile:
     """Load a profile from a JSON file.
 
     Args:
         path: Profile JSON document.
-        accept_legacy_bindings: Forwarded to :meth:`Profile.from_dict` for
-            legacy ``bindings`` keys (default fail-closed ``PMCFG111``).
-
     Returns:
-        Parsed :class:`Profile` (legacy ``bindings`` keys may warn ``PMCFG110``).
+        Parsed canonical :class:`Profile`.
 
     Raises:
         ValueError: When the document is not a JSON object or fields are invalid.
@@ -1228,4 +1188,4 @@ def load_profile(
     data = json.loads(text)
     if not isinstance(data, dict):
         raise ValueError("Profile document must be a JSON object")
-    return Profile.from_dict(data, accept_legacy_bindings=accept_legacy_bindings)
+    return Profile.from_dict(data)

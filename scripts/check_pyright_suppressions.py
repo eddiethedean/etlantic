@@ -48,7 +48,9 @@ from pathlib import Path
 # AC056-031 effect classification and managed recovery changes shifted existing
 # directives. Token review found no suppressions added or removed; re-pin the
 # 789-entry inventory.
-EXPECTED_DIGEST = "a3f39032344217676bef74f241cc583aee71a559f1e5b5e80d2a04bddd0defd8"
+# AC056 removes the legacy profile migration and opt-in loading paths. The
+# 789-entry suppression inventory is unchanged, with refreshed source lines.
+EXPECTED_DIGEST = "fb8625cac421919969126c3cdf05214f7f0bf43cbed6ae86b6876d1c1a73c09d"
 
 _IGNORED_DIRECTORIES = frozenset(
     {

@@ -6,6 +6,7 @@ from __future__ import annotations
 import json
 from pathlib import Path
 
+import pytest
 from typer.testing import CliRunner
 
 from etlantic.cli import app
@@ -59,7 +60,9 @@ def test_workspace_flag_resolves_profiles_off_cwd(tmp_path: Path, monkeypatch) -
     assert result.exit_code == ec.SUCCESS, result.stdout + result.stderr
 
 
-def test_accept_legacy_bindings_cli_validate(tmp_path: Path, monkeypatch) -> None:
+def test_cli_rejects_legacy_bindings_with_or_without_removed_flag(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
     monkeypatch.chdir(tmp_path)
     _init_project(tmp_path)
     profile = tmp_path / "profiles" / "development.json"
@@ -74,7 +77,7 @@ def test_accept_legacy_bindings_cli_validate(tmp_path: Path, monkeypatch) -> Non
     )
     assert blocked.exit_code != 0
 
-    allowed = runner.invoke(
+    removed_flag = runner.invoke(
         app,
         [
             "--accept-legacy-bindings",
@@ -84,10 +87,12 @@ def test_accept_legacy_bindings_cli_validate(tmp_path: Path, monkeypatch) -> Non
             "development",
         ],
     )
-    assert allowed.exit_code == ec.SUCCESS, allowed.stdout + allowed.stderr
+    assert removed_flag.exit_code != ec.SUCCESS
 
 
-def test_profile_migrate_empty_assets(tmp_path: Path, monkeypatch) -> None:
+def test_profile_migrate_command_is_removed(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
     monkeypatch.chdir(tmp_path)
     path = tmp_path / "legacy.json"
     path.write_text(
@@ -101,20 +106,14 @@ def test_profile_migrate_empty_assets(tmp_path: Path, monkeypatch) -> None:
         ),
         encoding="utf-8",
     )
-    dry = runner.invoke(app, ["profile", "migrate", str(path), "--format", "json"])
-    assert dry.exit_code == ec.SUCCESS, dry.stdout + dry.stderr
-    payload = json.loads(dry.stdout)
-    assert payload["profile"]["assets"]["rows"] == "memory"
-    assert "bindings" not in payload["profile"]
-
-    written = runner.invoke(
+    removed = runner.invoke(
         app,
-        ["--non-interactive", "profile", "migrate", str(path), "--write"],
+        ["profile", "migrate", str(path), "--write"],
     )
-    assert written.exit_code == ec.SUCCESS, written.stdout + written.stderr
-    migrated = json.loads(path.read_text(encoding="utf-8"))
-    assert migrated["assets"]["rows"] == "memory"
-    assert "bindings" not in migrated
+    assert removed.exit_code != ec.SUCCESS
+    assert json.loads(path.read_text(encoding="utf-8"))["bindings"] == {
+        "rows": "memory"
+    }
 
 
 def test_ephemeral_report_list(tmp_path: Path, monkeypatch) -> None:

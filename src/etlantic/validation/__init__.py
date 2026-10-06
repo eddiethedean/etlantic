@@ -215,7 +215,7 @@ def _phase_reference(
         if node.binding and policy.require_bindings:
             resolved = (
                 node.binding in context.registry.bindings
-                or node.binding in context.profile.bindings
+                or node.binding in context.profile.assets
             )
             if not resolved:
                 sym = node_symbol(pid, node.name, kind=node.kind.value)

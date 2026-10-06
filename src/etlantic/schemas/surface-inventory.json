@@ -120,8 +120,7 @@
     "resolve_profile"
   ],
   "cli_flags_stable": [
-    "--allow-adhoc-profile",
-    "--accept-legacy-bindings"
+    "--allow-adhoc-profile"
   ],
   "sdk_root_provisional": [],
   "sdk_root_experimental": [],

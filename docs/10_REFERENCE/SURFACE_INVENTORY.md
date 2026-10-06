@@ -87,7 +87,7 @@ Commands: `init`, `doctor`, `profile`, `validate`, `inspect`, `plan`, `run`,
 `viz`, `report`, `watch`, `stream`, `schedule`, `scheduler`, `worker`,
 `context`, `proposal`.
 
-Stable flags: `--allow-adhoc-profile`, `--accept-legacy-bindings`.
+Stable flags: `--allow-adhoc-profile`.
 
 See [CLI](CLI.md).
 

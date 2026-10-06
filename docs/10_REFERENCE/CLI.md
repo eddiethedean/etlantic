@@ -1,7 +1,7 @@
 # Command-Line Interface
 
-> **Status: ETLantic 0.55.0 Beta release.** This page documents the commands
-> implemented by the installed package.
+> **Status: ETLantic 0.56.0 qualification candidate (unpublished).** This page
+> documents the commands implemented by the installed package.
 
 ```bash
 python -m etlantic --help
@@ -20,7 +20,6 @@ interpreter is used.
 | `--workspace PATH` | Project/workspace root (default: cwd or `etlantic.toml` parent) |
 | `--ephemeral` | Process-local stores instead of durable `.etlantic/` |
 | `--profile`, `-p` | Default profile for commands that accept `--profile` |
-| `--accept-legacy-bindings` | Allow deprecated profile JSON `bindings` (else `PMCFG111`) |
 | `--verbose` / `-v`, `--quiet` / `-q` | Output verbosity |
 | `--color` / `--no-color` | Colorized output |
 | `--non-interactive` | Do not prompt for confirmation |
@@ -175,7 +174,6 @@ Profile lifecycle helpers:
 python -m etlantic profile validate profiles/development.json
 python -m etlantic profile show development --format json
 python -m etlantic profile diff LEFT.json RIGHT.json
-python -m etlantic profile migrate profiles/legacy.json --write
 ```
 
 | Subcommand | Purpose |
@@ -183,7 +181,9 @@ python -m etlantic profile migrate profiles/legacy.json --write
 | `validate` | Schema + semantic checks |
 | `show` | Print resolved profile |
 | `diff` | Compare two profiles |
-| `migrate` | Rewrite legacy `bindings` → `assets` |
+
+Profile JSON must use the canonical `assets` key. Legacy `bindings` input is
+rejected; convert older profile files outside ETLantic before loading them.
 
 ## `run`
 
@@ -529,7 +529,6 @@ in addition to exit codes.
 | `generate` | Writes contract files to `-o` / output directory |
 | `compile` | Writes orchestrator artifacts to `-o` (unless `--preview`) |
 | `run` | Executes pipeline side effects; writes `.etlantic/reports/` (unless `--ephemeral` / `--preview`) |
-| `profile migrate --write` | Rewrites profile JSON |
 | `schema monitor` / `acknowledge` | Writes schema history under `.etlantic/schema-history/` |
 | `report export` | Writes the chosen `--output` file |
 

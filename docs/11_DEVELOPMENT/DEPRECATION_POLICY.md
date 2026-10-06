@@ -28,6 +28,7 @@ full plan object-graph immutability.
 |---|---|---|
 | `DataContractModel` alias | **removed in 0.37.0** | use `ContractModel` / `Data` |
 | Silent legacy profile `bindings` load | rejected (`PMCFG111`) unless `--accept-legacy-bindings` | done in 0.21 |
+| Temporary legacy profile `bindings` opt-in | removed; 0.56 accepts only canonical profile JSON using `assets` | 0.56 standalone reset |
 | Name/`security_domain` production heuristics | removed in 0.19 (`security_mode` only) | n/a |
 | Missing wire `schema` defaults | removed in 0.19 | n/a |
 | Ad hoc bare profile names | fail-closed; opt-in flag | keep flag through 0.37 |

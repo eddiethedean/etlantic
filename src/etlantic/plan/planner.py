@@ -2198,7 +2198,7 @@ def _resolve_bindings(
         if node.binding in context.registry.bindings:
             resolved[node.name] = context.registry.bindings[node.binding]
             continue
-        provider_raw = context.profile.bindings.get(node.binding, "memory")
+        provider_raw = context.profile.assets.get(node.binding, "memory")
         from etlantic.bindings import parse_asset_descriptor
         from etlantic.connectors.models import fingerprint_public_config
 

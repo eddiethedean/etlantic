@@ -60,7 +60,6 @@ def test_profile_bindings_ctor_rejected() -> None:
 def test_profile_assets_ok() -> None:
     profile = Profile(name="demo", assets={"raw": "memory"})
     assert profile.assets == {"raw": "memory"}
-    assert profile.bindings == {"raw": "memory"}
     public = profile.to_dict()
     assert public["assets"] == {"raw": "memory"}
     assert "bindings" not in public
@@ -69,13 +68,15 @@ def test_profile_assets_ok() -> None:
     assert "assets" not in snap
 
 
-def test_profile_from_dict_reads_legacy_bindings() -> None:
-    profile = Profile.from_dict(
-        {"name": "demo", "security_mode": "development", "bindings": {"raw": "memory"}},
-        accept_legacy_bindings=True,
-    )
-    assert profile.assets == {"raw": "memory"}
-    assert "bindings" not in profile.to_dict()
+def test_profile_from_dict_rejects_legacy_bindings() -> None:
+    with pytest.raises(ValueError, match="PMCFG111"):
+        Profile.from_dict(
+            {
+                "name": "demo",
+                "security_mode": "development",
+                "bindings": {"raw": "memory"},
+            }
+        )
 
 
 def test_run_request_binding_overrides_rejected() -> None:

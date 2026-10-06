@@ -35,7 +35,6 @@ class GlobalCliOptions:
     workspace: str | None = None
     ephemeral: bool = False
     default_profile: str | None = None
-    accept_legacy_bindings: bool = False
 
 
 @dataclass
@@ -105,7 +104,6 @@ class CliContext:
             name,
             start=self.workspace().root,
             allow_adhoc_profile=allow_adhoc_profile,
-            accept_legacy_bindings=self.globals.accept_legacy_bindings,
         )
 
     def ensure_plugins(

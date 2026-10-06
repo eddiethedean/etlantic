@@ -161,7 +161,7 @@ interchange descriptors. Review [CHANGELOG](../CHANGELOG.md).
 |---|---|
 | Production detection by name/`security_domain` | `security_mode="production"` |
 | Unknown bare profile names | Fail closed; `--allow-adhoc-profile` |
-| Legacy profile JSON `bindings` only | Prefer `assets`; diagnosed `PMCFG110` |
+| Legacy profile JSON `bindings` | Rename the key to canonical `assets`; 0.56 rejects the legacy key |
 | Missing plan/report `schema` | Required; no silent default |
 
 ## 0.20 configuration cheat sheet
@@ -184,8 +184,8 @@ See [Migration 0.19 → 0.20](../11_DEVELOPMENT/MIGRATION_0_19_TO_0_20.md) for e
 |---|---|
 | Ephemeral-only report store | Default durable `.etlantic/reports` workspace; `--ephemeral` for process-local |
 | Implicit project layout | Optional `etlantic.toml` + `profiles/`; `etlantic init` scaffolds |
-| Legacy profile `bindings` | Structured `assets` descriptors; `--accept-legacy-bindings` for migration only |
-| Ad hoc profile JSON paths | `etlantic profile validate/show/diff/migrate` |
+| Legacy profile `bindings` | Structured `assets` descriptors; legacy profile JSON is rejected |
+| Profile inspection | `etlantic profile validate/show/diff` |
 | `reliability plan-diff` | `etlantic plan diff` |
 | Human-only plan explain | `etlantic plan explain --format human` |
 

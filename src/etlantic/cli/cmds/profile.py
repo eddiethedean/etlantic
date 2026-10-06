@@ -10,11 +10,10 @@ from typing import Any
 import jsonschema
 import typer
 
-from etlantic.bindings import normalize_assets_map
 from etlantic.cli import exit_codes as ec
 from etlantic.cli.context import get_cli_context
 from etlantic.cli.output import emit_payload
-from etlantic.profile import Profile, load_profile, resolve_profile, write_profile
+from etlantic.profile import Profile, load_profile, resolve_profile
 
 
 def _schema_path(name: str) -> Path:
@@ -28,23 +27,20 @@ def _load_schema(name: str) -> dict[str, Any]:
 def _resolve_profile_arg(
     ref: str,
     *,
-    accept_legacy_bindings: bool,
     allow_adhoc_profile: bool,
     start: Path | None = None,
 ) -> tuple[Profile, Path | None]:
     path = Path(ref)
     if path.suffix == ".json" and path.is_file():
         return (
-            load_profile(path, accept_legacy_bindings=accept_legacy_bindings),
+            load_profile(path),
             path,
         )
     root = start or Path.cwd()
     profiles_candidate = root / "profiles" / f"{ref}.json"
     if profiles_candidate.is_file():
         return (
-            load_profile(
-                profiles_candidate, accept_legacy_bindings=accept_legacy_bindings
-            ),
+            load_profile(profiles_candidate),
             profiles_candidate,
         )
     return (
@@ -81,7 +77,7 @@ def _validate_profile_semantics(profile: Profile, root: Path) -> list[dict[str, 
 
 
 def register_profile_commands(app: typer.Typer) -> None:
-    profile_app = typer.Typer(help="Profile validation and migration.")
+    profile_app = typer.Typer(help="Profile validation and inspection.")
     app.add_typer(profile_app, name="profile")
 
     @profile_app.command("validate")
@@ -101,7 +97,6 @@ def register_profile_commands(app: typer.Typer) -> None:
         else:
             profile, _ = _resolve_profile_arg(
                 ref,
-                accept_legacy_bindings=cli.globals.accept_legacy_bindings,
                 allow_adhoc_profile=allow_adhoc_profile,
                 start=cli.workspace().root,
             )
@@ -112,10 +107,7 @@ def register_profile_commands(app: typer.Typer) -> None:
         except jsonschema.ValidationError as exc:
             errors.append(str(exc.message))
         try:
-            profile = Profile.from_dict(
-                raw,
-                accept_legacy_bindings=cli.globals.accept_legacy_bindings,
-            )
+            profile = Profile.from_dict(raw)
         except Exception as exc:
             errors.append(str(exc))
             emit_payload({"valid": False, "errors": errors}, fmt=fmt)
@@ -156,7 +148,6 @@ def register_profile_commands(app: typer.Typer) -> None:
         cli = get_cli_context(ctx)
         profile, _ = _resolve_profile_arg(
             ref,
-            accept_legacy_bindings=cli.globals.accept_legacy_bindings,
             allow_adhoc_profile=allow_adhoc_profile,
             start=cli.workspace().root,
         )
@@ -174,13 +165,11 @@ def register_profile_commands(app: typer.Typer) -> None:
         cli = get_cli_context(ctx)
         left_profile, _ = _resolve_profile_arg(
             left,
-            accept_legacy_bindings=cli.globals.accept_legacy_bindings,
             allow_adhoc_profile=allow_adhoc_profile,
             start=cli.workspace().root,
         )
         right_profile, _ = _resolve_profile_arg(
             right,
-            accept_legacy_bindings=cli.globals.accept_legacy_bindings,
             allow_adhoc_profile=allow_adhoc_profile,
             start=cli.workspace().root,
         )
@@ -205,49 +194,3 @@ def register_profile_commands(app: typer.Typer) -> None:
         }
         emit_payload(payload, fmt=fmt, quiet=cli.globals.quiet)
         raise typer.Exit(ec.SUCCESS if not breaking else ec.BREAKING_CHANGE)
-
-    @profile_app.command("migrate")
-    def profile_migrate_cmd(
-        ctx: typer.Context,
-        ref: str = typer.Argument(..., help="Profile JSON path"),
-        dry_run: bool = typer.Option(True, "--dry-run/--write"),
-        fmt: str = typer.Option("human", "--format"),
-    ) -> None:
-        """Migrate legacy profile JSON to 0.21 shape."""
-        cli = get_cli_context(ctx)
-        path = Path(ref)
-        if not path.is_file():
-            raise typer.BadParameter(f"Profile file not found: {path}")
-        raw = json.loads(path.read_text(encoding="utf-8"))
-        migrated = dict(raw)
-        bindings = dict(migrated.get("bindings") or {})
-        assets = dict(migrated.get("assets") or {}) if "assets" in migrated else None
-        if bindings:
-            if assets is None or not assets:
-                migrated["assets"] = dict(bindings)
-            elif assets != normalize_assets_map(bindings) and assets != bindings:
-                raise typer.BadParameter(
-                    "Profile has both assets and bindings that disagree; "
-                    "resolve manually before migrate."
-                )
-        migrated.pop("bindings", None)
-        if "assets" in migrated:
-            migrated["assets"] = normalize_assets_map(migrated["assets"])
-        if "security_mode" not in migrated:
-            from etlantic.profile import _infer_security_mode
-
-            migrated["security_mode"] = _infer_security_mode(
-                name=str(migrated.get("name") or path.stem),
-                security_domain=str(migrated.get("security_domain") or ""),
-            )
-        payload = {"path": str(path), "dry_run": dry_run, "profile": migrated}
-        if fmt == "json":
-            emit_payload(payload, fmt="json")
-        else:
-            typer.echo(f"migrate: {path} (dry_run={dry_run})")
-        if not dry_run:
-            cli.confirm_mutation(f"Write migrated profile to {path}?")
-            write_profile(Profile.from_dict(migrated), path)
-            if not cli.globals.quiet:
-                typer.echo(f"Wrote {path}")
-        raise typer.Exit(ec.SUCCESS)

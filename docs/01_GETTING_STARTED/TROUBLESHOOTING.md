@@ -171,7 +171,7 @@ native `@implementation(...)`, or use
 | Code | Meaning | Fix |
 |---|---|---|
 | `PMCFG100` | Unknown bare profile name | Use a built-in template, a JSON path, or `--allow-adhoc-profile` |
-| `PMCFG110` / `PMCFG111` | Legacy `bindings`-only profile | Prefer `assets`; `etlantic profile migrate` or `--accept-legacy-bindings` once |
+| `PMCFG111` | Profile JSON contains legacy `bindings` | Rename the key to `assets` |
 | `PMPLUG401` | Production `plugin_allowlist` is empty | Set a non-empty allowlist (see `prod.example.json`); do not use bare `--profile production` for CI |
 | `PMPLUG402` | Plugin name/version not permitted by allowlist | Add the package with a matching pin, or install the allowlisted version |
 | `PMPLUG403` | Allowlist pin is not a valid version specifier | Fix the pin syntax (`==0.55.0`, `>=0.55.0,<0.56`, …) |
@@ -223,10 +223,8 @@ Profile JSON path for CI.
 
 ## Legacy profile `bindings` rejected (`PMCFG111`)
 
-Profile JSON that only has `"bindings"` fails closed with `PMCFG111`. Prefer
-`"assets"`. Migrate with `etlantic profile migrate PATH --write`, or load once
-with `--accept-legacy-bindings` /
-`Profile.from_dict(data, accept_legacy_bindings=True)`.
+Profile JSON containing `"bindings"` fails with `PMCFG111`. Rename it to
+`"assets"` and review the provider mappings before using the file.
 
 ## Plan fingerprint or schema errors
 

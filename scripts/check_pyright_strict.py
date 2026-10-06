@@ -125,8 +125,11 @@ EXPECTED_DIGESTS = {
     # Compatibility cancellation receipts and catalog kind validation shift
     # existing diagnostic locations. The reviewed normalized inventory is
     # unchanged at 10,038 diagnostics.
-    "Darwin": "b84604fa7aa081ed11851dbdd6243ee839fa240dca83410c2d1bac4988e92863",
-    "Linux": "b84604fa7aa081ed11851dbdd6243ee839fa240dca83410c2d1bac4988e92863",
+    # AC056 removes legacy profile migration/loading paths, including their
+    # shadow type debt. The asset-store rename changes one diagnostic symbol;
+    # the normalized inventory now has 10,030 diagnostics with no other delta.
+    "Darwin": "ca2fdd763d064855c49f3741bbe1d3189834c17ca45a4f7590d40460131bb37c",
+    "Linux": "ca2fdd763d064855c49f3741bbe1d3189834c17ca45a4f7590d40460131bb37c",
 }
 
 

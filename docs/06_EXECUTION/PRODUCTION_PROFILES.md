@@ -55,11 +55,10 @@ When `security_mode` is `production`, unknown plugins are rejected unless they
 appear on `plugin_allowlist`. Names and `security_domain` alone do **not**
 enable production fail-closed behavior.
 
-## Legacy bindings
+## Canonical profile assets
 
-Prefer `assets` in profile JSON. Legacy `bindings`-only files fail closed with
-`PMCFG111` unless `accept_legacy_bindings=True` / `--accept-legacy-bindings`.
-Migrate with `etlantic profile migrate`.
+Use `assets` in profile JSON. Files containing the legacy `bindings` key are
+rejected with `PMCFG111`; convert them to the canonical 0.56 shape before use.
 
 See [Profiles](../05_PIPELINES/PROFILES.md) and
 [Migration 0.20 → 0.21](../11_DEVELOPMENT/MIGRATION_0_20_TO_0_21.md).

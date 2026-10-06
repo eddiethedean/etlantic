@@ -2819,10 +2819,10 @@ def main() -> None:
             f"!= package {package_version}"
         )
     cli_flags_stable = inventory.get("cli_flags_stable", [])
-    if "--accept-legacy-bindings" not in cli_flags_stable:
+    if "--accept-legacy-bindings" in cli_flags_stable:
         raise SystemExit(
-            "surface-inventory.json cli_flags_stable must include "
-            "--accept-legacy-bindings"
+            "surface-inventory.json must not advertise the removed "
+            "--accept-legacy-bindings flag"
         )
 
     subprocess.run(

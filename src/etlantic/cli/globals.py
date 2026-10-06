@@ -55,11 +55,6 @@ def register_global_callback(
             "-p",
             help="Default profile for commands that accept --profile.",
         ),
-        accept_legacy_bindings: bool = typer.Option(
-            False,
-            "--accept-legacy-bindings",
-            help="Allow legacy profile JSON 'bindings' key (deprecated).",
-        ),
     ) -> None:
         """ETLantic command-line interface."""
         if version:
@@ -81,7 +76,6 @@ def register_global_callback(
             workspace=workspace,
             ephemeral=ephemeral,
             default_profile=default_profile,
-            accept_legacy_bindings=accept_legacy_bindings,
         )
         cli_ctx = CliContext(load_target=load_target, globals=globals_opts)
         ctx_holder["ctx"] = cli_ctx

@@ -439,8 +439,10 @@ class ExecutionHost:
                 continue
 
             if (
-                cancel_event.is_set() and outcome.status is not RunStatus.CANCELLED
-            ) or outcome.plan_fingerprint != submission.plan_fingerprint:
+                (cancel_event.is_set() and outcome.status is not RunStatus.CANCELLED)
+                or outcome.run_id != submission.run_id
+                or (outcome.plan_fingerprint != submission.plan_fingerprint)
+            ):
                 self._record_unknown_effect(
                     ctx,
                     item.submission_id,
