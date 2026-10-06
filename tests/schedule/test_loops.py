@@ -246,11 +246,13 @@ def test_execution_host_uses_the_packaged_runtime_adapter_by_default() -> None:
     assert host.runner.__class__.__name__ == "ManagedExecutionAdapter"
 
 
-def _report(*, status: RunStatus = RunStatus.SUCCEEDED) -> PipelineRunReport:
+def _report(
+    *, run_id: str = "run-1", status: RunStatus = RunStatus.SUCCEEDED
+) -> PipelineRunReport:
     return PipelineRunReport(
         pipeline_id="pipe-1",
         plan_id="plan-1",
-        run_id="run-1",
+        run_id=run_id,
         intent=RunIntent.STANDARD,
         profile="development",
         status=status,
@@ -270,7 +272,7 @@ def test_execution_host_completes_and_unknown_commit_does_not_retry() -> None:
     )
 
     def complete(_ctx: ControlPlaneContext, **_: object) -> PipelineRunReport:
-        return _report()
+        return _report(run_id=submission.run_id)
 
     host = ExecutionHost(durable, owner_id="w1", runner=complete)
     assert host.tick(ctx) == 1
@@ -327,7 +329,7 @@ def test_execution_host_persists_actual_effect_receipt() -> None:
     def success_runner(
         _ctx: ControlPlaneContext, **_kwargs: object
     ) -> PipelineRunReport:
-        return _report()
+        return _report(run_id=submission.run_id)
 
     host = ExecutionHost(durable, owner_id="w1", runner=success_runner)
 
@@ -357,7 +359,7 @@ def test_execution_host_renews_lease_during_long_running_work() -> None:
         if calls == 1:
             started.set()
             assert allow_finish.wait(timeout=4)
-        return _report()
+        return _report(run_id=submission.run_id)
 
     first = ExecutionHost(
         durable, owner_id="long-worker-1", ttl_seconds=1, runner=runner
