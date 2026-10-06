@@ -9,7 +9,14 @@ import io
 import json
 import re
 import urllib.parse
-from collections.abc import AsyncGenerator, AsyncIterator, Iterable, Mapping, Sequence
+from collections.abc import (
+    AsyncGenerator,
+    AsyncIterator,
+    Iterable,
+    Iterator,
+    Mapping,
+    Sequence,
+)
 from contextlib import asynccontextmanager
 from copy import deepcopy
 from dataclasses import dataclass, field
@@ -975,12 +982,18 @@ class FoundrySourceConnector(_FoundryClient):
                         provider=PROVIDER,
                     )
 
-        records: list[dict[str, Any]] = []
         identities: list[LandingFileIdentity] = []
+        batch_identities: list[LandingFileIdentity] = []
+        batch_records: list[dict[str, Any]] = []
+        pending_batch: ReadBatch | None = None
+        batch_index = 0
+        row_count = 0
         total_bytes = 0
         encoding = _encoding(intent)
         delimiter = _delimiter(intent)
         source_format = str(intent["format"])
+        batch_size = int(intent["batch_size"])
+        max_rows = int(intent["max_rows"])
         for item in files:
             relative_path = str(item["path"])
             remaining_total_bytes = max_total_bytes - total_bytes
@@ -1027,19 +1040,44 @@ class FoundrySourceConnector(_FoundryClient):
                     provider=PROVIDER,
                 )
             digest = hashlib.sha256(payload).hexdigest()
-            identities.append(
-                LandingFileIdentity(
-                    root_ref=str(plan.root_ref),
-                    relative_path=relative_path,
-                    size=len(payload),
-                    content_sha256=digest,
-                )
+            identity = LandingFileIdentity(
+                root_ref=str(plan.root_ref),
+                relative_path=relative_path,
+                size=len(payload),
+                content_sha256=digest,
             )
+            identities.append(identity)
+            batch_identities.append(identity)
             try:
                 decoded = payload.decode(encoding, errors="strict")
-                parsed_rows = _parse_records(
+                for row in _iter_records(
                     decoded, source_format=source_format, delimiter=delimiter
-                )
+                ):
+                    row_count += 1
+                    if row_count > max_rows:
+                        raise ConnectorReadError(
+                            f"Foundry source exceeds max_rows ({max_rows})",
+                            code="PMFND035",
+                            provider=PROVIDER,
+                        )
+                    batch_records.append(row)
+                    if len(batch_records) == batch_size:
+                        current_batch = ReadBatch(
+                            records=tuple(batch_records),
+                            batch_index=batch_index,
+                            identities=tuple(batch_identities),
+                            metadata={
+                                "dataset_rid": intent["dataset_rid"],
+                                "transaction_rid": transaction,
+                                "record_count": len(batch_records),
+                            },
+                        )
+                        batch_index += 1
+                        batch_records.clear()
+                        batch_identities.clear()
+                        if pending_batch is not None:
+                            yield pending_batch
+                        pending_batch = current_batch
             except ConnectorReadError:
                 raise
             except (
@@ -1053,13 +1091,6 @@ class FoundrySourceConnector(_FoundryClient):
                     code="PMFND034",
                     provider=PROVIDER,
                 ) from exc
-            records.extend(parsed_rows)
-            if len(records) > int(intent["max_rows"]):
-                raise ConnectorReadError(
-                    f"Foundry source exceeds max_rows ({intent['max_rows']})",
-                    code="PMFND035",
-                    provider=PROVIDER,
-                )
         manifest = LandingReadManifest(
             root_ref=str(plan.root_ref),
             identities=tuple(identities),
@@ -1072,25 +1103,28 @@ class FoundrySourceConnector(_FoundryClient):
         )
         if isinstance(context, dict):
             context["landing_read_manifest"] = manifest
-        batch_size = int(intent["batch_size"])
-        chunks: list[list[dict[str, Any]]] = [
-            records[index : index + batch_size]
-            for index in range(0, len(records), batch_size)
-        ]
-        if not chunks:
-            chunks = [[]]
-        for index, chunk in enumerate(chunks):
+        if pending_batch is not None and not batch_records and not batch_identities:
             yield ReadBatch(
-                records=tuple(chunk),
-                batch_index=index,
-                exhausted=index == len(chunks) - 1,
-                identities=tuple(identities) if index == 0 else (),
-                metadata={
-                    "dataset_rid": intent["dataset_rid"],
-                    "transaction_rid": transaction,
-                    "record_count": len(chunk),
-                },
+                records=pending_batch.records,
+                batch_index=pending_batch.batch_index,
+                exhausted=True,
+                identities=pending_batch.identities,
+                metadata=pending_batch.metadata,
             )
+            return
+        if pending_batch is not None:
+            yield pending_batch
+        yield ReadBatch(
+            records=tuple(batch_records),
+            batch_index=batch_index,
+            exhausted=True,
+            identities=tuple(batch_identities),
+            metadata={
+                "dataset_rid": intent["dataset_rid"],
+                "transaction_rid": transaction,
+                "record_count": len(batch_records),
+            },
+        )
 
     async def propose_cursor(
         self,
@@ -1980,40 +2014,61 @@ def _effect_id(context: Mapping[str, Any], dataset: str, branch: str) -> str:
     return hashlib.sha256(raw.encode("utf-8")).hexdigest()
 
 
-def _parse_records(
+def _iter_records(
     text: str, *, source_format: str, delimiter: str
-) -> list[dict[str, Any]]:
+) -> Iterator[dict[str, Any]]:
     if source_format == "csv":
         reader: csv.DictReader[str] = csv.DictReader(
             io.StringIO(text, newline=""), delimiter=delimiter
         )
-        if reader.fieldnames is None:
-            return []
-        if len(set(reader.fieldnames)) != len(reader.fieldnames) or any(
-            not field for field in reader.fieldnames
-        ):
+        header = reader.fieldnames
+        if header is None:
+            return
+        if len(set(header)) != len(header) or any(not field for field in header):
             raise ValueError("CSV headers must be present and unique")
-        rows: list[dict[str, Any]] = []
         for row in cast(Iterable[Mapping[str, Any]], reader):
-            rows.append(dict(row))
-        return rows
+            yield dict(row)
+        return
     if source_format == "json":
-        decoded: Any = json.loads(text)
-        if not isinstance(decoded, list):
+        decoder = json.JSONDecoder()
+        index = len(text) - len(text.lstrip())
+        if index >= len(text) or text[index] != "[":
             raise ValueError("JSON file must contain an array of objects")
-        decoded_rows: list[Any] = cast(list[Any], decoded)
-        if any(not isinstance(row, Mapping) for row in decoded_rows):
-            raise ValueError("JSON file must contain an array of objects")
-        return [dict(cast(Mapping[str, Any], row)) for row in decoded_rows]
-    rows: list[dict[str, Any]] = []
-    for line in text.splitlines():
+        index += 1
+        while index < len(text) and text[index].isspace():
+            index += 1
+        if index < len(text) and text[index] == "]":
+            index += 1
+            if text[index:].strip():
+                raise ValueError("JSON file must contain an array of objects")
+            return
+        while index < len(text):
+            row, index = decoder.raw_decode(text, index)
+            if not isinstance(row, Mapping):
+                raise ValueError("JSON file must contain an array of objects")
+            yield dict(cast(Mapping[str, Any], row))
+            while index < len(text) and text[index].isspace():
+                index += 1
+            if index >= len(text):
+                raise ValueError("JSON file must contain an array of objects")
+            separator = text[index]
+            index += 1
+            if separator == "]":
+                if text[index:].strip():
+                    raise ValueError("JSON file must contain an array of objects")
+                return
+            if separator != ",":
+                raise ValueError("JSON file must contain an array of objects")
+            while index < len(text) and text[index].isspace():
+                index += 1
+        raise ValueError("JSON file must contain an array of objects")
+    for line in io.StringIO(text):
         if not line.strip():
             continue
         decoded: Any = json.loads(line)
         if not isinstance(decoded, Mapping):
             raise ValueError("JSONL lines must contain objects")
-        rows.append(dict(cast(Mapping[str, Any], decoded)))
-    return rows
+        yield dict(cast(Mapping[str, Any], decoded))
 
 
 def _serialize_records(

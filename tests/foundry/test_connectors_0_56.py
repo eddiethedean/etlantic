@@ -204,11 +204,16 @@ def test_source_reads_pinned_paginated_csv_and_records_identity() -> None:
     assert rows == [{"id": "1", "value": "alpha"}, {"id": "2", "value": "beta"}]
     assert [batch.batch_index for batch in batches] == [0, 1]
     assert batches[-1].exhausted
-    assert len(batches[0].identities) == 2
+    batch_identities = [identity for batch in batches for identity in batch.identities]
+    assert [identity.relative_path for identity in batch_identities] == [
+        "folder/a.csv",
+        "folder/b.csv",
+    ]
     assert (
-        batches[0].identities[0].content_sha256
+        batch_identities[0].content_sha256
         == hashlib.sha256(contents["folder/a.csv"]).hexdigest()
     )
+    assert len(context["landing_read_manifest"].identities) == 2
     listing_requests = [
         request for request in requests if request.url.path.endswith("/files")
     ]
