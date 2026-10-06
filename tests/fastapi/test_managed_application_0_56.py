@@ -4666,6 +4666,90 @@ def test_managed_rerun_rechecks_admission_and_charges_quota_once(
     assert quota.get_state(ctx).usage["concurrency"] == 2
 
 
+def test_rejected_input_run_does_not_acquire_retention_lease(tmp_path: Path) -> None:
+    from datetime import UTC, datetime, timedelta
+    from hashlib import sha256
+
+    from etlantic.control_plane import MemoryInputResourceStore
+
+    class TrackingInputStore(MemoryInputResourceStore):
+        acquisitions = 0
+
+        def acquire_lease(
+            self,
+            ctx: ControlPlaneContext,
+            reference: Any,
+            *,
+            lease_id: str,
+            retain_until: datetime,
+        ) -> None:
+            self.acquisitions += 1
+            super().acquire_lease(
+                ctx, reference, lease_id=lease_id, retain_until=retain_until
+            )
+
+    ctx, authz, _definitions, submissions, _durable, _events, service = _wired(tmp_path)
+    authz.grant(ctx, "input.read")
+    store = TrackingInputStore()
+    service.input_resources = store
+    content = b"id\n42\n"
+    staged = store.stage(
+        ctx,
+        content,
+        media_type="text/csv",
+        format="csv",
+        expires_at=datetime.now(UTC) + timedelta(hours=1),
+    )
+    reference = store.finalize(
+        ctx,
+        staged.upload_id,
+        expected_sha256=sha256(content).hexdigest(),
+        expected_byte_length=len(content),
+    )
+
+    def planning_context(
+        _ctx: ControlPlaneContext, profile: Profile
+    ) -> PlanningContext:
+        planning = PlanningContext.create(profile=profile)
+        planning.registry.register_binding(
+            BindingDescriptor(
+                binding="file-in",
+                provider="local-files",
+                kind="source",
+                format="csv",
+                config={"input_resource": reference.to_dict()},
+            )
+        )
+        planning.registry.register_binding(
+            BindingDescriptor(
+                binding="file-out",
+                provider="csv",
+                kind="sink",
+                location=str(tmp_path / "out.csv"),
+            )
+        )
+        return planning
+
+    service.planning_context_factory = planning_context
+    service.register_definition(
+        ctx,
+        "rejected-input-pipe",
+        pipeline_to_dict(definition_from_pipeline(ManagedFilePipeline)),
+    )
+    policy = MemoryPolicyProvider()
+    policy.set_rule("pre_submit", "deny")
+    service.policy = policy
+
+    with pytest.raises(ControlPlaneError, match="policy denied"):
+        service.submit_run(ctx, "rejected-input-pipe", idempotency_key="denied-input")
+
+    assert store.acquisitions == 0
+    assert (
+        submissions.lookup_idempotency(ctx, "denied-input", operation="run.submit")
+        is None
+    )
+
+
 @pytest.mark.parametrize(
     "principal",
     [

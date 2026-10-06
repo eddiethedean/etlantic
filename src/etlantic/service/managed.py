@@ -1404,14 +1404,12 @@ class ManagedApplicationService:
                 ),
             )
         self._authorize_plan_resources(ctx, plan, action="run.submit")
+        # Check input authorization and immutable references before disclosing
+        # policy or charging quota. The retention lease itself waits until
+        # admission succeeds, so a rejected command cannot retain the upload.
+        self._authorize_input_resources(ctx, plan)
         if _preparation_control is not None:
             _preparation_control.check()
-        input_lease_id = self._protect_input_resources(
-            ctx,
-            plan,
-            operation="run.submit",
-            idempotency_key=idempotency_key,
-        )
         if isinstance(plan, PipelinePlan):
             plugin_versions = dict(plan.plugin_versions)
         else:
@@ -1465,25 +1463,32 @@ class ManagedApplicationService:
                 self.attestations,
             )
         ):
-            decision, _quota = gate_pre_submit(
-                ctx,
-                policy=self.policy,
-                approvals=self.approvals,
-                quotas=self.quotas,
-                audit=self.audit,
-                attestations=self.attestations,
-                plan_fingerprint=plan.fingerprint,
-                effective_fingerprint=effective_fingerprint,
-                revision_id=revision_id,
-                quota_idempotency_key=quota_key,
-                quota_claim_id=quota_claim_id,
-                plugin_fingerprints=(
-                    [plugin_fingerprint] if plugin_fingerprint is not None else None
-                ),
-                require_policy=self.policy is not None,
-                require_attestations=self.require_attestations,
-                audit_before_quota=True,
-            )
+            try:
+                decision, _quota = gate_pre_submit(
+                    ctx,
+                    policy=self.policy,
+                    approvals=self.approvals,
+                    quotas=self.quotas,
+                    audit=self.audit,
+                    attestations=self.attestations,
+                    plan_fingerprint=plan.fingerprint,
+                    effective_fingerprint=effective_fingerprint,
+                    revision_id=revision_id,
+                    quota_idempotency_key=quota_key,
+                    quota_claim_id=quota_claim_id,
+                    plugin_fingerprints=(
+                        [plugin_fingerprint] if plugin_fingerprint is not None else None
+                    ),
+                    require_policy=self.policy is not None,
+                    require_attestations=self.require_attestations,
+                    audit_before_quota=True,
+                )
+            except Exception:
+                # Admission can reject before a run owns any resources. Input
+                # leases are acquired only after this gate succeeds.
+                with suppress(Exception):
+                    self._release_quota_reservation(ctx, quota_key, quota_claim_id)
+                raise
             policy_fingerprint = (
                 decision.policy_fingerprint if decision is not None else None
             )
@@ -1492,9 +1497,21 @@ class ManagedApplicationService:
             try:
                 _preparation_control.check()
             except Exception:
-                self._release_input_lease(ctx, input_lease_id)
                 self._release_quota_reservation(ctx, quota_key, quota_claim_id)
                 raise
+        try:
+            input_lease_id = self._protect_input_resources(
+                ctx,
+                plan,
+                operation="run.submit",
+                idempotency_key=idempotency_key,
+            )
+        except Exception:
+            # Admission may already have reserved concurrency. If resource
+            # authorization or leasing fails, abandon only this attempt's claim.
+            with suppress(Exception):
+                self._release_quota_reservation(ctx, quota_key, quota_claim_id)
+            raise
         envelope = ExecutionEnvelope.create(
             definition_id=definition_id,
             revision_selector=revision_selector,
