@@ -44,6 +44,21 @@ The release index candidate hash and qualification artifact checksums were
 refreshed after these results. All 44 criteria are qualified; the release
 decision remains open pending the separate final release review.
 
+## Foundry bounded-batch requalification (2026-10-06)
+
+Requalified the current implementation at source revision `20e71c32` after
+Foundry source reads changed to emit bounded batches. The simulator suite
+`uv run pytest -q tests/foundry/test_simulator.py
+tests/foundry/test_connectors_0_56.py
+tests/connectors/test_resource_overlap_0_56.py` passed 42 tests across two
+independent loopback scopes. The managed provider matrix
+`ETLANTIC_SQL_TEST_URL=postgresql+psycopg://postgres@127.0.0.1:55439/postgres
+ETLANTIC_PHASE056_MATRIX_EVIDENCE=<temporary path> uv run pytest -q
+tests/fastapi/test_managed_provider_matrix_0_56.py` passed all 20 source /
+destination pairing and mode cases against a disposable PostgreSQL 16.13
+cluster and two Semblance 0.9.0 scopes. The matrix artifact was regenerated
+from this run; the temporary database cluster was stopped and removed.
+
 ## Executed evidence
 
 - Default non-optional suite:

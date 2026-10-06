@@ -1,42 +1,47 @@
 {
-  "schema": "etlantic.phase_0_56.foundry_simulator_qualification/1",
+  "cases": {
+    "branch_and_file_operations": "qualification branch file was readable after commit and absent from main and the other scope",
+    "dataset_isolation": "wrong dataset RID returned 404; other scope files were not visible",
+    "effect_reconciliation": "lost commit acknowledgement reconciled to committed independently in both scopes",
+    "independent_pinned_reads": "each scope read its own different seed rows",
+    "managed_overlap_enforcement": "the managed worker path rejected same-file source/replace overlap before a sink transaction in each scope",
+    "overlap_identity": "same origin/dataset/branch/file matched; different branch and dataset did not",
+    "secret_redaction": "opaque resource identities omitted bearer values",
+    "token_isolation": "cross-scope bearer token returned 401 without echoing either token",
+    "write_modes_per_scope": [
+      "append",
+      "replace",
+      "snapshot"
+    ]
+  },
+  "command": "uv run pytest -q tests/foundry/test_simulator.py tests/foundry/test_connectors_0_56.py tests/connectors/test_resource_overlap_0_56.py",
+  "credential_values_recorded": false,
   "decision": "passed",
   "foundry_target": "Semblance-backed Foundry REST API simulator",
-  "semblance_version": "0.9.0",
-  "network": "loopback only",
   "live_foundry_account_required": false,
-  "credential_values_recorded": false,
+  "network": "loopback only",
+  "requalified_at_utc": "2026-10-06T13:23:03.827555+00:00",
+  "result": "42 passed",
+  "schema": "etlantic.phase_0_56.foundry_simulator_qualification/1",
   "scopes": [
     {
-      "scope_id": "scope-a",
-      "dataset_rid": "ri.foundry.main.dataset.scope-a",
-      "pinned_transaction_rid": "ri.foundry.main.transaction.scope-a-pinned",
-      "namespace": "scope-a",
       "bearer_token": "distinct test token; value omitted",
+      "dataset_rid": "ri.foundry.main.dataset.scope-a",
+      "namespace": "scope-a",
+      "pinned_transaction_rid": "ri.foundry.main.transaction.scope-a-pinned",
+      "scope_id": "scope-a",
       "seed_file": "folder/input.csv"
     },
     {
-      "scope_id": "scope-b",
-      "dataset_rid": "ri.foundry.main.dataset.scope-b",
-      "pinned_transaction_rid": "ri.foundry.main.transaction.scope-b-pinned",
-      "namespace": "scope-b",
       "bearer_token": "distinct test token; value omitted",
+      "dataset_rid": "ri.foundry.main.dataset.scope-b",
+      "namespace": "scope-b",
+      "pinned_transaction_rid": "ri.foundry.main.transaction.scope-b-pinned",
+      "scope_id": "scope-b",
       "seed_file": "folder/input.csv"
     }
   ],
-  "cases": {
-    "independent_pinned_reads": "each scope read its own different seed rows",
-    "dataset_isolation": "wrong dataset RID returned 404; other scope files were not visible",
-    "token_isolation": "cross-scope bearer token returned 401 without echoing either token",
-    "branch_and_file_operations": "qualification branch file was readable after commit and absent from main and the other scope",
-    "write_modes_per_scope": ["append", "replace", "snapshot"],
-    "overlap_identity": "same origin/dataset/branch/file matched; different branch and dataset did not",
-    "managed_overlap_enforcement": "the managed worker path rejected same-file source/replace overlap before a sink transaction in each scope",
-    "effect_reconciliation": "lost commit acknowledgement reconciled to committed independently in both scopes",
-    "secret_redaction": "opaque resource identities omitted bearer values"
-  },
-  "command": "uv run pytest -q tests/foundry/test_simulator.py tests/foundry/test_connectors_0_56.py tests/connectors/test_resource_overlap_0_56.py",
-  "result": "26 passed",
+  "semblance_version": "0.9.0",
   "supporting_cases": [
     "tests/foundry/test_simulator.py::test_independent_semblance_scopes_isolate_dataset_token_branch_and_files",
     "tests/foundry/test_simulator.py::test_managed_foundry_overlap_is_rejected_before_opening_sink_transaction",
