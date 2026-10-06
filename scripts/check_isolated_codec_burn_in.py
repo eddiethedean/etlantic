@@ -3,7 +3,7 @@
 """True old/new reader-writer compatibility harness (036-C02).
 
 Default mode exercises current-tree fixtures plus semantic comparison and
-legacy run-report metadata migration. Pass ``--isolated-wheels`` to also
+canonical-input rejection. Pass ``--isolated-wheels`` to also
 install published 0.34/0.35 wheels in subprocess environments and prove
 cross-version load outcomes (requires network + uv).
 """
@@ -15,7 +15,6 @@ import json
 import os
 import subprocess
 import sys
-import warnings
 from pathlib import Path
 from typing import Any
 
@@ -51,7 +50,7 @@ MATRIX: tuple[tuple[str, str, str, str], ...] = (
     ("run_report", "0.34", "0.35", "compatible"),
     ("run_report", "0.35", "0.36", "compatible"),
     ("run_report", "0.36", "0.37", "compatible"),
-    ("run_report", "0.35.0-bare", "0.36", "migrated"),
+    ("run_report", "0.35.0-bare", "current", "upgrade-required"),
     ("run_report", "current", "current", "compatible"),
     ("profile", "0.34", "0.35", "compatible"),
     ("profile", "0.35", "0.36", "compatible"),
@@ -175,34 +174,10 @@ def _check_current_cell(
         finding["note"] = "declared unsupported for 0.34 package set"
         return finding
 
-    if family == "pipeline" and expected == "upgrade-required":
-        finding["outcome"] = "upgrade-required"
-        finding["status"] = "passed"
-        return finding
-
     try:
-        with warnings.catch_warnings(record=True) as caught:
-            warnings.simplefilter("always")
-            rewritten = _load_with_current(family, data)
-        bare_warnings = [w for w in caught if "bare keys" in str(w.message)]
-        if expected == "migrated":
-            if bare_warnings:
-                finding["error"] = "bare-key warnings after migration"
-                return finding
-            meta = rewritten.get("metadata") or {}
-            if "prefect_run_id" in meta:
-                finding["error"] = "bare prefect_run_id retained after migration"
-                return finding
-            if "etlantic.prefect.run_id" not in meta:
-                finding["error"] = "namespaced prefect run id missing after migration"
-                return finding
-            # Deterministic rewrite fingerprint: second pass identical.
-            again = _load_with_current(family, rewritten)
-            if again.get("metadata") != rewritten.get("metadata"):
-                finding["error"] = "non-deterministic metadata rewrite"
-                return finding
-            finding["outcome"] = "migrated"
-            finding["status"] = "passed"
+        rewritten = _load_with_current(family, data)
+        if expected == "upgrade-required":
+            finding["error"] = "legacy payload was accepted"
             return finding
 
         if family == "pipeline":
@@ -220,6 +195,11 @@ def _check_current_cell(
         finding["status"] = "passed"
         return finding
     except Exception as exc:
+        if expected == "upgrade-required":
+            finding["outcome"] = "upgrade-required"
+            finding["status"] = "passed"
+            finding["note"] = f"canonical decoder rejected legacy input: {exc}"
+            return finding
         finding["error"] = f"{type(exc).__name__}: {exc}"
         return finding
 

@@ -5,6 +5,8 @@ from __future__ import annotations
 import json
 from pathlib import Path
 
+import pytest
+
 from etlantic.authoring import pipeline_from_dict, pipeline_to_dict
 from etlantic.reports.model import PipelineRunReport
 
@@ -31,17 +33,14 @@ def test_035_to_036_pipeline_fixture_compatible() -> None:
     assert rewritten["fingerprint"] == data["fingerprint"]
 
 
-def test_035_bare_report_migrates_on_036_reader() -> None:
+def test_035_bare_report_is_rejected_by_current_reader() -> None:
     data = json.loads(
         (RELEASES / "v0_35/known_defects/run_report_bare_metadata.json").read_text(
             encoding="utf-8"
         )
     )
-    report = PipelineRunReport.from_dict(data)
-    assert report.metadata["etlantic.prefect.run_id"] == "legacy-run-id-0350"
-    # Deterministic second pass.
-    again = PipelineRunReport.from_dict(report.to_dict())
-    assert again.metadata == report.metadata
+    with pytest.raises(ValueError, match="unsupported legacy metadata key"):
+        PipelineRunReport.from_dict(data)
 
 
 def test_release_baseline_covers_thirteen_distributions() -> None:

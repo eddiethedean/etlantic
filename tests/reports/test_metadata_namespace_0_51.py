@@ -1,8 +1,6 @@
-"""0.51 built-in report metadata migration tests."""
+"""Canonical report metadata namespace tests."""
 
 from __future__ import annotations
-
-import warnings
 
 import pytest
 
@@ -33,24 +31,13 @@ def _report(metadata: dict[str, object]) -> dict[str, object]:
 
 
 @pytest.mark.parametrize("legacy", ["dataframe", "sql", "spark", "spark_schema"])
-def test_bare_built_in_metadata_is_migrated_without_warning(legacy: str) -> None:
-    with warnings.catch_warnings(record=True) as caught:
-        warnings.simplefilter("always")
-        report = PipelineRunReport.from_dict(_report({legacy: {"rows": 1}}))
-    assert not caught
-    assert report.steps[0].metadata == {f"etlantic.{legacy}": {"rows": 1}}
+def test_bare_built_in_metadata_is_rejected(legacy: str) -> None:
+    with pytest.raises(ValueError, match="unsupported legacy metadata key"):
+        PipelineRunReport.from_dict(_report({legacy: {"rows": 1}}))
 
 
-def test_namespaced_metadata_wins_collision_and_reserializes_canonically() -> None:
-    report = PipelineRunReport.from_dict(
-        _report(
-            {
-                "sql": {"source": "legacy"},
-                "etlantic.sql": {"source": "canonical"},
-            }
-        )
-    )
-    assert report.steps[0].metadata == {"etlantic.sql": {"source": "canonical"}}
+def test_namespaced_metadata_reserializes_canonically() -> None:
+    report = PipelineRunReport.from_dict(_report({"etlantic.sql": {"source": "ok"}}))
     again = PipelineRunReport.from_dict(report.to_dict())
     assert again.to_dict() == report.to_dict()
 

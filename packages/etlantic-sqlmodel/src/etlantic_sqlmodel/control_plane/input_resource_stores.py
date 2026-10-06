@@ -6,7 +6,7 @@ import hashlib
 import hmac
 import json
 import uuid
-from collections.abc import Mapping
+from collections.abc import Mapping, Sequence
 from datetime import UTC, datetime
 from typing import Any, cast
 
@@ -421,76 +421,95 @@ class SqlModelInputResourceStore:
         lease_id: str,
         retain_until: datetime,
     ) -> None:
+        self.acquire_leases(
+            ctx, (reference,), lease_id=lease_id, retain_until=retain_until
+        )
+
+    def acquire_leases(
+        self,
+        ctx: ControlPlaneContext,
+        references: Sequence[InputResourceReference],
+        *,
+        lease_id: str,
+        retain_until: datetime,
+    ) -> None:
         if not lease_id.strip():
             raise ValueError("lease_id must be non-empty")
+        if not references:
+            return
         retain = _iso(retain_until)
         current = _iso(datetime.now(UTC))
         if retain <= current:
             raise ValueError("retain_until must be in the future")
+        owner_id = _owner(ctx)
         with self.engine.begin() as connection:
-            row = (
-                connection.execute(
-                    select(self.uploads)
-                    .where(
-                        self.uploads.c.upload_id == reference.resource_id,
-                        self.uploads.c.tenant_id == ctx.tenant.tenant_id,
-                        self.uploads.c.workspace_id == ctx.workspace.workspace_id,
-                        self.uploads.c.owner_id == _owner(ctx),
+            prepared: list[tuple[InputResourceReference, Any | None]] = []
+            for reference in references:
+                row = (
+                    connection.execute(
+                        select(self.uploads)
+                        .where(
+                            self.uploads.c.upload_id == reference.resource_id,
+                            self.uploads.c.tenant_id == ctx.tenant.tenant_id,
+                            self.uploads.c.workspace_id == ctx.workspace.workspace_id,
+                            self.uploads.c.owner_id == owner_id,
+                        )
+                        .with_for_update()
                     )
-                    .with_for_update()
+                    .mappings()
+                    .one_or_none()
                 )
-                .mappings()
-                .one_or_none()
-            )
-            if row is None:
-                raise ControlPlaneError.not_found("Input resource not found")
-            self._verify_row_reference(ctx, row, reference)
-            existing = (
-                connection.execute(
-                    select(self.leases)
+                if row is None:
+                    raise ControlPlaneError.not_found("Input resource not found")
+                self._verify_row_reference(ctx, row, reference)
+                existing = (
+                    connection.execute(
+                        select(self.leases)
+                        .where(
+                            self.leases.c.tenant_id == ctx.tenant.tenant_id,
+                            self.leases.c.workspace_id == ctx.workspace.workspace_id,
+                            self.leases.c.owner_id == owner_id,
+                            self.leases.c.upload_id == reference.resource_id,
+                            self.leases.c.lease_id == lease_id,
+                        )
+                        .with_for_update()
+                    )
+                    .mappings()
+                    .one_or_none()
+                )
+                active_lease = connection.execute(
+                    select(self.leases.c.id)
                     .where(
                         self.leases.c.tenant_id == ctx.tenant.tenant_id,
                         self.leases.c.workspace_id == ctx.workspace.workspace_id,
-                        self.leases.c.owner_id == _owner(ctx),
+                        self.leases.c.owner_id == owner_id,
                         self.leases.c.upload_id == reference.resource_id,
-                        self.leases.c.lease_id == lease_id,
+                        self.leases.c.retain_until > current,
                     )
-                    .with_for_update()
-                )
-                .mappings()
-                .one_or_none()
-            )
-            active_lease = connection.execute(
-                select(self.leases.c.id)
-                .where(
-                    self.leases.c.tenant_id == ctx.tenant.tenant_id,
-                    self.leases.c.workspace_id == ctx.workspace.workspace_id,
-                    self.leases.c.owner_id == _owner(ctx),
-                    self.leases.c.upload_id == reference.resource_id,
-                    self.leases.c.retain_until > current,
-                )
-                .limit(1)
-            ).first()
-            if str(row["expires_at"]) <= current and active_lease is None:
-                raise _expired_upload()
-            if existing is not None:
-                retain = max(retain, str(existing["retain_until"]))
-                connection.execute(
-                    update(self.leases)
-                    .where(self.leases.c.id == existing["id"])
-                    .values(retain_until=retain)
-                )
-            else:
-                connection.execute(
-                    self.leases.insert().values(
-                        tenant_id=ctx.tenant.tenant_id,
-                        workspace_id=ctx.workspace.workspace_id,
-                        owner_id=_owner(ctx),
-                        upload_id=reference.resource_id,
-                        lease_id=lease_id,
-                        retain_until=retain,
+                    .limit(1)
+                ).first()
+                if str(row["expires_at"]) <= current and active_lease is None:
+                    raise _expired_upload()
+                prepared.append((reference, existing))
+            for reference, existing in prepared:
+                if existing is not None:
+                    lease_retain = max(retain, str(existing["retain_until"]))
+                    connection.execute(
+                        update(self.leases)
+                        .where(self.leases.c.id == existing["id"])
+                        .values(retain_until=lease_retain)
                     )
-                )
+                else:
+                    connection.execute(
+                        self.leases.insert().values(
+                            tenant_id=ctx.tenant.tenant_id,
+                            workspace_id=ctx.workspace.workspace_id,
+                            owner_id=owner_id,
+                            upload_id=reference.resource_id,
+                            lease_id=lease_id,
+                            retain_until=retain,
+                        )
+                    )
 
     def release_lease(self, ctx: ControlPlaneContext, *, lease_id: str) -> None:
         with self.engine.begin() as connection:

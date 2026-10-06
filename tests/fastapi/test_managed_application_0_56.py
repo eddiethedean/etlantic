@@ -4675,17 +4675,17 @@ def test_rejected_input_run_does_not_acquire_retention_lease(tmp_path: Path) -> 
     class TrackingInputStore(MemoryInputResourceStore):
         acquisitions = 0
 
-        def acquire_lease(
+        def acquire_leases(
             self,
             ctx: ControlPlaneContext,
-            reference: Any,
+            references: Any,
             *,
             lease_id: str,
             retain_until: datetime,
         ) -> None:
-            self.acquisitions += 1
-            super().acquire_lease(
-                ctx, reference, lease_id=lease_id, retain_until=retain_until
+            self.acquisitions += len(references)
+            super().acquire_leases(
+                ctx, references, lease_id=lease_id, retain_until=retain_until
             )
 
     ctx, authz, _definitions, submissions, _durable, _events, service = _wired(tmp_path)
@@ -5036,7 +5036,7 @@ def test_managed_rerun_input_lease_failure_does_not_charge_quota(
     class LeaseFailureInputStore(MemoryInputResourceStore):
         fail_leases = False
 
-        def acquire_lease(self, *args: Any, **kwargs: Any) -> Any:
+        def acquire_leases(self, *args: Any, **kwargs: Any) -> Any:
             if self.fail_leases:
                 raise ControlPlaneError(
                     "Input lease temporarily unavailable",
@@ -5044,7 +5044,7 @@ def test_managed_rerun_input_lease_failure_does_not_charge_quota(
                     status=503,
                     title="Service Unavailable",
                 )
-            return super().acquire_lease(*args, **kwargs)
+            return super().acquire_leases(*args, **kwargs)
 
     ctx, authz, _definitions, submissions, durable, _events, service = _wired(tmp_path)
     authz.grant(ctx, "run.rerun")
@@ -5135,18 +5135,18 @@ def test_managed_rerun_lease_failure_cannot_revoke_concurrent_acceptance(
         failure_acquired = Event()
         release_failure = Event()
 
-        def acquire_lease(
+        def acquire_leases(
             self,
             ctx: ControlPlaneContext,
-            reference: Any,
+            references: Any,
             *,
             lease_id: str,
             retain_until: datetime,
         ) -> None:
             if self.fail_next:
                 self.fail_next = False
-                super().acquire_lease(
-                    ctx, reference, lease_id=lease_id, retain_until=retain_until
+                super().acquire_leases(
+                    ctx, references, lease_id=lease_id, retain_until=retain_until
                 )
                 self.failure_acquired.set()
                 assert self.release_failure.wait(timeout=10)
@@ -5156,8 +5156,8 @@ def test_managed_rerun_lease_failure_cannot_revoke_concurrent_acceptance(
                     status=503,
                     title="Service Unavailable",
                 )
-            super().acquire_lease(
-                ctx, reference, lease_id=lease_id, retain_until=retain_until
+            super().acquire_leases(
+                ctx, references, lease_id=lease_id, retain_until=retain_until
             )
 
     ctx, authz, _definitions, submissions, durable, _events, service = _wired(tmp_path)

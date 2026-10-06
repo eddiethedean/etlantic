@@ -12,7 +12,7 @@ import hmac
 import json
 import threading
 import uuid
-from collections.abc import Mapping
+from collections.abc import Mapping, Sequence
 from dataclasses import dataclass, field
 from datetime import UTC, datetime
 from typing import Protocol, runtime_checkable
@@ -61,9 +61,13 @@ def _owner(ctx: ControlPlaneContext) -> str:
 
 
 def managed_input_lease_id(
-    ctx: ControlPlaneContext, *, operation: str, idempotency_key: str
+    ctx: ControlPlaneContext,
+    *,
+    operation: str,
+    idempotency_key: str,
+    intent_fingerprint: str,
 ) -> str:
-    """Derive the canonical, principal-scoped lease for accepted input bytes."""
+    """Derive the canonical lease for one principal-scoped execution intent."""
     scope = {
         "security_domain": ctx.security_domain.domain_id,
         "tenant": ctx.tenant.tenant_id,
@@ -77,6 +81,7 @@ def managed_input_lease_id(
         },
         "operation": operation,
         "idempotency_key": idempotency_key,
+        "intent_fingerprint": intent_fingerprint,
     }
     digest = hashlib.sha256(
         json.dumps(scope, sort_keys=True, separators=(",", ":")).encode("utf-8")
@@ -290,7 +295,18 @@ class InputResourceStore(Protocol):
         lease_id: str,
         retain_until: datetime,
     ) -> None:
-        """Protect an accepted, retryable or replayable input reference."""
+        """Protect one accepted, retryable or replayable input reference."""
+        ...
+
+    def acquire_leases(
+        self,
+        ctx: ControlPlaneContext,
+        references: Sequence[InputResourceReference],
+        *,
+        lease_id: str,
+        retain_until: datetime,
+    ) -> None:
+        """Atomically protect every input for one accepted execution."""
         ...
 
     def release_lease(self, ctx: ControlPlaneContext, *, lease_id: str) -> None:
@@ -547,27 +563,41 @@ class MemoryInputResourceStore:
         lease_id: str,
         retain_until: datetime,
     ) -> None:
+        self.acquire_leases(
+            ctx, (reference,), lease_id=lease_id, retain_until=retain_until
+        )
+
+    def acquire_leases(
+        self,
+        ctx: ControlPlaneContext,
+        references: Sequence[InputResourceReference],
+        *,
+        lease_id: str,
+        retain_until: datetime,
+    ) -> None:
         if not lease_id.strip():
             raise ValueError("lease_id must be non-empty")
+        if not references:
+            return
         expiry = _time(retain_until)
         if expiry <= datetime.now(UTC):
             raise ValueError("retain_until must be in the future")
         with self._lock:
-            upload = self._get_upload(ctx, reference.resource_id)
-            self._verify_reference(ctx, upload, reference)
             current = datetime.now(UTC)
-            if _parse_time(upload.expires_at) <= current and not self._has_live_lease(
-                upload, current
-            ):
-                raise _expired_input()
-            key = (upload.tenant_id, upload.workspace_id, upload.upload_id)
-            leases = self._leases.setdefault(key, {})
-            prior = leases.get(lease_id)
             encoded = _iso(expiry)
-            if prior is not None and prior != encoded:
-                leases[lease_id] = max(prior, encoded)
-            else:
-                leases[lease_id] = encoded
+            prepared: list[tuple[tuple[str, str, str], str | None]] = []
+            for reference in references:
+                upload = self._get_upload(ctx, reference.resource_id)
+                self._verify_reference(ctx, upload, reference)
+                if _parse_time(
+                    upload.expires_at
+                ) <= current and not self._has_live_lease(upload, current):
+                    raise _expired_input()
+                key = (upload.tenant_id, upload.workspace_id, upload.upload_id)
+                prepared.append((key, self._leases.get(key, {}).get(lease_id)))
+            for key, prior in prepared:
+                leases = self._leases.setdefault(key, {})
+                leases[lease_id] = max(prior, encoded) if prior is not None else encoded
 
     def release_lease(self, ctx: ControlPlaneContext, *, lease_id: str) -> None:
         owner = _owner(ctx)

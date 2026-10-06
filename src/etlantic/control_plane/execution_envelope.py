@@ -30,7 +30,6 @@ from etlantic.runtime.request import (
     resolve_request_policies,
 )
 
-_EXECUTION_ENVELOPE_SCHEMA_V1 = "etlantic.execution_envelope/1"
 EXECUTION_ENVELOPE_SCHEMA = "etlantic.execution_envelope/2"
 _FINGERPRINT_RE = re.compile(r"^[0-9a-f]{64}$")
 
@@ -224,10 +223,7 @@ class ExecutionEnvelope:
                 "Unknown execution-envelope field(s): " + ", ".join(sorted(unknown))
             )
         schema_raw = data.get("schema")
-        if schema_raw not in {
-            _EXECUTION_ENVELOPE_SCHEMA_V1,
-            EXECUTION_ENVELOPE_SCHEMA,
-        }:
+        if schema_raw != EXECUTION_ENVELOPE_SCHEMA:
             raise ValueError("Unsupported execution-envelope schema")
 
         def text_field(name: str, *, allow_empty: bool = False) -> str:
@@ -255,8 +251,7 @@ class ExecutionEnvelope:
             ("effective_settings", effective_raw),
             ("setting_provenance", provenance_raw),
         ]
-        if schema_raw == EXECUTION_ENVELOPE_SCHEMA:
-            required_mappings.append(("effective_request", effective_request_raw))
+        required_mappings.append(("effective_request", effective_request_raw))
         for name, value in required_mappings:
             if not isinstance(value, Mapping):
                 raise TypeError(f"{name} must be an object")
@@ -351,17 +346,14 @@ class ExecutionEnvelope:
             profile_name=profile_name,
             intents=intents,
         )
-        if schema_raw == EXECUTION_ENVELOPE_SCHEMA:
-            if effective_request_data is None or _canonical_json(
-                dict(effective_request_data)
-            ) != _canonical_json(expected_effective_request):
-                raise ValueError(
-                    "Effective request does not match its plan and request"
-                )
-            if _canonical_json(dict(provenance_data)) != _canonical_json(
-                expected_provenance
-            ):
-                raise ValueError("Setting provenance does not match resolved settings")
+        if effective_request_data is None or _canonical_json(
+            dict(effective_request_data)
+        ) != _canonical_json(expected_effective_request):
+            raise ValueError("Effective request does not match its plan and request")
+        if _canonical_json(dict(provenance_data)) != _canonical_json(
+            expected_provenance
+        ):
+            raise ValueError("Setting provenance does not match resolved settings")
 
         _validate_secret_free("definition_document", dict(definition_data))
         _validate_secret_free("plan_document", dict(plan_data))

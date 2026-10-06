@@ -1505,6 +1505,7 @@ class ManagedApplicationService:
                 plan,
                 operation="run.submit",
                 idempotency_key=idempotency_key,
+                intent_fingerprint=effective_fingerprint,
             )
         except Exception:
             # Admission may already have reserved concurrency. If resource
@@ -1579,13 +1580,20 @@ class ManagedApplicationService:
             if prior_receipt is not None:
                 prior_envelope = self._envelope_from_payload(prior_payload)
                 if prior_envelope.to_json() != envelope.to_json():
+                    with suppress(Exception):
+                        self._release_input_lease(ctx, input_lease_id)
+                    with suppress(Exception):
+                        self._release_quota_reservation(ctx, quota_key, quota_claim_id)
                     raise ControlPlaneError.conflict(
                         "Idempotency key reuse with a different accepted snapshot"
                     ) from exc
                 receipt_result = AcceptResult(receipt=prior_receipt, created=False)
             else:
                 if isinstance(exc, ControlPlaneError) and exc.status < 500:
-                    self._release_quota_reservation(ctx, quota_key, quota_claim_id)
+                    with suppress(Exception):
+                        self._release_input_lease(ctx, input_lease_id)
+                    with suppress(Exception):
+                        self._release_quota_reservation(ctx, quota_key, quota_claim_id)
                     raise
                 raise ControlPlaneError(
                     "CP1 acceptance acknowledgement is uncertain; retry the same "
@@ -1601,6 +1609,10 @@ class ManagedApplicationService:
                 ) from exc
         expected_run_id = managed_run_id(ctx, idempotency_key)
         if receipt_result.receipt.resource_id != expected_run_id:
+            with suppress(Exception):
+                self._release_input_lease(ctx, input_lease_id)
+            with suppress(Exception):
+                self._release_quota_reservation(ctx, quota_key, quota_claim_id)
             raise ControlPlaneError.conflict(
                 "Accepted receipt has no canonical run identity"
             )
@@ -2812,6 +2824,7 @@ class ManagedApplicationService:
             if self.quotas is not None
             else None
         )
+        quota_claim_id = uuid4().hex if quota_key is not None else None
         prior_receipt = self.submissions.lookup_idempotency(
             ctx, idempotency_key, operation=operation
         )
@@ -2910,41 +2923,56 @@ class ManagedApplicationService:
             )
             return receipt_result.receipt
 
-        input_lease_id = self._protect_input_resources(
-            ctx,
-            input_plan,
-            operation=operation,
-            idempotency_key=idempotency_key,
-        )
+        try:
+            decision, _quota = gate_pre_submit(
+                ctx,
+                policy=self.policy,
+                approvals=self.approvals,
+                quotas=self.quotas,
+                audit=self.audit,
+                attestations=self.attestations,
+                plan_fingerprint=envelope.plan_fingerprint,
+                effective_fingerprint=envelope.effective_fingerprint,
+                revision_id=envelope.revision_id,
+                quota_idempotency_key=quota_key,
+                quota_claim_id=quota_claim_id,
+                plugin_fingerprints=(
+                    [envelope.plugin_fingerprint]
+                    if envelope.plugin_fingerprint is not None
+                    else None
+                ),
+                require_policy=self.policy is not None,
+                require_attestations=self.require_attestations,
+                audit_before_quota=True,
+            )
+        except Exception:
+            with suppress(Exception):
+                self._release_quota_reservation(ctx, quota_key, quota_claim_id)
+            raise
+        quota_key = self._quota_reservation_key(_quota, quota_key)
+        try:
+            input_lease_id = self._protect_input_resources(
+                ctx,
+                input_plan,
+                operation=operation,
+                idempotency_key=idempotency_key,
+                intent_fingerprint=envelope.effective_fingerprint,
+            )
+        except Exception:
+            with suppress(Exception):
+                self._release_quota_reservation(ctx, quota_key, quota_claim_id)
+            raise
         envelope_lease_id = (envelope.evidence_refs or {}).get(
             "input_resource_lease_id"
         )
         if input_lease_id != envelope_lease_id:
             with suppress(Exception):
                 self._release_input_lease(ctx, input_lease_id)
+            with suppress(Exception):
+                self._release_quota_reservation(ctx, quota_key, quota_claim_id)
             raise ControlPlaneError.conflict(
                 "Accepted input resource lease does not match its execution envelope"
             )
-        decision, _quota = gate_pre_submit(
-            ctx,
-            policy=self.policy,
-            approvals=self.approvals,
-            quotas=self.quotas,
-            audit=self.audit,
-            attestations=self.attestations,
-            plan_fingerprint=envelope.plan_fingerprint,
-            effective_fingerprint=envelope.effective_fingerprint,
-            revision_id=envelope.revision_id,
-            quota_idempotency_key=quota_key,
-            plugin_fingerprints=(
-                [envelope.plugin_fingerprint]
-                if envelope.plugin_fingerprint is not None
-                else None
-            ),
-            require_policy=self.policy is not None,
-            require_attestations=self.require_attestations,
-            audit_before_quota=True,
-        )
         envelope = ExecutionEnvelope.from_dict(
             {
                 **envelope.to_dict(),
@@ -2977,14 +3005,77 @@ class ManagedApplicationService:
                 "parent_submission_id": parent_submission_id,
             }
         )
-        receipt_result = self.submissions.accept(
-            ctx,
-            idempotency_key=idempotency_key,
-            payload=payload,
-            resource_type="run",
-            resource_id=managed_run_id(ctx, idempotency_key, operation=operation),
-            operation=operation,
-        )
+        try:
+            receipt_result = self.submissions.accept(
+                ctx,
+                idempotency_key=idempotency_key,
+                payload=payload,
+                resource_type="run",
+                resource_id=managed_run_id(ctx, idempotency_key, operation=operation),
+                operation=operation,
+            )
+            acceptance_reconciled = False
+        except Exception as exc:
+            # Reconcile an acknowledgement loss before deciding whether the
+            # quota claim and input lease belong to an accepted child run.
+            prior_receipt: AcceptReceipt | None = None
+            prior_payload: Mapping[str, Any] | None = None
+            lookup_succeeded = False
+            try:
+                prior_receipt = self.submissions.lookup_idempotency(
+                    ctx, idempotency_key, operation=operation
+                )
+                prior_payload = self.submissions.lookup_idempotency_payload(
+                    ctx, idempotency_key, operation=operation
+                )
+                lookup_succeeded = True
+            except Exception:
+                prior_receipt = None
+                prior_payload = None
+            if prior_receipt is not None:
+                prior_envelope = self._envelope_from_payload(prior_payload)
+                if prior_envelope.to_json() != envelope.to_json():
+                    with suppress(Exception):
+                        self._release_quota_reservation(ctx, quota_key, quota_claim_id)
+                    prior_lease_id = (prior_envelope.evidence_refs or {}).get(
+                        "input_resource_lease_id"
+                    )
+                    if prior_lease_id != input_lease_id:
+                        with suppress(Exception):
+                            self._release_input_lease(ctx, input_lease_id)
+                    raise ControlPlaneError.conflict(
+                        "Idempotency key reuse with a different lifecycle parent or intent"
+                    ) from exc
+                receipt_result = AcceptResult(receipt=prior_receipt, created=False)
+                # The receipt may be this attempt's commit with a lost
+                # acknowledgement. Keep its claim because the receipt alone
+                # cannot identify which concurrent attempt won.
+                acceptance_reconciled = True
+            elif isinstance(exc, ControlPlaneError) and exc.status < 500:
+                with suppress(Exception):
+                    self._release_quota_reservation(ctx, quota_key, quota_claim_id)
+                if lookup_succeeded:
+                    with suppress(Exception):
+                        self._release_input_lease(ctx, input_lease_id)
+                raise
+            else:
+                raise ControlPlaneError(
+                    "Lifecycle acceptance acknowledgement is uncertain; retry the same "
+                    "idempotency key to reconcile",
+                    code="PMCP503",
+                    status=503,
+                    title="Service Unavailable",
+                    type="etlantic.control_plane/unavailable",
+                    extensions={
+                        "idempotency_key": idempotency_key,
+                        "acceptance_uncertain": True,
+                    },
+                ) from exc
+        if not receipt_result.created and not acceptance_reconciled:
+            # Concurrent identical retries share one accepted child run. Only
+            # the winning request keeps the attempt-specific quota claim.
+            with suppress(Exception):
+                self._release_quota_reservation(ctx, quota_key, quota_claim_id)
         expected_run_id = managed_run_id(ctx, idempotency_key, operation=operation)
         if receipt_result.receipt.resource_id != expected_run_id:
             raise ControlPlaneError.conflict(
@@ -4079,6 +4170,7 @@ class ManagedApplicationService:
         *,
         operation: str,
         idempotency_key: str,
+        intent_fingerprint: str,
     ) -> str | None:
         references = self._authorize_input_resources(ctx, plan)
         if not references:
@@ -4094,7 +4186,10 @@ class ManagedApplicationService:
                 title="Internal Server Error",
             )
         lease_id = managed_input_lease_id(
-            ctx, operation=operation, idempotency_key=idempotency_key
+            ctx,
+            operation=operation,
+            idempotency_key=idempotency_key,
+            intent_fingerprint=intent_fingerprint,
         )
         retain_until = datetime.now(UTC) + timedelta(
             seconds=self.input_resource_retention_seconds
@@ -4107,13 +4202,21 @@ class ManagedApplicationService:
                 title="Service Unavailable",
                 type="etlantic.control_plane/unavailable",
             )
-        for reference in references:
-            self.input_resources.acquire_lease(
-                ctx,
-                reference,
-                lease_id=lease_id,
-                retain_until=retain_until,
+        acquire_many = getattr(self.input_resources, "acquire_leases", None)
+        if not callable(acquire_many):
+            raise ControlPlaneError(
+                "Input resource store does not support atomic multi-input leases",
+                code="PMRES503",
+                status=503,
+                title="Service Unavailable",
+                type="etlantic.control_plane/unavailable",
             )
+        acquire_many(
+            ctx,
+            references,
+            lease_id=lease_id,
+            retain_until=retain_until,
+        )
         return lease_id
 
     def _release_input_lease(
@@ -4531,7 +4634,10 @@ def _with_input_resource_lease(
     evidence_refs = dict(envelope.evidence_refs or {})
     if _input_resource_references(plan):
         evidence_refs["input_resource_lease_id"] = managed_input_lease_id(
-            ctx, operation=operation, idempotency_key=idempotency_key
+            ctx,
+            operation=operation,
+            idempotency_key=idempotency_key,
+            intent_fingerprint=envelope.effective_fingerprint,
         )
     else:
         evidence_refs.pop("input_resource_lease_id", None)

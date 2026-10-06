@@ -13,7 +13,6 @@ from etlantic.authoring.upgrade import UnsupportedPipelineSchemaError
 from etlantic.extensions import (
     MAX_METADATA_BYTES,
     MAX_METADATA_DEPTH,
-    migrate_report_metadata_keys,
     validate_extension_metadata,
 )
 from etlantic.reports.model import PipelineRunReport
@@ -31,14 +30,11 @@ def test_secret_like_keys_rejected_in_report_metadata() -> None:
         )
 
 
-def test_bare_report_keys_migrate_without_warnings() -> None:
+def test_bare_report_keys_are_rejected() -> None:
     path = RELEASES / "v0_35/known_defects/run_report_bare_metadata.json"
     data = json.loads(path.read_text(encoding="utf-8"))
-    report = PipelineRunReport.from_dict(data)
-    assert "prefect_run_id" not in report.metadata
-    assert report.metadata.get("etlantic.prefect.run_id") == "legacy-run-id-0350"
-    again = migrate_report_metadata_keys(dict(report.metadata))
-    assert again == report.metadata
+    with pytest.raises(ValueError, match="unsupported legacy metadata key"):
+        PipelineRunReport.from_dict(data)
 
 
 def test_oversized_metadata_fail_closed() -> None:

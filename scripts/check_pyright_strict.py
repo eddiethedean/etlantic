@@ -127,9 +127,12 @@ EXPECTED_DIGESTS = {
     # unchanged at 10,038 diagnostics.
     # AC056 removes legacy profile migration/loading paths, including their
     # shadow type debt. The asset-store rename changes one diagnostic symbol;
-    # the normalized inventory is now 10,030 diagnostics on both platforms.
-    "Darwin": "ca2fdd763d064855c49f3741bbe1d3189834c17ca45a4f7590d40460131bb37c",
-    "Linux": "ca2fdd763d064855c49f3741bbe1d3189834c17ca45a4f7590d40460131bb37c",
+    # the normalized inventory is now 10,029 diagnostics on both platforms.
+    # Canonical envelope/report decoding and atomic input leases shift existing
+    # source locations; direct Pyright reports no new diagnostics. The reviewed
+    # suppression-free inventory remains at 10,029 diagnostics.
+    "Darwin": "3024510567f3fc9c208b6ee44abe88b5b0c5b665a0f83931ff4ed7d49e3a54be",
+    "Linux": "3024510567f3fc9c208b6ee44abe88b5b0c5b665a0f83931ff4ed7d49e3a54be",
 }
 
 

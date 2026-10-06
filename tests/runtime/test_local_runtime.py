@@ -208,10 +208,8 @@ def test_execution_envelope_round_trips_verified_plan_and_request() -> None:
     legacy_document["run_request"].pop("explicit_settings")
     legacy_document["run_request"].pop("extensions")
     legacy_document["setting_provenance"] = {"retry_max_attempts": "profile.default"}
-    upgraded = ExecutionEnvelope.from_dict(legacy_document)
-    assert upgraded.schema == "etlantic.execution_envelope/2"
-    assert upgraded.effective_request["retry"]["max_attempts"] == 5
-    assert upgraded.effective_request["timeout"]["run_seconds"] == 120
+    with pytest.raises(ValueError, match="Unsupported execution-envelope schema"):
+        ExecutionEnvelope.from_dict(legacy_document)
 
 
 def test_execution_envelope_rejects_tampered_plan_and_secret_fields() -> None:

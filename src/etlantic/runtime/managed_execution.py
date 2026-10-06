@@ -571,6 +571,7 @@ class ManagedExecutionAdapter:
                 ctx,
                 operation=submission.operation,
                 idempotency_key=submission.idempotency_key,
+                intent_fingerprint=envelope.effective_fingerprint,
             ):
                 raise ExecutionRejected(
                     "Accepted input resource lease has a noncanonical scope"
