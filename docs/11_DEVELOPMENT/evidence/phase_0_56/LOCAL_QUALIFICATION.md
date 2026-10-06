@@ -4,9 +4,9 @@ status: experimental
 
 # Phase 0.56 Local Qualification
 
-**Decision: all acceptance criteria are qualified; release review remains open.** This record reports local implementation evidence; it does not claim publication.
+**Decision: all 44 acceptance criteria are qualified; release review remains open.** This record reports local implementation evidence; it does not claim publication.
 
-Current index: 44 criteria passed, 0 open, and 0 blocked of 44.
+Current index: 44 criteria passed, 0 open, 0 pending, and 0 blocked.
 
 ## Candidate environment
 
@@ -18,6 +18,31 @@ Current index: 44 criteria passed, 0 open, and 0 blocked of 44.
   loopback PostgreSQL 16.13 Homebrew cluster.
 - Workspace base: `e7fd6b866dbecab646cf68b73405ee06ea4437e5`
 - Candidate packages: core and companions build as 0.56.0 in lockstep. This is an unpublished qualification candidate against the published 0.55.x compatibility baseline.
+
+## Requalification against the current candidate tree
+
+- Date: 2026-10-06. Source candidate: `bbdd4a27` before this evidence refresh.
+- The full default non-optional regression command above was rerun against the
+  current source tree: 3,260 passed, 120 skipped, and 739 deselected in 8m10s.
+  This covers the current managed admission, runtime recovery, input lease
+  ordering, profile boundary, and compatibility-reader changes.
+- SQLModel local-store regression:
+  `uv run pytest -q tests/sqlmodel/test_control_plane_stores.py
+  tests/sqlmodel/test_durable_work_0_41.py
+  tests/sqlmodel/test_input_resource_postgresql_0_56.py` — 25 passed, 1
+  skipped because the live PostgreSQL lease/cleanup race requires a database
+  URL. That race was then rerun against an isolated temporary PostgreSQL 16.13
+  cluster:
+  `ETLANTIC_SQLMODEL_TEST_URL=postgresql+psycopg://... uv run pytest -q
+  tests/sqlmodel/test_input_resource_postgresql_0_56.py` — 1 passed. The test
+  covers six multiprocess lease-versus-cleanup trials, including both forced
+  orderings and simultaneous races. The temporary cluster was removed after
+  the run.
+- `git diff --check` and `uv run python scripts/check_docs.py` passed after the evidence refresh.
+
+The release index candidate hash and qualification artifact checksums were
+refreshed after these results. All 44 criteria are qualified; the release
+decision remains open pending the separate final release review.
 
 ## Executed evidence
 
@@ -1153,11 +1178,13 @@ case references, provider tuple and open reason. These limitations keep the
 
 ## Final candidate disposition
 
-All 44 acceptance criteria are marked passed. AC056-031 now covers managed
-checkpoint restoration alongside the previously qualified PostgreSQL repair
-and backfill behavior. The historical 2,983-test default regression, the
-focused live PostgreSQL repair/backfill suite, and isolated wheel checks remain
-evidence for their recorded source state. No package tag or publication is
+The release index records all 44 criteria as qualified. AC056-026 includes a
+current-source PostgreSQL 16.13 lease/cleanup race rerun after the
+`acquire_leases` change. AC056-031 covers managed checkpoint restoration
+alongside the previously qualified PostgreSQL repair and backfill behavior.
+Historical regressions, focused provider suites and isolated wheel checks
+remain evidence for their recorded source states; current-tree regression
+results are listed above. No package tag or publication is
 claimed; the published supported line remains 0.55.x.
 
 - Static and documentation gates: `uv run pyright` — 0 errors; `uv run ruff check .` and `uv run ruff format --check .` passed; `uv run python scripts/check_docs.py` passed; `uv run mkdocs build --strict` built the site successfully; `uv run python scripts/check_release.py` passed all in-repository release checks and reported the expected 24 unpublished candidate distributions missing from PyPI.

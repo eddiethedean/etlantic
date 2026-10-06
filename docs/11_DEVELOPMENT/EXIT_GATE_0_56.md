@@ -14,10 +14,11 @@ The published 0.56.0 release remains pending.
 
 The machine-readable [0.56 release index](evidence/phase_0_56/RELEASE_INDEX.json)
 tracks all 44 acceptance criteria as passed, including managed checkpoint
-restoration, PostgreSQL partition repair and backfill, and run lineage. Its
-linked artifacts include the package compatibility report, wheel manifest,
-local qualification record, live PostgreSQL partition tests and managed
-repair/backfill lifecycle tests.
+restoration, PostgreSQL partition repair and backfill, and run lineage. AC056-026
+was rerun against the current input-store source using an isolated temporary
+PostgreSQL 16.13 cluster. Linked artifacts include the package compatibility
+report, wheel manifest, local qualification record, live PostgreSQL tests and
+managed repair/backfill lifecycle tests.
 
 Candidate qualification commands and environment details are recorded in the
 [local qualification record](evidence/phase_0_56/LOCAL_QUALIFICATION.md).
