@@ -127,7 +127,7 @@ EXPECTED_DIGESTS = {
     # unchanged at 10,038 diagnostics.
     # AC056 removes legacy profile migration/loading paths, including their
     # shadow type debt. The asset-store rename changes one diagnostic symbol;
-    # the normalized inventory now has 10,030 diagnostics with no other delta.
+    # the normalized inventory is now 10,030 diagnostics on both platforms.
     "Darwin": "ca2fdd763d064855c49f3741bbe1d3189834c17ca45a4f7590d40460131bb37c",
     "Linux": "ca2fdd763d064855c49f3741bbe1d3189834c17ca45a4f7590d40460131bb37c",
 }

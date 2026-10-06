@@ -269,10 +269,11 @@ def test_execution_host_completes_and_unknown_commit_does_not_retry() -> None:
         idempotency_key="k1",
         operation="schedule.fire",
         plan_fingerprint="plan",
+        run_id="run-1",
     )
 
     def complete(_ctx: ControlPlaneContext, **_: object) -> PipelineRunReport:
-        return _report(run_id=submission.run_id)
+        return _report()
 
     host = ExecutionHost(durable, owner_id="w1", runner=complete)
     assert host.tick(ctx) == 1
@@ -324,12 +325,13 @@ def test_execution_host_persists_actual_effect_receipt() -> None:
         idempotency_key="success",
         operation="run.submit",
         plan_fingerprint="plan",
+        run_id="run-1",
     )
 
     def success_runner(
         _ctx: ControlPlaneContext, **_kwargs: object
     ) -> PipelineRunReport:
-        return _report(run_id=submission.run_id)
+        return _report()
 
     host = ExecutionHost(durable, owner_id="w1", runner=success_runner)
 
@@ -348,6 +350,7 @@ def test_execution_host_renews_lease_during_long_running_work() -> None:
         idempotency_key="long-worker",
         operation="run.submit",
         plan_fingerprint="plan",
+        run_id="run-1",
     )
     started = Event()
     allow_finish = Event()
@@ -359,7 +362,7 @@ def test_execution_host_renews_lease_during_long_running_work() -> None:
         if calls == 1:
             started.set()
             assert allow_finish.wait(timeout=4)
-        return _report(run_id=submission.run_id)
+        return _report()
 
     first = ExecutionHost(
         durable, owner_id="long-worker-1", ttl_seconds=1, runner=runner
