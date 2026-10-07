@@ -1,6 +1,6 @@
 [project]
 name = "etlantic-keyring"
-version = "0.56.0"
+version = "0.56.1"
 description = "OS keyring secret provider for ETLantic."
 readme = "README.md"
 license = "MIT"
@@ -17,8 +17,8 @@ classifiers = [
     "Typing :: Typed",
 ]
 dependencies = [
-    "etlantic>=0.56.0,<0.57",
-    "keyring>=25,<26",
+    "etlantic>=0.56.0",
+    "keyring>=25",
 ]
 
 [project.urls]

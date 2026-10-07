@@ -97,7 +97,7 @@ def test_subprocess_import_etlantic_clean() -> None:
 
 def test_fastapi_package_declares_optional_extra() -> None:
     root_pyproject = (ROOT / "pyproject.toml").read_text(encoding="utf-8")
-    assert 'fastapi = ["etlantic-fastapi==' in root_pyproject
+    assert 'fastapi = ["etlantic-fastapi>=0.56.0"]' in root_pyproject
     pkg = (ROOT / "packages" / "etlantic-fastapi" / "pyproject.toml").read_text(
         encoding="utf-8"
     )

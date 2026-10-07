@@ -137,8 +137,12 @@ EXPECTED_DIGESTS = {
     # The release-document inventory guard adds Foundry, DuckDB and LSP to the
     # checked distribution set and updates the published package count. The
     # 10,029 normalized diagnostics remain unchanged; only source locations move.
-    "Darwin": "0882ea315e0a0f25d62a02f3f7728e8671076ef0e9dd1feff7968f895fe5d59c",
-    "Linux": "0882ea315e0a0f25d62a02f3f7728e8671076ef0e9dd1feff7968f895fe5d59c",
+    # The 0.56.1 release gate now checks open minor-line dependency floors; that
+    # removes four stale possibly-unbound diagnostics from the docs checker.
+    # The CP-GA compatibility matrix now records the same open 0.56 line floor;
+    # its helper edits shift the remaining fingerprint, with 10,025 diagnostics.
+    "Darwin": "60870b0f48689ec51402dfbf040ba793b792079b5f285f2a38ce797875db146f",
+    "Linux": "60870b0f48689ec51402dfbf040ba793b792079b5f285f2a38ce797875db146f",
 }
 
 

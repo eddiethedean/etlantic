@@ -59,6 +59,16 @@ def version_from(path: Path, pattern: str) -> str:
     return match.group(1)
 
 
+def has_open_dependency_floor(text: str, package: str, floor: str) -> bool:
+    """Return whether metadata declares exactly an open lower-bound requirement."""
+
+    package_pattern = re.escape(package) + r"(?:\[[^\]]+\])?"
+    requirement = (
+        rf"(?<![A-Za-z0-9_.-]){package_pattern}>={re.escape(floor)}(?=['\"])"
+    )
+    return re.search(requirement, text) is not None
+
+
 def pypi_exists(name: str, version: str) -> bool:
     url = f"https://pypi.org/pypi/{name}/{version}/json"
     try:
@@ -132,10 +142,10 @@ def main() -> int:
         if "Development Status :: 4 - Beta" not in text:
             errors.append(f"{pkg} missing Beta classifier")
         major_minor = ".".join(version.split(".")[:2])
-        next_minor = f"{major_minor.split('.')[0]}.{int(major_minor.split('.')[1]) + 1}"
-        expected_dep = f"etlantic>={version},<{next_minor}"
-        if expected_dep not in text:
-            errors.append(f"{pkg} missing core dependency {expected_dep}")
+        compatible_floor = f"{major_minor}.0"
+        if not has_open_dependency_floor(text, "etlantic", compatible_floor):
+            expected_dep = f"etlantic>={compatible_floor}"
+            errors.append(f"{pkg} missing core dependency floor {expected_dep}")
 
     for pkg in FACADE_PACKAGES:
         path = ROOT / "packages" / pkg / "pyproject.toml"
@@ -156,10 +166,10 @@ def main() -> int:
                 "(IR/migration adapter honesty)"
             )
         major_minor = ".".join(version.split(".")[:2])
-        next_minor = f"{major_minor.split('.')[0]}.{int(major_minor.split('.')[1]) + 1}"
-        expected_dep = f"etlantic>={version},<{next_minor}"
-        if expected_dep not in text:
-            errors.append(f"{pkg} missing core dependency {expected_dep}")
+        compatible_floor = f"{major_minor}.0"
+        if not has_open_dependency_floor(text, "etlantic", compatible_floor):
+            expected_dep = f"etlantic>={compatible_floor}"
+            errors.append(f"{pkg} missing core dependency floor {expected_dep}")
 
     for pkg in REDIRECT_PACKAGES:
         path = ROOT / "packages" / pkg / "pyproject.toml"
@@ -193,10 +203,10 @@ def main() -> int:
         if "Development Status :: 5 - Production/Stable" in text:
             errors.append(f"{pkg} should use Beta, not Production/Stable")
         major_minor = ".".join(version.split(".")[:2])
-        next_minor = f"{major_minor.split('.')[0]}.{int(major_minor.split('.')[1]) + 1}"
-        expected_dep = f"etlantic>={version},<{next_minor}"
-        if expected_dep not in text:
-            errors.append(f"{pkg} missing core dependency {expected_dep}")
+        compatible_floor = f"{major_minor}.0"
+        if not has_open_dependency_floor(text, "etlantic", compatible_floor):
+            expected_dep = f"etlantic>={compatible_floor}"
+            errors.append(f"{pkg} missing core dependency floor {expected_dep}")
 
     for pkg in EXPERIMENTAL_PACKAGES:
         path = ROOT / "packages" / pkg / "pyproject.toml"
@@ -208,15 +218,15 @@ def main() -> int:
             errors.append(f"{pkg} version {pkg_version} != {version}")
         text = path.read_text(encoding="utf-8")
         major_minor = ".".join(version.split(".")[:2])
-        next_minor = f"{major_minor.split('.')[0]}.{int(major_minor.split('.')[1]) + 1}"
-        expected_dep = f"etlantic>={version},<{next_minor}"
-        if expected_dep not in text:
+        compatible_floor = f"{major_minor}.0"
+        if not has_open_dependency_floor(text, "etlantic", compatible_floor):
+            expected_dep = f"etlantic>={compatible_floor}"
             errors.append(f"{pkg} missing core dependency {expected_dep}")
         if "Development Status :: 3 - Alpha" not in text:
             errors.append(f"{pkg} experimental package should use Alpha classifier")
 
     root_pyproject = (ROOT / "pyproject.toml").read_text(encoding="utf-8")
-    pin_suffix = f"=={version}"
+    compatible_floor = f"{major_minor}.0"
     for pkg in (
         *PACKAGES,
         *FACADE_PACKAGES,
@@ -224,9 +234,10 @@ def main() -> int:
         *REFERENCE_PACKAGES,
         *EXPERIMENTAL_PACKAGES,
     ):
-        if f"{pkg}{pin_suffix}" not in root_pyproject:
+        if not has_open_dependency_floor(root_pyproject, pkg, compatible_floor):
             errors.append(
-                f"root pyproject.toml missing optional dependency pin {pkg}{pin_suffix}"
+                "root pyproject.toml missing open optional dependency floor "
+                f"{pkg}>={compatible_floor}"
             )
 
     if "Development Status :: 3 - Alpha" in root_pyproject:

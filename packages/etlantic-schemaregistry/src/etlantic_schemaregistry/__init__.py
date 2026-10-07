@@ -7,7 +7,7 @@ import os
 from etlantic.streaming.registry import InMemorySchemaRegistry
 from etlantic_schemaregistry.http import ConfluentHttpRegistry
 
-__version__ = "0.56.0"
+__version__ = "0.56.1"
 
 
 def live_registry_url() -> str | None:

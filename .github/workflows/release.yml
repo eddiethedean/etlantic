@@ -193,6 +193,7 @@ jobs:
           SPARKFORGE="dist/etlantic_sparkforge-${TAG}-py3-none-any.whl"
           DATAFUSION="dist/etlantic_datafusion-${TAG}-py3-none-any.whl"
           FASTAPI="dist/etlantic_fastapi-${TAG}-py3-none-any.whl"
+          LSP="dist/etlantic_lsp-${TAG}-py3-none-any.whl"
           S3="dist/etlantic_s3-${TAG}-py3-none-any.whl"
           ICEBERG="dist/etlantic_iceberg-${TAG}-py3-none-any.whl"
           SNOWFLAKE="dist/etlantic_snowflake-${TAG}-py3-none-any.whl"
@@ -201,7 +202,7 @@ jobs:
           uv run --isolated --no-project \
             --with "$CORE" --with "$POLARS" --with "$PANDAS" --with "$SQL" \
             --with "$SPARK" --with "$AIRFLOW" --with "$PREFECT" --with "$KEYRING" \
-            --with "$SQLMODEL" --with "$MEDALLANTIC" --with "$SPARKFORGE" --with "$DATAFUSION" --with "$FASTAPI" \
+            --with "$SQLMODEL" --with "$MEDALLANTIC" --with "$SPARKFORGE" --with "$DATAFUSION" --with "$FASTAPI" --with "$LSP" \
             --with "$S3" --with "$ICEBERG" --with "$SNOWFLAKE" --with "$OPENLINEAGE" --with "$DUCKDB" \
             python -c "
           import etlantic
@@ -217,6 +218,7 @@ jobs:
           import etlantic_sparkforge
           import etlantic_datafusion
           import etlantic_fastapi
+          import etlantic_lsp
           import etlantic_s3
           import etlantic_iceberg
           import etlantic_snowflake
@@ -235,6 +237,7 @@ jobs:
           assert etlantic_sparkforge.__version__ == '$TAG'
           assert etlantic_datafusion.__version__ == '$TAG'
           assert etlantic_fastapi.__version__ == '$TAG'
+          assert etlantic_lsp.__version__ == '$TAG'
           assert etlantic_s3.__version__ == '$TAG'
           assert etlantic_iceberg.__version__ == '$TAG'
           assert etlantic_snowflake.__version__ == '$TAG'

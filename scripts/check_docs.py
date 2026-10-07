@@ -1508,11 +1508,9 @@ def main() -> None:
         if not current_migration.exists():
             raise SystemExit(f"Missing {current_migration.relative_to(ROOT)}")
         migration_text = current_migration.read_text(encoding="utf-8")
-        expected_floor = (
-            f"etlantic>={major_minor_for_notes}.0,<{major}.{int(minor) + 1}"
-        )
+        expected_floor = f"etlantic>={major_minor_for_notes}.0"
         dest_floor_ok = expected_floor in migration_text or (
-            f">={major_minor_for_notes}.0,<{major}.{int(minor) + 1}" in migration_text
+            f">={major_minor_for_notes}.0" in migration_text
         )
         if not dest_floor_ok:
             raise SystemExit(
@@ -2666,12 +2664,6 @@ def main() -> None:
     plugin_stable_classifier = "Development Status :: 5 - Production/Stable"
     root_beta_classifier = "Development Status :: 4 - Beta"
     alpha_classifier = "Development Status :: 3 - Alpha"
-    next_minor = None
-    try:
-        maj_s, min_s = major_minor.split(".")
-        next_minor = f"{maj_s}.{int(min_s) + 1}"
-    except ValueError:
-        next_minor = None
     experimental_packages = {
         "etlantic-datafusion",
         "etlantic-s3",
@@ -2700,12 +2692,11 @@ def main() -> None:
         if pkg_name in experimental_packages:
             if alpha_classifier not in text:
                 raise SystemExit(f"{path} experimental package should use Alpha")
-            if next_minor is not None:
-                expected_alt = f"etlantic>={package_version},<{next_minor}"
-                if expected_alt not in text:
-                    raise SystemExit(
-                        f"{path} must depend on {expected_alt} (found mismatched core range)"
-                    )
+            expected_alt = f"etlantic>={major_minor}.0"
+            if expected_alt not in text:
+                raise SystemExit(
+                    f"{path} must depend on {expected_alt} (found mismatched core floor)"
+                )
             continue
         if pkg_name in reference_packages:
             if root_beta_classifier not in text:
@@ -2714,12 +2705,11 @@ def main() -> None:
                 raise SystemExit(
                     f"{path} reference package should use Beta, not Production/Stable"
                 )
-            if next_minor is not None:
-                expected_alt = f"etlantic>={package_version},<{next_minor}"
-                if expected_alt not in text:
-                    raise SystemExit(
-                        f"{path} must depend on {expected_alt} (found mismatched core range)"
-                    )
+            expected_alt = f"etlantic>={major_minor}.0"
+            if expected_alt not in text:
+                raise SystemExit(
+                    f"{path} must depend on {expected_alt} (found mismatched core floor)"
+                )
             continue
         if pkg_name in redirect_packages:
             inactive_classifier = "Development Status :: 7 - Inactive"
@@ -2727,12 +2717,11 @@ def main() -> None:
                 raise SystemExit(
                     f"{path} redirect package should use Inactive classifier"
                 )
-            if next_minor is not None:
-                expected_med = f"medallantic>={major_minor}.0,<{next_minor}"
-                if expected_med not in text:
-                    raise SystemExit(
-                        f"{path} must depend on {expected_med} (found mismatched medallantic range)"
-                    )
+            expected_med = f"medallantic>={major_minor}.0"
+            if expected_med not in text:
+                raise SystemExit(
+                    f"{path} must depend on {expected_med} (found mismatched medallantic floor)"
+                )
             continue
         if alpha_classifier in text:
             raise SystemExit(f"{path} still uses Alpha classifier")
@@ -2742,13 +2731,11 @@ def main() -> None:
             )
         if root_beta_classifier not in text:
             raise SystemExit(f"{path} missing Beta classifier")
-        if path.parent.name.startswith("etlantic-") and next_minor is not None:
-            expected = f"etlantic>={package_version},<{next_minor}"
-            # Also accept major.minor.0 style already used.
-            expected_alt = f"etlantic>={major_minor}.0,<{next_minor}"
-            if expected not in text and expected_alt not in text:
+        if path.parent.name.startswith("etlantic-"):
+            expected_alt = f"etlantic>={major_minor}.0"
+            if expected_alt not in text:
                 raise SystemExit(
-                    f"{path} must depend on {expected_alt} (found mismatched core range)"
+                    f"{path} must depend on {expected_alt} (found mismatched core floor)"
                 )
 
     # Primary status pages must not call the current line alpha.

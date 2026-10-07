@@ -5,6 +5,15 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.56.1] - Unreleased candidate (not published)
+
+### Changed
+
+- Relax dependency version constraints across core and first-party packages.
+- Retain the `pygls<2` compatibility ceiling required by the current LSP API.
+- Bump core and first-party distribution versions to 0.56.1.
+- Refresh adaptive and Medallantic compatibility evidence for the new runtime version.
+
 ## [0.56.0] - 2026-10-07
 
 ### Added
@@ -154,6 +163,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Require exact candidate pins and semantically verified, row-bound evidence;
   normalize source ordering and relative evidence paths across platforms.
 
+[0.56.1]: https://github.com/eddiethedean/etlantic/compare/v0.56.0...v0.56.1
 [0.56.0]: https://github.com/eddiethedean/etlantic/compare/v0.55.0...v0.56.0
 [0.55.0]: https://github.com/eddiethedean/etlantic/compare/v0.54.0...v0.55.0
 [0.54.0]: https://github.com/eddiethedean/etlantic/releases/tag/v0.54.0

@@ -14,13 +14,13 @@ uses an in-memory fake; live Snowflake is optional. Pin with core.
 ## Install
 
 ```bash
-pip install 'etlantic-snowflake==0.56.0'
+pip install 'etlantic-snowflake==0.56.1'
 # Live Snowflake (optional):
-# pip install 'etlantic-snowflake[snowflake]==0.56.0'
-# pip install 'etlantic==0.56.0'
+# pip install 'etlantic-snowflake[snowflake]==0.56.1'
+# pip install 'etlantic==0.56.1'
 ```
 
-Core dependency: `etlantic>=0.56.0,<0.57`.
+Core dependency: `etlantic>=0.56.0`.
 
 ## Entry points
 

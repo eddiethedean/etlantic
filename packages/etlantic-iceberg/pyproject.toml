@@ -1,6 +1,6 @@
 [project]
 name = "etlantic-iceberg"
-version = "0.56.0"
+version = "0.56.1"
 description = "Experimental Apache Iceberg connector for ETLantic (PyIceberg)."
 readme = "README.md"
 license = "MIT"
@@ -17,11 +17,11 @@ classifiers = [
     "Typing :: Typed",
 ]
 dependencies = [
-    "etlantic>=0.56.0,<0.57",
+    "etlantic>=0.56.0",
 ]
 
 [project.optional-dependencies]
-pyiceberg = ["pyiceberg>=0.7,<1"]
+pyiceberg = ["pyiceberg>=0.7"]
 
 [project.urls]
 Homepage = "https://github.com/eddiethedean/etlantic"

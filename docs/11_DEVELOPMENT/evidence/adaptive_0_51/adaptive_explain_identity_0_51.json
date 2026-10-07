@@ -5,7 +5,7 @@
   "passed_scenarios": 3,
   "planner_version": "0.52",
   "public_schema": "etlantic.plan/2",
-  "repository_revision": "sha256:c2be34fe291a8f62287b9d9995aa0d7aa507111846758975a2c560ab43b05afc",
+  "repository_revision": "sha256:29a42b23d94b16da5fb84d1af79cadd000da305329766ffa08e947dccbeda1e6",
   "result": "pass",
   "scenario_count": 3,
   "scenarios": [
@@ -15,7 +15,7 @@
       "executed": true,
       "expected": "pass",
       "id": "test_adaptive_explain_uses_the_bounded_summary",
-      "plan_fingerprint": "cb40d6ccd44f9b510ac8ce5455b85f26f3eec96db84b7e270346eeadf37706df",
+      "plan_fingerprint": "e2e93a962c1a2fc5b4a87dd7484697b1071996652aa5c507287fa15dbef12140",
       "result": "pass",
       "verification": "test_adaptive_explain_uses_the_bounded_summary"
     },
@@ -25,7 +25,7 @@
       "executed": true,
       "expected": "pass",
       "id": "test_adaptive_diff_covers_semantic_and_cross_schema_changes",
-      "plan_fingerprint": "cb40d6ccd44f9b510ac8ce5455b85f26f3eec96db84b7e270346eeadf37706df",
+      "plan_fingerprint": "e2e93a962c1a2fc5b4a87dd7484697b1071996652aa5c507287fa15dbef12140",
       "result": "pass",
       "verification": "test_adaptive_diff_covers_semantic_and_cross_schema_changes"
     },
@@ -35,7 +35,7 @@
       "executed": true,
       "expected": "pass",
       "id": "test_final_052_023_truncated_explain_retains_release_contract_fields",
-      "plan_fingerprint": "cb40d6ccd44f9b510ac8ce5455b85f26f3eec96db84b7e270346eeadf37706df",
+      "plan_fingerprint": "e2e93a962c1a2fc5b4a87dd7484697b1071996652aa5c507287fa15dbef12140",
       "result": "pass",
       "verification": "test_final_052_023_truncated_explain_retains_release_contract_fields"
     }

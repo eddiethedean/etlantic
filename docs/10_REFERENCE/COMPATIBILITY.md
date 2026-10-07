@@ -42,7 +42,7 @@ ContractModel / Python):
 | Portable authoring profile | Shipped as `etlantic.transform/1` (full DTCS 3.0 facade→IR authoring) |
 | Portable compiler protocol | Release-candidate `etlantic.transform-compiler/1` (Local, Polars, Pandas, SQL, PySpark, DataFusion, and DuckDB qualification recorded for 0.50) |
 | Package stability | Beta — suitable for documented single-tenant reference deployments (not unrestricted enterprise production) |
-| Plugin SDK stability | Protocol `/1` families **frozen** in 0.28.0; third-party plugins must pin `etlantic>=0.56.0,<0.57` and re-run conformance |
+| Plugin SDK stability | Protocol `/1` families **frozen** in 0.28.0; third-party plugins should declare a supported core floor (for this line, `etlantic>=0.56.0`) and re-run conformance |
 
 ## Joint burn-in (0.37)
 
@@ -82,17 +82,17 @@ Package metadata declares these backend dependency ranges:
 
 | Package or extra | Declared backend range |
 |---|---|
-| `etlantic-polars` | `polars>=1.0,<2`; optional `pyarrow>=14` |
-| `etlantic-pandas` | `pandas>=2.2,<3`; optional `pyarrow>=14` |
-| `etlantic-pyspark` | `pyspark>=3.5,<4`; optional `delta-spark>=3.0,<4` |
-| `etlantic-sql` | `sqlalchemy>=2.0,<3`, `psycopg[binary]>=3.1,<4` |
-| `etlantic-duckdb` | `duckdb>=1.0,<2` |
-| `etlantic-sqlmodel` | `sqlmodel>=0.0.22,<1` |
-| `etlantic-keyring` | `keyring` (no narrower range declared) |
+| `etlantic-polars` | `polars>=1.0`; optional `pyarrow>=14` |
+| `etlantic-pandas` | `pandas>=2.2`; optional `pyarrow>=14` |
+| `etlantic-pyspark` | `pyspark>=3.5`; optional `delta-spark>=3.0` |
+| `etlantic-sql` | `sqlalchemy>=2.0`, `psycopg[binary]>=3.1` |
+| `etlantic-duckdb` | `duckdb>=1.0` |
+| `etlantic-sqlmodel` | `sqlmodel>=0.0.22` |
+| `etlantic-keyring` | `keyring>=25` |
 | `etlantic-airflow` | No Apache Airflow runtime dependency; it compiles DAG source |
 | `airflow-runtime` (uv group, 0.23) | `etlantic-airflow` only; CI imports generated DAGs with `apache-airflow` 2.11.1 and 3.2.1 |
-| `etlantic-prefect` | `prefect>=3,<4` |
-| `etlantic[otel]` / `[observability]` | `opentelemetry-api>=1.36,<2` |
+| `etlantic-prefect` | `prefect>=3` |
+| `etlantic[otel]` / `[observability]` | `opentelemetry-api>=1.36` |
 | `etlantic[arrow]` | `pyarrow>=14` |
 
 A declared range means the resolver may install that version; it does not mean
@@ -100,13 +100,11 @@ every backend version and operating system combination is exercised in CI.
 For a controlled deployment, test the exact resolved environment and pin
 `etlantic==0.56.0` plus every official plugin to `==0.56.0`.
 
-Core extras already enforce exact official plugin versions, for example
-`etlantic[polars]==0.56.0` depends on `etlantic-polars==0.56.0`. Official
-plugin source metadata accepts core `etlantic>=0.56.0,<0.57`, which is
-minor-matched but less exact. Published, older, or third-party plugin metadata
-may use a broader bound such as `etlantic>=0.14,<1.0`; do not treat that broad
-specifier as evidence of tested cross-minor compatibility. Match the core and
-official plugin minor versions, and prefer exact pins for reproducibility.
+Core extras declare a minimum compatible companion version, for example
+`etlantic[polars]` requires `etlantic-polars>=0.56.0`. Official plugin source
+metadata declares the same minimum core line. These ranges are intentionally
+open-ended. The resolver may select a later release, so validate the resolved
+environment and use a lockfile when reproducibility is required.
 
 Root import changes in 0.28 (third-wave removals of demoted aliases): see
 [Migration 0.27 → 0.28](../11_DEVELOPMENT/MIGRATION_0_27_TO_0_28.md).

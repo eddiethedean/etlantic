@@ -9,8 +9,8 @@ Package version is **0.56.0** — pin with core.
 ## Install
 
 ```bash
-pip install 'etlantic-sqlmodel==0.56.0'
-# pip install 'etlantic==0.56.0'
+pip install 'etlantic-sqlmodel==0.56.1'
+# pip install 'etlantic==0.56.1'
 ```
 
 ## Schema bridge

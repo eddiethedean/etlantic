@@ -39,7 +39,7 @@ pip install 'etlantic-spark-connect==0.56.0'
 pip install 'etlantic-mcp==0.56.0'
 ```
 
-Official first-party plugins declare `etlantic>=0.56.0,<0.57`.
+Official first-party plugins declare `etlantic>=0.56.0`.
 Keep core and plugins on the same patch (pin all to the published `0.56.0` release for pilots).
 Cross-minor mixes are unsupported and commonly fail plugin discovery.
 

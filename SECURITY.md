@@ -1,6 +1,6 @@
 # Security Policy
 
-> **Version boundary:** ETLantic 0.56.0 is the current published Beta release and supported line.
+> **Version boundary:** ETLantic 0.56.1 is a Beta release candidate; 0.56.0 remains the current published and supported line.
 
 
 ETLantic 0.56.0 is the current **Beta release** for documented single-tenant

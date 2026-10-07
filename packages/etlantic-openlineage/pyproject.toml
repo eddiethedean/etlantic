@@ -1,6 +1,6 @@
 [project]
 name = "etlantic-openlineage"
-version = "0.56.0"
+version = "0.56.1"
 description = "Experimental outbound OpenLineage export for ETLantic CP2."
 readme = "README.md"
 license = "MIT"
@@ -17,11 +17,11 @@ classifiers = [
     "Typing :: Typed",
 ]
 dependencies = [
-    "etlantic>=0.56.0,<0.57",
+    "etlantic>=0.56.0",
 ]
 
 [project.optional-dependencies]
-openlineage = ["openlineage-python>=1.0,<2"]
+openlineage = ["openlineage-python>=1.0"]
 
 [project.urls]
 Homepage = "https://github.com/eddiethedean/etlantic"

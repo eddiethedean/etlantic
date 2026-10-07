@@ -15,7 +15,7 @@ foundation, and post-foundation capabilities continue in later 0.x minors.
 
 Breaking changes must be documented. Official plugin packages currently share
 the core minor version (for example `0.38.0`).
-Official plugins declare `etlantic>=0.56.0,<0.57` for the 0.56 line.
+Official plugins and root extras declare the compatible 0.56 line floor (`>=0.56.0`) without a patch lockstep pin or upper cap.
 
 ## Package categories
 
@@ -76,7 +76,7 @@ wheel). Build with `npm run package` after `npm install`.
    [CAPABILITIES](../01_GETTING_STARTED/CAPABILITIES.md).
 2. Resolve release-blocking issues; `main` CI must be green.
 3. Confirm every package version and `__version__` equals the intended tag
-   (no `v` prefix). Extras pins use `==X.Y.Z`.
+   (no `v` prefix). Root extras accept the matching minor line from its `.0` floor; deployment lockfiles may pin exact artifacts.
    When plugin manifest JSON changes, regenerate digests:
 
    ```bash

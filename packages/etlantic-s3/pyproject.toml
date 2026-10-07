@@ -1,6 +1,6 @@
 [project]
 name = "etlantic-s3"
-version = "0.56.0"
+version = "0.56.1"
 description = "Experimental S3-compatible JSON connector for ETLantic."
 readme = "README.md"
 license = "MIT"
@@ -17,12 +17,12 @@ classifiers = [
     "Typing :: Typed",
 ]
 dependencies = [
-    "etlantic>=0.56.0,<0.57",
+    "etlantic>=0.56.0",
 ]
 
 [project.optional-dependencies]
-aws = ["boto3>=1.34,<2", "pyarrow>=14"]
-boto3 = ["boto3>=1.34,<2"]
+aws = ["boto3>=1.34", "pyarrow>=14"]
+boto3 = ["boto3>=1.34"]
 pyarrow = ["pyarrow>=14"]
 
 [project.urls]

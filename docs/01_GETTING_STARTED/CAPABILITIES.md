@@ -1,6 +1,6 @@
 # Current Capabilities and Limitations
 
-> **Version boundary:** 0.56.0 is the published Beta release and current supported line.
+> **Version boundary:** 0.56.1 is the current Beta release candidate; 0.56.0 remains published and supported.
 
 
 > **Status: 0.56.0 is the published Beta release and current supported line.** This page records
