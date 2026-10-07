@@ -540,24 +540,23 @@ class RunRequest:
             parameters[key] = {cast(str, name): item for name, item in values.items()}
         metadata = mapping_value("metadata")
         extensions = mapping_value("extensions")
-        if "explicit_settings" in data:
-            explicit_settings: set[str] = set(
+        if "explicit_settings" not in data:
+            if (
+                max_attempts != 1
+                or float(backoff) != 0.0
+                or retry_on
+                or run_seconds is not None
+                or step_seconds is not None
+            ):
+                raise ValueError(
+                    "Run requests with non-default retry or timeout values "
+                    "must include explicit_settings"
+                )
+            explicit_settings: set[str] = set()
+        else:
+            explicit_settings = set(
                 _string_values(data["explicit_settings"], name="explicit_settings")
             )
-        else:
-            # Legacy request documents had no explicitness marker. Keep their
-            # former merge behavior by inheriting values equal to defaults.
-            explicit_settings = set()
-            if max_attempts != 1:
-                explicit_settings.add("retry.max_attempts")
-            if float(backoff) != 0.0:
-                explicit_settings.add("retry.backoff_seconds")
-            if retry_on:
-                explicit_settings.add("retry.retry_on")
-            if run_seconds is not None:
-                explicit_settings.add("timeout.run_seconds")
-            if step_seconds is not None:
-                explicit_settings.add("timeout.step_seconds")
         no_write = data.get("no_write", False)
         if not isinstance(no_write, bool):
             raise TypeError("no_write must be a boolean")
@@ -629,7 +628,6 @@ def resolve_request_policies(
         setting_key: str,
         group: Mapping[str, Any],
         intent_key: str,
-        legacy_intent_key: str,
     ) -> Any:
         value = execution_settings.get(setting_key)
         if value is not None:
@@ -637,12 +635,10 @@ def resolve_request_policies(
         value = group.get(intent_key)
         if value is not None:
             return value
-        return intent_data.get(legacy_intent_key)
+        return None
 
     explicit = request.explicit_settings
-    attempts_default = profile_value(
-        "retry_max_attempts", retry_intent, "max_attempts", "retry_max_attempts"
-    )
+    attempts_default = profile_value("retry_max_attempts", retry_intent, "max_attempts")
     attempts = (
         request.retry.max_attempts
         if "retry.max_attempts" in explicit
@@ -655,7 +651,6 @@ def resolve_request_policies(
         "retry_backoff_seconds",
         retry_intent,
         "backoff_seconds",
-        "retry_backoff_seconds",
     )
     backoff = (
         request.retry.backoff_seconds
@@ -665,17 +660,13 @@ def resolve_request_policies(
         else request.retry.backoff_seconds
     )
     retry_on_default: Any = retry_intent.get("retry_on")
-    if retry_on_default is None:
-        retry_on_default = intent_data.get("retry_on")
     retry_on = (
         request.retry.retry_on
         if "retry.retry_on" in explicit or retry_on_default is None
         else tuple(_string_values(retry_on_default, name="retry.retry_on"))
     )
 
-    run_timeout_default = profile_value(
-        "timeout_seconds", timeout_intent, "seconds", "timeout_seconds"
-    )
+    run_timeout_default = profile_value("timeout_seconds", timeout_intent, "seconds")
     run_timeout = (
         request.timeout.run_seconds
         if "timeout.run_seconds" in explicit
@@ -688,7 +679,6 @@ def resolve_request_policies(
         "step_timeout_seconds",
         timeout_intent,
         "step_seconds",
-        "step_timeout_seconds",
     )
     step_timeout = (
         request.timeout.step_seconds

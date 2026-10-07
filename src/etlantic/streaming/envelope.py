@@ -45,6 +45,24 @@ class ChangeEnvelopeMetadata:
     @classmethod
     def from_dict(cls, data: Mapping[str, Any]) -> ChangeEnvelopeMetadata:
         assert_no_payload(data)
+        allowed = {
+            "op",
+            "source_position",
+            "order_key",
+            "schema_identity",
+            "transaction_id",
+        }
+        unknown = set(data) - allowed
+        if unknown:
+            raise ValueError(
+                "Unknown change-envelope field(s): " + ", ".join(sorted(unknown))
+            )
+        missing = allowed - {"transaction_id"} - set(data)
+        if missing:
+            raise ValueError(
+                "Missing required change-envelope field(s): "
+                + ", ".join(sorted(missing))
+            )
         txn = data.get("transaction_id")
         return cls(
             op=ChangeOp(str(data["op"])),

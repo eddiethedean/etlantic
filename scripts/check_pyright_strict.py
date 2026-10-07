@@ -131,8 +131,14 @@ EXPECTED_DIGESTS = {
     # Canonical envelope/report decoding and atomic input leases shift existing
     # source locations; direct Pyright reports no new diagnostics. The reviewed
     # suppression-free inventory remains at 10,029 diagnostics.
-    "Darwin": "3024510567f3fc9c208b6ee44abe88b5b0c5b665a0f83931ff4ed7d49e3a54be",
-    "Linux": "3024510567f3fc9c208b6ee44abe88b5b0c5b665a0f83931ff4ed7d49e3a54be",
+    # The 0.56 standalone reset removes request and stream migration readers and
+    # updates their canonical decoder regressions. The 10,029 normalized
+    # diagnostics are unchanged from main; only source-line fingerprints move.
+    # The release-document inventory guard adds Foundry, DuckDB and LSP to the
+    # checked distribution set and updates the published package count. The
+    # 10,029 normalized diagnostics remain unchanged; only source locations move.
+    "Darwin": "0882ea315e0a0f25d62a02f3f7728e8671076ef0e9dd1feff7968f895fe5d59c",
+    "Linux": "0882ea315e0a0f25d62a02f3f7728e8671076ef0e9dd1feff7968f895fe5d59c",
 }
 
 

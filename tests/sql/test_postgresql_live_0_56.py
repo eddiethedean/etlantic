@@ -834,6 +834,151 @@ def test_live_failed_stage_rolls_back_and_effect_ack_reconciles(
     assert recovered.status == "committed"
 
 
+@pytest.mark.parametrize("settlement", ["committed", "rolled_back"])
+def test_live_reconciliation_does_not_settle_an_active_writer(
+    secret_context: dict[str, Any], settlement: str
+) -> None:
+    async def run() -> None:
+        writer = LivePostgresSinkConnector()
+        binding = _binding("append")
+        plan = await writer.plan_write(binding=binding, context=secret_context)
+        session = await writer.begin_write(
+            plan=plan, binding=binding, context=secret_context
+        )
+        settled = False
+        try:
+            await writer.write_batch(
+                session,
+                [{"id": "active", "payload": "pending"}],
+                context=secret_context,
+            )
+            await writer.prepare(session, context=secret_context)
+            uncertain = CommitReceipt(
+                status="unknown",
+                session_id=session.session_id,
+                provider=session.provider,
+                metadata=dict(session.metadata),
+            )
+            observer = LivePostgresSinkConnector()
+            pending = await observer.reconcile(uncertain, context=secret_context)
+            assert pending.status == "unknown"
+
+            if settlement == "committed":
+                await writer.commit(session, context=secret_context)
+            else:
+                await writer.abort(session, context=secret_context)
+            settled = True
+            resolved = await observer.reconcile(uncertain, context=secret_context)
+            assert resolved.status == settlement
+        finally:
+            if not settled:
+                await writer.abort(session, context=secret_context)
+
+    anyio.run(run)
+
+
+def test_live_reconciliation_remains_unknown_during_commit(
+    secret_context: dict[str, Any],
+) -> None:
+    assert URL
+    engine = create_engine(URL, hide_parameters=True)
+    gate = uuid.uuid4().hex
+    function_name = f"etlantic_commit_gate_{gate}"
+    with engine.begin() as connection:
+        connection.execute(
+            text(
+                f"CREATE FUNCTION public.{function_name}() RETURNS trigger "
+                "LANGUAGE plpgsql AS $$ BEGIN "
+                f"PERFORM pg_advisory_xact_lock(hashtextextended('{gate}', 0)); "
+                "RETURN NEW; END $$"
+            )
+        )
+        connection.execute(
+            text(
+                "CREATE CONSTRAINT TRIGGER etlantic_commit_gate "
+                "AFTER INSERT ON public.etlantic_phase056_orders "
+                "DEFERRABLE INITIALLY DEFERRED FOR EACH ROW "
+                f"EXECUTE FUNCTION public.{function_name}()"
+            )
+        )
+
+    async def run() -> None:
+        writer = LivePostgresSinkConnector()
+        binding = _binding("append")
+        plan = await writer.plan_write(binding=binding, context=secret_context)
+        session = await writer.begin_write(
+            plan=plan, binding=binding, context=secret_context
+        )
+        await writer.write_batch(
+            session, [{"id": "commit", "payload": "in-flight"}], context=secret_context
+        )
+        await writer.prepare(session, context=secret_context)
+        uncertain = CommitReceipt(
+            status="unknown",
+            session_id=session.session_id,
+            provider=session.provider,
+            metadata=dict(session.metadata),
+        )
+        observer = LivePostgresSinkConnector()
+
+        async def commit() -> None:
+            result = await writer.commit(session, context=secret_context)
+            assert result.status == "committed"
+
+        try:
+            with engine.connect() as gate_connection:
+                gate_connection.execute(
+                    text("SELECT pg_advisory_lock(hashtextextended(:gate, 0))"),
+                    {"gate": gate},
+                )
+                gate_connection.commit()
+                async with anyio.create_task_group() as group:
+                    group.start_soon(commit)
+                    try:
+                        with anyio.fail_after(5):
+                            while True:
+                                blocked = gate_connection.execute(
+                                    text(
+                                        "SELECT EXISTS (SELECT 1 FROM pg_stat_activity "
+                                        "WHERE datname = current_database() "
+                                        "AND query = 'COMMIT' AND wait_event_type = 'Lock')"
+                                    )
+                                ).scalar_one()
+                                gate_connection.commit()
+                                if blocked:
+                                    break
+                                await anyio.sleep(0.01)
+                        pending = await observer.reconcile(
+                            uncertain, context=secret_context
+                        )
+                        assert pending.status == "unknown"
+                    finally:
+                        gate_connection.execute(
+                            text(
+                                "SELECT pg_advisory_unlock(hashtextextended(:gate, 0))"
+                            ),
+                            {"gate": gate},
+                        )
+                        gate_connection.commit()
+            resolved = await observer.reconcile(uncertain, context=secret_context)
+            assert resolved.status == "committed"
+        finally:
+            await writer.abort(session, context=secret_context)
+
+    try:
+        anyio.run(run)
+    finally:
+        with engine.begin() as connection:
+            connection.execute(
+                text(
+                    "DROP TRIGGER etlantic_commit_gate "
+                    "ON public.etlantic_phase056_orders"
+                )
+            )
+            connection.execute(text(f"DROP FUNCTION public.{function_name}()"))
+        engine.dispose()
+
+
 def test_live_sink_denies_ungranted_write_and_leaves_target_unchanged(
     secret_context: dict[str, Any],
 ) -> None:

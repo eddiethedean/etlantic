@@ -820,10 +820,13 @@ def check_release_surface_version_drift(package_version: str) -> None:
         "etlantic-prefect",
         "etlantic-keyring",
         "etlantic-sqlmodel",
+        "etlantic-duckdb",
+        "etlantic-foundry",
         "medallantic",
         "etlantic-sparkforge",
         "etlantic-datafusion",
         "etlantic-fastapi",
+        "etlantic-lsp",
         "etlantic-s3",
         "etlantic-kafka",
         "etlantic-k8s",
@@ -840,9 +843,9 @@ def check_release_surface_version_drift(package_version: str) -> None:
                 "docs/11_DEVELOPMENT/RELEASE_PROCESS.md missing release "
                 f"distribution {distribution}"
             )
-    if "publishes twenty-four distributions" not in release_process:
+    if "publishes twenty-five distributions" not in release_process:
         raise SystemExit(
-            "docs/11_DEVELOPMENT/RELEASE_PROCESS.md must state the 24-package "
+            "docs/11_DEVELOPMENT/RELEASE_PROCESS.md must state the 25-package "
             "release inventory"
         )
 

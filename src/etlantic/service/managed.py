@@ -100,7 +100,7 @@ def _connector_action_cursor_scope(ctx: ControlPlaneContext) -> str:
         ctx.tenant.tenant_id,
         ctx.workspace.workspace_id,
         ctx.environment.name,
-        ctx.resource_owner_id or ctx.principal.subject,
+        ctx.resource_owner_id or ctx.principal.identity_key,
     ]
     return hashlib.sha256(
         json.dumps(scope, separators=(",", ":"), ensure_ascii=False).encode("utf-8")

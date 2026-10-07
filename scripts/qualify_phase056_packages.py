@@ -377,12 +377,15 @@ def _migration_report() -> dict[str, Any]:
     from etlantic_sqlmodel.migrations import (
         VERSIONS,
         current_version,
-        downgrade,
         upgrade,
     )
 
     context = ControlPlaneContext(
-        principal=Principal(subject="qualification-user"),
+        principal=Principal(
+            subject="qualification-user",
+            issuer="https://qualification.invalid",
+            kind="service",
+        ),
         tenant=TenantRef(tenant_id="qualification-tenant"),
         workspace=WorkspaceRef(
             tenant_id="qualification-tenant", workspace_id="qualification-workspace"
@@ -413,25 +416,14 @@ def _migration_report() -> dict[str, Any]:
             payload={"submission_id": receipt.submission_id},
         )
 
-        rollback_heads: list[str] = []
-        for head in VERSIONS[4:-1]:
-            if downgrade(engine, target=head) != head:
-                raise RuntimeError(f"Downgrade failed to reach {head}")
-            if upgrade(engine) != VERSIONS[-1]:
-                raise RuntimeError(f"Upgrade failed after rollback from {head}")
-            if definitions.get(context, "compatibility-definition") != definition:
-                raise RuntimeError(f"Definition record was lost across {head} rollback")
-            recovered = submissions.lookup_idempotency(
-                context, "compatibility-submission"
-            )
-            if recovered is None or recovered.submission_id != receipt.submission_id:
-                raise RuntimeError(
-                    f"Submission identity changed across {head} rollback"
-                )
-            replayed = events.list_after_cursor(context, None, limit=20)
-            if [item.event_id for item in replayed] != [event.event_id]:
-                raise RuntimeError(f"Event history changed across {head} rollback")
-            rollback_heads.append(head)
+        if definitions.get(context, "compatibility-definition") != definition:
+            raise RuntimeError("Definition record was lost after fresh migration")
+        recovered = submissions.lookup_idempotency(context, "compatibility-submission")
+        if recovered is None or recovered.submission_id != receipt.submission_id:
+            raise RuntimeError("Current submission identity did not round-trip")
+        replayed = events.list_after_cursor(context, None, limit=20)
+        if [item.event_id for item in replayed] != [event.event_id]:
+            raise RuntimeError("Current event history did not round-trip")
         version = current_version(engine)
         engine.dispose()
 
@@ -439,8 +431,12 @@ def _migration_report() -> dict[str, Any]:
         "migration_versions": list(VERSIONS),
         "latest_head": version,
         "fresh_upgrade": "passed",
-        "rollback_heads_reupgraded": rollback_heads,
-        "core_records_preserved": ["definition", "submission_idempotency", "event"],
+        "canonical_records_round_trip": [
+            "definition",
+            "submission_idempotency",
+            "event",
+        ],
+        "state_boundary": "fresh_current_schema_only",
         "status": "passed",
     }
 
@@ -453,6 +449,8 @@ def _verification_report(repo: Path) -> list[dict[str, Any]]:
             "tests/fastapi/test_cp_ga_openapi_0_43.py",
             "tests/plan/test_wire_schemas_0_19.py",
             "tests/plan/test_schema_version_0_19.py",
+            "tests/runtime/test_run_request_wire.py",
+            "tests/streaming/test_operations_0_46.py",
         ],
         [
             "tests/compatibility",
@@ -462,8 +460,35 @@ def _verification_report(repo: Path) -> list[dict[str, Any]]:
         ],
     ]
     results: list[dict[str, Any]] = []
+    modules = json.dumps(sorted(set(PACKAGES.values())))
+    bootstrap = f"""
+import importlib.util
+import json
+import sys
+from pathlib import Path
+
+repo = Path(sys.argv[1]).resolve()
+for name in json.loads({modules!r}):
+    spec = importlib.util.find_spec(name)
+    if spec is None or spec.origin is None:
+        raise SystemExit(f"Installed package {{name}} has no importable origin")
+    origin = Path(spec.origin).resolve()
+    if origin == repo or repo in origin.parents:
+        raise SystemExit(f"Package {{name}} resolves to workspace source: {{origin}}")
+
+import pytest
+
+raise SystemExit(
+    pytest.main([
+        "-q",
+        "-o", "pythonpath=.",
+        "--import-mode=importlib",
+        *sys.argv[2:],
+    ])
+)
+"""
     for paths in suites:
-        command = [sys.executable, "-I", "-m", "pytest", "-q", *paths]
+        command = [sys.executable, "-I", "-c", bootstrap, str(repo), *paths]
         completed = subprocess.run(
             command,
             cwd=repo,
@@ -484,7 +509,18 @@ def _verification_report(repo: Path) -> list[dict[str, Any]]:
         skipped = re.search(r"(\d+) skipped", fields)
         results.append(
             {
-                "command": command[2:],
+                "command": [
+                    "python",
+                    "-I",
+                    "pytest",
+                    "-q",
+                    "-o",
+                    "pythonpath=.",
+                    "--import-mode=importlib",
+                    *paths,
+                ],
+                "package_import_origins_checked": sorted(set(PACKAGES.values())),
+                "workspace_shadowing": "rejected_before_collection",
                 "test_paths": paths,
                 "passed": int(passed.group(1)) if passed else 0,
                 "skipped": int(skipped.group(1)) if skipped else 0,

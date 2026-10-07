@@ -8,16 +8,16 @@
     "projection_preserved": true,
     "provider_code_loaded_by_entry_point": true,
     "status": "completed",
-    "submission_id": "sub-55b61964e5f14e61"
+    "submission_id": "sub-d96f00b07f8546bd"
   },
   "core_wheel": {
-    "filename": "etlantic-0.55.0-py3-none-any.whl",
-    "sha256": "5e9861df4d9ec07df2180845af125bb920a8e94862f86fbf7780c7c868619003"
+    "filename": "etlantic-0.56.0-py3-none-any.whl",
+    "sha256": "b8d1c2e8c193453851d3490c62a005f4c771f4dd77082bc3ea7fdbfcfcb42325"
   },
   "independent_provider_wheel": {
     "distribution": "etlantic-private-ac056037",
     "filename": "etlantic_private_ac056037-1.0.0-py3-none-any.whl",
-    "sha256": "8e74660697a112dac94321a427c4d0fe2c822ca6744eb4968497dd6b248e913e",
+    "sha256": "23e8c378d1544636a008347446cc10740b03a0cd8ddd5077b72d1f3d6145db23",
     "version": "1.0.0"
   },
   "installed_without_workspace_path": true,

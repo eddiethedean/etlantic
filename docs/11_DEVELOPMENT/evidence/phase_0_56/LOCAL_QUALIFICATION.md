@@ -1130,7 +1130,7 @@ case references, provider tuple and open reason. These limitations keep the
   also passed after recording the 92-operation contract. Ruff, format and
   Pyright checks passed for the completed change.
 
-## AC056-040 package compatibility qualification (2026-10-01)
+## Earlier AC056-040 package compatibility qualification (superseded; 2026-10-01)
 
 - `uv build --all-packages --wheel --out-dir /tmp/etlantic-ac056-040-wheels
   --clear` built all 25 workspace distributions. `WHEEL_MANIFEST.json` records
@@ -1202,4 +1202,107 @@ remain evidence for their recorded source states; current-tree regression
 results are listed above. No package tag or publication is
 claimed; the published supported line remains 0.55.x.
 
-- Static and documentation gates: `uv run pyright` — 0 errors; `uv run ruff check .` and `uv run ruff format --check .` passed; `uv run python scripts/check_docs.py` passed; `uv run mkdocs build --strict` built the site successfully; `uv run python scripts/check_release.py` passed all in-repository release checks and reported the expected 24 unpublished candidate distributions missing from PyPI.
+- Static and documentation gates: `uv run pyright` — 0 errors; `uv run ruff check .` and `uv run ruff format --check .` passed; `uv run python scripts/check_docs.py` passed; `uv run mkdocs build --strict` built the site successfully; `uv run python scripts/check_release.py` passed all in-repository release checks and reported 24 existing candidate distributions missing from PyPI and the new
+etlantic-foundry project that will be created on its first upload.
+
+## Superseding AC056-040 qualification after the standalone reset (2026-10-06)
+
+This result supersedes the 2026-10-01 package qualification above. The older
+section documented rollback and historical-input support that the current 0.56
+release boundary no longer claims.
+
+- Rebuilt all 25 wheels and 25 source distributions from the reviewed candidate
+  with `uv build --all-packages`; the current wheel SHA-256 values and sizes are
+  in `WHEEL_MANIFEST.json`.
+- Installed all 25 wheels together in a fresh CPython 3.11.15 environment.
+  The qualifier confirmed all package roots and 387 exports resolve from the
+  installed environment and checked the committed wheel manifest, dependency
+  constraints, both OpenAPI snapshots, schema references, and migration head
+  `014_cp1_complete_principal_idempotency_0_56`.
+- The current-schema migration smoke created canonical definition, accepted
+  submission, and event records, then verified their identities on the fresh
+  current head. It makes no claim that old state can be migrated or rolled back
+  into subject-only identity semantics.
+- The isolated wheel test subprocess verified all 25 package import origins
+  before collecting tests, overrode the repository pytest `pythonpath`, and ran
+  with `--import-mode=importlib`. The two suites passed 48 and 88 tests; 6
+  PostgreSQL cases were skipped because no test URL was configured.
+- Source regressions for canonical request fields, legacy flat intent keys,
+  stream-envelope aliases, and unsafe schema rollback passed in the focused
+  source run: 38 passed, 6 PostgreSQL cases skipped.
+- `PACKAGE_COMPATIBILITY_0_56.json` contains the package, OpenAPI, migration,
+  installed-wheel test, and environment results. `RELEASE_INDEX.json` records
+  the current hashes and updates AC056-040/042 to the standalone boundary.
+
+
+## Final release-review remediation (2026-10-06)
+
+Two findings from the final review of `a829ce2a` were reproduced and fixed:
+
+- PostgreSQL effect reconciliation now tries the same advisory transaction lock
+  held by the writer. A busy effect remains `unknown`; after acquiring the lock,
+  a separate read under `READ COMMITTED` checks the settled ledger state.
+  Live regressions cover active writers that subsequently commit or roll back,
+  and a deferred constraint trigger that blocks PostgreSQL inside `COMMIT`.
+- Connector catalog sensitivity now propagates through nested object properties,
+  composition branches and array items. Twenty public-catalog cases cover
+  `writeOnly`, `x-sensitive`, `sensitive` and credential-named parents while
+  preserving non-sensitive defaults and the provider's original schema.
+
+The initial new regressions failed before the fixes (22 failed). The final
+source provider/privacy suite passed all 63 tests against an isolated local
+PostgreSQL 16.13 cluster. The same tests passed against installed candidate
+wheels with repository source paths disabled: 43 provider/privacy tests, then
+20 managed PostgreSQL/Foundry simulator matrix cases after installing the
+optional Semblance test dependency. No live Foundry account was used.
+
+All 25 wheels and 25 source distributions were rebuilt. The refreshed wheel
+manifest records the changed core and SQL artifacts; the clean-environment
+package qualifier passed all 25 package roots and 387 exports, both OpenAPI
+snapshots, schema references, fresh current migrations, and suites of 54 and
+88 tests with live PostgreSQL migration cases enabled. The independent private
+provider qualification was rerun against the rebuilt core wheel and passed.
+
+The adaptive acceptance campaign regenerated its ten artifacts for the updated
+source and tests. Ruff lint/format, Pyright (zero errors), documentation
+consistency, strict MkDocs and release readiness checks passed. No tag or
+publication is claimed; the fresh-store boundary and candidate maturity remain
+unchanged.
+
+
+Final default regression after these fixes:
+`uv run pytest -q -m "not medallantic and not polars and not pandas and not sql and not spark and not real_pyspark and not airflow and not prefect and not keyring and not sqlmodel and not datafusion"`
+— 3,281 passed, 123 skipped, 731 deselected, 22 warnings in 5m48s; exit code 0.
+The new catalog cases are included; live PostgreSQL cases are qualified by the
+separate source and installed-wheel provider runs above.
+
+## Connector catalog privacy requalification for issue #269 (2026-10-06)
+
+At source commit `7db7329d`, catalog sample sanitization is schema-aware for
+ancestor defaults/examples, object properties, array items, compositions, and
+local JSON Schema references. Unresolved and cyclic references fail closed.
+Dynamic references fail closed; conditional and unevaluated schemas contribute
+sensitivity context. Legacy `dependencies` and tuple `additionalItems` schemas
+are also included. The focused catalog regression suite passed 62 tests; Ruff
+lint, format, and `git diff --check` passed.
+
+All 25 candidate 0.56 wheels were rebuilt. A fresh Python 3.11.15 virtual
+environment installed the rebuilt core wheel, then `python -I` imported the
+installed package with workspace paths disabled and passed the four original
+reproductions plus `additionalProperties`, `prefixItems`, dynamic-reference,
+conditional, unevaluated-property/item, `contains`, malformed-reference, JSON
+`contentSchema`, legacy `dependencies`, and tuple `additionalItems` cases from
+review (15 synthetic cases total). The updated wheel SHA-256 and size are
+recorded in `WHEEL_MANIFEST.json`.
+
+
+## Post-merge CI follow-up (2026-10-07)
+
+Strict Pyright initially found untyped collection paths in the schema-aware
+catalog sanitizer. Explicit schema and sample collection types now keep the
+implementation within the repository's typing boundary. The focused catalog
+suite passed 62 tests; repository Ruff and Pyright checks passed, including the
+strict suppression-free inventory (10,029 existing diagnostics). All 25 0.56
+wheels were rebuilt and recorded in `WHEEL_MANIFEST.json`. The adaptive 0.52
+evidence campaign was regenerated for the updated source and passed its
+10-artifact, 18-criterion verifier.

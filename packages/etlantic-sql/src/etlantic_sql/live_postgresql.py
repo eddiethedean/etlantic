@@ -1333,7 +1333,7 @@ class LivePostgresSinkConnector:
         self, receipt: CommitReceipt, *, context: Mapping[str, Any]
     ) -> ReconciliationResult:
         from anyio import to_thread
-        from sqlalchemy import MetaData, Table, select
+        from sqlalchemy import MetaData, Table, select, text
 
         effect_id = str(
             (receipt.metadata or {}).get("effect_id") or receipt.session_id or ""
@@ -1361,7 +1361,7 @@ class LivePostgresSinkConnector:
                     "effect_table": effect_table,
                 }
 
-            def lookup() -> Any:
+            def lookup() -> tuple[bool, Any]:
                 engine = _engine(
                     context,
                     timeout_seconds=int(
@@ -1370,13 +1370,31 @@ class LivePostgresSinkConnector:
                 )
                 try:
                     with engine.connect() as connection:
+                        # The writer holds this lock through COMMIT/rollback.
+                        # An invisible ledger row cannot establish rollback
+                        # while that transaction is still able to commit.
+                        connection = connection.execution_options(
+                            isolation_level="READ COMMITTED"
+                        )
+                        settled = connection.execute(
+                            text(
+                                "SELECT pg_try_advisory_xact_lock("
+                                "hashtextextended(:effect_id, 0))"
+                            ),
+                            {"effect_id": effect_id},
+                        ).scalar_one()
+                        if not settled:
+                            return False, None
+                        # Read in a separate statement so the snapshot follows
+                        # acquisition of the effect lock, even if a writer
+                        # committed just as reconciliation began.
                         table = Table(
                             str(meta["effect_table"]),
                             MetaData(),
                             schema=str(meta["effect_schema"]),
                             autoload_with=connection,
                         )
-                        return (
+                        return True, (
                             connection.execute(
                                 select(table).where(table.c.effect_id == effect_id)
                             )
@@ -1386,11 +1404,17 @@ class LivePostgresSinkConnector:
                 finally:
                     engine.dispose()
 
-            row = await to_thread.run_sync(lookup)
+            settled, row = await to_thread.run_sync(lookup)
         except Exception:
             return ReconciliationResult(
                 status="unknown",
                 message="PostgreSQL effect ledger could not be queried",
+            )
+        if not settled:
+            return ReconciliationResult(
+                status="unknown",
+                message="PostgreSQL effect transaction is still active",
+                metadata={"effect_id": effect_id},
             )
         if row is None:
             return ReconciliationResult(

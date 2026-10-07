@@ -35,7 +35,8 @@ as authoritative over PyPI classifier wording.
 
 ## Packages published on each tag
 
-Tag `vX.Y.Z` publishes twenty-four distributions:
+Tag `vX.Y.Z` publishes twenty-five distributions (the core package and
+twenty-four companion packages):
 
 | PyPI name | Source | Notes |
 |---|---|---|
@@ -48,6 +49,7 @@ Tag `vX.Y.Z` publishes twenty-four distributions:
 | `etlantic-prefect` | `packages/etlantic-prefect` | execution plugin |
 | `etlantic-keyring` | `packages/etlantic-keyring` | execution plugin |
 | `etlantic-sqlmodel` | `packages/etlantic-sqlmodel` | execution plugin |
+| `etlantic-foundry` | `packages/etlantic-foundry` | execution plugin; Foundry provider |
 | `medallantic` | `packages/medallantic` | **facade** |
 | `etlantic-sparkforge` | `packages/etlantic-sparkforge` | **compatibility redirect** → medallantic |
 | `etlantic-fastapi` | `packages/etlantic-fastapi` | thin reference adapter (since 0.24) |
@@ -111,9 +113,10 @@ wheel). Build with `npm run package` after `npm install`.
    existing projects. Prefer Trusted Publishing / OIDC when configured;
    otherwise use the least-privilege token documented for this repository.
    Treat long-lived user tokens and first-project bootstrap as exceptional.
-   For 0.50.0, `etlantic-duckdb` is a brand-new PyPI name and
-   `etlantic-spark-connect` is still unpublished from the 0.47 rate-limit
-   window—pace new-project creates accordingly.
+   For 0.56.0, `etlantic-foundry` is a brand-new PyPI name—pace its first
+   project creation accordingly. Confirm the current project/version status
+   with `scripts/check_release.py` for each release; names that were new in an
+   earlier release may already exist.
 8. **New distribution bootstrap only:** if introducing a brand-new PyPI name,
    review `scripts/check_release.py` output and PyPI new-project rate limits
    (`429 Too many new projects created`). Release CI waits between brand-new
@@ -149,7 +152,7 @@ GitHub Actions workflow
 
 1. Runs the full checks matrix.
 2. Verifies tag == core + all plugin versions.
-3. Builds all twenty-four wheels/sdists.
+3. Builds all twenty-five wheels/sdists.
 4. Smokes the core wheel (driver-free) **and** plugin discovery/import
    **before** any PyPI upload.
 5. Publishes to PyPI: **existing projects first** (skip files already present
