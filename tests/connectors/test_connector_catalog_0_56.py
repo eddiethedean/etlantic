@@ -216,6 +216,61 @@ def test_connector_catalog_redacts_inherited_sensitivity(
         ),
         (
             {
+                "$defs": {
+                    "Private": {
+                        "$dynamicAnchor": "private",
+                        "type": "string",
+                        "writeOnly": True,
+                    }
+                },
+                "type": "object",
+                "properties": {
+                    "opaque": {
+                        "$dynamicRef": "#private",
+                        "default": "synthetic-private-value",
+                    }
+                },
+            },
+            "default",
+        ),
+        (
+            {
+                "type": "object",
+                "properties": {"region": {"type": "string"}},
+                "if": {"properties": {"mode": {"const": "private"}}},
+                "then": {
+                    "properties": {"opaque": {"type": "string", "writeOnly": True}}
+                },
+                "default": {
+                    "mode": "private",
+                    "opaque": "synthetic-private-value",
+                    "region": "us-east-1",
+                },
+            },
+            "default",
+        ),
+        (
+            {
+                "type": "object",
+                "properties": {"region": {"type": "string"}},
+                "unevaluatedProperties": {"type": "string", "writeOnly": True},
+                "default": {
+                    "opaque": "synthetic-private-value",
+                    "region": "us-east-1",
+                },
+            },
+            "default",
+        ),
+        (
+            {
+                "type": "array",
+                "unevaluatedItems": {"type": "string", "writeOnly": True},
+                "examples": [["synthetic-private-value"]],
+            },
+            "examples",
+        ),
+        (
+            {
                 "type": "object",
                 "$defs": {"Private": {"type": "string", "writeOnly": True}},
                 "properties": {
@@ -247,7 +302,7 @@ def test_connector_catalog_sanitizes_samples_with_schema_context(
 
     assert "synthetic-private-value" not in json.dumps(public_schema)
     if sample_key == "default" and "default" in schema:
-        assert public_schema["default"] == {"region": "us-east-1"}
+        assert public_schema["default"]["region"] == "us-east-1"
     assert source_schema == schema
 
 

@@ -61,7 +61,9 @@ def _schema_parts(
 ) -> tuple[list[Mapping[str, Any]], bool]:
     """Return a schema and its local ref/composition targets; flag unresolved refs."""
     parts = [schema]
-    failed = False
+    # Dynamic/recursive scope depends on the containing schema walk. Until it is
+    # resolved explicitly, samples described by these references are unsafe.
+    failed = "$dynamicRef" in schema or "$recursiveRef" in schema
     reference = schema.get("$ref")
     if isinstance(reference, str):
         if reference in seen:
@@ -74,14 +76,25 @@ def _schema_parts(
                 nested, nested_failed = _schema_parts(target, root, seen | {reference})
                 parts.extend(nested)
                 failed |= nested_failed
-    for keyword in ("allOf", "anyOf", "oneOf"):
+    for keyword in ("allOf", "anyOf", "oneOf", "if", "then", "else"):
         children = schema.get(keyword)
-        if isinstance(children, list):
+        if isinstance(children, Mapping):
+            nested, nested_failed = _schema_parts(children, root, seen)
+            parts.extend(nested)
+            failed |= nested_failed
+        elif isinstance(children, list):
             for child in children:
                 if isinstance(child, Mapping):
                     nested, nested_failed = _schema_parts(child, root, seen)
                     parts.extend(nested)
                     failed |= nested_failed
+    dependent_schemas = schema.get("dependentSchemas")
+    if isinstance(dependent_schemas, Mapping):
+        for child in dependent_schemas.values():
+            if isinstance(child, Mapping):
+                nested, nested_failed = _schema_parts(child, root, seen)
+                parts.extend(nested)
+                failed |= nested_failed
     return parts, failed
 
 
@@ -123,6 +136,10 @@ def _child_schemas(
             additional = part.get("additionalProperties")
             if not matched and isinstance(additional, Mapping):
                 children.append(cast(Mapping[str, Any], additional))
+                matched = True
+            unevaluated = part.get("unevaluatedProperties")
+            if not matched and isinstance(unevaluated, Mapping):
+                children.append(cast(Mapping[str, Any], unevaluated))
     return children
 
 
@@ -133,21 +150,25 @@ def _item_schemas(
     for schema in schemas:
         parts, _ = _schema_parts(schema, root)
         for part in parts:
+            matched = False
             prefix_items = part.get("prefixItems")
             if isinstance(prefix_items, list) and index < len(prefix_items):
                 item = prefix_items[index]
                 if isinstance(item, Mapping):
                     children.append(cast(Mapping[str, Any], item))
+                matched = True
                 continue
             items = part.get("items")
             if isinstance(items, Mapping):
                 children.append(cast(Mapping[str, Any], items))
-            elif (
-                isinstance(items, list)
-                and index < len(items)
-                and isinstance(items[index], Mapping)
-            ):
-                children.append(cast(Mapping[str, Any], items[index]))
+                matched = True
+            elif isinstance(items, list) and index < len(items):
+                if isinstance(items[index], Mapping):
+                    children.append(cast(Mapping[str, Any], items[index]))
+                matched = True
+            unevaluated = part.get("unevaluatedItems")
+            if not matched and isinstance(unevaluated, Mapping):
+                children.append(cast(Mapping[str, Any], unevaluated))
     return children
 
 
