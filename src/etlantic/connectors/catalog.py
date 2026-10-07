@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import json
 import re
 from collections.abc import Mapping
 from typing import Any, cast
@@ -218,6 +219,40 @@ def _sanitize_sample(
                 return None, False
             sample.append(sanitized)
         return sample, True
+    if isinstance(value, str):
+        content = value
+        for schema in schemas:
+            parts, _ = _schema_parts(schema, root)
+            for part in parts:
+                if "contentSchema" not in part:
+                    continue
+                content_schema = part.get("contentSchema")
+                media_type = part.get("contentMediaType")
+                normalized_media_type = (
+                    media_type.split(";", 1)[0].strip().lower()
+                    if isinstance(media_type, str)
+                    else ""
+                )
+                if not isinstance(content_schema, Mapping) or not (
+                    normalized_media_type == "application/json"
+                    or normalized_media_type.endswith("+json")
+                ):
+                    return None, False
+                try:
+                    parsed_content = json.loads(content)
+                except (json.JSONDecodeError, TypeError):
+                    return None, False
+                sanitized_content, safe = _sanitize_sample(
+                    parsed_content,
+                    [cast(Mapping[str, Any], content_schema)],
+                    root,
+                    seen=seen,
+                )
+                if not safe:
+                    return None, False
+                if sanitized_content != parsed_content:
+                    content = json.dumps(sanitized_content, ensure_ascii=False)
+        return content, True
     return value, True
 
 

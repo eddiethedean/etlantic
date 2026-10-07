@@ -204,6 +204,21 @@ def test_connector_catalog_redacts_inherited_sensitivity(
         ),
         (
             {
+                "type": "string",
+                "contentMediaType": "application/json",
+                "contentSchema": {
+                    "type": "object",
+                    "properties": {
+                        "opaque": {"type": "string", "writeOnly": True},
+                        "region": {"type": "string"},
+                    },
+                },
+                "default": '{"opaque":"synthetic-private-value","region":"us-east-1"}',
+            },
+            "default",
+        ),
+        (
+            {
                 "type": "object",
                 "properties": {"region": {"type": "string"}},
                 "additionalProperties": {"type": "string", "writeOnly": True},
@@ -326,6 +341,15 @@ def test_connector_catalog_sanitizes_samples_with_schema_context(
             "type": "object",
             "properties": {"opaque": {"type": "string", "default": "safe"}},
             "default": {"opaque": "safe"},
+        },
+        {
+            "type": "string",
+            "contentMediaType": "application/json",
+            "contentSchema": {
+                "type": "object",
+                "properties": {"region": {"type": "string"}},
+            },
+            "default": '{"region":"us-east-1"}',
         },
     ],
 )
