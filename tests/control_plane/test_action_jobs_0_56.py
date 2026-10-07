@@ -5,6 +5,7 @@ from __future__ import annotations
 import asyncio
 import json
 from collections.abc import Mapping
+from dataclasses import replace
 from datetime import UTC, datetime, timedelta
 from threading import Event, Thread
 from time import sleep
@@ -109,6 +110,72 @@ def test_action_job_acceptance_is_redacted_idempotent_and_owner_scoped() -> None
     with pytest.raises(ControlPlaneError) as cross_owner:
         store.get_action_job(_context("other-owner"), original.action_id)
     assert cross_owner.value.status == 404
+
+
+@pytest.mark.parametrize(
+    "other_principal",
+    [
+        Principal("action-owner", issuer="other-issuer", kind="human"),
+        Principal("action-owner", issuer=None, kind="service"),
+    ],
+)
+def test_action_ownership_uses_complete_principal_identity(
+    other_principal: Principal,
+) -> None:
+    store = MemoryDurableWorkStore()
+    owner = _context()
+    other = replace(owner, principal=other_principal)
+    action = _accepted(
+        store,
+        owner,
+        key="private-preview",
+        request={"provider": "mock"},
+    )
+    preparation = _accepted(
+        store,
+        owner,
+        key="private-preparation",
+        action="run.prepare",
+        request={"definition_id": "private-definition"},
+    )
+
+    assert (
+        _accepted(
+            store,
+            other,
+            key="private-preview",
+            request={"provider": "mock"},
+        ).action_id
+        != action.action_id
+    )
+    with pytest.raises(ControlPlaneError) as hidden:
+        store.get_action_job(other, action.action_id)
+    assert hidden.value.status == 404
+    assert all(
+        item.action_id != action.action_id for item in store.list_action_jobs(other)
+    )
+    with pytest.raises(ControlPlaneError) as hidden_cancel:
+        store.cancel_action_job(other, preparation.action_id)
+    assert hidden_cancel.value.status == 404
+    assert store.get_action_job(owner, preparation.action_id).status == "queued"
+
+    # Explicit resource owners are trusted sharing boundaries across principals.
+    shared_owner = replace(owner, resource_owner_id="shared-actions")
+    shared_reader = replace(other, resource_owner_id="shared-actions")
+    shared = _accepted(
+        store,
+        shared_owner,
+        key="shared-preview",
+        request={"provider": "mock"},
+    )
+    assert (
+        store.get_action_job(shared_reader, shared.action_id).action_id
+        == shared.action_id
+    )
+    assert any(
+        item.action_id == shared.action_id
+        for item in store.list_action_jobs(shared_reader)
+    )
 
 
 def test_run_preparation_operations_are_idempotent_and_cancellable_until_acceptance() -> (

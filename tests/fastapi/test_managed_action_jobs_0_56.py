@@ -549,6 +549,111 @@ def test_action_receipts_and_cursors_are_bound_to_owner_environment_and_domain(
         backend.close()
 
 
+@pytest.mark.parametrize(
+    "variant_headers",
+    [
+        {"X-Principal-Issuer": "issuer-b"},
+        {"X-Principal-Kind": "service"},
+    ],
+)
+def test_action_receipts_and_http_listing_use_issuer_qualified_owner(
+    tmp_path: Path, variant_headers: Mapping[str, str]
+) -> None:
+    owner = _context()
+    variant = replace(
+        owner,
+        principal=Principal(
+            "action-owner",
+            issuer=variant_headers.get("X-Principal-Issuer"),
+            kind=variant_headers.get("X-Principal-Kind", "human"),
+        ),
+    )
+    authorizer = MemoryAuthorizer()
+    for context in (owner, variant):
+        for action in (
+            "connector.test",
+            "connector.action.read",
+            "connector.action.list",
+            "run.cancel",
+        ):
+            authorizer.grant(context, action)
+    backend = _backend(_config(tmp_path, _async_action_result), authorizer)
+    client = cast(Any, TestClient(create_app(backend.api, with_lifespan=False)))
+    try:
+        service = backend.api.managed_service
+        assert service is not None
+        receipt = service.submit_connector_action(
+            owner,
+            "connector.test",
+            {"provider": "mock", "connection_id": "same-connection"},
+            idempotency_key="issuer-qualified-key",
+        )
+        service.submit_connector_action(
+            owner,
+            "connector.test",
+            {"provider": "mock", "connection_id": "second"},
+            idempotency_key="second-owner-action",
+        )
+        repeated_as_variant = service.submit_connector_action(
+            variant,
+            "connector.test",
+            {"provider": "mock", "connection_id": "same-connection"},
+            idempotency_key="issuer-qualified-key",
+        )
+        assert repeated_as_variant["action_id"] != receipt["action_id"]
+        preparation = backend.api.durable_work.accept_action_job(
+            owner,
+            action="run.prepare",
+            idempotency_key="private-preparation",
+            request={"definition_id": "private-definition"},
+            deadline_at=(datetime.now(UTC) + timedelta(minutes=1)).isoformat(),
+        )
+        with pytest.raises(ControlPlaneError) as hidden_cancel:
+            service.cancel_run_preparation(variant, preparation.action_id)
+        assert hidden_cancel.value.status == 404
+        assert (
+            backend.api.durable_work.get_action_job(owner, preparation.action_id).status
+            == "queued"
+        )
+        with pytest.raises(ControlPlaneError) as hidden:
+            service.get_connector_action(variant, receipt["action_id"])
+        assert hidden.value.status == 404
+        assert all(
+            item["action_id"] != receipt["action_id"]
+            for item in service.list_connector_actions(variant)["items"]
+        )
+        owner_page = service.list_connector_actions(owner, limit=1)
+        cursor = owner_page["next_cursor"]
+        assert cursor is not None
+        with pytest.raises(ControlPlaneError) as wrong_owner_cursor:
+            service.list_connector_actions(variant, limit=1, cursor=cursor)
+        assert wrong_owner_cursor.value.status == 400
+
+        headers = {"X-Principal": "action-owner", **variant_headers}
+        hidden_http = client.get(
+            f"/v1/connector-actions/{receipt['action_id']}", headers=headers
+        )
+        assert hidden_http.status_code == 404
+        hidden_cancel_http = client.delete(
+            f"/v1/preparations/{preparation.action_id}", headers=headers
+        )
+        assert hidden_cancel_http.status_code == 404
+        listed_http = client.get("/v1/connector-actions", headers=headers)
+        assert listed_http.status_code == 200
+        assert all(
+            item["action_id"] != receipt["action_id"]
+            for item in listed_http.json()["items"]
+        )
+        cursor_http = client.get(
+            "/v1/connector-actions",
+            params={"limit": 1, "cursor": cursor},
+            headers=headers,
+        )
+        assert cursor_http.status_code == 400
+    finally:
+        backend.close()
+
+
 def test_connector_catalog_can_run_as_an_authorized_action_job(
     tmp_path: Path,
 ) -> None:
