@@ -565,7 +565,11 @@ def test_action_receipts_and_http_listing_use_issuer_qualified_owner(
         principal=Principal(
             "action-owner",
             issuer=variant_headers.get("X-Principal-Issuer"),
-            kind=variant_headers.get("X-Principal-Kind", "human"),
+            kind=(
+                "service"
+                if variant_headers.get("X-Principal-Kind") == "service"
+                else "human"
+            ),
         ),
     )
     authorizer = MemoryAuthorizer()
@@ -581,7 +585,9 @@ def test_action_receipts_and_http_listing_use_issuer_qualified_owner(
     client = cast(Any, TestClient(create_app(backend.api, with_lifespan=False)))
     try:
         service = backend.api.managed_service
+        durable = backend.api.durable_work
         assert service is not None
+        assert durable is not None
         receipt = service.submit_connector_action(
             owner,
             "connector.test",
@@ -601,7 +607,7 @@ def test_action_receipts_and_http_listing_use_issuer_qualified_owner(
             idempotency_key="issuer-qualified-key",
         )
         assert repeated_as_variant["action_id"] != receipt["action_id"]
-        preparation = backend.api.durable_work.accept_action_job(
+        preparation = durable.accept_action_job(
             owner,
             action="run.prepare",
             idempotency_key="private-preparation",
@@ -611,10 +617,7 @@ def test_action_receipts_and_http_listing_use_issuer_qualified_owner(
         with pytest.raises(ControlPlaneError) as hidden_cancel:
             service.cancel_run_preparation(variant, preparation.action_id)
         assert hidden_cancel.value.status == 404
-        assert (
-            backend.api.durable_work.get_action_job(owner, preparation.action_id).status
-            == "queued"
-        )
+        assert durable.get_action_job(owner, preparation.action_id).status == "queued"
         with pytest.raises(ControlPlaneError) as hidden:
             service.get_connector_action(variant, receipt["action_id"])
         assert hidden.value.status == 404
