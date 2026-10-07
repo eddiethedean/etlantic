@@ -6,9 +6,11 @@ current_minor: "0.56"
 
 # ETLantic 0.56 Exit Gate — Complete Application ETL Backend
 
-**Decision: all 44 acceptance criteria are qualified; release review remains open.**
-This gate records the in-tree implementation and local evidence for the phase.
-The published 0.56.0 release remains pending.
+**Decision (2026-10-07): GO for the ETLantic 0.56.0 release.** All 44
+acceptance criteria are qualified, the final candidate is merged to `main` at
+`d9edb360652de8ebd5265e8f0bbfe6ab3f5618d3`, and its full CI run passed. This
+approves proceeding with the tagged release workflow; it does not claim that
+0.56.0 has been tagged or published.
 
 ## Evidence
 
@@ -30,13 +32,16 @@ uv run python scripts/qualify_phase056_packages.py --repo-root . --wheel-dir PAT
 
 ## Release boundary
 
-- The 0.56.0 candidate is not a published or supported package release.
+- ETLantic 0.56.0 is approved for release, but is not a published or supported
+  package release until the release workflow completes successfully.
 - The published 0.55.x line remains the production installation target until
-  an authorized release is prepared.
+  0.56.0 publication succeeds.
+- `etlantic-foundry` is a new PyPI project; use the release workflow's paced
+  first-project creation and verify the upload before declaring publication.
 - PostgreSQL repair/backfill requires an explicit `partition_column` and
   allowlisted partition capabilities. Other providers fail closed.
-- Candidate gate evidence does not create a tag, publish packages, or replace
-  the final release review.
+- This decision does not create a tag or publish packages. Follow the
+  [release process](RELEASE_PROCESS.md) for tagging and publication.
 
 See the [implementation plan](IMPLEMENTATION_PLAN_0_56.md), [execution
 plan](EXECUTION_PLAN_0_56.md), and [review findings](FINDINGS_0_56.md).

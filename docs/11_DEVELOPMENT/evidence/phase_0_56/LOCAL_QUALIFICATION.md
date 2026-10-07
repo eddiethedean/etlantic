@@ -4,7 +4,10 @@ status: experimental
 
 # Phase 0.56 Local Qualification
 
-**Decision: all 44 acceptance criteria are qualified; release review remains open.** This record reports local implementation evidence; it does not claim publication.
+**Qualification: all 44 acceptance criteria passed.** The final release review
+recorded GO on merged `main` commit
+`d9edb360652de8ebd5265e8f0bbfe6ab3f5618d3`; this local qualification record
+does not claim that the release has been tagged or published.
 
 Current index: 44 criteria passed, 0 open, 0 pending, and 0 blocked.
 
@@ -892,8 +895,10 @@ qualification state.
   qualification files.
 
 See [`RELEASE_INDEX.json`](RELEASE_INDEX.json) for the per-criterion status,
-case references, provider tuple and open reason. These limitations keep the
-0.56 release decision open even though the implemented local gates pass.
+case references, provider tuple and scoped limitations. These limitations
+define the qualified release scope. The final review found no release-blocking
+open, pending, or blocked acceptance criteria; see the
+[0.56 exit gate](../../EXIT_GATE_0_56.md) for the recorded GO decision.
 
 
 - Output partition result lineage (AC056-017): `uv run pytest -q
