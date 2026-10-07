@@ -3,8 +3,8 @@
   "packages": [
     {
       "filename": "etlantic-0.56.0-py3-none-any.whl",
-      "sha256": "ebea481e51bd3fc0712e989edb7874b5646c40212384d694670c36520e6ad037",
-      "size_bytes": 1187914
+      "sha256": "1a3dea78f34d7dfd49154145508df7485a0a451a2a261f560341ca9152a11caf",
+      "size_bytes": 1188118
     },
     {
       "filename": "etlantic_airflow-0.56.0-py3-none-any.whl",

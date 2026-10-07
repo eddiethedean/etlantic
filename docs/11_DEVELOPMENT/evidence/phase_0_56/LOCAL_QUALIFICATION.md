@@ -1278,15 +1278,17 @@ separate source and installed-wheel provider runs above.
 
 ## Connector catalog privacy requalification for issue #269 (2026-10-06)
 
-At source commit `bb604c5e`, catalog sample sanitization became schema-aware for
+At source commit `d0e3732b`, catalog sample sanitization became schema-aware for
 ancestor defaults/examples, object properties, array items, compositions, and
-local JSON Schema references. Unresolved and cyclic references fail closed. The
-focused catalog regression suite passed 51 tests; Ruff lint, format, and
-`git diff --check` passed.
+local JSON Schema references. Unresolved and cyclic references fail closed.
+Dynamic references fail closed; conditional and unevaluated schemas contribute
+sensitivity context. The focused catalog regression suite passed 55 tests;
+Ruff lint, format, and `git diff --check` passed.
 
 All 25 candidate 0.56 wheels were rebuilt. A fresh Python 3.11.15 virtual
 environment installed the rebuilt core wheel, then `python -I` imported the
 installed package with workspace paths disabled and passed the four original
-reproductions plus the `additionalProperties` and `prefixItems` regression
-cases from review. The updated wheel SHA-256 and size are recorded in
+reproductions plus `additionalProperties`, `prefixItems`, dynamic-reference,
+conditional, and unevaluated-property/item cases from review (10 synthetic
+cases total). The updated wheel SHA-256 and size are recorded in
 `WHEEL_MANIFEST.json`.
