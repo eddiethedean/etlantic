@@ -535,7 +535,7 @@ class MemoryDurableWorkStore:
                 allow_nan=False,
             ).encode("utf-8")
         ).hexdigest()
-        owner_id = ctx.resource_owner_id or ctx.principal.subject
+        owner_id = ctx.resource_owner_id or ctx.principal.identity_key
         legacy_idem = (
             *_scope(ctx),
             ctx.principal.issuer or "",
@@ -623,7 +623,7 @@ class MemoryDurableWorkStore:
         self, ctx: ControlPlaneContext, action_id: str
     ) -> ActionJobRecord:
         """Read an action receipt within the caller's resource-owner scope."""
-        owner_id = ctx.resource_owner_id or ctx.principal.subject
+        owner_id = ctx.resource_owner_id or ctx.principal.identity_key
         with self._lock:
             record = self._action_jobs.get((*_scope(ctx), action_id))
             if (
@@ -642,7 +642,7 @@ class MemoryDurableWorkStore:
         action: str,
         idempotency_key: str,
     ) -> ActionJobRecord | None:
-        owner_id = ctx.resource_owner_id or ctx.principal.subject
+        owner_id = ctx.resource_owner_id or ctx.principal.identity_key
         idem = (
             *_scope(ctx),
             ctx.security_domain.domain_id,
@@ -681,7 +681,7 @@ class MemoryDurableWorkStore:
     def cancel_action_job(
         self, ctx: ControlPlaneContext, action_id: str
     ) -> ActionJobRecord:
-        owner_id = ctx.resource_owner_id or ctx.principal.subject
+        owner_id = ctx.resource_owner_id or ctx.principal.identity_key
         key = (*_scope(ctx), action_id)
         with self._lock:
             row = self._action_jobs.get(key)
@@ -725,7 +725,7 @@ class MemoryDurableWorkStore:
         """Return one bounded page of owner-scoped action receipts."""
         if type(limit) is not int or limit < 1:
             raise ValueError("limit must be a positive integer")
-        owner_id = ctx.resource_owner_id or ctx.principal.subject
+        owner_id = ctx.resource_owner_id or ctx.principal.identity_key
         with self._lock:
             records = sorted(
                 (

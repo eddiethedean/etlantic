@@ -553,7 +553,7 @@ def verify_provision_parent(
         or parent.result_json is None
         or parent.tenant_id != ctx.tenant.tenant_id
         or parent.workspace_id != ctx.workspace.workspace_id
-        or parent.owner_id != (ctx.resource_owner_id or ctx.principal.subject)
+        or parent.owner_id != (ctx.resource_owner_id or ctx.principal.identity_key)
         or parent.environment != ctx.environment.name
         or parent.security_domain_id != ctx.security_domain.domain_id
     ):
