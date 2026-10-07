@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import inspect
 from typing import Any
 
 import polars as pl
@@ -40,6 +41,14 @@ _JOIN_TYPES = frozenset(
 # 0.13 claims fail-closed collision only; suffix/coalesce deferred.
 _COLLISION_POLICIES = frozenset({"fail"})
 _UNION_MODES = frozenset({"byName", "byPosition"})
+_EXPLODE_EMPTY_AS_NULL = (
+    "empty_as_null" in inspect.signature(pl.DataFrame.explode).parameters
+)
+_JOIN_NULLS_PARAM = (
+    "nulls_equal"
+    if "nulls_equal" in inspect.signature(pl.DataFrame.join).parameters
+    else "join_nulls"
+)
 
 
 def apply_action(
@@ -129,7 +138,11 @@ def apply_action(
         field = params.get("field")
         if field is None:
             raise ValueError("dtcs:explode requires a field")
-        return frame.explode(str(field), empty_as_null=True)
+        if _EXPLODE_EMPTY_AS_NULL:
+            return frame.explode(str(field), empty_as_null=True)
+        # Polars added this flag after its legacy default already matched the
+        # DTCS empty-list-to-null behavior. Keep that behavior on older builds.
+        return frame.explode(str(field))
     raise ValueError(f"Unsupported action {name!r}")
 
 
@@ -253,17 +266,9 @@ def _apply_join(
         "how": how,
         "coalesce": True,
     }
-    # Polars 1.x: nulls_equal; older builds may reject the keyword only.
+    # Polars renamed this keyword from join_nulls to nulls_equal.
     if null_safe:
-        join_kwargs["nulls_equal"] = True
-        try:
-            return left.join(right, **join_kwargs)
-        except TypeError as exc:
-            message = str(exc).lower()
-            if "nulls_equal" not in message and "unexpected keyword" not in message:
-                raise
-            join_kwargs.pop("nulls_equal", None)
-            return left.join(right, **join_kwargs)
+        join_kwargs[_JOIN_NULLS_PARAM] = True
     return left.join(right, **join_kwargs)
 
 

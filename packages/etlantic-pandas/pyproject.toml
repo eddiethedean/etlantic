@@ -29,7 +29,7 @@ Issues = "https://github.com/eddiethedean/etlantic/issues"
 Changelog = "https://github.com/eddiethedean/etlantic/blob/main/CHANGELOG.md"
 
 [project.optional-dependencies]
-arrow = ["pyarrow>=14"]
+arrow = ["pyarrow>=17"]
 
 [project.entry-points."etlantic.dataframe_plugins"]
 pandas = "etlantic_pandas:create_plugin"

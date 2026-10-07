@@ -6,7 +6,7 @@
 > [Capabilities](docs/01_GETTING_STARTED/CAPABILITIES.md) for what ships now.
 > Review this header for every release or sequence change.
 
-**Latest published release:** ETLantic **0.56.0** (Beta); `0.56.1` is in release-candidate preparation. It completes the
+**Latest published release:** ETLantic **0.56.1** (Beta). It completes the
 application backend and is supported for documented single-tenant pilots. The
 scoped inferred-model authoring surface remains Experimental. Adaptive execution also
 remains Experimental; its independent graduation is still pending. See the [0.55 exit gate](docs/11_DEVELOPMENT/EXIT_GATE_0_55.md)
@@ -37,7 +37,7 @@ through **0.37** (stable foundation) are shipped.
 | Previous | 0.40 | Tenant registry / workspaces (CP2) | Gate-ready / shipped evidence |
 | Previous | 0.39 | Multi-tenant control plane (CP1) | Gate-ready / shipped evidence |
 | Previous | 0.38 | Data connectivity and connector SDK | Gate-ready / shipped evidence |
-| Current | 0.56 | Complete application ETL backend with full specification and run control | Gate-ready for tag/publish |
+| Current | 0.56 | Complete application ETL backend with full specification and run control | Published / shipped evidence |
 | Later | 0.57 | Brownfield adoption bridges | Planning freeze |
 | Later | 0.58 | Operator Console | Planned |
 | Later | 0.59 | Managed runtime and enterprise provider packs | Planned |

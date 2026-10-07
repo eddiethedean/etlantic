@@ -1,6 +1,6 @@
 # Upgrade Hub
 
-> **Status: 0.56.0 is the published Beta release and current upgrade target.**
+> **Status: 0.56.1 is the published Beta release and current upgrade target.**
 
 !!! warning "Upgraders only"
     New users: start at the [docs home green path](../README.md) or
@@ -9,21 +9,21 @@
 Upgrade between ETLantic 0.x releases using the guides below. Always pin core
 and first-party plugins to the **same minor** after upgrading.
 
-The current target is the published 0.56.0 release. Older paths must complete
+The current target is the published 0.56.1 release. Older paths must complete
 the listed migrations through 0.55, then apply the 0.55 → 0.56 guide.
 
 Historical release notes: [Earlier releases](EARLIER_RELEASES.md).
 
 ## 0.56 configuration cheat sheet
 
-The 0.56.0 release uses lockstep core and plugin versions with the constraint
+The 0.56 release uses lockstep core and plugin versions with the constraint
 `etlantic>=0.56.0,<0.57`. For PostgreSQL partition repair/backfill, configure
 `partition_column` on both relevant connector bindings and allow the required
 partition capabilities. See [Migration 0.55 → 0.56](../11_DEVELOPMENT/MIGRATION_0_55_TO_0_56.md).
 
 ## Current target
 
-**ETLantic 0.56.0** (published Beta release) — choose your guide:
+**ETLantic 0.56.1** (published Beta release) — choose your guide:
 
 |---|---|
 | 0.55.x | [Migration 0.55 → 0.56](../11_DEVELOPMENT/MIGRATION_0_55_TO_0_56.md) |

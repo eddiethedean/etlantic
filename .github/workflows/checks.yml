@@ -1164,3 +1164,26 @@ jobs:
         env:
           ETLANTIC_REQUIRE_AIRFLOW: "1"
         run: uv run pytest -q tests/airflow/test_airflow_compile.py::test_optional_airflow_import_of_generated_dag -m airflow
+
+  dependency-minimums:
+    name: Dependency minimums (Python 3.11)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v9.0.0
+        with:
+          version: "0.12.0"
+          python-version: "3.11"
+          enable-cache: true
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Sync lowest direct dependency versions
+        run: uv sync --resolution lowest-direct --upgrade --all-groups --all-extras
+
+      - name: Core suite at dependency minimums
+        run: uv run pytest -q -m "not medallantic and not polars and not pandas and not sql and not spark and not real_pyspark and not airflow and not prefect and not keyring and not sqlmodel and not datafusion"
+
+      - name: Optional package suites at dependency minimums
+        run: uv run pytest -q -m "not airflow and not real_pyspark" tests/polars_compiler tests/pandas_compiler tests/dataframe tests/portable_conformance tests/datafusion tests/duckdb tests/sql tests/sqlmodel tests/fastapi tests/prefect tests/keyring tests/s3

@@ -14,7 +14,10 @@ from typer.testing import CliRunner
 
 from etlantic.cli import _build_selection, app
 
-runner = CliRunner(env={"NO_COLOR": "1", "TERM": "dumb"})
+try:
+    runner = CliRunner(mix_stderr=False, env={"NO_COLOR": "1", "TERM": "dumb"})
+except TypeError:  # Click 8.2 removed mix_stderr after separating captured streams.
+    runner = CliRunner(env={"NO_COLOR": "1", "TERM": "dumb"})
 _ANSI_ESCAPE = re.compile(r"\x1b\[[0-9;]*m")
 _TARGET = "tests.fixtures.sample_pipeline:SamplePipeline"
 

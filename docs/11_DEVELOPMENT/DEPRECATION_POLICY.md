@@ -1,6 +1,6 @@
 # API Stability and Deprecation Policy
 
-ETLantic 0.56.0 is the current Beta (PyPI) release suitable for documented single-tenant
+ETLantic 0.56.1 is the current Beta (PyPI) release suitable for documented single-tenant
 pilots—not unrestricted enterprise production. The roadmap remains entirely
 within the 0.x series; **0.37** closed the stable-foundation gate and later
 minors continue post-foundation incubation. Breaking

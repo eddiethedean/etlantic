@@ -32,7 +32,13 @@ from tests.runtime.adaptive_candidate_guard import (
     ADAPTIVE_CANDIDATE_MATCHES_PACKAGE,
     ADAPTIVE_CANDIDATE_MISMATCH_REASON,
 )
-from tests.runtime.physical.test_qualification_0_53 import Chain, Project, setup
+from tests.runtime.physical.test_qualification_0_53 import (
+    Chain,
+    Project,
+)
+from tests.runtime.physical.test_qualification_0_53 import (
+    setup as setup_physical_pipeline,
+)
 from tests.runtime.test_sol_0_53_effective_request import ParameterRequestPipeline
 
 
@@ -152,7 +158,9 @@ def test_serialized_definition_matches_class_across_qualified_families(
         context = PlanningContext.create(profile)
         class_plan = _plan(Chain, reporting, context=context)
     else:
-        runtime, profile, class_plan = setup(Chain, families, RunRequest())
+        runtime, profile, class_plan = setup_physical_pipeline(
+            Chain, families, RunRequest()
+        )
         context = PlanningContext.create(profile, registry=runtime.registry)
     definition = pipeline_from_json(pipeline_to_json(definition_from_pipeline(Chain)))
     plan = _plan(definition, reporting, context=context, request=RunRequest())

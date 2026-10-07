@@ -378,6 +378,29 @@ def _operation_fields(
                 }
                 for field in _schema_fields(content.get("schema", {}), components)
             )
+    if any(
+        item.get("surface") == "response"
+        and item.get("status_code") == "422"
+        and item.get("path") == "detail"
+        for item in fields
+    ):
+        # FastAPI versions vary in how much of Pydantic's validation-error
+        # payload they expose in generated OpenAPI. Keep the reviewed public
+        # error shape stable across the supported FastAPI/Pydantic range.
+        known_paths = {item["path"] for item in fields}
+        for name in ("input", "ctx"):
+            path = f"detail[].{name}"
+            if path not in known_paths:
+                fields.append(
+                    {
+                        "surface": "response",
+                        "status_code": "422",
+                        "media_type": "application/json",
+                        "path": path,
+                        "required": False,
+                        "type": "object",
+                    }
+                )
     return sorted(
         fields,
         key=lambda item: (

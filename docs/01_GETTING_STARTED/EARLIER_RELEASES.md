@@ -1,6 +1,6 @@
 # Earlier release notes
 
-> **Status: Published release index; current release is 0.56.0.**
+> **Status: Published release index; current release is 0.56.1.**
 > Current release: [What's new in 0.56](WHATS_NEW_0_56.md). Earlier release
 > notes follow. Full history: [Changelog](../CHANGELOG.md).
 

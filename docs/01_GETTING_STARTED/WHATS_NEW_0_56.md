@@ -7,7 +7,7 @@ audience: adopter
 
 # What's new in 0.56
 
-> **Status: ETLantic 0.56.0 is the published Beta release.**
+> **Status: ETLantic 0.56.1 is the published Beta release.**
 
 Phase 0.56 completes the application-facing managed ETL path. Applications can
 submit work through one preparation and acceptance path, use managed workers,

@@ -18,8 +18,8 @@ classifiers = [
 ]
 dependencies = [
     "etlantic>=0.56.0",
-    "datafusion>=40",
-    "pyarrow>=14",
+    "datafusion>=49",
+    "pyarrow>=17",
 ]
 
 [project.urls]

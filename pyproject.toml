@@ -58,7 +58,7 @@ openlineage = ["etlantic-openlineage>=0.56.0"]
 mcp = ["etlantic-mcp>=0.56.0"]
 otel = ["opentelemetry-api>=1.36"]
 observability = ["opentelemetry-api>=1.36"]
-arrow = ["pyarrow>=14"]
+arrow = ["pyarrow>=17"]
 notebook = ["ipython>=8", "ipywidgets>=8"]
 lsp = ["etlantic-lsp>=0.56.0"]
 dataframes = [
@@ -99,15 +99,15 @@ dev = [
 dataframes = [
     "etlantic-polars",
     "etlantic-pandas",
-    "pyarrow>=14",
+    "pyarrow>=17",
 ]
 polars = [
     "etlantic-polars",
-    "pyarrow>=14",
+    "pyarrow>=17",
 ]
 pandas = [
     "etlantic-pandas",
-    "pyarrow>=14",
+    "pyarrow>=17",
 ]
 sql = [
     "etlantic-sql",

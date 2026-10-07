@@ -1062,7 +1062,7 @@ requires-dist = [
     { name = "opentelemetry-api", marker = "extra == 'observability'", specifier = ">=1.36" },
     { name = "opentelemetry-api", marker = "extra == 'otel'", specifier = ">=1.36" },
     { name = "packaging", specifier = ">=24" },
-    { name = "pyarrow", marker = "extra == 'arrow'", specifier = ">=14" },
+    { name = "pyarrow", marker = "extra == 'arrow'", specifier = ">=17" },
     { name = "pydantic", specifier = ">=2.12" },
     { name = "typer", specifier = ">=0.15" },
     { name = "tzdata", specifier = ">=2024.1" },
@@ -1075,7 +1075,7 @@ airflow-runtime = [{ name = "etlantic-airflow", editable = "packages/etlantic-ai
 dataframes = [
     { name = "etlantic-pandas", editable = "packages/etlantic-pandas" },
     { name = "etlantic-polars", editable = "packages/etlantic-polars" },
-    { name = "pyarrow", specifier = ">=14" },
+    { name = "pyarrow", specifier = ">=17" },
 ]
 datafusion = [{ name = "etlantic-datafusion", editable = "packages/etlantic-datafusion" }]
 dev = [
@@ -1108,11 +1108,11 @@ observability = [{ name = "opentelemetry-api", specifier = ">=1.36" }]
 openlineage = [{ name = "etlantic-openlineage", editable = "packages/etlantic-openlineage" }]
 pandas = [
     { name = "etlantic-pandas", editable = "packages/etlantic-pandas" },
-    { name = "pyarrow", specifier = ">=14" },
+    { name = "pyarrow", specifier = ">=17" },
 ]
 polars = [
     { name = "etlantic-polars", editable = "packages/etlantic-polars" },
-    { name = "pyarrow", specifier = ">=14" },
+    { name = "pyarrow", specifier = ">=17" },
 ]
 prefect = [{ name = "etlantic-prefect", editable = "packages/etlantic-prefect" }]
 pyspark = [
@@ -1152,9 +1152,9 @@ dependencies = [
 
 [package.metadata]
 requires-dist = [
-    { name = "datafusion", specifier = ">=40" },
+    { name = "datafusion", specifier = ">=49" },
     { name = "etlantic", editable = "." },
-    { name = "pyarrow", specifier = ">=14" },
+    { name = "pyarrow", specifier = ">=17" },
 ]
 
 [[package]]
@@ -1360,7 +1360,7 @@ arrow = [
 requires-dist = [
     { name = "etlantic", editable = "." },
     { name = "pandas", specifier = ">=2.2" },
-    { name = "pyarrow", marker = "extra == 'arrow'", specifier = ">=14" },
+    { name = "pyarrow", marker = "extra == 'arrow'", specifier = ">=17" },
 ]
 provides-extras = ["arrow"]
 
@@ -1381,8 +1381,8 @@ arrow = [
 [package.metadata]
 requires-dist = [
     { name = "etlantic", editable = "." },
-    { name = "polars", specifier = ">=1.0" },
-    { name = "pyarrow", marker = "extra == 'arrow'", specifier = ">=14" },
+    { name = "polars", specifier = ">=1.22" },
+    { name = "pyarrow", marker = "extra == 'arrow'", specifier = ">=17" },
 ]
 provides-extras = ["arrow"]
 
@@ -1393,12 +1393,14 @@ source = { editable = "packages/etlantic-prefect" }
 dependencies = [
     { name = "etlantic" },
     { name = "prefect" },
+    { name = "sqlalchemy" },
 ]
 
 [package.metadata]
 requires-dist = [
     { name = "etlantic", editable = "." },
     { name = "prefect", specifier = ">=3" },
+    { name = "sqlalchemy", specifier = ">=2.0.36" },
 ]
 
 [[package]]
@@ -1448,8 +1450,8 @@ requires-dist = [
     { name = "boto3", marker = "extra == 'aws'", specifier = ">=1.34" },
     { name = "boto3", marker = "extra == 'boto3'", specifier = ">=1.34" },
     { name = "etlantic", editable = "." },
-    { name = "pyarrow", marker = "extra == 'aws'", specifier = ">=14" },
-    { name = "pyarrow", marker = "extra == 'pyarrow'", specifier = ">=14" },
+    { name = "pyarrow", marker = "extra == 'aws'", specifier = ">=17" },
+    { name = "pyarrow", marker = "extra == 'pyarrow'", specifier = ">=17" },
 ]
 provides-extras = ["aws", "boto3", "pyarrow"]
 
