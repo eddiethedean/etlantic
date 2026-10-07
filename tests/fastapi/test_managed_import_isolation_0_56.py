@@ -13,6 +13,7 @@ import pytest
 pytest.importorskip("fastapi")
 pytest.importorskip("sqlalchemy")
 pytest.importorskip("sqlmodel")
+pytest.importorskip("etlantic_fastapi")
 pytest.importorskip("etlantic_sqlmodel")
 
 
