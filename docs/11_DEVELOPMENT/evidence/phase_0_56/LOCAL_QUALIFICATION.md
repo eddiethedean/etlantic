@@ -1294,3 +1294,15 @@ conditional, unevaluated-property/item, `contains`, malformed-reference, JSON
 `contentSchema`, legacy `dependencies`, and tuple `additionalItems` cases from
 review (15 synthetic cases total). The updated wheel SHA-256 and size are
 recorded in `WHEEL_MANIFEST.json`.
+
+
+## Post-merge CI follow-up (2026-10-07)
+
+Strict Pyright initially found untyped collection paths in the schema-aware
+catalog sanitizer. Explicit schema and sample collection types now keep the
+implementation within the repository's typing boundary. The focused catalog
+suite passed 62 tests; repository Ruff and Pyright checks passed, including the
+strict suppression-free inventory (10,029 existing diagnostics). All 25 0.56
+wheels were rebuilt and recorded in `WHEEL_MANIFEST.json`. The adaptive 0.52
+evidence campaign was regenerated for the updated source and passed its
+10-artifact, 18-criterion verifier.

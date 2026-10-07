@@ -82,21 +82,27 @@ def _schema_parts(
     for keyword in ("allOf", "anyOf", "oneOf", "if", "then", "else"):
         children = schema.get(keyword)
         if isinstance(children, Mapping):
-            nested, nested_failed = _schema_parts(children, root, seen)
+            nested, nested_failed = _schema_parts(
+                cast(Mapping[str, Any], children), root, seen
+            )
             parts.extend(nested)
             failed |= nested_failed
         elif isinstance(children, list):
-            for child in children:
+            for child in cast(list[Any], children):
                 if isinstance(child, Mapping):
-                    nested, nested_failed = _schema_parts(child, root, seen)
+                    nested, nested_failed = _schema_parts(
+                        cast(Mapping[str, Any], child), root, seen
+                    )
                     parts.extend(nested)
                     failed |= nested_failed
     for keyword in ("dependentSchemas", "dependencies"):
         dependent_schemas = schema.get(keyword)
         if isinstance(dependent_schemas, Mapping):
-            for child in dependent_schemas.values():
+            for child in cast(Mapping[str, Any], dependent_schemas).values():
                 if isinstance(child, Mapping):
-                    nested, nested_failed = _schema_parts(child, root, seen)
+                    nested, nested_failed = _schema_parts(
+                        cast(Mapping[str, Any], child), root, seen
+                    )
                     parts.extend(nested)
                     failed |= nested_failed
     return parts, failed
@@ -122,19 +128,17 @@ def _child_schemas(
         for part in parts:
             matched = False
             properties = part.get("properties")
-            if isinstance(properties, Mapping) and isinstance(
-                properties.get(name), Mapping
-            ):
-                children.append(cast(Mapping[str, Any], properties[name]))
-                matched = True
+            if isinstance(properties, Mapping):
+                property_schemas = cast(Mapping[str, Any], properties)
+                if isinstance(property_schemas.get(name), Mapping):
+                    children.append(cast(Mapping[str, Any], property_schemas[name]))
+                    matched = True
             pattern_properties = part.get("patternProperties")
             if isinstance(pattern_properties, Mapping):
-                for pattern, child in pattern_properties.items():
-                    if (
-                        isinstance(pattern, str)
-                        and re.search(pattern, name)
-                        and isinstance(child, Mapping)
-                    ):
+                for pattern, child in cast(
+                    Mapping[str, Any], pattern_properties
+                ).items():
+                    if re.search(pattern, name) and isinstance(child, Mapping):
                         children.append(cast(Mapping[str, Any], child))
                         matched = True
             additional = part.get("additionalProperties")
@@ -161,8 +165,12 @@ def _item_schemas(
                 # validation, so conservatively apply its sensitivity schema.
                 children.append(cast(Mapping[str, Any], contains))
             prefix_items = part.get("prefixItems")
-            if isinstance(prefix_items, list) and index < len(prefix_items):
-                item = prefix_items[index]
+            if isinstance(prefix_items, list):
+                prefix_item_schemas = cast(list[Any], prefix_items)
+            else:
+                prefix_item_schemas = []
+            if index < len(prefix_item_schemas):
+                item = prefix_item_schemas[index]
                 if isinstance(item, Mapping):
                     children.append(cast(Mapping[str, Any], item))
                 matched = True
@@ -172,9 +180,10 @@ def _item_schemas(
                 children.append(cast(Mapping[str, Any], items))
                 matched = True
             elif isinstance(items, list):
-                if index < len(items):
-                    if isinstance(items[index], Mapping):
-                        children.append(cast(Mapping[str, Any], items[index]))
+                item_schemas = cast(list[Any], items)
+                if index < len(item_schemas):
+                    if isinstance(item_schemas[index], Mapping):
+                        children.append(cast(Mapping[str, Any], item_schemas[index]))
                     matched = True
                 else:
                     additional = part.get("additionalItems")
@@ -198,11 +207,12 @@ def _sanitize_sample(
     if any(_is_schema_sensitive(schema, root) for schema in schemas):
         return None, False
     if isinstance(value, Mapping):
-        if id(value) in seen:
+        object_value = cast(Mapping[str, Any], value)
+        if id(object_value) in seen:
             return None, False
-        visited = seen | {id(value)}
-        sample: dict[str, Any] = {}
-        for raw_name, child in value.items():
+        visited = seen | {id(object_value)}
+        object_sample: dict[str, Any] = {}
+        for raw_name, child in object_value.items():
             name = str(raw_name)
             child_schemas = _child_schemas(schemas, root, name)
             if _is_sensitive_option(name) or any(
@@ -212,20 +222,21 @@ def _sanitize_sample(
                 continue
             sanitized, safe = _sanitize_sample(child, child_schemas, root, seen=visited)
             if safe:
-                sample[name] = sanitized
-        return sample, True
+                object_sample[name] = sanitized
+        return object_sample, True
     if isinstance(value, (list, tuple)):
-        if id(value) in seen:
+        sequence_value = cast(list[Any] | tuple[Any, ...], value)
+        if id(sequence_value) in seen:
             return None, False
-        visited = seen | {id(value)}
-        sample: list[Any] = []
-        for index, child in enumerate(value):
+        visited = seen | {id(sequence_value)}
+        array_sample: list[Any] = []
+        for index, child in enumerate(sequence_value):
             item_schemas = _item_schemas(schemas, root, index)
             sanitized, safe = _sanitize_sample(child, item_schemas, root, seen=visited)
             if not safe:
                 return None, False
-            sample.append(sanitized)
-        return sample, True
+            array_sample.append(sanitized)
+        return array_sample, True
     if isinstance(value, str):
         content = value
         for schema in schemas:
@@ -279,9 +290,10 @@ def _schema_without_sensitive_defaults(
                 if marked_sensitive:
                     continue
                 if key in {"examples", "enum"} and isinstance(child, (list, tuple)):
-                    sanitized_values = []
-                    for sample in child:
-                        sanitized, safe = _sanitize_sample(sample, [raw], root)
+                    sanitized_values: list[Any] = []
+                    samples = cast(list[Any] | tuple[Any, ...], child)
+                    for sample_value in samples:
+                        sanitized, safe = _sanitize_sample(sample_value, [raw], root)
                         if safe:
                             sanitized_values.append(sanitized)
                     result[key] = sanitized_values
