@@ -1,6 +1,6 @@
 # Production Readiness and Deployment Boundaries
 
-> **Status: ETLantic 0.55.0 Beta release.**
+> **Status: ETLantic 0.56.0 Beta release.**
 
 ## Residual evaluation lead
 
@@ -21,9 +21,9 @@ graduates the integrated control plane for `isolated-deployment` and
 
 Experimental features remain experimental. Broader deployment topology,
 compliance attestations, and HA remain adopter-owned today. Supply
-chain for 0.55.0 is gated on a SHA-256 artifact manifest and GitHub
-provenance attestations; CycloneDX SBOM generation is optional (SBOM or
-`sbom-warning.txt`)—see
+The 0.56.0 release includes a SHA-256 artifact manifest and GitHub provenance
+attestations. CycloneDX SBOM generation was unavailable for this release; see
+`sbom-warning.txt` and
 [Release artifact verification](../01_GETTING_STARTED/RELEASE_ARTIFACT_VERIFICATION.md).
 Multi-tenancy has a
 [first-class gated plan](../11_DEVELOPMENT/MULTI_TENANT_CONTROL_PLANE_PLAN.md);
@@ -50,7 +50,7 @@ multi-tenant claims.
 
 ## Reference single-process topology
 
-1. Pin `etlantic==0.55.0` and matching plugins in a lockfile.
+1. Pin `etlantic==0.56.0` and matching plugins in a lockfile.
 2. Build an immutable image or venv; do not install untrusted entry points.
 3. Configure `Profile.plugin_allowlist` for production.
 4. Resolve secrets from env/files/keyring at runtime only.

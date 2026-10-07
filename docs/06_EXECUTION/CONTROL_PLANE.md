@@ -34,11 +34,11 @@ mapping. See [ADR-016](../11_DEVELOPMENT/adr/ADR-016-CONTROL-PLANE-IDENTITY.md).
 ## Install
 
 ```bash
-python -m pip install 'etlantic-fastapi==0.55.0'
-# or: python -m pip install 'etlantic[fastapi]==0.55.0'
+python -m pip install 'etlantic-fastapi==0.56.0'
+# or: python -m pip install 'etlantic[fastapi]==0.56.0'
 ```
 
-Pin the same minor as core (`etlantic==0.55.0`). Package README:
+Pin the same minor as core (`etlantic==0.56.0`). Package README:
 [`packages/etlantic-fastapi`](https://github.com/eddiethedean/etlantic/tree/main/packages/etlantic-fastapi).
 
 ## Embed: `include_router` vs `create_app`

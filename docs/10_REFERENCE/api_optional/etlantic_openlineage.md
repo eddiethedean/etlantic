@@ -15,7 +15,7 @@ audience: developer
 ## Setup
 
 ```bash
-pip install 'etlantic-openlineage==0.55.0'
+pip install 'etlantic-openlineage==0.56.0'
 ```
 
 ```python

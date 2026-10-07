@@ -14,7 +14,7 @@ audience: developer
 ## Setup
 
 ```bash
-pip install 'etlantic-kafka==0.55.0'
+pip install 'etlantic-kafka==0.56.0'
 ```
 
 ```python

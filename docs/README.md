@@ -9,7 +9,7 @@ audience: adopter
 
 <div class="etlantic-hero">
   <div class="etlantic-hero__content">
-    <span class="etlantic-hero__eyebrow">ETLantic 0.56 · qualification candidate</span>
+    <span class="etlantic-hero__eyebrow">ETLantic 0.56 · Beta release</span>
     <h1>One typed pipeline model. Many execution backends.</h1>
     <p>Define contracts and topology in Python, validate them before execution,
     then produce deterministic plans for local engines, backend plugins, or
@@ -62,7 +62,7 @@ audience: adopter
 
 ## Choose your path
 
-> **Status: 0.56.0 is a qualification candidate. The published, supported package line remains 0.55.x.**
+> **Status: ETLantic 0.56.0 is the published Beta release and current supported package line.**
 
 
 <div class="etlantic-path-grid">
@@ -106,9 +106,8 @@ audience: adopter
 
 ## Green path: first success
 
-Install from PyPI first: `pip install etlantic`. The commands below pin
-Install the latest published package. While 0.56.0 is a candidate, the PyPI
-installer resolves the supported 0.55.x line. The complete
+Install from PyPI first: `pip install etlantic`. The installer resolves the
+latest published supported line, currently 0.56.x. The complete
 [Quickstart](01_GETTING_STARTED/QUICKSTART.md) uses that published package. The guide continues with an
 intentional validation failure after the first successful run.
 

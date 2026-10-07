@@ -1,6 +1,6 @@
 # Upgrade Hub
 
-> **Status: 0.56.0 is a qualification candidate; 0.55.0 remains the published Beta release.**
+> **Status: 0.56.0 is the published Beta release and current upgrade target.**
 
 !!! warning "Upgraders only"
     New users: start at the [docs home green path](../README.md) or
@@ -9,25 +9,24 @@
 Upgrade between ETLantic 0.x releases using the guides below. Always pin core
 and first-party plugins to the **same minor** after upgrading.
 
-The current target is the published 0.55.0 release. Older paths below must finish with the 0.53 → 0.54
-and 0.54 → 0.55 migrations.
+The current target is the published 0.56.0 release. Older paths must complete
+the listed migrations through 0.55, then apply the 0.55 → 0.56 guide.
 
 Historical release notes: [Earlier releases](EARLIER_RELEASES.md).
 
 ## 0.56 configuration cheat sheet
 
-The 0.56.0 candidate uses lockstep core and plugin versions with the constraint
-`etlantic>=0.56.0,<0.57`. Keep using the published 0.55.x line until the
-candidate is released. For PostgreSQL partition repair/backfill, configure
+The 0.56.0 release uses lockstep core and plugin versions with the constraint
+`etlantic>=0.56.0,<0.57`. For PostgreSQL partition repair/backfill, configure
 `partition_column` on both relevant connector bindings and allow the required
 partition capabilities. See [Migration 0.55 → 0.56](../11_DEVELOPMENT/MIGRATION_0_55_TO_0_56.md).
 
 ## Current target
 
-**ETLantic 0.55.0** (published Beta release) — choose your guide:
+**ETLantic 0.56.0** (published Beta release) — choose your guide:
 
-| From version | Ordered path to 0.55 |
 |---|---|
+| 0.55.x | [Migration 0.55 → 0.56](../11_DEVELOPMENT/MIGRATION_0_55_TO_0_56.md) |
 | 0.54.x | [Migration 0.54 → 0.55](../11_DEVELOPMENT/MIGRATION_0_54_TO_0_55.md) |
 | 0.53.x | [Migration 0.53 → 0.54](../11_DEVELOPMENT/MIGRATION_0_53_TO_0_54.md), then [0.54 → 0.55](../11_DEVELOPMENT/MIGRATION_0_54_TO_0_55.md) |
 | 0.52.x | [Migration 0.52 → 0.53](../11_DEVELOPMENT/MIGRATION_0_52_TO_0_53.md), then 0.53 → 0.54 → 0.55 |

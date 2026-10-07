@@ -1,6 +1,6 @@
 # Pilot evidence packet
 
-> **Status: ETLantic 0.55.0 Beta release.** Reproducible checklist for a
+> **Status: ETLantic 0.56.0 Beta release.** Reproducible checklist for a
 > controlled single-tenant pilot. This is an in-repo evidence template, not an
 > independent third-party case study.
 
@@ -14,10 +14,10 @@ Related evaluator pages (also in this packet):
 
 | Component | Pin |
 |---|---|
-| Core | `etlantic==0.55.0` |
-| Docs | `https://etlantic.readthedocs.io/en/stable/` (pin `v0.55.0` if you need a frozen tree) |
+| Core | `etlantic==0.56.0` |
+| Docs | `https://etlantic.readthedocs.io/en/stable/` (pin `v0.56.0` if you need a frozen tree) |
 | Optional engines | Matching `0.53.0` plugins (`etlantic-polars`, `etlantic-sql`, …) |
-| Facade | `medallantic==0.55.0` when used |
+| Facade | `medallantic==0.56.0` when used |
 
 ## Topology (reference)
 
@@ -27,7 +27,7 @@ Related evaluator pages (also in this packet):
 3. Local or one engine plugin (Polars **or** Pandas **or** SQL **or** local PySpark)
 4. Optional Airflow compile or Prefect local MVP — not a managed control plane
 
-Companion: [`examples/sample_pilot/`](https://github.com/eddiethedean/etlantic/tree/v0.55.0/examples/sample_pilot).
+Companion: [`examples/sample_pilot/`](https://github.com/eddiethedean/etlantic/tree/v0.56.0/examples/sample_pilot).
 
 ## Ownership
 
@@ -56,8 +56,8 @@ Companion: [`examples/sample_pilot/`](https://github.com/eddiethedean/etlantic/t
 
 ## Sign-off checklist
 
-- [ ] `etlantic --version` prints `0.55.0`
+- [ ] `etlantic --version` prints `0.56.0`
 - [ ] Quickstart succeeds and intentional `PMPIPE210` fails closed
 - [ ] Production profile has `plugin_allowlist`
-- [ ] Docs consulted from `/en/v0.55.0/` for the pin
+- [ ] Docs consulted from `/en/v0.56.0/` for the pin
 - [ ] Limitations reviewed in [Capabilities](CAPABILITIES.md)

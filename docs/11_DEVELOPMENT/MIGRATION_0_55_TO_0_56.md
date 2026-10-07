@@ -1,20 +1,19 @@
 ---
 title: Migration from ETLantic 0.55 to 0.56
-status: candidate
+status: available
 current_minor: "0.56"
 ---
 
 # Migration from 0.55 to 0.56
 
-> **Status: 0.56.0 is a qualification candidate and is not published.**
+> **Status: ETLantic 0.56.0 is published.**
 
-## Candidate package line
+## Published package line
 
 Core and first-party distributions are qualified together at `0.56.0`; plugin
 metadata requires `etlantic>=0.56.0,<0.57`. Do not mix 0.55 and 0.56
-first-party packages in one environment. The published and
-supported line remains 0.55.x until the candidate passes final release review
-and is published.
+first-party packages in one environment. ETLantic 0.56.x is the published and
+supported Beta line. The 0.55.x line is no longer actively maintained.
 
 ## Partition repair and backfill
 

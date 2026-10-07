@@ -1,6 +1,6 @@
 # Compile an Airflow DAG
 
-> **Status: ETLantic 0.55.0 Beta release.** ETLantic compiles a plan; it does
+> **Status: ETLantic 0.56.0 Beta release.** ETLantic compiles a plan; it does
 > not install or operate an Airflow scheduler.
 
 !!! tip "PyPI vs clone"
@@ -16,14 +16,14 @@
 
 !!! note "Repository examples"
     Companion scripts under `examples/` are not installed with the PyPI
-    wheel. Clone a matching checkout (prefer the `v0.55.0` tag) and use
+    wheel. Clone a matching checkout (prefer the `v0.56.0` tag) and use
     `uv sync` / the documented dependency group before running them.
 
 ## Install and compile
 
 ```bash
-python -m pip install 'etlantic==0.55.0' 'etlantic-airflow==0.55.0'
-git clone --branch v0.55.0 https://github.com/eddiethedean/etlantic.git
+python -m pip install 'etlantic==0.56.0' 'etlantic-airflow==0.56.0'
+git clone --branch v0.56.0 https://github.com/eddiethedean/etlantic.git
 cd etlantic
 python examples/airflow_compile.py
 ```

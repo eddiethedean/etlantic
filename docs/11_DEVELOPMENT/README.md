@@ -1,10 +1,10 @@
 # Development
 
-Latest published release: [0.55 migration](MIGRATION_0_54_TO_0_55.md),
-[scoped exit gate](EXIT_GATE_0_55.md), and
-[inference evidence](evidence/inference_0_55/index.json). Version 0.55.0 remains
-the supported line. The 0.56.0 candidate has completed local qualification; see
-[its migration](MIGRATION_0_55_TO_0_56.md) and [exit gate](EXIT_GATE_0_56.md).
+Latest published release: [0.56 migration](MIGRATION_0_55_TO_0_56.md),
+[exit gate](EXIT_GATE_0_56.md), and
+[release evidence](evidence/phase_0_56/RELEASE_INDEX.json). Version 0.56.0 is
+the current supported Beta line. The 0.55 migration and qualification evidence
+remain available in the linked historical release docs.
 
 Earlier release: [0.54 migration](MIGRATION_0_53_TO_0_54.md),
 [exit gate](EXIT_GATE_0_54.md), and [implementation report](IMPLEMENTATION_REPORT_0_54.md).
@@ -34,7 +34,7 @@ released.
 
 ## Current migrations and exit gates
 
-- [0.56 candidate implementation](IMPLEMENTATION_PLAN_0_56.md), [execution](EXECUTION_PLAN_0_56.md), [migration 0.55 → 0.56](MIGRATION_0_55_TO_0_56.md), and [exit gate](EXIT_GATE_0_56.md)
+- [0.56 implementation](IMPLEMENTATION_PLAN_0_56.md), [execution](EXECUTION_PLAN_0_56.md), [migration 0.55 → 0.56](MIGRATION_0_55_TO_0_56.md), and [exit gate](EXIT_GATE_0_56.md)
 
 - [0.52 adaptive-planning plan](IMPLEMENTATION_PLAN_0_52.md),
   [exit gate](EXIT_GATE_0_52.md),

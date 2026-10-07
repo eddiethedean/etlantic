@@ -1,6 +1,6 @@
 # Polars ↔ Pandas Interchange
 
-!!! success "**Status: ETLantic 0.55.0 Beta release**"
+!!! success "**Status: ETLantic 0.56.0 Beta release**"
     Gate A versioned tabular interchange (`etlantic.interchange/1`) shipped in
     0.18.0 for compatible Polars↔Pandas cross-engine boundaries.
 
@@ -11,7 +11,7 @@ a checkout (and CI); it is **not** included in the wheel.
 ## 1. Install
 
 ```bash
-python -m pip install 'etlantic[dataframes]==0.55.0'
+python -m pip install 'etlantic[dataframes]==0.56.0'
 ```
 
 ## 2. Create `interchange_polars_pandas.py`
@@ -27,7 +27,7 @@ Requires:
 
 Or from published packages:
 
-    pip install 'etlantic[dataframes]==0.55.0'
+    pip install 'etlantic[dataframes]==0.56.0'
 
 Run with:
 
@@ -103,7 +103,7 @@ def _require_plugins() -> dict[str, Any]:
             "Missing dataframe plugin(s): "
             + ", ".join(missing)
             + ". Install with: uv sync --group dataframes "
-            "or pip install 'etlantic[dataframes]==0.55.0'"
+            "or pip install 'etlantic[dataframes]==0.56.0'"
         )
     return found
 
@@ -185,7 +185,7 @@ Optional:
 
 ```bash
 curl -fsSL -o interchange_polars_pandas.py \
-  https://raw.githubusercontent.com/eddiethedean/etlantic/v0.55.0/examples/interchange_polars_pandas.py
+  https://raw.githubusercontent.com/eddiethedean/etlantic/v0.56.0/examples/interchange_polars_pandas.py
 python interchange_polars_pandas.py
 ```
 

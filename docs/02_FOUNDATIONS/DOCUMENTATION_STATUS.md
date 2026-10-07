@@ -1,6 +1,6 @@
 # Documentation Status and Conventions
 
-Prefer pages marked **Candidate in 0.56** for candidate behavior; **Available in 0.55** describes the published supported line. Follow the Green path for the latest published package. For what ships in the current package, start with
+Prefer pages marked **Available in 0.56** for the current published behavior. Follow the Green path for the latest published package. For what ships in the current package, start with
 [Capabilities](../01_GETTING_STARTED/CAPABILITIES.md)—not chapter length or
 this legend. Maintainer release evidence:
 [Exit gate 0.39](../11_DEVELOPMENT/EXIT_GATE_0_39.md) and
@@ -12,8 +12,7 @@ completed documentation audit:
 ## How to read a page
 
 1. Read the page status label first (table below).
-2. Treat **Candidate in 0.56** as behavior qualified from this source candidate.
-   Treat **Available in 0.55** / **Shipped in 0.x** as published package
+2. Treat **Available in 0.56** / **Shipped in 0.x** as published package
    behavior; treat **Future design** and Design Proposals as intended 0.x
    surfaces, not APIs to install against.
 3. Treat **Experimental** as public but changeable without a major bump.
@@ -32,8 +31,8 @@ completed documentation audit:
 
 | Page status | Meaning |
 |---|---|
-| Candidate in 0.56 | Implemented and locally qualified; not yet published |
-| Available in 0.55 | Tested against the current published package |
+| Candidate in 0.56 | Historical qualification status before publication |
+| Available in 0.56 | Tested against the current published package |
 | Shipped in 0.x | Available since that milestone (still current) |
 | Experimental | Public APIs that may change without a major version bump |
 | Partially available | Shipped and future behavior are explicitly separated |

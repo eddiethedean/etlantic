@@ -13,7 +13,7 @@ audience: developer
 ## Setup
 
 ```bash
-pip install 'etlantic-datafusion==0.55.0'
+pip install 'etlantic-datafusion==0.56.0'
 ```
 
 ```python

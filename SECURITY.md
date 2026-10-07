@@ -1,9 +1,9 @@
 # Security Policy
 
-> **Version boundary:** 0.56.0 is a qualification candidate; 0.55.x remains the published supported line.
+> **Version boundary:** ETLantic 0.56.0 is the current published Beta release and supported line.
 
 
-ETLantic 0.55.0 is the current **Beta release** for documented single-tenant
+ETLantic 0.56.0 is the current **Beta release** for documented single-tenant
 pilots. You can embed an HTTP control plane with **Supported** isolation
 profiles (`isolated-deployment`, `dedicated-schema`). There is no hosted
 multi-tenant SaaS. Security reports
@@ -15,13 +15,13 @@ and PySpark plugins, documentation, or repository automation are welcome.
 
 | Version | Support |
 |---|---|
-| 0.56.x | Qualification candidate; not published or supported for deployment |
-| 0.55.x | Current published and supported Beta line |
+| 0.56.x | Current published and supported Beta line |
+| 0.55.x | Previous release line; not actively maintained |
 | 0.54.x | Previous release line; not actively maintained |
-| 0.53.x | Previous Beta line; upgrade to 0.55.x |
+| 0.53.x | Previous Beta line; upgrade to 0.56.x |
 | 0.49.x and earlier | Not actively maintained; upgrade to the current line |
 
-Backports to older minor lines are not provided. Upgrade to the latest 0.55.x
+Backports to older minor lines are not provided. Upgrade to the latest 0.56.x
 patch before reporting an issue.
 
 ## Reporting a Vulnerability

@@ -1,16 +1,18 @@
 ---
 title: ETLantic 0.56 Exit Gate
-status: candidate
+status: released
 current_minor: "0.56"
 ---
 
 # ETLantic 0.56 Exit Gate — Complete Application ETL Backend
 
-**Decision (2026-10-07): GO for the ETLantic 0.56.0 release.** All 44
-acceptance criteria are qualified, the final candidate is merged to `main` at
-`d9edb360652de8ebd5265e8f0bbfe6ab3f5618d3`, and its full CI run passed. This
-approves proceeding with the tagged release workflow; it does not claim that
-0.56.0 has been tagged or published.
+**Release decision (2026-10-07): GO; ETLantic 0.56.0 is published.** All 44
+acceptance criteria passed. The merged main candidate was tagged `v0.56.0` at
+`b4a5f578feadd704e65326c77e72120d55aaa5bb`; release workflow run
+[37570780108](https://github.com/eddiethedean/etlantic/actions/runs/37570780108)
+passed, and the GitHub release was published at 2026-10-07 04:30:02 UTC.
+The [release artifact verification guide](../01_GETTING_STARTED/RELEASE_ARTIFACT_VERIFICATION.md)
+lists the published assets and verification steps.
 
 ## Evidence
 
@@ -32,16 +34,14 @@ uv run python scripts/qualify_phase056_packages.py --repo-root . --wheel-dir PAT
 
 ## Release boundary
 
-- ETLantic 0.56.0 is approved for release, but is not a published or supported
-  package release until the release workflow completes successfully.
-- The published 0.55.x line remains the production installation target until
-  0.56.0 publication succeeds.
-- `etlantic-foundry` is a new PyPI project; use the release workflow's paced
-  first-project creation and verify the upload before declaring publication.
+- ETLantic 0.56.x is the published and supported Beta line.
+- The release workflow published 25 package distributions across wheels and
+  source archives, alongside `release-artifacts.json` and provenance
+  attestations. All 25 package projects are present on PyPI.
+- SBOM generation was unavailable for this release; the GitHub release records
+  this in `sbom-warning.txt`.
 - PostgreSQL repair/backfill requires an explicit `partition_column` and
   allowlisted partition capabilities. Other providers fail closed.
-- This decision does not create a tag or publish packages. Follow the
-  [release process](RELEASE_PROCESS.md) for tagging and publication.
 
 See the [implementation plan](IMPLEMENTATION_PLAN_0_56.md), [execution
 plan](EXECUTION_PLAN_0_56.md), and [review findings](FINDINGS_0_56.md).

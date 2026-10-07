@@ -15,7 +15,7 @@ foundation, and post-foundation capabilities continue in later 0.x minors.
 
 Breaking changes must be documented. Official plugin packages currently share
 the core minor version (for example `0.38.0`).
-Official plugins declare `etlantic>=0.55.0,<0.56` for the 0.55 line.
+Official plugins declare `etlantic>=0.56.0,<0.57` for the 0.56 line.
 
 ## Package categories
 

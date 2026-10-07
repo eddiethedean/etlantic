@@ -1,11 +1,11 @@
 # Frequently Asked Questions
 
-> **Version boundary:** 0.56.0 is a qualification candidate; 0.55.x remains the published supported line.
+> **Version boundary:** 0.56.0 is the published Beta release and current supported line.
 
 
-> **Status: ETLantic 0.55.0 Beta release.**
+> **Status: ETLantic 0.56.0 Beta release.**
 
-Practical questions for ETLantic **0.55.0**. Philosophy and contract taxonomy
+Practical questions for ETLantic **0.56.0**. Philosophy and contract taxonomy
 live under [Foundations](../02_FOUNDATIONS/README.md).
 
 ## What is ETLantic?
@@ -52,7 +52,7 @@ engine. SQL needs `etlantic-sql` (+ PostgreSQL for MERGE). PySpark needs Java.
 Yes. Pin the same minor:
 
 ```bash
-python -m pip install 'etlantic==0.55.0' 'etlantic-polars==0.55.0'
+python -m pip install 'etlantic==0.56.0' 'etlantic-polars==0.56.0'
 ```
 
 ## Why do validate/plan work but run has no data?
@@ -71,9 +71,9 @@ non-empty `plugin_allowlist` — **not** the profile name. See
 Use `SecretRef` — never put values in plans. Follow the
 [Secrets decision tree](../10_REFERENCE/SECRETS_DECISION.md).
 
-## Is ETLantic 0.55 production-supported?
+## Is ETLantic production-supported?
 
-ETLantic **0.55.0** is the current **Beta release**. It targets documented
+ETLantic **0.56.0** is the current **Beta release**. It targets documented
 single-tenant pilots. You can embed an HTTP control plane
 (`etlantic-fastapi`) with **Supported** isolation profiles
 (`isolated-deployment`, `dedicated-schema`). There is no hosted multi-tenant
@@ -82,7 +82,7 @@ SaaS. See [Capabilities](CAPABILITIES.md) and
 
 ## Available vs Experimental?
 
-**Available** means it is in the 0.53 product envelope: documented, tested, and
+**Available** means it is in the current 0.56 product envelope: documented, tested, and
 covered by the Beta support policy (current minor only, no SLA).
 **Experimental** means Alpha extras (Kafka, Iceberg, MCP, DataFusion, k8s,
 Spark Connect, `shared-service` isolation) that may change or stay fake-first.

@@ -1,6 +1,6 @@
 # Enterprise Evaluation Guide
 
-> **Status: ETLantic 0.56.0 qualification candidate; 0.55.0 remains the published Beta release.** Deep diligence packet for the 0.56 candidate. The published supported package line remains 0.55.x. Start with the
+> **Status: ETLantic 0.56.0 is the published Beta release.** Deep diligence packet for the 0.56 release. The published supported package line is 0.56.x. Start with the
 > one-page [Evaluator Brief](EVALUATOR.md) for residual risk and the capability
 > matrix; use this page to assemble review links and artifacts.
 
