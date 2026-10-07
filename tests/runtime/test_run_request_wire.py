@@ -45,7 +45,7 @@ def test_run_request_wire_rejects_unknown_semantics() -> None:
             {"retry": {"retry_everything": True}, "explicit_settings": []}
         )
 
-    with pytest.raises(ValueError, match=r"Missing required.*explicit_settings"):
+    with pytest.raises(ValueError, match="must include explicit_settings"):
         RunRequest.from_dict({"retry": {"max_attempts": 2}})
 
 
@@ -132,7 +132,8 @@ def test_request_policy_precedence_records_explicit_default_values() -> None:
 
 
 def test_legacy_request_wire_without_explicit_settings_is_rejected() -> None:
-    with pytest.raises(ValueError, match=r"Missing required.*explicit_settings"):
+    assert RunRequest.from_dict({}).to_dict() == RunRequest().to_dict()
+    with pytest.raises(ValueError, match="must include explicit_settings"):
         RunRequest.from_dict({"retry": {"max_attempts": 4, "backoff_seconds": 0.0}})
 
 

@@ -1202,7 +1202,8 @@ remain evidence for their recorded source states; current-tree regression
 results are listed above. No package tag or publication is
 claimed; the published supported line remains 0.55.x.
 
-- Static and documentation gates: `uv run pyright` — 0 errors; `uv run ruff check .` and `uv run ruff format --check .` passed; `uv run python scripts/check_docs.py` passed; `uv run mkdocs build --strict` built the site successfully; `uv run python scripts/check_release.py` passed all in-repository release checks and reported the expected 24 unpublished candidate distributions missing from PyPI.
+- Static and documentation gates: `uv run pyright` — 0 errors; `uv run ruff check .` and `uv run ruff format --check .` passed; `uv run python scripts/check_docs.py` passed; `uv run mkdocs build --strict` built the site successfully; `uv run python scripts/check_release.py` passed all in-repository release checks and reported 24 existing candidate distributions missing from PyPI and the new
+etlantic-foundry project that will be created on its first upload.
 
 ## Superseding AC056-040 qualification after the standalone reset (2026-10-06)
 

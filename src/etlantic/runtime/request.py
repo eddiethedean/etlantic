@@ -454,8 +454,6 @@ class RunRequest:
             raise ValueError(
                 "Unknown run-request field(s): " + ", ".join(sorted(unknown))
             )
-        if "explicit_settings" not in data:
-            raise ValueError("Missing required run-request field: explicit_settings")
 
         def mapping_value(
             name: str, default: Mapping[str, Any] | None = None
@@ -542,9 +540,23 @@ class RunRequest:
             parameters[key] = {cast(str, name): item for name, item in values.items()}
         metadata = mapping_value("metadata")
         extensions = mapping_value("extensions")
-        explicit_settings = set(
-            _string_values(data["explicit_settings"], name="explicit_settings")
-        )
+        if "explicit_settings" not in data:
+            if (
+                max_attempts != 1
+                or float(backoff) != 0.0
+                or retry_on
+                or run_seconds is not None
+                or step_seconds is not None
+            ):
+                raise ValueError(
+                    "Run requests with non-default retry or timeout values "
+                    "must include explicit_settings"
+                )
+            explicit_settings: set[str] = set()
+        else:
+            explicit_settings = set(
+                _string_values(data["explicit_settings"], name="explicit_settings")
+            )
         no_write = data.get("no_write", False)
         if not isinstance(no_write, bool):
             raise TypeError("no_write must be a boolean")

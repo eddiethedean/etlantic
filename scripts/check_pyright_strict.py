@@ -131,8 +131,11 @@ EXPECTED_DIGESTS = {
     # Canonical envelope/report decoding and atomic input leases shift existing
     # source locations; direct Pyright reports no new diagnostics. The reviewed
     # suppression-free inventory remains at 10,029 diagnostics.
-    "Darwin": "3024510567f3fc9c208b6ee44abe88b5b0c5b665a0f83931ff4ed7d49e3a54be",
-    "Linux": "3024510567f3fc9c208b6ee44abe88b5b0c5b665a0f83931ff4ed7d49e3a54be",
+    # The 0.56 standalone reset removes request and stream migration readers and
+    # updates their canonical decoder regressions. The 10,029 normalized
+    # diagnostics are unchanged from main; only source-line fingerprints move.
+    "Darwin": "95e0759dd47a1a304317c75411e23a97aa8c395da4b4da41f23df01724e601f8",
+    "Linux": "95e0759dd47a1a304317c75411e23a97aa8c395da4b4da41f23df01724e601f8",
 }
 
 

@@ -57,9 +57,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Upgrade notes
 
-- 0.56 accepts canonical request and stream metadata only. A run request must
-  include `explicit_settings`; legacy stream aliases are rejected. Start with a
-  fresh 0.56 store because this release does not read 0.55 durable state or
+-  0.56 rejects inferred policy overrides: requests carrying non-default retry
+  or timeout values must include `explicit_settings`; empty/default requests
+  remain valid. Legacy stream aliases are rejected. Start with a fresh 0.56
+  store because this release does not read 0.55 durable state or
   migrate subject-only resource owners. No offline converter is included; keep
   the 0.55 application and its original store for rollback.
 

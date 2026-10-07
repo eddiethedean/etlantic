@@ -63,8 +63,12 @@ backend configures this automatically.
 
 ## Fresh state boundary
 
-ETLantic 0.56 does not read or migrate 0.55 profiles, requests, plans, reports,
-database rows, leases, receipts, accepted work, or input-resource references.
+ETLantic 0.56 does not read or migrate persisted 0.55 profiles, requests,
+plans, reports, database rows, leases, receipts, accepted work, or input-resource
+references. Public request submission still accepts an empty request for current
+default behavior; a request carrying non-default retry or timeout values must
+include the 0.56 `explicit_settings` marker, and versioned 0.55 envelopes are
+rejected.
 Start with a fresh 0.56 database and re-create definitions and resources from
 their authoritative sources. Principal-owned resources use the issuer- and
 kind-qualified identity supplied by the trusted 0.56 authentication layer.
