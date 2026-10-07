@@ -196,6 +196,14 @@ def test_connector_catalog_redacts_inherited_sensitivity(
         ),
         (
             {
+                "type": "array",
+                "contains": {"type": "string", "writeOnly": True},
+                "default": ["synthetic-private-value"],
+            },
+            "default",
+        ),
+        (
+            {
                 "type": "object",
                 "properties": {"region": {"type": "string"}},
                 "additionalProperties": {"type": "string", "writeOnly": True},
@@ -301,7 +309,11 @@ def test_connector_catalog_sanitizes_samples_with_schema_context(
     )
 
     assert "synthetic-private-value" not in json.dumps(public_schema)
-    if sample_key == "default" and "default" in schema:
+    if (
+        sample_key == "default"
+        and schema.get("type") == "object"
+        and isinstance(schema.get("default"), dict)
+    ):
         assert public_schema["default"]["region"] == "us-east-1"
     assert source_schema == schema
 
@@ -377,10 +389,10 @@ def test_connector_catalog_redacts_each_parent_sample_keyword(
 
 @pytest.mark.parametrize(
     "reference",
-    ["#/$defs/Missing", "#/$defs/Loop"],
+    ["#/$defs/Missing", "#/$defs/Loop", 7, None],
 )
 def test_connector_catalog_fails_closed_for_unresolved_or_cyclic_refs(
-    monkeypatch: Any, reference: str
+    monkeypatch: Any, reference: Any
 ) -> None:
     schema = {
         "$defs": {"Loop": {"$ref": "#/$defs/Loop"}},

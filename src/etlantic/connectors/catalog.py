@@ -76,6 +76,8 @@ def _schema_parts(
                 nested, nested_failed = _schema_parts(target, root, seen | {reference})
                 parts.extend(nested)
                 failed |= nested_failed
+    elif "$ref" in schema:
+        failed = True
     for keyword in ("allOf", "anyOf", "oneOf", "if", "then", "else"):
         children = schema.get(keyword)
         if isinstance(children, Mapping):
@@ -151,6 +153,11 @@ def _item_schemas(
         parts, _ = _schema_parts(schema, root)
         for part in parts:
             matched = False
+            contains = part.get("contains")
+            if isinstance(contains, Mapping):
+                # The array item's match cannot be established without full
+                # validation, so conservatively apply its sensitivity schema.
+                children.append(cast(Mapping[str, Any], contains))
             prefix_items = part.get("prefixItems")
             if isinstance(prefix_items, list) and index < len(prefix_items):
                 item = prefix_items[index]
