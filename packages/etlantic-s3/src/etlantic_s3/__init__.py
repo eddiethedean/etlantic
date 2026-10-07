@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-__version__ = "0.56.1"
+__version__ = "0.56.2"
 
 from etlantic_s3.connectors import (
     S3SinkConnector,

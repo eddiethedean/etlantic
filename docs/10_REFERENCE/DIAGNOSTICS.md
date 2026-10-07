@@ -1,6 +1,6 @@
 # Diagnostics Reference
 
-> **Version boundary:** ETLantic 0.56.1 is the current published Beta release and supported line.
+> **Version boundary:** ETLantic 0.56.2 is a Beta release candidate; 0.56.1 remains the current published and supported line.
 
 
 > **Status: ETLantic 0.55.0 Beta release.**

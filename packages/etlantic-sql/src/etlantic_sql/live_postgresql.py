@@ -65,7 +65,7 @@ from etlantic_sql.configuration_schemas import (
 )
 
 PROVIDER = "postgresql"
-PACKAGE_VERSION = "0.56.1"
+PACKAGE_VERSION = "0.56.2"
 _RESOURCE_IDENTITY_KEY = secrets.token_bytes(32)
 DEFAULT_ROW_LIMIT = 10_000
 MAX_ROW_LIMIT = 100_000

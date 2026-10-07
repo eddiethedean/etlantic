@@ -809,7 +809,7 @@ wheels = [
 
 [[package]]
 name = "etlantic"
-version = "0.56.1"
+version = "0.56.2"
 source = { editable = "." }
 dependencies = [
     { name = "anyio" },
@@ -1131,7 +1131,7 @@ sqlmodel = [
 
 [[package]]
 name = "etlantic-airflow"
-version = "0.56.1"
+version = "0.56.2"
 source = { editable = "packages/etlantic-airflow" }
 dependencies = [
     { name = "etlantic" },
@@ -1142,7 +1142,7 @@ requires-dist = [{ name = "etlantic", editable = "." }]
 
 [[package]]
 name = "etlantic-datafusion"
-version = "0.56.1"
+version = "0.56.2"
 source = { editable = "packages/etlantic-datafusion" }
 dependencies = [
     { name = "datafusion" },
@@ -1159,7 +1159,7 @@ requires-dist = [
 
 [[package]]
 name = "etlantic-duckdb"
-version = "0.56.1"
+version = "0.56.2"
 source = { editable = "packages/etlantic-duckdb" }
 dependencies = [
     { name = "duckdb" },
@@ -1177,7 +1177,7 @@ requires-dist = [
 
 [[package]]
 name = "etlantic-fastapi"
-version = "0.56.1"
+version = "0.56.2"
 source = { editable = "packages/etlantic-fastapi" }
 dependencies = [
     { name = "etlantic" },
@@ -1217,7 +1217,7 @@ dev = [
 
 [[package]]
 name = "etlantic-foundry"
-version = "0.56.1"
+version = "0.56.2"
 source = { editable = "packages/etlantic-foundry" }
 dependencies = [
     { name = "etlantic" },
@@ -1232,7 +1232,7 @@ requires-dist = [
 
 [[package]]
 name = "etlantic-iceberg"
-version = "0.56.1"
+version = "0.56.2"
 source = { editable = "packages/etlantic-iceberg" }
 dependencies = [
     { name = "etlantic" },
@@ -1252,7 +1252,7 @@ provides-extras = ["pyiceberg"]
 
 [[package]]
 name = "etlantic-k8s"
-version = "0.56.1"
+version = "0.56.2"
 source = { editable = "packages/etlantic-k8s" }
 dependencies = [
     { name = "etlantic" },
@@ -1263,7 +1263,7 @@ requires-dist = [{ name = "etlantic", editable = "." }]
 
 [[package]]
 name = "etlantic-kafka"
-version = "0.56.1"
+version = "0.56.2"
 source = { editable = "packages/etlantic-kafka" }
 dependencies = [
     { name = "etlantic" },
@@ -1274,7 +1274,7 @@ requires-dist = [{ name = "etlantic", editable = "." }]
 
 [[package]]
 name = "etlantic-keyring"
-version = "0.56.1"
+version = "0.56.2"
 source = { editable = "packages/etlantic-keyring" }
 dependencies = [
     { name = "etlantic" },
@@ -1289,7 +1289,7 @@ requires-dist = [
 
 [[package]]
 name = "etlantic-lsp"
-version = "0.56.1"
+version = "0.56.2"
 source = { editable = "packages/etlantic-lsp" }
 dependencies = [
     { name = "etlantic" },
@@ -1313,7 +1313,7 @@ provides-extras = ["test"]
 
 [[package]]
 name = "etlantic-mcp"
-version = "0.56.1"
+version = "0.56.2"
 source = { editable = "packages/etlantic-mcp" }
 dependencies = [
     { name = "etlantic" },
@@ -1324,7 +1324,7 @@ requires-dist = [{ name = "etlantic", editable = "." }]
 
 [[package]]
 name = "etlantic-openlineage"
-version = "0.56.1"
+version = "0.56.2"
 source = { editable = "packages/etlantic-openlineage" }
 dependencies = [
     { name = "etlantic" },
@@ -1344,7 +1344,7 @@ provides-extras = ["openlineage"]
 
 [[package]]
 name = "etlantic-pandas"
-version = "0.56.1"
+version = "0.56.2"
 source = { editable = "packages/etlantic-pandas" }
 dependencies = [
     { name = "etlantic" },
@@ -1366,7 +1366,7 @@ provides-extras = ["arrow"]
 
 [[package]]
 name = "etlantic-polars"
-version = "0.56.1"
+version = "0.56.2"
 source = { editable = "packages/etlantic-polars" }
 dependencies = [
     { name = "etlantic" },
@@ -1388,7 +1388,7 @@ provides-extras = ["arrow"]
 
 [[package]]
 name = "etlantic-prefect"
-version = "0.56.1"
+version = "0.56.2"
 source = { editable = "packages/etlantic-prefect" }
 dependencies = [
     { name = "etlantic" },
@@ -1405,7 +1405,7 @@ requires-dist = [
 
 [[package]]
 name = "etlantic-pyspark"
-version = "0.56.1"
+version = "0.56.2"
 source = { editable = "packages/etlantic-pyspark" }
 dependencies = [
     { name = "etlantic" },
@@ -1427,7 +1427,7 @@ provides-extras = ["delta"]
 
 [[package]]
 name = "etlantic-s3"
-version = "0.56.1"
+version = "0.56.2"
 source = { editable = "packages/etlantic-s3" }
 dependencies = [
     { name = "etlantic" },
@@ -1457,7 +1457,7 @@ provides-extras = ["aws", "boto3", "pyarrow"]
 
 [[package]]
 name = "etlantic-schemaregistry"
-version = "0.56.1"
+version = "0.56.2"
 source = { editable = "packages/etlantic-schemaregistry" }
 dependencies = [
     { name = "etlantic" },
@@ -1468,7 +1468,7 @@ requires-dist = [{ name = "etlantic", editable = "." }]
 
 [[package]]
 name = "etlantic-snowflake"
-version = "0.56.1"
+version = "0.56.2"
 source = { editable = "packages/etlantic-snowflake" }
 dependencies = [
     { name = "etlantic" },
@@ -1488,7 +1488,7 @@ provides-extras = ["snowflake"]
 
 [[package]]
 name = "etlantic-spark-connect"
-version = "0.56.1"
+version = "0.56.2"
 source = { editable = "packages/etlantic-spark-connect" }
 dependencies = [
     { name = "etlantic" },
@@ -1499,7 +1499,7 @@ requires-dist = [{ name = "etlantic", editable = "." }]
 
 [[package]]
 name = "etlantic-sparkforge"
-version = "0.56.1"
+version = "0.56.2"
 source = { editable = "packages/etlantic-sparkforge" }
 dependencies = [
     { name = "medallantic" },
@@ -1510,7 +1510,7 @@ requires-dist = [{ name = "medallantic", editable = "packages/medallantic" }]
 
 [[package]]
 name = "etlantic-sql"
-version = "0.56.1"
+version = "0.56.2"
 source = { editable = "packages/etlantic-sql" }
 dependencies = [
     { name = "etlantic" },
@@ -1528,7 +1528,7 @@ provides-extras = ["sqlite"]
 
 [[package]]
 name = "etlantic-sqlmodel"
-version = "0.56.1"
+version = "0.56.2"
 source = { editable = "packages/etlantic-sqlmodel" }
 dependencies = [
     { name = "etlantic" },
@@ -2321,7 +2321,7 @@ wheels = [
 
 [[package]]
 name = "medallantic"
-version = "0.56.1"
+version = "0.56.2"
 source = { editable = "packages/medallantic" }
 dependencies = [
     { name = "etlantic" },
