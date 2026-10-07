@@ -63,9 +63,7 @@ def has_open_dependency_floor(text: str, package: str, floor: str) -> bool:
     """Return whether metadata declares exactly an open lower-bound requirement."""
 
     package_pattern = re.escape(package) + r"(?:\[[^\]]+\])?"
-    requirement = (
-        rf"(?<![A-Za-z0-9_.-]){package_pattern}>={re.escape(floor)}(?=['\"])"
-    )
+    requirement = rf"(?<![A-Za-z0-9_.-]){package_pattern}>={re.escape(floor)}(?=['\"])"
     return re.search(requirement, text) is not None
 
 
