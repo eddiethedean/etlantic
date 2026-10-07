@@ -1,6 +1,6 @@
 [project]
 name = "etlantic-snowflake"
-version = "0.56.1"
+version = "0.56.2"
 description = "Experimental Snowflake connector for ETLantic."
 readme = "README.md"
 license = "MIT"

@@ -1,6 +1,6 @@
 # Evaluator Brief
 
-> **Status: ETLantic 0.56.1 is the published Beta release. Adaptive graduation remains pending.**
+> **Status: ETLantic 0.56.1 is the published Beta release; 0.56.2 is in release-candidate preparation. Adaptive graduation remains pending.**
 
 A one-page answer for enterprise evaluators and technical decision-makers.
 

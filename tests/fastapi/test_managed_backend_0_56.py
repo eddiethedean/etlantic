@@ -1176,7 +1176,7 @@ def test_managed_adaptive_local_chain_is_admitted_and_observed(
             plan["metadata"]["etlantic.runtime"]["support_row"]["version_requirements"][
                 "etlantic"
             ]
-            == "0.56.1"
+            == "0.56.2"
         )
         from etlantic.runtime.adaptive_support import candidate_bundle
 

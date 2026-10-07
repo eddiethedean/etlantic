@@ -9,7 +9,7 @@ Live Kind clusters are opt-in via `ETLANTIC_K8S_CONTEXT` and are skipped in CI (
 ## Install
 
 ```bash
-pip install 'etlantic-k8s==0.56.1'
+pip install 'etlantic-k8s==0.56.2'
 ```
 
 Core dependency: `etlantic>=0.56.0`. No Kubernetes Python SDK in the default extra.

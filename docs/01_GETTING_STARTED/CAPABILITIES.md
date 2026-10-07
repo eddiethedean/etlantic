@@ -1,9 +1,9 @@
 # Current Capabilities and Limitations
 
-> **Version boundary:** ETLantic 0.56.1 is the current published Beta release and supported line.
+> **Version boundary:** ETLantic 0.56.2 is a Beta release candidate; 0.56.1 remains the current published and supported line.
 
 
-> **Status: 0.56.1 is the published Beta release and current supported line.** This page records
+> **Status: 0.56.1 is the published Beta release and current supported line.** 0.56.2 is in release-candidate preparation. This page records
 > the published 0.56 envelope for controlled single-tenant pilots and
 > Supported isolation profiles.
 
