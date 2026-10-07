@@ -52,13 +52,6 @@ from etlantic.streaming.handoff import (
     evaluate_handoff,
     handoff_failure_diagnostic,
 )
-from etlantic.streaming.migration import (
-    ENVELOPE_SCHEMA_V1,
-    STATE_SCHEMA_V1,
-    StreamStateRecord,
-    migrate_envelope_dict,
-    migrate_state_dict,
-)
 from etlantic.streaming.plan_meta import (
     EXPANSION_METADATA_KEY,
     STREAMING_METADATA_KEY,
@@ -89,11 +82,9 @@ __all__ = [
     "CONTROL_NODE_KINDS",
     "DLQ_CODES",
     "DYN_CODES",
-    "ENVELOPE_SCHEMA_V1",
     "EXPANSION_METADATA_KEY",
     "REGISTRY_PROTOCOL",
     "REG_CODES",
-    "STATE_SCHEMA_V1",
     "STREAMING_EXTRAS",
     "STREAMING_METADATA_KEY",
     "STREAMING_SCHEMA",
@@ -121,7 +112,6 @@ __all__ = [
     "SchemaRegistryProvider",
     "SnapshotCut",
     "StreamSemantics",
-    "StreamStateRecord",
     "StreamTrigger",
     "TimeDomain",
     "WatermarkSpec",
@@ -136,8 +126,6 @@ __all__ = [
     "graph_required_streaming_extras",
     "handoff_failure_diagnostic",
     "is_control_kind",
-    "migrate_envelope_dict",
-    "migrate_state_dict",
     "reg_diagnostic",
     "registry_adapter_allowed",
     "reject_python_branch",

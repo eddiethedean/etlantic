@@ -7,11 +7,11 @@
       "evidence_artifacts": [
         {
           "path": "docs/11_DEVELOPMENT/evidence/phase_0_56/LOCAL_QUALIFICATION.md",
-          "sha256": "75ba4c73aa07ce680aa57d3c4dd92cf512ec93720c32a5734fd18c3cee7567b1"
+          "sha256": "f10d80e0bcd3d2bdc9ed734d64e79620ff491985b456092b7b929f1bf7a38690"
         },
         {
           "path": "docs/11_DEVELOPMENT/evidence/phase_0_56/WHEEL_MANIFEST.json",
-          "sha256": "8070b20da74609a8e2a6f22d81b8d2e8ec5d291468e2ce1e8a07ea8c0502af3e"
+          "sha256": "6497f03b17ff31767aafd8fd1f9934d86d0e22d9cccbead1aeb3d8b0fe8c0b43"
         }
       ],
       "id": "AC056-001",
@@ -34,11 +34,11 @@
       "evidence_artifacts": [
         {
           "path": "docs/11_DEVELOPMENT/evidence/phase_0_56/LOCAL_QUALIFICATION.md",
-          "sha256": "75ba4c73aa07ce680aa57d3c4dd92cf512ec93720c32a5734fd18c3cee7567b1"
+          "sha256": "f10d80e0bcd3d2bdc9ed734d64e79620ff491985b456092b7b929f1bf7a38690"
         },
         {
           "path": "docs/11_DEVELOPMENT/evidence/phase_0_56/WHEEL_MANIFEST.json",
-          "sha256": "8070b20da74609a8e2a6f22d81b8d2e8ec5d291468e2ce1e8a07ea8c0502af3e"
+          "sha256": "6497f03b17ff31767aafd8fd1f9934d86d0e22d9cccbead1aeb3d8b0fe8c0b43"
         }
       ],
       "id": "AC056-002",
@@ -64,11 +64,11 @@
       "evidence_artifacts": [
         {
           "path": "docs/11_DEVELOPMENT/evidence/phase_0_56/LOCAL_QUALIFICATION.md",
-          "sha256": "75ba4c73aa07ce680aa57d3c4dd92cf512ec93720c32a5734fd18c3cee7567b1"
+          "sha256": "f10d80e0bcd3d2bdc9ed734d64e79620ff491985b456092b7b929f1bf7a38690"
         },
         {
           "path": "docs/11_DEVELOPMENT/evidence/phase_0_56/WHEEL_MANIFEST.json",
-          "sha256": "8070b20da74609a8e2a6f22d81b8d2e8ec5d291468e2ce1e8a07ea8c0502af3e"
+          "sha256": "6497f03b17ff31767aafd8fd1f9934d86d0e22d9cccbead1aeb3d8b0fe8c0b43"
         }
       ],
       "id": "AC056-003",
@@ -92,7 +92,7 @@
       "evidence_artifacts": [
         {
           "path": "docs/11_DEVELOPMENT/evidence/phase_0_56/LOCAL_QUALIFICATION.md",
-          "sha256": "75ba4c73aa07ce680aa57d3c4dd92cf512ec93720c32a5734fd18c3cee7567b1"
+          "sha256": "f10d80e0bcd3d2bdc9ed734d64e79620ff491985b456092b7b929f1bf7a38690"
         },
         {
           "path": "docs/11_DEVELOPMENT/evidence/phase_0_56/PUBLIC_CONTROL_COVERAGE_0_56.json",
@@ -100,7 +100,7 @@
         },
         {
           "path": "docs/11_DEVELOPMENT/evidence/phase_0_56/WHEEL_MANIFEST.json",
-          "sha256": "8070b20da74609a8e2a6f22d81b8d2e8ec5d291468e2ce1e8a07ea8c0502af3e"
+          "sha256": "6497f03b17ff31767aafd8fd1f9934d86d0e22d9cccbead1aeb3d8b0fe8c0b43"
         }
       ],
       "id": "AC056-004",
@@ -125,11 +125,11 @@
       "evidence_artifacts": [
         {
           "path": "docs/11_DEVELOPMENT/evidence/phase_0_56/LOCAL_QUALIFICATION.md",
-          "sha256": "75ba4c73aa07ce680aa57d3c4dd92cf512ec93720c32a5734fd18c3cee7567b1"
+          "sha256": "f10d80e0bcd3d2bdc9ed734d64e79620ff491985b456092b7b929f1bf7a38690"
         },
         {
           "path": "docs/11_DEVELOPMENT/evidence/phase_0_56/WHEEL_MANIFEST.json",
-          "sha256": "8070b20da74609a8e2a6f22d81b8d2e8ec5d291468e2ce1e8a07ea8c0502af3e"
+          "sha256": "6497f03b17ff31767aafd8fd1f9934d86d0e22d9cccbead1aeb3d8b0fe8c0b43"
         }
       ],
       "id": "AC056-005",
@@ -156,11 +156,11 @@
       "evidence_artifacts": [
         {
           "path": "docs/11_DEVELOPMENT/evidence/phase_0_56/LOCAL_QUALIFICATION.md",
-          "sha256": "75ba4c73aa07ce680aa57d3c4dd92cf512ec93720c32a5734fd18c3cee7567b1"
+          "sha256": "f10d80e0bcd3d2bdc9ed734d64e79620ff491985b456092b7b929f1bf7a38690"
         },
         {
           "path": "docs/11_DEVELOPMENT/evidence/phase_0_56/WHEEL_MANIFEST.json",
-          "sha256": "8070b20da74609a8e2a6f22d81b8d2e8ec5d291468e2ce1e8a07ea8c0502af3e"
+          "sha256": "6497f03b17ff31767aafd8fd1f9934d86d0e22d9cccbead1aeb3d8b0fe8c0b43"
         }
       ],
       "id": "AC056-006",
@@ -192,11 +192,11 @@
       "evidence_artifacts": [
         {
           "path": "docs/11_DEVELOPMENT/evidence/phase_0_56/LOCAL_QUALIFICATION.md",
-          "sha256": "75ba4c73aa07ce680aa57d3c4dd92cf512ec93720c32a5734fd18c3cee7567b1"
+          "sha256": "f10d80e0bcd3d2bdc9ed734d64e79620ff491985b456092b7b929f1bf7a38690"
         },
         {
           "path": "docs/11_DEVELOPMENT/evidence/phase_0_56/WHEEL_MANIFEST.json",
-          "sha256": "8070b20da74609a8e2a6f22d81b8d2e8ec5d291468e2ce1e8a07ea8c0502af3e"
+          "sha256": "6497f03b17ff31767aafd8fd1f9934d86d0e22d9cccbead1aeb3d8b0fe8c0b43"
         }
       ],
       "id": "AC056-007",
@@ -223,11 +223,11 @@
       "evidence_artifacts": [
         {
           "path": "docs/11_DEVELOPMENT/evidence/phase_0_56/LOCAL_QUALIFICATION.md",
-          "sha256": "75ba4c73aa07ce680aa57d3c4dd92cf512ec93720c32a5734fd18c3cee7567b1"
+          "sha256": "f10d80e0bcd3d2bdc9ed734d64e79620ff491985b456092b7b929f1bf7a38690"
         },
         {
           "path": "docs/11_DEVELOPMENT/evidence/phase_0_56/WHEEL_MANIFEST.json",
-          "sha256": "8070b20da74609a8e2a6f22d81b8d2e8ec5d291468e2ce1e8a07ea8c0502af3e"
+          "sha256": "6497f03b17ff31767aafd8fd1f9934d86d0e22d9cccbead1aeb3d8b0fe8c0b43"
         }
       ],
       "id": "AC056-008",
@@ -255,11 +255,11 @@
       "evidence_artifacts": [
         {
           "path": "docs/11_DEVELOPMENT/evidence/phase_0_56/LOCAL_QUALIFICATION.md",
-          "sha256": "75ba4c73aa07ce680aa57d3c4dd92cf512ec93720c32a5734fd18c3cee7567b1"
+          "sha256": "f10d80e0bcd3d2bdc9ed734d64e79620ff491985b456092b7b929f1bf7a38690"
         },
         {
           "path": "docs/11_DEVELOPMENT/evidence/phase_0_56/WHEEL_MANIFEST.json",
-          "sha256": "8070b20da74609a8e2a6f22d81b8d2e8ec5d291468e2ce1e8a07ea8c0502af3e"
+          "sha256": "6497f03b17ff31767aafd8fd1f9934d86d0e22d9cccbead1aeb3d8b0fe8c0b43"
         }
       ],
       "id": "AC056-009",
@@ -290,11 +290,11 @@
       "evidence_artifacts": [
         {
           "path": "docs/11_DEVELOPMENT/evidence/phase_0_56/LOCAL_QUALIFICATION.md",
-          "sha256": "75ba4c73aa07ce680aa57d3c4dd92cf512ec93720c32a5734fd18c3cee7567b1"
+          "sha256": "f10d80e0bcd3d2bdc9ed734d64e79620ff491985b456092b7b929f1bf7a38690"
         },
         {
           "path": "docs/11_DEVELOPMENT/evidence/phase_0_56/WHEEL_MANIFEST.json",
-          "sha256": "8070b20da74609a8e2a6f22d81b8d2e8ec5d291468e2ce1e8a07ea8c0502af3e"
+          "sha256": "6497f03b17ff31767aafd8fd1f9934d86d0e22d9cccbead1aeb3d8b0fe8c0b43"
         }
       ],
       "id": "AC056-010",
@@ -325,11 +325,11 @@
       "evidence_artifacts": [
         {
           "path": "docs/11_DEVELOPMENT/evidence/phase_0_56/LOCAL_QUALIFICATION.md",
-          "sha256": "75ba4c73aa07ce680aa57d3c4dd92cf512ec93720c32a5734fd18c3cee7567b1"
+          "sha256": "f10d80e0bcd3d2bdc9ed734d64e79620ff491985b456092b7b929f1bf7a38690"
         },
         {
           "path": "docs/11_DEVELOPMENT/evidence/phase_0_56/WHEEL_MANIFEST.json",
-          "sha256": "8070b20da74609a8e2a6f22d81b8d2e8ec5d291468e2ce1e8a07ea8c0502af3e"
+          "sha256": "6497f03b17ff31767aafd8fd1f9934d86d0e22d9cccbead1aeb3d8b0fe8c0b43"
         }
       ],
       "id": "AC056-011",
@@ -357,11 +357,11 @@
       "evidence_artifacts": [
         {
           "path": "docs/11_DEVELOPMENT/evidence/phase_0_56/LOCAL_QUALIFICATION.md",
-          "sha256": "75ba4c73aa07ce680aa57d3c4dd92cf512ec93720c32a5734fd18c3cee7567b1"
+          "sha256": "f10d80e0bcd3d2bdc9ed734d64e79620ff491985b456092b7b929f1bf7a38690"
         },
         {
           "path": "docs/11_DEVELOPMENT/evidence/phase_0_56/WHEEL_MANIFEST.json",
-          "sha256": "8070b20da74609a8e2a6f22d81b8d2e8ec5d291468e2ce1e8a07ea8c0502af3e"
+          "sha256": "6497f03b17ff31767aafd8fd1f9934d86d0e22d9cccbead1aeb3d8b0fe8c0b43"
         }
       ],
       "id": "AC056-012",
@@ -387,11 +387,11 @@
       "evidence_artifacts": [
         {
           "path": "docs/11_DEVELOPMENT/evidence/phase_0_56/LOCAL_QUALIFICATION.md",
-          "sha256": "75ba4c73aa07ce680aa57d3c4dd92cf512ec93720c32a5734fd18c3cee7567b1"
+          "sha256": "f10d80e0bcd3d2bdc9ed734d64e79620ff491985b456092b7b929f1bf7a38690"
         },
         {
           "path": "docs/11_DEVELOPMENT/evidence/phase_0_56/WHEEL_MANIFEST.json",
-          "sha256": "8070b20da74609a8e2a6f22d81b8d2e8ec5d291468e2ce1e8a07ea8c0502af3e"
+          "sha256": "6497f03b17ff31767aafd8fd1f9934d86d0e22d9cccbead1aeb3d8b0fe8c0b43"
         }
       ],
       "id": "AC056-013",
@@ -428,11 +428,11 @@
       "evidence_artifacts": [
         {
           "path": "docs/11_DEVELOPMENT/evidence/phase_0_56/LOCAL_QUALIFICATION.md",
-          "sha256": "75ba4c73aa07ce680aa57d3c4dd92cf512ec93720c32a5734fd18c3cee7567b1"
+          "sha256": "f10d80e0bcd3d2bdc9ed734d64e79620ff491985b456092b7b929f1bf7a38690"
         },
         {
           "path": "docs/11_DEVELOPMENT/evidence/phase_0_56/WHEEL_MANIFEST.json",
-          "sha256": "8070b20da74609a8e2a6f22d81b8d2e8ec5d291468e2ce1e8a07ea8c0502af3e"
+          "sha256": "6497f03b17ff31767aafd8fd1f9934d86d0e22d9cccbead1aeb3d8b0fe8c0b43"
         }
       ],
       "id": "AC056-014",
@@ -456,11 +456,11 @@
       "evidence_artifacts": [
         {
           "path": "docs/11_DEVELOPMENT/evidence/phase_0_56/LOCAL_QUALIFICATION.md",
-          "sha256": "75ba4c73aa07ce680aa57d3c4dd92cf512ec93720c32a5734fd18c3cee7567b1"
+          "sha256": "f10d80e0bcd3d2bdc9ed734d64e79620ff491985b456092b7b929f1bf7a38690"
         },
         {
           "path": "docs/11_DEVELOPMENT/evidence/phase_0_56/WHEEL_MANIFEST.json",
-          "sha256": "8070b20da74609a8e2a6f22d81b8d2e8ec5d291468e2ce1e8a07ea8c0502af3e"
+          "sha256": "6497f03b17ff31767aafd8fd1f9934d86d0e22d9cccbead1aeb3d8b0fe8c0b43"
         }
       ],
       "id": "AC056-015",
@@ -489,11 +489,11 @@
       "evidence_artifacts": [
         {
           "path": "docs/11_DEVELOPMENT/evidence/phase_0_56/LOCAL_QUALIFICATION.md",
-          "sha256": "75ba4c73aa07ce680aa57d3c4dd92cf512ec93720c32a5734fd18c3cee7567b1"
+          "sha256": "f10d80e0bcd3d2bdc9ed734d64e79620ff491985b456092b7b929f1bf7a38690"
         },
         {
           "path": "docs/11_DEVELOPMENT/evidence/phase_0_56/WHEEL_MANIFEST.json",
-          "sha256": "8070b20da74609a8e2a6f22d81b8d2e8ec5d291468e2ce1e8a07ea8c0502af3e"
+          "sha256": "6497f03b17ff31767aafd8fd1f9934d86d0e22d9cccbead1aeb3d8b0fe8c0b43"
         }
       ],
       "id": "AC056-016",
@@ -521,11 +521,11 @@
       "evidence_artifacts": [
         {
           "path": "docs/11_DEVELOPMENT/evidence/phase_0_56/LOCAL_QUALIFICATION.md",
-          "sha256": "75ba4c73aa07ce680aa57d3c4dd92cf512ec93720c32a5734fd18c3cee7567b1"
+          "sha256": "f10d80e0bcd3d2bdc9ed734d64e79620ff491985b456092b7b929f1bf7a38690"
         },
         {
           "path": "docs/11_DEVELOPMENT/evidence/phase_0_56/WHEEL_MANIFEST.json",
-          "sha256": "8070b20da74609a8e2a6f22d81b8d2e8ec5d291468e2ce1e8a07ea8c0502af3e"
+          "sha256": "6497f03b17ff31767aafd8fd1f9934d86d0e22d9cccbead1aeb3d8b0fe8c0b43"
         }
       ],
       "id": "AC056-017",
@@ -553,11 +553,11 @@
       "evidence_artifacts": [
         {
           "path": "docs/11_DEVELOPMENT/evidence/phase_0_56/LOCAL_QUALIFICATION.md",
-          "sha256": "75ba4c73aa07ce680aa57d3c4dd92cf512ec93720c32a5734fd18c3cee7567b1"
+          "sha256": "f10d80e0bcd3d2bdc9ed734d64e79620ff491985b456092b7b929f1bf7a38690"
         },
         {
           "path": "docs/11_DEVELOPMENT/evidence/phase_0_56/WHEEL_MANIFEST.json",
-          "sha256": "8070b20da74609a8e2a6f22d81b8d2e8ec5d291468e2ce1e8a07ea8c0502af3e"
+          "sha256": "6497f03b17ff31767aafd8fd1f9934d86d0e22d9cccbead1aeb3d8b0fe8c0b43"
         }
       ],
       "id": "AC056-018",
@@ -586,11 +586,11 @@
       "evidence_artifacts": [
         {
           "path": "docs/11_DEVELOPMENT/evidence/phase_0_56/LOCAL_QUALIFICATION.md",
-          "sha256": "75ba4c73aa07ce680aa57d3c4dd92cf512ec93720c32a5734fd18c3cee7567b1"
+          "sha256": "f10d80e0bcd3d2bdc9ed734d64e79620ff491985b456092b7b929f1bf7a38690"
         },
         {
           "path": "docs/11_DEVELOPMENT/evidence/phase_0_56/WHEEL_MANIFEST.json",
-          "sha256": "8070b20da74609a8e2a6f22d81b8d2e8ec5d291468e2ce1e8a07ea8c0502af3e"
+          "sha256": "6497f03b17ff31767aafd8fd1f9934d86d0e22d9cccbead1aeb3d8b0fe8c0b43"
         }
       ],
       "id": "AC056-019",
@@ -637,11 +637,11 @@
       "evidence_artifacts": [
         {
           "path": "docs/11_DEVELOPMENT/evidence/phase_0_56/LOCAL_QUALIFICATION.md",
-          "sha256": "75ba4c73aa07ce680aa57d3c4dd92cf512ec93720c32a5734fd18c3cee7567b1"
+          "sha256": "f10d80e0bcd3d2bdc9ed734d64e79620ff491985b456092b7b929f1bf7a38690"
         },
         {
           "path": "docs/11_DEVELOPMENT/evidence/phase_0_56/WHEEL_MANIFEST.json",
-          "sha256": "8070b20da74609a8e2a6f22d81b8d2e8ec5d291468e2ce1e8a07ea8c0502af3e"
+          "sha256": "6497f03b17ff31767aafd8fd1f9934d86d0e22d9cccbead1aeb3d8b0fe8c0b43"
         }
       ],
       "id": "AC056-020",
@@ -667,11 +667,11 @@
       "evidence_artifacts": [
         {
           "path": "docs/11_DEVELOPMENT/evidence/phase_0_56/LOCAL_QUALIFICATION.md",
-          "sha256": "75ba4c73aa07ce680aa57d3c4dd92cf512ec93720c32a5734fd18c3cee7567b1"
+          "sha256": "f10d80e0bcd3d2bdc9ed734d64e79620ff491985b456092b7b929f1bf7a38690"
         },
         {
           "path": "docs/11_DEVELOPMENT/evidence/phase_0_56/WHEEL_MANIFEST.json",
-          "sha256": "8070b20da74609a8e2a6f22d81b8d2e8ec5d291468e2ce1e8a07ea8c0502af3e"
+          "sha256": "6497f03b17ff31767aafd8fd1f9934d86d0e22d9cccbead1aeb3d8b0fe8c0b43"
         }
       ],
       "id": "AC056-021",
@@ -700,11 +700,11 @@
       "evidence_artifacts": [
         {
           "path": "docs/11_DEVELOPMENT/evidence/phase_0_56/LOCAL_QUALIFICATION.md",
-          "sha256": "75ba4c73aa07ce680aa57d3c4dd92cf512ec93720c32a5734fd18c3cee7567b1"
+          "sha256": "f10d80e0bcd3d2bdc9ed734d64e79620ff491985b456092b7b929f1bf7a38690"
         },
         {
           "path": "docs/11_DEVELOPMENT/evidence/phase_0_56/WHEEL_MANIFEST.json",
-          "sha256": "8070b20da74609a8e2a6f22d81b8d2e8ec5d291468e2ce1e8a07ea8c0502af3e"
+          "sha256": "6497f03b17ff31767aafd8fd1f9934d86d0e22d9cccbead1aeb3d8b0fe8c0b43"
         }
       ],
       "id": "AC056-022",
@@ -733,11 +733,11 @@
       "evidence_artifacts": [
         {
           "path": "docs/11_DEVELOPMENT/evidence/phase_0_56/LOCAL_QUALIFICATION.md",
-          "sha256": "75ba4c73aa07ce680aa57d3c4dd92cf512ec93720c32a5734fd18c3cee7567b1"
+          "sha256": "f10d80e0bcd3d2bdc9ed734d64e79620ff491985b456092b7b929f1bf7a38690"
         },
         {
           "path": "docs/11_DEVELOPMENT/evidence/phase_0_56/WHEEL_MANIFEST.json",
-          "sha256": "8070b20da74609a8e2a6f22d81b8d2e8ec5d291468e2ce1e8a07ea8c0502af3e"
+          "sha256": "6497f03b17ff31767aafd8fd1f9934d86d0e22d9cccbead1aeb3d8b0fe8c0b43"
         }
       ],
       "id": "AC056-023",
@@ -768,11 +768,11 @@
       "evidence_artifacts": [
         {
           "path": "docs/11_DEVELOPMENT/evidence/phase_0_56/LOCAL_QUALIFICATION.md",
-          "sha256": "75ba4c73aa07ce680aa57d3c4dd92cf512ec93720c32a5734fd18c3cee7567b1"
+          "sha256": "f10d80e0bcd3d2bdc9ed734d64e79620ff491985b456092b7b929f1bf7a38690"
         },
         {
           "path": "docs/11_DEVELOPMENT/evidence/phase_0_56/WHEEL_MANIFEST.json",
-          "sha256": "8070b20da74609a8e2a6f22d81b8d2e8ec5d291468e2ce1e8a07ea8c0502af3e"
+          "sha256": "6497f03b17ff31767aafd8fd1f9934d86d0e22d9cccbead1aeb3d8b0fe8c0b43"
         }
       ],
       "id": "AC056-024",
@@ -806,11 +806,11 @@
       "evidence_artifacts": [
         {
           "path": "docs/11_DEVELOPMENT/evidence/phase_0_56/LOCAL_QUALIFICATION.md",
-          "sha256": "75ba4c73aa07ce680aa57d3c4dd92cf512ec93720c32a5734fd18c3cee7567b1"
+          "sha256": "f10d80e0bcd3d2bdc9ed734d64e79620ff491985b456092b7b929f1bf7a38690"
         },
         {
           "path": "docs/11_DEVELOPMENT/evidence/phase_0_56/WHEEL_MANIFEST.json",
-          "sha256": "8070b20da74609a8e2a6f22d81b8d2e8ec5d291468e2ce1e8a07ea8c0502af3e"
+          "sha256": "6497f03b17ff31767aafd8fd1f9934d86d0e22d9cccbead1aeb3d8b0fe8c0b43"
         }
       ],
       "id": "AC056-025",
@@ -839,11 +839,11 @@
       "evidence_artifacts": [
         {
           "path": "docs/11_DEVELOPMENT/evidence/phase_0_56/LOCAL_QUALIFICATION.md",
-          "sha256": "75ba4c73aa07ce680aa57d3c4dd92cf512ec93720c32a5734fd18c3cee7567b1"
+          "sha256": "f10d80e0bcd3d2bdc9ed734d64e79620ff491985b456092b7b929f1bf7a38690"
         },
         {
           "path": "docs/11_DEVELOPMENT/evidence/phase_0_56/WHEEL_MANIFEST.json",
-          "sha256": "8070b20da74609a8e2a6f22d81b8d2e8ec5d291468e2ce1e8a07ea8c0502af3e"
+          "sha256": "6497f03b17ff31767aafd8fd1f9934d86d0e22d9cccbead1aeb3d8b0fe8c0b43"
         }
       ],
       "id": "AC056-026",
@@ -870,11 +870,11 @@
       "evidence_artifacts": [
         {
           "path": "docs/11_DEVELOPMENT/evidence/phase_0_56/LOCAL_QUALIFICATION.md",
-          "sha256": "75ba4c73aa07ce680aa57d3c4dd92cf512ec93720c32a5734fd18c3cee7567b1"
+          "sha256": "f10d80e0bcd3d2bdc9ed734d64e79620ff491985b456092b7b929f1bf7a38690"
         },
         {
           "path": "docs/11_DEVELOPMENT/evidence/phase_0_56/WHEEL_MANIFEST.json",
-          "sha256": "8070b20da74609a8e2a6f22d81b8d2e8ec5d291468e2ce1e8a07ea8c0502af3e"
+          "sha256": "6497f03b17ff31767aafd8fd1f9934d86d0e22d9cccbead1aeb3d8b0fe8c0b43"
         }
       ],
       "id": "AC056-027",
@@ -901,11 +901,11 @@
       "evidence_artifacts": [
         {
           "path": "docs/11_DEVELOPMENT/evidence/phase_0_56/LOCAL_QUALIFICATION.md",
-          "sha256": "75ba4c73aa07ce680aa57d3c4dd92cf512ec93720c32a5734fd18c3cee7567b1"
+          "sha256": "f10d80e0bcd3d2bdc9ed734d64e79620ff491985b456092b7b929f1bf7a38690"
         },
         {
           "path": "docs/11_DEVELOPMENT/evidence/phase_0_56/WHEEL_MANIFEST.json",
-          "sha256": "8070b20da74609a8e2a6f22d81b8d2e8ec5d291468e2ce1e8a07ea8c0502af3e"
+          "sha256": "6497f03b17ff31767aafd8fd1f9934d86d0e22d9cccbead1aeb3d8b0fe8c0b43"
         }
       ],
       "id": "AC056-028",
@@ -932,11 +932,11 @@
       "evidence_artifacts": [
         {
           "path": "docs/11_DEVELOPMENT/evidence/phase_0_56/LOCAL_QUALIFICATION.md",
-          "sha256": "75ba4c73aa07ce680aa57d3c4dd92cf512ec93720c32a5734fd18c3cee7567b1"
+          "sha256": "f10d80e0bcd3d2bdc9ed734d64e79620ff491985b456092b7b929f1bf7a38690"
         },
         {
           "path": "docs/11_DEVELOPMENT/evidence/phase_0_56/WHEEL_MANIFEST.json",
-          "sha256": "8070b20da74609a8e2a6f22d81b8d2e8ec5d291468e2ce1e8a07ea8c0502af3e"
+          "sha256": "6497f03b17ff31767aafd8fd1f9934d86d0e22d9cccbead1aeb3d8b0fe8c0b43"
         }
       ],
       "id": "AC056-029",
@@ -965,11 +965,11 @@
       "evidence_artifacts": [
         {
           "path": "docs/11_DEVELOPMENT/evidence/phase_0_56/LOCAL_QUALIFICATION.md",
-          "sha256": "75ba4c73aa07ce680aa57d3c4dd92cf512ec93720c32a5734fd18c3cee7567b1"
+          "sha256": "f10d80e0bcd3d2bdc9ed734d64e79620ff491985b456092b7b929f1bf7a38690"
         },
         {
           "path": "docs/11_DEVELOPMENT/evidence/phase_0_56/WHEEL_MANIFEST.json",
-          "sha256": "8070b20da74609a8e2a6f22d81b8d2e8ec5d291468e2ce1e8a07ea8c0502af3e"
+          "sha256": "6497f03b17ff31767aafd8fd1f9934d86d0e22d9cccbead1aeb3d8b0fe8c0b43"
         }
       ],
       "id": "AC056-030",
@@ -995,11 +995,11 @@
       "evidence_artifacts": [
         {
           "path": "docs/11_DEVELOPMENT/evidence/phase_0_56/LOCAL_QUALIFICATION.md",
-          "sha256": "75ba4c73aa07ce680aa57d3c4dd92cf512ec93720c32a5734fd18c3cee7567b1"
+          "sha256": "f10d80e0bcd3d2bdc9ed734d64e79620ff491985b456092b7b929f1bf7a38690"
         },
         {
           "path": "docs/11_DEVELOPMENT/evidence/phase_0_56/WHEEL_MANIFEST.json",
-          "sha256": "8070b20da74609a8e2a6f22d81b8d2e8ec5d291468e2ce1e8a07ea8c0502af3e"
+          "sha256": "6497f03b17ff31767aafd8fd1f9934d86d0e22d9cccbead1aeb3d8b0fe8c0b43"
         },
         {
           "path": "docs/11_DEVELOPMENT/evidence/phase_0_56/PARTITION_REPAIR_BACKFILL_0_56.json",
@@ -1034,7 +1034,7 @@
       "evidence_artifacts": [
         {
           "path": "docs/11_DEVELOPMENT/evidence/phase_0_56/LOCAL_QUALIFICATION.md",
-          "sha256": "75ba4c73aa07ce680aa57d3c4dd92cf512ec93720c32a5734fd18c3cee7567b1"
+          "sha256": "f10d80e0bcd3d2bdc9ed734d64e79620ff491985b456092b7b929f1bf7a38690"
         },
         {
           "path": "docs/11_DEVELOPMENT/evidence/phase_0_56/PUBLIC_CONTROL_COVERAGE_0_56.json",
@@ -1075,11 +1075,11 @@
       "evidence_artifacts": [
         {
           "path": "docs/11_DEVELOPMENT/evidence/phase_0_56/LOCAL_QUALIFICATION.md",
-          "sha256": "75ba4c73aa07ce680aa57d3c4dd92cf512ec93720c32a5734fd18c3cee7567b1"
+          "sha256": "f10d80e0bcd3d2bdc9ed734d64e79620ff491985b456092b7b929f1bf7a38690"
         },
         {
           "path": "docs/11_DEVELOPMENT/evidence/phase_0_56/WHEEL_MANIFEST.json",
-          "sha256": "8070b20da74609a8e2a6f22d81b8d2e8ec5d291468e2ce1e8a07ea8c0502af3e"
+          "sha256": "6497f03b17ff31767aafd8fd1f9934d86d0e22d9cccbead1aeb3d8b0fe8c0b43"
         }
       ],
       "id": "AC056-033",
@@ -1108,7 +1108,7 @@
       "evidence_artifacts": [
         {
           "path": "docs/11_DEVELOPMENT/evidence/phase_0_56/LOCAL_QUALIFICATION.md",
-          "sha256": "75ba4c73aa07ce680aa57d3c4dd92cf512ec93720c32a5734fd18c3cee7567b1"
+          "sha256": "f10d80e0bcd3d2bdc9ed734d64e79620ff491985b456092b7b929f1bf7a38690"
         },
         {
           "path": "docs/11_DEVELOPMENT/evidence/phase_0_56/SIMULATOR_QUALIFICATION_0_56.json",
@@ -1116,7 +1116,7 @@
         },
         {
           "path": "docs/11_DEVELOPMENT/evidence/phase_0_56/WHEEL_MANIFEST.json",
-          "sha256": "8070b20da74609a8e2a6f22d81b8d2e8ec5d291468e2ce1e8a07ea8c0502af3e"
+          "sha256": "6497f03b17ff31767aafd8fd1f9934d86d0e22d9cccbead1aeb3d8b0fe8c0b43"
         }
       ],
       "id": "AC056-034",
@@ -1142,11 +1142,11 @@
       "evidence_artifacts": [
         {
           "path": "docs/11_DEVELOPMENT/evidence/phase_0_56/LOCAL_QUALIFICATION.md",
-          "sha256": "75ba4c73aa07ce680aa57d3c4dd92cf512ec93720c32a5734fd18c3cee7567b1"
+          "sha256": "f10d80e0bcd3d2bdc9ed734d64e79620ff491985b456092b7b929f1bf7a38690"
         },
         {
           "path": "docs/11_DEVELOPMENT/evidence/phase_0_56/WHEEL_MANIFEST.json",
-          "sha256": "8070b20da74609a8e2a6f22d81b8d2e8ec5d291468e2ce1e8a07ea8c0502af3e"
+          "sha256": "6497f03b17ff31767aafd8fd1f9934d86d0e22d9cccbead1aeb3d8b0fe8c0b43"
         }
       ],
       "id": "AC056-035",
@@ -1175,7 +1175,7 @@
       "evidence_artifacts": [
         {
           "path": "docs/11_DEVELOPMENT/evidence/phase_0_56/LOCAL_QUALIFICATION.md",
-          "sha256": "75ba4c73aa07ce680aa57d3c4dd92cf512ec93720c32a5734fd18c3cee7567b1"
+          "sha256": "f10d80e0bcd3d2bdc9ed734d64e79620ff491985b456092b7b929f1bf7a38690"
         },
         {
           "path": "docs/11_DEVELOPMENT/evidence/phase_0_56/MANAGED_PROVIDER_MATRIX_0_56.json",
@@ -1212,11 +1212,11 @@
       "evidence_artifacts": [
         {
           "path": "docs/11_DEVELOPMENT/evidence/phase_0_56/LOCAL_QUALIFICATION.md",
-          "sha256": "75ba4c73aa07ce680aa57d3c4dd92cf512ec93720c32a5734fd18c3cee7567b1"
+          "sha256": "f10d80e0bcd3d2bdc9ed734d64e79620ff491985b456092b7b929f1bf7a38690"
         },
         {
           "path": "docs/11_DEVELOPMENT/evidence/phase_0_56/WHEEL_MANIFEST.json",
-          "sha256": "8070b20da74609a8e2a6f22d81b8d2e8ec5d291468e2ce1e8a07ea8c0502af3e"
+          "sha256": "6497f03b17ff31767aafd8fd1f9934d86d0e22d9cccbead1aeb3d8b0fe8c0b43"
         },
         {
           "path": "docs/11_DEVELOPMENT/evidence/phase_0_56/PRIVATE_PROVIDER_QUALIFICATION.json",
@@ -1246,11 +1246,11 @@
       "evidence_artifacts": [
         {
           "path": "docs/11_DEVELOPMENT/evidence/phase_0_56/LOCAL_QUALIFICATION.md",
-          "sha256": "75ba4c73aa07ce680aa57d3c4dd92cf512ec93720c32a5734fd18c3cee7567b1"
+          "sha256": "f10d80e0bcd3d2bdc9ed734d64e79620ff491985b456092b7b929f1bf7a38690"
         },
         {
           "path": "docs/11_DEVELOPMENT/evidence/phase_0_56/WHEEL_MANIFEST.json",
-          "sha256": "8070b20da74609a8e2a6f22d81b8d2e8ec5d291468e2ce1e8a07ea8c0502af3e"
+          "sha256": "6497f03b17ff31767aafd8fd1f9934d86d0e22d9cccbead1aeb3d8b0fe8c0b43"
         }
       ],
       "id": "AC056-038",
@@ -1283,11 +1283,11 @@
       "evidence_artifacts": [
         {
           "path": "docs/11_DEVELOPMENT/evidence/phase_0_56/LOCAL_QUALIFICATION.md",
-          "sha256": "75ba4c73aa07ce680aa57d3c4dd92cf512ec93720c32a5734fd18c3cee7567b1"
+          "sha256": "f10d80e0bcd3d2bdc9ed734d64e79620ff491985b456092b7b929f1bf7a38690"
         },
         {
           "path": "docs/11_DEVELOPMENT/evidence/phase_0_56/WHEEL_MANIFEST.json",
-          "sha256": "8070b20da74609a8e2a6f22d81b8d2e8ec5d291468e2ce1e8a07ea8c0502af3e"
+          "sha256": "6497f03b17ff31767aafd8fd1f9934d86d0e22d9cccbead1aeb3d8b0fe8c0b43"
         }
       ],
       "id": "AC056-039",
@@ -1314,19 +1314,19 @@
       "evidence_artifacts": [
         {
           "path": "docs/11_DEVELOPMENT/evidence/phase_0_56/LOCAL_QUALIFICATION.md",
-          "sha256": "75ba4c73aa07ce680aa57d3c4dd92cf512ec93720c32a5734fd18c3cee7567b1"
+          "sha256": "f10d80e0bcd3d2bdc9ed734d64e79620ff491985b456092b7b929f1bf7a38690"
         },
         {
           "path": "docs/11_DEVELOPMENT/evidence/phase_0_56/WHEEL_MANIFEST.json",
-          "sha256": "8070b20da74609a8e2a6f22d81b8d2e8ec5d291468e2ce1e8a07ea8c0502af3e"
+          "sha256": "6497f03b17ff31767aafd8fd1f9934d86d0e22d9cccbead1aeb3d8b0fe8c0b43"
         },
         {
           "path": "docs/11_DEVELOPMENT/evidence/phase_0_56/PACKAGE_COMPATIBILITY_0_56.json",
-          "sha256": "509b7c389391aae71ca9acd606f3f36605eaa2d9268d5da7e28ac9df021dca06"
+          "sha256": "11387241d780466efd37952855059c943c5d985e76b64778573d96b7c10a95cb"
         },
         {
           "path": "scripts/qualify_phase056_packages.py",
-          "sha256": "75bec389d07dcdeb164613b4395ca1a35bfb74633b42af12f9d251a7a46ba18d"
+          "sha256": "b4930f2ecd5b6a2428d75642e71baab8167d913e0de5e87b587d653c356f3a68"
         },
         {
           "path": "tests/fastapi/openapi_cp1_snapshot.json",
@@ -1338,13 +1338,13 @@
         }
       ],
       "id": "AC056-040",
-      "observed_result": "All 25 candidate wheels built and dependency-resolved together into a fresh isolated CPython 3.11.15 environment. All 25 installed public package roots and 387 declared exports resolved from site-packages. All 24 adapter base-package constraints accepted the installed 0.56.0 core (or medallantic for SparkForge) and rejected 0.55.99 and 0.57.0. Installed CP1 and CP-GA OpenAPI 3.1 matched the committed path and operation-ID snapshots; both had 57 component schemas and 161 resolving local schema references, with matching component hashes. The installed SQLModel migration chain upgraded to 012 and completed rollback/re-upgrade from each supported CP1 head 005\u2013011 while preserving a definition, submission identity and event history. In the isolated wheel environment, the migration/OpenAPI/wire-schema suites passed 34 tests with 6 PostgreSQL cases skipped because no test database URL was configured; package/version, connector-schema and schema-drift suites passed 87 tests. Resolved runtime dependency versions, exact wheel hashes, package exports, compatibility results and the repeatable qualification command are recorded in the referenced evidence artifacts.",
+      "observed_result": "All 25 current candidate wheels were built, installed together in a fresh CPython 3.11.15 environment, and checked against the regenerated wheel manifest. All 25 package roots and 387 exports resolved from installed distributions. Dependency constraints, CP1 and CP-GA OpenAPI snapshots, local schema references, and the fresh SQLModel migration chain through 014 passed. Canonical definition, submission-idempotency, and event records round-tripped on the current schema. The isolated wheel subprocess checked all 25 import origins before test collection and prevented repository source paths from shadowing installed wheels; the two suites passed 48 and 88 tests, with 6 PostgreSQL cases skipped because no test URL was configured.",
       "open_reason": "",
       "owner": "056-QUALIFY",
       "provider_version_tuple": [
         "CPython 3.11.15; macOS arm64; isolated virtual environment",
-        "25 workspace wheels at 0.56.0; dependency-resolved installation",
-        "pytest 8.4.2; SQLite migration round-trip"
+        "25 workspace wheels at 0.56.0; pytest 8.4.2",
+        "SQLite fresh migration to 014_cp1_complete_principal_idempotency_0_56"
       ],
       "status": "passed",
       "supporting_cases": [
@@ -1369,7 +1369,7 @@
       "evidence_artifacts": [
         {
           "path": "docs/11_DEVELOPMENT/evidence/phase_0_56/LOCAL_QUALIFICATION.md",
-          "sha256": "75ba4c73aa07ce680aa57d3c4dd92cf512ec93720c32a5734fd18c3cee7567b1"
+          "sha256": "f10d80e0bcd3d2bdc9ed734d64e79620ff491985b456092b7b929f1bf7a38690"
         },
         {
           "path": "docs/11_DEVELOPMENT/evidence/phase_0_56/MANAGED_EXECUTION_MATRIX_0_56.json",
@@ -1377,7 +1377,7 @@
         },
         {
           "path": "docs/11_DEVELOPMENT/evidence/phase_0_56/WHEEL_MANIFEST.json",
-          "sha256": "8070b20da74609a8e2a6f22d81b8d2e8ec5d291468e2ce1e8a07ea8c0502af3e"
+          "sha256": "6497f03b17ff31767aafd8fd1f9934d86d0e22d9cccbead1aeb3d8b0fe8c0b43"
         }
       ],
       "id": "AC056-041",
@@ -1401,32 +1401,45 @@
       ]
     },
     {
-      "acceptance_criterion": "Existing 0.55 definitions/runs/stores migrate; legacy incomplete payloads cannot execute under fabricated fingerprints or silently receive new semantics",
+      "acceptance_criterion": "0.56 request and stream decoders reject pre-0.56 shapes; runtime does not read pre-0.56 durable state; fresh canonical 0.56 state works and unsafe rollback is rejected",
       "case_id": "AC056-042-local-qualification",
       "environment_id": "local-darwin-arm64-python311-postgresql16",
       "evidence_artifacts": [
         {
           "path": "docs/11_DEVELOPMENT/evidence/phase_0_56/LOCAL_QUALIFICATION.md",
-          "sha256": "75ba4c73aa07ce680aa57d3c4dd92cf512ec93720c32a5734fd18c3cee7567b1"
+          "sha256": "f10d80e0bcd3d2bdc9ed734d64e79620ff491985b456092b7b929f1bf7a38690"
+        },
+        {
+          "path": "docs/11_DEVELOPMENT/evidence/phase_0_56/PACKAGE_COMPATIBILITY_0_56.json",
+          "sha256": "11387241d780466efd37952855059c943c5d985e76b64778573d96b7c10a95cb"
         },
         {
           "path": "docs/11_DEVELOPMENT/evidence/phase_0_56/WHEEL_MANIFEST.json",
-          "sha256": "8070b20da74609a8e2a6f22d81b8d2e8ec5d291468e2ce1e8a07ea8c0502af3e"
+          "sha256": "6497f03b17ff31767aafd8fd1f9934d86d0e22d9cccbead1aeb3d8b0fe8c0b43"
+        },
+        {
+          "path": "docs/11_DEVELOPMENT/EXECUTION_PLAN_0_56_STANDALONE.md",
+          "sha256": "74dd979df724c0f413cd875e01928b22548db9c61be2417a9a1358839ac48c8c"
+        },
+        {
+          "path": "docs/11_DEVELOPMENT/MIGRATION_0_55_TO_0_56.md",
+          "sha256": "da82c68a939fc9c08d883484baff9fc1d5c59a94606b40af8c24ef77aaa34d10"
         }
       ],
       "id": "AC056-042",
-      "observed_result": "The latest migration campaign passed 19 SQLite and PostgreSQL cases against PostgreSQL 16.13 through migration 010, including upgrades from legacy heads, fresh install, restart and downgrade/re-upgrade with existing CP1 data retained. The managed worker rejects a legacy accepted payload without a verified execution envelope instead of replanning it from a caller fingerprint.",
+      "observed_result": "RunRequest rejects payloads missing explicit_settings and ignores legacy flat intent keys. Canonical stream-envelope fields decode, while legacy aliases fail with a stable unknown-field error; stream migration adapters are removed. The migration guide requires a fresh 0.56 store and states that no offline converter is included. A current qualified-principal store round-trips canonical records and refuses downgrade to subject-only identity semantics. Focused regression qualification passed 38 tests; 6 PostgreSQL-only cases were skipped without a test URL.",
       "open_reason": "",
       "owner": "056-ADMIT",
       "provider_version_tuple": [
-        "PostgreSQL 16.13",
-        "SQLite",
-        "SQLModel candidate 0.56.0"
+        "CPython 3.11.15; SQLite; SQLModel 0.56.0",
+        "canonical 0.56 request and stream-envelope schemas"
       ],
       "status": "passed",
       "supporting_cases": [
-        "tests/sqlmodel/test_cp1_migrations_0_51.py",
-        "tests/fastapi/test_managed_control_races_0_56.py::test_legacy_acceptance_without_envelope_cannot_be_replanned_or_executed"
+        "tests/runtime/test_run_request_wire.py",
+        "tests/streaming/test_operations_0_46.py::test_envelope_decoder_accepts_canonical_fields_and_rejects_legacy_aliases",
+        "tests/sqlmodel/test_cp1_migrations_0_51.py::test_current_principal_identity_blocks_unsafe_schema_rollback",
+        "scripts/qualify_phase056_packages.py"
       ]
     },
     {
@@ -1436,7 +1449,7 @@
       "evidence_artifacts": [
         {
           "path": "docs/11_DEVELOPMENT/evidence/phase_0_56/LOCAL_QUALIFICATION.md",
-          "sha256": "75ba4c73aa07ce680aa57d3c4dd92cf512ec93720c32a5734fd18c3cee7567b1"
+          "sha256": "f10d80e0bcd3d2bdc9ed734d64e79620ff491985b456092b7b929f1bf7a38690"
         },
         {
           "path": "docs/11_DEVELOPMENT/evidence/phase_0_56/MANAGED_ADAPTIVE_QUALIFICATION_0_56.json",
@@ -1444,7 +1457,7 @@
         },
         {
           "path": "docs/11_DEVELOPMENT/evidence/phase_0_56/WHEEL_MANIFEST.json",
-          "sha256": "8070b20da74609a8e2a6f22d81b8d2e8ec5d291468e2ce1e8a07ea8c0502af3e"
+          "sha256": "6497f03b17ff31767aafd8fd1f9934d86d0e22d9cccbead1aeb3d8b0fe8c0b43"
         }
       ],
       "id": "AC056-043",
@@ -1474,11 +1487,11 @@
       "evidence_artifacts": [
         {
           "path": "docs/11_DEVELOPMENT/evidence/phase_0_56/LOCAL_QUALIFICATION.md",
-          "sha256": "75ba4c73aa07ce680aa57d3c4dd92cf512ec93720c32a5734fd18c3cee7567b1"
+          "sha256": "f10d80e0bcd3d2bdc9ed734d64e79620ff491985b456092b7b929f1bf7a38690"
         },
         {
           "path": "docs/11_DEVELOPMENT/evidence/phase_0_56/WHEEL_MANIFEST.json",
-          "sha256": "8070b20da74609a8e2a6f22d81b8d2e8ec5d291468e2ce1e8a07ea8c0502af3e"
+          "sha256": "6497f03b17ff31767aafd8fd1f9934d86d0e22d9cccbead1aeb3d8b0fe8c0b43"
         }
       ],
       "id": "AC056-044",
@@ -1502,7 +1515,7 @@
   "artifacts": [
     {
       "path": "docs/11_DEVELOPMENT/evidence/phase_0_56/LOCAL_QUALIFICATION.md",
-      "sha256": "75ba4c73aa07ce680aa57d3c4dd92cf512ec93720c32a5734fd18c3cee7567b1"
+      "sha256": "f10d80e0bcd3d2bdc9ed734d64e79620ff491985b456092b7b929f1bf7a38690"
     },
     {
       "path": "docs/11_DEVELOPMENT/evidence/phase_0_56/MANAGED_EXECUTION_MATRIX_0_56.json",
@@ -1514,7 +1527,7 @@
     },
     {
       "path": "docs/11_DEVELOPMENT/evidence/phase_0_56/PACKAGE_COMPATIBILITY_0_56.json",
-      "sha256": "509b7c389391aae71ca9acd606f3f36605eaa2d9268d5da7e28ac9df021dca06"
+      "sha256": "11387241d780466efd37952855059c943c5d985e76b64778573d96b7c10a95cb"
     },
     {
       "path": "docs/11_DEVELOPMENT/evidence/phase_0_56/PRIVATE_PROVIDER_QUALIFICATION.json",
@@ -1530,11 +1543,11 @@
     },
     {
       "path": "docs/11_DEVELOPMENT/evidence/phase_0_56/WHEEL_MANIFEST.json",
-      "sha256": "8070b20da74609a8e2a6f22d81b8d2e8ec5d291468e2ce1e8a07ea8c0502af3e"
+      "sha256": "6497f03b17ff31767aafd8fd1f9934d86d0e22d9cccbead1aeb3d8b0fe8c0b43"
     },
     {
       "path": "scripts/qualify_phase056_packages.py",
-      "sha256": "75bec389d07dcdeb164613b4395ca1a35bfb74633b42af12f9d251a7a46ba18d"
+      "sha256": "b4930f2ecd5b6a2428d75642e71baab8167d913e0de5e87b587d653c356f3a68"
     },
     {
       "path": "tests/fastapi/openapi_cp1_snapshot.json",
@@ -1550,9 +1563,9 @@
     }
   ],
   "candidate": {
-    "base_commit": "e7fd6b866dbecab646cf68b73405ee06ea4437e5",
-    "branch": "codex/phase-0-56",
-    "implementation_patch_sha256_before_index": "91952b1392ece57c118c20d546eb0c67b074b38bcf0fa15e6d06928fb2b7dde3",
+    "base_commit": "963b42ec63d197e2dbb982105219389db189a3b8",
+    "branch": "codex/phase-0-56-release-fixes",
+    "implementation_patch_sha256_before_index": "15d8e152e1478878e3c390b3fbdd879a01dfacbcaa1cdfbb4923fb4b3d265936",
     "package_versions": {
       "etlantic": "0.56.0",
       "etlantic-fastapi": "0.56.0",

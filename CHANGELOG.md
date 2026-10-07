@@ -9,6 +9,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- Add the Foundry provider package to the 0.56 first-party distribution set and
+  the generic release readiness inventory.
 - Managed partition repair and backfill now use configured, bounded PostgreSQL
   partition reads and transactional idempotent replacement, with parent and
   attempt lineage through the shared service and HTTP command surfaces.
@@ -52,6 +54,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Recovery cancellation preserves unknown effects. Reconciliation requires
   nonblank evidence and cannot change an existing effect's submission identity
   or authority (#217).
+
+### Upgrade notes
+
+- 0.56 accepts canonical request and stream metadata only. A run request must
+  include `explicit_settings`; legacy stream aliases are rejected. Start with a
+  fresh 0.56 store because this release does not read 0.55 durable state or
+  migrate subject-only resource owners. No offline converter is included; keep
+  the 0.55 application and its original store for rollback.
 
 ## [0.55.0] - 2026-09-29
 

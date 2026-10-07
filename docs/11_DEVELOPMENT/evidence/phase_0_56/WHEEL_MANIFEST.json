@@ -3,8 +3,8 @@
   "packages": [
     {
       "filename": "etlantic-0.56.0-py3-none-any.whl",
-      "sha256": "7a697e990617bbc259e94365b049d4d6a360c06266fd66693b52a46d572a4139",
-      "size_bytes": 1157295
+      "sha256": "8387e9af53d0114aa7ac17bd1316a39547e937d18b61e3c15c7e8dd01b97de1d",
+      "size_bytes": 1186666
     },
     {
       "filename": "etlantic_airflow-0.56.0-py3-none-any.whl",
@@ -23,13 +23,13 @@
     },
     {
       "filename": "etlantic_fastapi-0.56.0-py3-none-any.whl",
-      "sha256": "051b49662238d1a9e55095048bf25758078f2ae1d9d886eb7997f7c22cb50174",
-      "size_bytes": 52940
+      "sha256": "25134beaed279e4c64814ec50e759de27c979847b8bd73fb8e43dc230f5b2e03",
+      "size_bytes": 53312
     },
     {
       "filename": "etlantic_foundry-0.56.0-py3-none-any.whl",
-      "sha256": "f12280bd6750a6632f8173d00da74a7610a092dd6ae14b754688fb265cc70521",
-      "size_bytes": 21453
+      "sha256": "8da32bcf2eb17d5c1e3d98833683398c75afd5cc636fe83eb63cc8063364fca5",
+      "size_bytes": 23373
     },
     {
       "filename": "etlantic_iceberg-0.56.0-py3-none-any.whl",
@@ -113,13 +113,13 @@
     },
     {
       "filename": "etlantic_sql-0.56.0-py3-none-any.whl",
-      "sha256": "7e9a4db954b7c1a642d13cfd8befa4a8a171050ba9563f14d9027f043dd2fe0f",
-      "size_bytes": 82127
+      "sha256": "9842a4d293f95c0d603181d2311b7b6dee2349ae1ad0d5d9fa0cd4173e749839",
+      "size_bytes": 85552
     },
     {
       "filename": "etlantic_sqlmodel-0.56.0-py3-none-any.whl",
-      "sha256": "598a5e2b4c83557c5614792c716b247934dcc9bb3e957ebec347b2629a7cdc5e",
-      "size_bytes": 61969
+      "sha256": "fbaaf32dfaf97e429626af5935be5330cc14a294d811ccf549b733bb1dce7c45",
+      "size_bytes": 69367
     },
     {
       "filename": "medallantic-0.56.0-py3-none-any.whl",

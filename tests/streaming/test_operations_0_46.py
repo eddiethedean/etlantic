@@ -15,14 +15,17 @@ from etlantic.reports.streaming import (
 from etlantic.runtime.request import RunIntent
 from etlantic.runtime.state import RunStatus
 from etlantic.spark.streaming import project_core_semantics, project_core_watermark
-from etlantic.streaming.envelope import ChangeOp, assert_no_payload
+from etlantic.streaming.envelope import (
+    ChangeEnvelopeMetadata,
+    ChangeOp,
+    assert_no_payload,
+)
 from etlantic.streaming.fixtures import InMemoryTriggerQueue
 from etlantic.streaming.handoff import (
     SnapshotCut,
     evaluate_handoff,
     handoff_failure_diagnostic,
 )
-from etlantic.streaming.migration import migrate_envelope_dict, migrate_state_dict
 from etlantic.streaming.semantics import StreamSemantics, WatermarkSpec
 
 
@@ -155,24 +158,29 @@ def test_quality_window_threshold_transition() -> None:
     assert above.backpressure == "shed"
 
 
-def test_envelope_and_state_migration_mixed_versions() -> None:
-    legacy = migrate_envelope_dict(
-        {"o": "u", "pos": "000003", "ord": "3", "schema_id": "sch-2", "txn": "t1"}
-    )
-    assert legacy.op is ChangeOp.UPDATE
-    assert legacy.source_position == "000003"
-    assert_no_payload(legacy.to_dict())
-    state = migrate_state_dict(
+def test_envelope_decoder_accepts_canonical_fields_and_rejects_legacy_aliases() -> None:
+    envelope = ChangeEnvelopeMetadata.from_dict(
         {
-            "schema": "etlantic.stream-state/0",
-            "id": "src-1",
-            "watermark": "w1",
-            "cursor": "cursor:src-1",
+            "op": "update",
+            "source_position": "000003",
+            "order_key": "3",
+            "schema_identity": "sch-2",
+            "transaction_id": "t1",
         }
     )
-    assert state.schema == "etlantic.stream-state/1"
-    assert state.identity == "src-1"
-    assert state.cursor_identity == "cursor:src-1"
+    assert envelope.op is ChangeOp.UPDATE
+    assert envelope.source_position == "000003"
+    assert_no_payload(envelope.to_dict())
+
+    with pytest.raises(ValueError, match=r"Unknown change-envelope field.*o"):
+        ChangeEnvelopeMetadata.from_dict(
+            {
+                "o": "u",
+                "pos": "000003",
+                "ord": "3",
+                "schema_id": "sch-2",
+            }
+        )
 
 
 def test_trigger_queue_backpressure() -> None:

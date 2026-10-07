@@ -41,17 +41,27 @@ def test_run_request_wire_rejects_unknown_semantics() -> None:
         RunRequest.from_dict({"future_control": True})
 
     with pytest.raises(ValueError, match="Unknown retry field"):
-        RunRequest.from_dict({"retry": {"retry_everything": True}})
+        RunRequest.from_dict(
+            {"retry": {"retry_everything": True}, "explicit_settings": []}
+        )
+
+    with pytest.raises(ValueError, match=r"Missing required.*explicit_settings"):
+        RunRequest.from_dict({"retry": {"max_attempts": 2}})
 
 
 def test_run_request_wire_rejects_malformed_overrides() -> None:
     with pytest.raises(
         TypeError, match="parameter_overrides must map strings to objects"
     ):
-        RunRequest.from_dict({"parameter_overrides": {"node": "not-an-object"}})
+        RunRequest.from_dict(
+            {
+                "parameter_overrides": {"node": "not-an-object"},
+                "explicit_settings": [],
+            }
+        )
 
     with pytest.raises(TypeError, match="asset_overrides must map strings to strings"):
-        RunRequest.from_dict({"asset_overrides": {"node": 3}})
+        RunRequest.from_dict({"asset_overrides": {"node": 3}, "explicit_settings": []})
 
 
 def test_run_request_extensions_require_namespaces_and_secret_free_json() -> None:
@@ -121,8 +131,16 @@ def test_request_policy_precedence_records_explicit_default_values() -> None:
     assert provenance["request.timeout.run_seconds"] == "request"
 
 
-def test_legacy_request_wire_infers_only_non_default_policy_overrides() -> None:
-    legacy = RunRequest.from_dict(
-        {"retry": {"max_attempts": 4, "backoff_seconds": 0.0}}
+def test_legacy_request_wire_without_explicit_settings_is_rejected() -> None:
+    with pytest.raises(ValueError, match=r"Missing required.*explicit_settings"):
+        RunRequest.from_dict({"retry": {"max_attempts": 4, "backoff_seconds": 0.0}})
+
+
+def test_legacy_flat_intent_keys_are_not_used_as_policy_defaults() -> None:
+    request = resolve_request_policies(
+        RunRequest(),
+        {},
+        intents={"retry_max_attempts": 4, "timeout_seconds": 120},
     )
-    assert legacy.explicit_settings == frozenset({"retry.max_attempts"})
+    assert request.retry == RetryPolicy()
+    assert request.timeout == TimeoutPolicy()

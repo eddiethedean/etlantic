@@ -35,7 +35,6 @@ from etlantic.control_plane import (
 )
 from etlantic_sqlmodel.control_plane import (
     SQLModelDefinitionRepository,
-    SQLModelDurableWorkStore,
     SqlModelEventStore,
     SqlModelRegistryProvider,
     SQLModelSubmissionStore,
@@ -118,7 +117,7 @@ def _ctx(
     tenant: str = "tenant-a", workspace: str = "workspace-a"
 ) -> ControlPlaneContext:
     return ControlPlaneContext(
-        principal=Principal(subject="alice"),
+        principal=Principal(subject="alice", issuer="https://test.invalid"),
         tenant=TenantRef(tenant_id=tenant),
         workspace=WorkspaceRef(tenant_id=tenant, workspace_id=workspace),
         environment=EnvironmentRef(name="development"),
@@ -455,52 +454,27 @@ def test_bounded_event_tombstone_rollback_and_upgrade_preserve_delivery_keys(
     assert isinstance(restored_expiry, str)
 
 
-@pytest.mark.parametrize("rollback_head", VERSIONS[4:-1])
-def test_supported_cp1_rollback_heads_upgrade_again_with_core_records(
+def test_current_principal_identity_blocks_unsafe_schema_rollback(
     tmp_path: Path,
-    rollback_head: str,
 ) -> None:
-    """Exercise every published CP1 rollback boundary and subsequent upgrade."""
-    database_path = tmp_path / ("rollback-" + rollback_head.replace("/", "-") + ".db")
-    engine = create_sqlite_engine(f"sqlite:///{database_path}")
+    """A 0.56 store with qualified principals cannot roll back to subject-only keys."""
+    engine = create_sqlite_engine(f"sqlite:///{tmp_path / 'identity-rollback.db'}")
     assert upgrade(engine) == VERSIONS[-1]
     ctx = _ctx()
-    definition_store = SQLModelDefinitionRepository(engine)
-    submission_store = SQLModelSubmissionStore(engine)
-    event_store = SqlModelEventStore(engine)
-    definition_store.put(ctx, "rollback-definition", {"name": "orders"})
-    accepted = submission_store.accept(
+    submissions = SQLModelSubmissionStore(engine)
+    accepted = submissions.accept(
         ctx,
         idempotency_key="rollback-submission",
-        payload={"definition_id": "rollback-definition"},
+        payload={"definition": "canonical-0.56"},
     )
     accepted_receipt = accepted.receipt
     assert accepted_receipt is not None
-    SQLModelDurableWorkStore(engine).accept(
-        ctx,
-        idempotency_key="rollback-submission",
-        operation="run.submit",
-        plan_fingerprint="f" * 64,
-        submission_id=accepted_receipt.submission_id,
-    )
-    event = event_store.append(
-        ctx,
-        kind="run.accepted",
-        payload={"submission_id": accepted_receipt.submission_id},
-    )
-
-    assert downgrade(engine, target=rollback_head) == rollback_head
-    assert upgrade(engine) == VERSIONS[-1]
-    assert SQLModelDefinitionRepository(engine).get(ctx, "rollback-definition") == {
-        "name": "orders"
-    }
-    receipt = SQLModelSubmissionStore(engine).lookup_idempotency(
-        ctx, "rollback-submission"
-    )
+    with pytest.raises(RuntimeError, match="Cannot downgrade CP1 principal identity"):
+        downgrade(engine, target=VERSIONS[4])
+    assert current_version(engine) == VERSIONS[-1]
+    receipt = submissions.lookup_idempotency(ctx, "rollback-submission")
     assert receipt is not None
     assert receipt.submission_id == accepted_receipt.submission_id
-    replayed = SqlModelEventStore(engine).list_after_cursor(ctx, None, limit=10)
-    assert [item.event_id for item in replayed] == [event.event_id]
 
 
 @pytest.mark.parametrize(

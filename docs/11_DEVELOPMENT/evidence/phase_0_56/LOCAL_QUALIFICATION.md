@@ -1130,7 +1130,7 @@ case references, provider tuple and open reason. These limitations keep the
   also passed after recording the 92-operation contract. Ruff, format and
   Pyright checks passed for the completed change.
 
-## AC056-040 package compatibility qualification (2026-10-01)
+## Earlier AC056-040 package compatibility qualification (superseded; 2026-10-01)
 
 - `uv build --all-packages --wheel --out-dir /tmp/etlantic-ac056-040-wheels
   --clear` built all 25 workspace distributions. `WHEEL_MANIFEST.json` records
@@ -1203,3 +1203,32 @@ results are listed above. No package tag or publication is
 claimed; the published supported line remains 0.55.x.
 
 - Static and documentation gates: `uv run pyright` — 0 errors; `uv run ruff check .` and `uv run ruff format --check .` passed; `uv run python scripts/check_docs.py` passed; `uv run mkdocs build --strict` built the site successfully; `uv run python scripts/check_release.py` passed all in-repository release checks and reported the expected 24 unpublished candidate distributions missing from PyPI.
+
+## Superseding AC056-040 qualification after the standalone reset (2026-10-06)
+
+This result supersedes the 2026-10-01 package qualification above. The older
+section documented rollback and historical-input support that the current 0.56
+release boundary no longer claims.
+
+- Rebuilt all 25 wheels and 25 source distributions from the reviewed candidate
+  with `uv build --all-packages`; the current wheel SHA-256 values and sizes are
+  in `WHEEL_MANIFEST.json`.
+- Installed all 25 wheels together in a fresh CPython 3.11.15 environment.
+  The qualifier confirmed all package roots and 387 exports resolve from the
+  installed environment and checked the committed wheel manifest, dependency
+  constraints, both OpenAPI snapshots, schema references, and migration head
+  `014_cp1_complete_principal_idempotency_0_56`.
+- The current-schema migration smoke created canonical definition, accepted
+  submission, and event records, then verified their identities on the fresh
+  current head. It makes no claim that old state can be migrated or rolled back
+  into subject-only identity semantics.
+- The isolated wheel test subprocess verified all 25 package import origins
+  before collecting tests, overrode the repository pytest `pythonpath`, and ran
+  with `--import-mode=importlib`. The two suites passed 48 and 88 tests; 6
+  PostgreSQL cases were skipped because no test URL was configured.
+- Source regressions for canonical request fields, legacy flat intent keys,
+  stream-envelope aliases, and unsafe schema rollback passed in the focused
+  source run: 38 passed, 6 PostgreSQL cases skipped.
+- `PACKAGE_COMPATIBILITY_0_56.json` contains the package, OpenAPI, migration,
+  installed-wheel test, and environment results. `RELEASE_INDEX.json` records
+  the current hashes and updates AC056-040/042 to the standalone boundary.
