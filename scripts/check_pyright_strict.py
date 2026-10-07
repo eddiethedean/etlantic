@@ -134,8 +134,11 @@ EXPECTED_DIGESTS = {
     # The 0.56 standalone reset removes request and stream migration readers and
     # updates their canonical decoder regressions. The 10,029 normalized
     # diagnostics are unchanged from main; only source-line fingerprints move.
-    "Darwin": "95e0759dd47a1a304317c75411e23a97aa8c395da4b4da41f23df01724e601f8",
-    "Linux": "95e0759dd47a1a304317c75411e23a97aa8c395da4b4da41f23df01724e601f8",
+    # The release-document inventory guard adds Foundry, DuckDB and LSP to the
+    # checked distribution set and updates the published package count. The
+    # 10,029 normalized diagnostics remain unchanged; only source locations move.
+    "Darwin": "0882ea315e0a0f25d62a02f3f7728e8671076ef0e9dd1feff7968f895fe5d59c",
+    "Linux": "0882ea315e0a0f25d62a02f3f7728e8671076ef0e9dd1feff7968f895fe5d59c",
 }
 
 
