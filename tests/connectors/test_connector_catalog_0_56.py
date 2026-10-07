@@ -197,6 +197,26 @@ def test_connector_catalog_redacts_inherited_sensitivity(
         (
             {
                 "type": "object",
+                "properties": {"region": {"type": "string"}},
+                "additionalProperties": {"type": "string", "writeOnly": True},
+                "default": {
+                    "opaque": "synthetic-private-value",
+                    "region": "us-east-1",
+                },
+            },
+            "default",
+        ),
+        (
+            {
+                "type": "array",
+                "prefixItems": [{"type": "string", "writeOnly": True}],
+                "examples": [["synthetic-private-value"]],
+            },
+            "examples",
+        ),
+        (
+            {
+                "type": "object",
                 "$defs": {"Private": {"type": "string", "writeOnly": True}},
                 "properties": {
                     "opaque": {

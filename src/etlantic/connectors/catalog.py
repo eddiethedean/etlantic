@@ -103,11 +103,13 @@ def _child_schemas(
     for schema in schemas:
         parts, _ = _schema_parts(schema, root)
         for part in parts:
+            matched = False
             properties = part.get("properties")
             if isinstance(properties, Mapping) and isinstance(
                 properties.get(name), Mapping
             ):
                 children.append(cast(Mapping[str, Any], properties[name]))
+                matched = True
             pattern_properties = part.get("patternProperties")
             if isinstance(pattern_properties, Mapping):
                 for pattern, child in pattern_properties.items():
@@ -117,26 +119,35 @@ def _child_schemas(
                         and isinstance(child, Mapping)
                     ):
                         children.append(cast(Mapping[str, Any], child))
+                        matched = True
+            additional = part.get("additionalProperties")
+            if not matched and isinstance(additional, Mapping):
+                children.append(cast(Mapping[str, Any], additional))
     return children
 
 
 def _item_schemas(
-    schemas: list[Mapping[str, Any]], root: Mapping[str, Any]
+    schemas: list[Mapping[str, Any]], root: Mapping[str, Any], index: int
 ) -> list[Mapping[str, Any]]:
     children: list[Mapping[str, Any]] = []
     for schema in schemas:
         parts, _ = _schema_parts(schema, root)
         for part in parts:
+            prefix_items = part.get("prefixItems")
+            if isinstance(prefix_items, list) and index < len(prefix_items):
+                item = prefix_items[index]
+                if isinstance(item, Mapping):
+                    children.append(cast(Mapping[str, Any], item))
+                continue
             items = part.get("items")
             if isinstance(items, Mapping):
                 children.append(cast(Mapping[str, Any], items))
-            elif isinstance(items, list):
-                children.extend(
-                    cast(
-                        list[Mapping[str, Any]],
-                        [item for item in items if isinstance(item, Mapping)],
-                    )
-                )
+            elif (
+                isinstance(items, list)
+                and index < len(items)
+                and isinstance(items[index], Mapping)
+            ):
+                children.append(cast(Mapping[str, Any], items[index]))
     return children
 
 
@@ -171,9 +182,9 @@ def _sanitize_sample(
         if id(value) in seen:
             return None, False
         visited = seen | {id(value)}
-        item_schemas = _item_schemas(schemas, root)
         sample: list[Any] = []
-        for child in value:
+        for index, child in enumerate(value):
+            item_schemas = _item_schemas(schemas, root, index)
             sanitized, safe = _sanitize_sample(child, item_schemas, root, seen=visited)
             if not safe:
                 return None, False
