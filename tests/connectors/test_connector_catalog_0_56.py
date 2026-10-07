@@ -204,6 +204,15 @@ def test_connector_catalog_redacts_inherited_sensitivity(
         ),
         (
             {
+                "type": "array",
+                "items": [{"type": "string"}],
+                "additionalItems": {"type": "string", "writeOnly": True},
+                "default": ["public", "synthetic-private-value"],
+            },
+            "default",
+        ),
+        (
+            {
                 "type": "string",
                 "contentMediaType": "application/json",
                 "contentSchema": {
@@ -223,6 +232,26 @@ def test_connector_catalog_redacts_inherited_sensitivity(
                 "properties": {"region": {"type": "string"}},
                 "additionalProperties": {"type": "string", "writeOnly": True},
                 "default": {
+                    "opaque": "synthetic-private-value",
+                    "region": "us-east-1",
+                },
+            },
+            "default",
+        ),
+        (
+            {
+                "type": "object",
+                "properties": {
+                    "mode": {"type": "string"},
+                    "region": {"type": "string"},
+                },
+                "dependencies": {
+                    "mode": {
+                        "properties": {"opaque": {"type": "string", "writeOnly": True}}
+                    }
+                },
+                "default": {
+                    "mode": "private",
                     "opaque": "synthetic-private-value",
                     "region": "us-east-1",
                 },

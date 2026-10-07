@@ -91,13 +91,14 @@ def _schema_parts(
                     nested, nested_failed = _schema_parts(child, root, seen)
                     parts.extend(nested)
                     failed |= nested_failed
-    dependent_schemas = schema.get("dependentSchemas")
-    if isinstance(dependent_schemas, Mapping):
-        for child in dependent_schemas.values():
-            if isinstance(child, Mapping):
-                nested, nested_failed = _schema_parts(child, root, seen)
-                parts.extend(nested)
-                failed |= nested_failed
+    for keyword in ("dependentSchemas", "dependencies"):
+        dependent_schemas = schema.get(keyword)
+        if isinstance(dependent_schemas, Mapping):
+            for child in dependent_schemas.values():
+                if isinstance(child, Mapping):
+                    nested, nested_failed = _schema_parts(child, root, seen)
+                    parts.extend(nested)
+                    failed |= nested_failed
     return parts, failed
 
 
@@ -170,10 +171,16 @@ def _item_schemas(
             if isinstance(items, Mapping):
                 children.append(cast(Mapping[str, Any], items))
                 matched = True
-            elif isinstance(items, list) and index < len(items):
-                if isinstance(items[index], Mapping):
-                    children.append(cast(Mapping[str, Any], items[index]))
-                matched = True
+            elif isinstance(items, list):
+                if index < len(items):
+                    if isinstance(items[index], Mapping):
+                        children.append(cast(Mapping[str, Any], items[index]))
+                    matched = True
+                else:
+                    additional = part.get("additionalItems")
+                    if isinstance(additional, Mapping):
+                        children.append(cast(Mapping[str, Any], additional))
+                    matched = "additionalItems" in part
             unevaluated = part.get("unevaluatedItems")
             if not matched and isinstance(unevaluated, Mapping):
                 children.append(cast(Mapping[str, Any], unevaluated))
