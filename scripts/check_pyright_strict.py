@@ -141,8 +141,11 @@ EXPECTED_DIGESTS = {
     # removes four stale possibly-unbound diagnostics from the docs checker.
     # The CP-GA compatibility matrix now records the same open 0.56 line floor;
     # its helper edits shift the remaining fingerprint, with 10,025 diagnostics.
-    "Darwin": "60870b0f48689ec51402dfbf040ba793b792079b5f285f2a38ce797875db146f",
-    "Linux": "60870b0f48689ec51402dfbf040ba793b792079b5f285f2a38ce797875db146f",
+    # Issue #273 defers worker execution imports from the FastAPI gateway and
+    # makes migration-head inspection read-only. The reviewed strict inventory
+    # remains at 10,025 diagnostics; source locations moved in touched paths.
+    "Darwin": "7c1bc979f8d997ac95d127f7ef336b897be835050e3fa450a844f1e45c8629e5",
+    "Linux": "7c1bc979f8d997ac95d127f7ef336b897be835050e3fa450a844f1e45c8629e5",
 }
 
 

@@ -1048,6 +1048,20 @@ jobs:
   fastapi:
     name: FastAPI reference adapter
     runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: etlantic
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
     steps:
       - uses: actions/checkout@v7
 
@@ -1067,6 +1081,7 @@ jobs:
       - name: Pytest FastAPI reference suite
         env:
           ETLANTIC_REQUIRE_SQLMODEL: "1"
+          ETLANTIC_SQLMODEL_TEST_URL: "postgresql+psycopg://postgres:postgres@localhost:5432/etlantic"
         run: |
           uv run pytest -q tests/fastapi packages/etlantic-fastapi/tests
 

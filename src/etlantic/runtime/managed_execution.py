@@ -53,7 +53,6 @@ from etlantic.runtime.artifact_coordination import (
 from etlantic.runtime.artifacts import ArtifactStore
 from etlantic.runtime.context import TrustedExecutionScope
 from etlantic.runtime.effect_classification import classify_failed_report_effect
-from etlantic.runtime.execute import run_pipeline
 from etlantic.runtime.faults import active_faults
 from etlantic.runtime.managed_errors import ExecutionRejected, UnknownCommitError
 from etlantic.runtime.request import MaterializationPolicy, RunIntent, RunRequest
@@ -754,6 +753,8 @@ class ManagedExecutionAdapter:
         publication_recovered = False
         try:
             try:
+                from etlantic.runtime.execute import run_pipeline
+
                 execution_profile = self._execution_profile(envelope, plan)
                 report = run_pipeline(
                     plan,
