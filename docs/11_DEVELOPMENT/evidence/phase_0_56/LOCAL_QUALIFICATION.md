@@ -1275,3 +1275,22 @@ Final default regression after these fixes:
 — 3,281 passed, 123 skipped, 731 deselected, 22 warnings in 5m48s; exit code 0.
 The new catalog cases are included; live PostgreSQL cases are qualified by the
 separate source and installed-wheel provider runs above.
+
+## Connector catalog privacy requalification for issue #269 (2026-10-06)
+
+At source commit `7db7329d`, catalog sample sanitization is schema-aware for
+ancestor defaults/examples, object properties, array items, compositions, and
+local JSON Schema references. Unresolved and cyclic references fail closed.
+Dynamic references fail closed; conditional and unevaluated schemas contribute
+sensitivity context. Legacy `dependencies` and tuple `additionalItems` schemas
+are also included. The focused catalog regression suite passed 62 tests; Ruff
+lint, format, and `git diff --check` passed.
+
+All 25 candidate 0.56 wheels were rebuilt. A fresh Python 3.11.15 virtual
+environment installed the rebuilt core wheel, then `python -I` imported the
+installed package with workspace paths disabled and passed the four original
+reproductions plus `additionalProperties`, `prefixItems`, dynamic-reference,
+conditional, unevaluated-property/item, `contains`, malformed-reference, JSON
+`contentSchema`, legacy `dependencies`, and tuple `additionalItems` cases from
+review (15 synthetic cases total). The updated wheel SHA-256 and size are
+recorded in `WHEEL_MANIFEST.json`.
