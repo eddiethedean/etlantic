@@ -1,6 +1,6 @@
 # Prefect Direct Execution
 
-> **Status: ETLantic 0.56.0 Beta release.** This guide runs the shipped Prefect
+> **Status: ETLantic 0.56.1 Beta release.** This guide runs the shipped Prefect
 > scheduler locally through `etlantic-prefect`.
 
 !!! warning "Clone required"

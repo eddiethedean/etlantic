@@ -1185,6 +1185,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
 
       - name: Install uv
         uses: astral-sh/setup-uv@v9.0.0
@@ -1195,10 +1197,13 @@ jobs:
           github-token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Sync lowest direct dependency versions
-        run: uv sync --resolution lowest-direct --upgrade --all-groups --all-extras
+        run: |
+          cp uv.lock "$RUNNER_TEMP/uv.lock"
+          uv sync --resolution lowest-direct --upgrade --all-groups --all-extras
+          cp "$RUNNER_TEMP/uv.lock" uv.lock
 
       - name: Core suite at dependency minimums
-        run: uv run pytest -q -m "not medallantic and not polars and not pandas and not sql and not spark and not real_pyspark and not airflow and not prefect and not keyring and not sqlmodel and not datafusion"
+        run: uv run --no-sync pytest -q -m "not medallantic and not polars and not pandas and not sql and not spark and not real_pyspark and not airflow and not prefect and not keyring and not sqlmodel and not datafusion"
 
       - name: Optional package suites at dependency minimums
-        run: uv run pytest -q -m "not airflow and not real_pyspark" tests/polars_compiler tests/pandas_compiler tests/dataframe tests/portable_conformance tests/datafusion tests/duckdb tests/sql tests/sqlmodel tests/fastapi tests/prefect tests/keyring tests/s3
+        run: uv run --no-sync pytest -q -m "not airflow and not real_pyspark" tests/polars_compiler tests/pandas_compiler tests/dataframe tests/portable_conformance tests/datafusion tests/duckdb tests/sql tests/sqlmodel tests/fastapi tests/prefect tests/keyring tests/s3

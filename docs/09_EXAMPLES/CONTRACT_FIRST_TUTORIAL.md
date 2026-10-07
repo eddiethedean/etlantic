@@ -1,6 +1,6 @@
 # Contract-First Workflow
 
-> **Status: ETLantic 0.56.0 Beta release.** Uses shipped
+> **Status: ETLantic 0.56.1 Beta release.** Uses shipped
 > `write_contracts` / `load_bundle` APIs (no separate companion script).
 
 Generate [ODCS](../03_DATA_CONTRACTS/ODCS.md) /
