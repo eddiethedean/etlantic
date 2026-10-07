@@ -1233,3 +1233,45 @@ release boundary no longer claims.
 - `PACKAGE_COMPATIBILITY_0_56.json` contains the package, OpenAPI, migration,
   installed-wheel test, and environment results. `RELEASE_INDEX.json` records
   the current hashes and updates AC056-040/042 to the standalone boundary.
+
+
+## Final release-review remediation (2026-10-06)
+
+Two findings from the final review of `a829ce2a` were reproduced and fixed:
+
+- PostgreSQL effect reconciliation now tries the same advisory transaction lock
+  held by the writer. A busy effect remains `unknown`; after acquiring the lock,
+  a separate read under `READ COMMITTED` checks the settled ledger state.
+  Live regressions cover active writers that subsequently commit or roll back,
+  and a deferred constraint trigger that blocks PostgreSQL inside `COMMIT`.
+- Connector catalog sensitivity now propagates through nested object properties,
+  composition branches and array items. Twenty public-catalog cases cover
+  `writeOnly`, `x-sensitive`, `sensitive` and credential-named parents while
+  preserving non-sensitive defaults and the provider's original schema.
+
+The initial new regressions failed before the fixes (22 failed). The final
+source provider/privacy suite passed all 63 tests against an isolated local
+PostgreSQL 16.13 cluster. The same tests passed against installed candidate
+wheels with repository source paths disabled: 43 provider/privacy tests, then
+20 managed PostgreSQL/Foundry simulator matrix cases after installing the
+optional Semblance test dependency. No live Foundry account was used.
+
+All 25 wheels and 25 source distributions were rebuilt. The refreshed wheel
+manifest records the changed core and SQL artifacts; the clean-environment
+package qualifier passed all 25 package roots and 387 exports, both OpenAPI
+snapshots, schema references, fresh current migrations, and suites of 54 and
+88 tests with live PostgreSQL migration cases enabled. The independent private
+provider qualification was rerun against the rebuilt core wheel and passed.
+
+The adaptive acceptance campaign regenerated its ten artifacts for the updated
+source and tests. Ruff lint/format, Pyright (zero errors), documentation
+consistency, strict MkDocs and release readiness checks passed. No tag or
+publication is claimed; the fresh-store boundary and candidate maturity remain
+unchanged.
+
+
+Final default regression after these fixes:
+`uv run pytest -q -m "not medallantic and not polars and not pandas and not sql and not spark and not real_pyspark and not airflow and not prefect and not keyring and not sqlmodel and not datafusion"`
+— 3,281 passed, 123 skipped, 731 deselected, 22 warnings in 5m48s; exit code 0.
+The new catalog cases are included; live PostgreSQL cases are qualified by the
+separate source and installed-wheel provider runs above.

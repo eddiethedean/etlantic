@@ -22,6 +22,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- PostgreSQL reconciliation keeps an in-flight effect unknown until its writer
+  releases the transaction lock, then checks a fresh ledger snapshot before
+  confirming commit or rollback.
+- Connector catalogs redact nested defaults and examples throughout sensitive
+  objects, including composed and array schemas.
 - Managed resume and checkpoint-backed repair reports persist their artifact
   workspace identity for listing, download and retention. Cleanup preserves
   files referenced by still-retained reports and denies downloads through

@@ -76,7 +76,9 @@ def _schema_without_sensitive_defaults(value: Any, *, sensitive: bool = False) -
                 property_schemas = cast(Mapping[str, Any], child)
                 properties: dict[str, Any] = {}
                 for name, field_schema in property_schemas.items():
-                    field_is_sensitive = _is_sensitive_option(str(name))
+                    field_is_sensitive = marked_sensitive or _is_sensitive_option(
+                        str(name)
+                    )
                     sanitized = _schema_without_sensitive_defaults(
                         field_schema,
                         sensitive=field_is_sensitive,

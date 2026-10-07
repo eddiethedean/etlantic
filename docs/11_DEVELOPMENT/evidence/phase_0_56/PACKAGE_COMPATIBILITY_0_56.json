@@ -1,13 +1,13 @@
 {
   "built_wheels": {
-    "manifest_sha256": "c83b48ae97bf86d948d99ccf12ece03a081af6ea75ebeb9a747c5183bbd4db65",
+    "manifest_sha256": "703c34c0a0b8ddf4a357e652e617656d2cfde53706574ff79d937b67c06c73c8",
     "package_count": 25,
     "packages": [
       {
         "distribution": "etlantic",
         "filename": "etlantic-0.56.0-py3-none-any.whl",
-        "sha256": "63bdc6196e6a765aca194fdc92d110c40506249503a1938c39873fd73dec2577",
-        "size_bytes": 1186728,
+        "sha256": "b8d1c2e8c193453851d3490c62a005f4c771f4dd77082bc3ea7fdbfcfcb42325",
+        "size_bytes": 1186742,
         "version": "0.56.0"
       },
       {
@@ -160,8 +160,8 @@
       {
         "distribution": "etlantic-sql",
         "filename": "etlantic_sql-0.56.0-py3-none-any.whl",
-        "sha256": "9842a4d293f95c0d603181d2311b7b6dee2349ae1ad0d5d9fa0cd4173e749839",
-        "size_bytes": 85552,
+        "sha256": "d3753769c8ddd7078950bab8406fb1ca21d50fa60782394eeac53d60430135cb",
+        "size_bytes": 85825,
         "version": "0.56.0"
       },
       {
@@ -180,7 +180,7 @@
       }
     ],
     "status": "passed",
-    "wheel_directory": "/private/tmp/etlantic-056-release-review.wfMC9e/dist"
+    "wheel_directory": "/private/tmp/etlantic-final-056-a829ce2/fixed-dist"
   },
   "environment": {
     "implementation": "CPython",
@@ -529,7 +529,7 @@
     "packages": [
       {
         "distribution": "etlantic",
-        "import_origin": "/private/tmp/etlantic-056-release-review.wfMC9e/venv/lib/python3.11/site-packages/etlantic/__init__.py",
+        "import_origin": "/private/tmp/etlantic-final-056-a829ce2/venv/lib/python3.11/site-packages/etlantic/__init__.py",
         "module": "etlantic",
         "public_export_count": 67,
         "public_exports_sha256": "04d0d99d04abe76f7768148bd62abd14d0805f68a08296aa884054db6e8bb307",
@@ -538,7 +538,7 @@
       },
       {
         "distribution": "etlantic-airflow",
-        "import_origin": "/private/tmp/etlantic-056-release-review.wfMC9e/venv/lib/python3.11/site-packages/etlantic_airflow/__init__.py",
+        "import_origin": "/private/tmp/etlantic-final-056-a829ce2/venv/lib/python3.11/site-packages/etlantic_airflow/__init__.py",
         "module": "etlantic_airflow",
         "public_export_count": 5,
         "public_exports_sha256": "322b47029ca2359cf5fe9221a967466f661048bc4442873d496b93778b03d148",
@@ -547,7 +547,7 @@
       },
       {
         "distribution": "etlantic-datafusion",
-        "import_origin": "/private/tmp/etlantic-056-release-review.wfMC9e/venv/lib/python3.11/site-packages/etlantic_datafusion/__init__.py",
+        "import_origin": "/private/tmp/etlantic-final-056-a829ce2/venv/lib/python3.11/site-packages/etlantic_datafusion/__init__.py",
         "module": "etlantic_datafusion",
         "public_export_count": 4,
         "public_exports_sha256": "c4450ffb1a1c6dbde4a168606c096ee2f003cb07dc7384293fec81e8eeb6cf1f",
@@ -556,7 +556,7 @@
       },
       {
         "distribution": "etlantic-duckdb",
-        "import_origin": "/private/tmp/etlantic-056-release-review.wfMC9e/venv/lib/python3.11/site-packages/etlantic_duckdb/__init__.py",
+        "import_origin": "/private/tmp/etlantic-final-056-a829ce2/venv/lib/python3.11/site-packages/etlantic_duckdb/__init__.py",
         "module": "etlantic_duckdb",
         "public_export_count": 6,
         "public_exports_sha256": "7fc384b1e5cfb8315de9eee88d14cdd09e69204b589ac07a3afac9c8e0641ae4",
@@ -565,7 +565,7 @@
       },
       {
         "distribution": "etlantic-fastapi",
-        "import_origin": "/private/tmp/etlantic-056-release-review.wfMC9e/venv/lib/python3.11/site-packages/etlantic_fastapi/__init__.py",
+        "import_origin": "/private/tmp/etlantic-final-056-a829ce2/venv/lib/python3.11/site-packages/etlantic_fastapi/__init__.py",
         "module": "etlantic_fastapi",
         "public_export_count": 35,
         "public_exports_sha256": "3fd371ae098043236fae6d51b976cc44b5d476240b7a8690909b7ee907ec4d0f",
@@ -574,7 +574,7 @@
       },
       {
         "distribution": "etlantic-foundry",
-        "import_origin": "/private/tmp/etlantic-056-release-review.wfMC9e/venv/lib/python3.11/site-packages/etlantic_foundry/__init__.py",
+        "import_origin": "/private/tmp/etlantic-final-056-a829ce2/venv/lib/python3.11/site-packages/etlantic_foundry/__init__.py",
         "module": "etlantic_foundry",
         "public_export_count": 8,
         "public_exports_sha256": "8e76d69c3788d28e5d9db044e29ad0b1c418871719341618046789cfffe43da8",
@@ -583,7 +583,7 @@
       },
       {
         "distribution": "etlantic-iceberg",
-        "import_origin": "/private/tmp/etlantic-056-release-review.wfMC9e/venv/lib/python3.11/site-packages/etlantic_iceberg/__init__.py",
+        "import_origin": "/private/tmp/etlantic-final-056-a829ce2/venv/lib/python3.11/site-packages/etlantic_iceberg/__init__.py",
         "module": "etlantic_iceberg",
         "public_export_count": 9,
         "public_exports_sha256": "4a142a1a80dcb8849bee306fe24ad65890427bd470116dbcb887e517b6dc63c0",
@@ -592,7 +592,7 @@
       },
       {
         "distribution": "etlantic-k8s",
-        "import_origin": "/private/tmp/etlantic-056-release-review.wfMC9e/venv/lib/python3.11/site-packages/etlantic_k8s/__init__.py",
+        "import_origin": "/private/tmp/etlantic-final-056-a829ce2/venv/lib/python3.11/site-packages/etlantic_k8s/__init__.py",
         "module": "etlantic_k8s",
         "public_export_count": 4,
         "public_exports_sha256": "4f98c0f0f091f9a4547aed5f4debd289af40e07b7bdca24287185822d17f96ae",
@@ -601,7 +601,7 @@
       },
       {
         "distribution": "etlantic-kafka",
-        "import_origin": "/private/tmp/etlantic-056-release-review.wfMC9e/venv/lib/python3.11/site-packages/etlantic_kafka/__init__.py",
+        "import_origin": "/private/tmp/etlantic-final-056-a829ce2/venv/lib/python3.11/site-packages/etlantic_kafka/__init__.py",
         "module": "etlantic_kafka",
         "public_export_count": 7,
         "public_exports_sha256": "0d6fb2111963042aa0c613a17f1be8bc3ee89d57c6b8aa76f293396e69acf040",
@@ -610,7 +610,7 @@
       },
       {
         "distribution": "etlantic-keyring",
-        "import_origin": "/private/tmp/etlantic-056-release-review.wfMC9e/venv/lib/python3.11/site-packages/etlantic_keyring/__init__.py",
+        "import_origin": "/private/tmp/etlantic-final-056-a829ce2/venv/lib/python3.11/site-packages/etlantic_keyring/__init__.py",
         "module": "etlantic_keyring",
         "public_export_count": 3,
         "public_exports_sha256": "e1c5fdb22dfc3ece637c16e02f9a057ab634c17c0e6d71cfa364622b4bb2af8c",
@@ -619,7 +619,7 @@
       },
       {
         "distribution": "etlantic-lsp",
-        "import_origin": "/private/tmp/etlantic-056-release-review.wfMC9e/venv/lib/python3.11/site-packages/etlantic_lsp/__init__.py",
+        "import_origin": "/private/tmp/etlantic-final-056-a829ce2/venv/lib/python3.11/site-packages/etlantic_lsp/__init__.py",
         "module": "etlantic_lsp",
         "public_export_count": 2,
         "public_exports_sha256": "bae8e11136bd64c18992e35a82ec82758a8fca5b40f236bddd2734dc105e3ea0",
@@ -628,7 +628,7 @@
       },
       {
         "distribution": "etlantic-mcp",
-        "import_origin": "/private/tmp/etlantic-056-release-review.wfMC9e/venv/lib/python3.11/site-packages/etlantic_mcp/__init__.py",
+        "import_origin": "/private/tmp/etlantic-final-056-a829ce2/venv/lib/python3.11/site-packages/etlantic_mcp/__init__.py",
         "module": "etlantic_mcp",
         "public_export_count": 4,
         "public_exports_sha256": "10ba1a8e8a784c51b0e26c21872041faf78625ed5831f0f9f155181a559a2c1c",
@@ -637,7 +637,7 @@
       },
       {
         "distribution": "etlantic-openlineage",
-        "import_origin": "/private/tmp/etlantic-056-release-review.wfMC9e/venv/lib/python3.11/site-packages/etlantic_openlineage/__init__.py",
+        "import_origin": "/private/tmp/etlantic-final-056-a829ce2/venv/lib/python3.11/site-packages/etlantic_openlineage/__init__.py",
         "module": "etlantic_openlineage",
         "public_export_count": 5,
         "public_exports_sha256": "5883fac4b383c1f4c843d0135d70573c48797d90029eabbd105903d1639477de",
@@ -646,7 +646,7 @@
       },
       {
         "distribution": "etlantic-pandas",
-        "import_origin": "/private/tmp/etlantic-056-release-review.wfMC9e/venv/lib/python3.11/site-packages/etlantic_pandas/__init__.py",
+        "import_origin": "/private/tmp/etlantic-final-056-a829ce2/venv/lib/python3.11/site-packages/etlantic_pandas/__init__.py",
         "module": "etlantic_pandas",
         "public_export_count": 5,
         "public_exports_sha256": "0a115c7705c61f3506357e07327613101a1ae6f931ba5d1844521b3e8262d171",
@@ -655,7 +655,7 @@
       },
       {
         "distribution": "etlantic-polars",
-        "import_origin": "/private/tmp/etlantic-056-release-review.wfMC9e/venv/lib/python3.11/site-packages/etlantic_polars/__init__.py",
+        "import_origin": "/private/tmp/etlantic-final-056-a829ce2/venv/lib/python3.11/site-packages/etlantic_polars/__init__.py",
         "module": "etlantic_polars",
         "public_export_count": 7,
         "public_exports_sha256": "7e4804854199291f74fcc2aef4641a063c41c129c048d6fdf83aae58d874b600",
@@ -664,7 +664,7 @@
       },
       {
         "distribution": "etlantic-prefect",
-        "import_origin": "/private/tmp/etlantic-056-release-review.wfMC9e/venv/lib/python3.11/site-packages/etlantic_prefect/__init__.py",
+        "import_origin": "/private/tmp/etlantic-final-056-a829ce2/venv/lib/python3.11/site-packages/etlantic_prefect/__init__.py",
         "module": "etlantic_prefect",
         "public_export_count": 3,
         "public_exports_sha256": "7784aa2c47b5b68e89a5abb17d1de38e12db12d5a72ef2692c585162be8faf6c",
@@ -673,7 +673,7 @@
       },
       {
         "distribution": "etlantic-pyspark",
-        "import_origin": "/private/tmp/etlantic-056-release-review.wfMC9e/venv/lib/python3.11/site-packages/etlantic_pyspark/__init__.py",
+        "import_origin": "/private/tmp/etlantic-final-056-a829ce2/venv/lib/python3.11/site-packages/etlantic_pyspark/__init__.py",
         "module": "etlantic_pyspark",
         "public_export_count": 7,
         "public_exports_sha256": "3880edcd8c7afc84d0109a3f6441c49331490552413c22f67ec97d3c71ffb694",
@@ -682,7 +682,7 @@
       },
       {
         "distribution": "etlantic-s3",
-        "import_origin": "/private/tmp/etlantic-056-release-review.wfMC9e/venv/lib/python3.11/site-packages/etlantic_s3/__init__.py",
+        "import_origin": "/private/tmp/etlantic-final-056-a829ce2/venv/lib/python3.11/site-packages/etlantic_s3/__init__.py",
         "module": "etlantic_s3",
         "public_export_count": 9,
         "public_exports_sha256": "dcb6d21f2156a5ccb1cab63ffb712e5b4f96de599a91458b0cb67346193dde32",
@@ -691,7 +691,7 @@
       },
       {
         "distribution": "etlantic-schemaregistry",
-        "import_origin": "/private/tmp/etlantic-056-release-review.wfMC9e/venv/lib/python3.11/site-packages/etlantic_schemaregistry/__init__.py",
+        "import_origin": "/private/tmp/etlantic-final-056-a829ce2/venv/lib/python3.11/site-packages/etlantic_schemaregistry/__init__.py",
         "module": "etlantic_schemaregistry",
         "public_export_count": 5,
         "public_exports_sha256": "d818e46cefa257a862dace98443ac857c6fa2549fcd4ccdb52358fb131cc15db",
@@ -700,7 +700,7 @@
       },
       {
         "distribution": "etlantic-snowflake",
-        "import_origin": "/private/tmp/etlantic-056-release-review.wfMC9e/venv/lib/python3.11/site-packages/etlantic_snowflake/__init__.py",
+        "import_origin": "/private/tmp/etlantic-final-056-a829ce2/venv/lib/python3.11/site-packages/etlantic_snowflake/__init__.py",
         "module": "etlantic_snowflake",
         "public_export_count": 9,
         "public_exports_sha256": "1375eafb48e80a59f5242187fb4794aea58e4aef72a28fa10f3dc3b23d70c174",
@@ -709,7 +709,7 @@
       },
       {
         "distribution": "etlantic-spark-connect",
-        "import_origin": "/private/tmp/etlantic-056-release-review.wfMC9e/venv/lib/python3.11/site-packages/etlantic_spark_connect/__init__.py",
+        "import_origin": "/private/tmp/etlantic-final-056-a829ce2/venv/lib/python3.11/site-packages/etlantic_spark_connect/__init__.py",
         "module": "etlantic_spark_connect",
         "public_export_count": 4,
         "public_exports_sha256": "7217c6d908f9a20a22850260eabd65ab02e1849d412230a0807b121338052ede",
@@ -718,7 +718,7 @@
       },
       {
         "distribution": "etlantic-sparkforge",
-        "import_origin": "/private/tmp/etlantic-056-release-review.wfMC9e/venv/lib/python3.11/site-packages/etlantic_sparkforge/__init__.py",
+        "import_origin": "/private/tmp/etlantic-final-056-a829ce2/venv/lib/python3.11/site-packages/etlantic_sparkforge/__init__.py",
         "module": "etlantic_sparkforge",
         "public_export_count": 62,
         "public_exports_sha256": "282a8e7d685c16cd66cc9e1ac8c89a27e8be8508206270d32c38ccbf0028672a",
@@ -727,7 +727,7 @@
       },
       {
         "distribution": "etlantic-sql",
-        "import_origin": "/private/tmp/etlantic-056-release-review.wfMC9e/venv/lib/python3.11/site-packages/etlantic_sql/__init__.py",
+        "import_origin": "/private/tmp/etlantic-final-056-a829ce2/venv/lib/python3.11/site-packages/etlantic_sql/__init__.py",
         "module": "etlantic_sql",
         "public_export_count": 17,
         "public_exports_sha256": "75e7fb7395f5b02bf35a5638f7330e8daae6ee2577b308bd0aa05280735c793c",
@@ -736,7 +736,7 @@
       },
       {
         "distribution": "etlantic-sqlmodel",
-        "import_origin": "/private/tmp/etlantic-056-release-review.wfMC9e/venv/lib/python3.11/site-packages/etlantic_sqlmodel/__init__.py",
+        "import_origin": "/private/tmp/etlantic-final-056-a829ce2/venv/lib/python3.11/site-packages/etlantic_sqlmodel/__init__.py",
         "module": "etlantic_sqlmodel",
         "public_export_count": 38,
         "public_exports_sha256": "bd798813baf79d31e09ad9e8d574fd94a41af857952a80d555f4f9d6300cb6fe",
@@ -745,7 +745,7 @@
       },
       {
         "distribution": "medallantic",
-        "import_origin": "/private/tmp/etlantic-056-release-review.wfMC9e/venv/lib/python3.11/site-packages/medallantic/__init__.py",
+        "import_origin": "/private/tmp/etlantic-final-056-a829ce2/venv/lib/python3.11/site-packages/medallantic/__init__.py",
         "module": "medallantic",
         "public_export_count": 62,
         "public_exports_sha256": "282a8e7d685c16cd66cc9e1ac8c89a27e8be8508206270d32c38ccbf0028672a",
@@ -990,10 +990,10 @@
         "etlantic_sqlmodel",
         "medallantic"
       ],
-      "passed": 48,
-      "skipped": 6,
+      "passed": 54,
+      "skipped": 0,
       "status": "passed",
-      "summary": "48 passed, 6 skipped",
+      "summary": "54 passed",
       "test_paths": [
         "tests/sqlmodel/test_cp1_migrations_0_51.py",
         "tests/fastapi/test_cp1_openapi.py",

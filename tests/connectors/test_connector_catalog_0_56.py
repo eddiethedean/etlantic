@@ -3,8 +3,11 @@
 from __future__ import annotations
 
 import json
+from dataclasses import replace
 from importlib.metadata import EntryPoint
 from typing import Any
+
+import pytest
 
 from etlantic.connectors import catalog as connector_catalog
 from etlantic.connectors.discovery import SOURCE_CONNECTORS_GROUP
@@ -56,9 +59,7 @@ class _SchemaProvider:
         )
 
 
-def test_connector_catalog_publishes_typed_schema_without_secret_defaults(
-    monkeypatch: Any,
-) -> None:
+def _catalog_document(monkeypatch: Any, provider: _SchemaProvider) -> dict[str, Any]:
     plugin = DiscoveredPlugin(
         group=SOURCE_CONNECTORS_GROUP,
         name="test-secret-source",
@@ -77,15 +78,19 @@ def test_connector_catalog_publishes_typed_schema_without_secret_defaults(
         return {
             SOURCE_CONNECTORS_GROUP: PluginLifecycleResult(
                 authorized=[plugin],
-                loaded={"test-secret-source": _SchemaProvider()},
+                loaded={"test-secret-source": provider},
             )
         }
 
     monkeypatch.setattr(connector_catalog, "discover_connectors_for_profile", discover)
 
-    document = connector_catalog.connector_catalog_for_profile(
-        Profile(name="development")
-    )
+    return connector_catalog.connector_catalog_for_profile(Profile(name="development"))
+
+
+def test_connector_catalog_publishes_typed_schema_without_secret_defaults(
+    monkeypatch: Any,
+) -> None:
+    document = _catalog_document(monkeypatch, _SchemaProvider())
     provider = next(
         item for item in document["connectors"] if item["name"] == "test-secret-source"
     )
@@ -112,3 +117,51 @@ def test_connector_catalog_publishes_typed_schema_without_secret_defaults(
     assert "private-key-enum" not in json.dumps(document, sort_keys=True)
     assert "nested-secret-value" not in json.dumps(document, sort_keys=True)
     assert "write-only-default" not in json.dumps(document, sort_keys=True)
+
+
+@pytest.mark.parametrize("marker", ["writeOnly", "x-sensitive", "sensitive", "name"])
+@pytest.mark.parametrize("wrapper", ["properties", "allOf", "anyOf", "oneOf", "items"])
+def test_connector_catalog_redacts_inherited_sensitivity(
+    monkeypatch: Any, marker: str, wrapper: str
+) -> None:
+    child = {
+        "type": "object",
+        "properties": {
+            "value": {
+                "type": "string",
+                "default": "synthetic-private-default",
+                "examples": ["synthetic-private-example"],
+                "enum": ["synthetic-private-enum"],
+                "const": "synthetic-private-const",
+            }
+        },
+    }
+    sensitive_object: dict[str, Any] = (
+        child
+        if wrapper == "properties"
+        else {wrapper: child if wrapper == "items" else [child]}
+    )
+    if marker != "name":
+        sensitive_object[marker] = True
+    field_name = "credentials" if marker == "name" else "opaque"
+    schema = {
+        "type": "object",
+        "properties": {
+            field_name: sensitive_object,
+            "region": {"type": "string", "default": "us-east-1"},
+        },
+    }
+
+    class NestedSchemaProvider(_SchemaProvider):
+        def info(self) -> ConnectorInfo:
+            return replace(super().info(), configuration_schema=schema)
+
+    document = _catalog_document(monkeypatch, NestedSchemaProvider())
+    provider = next(
+        item for item in document["connectors"] if item["name"] == "test-secret-source"
+    )
+    public_schema = provider["configuration_schema"]
+    assert public_schema["properties"]["region"]["default"] == "us-east-1"
+    assert "synthetic-private" not in json.dumps(document)
+    # Sanitizing a catalog must not mutate the provider's schema.
+    assert "synthetic-private-default" in json.dumps(schema)
