@@ -40,37 +40,174 @@ def _is_sensitive_option(name: str) -> bool:
     )
 
 
-def _redact_sensitive_sample(value: Any) -> Any:
-    """Remove credential-named members from nested provider sample values."""
+def _local_schema(root: Mapping[str, Any], reference: str) -> Mapping[str, Any] | None:
+    """Resolve a local JSON Schema pointer, failing closed for other references."""
+    if not reference.startswith("#/"):
+        return None
+    current: Any = root
+    try:
+        for part in reference[2:].split("/"):
+            part = part.replace("~1", "/").replace("~0", "~")
+            current = current[part]
+    except (KeyError, TypeError):
+        return None
+    return cast(Mapping[str, Any], current) if isinstance(current, Mapping) else None
+
+
+def _schema_parts(
+    schema: Mapping[str, Any],
+    root: Mapping[str, Any],
+    seen: frozenset[str] = frozenset(),
+) -> tuple[list[Mapping[str, Any]], bool]:
+    """Return a schema and its local ref/composition targets; flag unresolved refs."""
+    parts = [schema]
+    failed = False
+    reference = schema.get("$ref")
+    if isinstance(reference, str):
+        if reference in seen:
+            failed = True
+        else:
+            target = _local_schema(root, reference)
+            if target is None:
+                failed = True
+            else:
+                nested, nested_failed = _schema_parts(target, root, seen | {reference})
+                parts.extend(nested)
+                failed |= nested_failed
+    for keyword in ("allOf", "anyOf", "oneOf"):
+        children = schema.get(keyword)
+        if isinstance(children, list):
+            for child in children:
+                if isinstance(child, Mapping):
+                    nested, nested_failed = _schema_parts(child, root, seen)
+                    parts.extend(nested)
+                    failed |= nested_failed
+    return parts, failed
+
+
+def _is_schema_sensitive(schema: Mapping[str, Any], root: Mapping[str, Any]) -> bool:
+    parts, failed = _schema_parts(schema, root)
+    return failed or any(
+        any(
+            part.get(marker) is True
+            for marker in ("writeOnly", "x-sensitive", "sensitive")
+        )
+        for part in parts
+    )
+
+
+def _child_schemas(
+    schemas: list[Mapping[str, Any]], root: Mapping[str, Any], name: str
+) -> list[Mapping[str, Any]]:
+    children: list[Mapping[str, Any]] = []
+    for schema in schemas:
+        parts, _ = _schema_parts(schema, root)
+        for part in parts:
+            properties = part.get("properties")
+            if isinstance(properties, Mapping) and isinstance(
+                properties.get(name), Mapping
+            ):
+                children.append(cast(Mapping[str, Any], properties[name]))
+            pattern_properties = part.get("patternProperties")
+            if isinstance(pattern_properties, Mapping):
+                for pattern, child in pattern_properties.items():
+                    if (
+                        isinstance(pattern, str)
+                        and re.search(pattern, name)
+                        and isinstance(child, Mapping)
+                    ):
+                        children.append(cast(Mapping[str, Any], child))
+    return children
+
+
+def _item_schemas(
+    schemas: list[Mapping[str, Any]], root: Mapping[str, Any]
+) -> list[Mapping[str, Any]]:
+    children: list[Mapping[str, Any]] = []
+    for schema in schemas:
+        parts, _ = _schema_parts(schema, root)
+        for part in parts:
+            items = part.get("items")
+            if isinstance(items, Mapping):
+                children.append(cast(Mapping[str, Any], items))
+            elif isinstance(items, list):
+                children.extend(
+                    cast(
+                        list[Mapping[str, Any]],
+                        [item for item in items if isinstance(item, Mapping)],
+                    )
+                )
+    return children
+
+
+def _sanitize_sample(
+    value: Any,
+    schemas: list[Mapping[str, Any]],
+    root: Mapping[str, Any],
+    *,
+    seen: frozenset[int] = frozenset(),
+) -> tuple[Any, bool]:
+    """Sanitize one sample using its schema context; bool is false if unsafe."""
+    if any(_is_schema_sensitive(schema, root) for schema in schemas):
+        return None, False
     if isinstance(value, Mapping):
-        sample = cast(Mapping[str, Any], value)
-        return {
-            str(key): _redact_sensitive_sample(child)
-            for key, child in sample.items()
-            if not _is_sensitive_option(str(key))
-        }
-    if isinstance(value, list):
-        return [_redact_sensitive_sample(child) for child in cast(list[Any], value)]
-    if isinstance(value, tuple):
-        return [
-            _redact_sensitive_sample(child) for child in cast(tuple[Any, ...], value)
-        ]
-    return value
+        if id(value) in seen:
+            return None, False
+        visited = seen | {id(value)}
+        sample: dict[str, Any] = {}
+        for raw_name, child in value.items():
+            name = str(raw_name)
+            child_schemas = _child_schemas(schemas, root, name)
+            if _is_sensitive_option(name) or any(
+                _is_schema_sensitive(child_schema, root)
+                for child_schema in child_schemas
+            ):
+                continue
+            sanitized, safe = _sanitize_sample(child, child_schemas, root, seen=visited)
+            if safe:
+                sample[name] = sanitized
+        return sample, True
+    if isinstance(value, (list, tuple)):
+        if id(value) in seen:
+            return None, False
+        visited = seen | {id(value)}
+        item_schemas = _item_schemas(schemas, root)
+        sample: list[Any] = []
+        for child in value:
+            sanitized, safe = _sanitize_sample(child, item_schemas, root, seen=visited)
+            if not safe:
+                return None, False
+            sample.append(sanitized)
+        return sample, True
+    return value, True
 
 
-def _schema_without_sensitive_defaults(value: Any, *, sensitive: bool = False) -> Any:
-    """Copy a provider schema while removing defaults for secret-like fields."""
+def _schema_without_sensitive_defaults(
+    value: Any, *, sensitive: bool = False, root: Mapping[str, Any] | None = None
+) -> Any:
+    """Copy a provider schema while removing schema-sensitive sample values."""
+    if root is None and isinstance(value, Mapping):
+        root = cast(Mapping[str, Any], value)
+    root = root or {}
     if isinstance(value, Mapping):
         raw = dict(cast(Mapping[str, Any], value))
-        marked_sensitive = sensitive or any(
-            raw.get(key) is True for key in ("writeOnly", "x-sensitive", "sensitive")
-        )
+        marked_sensitive = sensitive or _is_schema_sensitive(raw, root)
         result: dict[str, Any] = {}
         for key, child in raw.items():
             if key in _SENSITIVE_SAMPLE_FIELDS:
                 if marked_sensitive:
                     continue
-                result[key] = _redact_sensitive_sample(child)
+                if key in {"examples", "enum"} and isinstance(child, (list, tuple)):
+                    sanitized_values = []
+                    for sample in child:
+                        sanitized, safe = _sanitize_sample(sample, [raw], root)
+                        if safe:
+                            sanitized_values.append(sanitized)
+                    result[key] = sanitized_values
+                else:
+                    sanitized, safe = _sanitize_sample(child, [raw], root)
+                    if safe:
+                        result[key] = sanitized
                 continue
             if key == "properties" and isinstance(child, Mapping):
                 property_schemas = cast(Mapping[str, Any], child)
@@ -82,6 +219,7 @@ def _schema_without_sensitive_defaults(value: Any, *, sensitive: bool = False) -
                     sanitized = _schema_without_sensitive_defaults(
                         field_schema,
                         sensitive=field_is_sensitive,
+                        root=root,
                     )
                     if (
                         field_is_sensitive
@@ -93,17 +231,17 @@ def _schema_without_sensitive_defaults(value: Any, *, sensitive: bool = False) -
                 result[str(key)] = properties
             else:
                 result[str(key)] = _schema_without_sensitive_defaults(
-                    child, sensitive=marked_sensitive
+                    child, sensitive=marked_sensitive, root=root
                 )
         return result
     if isinstance(value, list):
         return [
-            _schema_without_sensitive_defaults(child, sensitive=sensitive)
+            _schema_without_sensitive_defaults(child, sensitive=sensitive, root=root)
             for child in cast(list[Any], value)
         ]
     if isinstance(value, tuple):
         return [
-            _schema_without_sensitive_defaults(child, sensitive=sensitive)
+            _schema_without_sensitive_defaults(child, sensitive=sensitive, root=root)
             for child in cast(tuple[Any, ...], value)
         ]
     return value
