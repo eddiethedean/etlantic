@@ -295,7 +295,7 @@ def _validate_definition_references(
         if node.binding and getattr(policy, "require_bindings", False):
             resolved = (
                 node.binding in context.registry.bindings
-                or node.binding in context.profile.bindings
+                or node.binding in context.profile.assets
             )
             if not resolved:
                 diagnostics.append(

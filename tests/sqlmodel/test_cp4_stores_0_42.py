@@ -3,15 +3,21 @@
 
 from __future__ import annotations
 
+from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
+from threading import Barrier, Event, local
+from typing import Any
 
 import pytest
 
 pytest.importorskip("sqlmodel")
 pytest.importorskip("etlantic_sqlmodel")
 
+from sqlalchemy import event
+
 from etlantic.control_plane import (
     ControlPlaneContext,
+    ControlPlaneError,
     EnvironmentRef,
     Principal,
     SecurityDomain,
@@ -21,6 +27,7 @@ from etlantic.control_plane import (
 from etlantic_sqlmodel.control_plane.cp4_stores import (
     SQLModelAuditEvidenceStore,
     SQLModelPolicyProvider,
+    SQLModelQuotaProvider,
     create_cp4_tables,
 )
 from etlantic_sqlmodel.control_plane.durable_stores import SQLModelDurableWorkStore
@@ -85,6 +92,118 @@ def test_policy_sql_round_trip(tmp_path: Path) -> None:
     assert decision.effect == "deny"
     again = SQLModelPolicyProvider(engine)
     assert again.decide(c, hook="pre_submit", plan_fingerprint="p1").effect == "deny"
+
+
+def test_quota_idempotency_survives_store_reopen(tmp_path: Path) -> None:
+    engine = create_sqlite_engine(f"sqlite:///{tmp_path / 'quota-idempotency.db'}")
+    apply_migrations(engine)
+    create_cp4_tables(engine)
+    ctx = _ctx()
+    first = SQLModelQuotaProvider(engine).admit(
+        ctx,
+        resource="concurrency",
+        idempotency_key="scoped-submission-digest",
+    )
+    repeated = SQLModelQuotaProvider(engine).admit(
+        ctx,
+        resource="concurrency",
+        idempotency_key="scoped-submission-digest",
+    )
+
+    assert first == repeated
+    assert repeated.used == 1
+    assert SQLModelQuotaProvider(engine).get_state(ctx).usage["concurrency"] == 1
+
+
+def test_quota_snapshot_rejects_stale_compensation_after_new_claim(
+    tmp_path: Path,
+) -> None:
+    engine = create_sqlite_engine(f"sqlite:///{tmp_path / 'quota-claims-race.db'}")
+    apply_migrations(engine)
+    create_cp4_tables(engine)
+    ctx = _ctx()
+    first = SQLModelQuotaProvider(engine).admit(
+        ctx, resource="concurrency", idempotency_key="shared", claim_id="rejecting"
+    )
+    release_key = f"{first.metadata['reservation_key']}:release"
+    both_read = Barrier(2)
+    compensator_ready = Event()
+    claimant_committed = Event()
+    thread_state = local()
+
+    class CoordinatedQuota(SQLModelQuotaProvider):
+        def _read(self, session: Any, *, for_update: bool) -> tuple[Any, int]:
+            snapshot = super()._read(session, for_update=for_update)
+            if for_update:
+                both_read.wait(timeout=10)
+            return snapshot
+
+    def order_updates(
+        _connection: Any,
+        _cursor: Any,
+        statement: str,
+        _parameters: Any,
+        _context: Any,
+        _many: bool,
+    ) -> None:
+        if (
+            not statement.lstrip()
+            .upper()
+            .startswith("UPDATE CP_CP4_GOVERNANCE_SNAPSHOT")
+        ):
+            return
+        role = getattr(thread_state, "role", None)
+        if role == "rejecting":
+            compensator_ready.set()
+            assert claimant_committed.wait(timeout=10)
+        elif role == "accepting":
+            assert compensator_ready.wait(timeout=10)
+
+    event.listen(engine, "before_cursor_execute", order_updates)
+    try:
+
+        def register():
+            thread_state.role = "accepting"
+            decision = CoordinatedQuota(engine).admit(
+                ctx,
+                resource="concurrency",
+                idempotency_key="shared",
+                claim_id="accepting",
+            )
+            claimant_committed.set()
+            return decision
+
+        def compensate():
+            thread_state.role = "rejecting"
+            try:
+                return CoordinatedQuota(engine).release(
+                    ctx,
+                    resource="concurrency",
+                    idempotency_key=release_key,
+                    claim_id="rejecting",
+                )
+            except ControlPlaneError as exc:
+                return exc
+
+        with ThreadPoolExecutor(max_workers=2) as pool:
+            claimant = pool.submit(register)
+            rejected = pool.submit(compensate)
+            assert claimant.result(timeout=20).effect == "allow"
+            assert isinstance(rejected.result(timeout=20), ControlPlaneError)
+    finally:
+        event.remove(engine, "before_cursor_execute", order_updates)
+
+    reopened = SQLModelQuotaProvider(engine)
+    assert reopened.get_state(ctx).usage["concurrency"] == 1
+    # The rejected transaction did not commit its abandonment. A retry now
+    # removes only its own claim and leaves the accepted claimant charged.
+    reopened.release(
+        ctx,
+        resource="concurrency",
+        idempotency_key=release_key,
+        claim_id="rejecting",
+    )
+    assert reopened.get_state(ctx).usage["concurrency"] == 1
 
 
 def test_durable_accept_dual_writes_entity_rows(tmp_path: Path) -> None:

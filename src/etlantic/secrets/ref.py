@@ -16,6 +16,16 @@ class SecretRef:
     version: str = "current"
     purpose: str | None = None
 
+    def __post_init__(self) -> None:
+        if not self.provider.strip():
+            raise ValueError("SecretRef.provider must be a non-empty string")
+        if not self.name.strip():
+            raise ValueError("SecretRef.name must be a non-empty string")
+        if not self.version.strip():
+            raise ValueError("SecretRef.version must be a non-empty string")
+        if self.purpose is not None and not self.purpose.strip():
+            raise ValueError("SecretRef.purpose must be non-empty when provided")
+
     def identity(self) -> str:
         """Deterministic identity for this reference."""
         base = f"secret:{self.provider}/{self.name}#{self.key}@{self.version}"
@@ -31,10 +41,16 @@ class SecretRef:
     @classmethod
     def from_dict(cls, data: dict[str, Any]) -> SecretRef:
         """Deserialize a SecretRef from a mapping."""
+        version_raw = data.get("version")
+        purpose_raw = data.get("purpose")
+        if version_raw is not None and not isinstance(version_raw, str):
+            raise ValueError("SecretRef.version must be a string")
+        if purpose_raw is not None and not isinstance(purpose_raw, str):
+            raise ValueError("SecretRef.purpose must be a string or null")
         return cls(
             provider=str(data["provider"]),
             name=str(data["name"]),
             key=str(data["key"]),
-            version=str(data.get("version") or "current"),
-            purpose=data.get("purpose"),
+            version="current" if version_raw is None else str(version_raw),
+            purpose=purpose_raw,
         )

@@ -13,7 +13,7 @@ from etlantic.secrets.value import SecretValue
 
 _SECRET_KEY_RE = re.compile(
     r"(password|passwd|pwd|secret|token|api[_-]?key|credential|authorization|"
-    r"auth|jwt|bearer|"
+    r"(?<![A-Za-z0-9])auth(?![A-Za-z0-9])|jwt|bearer|"
     r"aws[_-]?secret[_-]?access[_-]?key|aws[_-]?access[_-]?key([_-]?id)?|"
     r"access[_-]?key|private[_-]?key|dsn|connection[_-]?string|jdbc[_-]?url|"
     r"database[_-]?url|db[_-]?url)",
@@ -45,7 +45,10 @@ class LogRecord:
     def to_dict(self) -> dict[str, Any]:
         data = asdict(self)
         data["at"] = self.at.isoformat()
-        return data
+        # Reapply redaction at the serialization boundary: extras is mutable
+        # even though the record dataclass is frozen, and records may be
+        # constructed without going through RunLogger.log.
+        return redact_value(data)
 
 
 _SECRET_INLINE_RE = re.compile(

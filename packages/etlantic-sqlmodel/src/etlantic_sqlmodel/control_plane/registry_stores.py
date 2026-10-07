@@ -11,11 +11,12 @@ import uuid
 from collections.abc import Mapping, Sequence
 from copy import deepcopy
 from dataclasses import dataclass
-from datetime import UTC, datetime
+from datetime import UTC, datetime, timedelta
 from typing import Any
 
 from sqlalchemy.engine import Engine
 from sqlalchemy.exc import IntegrityError
+from sqlalchemy.sql import text
 
 from etlantic.control_plane import (
     AliasRecord,
@@ -33,7 +34,10 @@ from etlantic.control_plane import (
     redact_control_plane_payload,
 )
 from etlantic.control_plane.redaction import redact_control_plane_text
-from etlantic.control_plane.registry_memory import safe_registry_content
+from etlantic.control_plane.registry_memory import (
+    revision_order_key,
+    safe_registry_content,
+)
 from etlantic_sqlmodel.control_plane.models import (
     AliasRow,
     EnvironmentRow,
@@ -50,6 +54,27 @@ from sqlmodel import Session, SQLModel, select
 
 def _utcnow_iso() -> str:
     return datetime.now(UTC).isoformat().replace("+00:00", "Z")
+
+
+def _timestamp_after_current(current: str | None, candidate: str | None) -> str:
+    """Choose a revision timestamp that sorts after the current head."""
+    try:
+        timestamp = datetime.fromisoformat(
+            (candidate or _utcnow_iso()).replace("Z", "+00:00")
+        )
+        if timestamp.tzinfo is None:
+            timestamp = timestamp.replace(tzinfo=UTC)
+        if current is not None:
+            current_timestamp = datetime.fromisoformat(current.replace("Z", "+00:00"))
+            if current_timestamp.tzinfo is None:
+                current_timestamp = current_timestamp.replace(tzinfo=UTC)
+            if timestamp <= current_timestamp:
+                timestamp = current_timestamp + timedelta(microseconds=1)
+    except ValueError as exc:
+        raise ControlPlaneError.conflict(
+            "Definition revision has an invalid timestamp"
+        ) from exc
+    return timestamp.astimezone(UTC).isoformat().replace("+00:00", "Z")
 
 
 def _require_active(lifecycle: LifecycleState | str, *, resource: str) -> None:
@@ -547,6 +572,12 @@ class SqlModelRevisionRegistry:
                         "Revision is immutable; cannot overwrite",
                         extensions={"revision_id": revision.revision_id},
                     )
+                self._lock_logical_row(
+                    session,
+                    ctx.tenant.tenant_id,
+                    ctx.workspace.workspace_id,
+                    revision.logical_id,
+                )
                 logical = self._logical_row(
                     session,
                     ctx.tenant.tenant_id,
@@ -573,6 +604,12 @@ class SqlModelRevisionRegistry:
                             "revision_kind": revision.kind,
                         },
                     )
+                latest = self._latest_revision_row(
+                    session,
+                    ctx.tenant.tenant_id,
+                    ctx.workspace.workspace_id,
+                    revision.logical_id,
+                )
                 session.add(
                     RevisionRow(
                         tenant_id=revision.tenant_id,
@@ -581,7 +618,112 @@ class SqlModelRevisionRegistry:
                         revision_id=revision.revision_id,
                         content_fingerprint=content_fingerprint(safe_content),
                         content_json=json.dumps(safe_content, sort_keys=True),
-                        created_at=revision.created_at or _utcnow_iso(),
+                        created_at=_timestamp_after_current(
+                            latest.created_at if latest is not None else None,
+                            revision.created_at,
+                        ),
+                        kind=revision.kind,
+                        signature_placeholder=(
+                            redact_control_plane_text(revision.signature_placeholder)
+                            if revision.signature_placeholder is not None
+                            else None
+                        ),
+                        provenance_json=(
+                            _meta(revision.provenance_placeholder)
+                            if revision.provenance_placeholder is not None
+                            else None
+                        ),
+                    )
+                )
+        except IntegrityError as exc:
+            raise ControlPlaneError.conflict(
+                "Revision is immutable; cannot overwrite",
+                extensions={"revision_id": revision.revision_id},
+            ) from exc
+
+    def put_revision_if_current(
+        self,
+        ctx: ControlPlaneContext,
+        revision: RegistryRevision,
+        *,
+        expected_current_fingerprint: str,
+    ) -> None:
+        """Lock the logical identity, verify its head, and append atomically."""
+        if (
+            revision.tenant_id != ctx.tenant.tenant_id
+            or revision.workspace_id != ctx.workspace.workspace_id
+        ):
+            raise ControlPlaneError.not_found(
+                "Revision not found",
+                extensions={"revision_id": revision.revision_id},
+            )
+        if revision.content_fingerprint != content_fingerprint(revision.content):
+            raise ControlPlaneError.conflict(
+                "Revision content fingerprint mismatch",
+                extensions={"revision_id": revision.revision_id},
+            )
+        safe_content = safe_registry_content(revision.content)
+        try:
+            with session_scope(self.engine) as session:
+                self._assert_scope_active(ctx)
+                # All revision append paths take this lock before checking the
+                # head, so registrations and promotions cannot bypass a CAS.
+                self._lock_logical_row(
+                    session,
+                    ctx.tenant.tenant_id,
+                    ctx.workspace.workspace_id,
+                    revision.logical_id,
+                )
+                logical = self._logical_row(
+                    session,
+                    ctx.tenant.tenant_id,
+                    ctx.workspace.workspace_id,
+                    revision.logical_id,
+                )
+                if logical is None or (
+                    revision.kind is not None and logical.kind != revision.kind
+                ):
+                    raise ControlPlaneError.conflict(
+                        "Definition changed since the edit was prepared"
+                    )
+                latest = self._latest_revision_row(
+                    session,
+                    ctx.tenant.tenant_id,
+                    ctx.workspace.workspace_id,
+                    revision.logical_id,
+                )
+                if (
+                    latest is None
+                    or latest.content_fingerprint != expected_current_fingerprint
+                ):
+                    raise ControlPlaneError.conflict(
+                        "Definition changed since the edit was prepared"
+                    )
+                created_at = _timestamp_after_current(
+                    latest.created_at, revision.created_at
+                )
+                if (
+                    self._revision_row(
+                        session,
+                        ctx.tenant.tenant_id,
+                        ctx.workspace.workspace_id,
+                        revision.revision_id,
+                    )
+                    is not None
+                ):
+                    raise ControlPlaneError.conflict(
+                        "Revision is immutable; cannot overwrite",
+                        extensions={"revision_id": revision.revision_id},
+                    )
+                session.add(
+                    RevisionRow(
+                        tenant_id=revision.tenant_id,
+                        workspace_id=revision.workspace_id,
+                        logical_id=revision.logical_id,
+                        revision_id=revision.revision_id,
+                        content_fingerprint=content_fingerprint(safe_content),
+                        content_json=json.dumps(safe_content, sort_keys=True),
+                        created_at=created_at,
                         kind=revision.kind,
                         signature_placeholder=(
                             redact_control_plane_text(revision.signature_placeholder)
@@ -734,6 +876,12 @@ class SqlModelRevisionRegistry:
     ) -> PromotionRecord:
         with session_scope(self.engine) as session:
             self._assert_scope_active(ctx)
+            self._lock_logical_row(
+                session,
+                ctx.tenant.tenant_id,
+                ctx.workspace.workspace_id,
+                logical_id,
+            )
             source_row = self._revision_row(
                 session,
                 ctx.tenant.tenant_id,
@@ -754,7 +902,16 @@ class SqlModelRevisionRegistry:
             )
             body = safe_registry_content(requested_body)
             new_revision_id = f"rev-{uuid.uuid4().hex[:16]}"
-            created = _utcnow_iso()
+            latest = self._latest_revision_row(
+                session,
+                ctx.tenant.tenant_id,
+                ctx.workspace.workspace_id,
+                logical_id,
+            )
+            created = _timestamp_after_current(
+                latest.created_at if latest is not None else None,
+                _utcnow_iso(),
+            )
             new_rev = RegistryRevision(
                 logical_id=logical_id,
                 revision_id=new_revision_id,
@@ -860,6 +1017,40 @@ class SqlModelRevisionRegistry:
                 LogicalIdentityRow.logical_id == logical_id,
             )
         ).first()
+
+    @staticmethod
+    def _lock_logical_row(
+        session: Session, tenant_id: str, workspace_id: str, logical_id: str
+    ) -> None:
+        """Serialize appends for one logical identity across database writers."""
+        session.connection().execute(
+            text(
+                "UPDATE cp_registry_logical SET metadata_json = metadata_json "
+                "WHERE tenant_id = :tenant_id AND workspace_id = :workspace_id "
+                "AND logical_id = :logical_id"
+            ).bindparams(
+                tenant_id=tenant_id,
+                workspace_id=workspace_id,
+                logical_id=logical_id,
+            )
+        )
+
+    @staticmethod
+    def _latest_revision_row(
+        session: Session, tenant_id: str, workspace_id: str, logical_id: str
+    ) -> RevisionRow | None:
+        revisions = session.exec(
+            select(RevisionRow).where(
+                RevisionRow.tenant_id == tenant_id,
+                RevisionRow.workspace_id == workspace_id,
+                RevisionRow.logical_id == logical_id,
+            )
+        ).all()
+        return max(
+            revisions,
+            key=lambda item: revision_order_key(item.created_at, item.revision_id),
+            default=None,
+        )
 
     @staticmethod
     def _revision_row(

@@ -26,6 +26,10 @@ from etlantic.connectors.capabilities import (
     WRITE_SKIP_IF_EXISTS,
     WRITE_UPSERT,
 )
+from etlantic.connectors.catalog import (
+    CONNECTOR_CATALOG_SCHEMA,
+    connector_catalog_for_profile,
+)
 from etlantic.connectors.cdk import (
     BatchBudget,
     BatchCeilings,
@@ -95,6 +99,9 @@ from etlantic.connectors.models import (
     fingerprint_public_config,
 )
 from etlantic.connectors.protocol import (
+    PartitionedSinkConnector,
+    PartitionedSourceConnector,
+    ResourceIdentityConnector,
     SinkConnector,
     SourceConnector,
     StorageConnector,
@@ -103,6 +110,7 @@ from etlantic.connectors.protocol import (
 __all__ = [
     "CLEANUP",
     "CONNECTOR_CAPABILITY_VOCABULARY",
+    "CONNECTOR_CATALOG_SCHEMA",
     "CONNECTOR_ENTRY_POINT_GROUPS",
     "FORMAT_CSV",
     "IDEMPOTENCY",
@@ -152,10 +160,13 @@ __all__ = [
     "LandingFileIdentity",
     "LandingReadManifest",
     "LocalFilesSourceConnector",
+    "PartitionedSinkConnector",
+    "PartitionedSourceConnector",
     "PublicationDecision",
     "ReadBatch",
     "ReconciliationResult",
     "RedactedRuntimeContext",
+    "ResourceIdentityConnector",
     "RetryPolicy",
     "SchemaInspection",
     "SinkConnector",
@@ -167,6 +178,7 @@ __all__ = [
     "WriteSession",
     "advance_landing_checkpoint",
     "checkpoint_path_for",
+    "connector_catalog_for_profile",
     "create_local_files_source",
     "discover_connectors_for_profile",
     "discover_sink_connectors",

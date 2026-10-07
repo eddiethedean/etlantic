@@ -1,6 +1,6 @@
 {
   "schema": "etlantic.surface-inventory/1",
-  "version": "0.55.0",
+  "version": "0.56.0",
   "classes": [
     "stable",
     "provisional",
@@ -120,8 +120,7 @@
     "resolve_profile"
   ],
   "cli_flags_stable": [
-    "--allow-adhoc-profile",
-    "--accept-legacy-bindings"
+    "--allow-adhoc-profile"
   ],
   "sdk_root_provisional": [],
   "sdk_root_experimental": [],

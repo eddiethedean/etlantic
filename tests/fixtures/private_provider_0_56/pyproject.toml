@@ -1,0 +1,23 @@
+[build-system]
+requires = ["setuptools>=77", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "etlantic-private-ac056037"
+version = "1.0.0"
+requires-python = ">=3.11"
+dependencies = ["etlantic==0.56.0"]
+description = "Independent AC056-037 provider qualification fixture"
+
+[project.entry-points."etlantic.source_connectors"]
+private-ac056037 = "etlantic_private_ac056037:create_source"
+
+[tool.setuptools]
+package-dir = {"" = "src"}
+include-package-data = true
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.setuptools.package-data]
+etlantic_private_ac056037 = ["etlantic-plugin-manifest.json"]

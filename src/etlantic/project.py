@@ -38,25 +38,22 @@ def _resolve_profile_ref(
     ref: str | dict[str, Any],
     *,
     root: Path,
-    accept_legacy_bindings: bool = False,
 ) -> Profile:
     if isinstance(ref, dict):
-        return Profile.from_dict(ref, accept_legacy_bindings=accept_legacy_bindings)
+        return Profile.from_dict(ref)
     text = str(ref).strip()
     if text.endswith(".json"):
         path = (root / text).resolve() if not Path(text).is_absolute() else Path(text)
         if path.is_file():
-            return load_profile(path, accept_legacy_bindings=accept_legacy_bindings)
+            return load_profile(path)
     path = root / "profiles" / f"{text}.json"
     if path.is_file():
-        return load_profile(path, accept_legacy_bindings=accept_legacy_bindings)
+        return load_profile(path)
     return resolve_profile(text)
 
 
 def load_project(
     start: Path | None = None,
-    *,
-    accept_legacy_bindings: bool = False,
 ) -> ProjectConfig | None:
     """Load project config when ``etlantic.toml`` exists."""
     root = discover_project_root(start)
@@ -71,7 +68,6 @@ def load_project(
             profiles[str(name)] = _resolve_profile_ref(
                 ref,
                 root=root,
-                accept_legacy_bindings=accept_legacy_bindings,
             )
     default_profile = str(data.get("default_profile") or "development")
     return ProjectConfig(
@@ -89,14 +85,13 @@ def resolve_project_profile(
     *,
     start: Path | None = None,
     allow_adhoc_profile: bool = False,
-    accept_legacy_bindings: bool = False,
 ) -> tuple[Profile, str]:
     """Resolve profile using project config, profiles/, and built-ins.
 
     Returns:
         Tuple of (profile, source description).
     """
-    project = load_project(start, accept_legacy_bindings=accept_legacy_bindings)
+    project = load_project(start)
     name = profile_name
     if name is None and project is not None:
         name = project.default_profile
@@ -108,13 +103,13 @@ def resolve_project_profile(
     profiles_path = root / "profiles" / f"{name}.json"
     if name and profiles_path.is_file():
         return (
-            load_profile(profiles_path, accept_legacy_bindings=accept_legacy_bindings),
+            load_profile(profiles_path),
             str(profiles_path),
         )
 
     if name and Path(name).suffix.casefold() == ".json" and Path(name).is_file():
         return (
-            load_profile(name, accept_legacy_bindings=accept_legacy_bindings),
+            load_profile(name),
             str(Path(name).resolve()),
         )
 

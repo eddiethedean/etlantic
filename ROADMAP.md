@@ -6,10 +6,11 @@
 > [Capabilities](docs/01_GETTING_STARTED/CAPABILITIES.md) for what ships now.
 > Review this header for every release or sequence change.
 
-**Current release:** ETLantic **0.55.0** (published Beta).
-The scoped inferred-model authoring surface is qualified and remains
-Experimental. Adaptive execution also remains Experimental; its independent
-graduation is still pending. See the [0.55 exit gate](docs/11_DEVELOPMENT/EXIT_GATE_0_55.md)
+**Latest published release:** ETLantic **0.55.0** (Beta). The current 0.56.0
+package candidate completes the application backend and has local qualification
+evidence; publication remains pending final release review. The scoped
+inferred-model authoring surface remains Experimental. Adaptive execution also
+remains Experimental; its independent graduation is still pending. See the [0.55 exit gate](docs/11_DEVELOPMENT/EXIT_GATE_0_55.md)
 and [0.54 exit gate](docs/11_DEVELOPMENT/EXIT_GATE_0_54.md).
 Prior **0.49** qualified optional DuckDB; prior **0.48** human-governed AI
 context/proposals and Experimental `etlantic-mcp`
@@ -21,7 +22,7 @@ through **0.37** (stable foundation) are shipped.
 
 | Horizon | Release | Outcome | Status |
 |---|---:|---|---|
-| Current | 0.55 | Scoped Experimental inferred-model authoring qualification | Published / shipped evidence |
+| Previous | 0.55 | Scoped Experimental inferred-model authoring qualification | Published / shipped evidence |
 | Previous | 0.53 | Experimental fixture-qualified local adaptive physical-DAG execution | Historical candidate |
 | Previous | 0.52 | Deterministic adaptive planning and plan-only physical lowering | Published / shipped evidence |
 | Previous | 0.50 | Seven-engine portable baseline with 0.50.1 compatibility fixes | Published / shipped evidence |
@@ -37,7 +38,7 @@ through **0.37** (stable foundation) are shipped.
 | Previous | 0.40 | Tenant registry / workspaces (CP2) | Gate-ready / shipped evidence |
 | Previous | 0.39 | Multi-tenant control plane (CP1) | Gate-ready / shipped evidence |
 | Previous | 0.38 | Data connectivity and connector SDK | Gate-ready / shipped evidence |
-| Next | 0.56 | Complete application ETL backend with full specification and run control | Planned; [implementation contract](docs/11_DEVELOPMENT/IMPLEMENTATION_PLAN_0_56.md) |
+| Current | 0.56 | Complete application ETL backend with full specification and run control | Gate-ready for tag/publish |
 | Later | 0.57 | Brownfield adoption bridges | Planning freeze |
 | Later | 0.58 | Operator Console | Planned |
 | Later | 0.59 | Managed runtime and enterprise provider packs | Planned |
@@ -4710,8 +4711,9 @@ Deliver:
 - isolated connector test/catalog/schema/preflight/preview/provision actions,
   scoped credential resolution and immutable uploaded input lifecycle;
 - scheduler/manual/external-trigger equivalence and executable lifecycle commands;
-- independently packaged Foundry support and live PostgreSQL/CSV qualification,
-  including 12 source/destination pairings and advertised writer modes;
+- independently packaged Foundry support qualified against the local
+  Semblance API simulator, plus live PostgreSQL/CSV qualification, including 12
+  source/destination pairings and advertised writer modes;
 - private extensions and existing advanced engine/native/dynamic/streaming
   controls through the same service, with exact capability evidence;
 - migration, security, real-store, installed-wheel and independent-consumer proof.

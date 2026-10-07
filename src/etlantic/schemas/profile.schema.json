@@ -4,6 +4,7 @@
   "title": "ETLantic Profile",
   "type": "object",
   "required": ["name", "security_mode"],
+  "not": { "required": ["bindings"] },
   "properties": {
     "name": { "type": "string", "minLength": 1 },
     "orchestrator": { "type": "string" },
@@ -42,11 +43,6 @@
           }
         ]
       }
-    },
-    "bindings": {
-      "type": "object",
-      "additionalProperties": { "type": "string" },
-      "description": "Deprecated legacy key. Rejected on load (PMCFG111) unless --accept-legacy-bindings / accept_legacy_bindings=True. Prefer assets=."
     },
     "implementation_overrides": {
       "type": "object",

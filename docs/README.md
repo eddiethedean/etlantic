@@ -2,14 +2,14 @@
 hide:
   - toc
 status: available
-since: "0.55.0"
-current_minor: "0.55"
+since: "0.56.0"
+current_minor: "0.56"
 audience: adopter
 ---
 
 <div class="etlantic-hero">
   <div class="etlantic-hero__content">
-    <span class="etlantic-hero__eyebrow">ETLantic 0.55 · Beta release</span>
+    <span class="etlantic-hero__eyebrow">ETLantic 0.56 · qualification candidate</span>
     <h1>One typed pipeline model. Many execution backends.</h1>
     <p>Define contracts and topology in Python, validate them before execution,
     then produce deterministic plans for local engines, backend plugins, or
@@ -62,7 +62,7 @@ audience: adopter
 
 ## Choose your path
 
-> **Status: ETLantic 0.55.0 is the published Beta release and the current supported line.**
+> **Status: 0.56.0 is a qualification candidate. The published, supported package line remains 0.55.x.**
 
 
 <div class="etlantic-path-grid">
@@ -107,9 +107,9 @@ audience: adopter
 ## Green path: first success
 
 Install from PyPI first: `pip install etlantic`. The commands below pin
-`etlantic==0.55.0` so this version of the documentation and the installed API
-stay aligned. The complete [Quickstart](01_GETTING_STARTED/QUICKSTART.md)
-installs 0.55.0 from PyPI. The guide continues with an
+Install the latest published package. While 0.56.0 is a candidate, the PyPI
+installer resolves the supported 0.55.x line. The complete
+[Quickstart](01_GETTING_STARTED/QUICKSTART.md) uses that published package. The guide continues with an
 intentional validation failure after the first successful run.
 
 === "macOS / Linux"
@@ -118,7 +118,7 @@ intentional validation failure after the first successful run.
     python -m venv .venv
     source .venv/bin/activate
     python -m pip install --upgrade pip
-    python -m pip install 'etlantic==0.55.0'
+    python -m pip install 'etlantic'
     python -m etlantic --version
 
     mkdir my-pipeline
@@ -135,7 +135,7 @@ intentional validation failure after the first successful run.
     py -3.11 -m venv .venv
     .\.venv\Scripts\Activate.ps1
     python -m pip install --upgrade pip
-    python -m pip install 'etlantic==0.55.0'
+    python -m pip install 'etlantic'
     python -m etlantic --version
 
     mkdir my-pipeline
@@ -192,13 +192,13 @@ Prefect. Add only what the pipeline uses.
 
 | Path | Install | Current scope |
 |---|---|---|
-| Local Python + JSON/CSV | `pip install 'etlantic==0.55.0'` | Built-in first-success and test path |
-| Polars | `pip install 'etlantic[polars]==0.55.0'` | Eager/lazy execution and portable compilation |
-| Pandas | `pip install 'etlantic[pandas]==0.55.0'` | Eager execution and portable compilation |
-| SQL | `pip install 'etlantic[sql]==0.55.0'` | SQLite evaluation and PostgreSQL reference execution |
-| PySpark | `pip install 'etlantic[pyspark]==0.55.0'` | Batch Spark execution; compatible JVM required |
-| Airflow | `pip install 'etlantic[airflow]==0.55.0'` | DAG compilation; Apache Airflow installs separately |
-| Prefect | `pip install 'etlantic[prefect]==0.55.0'` | Bounded local direct-execution integration |
+| Local Python + JSON/CSV | `pip install 'etlantic'` | Built-in first-success and test path |
+| Polars | `pip install 'etlantic[polars]'` | Eager/lazy execution and portable compilation |
+| Pandas | `pip install 'etlantic[pandas]'` | Eager execution and portable compilation |
+| SQL | `pip install 'etlantic[sql]'` | SQLite evaluation and PostgreSQL reference execution |
+| PySpark | `pip install 'etlantic[pyspark]'` | Batch Spark execution; compatible JVM required |
+| Airflow | `pip install 'etlantic[airflow]'` | DAG compilation; Apache Airflow installs separately |
+| Prefect | `pip install 'etlantic[prefect]'` | Bounded local direct-execution integration |
 
 See [Engine selection](01_GETTING_STARTED/ENGINE_SELECTION.md) for prerequisites
 and [Compatibility](10_REFERENCE/COMPATIBILITY.md) before pinning a deployment.
@@ -247,6 +247,6 @@ before a pilot.
 | Author with the public Python facade | [Python SDK in 10 minutes](01_GETTING_STARTED/SDK_10_MINUTES.md) |
 | Configure CI validation | [CI integration](06_EXECUTION/CI_INTEGRATION.md) |
 | Diagnose a failure | [Troubleshooting](01_GETTING_STARTED/TROUBLESHOOTING.md) |
-| Review the current release | [What's new in 0.55](01_GETTING_STARTED/WHATS_NEW_0_55.md) |
+| Review the current candidate | [What's new in 0.56](01_GETTING_STARTED/WHATS_NEW_0_56.md) |
 | Review future direction | [Planning Hub](11_DEVELOPMENT/PLAN_INDEX.md) |
 | Contribute to ETLantic | [Contributor guide](11_DEVELOPMENT/CONTRIBUTING.md) |

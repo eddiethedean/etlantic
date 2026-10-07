@@ -105,33 +105,33 @@ def gate_pre_submit(
     audit: AuditEvidenceStore | None = None,
     attestations: AttestationStore | None = None,
     plan_fingerprint: str,
+    effective_fingerprint: str | None = None,
     revision_id: str | None = None,
+    quota_idempotency_key: str | None = None,
+    quota_claim_id: str | None = None,
     plugin_fingerprints: list[str] | None = None,
     sbom_digest: str | None = None,
     require_policy: bool = False,
     require_attestations: bool = False,
+    audit_before_quota: bool = False,
+    attestation_max_age_seconds: int = 24 * 60 * 60,
     resource: QuotaResource = "concurrency",
 ) -> tuple[PolicyDecision | None, QuotaDecision | None]:
-    """Run pre-submit policy, quota admission, and optional attestation checks."""
+    """Run pre-submit policy, quota admission, and optional attestation checks.
+
+    ``audit_before_quota`` records policy approval before reserving quota and
+    marks the quota effect as pending in that audit entry.
+    """
+    approval_fingerprint = effective_fingerprint or plan_fingerprint
     decision = evaluate_policy(
         policy,
         ctx,
         hook="pre_submit",
-        plan_fingerprint=plan_fingerprint,
+        plan_fingerprint=approval_fingerprint,
         revision_id=revision_id,
         required=require_policy,
     )
     enforce_policy_decision(decision, approvals=approvals, ctx=ctx)
-
-    quota_decision: QuotaDecision | None = None
-    if quotas is not None:
-        quotas.require_available(ctx)
-        quota_decision = quotas.admit(ctx, resource=resource, units=1)
-        if quota_decision.effect != "allow":
-            raise ControlPlaneError.conflict(
-                f"quota {quota_decision.effect}: {quota_decision.reason}",
-                extensions=quota_decision.to_dict(),
-            )
 
     if require_attestations:
         if attestations is None:
@@ -144,26 +144,71 @@ def gate_pre_submit(
             )
         results = attestations.verify_plan(
             ctx,
-            plan_fingerprint=plan_fingerprint,
+            plan_fingerprint=approval_fingerprint,
             revision_id=revision_id or plan_fingerprint,
             policy_fingerprint=(
                 decision.policy_fingerprint if decision else "unsigned"
             ),
             plugin_fingerprints=plugin_fingerprints or (),
             sbom_digest=sbom_digest,
+            max_age_seconds=attestation_max_age_seconds,
         )
         require_verified(results)
 
-    if audit is not None:
+    if audit is not None and audit_before_quota:
         audit.append(
             ctx,
             action="pre_submit",
-            resource=plan_fingerprint,
+            resource=approval_fingerprint,
             decision_refs=([decision.decision_id] if decision is not None else []),
             metadata={
                 "policy_fingerprint": (
                     decision.policy_fingerprint if decision else None
                 ),
+                "plan_fingerprint": plan_fingerprint,
+                "effective_fingerprint": approval_fingerprint,
+                "quota_effect": "pending" if quotas is not None else None,
+            },
+        )
+
+    quota_decision: QuotaDecision | None = None
+    if quotas is not None:
+        quotas.require_available(ctx)
+        if quota_idempotency_key is None:
+            quota_decision = quotas.admit(ctx, resource=resource, units=1)
+        elif quota_claim_id is not None:
+            quota_decision = quotas.admit(
+                ctx,
+                resource=resource,
+                units=1,
+                idempotency_key=quota_idempotency_key,
+                claim_id=quota_claim_id,
+            )
+        else:
+            quota_decision = quotas.admit(
+                ctx,
+                resource=resource,
+                units=1,
+                idempotency_key=quota_idempotency_key,
+            )
+        if quota_decision.effect != "allow":
+            raise ControlPlaneError.conflict(
+                f"quota {quota_decision.effect}: {quota_decision.reason}",
+                extensions=quota_decision.to_dict(),
+            )
+
+    if audit is not None and not audit_before_quota:
+        audit.append(
+            ctx,
+            action="pre_submit",
+            resource=approval_fingerprint,
+            decision_refs=([decision.decision_id] if decision is not None else []),
+            metadata={
+                "policy_fingerprint": (
+                    decision.policy_fingerprint if decision else None
+                ),
+                "plan_fingerprint": plan_fingerprint,
+                "effective_fingerprint": approval_fingerprint,
                 "quota_effect": (quota_decision.effect if quota_decision else None),
             },
         )

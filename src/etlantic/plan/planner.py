@@ -715,6 +715,41 @@ def _build_plan(
         intents["retry"] = {"max_attempts": profile.retry_max_attempts}
     if profile.timeout_seconds is not None:
         intents["timeout"] = {"seconds": profile.timeout_seconds}
+    if definition is not None:
+        incremental = dict(getattr(definition, "extensions", {}) or {}).get(
+            "etlantic.incremental"
+        )
+        if incremental is not None:
+            if not isinstance(incremental, Mapping):
+                raise ValueError("etlantic.incremental must be an object")
+            strategies = incremental.get("strategies")
+            if not isinstance(strategies, Mapping) or not strategies:
+                raise ValueError(
+                    "etlantic.incremental.strategies must be a non-empty object"
+                )
+            from etlantic.runtime.incremental import IncrementalStrategy
+
+            normalized: dict[str, dict[str, Any]] = {}
+            for subject_id, raw in strategies.items():
+                if (
+                    not isinstance(subject_id, str)
+                    or not subject_id.strip()
+                    or not isinstance(raw, Mapping)
+                ):
+                    raise ValueError(
+                        "Incremental strategies require named object entries"
+                    )
+                typed = IncrementalStrategy.from_dict(
+                    {**dict(raw), "subject_id": subject_id}
+                )
+                if typed.kind.value in {"watermark", "cursor", "change_feed"} and (
+                    not typed.column
+                ):
+                    raise ValueError(
+                        f"Incremental strategy {subject_id!r} requires a field"
+                    )
+                normalized[subject_id] = typed.to_dict()
+            intents["incremental_strategies"] = normalized
 
     from etlantic.engines import get_engine_registry
     from etlantic.extensions import namespaced_extension_items
@@ -2163,7 +2198,7 @@ def _resolve_bindings(
         if node.binding in context.registry.bindings:
             resolved[node.name] = context.registry.bindings[node.binding]
             continue
-        provider_raw = context.profile.bindings.get(node.binding, "memory")
+        provider_raw = context.profile.assets.get(node.binding, "memory")
         from etlantic.bindings import parse_asset_descriptor
         from etlantic.connectors.models import fingerprint_public_config
 

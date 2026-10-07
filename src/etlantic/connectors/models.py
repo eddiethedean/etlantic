@@ -6,6 +6,7 @@ from __future__ import annotations
 import hashlib
 import json
 from collections.abc import Mapping, Sequence
+from copy import deepcopy
 from dataclasses import dataclass, field
 from datetime import datetime
 from typing import Any, Literal
@@ -45,6 +46,7 @@ class ConnectorInfo:
     capabilities: tuple[str, ...] = ()
     maturity: ConnectorMaturity = ConnectorMaturity.EXPERIMENTAL
     metadata: dict[str, Any] = field(default_factory=dict)
+    configuration_schema: dict[str, Any] = field(default_factory=dict)
 
     def to_dict(self) -> dict[str, Any]:
         return {
@@ -55,6 +57,7 @@ class ConnectorInfo:
             "capabilities": list(self.capabilities),
             "maturity": self.maturity.value,
             "metadata": dict(self.metadata),
+            "configuration_schema": deepcopy(self.configuration_schema),
         }
 
     @classmethod
@@ -70,6 +73,7 @@ class ConnectorInfo:
             capabilities=tuple(str(x) for x in (data.get("capabilities") or ())),
             maturity=ConnectorMaturity(str(maturity_raw)),
             metadata=dict(data.get("metadata") or {}),
+            configuration_schema=deepcopy(data.get("configuration_schema") or {}),
         )
 
 

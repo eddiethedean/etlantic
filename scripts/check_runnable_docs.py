@@ -17,6 +17,12 @@ release_status = (
 )
 if RELEASE_FACTS.get("publication_status") != "published":
     release_status += " candidate; publication pending"
+    supported_minor = str(RELEASE_FACTS.get("support_line", "")).removesuffix(".x")
+    supported_release_status = (
+        f"ETLantic {supported_minor}.0 {RELEASE_FACTS['maturity']} release"
+    )
+else:
+    supported_release_status = release_status
 
 EXPECTED_OUTPUT = re.compile(r"(?ms)^## Expected output\s*$\n(?P<body>.*?)(?=^## |\Z)")
 OUTPUT_FENCE = re.compile(r"(?ms)^```(?:console|json|text|yaml)\s*$.*?^```\s*$")
@@ -139,7 +145,11 @@ def main() -> None:
                     f"Illustrative page must say so explicitly: {entry.page}"
                 )
             continue
-        if "Status: Available" not in text and release_status not in text:
+        if (
+            "Status: Available" not in text
+            and release_status not in text
+            and supported_release_status not in text
+        ):
             raise SystemExit(f"Runnable page lacks Available status: {entry.page}")
         if source.name not in text:
             raise SystemExit(

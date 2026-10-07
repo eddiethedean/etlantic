@@ -950,6 +950,11 @@ def check_stale_prior_minor_adopter_banners(package_version: str) -> None:
                 f"expected current {package_version} / {major}.{minor}"
             )
 
+    # During candidate qualification the prior minor is still the published
+    # support line, so its release-wheel references are not stale.
+    if load_release_facts().get("publication_status") != "published":
+        return
+
     wheel_re = re.compile(
         rf"etlantic-{re.escape(prior_minor)}\.\d+-.*\.whl"
         r"|etlantic-" + re.escape(prior_minor) + r"\.0-\*\.whl"
@@ -1072,32 +1077,54 @@ def main() -> None:
                 f"{path} does not mention current version {package_version}"
             )
 
+    release_facts = load_release_facts()
     support = (ROOT / "SUPPORT.md").read_text(encoding="utf-8")
     support_opening = "\n".join(support.splitlines()[:8]).lower()
-    if (
-        f"**{package_version}**" not in "\n".join(support.splitlines()[:8])
-        or "beta" not in support_opening
-    ):
-        raise SystemExit(
-            f"SUPPORT.md opening must claim {package_version} is Beta (PyPI)"
-        )
+    if release_facts.get("publication_status") == "published":
+        if (
+            f"**{package_version}**" not in "\n".join(support.splitlines()[:8])
+            or "beta" not in support_opening
+        ):
+            raise SystemExit(
+                f"SUPPORT.md opening must claim {package_version} is Beta (PyPI)"
+            )
+    else:
+        support_line = str(release_facts.get("support_line", ""))
+        if (
+            package_version not in support_opening
+            or "candidate" not in support_opening
+            or support_line not in support_opening
+        ):
+            raise SystemExit(
+                "SUPPORT.md opening must distinguish the candidate package from "
+                "the published support line"
+            )
 
     known_issues = (ROOT / "docs/10_REFERENCE/KNOWN_ISSUES.md").read_text(
         encoding="utf-8"
     )
     known_opening = "\n".join(known_issues.splitlines()[:12])
     major_minor = ".".join(package_version.split(".")[:2])
-    if f"**{major_minor}.x**" not in known_opening or "Beta" not in known_opening:
+    supported_minor = (
+        major_minor
+        if release_facts.get("publication_status") == "published"
+        else str(release_facts.get("support_line", "")).removesuffix(".x")
+    )
+    if f"**{supported_minor}.x**" not in known_opening or "Beta" not in known_opening:
         raise SystemExit(
-            "KNOWN_ISSUES.md opening must claim the current minor "
-            f"({major_minor}.x) is Beta"
+            "KNOWN_ISSUES.md opening must claim the published support minor "
+            f"({supported_minor}.x) is Beta"
         )
     try:
         major_s, minor_s = major_minor.split(".")
         prior_minor = f"{major_s}.{int(minor_s) - 1}" if int(minor_s) > 0 else None
     except ValueError:
         prior_minor = None
-    if prior_minor is not None and f"**{prior_minor}.x**" in known_opening:
+    if (
+        release_facts.get("publication_status") == "published"
+        and prior_minor is not None
+        and f"**{prior_minor}.x**" in known_opening
+    ):
         raise SystemExit(
             f"KNOWN_ISSUES.md opening still claims prior minor {prior_minor}.x "
             "as the current Beta line"
@@ -1279,7 +1306,10 @@ def main() -> None:
         prior_minor = f"{major_s}.{int(minor_s) - 1}" if int(minor_s) > 0 else None
     except ValueError:
         prior_minor = None
-    if prior_minor is not None:
+    if (
+        prior_minor is not None
+        and load_release_facts().get("publication_status") == "published"
+    ):
         prior_patch = f"{prior_minor}.0"
         banned_phrases.extend(
             [
@@ -1806,17 +1836,23 @@ def main() -> None:
     security = (ROOT / "SECURITY.md").read_text(encoding="utf-8")
     # e.g. 0.14.0 → 0.14.x
     major_minor = ".".join(package_version.split(".")[:2])
+    security_facts = load_release_facts()
+    supported_minor = (
+        major_minor
+        if security_facts.get("publication_status") == "published"
+        else str(security_facts.get("support_line", "")).removesuffix(".x")
+    )
     current_support_rows = [
-        line for line in security.splitlines() if f"| {major_minor}.x |" in line
+        line for line in security.splitlines() if f"| {supported_minor}.x |" in line
     ]
     if len(current_support_rows) != 1:
         raise SystemExit(
             "SECURITY.md support table must have exactly one "
-            f"{major_minor}.x row (found {len(current_support_rows)})"
+            f"{supported_minor}.x row (found {len(current_support_rows)})"
         )
     if "Not actively maintained" in current_support_rows[0]:
         raise SystemExit(
-            f"SECURITY.md {major_minor}.x row must be the current supported line"
+            f"SECURITY.md {supported_minor}.x row must be the current supported line"
         )
 
     scrub_paths = [
@@ -2314,8 +2350,11 @@ def main() -> None:
     prior_minor = None
     try:
         maj_s, min_s = major_minor.split(".")
-        if int(min_s) > 0:
-            prior_minor = f"{maj_s}.{int(min_s) - 1}"
+        offset = (
+            2 if load_release_facts().get("publication_status") != "published" else 1
+        )
+        if int(min_s) >= offset:
+            prior_minor = f"{maj_s}.{int(min_s) - offset}"
     except ValueError:
         prior_minor = None
 
@@ -2736,10 +2775,13 @@ def main() -> None:
     doc_status = (ROOT / "docs/02_FOUNDATIONS/DOCUMENTATION_STATUS.md").read_text(
         encoding="utf-8"
     )
-    if f"Available in {major_minor}" not in doc_status:
-        raise SystemExit(
-            f"DOCUMENTATION_STATUS.md must reference Available in {major_minor}"
-        )
+    availability_label = (
+        f"Candidate in {major_minor}"
+        if load_release_facts().get("publication_status") != "published"
+        else f"Available in {major_minor}"
+    )
+    if availability_label not in doc_status:
+        raise SystemExit(f"DOCUMENTATION_STATUS.md must reference {availability_label}")
     surface_inventory = (ROOT / "docs/10_REFERENCE/SURFACE_INVENTORY.md").read_text(
         encoding="utf-8"
     )
@@ -2777,10 +2819,10 @@ def main() -> None:
             f"!= package {package_version}"
         )
     cli_flags_stable = inventory.get("cli_flags_stable", [])
-    if "--accept-legacy-bindings" not in cli_flags_stable:
+    if "--accept-legacy-bindings" in cli_flags_stable:
         raise SystemExit(
-            "surface-inventory.json cli_flags_stable must include "
-            "--accept-legacy-bindings"
+            "surface-inventory.json must not advertise the removed "
+            "--accept-legacy-bindings flag"
         )
 
     subprocess.run(
@@ -2815,9 +2857,13 @@ def main() -> None:
     # Current-patch install pins must match package_version on green-path pages.
     pin = f"=={package_version}"
     parts = package_version.split(".")
+    candidate = load_release_facts().get("publication_status") != "published"
     prior_minor = (
         f"{parts[0]}.{int(parts[1]) - 1}.0"
-        if len(parts) >= 2 and parts[1].isdigit() and int(parts[1]) > 0
+        if not candidate
+        and len(parts) >= 2
+        and parts[1].isdigit()
+        and int(parts[1]) > 0
         else None
     )
     green_path_docs = [
@@ -3165,6 +3211,9 @@ def has_current_release_status(text: str) -> bool:
     status = f"ETLantic {facts['current_version']} {facts['maturity']} release"
     if facts.get("publication_status") != "published":
         status += " candidate; publication pending"
+        support_minor = str(facts.get("support_line", "")).removesuffix(".x")
+        published_status = f"ETLantic {support_minor}.0 {facts['maturity']} release"
+        return status in text or published_status in text
     return status in text
 
 

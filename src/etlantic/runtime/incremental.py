@@ -4,6 +4,8 @@
 from __future__ import annotations
 
 import json
+import threading
+from collections.abc import Mapping, Sequence
 from dataclasses import dataclass, field
 from datetime import UTC, datetime
 from enum import StrEnum
@@ -167,8 +169,31 @@ class StateStore(Protocol):
         """Atomically commit a new cursor value."""
         ...
 
+    def commit_many(
+        self, updates: Mapping[str, tuple[str | None, str | None]]
+    ) -> Sequence[StateTransitionResult]:
+        """Atomically commit multiple cursor values in one transaction."""
+        ...
+
     def rollback(self, subject_id: str) -> None:
         """Discard any staged candidate for ``subject_id``."""
+
+
+def _validate_state_updates(
+    updates: Any,
+) -> None:
+    if not isinstance(updates, Mapping) or not updates:
+        raise ValueError("commit_many requires at least one cursor update")
+    for subject_id, entry in updates.items():
+        if not isinstance(subject_id, str) or not subject_id.strip():
+            raise ValueError("commit_many requires non-empty subject identifiers")
+        if not isinstance(entry, tuple) or len(entry) != 2:
+            raise ValueError("each cursor update must contain a value and reason")
+        value, reason = entry
+        if value is not None and not isinstance(value, str):
+            raise TypeError("cursor values must be strings or None")
+        if reason is not None and not isinstance(reason, str):
+            raise TypeError("cursor reasons must be strings or None")
 
 
 def may_advance_state(*, intent: RunIntent, no_write: bool, succeeded: bool) -> bool:
@@ -184,9 +209,11 @@ class MemoryStateStore:
     def __init__(self) -> None:
         self._committed: dict[str, StateCursor] = {}
         self._proposed: dict[str, StateCursor] = {}
+        self._lock = threading.RLock()
 
     def get(self, subject_id: str) -> StateCursor | None:
-        return self._committed.get(subject_id)
+        with self._lock:
+            return self._committed.get(subject_id)
 
     def propose(self, subject_id: str, value: str | None) -> StateCursor:
         cursor = StateCursor(
@@ -194,7 +221,8 @@ class MemoryStateStore:
             value=value,
             updated_at=datetime.now(UTC),
         )
-        self._proposed[subject_id] = cursor
+        with self._lock:
+            self._proposed[subject_id] = cursor
         return cursor
 
     def commit(
@@ -204,26 +232,42 @@ class MemoryStateStore:
         *,
         reason: str | None = None,
     ) -> StateTransitionResult:
-        previous = self._committed.get(subject_id)
+        return self.commit_many({subject_id: (value, reason)})[0]
+
+    def commit_many(
+        self, updates: Mapping[str, tuple[str | None, str | None]]
+    ) -> Sequence[StateTransitionResult]:
+        _validate_state_updates(updates)
         now = datetime.now(UTC)
-        self._committed[subject_id] = StateCursor(
-            subject_id=subject_id,
-            value=value,
-            updated_at=now,
-        )
-        self._proposed.pop(subject_id, None)
-        return StateTransitionResult(
-            subject=subject_id,
-            from_status=previous.value
-            if previous and previous.value is not None
-            else "",
-            to_status=value if value is not None else "",
-            at=now,
-            reason=reason or "commit",
-        )
+        with self._lock:
+            transitions: list[StateTransitionResult] = []
+            for subject_id, (value, reason) in sorted(updates.items()):
+                previous = self._committed.get(subject_id)
+                transitions.append(
+                    StateTransitionResult(
+                        subject=subject_id,
+                        from_status=(
+                            previous.value
+                            if previous is not None and previous.value is not None
+                            else ""
+                        ),
+                        to_status=value if value is not None else "",
+                        at=now,
+                        reason=reason or "commit",
+                    )
+                )
+            for subject_id, (value, _reason) in updates.items():
+                self._committed[subject_id] = StateCursor(
+                    subject_id=subject_id,
+                    value=value,
+                    updated_at=now,
+                )
+                self._proposed.pop(subject_id, None)
+            return transitions
 
     def rollback(self, subject_id: str) -> None:
-        self._proposed.pop(subject_id, None)
+        with self._lock:
+            self._proposed.pop(subject_id, None)
 
 
 class FileStateStore:
@@ -303,31 +347,44 @@ class FileStateStore:
         *,
         reason: str | None = None,
     ) -> StateTransitionResult:
+        return self.commit_many({subject_id: (value, reason)})[0]
+
+    def commit_many(
+        self, updates: Mapping[str, tuple[str | None, str | None]]
+    ) -> Sequence[StateTransitionResult]:
+        _validate_state_updates(updates)
         now = datetime.now(UTC)
-        previous_value: str | None = None
+        previous_values: dict[str, Any] = {}
 
         def _merge(current: dict[str, Any]) -> dict[str, Any]:
-            nonlocal previous_value
             data = dict(current)
-            raw_previous = data.get(subject_id)
-            if isinstance(raw_previous, dict):
-                previous_value = raw_previous.get("value")
-            data[subject_id] = {
-                "value": value,
-                "updated_at": now.isoformat(),
-                "metadata": {},
-            }
+            for subject_id, (value, _reason) in sorted(updates.items()):
+                raw_previous = data.get(subject_id)
+                previous_values[subject_id] = (
+                    raw_previous.get("value")
+                    if isinstance(raw_previous, dict)
+                    else None
+                )
+                data[subject_id] = {
+                    "value": value,
+                    "updated_at": now.isoformat(),
+                    "metadata": {},
+                }
             return data
 
-        self._rmw(self.path, self._policy, _merge, run_id="state-store-commit")
-        self._proposed.pop(subject_id, None)
-        return StateTransitionResult(
-            subject=subject_id,
-            from_status=previous_value if previous_value is not None else "",
-            to_status=value if value is not None else "",
-            at=now,
-            reason=reason or "commit",
-        )
+        self._rmw(self.path, self._policy, _merge, run_id="state-store-commit-many")
+        for subject_id, (_value, _reason) in updates.items():
+            self._proposed.pop(subject_id, None)
+        return [
+            StateTransitionResult(
+                subject=subject_id,
+                from_status=previous_values.get(subject_id) or "",
+                to_status=value if value is not None else "",
+                at=now,
+                reason=reason or "commit",
+            )
+            for subject_id, (value, reason) in sorted(updates.items())
+        ]
 
     def rollback(self, subject_id: str) -> None:
         self._proposed.pop(subject_id, None)

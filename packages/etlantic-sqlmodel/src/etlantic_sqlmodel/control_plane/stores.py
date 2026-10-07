@@ -8,8 +8,9 @@ import uuid
 from collections.abc import Callable, Mapping, Sequence
 from copy import deepcopy
 from datetime import UTC, datetime
-from typing import Any
+from typing import Any, cast
 
+from sqlalchemy import Table, delete
 from sqlalchemy.engine import Engine
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.sql import text
@@ -20,10 +21,20 @@ from etlantic.control_plane import (
     ControlPlaneContext,
     ControlPlaneError,
     ControlPlaneEvent,
+    DefinitionResolution,
     redact_control_plane_payload,
+)
+from etlantic.control_plane.event_retention import (
+    DEFAULT_EVENT_IDEMPOTENCY_RETENTION_SECONDS,
+    MAX_EVENT_IDEMPOTENCY_PRUNE_BATCH,
+    event_expiry,
+    event_time,
+    is_event_expired,
+    normalize_event_time,
 )
 from etlantic_sqlmodel.control_plane.models import (
     DefinitionRow,
+    EventIdempotencyRow,
     EventRow,
     SubmissionRow,
 )
@@ -36,7 +47,18 @@ def _utcnow_iso() -> str:
 
 
 _EVENT_APPEND_MAX_ATTEMPTS = 3
+_EVENT_IDEMPOTENCY_SWEEP_BATCH_SIZE = MAX_EVENT_IDEMPOTENCY_PRUNE_BATCH
 _EVENT_SEQUENCE_CONSTRAINT = "uq_cp_event_scope_seq"
+_EVENT_IDEMPOTENCY_CONSTRAINT = "uq_cp_event_scope_idem"
+_UNRESOLVED_PRINCIPAL_KIND = "legacy_unresolved"
+
+
+def _event_idempotency_table() -> Table:
+    return cast(Table, vars(EventIdempotencyRow)["__table__"])
+
+
+def _sqlmodel_table(model: type[SQLModel]) -> Table:
+    return cast(Table, vars(model)["__table__"])
 
 
 def create_control_plane_tables(engine: Engine) -> None:
@@ -44,14 +66,13 @@ def create_control_plane_tables(engine: Engine) -> None:
 
     Intended for tests and local demos — not a production migration path.
     """
-    SQLModel.metadata.create_all(
-        engine,
-        tables=[
-            DefinitionRow.__table__,  # type: ignore[list-item]
-            SubmissionRow.__table__,  # type: ignore[list-item]
-            EventRow.__table__,  # type: ignore[list-item]
-        ],
-    )
+    tables: list[Table] = [
+        _sqlmodel_table(DefinitionRow),
+        _sqlmodel_table(SubmissionRow),
+        _sqlmodel_table(EventRow),
+        _event_idempotency_table(),
+    ]
+    SQLModel.metadata.create_all(engine, tables=tables)
 
 
 class SQLModelDefinitionRepository:
@@ -68,6 +89,29 @@ class SQLModelDefinitionRepository:
                     f"Definition {definition_id!r} not found"
                 )
             return json.loads(row.document_json)
+
+    def resolve_revision(
+        self,
+        ctx: ControlPlaneContext,
+        definition_id: str,
+        selector: str,
+    ) -> DefinitionResolution:
+        """Resolve the current content-addressed document in this legacy store."""
+        document = self.get(ctx, definition_id)
+        canonical = json.dumps(
+            dict(document),
+            sort_keys=True,
+            separators=(",", ":"),
+            ensure_ascii=False,
+            allow_nan=False,
+        )
+        revision_id = f"defrev-{hashlib.sha256(canonical.encode('utf-8')).hexdigest()}"
+        if selector not in {"current", revision_id}:
+            raise ControlPlaneError.not_found(
+                "Definition revision was not found",
+                extensions={"definition_id": definition_id},
+            )
+        return DefinitionResolution(revision_id=revision_id, document=document)
 
     def list(self, ctx: ControlPlaneContext) -> Sequence[str]:
         with session_scope(self._engine) as session:
@@ -100,6 +144,34 @@ class SQLModelDefinitionRepository:
                 row.document_json = payload
                 session.add(row)
 
+    def compare_and_swap(
+        self,
+        ctx: ControlPlaneContext,
+        definition_id: str,
+        expected_document: Mapping[str, Any],
+        document: Mapping[str, Any],
+    ) -> None:
+        """Atomically replace the row only while its source JSON is unchanged."""
+        expected = json.dumps(dict(expected_document), sort_keys=True)
+        payload = json.dumps(dict(document), sort_keys=True)
+        statement = text(
+            "UPDATE cp_definitions SET document_json = :document_json "
+            "WHERE tenant_id = :tenant_id AND workspace_id = :workspace_id "
+            "AND definition_id = :definition_id AND document_json = :expected_document"
+        ).bindparams(
+            document_json=payload,
+            tenant_id=ctx.tenant.tenant_id,
+            workspace_id=ctx.workspace.workspace_id,
+            definition_id=definition_id,
+            expected_document=expected,
+        )
+        with self._engine.begin() as connection:
+            result = connection.execute(statement)
+            if result.rowcount != 1:
+                raise ControlPlaneError.conflict(
+                    "Definition changed since the edit was prepared"
+                )
+
     @staticmethod
     def _get_row(
         session: Session, ctx: ControlPlaneContext, definition_id: str
@@ -129,6 +201,17 @@ class SQLModelSubmissionStore:
             row = self._by_idem(session, ctx, idempotency_key, operation=operation)
             return None if row is None else self._to_receipt(row)
 
+    def lookup_idempotency_payload(
+        self,
+        ctx: ControlPlaneContext,
+        idempotency_key: str,
+        *,
+        operation: str = "run.submit",
+    ) -> Mapping[str, Any] | None:
+        with session_scope(self._engine) as session:
+            row = self._by_idem(session, ctx, idempotency_key, operation=operation)
+            return None if row is None else json.loads(row.payload_json)
+
     def accept(
         self,
         ctx: ControlPlaneContext,
@@ -137,6 +220,7 @@ class SQLModelSubmissionStore:
         payload: Mapping[str, Any],
         resource_type: str = "run",
         resource_id: str | None = None,
+        submission_id: str | None = None,
         operation: str = "run.submit",
     ) -> AcceptResult:
         from sqlalchemy.exc import IntegrityError
@@ -144,6 +228,7 @@ class SQLModelSubmissionStore:
         safe_payload = redact_control_plane_payload(deepcopy(dict(payload)))
         if not isinstance(safe_payload, dict):
             safe_payload = {}
+        requested_submission_id = submission_id
         try:
             with session_scope(self._engine) as session:
                 existing = self._by_idem(
@@ -156,17 +241,26 @@ class SQLModelSubmissionStore:
                             "Idempotency key reuse with a different payload",
                             extensions={"idempotency_key": idempotency_key},
                         )
+                    if (
+                        submission_id is not None
+                        and existing.submission_id != submission_id
+                    ):
+                        raise ControlPlaneError.conflict(
+                            "Idempotency key is bound to a different submission"
+                        )
                     return AcceptResult(
                         receipt=self._to_receipt(existing), created=False
                     )
 
                 acceptance_id = f"acc-{uuid.uuid4().hex[:16]}"
-                submission_id = f"sub-{uuid.uuid4().hex[:16]}"
+                submission_id = submission_id or f"sub-{uuid.uuid4().hex[:16]}"
                 run_id = resource_id or submission_id
                 created = _utcnow_iso()
                 row = SubmissionRow(
                     tenant_id=ctx.tenant.tenant_id,
                     workspace_id=ctx.workspace.workspace_id,
+                    principal_issuer=ctx.principal.issuer or "",
+                    principal_kind=ctx.principal.kind,
                     principal_subject=ctx.principal.subject,
                     operation=operation,
                     idempotency_key=idempotency_key,
@@ -203,6 +297,13 @@ class SQLModelSubmissionStore:
                     raise ControlPlaneError.conflict(
                         "Idempotency key reuse with a different payload",
                         extensions={"idempotency_key": idempotency_key},
+                    ) from exc
+                if (
+                    requested_submission_id is not None
+                    and winner.submission_id != requested_submission_id
+                ):
+                    raise ControlPlaneError.conflict(
+                        "Idempotency key is bound to a different submission"
                     ) from exc
                 return AcceptResult(receipt=self._to_receipt(winner), created=False)
 
@@ -257,11 +358,29 @@ class SQLModelSubmissionStore:
         statement = select(SubmissionRow).where(
             SubmissionRow.tenant_id == ctx.tenant.tenant_id,
             SubmissionRow.workspace_id == ctx.workspace.workspace_id,
+            SubmissionRow.principal_issuer == (ctx.principal.issuer or ""),
+            SubmissionRow.principal_kind == ctx.principal.kind,
             SubmissionRow.principal_subject == ctx.principal.subject,
             SubmissionRow.operation == operation,
             SubmissionRow.idempotency_key == idempotency_key,
         )
-        return session.exec(statement).first()
+        row = session.exec(statement).first()
+        if row is not None:
+            return row
+        unresolved = select(SubmissionRow).where(
+            SubmissionRow.tenant_id == ctx.tenant.tenant_id,
+            SubmissionRow.workspace_id == ctx.workspace.workspace_id,
+            SubmissionRow.principal_kind == _UNRESOLVED_PRINCIPAL_KIND,
+            SubmissionRow.principal_subject == ctx.principal.subject,
+            SubmissionRow.operation == operation,
+            SubmissionRow.idempotency_key == idempotency_key,
+        )
+        if session.exec(unresolved).first() is not None:
+            raise ControlPlaneError.conflict(
+                "Legacy acceptance has no verified principal identity",
+                extensions={"reason": "legacy_principal_unresolved"},
+            )
+        return None
 
     @staticmethod
     def _by_run(
@@ -313,8 +432,27 @@ class SQLModelSubmissionStore:
 class SqlModelEventStore:
     """Minimal SQLModel-backed EventStore with tenant/workspace isolation."""
 
-    def __init__(self, engine: Engine) -> None:
+    def __init__(
+        self,
+        engine: Engine,
+        *,
+        max_events_per_scope: int | None = None,
+        idempotency_retention_seconds: int = DEFAULT_EVENT_IDEMPOTENCY_RETENTION_SECONDS,
+    ) -> None:
+        if max_events_per_scope is not None and (
+            type(max_events_per_scope) is not int or max_events_per_scope < 1
+        ):
+            raise ValueError("max_events_per_scope must be a positive integer or None")
+        if (
+            type(idempotency_retention_seconds) is not int
+            or idempotency_retention_seconds < 1
+        ):
+            raise ValueError(
+                "idempotency_retention_seconds must be a positive integer or None"
+            )
         self._engine = engine
+        self.max_events_per_scope = max_events_per_scope
+        self.idempotency_retention_seconds = idempotency_retention_seconds
 
     def append(
         self,
@@ -323,18 +461,67 @@ class SqlModelEventStore:
         kind: str,
         payload: Mapping[str, Any] | None = None,
     ) -> ControlPlaneEvent:
-        safe_payload = redact_control_plane_payload(deepcopy(dict(payload or {})))
-        if not isinstance(safe_payload, dict):
-            safe_payload = {}
+        return self._append(
+            ctx,
+            event_key=None,
+            kind=kind,
+            payload=payload,
+        )
+
+    def append_once(
+        self,
+        ctx: ControlPlaneContext,
+        *,
+        event_key: str,
+        kind: str,
+        payload: Mapping[str, Any] | None = None,
+    ) -> ControlPlaneEvent:
+        """Append once per trusted scope and key, including across restarts."""
+        if not event_key.strip():
+            raise ValueError("event_key must not be empty")
+        return self._append(ctx, event_key=event_key, kind=kind, payload=payload)
+
+    def _append(
+        self,
+        ctx: ControlPlaneContext,
+        *,
+        event_key: str | None,
+        kind: str,
+        payload: Mapping[str, Any] | None,
+    ) -> ControlPlaneEvent:
+        redacted_payload = redact_control_plane_payload(deepcopy(dict(payload or {})))
+        safe_payload = (
+            cast(dict[str, Any], redacted_payload)
+            if isinstance(redacted_payload, dict)
+            else {}
+        )
+        safe_key = (
+            None
+            if event_key is None
+            else hashlib.sha256(event_key.encode("utf-8")).hexdigest()
+        )
         for attempt in range(1, _EVENT_APPEND_MAX_ATTEMPTS + 1):
             try:
                 return self._append_once(
                     ctx,
                     kind=kind,
                     safe_payload=safe_payload,
+                    event_key=safe_key,
                 )
             except IntegrityError as exc:
-                if not self._is_sequence_conflict(exc):
+                if self._is_idempotency_conflict(exc) and safe_key is not None:
+                    existing = self._get_event_by_key(ctx, safe_key)
+                    if existing is not None:
+                        if (
+                            existing.kind != kind
+                            or dict(existing.payload or {}) != safe_payload
+                        ):
+                            raise ControlPlaneError.conflict(
+                                "Event idempotency key was reused with different content",
+                                extensions={"operation": "event.append_once"},
+                            ) from exc
+                        return existing
+                elif not self._is_sequence_conflict(exc):
                     raise
                 if attempt == _EVENT_APPEND_MAX_ATTEMPTS:
                     raise ControlPlaneError.conflict(
@@ -355,15 +542,84 @@ class SqlModelEventStore:
             return constraint_name == _EVENT_SEQUENCE_CONSTRAINT
         return _EVENT_SEQUENCE_CONSTRAINT in str(exc.orig)
 
+    @staticmethod
+    def _is_idempotency_conflict(exc: IntegrityError) -> bool:
+        diagnostic = getattr(exc.orig, "diag", None)
+        constraint_name = getattr(diagnostic, "constraint_name", None)
+        if constraint_name is not None:
+            return constraint_name == _EVENT_IDEMPOTENCY_CONSTRAINT
+        detail = str(exc.orig)
+        return _EVENT_IDEMPOTENCY_CONSTRAINT in detail or (
+            "cp_event_idempotency.tenant_id, "
+            "cp_event_idempotency.workspace_id, "
+            "cp_event_idempotency.event_key" in detail
+        )
+
     def _append_once(
         self,
         ctx: ControlPlaneContext,
         *,
         kind: str,
         safe_payload: dict[str, Any],
+        event_key: str | None,
     ) -> ControlPlaneEvent:
         with session_scope(self._engine) as session:
             self._lock_append_scope(session, ctx)
+            now = normalize_event_time()
+            self._prune_expired_idempotency(
+                session,
+                ctx,
+                now=now,
+                limit=_EVENT_IDEMPOTENCY_SWEEP_BATCH_SIZE,
+            )
+            if event_key is not None:
+                existing = session.exec(
+                    select(EventIdempotencyRow).where(
+                        EventIdempotencyRow.tenant_id == ctx.tenant.tenant_id,
+                        EventIdempotencyRow.workspace_id == ctx.workspace.workspace_id,
+                        EventIdempotencyRow.event_key == event_key,
+                    )
+                ).first()
+                if existing is not None and is_event_expired(
+                    existing.expires_at, now=now
+                ):
+                    session.delete(existing)
+                    session.flush()
+                    existing = None
+                if existing is not None:
+                    event_row = session.exec(
+                        select(EventRow).where(
+                            EventRow.tenant_id == ctx.tenant.tenant_id,
+                            EventRow.workspace_id == ctx.workspace.workspace_id,
+                            EventRow.event_id == existing.event_id,
+                        )
+                    ).first()
+                    if event_row is None:
+                        payload_digest = hashlib.sha256(
+                            json.dumps(safe_payload, sort_keys=True).encode("utf-8")
+                        ).hexdigest()
+                        if (
+                            existing.event_kind != kind
+                            or existing.payload_sha256 != payload_digest
+                        ):
+                            raise ControlPlaneError.conflict(
+                                "Event idempotency key was reused with different content",
+                                extensions={"operation": "event.append_once"},
+                            )
+                        raise ControlPlaneError.gone(
+                            "Previously delivered event is outside retained history",
+                            extensions={
+                                "hint": "event_expired",
+                                "operation": "event.append_once",
+                            },
+                        )
+                    event = self._to_event(event_row)
+                    if event.kind != kind or dict(event.payload or {}) != safe_payload:
+                        raise ControlPlaneError.conflict(
+                            "Event idempotency key was reused with different content",
+                            extensions={"operation": "event.append_once"},
+                        )
+                    return event
             statement = (
                 select(EventRow)
                 .where(
@@ -396,6 +652,27 @@ class SqlModelEventStore:
             )
             session.add(row)
             session.flush()
+            if event_key is not None:
+                session.add(
+                    EventIdempotencyRow(
+                        tenant_id=ctx.tenant.tenant_id,
+                        workspace_id=ctx.workspace.workspace_id,
+                        event_key=event_key,
+                        event_id=event_id,
+                        event_kind=kind,
+                        payload_sha256=hashlib.sha256(
+                            json.dumps(safe_payload, sort_keys=True).encode("utf-8")
+                        ).hexdigest(),
+                        sequence=sequence,
+                        cursor=cursor,
+                        expires_at=event_expiry(
+                            event_time(created) or now,
+                            self.idempotency_retention_seconds,
+                        ),
+                    )
+                )
+                session.flush()
+            self._enforce_retention(session, ctx, high_water_sequence=sequence)
             return ControlPlaneEvent(
                 event_id=event_id,
                 sequence=sequence,
@@ -409,6 +686,106 @@ class SqlModelEventStore:
                     "workspace_id": ctx.workspace.workspace_id,
                 },
             )
+
+    def prune_before_sequence(
+        self, ctx: ControlPlaneContext, before_sequence: int
+    ) -> int:
+        """Delete older scoped events while preserving the sequence high-water."""
+        if before_sequence < 1:
+            raise ValueError("before_sequence must be at least 1")
+        with session_scope(self._engine) as session:
+            self._lock_append_scope(session, ctx)
+            latest_sequence = session.exec(
+                select(EventRow.sequence)
+                .where(
+                    EventRow.tenant_id == ctx.tenant.tenant_id,
+                    EventRow.workspace_id == ctx.workspace.workspace_id,
+                )
+                .order_by(text("sequence DESC"))
+                .limit(1)
+            ).first()
+            if latest_sequence is None:
+                return 0
+            cutoff = min(before_sequence, int(latest_sequence))
+            result = session.exec(
+                delete(EventRow).where(
+                    EventRow.tenant_id == ctx.tenant.tenant_id,
+                    EventRow.workspace_id == ctx.workspace.workspace_id,
+                    EventRow.sequence < cutoff,
+                )
+            )
+            return int(result.rowcount or 0)
+
+    def prune_expired_idempotency(
+        self,
+        ctx: ControlPlaneContext,
+        *,
+        limit: int = _EVENT_IDEMPOTENCY_SWEEP_BATCH_SIZE,
+        now: datetime | None = None,
+    ) -> int:
+        """Delete a bounded number of expired scoped event-key tombstones."""
+        if (
+            type(limit) is not int
+            or not 1 <= limit <= MAX_EVENT_IDEMPOTENCY_PRUNE_BATCH
+        ):
+            raise ValueError(
+                f"limit must be between 1 and {MAX_EVENT_IDEMPOTENCY_PRUNE_BATCH}"
+            )
+        current = normalize_event_time(now)
+        with session_scope(self._engine) as session:
+            self._lock_append_scope(session, ctx)
+            return self._prune_expired_idempotency(
+                session, ctx, now=current, limit=limit
+            )
+
+    @staticmethod
+    def _prune_expired_idempotency(
+        session: Session,
+        ctx: ControlPlaneContext,
+        *,
+        now: datetime,
+        limit: int,
+    ) -> int:
+        """Delete expired tombstones in the caller's transaction."""
+        boundary = now.isoformat(timespec="microseconds").replace("+00:00", "Z")
+        expired = session.exec(
+            select(EventIdempotencyRow)
+            .where(
+                EventIdempotencyRow.tenant_id == ctx.tenant.tenant_id,
+                EventIdempotencyRow.workspace_id == ctx.workspace.workspace_id,
+                EventIdempotencyRow.expires_at.is_not(None),
+                EventIdempotencyRow.expires_at <= boundary,
+            )
+            .order_by(text("expires_at ASC"))
+            .limit(limit)
+        ).all()
+        for row in expired:
+            session.delete(row)
+        return len(expired)
+
+    def _get_event_by_key(
+        self, ctx: ControlPlaneContext, event_key: str
+    ) -> ControlPlaneEvent | None:
+        with session_scope(self._engine) as session:
+            mapping = session.exec(
+                select(EventIdempotencyRow).where(
+                    EventIdempotencyRow.tenant_id == ctx.tenant.tenant_id,
+                    EventIdempotencyRow.workspace_id == ctx.workspace.workspace_id,
+                    EventIdempotencyRow.event_key == event_key,
+                )
+            ).first()
+            if mapping is None:
+                return None
+            if is_event_expired(mapping.expires_at):
+                return None
+            row = session.exec(
+                select(EventRow).where(
+                    EventRow.tenant_id == ctx.tenant.tenant_id,
+                    EventRow.workspace_id == ctx.workspace.workspace_id,
+                    EventRow.event_id == mapping.event_id,
+                )
+            ).first()
+            return None if row is None else self._to_event(row)
 
     def _lock_append_scope(self, session: Session, ctx: ControlPlaneContext) -> None:
         """Serialize sequence allocation for this scope on PostgreSQL.
@@ -439,6 +816,8 @@ class SqlModelEventStore:
     ) -> Sequence[ControlPlaneEvent]:
         if limit < 1:
             return ()
+        self.prune_expired_idempotency(ctx)
+        self._enforce_scope_retention(ctx)
         with session_scope(self._engine) as session:
             start_seq = 0
             if cursor is not None:
@@ -471,6 +850,42 @@ class SqlModelEventStore:
             )
             rows = session.exec(statement).all()
             return [self._to_event(r) for r in rows]
+
+    def _enforce_scope_retention(self, ctx: ControlPlaneContext) -> None:
+        if self.max_events_per_scope is None:
+            return
+        with session_scope(self._engine) as session:
+            self._lock_append_scope(session, ctx)
+            latest_sequence = session.exec(
+                select(EventRow.sequence)
+                .where(
+                    EventRow.tenant_id == ctx.tenant.tenant_id,
+                    EventRow.workspace_id == ctx.workspace.workspace_id,
+                )
+                .order_by(text("sequence DESC"))
+                .limit(1)
+            ).first()
+            if latest_sequence is not None:
+                self._enforce_retention(
+                    session, ctx, high_water_sequence=int(latest_sequence)
+                )
+
+    def _enforce_retention(
+        self, session: Session, ctx: ControlPlaneContext, *, high_water_sequence: int
+    ) -> None:
+        """Keep only the configured newest event window inside this scope."""
+        if self.max_events_per_scope is None:
+            return
+        first_retained = high_water_sequence - self.max_events_per_scope + 1
+        if first_retained <= 1:
+            return
+        session.exec(
+            delete(EventRow).where(
+                EventRow.tenant_id == ctx.tenant.tenant_id,
+                EventRow.workspace_id == ctx.workspace.workspace_id,
+                EventRow.sequence < first_retained,
+            )
+        )
 
     @staticmethod
     def _to_event(row: EventRow) -> ControlPlaneEvent:

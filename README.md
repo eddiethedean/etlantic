@@ -42,7 +42,7 @@ is not dbt, not a dataframe engine, and not a hosted scheduler.
 ETLantic requires Python 3.11 or newer. In an activated virtual environment:
 
 ```bash
-python -m pip install 'etlantic==0.55.0'
+python -m pip install etlantic
 python -m etlantic --version
 mkdir my-pipeline
 cd my-pipeline
@@ -51,14 +51,14 @@ python -m etlantic validate pipeline.py:SamplePipeline --profile development
 python -m etlantic run pipeline.py:SamplePipeline --profile development
 ```
 
-This install pin will resolve once 0.55.0 is published. The run should succeed
+The published 0.55.0 line remains supported while 0.56.0 is a qualification candidate. The run should succeed
 and write Ada and Grace to `data/out.json`. See the
 [full Quickstart](https://etlantic.readthedocs.io/en/stable/01_GETTING_STARTED/QUICKSTART/)
 for setup details and expected output.
 
 If `init` refuses the directory, use an empty folder (or `--force` only after
 you have reviewed what it overwrites). Pin every official plugin to the same
-version as core (`etlantic-polars==0.55.0` with `etlantic==0.55.0`). Mixed
+version as core (`etlantic-polars` with `etlantic`). Mixed
 plugin versions fail closed — see
 [Troubleshooting](https://etlantic.readthedocs.io/en/stable/01_GETTING_STARTED/TROUBLESHOOTING/#core-and-plugin-versions-do-not-match).
 
@@ -104,7 +104,7 @@ The public CLI (see the
 Core has no dataframe, database, Spark, or orchestrator dependency. Install
 only the integrations a pipeline needs:
 
-| Capability | 0.55 |
+| Capability | 0.56 |
 |---|---|
 | Local Python + JSON/CSV | `etlantic` |
 | Polars or Pandas | `etlantic[polars]` or `etlantic[pandas]` |

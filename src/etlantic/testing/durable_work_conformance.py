@@ -171,3 +171,47 @@ def run_durable_work_conformance_suite(store: Any) -> None:
         submission_id=submission.submission_id,
     )
     assert ack.version == 1
+
+    accepted_scope = ControlPlaneContext(
+        principal=Principal("nightly", issuer="conformance", kind="workload"),
+        tenant=context.tenant,
+        workspace=context.workspace,
+        environment=EnvironmentRef("production"),
+        security_domain=SecurityDomain("regulated"),
+        resource_owner_id="owner-a",
+    )
+    _accepted_scope_submission, accepted_scope_created = store.accept(
+        accepted_scope,
+        idempotency_key="conf-scope-1",
+        operation="run.submit",
+        plan_fingerprint="scope-plan",
+    )
+    assert accepted_scope_created
+    scopes: list[ControlPlaneContext] = []
+    scope_cursor = None
+    scope_high_watermark = None
+    while True:
+        page = store.list_execution_scopes(
+            context,
+            after_submission_id=scope_cursor,
+            through_submission_id=scope_high_watermark,
+            limit=1,
+        )
+        scopes.extend(page.scopes)
+        scope_cursor = page.next_cursor
+        scope_high_watermark = page.high_watermark
+        if scope_cursor is None:
+            break
+    assert {
+        (
+            scope.principal.subject,
+            scope.principal.issuer,
+            scope.environment.name,
+            scope.security_domain.domain_id,
+            scope.resource_owner_id,
+        )
+        for scope in scopes
+    } == {
+        ("worker-a", "conformance", "dev", "internal", None),
+        ("nightly", "conformance", "production", "regulated", "owner-a"),
+    }

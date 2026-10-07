@@ -276,6 +276,7 @@ class LocalScheduler:
                 physical_compiler_pins=admission.compiler_pins,
                 physical_dataframe_pins=dict(admission.dataframe_pins),
                 physical_io_policy_pins=admission.io_policy_pins,
+                state_store=getattr(runtime, "incremental_state_store", None),
             )
             result = await host.execute()
             result.metadata.setdefault("etlantic.scheduler", self.info.name)
@@ -292,6 +293,7 @@ class LocalScheduler:
             workspace=workspace,
             artifacts=artifact_store,
             run_id=context.run_id if context is not None else None,
+            state_store=getattr(runtime, "incremental_state_store", None),
         )
         result = await host.execute()
         # Annotate scheduler identity without breaking report schema consumers.

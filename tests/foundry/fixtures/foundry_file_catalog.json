@@ -1,0 +1,22 @@
+{
+  "files": [
+    {
+      "path": "folder/a.csv",
+      "branch_name": "main",
+      "transaction_rid": "ri.foundry.main.transaction.pinned",
+      "content_fixture": "files/folder-a.csv"
+    },
+    {
+      "path": "folder/b.csv",
+      "branch_name": "main",
+      "transaction_rid": "ri.foundry.main.transaction.pinned",
+      "content_fixture": "files/folder-b.csv"
+    },
+    {
+      "path": "orders.csv",
+      "branch_name": "main",
+      "transaction_rid": "ri.foundry.main.transaction.pinned",
+      "content_fixture": "files/orders.csv"
+    }
+  ]
+}

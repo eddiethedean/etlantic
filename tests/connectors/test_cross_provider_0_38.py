@@ -180,7 +180,10 @@ def test_038_a19_capability_matrix_matches_connectors() -> None:
 
     from etlantic_iceberg import create_source as create_iceberg_source
 
-    from etlantic_sql.connectors import create_source as create_pg_source
+    from etlantic_sql.connectors import (
+        FakePostgresConnection,
+        PostgresSourceConnector,
+    )
 
     iceberg = create_iceberg_source()
     assert iceberg.info().maturity is ConnectorMaturity.EXPERIMENTAL
@@ -188,7 +191,9 @@ def test_038_a19_capability_matrix_matches_connectors() -> None:
         providers["iceberg"]["source_capabilities"]
     )
 
-    pg = create_pg_source()
+    # Keep this historical cross-provider comparison on the explicitly named
+    # SQLite fake; the PostgreSQL entry point now returns the live connector.
+    pg = PostgresSourceConnector(connection=FakePostgresConnection())
     assert pg.info().maturity is ConnectorMaturity.EXPERIMENTAL
     assert set(pg.info().capabilities) == set(
         providers["postgresql"]["source_capabilities"]
@@ -273,19 +278,27 @@ def test_provider_plan_read_identity_scheme_only() -> None:
             create_snowflake_source,
         ):
             connector = factory()
-            binding = {
-                "provider": connector.info().provider,
-                "format": "csv",
-                "root_ref": "landing",
-                "mode": "snapshot",
-                "config": {
+            provider = connector.info().provider
+            assert provider is not None
+            config_by_provider = {
+                "local-files": {
+                    "format": "csv",
+                    "mode": "snapshot",
+                    "root_ref": "landing",
+                },
+                "s3": {
                     "bucket": "lake",
                     "prefix": "x",
                     "pointer_key": "x.commit",
-                    "table": "ORDERS",
-                    "root_ref": "landing",
-                    "mode": "snapshot",
                 },
+                "snowflake": {"table": "ORDERS"},
+            }
+            binding = {
+                "provider": provider,
+                "format": "csv",
+                "root_ref": "landing",
+                "mode": "snapshot",
+                "config": config_by_provider[provider],
             }
             plan = await connector.plan_read(
                 binding=binding, context={"run_id": "burnin"}

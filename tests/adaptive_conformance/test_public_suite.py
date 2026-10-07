@@ -12,6 +12,7 @@ import pytest
 from tests.runtime.adaptive_candidate_guard import (
     ADAPTIVE_CANDIDATE_MATCHES_PACKAGE,
     ADAPTIVE_CANDIDATE_MISMATCH_REASON,
+    ADAPTIVE_LOCAL_CHAIN_MATCHES_PACKAGE,
 )
 
 from etlantic import (
@@ -130,7 +131,7 @@ def test_actual_public_stored_execution_and_canonical_results():
     ADAPTIVE_CANDIDATE_MATCHES_PACKAGE,
     reason="the packaged adaptive candidate matches this ETLantic version",
 )
-def test_stale_candidate_rejects_execution_before_reads():
+def test_unqualified_topology_rejects_execution_before_reads():
     reads: list[bool] = []
 
     def factory() -> PipelineRuntime:
@@ -151,16 +152,17 @@ def test_stale_candidate_rejects_execution_before_reads():
     report = run_adaptive_provider_conformance_suite(
         [
             case(
+                pipeline=MultiSource,
                 runtime_factory=factory,
                 expected_acceptance=False,
-                expected_code="PMADP501",
+                expected_code="PMADP500",
                 verify=verify,
             )
         ]
     )
 
     assert report.passed
-    assert report.results[0].code == "PMADP501"
+    assert report.results[0].code == "PMADP500"
     assert reads == []
 
 
@@ -168,7 +170,7 @@ def test_stale_candidate_rejects_execution_before_reads():
 @pytest.mark.parametrize("supplied", [True, False])
 def test_required_parameter_from_request(mode: str, supplied: bool):
     expected_acceptance = supplied and (
-        mode == "planning" or ADAPTIVE_CANDIDATE_MATCHES_PACKAGE
+        mode == "planning" or ADAPTIVE_LOCAL_CHAIN_MATCHES_PACKAGE
     )
     expected_code: str | None = (
         None if expected_acceptance else "PMTRN102" if not supplied else "PMADP501"
@@ -180,7 +182,7 @@ def test_required_parameter_from_request(mode: str, supplied: bool):
             assert runtime.memory.get("out") == []
         elif mode == "planning":
             assert plan is not None and report is None
-        elif ADAPTIVE_CANDIDATE_MATCHES_PACKAGE:
+        elif ADAPTIVE_LOCAL_CHAIN_MATCHES_PACKAGE:
             assert report.status.value == "succeeded"
             assert [row.key for row in runtime.memory.get("out")] == [1, 1]
         else:
@@ -332,10 +334,13 @@ def test_sync_loop_guard_and_async_entry_point():
         report = await arun_adaptive_provider_conformance_suite(
             [
                 case(
+                    pipeline=(
+                        Chain if ADAPTIVE_CANDIDATE_MATCHES_PACKAGE else MultiSource
+                    ),
                     expected_acceptance=ADAPTIVE_CANDIDATE_MATCHES_PACKAGE,
                     expected_code=None
                     if ADAPTIVE_CANDIDATE_MATCHES_PACKAGE
-                    else "PMADP501",
+                    else "PMADP500",
                     verify=passing_oracle,
                 )
             ]

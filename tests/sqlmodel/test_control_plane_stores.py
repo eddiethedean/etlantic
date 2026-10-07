@@ -3,7 +3,10 @@
 
 from __future__ import annotations
 
+import json
 from concurrent.futures import ThreadPoolExecutor
+from dataclasses import replace
+from importlib import import_module
 from pathlib import Path
 
 import pytest
@@ -11,6 +14,7 @@ import pytest
 pytest.importorskip("sqlmodel")
 pytest.importorskip("etlantic_sqlmodel")
 
+from sqlalchemy import text
 from sqlalchemy.exc import IntegrityError
 
 from etlantic.control_plane import (
@@ -22,6 +26,7 @@ from etlantic.control_plane import (
     TenantRef,
     WorkspaceRef,
 )
+from etlantic.runtime.managed_execution import managed_run_id
 from etlantic_sqlmodel.control_plane import (
     SQLModelDefinitionRepository,
     SqlModelEventStore,
@@ -66,6 +71,187 @@ def test_sqlite_restart_preserves_accept(tmp_path: Path) -> None:
     assert run["status"] == "accepted"
 
 
+def test_sqlite_acceptance_keeps_same_key_isolated_by_principal(
+    tmp_path: Path,
+) -> None:
+    engine = create_sqlite_engine(f"sqlite:///{tmp_path / 'cp-principal-scope.db'}")
+    create_control_plane_tables(engine)
+    store = SQLModelSubmissionStore(engine)
+    alice = _ctx()
+    bob = replace(alice, principal=Principal(subject="bob"))
+
+    alice_run_id = managed_run_id(alice, "shared-key")
+    bob_run_id = managed_run_id(bob, "shared-key")
+    alice_result = store.accept(
+        alice,
+        idempotency_key="shared-key",
+        payload={"definition_id": "pipe", "owner": "alice"},
+        resource_id=alice_run_id,
+    )
+    bob_result = store.accept(
+        bob,
+        idempotency_key="shared-key",
+        payload={"definition_id": "pipe", "owner": "bob"},
+        resource_id=bob_run_id,
+    )
+
+    assert alice_run_id != bob_run_id
+    assert alice_result.receipt.submission_id != bob_result.receipt.submission_id
+    assert (
+        store.get_run(alice, alice_run_id)["submission_id"]
+        == alice_result.receipt.submission_id
+    )
+    assert (
+        store.get_run(bob, bob_run_id)["submission_id"]
+        == bob_result.receipt.submission_id
+    )
+
+
+@pytest.mark.parametrize(
+    "other_principal",
+    [
+        Principal(subject="alice", issuer="issuer-b", kind="human"),
+        Principal(subject="alice", issuer="issuer-a", kind="workload"),
+    ],
+    ids=["different-issuer", "different-kind"],
+)
+def test_sqlite_acceptance_scopes_idempotency_to_complete_principal(
+    tmp_path: Path, other_principal: Principal
+) -> None:
+    engine = create_sqlite_engine(f"sqlite:///{tmp_path / 'cp-complete-principal.db'}")
+    create_control_plane_tables(engine)
+    store = SQLModelSubmissionStore(engine)
+    base = replace(_ctx(), principal=Principal(subject="alice", issuer="issuer-a"))
+    other = replace(base, principal=other_principal)
+
+    first = store.accept(
+        base, idempotency_key="shared-key", payload={"definition_id": "pipe"}
+    ).receipt
+    second = store.accept(
+        other, idempotency_key="shared-key", payload={"definition_id": "pipe"}
+    ).receipt
+
+    assert first.submission_id != second.submission_id
+    assert store.lookup_idempotency(base, "shared-key") == first
+    assert store.lookup_idempotency(other, "shared-key") == second
+    assert (
+        store.accept(
+            base, idempotency_key="shared-key", payload={"definition_id": "pipe"}
+        ).receipt
+        == first
+    )
+    assert (
+        store.accept(
+            other, idempotency_key="shared-key", payload={"definition_id": "pipe"}
+        ).receipt
+        == second
+    )
+
+
+def _insert_legacy_cp1_receipt(engine, ctx: ControlPlaneContext) -> None:
+    with engine.begin() as connection:
+        connection.execute(
+            text(
+                "CREATE TABLE cp_submissions (id INTEGER PRIMARY KEY, "
+                "tenant_id VARCHAR NOT NULL, workspace_id VARCHAR NOT NULL, "
+                "principal_subject VARCHAR NOT NULL, operation VARCHAR NOT NULL, "
+                "idempotency_key VARCHAR NOT NULL, acceptance_id VARCHAR NOT NULL, "
+                "submission_id VARCHAR NOT NULL, created_at VARCHAR NOT NULL, "
+                "status VARCHAR NOT NULL, resource_type VARCHAR NOT NULL, "
+                "resource_id VARCHAR, payload_json VARCHAR NOT NULL, "
+                "run_status VARCHAR NOT NULL, updated_at VARCHAR, definition_id VARCHAR, "
+                "CONSTRAINT uq_cp_submission_idem UNIQUE (tenant_id, workspace_id, "
+                "principal_subject, operation, idempotency_key))"
+            )
+        )
+        connection.execute(
+            text(
+                "INSERT INTO cp_submissions "
+                "(tenant_id, workspace_id, principal_subject, operation, "
+                "idempotency_key, acceptance_id, submission_id, created_at, status, "
+                "resource_type, resource_id, payload_json, run_status, updated_at, "
+                "definition_id) VALUES (:tenant, :workspace, :subject, :operation, "
+                ":key, :acceptance, :submission, :created, :status, :resource_type, "
+                ":resource, :payload, :run_status, :updated, :definition)"
+            ),
+            {
+                "tenant": ctx.tenant.tenant_id,
+                "workspace": ctx.workspace.workspace_id,
+                "subject": ctx.principal.subject,
+                "operation": "run.submit",
+                "key": "legacy-key",
+                "acceptance": "acc-legacy",
+                "submission": "sub-legacy",
+                "created": "2026-10-04T00:00:00Z",
+                "status": "accepted",
+                "resource_type": "run",
+                "resource": "run-legacy",
+                "payload": '{"definition_id":"pipe"}',
+                "run_status": "accepted",
+                "updated": "2026-10-04T00:00:00Z",
+                "definition": "pipe",
+            },
+        )
+
+
+def test_sqlite_acceptance_blocks_unresolved_legacy_receipt(tmp_path: Path) -> None:
+    engine = create_sqlite_engine(f"sqlite:///{tmp_path / 'cp-legacy-principal.db'}")
+    ctx = _ctx()
+    _insert_legacy_cp1_receipt(engine, ctx)
+    migration = import_module(
+        "etlantic_sqlmodel.migrations.versions.014_cp1_complete_principal_idempotency_0_56"
+    )
+    migration.upgrade(engine)
+    with pytest.raises(ControlPlaneError, match="no verified principal identity"):
+        SQLModelSubmissionStore(engine).lookup_idempotency(ctx, "legacy-key")
+
+
+def test_sqlite_migration_recovers_legacy_receipt_identity_from_cp3(
+    tmp_path: Path,
+) -> None:
+    engine = create_sqlite_engine(f"sqlite:///{tmp_path / 'cp-recover-principal.db'}")
+    base = _ctx()
+    owner = replace(
+        base,
+        principal=Principal(subject="alice", issuer="issuer-a", kind="workload"),
+    )
+    _insert_legacy_cp1_receipt(engine, base)
+    cp3_submission = {
+        "submission_id": "sub-legacy",
+        "tenant_id": owner.tenant.tenant_id,
+        "workspace_id": owner.workspace.workspace_id,
+        "principal_subject": owner.principal.subject,
+        "principal_issuer": owner.principal.issuer,
+        "principal_kind": owner.principal.kind,
+        "operation": "run.submit",
+        "idempotency_key": "legacy-key",
+    }
+    with engine.begin() as connection:
+        connection.execute(
+            text(
+                "CREATE TABLE cp_durable_snapshot (id INTEGER PRIMARY KEY, "
+                "store_id VARCHAR NOT NULL, payload_json TEXT NOT NULL)"
+            )
+        )
+        connection.execute(
+            text(
+                "INSERT INTO cp_durable_snapshot (store_id, payload_json) "
+                "VALUES (:store_id, :payload)"
+            ),
+            {
+                "store_id": "default",
+                "payload": json.dumps({"submissions": {"entry": cp3_submission}}),
+            },
+        )
+    migration = import_module(
+        "etlantic_sqlmodel.migrations.versions.014_cp1_complete_principal_idempotency_0_56"
+    )
+    migration.upgrade(engine)
+    receipt = SQLModelSubmissionStore(engine).lookup_idempotency(owner, "legacy-key")
+    assert receipt is not None
+    assert receipt.submission_id == "sub-legacy"
+
+
 def test_sqlite_event_store_restart(tmp_path: Path) -> None:
     db = tmp_path / "cp-events.db"
     url = f"sqlite:///{db}"
@@ -83,6 +269,151 @@ def test_sqlite_event_store_restart(tmp_path: Path) -> None:
     assert listed[0].event_id == first.event_id
     assert listed[0].payload == {"run_id": "run-1", "note": "ok"}
     assert listed[0].to_dict()["run_id"] == "run-1"
+
+
+def test_sqlite_event_append_once_survives_restart_and_rejects_conflicts(
+    tmp_path: Path,
+) -> None:
+    url = f"sqlite:///{tmp_path / 'cp-events-idempotent.db'}"
+    engine = create_sqlite_engine(url)
+    create_control_plane_tables(engine)
+    ctx = _ctx()
+    first = SqlModelEventStore(engine).append_once(
+        ctx,
+        event_key="sub-1:attempt-1:started",
+        kind="run.started",
+        payload={"run_id": "run-1", "attempt_id": "attempt-1"},
+    )
+
+    restarted = create_sqlite_engine(url)
+    events = SqlModelEventStore(restarted)
+    repeated = events.append_once(
+        ctx,
+        event_key="sub-1:attempt-1:started",
+        kind="run.started",
+        payload={"run_id": "run-1", "attempt_id": "attempt-1"},
+    )
+    assert repeated.event_id == first.event_id
+    assert len(events.list_after_cursor(ctx, None)) == 1
+    with pytest.raises(ControlPlaneError) as caught:
+        events.append_once(
+            ctx,
+            event_key="sub-1:attempt-1:started",
+            kind="run.started",
+            payload={"run_id": "different"},
+        )
+    assert caught.value.status == 409
+
+
+def test_sqlite_event_retention_preserves_tombstones_and_sequence_anchor(
+    tmp_path: Path,
+) -> None:
+    engine = create_sqlite_engine(f"sqlite:///{tmp_path / 'cp-events-retention.db'}")
+    create_control_plane_tables(engine)
+    ctx = _ctx()
+    events = SqlModelEventStore(engine)
+    expired = events.append_once(
+        ctx,
+        event_key="started:attempt-1",
+        kind="run.started",
+        payload={"run_id": "run-1"},
+    )
+    events.append(ctx, kind="run.progress", payload={"run_id": "run-1"})
+    anchor = events.append(ctx, kind="run.completed", payload={"run_id": "run-1"})
+    other_scope = events.append(_ctx(tenant="tenant-b"), kind="other.scope")
+
+    assert events.prune_before_sequence(ctx, before_sequence=3) == 2
+    with pytest.raises(ControlPlaneError) as cursor_error:
+        events.list_after_cursor(ctx, expired.cursor)
+    assert cursor_error.value.status == 410
+    with pytest.raises(ControlPlaneError) as retry_error:
+        events.append_once(
+            ctx,
+            event_key="started:attempt-1",
+            kind="run.started",
+            payload={"run_id": "run-1"},
+        )
+    assert retry_error.value.status == 410
+    with pytest.raises(ControlPlaneError) as conflict:
+        events.append_once(
+            ctx,
+            event_key="started:attempt-1",
+            kind="run.started",
+            payload={"run_id": "different"},
+        )
+    assert conflict.value.status == 409
+
+    appended = events.append(ctx, kind="run.recovered")
+    assert appended.sequence == anchor.sequence + 1 == 4
+    assert [event.event_id for event in events.list_after_cursor(ctx, None)] == [
+        anchor.event_id,
+        appended.event_id,
+    ]
+    assert events.list_after_cursor(_ctx(tenant="tenant-b"), None) == [other_scope]
+
+
+def test_sqlite_event_retention_policy_is_enforced_and_survives_restart(
+    tmp_path: Path,
+) -> None:
+    url = f"sqlite:///{tmp_path / 'cp-events-policy.db'}"
+    engine = create_sqlite_engine(url)
+    create_control_plane_tables(engine)
+    ctx = _ctx()
+    unbounded = SqlModelEventStore(engine)
+    expired = unbounded.append_once(
+        ctx,
+        event_key="start-policy-1",
+        kind="run.started",
+        payload={"run_id": "run-1"},
+    )
+    unbounded.append(ctx, kind="run.progress", payload={"run_id": "run-1"})
+    anchor = unbounded.append(ctx, kind="run.completed", payload={"run_id": "run-1"})
+    other_scope = unbounded.append(_ctx(tenant="tenant-b"), kind="other.scope")
+
+    retained = SqlModelEventStore(engine, max_events_per_scope=2)
+    assert [event.sequence for event in retained.list_after_cursor(ctx, None)] == [2, 3]
+    with pytest.raises(ControlPlaneError) as cursor_error:
+        retained.list_after_cursor(ctx, expired.cursor)
+    assert cursor_error.value.status == 410
+    with pytest.raises(ControlPlaneError) as retry_error:
+        retained.append_once(
+            ctx,
+            event_key="start-policy-1",
+            kind="run.started",
+            payload={"run_id": "run-1"},
+        )
+    assert retry_error.value.status == 410
+
+    next_event = retained.append(ctx, kind="run.recovered")
+    assert next_event.sequence == anchor.sequence + 1 == 4
+    assert [event.sequence for event in retained.list_after_cursor(ctx, None)] == [3, 4]
+    assert retained.list_after_cursor(_ctx(tenant="tenant-b"), None) == [other_scope]
+    engine.dispose()
+
+    restarted_engine = create_sqlite_engine(url)
+    restarted = SqlModelEventStore(restarted_engine, max_events_per_scope=2)
+    assert [event.sequence for event in restarted.list_after_cursor(ctx, None)] == [
+        3,
+        4,
+    ]
+    with pytest.raises(ControlPlaneError) as restarted_retry:
+        restarted.append_once(
+            ctx,
+            event_key="start-policy-1",
+            kind="run.started",
+            payload={"run_id": "run-1"},
+        )
+    assert restarted_retry.value.status == 410
+    restarted_engine.dispose()
+
+
+def test_sqlite_event_store_rejects_invalid_retention_policy(tmp_path: Path) -> None:
+    engine = create_sqlite_engine(
+        f"sqlite:///{tmp_path / 'cp-events-invalid-policy.db'}"
+    )
+    with pytest.raises(ValueError, match="positive integer"):
+        SqlModelEventStore(engine, max_events_per_scope=0)
+    engine.dispose()
 
 
 def test_sqlite_event_sequence_conflict_is_bounded_and_retryable(
@@ -175,5 +506,10 @@ def test_definition_repo_scoped(tmp_path: Path) -> None:
     assert repo.get(a, "pipe")["owner"] == "a"
     assert repo.get(b, "pipe")["owner"] == "b"
     assert list(repo.list(a)) == ["pipe"]
+    repo.compare_and_swap(a, "pipe", {"owner": "a"}, {"owner": "a-edited"})
+    with pytest.raises(ControlPlaneError) as stale:
+        repo.compare_and_swap(a, "pipe", {"owner": "a"}, {"owner": "stale"})
+    assert stale.value.status == 409
+    assert repo.get(a, "pipe")["owner"] == "a-edited"
     with pytest.raises(ControlPlaneError):
         repo.get(a, "missing")

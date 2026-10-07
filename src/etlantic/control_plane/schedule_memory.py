@@ -3,6 +3,7 @@
 
 from __future__ import annotations
 
+import hashlib
 import json
 import threading
 import uuid
@@ -14,13 +15,14 @@ from typing import Any
 
 from etlantic.control_plane.durable_protocols import DurableWorkStore
 from etlantic.control_plane.errors import ControlPlaneError
-from etlantic.control_plane.models import ControlPlaneContext
+from etlantic.control_plane.models import ControlPlaneContext, Principal
 from etlantic.control_plane.schedule_clock import _in_window
 from etlantic.control_plane.schedule_models import (
     FiringRecord,
     FiringStatus,
     ScheduleRecord,
     ScheduleSpec,
+    assert_schedule_payload_clean,
     firing_key,
 )
 from etlantic.control_plane.schedule_protocols import SchedulerLeaderLease
@@ -42,9 +44,13 @@ def _submission_inflight(
     if durable is None:
         return True
     status_fn = getattr(durable, "submission_status", None)
-    if status_fn is None:
-        return True
-    status = status_fn(ctx, submission_id)
+    if callable(status_fn):
+        status = status_fn(ctx, submission_id)
+    else:
+        try:
+            status = durable.get_submission(ctx, submission_id).status
+        except ControlPlaneError:
+            return True
     return status in _NON_TERMINAL if status is not None else False
 
 
@@ -78,8 +84,11 @@ class MemoryScheduleStore:
         spec: ScheduleSpec,
         schedule_id: str | None = None,
         policy_fingerprint: str = "",
+        definition_revision_id: str | None = None,
         parameter_refs: dict[str, str] | None = None,
-        secret_refs: dict[str, str] | None = None,
+        secret_refs: dict[str, Mapping[str, Any] | str] | None = None,
+        revision_policy: str = "pinned",
+        workload_identity: Principal | None = None,
         next_fire_at: str | None = None,
     ) -> ScheduleRecord:
         sid = (schedule_id or f"sch-{uuid.uuid4().hex[:16]}").strip()
@@ -98,8 +107,14 @@ class MemoryScheduleStore:
             updated_at=now,
             status="active",
             next_fire_at=next_fire_at,
+            definition_revision_id=definition_revision_id,
             parameter_refs=dict(parameter_refs or {}),
-            secret_refs=dict(secret_refs or {}),
+            secret_refs={
+                str(name): dict(value) if isinstance(value, Mapping) else value
+                for name, value in (secret_refs or {}).items()
+            },
+            revision_policy=revision_policy,  # type: ignore[arg-type]
+            workload_identity=workload_identity,
         )
         key = (*_scope(ctx), sid)
         with self._lock:
@@ -130,6 +145,47 @@ class MemoryScheduleStore:
 
     def resume(self, ctx: ControlPlaneContext, schedule_id: str) -> ScheduleRecord:
         return self._set_status(ctx, schedule_id, "active")
+
+    def amend(
+        self,
+        ctx: ControlPlaneContext,
+        schedule_id: str,
+        *,
+        expected_revision_id: str,
+        spec: ScheduleSpec,
+        next_fire_at: str | None,
+        durable: DurableWorkStore | None = None,
+    ) -> ScheduleRecord:
+        """Create a new schedule revision after active firings have drained."""
+        key = (*_scope(ctx), schedule_id)
+        with self._lock:
+            record = self._schedules.get(key)
+            if record is None or record.status == "deleted":
+                raise ControlPlaneError.not_found("schedule not found")
+            if record.revision_id != expected_revision_id:
+                raise ControlPlaneError.conflict(
+                    "Schedule revision changed before amendment",
+                    code="PMFIRE409",
+                    extensions={"reason": "stale_revision"},
+                )
+            if self._has_inflight_firing(ctx, schedule_id, _scope(ctx), durable):
+                raise ControlPlaneError.conflict(
+                    "Schedule cannot be amended while a firing is active",
+                    code="PMFIRE409",
+                    extensions={"reason": "active_firing"},
+                )
+            metadata = dict(record.metadata)
+            metadata["amends_revision_id"] = record.revision_id
+            amended = replace(
+                record,
+                revision_id=f"rev-{uuid.uuid4().hex[:12]}",
+                spec=spec,
+                next_fire_at=next_fire_at,
+                updated_at=_iso(),
+                metadata=metadata,
+            )
+            self._schedules[key] = amended
+            return deepcopy(amended)
 
     def delete(self, ctx: ControlPlaneContext, schedule_id: str) -> ScheduleRecord:
         return self._set_status(ctx, schedule_id, "deleted")
@@ -260,7 +316,9 @@ class MemoryScheduleStore:
         durable: DurableWorkStore | None = None,
         next_fire_at: str | None = None,
         require_leader_lease: bool = True,
+        admit_submission: bool = True,
         skip_status: FiringStatus | None = None,
+        metadata: Mapping[str, Any] | None = None,
     ) -> tuple[FiringRecord, bool]:
         logical = firing_key(schedule_id, revision_id, nominal_fire_time)
         scope = _scope(ctx)
@@ -273,19 +331,39 @@ class MemoryScheduleStore:
                 return deepcopy(existing), False
             sk = (*scope, schedule_id)
             rec = self._schedules.get(sk)
-            spec = rec.spec if rec is not None else None
+            if rec is None:
+                raise ControlPlaneError.not_found("schedule not found")
+            if rec.status == "deleted":
+                raise ControlPlaneError.conflict(
+                    "Deleted schedules cannot accept a firing",
+                    code="PMFIRE409",
+                    extensions={"reason": "schedule_deleted"},
+                )
+            if rec.revision_id != revision_id:
+                raise ControlPlaneError.conflict(
+                    "Schedule revision changed before firing claim",
+                    code="PMFIRE409",
+                    extensions={"reason": "stale_revision"},
+                )
+            if require_leader_lease and rec.status != "active":
+                raise ControlPlaneError.conflict(
+                    "Only active schedules can accept a scheduled firing",
+                    code="PMFIRE409",
+                    extensions={"reason": "schedule_not_active"},
+                )
+            spec = rec.spec
             nominal_dt = _parse_iso(nominal_fire_time)
             status: FiringStatus = "accepted"
             if skip_status is not None:
                 status = skip_status
-            elif spec is not None and not _in_window(spec, nominal_dt):
+            elif not _in_window(spec, nominal_dt):
                 status = "skipped_window"
-            elif (
-                spec is not None
-                and spec.overlap == "skip"
-                and self._has_inflight_firing(ctx, schedule_id, scope, durable)
+            elif spec.overlap == "skip" and self._has_inflight_firing(
+                ctx, schedule_id, scope, durable
             ):
                 status = "skipped_overlap"
+            occurrence_metadata = dict(metadata or {})
+            assert_schedule_payload_clean({"metadata": occurrence_metadata})
             firing = FiringRecord(
                 firing_id=f"fire-{uuid.uuid4().hex[:16]}",
                 schedule_id=schedule_id,
@@ -295,9 +373,10 @@ class MemoryScheduleStore:
                 workspace_id=ctx.workspace.workspace_id,
                 created_at=_iso(),
                 status=status,
+                metadata=occurrence_metadata,
             )
             submission_id = None
-            if status == "accepted" and durable is not None:
+            if status == "accepted" and durable is not None and admit_submission:
                 submission, _created = durable.accept(
                     ctx,
                     idempotency_key=logical,
@@ -309,11 +388,76 @@ class MemoryScheduleStore:
                 submission_id = submission.submission_id
             firing = replace(firing, submission_id=submission_id)
             self._firings[firing_scope] = firing
-            if rec is not None:
-                self._schedules[sk] = replace(
-                    rec, next_fire_at=next_fire_at, updated_at=_iso()
-                )
+            self._schedules[sk] = replace(
+                rec, next_fire_at=next_fire_at, updated_at=_iso()
+            )
             return deepcopy(firing), True
+
+    def link_firing_submission(
+        self,
+        ctx: ControlPlaneContext,
+        firing_id: str,
+        *,
+        submission_id: str,
+        plan_fingerprint: str,
+        durable: DurableWorkStore,
+    ) -> FiringRecord:
+        scope = _scope(ctx)
+        with self._lock:
+            matching = [
+                (key, firing)
+                for key, firing in self._firings.items()
+                if key[:2] == scope and firing.firing_id == firing_id
+            ]
+            if not matching:
+                raise ControlPlaneError.not_found("schedule firing not found")
+            key, firing = matching[0]
+            if firing.status != "accepted":
+                raise ControlPlaneError.conflict(
+                    "Only accepted schedule firings can link managed work"
+                )
+            if firing.submission_id is not None:
+                if firing.submission_id != submission_id:
+                    raise ControlPlaneError.conflict(
+                        "Schedule firing is already linked to another submission"
+                    )
+                return deepcopy(firing)
+            submission = durable.get_submission(ctx, submission_id)
+            schedule = self._schedules.get((*scope, firing.schedule_id))
+            selected_revision = firing.metadata.get("selected_definition_revision_id")
+            expected_revision = (
+                str(selected_revision)
+                if isinstance(selected_revision, str) and selected_revision
+                else (schedule.definition_revision_id if schedule is not None else None)
+            )
+            if schedule is None or (
+                expected_revision is None or submission.revision_id != expected_revision
+            ):
+                raise ControlPlaneError.conflict(
+                    "Managed schedule submission does not match its occurrence revision"
+                )
+            if (
+                submission.operation != "run.submit"
+                or submission.plan_fingerprint != plan_fingerprint
+                or submission.idempotency_key
+                != "schedule-"
+                + hashlib.sha256(firing.logical_key.encode("utf-8")).hexdigest()
+                or not submission.input_snapshot
+            ):
+                raise ControlPlaneError.conflict(
+                    "Managed schedule submission is not an accepted executable run"
+                )
+            metadata = dict(firing.metadata)
+            metadata.update(
+                {
+                    "definition_revision_id": expected_revision,
+                    "plan_fingerprint": plan_fingerprint,
+                    "admission": "managed",
+                }
+            )
+            linked = replace(firing, submission_id=submission_id, metadata=metadata)
+            self._firings[key] = linked
+            return deepcopy(linked)
 
     def _has_inflight_firing(
         self,

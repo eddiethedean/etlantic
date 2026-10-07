@@ -119,8 +119,14 @@ def require_authorized_run(
     decision = authorizer.authorize(ctx, action, resource)
     if decision.allowed:
         return
-    if decision.disclosure == "forbidden":
-        raise_for_deny(decision, resource_in_caller_scope=True)
+    if decision.disclosure in {"not_found", "forbidden"}:
+        # An explicit disclosure is authoritative. In particular, never probe
+        # existence after an explicit opaque not_found decision: doing so makes
+        # the observable response depend on whether the run exists.
+        raise_for_deny(
+            decision,
+            resource_in_caller_scope=decision.disclosure == "forbidden",
+        )
         return
     exists = False
     if probe_exists is not None:

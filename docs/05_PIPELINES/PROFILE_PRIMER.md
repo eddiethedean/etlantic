@@ -71,12 +71,11 @@ In production, an empty allowlist rejects every discovered plugin. Example:
 See [Production profiles](../06_EXECUTION/PRODUCTION_PROFILES.md) and
 [prod.example.json](../01_GETTING_STARTED/prod.example.json).
 
-### `assets` vs legacy `bindings`
+### `assets` profile field
 
-Prefer **`assets`** for logical-to-physical maps (extract/load locations).
-Legacy **`bindings`** keys fail closed with `PMCFG111` unless
-`--accept-legacy-bindings` / `accept_legacy_bindings=True`. Migrate with
-`etlantic profile migrate`.
+Use **`assets`** for logical-to-physical maps (extract/load locations).
+Profile JSON containing the legacy **`bindings`** key fails with `PMCFG111`;
+convert old files to the canonical `assets` shape before loading them.
 
 ### Engines and orchestrator
 

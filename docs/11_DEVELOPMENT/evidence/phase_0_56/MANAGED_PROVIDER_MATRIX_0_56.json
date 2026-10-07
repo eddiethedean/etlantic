@@ -1,0 +1,1131 @@
+{
+  "cases": [
+    {
+      "accepted_failure_run_id": "run-9e3cc048d414474b32af423d",
+      "accepted_success_run_id": "run-1d557cbf0ea50d02c2ba4901",
+      "destination_identity": {
+        "base_url": "http://127.0.0.1:49528",
+        "branch": "main",
+        "dataset_rid": "ri.foundry.main.dataset.phase056.57dcbff537c1",
+        "mode": "replace",
+        "path": "managed-output/csv-foundry_a-replace-75a69b96.csv",
+        "provider": "foundry"
+      },
+      "destination_kind": "foundry_a",
+      "destination_mode": "replace",
+      "failure_diagnostic_codes": [
+        "PMCONN780"
+      ],
+      "failure_status": "failed",
+      "foundry_simulator_scopes": [
+        {
+          "dataset_rid": "ri.foundry.main.dataset.phase056.57dcbff537c1",
+          "namespace": "phase056-a",
+          "pinned_transaction_rid": "ri.foundry.main.transaction.phase056-a-2acaa5da"
+        },
+        {
+          "dataset_rid": "ri.foundry.main.dataset.phase056.285f49dbccb2",
+          "namespace": "phase056-b",
+          "pinned_transaction_rid": "ri.foundry.main.transaction.phase056-b-d811e82b"
+        }
+      ],
+      "postgresql": {
+        "database": "postgres",
+        "host": "127.0.0.1",
+        "port": 55439,
+        "server_version": "16.13 (Homebrew)"
+      },
+      "report_contains_no_foundry_credentials": true,
+      "source_identity": {
+        "byte_length": 68,
+        "format": "csv",
+        "media_type": "text/csv",
+        "provider": "immutable_csv_upload",
+        "resource_id": "7f16e442f3d94f8191e0fb1f82dc710f",
+        "sha256": "6407323e3bf145fc8405a9ebd53827330cc0bc2d8fe23165b9be97d13f2c049d",
+        "version": "sha256:6407323e3bf145fc8405a9ebd53827330cc0bc2d8fe23165b9be97d13f2c049d"
+      },
+      "source_kind": "csv",
+      "success_effect": {
+        "branch": "main",
+        "byte_length": 68,
+        "dataset_rid": "ri.foundry.main.dataset.phase056.57dcbff537c1",
+        "path": "managed-output/csv-foundry_a-replace-75a69b96.csv",
+        "provider": "foundry",
+        "sha256": "6407323e3bf145fc8405a9ebd53827330cc0bc2d8fe23165b9be97d13f2c049d",
+        "transaction_rid": "ri.foundry.main.transaction.phase056-a-sim-1"
+      },
+      "success_status": "succeeded",
+      "target_unchanged_after_failure": true
+    },
+    {
+      "accepted_failure_run_id": "run-fd72eed124e49fb85821fba0",
+      "accepted_success_run_id": "run-7dbefbaa0a818e8625847c68",
+      "destination_identity": {
+        "base_url": "http://127.0.0.1:49536",
+        "branch": "main",
+        "dataset_rid": "ri.foundry.main.dataset.phase056.b715f327382c",
+        "mode": "replace",
+        "path": "managed-output/csv-foundry_b-replace-0a70fac3.csv",
+        "provider": "foundry"
+      },
+      "destination_kind": "foundry_b",
+      "destination_mode": "replace",
+      "failure_diagnostic_codes": [
+        "PMCONN780"
+      ],
+      "failure_status": "failed",
+      "foundry_simulator_scopes": [
+        {
+          "dataset_rid": "ri.foundry.main.dataset.phase056.24a4402c39d3",
+          "namespace": "phase056-a",
+          "pinned_transaction_rid": "ri.foundry.main.transaction.phase056-a-843c1108"
+        },
+        {
+          "dataset_rid": "ri.foundry.main.dataset.phase056.b715f327382c",
+          "namespace": "phase056-b",
+          "pinned_transaction_rid": "ri.foundry.main.transaction.phase056-b-a43b1e2a"
+        }
+      ],
+      "postgresql": {
+        "database": "postgres",
+        "host": "127.0.0.1",
+        "port": 55439,
+        "server_version": "16.13 (Homebrew)"
+      },
+      "report_contains_no_foundry_credentials": true,
+      "source_identity": {
+        "byte_length": 68,
+        "format": "csv",
+        "media_type": "text/csv",
+        "provider": "immutable_csv_upload",
+        "resource_id": "d702407716464581afb65229923c9457",
+        "sha256": "44869d8fae615e9b1e816644beb3df38cdf8b909031a3589cf31a0c9c3224f2c",
+        "version": "sha256:44869d8fae615e9b1e816644beb3df38cdf8b909031a3589cf31a0c9c3224f2c"
+      },
+      "source_kind": "csv",
+      "success_effect": {
+        "branch": "main",
+        "byte_length": 68,
+        "dataset_rid": "ri.foundry.main.dataset.phase056.b715f327382c",
+        "path": "managed-output/csv-foundry_b-replace-0a70fac3.csv",
+        "provider": "foundry",
+        "sha256": "44869d8fae615e9b1e816644beb3df38cdf8b909031a3589cf31a0c9c3224f2c",
+        "transaction_rid": "ri.foundry.main.transaction.phase056-b-sim-1"
+      },
+      "success_status": "succeeded",
+      "target_unchanged_after_failure": true
+    },
+    {
+      "accepted_failure_run_id": "run-ee4e8bca5045989d1b08c775",
+      "accepted_success_run_id": "run-1382aa435839a39dca825be9",
+      "destination_identity": {
+        "database": "postgres",
+        "effect_table": "etlantic_p056_fx_cbabeb864d",
+        "host": "127.0.0.1",
+        "mode": "append",
+        "port": 55439,
+        "provider": "postgresql",
+        "schema": "public",
+        "table": "etlantic_p056_06b5119ba484"
+      },
+      "destination_kind": "postgresql",
+      "destination_mode": "append",
+      "failure_diagnostic_codes": [
+        "PMCONN780"
+      ],
+      "failure_status": "failed",
+      "foundry_simulator_scopes": [
+        {
+          "dataset_rid": "ri.foundry.main.dataset.phase056.5a2661fd2bec",
+          "namespace": "phase056-a",
+          "pinned_transaction_rid": "ri.foundry.main.transaction.phase056-a-2d98114e"
+        },
+        {
+          "dataset_rid": "ri.foundry.main.dataset.phase056.7674d8e78fc4",
+          "namespace": "phase056-b",
+          "pinned_transaction_rid": "ri.foundry.main.transaction.phase056-b-916144d5"
+        }
+      ],
+      "postgresql": {
+        "database": "postgres",
+        "host": "127.0.0.1",
+        "port": 55439,
+        "server_version": "16.13 (Homebrew)"
+      },
+      "report_contains_no_foundry_credentials": true,
+      "source_identity": {
+        "byte_length": 68,
+        "format": "csv",
+        "media_type": "text/csv",
+        "provider": "immutable_csv_upload",
+        "resource_id": "9cfa0c6f604c4813821fdb66f2cc683f",
+        "sha256": "82a23b98d81d35501ed3245f7f21f6f2de291511a66002213f700d9d7235071b",
+        "version": "sha256:82a23b98d81d35501ed3245f7f21f6f2de291511a66002213f700d9d7235071b"
+      },
+      "source_kind": "csv",
+      "success_effect": {
+        "effect_id": "pgfx-1b40cb5301ef57eea45f0b7cee84853e84c0e5300689f4a5a9adf03740c85301",
+        "provider": "postgresql",
+        "publication_id": "pgpub-1b40cb5301ef57eea45f0b7cee84853e84c0e5300689f4a5a9adf03740c85301",
+        "row_count": 1
+      },
+      "success_status": "succeeded",
+      "target_unchanged_after_failure": true
+    },
+    {
+      "accepted_failure_run_id": "run-3cc1cab587d3c8584c4b56d6",
+      "accepted_success_run_id": "run-88d0214221d32645f360d48d",
+      "destination_identity": {
+        "database": "postgres",
+        "effect_table": "etlantic_p056_fx_701cef38fe",
+        "host": "127.0.0.1",
+        "mode": "replace",
+        "port": 55439,
+        "provider": "postgresql",
+        "schema": "public",
+        "table": "etlantic_p056_46b227d3872e"
+      },
+      "destination_kind": "postgresql",
+      "destination_mode": "replace",
+      "failure_diagnostic_codes": [
+        "PMCONN780"
+      ],
+      "failure_status": "failed",
+      "foundry_simulator_scopes": [
+        {
+          "dataset_rid": "ri.foundry.main.dataset.phase056.8fba11af1cfc",
+          "namespace": "phase056-a",
+          "pinned_transaction_rid": "ri.foundry.main.transaction.phase056-a-b6588299"
+        },
+        {
+          "dataset_rid": "ri.foundry.main.dataset.phase056.42d5a41c9c63",
+          "namespace": "phase056-b",
+          "pinned_transaction_rid": "ri.foundry.main.transaction.phase056-b-2e35be5b"
+        }
+      ],
+      "postgresql": {
+        "database": "postgres",
+        "host": "127.0.0.1",
+        "port": 55439,
+        "server_version": "16.13 (Homebrew)"
+      },
+      "report_contains_no_foundry_credentials": true,
+      "source_identity": {
+        "byte_length": 69,
+        "format": "csv",
+        "media_type": "text/csv",
+        "provider": "immutable_csv_upload",
+        "resource_id": "9241fb0b975543ebbd3808a3480ee356",
+        "sha256": "273c5acf1777db8305106df0d6d74ec7d71f03ccb73841fc3fd756a294ac94cf",
+        "version": "sha256:273c5acf1777db8305106df0d6d74ec7d71f03ccb73841fc3fd756a294ac94cf"
+      },
+      "source_kind": "csv",
+      "success_effect": {
+        "effect_id": "pgfx-c97f5830283a0da48e3c158dd86c0efdd090da1cad56cc9dd74ebc80767406be",
+        "provider": "postgresql",
+        "publication_id": "pgpub-c97f5830283a0da48e3c158dd86c0efdd090da1cad56cc9dd74ebc80767406be",
+        "row_count": 1
+      },
+      "success_status": "succeeded",
+      "target_unchanged_after_failure": true
+    },
+    {
+      "accepted_failure_run_id": "run-9fccbab0925924d5ab2dc06d",
+      "accepted_success_run_id": "run-0312387d593439797c33c7b1",
+      "destination_identity": {
+        "database": "postgres",
+        "effect_table": "etlantic_p056_fx_32aa1490e7",
+        "host": "127.0.0.1",
+        "mode": "upsert",
+        "port": 55439,
+        "provider": "postgresql",
+        "schema": "public",
+        "table": "etlantic_p056_170d979ee818"
+      },
+      "destination_kind": "postgresql",
+      "destination_mode": "upsert",
+      "failure_diagnostic_codes": [
+        "PMCONN780"
+      ],
+      "failure_status": "failed",
+      "foundry_simulator_scopes": [
+        {
+          "dataset_rid": "ri.foundry.main.dataset.phase056.47cb71787597",
+          "namespace": "phase056-a",
+          "pinned_transaction_rid": "ri.foundry.main.transaction.phase056-a-c5410658"
+        },
+        {
+          "dataset_rid": "ri.foundry.main.dataset.phase056.12a8f038b72f",
+          "namespace": "phase056-b",
+          "pinned_transaction_rid": "ri.foundry.main.transaction.phase056-b-0d43df90"
+        }
+      ],
+      "postgresql": {
+        "database": "postgres",
+        "host": "127.0.0.1",
+        "port": 55439,
+        "server_version": "16.13 (Homebrew)"
+      },
+      "report_contains_no_foundry_credentials": true,
+      "source_identity": {
+        "byte_length": 68,
+        "format": "csv",
+        "media_type": "text/csv",
+        "provider": "immutable_csv_upload",
+        "resource_id": "7d69a36a85c14617a2f9521d001e56f6",
+        "sha256": "2946c456c6aa27e6cb65b0267448b4538793489570f0bc6ed4efa22733b28b18",
+        "version": "sha256:2946c456c6aa27e6cb65b0267448b4538793489570f0bc6ed4efa22733b28b18"
+      },
+      "source_kind": "csv",
+      "success_effect": {
+        "effect_id": "pgfx-68caf0ba9623f301256ab9ffbdd05fcaec5ea79a0722e67d0bc8a139e8540418",
+        "provider": "postgresql",
+        "publication_id": "pgpub-68caf0ba9623f301256ab9ffbdd05fcaec5ea79a0722e67d0bc8a139e8540418",
+        "row_count": 1
+      },
+      "success_status": "succeeded",
+      "target_unchanged_after_failure": true
+    },
+    {
+      "accepted_failure_run_id": "run-ea6d5d9768d6345d6339e75c",
+      "accepted_success_run_id": "run-cfb2803a96396cef3b69e9f5",
+      "destination_identity": {
+        "base_url": "http://127.0.0.1:49349",
+        "branch": "main",
+        "dataset_rid": "ri.foundry.main.dataset.phase056.5797966e937b",
+        "mode": "replace",
+        "path": "managed-output/foundry_a-foundry_a-replace-eb46d764.csv",
+        "provider": "foundry"
+      },
+      "destination_kind": "foundry_a",
+      "destination_mode": "replace",
+      "failure_diagnostic_codes": [
+        "PMFND030"
+      ],
+      "failure_status": "failed",
+      "foundry_simulator_scopes": [
+        {
+          "dataset_rid": "ri.foundry.main.dataset.phase056.5797966e937b",
+          "namespace": "phase056-a",
+          "pinned_transaction_rid": "ri.foundry.main.transaction.phase056-a-79f1a0dc"
+        },
+        {
+          "dataset_rid": "ri.foundry.main.dataset.phase056.da945802b753",
+          "namespace": "phase056-b",
+          "pinned_transaction_rid": "ri.foundry.main.transaction.phase056-b-ad44eb48"
+        }
+      ],
+      "postgresql": {
+        "database": "postgres",
+        "host": "127.0.0.1",
+        "port": 55439,
+        "server_version": "16.13 (Homebrew)"
+      },
+      "report_contains_no_foundry_credentials": true,
+      "source_identity": {
+        "base_url": "http://127.0.0.1:49349",
+        "branch": "main",
+        "dataset_rid": "ri.foundry.main.dataset.phase056.5797966e937b",
+        "path": "seed/input.csv",
+        "provider": "foundry",
+        "transaction_rid": "ri.foundry.main.transaction.phase056-a-79f1a0dc"
+      },
+      "source_kind": "foundry_a",
+      "success_effect": {
+        "branch": "main",
+        "byte_length": 74,
+        "dataset_rid": "ri.foundry.main.dataset.phase056.5797966e937b",
+        "path": "managed-output/foundry_a-foundry_a-replace-eb46d764.csv",
+        "provider": "foundry",
+        "sha256": "a5dd1c2b2a457480df3b7fbd54371135313399baecb554a9675cdd0390a889e4",
+        "transaction_rid": "ri.foundry.main.transaction.phase056-a-sim-1"
+      },
+      "success_status": "succeeded",
+      "target_unchanged_after_failure": true
+    },
+    {
+      "accepted_failure_run_id": "run-7d41269d574523c5d6838b88",
+      "accepted_success_run_id": "run-c68fe37de97e635a6656a44c",
+      "destination_identity": {
+        "base_url": "http://127.0.0.1:49364",
+        "branch": "main",
+        "dataset_rid": "ri.foundry.main.dataset.phase056.3a946b4181ad",
+        "mode": "replace",
+        "path": "managed-output/foundry_a-foundry_b-replace-37d50a71.csv",
+        "provider": "foundry"
+      },
+      "destination_kind": "foundry_b",
+      "destination_mode": "replace",
+      "failure_diagnostic_codes": [
+        "PMFND030"
+      ],
+      "failure_status": "failed",
+      "foundry_simulator_scopes": [
+        {
+          "dataset_rid": "ri.foundry.main.dataset.phase056.1bbacc588835",
+          "namespace": "phase056-a",
+          "pinned_transaction_rid": "ri.foundry.main.transaction.phase056-a-83f567a4"
+        },
+        {
+          "dataset_rid": "ri.foundry.main.dataset.phase056.3a946b4181ad",
+          "namespace": "phase056-b",
+          "pinned_transaction_rid": "ri.foundry.main.transaction.phase056-b-448c3bfa"
+        }
+      ],
+      "postgresql": {
+        "database": "postgres",
+        "host": "127.0.0.1",
+        "port": 55439,
+        "server_version": "16.13 (Homebrew)"
+      },
+      "report_contains_no_foundry_credentials": true,
+      "source_identity": {
+        "base_url": "http://127.0.0.1:49363",
+        "branch": "main",
+        "dataset_rid": "ri.foundry.main.dataset.phase056.1bbacc588835",
+        "path": "seed/input.csv",
+        "provider": "foundry",
+        "transaction_rid": "ri.foundry.main.transaction.phase056-a-83f567a4"
+      },
+      "source_kind": "foundry_a",
+      "success_effect": {
+        "branch": "main",
+        "byte_length": 74,
+        "dataset_rid": "ri.foundry.main.dataset.phase056.3a946b4181ad",
+        "path": "managed-output/foundry_a-foundry_b-replace-37d50a71.csv",
+        "provider": "foundry",
+        "sha256": "dadfc9257b9b4f24ef4764de80afa7bfe91483949ea79d81060aae435b996ee1",
+        "transaction_rid": "ri.foundry.main.transaction.phase056-b-sim-1"
+      },
+      "success_status": "succeeded",
+      "target_unchanged_after_failure": true
+    },
+    {
+      "accepted_failure_run_id": "run-4701cb445843efdfff6cb3c4",
+      "accepted_success_run_id": "run-63900ea6bfb15f1c82794653",
+      "destination_identity": {
+        "database": "postgres",
+        "effect_table": "etlantic_p056_fx_a8452dcff3",
+        "host": "127.0.0.1",
+        "mode": "append",
+        "port": 55439,
+        "provider": "postgresql",
+        "schema": "public",
+        "table": "etlantic_p056_530936e82fff"
+      },
+      "destination_kind": "postgresql",
+      "destination_mode": "append",
+      "failure_diagnostic_codes": [
+        "PMFND030"
+      ],
+      "failure_status": "failed",
+      "foundry_simulator_scopes": [
+        {
+          "dataset_rid": "ri.foundry.main.dataset.phase056.c23aa7cc6f44",
+          "namespace": "phase056-a",
+          "pinned_transaction_rid": "ri.foundry.main.transaction.phase056-a-249ac37f"
+        },
+        {
+          "dataset_rid": "ri.foundry.main.dataset.phase056.8e58e16be53c",
+          "namespace": "phase056-b",
+          "pinned_transaction_rid": "ri.foundry.main.transaction.phase056-b-19eb7462"
+        }
+      ],
+      "postgresql": {
+        "database": "postgres",
+        "host": "127.0.0.1",
+        "port": 55439,
+        "server_version": "16.13 (Homebrew)"
+      },
+      "report_contains_no_foundry_credentials": true,
+      "source_identity": {
+        "base_url": "http://127.0.0.1:49377",
+        "branch": "main",
+        "dataset_rid": "ri.foundry.main.dataset.phase056.c23aa7cc6f44",
+        "path": "seed/input.csv",
+        "provider": "foundry",
+        "transaction_rid": "ri.foundry.main.transaction.phase056-a-249ac37f"
+      },
+      "source_kind": "foundry_a",
+      "success_effect": {
+        "effect_id": "pgfx-58a5dd8220c4451af99a59e36e4540fc26c2d7e68d1e9b8e78801c3c5627715c",
+        "provider": "postgresql",
+        "publication_id": "pgpub-58a5dd8220c4451af99a59e36e4540fc26c2d7e68d1e9b8e78801c3c5627715c",
+        "row_count": 1
+      },
+      "success_status": "succeeded",
+      "target_unchanged_after_failure": true
+    },
+    {
+      "accepted_failure_run_id": "run-c5c6f75f10b79d0140071ed3",
+      "accepted_success_run_id": "run-39b8ac182e9a13b68839d946",
+      "destination_identity": {
+        "database": "postgres",
+        "effect_table": "etlantic_p056_fx_dcbc1b95a6",
+        "host": "127.0.0.1",
+        "mode": "replace",
+        "port": 55439,
+        "provider": "postgresql",
+        "schema": "public",
+        "table": "etlantic_p056_07e46a0d5596"
+      },
+      "destination_kind": "postgresql",
+      "destination_mode": "replace",
+      "failure_diagnostic_codes": [
+        "PMFND030"
+      ],
+      "failure_status": "failed",
+      "foundry_simulator_scopes": [
+        {
+          "dataset_rid": "ri.foundry.main.dataset.phase056.1477d68e7516",
+          "namespace": "phase056-a",
+          "pinned_transaction_rid": "ri.foundry.main.transaction.phase056-a-8a9ff4fd"
+        },
+        {
+          "dataset_rid": "ri.foundry.main.dataset.phase056.adabbbded765",
+          "namespace": "phase056-b",
+          "pinned_transaction_rid": "ri.foundry.main.transaction.phase056-b-9f9e71da"
+        }
+      ],
+      "postgresql": {
+        "database": "postgres",
+        "host": "127.0.0.1",
+        "port": 55439,
+        "server_version": "16.13 (Homebrew)"
+      },
+      "report_contains_no_foundry_credentials": true,
+      "source_identity": {
+        "base_url": "http://127.0.0.1:49401",
+        "branch": "main",
+        "dataset_rid": "ri.foundry.main.dataset.phase056.1477d68e7516",
+        "path": "seed/input.csv",
+        "provider": "foundry",
+        "transaction_rid": "ri.foundry.main.transaction.phase056-a-8a9ff4fd"
+      },
+      "source_kind": "foundry_a",
+      "success_effect": {
+        "effect_id": "pgfx-4d910168af155b3e4176738e0a346f33ac7e372e8fdae15d98d6e314d569a36a",
+        "provider": "postgresql",
+        "publication_id": "pgpub-4d910168af155b3e4176738e0a346f33ac7e372e8fdae15d98d6e314d569a36a",
+        "row_count": 1
+      },
+      "success_status": "succeeded",
+      "target_unchanged_after_failure": true
+    },
+    {
+      "accepted_failure_run_id": "run-0cd29dbcdd0b2d6d00457e63",
+      "accepted_success_run_id": "run-8fde7a620e05e2dc49ced7f2",
+      "destination_identity": {
+        "database": "postgres",
+        "effect_table": "etlantic_p056_fx_25dad84325",
+        "host": "127.0.0.1",
+        "mode": "upsert",
+        "port": 55439,
+        "provider": "postgresql",
+        "schema": "public",
+        "table": "etlantic_p056_949b766ef308"
+      },
+      "destination_kind": "postgresql",
+      "destination_mode": "upsert",
+      "failure_diagnostic_codes": [
+        "PMFND030"
+      ],
+      "failure_status": "failed",
+      "foundry_simulator_scopes": [
+        {
+          "dataset_rid": "ri.foundry.main.dataset.phase056.2db0277aa09a",
+          "namespace": "phase056-a",
+          "pinned_transaction_rid": "ri.foundry.main.transaction.phase056-a-cd5cc807"
+        },
+        {
+          "dataset_rid": "ri.foundry.main.dataset.phase056.4de67f655054",
+          "namespace": "phase056-b",
+          "pinned_transaction_rid": "ri.foundry.main.transaction.phase056-b-66956d03"
+        }
+      ],
+      "postgresql": {
+        "database": "postgres",
+        "host": "127.0.0.1",
+        "port": 55439,
+        "server_version": "16.13 (Homebrew)"
+      },
+      "report_contains_no_foundry_credentials": true,
+      "source_identity": {
+        "base_url": "http://127.0.0.1:49389",
+        "branch": "main",
+        "dataset_rid": "ri.foundry.main.dataset.phase056.2db0277aa09a",
+        "path": "seed/input.csv",
+        "provider": "foundry",
+        "transaction_rid": "ri.foundry.main.transaction.phase056-a-cd5cc807"
+      },
+      "source_kind": "foundry_a",
+      "success_effect": {
+        "effect_id": "pgfx-a05046c163cee30eb8deefd83badbe7749011d1803e3a1c8c0840af3fd9321e4",
+        "provider": "postgresql",
+        "publication_id": "pgpub-a05046c163cee30eb8deefd83badbe7749011d1803e3a1c8c0840af3fd9321e4",
+        "row_count": 1
+      },
+      "success_status": "succeeded",
+      "target_unchanged_after_failure": true
+    },
+    {
+      "accepted_failure_run_id": "run-c56ceba17aa6e475b13a7fd7",
+      "accepted_success_run_id": "run-0ad9230a0abeae4247321478",
+      "destination_identity": {
+        "base_url": "http://127.0.0.1:49413",
+        "branch": "main",
+        "dataset_rid": "ri.foundry.main.dataset.phase056.34e281762ee4",
+        "mode": "replace",
+        "path": "managed-output/foundry_b-foundry_a-replace-baf64761.csv",
+        "provider": "foundry"
+      },
+      "destination_kind": "foundry_a",
+      "destination_mode": "replace",
+      "failure_diagnostic_codes": [
+        "PMFND030"
+      ],
+      "failure_status": "failed",
+      "foundry_simulator_scopes": [
+        {
+          "dataset_rid": "ri.foundry.main.dataset.phase056.34e281762ee4",
+          "namespace": "phase056-a",
+          "pinned_transaction_rid": "ri.foundry.main.transaction.phase056-a-b65b0703"
+        },
+        {
+          "dataset_rid": "ri.foundry.main.dataset.phase056.28a9f58c3a3a",
+          "namespace": "phase056-b",
+          "pinned_transaction_rid": "ri.foundry.main.transaction.phase056-b-c6d4c271"
+        }
+      ],
+      "postgresql": {
+        "database": "postgres",
+        "host": "127.0.0.1",
+        "port": 55439,
+        "server_version": "16.13 (Homebrew)"
+      },
+      "report_contains_no_foundry_credentials": true,
+      "source_identity": {
+        "base_url": "http://127.0.0.1:49414",
+        "branch": "main",
+        "dataset_rid": "ri.foundry.main.dataset.phase056.28a9f58c3a3a",
+        "path": "seed/input.csv",
+        "provider": "foundry",
+        "transaction_rid": "ri.foundry.main.transaction.phase056-b-c6d4c271"
+      },
+      "source_kind": "foundry_b",
+      "success_effect": {
+        "branch": "main",
+        "byte_length": 74,
+        "dataset_rid": "ri.foundry.main.dataset.phase056.34e281762ee4",
+        "path": "managed-output/foundry_b-foundry_a-replace-baf64761.csv",
+        "provider": "foundry",
+        "sha256": "450dd35c25d1b030958306f174f2234a5fd6d7cffed2fba520dc5b0fcb967f0d",
+        "transaction_rid": "ri.foundry.main.transaction.phase056-a-sim-1"
+      },
+      "success_status": "succeeded",
+      "target_unchanged_after_failure": true
+    },
+    {
+      "accepted_failure_run_id": "run-98f3dc61e8980edda2a73494",
+      "accepted_success_run_id": "run-e289c85ddca2cd686db2c47b",
+      "destination_identity": {
+        "base_url": "http://127.0.0.1:49428",
+        "branch": "main",
+        "dataset_rid": "ri.foundry.main.dataset.phase056.e46e67ae9902",
+        "mode": "replace",
+        "path": "managed-output/foundry_b-foundry_b-replace-294722dc.csv",
+        "provider": "foundry"
+      },
+      "destination_kind": "foundry_b",
+      "destination_mode": "replace",
+      "failure_diagnostic_codes": [
+        "PMFND030"
+      ],
+      "failure_status": "failed",
+      "foundry_simulator_scopes": [
+        {
+          "dataset_rid": "ri.foundry.main.dataset.phase056.be2078d8d905",
+          "namespace": "phase056-a",
+          "pinned_transaction_rid": "ri.foundry.main.transaction.phase056-a-b9cdd8e3"
+        },
+        {
+          "dataset_rid": "ri.foundry.main.dataset.phase056.e46e67ae9902",
+          "namespace": "phase056-b",
+          "pinned_transaction_rid": "ri.foundry.main.transaction.phase056-b-8dbf9a8d"
+        }
+      ],
+      "postgresql": {
+        "database": "postgres",
+        "host": "127.0.0.1",
+        "port": 55439,
+        "server_version": "16.13 (Homebrew)"
+      },
+      "report_contains_no_foundry_credentials": true,
+      "source_identity": {
+        "base_url": "http://127.0.0.1:49428",
+        "branch": "main",
+        "dataset_rid": "ri.foundry.main.dataset.phase056.e46e67ae9902",
+        "path": "seed/input.csv",
+        "provider": "foundry",
+        "transaction_rid": "ri.foundry.main.transaction.phase056-b-8dbf9a8d"
+      },
+      "source_kind": "foundry_b",
+      "success_effect": {
+        "branch": "main",
+        "byte_length": 74,
+        "dataset_rid": "ri.foundry.main.dataset.phase056.e46e67ae9902",
+        "path": "managed-output/foundry_b-foundry_b-replace-294722dc.csv",
+        "provider": "foundry",
+        "sha256": "e0031b2beec02659c9c084a8065ef621fd35385ff6a8b10518827136d3c84648",
+        "transaction_rid": "ri.foundry.main.transaction.phase056-b-sim-1"
+      },
+      "success_status": "succeeded",
+      "target_unchanged_after_failure": true
+    },
+    {
+      "accepted_failure_run_id": "run-3a3e6a98b4bb838be3fe1d4a",
+      "accepted_success_run_id": "run-bc7f5e31cfc12600cddb35b5",
+      "destination_identity": {
+        "database": "postgres",
+        "effect_table": "etlantic_p056_fx_4b76aa6bdf",
+        "host": "127.0.0.1",
+        "mode": "append",
+        "port": 55439,
+        "provider": "postgresql",
+        "schema": "public",
+        "table": "etlantic_p056_b6af1f8ef603"
+      },
+      "destination_kind": "postgresql",
+      "destination_mode": "append",
+      "failure_diagnostic_codes": [
+        "PMFND030"
+      ],
+      "failure_status": "failed",
+      "foundry_simulator_scopes": [
+        {
+          "dataset_rid": "ri.foundry.main.dataset.phase056.617d91aaab83",
+          "namespace": "phase056-a",
+          "pinned_transaction_rid": "ri.foundry.main.transaction.phase056-a-47756f74"
+        },
+        {
+          "dataset_rid": "ri.foundry.main.dataset.phase056.ad1d645c49fc",
+          "namespace": "phase056-b",
+          "pinned_transaction_rid": "ri.foundry.main.transaction.phase056-b-a7e8a6b2"
+        }
+      ],
+      "postgresql": {
+        "database": "postgres",
+        "host": "127.0.0.1",
+        "port": 55439,
+        "server_version": "16.13 (Homebrew)"
+      },
+      "report_contains_no_foundry_credentials": true,
+      "source_identity": {
+        "base_url": "http://127.0.0.1:49443",
+        "branch": "main",
+        "dataset_rid": "ri.foundry.main.dataset.phase056.ad1d645c49fc",
+        "path": "seed/input.csv",
+        "provider": "foundry",
+        "transaction_rid": "ri.foundry.main.transaction.phase056-b-a7e8a6b2"
+      },
+      "source_kind": "foundry_b",
+      "success_effect": {
+        "effect_id": "pgfx-c4aa7d61937a4f16d92d27a013d4a752e0b1bf62fd4446c7b866fa481103f75c",
+        "provider": "postgresql",
+        "publication_id": "pgpub-c4aa7d61937a4f16d92d27a013d4a752e0b1bf62fd4446c7b866fa481103f75c",
+        "row_count": 1
+      },
+      "success_status": "succeeded",
+      "target_unchanged_after_failure": true
+    },
+    {
+      "accepted_failure_run_id": "run-899e274f971c3c34c1fae587",
+      "accepted_success_run_id": "run-ce445904fafb7c5049e2b5d7",
+      "destination_identity": {
+        "database": "postgres",
+        "effect_table": "etlantic_p056_fx_ba69d07f52",
+        "host": "127.0.0.1",
+        "mode": "replace",
+        "port": 55439,
+        "provider": "postgresql",
+        "schema": "public",
+        "table": "etlantic_p056_206d3a595f12"
+      },
+      "destination_kind": "postgresql",
+      "destination_mode": "replace",
+      "failure_diagnostic_codes": [
+        "PMFND030"
+      ],
+      "failure_status": "failed",
+      "foundry_simulator_scopes": [
+        {
+          "dataset_rid": "ri.foundry.main.dataset.phase056.b606949861b0",
+          "namespace": "phase056-a",
+          "pinned_transaction_rid": "ri.foundry.main.transaction.phase056-a-5c4f18ae"
+        },
+        {
+          "dataset_rid": "ri.foundry.main.dataset.phase056.82e2421dc87b",
+          "namespace": "phase056-b",
+          "pinned_transaction_rid": "ri.foundry.main.transaction.phase056-b-35dcd0af"
+        }
+      ],
+      "postgresql": {
+        "database": "postgres",
+        "host": "127.0.0.1",
+        "port": 55439,
+        "server_version": "16.13 (Homebrew)"
+      },
+      "report_contains_no_foundry_credentials": true,
+      "source_identity": {
+        "base_url": "http://127.0.0.1:49467",
+        "branch": "main",
+        "dataset_rid": "ri.foundry.main.dataset.phase056.82e2421dc87b",
+        "path": "seed/input.csv",
+        "provider": "foundry",
+        "transaction_rid": "ri.foundry.main.transaction.phase056-b-35dcd0af"
+      },
+      "source_kind": "foundry_b",
+      "success_effect": {
+        "effect_id": "pgfx-a5fce13d293cbc3f38e2459ba4c8bcfb3ac2ed662ebe574b929601613bc1eb09",
+        "provider": "postgresql",
+        "publication_id": "pgpub-a5fce13d293cbc3f38e2459ba4c8bcfb3ac2ed662ebe574b929601613bc1eb09",
+        "row_count": 1
+      },
+      "success_status": "succeeded",
+      "target_unchanged_after_failure": true
+    },
+    {
+      "accepted_failure_run_id": "run-7446920e3d8fde3b6f27a0a1",
+      "accepted_success_run_id": "run-084529131c357a870c2f7a4c",
+      "destination_identity": {
+        "database": "postgres",
+        "effect_table": "etlantic_p056_fx_70320e5477",
+        "host": "127.0.0.1",
+        "mode": "upsert",
+        "port": 55439,
+        "provider": "postgresql",
+        "schema": "public",
+        "table": "etlantic_p056_c2c29274b061"
+      },
+      "destination_kind": "postgresql",
+      "destination_mode": "upsert",
+      "failure_diagnostic_codes": [
+        "PMFND030"
+      ],
+      "failure_status": "failed",
+      "foundry_simulator_scopes": [
+        {
+          "dataset_rid": "ri.foundry.main.dataset.phase056.89173cb848e9",
+          "namespace": "phase056-a",
+          "pinned_transaction_rid": "ri.foundry.main.transaction.phase056-a-b889f153"
+        },
+        {
+          "dataset_rid": "ri.foundry.main.dataset.phase056.0d6d8e51dea3",
+          "namespace": "phase056-b",
+          "pinned_transaction_rid": "ri.foundry.main.transaction.phase056-b-906c1341"
+        }
+      ],
+      "postgresql": {
+        "database": "postgres",
+        "host": "127.0.0.1",
+        "port": 55439,
+        "server_version": "16.13 (Homebrew)"
+      },
+      "report_contains_no_foundry_credentials": true,
+      "source_identity": {
+        "base_url": "http://127.0.0.1:49455",
+        "branch": "main",
+        "dataset_rid": "ri.foundry.main.dataset.phase056.0d6d8e51dea3",
+        "path": "seed/input.csv",
+        "provider": "foundry",
+        "transaction_rid": "ri.foundry.main.transaction.phase056-b-906c1341"
+      },
+      "source_kind": "foundry_b",
+      "success_effect": {
+        "effect_id": "pgfx-77eb309d990c1e73b08f20ce5026088607e3a4cea1da6e305bcb416256185213",
+        "provider": "postgresql",
+        "publication_id": "pgpub-77eb309d990c1e73b08f20ce5026088607e3a4cea1da6e305bcb416256185213",
+        "row_count": 1
+      },
+      "success_status": "succeeded",
+      "target_unchanged_after_failure": true
+    },
+    {
+      "accepted_failure_run_id": "run-a8a4f61ec1c15b6c598af0ff",
+      "accepted_success_run_id": "run-10f22af6c4ff70ecfee7a5fe",
+      "destination_identity": {
+        "base_url": "http://127.0.0.1:49479",
+        "branch": "main",
+        "dataset_rid": "ri.foundry.main.dataset.phase056.9b44f215fffe",
+        "mode": "replace",
+        "path": "managed-output/postgresql-foundry_a-replace-15933aab.csv",
+        "provider": "foundry"
+      },
+      "destination_kind": "foundry_a",
+      "destination_mode": "replace",
+      "failure_diagnostic_codes": [
+        "PMCONN857"
+      ],
+      "failure_status": "failed",
+      "foundry_simulator_scopes": [
+        {
+          "dataset_rid": "ri.foundry.main.dataset.phase056.9b44f215fffe",
+          "namespace": "phase056-a",
+          "pinned_transaction_rid": "ri.foundry.main.transaction.phase056-a-8c03c342"
+        },
+        {
+          "dataset_rid": "ri.foundry.main.dataset.phase056.ad7c5da1b987",
+          "namespace": "phase056-b",
+          "pinned_transaction_rid": "ri.foundry.main.transaction.phase056-b-1874c8ac"
+        }
+      ],
+      "postgresql": {
+        "database": "postgres",
+        "host": "127.0.0.1",
+        "port": 55439,
+        "server_version": "16.13 (Homebrew)"
+      },
+      "report_contains_no_foundry_credentials": true,
+      "source_identity": {
+        "provider": "postgresql",
+        "schema": "public",
+        "table": "etlantic_p056_35a5efb853e8"
+      },
+      "source_kind": "postgresql",
+      "success_effect": {
+        "branch": "main",
+        "byte_length": 75,
+        "dataset_rid": "ri.foundry.main.dataset.phase056.9b44f215fffe",
+        "path": "managed-output/postgresql-foundry_a-replace-15933aab.csv",
+        "provider": "foundry",
+        "sha256": "adc24d972f431037a0f5c95fa0a873f47b003acdcdc7b07646d81bae7c85f1fb",
+        "transaction_rid": "ri.foundry.main.transaction.phase056-a-sim-1"
+      },
+      "success_status": "succeeded",
+      "target_unchanged_after_failure": true
+    },
+    {
+      "accepted_failure_run_id": "run-79a3883f23226c517dc3eb89",
+      "accepted_success_run_id": "run-42a99a13e9f95496d214ddd7",
+      "destination_identity": {
+        "base_url": "http://127.0.0.1:49491",
+        "branch": "main",
+        "dataset_rid": "ri.foundry.main.dataset.phase056.50831573cae8",
+        "mode": "replace",
+        "path": "managed-output/postgresql-foundry_b-replace-76d499c4.csv",
+        "provider": "foundry"
+      },
+      "destination_kind": "foundry_b",
+      "destination_mode": "replace",
+      "failure_diagnostic_codes": [
+        "PMCONN857"
+      ],
+      "failure_status": "failed",
+      "foundry_simulator_scopes": [
+        {
+          "dataset_rid": "ri.foundry.main.dataset.phase056.2cf8991fcddf",
+          "namespace": "phase056-a",
+          "pinned_transaction_rid": "ri.foundry.main.transaction.phase056-a-9593c467"
+        },
+        {
+          "dataset_rid": "ri.foundry.main.dataset.phase056.50831573cae8",
+          "namespace": "phase056-b",
+          "pinned_transaction_rid": "ri.foundry.main.transaction.phase056-b-d5e74f94"
+        }
+      ],
+      "postgresql": {
+        "database": "postgres",
+        "host": "127.0.0.1",
+        "port": 55439,
+        "server_version": "16.13 (Homebrew)"
+      },
+      "report_contains_no_foundry_credentials": true,
+      "source_identity": {
+        "provider": "postgresql",
+        "schema": "public",
+        "table": "etlantic_p056_479a0ce59552"
+      },
+      "source_kind": "postgresql",
+      "success_effect": {
+        "branch": "main",
+        "byte_length": 75,
+        "dataset_rid": "ri.foundry.main.dataset.phase056.50831573cae8",
+        "path": "managed-output/postgresql-foundry_b-replace-76d499c4.csv",
+        "provider": "foundry",
+        "sha256": "e5acb3e367f8d4e7ff3c9685ddb55e37207983f2c0c8ccb5bff8539b6184398b",
+        "transaction_rid": "ri.foundry.main.transaction.phase056-b-sim-1"
+      },
+      "success_status": "succeeded",
+      "target_unchanged_after_failure": true
+    },
+    {
+      "accepted_failure_run_id": "run-c664f1c82edb49aee7f0a9b4",
+      "accepted_success_run_id": "run-668de65903db7a7be28087d9",
+      "destination_identity": {
+        "database": "postgres",
+        "effect_table": "etlantic_p056_fx_d8d701eb01",
+        "host": "127.0.0.1",
+        "mode": "append",
+        "port": 55439,
+        "provider": "postgresql",
+        "schema": "public",
+        "table": "etlantic_p056_600305b8729e"
+      },
+      "destination_kind": "postgresql",
+      "destination_mode": "append",
+      "failure_diagnostic_codes": [
+        "PMCONN857"
+      ],
+      "failure_status": "failed",
+      "foundry_simulator_scopes": [
+        {
+          "dataset_rid": "ri.foundry.main.dataset.phase056.d1acd77bc555",
+          "namespace": "phase056-a",
+          "pinned_transaction_rid": "ri.foundry.main.transaction.phase056-a-07a9e033"
+        },
+        {
+          "dataset_rid": "ri.foundry.main.dataset.phase056.a9ab0100b852",
+          "namespace": "phase056-b",
+          "pinned_transaction_rid": "ri.foundry.main.transaction.phase056-b-b4504793"
+        }
+      ],
+      "postgresql": {
+        "database": "postgres",
+        "host": "127.0.0.1",
+        "port": 55439,
+        "server_version": "16.13 (Homebrew)"
+      },
+      "report_contains_no_foundry_credentials": true,
+      "source_identity": {
+        "provider": "postgresql",
+        "schema": "public",
+        "table": "etlantic_p056_b3deb5ea94ea"
+      },
+      "source_kind": "postgresql",
+      "success_effect": {
+        "effect_id": "pgfx-f4f595836858dd699054cd0822caba004c704c40e3fd64bfd6e604e6a5e6cb6f",
+        "provider": "postgresql",
+        "publication_id": "pgpub-f4f595836858dd699054cd0822caba004c704c40e3fd64bfd6e604e6a5e6cb6f",
+        "row_count": 1
+      },
+      "success_status": "succeeded",
+      "target_unchanged_after_failure": true
+    },
+    {
+      "accepted_failure_run_id": "run-09a6664c21cb679de05c4afc",
+      "accepted_success_run_id": "run-aaa4ec833e7c887cfebfe089",
+      "destination_identity": {
+        "database": "postgres",
+        "effect_table": "etlantic_p056_fx_6157f63514",
+        "host": "127.0.0.1",
+        "mode": "replace",
+        "port": 55439,
+        "provider": "postgresql",
+        "schema": "public",
+        "table": "etlantic_p056_e0286535479d"
+      },
+      "destination_kind": "postgresql",
+      "destination_mode": "replace",
+      "failure_diagnostic_codes": [
+        "PMCONN857"
+      ],
+      "failure_status": "failed",
+      "foundry_simulator_scopes": [
+        {
+          "dataset_rid": "ri.foundry.main.dataset.phase056.99f6e407ca93",
+          "namespace": "phase056-a",
+          "pinned_transaction_rid": "ri.foundry.main.transaction.phase056-a-3c41c887"
+        },
+        {
+          "dataset_rid": "ri.foundry.main.dataset.phase056.e59f74f22929",
+          "namespace": "phase056-b",
+          "pinned_transaction_rid": "ri.foundry.main.transaction.phase056-b-b3e5ebe4"
+        }
+      ],
+      "postgresql": {
+        "database": "postgres",
+        "host": "127.0.0.1",
+        "port": 55439,
+        "server_version": "16.13 (Homebrew)"
+      },
+      "report_contains_no_foundry_credentials": true,
+      "source_identity": {
+        "provider": "postgresql",
+        "schema": "public",
+        "table": "etlantic_p056_979e2c06fb95"
+      },
+      "source_kind": "postgresql",
+      "success_effect": {
+        "effect_id": "pgfx-c76c5061dddf85525850469f0af0a8b7659b16432897eaccc535724e0474d1be",
+        "provider": "postgresql",
+        "publication_id": "pgpub-c76c5061dddf85525850469f0af0a8b7659b16432897eaccc535724e0474d1be",
+        "row_count": 1
+      },
+      "success_status": "succeeded",
+      "target_unchanged_after_failure": true
+    },
+    {
+      "accepted_failure_run_id": "run-fffe2912567f75bfb7798221",
+      "accepted_success_run_id": "run-2889ff35faec31c8dea2d5ed",
+      "destination_identity": {
+        "database": "postgres",
+        "effect_table": "etlantic_p056_fx_ba6adc9426",
+        "host": "127.0.0.1",
+        "mode": "upsert",
+        "port": 55439,
+        "provider": "postgresql",
+        "schema": "public",
+        "table": "etlantic_p056_d9e35ae03bf0"
+      },
+      "destination_kind": "postgresql",
+      "destination_mode": "upsert",
+      "failure_diagnostic_codes": [
+        "PMCONN857"
+      ],
+      "failure_status": "failed",
+      "foundry_simulator_scopes": [
+        {
+          "dataset_rid": "ri.foundry.main.dataset.phase056.1dab7970faa7",
+          "namespace": "phase056-a",
+          "pinned_transaction_rid": "ri.foundry.main.transaction.phase056-a-ffb6838c"
+        },
+        {
+          "dataset_rid": "ri.foundry.main.dataset.phase056.a1eb65b0d851",
+          "namespace": "phase056-b",
+          "pinned_transaction_rid": "ri.foundry.main.transaction.phase056-b-3fc6a48b"
+        }
+      ],
+      "postgresql": {
+        "database": "postgres",
+        "host": "127.0.0.1",
+        "port": 55439,
+        "server_version": "16.13 (Homebrew)"
+      },
+      "report_contains_no_foundry_credentials": true,
+      "source_identity": {
+        "provider": "postgresql",
+        "schema": "public",
+        "table": "etlantic_p056_2c4abbb05b6d"
+      },
+      "source_kind": "postgresql",
+      "success_effect": {
+        "effect_id": "pgfx-21ed33b0de22abef836c7f67d3165a10cf57526daa0998068ae6e195e4e6c43f",
+        "provider": "postgresql",
+        "publication_id": "pgpub-21ed33b0de22abef836c7f67d3165a10cf57526daa0998068ae6e195e4e6c43f",
+        "row_count": 1
+      },
+      "success_status": "succeeded",
+      "target_unchanged_after_failure": true
+    }
+  ],
+  "created_at_utc": "2026-10-06T13:21:25.684161+00:00",
+  "criterion": "AC056-036",
+  "provider_versions": {
+    "etlantic": "0.56.0",
+    "etlantic_foundry": "0.56.0",
+    "etlantic_sql": "0.56.0",
+    "semblance": "0.9.0"
+  },
+  "schema": "etlantic.phase_0_56.managed_provider_matrix/1"
+}

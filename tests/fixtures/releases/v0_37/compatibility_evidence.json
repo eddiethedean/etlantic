@@ -121,10 +121,11 @@
     {
       "family": "run_report",
       "writer": "0.35.0-bare",
-      "reader": "0.36",
-      "expected": "migrated",
-      "outcome": "migrated",
-      "status": "passed"
+      "reader": "current",
+      "expected": "upgrade-required",
+      "outcome": "upgrade-required",
+      "status": "passed",
+      "note": "canonical decoder rejected legacy input: report.metadata contains unsupported legacy metadata key(s): prefect_run_id, prefect_task_correlation"
     },
     {
       "family": "run_report",

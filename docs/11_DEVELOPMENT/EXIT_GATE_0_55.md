@@ -1,7 +1,7 @@
 ---
 title: ETLantic 0.55 Exit Gate
 status: candidate
-current_minor: "0.55"
+current_minor: "0.56"
 ---
 
 # ETLantic 0.55 Exit Gate — Inferred Model Authoring

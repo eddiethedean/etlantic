@@ -9,13 +9,13 @@
     {
       "id": "sqlmodel_migrations_fresh",
       "status": "pass",
-      "version": "005_cp1_reference"
+      "version": "014_cp1_complete_principal_idempotency_0_56"
     },
     {
       "id": "compat_floor",
       "status": "pass",
-      "policy": ">=0.55.0,<0.56",
-      "installed": "0.55.0"
+      "policy": ">=0.56.0,<0.57",
+      "installed": "0.56.0"
     }
   ],
   "pass": true,

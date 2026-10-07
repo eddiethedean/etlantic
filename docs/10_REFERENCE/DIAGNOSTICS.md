@@ -1,5 +1,8 @@
 # Diagnostics Reference
 
+> **Version boundary:** 0.56.0 is a qualification candidate; 0.55.x remains the published supported line.
+
+
 > **Status: ETLantic 0.55.0 Beta release.**
 
 Diagnostics are structured findings produced while loading, inspecting,
@@ -159,8 +162,7 @@ The curated tables below remain the human-oriented index.
 | Code | Meaning |
 |---|---|
 | `PMCFG100` | Unknown profile name; use a built-in template or pass an explicit profile path |
-| `PMCFG110` | Legacy `bindings` key loaded from profile JSON; migrate to `assets` |
-| `PMCFG111` | Profile JSON used legacy `bindings`; rename to `assets` or pass `--accept-legacy-bindings` |
+| `PMCFG111` | Profile JSON contains the unsupported legacy `bindings` key; rename it to `assets` |
 
 ### Source, import, and security policy
 

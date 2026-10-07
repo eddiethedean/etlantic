@@ -4,12 +4,13 @@
 from __future__ import annotations
 
 import json
+from typing import Any, cast
 
 import pytest
 
 pytest.importorskip("fastapi")
 pytest.importorskip("etlantic_fastapi")
-pytest.importorskip("httpx")
+pytest.importorskip("httpx2")
 
 from fastapi.testclient import TestClient
 
@@ -175,6 +176,76 @@ def test_sse_unknown_cursor_is_410() -> None:
     body = resp.json()
     assert body["code"] == "PMCP410"
     assert body["extensions"]["hint"] == "omit_cursor_or_last_event_id"
+
+
+def test_event_history_pages_advance_scoped_cursor_and_filter_other_runs() -> None:
+    client, api = _wired()
+    http = cast(Any, client)
+    headers = {"X-Principal": "alice", "Idempotency-Key": "event-page"}
+    submit = http.post("/v1/definitions/pipe/runs", headers=headers, json={})
+    assert submit.status_code == 202
+    run_id = submit.json()["resource_id"]
+    ctx = _ctx()
+    api.events.append(ctx, kind="run.progress", payload={"run_id": "other-run"})
+    api.events.append(
+        ctx,
+        kind="run.progress",
+        payload={"run_id": run_id, "progress": 1},
+    )
+    api.events.append(
+        ctx,
+        kind="run.progress",
+        payload={"run_id": run_id, "progress": 2},
+    )
+
+    first = http.get(
+        f"/v1/runs/{run_id}/events/history",
+        params={"limit": 2},
+        headers={"X-Principal": "alice"},
+    )
+    assert first.status_code == 200
+    body = first.json()
+    assert body["schema"] == "etlantic.control_plane.run_event_page/1"
+    assert [item["kind"] for item in body["items"]] == ["run.accepted"]
+    assert body["has_more"] is True
+    assert body["next_cursor"]
+
+    second = http.get(
+        f"/v1/runs/{run_id}/events/history",
+        params={"limit": 2, "cursor": body["next_cursor"]},
+        headers={"X-Principal": "alice"},
+    )
+    assert second.status_code == 200
+    next_body = second.json()
+    assert [item["kind"] for item in next_body["items"]] == [
+        "run.progress",
+        "run.progress",
+    ]
+    assert next_body["has_more"] is False
+    assert next_body["next_cursor"] is None
+
+    expired = http.get(
+        f"/v1/runs/{run_id}/events/history",
+        params={"cursor": "unknown-cursor"},
+        headers={"X-Principal": "alice"},
+    )
+    assert expired.status_code == 410
+
+
+def test_event_history_authz_and_tenant_isolation() -> None:
+    client, _api = _wired()
+    http = cast(Any, client)
+    submit = http.post(
+        "/v1/definitions/pipe/runs",
+        headers={"X-Principal": "alice", "Idempotency-Key": "event-page-authz"},
+        json={},
+    )
+    run_id = submit.json()["resource_id"]
+    denied = http.get(
+        f"/v1/runs/{run_id}/events/history",
+        headers={"X-Principal": "bob"},
+    )
+    assert denied.status_code == 404
 
 
 def test_sse_authz_deny_and_cross_tenant_404() -> None:

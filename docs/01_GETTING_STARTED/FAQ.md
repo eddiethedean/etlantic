@@ -1,5 +1,8 @@
 # Frequently Asked Questions
 
+> **Version boundary:** 0.56.0 is a qualification candidate; 0.55.x remains the published supported line.
+
+
 > **Status: ETLantic 0.55.0 Beta release.**
 
 Practical questions for ETLantic **0.55.0**. Philosophy and contract taxonomy

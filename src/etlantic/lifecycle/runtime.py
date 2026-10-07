@@ -6,6 +6,7 @@ from __future__ import annotations
 from collections.abc import AsyncIterator, Callable
 from contextlib import AbstractAsyncContextManager, asynccontextmanager
 from dataclasses import dataclass, field
+from threading import Event
 from typing import Any
 
 from etlantic.diagnostics import Diagnostic
@@ -16,10 +17,11 @@ from etlantic.plugins.coordinator import PluginDiscoveryCoordinator, profile_plu
 from etlantic.profile import Profile
 from etlantic.registry import RegistryBundle, builtin_stub_registry
 from etlantic.reports.store import ReportStore
+from etlantic.runtime.context import TrustedExecutionScope
 from etlantic.runtime.events import EventBus
 from etlantic.secrets.cache import SecretCache
 from etlantic.secrets.env import EnvSecretProvider
-from etlantic.secrets.provider import SecretProvider
+from etlantic.secrets.provider import SecretAliasAuthorizer, SecretProvider
 from etlantic.storage.callable_binding import CallableStorage
 from etlantic.storage.csv_binding import CsvStorage
 from etlantic.storage.json_binding import JsonStorage
@@ -59,6 +61,11 @@ class PipelineRuntime:
     step_middleware: MiddlewareStack = field(default_factory=MiddlewareStack)
     provider_middleware: MiddlewareStack = field(default_factory=MiddlewareStack)
     secret_providers: dict[str, SecretProvider] = field(default_factory=dict)
+    # A managed worker supplies this authority. Local unmanaged runs do not
+    # have an authenticated control-plane scope and retain provider behavior.
+    secret_alias_authorizer: SecretAliasAuthorizer | None = field(
+        default=None, repr=False
+    )
     storage: dict[str, StorageBinding] = field(default_factory=dict)
     source_connectors: dict[str, Any] = field(default_factory=dict)
     sink_connectors: dict[str, Any] = field(default_factory=dict)
@@ -97,6 +104,24 @@ class PipelineRuntime:
     _manual_sink_connectors: dict[str, Any] = field(default_factory=dict, repr=False)
     _manual_storage_connectors: dict[str, Any] = field(default_factory=dict, repr=False)
     _manual_storage_bindings: dict[str, Any] = field(default_factory=dict, repr=False)
+    # Set only by managed workers. Local execution watches this thread-safe
+    # token and converts a control-plane cancel request into runtime cancel.
+    external_cancel_event: Event | None = field(default=None, repr=False)
+    # Server-derived identity passed to secret and connector providers at I/O.
+    trusted_execution_scope: TrustedExecutionScope | None = field(
+        default=None, repr=False
+    )
+    # Managed execution supplies an owner-scoped, digest-verifying resolver.
+    # It is a live worker dependency and is never serialized into plans.
+    input_resource_resolver: Callable[[Any], bytes] | None = field(
+        default=None, repr=False
+    )
+    # Managed resume workers set this after verifying a selected, scoped
+    # checkpoint. It is runtime authority and is never serialized into a plan.
+    managed_checkpoint_restore: str | None = field(default=None, repr=False)
+    managed_checkpoint_publisher: Callable[[str, str], None] | None = field(
+        default=None, repr=False
+    )
     _observability_bridge: Any = field(default=None, repr=False)
 
     def __post_init__(self) -> None:

@@ -41,7 +41,7 @@ jobs:
 
       - name: Sync all workspace dependencies for Pyright
         if: matrix.os == 'ubuntu-latest' && matrix.python-version == '3.11'
-        run: uv sync --locked --all-groups
+        run: uv sync --locked --all-groups --extra fastapi --extra lsp
 
       - name: Pyright (strict repository)
         if: matrix.os == 'ubuntu-latest' && matrix.python-version == '3.11'
@@ -476,6 +476,51 @@ jobs:
           uv run python examples/sql_boundary_hybrid.py
           uv run python examples/sql_failure_recovery.py
 
+  managed-provider-matrix:
+    name: Managed phase 0.56 provider matrix
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: etlantic
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v9.0.0
+        with:
+          version: "0.12.0"
+          python-version: "3.11"
+          enable-cache: true
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Sync managed provider dependencies
+        run: uv sync --locked --all-groups --extra fastapi --extra lsp
+
+      - name: Execute PostgreSQL, CSV and two-scope Semblance worker matrix
+        env:
+          ETLANTIC_SQL_TEST_URL: "postgresql+psycopg://postgres:postgres@localhost:5432/etlantic"
+          ETLANTIC_PHASE056_MATRIX_EVIDENCE: ${{ runner.temp }}/phase-0.56-managed-provider-matrix.json
+        run: uv run pytest -q tests/fastapi/test_managed_provider_matrix_0_56.py
+
+      - name: Upload managed provider matrix evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: phase-0.56-managed-provider-matrix
+          path: ${{ runner.temp }}/phase-0.56-managed-provider-matrix.json
+          if-no-files-found: ignore
+
   duckdb:
     name: DuckDB optional plugin
     runs-on: ${{ matrix.os }}
@@ -790,7 +835,7 @@ jobs:
 
       - name: Build all plugin wheels
         run: |
-          for pkg in etlantic-polars etlantic-pandas etlantic-sql etlantic-pyspark \
+          for pkg in etlantic-polars etlantic-pandas etlantic-sql etlantic-foundry etlantic-pyspark \
             etlantic-airflow etlantic-prefect etlantic-keyring etlantic-sqlmodel \
             medallantic etlantic-sparkforge etlantic-fastapi etlantic-lsp etlantic-datafusion \
             etlantic-s3 etlantic-kafka etlantic-k8s etlantic-spark-connect etlantic-schemaregistry etlantic-iceberg etlantic-snowflake \
@@ -1015,7 +1060,9 @@ jobs:
           github-token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Sync with fastapi extra
-        run: uv sync --locked --extra fastapi --group sqlmodel
+        run: >-
+          uv sync --locked --extra fastapi --extra dataframes --extra sql
+          --extra datafusion --extra duckdb --group pyspark --group sqlmodel
 
       - name: Pytest FastAPI reference suite
         env:
@@ -1107,6 +1154,10 @@ jobs:
           PYTHON_VERSION="$(python -c 'import sys; print(f"{sys.version_info.major}.{sys.version_info.minor}")')"
           CONSTRAINT_URL="https://raw.githubusercontent.com/apache/airflow/constraints-${AIRFLOW_VERSION}/constraints-${PYTHON_VERSION}.txt"
           uv pip install "apache-airflow==${AIRFLOW_VERSION}" --constraint "$CONSTRAINT_URL"
+          # The Airflow constraints pin idna below the version required by
+          # ETLantic's locked httpx2 dependency. Keep the integration test
+          # environment compatible with both sets of requirements.
+          uv pip install "idna>=3.18"
           uv pip check
 
       - name: Compile and import generated DAG

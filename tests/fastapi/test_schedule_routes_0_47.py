@@ -3,11 +3,13 @@
 
 from __future__ import annotations
 
+from typing import Any, cast
+
 import pytest
 
 pytest.importorskip("fastapi")
 pytest.importorskip("etlantic_fastapi")
-pytest.importorskip("httpx")
+pytest.importorskip("httpx2")
 
 from fastapi.testclient import TestClient
 
@@ -125,3 +127,43 @@ def test_worker_health_does_not_enumerate_without_authz() -> None:
     if resp.status_code == 200:
         raise AssertionError("unauthorized worker health must not succeed")
     assert "worker-host" not in resp.text
+
+
+def test_schedule_amendment_is_revision_guarded() -> None:
+    client, _store, _durable = _client()
+    request_client: Any = cast(Any, client)
+    headers = {"X-Principal": "alice"}
+    created = request_client.post(
+        "/v1/definitions/pipe-1/schedules",
+        headers=headers,
+        json={"kind": "interval", "interval_seconds": 60},
+    )
+    assert created.status_code == 201, created.text
+    schedule = created.json()
+    schedule_id = schedule["schedule_id"]
+    old_revision = schedule["revision_id"]
+
+    amended_response = request_client.post(
+        f"/v1/schedules/{schedule_id}/amend",
+        headers=headers,
+        json={
+            "expected_revision_id": old_revision,
+            "spec": {"kind": "interval", "interval_seconds": 120},
+        },
+    )
+    assert amended_response.status_code == 200, amended_response.text
+    amended = amended_response.json()
+    assert amended["revision_id"] != old_revision
+    assert amended["metadata"]["amends_revision_id"] == old_revision
+    assert amended["spec"]["interval_seconds"] == 120
+
+    stale = request_client.post(
+        f"/v1/schedules/{schedule_id}/amend",
+        headers=headers,
+        json={
+            "expected_revision_id": old_revision,
+            "spec": {"kind": "interval", "interval_seconds": 180},
+        },
+    )
+    assert stale.status_code == 409, stale.text
+    assert stale.json()["extensions"]["reason"] == "stale_revision"

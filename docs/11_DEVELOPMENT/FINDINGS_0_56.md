@@ -199,7 +199,7 @@ allowed actions; preserve run/attempt/command lineage and explicitly supported
 amendment/pause boundaries. **Workstream:** 056-CONTROL.
 **Acceptance:** AC056-030–032, 044.
 
-### F056-11 — P1: Required provider coverage and live qualification
+### F056-11 — P1: Required provider coverage and qualification
 
 The [SQL package](https://github.com/eddiethedean/etlantic/blob/fb0dd748860cdbafceea473f315ed8934a329b27/packages/etlantic-sql/README.md#L76)
 documents Experimental PostgreSQL connector coverage with SQLite fake evidence.
@@ -208,10 +208,13 @@ found in the reviewed `src`/`packages` tree. Data Mover's MSS and MCS-COP are
 Foundry configurations, **not Microsoft SQL Server**.
 
 **Add:** a generic independently installable Foundry provider and qualify live
-PostgreSQL plus immutable CSV inputs through the complete managed path. Cover
-all advertised source/destination pairs and modes, overlap, permissions,
-bounded batches, cleanup and uncertain commits. Named product deployments are
-configuration fixtures; core must never import Data Mover.
+PostgreSQL plus immutable CSV inputs through the complete managed path. Qualify
+Foundry API contract behavior against the Semblance-backed local simulator; a
+live Foundry account is not part of qualification. Cover all advertised
+source/destination pairs
+and modes, overlap, permissions, bounded batches, cleanup and uncertain commits.
+Named product deployments are configuration fixtures; core must never import
+Data Mover.
 **Workstreams:** 056-PROVIDER, 056-QUALIFY. **Acceptance:** AC056-033–036, 039–041.
 
 ### F056-12 — P1: Preserve explicit opaque denial policy

@@ -32,7 +32,10 @@ from etlantic.planning.adaptive import _handoff_contract
 from etlantic.profile import PlacementTarget, Profile
 from etlantic.registry import PlanningContext, PluginDescriptor
 from etlantic.runtime.execute import arun_pipeline
-from etlantic.runtime.physical_operations import OPERATION_SCHEMA
+from etlantic.runtime.physical_operations import (
+    OPERATION_SCHEMA,
+    validate_managed_resume_checkpoint,
+)
 from etlantic.runtime.request import RetryPolicy, RunRequest, RunSelection
 from etlantic.runtime.scheduler import LocalScheduler
 
@@ -347,6 +350,75 @@ def test_checkpoint_and_reuse_execute(
             t.get("selection") == "checkpoint"
             for t in report.metadata["etlantic.physical_trace"]
         )
+
+    anyio.run(exercise)
+
+
+@pytest.mark.parametrize("family", ["local", "polars", "pandas"])
+def test_managed_resume_requires_and_restores_selected_checkpoint(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, family: str
+) -> None:
+    graph = Chain.build_graph()
+    graph = replace(
+        graph,
+        nodes=tuple(
+            replace(
+                node,
+                metadata={
+                    **dict(node.metadata),
+                    "etlantic.materialization_required": {
+                        "schema": OPERATION_SCHEMA,
+                        "kind": "materialization",
+                        "checkpoint": "first",
+                    },
+                    "etlantic.reuse_artifact": {
+                        "schema": OPERATION_SCHEMA,
+                        "kind": "reuse",
+                        "checkpoint": "first",
+                    },
+                },
+            )
+            if node.name == "first"
+            else node
+            for node in graph.nodes
+        ),
+    )
+    monkeypatch.setattr(Chain, "build_graph", classmethod(lambda cls: graph))
+
+    async def exercise() -> None:
+        runtime, _, plan = setup(Chain, (family,), RunRequest())
+        runtime.memory.seed("rows", [{"id": 1}])
+        initial = await LocalScheduler().execute(
+            plan, request=RunRequest(), runtime=runtime, workspace=tmp_path
+        )
+        assert initial.status.value == "succeeded", initial.diagnostics
+        assert (
+            validate_managed_resume_checkpoint(
+                plan,
+                checkpoint_id="checkpoint:run-parent:first",
+                parent_run_id="run-parent",
+                workspace=tmp_path,
+            )
+            == "first"
+        )
+
+        runtime.managed_checkpoint_restore = "first"
+        runtime.memory.seed("rows", [{"id": 2}])
+        resumed = await LocalScheduler().execute(
+            plan, request=RunRequest(), runtime=runtime, workspace=tmp_path
+        )
+        assert resumed.status.value == "succeeded", resumed.diagnostics
+        assert any(
+            item.get("selection") == "checkpoint"
+            for item in resumed.metadata["etlantic.physical_trace"]
+        )
+
+        (tmp_path / "checkpoint-first.json").unlink()
+        missing = await LocalScheduler().execute(
+            plan, request=RunRequest(), runtime=runtime, workspace=tmp_path
+        )
+        assert missing.status.value == "failed"
+        assert any(item.code == "PMADP520" for item in missing.diagnostics)
 
     anyio.run(exercise)
 

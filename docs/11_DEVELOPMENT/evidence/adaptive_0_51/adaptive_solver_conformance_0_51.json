@@ -5,7 +5,7 @@
   "passed_scenarios": 5,
   "planner_version": "0.52",
   "public_schema": "etlantic.plan/2",
-  "repository_revision": "sha256:3258c05d92333a9e464e80ead95d82f20431b1676332120cc86c91fb2050b726",
+  "repository_revision": "sha256:02786aba5789ed3c5f0bd1fab3f06990359316cec845e5a6062349fca4ee6991",
   "result": "pass",
   "scenario_count": 5,
   "scenarios": [
@@ -15,7 +15,7 @@
       "executed": true,
       "expected": "pass",
       "id": "test_candidate_matrix_is_canonical_node_then_target_order",
-      "plan_fingerprint": "44fb35e2f46709033e5a1d6226548932e3b57629ade80e1cc5ffcee759309eed",
+      "plan_fingerprint": "cb40d6ccd44f9b510ac8ce5455b85f26f3eec96db84b7e270346eeadf37706df",
       "result": "pass",
       "verification": "test_candidate_matrix_is_canonical_node_then_target_order"
     },
@@ -25,7 +25,7 @@
       "executed": true,
       "expected": "pass",
       "id": "test_adaptive_candidate_analysis_is_analyze_only",
-      "plan_fingerprint": "44fb35e2f46709033e5a1d6226548932e3b57629ade80e1cc5ffcee759309eed",
+      "plan_fingerprint": "cb40d6ccd44f9b510ac8ce5455b85f26f3eec96db84b7e270346eeadf37706df",
       "result": "pass",
       "verification": "test_adaptive_candidate_analysis_is_analyze_only"
     },
@@ -35,7 +35,7 @@
       "executed": true,
       "expected": "pass",
       "id": "test_adaptive_solver_matches_seeded_oracle_corpus",
-      "plan_fingerprint": "44fb35e2f46709033e5a1d6226548932e3b57629ade80e1cc5ffcee759309eed",
+      "plan_fingerprint": "cb40d6ccd44f9b510ac8ce5455b85f26f3eec96db84b7e270346eeadf37706df",
       "result": "pass",
       "verification": "test_adaptive_solver_matches_seeded_oracle_corpus"
     },
@@ -45,7 +45,7 @@
       "executed": true,
       "expected": "pass",
       "id": "test_adaptive_solver_oracle_rejects_a_nonoptimal_assignment",
-      "plan_fingerprint": "44fb35e2f46709033e5a1d6226548932e3b57629ade80e1cc5ffcee759309eed",
+      "plan_fingerprint": "cb40d6ccd44f9b510ac8ce5455b85f26f3eec96db84b7e270346eeadf37706df",
       "result": "pass",
       "verification": "test_adaptive_solver_oracle_rejects_a_nonoptimal_assignment"
     },
@@ -55,7 +55,7 @@
       "executed": true,
       "expected": "pass",
       "id": "test_final_052_020_solver_infeasibility_uses_explicit_fallback",
-      "plan_fingerprint": "44fb35e2f46709033e5a1d6226548932e3b57629ade80e1cc5ffcee759309eed",
+      "plan_fingerprint": "cb40d6ccd44f9b510ac8ce5455b85f26f3eec96db84b7e270346eeadf37706df",
       "result": "pass",
       "verification": "test_final_052_020_solver_infeasibility_uses_explicit_fallback"
     }

@@ -11,8 +11,46 @@ from pathlib import Path
 # Pyright/type-ignore comments are temporary compatibility boundaries. Locking
 # their exact inventory prevents a new suppression from silently widening the
 # strict-checking escape hatch; intentional changes must update this digest in
-# the same review.
-EXPECTED_DIGEST = "c5dd6ea5b4e42251ded4853be08ccdf91e0e4979083bf5b16c7def04b7b6eee4"
+# the same review. AC056-020 action-scope checks shifted later source lines;
+# prior AC056-019/044/031/015 work shifted other positions. AC056-021's
+# validation imports and branches shift locations again. Phase 0.56 adds two
+# reviewed file-scoped exceptions: FastAPI route decorators appear unused to
+# Pyright's module scan, and the same-engine schedule adapter coordinates a
+# transaction through the durable adapter's internal snapshot API.
+# The private-usage exception was removed after exposing the SQLModel durable
+# adapter's same-transaction operation as a public coordination method. The
+# managed preparation service, managed resume command, route and authorization
+# matrix shift existing directives; token review found no additions or removals.
+# AC #215 persists the accepted execution scope on CP3 submissions and carries
+# it through report recovery and artifact retention. AC #226 enumerates full
+# accepted scopes through the durable provider contract. Source lines shifted,
+# with no suppression added or removed; the 784-entry inventory is re-pinned.
+# AC #227 paginates retention scope discovery and centralizes accepted-context
+# reconstruction. No suppression was added or removed; the 784-entry inventory
+# is re-pinned after source-line shifts.
+# AC #230 bounds paginated scope scans with a high watermark so a full retry
+# queue cannot stall discovery. No suppression was added or removed; the
+# inventory is re-pinned after source-line shifts.
+# Issue #217 preserves unknown effects through recovery and store snapshots.
+# No suppression changed; the 784-entry inventory is re-pinned after line shifts.
+# Issue #219 retains fenced late action effects; existing suppression locations
+# shift, with no directives added or removed (784 entries).
+# Phase 0.56 #221/222 update control-plane and SQLModel sources, shifting
+# existing suppression locations without adding or removing directives.
+# Managed checkpoint persistence shifts existing runtime/service directives;
+# the reviewed 789-entry inventory is re-pinned with no suppression changes.
+# Issue #243 completes principal-scoped idempotency. No suppression was added
+# or removed; the 784-entry inventory is re-pinned after source-line shifts.
+# Merged phase 0.56 quota durability adds five reviewed SQLModel snapshot
+# adapter suppressions: one for the ORM-generated table attribute and four for
+# restoring private MemoryQuotaProvider state as part of the durable snapshot.
+# The 789-entry inventory is pinned after those additions and line shifts.
+# AC056-031 effect classification and managed recovery changes shifted existing
+# directives. Token review found no suppressions added or removed; re-pin the
+# 789-entry inventory.
+# AC056 removes the legacy profile migration and opt-in loading paths. The
+# 789-entry suppression inventory is unchanged, with refreshed source lines.
+EXPECTED_DIGEST = "fb8625cac421919969126c3cdf05214f7f0bf43cbed6ae86b6876d1c1a73c09d"
 
 _IGNORED_DIRECTORIES = frozenset(
     {

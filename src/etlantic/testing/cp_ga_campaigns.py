@@ -8,6 +8,7 @@ from importlib.metadata import version as pkg_version
 from pathlib import Path
 from typing import Any
 
+from etlantic import __version__ as module_version
 from etlantic.control_plane import (
     ControlPlaneContext,
     ControlPlaneError,
@@ -73,7 +74,11 @@ def run_compat_campaign() -> dict[str, Any]:
     # Migration apply on fresh sqlite (sqlmodel optional).
     try:
         from etlantic_sqlmodel.control_plane.session import create_sqlite_engine
-        from etlantic_sqlmodel.migrations import apply_migrations, current_version
+        from etlantic_sqlmodel.migrations import (
+            VERSIONS,
+            apply_migrations,
+            current_version,
+        )
 
         engine = create_sqlite_engine("sqlite://")
         apply_migrations(engine)
@@ -81,7 +86,7 @@ def run_compat_campaign() -> dict[str, Any]:
         cases.append(
             {
                 "id": "sqlmodel_migrations_fresh",
-                "status": "pass" if ver == "005_cp1_reference" else "fail",
+                "status": "pass" if ver == VERSIONS[-1] else "fail",
                 "version": ver,
             }
         )
@@ -101,7 +106,9 @@ def run_compat_campaign() -> dict[str, Any]:
     cases.append(
         {
             "id": "compat_floor",
-            "status": "pass" if major_minor == "0.55" else "fail",
+            "status": "pass"
+            if major_minor == ".".join(module_version.split(".")[:2])
+            else "fail",
             "policy": f">={major_minor}.0,<{next_minor}",
             "installed": installed,
         }
@@ -486,6 +493,7 @@ def run_recovery_campaign() -> dict[str, Any]:
         signer_id=att.signer_id,
         tenant_id=att.tenant_id,
         workspace_id=att.workspace_id,
+        created_at=att.created_at,
     )
     store1.put(ctx, attestation=signed)
     store2 = MemoryAttestationStore(signing_secret=b"rotated-secret-value-0001")

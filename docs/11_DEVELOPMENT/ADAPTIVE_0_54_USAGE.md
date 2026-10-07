@@ -1,7 +1,7 @@
 ---
 status: experimental
 since: "0.54.0"
-current_minor: "0.55"
+current_minor: "0.56"
 audience: developer
 ---
 

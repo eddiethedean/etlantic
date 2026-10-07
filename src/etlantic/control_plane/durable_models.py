@@ -8,13 +8,24 @@ the API, dispatcher, execution host, and optional persistence adapters.
 
 from __future__ import annotations
 
+import json
 from collections.abc import Mapping
 from dataclasses import asdict, dataclass, field
-from typing import Any, Literal
+from datetime import UTC, datetime
+from typing import Any, Literal, cast
 
+from etlantic.control_plane.models import (
+    ControlPlaneContext,
+    EnvironmentRef,
+    Principal,
+    SecurityDomain,
+    TenantRef,
+    WorkspaceRef,
+)
 from etlantic.control_plane.redaction import (
     redact_control_plane_payload,
     redact_control_plane_text,
+    redact_or_preserve_execution_envelope,
 )
 
 SUBMISSION_RECORD_SCHEMA = "etlantic.control_plane.submission_record/1"
@@ -33,6 +44,8 @@ STATE_TRANSITION_EXPLANATION_SCHEMA = (
 )
 STATE_DIAGNOSTIC_SCHEMA = "etlantic.control_plane.state_diagnostic/1"
 BASELINE_ACK_SCHEMA = "etlantic.control_plane.baseline_acknowledgement/1"
+ACTION_JOB_SCHEMA = "etlantic.control_plane.action_job/1"
+RESULT_PUBLICATION_SCHEMA = "etlantic.control_plane.result_publication/1"
 
 STATE_NAMESPACES = ("cursor:", "watermark:", "partition:", "snapshot:", "checkpoint:")
 
@@ -44,6 +57,15 @@ EffectStatus = Literal[
     "none", "pending", "committed", "not_committed", "failed", "unknown"
 ]
 RepairPlanKind = Literal["resume", "repair", "backfill"]
+ActionJobStatus = Literal[
+    "queued",
+    "running",
+    "cancel_requested",
+    "succeeded",
+    "failed",
+    "timed_out",
+    "cancelled",
+]
 
 
 def _metadata(value: Mapping[str, Any] | None) -> Mapping[str, Any]:
@@ -82,19 +104,68 @@ class SubmissionRecord:
     schema_observation_fingerprint: str | None = None
     schema_baseline_id: str | None = None
     metadata: Mapping[str, Any] = field(default_factory=dict)
+    environment: str | None = None
+    security_domain_id: str | None = None
+    resource_owner_id: str | None = None
+    run_id: str | None = None
 
     def to_dict(self) -> dict[str, Any]:
         payload = asdict(self)
-        payload["input_snapshot"] = (
-            redact_control_plane_text(self.input_snapshot)
-            if self.input_snapshot is not None
-            else None
+        payload["input_snapshot"] = redact_or_preserve_execution_envelope(
+            self.input_snapshot
         )
         return {
             "schema": SUBMISSION_RECORD_SCHEMA,
             **payload,
             "metadata": _metadata(self.metadata),
         }
+
+
+@dataclass(frozen=True, slots=True)
+class ExecutionScopePage:
+    """A bounded page of accepted execution scopes.
+
+    ``next_cursor`` is the last scanned submission ID when more submissions
+    remain through ``high_watermark``, or ``None`` when this snapshot is
+    complete. The watermark records the newest insertion at scan start and
+    keeps later submissions from extending the scan.
+    """
+
+    scopes: tuple[ControlPlaneContext, ...]
+    next_cursor: str | None = None
+    high_watermark: str | None = None
+
+
+def execution_context_from_submission(
+    submission: SubmissionRecord,
+) -> ControlPlaneContext | None:
+    """Build accepted authority from a durable submission, if it is complete."""
+    if (
+        not submission.tenant_id
+        or not submission.workspace_id
+        or not submission.principal_subject
+        or not submission.environment
+        or not submission.security_domain_id
+    ):
+        return None
+    try:
+        return ControlPlaneContext(
+            principal=Principal.from_dict(
+                {
+                    "subject": submission.principal_subject,
+                    "issuer": submission.principal_issuer,
+                    "kind": submission.principal_kind,
+                }
+            ),
+            tenant=TenantRef(submission.tenant_id),
+            workspace=WorkspaceRef(submission.tenant_id, submission.workspace_id),
+            environment=EnvironmentRef(submission.environment),
+            security_domain=SecurityDomain(submission.security_domain_id),
+            resource_owner_id=submission.resource_owner_id,
+        )
+    except (KeyError, TypeError, ValueError):
+        # Historical or malformed authority data must not select a store.
+        return None
 
 
 @dataclass(frozen=True, slots=True)
@@ -151,6 +222,24 @@ class AttemptRecord:
             **asdict(self),
             "context": _metadata(self.context),
         }
+
+
+@dataclass(frozen=True, slots=True)
+class ResultPublicationRecord:
+    """Durable canonical run report awaiting or confirming publication."""
+
+    submission_id: str
+    attempt_id: str
+    run_id: str
+    tenant_id: str
+    workspace_id: str
+    report_json: str
+    report_sha256: str
+    created_at: str
+    published_at: str | None = None
+
+    def to_dict(self) -> dict[str, Any]:
+        return {"schema": RESULT_PUBLICATION_SCHEMA, **asdict(self)}
 
 
 @dataclass(frozen=True, slots=True)
@@ -236,10 +325,8 @@ class ReplayRecord:
 
     def to_dict(self) -> dict[str, Any]:
         payload = asdict(self)
-        payload["input_snapshot"] = (
-            redact_control_plane_text(self.input_snapshot)
-            if self.input_snapshot is not None
-            else None
+        payload["input_snapshot"] = redact_or_preserve_execution_envelope(
+            self.input_snapshot
         )
         return {
             "schema": REPLAY_RECORD_SCHEMA,
@@ -401,7 +488,78 @@ class BaselineAcknowledgement:
         return {"schema": BASELINE_ACK_SCHEMA, **asdict(self)}
 
 
+@dataclass(frozen=True, slots=True)
+class ActionJobRecord:
+    """Durable owner-scoped, bounded connector action receipt."""
+
+    action_id: str
+    tenant_id: str
+    workspace_id: str
+    owner_id: str
+    principal_subject: str
+    principal_issuer: str | None
+    principal_kind: str
+    environment: str
+    security_domain_id: str
+    action: str
+    idempotency_key: str
+    request_fingerprint: str
+    request_json: str
+    created_at: str
+    deadline_at: str
+    status: ActionJobStatus = "queued"
+    phase: str = "queued"
+    attempt: int = 0
+    fencing_token: int = 0
+    worker_id: str | None = None
+    lease_expires_at: str | None = None
+    started_at: str | None = None
+    completed_at: str | None = None
+    result_json: str | None = None
+    result_expires_at: str | None = None
+    error_code: str | None = None
+
+    def to_dict(self) -> dict[str, Any]:
+        """Return the safe caller receipt without the submitted request."""
+        result: Any = None
+        result_expired = False
+        if self.result_expires_at is not None:
+            try:
+                expiry = datetime.fromisoformat(
+                    self.result_expires_at.replace("Z", "+00:00")
+                )
+                result_expired = expiry <= datetime.now(UTC)
+            except (TypeError, ValueError):
+                result_expired = True
+        if self.result_json is not None and not result_expired:
+            try:
+                result = json.loads(self.result_json)
+            except (TypeError, ValueError):
+                result = None
+        return {
+            "schema": ACTION_JOB_SCHEMA,
+            "action_id": self.action_id,
+            "tenant_id": self.tenant_id,
+            "workspace_id": self.workspace_id,
+            "action": self.action,
+            "created_at": self.created_at,
+            "deadline_at": self.deadline_at,
+            "status": self.status,
+            "attempt": self.attempt,
+            "started_at": self.started_at,
+            "completed_at": self.completed_at,
+            "result_expires_at": self.result_expires_at,
+            "result": (
+                dict(cast(Mapping[str, Any], result))
+                if isinstance(result, Mapping)
+                else None
+            ),
+            "error_code": self.error_code,
+        }
+
+
 __all__ = [
+    "ACTION_JOB_SCHEMA",
     "ATTEMPT_RECORD_SCHEMA",
     "BASELINE_ACK_SCHEMA",
     "CHECKPOINT_RECORD_SCHEMA",
@@ -417,6 +575,8 @@ __all__ = [
     "STATE_NAMESPACES",
     "STATE_TRANSITION_EXPLANATION_SCHEMA",
     "SUBMISSION_RECORD_SCHEMA",
+    "ActionJobRecord",
+    "ActionJobStatus",
     "AttemptRecord",
     "AttemptStatus",
     "BaselineAcknowledgement",

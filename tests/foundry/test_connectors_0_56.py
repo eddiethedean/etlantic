@@ -1,0 +1,799 @@
+from __future__ import annotations
+
+import asyncio
+import hashlib
+import json
+from collections.abc import Mapping
+from typing import Any, cast
+from urllib.parse import unquote
+
+import anyio
+import httpx2
+import pytest
+from etlantic_foundry.connectors import (
+    FoundrySinkConnector,
+    FoundrySourceConnector,
+    FoundryStorageConnector,
+)
+
+from etlantic.connectors.errors import (
+    ConnectorConfigError,
+    ConnectorReadError,
+    ConnectorWriteError,
+)
+from etlantic.connectors.models import CommitReceipt, ReconciliationResult
+from etlantic.connectors.session import write_via_sink_connector
+from etlantic.secrets import SecretValue
+
+BASE = "https://foundry.example"
+DATASET = "ri.foundry.main.dataset.test"
+TRANSACTION = "ri.foundry.main.transaction.pinned"
+TOKEN = "foundry-test-token-do-not-log"
+
+
+def _secret() -> dict[str, Any]:
+    return {
+        "secret": SecretValue(
+            _value=TOKEN,
+            provider="fixture",
+            name="foundry-token",
+            key="token",
+            version="test",
+        ),
+        "run_id": "foundry-run-1",
+        "node": "foundry-output",
+    }
+
+
+def _source_binding(**options: Any) -> dict[str, Any]:
+    return {
+        "provider": "foundry",
+        "format": "csv",
+        "config": {
+            "base_url": BASE,
+            "dataset_rid": DATASET,
+            "branch_name": "main",
+            "transaction_rid": TRANSACTION,
+            **options,
+        },
+    }
+
+
+def _sink_binding(mode: str = "append", **options: Any) -> dict[str, Any]:
+    return {
+        "provider": "foundry",
+        "format": "csv",
+        "config": {
+            "base_url": BASE,
+            "dataset_rid": DATASET,
+            "branch_name": "main",
+            "mode": mode,
+            **options,
+        },
+    }
+
+
+def _catalog_binding() -> dict[str, Any]:
+    return {
+        "provider": "foundry",
+        "config": {
+            "base_url": BASE,
+            "dataset_rid": DATASET,
+            "branch_name": "main",
+        },
+    }
+
+
+@pytest.mark.parametrize("files", [[], [{"path": "a.csv"}]])
+def test_catalog_accepts_a_single_terminal_page(files: list[dict[str, str]]) -> None:
+    def handler(request: httpx2.Request) -> httpx2.Response:
+        assert request.url.params["pageSize"] == "1"
+        assert request.url.params["branchName"] == "main"
+        assert "pageToken" not in request.url.params
+        return httpx2.Response(200, json={"data": files})
+
+    connector = FoundryStorageConnector(transport=httpx2.MockTransport(handler))
+
+    async def run() -> dict[str, Any]:
+        return await connector.list_catalog(
+            binding=_catalog_binding(), context=_secret(), limit=1
+        )
+
+    page = anyio.run(run)
+    assert page["items"] == [
+        {"resource_id": item["path"], "kind": "file"} for item in files
+    ]
+    assert page["next_cursor"] is None
+    assert page["has_more"] is False
+
+
+@pytest.mark.parametrize("repeated_token", [False, True])
+def test_catalog_continuation_accepts_exhaustion_and_rejects_repeated_tokens(
+    repeated_token: bool,
+) -> None:
+    requests: list[httpx2.Request] = []
+
+    def handler(request: httpx2.Request) -> httpx2.Response:
+        requests.append(request)
+        if request.url.params.get("pageToken") is None:
+            return httpx2.Response(
+                200, json={"data": [{"path": "a.csv"}], "nextPageToken": "next"}
+            )
+        assert request.url.params["pageToken"] == "next"
+        body: dict[str, Any] = {"data": [{"path": "b.csv"}]}
+        if repeated_token:
+            body["nextPageToken"] = "next"
+        return httpx2.Response(200, json=body)
+
+    connector = FoundryStorageConnector(transport=httpx2.MockTransport(handler))
+
+    async def run() -> dict[str, Any]:
+        first = await connector.list_catalog(
+            binding=_catalog_binding(), context=_secret(), limit=1
+        )
+        assert first["has_more"] is True
+        return await connector.list_catalog(
+            binding=_catalog_binding(),
+            context=_secret(),
+            limit=1,
+            cursor=first["next_cursor"],
+        )
+
+    if repeated_token:
+        with pytest.raises(ConnectorReadError, match="repeated pagination token"):
+            anyio.run(run)
+    else:
+        page = anyio.run(run)
+        assert page["items"] == [{"resource_id": "b.csv", "kind": "file"}]
+        assert page["next_cursor"] is None
+        assert page["has_more"] is False
+    assert len(requests) == 2
+
+
+def test_source_reads_pinned_paginated_csv_and_records_identity() -> None:
+    requests: list[httpx2.Request] = []
+    contents = {
+        "folder/a.csv": b"id,value\n1,alpha\n",
+        "folder/b.csv": b"id,value\n2,beta\n",
+    }
+
+    def handler(request: httpx2.Request) -> httpx2.Response:
+        requests.append(request)
+        assert request.headers["Authorization"] == f"Bearer {TOKEN}"
+        if request.url.path.endswith(f"/transactions/{TRANSACTION}"):
+            return httpx2.Response(
+                200, json={"rid": TRANSACTION, "status": "COMMITTED"}
+            )
+        if request.url.path.endswith("/files"):
+            if request.url.params.get("pageToken"):
+                return httpx2.Response(
+                    200,
+                    json={
+                        "data": [{"path": "folder/b.csv", "sizeBytes": "16"}],
+                    },
+                )
+            return httpx2.Response(
+                200,
+                json={
+                    "data": [{"path": "folder/a.csv", "sizeBytes": "17"}],
+                    "nextPageToken": "next-page",
+                },
+            )
+        if request.url.path.endswith("/content"):
+            path = unquote(
+                request.url.path.split("/files/", 1)[1].removesuffix("/content")
+            )
+            return httpx2.Response(200, content=contents[path])
+        raise AssertionError(f"unexpected request: {request.method} {request.url}")
+
+    connector = FoundrySourceConnector(transport=httpx2.MockTransport(handler))
+    binding = _source_binding(path_prefix="folder", batch_size=1)
+    context = _secret()
+
+    async def run() -> tuple[list[dict[str, Any]], list[Any]]:
+        plan = await connector.plan_read(binding=binding, context=context)
+        batches = [
+            batch
+            async for batch in connector.read_batches(
+                plan=plan, binding=binding, context=context
+            )
+        ]
+        return [dict(row) for batch in batches for row in batch.records], batches
+
+    rows, batches = anyio.run(run)
+    assert rows == [{"id": "1", "value": "alpha"}, {"id": "2", "value": "beta"}]
+    assert [batch.batch_index for batch in batches] == [0, 1]
+    assert batches[-1].exhausted
+    batch_identities = [identity for batch in batches for identity in batch.identities]
+    assert [identity.relative_path for identity in batch_identities] == [
+        "folder/a.csv",
+        "folder/b.csv",
+    ]
+    assert (
+        batch_identities[0].content_sha256
+        == hashlib.sha256(contents["folder/a.csv"]).hexdigest()
+    )
+    assert len(context["landing_read_manifest"].identities) == 2
+    listing_requests = [
+        request for request in requests if request.url.path.endswith("/files")
+    ]
+    assert len(listing_requests) == 2
+    assert all(
+        request.url.params.get("endTransactionRid") == TRANSACTION
+        for request in listing_requests
+    )
+    assert all(
+        request.url.params.get("branchName") is None for request in listing_requests
+    )
+    assert "Bearer" not in repr(batches)
+
+
+@pytest.mark.parametrize("announced_size", [None, "1"])
+def test_source_stops_streaming_when_file_budget_is_exceeded(
+    announced_size: str | None,
+) -> None:
+    chunks_read: list[int] = []
+
+    class OversizedStream(httpx2.AsyncByteStream):
+        async def __aiter__(self):
+            for index in range(8):
+                chunks_read.append(index)
+                yield b"id\n1\n"
+
+    def handler(request: httpx2.Request) -> httpx2.Response:
+        if request.url.path.endswith(f"/transactions/{TRANSACTION}"):
+            return httpx2.Response(200, json={"status": "COMMITTED"})
+        if request.url.path.endswith("/files"):
+            item: dict[str, Any] = {"path": "large.csv"}
+            if announced_size is not None:
+                item["sizeBytes"] = announced_size
+            return httpx2.Response(200, json={"data": [item]})
+        if request.url.path.endswith("/content"):
+            return httpx2.Response(200, stream=OversizedStream())
+        raise AssertionError(f"unexpected request: {request.method} {request.url}")
+
+    connector = FoundrySourceConnector(transport=httpx2.MockTransport(handler))
+    binding = _source_binding(max_file_bytes=8, max_total_bytes=8)
+    context = _secret()
+
+    async def run() -> None:
+        plan = await connector.plan_read(binding=binding, context=context)
+        async for _ in connector.read_batches(
+            plan=plan, binding=binding, context=context
+        ):
+            pass
+
+    with pytest.raises(ConnectorReadError, match="content exceeds max_bytes"):
+        anyio.run(run)
+    assert len(chunks_read) == 2
+
+
+def test_source_caps_each_download_to_remaining_total_budget() -> None:
+    content_requests: list[str] = []
+    second_file_chunks: list[int] = []
+
+    class FirstFileStream(httpx2.AsyncByteStream):
+        async def __aiter__(self):
+            yield b"id\n1\n"
+
+    class SecondFileStream(httpx2.AsyncByteStream):
+        async def __aiter__(self):
+            for index in range(8):
+                second_file_chunks.append(index)
+                yield b"id\n2\n"
+
+    def handler(request: httpx2.Request) -> httpx2.Response:
+        if request.url.path.endswith(f"/transactions/{TRANSACTION}"):
+            return httpx2.Response(200, json={"status": "COMMITTED"})
+        if request.url.path.endswith("/files"):
+            return httpx2.Response(
+                200,
+                json={"data": [{"path": "first.csv"}, {"path": "second.csv"}]},
+            )
+        if request.url.path.endswith("/content"):
+            path = unquote(
+                request.url.path.split("/files/", 1)[1].removesuffix("/content")
+            )
+            content_requests.append(path)
+            stream = FirstFileStream() if path == "first.csv" else SecondFileStream()
+            return httpx2.Response(200, stream=stream)
+        raise AssertionError(f"unexpected request: {request.method} {request.url}")
+
+    connector = FoundrySourceConnector(transport=httpx2.MockTransport(handler))
+    binding = _source_binding(max_file_bytes=8, max_total_bytes=9)
+    context = _secret()
+
+    async def run() -> None:
+        plan = await connector.plan_read(binding=binding, context=context)
+        async for _ in connector.read_batches(
+            plan=plan, binding=binding, context=context
+        ):
+            pass
+
+    with pytest.raises(
+        ConnectorReadError, match="source exceeds max_total_bytes"
+    ) as oversized:
+        anyio.run(run)
+    assert oversized.value.code == "PMFND033"
+    assert content_requests == ["first.csv", "second.csv"]
+    assert len(second_file_chunks) == 1
+
+
+def test_source_does_not_start_another_file_after_total_budget_is_exhausted() -> None:
+    content_requests: list[str] = []
+
+    def handler(request: httpx2.Request) -> httpx2.Response:
+        if request.url.path.endswith(f"/transactions/{TRANSACTION}"):
+            return httpx2.Response(200, json={"status": "COMMITTED"})
+        if request.url.path.endswith("/files"):
+            return httpx2.Response(
+                200,
+                json={"data": [{"path": "first.csv"}, {"path": "second.csv"}]},
+            )
+        if request.url.path.endswith("/content"):
+            path = unquote(
+                request.url.path.split("/files/", 1)[1].removesuffix("/content")
+            )
+            content_requests.append(path)
+            return httpx2.Response(200, content=b"id\n1\n")
+        raise AssertionError(f"unexpected request: {request.method} {request.url}")
+
+    connector = FoundrySourceConnector(transport=httpx2.MockTransport(handler))
+    binding = _source_binding(max_file_bytes=8, max_total_bytes=5)
+    context = _secret()
+
+    async def run() -> None:
+        plan = await connector.plan_read(binding=binding, context=context)
+        async for _ in connector.read_batches(
+            plan=plan, binding=binding, context=context
+        ):
+            pass
+
+    with pytest.raises(ConnectorReadError, match="source exceeds max_total_bytes"):
+        anyio.run(run)
+    assert content_requests == ["first.csv"]
+
+
+@pytest.mark.parametrize(
+    ("mode", "transaction_type"),
+    [("append", "APPEND"), ("replace", "UPDATE"), ("snapshot", "SNAPSHOT")],
+)
+def test_sink_modes_use_open_foundry_transactions(
+    mode: str, transaction_type: str
+) -> None:
+    events: list[tuple[str, str]] = []
+
+    def handler(request: httpx2.Request) -> httpx2.Response:
+        assert request.headers["Authorization"] == f"Bearer {TOKEN}"
+        path = request.url.path
+        if path.endswith("/transactions"):
+            events.append(("create", json.loads(request.content)["transactionType"]))
+            return httpx2.Response(
+                200,
+                json={"rid": f"ri.foundry.main.transaction.{mode}", "status": "OPEN"},
+            )
+        if path.endswith("/files"):
+            return httpx2.Response(200, json={"data": []})
+        if path.endswith("/upload"):
+            events.append(("upload", request.content.decode("utf-8")))
+            return httpx2.Response(
+                200,
+                json={
+                    "path": unquote(path.split("/files/", 1)[1].removesuffix("/upload"))
+                },
+            )
+        if path.endswith("/commit"):
+            events.append(("commit", ""))
+            return httpx2.Response(200, json={"status": "COMMITTED"})
+        raise AssertionError(f"unexpected request: {request.method} {request.url}")
+
+    connector = FoundrySinkConnector(transport=httpx2.MockTransport(handler))
+    binding = _sink_binding(
+        mode, file_path="orders/current.csv" if mode == "replace" else None
+    )
+    context = _secret()
+
+    async def run() -> CommitReceipt:
+        return await write_via_sink_connector(
+            connector,
+            binding=binding,
+            data=[{"id": "1", "value": "alpha"}],
+            context=context,
+        )
+
+    receipt = anyio.run(run)
+    assert receipt.status == "committed"
+    assert events[0] == ("create", transaction_type)
+    assert events[1][0] == "upload"
+    assert events[2] == ("commit", "")
+    assert events[1][1] == "id,value\n1,alpha\n"
+    if mode == "replace":
+        assert receipt.metadata["file_path"] == "orders/current.csv"
+    else:
+        assert receipt.metadata["file_path"].startswith("etlantic/effects/")
+
+
+def test_sink_cancellation_aborts_open_foundry_transaction() -> None:
+    events: list[str] = []
+    preparing = asyncio.Event()
+
+    def handler(request: httpx2.Request) -> httpx2.Response:
+        path = request.url.path
+        if path.endswith("/transactions"):
+            events.append("create")
+            return httpx2.Response(
+                200,
+                json={"rid": "ri.foundry.main.transaction.cancel", "status": "OPEN"},
+            )
+        if path.endswith("/transactions/ri.foundry.main.transaction.cancel/abort"):
+            events.append("abort")
+            return httpx2.Response(
+                200,
+                json={"rid": "ri.foundry.main.transaction.cancel", "status": "ABORTED"},
+            )
+        raise AssertionError(f"unexpected request: {request.method} {request.url}")
+
+    class WaitingSink(FoundrySinkConnector):
+        async def prepare(self, session: Any, *, context: Mapping[str, Any]) -> None:
+            del session, context
+            preparing.set()
+            await asyncio.Event().wait()
+
+    connector = WaitingSink(transport=httpx2.MockTransport(handler))
+    binding = _sink_binding("append")
+    context = _secret()
+
+    async def run() -> None:
+        task = asyncio.create_task(
+            write_via_sink_connector(
+                connector, binding=binding, data=[{"id": "1"}], context=context
+            )
+        )
+        await preparing.wait()
+        task.cancel()
+        with pytest.raises(asyncio.CancelledError):
+            await task
+
+    anyio.run(run)
+    assert events == ["create", "abort"]
+
+
+def test_sink_commit_cancellation_reconciles_without_aborting() -> None:
+    events: list[str] = []
+    committing = asyncio.Event()
+
+    def handler(request: httpx2.Request) -> httpx2.Response:
+        path = request.url.path
+        if path.endswith("/transactions"):
+            events.append("create")
+            return httpx2.Response(
+                200,
+                json={
+                    "rid": "ri.foundry.main.transaction.commit-cancel",
+                    "status": "OPEN",
+                },
+            )
+        if path.endswith("/files"):
+            return httpx2.Response(200, json={"data": []})
+        if path.endswith("/upload"):
+            events.append("upload")
+            return httpx2.Response(
+                200,
+                json={
+                    "path": unquote(path.split("/files/", 1)[1].removesuffix("/upload"))
+                },
+            )
+        if path.endswith(
+            "/transactions/ri.foundry.main.transaction.commit-cancel/abort"
+        ):
+            events.append("abort")
+            return httpx2.Response(200, json={"status": "ABORTED"})
+        raise AssertionError(f"unexpected request: {request.method} {request.url}")
+
+    class WaitingCommitSink(FoundrySinkConnector):
+        async def commit(
+            self, session: Any, *, context: Mapping[str, Any]
+        ) -> CommitReceipt:
+            del context
+            committing.set()
+            await asyncio.Event().wait()
+            return CommitReceipt(status="committed", session_id=session.session_id)
+
+        async def reconcile(
+            self, receipt: CommitReceipt, *, context: Mapping[str, Any]
+        ) -> ReconciliationResult:
+            del context
+            events.append("reconcile")
+            return ReconciliationResult(status=receipt.status)
+
+    connector = WaitingCommitSink(transport=httpx2.MockTransport(handler))
+    context = _secret()
+
+    async def run() -> None:
+        task = asyncio.create_task(
+            write_via_sink_connector(
+                connector,
+                binding=_sink_binding("append"),
+                data=[{"id": "1"}],
+                context=context,
+            )
+        )
+        await committing.wait()
+        task.cancel()
+        with pytest.raises(asyncio.CancelledError) as cancelled:
+            await task
+        receipt = cast(CommitReceipt, cast(Any, cancelled.value).commit_receipt)
+        assert receipt.status == "unknown"
+        assert receipt.session_id
+
+    anyio.run(run)
+    assert events == ["create", "upload", "reconcile"]
+
+
+def test_sink_enforces_byte_bound_during_staging_without_poisoning_session() -> None:
+    uploaded: list[bytes] = []
+
+    def handler(request: httpx2.Request) -> httpx2.Response:
+        path = request.url.path
+        if path.endswith("/transactions"):
+            return httpx2.Response(
+                200,
+                json={"rid": "ri.foundry.main.transaction.bounded", "status": "OPEN"},
+            )
+        if path.endswith("/files"):
+            return httpx2.Response(200, json={"data": []})
+        if path.endswith("/upload"):
+            uploaded.append(request.content)
+            return httpx2.Response(
+                200,
+                json={
+                    "path": unquote(path.split("/files/", 1)[1].removesuffix("/upload"))
+                },
+            )
+        raise AssertionError(f"unexpected request: {request.method} {request.url}")
+
+    connector = FoundrySinkConnector(transport=httpx2.MockTransport(handler))
+    binding = _sink_binding("append", format="json", max_bytes=15)
+    binding["format"] = "json"
+    context = _secret()
+
+    async def run() -> None:
+        plan = await connector.plan_write(binding=binding, context=context)
+        session = await connector.begin_write(
+            plan=plan, binding=binding, context=context
+        )
+        with pytest.raises(ConnectorWriteError, match="max_bytes"):
+            await connector.write_batch(
+                session, [{"value": "0123456789"}], context=context
+            )
+        await connector.write_batch(session, [{"value": "x"}], context=context)
+        await connector.prepare(session, context=context)
+
+    anyio.run(run)
+
+    assert uploaded == [b'[{"value":"x"}]']
+
+
+@pytest.mark.parametrize("file_format", ["json", "jsonl"])
+def test_sink_counts_utf8_sig_bom_once_across_batches(file_format: str) -> None:
+    uploaded: list[bytes] = []
+    rows = [{"value": "a"}, {"value": "b"}]
+    if file_format == "json":
+        expected = json.dumps(
+            rows, sort_keys=True, separators=(",", ":"), ensure_ascii=False
+        ).encode("utf-8-sig")
+    else:
+        expected = "".join(
+            json.dumps(row, sort_keys=True, separators=(",", ":"), ensure_ascii=False)
+            + "\n"
+            for row in rows
+        ).encode("utf-8-sig")
+
+    def handler(request: httpx2.Request) -> httpx2.Response:
+        path = request.url.path
+        if path.endswith("/transactions"):
+            return httpx2.Response(
+                200,
+                json={"rid": "ri.foundry.main.transaction.bom", "status": "OPEN"},
+            )
+        if path.endswith("/files"):
+            return httpx2.Response(200, json={"data": []})
+        if path.endswith("/upload"):
+            uploaded.append(request.content)
+            return httpx2.Response(
+                200,
+                json={
+                    "path": unquote(path.split("/files/", 1)[1].removesuffix("/upload"))
+                },
+            )
+        if path.endswith("/commit"):
+            return httpx2.Response(200, json={"status": "COMMITTED"})
+        raise AssertionError(f"unexpected request: {request.method} {request.url}")
+
+    connector = FoundrySinkConnector(transport=httpx2.MockTransport(handler))
+    binding = _sink_binding(
+        "append",
+        format=file_format,
+        encoding="utf-8-sig",
+        max_bytes=len(expected),
+    )
+    binding["format"] = file_format
+    context = _secret()
+
+    async def run() -> Any:
+        plan = await connector.plan_write(binding=binding, context=context)
+        session = await connector.begin_write(
+            plan=plan, binding=binding, context=context
+        )
+        await connector.write_batch(session, rows[:1], context=context)
+        await connector.write_batch(session, rows[1:], context=context)
+        await connector.prepare(session, context=context)
+        return await connector.commit(session, context=context)
+
+    receipt = anyio.run(run)
+
+    assert receipt.status == "committed"
+    assert uploaded == [expected]
+
+
+def test_lost_commit_ack_reconciles_after_connector_restart() -> None:
+    committed = False
+    transaction_rid = "ri.foundry.main.transaction.lost-ack"
+    expected_payload = b"id,value\n1,alpha\n"
+
+    def handler(request: httpx2.Request) -> httpx2.Response:
+        nonlocal committed
+        path = request.url.path
+        if path.endswith("/transactions"):
+            return httpx2.Response(200, json={"rid": transaction_rid, "status": "OPEN"})
+        if path.endswith("/files"):
+            return httpx2.Response(200, json={"data": []})
+        if path.endswith("/upload"):
+            assert request.content == expected_payload
+            uploaded_path = unquote(path.split("/files/", 1)[1].removesuffix("/upload"))
+            return httpx2.Response(200, json={"path": uploaded_path})
+        if path.endswith("/commit"):
+            committed = True
+            raise httpx2.ReadTimeout("simulated lost acknowledgement")
+        if path.endswith(f"/transactions/{transaction_rid}"):
+            return httpx2.Response(
+                200,
+                json={
+                    "rid": transaction_rid,
+                    "status": "COMMITTED" if committed else "OPEN",
+                },
+            )
+        raise AssertionError(f"unexpected request: {request.method} {request.url}")
+
+    transport = httpx2.MockTransport(handler)
+    connector = FoundrySinkConnector(transport=transport)
+    context = _secret()
+
+    async def write() -> CommitReceipt:
+        return await write_via_sink_connector(
+            connector,
+            binding=_sink_binding("append"),
+            data=[{"id": "1", "value": "alpha"}],
+            context=context,
+        )
+
+    receipt = anyio.run(write)
+    assert receipt.status == "unknown"
+    assert receipt.metadata.get("dataset_rid") == DATASET, receipt.to_dict()
+
+    async def recover() -> Any:
+        return await FoundrySinkConnector(transport=transport).reconcile(
+            receipt, context=context
+        )
+
+    recovered = anyio.run(recover)
+    assert recovered.status == "committed", recovered.message
+    assert recovered.publication_id == transaction_rid
+
+
+def test_lost_transaction_create_ack_is_unknown_and_scoped() -> None:
+    def handler(request: httpx2.Request) -> httpx2.Response:
+        assert request.url.path.endswith("/transactions")
+        raise httpx2.ReadTimeout("simulated transaction create acknowledgement loss")
+
+    connector = FoundrySinkConnector(transport=httpx2.MockTransport(handler))
+    context = _secret()
+
+    async def write() -> CommitReceipt:
+        return await write_via_sink_connector(
+            connector,
+            binding=_sink_binding("append"),
+            data=[{"id": "1", "value": "alpha"}],
+            context=context,
+        )
+
+    receipt = anyio.run(write)
+    assert receipt.status == "unknown"
+    assert receipt.session_id is not None
+    assert receipt.metadata["dataset_rid"] == DATASET
+    assert TOKEN not in repr(receipt.to_dict())
+    recovered = anyio.run(
+        lambda: FoundrySinkConnector(transport=httpx2.MockTransport(handler)).reconcile(
+            receipt, context=context
+        )
+    )
+    assert recovered.status == "unknown"
+
+
+def test_foundry_scopes_distinct_dataset_and_branch_configurations() -> None:
+    first = _sink_binding("append")
+    second = _sink_binding("append")
+    second["config"]["dataset_rid"] = "ri.foundry.main.dataset.other"
+    second["config"]["branch_name"] = "qualification"
+    connector = FoundrySinkConnector()
+
+    async def plans() -> tuple[Any, Any]:
+        return (
+            await connector.plan_write(binding=first, context=_secret()),
+            await connector.plan_write(binding=second, context=_secret()),
+        )
+
+    first_plan, second_plan = anyio.run(plans)
+    assert first_plan.metadata["dataset_rid"] != second_plan.metadata["dataset_rid"]
+    assert first_plan.metadata["branch_name"] != second_plan.metadata["branch_name"]
+    assert first_plan.metadata["file_path"] != second_plan.metadata["file_path"]
+
+
+def test_foundry_rejects_unpinned_source_and_unsafe_paths() -> None:
+    source = FoundrySourceConnector(
+        transport=httpx2.MockTransport(lambda request: httpx2.Response(200))
+    )
+    unpinned = _source_binding()
+    del unpinned["config"]["transaction_rid"]
+
+    async def make_source_plan() -> Any:
+        return await source.plan_read(binding=unpinned, context=_secret())
+
+    with pytest.raises(ConnectorConfigError, match="pinned transaction_rid"):
+        anyio.run(make_source_plan)
+
+    sink = FoundrySinkConnector(
+        transport=httpx2.MockTransport(lambda request: httpx2.Response(200))
+    )
+
+    async def make_sink_plan() -> Any:
+        return await sink.plan_write(
+            binding=_sink_binding("replace", file_path="../outside.csv"),
+            context=_secret(),
+        )
+
+    with pytest.raises(ConnectorConfigError, match="unsafe segment"):
+        anyio.run(make_sink_plan)
+
+
+def test_storage_inspection_reads_csv_header_without_mutations() -> None:
+    requests: list[str] = []
+
+    def handler(request: httpx2.Request) -> httpx2.Response:
+        requests.append(request.method)
+        if request.url.path.endswith("/files"):
+            return httpx2.Response(
+                200,
+                json={"data": [{"path": "orders.csv", "sizeBytes": "13"}]},
+            )
+        if request.url.path.endswith("/content"):
+            return httpx2.Response(200, content=b"id,value\n1,a\n")
+        raise AssertionError(f"unexpected request: {request.method} {request.url}")
+
+    storage = FoundryStorageConnector(transport=httpx2.MockTransport(handler))
+    inspection = anyio.run(
+        lambda: storage.inspect_schema(
+            binding={
+                "provider": "foundry",
+                "format": "csv",
+                "config": {
+                    "base_url": BASE,
+                    "dataset_rid": DATASET,
+                    "branch_name": "main",
+                },
+            },
+            context=_secret(),
+        )
+    )
+    assert [field["name"] for field in inspection.fields] == ["id", "value"]
+    assert requests == ["GET", "GET"]

@@ -1,6 +1,6 @@
 [project]
 name = "etlantic-mcp"
-version = "0.55.0"
+version = "0.56.0"
 description = "Experimental read-only MCP server for ETLantic (fake by default)."
 readme = "README.md"
 license = "MIT"
@@ -17,7 +17,7 @@ classifiers = [
     "Typing :: Typed",
 ]
 dependencies = [
-    "etlantic>=0.55.0,<0.56",
+    "etlantic>=0.56.0,<0.57",
 ]
 
 [project.urls]

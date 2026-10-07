@@ -10,7 +10,7 @@ import pytest
 
 pytest.importorskip("fastapi")
 pytest.importorskip("etlantic_fastapi")
-pytest.importorskip("httpx")
+pytest.importorskip("httpx2")
 
 from fastapi.testclient import TestClient
 
@@ -33,15 +33,21 @@ REQUIRED_OPERATION_IDS = {
     "cp_health",
     "cp_ready",
     "cp_list_definitions",
+    "cp_list_connector_catalog",
     "cp_get_definition",
     "cp_validate_definition",
     "cp_plan_definition",
     "cp_submit_run",
     "cp_get_run",
+    "cp_get_run_actions",
+    "cp_retry_run",
+    "cp_resume_run",
     "cp_cancel_run",
     "cp_stream_run_events",
+    "cp_list_run_events",
     "cp_get_run_report",
     "cp_list_run_artifacts",
+    "cp_get_run_artifact_content",
     "cp_get_run_lineage",
     "cp_list_schema_observations",
     "cp_ack_schema_observation",

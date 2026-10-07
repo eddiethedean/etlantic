@@ -23,17 +23,16 @@ def test_empty_assets_does_not_bypass_legacy_bindings() -> None:
         )
 
 
-def test_empty_assets_with_legacy_opt_in() -> None:
-    profile = Profile.from_dict(
-        {
-            "name": "legacy",
-            "security_mode": "development",
-            "assets": {},
-            "bindings": {"customers": "memory"},
-        },
-        accept_legacy_bindings=True,
-    )
-    assert profile.assets["customers"] == "memory"
+def test_empty_assets_does_not_enable_legacy_bindings() -> None:
+    with pytest.raises(ValueError, match="PMCFG111"):
+        Profile.from_dict(
+            {
+                "name": "legacy",
+                "security_mode": "development",
+                "assets": {},
+                "bindings": {"customers": "memory"},
+            }
+        )
 
 
 def test_inferred_production_enforces_strict_metadata() -> None:
@@ -46,7 +45,7 @@ def test_inferred_production_enforces_strict_metadata() -> None:
         )
 
 
-def test_accept_legacy_bindings_via_resolve_project_profile(
+def test_project_profile_rejects_legacy_bindings(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     monkeypatch.chdir(tmp_path)
@@ -65,16 +64,9 @@ def test_accept_legacy_bindings_via_resolve_project_profile(
     write_minimal_etlantic_toml(tmp_path / "etlantic.toml", project="demo")
     with pytest.raises(ValueError, match="PMCFG111"):
         resolve_project_profile("development", start=tmp_path)
-    loaded, source = resolve_project_profile(
-        "development",
-        start=tmp_path,
-        accept_legacy_bindings=True,
-    )
-    assert loaded.assets["rows"] == "memory"
-    assert "profiles" in source
 
 
-def test_load_profile_accept_legacy(tmp_path: Path) -> None:
+def test_load_profile_rejects_legacy_bindings(tmp_path: Path) -> None:
     path = tmp_path / "legacy.json"
     path.write_text(
         json.dumps(
@@ -88,7 +80,6 @@ def test_load_profile_accept_legacy(tmp_path: Path) -> None:
     )
     with pytest.raises(ValueError, match="PMCFG111"):
         load_profile(path)
-    assert load_profile(path, accept_legacy_bindings=True).assets["a"] == "memory"
 
 
 def test_from_plan_snapshot_accepts_wire_bindings() -> None:

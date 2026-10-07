@@ -11,8 +11,8 @@ pipelines need `Profile(sql_engine="sql")`, SQL→SQL fusion, or Experimental
 ## Install
 
 ```bash
-pip install 'etlantic-sql==0.55.0'
-# pip install 'etlantic==0.55.0'
+pip install 'etlantic-sql==0.56.0'
+# pip install 'etlantic==0.56.0'
 export ETLANTIC_SQL_URL=postgresql+psycopg://user:pass@localhost:5432/etlantic
 # Or use SQLite:
 # export ETLANTIC_SQL_URL=sqlite+pysqlite:///:memory:
@@ -73,24 +73,108 @@ target = SQLiteTableTarget(
 observation = etl.inspect_target(target)
 ```
 
-## Connector capability matrix (0.38 Experimental)
+## PostgreSQL connectors (0.56 implementation; Experimental)
 
-Source/sink/storage entry points (`postgresql`) implement
-`etlantic.connectors` protocols. CI uses an in-memory SQLite fake; live
-PostgreSQL remains the intended production dialect for the SQL plugin.
+The `postgresql` source, sink and storage entry points use SQLAlchemy and
+psycopg against a live PostgreSQL database. They require a runtime
+`SecretValue` containing the connection URL, or a worker-level
+`ETLANTIC_SQL_URL`. Put table and mode options in the public asset config; do
+not put a URL or credential in that config. The source reads one repeatable
+read snapshot, with configurable `row_limit`, `batch_size` and `max_bytes`
+(bounded to 100,000 rows, 10,000 records per batch and 256 MiB). Schema
+inspection reads catalog metadata and PostgreSQL's row estimate without
+creating or changing a target.
+
+The sink supports `append`, `replace`/`overwrite`, and `upsert`. Upsert
+requires `key_columns` that match a primary or unique constraint. Commit
+recovery relies on a provisioned durable effect ledger. Provision it once
+through a database administrator or migration before enabling sink writes:
+
+```sql
+CREATE TABLE public.etlantic_connector_effects (
+    effect_id text PRIMARY KEY,
+    intent_fingerprint text NOT NULL,
+    publication_id text NOT NULL UNIQUE,
+    row_count bigint NOT NULL,
+    committed_at timestamptz NOT NULL DEFAULT now()
+);
+```
+
+The worker takes a transaction-scoped advisory lock for each stable run/node
+effect ID, changes the target and inserts the ledger row in the same
+transaction. Reconciliation consults that row; an unavailable ledger returns
+`unknown`. An effect ID bound to different write intent fails closed. The
+SQLite-backed fake remains available as `FakePostgresConnection` for fast
+connector unit tests; it is not registered as the PostgreSQL provider.
+
+Managed repair and backfill use bounded partition operations when both
+PostgreSQL bindings configure `partition_column` and declare
+`source.partitioned` or `write.partition_replace` plus `idempotency` as
+required capabilities. Partition IDs are opaque strings matched to the
+configured column's text representation. Source reads filter to those values;
+sink publication deletes and replaces only those values in the same
+transaction as its effect-ledger row. Empty output clears the selected
+partitions. Rows outside the accepted selector are rejected before commit.
+Bindings without the column configuration cannot admit repair or backfill.
+
+During managed execution, PostgreSQL source and sink connectors also provide
+opaque resource identities to the worker. Before opening a sink write session,
+the runtime compares source and target identities, including the live server
+address and normalized schema/table. A matching identity, or a same-provider
+transfer whose identities cannot be verified, fails with `PMEXEC435` before
+target mutation. The comparison tokens use a worker-process key and stay in
+memory; credentials and raw database/resource names are not written to plans,
+receipts or reports.
+
+### Explicit action provisioning
+
+For deployments that grant `connector.provision`, the package also provides
+`etlantic_sql.create_action_handlers(resolve_engine)`. The callback receives
+the action worker's trusted `ControlPlaneContext` and an opaque saved
+connection ID, then returns an application-owned SQLAlchemy engine. The
+factory registers PostgreSQL table create and cleanup handlers; connection
+URLs and credentials stay inside the deployment callback.
+
+Provisioning is create-only. The handler accepts only a typed table schema
+with safe identifiers, refuses an existing unmanaged table, and records the
+action ID, owner scope, schema fingerprint and effect ID in the same database.
+Retries of one accepted action recover the recorded receipt instead of
+recreating the table. Cleanup requires a worker-verified committed parent
+provision receipt and removes only that exact effect; its tombstone makes a
+cleanup retry idempotent. The action factory performs no database writes when
+constructed, and the Foundry storage inspection handler remains read-only.
+The SQLite-backed unit case and isolated PostgreSQL loopback qualification
+exercise create-only conflict, receipt recovery and compensation.
+
+The worker deadline covers the SQL transaction. PostgreSQL actions use local
+statement and lock timeouts, driver cancellation, and a deadline check before
+commit. SQLite qualification uses an explicit transaction so rollback also
+removes DDL. Provider work uses a bounded dedicated daemon thread rather than
+asyncio's shutdown-blocking default executor. Each handler factory permits one
+SQL operation at a time; a settling operation cannot create an unbounded queue
+of database threads. Keep the application-owned engine alive until its pending
+operation settles.
+
+A confirmed commit retains its verified effect receipt even if acknowledgement
+arrives after the action deadline. The action remains `timed_out`, and that
+receipt can authorize cleanup. If an execution timeout or provider failure has
+no verified receipt, resubmit the identical action with its original idempotency
+key and a new deadline. The action keeps its ID, obtains a new worker fence, and
+recovers its effect registry before create-only provisioning or cleanup. Unknown
+effects never authorize cleanup without the matching verified receipt.
 
 | Capability | Source | Sink | Storage | Notes |
 |---|:---:|:---:|:---:|---|
 | `source.batch_snapshot` | ✓ | | | Bounded table read |
 | `source.schema_discovery` | ✓ | | ✓ | Row-free field inspect |
-| `source.statistics_bounded` | ✓ | | ✓ | Row estimate only |
+| `source.statistics_bounded` | ✓ | | ✓ | PostgreSQL catalog estimate |
 | `write.append` | | ✓ | | Transactional |
 | `write.overwrite` | | ✓ | | DELETE + INSERT |
-| `write.merge` | | ✓ | | `ON CONFLICT` (PG / sqlite fake) |
+| `write.merge` | | ✓ | | `ON CONFLICT` with declared unique key |
 | `publication.atomic` | | ✓ | | Commit / rollback |
 | `transactions` | | ✓ | | Autocommit-off path |
-| `reconciliation` | | ✓ | | `query_id` evidence |
-| `idempotency` | ✓ | ✓ | | Declared |
+| `reconciliation` | | ✓ | | Durable effect ledger |
+| `idempotency` | | ✓ | | Sink effect ledger; PostgreSQL source reads are per-run snapshots |
 
 Entry points: `etlantic.source_connectors` / `sink_connectors` /
 `storage_connectors` → `postgresql`.
@@ -106,7 +190,7 @@ python examples/sql_failure_recovery.py
 
 ## Links
 
-[SQL tutorial](https://etlantic.readthedocs.io/en/v0.55.0/06_EXECUTION/SQL_TUTORIAL/) ·
-[SQL hello](https://etlantic.readthedocs.io/en/v0.55.0/06_EXECUTION/SQL_HELLO_PYPI/) ·
+[SQL tutorial](https://etlantic.readthedocs.io/en/v0.56.0/06_EXECUTION/SQL_TUTORIAL/) ·
+[SQL hello](https://etlantic.readthedocs.io/en/v0.56.0/06_EXECUTION/SQL_HELLO_PYPI/) ·
 [Source](https://github.com/eddiethedean/etlantic/tree/main/packages/etlantic-sql) ·
 [Issues](https://github.com/eddiethedean/etlantic/issues)

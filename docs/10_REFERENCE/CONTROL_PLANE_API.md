@@ -64,6 +64,14 @@ outbox. `POST /v1/runs/{id}/cancel` cancels the durable submission **first**,
 then the CP1 run observation (durable 404/409 are treated as continue so CP1
 can still converge). Cancel expires any live durable lease; heartbeat and
 checkpoint CAS fail closed under `cancel_requested`.
+
+Managed authoring replies identify the immutable definition revision. Pass that
+`revision_id` to `POST /v1/definitions/{id}/validate?revision_selector=…` and
+in the `revision_selector` field of the plan and run request bodies to keep
+review, planning and submission bound to one definition through concurrent
+edits. These exact-revision commands require `ManagedApplicationService`; an
+adapter without it fails closed instead of silently planning `current`.
+
 Shipped host routes under `/v1/durable/*` (authz first):
 
 | Route | Purpose |

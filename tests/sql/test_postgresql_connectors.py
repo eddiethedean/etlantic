@@ -1,17 +1,24 @@
 # pyright: reportMissingImports=false, reportUnknownArgumentType=false, reportUnknownMemberType=false, reportUnknownVariableType=false
-"""PostgreSQL connector fake tests (sqlite; no live Postgres)."""
+"""SQLite test-double checks plus live PostgreSQL factory contracts."""
 
 from __future__ import annotations
 
 import anyio
 
 from etlantic.connectors.protocol import SinkConnector, SourceConnector
-from etlantic_sql.connectors import create_sink, create_source
+from etlantic_sql.connectors import (
+    FakePostgresConnection,
+    PostgresSinkConnector,
+    PostgresSourceConnector,
+    create_sink,
+    create_source,
+)
 
 
 def test_commit_rollback_and_query_id() -> None:
-    sink = create_sink()
-    source = create_source()
+    connection = FakePostgresConnection()
+    sink = PostgresSinkConnector(connection=connection)
+    source = PostgresSourceConnector(connection=connection)
     # Share the fake connection so source sees committed rows.
     source.connection = sink.connection
     binding = {"config": {"schema": "public", "table": "orders", "mode": "append"}}
@@ -61,7 +68,7 @@ def test_commit_rollback_and_query_id() -> None:
 
 
 def test_merge_upsert() -> None:
-    sink = create_sink()
+    sink = PostgresSinkConnector(connection=FakePostgresConnection())
     binding = {"config": {"table": "items", "mode": "merge"}}
 
     async def _run() -> None:
@@ -81,7 +88,7 @@ def test_merge_upsert() -> None:
 
 def test_abort_then_reconcile_not_committed() -> None:
     """begin → prepare → abort → reconcile must not report committed."""
-    sink = create_sink()
+    sink = PostgresSinkConnector(connection=FakePostgresConnection())
     binding = {"config": {"table": "orders", "mode": "append"}}
 
     async def _run() -> None:
@@ -108,3 +115,5 @@ def test_protocols_and_matrix_metadata() -> None:
     assert "transactions" in caps
     assert "write.merge" in caps
     assert "reconciliation" in caps
+    assert create_source().info().metadata["backend"] == "live"
+    assert create_sink().info().metadata["backend"] == "live"

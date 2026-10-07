@@ -1,0 +1,26 @@
+{
+  "capabilities": [
+    "source.batch_snapshot"
+  ],
+  "digest": "sha256:a8efa378e4fc52de8dda71294e4394a7983d5d730dd48a69d9f5530b73a194ef",
+  "entries": [
+    {
+      "capabilities": [
+        "source.batch_snapshot"
+      ],
+      "engine": null,
+      "group": "etlantic.source_connectors",
+      "name": "private-ac056037",
+      "protocol": "etlantic.source/1",
+      "target": "etlantic_private_ac056037:create_source"
+    }
+  ],
+  "package": "etlantic-private-ac056037",
+  "privileges": [],
+  "protocol_range": "etlantic.source/1",
+  "provenance": {
+    "publisher": "independent-private-provider-fixture"
+  },
+  "schema": "etlantic.plugin_manifest/1",
+  "version": "1.0.0"
+}

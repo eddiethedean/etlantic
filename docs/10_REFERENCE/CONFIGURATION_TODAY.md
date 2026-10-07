@@ -1,11 +1,11 @@
-# Configuration in 0.54
+# Configuration in 0.56
 
 > **Status: ETLantic 0.55.0 Beta release.**
 
-ETLantic 0.55.0 configures execution with a `Profile` object, a JSON profile
+ETLantic 0.56.0 configures execution with a `Profile` object, a JSON profile
 document, and an optional project `etlantic.toml`. Prefer **`assets`** for
-logical-to-physical maps; legacy `bindings` fail closed (`PMCFG111`) unless
-`--accept-legacy-bindings` / `accept_legacy_bindings=True`.
+logical-to-physical maps. Legacy profile JSON using `bindings` is rejected
+with `PMCFG111`; use `assets` in canonical 0.56 profile documents.
 
 ## Optional `etlantic.toml`
 

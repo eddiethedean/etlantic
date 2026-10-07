@@ -9,15 +9,16 @@ the same engine, firing claim and durable accept share one commit.
 from __future__ import annotations
 
 import json
-from collections.abc import Callable, Sequence
+from collections.abc import Callable, Mapping, Sequence
 from datetime import UTC, datetime
 from typing import Any, TypeVar
 
 from sqlalchemy.engine import Engine
 
+from etlantic.control_plane.durable_memory import MemoryDurableWorkStore
 from etlantic.control_plane.durable_protocols import DurableWorkStore
 from etlantic.control_plane.errors import ControlPlaneError
-from etlantic.control_plane.models import ControlPlaneContext
+from etlantic.control_plane.models import ControlPlaneContext, Principal
 from etlantic.control_plane.schedule_memory import MemoryScheduleStore
 from etlantic.control_plane.schedule_models import (
     FiringRecord,
@@ -127,8 +128,11 @@ class SQLModelScheduleStore:
         spec: ScheduleSpec,
         schedule_id: str | None = None,
         policy_fingerprint: str = "",
+        definition_revision_id: str | None = None,
         parameter_refs: dict[str, str] | None = None,
-        secret_refs: dict[str, str] | None = None,
+        secret_refs: dict[str, Mapping[str, Any] | str] | None = None,
+        revision_policy: str = "pinned",
+        workload_identity: Principal | None = None,
         next_fire_at: str | None = None,
     ) -> ScheduleRecord:
         return self._txn(
@@ -139,8 +143,11 @@ class SQLModelScheduleStore:
                 spec=spec,
                 schedule_id=schedule_id,
                 policy_fingerprint=policy_fingerprint,
+                definition_revision_id=definition_revision_id,
                 parameter_refs=parameter_refs,
                 secret_refs=secret_refs,
+                revision_policy=revision_policy,
+                workload_identity=workload_identity,
                 next_fire_at=next_fire_at,
             )
         )
@@ -156,6 +163,27 @@ class SQLModelScheduleStore:
 
     def resume(self, ctx: ControlPlaneContext, schedule_id: str) -> ScheduleRecord:
         return self._txn(lambda m: m.resume(ctx, schedule_id))
+
+    def amend(
+        self,
+        ctx: ControlPlaneContext,
+        schedule_id: str,
+        *,
+        expected_revision_id: str,
+        spec: ScheduleSpec,
+        next_fire_at: str | None,
+        durable: DurableWorkStore | None = None,
+    ) -> ScheduleRecord:
+        return self._txn(
+            lambda m: m.amend(
+                ctx,
+                schedule_id,
+                expected_revision_id=expected_revision_id,
+                spec=spec,
+                next_fire_at=next_fire_at,
+                durable=durable,
+            )
+        )
 
     def delete(self, ctx: ControlPlaneContext, schedule_id: str) -> ScheduleRecord:
         return self._txn(lambda m: m.delete(ctx, schedule_id))
@@ -218,7 +246,9 @@ class SQLModelScheduleStore:
         durable: DurableWorkStore | None = None,
         next_fire_at: str | None = None,
         require_leader_lease: bool = True,
+        admit_submission: bool = True,
         skip_status: str | None = None,
+        metadata: Mapping[str, Any] | None = None,
     ) -> tuple[FiringRecord, bool]:
         kwargs: dict[str, Any] = {
             "schedule_id": schedule_id,
@@ -229,7 +259,9 @@ class SQLModelScheduleStore:
             "plan_fingerprint": plan_fingerprint,
             "next_fire_at": next_fire_at,
             "require_leader_lease": require_leader_lease,
+            "admit_submission": admit_submission,
             "skip_status": skip_status,
+            "metadata": metadata,
         }
         if (
             isinstance(durable, SQLModelDurableWorkStore)
@@ -237,12 +269,54 @@ class SQLModelScheduleStore:
         ):
             with session_scope(self.engine) as session:
                 sched, sv = self._read(session, for_update=True)
-                dur_mem, dv = durable._read(session, for_update=True)
-                result = sched.claim_firing(ctx, durable=dur_mem, **kwargs)
-                self._write(session, sched, expected_version=sv)
-                durable._write(session, dur_mem, expected_version=dv)
-                return result
+
+                def claim(
+                    durable_memory: MemoryDurableWorkStore,
+                ) -> tuple[FiringRecord, bool]:
+                    result = sched.claim_firing(ctx, durable=durable_memory, **kwargs)
+                    self._write(session, sched, expected_version=sv)
+                    return result
+
+                return durable.apply_in_transaction(session, claim)
         return self._txn(lambda m: m.claim_firing(ctx, durable=durable, **kwargs))
+
+    def link_firing_submission(
+        self,
+        ctx: ControlPlaneContext,
+        firing_id: str,
+        *,
+        submission_id: str,
+        plan_fingerprint: str,
+        durable: DurableWorkStore,
+    ) -> FiringRecord:
+        if (
+            isinstance(durable, SQLModelDurableWorkStore)
+            and durable.engine is self.engine
+        ):
+            with session_scope(self.engine) as session:
+                sched, version = self._read(session, for_update=True)
+
+                def link(durable_memory: MemoryDurableWorkStore) -> FiringRecord:
+                    result = sched.link_firing_submission(
+                        ctx,
+                        firing_id,
+                        submission_id=submission_id,
+                        plan_fingerprint=plan_fingerprint,
+                        durable=durable_memory,
+                    )
+                    self._write(session, sched, expected_version=version)
+                    return result
+
+                return durable.apply_in_transaction(session, link)
+        return self._txn(
+            lambda schedule_memory: schedule_memory.link_firing_submission(
+                ctx,
+                firing_id,
+                submission_id=submission_id,
+                plan_fingerprint=plan_fingerprint,
+                durable=durable,
+            )
+        )
 
 
 __all__ = [

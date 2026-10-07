@@ -8,14 +8,16 @@ import copy
 import uuid
 from dataclasses import dataclass, field, replace
 from pathlib import Path
-from typing import Any, cast
+from typing import Any
 
 import anyio
 
 from etlantic.exceptions import PipelineExecutionError
 from etlantic.lifecycle.runtime import PipelineRuntime
+from etlantic.plan.adaptive_model import AdaptivePipelinePlan, PlanDocument
 from etlantic.plan.model import PipelinePlan
 from etlantic.plan.planner import plan_pipeline
+from etlantic.plan.serialize import verify_plan_fingerprint
 from etlantic.registry import PlanningContext
 from etlantic.reliability_runtime import invalidation_targets
 from etlantic.reports.model import PipelineRunReport
@@ -24,6 +26,7 @@ from etlantic.runtime.request import (
     InvalidationMode,
     RunRequest,
     RunSelection,
+    resolve_request_policies,
 )
 from etlantic.runtime.scheduler import SchedulingContext
 from etlantic.runtime.state import RunStatus
@@ -42,51 +45,11 @@ def _ensure_not_in_running_loop() -> None:
 
 
 def _merge_plan_policies(request: RunRequest, plan: PipelinePlan) -> RunRequest:
-    """Fill request retry/timeout defaults from plan execution_settings/intents."""
-    settings = dict(plan.execution_settings or {})
-    intents = dict(plan.intents or {})
-    retry = request.retry
-    timeout = request.timeout
-
-    plan_attempts = settings.get("retry_max_attempts")
-    if plan_attempts is None:
-        plan_attempts = intents.get("retry_max_attempts")
-    if retry.max_attempts == 1 and plan_attempts is not None:
-        retry = replace(retry, max_attempts=max(1, int(plan_attempts)))
-
-    plan_backoff = settings.get("retry_backoff_seconds") or intents.get(
-        "retry_backoff_seconds"
-    )
-    if retry.backoff_seconds == 0.0 and plan_backoff is not None:
-        retry = replace(retry, backoff_seconds=float(plan_backoff))
-
-    plan_run_timeout = settings.get("timeout_seconds")
-    if plan_run_timeout is None:
-        plan_run_timeout = intents.get("timeout_seconds")
-    if timeout.run_seconds is None and plan_run_timeout is not None:
-        timeout = replace(timeout, run_seconds=float(plan_run_timeout))
-
-    plan_step_timeout = settings.get("step_timeout_seconds") or intents.get(
-        "step_timeout_seconds"
-    )
-    if timeout.step_seconds is None and plan_step_timeout is not None:
-        timeout = replace(timeout, step_seconds=float(plan_step_timeout))
-
-    if retry is request.retry and timeout is request.timeout:
-        return request
-    return RunRequest(
-        selection=request.selection,
-        intent=request.intent,
-        materialization=request.materialization,
-        retry=retry,
-        timeout=timeout,
-        cancellation=request.cancellation,
-        parameter_overrides=dict(request.parameter_overrides),
-        asset_overrides=dict(request.binding_overrides),
-        implementation_overrides=dict(request.implementation_overrides),
-        invalidation=request.invalidation,
-        no_write=request.no_write,
-        metadata=dict(request.metadata),
+    """Resolve request policies with the same precedence used by admission."""
+    return resolve_request_policies(
+        request,
+        plan.execution_settings or {},
+        plan.intents or {},
     )
 
 
@@ -99,6 +62,7 @@ async def arun_pipeline(
     context: PlanningContext | None = None,
     workspace: str | Path | None = None,
     artifact_store: ArtifactStore | None = None,
+    run_id: str | None = None,
 ) -> PipelineRunReport:
     """Validate, plan, and execute a pipeline asynchronously.
 
@@ -130,6 +94,8 @@ async def arun_pipeline(
             invalidation=request.invalidation,
             no_write=request.no_write,
             metadata={**request.metadata, "concurrency": resolved.concurrency},
+            extensions=request.extensions,
+            explicit_settings=request.explicit_settings,
         )
     if (
         resolved.execution_strategy == "adaptive"
@@ -173,7 +139,19 @@ async def arun_pipeline(
         )
 
     pipeline_for_scheduler: type[Any] | None
-    if isinstance(pipeline_cls, PipelineDefinition):
+    supplied_plan: PlanDocument | None = None
+    if isinstance(pipeline_cls, (PipelinePlan, AdaptivePipelinePlan)):
+        verify_plan_fingerprint(pipeline_cls)
+        if pipeline_cls.profile_name != resolved.name:
+            raise PipelineExecutionError(
+                "Stored plan profile does not match the selected runtime profile",
+                code="PMPLAN409",
+                stage="admission",
+            )
+        supplied_plan = pipeline_cls
+        graph = pipeline_cls.logical_graph
+        pipeline_for_scheduler = None
+    elif isinstance(pipeline_cls, PipelineDefinition):
         if context is None:
             context = PlanningContext.create(profile=profile, registry=runtime.registry)
         _defn, context, _ = resolve_definition(
@@ -187,16 +165,29 @@ async def arun_pipeline(
         if context is None:
             context = PlanningContext.create(profile=profile, registry=runtime.registry)
 
-    selection = request.selection.to_plan_selection(graph)
-    plan = plan_pipeline(
-        pipeline_cls,
-        context=context,
-        profile=profile,
-        selection=selection,
-        request=request if resolved.execution_strategy == "adaptive" else None,
-    )
-    explicit_plan = cast(PipelinePlan, plan)
-    if resolved.execution_strategy != "adaptive":
+    if supplied_plan is not None:
+        requested_nodes = request.selection.resolve(graph)
+        planned_nodes = supplied_plan.selected_nodes or tuple(
+            node.name for node in graph.nodes
+        )
+        if tuple(requested_nodes) != tuple(planned_nodes):
+            raise PipelineExecutionError(
+                "Run selection does not match the accepted plan",
+                code="PMPLAN409",
+                stage="admission",
+            )
+        explicit_plan = supplied_plan
+    else:
+        selection = request.selection.to_plan_selection(graph)
+        plan = plan_pipeline(
+            pipeline_cls,
+            context=context,
+            profile=profile,
+            selection=selection,
+            request=request if resolved.execution_strategy == "adaptive" else None,
+        )
+        explicit_plan = plan
+    if isinstance(explicit_plan, PipelinePlan):
         request = _merge_plan_policies(request, explicit_plan)
 
     # Adaptive runs are isolated transactions.  Reusing a process-level store
@@ -249,7 +240,12 @@ async def arun_pipeline(
 
         # Admission is deliberately outside the runtime session: a rejected
         # plan must not enter lifespans, allocate connectors, or emit effects.
-        admit_adaptive_plan(explicit_plan, request=request, runtime=runtime)
+        admit_adaptive_plan(
+            explicit_plan,
+            request=request,
+            runtime=runtime,
+            workspace=Path(workspace) if workspace else store.workspace,
+        )
 
     from etlantic.runtime.scheduler_discovery import resolve_scheduler
 
@@ -263,7 +259,7 @@ async def arun_pipeline(
         orchestrator_name,
         plugins=None if scheduler_plugins is None else dict(scheduler_plugins),
     )
-    run_id = f"run-{uuid.uuid4().hex[:12]}"
+    run_id = run_id or f"run-{uuid.uuid4().hex[:12]}"
     async with runtime.session():
         return await scheduler.execute(
             explicit_plan,
@@ -290,6 +286,7 @@ def run_pipeline(
     context: PlanningContext | None = None,
     workspace: str | Path | None = None,
     artifact_store: ArtifactStore | None = None,
+    run_id: str | None = None,
 ) -> PipelineRunReport:
     """Validate, plan, and execute a pipeline synchronously.
 
@@ -306,6 +303,7 @@ def run_pipeline(
             context=context,
             workspace=workspace,
             artifact_store=artifact_store,
+            run_id=run_id,
         )
 
     return anyio.run(_main)

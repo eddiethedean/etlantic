@@ -12,7 +12,7 @@
 | `Profile.plugin_allowlist` | Required in production; authorize **before** `entry_point.load()` (selection, not sandbox; install is the trust boundary) |
 | `Profile.safe_io` / `Profile.outbound` | Safe filesystem writes and outbound HTTP policy (0.20) |
 | `resolve_profile(name, allow_adhoc_profile=False)` | Unknown bare names raise `PMCFG100` unless ad hoc is allowed |
-| `Profile.from_dict(..., accept_legacy_bindings=False)` | Legacy `bindings`-only JSON fails closed with `PMCFG111`; pass `True` / `--accept-legacy-bindings` to allow |
+| `Profile.from_dict(data)` | Requires canonical profile JSON; legacy `bindings` keys fail with `PMCFG111` |
 | `PipelinePlan.from_dict` / `plan_from_json` | Require wire `schema: "etlantic.plan/1"`; verify fingerprint by default |
 | `verify_plan_fingerprint(plan)` | Public check; also called before `compile_plan` and local run |
 | `deep_freeze(value)` | Freeze nested mappings→`MappingProxyType`, lists→tuples, sets→frozensets; dataclasses/unknown objects unchanged |

@@ -104,8 +104,14 @@ def oauth2_oidc_principal_hook(
 
 def membership_context_factory(
     membership: MembershipMap,
+    *,
+    resource_owners: Mapping[str, str] | None = None,
 ) -> ContextFactory:
-    """Build a context factory that maps principal subjects via membership."""
+    """Build server-derived scopes, optionally mapping trusted resource owners.
+
+    ``resource_owners`` is application configuration keyed by the authenticated
+    principal subject. Owner identifiers are never read from request data.
+    """
 
     def factory(principal: Principal, request: Request) -> ControlPlaneContext:
         try:
@@ -125,6 +131,7 @@ def membership_context_factory(
             correlation_key=CorrelationKey(value=corr),
             idempotency_key=IdempotencyKey(value=idem) if idem else None,
             request_id=request.headers.get("X-Request-ID"),
+            resource_owner_id=(resource_owners or {}).get(principal.subject),
         )
 
     return factory
@@ -136,6 +143,7 @@ def static_context_factory(
     workspace_id: str,
     environment: str = "development",
     security_domain: str = "default",
+    resource_owner_id: str | None = None,
 ) -> ContextFactory:
     """Fixed-scope context factory for single-tenant demos and unit tests."""
 
@@ -151,6 +159,7 @@ def static_context_factory(
             correlation_key=CorrelationKey(value=corr),
             idempotency_key=IdempotencyKey(value=idem) if idem else None,
             request_id=request.headers.get("X-Request-ID"),
+            resource_owner_id=resource_owner_id,
         )
 
     return factory

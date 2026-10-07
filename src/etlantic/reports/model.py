@@ -14,27 +14,28 @@ REPORT_SCHEMA = "etlantic.run_report/1"
 
 
 def _validated_report_metadata(
-    value: Any, *, path: str, migrate_builtin_aliases: bool = False
+    value: Any, *, path: str, step_metadata: bool = False
 ) -> dict[str, Any]:
     from etlantic.extensions import (
         LEGACY_REPORT_METADATA_ALIASES,
         STEP_REPORT_METADATA_ALIASES,
-        migrate_report_metadata_keys,
         validate_extension_metadata,
     )
 
-    # Rewrite known 0.35 bare keys before validation so loads are warning-clean
-    # and rewrites are deterministic (036-C04).
-    metadata = migrate_report_metadata_keys(
-        dict(value or {}),
-        aliases=(
-            STEP_REPORT_METADATA_ALIASES
-            if migrate_builtin_aliases
-            else LEGACY_REPORT_METADATA_ALIASES
-        ),
+    metadata = dict(value or {})
+    legacy_aliases = (
+        STEP_REPORT_METADATA_ALIASES
+        if step_metadata
+        else LEGACY_REPORT_METADATA_ALIASES
     )
+    legacy_keys = sorted(set(metadata).intersection(legacy_aliases))
+    if legacy_keys:
+        raise ValueError(
+            f"{path} contains unsupported legacy metadata key(s): "
+            + ", ".join(legacy_keys)
+        )
     # Secret-key rejection is unconditional inside validate_extension_metadata;
-    # keep namespace warnings (not raises) for remaining unknown bare keys.
+    # keep namespace warnings (not raises) for other extension metadata.
     validate_extension_metadata(metadata, path=path, strict=False)
     return metadata
 
@@ -335,7 +336,7 @@ class PipelineRunReport:
                 metadata=_validated_report_metadata(
                     item.get("metadata"),
                     path="step.metadata",
-                    migrate_builtin_aliases=True,
+                    step_metadata=True,
                 ),
             )
             for item in (data.get("steps") or ())

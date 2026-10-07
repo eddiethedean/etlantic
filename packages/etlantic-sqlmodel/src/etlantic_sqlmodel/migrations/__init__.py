@@ -20,6 +20,15 @@ VERSIONS: Sequence[str] = (
     "003_cp4_governance",
     "004_schedules_0_47",
     "005_cp1_reference",
+    "006_managed_definition_revisions_0_56",
+    "007_managed_run_reports_0_56",
+    "008_idempotent_run_events_0_56",
+    "009_event_retention_tombstones_0_56",
+    "010_immutable_input_resources_0_56",
+    "011_run_artifact_retention_0_56",
+    "012_bounded_event_tombstone_retention_0_56",
+    "013_durable_submission_scope_backfill_0_56",
+    "014_cp1_complete_principal_idempotency_0_56",
 )
 
 

@@ -12,6 +12,7 @@ pytest.importorskip("etlantic_sqlmodel")
 
 from etlantic.control_plane import (
     AliasRecord,
+    CompareAndSwapRevisionRegistry,
     ControlPlaneContext,
     ControlPlaneError,
     EnvironmentRef,
@@ -20,6 +21,7 @@ from etlantic.control_plane import (
     Principal,
     RegistryDefinitionRepository,
     RegistryRevision,
+    RevisionRegistry,
     SecurityDomain,
     TenantRecord,
     TenantRef,
@@ -80,8 +82,8 @@ def test_migration_apply_on_empty_db_and_round_trip(tmp_path: Path) -> None:
     engine = create_sqlite_engine(f"sqlite:///{db}")
     assert current_version(engine) is None
     applied = apply_migrations(engine)
-    assert applied == "005_cp1_reference"
-    assert current_version(engine) == "005_cp1_reference"
+    assert applied == "014_cp1_complete_principal_idempotency_0_56"
+    assert current_version(engine) == "014_cp1_complete_principal_idempotency_0_56"
 
     provider = SqlModelRegistryProvider(engine)
     ctx = _ctx()
@@ -114,7 +116,7 @@ def test_migration_apply_on_empty_db_and_round_trip(tmp_path: Path) -> None:
 def test_migration_upgrade_downgrade(tmp_path: Path) -> None:
     engine = create_sqlite_engine(f"sqlite:///{tmp_path / 'mig.db'}")
     upgrade(engine)
-    assert current_version(engine) == "005_cp1_reference"
+    assert current_version(engine) == "014_cp1_complete_principal_idempotency_0_56"
     downgrade(engine, target="001_registry_cp2")
     assert current_version(engine) == "001_registry_cp2"
     downgrade(engine, target=None)
@@ -194,22 +196,76 @@ def test_memory_vs_sqlmodel_promote_suspend_conformance() -> None:
         with pytest.raises(ControlPlaneError) as exc:
             provider.workspaces.list(ctx)
         assert exc.value.status == 403, label
+        replacement = RegistryRevision(
+            logical_id="logic-x",
+            revision_id="rev-x2",
+            tenant_id="tenant-a",
+            workspace_id="ws-1",
+            content_fingerprint=content_fingerprint({"backend": "updated"}),
+            content={"backend": "updated"},
+        )
+        cas_statuses = []
+        for expected in ("0" * 64, content_fingerprint(content)):
+            with pytest.raises(ControlPlaneError) as cas_error:
+                provider.revisions.put_revision_if_current(
+                    ctx,
+                    replacement,
+                    expected_current_fingerprint=expected,
+                )
+            cas_statuses.append(cas_error.value.status)
+        assert cas_statuses == [403, 403], label
 
 
-def test_registry_definition_repository_round_trip() -> None:
+def test_registry_definition_repository_round_trip(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
     engine = create_sqlite_engine("sqlite://")
     apply_migrations(engine)
     provider = SqlModelRegistryProvider(engine)
     ctx = _ctx()
     _seed(provider, ctx)
+    assert isinstance(provider.revisions, RevisionRegistry)
+    assert isinstance(provider.revisions, CompareAndSwapRevisionRegistry)
+    monkeypatch.setattr(
+        "etlantic_sqlmodel.control_plane.registry_stores._utcnow_iso",
+        lambda: "2000-01-01T00:00:00Z",
+    )
     defs = RegistryDefinitionRepository(provider)
     doc = {"schema": "etlantic.pipeline/1", "name": "demo", "nodes": []}
     defs.put(ctx, "def-1", doc)
     assert defs.get(ctx, "def-1") == doc
     assert defs.list(ctx) == ["def-1"]
-    defs.put(ctx, "def-1", {**doc, "name": "demo-v2"})
+    updated = {**doc, "name": "demo-v2"}
+    defs.compare_and_swap(ctx, "def-1", doc, updated)
+    with pytest.raises(ControlPlaneError) as stale:
+        defs.compare_and_swap(ctx, "def-1", doc, {**doc, "name": "stale"})
+    assert stale.value.status == 409
     assert defs.get(ctx, "def-1")["name"] == "demo-v2"
-    assert len(provider.revisions.list_revisions(ctx, "def-1")) == 2
+    registered = {**doc, "name": "demo-v3"}
+    defs.put(ctx, "def-1", registered)
+    with pytest.raises(ControlPlaneError) as stale_edit:
+        defs.compare_and_swap(ctx, "def-1", updated, {**doc, "name": "stale-edit"})
+    assert stale_edit.value.status == 409
+    assert defs.get(ctx, "def-1") == registered
+    registered_revision = defs.resolve_revision(ctx, "def-1", "current")
+    promoted = {**doc, "name": "demo-v4"}
+    provider.revisions.promote(
+        ctx,
+        logical_id="def-1",
+        from_revision_id=registered_revision.revision_id,
+        from_environment="development",
+        to_environment="production",
+        content={
+            "document": promoted,
+            "document_fingerprint": content_fingerprint(promoted),
+            "kind": "definition",
+        },
+    )
+    with pytest.raises(ControlPlaneError) as stale_promotion:
+        defs.compare_and_swap(ctx, "def-1", registered, {**doc, "name": "stale"})
+    assert stale_promotion.value.status == 409
+    assert defs.get(ctx, "def-1") == promoted
+    assert len(provider.revisions.list_revisions(ctx, "def-1")) == 4
 
 
 def test_sqlmodel_alias_and_immutability() -> None:

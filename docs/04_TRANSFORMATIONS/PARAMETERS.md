@@ -178,6 +178,22 @@ request = RunRequest(
 This keeps the profile focused on execution behavior and makes an override
 explicit in the run request.
 
+`RunRequest.to_dict()` and `RunRequest.from_dict()` preserve parameter, asset,
+implementation, and namespaced `extensions` data. Extension values must be
+JSON-safe, secret-free, and use `etlantic.` or `plugin:` keys. Nested request
+maps are copied when the request is created and when it is exported, so changes
+to those dictionaries do not leak between the caller and the request. Managed
+acceptance freezes the complete request snapshot in the execution envelope.
+
+Retry and timeout values omitted by the request inherit the verified plan's
+profile settings, then use runtime defaults. Supplying a `RetryPolicy` or
+`TimeoutPolicy` marks its fields as explicit, including neutral values such as
+one attempt, zero backoff, or no timeout. `explicit_settings` can narrow that
+set when only selected fields in a policy object should override the profile.
+The managed execution envelope stores both the requested request and its
+resolved effective request, with a source for each setting. Older envelope
+version 1 documents are upgraded using their historical default precedence.
+
 ## Relationship to DTCS
 
 Declared parameters become part of the generated DTCS transformation contract.

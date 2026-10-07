@@ -54,3 +54,16 @@ def test_bare_keys_rejected_when_strict() -> None:
 def test_non_json_serializable_rejected() -> None:
     with pytest.raises(ValueError, match="JSON-serializable"):
         validate_extension_metadata({"etlantic.x": object()})
+
+
+def test_bounded_plugin_authorization_status_is_not_a_credential() -> None:
+    validate_extension_metadata(
+        {"etlantic.plugin_trust_records": [{"authorization": "allowed"}]}
+    )
+
+
+def test_plugin_authorization_credential_remains_rejected() -> None:
+    with pytest.raises(ValueError, match="secret-like key"):
+        validate_extension_metadata(
+            {"etlantic.plugin_trust_records": [{"authorization": "Bearer secret"}]}
+        )

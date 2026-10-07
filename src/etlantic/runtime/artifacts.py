@@ -3,6 +3,7 @@
 
 from __future__ import annotations
 
+import hashlib
 from dataclasses import dataclass, field, replace
 from pathlib import Path
 from typing import Any
@@ -14,6 +15,14 @@ from anyio.to_thread import run_sync
 from etlantic.io_policy import SafeIoPolicy, write_json_safe, write_text_safe
 from etlantic.plan.artifacts import ArtifactRef, ArtifactStrategy
 from etlantic.storage.protocol import as_records, records_to_dicts
+
+
+def artifact_storage_path(workspace: str | Path, identity: str) -> Path:
+    """Return a collision-resistant, identity-private artifact file path."""
+    if not identity:
+        raise ValueError("Artifact identity must be non-empty")
+    key = hashlib.sha256(identity.encode("utf-8")).hexdigest()
+    return Path(workspace) / f"{key}.json"
 
 
 @dataclass
@@ -29,6 +38,7 @@ class ArtifactStore:
     _values: dict[str, Any] = field(default_factory=dict)
     _refs: dict[str, ArtifactRef] = field(default_factory=dict)
     _ownership: dict[str, str] = field(default_factory=dict)
+    hash_identities: bool = False
 
     def put(
         self,
@@ -54,7 +64,9 @@ class ArtifactStore:
                 )
             self.workspace.mkdir(parents=True, exist_ok=True)
             path = (
-                self.workspace
+                artifact_storage_path(self.workspace, ref.identity)
+                if self.hash_identities
+                else self.workspace
                 / f"{ref.identity.replace(':', '_').replace('/', '_')}.json"
             )
             if self.policy is None:
@@ -133,7 +145,11 @@ class AttemptArtifactStore(ArtifactStore):
     """
 
     def __init__(self, parent: ArtifactStore) -> None:
-        super().__init__(workspace=parent.workspace, policy=parent.policy)
+        super().__init__(
+            workspace=parent.workspace,
+            policy=parent.policy,
+            hash_identities=parent.hash_identities,
+        )
         self._parent = parent
         self._durable: dict[str, bool] = {}
         self._text_files: list[tuple[Path, str, SafeIoPolicy, str]] = []
@@ -178,7 +194,11 @@ class AttemptArtifactStore(ArtifactStore):
         await check_attempt_deadline()
         # Keep even partially prepared durable outputs out of the run's lookup
         # maps. Their files are owned by this attempt until visibility commits.
-        prepared = ArtifactStore(workspace=self.workspace, policy=self.policy)
+        prepared = ArtifactStore(
+            workspace=self.workspace,
+            policy=self.policy,
+            hash_identities=self.hash_identities,
+        )
         written: list[tuple[Path, str | None, SafeIoPolicy]] = []
         checkpoint_payloads: dict[Path, bytes] = {}
 
@@ -238,8 +258,12 @@ class AttemptArtifactStore(ArtifactStore):
                 if durable and self.workspace is not None:
                     policy = self.policy or SafeIoPolicy.for_root(self.workspace)
                     remember(
-                        self.workspace
-                        / f"{ref.identity.replace(':', '_').replace('/', '_')}.json",
+                        (
+                            artifact_storage_path(self.workspace, ref.identity)
+                            if self.hash_identities
+                            else self.workspace
+                            / f"{ref.identity.replace(':', '_').replace('/', '_')}.json"
+                        ),
                         policy,
                         ref.identity,
                     )

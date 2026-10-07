@@ -8,7 +8,7 @@
 | `PMPIPE210` | Load/Extract type does not match upstream port | Align annotations (Quickstart aha: `Load[Row]` vs `Load[Other]`) |
 | `PMPLUG401` | Production profile missing allowlist | Set `security_mode="production"` **and** non-empty `plugin_allowlist` |
 | `PMPLUG402` | Plugin not on allowlist / not trusted | Add package to allowlist or switch profile to development |
-| `PMCFG111` | Legacy profile `bindings` shape | Migrate to `assets` / modern profile JSON ([Profiles hub](../05_PIPELINES/PROFILES_HUB.md)) |
+| `PMCFG111` | Legacy profile `bindings` shape | Rename the key to `assets` in the profile JSON ([Profiles hub](../05_PIPELINES/PROFILES_HUB.md)) |
 | `PMPLAN*` capability miss | Engine/plugin cannot satisfy plan | Install matching plugin minor; set engine fields on Profile |
 | `PMXFORM*` portable fail | Portable IR cannot lower | Prefer a supported ETLantic expression/engine; use a native body only when accepting engine lock-in and no adaptive execution |
 | `PMSEC*` / IO policy | Path or outbound blocked | Adjust `SafeIoPolicy` / workspace roots; never embed secrets |
