@@ -5305,6 +5305,7 @@ def test_managed_rerun_audit_failure_does_not_charge_quota(
 def test_preparation_deadline_retains_late_durable_acceptance_receipt(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
+    deadline_seconds = 10
     ctx, authz, _definitions, submissions, durable, _events, service = _wired(tmp_path)
     request = RunRequest()
     operation = service.start_run_preparation(
@@ -5312,12 +5313,12 @@ def test_preparation_deadline_retains_late_durable_acceptance_receipt(
         "pipe",
         idempotency_key="late-acceptance",
         request=request,
-        deadline_seconds=1,
+        deadline_seconds=deadline_seconds,
     )
     accept = submissions.accept
 
     def slow_accept(*args: Any, **kwargs: Any) -> Any:
-        time.sleep(1.2)
+        time.sleep(deadline_seconds + 0.2)
         return accept(*args, **kwargs)
 
     monkeypatch.setattr(submissions, "accept", slow_accept)
@@ -5351,7 +5352,7 @@ def test_preparation_deadline_retains_late_durable_acceptance_receipt(
         "pipe",
         idempotency_key="late-acceptance",
         request=request,
-        deadline_seconds=1,
+        deadline_seconds=deadline_seconds,
     )
     assert recovered["operation_id"] == operation["operation_id"]
     assert recovered["result"] == completed["result"]
