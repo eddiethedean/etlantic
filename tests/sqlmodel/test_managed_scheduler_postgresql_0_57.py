@@ -4,7 +4,6 @@ from __future__ import annotations
 
 import hashlib
 import os
-import time
 import uuid
 from concurrent.futures import ProcessPoolExecutor
 from datetime import UTC, datetime
@@ -119,7 +118,9 @@ def _scheduler_process_tick(
             durable=durable,
             clock=FakeScheduleClock(datetime(2026, 10, 1, 12, 0, tzinfo=UTC)),
             owner_id=owner_id,
-            ttl_seconds=1,
+            # Keep the lease alive while each independent process starts. The
+            # test explicitly releases it once standby behavior is verified.
+            ttl_seconds=300,
             run_submitter=submit,
             occurrence_preparer=prepare,
             occurrence_recoverer=recover,
@@ -175,7 +176,9 @@ def test_postgresql_two_schedulers_recover_accepted_unlinked_firing() -> None:
             ).result(timeout=30)
         assert standby_result == (0, "standby")
 
-        time.sleep(1.1)  # SQLModel lease expiry uses the database wall clock.
+        # Expire the held lease through the public store API instead of sleeping
+        # past a tiny TTL, which races with process startup on slower CI hosts.
+        schedules.release_leader(ctx, owner_id="scheduler-a", fencing_token=1)
         with ProcessPoolExecutor(
             max_workers=1, mp_context=get_context("spawn")
         ) as process:
