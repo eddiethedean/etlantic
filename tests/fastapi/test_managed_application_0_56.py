@@ -3135,7 +3135,7 @@ def test_managed_worker_stops_real_runtime_without_writing_target(
     host = ExecutionHost(
         durable,
         owner_id="cancel-integration-worker",
-        ttl_seconds=1,
+        ttl_seconds=30 if run_timeout is None else 1,
         runner=ManagedExecutionAdapter(
             runtime_factory=runtime_factory, report_root=report_root
         ),
