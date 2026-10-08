@@ -1213,11 +1213,36 @@ jobs:
           mapfile -t test_files < <(
             find tests -type f \( -name 'test_*.py' -o -name '*_test.py' \) -print \
               | sort \
-              | awk -v shard="$TEST_SHARD" '((NR - 1) % 16) + 1 == shard'
+              | awk -v shard="$TEST_SHARD" '((NR - 1) % 16) + 1 == shard && !(shard == 16 && $0 == "tests/cli/test_schedule_cli.py")'
           )
-          uv run --no-sync pytest -q \
+          uv run --no-sync pytest -q -n 4 --dist=load \
             -m "not medallantic and not polars and not pandas and not sql and not spark and not real_pyspark and not airflow and not prefect and not keyring and not sqlmodel and not datafusion" \
             "${test_files[@]}"
+
+  dependency-minimums-schedule-cli:
+    name: Dependency minimums schedule CLI (Python 3.11)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v9.0.0
+        with:
+          version: "0.12.0"
+          python-version: "3.11"
+          enable-cache: true
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Sync lowest direct dependency versions
+        run: |
+          cp uv.lock "$RUNNER_TEMP/uv.lock"
+          uv sync --resolution lowest-direct --upgrade --all-groups --all-extras
+          cp "$RUNNER_TEMP/uv.lock" uv.lock
+
+      - name: Schedule CLI test at dependency minimums
+        run: uv run --no-sync pytest -q tests/cli/test_schedule_cli.py
 
   dependency-minimums-optional:
     name: Dependency minimums optional packages (Python 3.11)
