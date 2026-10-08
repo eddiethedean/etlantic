@@ -1,6 +1,6 @@
 # Evaluator Brief
 
-> **Status: ETLantic 0.56.1 is the published Beta release; 0.56.2 is in release-candidate preparation. Adaptive graduation remains pending.**
+> **Status: ETLantic 0.56.2 is the published Beta release; 0.56.2 is the current published Beta release. Adaptive graduation remains pending.**
 
 A one-page answer for enterprise evaluators and technical decision-makers.
 
@@ -103,7 +103,7 @@ For the bounded reference topology and required controls, read
 
 ## Bounded production support (do not skip)
 
-ETLantic **0.56.1** is the current published **Beta release** for documented single-tenant
+ETLantic **0.56.2** is the current published **Beta release** for documented single-tenant
 pilots and Supported multi-tenant profiles. Shipped trust controls do not
 make an arbitrary shared-service topology safe.
 

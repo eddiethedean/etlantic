@@ -7,11 +7,11 @@ current_minor: "0.56"
 
 # ETLantic 0.56 Release Guide
 
-> **Status: ETLantic 0.56.1 is the current published Beta release.**
+> **Status: ETLantic 0.56.2 is the current published Beta release.**
 
 ETLantic 0.56 completes the managed application ETL path, including durable
 run control, worker execution, results, lineage, and recovery actions. This
-0.56.1 is published on PyPI and GitHub Releases. The 0.56.x package line is
+0.56.2 is published on PyPI and GitHub Releases. The 0.56.x package line is
 supported for controlled single-tenant pilots
 and Supported control-plane isolation profiles. Explicit class-authored
 pipelines remain the supported default.

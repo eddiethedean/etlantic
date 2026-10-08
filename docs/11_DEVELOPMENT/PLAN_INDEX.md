@@ -1,6 +1,6 @@
 # Planning Hub
 
-> **Status: ETLantic 0.56.1 is the published Beta release and current supported line.**
+> **Status: ETLantic 0.56.2 is the published Beta release and current supported line.**
 > Inferred-model authoring is qualified only for the scoped Experimental surface in the 0.55 exit gate. Adaptive execution remains Experimental and graduation remains pending.
 > Human-governed AI context/proposal surfaces are Available; MCP extra is
 > Experimental. Streaming and bounded dynamic control are Supported in core; Kafka and
