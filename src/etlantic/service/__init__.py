@@ -6,7 +6,7 @@ from __future__ import annotations
 import uuid
 from dataclasses import dataclass, field
 from datetime import UTC, datetime
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 from etlantic.authoring.catalog import (
     discover_authoring_catalog,
@@ -25,8 +25,9 @@ from etlantic.diagnostics import ValidationReport
 from etlantic.lifecycle.runtime import PipelineRuntime
 from etlantic.plan.model import PipelinePlan
 from etlantic.reports.model import PipelineRunReport
-from etlantic.runtime.execute import run_pipeline
-from etlantic.service.managed import ManagedApplicationService
+
+if TYPE_CHECKING:
+    from etlantic.service.managed import ManagedApplicationService
 
 
 @dataclass(frozen=True, slots=True)
@@ -347,6 +348,8 @@ class AuthoringService:
         )
         self.jobs[job_id] = job
         try:
+            from etlantic.runtime.execute import run_pipeline
+
             report = run_pipeline(
                 defn, profile=self.policy.profile, runtime=self.runtime
             )
@@ -424,3 +427,11 @@ __all__ = [
     "plan_pipeline_like",
     "validate_pipeline_like",
 ]
+
+
+def __getattr__(name: str) -> Any:
+    if name == "ManagedApplicationService":
+        from etlantic.service.managed import ManagedApplicationService
+
+        return ManagedApplicationService
+    raise AttributeError(f"module {__name__!r} has no attribute {name!r}")

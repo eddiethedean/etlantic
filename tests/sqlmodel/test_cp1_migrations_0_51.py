@@ -128,6 +128,8 @@ def _ctx(
 def test_latest_migration_provisions_cp1_and_report_tables(tmp_path: Path) -> None:
     engine = create_sqlite_engine(f"sqlite:///{tmp_path / 'cp1.db'}")
 
+    assert current_version(engine) is None
+    assert not inspect(engine).has_table("etlantic_sqlmodel_schema_version")
     assert apply_migrations(engine) == "014_cp1_complete_principal_idempotency_0_56"
     assert current_version(engine) == "014_cp1_complete_principal_idempotency_0_56"
     assert {

@@ -11,7 +11,7 @@ from collections.abc import Sequence
 from importlib import import_module
 from typing import Any
 
-from sqlalchemy import text
+from sqlalchemy import inspect, text
 from sqlalchemy.engine import Engine
 
 VERSIONS: Sequence[str] = (
@@ -37,17 +37,14 @@ def _load(version: str) -> Any:
 
 
 def current_version(engine: Engine) -> str | None:
-    """Return the applied migration version, or ``None`` on a fresh database."""
+    """Read the applied migration version without changing the database.
+
+    Return ``None`` when the schema-version table is absent or empty. Creating
+    the version table is reserved for the explicit migration path.
+    """
+    if not inspect(engine).has_table("etlantic_sqlmodel_schema_version"):
+        return None
     with engine.connect() as conn:
-        conn.execute(
-            text(
-                "CREATE TABLE IF NOT EXISTS etlantic_sqlmodel_schema_version ("
-                "id INTEGER PRIMARY KEY CHECK (id = 1), "
-                "version VARCHAR(64) NOT NULL"
-                ")"
-            )
-        )
-        conn.commit()
         row = conn.execute(
             text("SELECT version FROM etlantic_sqlmodel_schema_version WHERE id = 1")
         ).fetchone()

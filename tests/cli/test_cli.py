@@ -3,10 +3,12 @@
 
 from __future__ import annotations
 
+import inspect
 import json
 import re
 from importlib.metadata import version
 from pathlib import Path
+from typing import Any
 
 import pytest
 import typer
@@ -14,10 +16,10 @@ from typer.testing import CliRunner
 
 from etlantic.cli import _build_selection, app
 
-try:
-    runner = CliRunner(mix_stderr=False, env={"NO_COLOR": "1", "TERM": "dumb"})
-except TypeError:  # Click 8.2 removed mix_stderr after separating captured streams.
-    runner = CliRunner(env={"NO_COLOR": "1", "TERM": "dumb"})
+_runner_options: dict[str, Any] = {"env": {"NO_COLOR": "1", "TERM": "dumb"}}
+if "mix_stderr" in inspect.signature(CliRunner).parameters:
+    _runner_options["mix_stderr"] = False
+runner = CliRunner(**_runner_options)
 _ANSI_ESCAPE = re.compile(r"\x1b\[[0-9;]*m")
 _TARGET = "tests.fixtures.sample_pipeline:SamplePipeline"
 

@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import asyncio
 import inspect
-from collections.abc import Callable, Mapping
+from collections.abc import Awaitable, Callable, Mapping
 from contextlib import asynccontextmanager
 from dataclasses import dataclass, field
 from datetime import datetime
@@ -24,7 +24,6 @@ from etlantic.control_plane.registry_definitions import RegistryDefinitionReposi
 from etlantic.profile import Profile, resolve_profile
 from etlantic.registry import PlanningContext
 from etlantic.reports.retention import ArtifactRetentionResult
-from etlantic.runtime.action_execution_host import ActionHandler
 from etlantic_fastapi.api import ETLanticAPI, create_app
 from etlantic_fastapi.auth import (
     ContextFactory,
@@ -37,6 +36,10 @@ if TYPE_CHECKING:
     from sqlalchemy.engine import Engine
 
     from etlantic.runtime.action_execution_host import ActionExecutionHost
+
+ActionHandler = Callable[
+    [ControlPlaneContext, Mapping[str, Any]], Awaitable[Mapping[str, Any]]
+]
 
 
 def _empty_engine_options() -> dict[str, Any]:

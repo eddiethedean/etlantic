@@ -1,8 +1,8 @@
 # Compatibility Matrix
 
-> **Status: ETLantic 0.55.0 Beta release.**
+> **Status: ETLantic 0.56.1 Beta release.**
 
-This table describes the declared compatibility of ETLantic 0.54.0.
+This table describes the declared compatibility of ETLantic 0.56.1.
 Foundation policy summary ([ODCS](../03_DATA_CONTRACTS/ODCS.md) /
 [DTCS](../04_TRANSFORMATIONS/DTCS.md) / [DPCS](../05_PIPELINES/DPCS.md) /
 ContractModel / Python):
@@ -24,19 +24,19 @@ ContractModel / Python):
 | Tabular interchange (Gate A) | `etlantic.interchange/1` — Polars ↔ Pandas only; see [API Plan/Runtime](API_PLAN_RUNTIME.md#gate-a-tabular-interchange-etlanticinterchange1) |
 | SQL protocol | `etlantic.sql/1` |
 | Spark protocol | `etlantic.spark/1` |
-| Polars plugin | `etlantic-polars==0.56.0` |
-| Pandas plugin | `etlantic-pandas==0.56.0` |
-| SQL plugin | `etlantic-sql==0.56.0` |
-| DuckDB plugin | `etlantic-duckdb==0.56.0` (optional) |
-| PySpark plugin | `etlantic-pyspark==0.56.0` |
-| Airflow plugin | `etlantic-airflow==0.56.0` |
-| Prefect scheduler | `etlantic-prefect==0.56.0` |
-| Keyring provider | `etlantic-keyring==0.56.0` |
-| SQLModel bridge | `etlantic-sqlmodel==0.56.0` |
-| FastAPI reference adapter | `etlantic-fastapi==0.56.0` (reference only; not a control plane; see the [planned first-class control-plane program](../11_DEVELOPMENT/MULTI_TENANT_CONTROL_PLANE_PLAN.md)) |
-| Medallantic (facade) | `medallantic==0.56.0` |
-| SparkForge redirect | `etlantic-sparkforge==0.56.0` (compatibility shim; prefer `medallantic`) |
-| DataFusion plugin | `etlantic-datafusion==0.56.0` (technical qualification complete; provisional Alpha surface) |
+| Polars plugin | `etlantic-polars==0.56.1` |
+| Pandas plugin | `etlantic-pandas==0.56.1` |
+| SQL plugin | `etlantic-sql==0.56.1` |
+| DuckDB plugin | `etlantic-duckdb==0.56.1` (optional) |
+| PySpark plugin | `etlantic-pyspark==0.56.1` |
+| Airflow plugin | `etlantic-airflow==0.56.1` |
+| Prefect scheduler | `etlantic-prefect==0.56.1` |
+| Keyring provider | `etlantic-keyring==0.56.1` |
+| SQLModel bridge | `etlantic-sqlmodel==0.56.1` |
+| FastAPI reference adapter | `etlantic-fastapi==0.56.1` (reference only; not a control plane; see the [planned first-class control-plane program](../11_DEVELOPMENT/MULTI_TENANT_CONTROL_PLANE_PLAN.md)) |
+| Medallantic (facade) | `medallantic==0.56.1` |
+| SparkForge redirect | `etlantic-sparkforge==0.56.1` (compatibility shim; prefer `medallantic`) |
+| DataFusion plugin | `etlantic-datafusion==0.56.1` (technical qualification complete; provisional Alpha surface) |
 | Orchestration protocol | `etlantic.orchestration/1` |
 | DTCS Transformation Plan protocol | Published in DTCS 3.0 / `dtcs` 0.13 as `dtcs.transform-plan/2` (v1 readable); ETLantic authoring shipped in 0.11 |
 | Portable authoring profile | Shipped as `etlantic.transform/1` (full DTCS 3.0 facade→IR authoring) |
@@ -98,7 +98,7 @@ Package metadata declares these backend dependency ranges:
 A declared range means the resolver may install that version; it does not mean
 every backend version and operating system combination is exercised in CI.
 For a controlled deployment, test the exact resolved environment and pin
-`etlantic==0.56.0` plus every official plugin to `==0.56.0`.
+`etlantic==0.56.1` plus every official plugin to `==0.56.1`.
 
 Core extras declare a minimum compatible companion version, for example
 `etlantic[polars]` requires `etlantic-polars>=0.56.0`. Official plugin source
