@@ -1215,7 +1215,7 @@ jobs:
               | sort \
               | awk -v shard="$TEST_SHARD" '((NR - 1) % 8) + 1 == shard'
           )
-          uv run --no-sync pytest -q -n 4 --dist=load \
+          uv run --no-sync pytest -q \
             -m "not medallantic and not polars and not pandas and not sql and not spark and not real_pyspark and not airflow and not prefect and not keyring and not sqlmodel and not datafusion" \
             "${test_files[@]}"
 
