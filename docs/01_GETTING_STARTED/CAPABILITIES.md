@@ -3,7 +3,7 @@
 > **Version boundary:** ETLantic 0.57.0 is a Beta release candidate; 0.56.2 remains the current published and supported line.
 
 
-> **Status: 0.56.2 is the published Beta release and current supported line.** Version 0.57.0 is in candidate qualification. This page records
+> **Status: 0.56.2 is the published Beta release and current supported line.** Version 0.57.0 passed candidate qualification and awaits publication. This page records
 > the published 0.56 envelope for controlled single-tenant pilots and
 > Supported isolation profiles.
 

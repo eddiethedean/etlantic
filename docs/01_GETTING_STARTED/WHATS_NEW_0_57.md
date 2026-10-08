@@ -7,7 +7,7 @@ audience: adopter
 
 # What's new in 0.57
 
-> **Status: 0.57.0 release candidate. Publication is pending the exit gate.**
+> **Status: 0.57.0 release candidate. Candidate qualification passed; publication is pending.**
 
 ETLantic 0.57 makes the standard managed backend independent of the FastAPI
 adapter and adds public contracts for schedule commands, provider schema
