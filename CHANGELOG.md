@@ -5,6 +5,29 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.57.0] - Unreleased
+
+### Added
+
+- Add transport-independent managed backend construction, authorized schedule
+  commands, explicit scheduler construction, provider-owned schema inspection,
+  and local runtime status/cooperative drain for scheduler and worker roles.
+- Add a candidate migration guide and release acceptance gate for issues #278–#282.
+
+### Changed
+
+- Make the FastAPI managed adapter reuse the core and SQLModel service graph.
+- Require explicit preparation, submission, and recovery collaborators for the
+  standard managed scheduler; remove managed recovery inference from callback
+  binding details.
+
+### Compatibility
+
+- Preserve the SQLModel migration head at
+  `014_cp1_complete_principal_idempotency_0_56`; 0.57 adds no database migration.
+- Retain the FastAPI constructors and schedule HTTP routes as compatibility
+  adapters over the shared services.
+
 ## [0.56.2] - 2026-10-08
 
 ### Changed
@@ -2213,7 +2236,8 @@ See `docs/11_DEVELOPMENT/MIGRATION_0_16_TO_0_17.md`.
 - uv + ruff toolchain, MkDocs documentation site, shared GitHub Actions
   checks, and tag-triggered PyPI release
 
-[Unreleased]: https://github.com/eddiethedean/etlantic/compare/v0.53.0...HEAD
+[Unreleased]: https://github.com/eddiethedean/etlantic/compare/v0.56.2...HEAD
+[0.57.0]: https://github.com/eddiethedean/etlantic/releases/tag/v0.57.0
 [0.51.0]: https://github.com/eddiethedean/etlantic/releases/tag/v0.51.0
 [0.53.0]: https://github.com/eddiethedean/etlantic/compare/v0.52.1...v0.53.0
 [0.52.1]: https://github.com/eddiethedean/etlantic/releases/tag/v0.52.1

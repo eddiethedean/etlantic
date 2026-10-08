@@ -1,9 +1,9 @@
 # Current Capabilities and Limitations
 
-> **Version boundary:** ETLantic 0.56.2 is the current published Beta release and supported line.
+> **Version boundary:** ETLantic 0.57.0 is a Beta release candidate; 0.56.2 remains the current published and supported line.
 
 
-> **Status: 0.56.2 is the published Beta release and current supported line.** 0.56.2 is the current published Beta release. This page records
+> **Status: 0.56.2 is the published Beta release and current supported line.** Version 0.57.0 is in candidate qualification. This page records
 > the published 0.56 envelope for controlled single-tenant pilots and
 > Supported isolation profiles.
 
@@ -11,7 +11,7 @@
     Read **What works today** and **Limits** first. Residual gaps and CI
     starter JSON are further down for evaluators.
 
-## What works today (0.56)
+## What works today (0.57)
 
 ETLantic 0.56.2 is the current published and supported **Beta release** for
 documented, controlled, single-tenant pilots. Install the latest published `etlantic` package from PyPI. You can embed an

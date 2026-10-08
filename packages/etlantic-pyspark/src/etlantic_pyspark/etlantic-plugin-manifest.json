@@ -3,7 +3,7 @@
     "spark",
     "portable"
   ],
-  "digest": "sha256:7696650c09fe8c7cbde5255bbab240edd6650bf901d62fd55b458d215e12337c",
+  "digest": "sha256:7f3e2b054eb7e15eca787d0eed353ed8c1210b6597403d10b010227bd7941000",
   "entries": [
     {
       "capabilities": [
@@ -43,5 +43,5 @@
     "publisher": "etlantic"
   },
   "schema": "etlantic.plugin_manifest/1",
-  "version": "0.56.2"
+  "version": "0.57.0"
 }

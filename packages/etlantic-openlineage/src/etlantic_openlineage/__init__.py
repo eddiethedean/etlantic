@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-__version__ = "0.56.2"
+__version__ = "0.57.0"
 
 from etlantic_openlineage.exporter import (
     FakeTransport,

@@ -41,7 +41,7 @@ _POLARS_WRITE_EXTRAS = frozenset(
     e for e in WRITE_CAPABILITY_EXTRAS if e in {"write.append", "write.overwrite"}
 )
 
-__version__ = "0.56.2"
+__version__ = "0.57.0"
 
 __all__ = [
     "PolarsDataframePlugin",

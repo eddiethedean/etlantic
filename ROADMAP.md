@@ -6,7 +6,9 @@
 > [Capabilities](docs/01_GETTING_STARTED/CAPABILITIES.md) for what ships now.
 > Review this header for every release or sequence change.
 
-**Latest published release:** ETLantic **0.56.2** (Beta). It completes the
+**Latest published release:** ETLantic **0.56.2** (Beta). ETLantic **0.57.0**
+is in candidate qualification; publication is pending its exit gate. The 0.56
+release completes the
 application backend and is supported for documented single-tenant pilots. The
 scoped inferred-model authoring surface remains Experimental. Adaptive execution also
 remains Experimental; its independent graduation is still pending. See the [0.55 exit gate](docs/11_DEVELOPMENT/EXIT_GATE_0_55.md)
@@ -37,14 +39,14 @@ through **0.37** (stable foundation) are shipped.
 | Previous | 0.40 | Tenant registry / workspaces (CP2) | Gate-ready / shipped evidence |
 | Previous | 0.39 | Multi-tenant control plane (CP1) | Gate-ready / shipped evidence |
 | Previous | 0.38 | Data connectivity and connector SDK | Gate-ready / shipped evidence |
-| Current | 0.56 | Complete application ETL backend with full specification and run control | Published / shipped evidence |
-| Next | 0.57 | Managed backend independence and runtime supervision (#278–#282) | Planned for 0.57.0 |
+| Previous | 0.56 | Complete application ETL backend with full specification and run control | Published / shipped evidence |
+| Current | 0.57 | Managed backend independence and runtime supervision (#278–#282) | Gate-ready for tag/publish |
 | Later | 0.58 | Brownfield adoption bridges | Planning freeze |
 | Later | 0.59 | Operator Console | Planned |
 | Later | 0.60 | Managed runtime and enterprise provider packs | Planned |
 | Later | 0.61 | TransformationModel incubation | Proposed |
 | Foundation | 0.36–0.37 | Joint burn-in → stable foundation | Gate-ready (0.37) |
-| Post-foundation | 0.38–0.61 | Connectivity → control plane → developer intelligence → optimization → streaming → federation → governed AI → DuckDB package → portable-engine baseline → adaptive execution → inferred model authoring → complete application backend → backend independence → adoption → operations → providers → modeling incubation | In progress (0.56 published Beta; adaptive graduation pending) |
+| Post-foundation | 0.38–0.61 | Connectivity → control plane → developer intelligence → optimization → streaming → federation → governed AI → DuckDB package → portable-engine baseline → adaptive execution → inferred model authoring → complete application backend → backend independence → adoption → operations → providers → modeling incubation | In progress (0.56 published; 0.57 candidate; adaptive graduation pending) |
 
 For connectivity evidence, see
 [What's New in 0.38](docs/01_GETTING_STARTED/WHATS_NEW_0_38.md) and the

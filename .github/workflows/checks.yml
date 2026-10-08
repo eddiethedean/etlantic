@@ -521,6 +521,67 @@ jobs:
           path: ${{ runner.temp }}/phase-0.56-managed-provider-matrix.json
           if-no-files-found: ignore
 
+  managed-backend-phase-0-57:
+    name: Phase 0.57 managed backend acceptance
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: etlantic
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v9.0.0
+        with:
+          version: "0.12.0"
+          python-version: "3.11"
+          enable-cache: true
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Sync managed acceptance dependencies
+        run: uv sync --locked --all-groups --extra fastapi --extra lsp
+
+      - name: Run 0.57 service, schema, role, and managed backend acceptance
+        env:
+          ETLANTIC_REQUIRE_SQLMODEL: "1"
+          ETLANTIC_SQLMODEL_TEST_URL: "postgresql+psycopg://postgres:postgres@localhost:5432/etlantic"
+          ETLANTIC_CP_TEST_URL: "postgresql+psycopg://postgres:postgres@localhost:5432/etlantic"
+          ETLANTIC_SQL_TEST_URL: "postgresql+psycopg://postgres:postgres@localhost:5432/etlantic"
+        run: >-
+          uv run pytest -q
+          tests/runtime/test_role_lifecycle_0_57.py
+          tests/service/test_schedule_application_0_57.py
+          tests/sqlmodel/test_managed_schema_inspection_0_57.py
+          tests/sqlmodel/test_managed_runtime_schema_privileges_0_57.py
+          tests/sqlmodel/test_managed_scheduler_postgresql_0_57.py
+          tests/sqlmodel/test_cp1_migrations_0_51.py
+          tests/fastapi/test_managed_backend_0_56.py
+          tests/fastapi/test_managed_application_0_56.py
+          tests/fastapi/test_managed_import_isolation_0_56.py
+          tests/fastapi/test_managed_postgresql_process_0_56.py
+          --junitxml=${{ runner.temp }}/phase-0.57-managed-acceptance.xml
+
+      - name: Preserve phase 0.57 acceptance evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: phase-0.57-managed-acceptance-${{ github.sha }}
+          path: ${{ runner.temp }}/phase-0.57-managed-acceptance.xml
+          if-no-files-found: warn
+
   duckdb:
     name: DuckDB optional plugin
     runs-on: ${{ matrix.os }}
@@ -869,6 +930,26 @@ jobs:
           fi
           uv run --isolated --no-project --with "$WHEEL" --with pytest \
             python -m pytest -q tests/unit tests/cli
+
+      - name: Headless SQLModel backend from installed wheels without FastAPI
+        shell: bash
+        run: |
+          CORE="dist/etlantic-$(uv version --short --package etlantic)-py3-none-any.whl"
+          SQLMODEL="dist/etlantic_sqlmodel-$(uv version --short --package etlantic-sqlmodel)-py3-none-any.whl"
+          uv run --isolated --no-project \
+            --with "$CORE" --with "$SQLMODEL" \
+            python scripts/check_managed_backend_headless.py \
+              --core-wheel "$CORE" \
+              --sqlmodel-wheel "$SQLMODEL" \
+              --output "$RUNNER_TEMP/phase-0.57-headless-wheels.json"
+
+      - name: Preserve headless installed-wheel evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: phase-0.57-headless-wheels-${{ github.sha }}
+          path: ${{ runner.temp }}/phase-0.57-headless-wheels.json
+          if-no-files-found: warn
 
       - name: Medallantic wheel import smoke
         shell: bash

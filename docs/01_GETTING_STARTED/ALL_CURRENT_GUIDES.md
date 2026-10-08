@@ -12,7 +12,7 @@
 - [First pipeline](FIRST_PIPELINE.md)
 - [Engine selection](ENGINE_SELECTION.md)
 - [Learning path](LEARNING_PATH.md)
-- [Current 0.56 Guide](CURRENT_VERSION.md)
+- [Current 0.57 Guide](CURRENT_VERSION.md)
 
 ## Evaluate
 

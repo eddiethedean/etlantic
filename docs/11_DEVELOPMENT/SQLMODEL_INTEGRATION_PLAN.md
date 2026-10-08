@@ -3,7 +3,7 @@
 > **Plan status: partially shipped; application backend integration continues
 > in 0.56.**
 >
-> **Current 0.56 boundary:** The optional `etlantic-sqlmodel` package provides
+> **Current 0.57 boundary:** The optional `etlantic-sqlmodel` package provides
 > the contract-to-SQLModel bridge and control-plane persistence/migrations.
 > The [0.56 application backend plan](IMPLEMENTATION_PLAN_0_56.md) requires
 > prepared acceptance/handoff, runtime result projection and complete live

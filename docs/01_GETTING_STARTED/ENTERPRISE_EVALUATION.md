@@ -147,6 +147,6 @@ adopter-owned ops.
 
 ## Next steps
 
-- Practitioners: continue the [Current 0.56 Guide](CURRENT_VERSION.md)
+- Practitioners: continue the [Current 0.57 Guide](CURRENT_VERSION.md)
 - Decision-makers: return to [Evaluator Brief](EVALUATOR.md) with this checklist
 - Production pilots: [Pilot walkthrough](../06_EXECUTION/PILOT_WALKTHROUGH.md)

@@ -283,6 +283,8 @@ not_in_nav: |
   11_DEVELOPMENT/EXECUTION_PLAN_0_56.md
   11_DEVELOPMENT/FINDINGS_0_56.md
   11_DEVELOPMENT/IMPLEMENTATION_PLAN_0_57.md
+  11_DEVELOPMENT/MIGRATION_0_56_TO_0_57.md
+  11_DEVELOPMENT/EXIT_GATE_0_57.md
   11_DEVELOPMENT/IMPLEMENTATION_PLAN_0_58.md
   11_DEVELOPMENT/IMPLEMENTATION_PLAN_0_59.md
   11_DEVELOPMENT/IMPLEMENTATION_PLAN_0_60.md
@@ -514,7 +516,7 @@ nav:
       - Engine selection: 01_GETTING_STARTED/ENGINE_SELECTION.md
       - Learning path: 01_GETTING_STARTED/LEARNING_PATH.md
       - All current guides: 01_GETTING_STARTED/ALL_CURRENT_GUIDES.md
-      - Current 0.56 Guide: 01_GETTING_STARTED/CURRENT_VERSION.md
+      - Current 0.57 Guide: 01_GETTING_STARTED/CURRENT_VERSION.md
   - Evaluate:
       - Is ETLantic for me?: 01_GETTING_STARTED/COMPARE.md
       - Capabilities: 01_GETTING_STARTED/CAPABILITIES.md
@@ -600,7 +602,7 @@ nav:
       - CLI and configuration:
           - CLI: 10_REFERENCE/CLI.md
           - Cheatsheet: 10_REFERENCE/CHEATSHEET.md
-          - Configuration in 0.56: 10_REFERENCE/CONFIGURATION_TODAY.md
+          - Configuration in 0.57: 10_REFERENCE/CONFIGURATION_TODAY.md
           - Runtime configuration: 10_REFERENCE/RUNTIME_CONFIGURATION.md
           - Secrets decision tree: 10_REFERENCE/SECRETS_DECISION.md
           - Optional packages: 10_REFERENCE/OPTIONAL_PACKAGES.md
@@ -650,8 +652,11 @@ nav:
       - Releases:
           - Changelog: CHANGELOG.md
           - What's new in 0.56: 01_GETTING_STARTED/WHATS_NEW_0_56.md
+          - What's new in 0.57 (candidate): 01_GETTING_STARTED/WHATS_NEW_0_57.md
           - Migration from 0.55 to 0.56: 11_DEVELOPMENT/MIGRATION_0_55_TO_0_56.md
           - Exit gate 0.56: 11_DEVELOPMENT/EXIT_GATE_0_56.md
+          - Migration from 0.56 to 0.57: 11_DEVELOPMENT/MIGRATION_0_56_TO_0_57.md
+          - Exit gate 0.57: 11_DEVELOPMENT/EXIT_GATE_0_57.md
           - What's new in 0.54: 01_GETTING_STARTED/WHATS_NEW_0_54.md
           - Migration from 0.53 to 0.54: 11_DEVELOPMENT/MIGRATION_0_53_TO_0_54.md
           - Exit gate 0.54: 11_DEVELOPMENT/EXIT_GATE_0_54.md

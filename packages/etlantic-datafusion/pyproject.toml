@@ -1,6 +1,6 @@
 [project]
 name = "etlantic-datafusion"
-version = "0.56.2"
+version = "0.57.0"
 description = "DataFusion dataframe + portable transform plugin for ETLantic."
 readme = "README.md"
 license = "MIT"
@@ -17,7 +17,7 @@ classifiers = [
     "Typing :: Typed",
 ]
 dependencies = [
-    "etlantic>=0.56.0",
+    "etlantic>=0.57.0",
     "datafusion>=49",
     "pyarrow>=17",
 ]

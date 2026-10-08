@@ -1,10 +1,11 @@
 # Support
 
-> **Version boundary:** ETLantic 0.56.2 is the current published Beta release and supported line.
+> **Version boundary:** ETLantic 0.57.0 is a Beta release candidate; 0.56.2 remains the current published and supported line.
 
 
-ETLantic **0.56.2** is the current published Beta release and **0.56.x**
-support line. The 0.56 line targets documented
+ETLantic **0.56.2** remains the current published Beta release and **0.56.x**
+support line. **0.57.0** is in candidate qualification; publication is pending.
+The 0.56 line targets documented
 single-tenant pilots and retains **Supported** isolation
 profiles (`isolated-deployment`, `dedicated-schema`). There is no hosted
 multi-tenant SaaS. Community support has **no formal SLA** or guaranteed

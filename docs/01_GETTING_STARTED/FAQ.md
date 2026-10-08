@@ -1,9 +1,9 @@
 # Frequently Asked Questions
 
-> **Version boundary:** ETLantic 0.56.2 is the current published Beta release and supported line.
+> **Version boundary:** ETLantic 0.57.0 is a Beta release candidate; 0.56.2 remains the current published and supported line.
 
 
-> **Status: ETLantic 0.56.2 Beta release.** Version 0.56.2 is the current published Beta release.
+> **Status: ETLantic 0.56.2 Beta release.** Version 0.57.0 is in candidate qualification; 0.56.2 remains the current published release.
 
 Practical questions for ETLantic **0.56.2**. Philosophy and contract taxonomy
 live under [Foundations](../02_FOUNDATIONS/README.md).

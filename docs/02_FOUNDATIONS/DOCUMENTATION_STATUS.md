@@ -23,7 +23,7 @@ completed documentation audit:
    compiled artifact → run result.
 6. Treat `PipelineDefinition`, `etlantic.pipeline/1`, functional builders,
    GUI catalogs/edit commands, and the FastAPI reference adapter as
-   **Candidate in 0.56** (see
+   **Candidate in 0.57** (see
    [Programmatic authoring](../05_PIPELINES/PROGRAMMATIC_AUTHORING.md)).
    Historical design notes remain under Project → Archive.
 
@@ -31,7 +31,7 @@ completed documentation audit:
 
 | Page status | Meaning |
 |---|---|
-| Candidate in 0.56 | Historical qualification status before publication |
+| Candidate in 0.57 | Current release-candidate qualification status |
 | Available in 0.56 | Tested against the current published package |
 | Shipped in 0.x | Available since that milestone (still current) |
 | Experimental | Public APIs that may change without a major version bump |

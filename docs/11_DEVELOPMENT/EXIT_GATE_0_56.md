@@ -1,7 +1,7 @@
 ---
 title: ETLantic 0.56 Exit Gate
 status: released
-current_minor: "0.56"
+current_minor: "0.57"
 ---
 
 # ETLantic 0.56 Exit Gate — Complete Application ETL Backend

@@ -104,7 +104,7 @@ The public CLI (see the
 Core has no dataframe, database, Spark, or orchestrator dependency. Install
 only the integrations a pipeline needs:
 
-| Capability | 0.56 |
+| Capability | 0.57 |
 |---|---|
 | Local Python + JSON/CSV | `etlantic` |
 | Polars or Pandas | `etlantic[polars]` or `etlantic[pandas]` |

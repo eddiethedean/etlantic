@@ -1,6 +1,6 @@
 [project]
 name = "etlantic-foundry"
-version = "0.56.2"
+version = "0.57.0"
 description = "Foundry dataset and file connectors for ETLantic."
 readme = "README.md"
 license = "MIT"
@@ -8,7 +8,7 @@ requires-python = ">=3.11"
 authors = [{ name = "Odo Matthews", email = "odosmatthews@gmail.com" }]
 classifiers = ["Development Status :: 4 - Beta"]
 dependencies = [
-    "etlantic>=0.56.0",
+    "etlantic>=0.57.0",
     "httpx2>=2",
 ]
 

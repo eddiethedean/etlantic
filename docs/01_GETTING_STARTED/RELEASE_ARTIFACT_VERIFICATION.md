@@ -1,7 +1,7 @@
 ---
 title: Release artifact verification for 0.56.0
 status: available
-current_minor: "0.56"
+current_minor: "0.57"
 ---
 
 # Release artifact verification for 0.56.0

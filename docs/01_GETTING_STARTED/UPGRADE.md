@@ -14,6 +14,14 @@ the listed migrations through 0.55, then apply the 0.55 → 0.56 guide.
 
 Historical release notes: [Earlier releases](EARLIER_RELEASES.md).
 
+## 0.57 configuration cheat sheet
+
+The 0.57 candidate keeps core and first-party plugin versions in lockstep and
+requires `etlantic>=0.57.0` for companion packages. Managed SQLModel deployments
+continue to use the 0.56 migration head; apply migrations as an operator step
+and use the provider's read-only `inspect_schema()` check during construction.
+See [Migration 0.56 → 0.57](../11_DEVELOPMENT/MIGRATION_0_56_TO_0_57.md).
+
 ## 0.56 configuration cheat sheet
 
 The 0.56 release uses lockstep core and plugin versions with the constraint

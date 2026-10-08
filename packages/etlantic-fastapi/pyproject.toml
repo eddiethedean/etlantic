@@ -1,6 +1,6 @@
 [project]
 name = "etlantic-fastapi"
-version = "0.56.2"
+version = "0.57.0"
 description = "FastAPI adapter for ETLantic control-plane (CP1) and authoring reference."
 readme = "README.md"
 license = "MIT"
@@ -17,13 +17,13 @@ classifiers = [
     "Typing :: Typed",
 ]
 dependencies = [
-    "etlantic>=0.56.0",
+    "etlantic>=0.57.0",
     "fastapi>=0.115",
     "pydantic>=2.12",
 ]
 
 [project.optional-dependencies]
-managed = ["etlantic-sqlmodel>=0.56.0"]
+managed = ["etlantic-sqlmodel>=0.57.0"]
 test = ["httpx2>=2"]
 
 [dependency-groups]

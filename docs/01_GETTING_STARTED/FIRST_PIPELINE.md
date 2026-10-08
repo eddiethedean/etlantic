@@ -1,9 +1,9 @@
 # Your First Pipeline
 
-> **Version boundary:** ETLantic 0.56.2 is the current published Beta release and supported line.
+> **Version boundary:** ETLantic 0.57.0 is a Beta release candidate; 0.56.2 remains the current published and supported line.
 
 
-> **Status: ETLantic 0.56.2 Beta release.** Version 0.56.2 is the current published Beta release. Extends the project from
+> **Status: ETLantic 0.56.2 Beta release.** Version 0.57.0 is in candidate qualification; 0.56.2 remains the current published release. Extends the project from
 > [Quickstart](QUICKSTART.md). Local Python + JSON assets only.
 
 !!! tip "PyPI vs clone"

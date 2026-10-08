@@ -29,7 +29,7 @@ from etlantic.quality.model import PORTABLE_QUALITY_CAPABILITIES
 from etlantic.reliability import WRITE_CAPABILITY_EXTRAS
 from etlantic.storage.protocol import as_records, records_to_dicts
 
-__version__ = "0.56.2"
+__version__ = "0.57.0"
 
 
 def _imports() -> tuple[Any, Any]:
