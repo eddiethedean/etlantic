@@ -2,7 +2,7 @@
   "capabilities": [
     "spark-connect"
   ],
-  "digest": "sha256:20bc968c0eef17ad04a810156c4e92d585545bd63e982aa2a5b9a923a8595d76",
+  "digest": "sha256:6bd819675752af1d0137da908094cfb8753cde07e1b964850a8860aaed81882a",
   "entries": [
     {
       "capabilities": [

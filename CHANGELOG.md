@@ -9,7 +9,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- Correct dependency minimums for optional integrations and validate the
+  first-party packages against their supported minimum versions.
 - Bump core and first-party distribution versions to 0.56.2.
+
+### Fixed
+
+- Keep managed FastAPI gateway startup isolated from runtime action-host imports,
+  and make SQLModel migration version inspection read-only on fresh databases.
+- Preserve portable Polars explode and null-safe join behavior across supported
+  Polars versions.
+
+### Developer tooling
+
+- Run dependency-minimum CI suites in parallel to reduce validation time.
 
 ## [0.56.1] - 2026-10-07
 
