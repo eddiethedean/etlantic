@@ -1181,12 +1181,8 @@ jobs:
         run: uv run pytest -q tests/airflow/test_airflow_compile.py::test_optional_airflow_import_of_generated_dag -m airflow
 
   dependency-minimums:
-    name: Dependency minimums core (shard ${{ matrix.shard }}/16)
+    name: Dependency minimums core (Python 3.11)
     runs-on: ubuntu-latest
-    strategy:
-      fail-fast: false
-      matrix:
-        shard: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16]
     steps:
       - uses: actions/checkout@v7
         with:
@@ -1207,15 +1203,13 @@ jobs:
           cp "$RUNNER_TEMP/uv.lock" uv.lock
 
       - name: Core suite at dependency minimums
-        env:
-          TEST_SHARD: ${{ matrix.shard }}
         run: |
           mapfile -t test_files < <(
             find tests -type f \( -name 'test_*.py' -o -name '*_test.py' \) -print \
               | sort \
-              | awk -v shard="$TEST_SHARD" '((NR - 1) % 16) + 1 == shard && !(shard == 16 && $0 == "tests/cli/test_schedule_cli.py")'
+              | awk '$0 != "tests/cli/test_schedule_cli.py"'
           )
-          uv run --no-sync pytest -q -n 4 --dist=load \
+          uv run --no-sync pytest -q -n 8 --dist=load \
             -m "not medallantic and not polars and not pandas and not sql and not spark and not real_pyspark and not airflow and not prefect and not keyring and not sqlmodel and not datafusion" \
             "${test_files[@]}"
 
