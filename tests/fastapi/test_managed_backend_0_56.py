@@ -1681,7 +1681,7 @@ def test_managed_backend_rejects_unmigrated_schema_and_disposes_partial_engine(
         return engine
 
     monkeypatch.setattr(sqlalchemy, "create_engine", capture_initial_pool)
-    with pytest.raises(RuntimeError, match="not migrated"):
+    with pytest.raises(RuntimeError, match="not ready for managed execution"):
         _backend(
             ManagedBackendConfig(database_url=f"sqlite:///{tmp_path / 'unmigrated.db'}")
         )

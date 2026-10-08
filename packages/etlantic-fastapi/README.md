@@ -30,8 +30,9 @@ pip install 'etlantic-fastapi==0.56.2'
 ## Standard SQLModel-backed managed backend
 
 Install the managed extra and apply versioned migrations before creating the
-backend. The constructor checks the recorded migration version and fails
-closed when the schema is missing or behind. It creates one SQLAlchemy engine
+backend. The constructor uses the provider's read-only schema requirements and
+fails closed when the schema is fresh, behind, partial, unknown, or unreachable.
+It creates one SQLAlchemy engine
 for the SQLModel control-plane stores and owns that engine for the backend
 lifetime. The required migration head is
 `014_cp1_complete_principal_idempotency_0_56`, which includes durable
@@ -83,10 +84,13 @@ app = create_managed_app(
 Do not log the original URL. At startup the app checks store readiness; on
 shutdown or partial startup failure it disposes its pool. Accepted definitions
 and durable work remain stored for another process to recover. For headless
-commands, call `create_managed_backend(...)`, use `backend.api.managed_service`
-or its stores, and call `backend.close()` when the owner exits. That constructor
-uses the same store composition and migration checks without creating a
-synthetic HTTP request.
+commands, use `etlantic_sqlmodel.create_managed_backend(...)`. The FastAPI
+adapter can wrap that same core handle with
+`adapt_managed_backend(core_backend, context_factory=...)`; the handle retains
+its engine ownership and service graph. The legacy `create_managed_backend(...)`
+constructor remains available and delegates to the provider factory.
+The core handle exposes the same `schedule_service` used by HTTP routes, so
+authorization, timing, and trigger recovery stay shared across transports.
 
 Run ETL in a separate worker process with the same migrated backend settings:
 
@@ -94,11 +98,26 @@ Run ETL in a separate worker process with the same migrated backend settings:
 backend = create_managed_backend(config, authorizer=worker_authorizer,
                                  context_factory=worker_context_factory)
 worker = backend.create_execution_host(owner_id="etl-worker-1")
+action_worker = backend.create_action_execution_host(worker_id="actions-1")
+scheduler = backend.create_scheduler(owner_id="scheduler-1")
 try:
     worker.tick(trusted_worker_context)
+    action_worker.tick(trusted_worker_context)
+    scheduler.tick(trusted_worker_context)
 finally:
+    worker.request_drain()
+    action_worker.request_drain()
+    scheduler.request_drain()
+    # Join any consumer-owned tick threads before closing the backend.
     backend.close()
 ```
+
+Each runtime handle exposes a local, read-only `status()` snapshot with
+activity, admission, prerequisite state, in-flight work, observation time, and
+capabilities. A fresh role reports unknown prerequisites until its first tick;
+drain blocks later claims while already-dispatched work settles. The
+`/v1/scheduler/health` and `/v1/workers/health` routes project attached role
+snapshots and require the existing health authorization actions.
 
 `create_execution_host` installs the packaged runtime adapter and uses the
 backend's tenant/workspace-scoped SQLModel report store. Runtime reports remain

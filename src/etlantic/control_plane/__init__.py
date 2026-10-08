@@ -69,6 +69,7 @@ from etlantic.control_plane.authz import (
     raise_for_deny,
     require_authorized,
     require_authorized_run,
+    validate_control_plane_context,
 )
 from etlantic.control_plane.durable_memory import MemoryDurableWorkStore
 from etlantic.control_plane.durable_models import (
@@ -167,6 +168,7 @@ from etlantic.control_plane.input_resources import (
     InputUploadReceipt,
     MemoryInputResourceStore,
 )
+from etlantic.control_plane.managed_backend import ManagedBackend
 from etlantic.control_plane.memory import (
     MemoryAuthorizer,
     MemoryDefinitionRepository,
@@ -323,6 +325,7 @@ from etlantic.control_plane.schedule_models import (
 )
 from etlantic.control_plane.schedule_protocols import (
     PollingWakeTransport,
+    ScheduledOccurrenceService,
     SchedulerLeaderLease,
     ScheduleStore,
     WakeTransport,
@@ -484,6 +487,7 @@ __all__ = [  # noqa: RUF022
     "MemoryAuthorizer",
     "MemoryDefinitionRepository",
     "MemoryDurableWorkStore",
+    "ManagedBackend",
     "MemoryErasureProvider",
     "MemoryErasureStore",
     "MemoryEventStore",
@@ -538,6 +542,7 @@ __all__ = [  # noqa: RUF022
     "ScheduleRecord",
     "ScheduleSpec",
     "ScheduleStore",
+    "ScheduledOccurrenceService",
     "SchedulerLeaderLease",
     "RevisionRegistry",
     "RevisionSearchHit",
@@ -602,6 +607,7 @@ __all__ = [  # noqa: RUF022
     "reject_symlink_or_traversal",
     "require_authorized",
     "require_authorized_run",
+    "validate_control_plane_context",
     "resource_provider_allowed",
     "require_verified",
     "resolve_safe_root",

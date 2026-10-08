@@ -4,7 +4,7 @@ Optional bridge between ETLantic `Data` contracts and
 [SQLModel](https://sqlmodel.tiangolo.com/) table models, plus optional CP1
 control-plane reference stores. Install when you need `contract_to_sqlmodel`
 helpers or SQLModel-backed definition/submission stores for local CP1 demos.
-Package version is **0.56.0** — pin with core.
+Package version is **0.56.2** — pin with core.
 
 ## Install
 
@@ -69,6 +69,44 @@ by a durable database URL. For CP-GA Supported profiles, treat **snapshots as
 canonical** for backup/restore; entity dual-write rows are denormalized mirrors
 for isolation queries. Use separate engines/schemas per tenant for
 `isolated-deployment` / `dedicated-schema`.
+
+## Managed backend and schema inspection (0.57.0)
+
+`create_managed_backend` builds the authorized service graph without importing
+FastAPI or requiring an HTTP context factory. The factory owns an engine it
+creates; an injected engine remains caller-owned. Both paths require explicit
+migrations and perform read-only compatibility inspection before returning.
+
+```python
+from etlantic_sqlmodel import SQLModelBackendConfig, create_managed_backend
+
+backend = create_managed_backend(
+    SQLModelBackendConfig(
+        database_url=database_url,
+        store_id="control-plane",
+        profile=profile,
+    ),
+    authorizer=authorizer,
+)
+
+# The context must come from the consumer's trusted identity boundary.
+schedule = backend.schedule_service
+worker = backend.create_execution_host(owner_id="etl-worker-1")
+action_worker = backend.create_action_execution_host(worker_id="actions-1")
+scheduler = backend.create_scheduler(owner_id="scheduler-1")
+```
+
+Each role exposes `status()`, `request_drain()`, and a `ready()` convenience
+method. Run blocking ticks on consumer-owned threads. After requesting drain,
+join those threads before calling `backend.close()`; close refuses to dispose an
+owned engine while a role tick remains active. The schedule service owns command
+authorization and trigger recovery for both headless and HTTP callers.
+
+`schema_requirements()` publishes required managed-store tables, columns, primary
+keys, and unique keys. `inspect_schema(engine)` returns one of `fresh`, `behind`,
+`compatible`, `unknown_or_ahead`, `partial_or_corrupt`, or `unreachable`, with
+redacted reason codes. It does not create or upgrade schema objects. Apply
+`etlantic_sqlmodel.migrations.upgrade(engine)` as an explicit deployment step.
 
 ## Links
 

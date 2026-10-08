@@ -50,13 +50,14 @@ adoption and ecosystem gates described below.
 | 0.40 | Metadata identity and OpenLineage interoperability | Tenant-aware metadata export preview |
 | 0.41–0.43 | GitOps previews, delivery objectives, governed erasure, promotion evidence, and graduation | Supported preview-to-production and governed operations workflow |
 | 0.46 | Bounded dynamic control flow, incremental/CDC semantics, DLQ policy, and schema registries | Supported dynamic and change-stream contract |
-| 0.47 | Kubernetes and managed execution **Experimental fakes** (`etlantic-k8s`, `etlantic-spark-connect`) plus conforming remote-runtime protocol | Remote execution profiles (fakes); live packs remain 0.59 |
+| 0.47 | Kubernetes and managed execution **Experimental fakes** (`etlantic-k8s`, `etlantic-spark-connect`) plus conforming remote-runtime protocol | Remote execution profiles (fakes); live packs remain 0.60 |
 | 0.55 | Optional data-first authoring and inferred models for qualified sources and write targets | Qualified interactive authoring, target-guided backward inference, existing-target compatibility, and reviewable durable export |
 | 0.56 | Complete application ETL backend; public services, live PostgreSQL and immutable CSV qualification, and Semblance-backed Foundry API qualification | Fully specified managed ETL without application implementation; all gates required |
-| 0.57 | Brownfield adoption bridges | Supported import/compiler compatibility matrix |
-| 0.58 | Operator console | Supported control-plane operations UI |
-| 0.59 | Enterprise provider packs | Supported cloud provider matrix |
-| 0.60 | TransformationModel incubation | Independently useful modeling package |
+| 0.57 | Managed backend independence and runtime supervision (#278–#282) | Transport-independent backend and schedule services, complete runtime factories, read-only provider inspection, and safe role supervision; 0.57.0 |
+| 0.58 | Brownfield adoption bridges | Supported import/compiler compatibility matrix |
+| 0.59 | Operator console | Supported control-plane operations UI |
+| 0.60 | Enterprise provider packs | Supported cloud provider matrix |
+| 0.61 | TransformationModel incubation | Independently useful modeling package |
 
 No capability in this table is available merely because its phase is planned.
 Each claim begins only after the corresponding exit gate passes.
@@ -76,10 +77,11 @@ to every program below. Detailed implementation and release evidence live in:
 - [0.55 inferred model authoring](IMPLEMENTATION_PLAN_0_55.md)
 - [0.56 complete application ETL backend](IMPLEMENTATION_PLAN_0_56.md),
   [execution gates](EXECUTION_PLAN_0_56.md) and [source review](FINDINGS_0_56.md)
-- [0.57 brownfield bridges](IMPLEMENTATION_PLAN_0_57.md)
-- [0.58 operator console](IMPLEMENTATION_PLAN_0_58.md)
-- [0.59 managed-runtime and provider packs](IMPLEMENTATION_PLAN_0_59.md)
-- [0.60 TransformationModel incubation](IMPLEMENTATION_PLAN_0_60.md)
+- [0.57 managed backend independence and runtime supervision](IMPLEMENTATION_PLAN_0_57.md)
+- [0.58 brownfield bridges](IMPLEMENTATION_PLAN_0_58.md)
+- [0.59 operator console](IMPLEMENTATION_PLAN_0_59.md)
+- [0.60 managed-runtime and provider packs](IMPLEMENTATION_PLAN_0_60.md)
+- [0.61 TransformationModel incubation](IMPLEMENTATION_PLAN_0_61.md)
 
 ## Product Boundaries
 
@@ -95,7 +97,7 @@ services remain integrations behind those providers.
 Semblance API simulator, live PostgreSQL/CSV transfer qualification, isolated
 provider actions and scoped resource lifecycle. A live Foundry account is not
 required.
-The larger cloud/runtime/secret-provider portfolio remains 0.59. The source
+The larger cloud/runtime/secret-provider portfolio remains 0.60. The source
 review documents gaps in composing existing foundations; historical component
 gates do not alone qualify the complete application execution path.
 
@@ -503,7 +505,7 @@ This program will not:
 - [Schema Drift and Evolution Plan](SCHEMA_DRIFT_PLAN.md) owns observations,
   baselines, acknowledgement, and schema-change impact.
 - [TransformationModel Incubation Plan](TRANSFORMATIONMODEL_PLAN.md) owns the
-  0.60 package boundary and graduation.
+  0.61 package boundary and graduation.
 - [Security Model](../02_FOUNDATIONS/SECURITY.md) owns threat-model changes and
   mandatory controls.
 - [Dependency Strategy](DEPENDENCY_STRATEGY.md) owns package isolation and
@@ -520,9 +522,9 @@ must be reconciled in the same change before implementation proceeds.
 | Select the 0.38 local, object, table-format, warehouse, and relational reference set | Integration maintainers | Before 0.38 implementation freeze |
 | Freeze OpenLineage namespace, identity, and facet mappings | Observability + registry maintainers | Before CP2 conformance |
 | Define preview workspace lifecycle and untrusted-fork policy | Control-plane + security maintainers | Before CP3 conformance |
-| Select supported dbt artifact and orchestrator versions | Migration + orchestration maintainers | Before 0.57 preview |
-| Select operator-console frontend architecture and support matrix | API + UI maintainers | Before 0.58 implementation |
-| Select supported cloud regions, identity modes, and live-test accounts | Provider + security maintainers | Before 0.59 preview |
+| Select supported dbt artifact and orchestrator versions | Migration + orchestration maintainers | Before 0.58 preview |
+| Select operator-console frontend architecture and support matrix | API + UI maintainers | Before 0.59 implementation |
+| Select supported cloud regions, identity modes, and live-test accounts | Provider + security maintainers | Before 0.60 preview |
 
 Every decision requires an ADR or explicit roadmap decision record,
 conformance changes, compatibility impact, and documentation updates.

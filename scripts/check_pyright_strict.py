@@ -144,8 +144,11 @@ EXPECTED_DIGESTS = {
     # Issue #273 defers worker execution imports from the FastAPI gateway and
     # makes migration-head inspection read-only. The reviewed strict inventory
     # remains at 10,025 diagnostics; source locations moved in touched paths.
-    "Darwin": "7c1bc979f8d997ac95d127f7ef336b897be835050e3fa450a844f1e45c8629e5",
-    "Linux": "7c1bc979f8d997ac95d127f7ef336b897be835050e3fa450a844f1e45c8629e5",
+    # Phase 0.57 adds managed-backend inspection and runtime roles. The
+    # suppression-free diagnostic identities remain unchanged at 10,025; the
+    # fingerprint moved because source locations shifted in touched files.
+    "Darwin": "eb50ef893ee8ff82278dc3f8e0be4c0b6e08d23c87a4c50a6a18888238c73c27",
+    "Linux": "eb50ef893ee8ff82278dc3f8e0be4c0b6e08d23c87a4c50a6a18888238c73c27",
 }
 
 

@@ -44,17 +44,31 @@ from etlantic_sqlmodel.control_plane import (
     request_scoped_session,
     session_scope,
 )
+from etlantic_sqlmodel.managed import (
+    SQLModelBackendConfig,
+    create_managed_backend,
+)
 from etlantic_sqlmodel.migrations import (
     apply_migrations,
     current_version,
     downgrade,
     upgrade,
 )
+from etlantic_sqlmodel.schema import (
+    SCHEMA_REQUIREMENTS_SCHEMA,
+    SchemaCompatibility,
+    SchemaInspectionResult,
+    SchemaObjectRequirement,
+    SchemaRequirements,
+    inspect_schema,
+    schema_requirements,
+)
 from sqlmodel import Field, SQLModel
 
 __version__ = "0.56.2"
 
 __all__ = [
+    "SCHEMA_REQUIREMENTS_SCHEMA",
     "AliasRow",
     "DefinitionRow",
     "EnvironmentRow",
@@ -62,8 +76,13 @@ __all__ = [
     "LogicalIdentityRow",
     "PromotionRow",
     "RevisionRow",
+    "SQLModelBackendConfig",
     "SQLModelDefinitionRepository",
     "SQLModelSubmissionStore",
+    "SchemaCompatibility",
+    "SchemaInspectionResult",
+    "SchemaObjectRequirement",
+    "SchemaRequirements",
     "SecurityDomainRow",
     "SqlModelEventStore",
     "SqlModelIntegrationPlugin",
@@ -80,15 +99,18 @@ __all__ = [
     "contract_to_sqlmodel",
     "contract_to_sqlmodel_source",
     "create_control_plane_tables",
+    "create_managed_backend",
     "create_plugin",
     "create_registry_tables",
     "create_sqlite_engine",
     "current_version",
     "downgrade",
+    "inspect_schema",
     "make_session_factory",
     "primary_key_fields",
     "request_scoped_session",
     "run_conformance_checks",
+    "schema_requirements",
     "session_scope",
     "sqlmodel_to_contract",
     "upgrade",

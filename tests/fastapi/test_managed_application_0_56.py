@@ -761,7 +761,7 @@ def test_scheduler_recovers_accepted_snapshot_without_resolving_parameters(
         schedules,
         durable=service.durable_work,
         clock=FakeScheduleClock(due),
-        run_submitter=service.submit_scheduled_run,
+        occurrence_service=service,
     )
     # SchedulerService isolates this occurrence failure and keeps its durable
     # firing retryable for the next tick after the dependency recovers.
@@ -781,7 +781,7 @@ def test_scheduler_recovers_accepted_snapshot_without_resolving_parameters(
         schedules,
         durable=service.durable_work,
         clock=FakeScheduleClock(due),
-        run_submitter=service.submit_scheduled_run,
+        occurrence_service=service,
     )
     assert restarted.tick(ctx) == 0
     firing = schedules.list_firings(ctx, schedule.schedule_id)[0]
@@ -1091,7 +1091,7 @@ def test_external_workload_trigger_matches_manual_and_scheduled_admission(
         durable=durable,
         clock=FakeScheduleClock(datetime(2026, 10, 1, 14, 0, tzinfo=UTC)),
         owner_id="schedule-trigger",
-        run_submitter=service.submit_scheduled_run,
+        occurrence_service=service,
     )
     assert scheduler.tick(ctx) == 1
     firing = schedules.list_firings(ctx, schedule.schedule_id)[0]
@@ -1376,7 +1376,7 @@ def test_schedule_occurrence_snapshots_latest_approved_workload_and_refs(
             durable=durable,
             clock=FakeScheduleClock(due),
             owner_id="nightly-scheduler",
-            run_submitter=service.submit_scheduled_run,
+            occurrence_service=service,
         ).tick(workload_ctx)
         == 0
     )
@@ -1435,7 +1435,7 @@ def test_schedule_occurrence_snapshots_latest_approved_workload_and_refs(
         durable=recovered_durable,
         clock=FakeScheduleClock(due),
         owner_id="nightly-scheduler",
-        run_submitter=recovered_service.submit_scheduled_run,
+        occurrence_service=recovered_service,
     )
     assert restarted.tick(workload_ctx) == 0
     recovered_firings = recovered_schedules.list_firings(ctx, schedule_id)
@@ -1492,7 +1492,7 @@ def test_managed_scheduler_recovers_occurrence_after_link_ack_loss(
         durable=durable,
         clock=FakeScheduleClock(due),
         owner_id="managed-schedule-worker",
-        run_submitter=service.submit_scheduled_run,
+        occurrence_service=service,
     )
     assert scheduler.tick(ctx) == 0
 
@@ -1519,7 +1519,7 @@ def test_managed_scheduler_recovers_occurrence_after_link_ack_loss(
         durable=recovered_durable,
         clock=FakeScheduleClock(due),
         owner_id="managed-schedule-worker",
-        run_submitter=recovered_service.submit_scheduled_run,
+        occurrence_service=recovered_service,
     )
     assert restarted.tick(ctx) == 0
     recovered_firings = recovered_schedules.list_firings(ctx, schedule.schedule_id)

@@ -81,6 +81,11 @@ def _tables() -> tuple[Table, Table]:
     return uploads, leases
 
 
+# The provider exposes its table metadata so schema inspection can remain
+# provider-owned without depending on an internal helper.
+INPUT_RESOURCE_TABLES = _tables()
+
+
 def _iso(value: datetime) -> str:
     if value.tzinfo is None or value.utcoffset() is None:
         raise ValueError("timestamps must include a timezone")
@@ -104,7 +109,7 @@ class SqlModelInputResourceStore:
             raise ValueError("max_upload_bytes must be a positive integer")
         self.engine = engine
         self.max_upload_bytes = max_upload_bytes
-        self.uploads, self.leases = _tables()
+        self.uploads, self.leases = INPUT_RESOURCE_TABLES
 
     def stage(
         self,

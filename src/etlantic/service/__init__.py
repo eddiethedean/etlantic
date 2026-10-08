@@ -28,6 +28,7 @@ from etlantic.reports.model import PipelineRunReport
 
 if TYPE_CHECKING:
     from etlantic.service.managed import ManagedApplicationService
+    from etlantic.service.schedule import ScheduleApplicationService
 
 
 @dataclass(frozen=True, slots=True)
@@ -422,6 +423,7 @@ __all__ = [
     "PipelinePlan",
     "PolicyContext",
     "RunJob",
+    "ScheduleApplicationService",
     "ServiceError",
     "ValidationReport",
     "plan_pipeline_like",
@@ -434,4 +436,8 @@ def __getattr__(name: str) -> Any:
         from etlantic.service.managed import ManagedApplicationService
 
         return ManagedApplicationService
+    if name == "ScheduleApplicationService":
+        from etlantic.service.schedule import ScheduleApplicationService
+
+        return ScheduleApplicationService
     raise AttributeError(f"module {__name__!r} has no attribute {name!r}")

@@ -26,6 +26,7 @@ from etlantic_sqlmodel.control_plane.durable_stores import (
     create_durable_tables,
 )
 from etlantic_sqlmodel.control_plane.input_resource_stores import (
+    INPUT_RESOURCE_TABLES,
     SqlModelInputResourceStore,
 )
 from etlantic_sqlmodel.control_plane.models import (
@@ -92,6 +93,7 @@ __all__ = [
     "BACKUP_SCHEMA",
     "CP4_TABLES",
     "DURABLE_TABLES",
+    "INPUT_RESOURCE_TABLES",
     "REGISTRY_TABLES",
     "SCHEDULE_TABLES",
     "AliasRow",

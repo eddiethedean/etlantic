@@ -50,7 +50,10 @@ from pathlib import Path
 # 789-entry inventory.
 # AC056 removes the legacy profile migration and opt-in loading paths. The
 # 789-entry suppression inventory is unchanged, with refreshed source lines.
-EXPECTED_DIGEST = "fb8625cac421919969126c3cdf05214f7f0bf43cbed6ae86b6876d1c1a73c09d"
+# Phase 0.57 extracts schedule route handlers and adds backend/service/provider
+# surfaces. The existing route-decorator suppression remains; no directives
+# were added or removed. Re-pin the 789-entry inventory after source shifts.
+EXPECTED_DIGEST = "5091d99c1d943113d2b2de9cfafb02f326a0bfc44f7d0693c981c5a50996bb87"
 
 _IGNORED_DIRECTORIES = frozenset(
     {

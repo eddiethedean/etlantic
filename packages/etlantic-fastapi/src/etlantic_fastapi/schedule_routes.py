@@ -1,47 +1,51 @@
-"""Schedule and scheduler/worker FastAPI routes (047-API)."""
+"""Thin FastAPI adapter for transport-independent schedule commands."""
 
 # pyright: reportUnusedFunction=false
 
 from __future__ import annotations
 
-import hashlib
-import json
 from collections.abc import Callable, Mapping
 from datetime import UTC, datetime
-from typing import TYPE_CHECKING, Any, cast
+from typing import Any, cast
 
 from etlantic.control_plane import (
     ControlPlaneContext,
     ControlPlaneError,
     Principal,
     ScheduleSpec,
-    next_fire_after,
     require_authorized,
 )
-from etlantic.runtime.scheduler_service import SchedulerService
-from etlantic_fastapi.collections import visible_items
 from etlantic_fastapi.schemas import ScheduleCreateBody
 from fastapi import APIRouter, Depends
-
-if TYPE_CHECKING:
-    from etlantic_fastapi.api import ETLanticAPI
 
 
 def register_schedule_routes(
     router: APIRouter,
-    api: ETLanticAPI,
+    api: Any,
     get_ctx: Callable[..., Any],
 ) -> None:
-    def _require_schedule():
-        store = getattr(api, "schedule_store", None)
-        if store is None:
+    def service() -> Any:
+        return api.get_schedule_service()
+
+    def spec_from(raw: Any) -> ScheduleSpec:
+        if not isinstance(raw, dict):
             raise ControlPlaneError(
-                "Schedule store is not configured",
-                code="PMCP501",
-                status=501,
-                title="Not Implemented",
+                "Schedule specification must be an object",
+                code="PMCP400",
+                status=400,
+                title="Bad Request",
+                type="etlantic.control_plane/bad_request",
             )
-        return store
+        try:
+            return ScheduleSpec.from_dict(cast(Mapping[str, Any], raw))
+        except (KeyError, TypeError, ValueError) as exc:
+            raise ControlPlaneError(
+                "Schedule specification is invalid",
+                code="PMCP422",
+                status=422,
+                title="Unprocessable Entity",
+                type="etlantic.control_plane/validation_error",
+            ) from exc
 
     @router.post(
         "/v1/definitions/{definition_id}/schedules",
@@ -54,132 +58,52 @@ def register_schedule_routes(
         body: ScheduleCreateBody,
         ctx: ControlPlaneContext = Depends(get_ctx),
     ) -> dict[str, Any]:
-        require_authorized(
-            api.authorizer,
-            ctx,
-            "schedule.write",
-            f"definition:{definition_id}:schedules",
-            resource_in_caller_scope=False,
+        service().authorize(
+            ctx, "schedule.write", f"definition:{definition_id}:schedules"
         )
         body_data = body.model_dump(exclude_none=True)
-        try:
-            spec = ScheduleSpec.from_dict(body_data.get("spec") or body_data)
-        except (KeyError, TypeError, ValueError) as exc:
-            raise ControlPlaneError(
-                "Schedule specification is invalid",
-                code="PMCP422",
-                status=422,
-                title="Unprocessable Entity",
-                type="etlantic.control_plane/validation_error",
-            ) from exc
-        managed = getattr(api, "managed_service", None)
-        parameter_refs = dict(body_data.get("parameter_refs") or {})
-        secret_refs = dict(body_data.get("secret_refs") or {})
-        definition_revision_id = None
-        revision_policy = "pinned"
+        managed = api.managed_service
+        raw_identity = (
+            body_data.get("workload_identity") if managed is not None else None
+        )
         workload_identity = None
-        profile_name = str(body_data.get("profile_name") or "default")
-        if managed is not None:
-            if body_data.get("workload_identity") is not None:
-                raw_identity = body_data.get("workload_identity")
-                if not isinstance(raw_identity, dict):
-                    raise ControlPlaneError(
-                        "workload_identity must be an authenticated workload descriptor",
-                        code="PMCP400",
-                        status=400,
-                        title="Bad Request",
-                        type="etlantic.control_plane/bad_request",
-                    )
-                try:
-                    workload_identity = Principal.from_dict(
-                        cast(Mapping[str, Any], raw_identity)
-                    )
-                except (KeyError, TypeError, ValueError) as exc:
-                    raise ControlPlaneError(
-                        "workload_identity is invalid",
-                        code="PMCP400",
-                        status=400,
-                        title="Bad Request",
-                        type="etlantic.control_plane/bad_request",
-                    ) from exc
-                if workload_identity.kind not in ("workload", "service"):
-                    raise ControlPlaneError(
-                        "Scheduled workload identity must have workload or service kind",
-                        code="PMCP400",
-                        status=400,
-                        title="Bad Request",
-                        type="etlantic.control_plane/bad_request",
-                    )
-                require_authorized(
-                    api.authorizer,
-                    ctx,
-                    "schedule.bind_workload",
-                    "principal:"
-                    + (workload_identity.issuer or "")
-                    + "/"
-                    + workload_identity.subject,
-                    resource_in_caller_scope=False,
+        if raw_identity is not None:
+            if not isinstance(raw_identity, dict):
+                raise ControlPlaneError(
+                    "workload_identity must be an authenticated workload descriptor",
+                    code="PMCP400",
+                    status=400,
+                    title="Bad Request",
+                    type="etlantic.control_plane/bad_request",
                 )
-            normalized_secret_refs = managed.validate_schedule_references(
-                parameter_refs, secret_refs
-            )
-            selector = str(body_data.get("revision_selector") or "current")
-            selected_revision, effective_profile = (
-                managed.pin_schedule_definition_revision(
-                    ctx,
-                    definition_id,
-                    revision_selector=selector,
+            try:
+                workload_identity = Principal.from_dict(
+                    cast(Mapping[str, Any], raw_identity)
                 )
-            )
-            if selector == "latest-approved":
-                revision_policy = "latest-approved"
-            else:
-                definition_revision_id = selected_revision
-            if "profile_name" in body_data and profile_name != effective_profile:
-                raise ControlPlaneError.conflict(
-                    "Schedule profile differs from the managed service profile"
-                )
-            profile_name = effective_profile
-            secret_refs = normalized_secret_refs
-            policy_data = {
-                "revision_policy": revision_policy,
-                "definition_revision_id": definition_revision_id,
-                "parameter_refs": parameter_refs,
-                "secret_refs": secret_refs,
-                "workload_identity": (
-                    workload_identity.to_dict()
-                    if workload_identity is not None
-                    else None
-                ),
-                "profile_name": profile_name,
-            }
-            policy_fingerprint = hashlib.sha256(
-                json.dumps(
-                    policy_data,
-                    sort_keys=True,
-                    separators=(",", ":"),
-                    ensure_ascii=False,
-                ).encode("utf-8")
-            ).hexdigest()
-        else:
-            policy_fingerprint = str(body_data.get("policy_fingerprint") or "")
-        nxt = next_fire_after(spec, after=datetime.now(UTC))
-        rec = _require_schedule().create(
+            except (KeyError, TypeError, ValueError) as exc:
+                raise ControlPlaneError(
+                    "workload_identity is invalid",
+                    code="PMCP400",
+                    status=400,
+                    title="Bad Request",
+                    type="etlantic.control_plane/bad_request",
+                ) from exc
+        record = service().create(
             ctx,
-            definition_id=definition_id,
-            profile_name=profile_name,
-            spec=spec,
-            next_fire_at=(
-                nxt.isoformat().replace("+00:00", "Z") if nxt is not None else None
+            definition_id,
+            spec=spec_from(body_data.get("spec") or body_data),
+            profile_name=(
+                str(body_data["profile_name"])
+                if body_data.get("profile_name") is not None
+                else None
             ),
-            policy_fingerprint=policy_fingerprint,
-            definition_revision_id=definition_revision_id,
-            parameter_refs=parameter_refs,
-            secret_refs=secret_refs,
-            revision_policy=revision_policy,
+            policy_fingerprint=str(body_data.get("policy_fingerprint") or ""),
+            parameter_refs=body_data.get("parameter_refs") or {},
+            secret_refs=body_data.get("secret_refs") or {},
+            revision_selector=str(body_data.get("revision_selector") or "current"),
             workload_identity=workload_identity,
         )
-        return rec.to_dict()
+        return record.to_dict()
 
     @router.get(
         "/v1/definitions/{definition_id}/schedules",
@@ -190,28 +114,11 @@ def register_schedule_routes(
         definition_id: str,
         ctx: ControlPlaneContext = Depends(get_ctx),
     ) -> dict[str, Any]:
-        require_authorized(
-            api.authorizer,
-            ctx,
-            "schedule.read",
-            f"definition:{definition_id}:schedules",
-            resource_in_caller_scope=False,
-        )
-        items = [
-            rec.to_dict()
-            for rec in visible_items(
-                api.authorizer,
-                ctx,
-                "schedule.read",
-                [
-                    rec
-                    for rec in _require_schedule().list_schedules(ctx)
-                    if rec.definition_id == definition_id
-                ],
-                lambda rec: f"schedule:{rec.schedule_id}",
-            )
-        ]
-        return {"schedules": items}
+        return {
+            "schedules": [
+                item.to_dict() for item in service().list_definition(ctx, definition_id)
+            ]
+        }
 
     @router.get(
         "/v1/schedules/{schedule_id}",
@@ -222,14 +129,7 @@ def register_schedule_routes(
         schedule_id: str,
         ctx: ControlPlaneContext = Depends(get_ctx),
     ) -> dict[str, Any]:
-        require_authorized(
-            api.authorizer,
-            ctx,
-            "schedule.read",
-            f"schedule:{schedule_id}",
-            resource_in_caller_scope=False,
-        )
-        return _require_schedule().get(ctx, schedule_id).to_dict()
+        return service().get(ctx, schedule_id).to_dict()
 
     @router.post(
         "/v1/schedules/{schedule_id}/amend",
@@ -241,23 +141,7 @@ def register_schedule_routes(
         body: dict[str, Any],
         ctx: ControlPlaneContext = Depends(get_ctx),
     ) -> dict[str, Any]:
-        require_authorized(
-            api.authorizer,
-            ctx,
-            "schedule.write",
-            f"schedule:{schedule_id}",
-            resource_in_caller_scope=False,
-        )
-        store = _require_schedule()
-        amend = getattr(store, "amend", None)
-        if not callable(amend):
-            raise ControlPlaneError(
-                "Schedule store does not support safe amendments",
-                code="PMCP501",
-                status=501,
-                title="Not Implemented",
-                type="etlantic.control_plane/not_implemented",
-            )
+        service().authorize(ctx, "schedule.write", f"schedule:{schedule_id}")
         if set(body) != {"expected_revision_id", "spec"}:
             raise ControlPlaneError(
                 "Schedule amendment requires expected_revision_id and spec",
@@ -266,11 +150,8 @@ def register_schedule_routes(
                 title="Bad Request",
                 type="etlantic.control_plane/bad_request",
             )
-        expected_revision_id = body.get("expected_revision_id")
-        if (
-            not isinstance(expected_revision_id, str)
-            or not expected_revision_id.strip()
-        ):
+        revision = body.get("expected_revision_id")
+        if not isinstance(revision, str) or not revision.strip():
             raise ControlPlaneError(
                 "Schedule amendment requires a non-empty expected_revision_id",
                 code="PMCP400",
@@ -278,39 +159,16 @@ def register_schedule_routes(
                 title="Bad Request",
                 type="etlantic.control_plane/bad_request",
             )
-        raw_spec = body.get("spec")
-        if not isinstance(raw_spec, dict):
-            raise ControlPlaneError(
-                "Schedule amendment spec must be an object",
-                code="PMCP400",
-                status=400,
-                title="Bad Request",
-                type="etlantic.control_plane/bad_request",
+        return (
+            service()
+            .amend(
+                ctx,
+                schedule_id,
+                expected_revision_id=revision,
+                spec=spec_from(body.get("spec")),
             )
-        try:
-            spec = ScheduleSpec.from_dict(cast(Mapping[str, Any], raw_spec))
-        except (KeyError, TypeError, ValueError) as exc:
-            raise ControlPlaneError(
-                "Schedule amendment spec is invalid",
-                code="PMCP422",
-                status=422,
-                title="Unprocessable Entity",
-                type="etlantic.control_plane/validation_error",
-            ) from exc
-        next_fire = next_fire_after(spec, after=datetime.now(UTC))
-        amended = amend(
-            ctx,
-            schedule_id,
-            expected_revision_id=expected_revision_id,
-            spec=spec,
-            next_fire_at=(
-                next_fire.isoformat().replace("+00:00", "Z")
-                if next_fire is not None
-                else None
-            ),
-            durable=getattr(api, "durable_work", None),
+            .to_dict()
         )
-        return cast(Any, amended).to_dict()
 
     @router.post(
         "/v1/schedules/{schedule_id}/pause",
@@ -321,14 +179,7 @@ def register_schedule_routes(
         schedule_id: str,
         ctx: ControlPlaneContext = Depends(get_ctx),
     ) -> dict[str, Any]:
-        require_authorized(
-            api.authorizer,
-            ctx,
-            "schedule.write",
-            f"schedule:{schedule_id}",
-            resource_in_caller_scope=False,
-        )
-        return _require_schedule().pause(ctx, schedule_id).to_dict()
+        return service().pause(ctx, schedule_id).to_dict()
 
     @router.post(
         "/v1/schedules/{schedule_id}/resume",
@@ -339,14 +190,7 @@ def register_schedule_routes(
         schedule_id: str,
         ctx: ControlPlaneContext = Depends(get_ctx),
     ) -> dict[str, Any]:
-        require_authorized(
-            api.authorizer,
-            ctx,
-            "schedule.write",
-            f"schedule:{schedule_id}",
-            resource_in_caller_scope=False,
-        )
-        return _require_schedule().resume(ctx, schedule_id).to_dict()
+        return service().resume(ctx, schedule_id).to_dict()
 
     @router.get(
         "/v1/schedules/{schedule_id}/preview",
@@ -357,19 +201,7 @@ def register_schedule_routes(
         schedule_id: str,
         ctx: ControlPlaneContext = Depends(get_ctx),
     ) -> dict[str, Any]:
-        require_authorized(
-            api.authorizer,
-            ctx,
-            "schedule.read",
-            f"schedule:{schedule_id}",
-            resource_in_caller_scope=False,
-        )
-        rec = _require_schedule().get(ctx, schedule_id)
-        nxt = next_fire_after(rec.spec, after=datetime.now(UTC))
-        return {
-            "schedule_id": rec.schedule_id,
-            "next_fire_at": nxt.isoformat().replace("+00:00", "Z") if nxt else None,
-        }
+        return service().preview(ctx, schedule_id)
 
     @router.post(
         "/v1/schedules/{schedule_id}/trigger",
@@ -381,38 +213,15 @@ def register_schedule_routes(
         body: dict[str, Any] | None = None,
         ctx: ControlPlaneContext = Depends(get_ctx),
     ) -> dict[str, Any]:
-        require_authorized(
-            api.authorizer,
-            ctx,
-            "schedule.write",
-            f"schedule:{schedule_id}",
-            resource_in_caller_scope=False,
-        )
-        store = _require_schedule()
-        rec = store.get(ctx, schedule_id)
-        durable = getattr(api, "durable_work", None)
-        managed = getattr(api, "managed_service", None)
-        if managed is not None:
-            if durable is None:
-                raise ControlPlaneError(
-                    "Managed schedule trigger requires durable work storage",
-                    code="PMCP503",
-                    status=503,
-                    title="Service Unavailable",
-                    type="etlantic.control_plane/unavailable",
-                )
-            requested_nominal = (body or {}).get("nominal_fire_time")
+        service().authorize(ctx, "schedule.write", f"schedule:{schedule_id}")
+        requested = (body or {}).get("nominal_fire_time")
+        when = None
+        if requested is not None:
             try:
-                parsed_nominal = (
-                    datetime.now(UTC)
-                    if requested_nominal is None
-                    else datetime.fromisoformat(
-                        str(requested_nominal).replace("Z", "+00:00")
-                    )
-                )
-                if parsed_nominal.tzinfo is None:
-                    raise ValueError("nominal_fire_time must include a timezone")
-                now = parsed_nominal.astimezone(UTC).isoformat().replace("+00:00", "Z")
+                when = datetime.fromisoformat(str(requested).replace("Z", "+00:00"))
+                if when.tzinfo is None or when.utcoffset() is None:
+                    raise ValueError
+                when = when.astimezone(UTC)
             except (TypeError, ValueError) as exc:
                 raise ControlPlaneError(
                     "nominal_fire_time must be an ISO-8601 timestamp with a timezone",
@@ -421,50 +230,7 @@ def register_schedule_routes(
                     title="Bad Request",
                     type="etlantic.control_plane/bad_request",
                 ) from exc
-            prepared = managed.prepare_scheduled_occurrence(ctx, rec, now)
-            firing, created = store.claim_firing(
-                ctx,
-                schedule_id=rec.schedule_id,
-                revision_id=rec.revision_id,
-                nominal_fire_time=now,
-                owner_id="gateway",
-                fencing_token=0,
-                plan_fingerprint="managed-admission-pending",
-                durable=durable,
-                next_fire_at=rec.next_fire_at,
-                require_leader_lease=False,
-                admit_submission=False,
-                metadata=dict(prepared.occurrence_snapshot or {}),
-            )
-            if firing.status != "accepted" or firing.submission_id is not None:
-                return {**firing.to_dict(), "created": created}
-            prepared = managed.prepare_scheduled_occurrence(
-                ctx, rec, now, existing_firing=firing
-            )
-            submission_id, fingerprint = managed.submit_scheduled_run(
-                ctx, prepared, now
-            )
-            linked = store.link_firing_submission(
-                ctx,
-                firing.firing_id,
-                submission_id=submission_id,
-                plan_fingerprint=fingerprint,
-                durable=durable,
-            )
-            return {**linked.to_dict(), "created": created}
-
-        now = datetime.now(UTC).isoformat().replace("+00:00", "Z")
-        firing, created = store.claim_firing(
-            ctx,
-            schedule_id=rec.schedule_id,
-            revision_id=rec.revision_id,
-            nominal_fire_time=now,
-            owner_id="gateway",
-            fencing_token=0,
-            plan_fingerprint=str(rec.policy_fingerprint or "gateway"),
-            durable=durable,
-            require_leader_lease=False,
-        )
+        firing, created = service().trigger(ctx, schedule_id, nominal_fire_time=when)
         return {**firing.to_dict(), "created": created}
 
     @router.get(
@@ -476,24 +242,11 @@ def register_schedule_routes(
         schedule_id: str,
         ctx: ControlPlaneContext = Depends(get_ctx),
     ) -> dict[str, Any]:
-        require_authorized(
-            api.authorizer,
-            ctx,
-            "schedule.read",
-            f"schedule:{schedule_id}:firings",
-            resource_in_caller_scope=False,
-        )
-        items = [
-            rec.to_dict()
-            for rec in visible_items(
-                api.authorizer,
-                ctx,
-                "schedule.read",
-                _require_schedule().list_firings(ctx, schedule_id),
-                lambda rec: f"schedule:firing:{rec.firing_id}",
-            )
-        ]
-        return {"firings": items}
+        return {
+            "firings": [
+                item.to_dict() for item in service().list_firings(ctx, schedule_id)
+            ]
+        }
 
     @router.get(
         "/v1/scheduler/health",
@@ -510,11 +263,22 @@ def register_schedule_routes(
             "scheduler:health",
             resource_in_caller_scope=False,
         )
-        store = getattr(api, "schedule_store", None)
+        items = api.runtime_role_items()
+        role = dict(items).get("scheduler")
+        if role is None:
+            return {
+                "status": "unknown",
+                "role": "scheduler",
+                "reason_code": "role_not_attached",
+            }
+        snapshot = role.status()
         return {
-            "status": "ok" if store is not None else "unconfigured",
-            "role": "scheduler",
-            "kind": type(SchedulerService).__name__,
+            **snapshot.to_dict(),
+            "status": "ready"
+            if snapshot.ready
+            else "unknown"
+            if snapshot.prerequisites == "unknown"
+            else "unready",
         }
 
     @router.get(
@@ -532,4 +296,20 @@ def register_schedule_routes(
             "worker:health",
             resource_in_caller_scope=False,
         )
-        return {"status": "ok", "workers": []}
+        workers = [
+            role.status().to_dict()
+            for name, role in api.runtime_role_items()
+            if name != "scheduler"
+        ]
+        if not workers or any(item["prerequisites"] == "unknown" for item in workers):
+            summary = "unknown"
+        elif any(
+            item["admission"] == "stopped" or item["prerequisites"] == "unusable"
+            for item in workers
+        ):
+            summary = "unready"
+        elif all(item["ready"] for item in workers):
+            summary = "ready"
+        else:
+            summary = "degraded"
+        return {"status": summary, "workers": workers}

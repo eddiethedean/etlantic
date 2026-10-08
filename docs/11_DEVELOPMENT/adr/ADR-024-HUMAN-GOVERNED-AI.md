@@ -31,9 +31,9 @@ Authoritative sequencing:
 [ADR-020](ADR-020-DEVELOPER-INTELLIGENCE.md),
 [ADR-021](ADR-021-OPTIMIZER-PASS-PROTOCOL.md), and
 [SECURITY.md — AI Coding Assistants](../../02_FOUNDATIONS/SECURITY.md).
-Brownfield import remains [0.57](../IMPLEMENTATION_PLAN_0_57.md). Operator
-console remains [0.58](../IMPLEMENTATION_PLAN_0_58.md). Live providers remain
-[0.59](../IMPLEMENTATION_PLAN_0_59.md).
+Brownfield import remains [0.58](../IMPLEMENTATION_PLAN_0_58.md). Operator
+console remains [0.59](../IMPLEMENTATION_PLAN_0_59.md). Live providers remain
+[0.60](../IMPLEMENTATION_PLAN_0_60.md).
 
 ## Decision
 

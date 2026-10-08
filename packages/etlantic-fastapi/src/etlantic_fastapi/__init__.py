@@ -36,6 +36,7 @@ from etlantic_fastapi.landing_sensor import (
 from etlantic_fastapi.managed import (
     ManagedBackend,
     ManagedBackendConfig,
+    adapt_managed_backend,
     create_managed_app,
     create_managed_backend,
 )
@@ -63,6 +64,7 @@ __all__ = [
     "ReadyResponse",
     "RedactedValidationRoute",
     "__version__",
+    "adapt_managed_backend",
     "assert_path_scope",
     "control_plane_error_handler",
     "create_app",

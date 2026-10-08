@@ -12,6 +12,7 @@ from datetime import UTC, datetime
 from threading import Event, Thread
 from typing import Any, cast
 
+from etlantic.control_plane.authz import validate_control_plane_context
 from etlantic.control_plane.durable_models import (
     EffectRecord,
     ExecutionScopePage,
@@ -30,6 +31,7 @@ from etlantic.runtime.managed_errors import (
     ExecutionRejected,
     UnknownCommitError,
 )
+from etlantic.runtime.role import RuntimeRoleLifecycle, RuntimeRoleStatus
 from etlantic.runtime.state import RunStatus
 from etlantic.secrets.provider import SecretAliasAuthorizer
 
@@ -37,6 +39,10 @@ _LOG = logging.getLogger(__name__)
 _RETENTION_SCOPE_PAGE_SIZE = 20
 _RETENTION_RETRY_CAPACITY = 100
 _RETENTION_RETRY_BUDGET = 10
+
+
+def _is_nonempty_text(value: object) -> bool:
+    return isinstance(value, str) and bool(value.strip())
 
 
 def _execution_scope_key(
@@ -71,6 +77,8 @@ class ExecutionHost:
     ) -> None:
         if type(ttl_seconds) is not int or ttl_seconds < 1:
             raise ValueError("ttl_seconds must be a positive integer")
+        if not _is_nonempty_text(owner_id):
+            raise ValueError("owner_id must be a non-empty worker identity")
         if runner is None:
             from etlantic.runtime.managed_execution import ManagedExecutionAdapter
 
@@ -83,12 +91,15 @@ class ExecutionHost:
         self.runner = runner
         self.cancel_check = cancel_check
         self.quota_provider = quota_provider
-        self.draining = False
         self._retention_scope_workspace: tuple[str, str] | None = None
         self._retention_scope_cursor: str | None = None
         self._retention_scope_high_watermark: str | None = None
         self._retention_retry_keys: deque[object] = deque()
         self._retention_retry_contexts: dict[object, ControlPlaneContext] = {}
+        self._role = RuntimeRoleLifecycle(
+            "run_worker",
+            capabilities=("read_status", "cooperative_drain", "lease_fencing"),
+        )
 
     def _start_lease_monitor(
         self,
@@ -103,39 +114,61 @@ class ExecutionHost:
         interval = max(0.01, min(1.0, self.ttl_seconds / 3))
 
         def watch() -> None:
-            while not stop.wait(interval):
-                try:
-                    submission = self.durable.get_submission(ctx, submission_id)
-                    if submission.status == "cancel_requested":
+            try:
+                while not stop.wait(interval):
+                    try:
+                        submission = self.durable.get_submission(ctx, submission_id)
+                        if submission.status == "cancel_requested":
+                            cancel.set()
+                            return
+                        if self.cancel_check is not None and self.cancel_check(
+                            ctx, submission_id
+                        ):
+                            with suppress(ControlPlaneError):
+                                self.durable.cancel_submission(ctx, submission_id)
+                            cancel.set()
+                            return
+                        self.durable.heartbeat(
+                            ctx,
+                            submission_id,
+                            owner_id=self.owner_id,
+                            fencing_token=fencing_token,
+                            ttl_seconds=self.ttl_seconds,
+                        )
+                    except ControlPlaneError as exc:
+                        # A server-side store failure means this role cannot
+                        # prove its prerequisites are usable. Fencing conflicts
+                        # still cancel the run without misreporting an outage.
+                        if exc.status >= 500:
+                            self._role.observe_prerequisites(
+                                "unusable", reason_code="lease_store_unavailable"
+                            )
+                        lease_lost.set()
                         cancel.set()
                         return
-                    if self.cancel_check is not None and self.cancel_check(
-                        ctx, submission_id
-                    ):
-                        with suppress(ControlPlaneError):
-                            self.durable.cancel_submission(ctx, submission_id)
+                    except Exception:
+                        self._role.observe_prerequisites(
+                            "unusable", reason_code="lease_store_unavailable"
+                        )
+                        # A worker that cannot prove it still owns the lease
+                        # must stop mutating output; the outbox remains recoverable.
+                        lease_lost.set()
                         cancel.set()
                         return
-                    self.durable.heartbeat(
-                        ctx,
-                        submission_id,
-                        owner_id=self.owner_id,
-                        fencing_token=fencing_token,
-                        ttl_seconds=self.ttl_seconds,
-                    )
-                except Exception:
-                    # A worker that cannot prove it still owns the lease must
-                    # stop mutating output. The outbox remains recoverable.
-                    lease_lost.set()
-                    cancel.set()
-                    return
+            finally:
+                self._role.end_background_operation()
 
         thread = Thread(
             target=watch,
             name=f"etlantic-lease-{submission_id[:12]}",
             daemon=True,
         )
-        thread.start()
+        self._role.begin_background_operation()
+        try:
+            thread.start()
+        except BaseException:
+            self._role.end_background_operation()
+            raise
         return stop, cancel, lease_lost, thread
 
     def _invoke_runner(
@@ -249,7 +282,25 @@ class ExecutionHost:
         return publish
 
     def drain(self) -> None:
-        self.draining = True
+        self._role.request_drain()
+
+    def request_drain(self) -> RuntimeRoleStatus:
+        return self._role.request_drain()
+
+    @property
+    def draining(self) -> bool:
+        return self._role.draining
+
+    @draining.setter
+    def draining(self, value: bool) -> None:
+        if value:
+            self._role.request_drain()
+
+    def status(self) -> RuntimeRoleStatus:
+        return self._role.status()
+
+    def ready(self) -> bool:
+        return self._role.status().ready
 
     def _release_lease(
         self, ctx: ControlPlaneContext, submission_id: str, fencing_token: int
@@ -265,6 +316,20 @@ class ExecutionHost:
             )
 
     def tick(self, ctx: ControlPlaneContext, *, limit: int = 20) -> int:
+        validate_control_plane_context(ctx)
+        if not self._role.begin_tick():
+            return 0
+        try:
+            return self._tick(ctx, limit=limit)
+        except Exception:
+            self._role.observe_prerequisites(
+                "unusable", reason_code="worker_tick_failed"
+            )
+            raise
+        finally:
+            self._role.end_tick()
+
+    def _tick(self, ctx: ControlPlaneContext, *, limit: int = 20) -> int:
         if self.draining:
             return 0
         cleanup_artifacts = getattr(self.runner, "cleanup_expired_run_artifacts", None)
@@ -330,18 +395,40 @@ class ExecutionHost:
             ctx, limit=limit, acknowledge_outbox=False
         )
         self._reconcile_terminal_work(ctx, limit=limit)
-        self._reconcile_result_publications(ctx, limit=limit)
+        result_publications_healthy = self._reconcile_result_publications(
+            ctx, limit=limit
+        )
         processed = 0
-        for item in self.durable.pending_outbox(ctx, limit=limit):
+        pending_items = self.durable.pending_outbox(ctx, limit=limit)
+        if result_publications_healthy:
+            self._role.observe_prerequisites("usable")
+        else:
+            self._role.observe_prerequisites(
+                "unusable", reason_code="result_publication_unavailable"
+            )
+        for item in pending_items:
+            if self.draining:
+                break
+            if not self._role.begin_dispatch():
+                break
             try:
-                lease = self.durable.acquire_lease(
-                    ctx,
-                    item.submission_id,
-                    owner_id=self.owner_id,
-                    ttl_seconds=self.ttl_seconds,
-                )
-            except ControlPlaneError:
-                continue
+                try:
+                    lease = self.durable.acquire_lease(
+                        ctx,
+                        item.submission_id,
+                        owner_id=self.owner_id,
+                        ttl_seconds=self.ttl_seconds,
+                    )
+                except ControlPlaneError as exc:
+                    if exc.status >= 500:
+                        self._role.observe_prerequisites(
+                            "unusable", reason_code="lease_store_unavailable"
+                        )
+                    continue
+                if result_publications_healthy:
+                    self._role.observe_prerequisites("usable")
+            finally:
+                self._role.end_dispatch()
             try:
                 submission = self.durable.get_submission(ctx, item.submission_id)
                 previous_attempts = self.durable.list_attempts(ctx, item.submission_id)
@@ -724,17 +811,19 @@ class ExecutionHost:
 
     def _reconcile_result_publications(
         self, ctx: ControlPlaneContext, *, limit: int
-    ) -> None:
+    ) -> bool:
         publish = getattr(self.runner, "publish_result_publication", None)
         if not callable(publish):
-            return
+            return True
         from etlantic.runtime.managed_execution import accepted_execution_context
 
         try:
             records = self.durable.pending_result_publications(ctx, limit=limit)
         except Exception:
             _LOG.warning("Could not inspect pending run-result publications")
-            return
+            return False
+
+        healthy = True
 
         def read_submission(identity: str) -> SubmissionRecord:
             return self.durable.get_submission(ctx, identity)
@@ -762,9 +851,11 @@ class ExecutionHost:
                     report_sha256=record.report_sha256,
                 )
             except Exception:
+                healthy = False
                 _LOG.warning(
                     "Could not publish a durable run result; it remains recoverable"
                 )
+        return healthy
 
     def _record_unknown_effect(
         self,

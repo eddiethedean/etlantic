@@ -41,6 +41,33 @@ class PollingWakeTransport:
 
 
 @runtime_checkable
+class ScheduledOccurrenceService(Protocol):
+    """Canonical preparation, acceptance, and recovery for managed firings."""
+
+    def prepare_scheduled_occurrence(
+        self,
+        ctx: ControlPlaneContext,
+        schedule: ScheduleRecord,
+        nominal_fire_time: str,
+        existing_firing: FiringRecord | None = None,
+    ) -> ScheduleRecord: ...
+
+    def submit_scheduled_run(
+        self,
+        ctx: ControlPlaneContext,
+        schedule: ScheduleRecord,
+        nominal_fire_time: str,
+    ) -> tuple[str, str]: ...
+
+    def recover_scheduled_occurrence(
+        self,
+        ctx: ControlPlaneContext,
+        schedule: ScheduleRecord,
+        nominal_fire_time: str,
+    ) -> tuple[str, str] | None: ...
+
+
+@runtime_checkable
 class ScheduleStore(Protocol):
     def create(
         self,

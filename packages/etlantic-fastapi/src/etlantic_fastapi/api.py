@@ -5,6 +5,7 @@ from __future__ import annotations
 from collections.abc import Callable
 from contextlib import asynccontextmanager
 from dataclasses import dataclass, field
+from threading import RLock
 from typing import Any
 
 from etlantic.control_plane import (
@@ -41,6 +42,18 @@ from etlantic_fastapi.routes import build_control_plane_router
 from fastapi import APIRouter, FastAPI
 
 
+def _empty_observation_ids() -> set[str]:
+    return set()
+
+
+def _empty_runtime_roles() -> dict[str, Any]:
+    return {}
+
+
+def _is_nonempty_text(value: object) -> bool:
+    return isinstance(value, str) and bool(value.strip())
+
+
 @dataclass
 class ETLanticAPI:
     """Control-plane API holding injected stores and auth adapters.
@@ -70,7 +83,7 @@ class ETLanticAPI:
     history_store: HistoryStore | None = None
     # Seeded schema observation ids; empty → ack always 404 after authz.
     # Used when history_store is not injected (CP1 stub compatibility).
-    known_observation_ids: set[str] = field(default_factory=set)
+    known_observation_ids: set[str] = field(default_factory=_empty_observation_ids)
     # Optional CP2 registry provider for /v1/registry admin routes.
     registry: RegistryProvider | None = None
     # Optional CP3 durable work store for /v1/durable/* host routes.
@@ -92,6 +105,7 @@ class ETLanticAPI:
     # When configured, headless and HTTP commands share the verified durable
     # preparation/acceptance service.
     managed_service: ManagedApplicationService | None = None
+    _schedule_application_service: Any = field(default=None, init=False, repr=False)
     # Optional resource/connector resolution for canonical plan construction.
     planning_context_factory: Callable[[Any, Any], PlanningContext] | None = None
     title: str = "ETLantic Control Plane"
@@ -100,6 +114,10 @@ class ETLanticAPI:
     _context_dependency: Callable[..., Any] | None = field(
         default=None, init=False, repr=False
     )
+    # Runtime instances are supplied and owned by deployment consumers.
+    runtime_roles: dict[str, Any] = field(default_factory=_empty_runtime_roles)
+    _runtime_roles_lock: RLock = field(default_factory=RLock, init=False, repr=False)
+    schedule_clock: Any = field(default=None, repr=False)
 
     @classmethod
     def with_registry_definitions(
@@ -171,6 +189,53 @@ class ETLanticAPI:
             input_resource_retention_seconds=self.input_resource_retention_seconds,
         )
         return self
+
+    def get_schedule_service(self) -> Any:
+        """Return the canonical transport-independent schedule service."""
+        from etlantic.service import ScheduleApplicationService
+
+        service = self._schedule_application_service
+        if (
+            service is None
+            or service.schedule_store is not self.schedule_store
+            or service.managed_service is not self.managed_service
+            or service.durable_work is not self.durable_work
+            or service.authorizer is not self.authorizer
+        ):
+            service = ScheduleApplicationService(
+                authorizer=self.authorizer,
+                schedule_store=self.schedule_store,
+                managed_service=self.managed_service,
+                durable_work=self.durable_work,
+                clock=self.schedule_clock,
+            )
+            self._schedule_application_service = service
+        return service
+
+    def bind_schedule_service(self, service: Any) -> None:
+        """Bind the canonical schedule service shared with a core backend."""
+        if (
+            service.schedule_store is not self.schedule_store
+            or service.managed_service is not self.managed_service
+            or service.durable_work is not self.durable_work
+            or service.authorizer is not self.authorizer
+        ):
+            raise ValueError("schedule service does not match this API's backend graph")
+        self._schedule_application_service = service
+
+    def attach_runtime_role(self, name: str, role: Any) -> None:
+        """Register a consumer-owned runtime instance for health projections."""
+        if not _is_nonempty_text(name):
+            raise ValueError("runtime role name must be non-empty")
+        if not callable(getattr(role, "status", None)):
+            raise TypeError("runtime role must expose status()")
+        with self._runtime_roles_lock:
+            self.runtime_roles[name] = role
+
+    def runtime_role_items(self) -> tuple[tuple[str, Any], ...]:
+        """Return a stable local snapshot of attached runtime role handles."""
+        with self._runtime_roles_lock:
+            return tuple(self.runtime_roles.items())
 
 
 def include_router(

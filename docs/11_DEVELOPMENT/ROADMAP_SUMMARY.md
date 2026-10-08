@@ -47,12 +47,13 @@ For the status, current boundary, and owner of every domain plan, use the
 | Previous | 0.54 | Adaptive conformance and bounded scan/filter/project implementation | Published Beta; graduation pending — [plan](IMPLEMENTATION_PLAN_0_54.md), [exit gate](EXIT_GATE_0_54.md) |
 | Previous | 0.55 | Scoped Experimental inferred-model authoring | Published — [exit gate](EXIT_GATE_0_55.md) |
 | Previous | 0.56 | Complete application ETL backend with full specification and run control | Published — [exit gate](EXIT_GATE_0_56.md) |
-| Later | 0.57 | Brownfield adoption bridges | Planning freeze — [implementation plan](IMPLEMENTATION_PLAN_0_57.md) |
-| Later | 0.58 | Operator console | Planned — [implementation plan](IMPLEMENTATION_PLAN_0_58.md) |
-| Later | 0.59 | Managed runtime and enterprise provider packs | Planned — [implementation plan](IMPLEMENTATION_PLAN_0_59.md) |
-| Later | 0.60 | TransformationModel incubation | Proposed — [implementation plan](IMPLEMENTATION_PLAN_0_60.md) |
+| Next | 0.57 | Managed backend independence and runtime supervision (#278–#282) | Planned for 0.57.0 — [implementation plan](IMPLEMENTATION_PLAN_0_57.md) |
+| Later | 0.58 | Brownfield adoption bridges | Planning freeze — [implementation plan](IMPLEMENTATION_PLAN_0_58.md) |
+| Later | 0.59 | Operator console | Planned — [implementation plan](IMPLEMENTATION_PLAN_0_59.md) |
+| Later | 0.60 | Managed runtime and enterprise provider packs | Planned — [implementation plan](IMPLEMENTATION_PLAN_0_60.md) |
+| Later | 0.61 | TransformationModel incubation | Proposed — [implementation plan](IMPLEMENTATION_PLAN_0_61.md) |
 | Foundation | 0.36–0.37 | Joint burn-in → stable foundation | Gate-ready (0.37) |
-| Post-foundation | 0.38–0.60 | Connectivity → control plane → intelligence → federation → governed AI → DuckDB package → portable-engine baseline → adaptive execution → inferred model authoring → complete application backend → adoption → operations → providers → modeling incubation | Candidate review (0.56 is published Beta; adaptive graduation pending) |
+| Post-foundation | 0.38–0.61 | Connectivity → control plane → intelligence → federation → governed AI → DuckDB package → portable-engine baseline → adaptive execution → inferred model authoring → complete application backend → backend independence → adoption → operations → providers → modeling incubation | Candidate review (0.56 is published Beta; adaptive graduation pending) |
 
 “Planned” records capability order only. It does not imply a release date or
 that the capability is available in the current package.
@@ -69,7 +70,7 @@ outcomes without creating conflicting release numbers:
 3. A local run dashboard and visual plan/report comparison.
 4. Watch mode, LSP, editor previews, and profile/impact explanations in 0.44.
 5. A hosted, governed experience after the 0.39–0.43 control-plane gates,
-  culminating in the read-only-first 0.58 Operator Console.
+  culminating in the read-only-first 0.59 Operator Console.
 
 All views remain projections of the same public artifacts and must preserve
 redaction, safe-I/O, authorization, accessibility, and bounded rendering.
@@ -301,7 +302,7 @@ See the
 [ADR-015](adr/ADR-015-CONNECTOR-PROTOCOLS.md), and
 [Exit gate 0.38](EXIT_GATE_0_38.md).
 
-TransformationModel incubation moves to 0.60.
+TransformationModel incubation moves to 0.61.
 
 ## First-class control-plane program
 
@@ -339,7 +340,7 @@ shared entry, evidence, and completion rules for all later phases.
 - **[0.47](IMPLEMENTATION_PLAN_0_47.md):** optional FastAPI scheduler/runner
   service plus remote execution federation — [Gate-ready](EXIT_GATE_0_47.md)
   / [ADR-023](adr/ADR-023-SCHEDULER-SERVICE-AND-FEDERATION.md); Kubernetes and
-  Spark Connect are Experimental fakes; live packs remain 0.59
+  Spark Connect are Experimental fakes; live packs remain 0.60
 - **[0.48](IMPLEMENTATION_PLAN_0_48.md):** AI-assisted, human-governed
   proposals — [Gate-ready](EXIT_GATE_0_48.md) /
   [ADR-024](adr/ADR-024-HUMAN-GOVERNED-AI.md); MCP is Experimental
@@ -375,10 +376,11 @@ shared entry, evidence, and completion rules for all later phases.
   authorized shared services, real durable execution/results, isolated provider
   actions, complete run controls, live PostgreSQL/CSV and Semblance-backed
   Foundry API qualification
-- **[0.57](IMPLEMENTATION_PLAN_0_57.md):** brownfield adoption bridges for dbt, Dagster, Prefect, and Argo
-- **[0.58](IMPLEMENTATION_PLAN_0_58.md):** read-only-first operator console
-- **[0.59](IMPLEMENTATION_PLAN_0_59.md):** managed runtime and enterprise provider packs
-- **[0.60](IMPLEMENTATION_PLAN_0_60.md):** TransformationModel incubation
+- **[0.57](IMPLEMENTATION_PLAN_0_57.md):** headless backend independence, authorized schedule services, complete scheduler construction, read-only schema inspection, and runtime supervision; all of #278–#282 release in 0.57.0
+- **[0.58](IMPLEMENTATION_PLAN_0_58.md):** brownfield adoption bridges for dbt, Dagster, Prefect, and Argo
+- **[0.59](IMPLEMENTATION_PLAN_0_59.md):** read-only-first operator console
+- **[0.60](IMPLEMENTATION_PLAN_0_60.md):** managed runtime and enterprise provider packs
+- **[0.61](IMPLEMENTATION_PLAN_0_61.md):** TransformationModel incubation
 
 These are assigned post-control-plane phases with explicit acceptance gates.
 The roadmap does not reserve a 1.0 or 1.x phase.
@@ -397,7 +399,7 @@ portable evidence needed to recover safely:
   roles, host-neutral recovery negotiation, fenced attempt attribution,
   resumable observation, and conformance semantics for retry, replay, repair,
   reconciliation, and manual review. The 0.47 gate is protocol plus in-process
-  fakes; live Kubernetes and managed Spark hardening remain 0.59.
+  fakes; live Kubernetes and managed Spark hardening remain 0.60.
 
 Before 0.47 ships, queue, worker, and scheduler leadership remain adopter-owned.
 The 0.47 optional service provides reference implementations behind public
@@ -415,7 +417,7 @@ frozen `/1` protocols (re-scoped at 0.27; closure owned by **0.28**), and
 burn-in (**0.25** / **0.26** / **0.27** / **0.28**), joint Medallantic feature
 parity (**0.29–0.35**), joint compatibility burn-in (**0.36**), and stable
 foundation (**0.37**).
-TransformationModel incubation is deferred to **0.60** so connectivity,
+TransformationModel incubation is deferred to **0.61** so connectivity,
 interoperability, operations, and provider work can precede it.
 
 > **Production use is supported only within the documented reference

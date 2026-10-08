@@ -97,8 +97,8 @@ ETLantic may compile to:
 
 - Local Python artifacts where useful
 - Airflow (shipped via `etlantic-airflow`)
-- Dagster (planned 0.57)
-- Argo Workflows (planned 0.57)
+- Dagster (planned 0.58)
+- Argo Workflows (planned 0.58)
 - Future orchestration systems that consume `compile_plan`
 
 Prefect is **not** a compilation target; the shipped plugin is a local

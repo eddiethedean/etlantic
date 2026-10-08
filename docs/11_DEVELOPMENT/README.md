@@ -10,8 +10,10 @@ Earlier release: [0.54 migration](MIGRATION_0_53_TO_0_54.md),
 [exit gate](EXIT_GATE_0_54.md), and [implementation report](IMPLEMENTATION_REPORT_0_54.md).
 The new [0.56 complete application backend phase](IMPLEMENTATION_PLAN_0_56.md)
 closes the [reviewed backend gaps](FINDINGS_0_56.md) through
-[ordered execution gates](EXECUTION_PLAN_0_56.md). Brownfield, console, broader
-provider, and TransformationModel phases follow as 0.57–0.60.
+[ordered execution gates](EXECUTION_PLAN_0_56.md). The next
+[0.57 managed backend independence and runtime supervision phase](IMPLEMENTATION_PLAN_0_57.md)
+fully implements issues #278–#282 for 0.57.0. Brownfield, console, broader
+provider, and TransformationModel phases follow as 0.58–0.61 with scope retained.
 
 This section defines how ETLantic is designed, tested, contributed to, and
 released.
@@ -55,6 +57,7 @@ released.
 - [0.52 release-blocker remediation and verification](REMEDIATION_0_52.md)
 - [0.48 implementation plan](IMPLEMENTATION_PLAN_0_48.md) (Gate-ready)
 - [ADR-024: Human-governed AI](adr/ADR-024-HUMAN-GOVERNED-AI.md) (Accepted)
+- [ADR-026: Managed backend independence and runtime supervision](adr/ADR-026-MANAGED-BACKEND-INDEPENDENCE-AND-SUPERVISION.md) (Accepted)
 - [Exit gate 0.48](EXIT_GATE_0_48.md) (Gate-ready)
 - [Findings ledger 0.48](FINDINGS_0_48.md)
 - [Migration 0.47 → 0.48](MIGRATION_0_47_TO_0_48.md) (Gate-ready — human-governed AI)
@@ -121,7 +124,7 @@ released.
 - [Exit gate 0.38](EXIT_GATE_0_38.md) (Done — connectivity)
 - [Findings ledger 0.38](FINDINGS_0_38.md)
 - [0.38 implementation plan](IMPLEMENTATION_PLAN_0_38.md)
-- [Forward implementation plans](FORWARD_IMPLEMENTATION_PLANS.md) (0.39–0.60 delivery contract)
+- [Forward implementation plans](FORWARD_IMPLEMENTATION_PLANS.md) (0.39–0.61 delivery contract)
 - [ADR-015: Connector protocols](adr/ADR-015-CONNECTOR-PROTOCOLS.md)
 - [Migration 0.36 → 0.37](MIGRATION_0_36_TO_0_37.md)
 - [Exit gate 0.37](EXIT_GATE_0_37.md) (Gate-ready — stable foundation)

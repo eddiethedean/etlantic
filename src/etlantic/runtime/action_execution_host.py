@@ -26,7 +26,10 @@ from etlantic.control_plane.action_jobs import (
     parse_connector_action_request,
     verify_provision_parent,
 )
-from etlantic.control_plane.authz import require_authorized
+from etlantic.control_plane.authz import (
+    require_authorized,
+    validate_control_plane_context,
+)
 from etlantic.control_plane.durable_models import ActionJobRecord
 from etlantic.control_plane.durable_protocols import DurableWorkStore
 from etlantic.control_plane.errors import ControlPlaneError
@@ -41,6 +44,7 @@ from etlantic.control_plane.models import (
 )
 from etlantic.control_plane.protocols import Authorizer
 from etlantic.control_plane.redaction import REDACTED, redact_control_plane_payload
+from etlantic.runtime.role import RuntimeRoleLifecycle, RuntimeRoleStatus
 
 ActionHandler = Callable[
     [ControlPlaneContext, Mapping[str, Any]], Awaitable[Mapping[str, Any]]
@@ -49,6 +53,10 @@ _MAX_RESULT_DEPTH = 32
 _MAX_TICK_LIMIT = 100
 _SAFE_EFFECT_ID = re.compile(r"[A-Za-z0-9][A-Za-z0-9_.:-]{0,255}\Z")
 _SAFE_PREVIEW_COLUMN = re.compile(r"[A-Za-z0-9][A-Za-z0-9_.:-]{0,255}\Z")
+
+
+def _is_nonempty_text(value: object) -> bool:
+    return isinstance(value, str) and bool(value.strip())
 
 
 class _ActionLeaseLost(Exception):
@@ -93,7 +101,7 @@ class ActionExecutionHost:
         max_result_items: int = 100,
         preview_result_ttl_seconds: int = 60 * 60,
     ) -> None:
-        if not worker_id.strip():
+        if not _is_nonempty_text(worker_id):
             raise ValueError("worker_id must be non-empty")
         if type(lease_seconds) is not int or lease_seconds < 1:
             raise ValueError("lease_seconds must be a positive integer")
@@ -129,19 +137,68 @@ class ActionExecutionHost:
         self.max_result_bytes = max_result_bytes
         self.max_result_items = max_result_items
         self.preview_result_ttl_seconds = preview_result_ttl_seconds
+        self._role = RuntimeRoleLifecycle(
+            "action_worker",
+            capabilities=("read_status", "cooperative_drain", "job_fencing"),
+        )
+
+    def drain(self) -> None:
+        self._role.request_drain()
+
+    def request_drain(self) -> RuntimeRoleStatus:
+        return self._role.request_drain()
+
+    @property
+    def draining(self) -> bool:
+        return self._role.draining
+
+    @draining.setter
+    def draining(self, value: bool) -> None:
+        if value:
+            self._role.request_drain()
+
+    def status(self) -> RuntimeRoleStatus:
+        return self._role.status()
+
+    def ready(self) -> bool:
+        return self._role.status().ready
 
     def tick(self, ctx: ControlPlaneContext, *, limit: int = 20) -> int:
         """Execute at most ``limit`` currently available action jobs."""
+        validate_control_plane_context(ctx)
+        if not self._role.begin_tick():
+            return 0
+        try:
+            return self._tick(ctx, limit=limit)
+        except Exception:
+            self._role.observe_prerequisites(
+                "unusable", reason_code="worker_tick_failed"
+            )
+            raise
+        finally:
+            self._role.end_tick()
+
+    def _tick(self, ctx: ControlPlaneContext, *, limit: int = 20) -> int:
         if type(limit) is not int or not 1 <= limit <= _MAX_TICK_LIMIT:
             raise ValueError(f"limit must be between 1 and {_MAX_TICK_LIMIT}")
+        if self.draining:
+            return 0
         self.durable.cleanup_expired_action_results(ctx, limit=100)
+        self._role.observe_prerequisites("usable")
         processed = 0
         for _ in range(limit):
-            job = self.durable.claim_action_job(
-                ctx,
-                worker_id=self.worker_id,
-                lease_seconds=self.lease_seconds,
-            )
+            if self.draining:
+                break
+            if not self._role.begin_dispatch():
+                break
+            try:
+                job = self.durable.claim_action_job(
+                    ctx,
+                    worker_id=self.worker_id,
+                    lease_seconds=self.lease_seconds,
+                )
+            finally:
+                self._role.end_dispatch()
             if job is None:
                 break
             handler = self.handlers.get(job.action)
@@ -406,6 +463,7 @@ class ActionExecutionHost:
                     lease_seconds=self.lease_seconds,
                 )
             except Exception as exc:
+                self._observe_lease_renewal_failure(exc)
                 task.cancel()
                 try:
                     result = await task
@@ -454,6 +512,7 @@ class ActionExecutionHost:
                     except (asyncio.CancelledError, Exception):
                         raise _ActionLeaseLost from exc
                     raise _ActionLeaseLost(result) from exc
+                self._observe_lease_renewal_failure(exc)
                 task.cancel()
                 try:
                     result = await task
@@ -461,6 +520,16 @@ class ActionExecutionHost:
                     raise _ActionLeaseLost from exc
                 raise _ActionLeaseLost(result) from exc
         return await task
+
+    def _observe_lease_renewal_failure(self, exc: Exception) -> None:
+        if isinstance(exc, ControlPlaneError) and exc.status < 500:
+            self._role.observe_prerequisites(
+                "unusable", reason_code="action_lease_lost"
+            )
+        else:
+            self._role.observe_prerequisites(
+                "unusable", reason_code="lease_store_unavailable"
+            )
 
     def _execute_run_preparation(
         self,

@@ -8,9 +8,12 @@ plan_last_reviewed: v0.55.0
 # ETLantic 0.56 — Complete Application ETL Backend
 
 **Status: implementation in progress; qualification remains open.** This phase
-follows 0.55 inferred-model authoring. Brownfield bridges move to 0.57, the
-operator console to 0.58, managed-runtime/provider packs to 0.59 and
-TransformationModel incubation to 0.60. Their existing scope is preserved.
+follows 0.55 inferred-model authoring. Brownfield bridges move to 0.58, the
+operator console to 0.59, managed-runtime/provider packs to 0.60 and
+TransformationModel incubation to 0.61. Their existing scope is preserved.
+
+The [0.57 backend independence and runtime supervision plan](IMPLEMENTATION_PLAN_0_57.md)
+now precedes those programs and fully implements issues #278–#282 for 0.57.0.
 
 Read the [source review](FINDINGS_0_56.md) for the original 0.55 candidate audit
 and final-tag reconciliation, the [execution sequence](EXECUTION_PLAN_0_56.md)
@@ -299,7 +302,7 @@ filters, scalar derivations, deterministic deduplication and schema/not-null/
 range/membership validation with declared reject/quarantine behavior. It is a
 release floor; joins, unions and every other qualified public operation remain
 accessible. Generic Foundry and PostgreSQL delivery are owned by this phase;
-the broader enterprise cloud/runtime portfolio remains in 0.59.
+the broader enterprise cloud/runtime portfolio remains in 0.60.
 
 For each of the 12 pairings, record a result for every destination mode the
 provider advertises for that exact tuple. PostgreSQL append, keyed upsert and

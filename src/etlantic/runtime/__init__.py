@@ -16,6 +16,7 @@ from etlantic.runtime.request import (
     RunSelection,
     TimeoutPolicy,
 )
+from etlantic.runtime.role import RuntimeRoleLifecycle, RuntimeRoleStatus
 from etlantic.runtime.state import FailureStage, RunStatus, StepStatus
 
 if TYPE_CHECKING:
@@ -51,6 +52,8 @@ __all__ = [
     "RunRequest",
     "RunSelection",
     "RunStatus",
+    "RuntimeRoleLifecycle",
+    "RuntimeRoleStatus",
     "StateStore",
     "StepStatus",
     "TimeoutPolicy",

@@ -15,7 +15,16 @@ from collections.abc import Mapping
 from typing import Any, Literal
 
 from etlantic.control_plane.errors import ControlPlaneError
-from etlantic.control_plane.models import ControlPlaneContext
+from etlantic.control_plane.models import (
+    ControlPlaneContext,
+    CorrelationKey,
+    EnvironmentRef,
+    IdempotencyKey,
+    Principal,
+    SecurityDomain,
+    TenantRef,
+    WorkspaceRef,
+)
 from etlantic.control_plane.protocols import (
     Authorizer,
     AuthzDecision,
@@ -23,6 +32,97 @@ from etlantic.control_plane.protocols import (
 )
 
 Disclosure = Literal["not_found", "forbidden"]
+
+
+def _is_instance(value: Any, expected: type[Any]) -> bool:
+    return isinstance(value, expected)
+
+
+def validate_control_plane_context(ctx: object) -> ControlPlaneContext:
+    """Validate trusted context shape and scope before authz or store access.
+
+    This validates context facts but does not authenticate the principal. HTTP
+    adapters must continue deriving contexts from trusted identity sources.
+    """
+    raw: Any = ctx
+    valid = (
+        _is_instance(raw, ControlPlaneContext)
+        and _is_instance(raw.principal, Principal)
+        and _is_instance(raw.tenant, TenantRef)
+        and _is_instance(raw.workspace, WorkspaceRef)
+        and _is_instance(raw.environment, EnvironmentRef)
+        and _is_instance(raw.security_domain, SecurityDomain)
+        and (
+            raw.correlation_key is None
+            or _is_instance(raw.correlation_key, CorrelationKey)
+        )
+        and (
+            raw.idempotency_key is None
+            or _is_instance(raw.idempotency_key, IdempotencyKey)
+        )
+    )
+    if valid:
+        valid = _context_fields_valid(raw)
+    if not valid:
+        raise ControlPlaneError(
+            "Trusted control-plane context is invalid",
+            code="PMCTX400",
+            status=400,
+            title="Bad Request",
+            type="etlantic.control_plane/bad_request",
+        )
+    return raw
+
+
+def _context_fields_valid(ctx: Any) -> bool:
+    return (
+        isinstance(ctx.principal.subject, str)
+        and bool(ctx.principal.subject.strip())
+        and isinstance(ctx.principal.kind, str)
+        and ctx.principal.kind in {"human", "workload", "service"}
+        and (
+            ctx.principal.issuer is None
+            or (
+                isinstance(ctx.principal.issuer, str)
+                and bool(ctx.principal.issuer.strip())
+            )
+        )
+        and isinstance(ctx.tenant.tenant_id, str)
+        and bool(ctx.tenant.tenant_id.strip())
+        and isinstance(ctx.workspace.tenant_id, str)
+        and isinstance(ctx.workspace.workspace_id, str)
+        and bool(ctx.workspace.workspace_id.strip())
+        and ctx.workspace.tenant_id == ctx.tenant.tenant_id
+        and isinstance(ctx.environment.name, str)
+        and bool(ctx.environment.name.strip())
+        and isinstance(ctx.security_domain.domain_id, str)
+        and bool(ctx.security_domain.domain_id.strip())
+        and (
+            ctx.correlation_key is None
+            or (
+                isinstance(ctx.correlation_key.value, str)
+                and bool(ctx.correlation_key.value.strip())
+            )
+        )
+        and (
+            ctx.idempotency_key is None
+            or (
+                isinstance(ctx.idempotency_key.value, str)
+                and bool(ctx.idempotency_key.value.strip())
+            )
+        )
+        and (
+            ctx.request_id is None
+            or (isinstance(ctx.request_id, str) and bool(ctx.request_id.strip()))
+        )
+        and (
+            ctx.resource_owner_id is None
+            or (
+                isinstance(ctx.resource_owner_id, str)
+                and bool(ctx.resource_owner_id.strip())
+            )
+        )
+    )
 
 
 def map_deny_disclosure(
@@ -91,6 +191,7 @@ def require_authorized(
         * ``decision.disclosure == "not_found"`` → HTTP 404
         * unset disclosure → 403 when ``resource_in_caller_scope`` else 404
     """
+    validate_control_plane_context(ctx)
     decision = authorizer.authorize(ctx, action, resource)
     raise_for_deny(decision, resource_in_caller_scope=resource_in_caller_scope)
 
@@ -115,6 +216,7 @@ def require_authorized_run(
     present in the caller's scope. It is only invoked after a deny so
     cross-scope existence is never disclosed via the store of another tenant.
     """
+    validate_control_plane_context(ctx)
     resource = f"run:{run_id}"
     decision = authorizer.authorize(ctx, action, resource)
     if decision.allowed:
@@ -152,6 +254,7 @@ def authorized_get_definition(
     Cross-scope / unknown denies map to opaque not_found without calling the
     repository. Missing resources after an allow also surface as not_found.
     """
+    validate_control_plane_context(ctx)
     resource = f"definition:{definition_id}"
     decision = authorizer.authorize(ctx, action, resource)
     if not decision.allowed:
@@ -176,4 +279,5 @@ __all__ = [
     "raise_for_deny",
     "require_authorized",
     "require_authorized_run",
+    "validate_control_plane_context",
 ]

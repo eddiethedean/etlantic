@@ -38,12 +38,13 @@ through **0.37** (stable foundation) are shipped.
 | Previous | 0.39 | Multi-tenant control plane (CP1) | Gate-ready / shipped evidence |
 | Previous | 0.38 | Data connectivity and connector SDK | Gate-ready / shipped evidence |
 | Current | 0.56 | Complete application ETL backend with full specification and run control | Published / shipped evidence |
-| Later | 0.57 | Brownfield adoption bridges | Planning freeze |
-| Later | 0.58 | Operator Console | Planned |
-| Later | 0.59 | Managed runtime and enterprise provider packs | Planned |
-| Later | 0.60 | TransformationModel incubation | Proposed |
+| Next | 0.57 | Managed backend independence and runtime supervision (#278–#282) | Planned for 0.57.0 |
+| Later | 0.58 | Brownfield adoption bridges | Planning freeze |
+| Later | 0.59 | Operator Console | Planned |
+| Later | 0.60 | Managed runtime and enterprise provider packs | Planned |
+| Later | 0.61 | TransformationModel incubation | Proposed |
 | Foundation | 0.36–0.37 | Joint burn-in → stable foundation | Gate-ready (0.37) |
-| Post-foundation | 0.38–0.60 | Connectivity → control plane → developer intelligence → optimization → streaming → federation → governed AI → DuckDB package → portable-engine baseline → adaptive execution → inferred model authoring → complete application backend → adoption → operations → providers → modeling incubation | In progress (0.56 published Beta; adaptive graduation pending) |
+| Post-foundation | 0.38–0.61 | Connectivity → control plane → developer intelligence → optimization → streaming → federation → governed AI → DuckDB package → portable-engine baseline → adaptive execution → inferred model authoring → complete application backend → backend independence → adoption → operations → providers → modeling incubation | In progress (0.56 published Beta; adaptive graduation pending) |
 
 For connectivity evidence, see
 [What's New in 0.38](docs/01_GETTING_STARTED/WHATS_NEW_0_38.md) and the
@@ -212,9 +213,9 @@ diagnostics, reports, lineage, authorization decisions, and audit evidence.
 |---|---|---|
 | 1 | Human CLI renderer, actionable diagnostics, target discovery, and progressive onboarding | Stable-foundation tooling follow-up; prerequisite for 0.44 |
 | 2 | React architecture spike, then an interactive, accessible, self-contained pipeline HTML workspace | Visualization/tooling precursor to 0.44 |
-| 3 | Local run dashboard and visual plan/report comparisons | Read-only precursor to 0.58 |
+| 3 | Local run dashboard and visual plan/report comparisons | Read-only precursor to 0.59 |
 | 4 | Watch mode, LSP, editor previews, and profile/impact explanations | 0.44 Developer Intelligence |
-| 5 | Hosted, governed product experience | 0.39–0.43 control-plane substrate; 0.58 Operator Console |
+| 5 | Hosted, governed product experience | 0.39–0.43 control-plane substrate; 0.59 Operator Console |
 
 Phases may land incrementally, but later phases cannot bypass earlier
 consistency, accessibility, redaction, safe-I/O, or bounded-rendering gates.
@@ -2463,7 +2464,7 @@ parity, followed by joint burn-in in **0.37** toward the 0.37 stable foundation.
 
 This is **not** a control-plane, GUI, or new-engine milestone. Data
 connectivity (0.38), FastAPI (0.39), registry/workspaces (0.40), and
-TransformationModel incubation (0.60) remain post-foundation phases.
+TransformationModel incubation (0.61) remain post-foundation phases.
 
 ### Prerequisites already shipped (0.24)
 
@@ -3523,7 +3524,7 @@ All planned ETLantic releases remain in the 0.x series. This roadmap has no
 sequential 0.x minors. Versions belonging to external standards, dependencies,
 or user-authored artifacts do not change this release-numbering policy.
 
-Phases 0.38 through 0.60 expand ETLantic around the stable-foundation model
+Phases 0.38 through 0.61 expand ETLantic around the stable-foundation model
 while keeping storage systems, HTTP servers, catalogs, IDEs, cloud provisioning
 and AI runtimes behind optional packages and providers. ETL scheduling and
 execution semantics remain ETLantic-owned. Each initiative has one assigned
@@ -4110,7 +4111,7 @@ Planning freeze after **0.46.0**: [IMPLEMENTATION_PLAN_0_47](docs/11_DEVELOPMENT
 (Proposed), [EXIT_GATE_0_47](docs/11_DEVELOPMENT/EXIT_GATE_0_47.md). These
 surfaces are not Available. Kubernetes and Spark Connect are Experimental
 in-process fakes; live Kind/cluster and live Databricks/EMR hardening are
-**0.59**. Implementation of scheduler/worker processes, schedule HTTP routes,
+**0.60**. Implementation of scheduler/worker processes, schedule HTTP routes,
 or new packages is out of scope for this freeze.
 
 Deliver:
@@ -4143,10 +4144,10 @@ Deliver:
   terminal-state reconciliation, and bounded provider-owned cleanup;
   live Kind/cluster is skip `047-K-01`;
 - an Experimental Spark Connect reference (`etlantic-spark-connect`) plus
-  in-process fake; live Databricks, EMR, and Spark Connect packs remain 0.59
+  in-process fake; live Databricks, EMR, and Spark Connect packs remain 0.60
   (skip `047-S-01`);
 - FastAPI gateway support without requiring FastAPI in workers;
-- Helm/OCI production images remain out of 0.47 (0.59 `059-D`).
+- Helm/OCI production images remain out of 0.47 (0.60 `060-D`).
 
 Acceptance:
 
@@ -4193,8 +4194,8 @@ and 0.44 impact artifacts; hand off apply to existing 0.42 `ApprovalStore` /
 
 **Non-goals:** vendor AI SDKs or credentials in core; write MCP tools;
 autonomous run submission; applying optimizations without approval;
-brownfield dbt/orchestrator import (0.57); operator console (0.58); live
-cloud providers (0.59); live paid-model eval as a release blocker
+brownfield dbt/orchestrator import (0.58); operator console (0.59); live
+cloud providers (0.60); live paid-model eval as a release blocker
 (skip `048-E-01`).
 
 Supported vs Experimental (claims only until the exit gate is Met):
@@ -4206,7 +4207,7 @@ Supported vs Experimental (claims only until the exit gate is Met):
   prompt-injection and false-authority tests.
 - **Experimental:** optional `etlantic-mcp` read-only extra. Live MCP-client
   interop is skip `048-M-01` if fixtures suffice.
-- **Out of 0.48:** write MCP, vendor SDKs in core, GitOps promotion, 0.57–0.59
+- **Out of 0.48:** write MCP, vendor SDKs in core, GitOps promotion, 0.58–0.60
   programs.
 
 0.46/0.47 surfaces are **explain-only**: delivery objectives, DLQ, erasure,
@@ -4723,12 +4724,62 @@ must need no ETL implementation, provider factory graph or preparation callbacks
 Every qualified public control remains accessible; operator policy and actual
 provider capabilities explain restrictions. ETLantic has no dependency on any
 consuming product. Required Foundry/PostgreSQL delivery belongs to 0.56; broader
-enterprise runtime/provider packs remain 0.59.
+enterprise runtime/provider packs remain 0.60.
 
-The former 0.56–0.59 phases are renumbered 0.57–0.60 without removing scope.
-The 0.55 release code, package versions and qualification evidence are unchanged.
+Phase 0.57 now delivers managed backend independence and runtime supervision
+in 0.57.0. The former 0.57–0.60 programs move to 0.58–0.61 without removing
+scope. Published release versions and qualification evidence remain unchanged.
 
-## 0.57 — Brownfield Adoption Bridges
+## 0.57 — Managed Backend Independence and Runtime Supervision
+
+**Objective:** let deployment consumers use one upstream-owned headless backend
+and supervise scheduler, run-worker, and action-worker roles through public
+contracts. All five issues below must be fully implemented in **0.57.0**.
+The [0.57 implementation plan](docs/11_DEVELOPMENT/IMPLEMENTATION_PLAN_0_57.md)
+owns contract freeze, sequencing, acceptance traceability, and release evidence.
+
+Deliver:
+
+- [#278](https://github.com/eddiethedean/etlantic/issues/278): transport-independent
+  core backend/service/role contracts, optional SQLModel graph construction,
+  FastAPI adaptation, compatible constructors, and explicit resource ownership;
+- [#279](https://github.com/eddiethedean/etlantic/issues/279): authorized schedule
+  commands and reads in shared services, with HTTP/headless parity;
+- [#280](https://github.com/eddiethedean/etlantic/issues/280): a complete standard
+  scheduler factory, shared schedule store, and explicit preparation/recovery
+  collaborators;
+- [#281](https://github.com/eddiethedean/etlantic/issues/281): provider-owned,
+  read-only schema requirements and compatibility inspection reused at startup;
+- [#282](https://github.com/eddiethedean/etlantic/issues/282): redacted role status
+  and cooperative drain contracts covering activity, standby, prerequisites,
+  in-flight work, outages, and restart.
+
+Acceptance:
+
+- clean installed headless services and all runtime roles work without FastAPI,
+  synthetic Requests, HTTP context factories, or application-owned ETL wiring;
+- HTTP and Python reuse canonical authorization, context validation, schedule
+  records, CAS, immutable occurrence identity, and durable acceptance/recovery;
+- standard scheduling cannot lose preparation or recovery through a wrapped
+  callback, and two real PostgreSQL scheduler processes recover interrupted
+  preparation/claim/accept/link boundaries without duplicate admitted occurrences;
+- inspection and ordinary construction issue no DDL or explicit commit, detect
+  corrupt/partial schemas, and work with real PostgreSQL runtime grants lacking
+  CREATE, table ownership, or inherited migration privileges;
+- every role supports safe concurrent supervision and drain without fabricating
+  terminal results, equating zero work with health, or disposing active resources;
+- existing gateway import isolation, trust boundaries, fencing, accepted
+  execution authority, and external-effect limits remain qualified;
+- all acceptance criteria in #278–#282 have passing final-candidate evidence;
+  none is deferred to brownfield adoption or a consuming application's code.
+
+Consumers own process signals, loops, threads, probes, grace periods and
+deployment support policy. This phase adds no deployment orchestrator,
+cross-store atomicity, or exactly-once external-effect claim. The already-fixed
+#273 behavior remains a regression gate. New APIs are planned until qualified
+and published; 0.56.2 remains the current release during implementation.
+
+## 0.58 — Brownfield Adoption Bridges
 
 **Objective:** let teams introduce ETLantic alongside existing dbt and
 orchestrator projects through bounded metadata import, explicit fidelity
@@ -4765,7 +4816,7 @@ Acceptance:
 - at least one real project adopts ETLantic incrementally without a flag-day
   rewrite.
 
-## 0.58 — Operator Console
+## 0.59 — Operator Console
 
 **Objective:** provide a separately deployable, read-only-first operations UI
 over the graduated multi-tenant control plane.
@@ -4802,7 +4853,7 @@ Acceptance:
 - ETLantic core and the control API remain usable without frontend
   dependencies.
 
-## 0.59 — Managed Runtime and Enterprise Provider Packs
+## 0.60 — Managed Runtime and Enterprise Provider Packs
 
 **Objective:** graduate common cloud integrations into maintained,
 independently installable production profiles without coupling ETLantic core to
@@ -4838,7 +4889,7 @@ Acceptance:
 - live conformance uses isolated accounts or projects and proves cleanup;
 - no provider-specific type or SDK becomes a mandatory core dependency.
 
-## 0.60 — TransformationModel Incubation
+## 0.61 — TransformationModel Incubation
 
 **Status:** deferred from the 0.20+ and former 0.38 tracks; begins only after
 the higher-adoption connectivity, control-plane, interoperability, operations,
@@ -4902,7 +4953,7 @@ secret-resolution, or mutable-resource concerns.
 
 #### ETLantic adoption
 
-During 0.60, ETLantic may consume TransformationModel from the workspace behind
+During 0.61, ETLantic may consume TransformationModel from the workspace behind
 provisional boundaries. It becomes a required ETLantic dependency only after
 the graduation gates pass and a separately released version has proven the
 package boundary. No later 0.x compatibility promise may depend exclusively on
