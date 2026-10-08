@@ -1203,7 +1203,7 @@ jobs:
           cp "$RUNNER_TEMP/uv.lock" uv.lock
 
       - name: Core suite at dependency minimums
-        run: uv run --no-sync pytest -q -m "not medallantic and not polars and not pandas and not sql and not spark and not real_pyspark and not airflow and not prefect and not keyring and not sqlmodel and not datafusion"
+        run: uv run --no-sync pytest -q -n 4 --dist=loadfile -m "not medallantic and not polars and not pandas and not sql and not spark and not real_pyspark and not airflow and not prefect and not keyring and not sqlmodel and not datafusion"
 
       - name: Optional package suites at dependency minimums
-        run: uv run --no-sync pytest -q -m "not airflow and not real_pyspark" tests/polars_compiler tests/pandas_compiler tests/dataframe tests/portable_conformance tests/datafusion tests/duckdb tests/sql tests/sqlmodel tests/fastapi tests/prefect tests/keyring tests/s3
+        run: uv run --no-sync pytest -q -n 4 --dist=loadfile -m "not airflow and not real_pyspark" tests/polars_compiler tests/pandas_compiler tests/dataframe tests/portable_conformance tests/datafusion tests/duckdb tests/sql tests/sqlmodel tests/fastapi tests/prefect tests/keyring tests/s3
