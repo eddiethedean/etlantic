@@ -5,7 +5,7 @@
   "passed_scenarios": 6,
   "planner_version": "0.52",
   "public_schema": "etlantic.plan/2",
-  "repository_revision": "sha256:b49f7903a3d2433687a077fb069f3fb95c7568cd75300feb1338778a3a86522d",
+  "repository_revision": "sha256:343a6faa62c77cd45e7134d80413bccbca29cd23eceece90f7428522a6525106",
   "result": "pass",
   "scenario_count": 6,
   "scenarios": [
@@ -15,7 +15,7 @@
       "executed": true,
       "expected": "pass",
       "id": "test_adaptive_regions_are_maximal_and_unfused_without_proof",
-      "plan_fingerprint": "e2e93a962c1a2fc5b4a87dd7484697b1071996652aa5c507287fa15dbef12140",
+      "plan_fingerprint": "d425ec9510852e6f06411ab9538cc9ae085f4fb73743d3b7729c4def5a6460bc",
       "result": "pass",
       "verification": "test_adaptive_regions_are_maximal_and_unfused_without_proof"
     },
@@ -25,7 +25,7 @@
       "executed": true,
       "expected": "pass",
       "id": "test_final_052_021_regions_bind_execution_policy_and_fusion_facts",
-      "plan_fingerprint": "e2e93a962c1a2fc5b4a87dd7484697b1071996652aa5c507287fa15dbef12140",
+      "plan_fingerprint": "d425ec9510852e6f06411ab9538cc9ae085f4fb73743d3b7729c4def5a6460bc",
       "result": "pass",
       "verification": "test_final_052_021_regions_bind_execution_policy_and_fusion_facts"
     },
@@ -35,7 +35,7 @@
       "executed": true,
       "expected": "pass",
       "id": "test_adaptive_logical_path_can_cross_all_boundary_unit_kinds",
-      "plan_fingerprint": "e2e93a962c1a2fc5b4a87dd7484697b1071996652aa5c507287fa15dbef12140",
+      "plan_fingerprint": "d425ec9510852e6f06411ab9538cc9ae085f4fb73743d3b7729c4def5a6460bc",
       "result": "pass",
       "verification": "test_adaptive_logical_path_can_cross_all_boundary_unit_kinds"
     },
@@ -45,7 +45,7 @@
       "executed": true,
       "expected": "pass",
       "id": "test_final_052_012_logical_edge_path_cannot_be_hidden_by_metadata",
-      "plan_fingerprint": "e2e93a962c1a2fc5b4a87dd7484697b1071996652aa5c507287fa15dbef12140",
+      "plan_fingerprint": "d425ec9510852e6f06411ab9538cc9ae085f4fb73743d3b7729c4def5a6460bc",
       "result": "pass",
       "verification": "test_final_052_012_logical_edge_path_cannot_be_hidden_by_metadata"
     },
@@ -55,7 +55,7 @@
       "executed": true,
       "expected": "pass",
       "id": "test_final_052_022_generated_units_bind_contract_and_policy_evidence",
-      "plan_fingerprint": "e2e93a962c1a2fc5b4a87dd7484697b1071996652aa5c507287fa15dbef12140",
+      "plan_fingerprint": "d425ec9510852e6f06411ab9538cc9ae085f4fb73743d3b7729c4def5a6460bc",
       "result": "pass",
       "verification": "test_final_052_022_generated_units_bind_contract_and_policy_evidence"
     },
@@ -65,7 +65,7 @@
       "executed": true,
       "expected": "pass",
       "id": "test_sol_052_022_parallel_port_collections_remain_distinct",
-      "plan_fingerprint": "e2e93a962c1a2fc5b4a87dd7484697b1071996652aa5c507287fa15dbef12140",
+      "plan_fingerprint": "d425ec9510852e6f06411ab9538cc9ae085f4fb73743d3b7729c4def5a6460bc",
       "result": "pass",
       "verification": "test_sol_052_022_parallel_port_collections_remain_distinct"
     }
