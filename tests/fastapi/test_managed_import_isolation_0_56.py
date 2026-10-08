@@ -64,9 +64,17 @@ with tempfile.TemporaryDirectory() as temp:
     assert not execution_modules(), execution_modules()
     app.state.managed_backend.close()
 """
+    root = Path(__file__).resolve().parents[2]
+    env = os.environ.copy()
+    plugin_source = str(root / "packages/etlantic-fastapi/src")
+    existing_pythonpath = env.get("PYTHONPATH")
+    env["PYTHONPATH"] = os.pathsep.join(
+        path for path in (plugin_source, existing_pythonpath) if path
+    )
     completed = subprocess.run(
         [sys.executable, "-c", script],
-        cwd=Path(__file__).resolve().parents[2],
+        cwd=root,
+        env=env,
         capture_output=True,
         text=True,
         check=False,
