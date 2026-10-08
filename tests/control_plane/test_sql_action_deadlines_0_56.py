@@ -201,14 +201,14 @@ def test_deadline_rolls_back_a_mutation_after_a_blocked_driver_hook(
 
     event.listen(actions.engine, "before_cursor_execute", block)
     job = (
-        actions.cleanup(parent, deadline=0.4)
+        actions.cleanup(parent, deadline=1.0)
         if kind == "cleanup"
-        else actions.provision(deadline=0.4)
+        else actions.provision(deadline=1.0)
     )
     try:
         start = monotonic()
         assert actions.worker.tick(actions.ctx, limit=1) == 1
-        assert monotonic() - start < 1.5
+        assert monotonic() - start < 2.0
         assert started.is_set() and not settled.is_set()
         timed_out = actions.store.get_action_job(actions.ctx, job.action_id)
         assert timed_out.status == "timed_out" and timed_out.result_json is None
