@@ -9,7 +9,7 @@ Live brokers are opt-in via `ETLANTIC_KAFKA_BOOTSTRAP` and are not required for 
 ## Install
 
 ```bash
-pip install 'etlantic-kafka==0.56.1'
+pip install 'etlantic-kafka==0.56.2'
 ```
 
 Core dependency: `etlantic>=0.56.0`. No librdkafka / confluent-kafka in the default extra.

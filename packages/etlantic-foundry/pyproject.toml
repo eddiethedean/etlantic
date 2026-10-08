@@ -1,6 +1,6 @@
 [project]
 name = "etlantic-foundry"
-version = "0.56.1"
+version = "0.56.2"
 description = "Foundry dataset and file connectors for ETLantic."
 readme = "README.md"
 license = "MIT"

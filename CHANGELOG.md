@@ -5,6 +5,25 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.56.2] - Unreleased candidate (not published)
+
+### Changed
+
+- Correct dependency minimums for optional integrations and validate the
+  first-party packages against their supported minimum versions.
+- Bump core and first-party distribution versions to 0.56.2.
+
+### Fixed
+
+- Keep managed FastAPI gateway startup isolated from runtime action-host imports,
+  and make SQLModel migration version inspection read-only on fresh databases.
+- Preserve portable Polars explode and null-safe join behavior across supported
+  Polars versions.
+
+### Developer tooling
+
+- Run dependency-minimum CI suites in parallel to reduce validation time.
+
 ## [0.56.1] - 2026-10-07
 
 ### Changed
@@ -163,6 +182,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Require exact candidate pins and semantically verified, row-bound evidence;
   normalize source ordering and relative evidence paths across platforms.
 
+[0.56.2]: https://github.com/eddiethedean/etlantic/compare/v0.56.1...v0.56.2
 [0.56.1]: https://github.com/eddiethedean/etlantic/compare/v0.56.0...v0.56.1
 [0.56.0]: https://github.com/eddiethedean/etlantic/compare/v0.55.0...v0.56.0
 [0.55.0]: https://github.com/eddiethedean/etlantic/compare/v0.54.0...v0.55.0

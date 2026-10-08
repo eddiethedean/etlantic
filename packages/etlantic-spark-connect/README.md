@@ -10,7 +10,7 @@ Live Databricks/EMR/Spark Connect endpoints are opt-in via
 ## Install
 
 ```bash
-pip install 'etlantic-spark-connect==0.56.1'
+pip install 'etlantic-spark-connect==0.56.2'
 ```
 
 Core dependency: `etlantic>=0.56.0`. No Databricks/EMR SDK in the default extra.

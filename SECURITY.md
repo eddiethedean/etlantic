@@ -1,9 +1,10 @@
 # Security Policy
 
-> **Version boundary:** ETLantic 0.56.1 is the current published Beta release and supported line.
+> **Version boundary:** ETLantic 0.56.2 is a Beta release candidate; 0.56.1 remains the current published and supported line.
 
 
-ETLantic 0.56.1 is the current **Beta release** for documented single-tenant
+ETLantic 0.56.2 is a **Beta release candidate**. ETLantic 0.56.1 remains the current published
+Beta release for documented single-tenant
 pilots. You can embed an HTTP control plane with **Supported** isolation
 profiles (`isolated-deployment`, `dedicated-schema`). There is no hosted
 multi-tenant SaaS. Security reports

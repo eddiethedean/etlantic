@@ -16,10 +16,10 @@ until partition-scoped replace is real.
 ## Install
 
 ```bash
-pip install 'etlantic-iceberg==0.56.1'
+pip install 'etlantic-iceberg==0.56.2'
 # Optional live PyIceberg:
-# pip install 'etlantic-iceberg[pyiceberg]==0.56.1'
-# pip install 'etlantic==0.56.1'
+# pip install 'etlantic-iceberg[pyiceberg]==0.56.2'
+# pip install 'etlantic==0.56.2'
 ```
 
 Core dependency: `etlantic>=0.56.0`.
