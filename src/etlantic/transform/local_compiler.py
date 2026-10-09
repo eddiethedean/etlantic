@@ -347,7 +347,10 @@ def _local_sort_findings(
             for child_index, child in enumerate(node):
                 validate_expression(child, f"{path}[{child_index}]")
 
-    for action_index, item in enumerate(definition.get("actions") or ()):
+    # Plan payloads are wire data. Keep their values dynamic here so the shape
+    # checks below remain meaningful to both the runtime and Pyright.
+    actions: Any = definition.get("actions") or ()
+    for action_index, item in enumerate(actions):
         if not isinstance(item, Mapping):
             continue
         kind = item.get("kind") or {}

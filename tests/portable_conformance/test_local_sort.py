@@ -2,30 +2,83 @@
 
 from __future__ import annotations
 
+import asyncio
 from typing import Any
 
 import pytest
 
-from etlantic.transform.compiler import TransformPlanningContext
-from etlantic.transform.local_compiler import LocalTransformCompiler, _apply
+from etlantic.transform.compiler import (
+    TransformCompileContext,
+    TransformExecutionContext,
+    TransformPlanningContext,
+)
+from etlantic.transform.local_compiler import LocalTransformCompiler
 
 
-def _sort_then_deduplicate(rows: list[dict[str, Any]]) -> list[dict[str, Any]]:
-    sorted_rows = _apply(
-        rows,
-        "dtcs:sort",
-        {
-            "keys": [
+def _execute_local_actions(
+    rows: list[dict[str, Any]], actions: list[tuple[str, dict[str, Any]]]
+) -> list[dict[str, Any]]:
+    plan: dict[str, Any] = {
+        "inputs": {"source": {}},
+        "actions": [
+            {
+                "id": f"action_{index}",
+                "kind": {
+                    "id": f"action_{index}",
+                    "action": action,
+                    "target": "source" if index == 0 else f"action_{index - 1}",
+                    "parameters": parameters,
+                },
+            }
+            for index, (action, parameters) in enumerate(actions)
+        ],
+        "outputs": {"result": {}},
+        "requirements": {
+            "dependencies": [
                 {
-                    "expression": {"kind": "fieldRef", "target": "quantity"},
-                    "direction": "asc",
+                    "from": f"action_{len(actions) - 1}",
+                    "to": "result",
                 }
             ]
         },
-        {},
-        {},
+    }
+    compiler = LocalTransformCompiler()
+    compiled = compiler.compile(
+        plan,
+        context=TransformCompileContext("p", "pl", "s", "profile", "local"),
     )
-    return _apply(sorted_rows, "dtcs:deduplicate", {"keys": ["id"]}, {}, {})
+    result = asyncio.run(
+        compiler.execute(
+            compiled,
+            inputs={"source": rows},
+            parameters={},
+            context=TransformExecutionContext("r", "p", "pl", "s", "local"),
+        )
+    )
+    return result.valid["result"]
+
+
+def _sort_then_deduplicate(rows: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    return _execute_local_actions(
+        rows,
+        [
+            (
+                "dtcs:sort",
+                {
+                    "keys": [
+                        {
+                            "expression": {
+                                "kind": "fieldRef",
+                                "target": "quantity",
+                            },
+                            "direction": "asc",
+                        }
+                    ]
+                },
+            ),
+            ("dtcs:deduplicate", {"keys": ["id"]}),
+        ],
+    )
 
 
 def test_local_canonical_sort_selects_same_deduplicated_record_for_any_input_order() -> (
@@ -40,20 +93,25 @@ def test_local_canonical_sort_selects_same_deduplicated_record_for_any_input_ord
 def test_local_canonical_sort_honors_direction_and_null_placement() -> None:
     rows = [{"quantity": 3}, {"quantity": None}, {"quantity": 4}]
 
-    assert _apply(
+    assert _execute_local_actions(
         rows,
-        "dtcs:sort",
-        {
-            "keys": [
+        [
+            (
+                "dtcs:sort",
                 {
-                    "expression": {"kind": "fieldRef", "target": "quantity"},
-                    "direction": "desc",
-                    "nulls": "first",
-                }
-            ]
-        },
-        {},
-        {},
+                    "keys": [
+                        {
+                            "expression": {
+                                "kind": "fieldRef",
+                                "target": "quantity",
+                            },
+                            "direction": "desc",
+                            "nulls": "first",
+                        }
+                    ]
+                },
+            )
+        ],
     ) == [{"quantity": None}, {"quantity": 4}, {"quantity": 3}]
 
 
@@ -147,6 +205,7 @@ def test_local_analysis_rejects_nested_sort_field_reference_without_target() -> 
         for finding in report.findings
         if finding.requirement == "sort:key_expression:field_target"
     )
+    assert finding.expression_path is not None
     assert finding.expression_path.endswith("expression.args[0].target")
 
 
