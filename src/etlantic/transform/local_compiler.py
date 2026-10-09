@@ -241,7 +241,7 @@ def _local_sort_findings(
     findings: list[TransformSupportFinding] = []
     expression_kinds = {"fieldRef", "literal", "binary", "unary", "call"}
 
-    def validate_field_refs(node: Any, path: str) -> None:
+    def validate_expression(node: Any, path: str) -> None:
         if isinstance(node, Mapping):
             if node.get("kind") == "fieldRef" and not (
                 isinstance(node.get("target"), str) and node.get("target")
@@ -255,11 +255,36 @@ def _local_sort_findings(
                         support="unsupported",
                     )
                 )
+            if node.get("kind") == "binary" and not {
+                "left",
+                "right",
+            }.issubset(node):
+                findings.append(
+                    TransformSupportFinding(
+                        "PMXFORM302",
+                        "sort:key_expression:binary_operands",
+                        "binary sort expressions require left and right operands",
+                        path,
+                        support="unsupported",
+                    )
+                )
+            if node.get("kind") == "unary" and not (
+                "operand" in node or "expr" in node
+            ):
+                findings.append(
+                    TransformSupportFinding(
+                        "PMXFORM302",
+                        "sort:key_expression:unary_operand",
+                        "unary sort expressions require an operand",
+                        path,
+                        support="unsupported",
+                    )
+                )
             for child_key, child in node.items():
-                validate_field_refs(child, f"{path}.{child_key}")
+                validate_expression(child, f"{path}.{child_key}")
         elif isinstance(node, list):
             for child_index, child in enumerate(node):
-                validate_field_refs(child, f"{path}[{child_index}]")
+                validate_expression(child, f"{path}[{child_index}]")
 
     for action_index, item in enumerate(definition.get("actions") or ()):
         if not isinstance(item, Mapping):
@@ -309,7 +334,7 @@ def _local_sort_findings(
                     )
                 )
             else:
-                validate_field_refs(expression, f"{path}.expression")
+                validate_expression(expression, f"{path}.expression")
             direction = str(key.get("direction", "asc")).lower()
             if direction not in {"asc", "desc"}:
                 findings.append(
