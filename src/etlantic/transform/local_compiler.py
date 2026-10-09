@@ -240,6 +240,27 @@ def _local_sort_findings(
     """Reject sort keys whose shape or ordering options Local cannot honor."""
     findings: list[TransformSupportFinding] = []
     expression_kinds = {"fieldRef", "literal", "binary", "unary", "call"}
+
+    def validate_field_refs(node: Any, path: str) -> None:
+        if isinstance(node, Mapping):
+            if node.get("kind") == "fieldRef" and not (
+                isinstance(node.get("target"), str) and node.get("target")
+            ):
+                findings.append(
+                    TransformSupportFinding(
+                        "PMXFORM302",
+                        "sort:key_expression:field_target",
+                        "sort field reference requires a non-empty string target",
+                        f"{path}.target",
+                        support="unsupported",
+                    )
+                )
+            for child_key, child in node.items():
+                validate_field_refs(child, f"{path}.{child_key}")
+        elif isinstance(node, list):
+            for child_index, child in enumerate(node):
+                validate_field_refs(child, f"{path}[{child_index}]")
+
     for action_index, item in enumerate(definition.get("actions") or ()):
         if not isinstance(item, Mapping):
             continue
@@ -287,18 +308,8 @@ def _local_sort_findings(
                         support="unsupported",
                     )
                 )
-            elif expression.get("kind") == "fieldRef" and not (
-                isinstance(expression.get("target"), str) and expression.get("target")
-            ):
-                findings.append(
-                    TransformSupportFinding(
-                        "PMXFORM302",
-                        "sort:key_expression:field_target",
-                        "sort field reference requires a non-empty string target",
-                        f"{path}.expression.target",
-                        support="unsupported",
-                    )
-                )
+            else:
+                validate_field_refs(expression, f"{path}.expression")
             direction = str(key.get("direction", "asc")).lower()
             if direction not in {"asc", "desc"}:
                 findings.append(

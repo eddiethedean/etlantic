@@ -96,3 +96,37 @@ def test_local_analysis_rejects_sort_field_reference_without_target() -> None:
         finding.requirement == "sort:key_expression:field_target"
         for finding in report.findings
     )
+
+
+def test_local_analysis_rejects_nested_sort_field_reference_without_target() -> None:
+    report = LocalTransformCompiler().analyze(
+        {
+            "actions": [
+                {
+                    "kind": {
+                        "action": "dtcs:sort",
+                        "parameters": {
+                            "keys": [
+                                {
+                                    "expression": {
+                                        "kind": "call",
+                                        "callee": "dtcs:lower",
+                                        "args": [{"kind": "fieldRef"}],
+                                    }
+                                }
+                            ]
+                        },
+                    }
+                }
+            ]
+        },
+        context=TransformPlanningContext("p", "s", "profile", "local"),
+    )
+
+    assert report.supported is False
+    finding = next(
+        finding
+        for finding in report.findings
+        if finding.requirement == "sort:key_expression:field_target"
+    )
+    assert finding.expression_path.endswith("expression.args[0].target")
