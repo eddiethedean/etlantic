@@ -74,3 +74,25 @@ def test_local_analysis_rejects_unsupported_sort_expression_shape() -> None:
     assert any(
         finding.requirement == "sort:key_expression" for finding in report.findings
     )
+
+
+def test_local_analysis_rejects_sort_field_reference_without_target() -> None:
+    report = LocalTransformCompiler().analyze(
+        {
+            "actions": [
+                {
+                    "kind": {
+                        "action": "dtcs:sort",
+                        "parameters": {"keys": [{"expression": {"kind": "fieldRef"}}]},
+                    }
+                }
+            ]
+        },
+        context=TransformPlanningContext("p", "s", "profile", "local"),
+    )
+
+    assert report.supported is False
+    assert any(
+        finding.requirement == "sort:key_expression:field_target"
+        for finding in report.findings
+    )

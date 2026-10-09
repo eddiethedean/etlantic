@@ -287,6 +287,18 @@ def _local_sort_findings(
                         support="unsupported",
                     )
                 )
+            elif expression.get("kind") == "fieldRef" and not (
+                isinstance(expression.get("target"), str) and expression.get("target")
+            ):
+                findings.append(
+                    TransformSupportFinding(
+                        "PMXFORM302",
+                        "sort:key_expression:field_target",
+                        "sort field reference requires a non-empty string target",
+                        f"{path}.expression.target",
+                        support="unsupported",
+                    )
+                )
             direction = str(key.get("direction", "asc")).lower()
             if direction not in {"asc", "desc"}:
                 findings.append(
