@@ -2,13 +2,15 @@
 
 from __future__ import annotations
 
+from typing import Any
+
 import pytest
 
 from etlantic.transform.compiler import TransformPlanningContext
 from etlantic.transform.local_compiler import LocalTransformCompiler, _apply
 
 
-def _sort_then_deduplicate(rows: list[dict[str, int]]) -> list[dict[str, int]]:
+def _sort_then_deduplicate(rows: list[dict[str, Any]]) -> list[dict[str, Any]]:
     sorted_rows = _apply(
         rows,
         "dtcs:sort",
@@ -53,6 +55,20 @@ def test_local_canonical_sort_honors_direction_and_null_placement() -> None:
         {},
         {},
     ) == [{"quantity": None}, {"quantity": 4}, {"quantity": 3}]
+
+
+@pytest.mark.parametrize(
+    "rows",
+    [
+        [{"id": 1, "quantity": float("nan")}, {"id": 1, "quantity": 1.0}],
+        [{"id": 1, "quantity": 1.0}, {"id": 1, "quantity": float("nan")}],
+    ],
+)
+def test_local_sort_rejects_nan_values_before_deduplication(
+    rows: list[dict[str, float]],
+) -> None:
+    with pytest.raises(ValueError, match="sort key values cannot contain NaN"):
+        _sort_then_deduplicate(rows)
 
 
 def test_local_analysis_rejects_unsupported_sort_expression_shape() -> None:

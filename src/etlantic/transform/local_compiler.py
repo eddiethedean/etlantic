@@ -5,6 +5,7 @@ from __future__ import annotations
 
 import hashlib
 import json
+import math
 from collections.abc import Mapping, Sequence
 from functools import cmp_to_key
 from typing import Any
@@ -232,6 +233,17 @@ def _rows(value: Any) -> list[dict[str, Any]]:
 def _eval(node: Any, row: Mapping[str, Any], params: Mapping[str, Any]) -> Any:
     """Compatibility wrapper around the shared portable expression evaluator."""
     return evaluate_expression(node, row, params)
+
+
+def _is_nan(value: Any) -> bool:
+    """Return whether a scalar is NaN without imposing ordering semantics."""
+    decimal_is_nan = getattr(value, "is_nan", None)
+    if callable(decimal_is_nan):
+        return bool(decimal_is_nan())
+    try:
+        return math.isnan(value)
+    except (TypeError, ValueError):
+        return False
 
 
 def _local_sort_findings(
@@ -496,16 +508,14 @@ def _apply(
                 raise ValueError("unsupported local sort key expression")
             evaluated_keys.append((expression, direction == "desc", nulls))
 
-        values = [
-            (
-                row,
-                tuple(
-                    _eval(expression, row, params)
-                    for expression, _, _ in evaluated_keys
-                ),
+        values = []
+        for row in rows:
+            sort_values = tuple(
+                _eval(expression, row, params) for expression, _, _ in evaluated_keys
             )
-            for row in rows
-        ]
+            if any(_is_nan(value) for value in sort_values):
+                raise ValueError("local sort key values cannot contain NaN")
+            values.append((row, sort_values))
 
         def compare(
             left: tuple[dict[str, Any], tuple[Any, ...]],
@@ -523,7 +533,7 @@ def _apply(
                 else:
                     try:
                         result = (left_value > right_value) - (left_value < right_value)
-                    except TypeError as exc:
+                    except (ArithmeticError, TypeError, ValueError) as exc:
                         raise ValueError(
                             "local sort key values are not mutually orderable"
                         ) from exc
