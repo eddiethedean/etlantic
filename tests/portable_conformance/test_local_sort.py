@@ -165,3 +165,59 @@ def test_local_analysis_rejects_sort_binary_expression_without_right_operand() -
         finding.requirement == "sort:key_expression:binary_operands"
         for finding in report.findings
     )
+
+
+def test_local_analysis_rejects_sort_call_without_callee() -> None:
+    report = LocalTransformCompiler().analyze(
+        {
+            "actions": [
+                {
+                    "kind": {
+                        "action": "dtcs:sort",
+                        "parameters": {
+                            "keys": [{"expression": {"kind": "call", "args": []}}]
+                        },
+                    }
+                }
+            ]
+        },
+        context=TransformPlanningContext("p", "s", "profile", "local"),
+    )
+
+    assert report.supported is False
+    assert any(
+        finding.requirement == "sort:key_expression:call_callee"
+        for finding in report.findings
+    )
+
+
+def test_local_analysis_rejects_sort_call_with_non_list_args() -> None:
+    report = LocalTransformCompiler().analyze(
+        {
+            "actions": [
+                {
+                    "kind": {
+                        "action": "dtcs:sort",
+                        "parameters": {
+                            "keys": [
+                                {
+                                    "expression": {
+                                        "kind": "call",
+                                        "callee": "dtcs:current_date",
+                                        "args": None,
+                                    }
+                                }
+                            ]
+                        },
+                    }
+                }
+            ]
+        },
+        context=TransformPlanningContext("p", "s", "profile", "local"),
+    )
+
+    assert report.supported is False
+    assert any(
+        finding.requirement == "sort:key_expression:call_args"
+        for finding in report.findings
+    )

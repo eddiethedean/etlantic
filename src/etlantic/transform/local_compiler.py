@@ -280,6 +280,28 @@ def _local_sort_findings(
                         support="unsupported",
                     )
                 )
+            if node.get("kind") == "call":
+                callee = node.get("callee")
+                if not isinstance(callee, str) or not callee:
+                    findings.append(
+                        TransformSupportFinding(
+                            "PMXFORM302",
+                            "sort:key_expression:call_callee",
+                            "call sort expressions require a non-empty string callee",
+                            f"{path}.callee",
+                            support="unsupported",
+                        )
+                    )
+                if "args" in node and not isinstance(node.get("args"), (list, tuple)):
+                    findings.append(
+                        TransformSupportFinding(
+                            "PMXFORM302",
+                            "sort:key_expression:call_args",
+                            "call sort expression arguments must be a list",
+                            f"{path}.args",
+                            support="unsupported",
+                        )
+                    )
             for child_key, child in node.items():
                 validate_expression(child, f"{path}.{child_key}")
         elif isinstance(node, list):
