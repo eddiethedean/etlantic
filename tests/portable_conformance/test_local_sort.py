@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import pytest
+
 from etlantic.transform.compiler import TransformPlanningContext
 from etlantic.transform.local_compiler import LocalTransformCompiler, _apply
 
@@ -221,3 +223,42 @@ def test_local_analysis_rejects_sort_call_with_non_list_args() -> None:
         finding.requirement == "sort:key_expression:call_args"
         for finding in report.findings
     )
+
+
+@pytest.mark.parametrize(
+    ("expression", "requirement"),
+    [
+        ({"kind": "literal"}, "sort:key_expression:literal_value"),
+        (
+            {"kind": "unary", "expr": {"kind": "fieldRef", "target": "x"}},
+            "sort:key_expression:unary_operator",
+        ),
+        (
+            {
+                "kind": "binary",
+                "left": {"kind": "fieldRef", "target": "x"},
+                "right": {"kind": "literal", "value": 1},
+            },
+            "sort:key_expression:binary_operator",
+        ),
+    ],
+)
+def test_local_analysis_rejects_sort_expression_missing_required_fields(
+    expression: dict[str, object], requirement: str
+) -> None:
+    report = LocalTransformCompiler().analyze(
+        {
+            "actions": [
+                {
+                    "kind": {
+                        "action": "dtcs:sort",
+                        "parameters": {"keys": [{"expression": expression}]},
+                    }
+                }
+            ]
+        },
+        context=TransformPlanningContext("p", "s", "profile", "local"),
+    )
+
+    assert report.supported is False
+    assert any(finding.requirement == requirement for finding in report.findings)

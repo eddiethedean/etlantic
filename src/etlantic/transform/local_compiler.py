@@ -255,31 +255,58 @@ def _local_sort_findings(
                         support="unsupported",
                     )
                 )
-            if node.get("kind") == "binary" and not {
-                "left",
-                "right",
-            }.issubset(node):
+            if node.get("kind") == "literal" and "value" not in node:
                 findings.append(
                     TransformSupportFinding(
                         "PMXFORM302",
-                        "sort:key_expression:binary_operands",
-                        "binary sort expressions require left and right operands",
+                        "sort:key_expression:literal_value",
+                        "literal sort expressions require a value",
                         path,
                         support="unsupported",
                     )
                 )
-            if node.get("kind") == "unary" and not (
-                "operand" in node or "expr" in node
-            ):
-                findings.append(
-                    TransformSupportFinding(
-                        "PMXFORM302",
-                        "sort:key_expression:unary_operand",
-                        "unary sort expressions require an operand",
-                        path,
-                        support="unsupported",
+            if node.get("kind") == "binary":
+                if not isinstance(node.get("op"), str) or not node.get("op"):
+                    findings.append(
+                        TransformSupportFinding(
+                            "PMXFORM302",
+                            "sort:key_expression:binary_operator",
+                            "binary sort expressions require a non-empty operator",
+                            f"{path}.op",
+                            support="unsupported",
+                        )
                     )
-                )
+                if not {"left", "right"}.issubset(node):
+                    findings.append(
+                        TransformSupportFinding(
+                            "PMXFORM302",
+                            "sort:key_expression:binary_operands",
+                            "binary sort expressions require left and right operands",
+                            path,
+                            support="unsupported",
+                        )
+                    )
+            if node.get("kind") == "unary":
+                if not isinstance(node.get("op"), str) or not node.get("op"):
+                    findings.append(
+                        TransformSupportFinding(
+                            "PMXFORM302",
+                            "sort:key_expression:unary_operator",
+                            "unary sort expressions require a non-empty operator",
+                            f"{path}.op",
+                            support="unsupported",
+                        )
+                    )
+                if not ("operand" in node or "expr" in node):
+                    findings.append(
+                        TransformSupportFinding(
+                            "PMXFORM302",
+                            "sort:key_expression:unary_operand",
+                            "unary sort expressions require an operand",
+                            path,
+                            support="unsupported",
+                        )
+                    )
             if node.get("kind") == "call":
                 callee = node.get("callee")
                 if not isinstance(callee, str) or not callee:
