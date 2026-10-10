@@ -51,7 +51,7 @@ python -m etlantic validate pipeline.py:SamplePipeline --profile development
 python -m etlantic run pipeline.py:SamplePipeline --profile development
 ```
 
-ETLantic 0.57.0 is the current published Beta release and supported line. The run should succeed
+ETLantic 0.57.1 is the current published Beta release and supported line. The run should succeed
 and write Ada and Grace to `data/out.json`. See the
 [full Quickstart](https://etlantic.readthedocs.io/en/stable/01_GETTING_STARTED/QUICKSTART/)
 for setup details and expected output.

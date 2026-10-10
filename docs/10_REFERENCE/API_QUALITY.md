@@ -1,6 +1,6 @@
 # API — Quality
 
-> **Status: ETLantic 0.57.0 Beta release (provisional).** Generated from
+> **Status: ETLantic 0.57.1 Beta release (provisional).** Generated from
 > `etlantic.quality`. Hub: [Python API Reference](API_REFERENCE.md).
 >
 > Wire id: `etlantic.quality/1`. ContractModel remains the semantic authority

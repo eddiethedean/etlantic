@@ -1,5 +1,5 @@
 # Changelog
 
-> **Status: 0.57.0 is the latest published Beta release; 0.57.1 is in preparation.**
+> **Status: 0.57.1 is the latest published Beta release.**
 
 --8<-- "../CHANGELOG.md"

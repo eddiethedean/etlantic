@@ -1,6 +1,6 @@
 # Reference
 
-> **Status: ETLantic 0.57.0 Beta release.**
+> **Status: ETLantic 0.57.1 Beta release.**
 
 This section separates ETLantic **0.57** released behavior from proposed
 0.x interfaces.

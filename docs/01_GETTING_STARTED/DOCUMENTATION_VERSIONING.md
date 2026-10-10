@@ -1,6 +1,6 @@
 # Documentation versioning
 
-> **Status: ETLantic 0.57.0 Beta release.** How Read the Docs aliases relate to PyPI pins.
+> **Status: ETLantic 0.57.1 Beta release.** How Read the Docs aliases relate to PyPI pins.
 > Release facts live in [`docs/release-facts.json`](../release-facts.json).
 
 ETLantic docs are published on Read the Docs.

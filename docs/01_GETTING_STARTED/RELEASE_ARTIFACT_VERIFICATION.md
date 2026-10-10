@@ -6,7 +6,7 @@ current_minor: "0.57"
 
 # Release artifact verification for 0.57.0
 
-> **Status: 0.57.0 is published.** Release assets include all 25 package
+> **Status: 0.57.1 is published.** Release assets include all 25 package
 > distributions, `release-artifacts.json`, and `sbom-warning.txt`.
 
 ## Verify published artifacts

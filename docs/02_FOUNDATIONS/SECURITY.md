@@ -1,6 +1,6 @@
 # Security Model
 
-> **Status: ETLantic 0.57.0 Beta release.**
+> **Status: ETLantic 0.57.1 Beta release.**
 
 ETLantic coordinates contracts, Python code, plugins, credentials, data
 artifacts, and external execution systems. Security is therefore a

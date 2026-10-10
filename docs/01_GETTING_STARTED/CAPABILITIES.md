@@ -1,9 +1,9 @@
 # Current Capabilities and Limitations
 
-> **Version boundary:** ETLantic 0.57.0 is the current published Beta release and supported line.
+> **Version boundary:** ETLantic 0.57.1 is the current published Beta release and supported line.
 
 
-> **Status: ETLantic 0.57.0 is the published Beta release and current supported line.** This page records
+> **Status: ETLantic 0.57.1 is the published Beta release and current supported line.** This page records
 > the published 0.56 envelope for controlled single-tenant pilots and
 > Supported isolation profiles.
 
@@ -13,7 +13,7 @@
 
 ## What works today (0.57)
 
-ETLantic 0.57.0 is the current published and supported **Beta release** for
+ETLantic 0.57.1 is the current published and supported **Beta release** for
 documented, controlled, single-tenant pilots. Install the latest published `etlantic` package from PyPI. You can embed an
 HTTP control plane with **Supported** isolation profiles
 (`isolated-deployment`, `dedicated-schema`). There is no hosted multi-tenant

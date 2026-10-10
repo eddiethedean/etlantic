@@ -1,11 +1,11 @@
 # Frequently Asked Questions
 
-> **Version boundary:** ETLantic 0.57.0 is the current published Beta release and supported line.
+> **Version boundary:** ETLantic 0.57.1 is the current published Beta release and supported line.
 
 
-> **Status: ETLantic 0.57.0 is the published Beta release.**
+> **Status: ETLantic 0.57.1 is the published Beta release.**
 
-Practical questions for ETLantic **0.57.0**. Philosophy and contract taxonomy
+Practical questions for ETLantic **0.57.1**. Philosophy and contract taxonomy
 live under [Foundations](../02_FOUNDATIONS/README.md).
 
 ## What is ETLantic?
@@ -73,7 +73,7 @@ Use `SecretRef` — never put values in plans. Follow the
 
 ## Is ETLantic production-supported?
 
-ETLantic **0.57.0** is the current **Beta release**. It targets documented
+ETLantic **0.57.1** is the current **Beta release**. It targets documented
 single-tenant pilots. You can embed an HTTP control plane
 (`etlantic-fastapi`) with **Supported** isolation profiles
 (`isolated-deployment`, `dedicated-schema`). There is no hosted multi-tenant

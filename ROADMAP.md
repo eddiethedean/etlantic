@@ -6,7 +6,7 @@
 > [Capabilities](docs/01_GETTING_STARTED/CAPABILITIES.md) for what ships now.
 > Review this header for every release or sequence change.
 
-**Latest published release:** ETLantic **0.57.0** (Beta). The 0.57 release adds
+**Latest published release:** ETLantic **0.57.1** (Beta). The 0.57 release adds
 managed backend independence and runtime supervision. The 0.56 release completes the
 application backend and is supported for documented single-tenant pilots. The
 scoped inferred-model authoring surface remains Experimental. Adaptive execution also
@@ -39,7 +39,7 @@ through **0.37** (stable foundation) are shipped.
 | Previous | 0.39 | Multi-tenant control plane (CP1) | Gate-ready / shipped evidence |
 | Previous | 0.38 | Data connectivity and connector SDK | Gate-ready / shipped evidence |
 | Previous | 0.56 | Complete application ETL backend with full specification and run control | Published / shipped evidence |
-| Current | 0.57 | Managed backend independence and runtime supervision (#278–#282) | Gate-ready for tag/publish |
+| Current | 0.57 | Managed backend independence and runtime supervision (#278–#282) | Published / shipped evidence |
 | Later | 0.58 | Brownfield adoption bridges | Planning freeze |
 | Later | 0.59 | Operator Console | Planned |
 | Later | 0.60 | Managed runtime and enterprise provider packs | Planned |

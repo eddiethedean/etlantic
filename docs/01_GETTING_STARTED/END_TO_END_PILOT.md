@@ -1,6 +1,6 @@
 # End-to-end pilot
 
-> **Status: ETLantic 0.57.0 Beta release.** Pip-only walkthrough from `init`
+> **Status: ETLantic 0.57.1 Beta release.** Pip-only walkthrough from `init`
 > through reshape, optional quality, SARIF validate, run, and `report query`.
 > No repository clone required.
 

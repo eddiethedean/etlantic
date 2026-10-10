@@ -1,8 +1,8 @@
 # Known Limitations
 
-> **Status: ETLantic 0.57.0 Beta release; adaptive execution remains Experimental.**
+> **Status: ETLantic 0.57.1 Beta release; adaptive execution remains Experimental.**
 
-ETLantic **0.57.x** is the current published Beta line, with 0.57.0 as the latest patch. Prior baselines are suitable for documented
+ETLantic **0.57.x** is the current published Beta line, with 0.57.1 as the latest patch. Prior baselines are suitable for documented
 single-tenant reference deployments and Supported multi-tenant profiles.
 0.x releases may still introduce breaking API changes between minor versions.
 **CP-GA** graduated production multi-tenant for `isolated-deployment` /

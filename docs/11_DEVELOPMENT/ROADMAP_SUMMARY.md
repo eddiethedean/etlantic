@@ -4,7 +4,7 @@ ETLantic **0.35.0** closed **Migration Completion and Joint Freeze (M7)**.
 **0.36.0** closed joint compatibility burn-in. **0.37** closed the
 stable-foundation gate. **0.38.0** closed the connectivity line.
 **0.39.0** closed CP1 incubation. **0.40.0** closed CP2 registry incubation.
-**0.57.0** is the latest published **Beta release**, adding backend independence
+**0.57.1** is the latest published **Beta release**, adding backend independence
 and runtime supervision. The 0.56 release completed the application
 backend. Phase 0.56 is published; see its exit gate and migration guide. Adaptive graduation remains pending. The 0.54
 release added public conformance and the bounded source/fusion reference; its

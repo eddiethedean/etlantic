@@ -1,6 +1,6 @@
 # Run a File-Backed Pipeline
 
-> **Status: Available in ETLantic 0.57.0 Beta.** The companion script is exercised
+> **Status: Available in ETLantic 0.57.1 Beta.** The companion script is exercised
 > by CI.
 
 Use file storage when a pipeline must survive process boundaries. Unlike

@@ -7,7 +7,7 @@ audience: developer
 
 # etlantic-sql API
 
-> **Status: ETLantic 0.57.0 Beta release.** SQL plugin (SQLite + PostgreSQL).
+> **Status: ETLantic 0.57.1 Beta release.** SQL plugin (SQLite + PostgreSQL).
 > Install narrative: package README. Hub: [Optional packages API](../API_OPTIONAL_PACKAGES.md).
 
 ## Setup

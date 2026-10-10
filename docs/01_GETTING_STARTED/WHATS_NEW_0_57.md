@@ -7,7 +7,7 @@ audience: adopter
 
 # What's new in 0.57
 
-> **Status: ETLantic 0.57.0 is the published Beta release.**
+> **Status: ETLantic 0.57.1 is the published Beta release.**
 
 ETLantic 0.57 makes the standard managed backend independent of the FastAPI
 adapter and adds public contracts for schedule commands, provider schema

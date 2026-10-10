@@ -1,6 +1,6 @@
 # Upgrade Hub
 
-> **Status: 0.57.0 is the published Beta release and current upgrade target.**
+> **Status: 0.57.1 is the published Beta release and current upgrade target.**
 
 !!! warning "Upgraders only"
     New users: start at the [docs home green path](../README.md) or
@@ -9,7 +9,7 @@
 Upgrade between ETLantic 0.x releases using the guides below. Always pin core
 and first-party plugins to the **same minor** after upgrading.
 
-The current target is the published 0.57.0 release. Older paths must complete
+The current target is the published 0.57.1 release. Older paths must complete
 the listed migrations through 0.56, then apply the 0.56 → 0.57 guide.
 
 Historical release notes: [Earlier releases](EARLIER_RELEASES.md).
@@ -31,7 +31,7 @@ partition capabilities. See [Migration 0.55 → 0.56](../11_DEVELOPMENT/MIGRATIO
 
 ## Current target
 
-**ETLantic 0.57.0** (published Beta release) — choose your guide:
+**ETLantic 0.57.1** (published Beta release) — choose your guide:
 
 |---|---|
 | 0.55.x | [Migration 0.55 → 0.56](../11_DEVELOPMENT/MIGRATION_0_55_TO_0_56.md) |

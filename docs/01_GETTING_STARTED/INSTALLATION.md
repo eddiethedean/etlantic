@@ -1,9 +1,9 @@
-# Installing ETLantic 0.57.0
+# Installing ETLantic 0.57.1
 
-> **Status: ETLantic 0.57.0 Beta release.**
+> **Status: ETLantic 0.57.1 Beta release.**
 
-ETLantic **0.57.0** supports Python 3.11–3.13. Its PyPI page is
-[available here](https://pypi.org/project/etlantic/0.57.0/). It is the
+ETLantic **0.57.1** supports Python 3.11–3.13. Its PyPI page is
+[available here](https://pypi.org/project/etlantic/0.57.1/). It is the
 current published package.
 
 !!! tip "PyPI user vs contributor clone"
@@ -20,12 +20,12 @@ current published package.
 ## Install core (Day-0 — 2 minutes)
 
 Use a virtual environment. Prefer `python -m pip` and `python -m etlantic` so
-the interpreter you intend is the one that runs. Pin **0.57.0** for
+the interpreter you intend is the one that runs. Pin **0.57.1** for
 reproducible evaluation.
 
 ### pip
 
-The pinned PyPI commands below install the published `0.57.0` release.
+The pinned PyPI commands below install the published `0.57.1` release.
 
 ```bash
 python -m venv .venv
@@ -38,7 +38,7 @@ python -m etlantic --version
 Expected output:
 
 ```text
-0.57.0
+0.57.1
 ```
 
 ### uv (no existing project)
@@ -109,7 +109,7 @@ python -m etlantic --version
 
 ## Optional engine plugins
 Core never installs Polars, Pandas, database drivers, or PySpark. Add engines
-explicitly and **match the core patch** (`0.57.0` with `0.57.0`).
+explicitly and **match the core patch** (`0.57.1` with `0.57.1`).
 
 **Primary install (separate packages):**
 
@@ -211,7 +211,7 @@ Day-0 evaluation should use the PyPI pin above.
 python -m venv .venv
 source .venv/bin/activate
 python -m pip install --upgrade pip
-python -m pip install 'git+https://github.com/eddiethedean/etlantic.git@v0.57.0'
+python -m pip install 'git+https://github.com/eddiethedean/etlantic.git@v0.57.1'
 python -m etlantic --version
 ```
 
@@ -220,7 +220,7 @@ Optional plugins from the same monorepo (after cloning):
 ```bash
 git clone https://github.com/eddiethedean/etlantic.git
 cd etlantic
-git checkout v0.57.0
+git checkout v0.57.1
 uv sync --locked
 uv sync --extra fastapi   # optional reference adapter
 uv run python -m etlantic --version

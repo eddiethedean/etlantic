@@ -1,6 +1,6 @@
 # Production Readiness and Deployment Boundaries
 
-> **Status: ETLantic 0.57.0 Beta release.**
+> **Status: ETLantic 0.57.1 Beta release.**
 
 ## Residual evaluation lead
 

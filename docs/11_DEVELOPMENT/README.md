@@ -1,6 +1,6 @@
 # Development
 
-Latest published release: ETLantic 0.57.0. See the [0.56 migration](MIGRATION_0_55_TO_0_56.md),
+Latest published release: ETLantic 0.57.1. See the [0.56 migration](MIGRATION_0_55_TO_0_56.md),
 [exit gate](EXIT_GATE_0_56.md), and
 [release evidence](evidence/phase_0_56/RELEASE_INDEX.json). The 0.57.0 release
 passed qualification and is published; see its [implementation plan](IMPLEMENTATION_PLAN_0_57.md),

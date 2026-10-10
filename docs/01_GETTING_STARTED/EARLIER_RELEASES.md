@@ -1,6 +1,6 @@
 # Earlier release notes
 
-> **Status: 0.57.0 is published.** Earlier release notes follow. Full history:
+> **Status: 0.57.1 is published.** Earlier release notes follow. Full history:
 > [Changelog](../CHANGELOG.md).
 
 | Release | Notes |
