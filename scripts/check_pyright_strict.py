@@ -147,8 +147,11 @@ EXPECTED_DIGESTS = {
     # Phase 0.57 adds managed-backend inspection and runtime roles. The
     # suppression-free diagnostic identities remain unchanged at 10,025; the
     # fingerprint moved because source locations shifted in touched files.
-    "Darwin": "eb50ef893ee8ff82278dc3f8e0be4c0b6e08d23c87a4c50a6a18888238c73c27",
-    "Linux": "eb50ef893ee8ff82278dc3f8e0be4c0b6e08d23c87a4c50a6a18888238c73c27",
+    # Issue #283 adds Local sort-expression validation and public execution
+    # regressions, with 13 reviewed shadow diagnostics and clean regular
+    # Pyright; the suppression-free inventory contains 10,072 diagnostics.
+    "Darwin": "b5bf15d7d4f98f18c6966eb9601f07ad027f65cbbc00679548312f2b3296df2f",
+    "Linux": "b5bf15d7d4f98f18c6966eb9601f07ad027f65cbbc00679548312f2b3296df2f",
 }
 
 
