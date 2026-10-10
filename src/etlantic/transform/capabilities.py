@@ -1196,6 +1196,11 @@ def portable_shape_findings(
                                 )
                             )
                 for key, value in node.items():
+                    # Literal values are data, not nested expressions. Their
+                    # mappings may contain keys like ``kind`` that happen to
+                    # match or resemble expression discriminators.
+                    if node_kind == "literal" and key == "value":
+                        continue
                     _walk_expression(value, f"{path}.{key}" if path else key)
             elif isinstance(node, list):
                 for child_index, value in enumerate(node):

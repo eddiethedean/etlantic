@@ -187,7 +187,7 @@ def test_local_analysis_treats_literal_mapping_as_payload_not_expression() -> No
                                 {
                                     "expression": {
                                         "kind": "literal",
-                                        "value": {"kind": "literal"},
+                                        "value": {"kind": "business_label"},
                                     }
                                 }
                             ]
