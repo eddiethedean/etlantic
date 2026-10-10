@@ -140,7 +140,7 @@ EXPECTED_DIGESTS = {
     # The 0.57.0 release gate now checks open minor-line dependency floors; that
     # removes four stale possibly-unbound diagnostics from the docs checker.
     # The CP-GA compatibility matrix now records the same open 0.56 line floor;
-    # its helper edits shift the remaining fingerprint, with 10,025 diagnostics.
+    # its helper edits shift the remaining diagnostics, with 10,025 diagnostics.
     # Issue #273 defers worker execution imports from the FastAPI gateway and
     # makes migration-head inspection read-only. The reviewed strict inventory
     # remains at 10,025 diagnostics; source locations moved in touched paths.
@@ -150,8 +150,11 @@ EXPECTED_DIGESTS = {
     # Issue #283 adds Local sort-expression validation and public execution
     # regressions, with 13 reviewed shadow diagnostics and clean regular
     # Pyright; the suppression-free inventory contains 10,072 diagnostics.
-    "Darwin": "b5bf15d7d4f98f18c6966eb9601f07ad027f65cbbc00679548312f2b3296df2f",
-    "Linux": "b5bf15d7d4f98f18c6966eb9601f07ad027f65cbbc00679548312f2b3296df2f",
+    # Fingerprints pin path, diagnostic rule, message, and multiplicity while
+    # ignoring source coordinates. Line shifts therefore do not require a
+    # manual baseline refresh; diagnostic content changes still fail closed.
+    "Darwin": "494b1cab9ac6a0af7a1e9ed1c8de9500693706244394baaa90f59338067354d0",
+    "Linux": "494b1cab9ac6a0af7a1e9ed1c8de9500693706244394baaa90f59338067354d0",
 }
 
 
@@ -183,13 +186,10 @@ def _diagnostic_fingerprints(payload: dict[str, Any], root: Path) -> tuple[str, 
     fingerprints: list[str] = []
     for diagnostic in payload.get("generalDiagnostics", []):
         path = Path(str(diagnostic["file"])).resolve().relative_to(resolved_root)
-        start = diagnostic["range"]["start"]
         fingerprints.append(
             json.dumps(
                 [
                     path.as_posix(),
-                    int(start["line"]),
-                    int(start["character"]),
                     str(diagnostic.get("rule") or ""),
                     str(diagnostic.get("message") or ""),
                 ],

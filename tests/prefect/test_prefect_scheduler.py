@@ -4,6 +4,7 @@
 from __future__ import annotations
 
 import os
+import tempfile
 from types import SimpleNamespace
 
 import pytest
@@ -13,6 +14,11 @@ import pytest
 # changing application/runtime configuration.
 os.environ.setdefault("PREFECT_LOGGING_TO_API_ENABLED", "false")
 os.environ.setdefault("PREFECT_SERVER_EPHEMERAL_STARTUP_TIMEOUT_SECONDS", "60")
+# Xdist workers must not run Prefect migrations against the same SQLite file.
+_prefect_worker = os.environ.get("PYTEST_XDIST_WORKER", "main")
+os.environ["PREFECT_HOME"] = tempfile.mkdtemp(
+    prefix=f"etlantic-prefect-tests-{_prefect_worker}-"
+)
 
 pytest.importorskip("prefect")
 try:
@@ -20,7 +26,7 @@ try:
 except ImportError:  # pragma: no cover - empty leftover namespace package
     pytest.skip("prefect package not installed", allow_module_level=True)
 
-from etlantic import (
+from etlantic import (  # noqa: E402
     Data,
     Extract,
     Input,
@@ -31,15 +37,18 @@ from etlantic import (
     Profile,
     Transformation,
 )
-from etlantic.exceptions import ETLanticError
-from etlantic.runtime.request import RunRequest
-from etlantic.runtime.scheduler import SCHEDULER_PROTOCOL, SchedulingContext
-from etlantic.runtime.scheduler_discovery import (
+from etlantic.exceptions import ETLanticError  # noqa: E402
+from etlantic.runtime.request import RunRequest  # noqa: E402
+from etlantic.runtime.scheduler import (  # noqa: E402
+    SCHEDULER_PROTOCOL,
+    SchedulingContext,
+)
+from etlantic.runtime.scheduler_discovery import (  # noqa: E402
     discover_scheduler_plugins,
     resolve_scheduler,
 )
-from etlantic.runtime.state import RunStatus
-from etlantic_prefect import PrefectScheduler
+from etlantic.runtime.state import RunStatus  # noqa: E402
+from etlantic_prefect import PrefectScheduler  # noqa: E402
 
 pytestmark = pytest.mark.prefect
 

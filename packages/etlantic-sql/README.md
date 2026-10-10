@@ -11,8 +11,8 @@ pipelines need `Profile(sql_engine="sql")`, SQL→SQL fusion, or Experimental
 ## Install
 
 ```bash
-pip install 'etlantic-sql==0.57.1'
-# pip install 'etlantic==0.57.1'
+pip install 'etlantic-sql==0.57.2'
+# pip install 'etlantic==0.57.2'
 export ETLANTIC_SQL_URL=postgresql+psycopg://user:pass@localhost:5432/etlantic
 # Or use SQLite:
 # export ETLANTIC_SQL_URL=sqlite+pysqlite:///:memory:

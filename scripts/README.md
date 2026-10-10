@@ -15,6 +15,7 @@ Maintainer and CI helpers under `scripts/`. Prefer the paths documented in
 | `check_plugin_manifests.py` | Plugin manifest digests / trust metadata | Checks |
 | `check_agent_guidance.py` | AGENTS.md / agent surface consistency | Checks |
 | `check_release.py` | Release readiness (versions, packages) | Checks |
+| `bump_version.py` | Synchronize lockstep package versions, current-facing references, lockfile, and manifest digests | [Version bump workflow](../docs/11_DEVELOPMENT/RELEASE_PROCESS.md#version-bump-workflow) |
 | `check_registry_conformance.py` | CP2 registry promote/suspend (memory + SQLModel `--fake`) | Manual / optional |
 | `check_registry_isolation.py` | CP2 two-tenant/two-workspace isolation + profile matrix (`--fake`) | Manual / optional |
 | `check_surface_inventory.py` | Public surface inventory gate | Checks |
@@ -25,6 +26,19 @@ Maintainer and CI helpers under `scripts/`. Prefer the paths documented in
 | `generate_diagnostics_catalog.py` | Emit code→source diagnostics inventory | Manual / docs regen |
 
 ## Common recipes
+
+```bash
+# Preview and apply a lockstep 0.x.y package version bump
+uv run python scripts/bump_version.py 0.58.0 --dry-run
+uv run python scripts/bump_version.py 0.58.0
+```
+
+The preview lists affected tracked files. Applying the change also refreshes
+`uv.lock` and plugin manifest digests. Review publication state, support
+wording, changelog notes, and version-derived fixtures afterward. Historical
+release prose remains intact; docs `current_minor` markers are updated for a
+minor bump. See the [full workflow](../docs/11_DEVELOPMENT/RELEASE_PROCESS.md#version-bump-workflow)
+before using this for a release.
 
 ```bash
 # Docs-only PR

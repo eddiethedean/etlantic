@@ -15,7 +15,7 @@ standards own semantics.
 |---|---|---|---|
 | **Docs / typo** | ~30 min | ruff + `check_docs` + `check_agent_guidance` | Markdown, nav, examples prose |
 | **Core / plugin** | full CI-equivalent | `./scripts/test_core.sh` + authoring + docs + surface inventory | Runtime, plugins, schemas |
-| **Release-impacting** | full + packaging | Everything in [Full CI-equivalent checks](#full-ci-equivalent-checks-core-plugin-release-impacting) | Version pins, manifests, wheels |
+| **Release-impacting** | full + packaging | Everything in [Full CI-equivalent checks](#full-ci-equivalent-checks-core-plugin-release-impacting) | Version pins, manifests, wheels; follow the [release version bump guide](RELEASE_PROCESS.md#version-bump-workflow) |
 
 Docs-only PRs do **not** need the full pytest wall. Property-based suites in
 [TESTING.md](TESTING.md) are aspirational — not a mandatory PR checklist.

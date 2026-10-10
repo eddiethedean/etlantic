@@ -10,8 +10,9 @@ from pathlib import Path
 
 # Pyright/type-ignore comments are temporary compatibility boundaries. Locking
 # their exact inventory prevents a new suppression from silently widening the
-# strict-checking escape hatch; intentional changes must update this digest in
-# the same review. AC056-020 action-scope checks shifted later source lines;
+# strict-checking escape hatch. Paths and directive text are pinned; line
+# numbers are omitted so unrelated edits do not require re-pinning the gate.
+# AC056-020 action-scope checks shifted later source lines;
 # prior AC056-019/044/031/015 work shifted other positions. AC056-021's
 # validation imports and branches shift locations again. Phase 0.56 adds two
 # reviewed file-scoped exceptions: FastAPI route decorators appear unused to
@@ -53,7 +54,9 @@ from pathlib import Path
 # Phase 0.57 extracts schedule route handlers and adds backend/service/provider
 # surfaces. The existing route-decorator suppression remains; no directives
 # were added or removed. Re-pin the 789-entry inventory after source shifts.
-EXPECTED_DIGEST = "5091d99c1d943113d2b2de9cfafb02f326a0bfc44f7d0693c981c5a50996bb87"
+# Prefect test isolation shifts an existing inline ignore; no directives were
+# added or removed. Re-pin the unchanged 789-entry inventory after source shifts.
+EXPECTED_DIGEST = "17ec03efacc97bd79d9097382b43f4326615195f982d2629ea7e6b874eeea3d7"
 
 _IGNORED_DIRECTORIES = frozenset(
     {
@@ -82,17 +85,12 @@ def _inventory(root: Path) -> tuple[str, ...]:
         if _IGNORED_DIRECTORIES.intersection(path.relative_to(root).parts):
             continue
         source = path.read_text(encoding="utf-8")
-        lines = source.splitlines()
         try:
             tokens = tokenize.generate_tokens(io.StringIO(source).readline)
             for token in tokens:
                 if token.type != tokenize.COMMENT or not _is_suppression(token.string):
                     continue
-                line_number = token.start[0]
-                inventory.append(
-                    f"{path.relative_to(root).as_posix()}:{line_number}:"
-                    f"{lines[line_number - 1]}"
-                )
+                inventory.append(f"{path.relative_to(root).as_posix()}:{token.string}")
         except tokenize.TokenError:
             # Pyright will report malformed Python separately; preserve any
             # suppressions tokenized before the syntax error for this gate.

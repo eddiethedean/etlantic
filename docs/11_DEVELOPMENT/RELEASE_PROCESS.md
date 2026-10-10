@@ -17,6 +17,51 @@ Breaking changes must be documented. Official plugin packages currently share
 the core minor version (for example `0.38.0`).
 Official plugins and root extras declare the compatible 0.57 line floor (`>=0.57.0`) without a patch lockstep pin or upper cap.
 
+## Version bump workflow
+
+Use `scripts/bump_version.py` for a lockstep release version change. It accepts
+an increasing semantic `0.x.y` version and reads the current version from
+`src/etlantic/_version.py`. Before applying it, make sure
+`docs/release-facts.json` agrees with that version. The command works from the
+repository checkout and considers tracked files only.
+
+Preview first, then apply the same version:
+
+```bash
+uv run python scripts/bump_version.py 0.57.3 --dry-run
+uv run python scripts/bump_version.py 0.57.3
+```
+
+The preview lists the files whose contents will change; it does not write
+files or run the lock and manifest steps. Applying the bump synchronizes the
+core and companion package versions, current-facing version references,
+release-facts URLs, and the active changelog section. A minor bump also moves
+open dependency floors and live `current_minor` page markers to the new minor.
+It then runs `uv lock`, regenerates plugin manifest digests, and checks those
+digests. Historical changelog entries and historical evidence prose are
+preserved; live current-minor page markers in docs remain synchronized.
+
+The synchronizer does not decide whether the new version is published or a
+candidate, write release notes, change support policy, or regenerate
+version-derived test fixtures. Review and update these by hand:
+
+- `docs/release-facts.json` publication state, dates, suitability, and support
+  line; verify that the docs, PyPI, and GitHub release URLs are correct.
+- `CHANGELOG.md` release notes and any migration guide. The command creates a
+  basic `Changed` entry only when the current version has no unreleased
+  section.
+- `docs/CHANGELOG.md`, release-candidate wording, `SUPPORT.md`, and
+  `SECURITY.md`, so they accurately distinguish the latest published version
+  from the candidate.
+- Any changed version-derived fixtures or qualification artifacts. Inspect
+  their diffs and regenerate them with the owning fixture or evidence workflow.
+
+After review, verify synchronization and run the checks in the
+[pre-release checklist](#pre-release-checklist). In particular, run
+`uv sync --locked`, `scripts/check_docs.py`, `scripts/check_plugin_manifests.py`,
+and `scripts/check_release.py` before tagging. The bump command does not create
+a tag or publish packages.
+
 ## Package categories
 
 | Category | Examples | Classifier | Docs maturity |
@@ -75,9 +120,12 @@ wheel). Build with `npm run package` after `npm install`.
    [ROADMAP](https://github.com/eddiethedean/etlantic/blob/main/ROADMAP.md) and
    [CAPABILITIES](../01_GETTING_STARTED/CAPABILITIES.md).
 2. Resolve release-blocking issues; `main` CI must be green.
-3. Confirm every package version and `__version__` equals the intended tag
-   (no `v` prefix). Root extras accept the matching minor line from its `.0` floor; deployment lockfiles may pin exact artifacts.
-   When plugin manifest JSON changes, regenerate digests:
+3. Follow the [version bump workflow](#version-bump-workflow), then confirm
+   every package version and `__version__` equals the intended tag (no `v`
+   prefix). Root extras accept the matching minor line from its `.0` floor;
+   deployment lockfiles may pin exact artifacts.
+
+   To refresh manifest digests after changing manifest entries independently:
 
    ```bash
    uv run python scripts/check_plugin_manifests.py --write-digests

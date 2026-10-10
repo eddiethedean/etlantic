@@ -9,14 +9,14 @@ Install the current release:
 
 ```bash
 python -m pip install \
-  'etlantic==0.57.1' \
-  'medallantic==0.57.1'
+  'etlantic==0.57.2' \
+  'medallantic==0.57.2'
 ```
 
 The equivalent ETLantic extra is:
 
 ```bash
-python -m pip install 'etlantic[medallantic]==0.57.1'
+python -m pip install 'etlantic[medallantic]==0.57.2'
 ```
 
 Execution engines remain optional. Install the engine separately when moving

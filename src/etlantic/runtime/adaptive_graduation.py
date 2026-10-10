@@ -14,6 +14,8 @@ from datetime import datetime
 from types import MappingProxyType
 from typing import Any
 
+from .._version import __version__
+
 MATURITY = {"Experimental": 0, "Available": 1}
 COMPONENTS = {
     "engine",
@@ -230,7 +232,7 @@ def validate_candidate(value: Mapping[str, Any], decision: Mapping[str, Any]) ->
         ):
             raise ValueError("Candidate requires exact package/backend pins")
         pins = {
-            "etlantic": "0.57.1" if identity == "chain/1:local" else "0.54.0",
+            "etlantic": __version__ if identity == "chain/1:local" else "0.54.0",
             "etlantic-polars": "0.54.0",
             "etlantic-pandas": "0.54.0",
             "polars": "1.42.1",
