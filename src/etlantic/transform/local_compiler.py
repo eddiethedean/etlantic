@@ -8,7 +8,7 @@ import json
 import math
 from collections.abc import Mapping, Sequence
 from functools import cmp_to_key
-from typing import Any
+from typing import Any, cast
 
 from etlantic.transform.capabilities import (
     match_requirements,
@@ -394,11 +394,15 @@ def _local_sort_findings(
             legacy_name = key.get("field") or key.get("column") or key.get("name")
             if expression is None and isinstance(legacy_name, str) and legacy_name:
                 expression = {"kind": "fieldRef", "target": legacy_name}
-            if (
-                not isinstance(expression, Mapping)
-                or not isinstance(expression.get("kind"), str)
-                or expression.get("kind") not in expression_kinds
-            ):
+            if isinstance(expression, Mapping):
+                expression_kind: Any = cast(Mapping[str, Any], expression).get("kind")
+                invalid_expression = (
+                    not isinstance(expression_kind, str)
+                    or expression_kind not in expression_kinds
+                )
+            else:
+                invalid_expression = True
+            if invalid_expression:
                 findings.append(
                     TransformSupportFinding(
                         "PMXFORM302",

@@ -150,11 +150,14 @@ EXPECTED_DIGESTS = {
     # Issue #283 adds Local sort-expression validation and public execution
     # regressions, with 13 reviewed shadow diagnostics and clean regular
     # Pyright; the suppression-free inventory contains 10,072 diagnostics.
+    # The sort kind guard now narrows the expression mapping before lookup,
+    # removing one partially unknown .get diagnostic from the shadow inventory.
+    # The reviewed suppression-free inventory contains 10,071 diagnostics.
     # Fingerprints pin path, diagnostic rule, message, and multiplicity while
     # ignoring source coordinates. Line shifts therefore do not require a
     # manual baseline refresh; diagnostic content changes still fail closed.
-    "Darwin": "494b1cab9ac6a0af7a1e9ed1c8de9500693706244394baaa90f59338067354d0",
-    "Linux": "494b1cab9ac6a0af7a1e9ed1c8de9500693706244394baaa90f59338067354d0",
+    "Darwin": "8b14e4efdc0e47b37c06cf1aa39d2def45a9aa3fd1e1ae2568a2588c0936f0d7",
+    "Linux": "8b14e4efdc0e47b37c06cf1aa39d2def45a9aa3fd1e1ae2568a2588c0936f0d7",
 }
 
 
