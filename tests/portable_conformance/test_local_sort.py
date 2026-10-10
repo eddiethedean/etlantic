@@ -152,6 +152,39 @@ def test_local_analysis_rejects_unsupported_sort_expression_shape() -> None:
     )
 
 
+def test_local_analysis_rejects_sort_expression_with_non_string_kind() -> None:
+    report = LocalTransformCompiler().analyze(
+        {
+            "actions": [
+                {
+                    "kind": {
+                        "action": "dtcs:sort",
+                        "parameters": {
+                            "keys": [{"expression": {"kind": {"unexpected": "object"}}}]
+                        },
+                    }
+                }
+            ]
+        },
+        context=TransformPlanningContext("p", "s", "profile", "local"),
+    )
+
+    assert report.supported is False
+    assert any(
+        finding.requirement == "sort:key_expression" for finding in report.findings
+    )
+
+
+def test_local_analysis_rejects_sort_with_no_keys() -> None:
+    report = LocalTransformCompiler().analyze(
+        {"actions": [{"kind": {"action": "dtcs:sort", "parameters": {"keys": []}}}]},
+        context=TransformPlanningContext("p", "s", "profile", "local"),
+    )
+
+    assert report.supported is False
+    assert any(finding.requirement == "sort:keys" for finding in report.findings)
+
+
 def test_local_analysis_rejects_sort_field_reference_without_target() -> None:
     report = LocalTransformCompiler().analyze(
         {

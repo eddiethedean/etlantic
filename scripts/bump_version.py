@@ -75,7 +75,11 @@ def replace_current_minor_markers(text: str, old: str, new: str) -> str:
 def replace_version(text: str, old: str, new: str) -> str:
     old_minor = ".".join(old.split(".")[:2])
     new_minor = ".".join(new.split(".")[:2])
-    text = text.replace(old, new)
+    version_pattern = re.compile(
+        rf"(?<![A-Za-z0-9])(?P<prefix>v?){re.escape(old)}"
+        r"(?![A-Za-z0-9_+-]|\.\d)"
+    )
+    text = version_pattern.sub(lambda match: f"{match.group('prefix')}{new}", text)
     if old_minor != new_minor:
         # Dependency policy is an open minor-line floor, never a patch pin.
         text = text.replace(f">={old_minor}.0", f">={new_minor}.0")

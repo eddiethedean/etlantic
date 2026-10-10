@@ -365,6 +365,16 @@ def _local_sort_findings(
         keys = parameters.get("keys") or parameters.get("fields") or []
         if not isinstance(keys, list):
             keys = [keys]
+        if not keys:
+            findings.append(
+                TransformSupportFinding(
+                    "PMXFORM302",
+                    "sort:keys",
+                    "sort requires at least one key",
+                    f"actions[{action_index}].kind.parameters.keys",
+                    support="unsupported",
+                )
+            )
         for key_index, key in enumerate(keys):
             path = f"actions[{action_index}].kind.parameters.keys[{key_index}]"
             if isinstance(key, str) and key:
@@ -386,6 +396,7 @@ def _local_sort_findings(
                 expression = {"kind": "fieldRef", "target": legacy_name}
             if (
                 not isinstance(expression, Mapping)
+                or not isinstance(expression.get("kind"), str)
                 or expression.get("kind") not in expression_kinds
             ):
                 findings.append(
