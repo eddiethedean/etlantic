@@ -217,6 +217,10 @@ def main() -> int:
         print(f"Would update {len(changes)} files from {old} to {args.version}:")
         for path in sorted(changes):
             print(f"  {path.relative_to(ROOT)}")
+        print(
+            "Apply also refreshes uv.lock, plugin manifest digests, and the "
+            "DuckDB 0.49 evidence bundle."
+        )
         return 0
 
     for path, content in changes.items():
@@ -231,11 +235,38 @@ def main() -> int:
     subprocess.run(
         [sys.executable, "scripts/check_plugin_manifests.py"], cwd=ROOT, check=True
     )
+    subprocess.run(
+        [
+            "uv",
+            "run",
+            "--group",
+            "duckdb",
+            "python",
+            "scripts/check_duckdb_0_49.py",
+            "--write",
+        ],
+        cwd=ROOT,
+        check=True,
+    )
+    subprocess.run(
+        [
+            "uv",
+            "run",
+            "--group",
+            "duckdb",
+            "python",
+            "scripts/check_duckdb_0_49.py",
+        ],
+        cwd=ROOT,
+        check=True,
+    )
     print(
         f"Synchronized ETLantic from {old} to {args.version} ({len(changes)} source files)."
     )
     print(
-        "Review release facts, changelog notes, support claims, and generated goldens before release checks."
+        "Refreshed the DuckDB 0.49 evidence bundle. Review release facts, "
+        "changelog notes, support claims, and remaining generated goldens "
+        "before release checks."
     )
     return 0
 

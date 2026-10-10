@@ -32,13 +32,16 @@ uv run python scripts/bump_version.py 0.57.3 --dry-run
 uv run python scripts/bump_version.py 0.57.3
 ```
 
-The preview lists the files whose contents will change; it does not write
-files or run the lock and manifest steps. Applying the bump synchronizes the
+The preview lists tracked version-surface files whose contents will change and
+notes the generated refresh steps; it does not write files or run them.
+Applying the bump synchronizes the
 core and companion package versions, current-facing version references,
 release-facts URLs, and the active changelog section. A minor bump also moves
 open dependency floors and live `current_minor` page markers to the new minor.
 It then runs `uv lock`, regenerates plugin manifest digests, and checks those
-digests. Historical changelog entries and historical evidence prose are
+digests. It also regenerates and verifies the deterministic DuckDB 0.49
+evidence bundle, whose package version and manifest digest track the current
+release. Historical changelog entries and historical evidence prose are
 preserved; live current-minor page markers in docs remain synchronized.
 
 The synchronizer does not decide whether the new version is published or a
@@ -53,8 +56,9 @@ version-derived test fixtures. Review and update these by hand:
 - `docs/CHANGELOG.md`, release-candidate wording, `SUPPORT.md`, and
   `SECURITY.md`, so they accurately distinguish the latest published version
   from the candidate.
-- Any changed version-derived fixtures or qualification artifacts. Inspect
-  their diffs and regenerate them with the owning fixture or evidence workflow.
+- Any other changed version-derived fixtures or qualification artifacts.
+  Inspect their diffs and regenerate them with the owning fixture or evidence
+  workflow.
 
 After review, verify synchronization and run the checks in the
 [pre-release checklist](#pre-release-checklist). In particular, run
