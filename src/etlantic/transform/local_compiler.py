@@ -345,7 +345,10 @@ def _local_sort_findings(
                 # A literal's value is payload, not another expression node.
                 # In particular, JSON objects may legitimately contain keys
                 # such as ``kind`` that resemble expression discriminators.
-                if node.get("kind") == "literal" and child_key == "value":
+                if (
+                    cast(Mapping[str, Any], node).get("kind") == "literal"
+                    and child_key == "value"
+                ):
                     continue
                 validate_expression(child, f"{path}.{child_key}")
         elif isinstance(node, list):
