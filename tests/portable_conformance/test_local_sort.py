@@ -175,6 +175,33 @@ def test_local_analysis_rejects_sort_expression_with_non_string_kind() -> None:
     )
 
 
+def test_local_analysis_treats_literal_mapping_as_payload_not_expression() -> None:
+    report = LocalTransformCompiler().analyze(
+        {
+            "actions": [
+                {
+                    "kind": {
+                        "action": "dtcs:sort",
+                        "parameters": {
+                            "keys": [
+                                {
+                                    "expression": {
+                                        "kind": "literal",
+                                        "value": {"kind": "literal"},
+                                    }
+                                }
+                            ]
+                        },
+                    }
+                }
+            ]
+        },
+        context=TransformPlanningContext("p", "s", "profile", "local"),
+    )
+
+    assert report.supported is True
+
+
 def test_local_analysis_rejects_sort_with_no_keys() -> None:
     report = LocalTransformCompiler().analyze(
         {"actions": [{"kind": {"action": "dtcs:sort", "parameters": {"keys": []}}}]},
