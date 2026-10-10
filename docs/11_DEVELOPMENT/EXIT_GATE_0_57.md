@@ -9,8 +9,8 @@ current_minor: "0.57"
 **Release decision: GO for `v0.57.0`.** Candidate source revision
 [`94fe5c29`](https://github.com/eddiethedean/etlantic/commit/94fe5c29182c37ab9398146b61609cb6ebc9a59a)
 passed the full CI matrix (run [37832487031](https://github.com/eddiethedean/etlantic/actions/runs/37832487031),
-attempt 2) and the acceptance evidence below. ETLantic 0.56.2 remains the
-published release until 0.57.0 is tagged and published.
+attempt 2) and the acceptance evidence below. At qualification time, ETLantic
+0.56.2 remained the published release; ETLantic 0.57.0 is now tagged and published.
 
 ## Scope
 
@@ -63,4 +63,6 @@ passing evidence when they are closed.
 
 ## Decision
 
-**GO for release.** Tagging and publication remain separate release actions.
+**Published.** ETLantic 0.57.0 was tagged as [`v0.57.0`](https://github.com/eddiethedean/etlantic/releases/tag/v0.57.0),
+and the [post-tag release workflow](https://github.com/eddiethedean/etlantic/actions/runs/37839473334)
+completed successfully.

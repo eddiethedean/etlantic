@@ -230,7 +230,7 @@ def validate_candidate(value: Mapping[str, Any], decision: Mapping[str, Any]) ->
         ):
             raise ValueError("Candidate requires exact package/backend pins")
         pins = {
-            "etlantic": "0.57.0" if identity == "chain/1:local" else "0.54.0",
+            "etlantic": "0.57.1" if identity == "chain/1:local" else "0.54.0",
             "etlantic-polars": "0.54.0",
             "etlantic-pandas": "0.54.0",
             "polars": "1.42.1",

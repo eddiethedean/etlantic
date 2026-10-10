@@ -7,13 +7,13 @@ audience: developer
 
 # etlantic-pyspark API
 
-> **Status: ETLantic 0.56.0 Beta release.** PySpark plugin + portable compiler.
+> **Status: ETLantic 0.57.0 Beta release.** PySpark plugin + portable compiler.
 > Install narrative: package README. Hub: [Optional packages API](../API_OPTIONAL_PACKAGES.md).
 
 ## Setup
 
 ```bash
-pip install 'etlantic-pyspark==0.56.0'
+pip install 'etlantic-pyspark==0.57.1'
 ```
 
 ```python

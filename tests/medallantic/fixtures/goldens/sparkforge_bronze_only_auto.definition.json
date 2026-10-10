@@ -4,7 +4,7 @@
     "orders__rejected"
   ],
   "convertibility": "auto",
-  "definition_fingerprint": "fdea0b33a1cd5bf4f968680877b3f1adfa68364d869ade2162be2ed3429ce08a",
+  "definition_fingerprint": "78045094c18eacce417c5148d19aea114a4113c372b8caa45c8634698e07c42c",
   "generator_id": "medallantic.migrate.generate",
   "node_names": [
     "orders__ingest",

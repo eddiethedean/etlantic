@@ -13,9 +13,7 @@ Capabilities teaser: [Capabilities](CAPABILITIES.md) (full matrix after first su
 
 After Ada/Grace success: [SDK 10 minutes](SDK_10_MINUTES.md) (secondary),
 [FAQ](FAQ.md), [Troubleshooting](TROUBLESHOOTING.md), [Upgrade](UPGRADE.md),
-[What's New in 0.56](WHATS_NEW_0_56.md) (published Beta release).
-The [0.57.0 release candidate](WHATS_NEW_0_57.md) is undergoing qualification;
-it has not been published.
+[What's New in 0.57](WHATS_NEW_0_57.md) (published Beta release).
 
 Ignore **Project → Archive index** (and maintainer plans linked from it) until you contribute.
 

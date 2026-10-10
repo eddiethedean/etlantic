@@ -14,7 +14,7 @@ audience: developer
 ## Setup
 
 ```bash
-pip install 'etlantic-spark-connect==0.56.0'
+pip install 'etlantic-spark-connect==0.57.1'
 ```
 
 ```python

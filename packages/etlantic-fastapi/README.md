@@ -22,9 +22,9 @@ pollers observe accepted jobs outside the request.
 ## Install
 
 ```bash
-pip install 'etlantic-fastapi==0.57.0'
+pip install 'etlantic-fastapi==0.57.1'
 # keep core on the same pin:
-# pip install 'etlantic==0.57.0'
+# pip install 'etlantic==0.57.1'
 ```
 
 ## Standard SQLModel-backed managed backend
@@ -40,7 +40,7 @@ scope-isolated run reports, expiring idempotent lifecycle-event tombstones,
 immutable input resources, and indexed result-retention metadata.
 
 ```bash
-pip install 'etlantic-fastapi[managed]==0.57.0'
+pip install 'etlantic-fastapi[managed]==0.57.1'
 ```
 
 The migration is an explicit deployment step. Use the public

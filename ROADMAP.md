@@ -6,9 +6,8 @@
 > [Capabilities](docs/01_GETTING_STARTED/CAPABILITIES.md) for what ships now.
 > Review this header for every release or sequence change.
 
-**Latest published release:** ETLantic **0.56.2** (Beta). ETLantic **0.57.0**
-is in candidate qualification; publication is pending its exit gate. The 0.56
-release completes the
+**Latest published release:** ETLantic **0.57.0** (Beta). The 0.57 release adds
+managed backend independence and runtime supervision. The 0.56 release completes the
 application backend and is supported for documented single-tenant pilots. The
 scoped inferred-model authoring surface remains Experimental. Adaptive execution also
 remains Experimental; its independent graduation is still pending. See the [0.55 exit gate](docs/11_DEVELOPMENT/EXIT_GATE_0_55.md)
@@ -46,7 +45,7 @@ through **0.37** (stable foundation) are shipped.
 | Later | 0.60 | Managed runtime and enterprise provider packs | Planned |
 | Later | 0.61 | TransformationModel incubation | Proposed |
 | Foundation | 0.36–0.37 | Joint burn-in → stable foundation | Gate-ready (0.37) |
-| Post-foundation | 0.38–0.61 | Connectivity → control plane → developer intelligence → optimization → streaming → federation → governed AI → DuckDB package → portable-engine baseline → adaptive execution → inferred model authoring → complete application backend → backend independence → adoption → operations → providers → modeling incubation | In progress (0.56 published; 0.57 candidate; adaptive graduation pending) |
+| Post-foundation | 0.38–0.61 | Connectivity → control plane → developer intelligence → optimization → streaming → federation → governed AI → DuckDB package → portable-engine baseline → adaptive execution → inferred model authoring → complete application backend → backend independence → adoption → operations → providers → modeling incubation | In progress (0.57 published; adaptive graduation pending) |
 
 For connectivity evidence, see
 [What's New in 0.38](docs/01_GETTING_STARTED/WHATS_NEW_0_38.md) and the
@@ -4778,8 +4777,8 @@ Acceptance:
 Consumers own process signals, loops, threads, probes, grace periods and
 deployment support policy. This phase adds no deployment orchestrator,
 cross-store atomicity, or exactly-once external-effect claim. The already-fixed
-#273 behavior remains a regression gate. New APIs are planned until qualified
-and published; 0.56.2 remains the current release during implementation.
+#273 behavior remains a regression gate. New APIs were planned until qualified
+and published; 0.56.2 remained the current release during implementation.
 
 ## 0.58 — Brownfield Adoption Bridges
 

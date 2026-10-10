@@ -4,7 +4,7 @@ The [0.54 Experimental adaptive surface](../11_DEVELOPMENT/ADAPTIVE_0_54_USAGE.m
 placement-bound scan fusion. Conformance and content hashes do not grant runtime
 authority; adaptive remains Experimental and stored `/2` never downgrades.
 
-> **Status: ETLantic 0.56.0 Beta release** for deterministic
+> **Status: ETLantic 0.57.0 Beta release** for deterministic
 > `PipelinePlan` production via `etlantic plan` / the planner APIs, plus
 > advisory optimization via `etlantic plan optimize` / `etl.optimization`.
 > Plans are secret-free and do not execute transforms. Some advanced analysis

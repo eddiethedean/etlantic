@@ -7,13 +7,13 @@ audience: developer
 
 # etlantic-pandas API
 
-> **Status: ETLantic 0.56.0 Beta release.** Pandas dataframe plugin + portable compiler.
+> **Status: ETLantic 0.57.0 Beta release.** Pandas dataframe plugin + portable compiler.
 > Install narrative: package README. Hub: [Optional packages API](../API_OPTIONAL_PACKAGES.md).
 
 ## Setup
 
 ```bash
-pip install 'etlantic-pandas==0.56.0'
+pip install 'etlantic-pandas==0.57.1'
 ```
 
 ```python

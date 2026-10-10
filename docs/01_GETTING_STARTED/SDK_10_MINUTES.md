@@ -11,7 +11,7 @@ Use the curated root (`import etlantic as etl`) for a tiny in-process pipeline.
 Same install as [Installation](INSTALLATION.md):
 
 ```bash
-python -m pip install 'etlantic==0.56.0'
+python -m pip install 'etlantic==0.57.1'
 ```
 
 ## Author, validate, plan, run

@@ -1,6 +1,6 @@
 # Upgrade Hub
 
-> **Status: 0.56.2 is the published Beta release and current upgrade target.**
+> **Status: 0.57.0 is the published Beta release and current upgrade target.**
 
 !!! warning "Upgraders only"
     New users: start at the [docs home green path](../README.md) or
@@ -9,14 +9,14 @@
 Upgrade between ETLantic 0.x releases using the guides below. Always pin core
 and first-party plugins to the **same minor** after upgrading.
 
-The current target is the published 0.56.2 release. Older paths must complete
-the listed migrations through 0.55, then apply the 0.55 → 0.56 guide.
+The current target is the published 0.57.0 release. Older paths must complete
+the listed migrations through 0.56, then apply the 0.56 → 0.57 guide.
 
 Historical release notes: [Earlier releases](EARLIER_RELEASES.md).
 
 ## 0.57 configuration cheat sheet
 
-The 0.57 candidate keeps core and first-party plugin versions in lockstep and
+The 0.57 release keeps core and first-party plugin versions in lockstep and
 requires `etlantic>=0.57.0` for companion packages. Managed SQLModel deployments
 continue to use the 0.56 migration head; apply migrations as an operator step
 and use the provider's read-only `inspect_schema()` check during construction.
@@ -25,13 +25,13 @@ See [Migration 0.56 → 0.57](../11_DEVELOPMENT/MIGRATION_0_56_TO_0_57.md).
 ## 0.56 configuration cheat sheet
 
 The 0.56 release uses lockstep core and plugin versions with the constraint
-`etlantic>=0.56.0,<0.57`. For PostgreSQL partition repair/backfill, configure
+`etlantic>=0.57.0,<0.58`. For PostgreSQL partition repair/backfill, configure
 `partition_column` on both relevant connector bindings and allow the required
 partition capabilities. See [Migration 0.55 → 0.56](../11_DEVELOPMENT/MIGRATION_0_55_TO_0_56.md).
 
 ## Current target
 
-**ETLantic 0.56.2** (published Beta release) — choose your guide:
+**ETLantic 0.57.0** (published Beta release) — choose your guide:
 
 |---|---|
 | 0.55.x | [Migration 0.55 → 0.56](../11_DEVELOPMENT/MIGRATION_0_55_TO_0_56.md) |

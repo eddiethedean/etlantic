@@ -1,5 +1,5 @@
 ---
-status: candidate
+status: available
 since: "0.57.0"
 current_minor: "0.57"
 audience: adopter
@@ -7,13 +7,13 @@ audience: adopter
 
 # What's new in 0.57
 
-> **Status: 0.57.0 release candidate. Candidate qualification passed; publication is pending.**
+> **Status: ETLantic 0.57.0 is the published Beta release.**
 
 ETLantic 0.57 makes the standard managed backend independent of the FastAPI
 adapter and adds public contracts for schedule commands, provider schema
 compatibility, and runtime supervision.
 
-## Candidate scope
+## Release scope
 
 - Construct the standard authorized backend and its SQLModel store graph with
   `etlantic_sqlmodel.create_managed_backend`, without FastAPI or an HTTP context
@@ -40,5 +40,5 @@ for trusted identity derivation, process liveness, poll threads, grace periods,
 and joining drained work.
 
 See the [0.56 → 0.57 migration guide](../11_DEVELOPMENT/MIGRATION_0_56_TO_0_57.md)
-and [0.57 exit gate](../11_DEVELOPMENT/EXIT_GATE_0_57.md). This candidate does
+and [0.57 exit gate](../11_DEVELOPMENT/EXIT_GATE_0_57.md). This release does
 not claim production multi-tenant isolation or exactly-once external effects.

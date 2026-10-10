@@ -5,7 +5,7 @@
   "passed_scenarios": 6,
   "planner_version": "0.52",
   "public_schema": "etlantic.plan/2",
-  "repository_revision": "sha256:2af7992224f126a4ed03a41ed4b7003104bc4fb14bb1a924d17f1bfc57979a47",
+  "repository_revision": "sha256:183a5cc69db8183c4c5715fae6602b84dfb356c44fe607990bb6d3b6b4e61498",
   "result": "pass",
   "scenario_count": 6,
   "scenarios": [
@@ -15,7 +15,7 @@
       "executed": true,
       "expected": "pass",
       "id": "test_final_052_001_target_limit_precedes_plugin_discovery",
-      "plan_fingerprint": "100e50ab6ac4f1eebd6a3e2fbdceb9742ad810c794d63720062b50d2914e7167",
+      "plan_fingerprint": "4f1b12b42545bff6f0a5cd6b3056ad3a442c126a229382eaa31046a3fbe7a3b9",
       "result": "pass",
       "verification": "test_final_052_001_target_limit_precedes_plugin_discovery"
     },
@@ -25,7 +25,7 @@
       "executed": true,
       "expected": "pass",
       "id": "test_adaptive_resource_limits_fail_before_crossing",
-      "plan_fingerprint": "100e50ab6ac4f1eebd6a3e2fbdceb9742ad810c794d63720062b50d2914e7167",
+      "plan_fingerprint": "4f1b12b42545bff6f0a5cd6b3056ad3a442c126a229382eaa31046a3fbe7a3b9",
       "result": "pass",
       "verification": "test_adaptive_resource_limits_fail_before_crossing"
     },
@@ -35,7 +35,7 @@
       "executed": true,
       "expected": "pass",
       "id": "test_adaptive_bytes_ignore_target_mapping_insertion_order",
-      "plan_fingerprint": "100e50ab6ac4f1eebd6a3e2fbdceb9742ad810c794d63720062b50d2914e7167",
+      "plan_fingerprint": "4f1b12b42545bff6f0a5cd6b3056ad3a442c126a229382eaa31046a3fbe7a3b9",
       "result": "pass",
       "verification": "test_adaptive_bytes_ignore_target_mapping_insertion_order"
     },
@@ -45,7 +45,7 @@
       "executed": true,
       "expected": "pass",
       "id": "test_final_052_018_public_pipeline_accounts_all_phases_and_cleans_owners",
-      "plan_fingerprint": "100e50ab6ac4f1eebd6a3e2fbdceb9742ad810c794d63720062b50d2914e7167",
+      "plan_fingerprint": "4f1b12b42545bff6f0a5cd6b3056ad3a442c126a229382eaa31046a3fbe7a3b9",
       "result": "pass",
       "verification": "test_final_052_018_public_pipeline_accounts_all_phases_and_cleans_owners"
     },
@@ -55,7 +55,7 @@
       "executed": true,
       "expected": "pass",
       "id": "test_final_052_018_each_owner_has_exact_before_at_after_limits",
-      "plan_fingerprint": "100e50ab6ac4f1eebd6a3e2fbdceb9742ad810c794d63720062b50d2914e7167",
+      "plan_fingerprint": "4f1b12b42545bff6f0a5cd6b3056ad3a442c126a229382eaa31046a3fbe7a3b9",
       "result": "pass",
       "verification": "test_final_052_018_each_owner_has_exact_before_at_after_limits"
     },
@@ -65,7 +65,7 @@
       "executed": true,
       "expected": "pass",
       "id": "test_sol_052_018_lowering_rejects_before_identity_buffer_allocation",
-      "plan_fingerprint": "100e50ab6ac4f1eebd6a3e2fbdceb9742ad810c794d63720062b50d2914e7167",
+      "plan_fingerprint": "4f1b12b42545bff6f0a5cd6b3056ad3a442c126a229382eaa31046a3fbe7a3b9",
       "result": "pass",
       "verification": "test_sol_052_018_lowering_rejects_before_identity_buffer_allocation"
     }

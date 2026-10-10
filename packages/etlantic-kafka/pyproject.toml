@@ -1,6 +1,6 @@
 [project]
 name = "etlantic-kafka"
-version = "0.57.0"
+version = "0.57.1"
 description = "Experimental Kafka reference connector for ETLantic (fake by default)."
 readme = "README.md"
 license = "MIT"

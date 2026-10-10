@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-__version__ = "0.57.0"
+__version__ = "0.57.1"
 
 from etlantic_k8s.provider import FakeKubernetes, create_provider, live_configured
 
