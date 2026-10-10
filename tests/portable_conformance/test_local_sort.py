@@ -229,6 +229,43 @@ def test_local_arithmetic_analysis_ignores_binary_shaped_literal_payload() -> No
     assert report.supported is True
 
 
+@pytest.mark.parametrize(
+    "literal_payload",
+    [
+        {"kind": "call", "callee": "dtcs:future_function"},
+        {"kind": "call", "callee": "dtcs:ntile"},
+        {"window": {"partitionBy": ["customer_id"]}},
+    ],
+)
+def test_local_analysis_ignores_capability_shaped_literal_payloads(
+    literal_payload: dict[str, Any],
+) -> None:
+    report = LocalTransformCompiler().analyze(
+        {
+            "actions": [
+                {
+                    "kind": {
+                        "action": "dtcs:sort",
+                        "parameters": {
+                            "keys": [
+                                {
+                                    "expression": {
+                                        "kind": "literal",
+                                        "value": literal_payload,
+                                    }
+                                }
+                            ]
+                        },
+                    }
+                }
+            ]
+        },
+        context=TransformPlanningContext("p", "s", "profile", "local"),
+    )
+
+    assert report.supported is True
+
+
 def test_local_analysis_rejects_sort_with_no_keys() -> None:
     report = LocalTransformCompiler().analyze(
         {"actions": [{"kind": {"action": "dtcs:sort", "parameters": {"keys": []}}}]},
