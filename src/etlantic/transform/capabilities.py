@@ -1321,6 +1321,10 @@ def portable_arithmetic_findings(
                             path,
                         )
             for key, value in node.items():
+                # A literal's value is data, even when its mapping resembles
+                # an expression node such as binary division.
+                if kind == "literal" and key == "value":
+                    continue
                 walk(value, f"{path}.{key}")
         elif isinstance(node, list):
             for index, value in enumerate(node):

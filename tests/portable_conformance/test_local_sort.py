@@ -202,6 +202,33 @@ def test_local_analysis_treats_literal_mapping_as_payload_not_expression() -> No
     assert report.supported is True
 
 
+def test_local_arithmetic_analysis_ignores_binary_shaped_literal_payload() -> None:
+    report = LocalTransformCompiler().analyze(
+        {
+            "actions": [
+                {
+                    "kind": {
+                        "action": "dtcs:sort",
+                        "parameters": {
+                            "keys": [
+                                {
+                                    "expression": {
+                                        "kind": "literal",
+                                        "value": {"kind": "binary", "op": "divide"},
+                                    }
+                                }
+                            ]
+                        },
+                    }
+                }
+            ]
+        },
+        context=TransformPlanningContext("p", "s", "profile", "local"),
+    )
+
+    assert report.supported is True
+
+
 def test_local_analysis_rejects_sort_with_no_keys() -> None:
     report = LocalTransformCompiler().analyze(
         {"actions": [{"kind": {"action": "dtcs:sort", "parameters": {"keys": []}}}]},
