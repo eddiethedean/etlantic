@@ -5,8 +5,10 @@ from __future__ import annotations
 
 import hashlib
 import json
+import math
 from collections.abc import Mapping, Sequence
-from typing import Any, cast
+from functools import cmp_to_key
+from typing import Any
 
 from etlantic.transform.capabilities import (
     match_requirements,
@@ -25,6 +27,7 @@ from etlantic.transform.compiler import (
     TransformExecutionContext,
     TransformOutputBundle,
     TransformPlanningContext,
+    TransformSupportFinding,
     TransformSupportReport,
     capabilities_fingerprint,
     host_pushdown_findings,
@@ -105,6 +108,7 @@ class LocalTransformCompiler:
         )
         findings.extend(portable_shape_findings(definition))
         findings.extend(portable_arithmetic_findings(definition))
+        findings.extend(_local_sort_findings(definition))
         return TransformSupportReport(
             not findings,
             tuple(findings),
@@ -231,6 +235,195 @@ def _eval(node: Any, row: Mapping[str, Any], params: Mapping[str, Any]) -> Any:
     return evaluate_expression(node, row, params)
 
 
+def _is_nan(value: Any) -> bool:
+    """Return whether a scalar is NaN without imposing ordering semantics."""
+    decimal_is_nan = getattr(value, "is_nan", None)
+    if callable(decimal_is_nan):
+        return bool(decimal_is_nan())
+    try:
+        return math.isnan(value)
+    except (TypeError, ValueError):
+        return False
+
+
+def _local_sort_findings(
+    definition: Mapping[str, Any],
+) -> list[TransformSupportFinding]:
+    """Reject sort keys whose shape or ordering options Local cannot honor."""
+    findings: list[TransformSupportFinding] = []
+    expression_kinds = {"fieldRef", "literal", "binary", "unary", "call"}
+
+    def validate_expression(node: Any, path: str) -> None:
+        if isinstance(node, Mapping):
+            if node.get("kind") == "fieldRef" and not (
+                isinstance(node.get("target"), str) and node.get("target")
+            ):
+                findings.append(
+                    TransformSupportFinding(
+                        "PMXFORM302",
+                        "sort:key_expression:field_target",
+                        "sort field reference requires a non-empty string target",
+                        f"{path}.target",
+                        support="unsupported",
+                    )
+                )
+            if node.get("kind") == "literal" and "value" not in node:
+                findings.append(
+                    TransformSupportFinding(
+                        "PMXFORM302",
+                        "sort:key_expression:literal_value",
+                        "literal sort expressions require a value",
+                        path,
+                        support="unsupported",
+                    )
+                )
+            if node.get("kind") == "binary":
+                if not isinstance(node.get("op"), str) or not node.get("op"):
+                    findings.append(
+                        TransformSupportFinding(
+                            "PMXFORM302",
+                            "sort:key_expression:binary_operator",
+                            "binary sort expressions require a non-empty operator",
+                            f"{path}.op",
+                            support="unsupported",
+                        )
+                    )
+                if not {"left", "right"}.issubset(node):
+                    findings.append(
+                        TransformSupportFinding(
+                            "PMXFORM302",
+                            "sort:key_expression:binary_operands",
+                            "binary sort expressions require left and right operands",
+                            path,
+                            support="unsupported",
+                        )
+                    )
+            if node.get("kind") == "unary":
+                if not isinstance(node.get("op"), str) or not node.get("op"):
+                    findings.append(
+                        TransformSupportFinding(
+                            "PMXFORM302",
+                            "sort:key_expression:unary_operator",
+                            "unary sort expressions require a non-empty operator",
+                            f"{path}.op",
+                            support="unsupported",
+                        )
+                    )
+                if not ("operand" in node or "expr" in node):
+                    findings.append(
+                        TransformSupportFinding(
+                            "PMXFORM302",
+                            "sort:key_expression:unary_operand",
+                            "unary sort expressions require an operand",
+                            path,
+                            support="unsupported",
+                        )
+                    )
+            if node.get("kind") == "call":
+                callee = node.get("callee")
+                if not isinstance(callee, str) or not callee:
+                    findings.append(
+                        TransformSupportFinding(
+                            "PMXFORM302",
+                            "sort:key_expression:call_callee",
+                            "call sort expressions require a non-empty string callee",
+                            f"{path}.callee",
+                            support="unsupported",
+                        )
+                    )
+                if "args" in node and not isinstance(node.get("args"), (list, tuple)):
+                    findings.append(
+                        TransformSupportFinding(
+                            "PMXFORM302",
+                            "sort:key_expression:call_args",
+                            "call sort expression arguments must be a list",
+                            f"{path}.args",
+                            support="unsupported",
+                        )
+                    )
+            for child_key, child in node.items():
+                validate_expression(child, f"{path}.{child_key}")
+        elif isinstance(node, list):
+            for child_index, child in enumerate(node):
+                validate_expression(child, f"{path}[{child_index}]")
+
+    # Plan payloads are wire data. Keep their values dynamic here so the shape
+    # checks below remain meaningful to both the runtime and Pyright.
+    actions: Any = definition.get("actions") or ()
+    for action_index, item in enumerate(actions):
+        if not isinstance(item, Mapping):
+            continue
+        kind = item.get("kind") or {}
+        if (
+            not isinstance(kind, Mapping)
+            or normalize_action(str(kind.get("action") or "")) != "dtcs:sort"
+        ):
+            continue
+        parameters = kind.get("parameters") or {}
+        if not isinstance(parameters, Mapping):
+            continue
+        keys = parameters.get("keys") or parameters.get("fields") or []
+        if not isinstance(keys, list):
+            keys = [keys]
+        for key_index, key in enumerate(keys):
+            path = f"actions[{action_index}].kind.parameters.keys[{key_index}]"
+            if isinstance(key, str) and key:
+                continue
+            if not isinstance(key, Mapping):
+                findings.append(
+                    TransformSupportFinding(
+                        "PMXFORM302",
+                        "sort:key",
+                        "sort key must be a field name or an expression object",
+                        path,
+                        support="unsupported",
+                    )
+                )
+                continue
+            expression = key.get("expression")
+            legacy_name = key.get("field") or key.get("column") or key.get("name")
+            if expression is None and isinstance(legacy_name, str) and legacy_name:
+                expression = {"kind": "fieldRef", "target": legacy_name}
+            if (
+                not isinstance(expression, Mapping)
+                or expression.get("kind") not in expression_kinds
+            ):
+                findings.append(
+                    TransformSupportFinding(
+                        "PMXFORM302",
+                        "sort:key_expression",
+                        "sort key expression must use a supported portable expression",
+                        f"{path}.expression",
+                        support="unsupported",
+                    )
+                )
+            else:
+                validate_expression(expression, f"{path}.expression")
+            direction = str(key.get("direction", "asc")).lower()
+            if direction not in {"asc", "desc"}:
+                findings.append(
+                    TransformSupportFinding(
+                        "PMXFORM302",
+                        "sort:direction",
+                        "sort direction must be asc or desc",
+                        f"{path}.direction",
+                        support="unsupported",
+                    )
+                )
+            nulls = str(key.get("nulls", "last")).lower()
+            if nulls not in {"first", "last"}:
+                findings.append(
+                    TransformSupportFinding(
+                        "PMXFORM302",
+                        "sort:nulls",
+                        "sort null placement must be first or last",
+                        f"{path}.nulls",
+                        support="unsupported",
+                    )
+                )
+    return findings
+
+
 def _apply(
     rows: list[dict[str, Any]],
     action: str,
@@ -300,31 +493,60 @@ def _apply(
         return out
     if action == "dtcs:sort":
         keys = p.get("keys") or p.get("fields") or []
-        out = list(rows)
-        for key in reversed(keys if isinstance(keys, list) else [keys]):
-            name = (
-                (key.get("field") or key.get("column") or key.get("name"))
-                if isinstance(key, Mapping)
-                else key
-            )
-            desc = (
-                isinstance(key, Mapping)
-                and str(key.get("direction", "asc")).lower() == "desc"
-            )
-            nulls = (
-                str(key.get("nulls", "last")) if isinstance(key, Mapping) else "last"
-            )
-            if nulls == "first":
-                non_null = [r for r in out if r.get(str(name)) is not None]
-                null_rows = [r for r in out if r.get(str(name)) is None]
-                non_null.sort(key=lambda r: cast(Any, r.get(str(name))), reverse=desc)
-                out = null_rows + non_null
+        sort_keys = keys if isinstance(keys, list) else [keys]
+        evaluated_keys: list[tuple[Mapping[str, Any], bool, str]] = []
+        for key in sort_keys:
+            if isinstance(key, Mapping):
+                expression = key.get("expression")
+                if expression is None:
+                    name = key.get("field") or key.get("column") or key.get("name")
+                    expression = {"kind": "fieldRef", "target": name}
+                direction = str(key.get("direction", "asc")).lower()
+                nulls = str(key.get("nulls", "last")).lower()
             else:
-                non_null = [r for r in out if r.get(str(name)) is not None]
-                null_rows = [r for r in out if r.get(str(name)) is None]
-                non_null.sort(key=lambda r: cast(Any, r.get(str(name))), reverse=desc)
-                out = non_null + null_rows
-        return out
+                expression = {"kind": "fieldRef", "target": key}
+                direction = "asc"
+                nulls = "last"
+            if not isinstance(expression, Mapping):
+                raise ValueError("unsupported local sort key expression")
+            evaluated_keys.append((expression, direction == "desc", nulls))
+
+        values = []
+        for row in rows:
+            sort_values = tuple(
+                _eval(expression, row, params) for expression, _, _ in evaluated_keys
+            )
+            if any(_is_nan(value) for value in sort_values):
+                raise ValueError("local sort key values cannot contain NaN")
+            values.append((row, sort_values))
+
+        def compare(
+            left: tuple[dict[str, Any], tuple[Any, ...]],
+            right: tuple[dict[str, Any], tuple[Any, ...]],
+        ) -> int:
+            for index, (_, descending, nulls) in enumerate(evaluated_keys):
+                left_value = left[1][index]
+                right_value = right[1][index]
+                if left_value is None or right_value is None:
+                    if left_value is right_value:
+                        continue
+                    result = -1 if left_value is None else 1
+                    if nulls == "last":
+                        result = -result
+                else:
+                    try:
+                        result = (left_value > right_value) - (left_value < right_value)
+                    except (ArithmeticError, TypeError, ValueError) as exc:
+                        raise ValueError(
+                            "local sort key values are not mutually orderable"
+                        ) from exc
+                    if descending:
+                        result = -result
+                if result:
+                    return result
+            return 0
+
+        return [row for row, _ in sorted(values, key=cmp_to_key(compare))]
     if action == "dtcs:union":
         right = relations.get(str(p.get("other")), [])
         mode = str(p.get("mode", "byName")).lower()
