@@ -41,8 +41,11 @@ open dependency floors and live `current_minor` page markers to the new minor.
 It then runs `uv lock`, regenerates plugin manifest digests, and checks those
 digests. It also regenerates and verifies the deterministic DuckDB 0.49
 evidence bundle, whose package version and manifest digest track the current
-release. Historical changelog entries and historical evidence prose are
-preserved; live current-minor page markers in docs remain synchronized.
+release. It runs the adaptive 0.52 evidence campaign and refreshes its
+source-bound bundle as well, so applying a bump takes longer than the preview
+and fails if that campaign fails. Historical changelog entries and evidence
+prose remain intact; live current-minor page markers and generated evidence
+metadata stay synchronized.
 
 The synchronizer does not decide whether the new version is published or a
 candidate, write release notes, change support policy, or regenerate

@@ -218,8 +218,8 @@ def main() -> int:
         for path in sorted(changes):
             print(f"  {path.relative_to(ROOT)}")
         print(
-            "Apply also refreshes uv.lock, plugin manifest digests, and the "
-            "DuckDB 0.49 evidence bundle."
+            "Apply also refreshes uv.lock, plugin manifest digests, the "
+            "DuckDB 0.49 evidence bundle, and the adaptive 0.52 evidence."
         )
         return 0
 
@@ -260,11 +260,20 @@ def main() -> int:
         cwd=ROOT,
         check=True,
     )
+    subprocess.run(
+        [sys.executable, "scripts/check_adaptive_0_52.py", "--write"],
+        cwd=ROOT,
+        check=True,
+    )
+    subprocess.run(
+        [sys.executable, "scripts/check_adaptive_0_52.py"], cwd=ROOT, check=True
+    )
     print(
         f"Synchronized ETLantic from {old} to {args.version} ({len(changes)} source files)."
     )
     print(
-        "Refreshed the DuckDB 0.49 evidence bundle. Review release facts, "
+        "Refreshed the DuckDB 0.49 and adaptive 0.52 evidence bundles. "
+        "Review release facts, "
         "changelog notes, support claims, and remaining generated goldens "
         "before release checks."
     )

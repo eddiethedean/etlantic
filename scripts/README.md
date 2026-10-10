@@ -34,10 +34,12 @@ uv run python scripts/bump_version.py 0.58.0
 ```
 
 The preview lists affected tracked files. Applying the change also refreshes
-`uv.lock` and plugin manifest digests. Review publication state, support
-wording, changelog notes, and version-derived fixtures afterward. Historical
-release prose remains intact; docs `current_minor` markers are updated for a
-minor bump. See the [full workflow](../docs/11_DEVELOPMENT/RELEASE_PROCESS.md#version-bump-workflow)
+`uv.lock`, plugin manifest digests, and the DuckDB 0.49 and adaptive 0.52
+evidence bundles. The adaptive evidence refresh runs its qualification tests.
+Review publication state, support wording, changelog notes, and remaining
+version-derived fixtures afterward. Historical release prose remains intact;
+docs `current_minor` markers are updated for a minor bump. See the [full
+workflow](../docs/11_DEVELOPMENT/RELEASE_PROCESS.md#version-bump-workflow)
 before using this for a release.
 
 ```bash
