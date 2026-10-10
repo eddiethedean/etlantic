@@ -27,7 +27,7 @@ boundaries or fingerprints that changed. See
 ## How do I try it?
 
 ```bash
-pip install 'etlantic==0.56.0' 'etlantic-polars==0.56.0' 'etlantic-pandas==0.56.0'
+pip install 'etlantic==0.57.1' 'etlantic-polars==0.57.1' 'etlantic-pandas==0.57.1'
 # from a checkout:
 uv run python examples/interchange_polars_pandas.py
 ```

@@ -1,18 +1,18 @@
 ---
-title: ETLantic 0.57 Release Candidate Guide
-status: candidate
+title: ETLantic 0.57 Release Guide
+status: available
 since: "0.57.0"
 current_minor: "0.57"
 ---
 
-# ETLantic 0.57 Release Candidate Guide
+# ETLantic 0.57 Release Guide
 
-> **Status: ETLantic 0.57.0 has passed candidate qualification. ETLantic 0.56.2 remains the current published Beta release until 0.57.0 is published.**
+> **Status: ETLantic 0.57.1 Beta release candidate; 0.57.0 remains the latest published release.**
 
 ETLantic 0.57 adds the transport-independent managed backend, schedule service,
 provider schema inspection, and role status/drain contracts. Its passing
-[0.57 exit gate](../11_DEVELOPMENT/EXIT_GATE_0_57.md) records release readiness. ETLantic
-0.56.2 remains published on PyPI and GitHub Releases. The 0.56.x package line
+[0.57 exit gate](../11_DEVELOPMENT/EXIT_GATE_0_57.md) records release qualification. ETLantic
+0.57.0 is published on PyPI and GitHub Releases. The 0.57.x package line
 is supported for controlled single-tenant pilots
 and Supported control-plane isolation profiles. Explicit class-authored
 pipelines remain the supported default.

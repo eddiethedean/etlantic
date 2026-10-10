@@ -1,8 +1,8 @@
 # Configuration in 0.56
 
-> **Status: ETLantic 0.56.0 Beta release.**
+> **Status: ETLantic 0.57.0 Beta release.**
 
-ETLantic 0.56.0 configures execution with a `Profile` object, a JSON profile
+ETLantic 0.57.0 configures execution with a `Profile` object, a JSON profile
 document, and an optional project `etlantic.toml`. Prefer **`assets`** for
 logical-to-physical maps. Legacy profile JSON using `bindings` is rejected
 with `PMCFG111`; use `assets` in canonical 0.56 profile documents.
@@ -17,7 +17,7 @@ project = "my-pipeline"
 default_profile = "development"
 
 [metadata]
-etlantic.version = "0.56.0"
+etlantic.version = "0.57.0"
 ```
 
 Optional `[profiles]` entries may reference built-in names, `profiles/*.json`
@@ -117,7 +117,7 @@ is no automatic ETLantic-wide prefix. See the normative
 - Optional explicit prefix: register `EnvSecretProvider(prefix="ETLANTIC_SECRET_")`
   yourself; `ETLANTIC_SECRET_*` is **not** an ambient core convention.
 
-ETLantic 0.56.0 does not auto-read `ETLANTIC_PROFILE`, `ETLANTIC_CONFIG`,
+ETLantic 0.57.0 does not auto-read `ETLANTIC_PROFILE`, `ETLANTIC_CONFIG`,
 `ETLANTIC_PROJECT`, logging overrides, or output-format overrides. Names on
 [Environment Variables](ENVIRONMENT_VARIABLES.md) beyond this page remain
 proposed 0.38 design unless listed here as shipped.

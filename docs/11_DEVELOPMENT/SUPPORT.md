@@ -6,7 +6,7 @@
 > [`SUPPORT.md`](https://github.com/eddiethedean/etlantic/blob/main/SUPPORT.md).
 > Keep this page as maintainer extras only; do not duplicate pin/envelope text.
 
-ETLantic **0.56.x** is the latest **published Beta** line. Community support is
+ETLantic **0.57.x** is the latest **published Beta** line. Community support is
 best-effort with **no formal SLA**.
 
 ## Where to ask
@@ -21,7 +21,7 @@ Remove credentials, customer data, internal hostnames, and production plans.
 
 ## Maintainer notes
 
-- The latest published line (`0.56.x`) receives best-effort correctness
+- The latest published line (`0.57.x`) receives best-effort correctness
   and security fixes. Older 0.x lines are not actively maintained.
 - Supported isolation profiles (`isolated-deployment`, `dedicated-schema`)
   graduated in 0.43. There is no hosted multi-tenant SaaS. See

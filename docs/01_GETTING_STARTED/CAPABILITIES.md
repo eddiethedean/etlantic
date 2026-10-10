@@ -1,9 +1,9 @@
 # Current Capabilities and Limitations
 
-> **Version boundary:** ETLantic 0.57.0 is a Beta release candidate; 0.56.2 remains the current published and supported line.
+> **Version boundary:** ETLantic 0.57.0 is the current published Beta release and supported line.
 
 
-> **Status: 0.56.2 is the published Beta release and current supported line.** Version 0.57.0 passed candidate qualification and awaits publication. This page records
+> **Status: ETLantic 0.57.0 is the published Beta release and current supported line.** This page records
 > the published 0.56 envelope for controlled single-tenant pilots and
 > Supported isolation profiles.
 
@@ -13,7 +13,7 @@
 
 ## What works today (0.57)
 
-ETLantic 0.56.2 is the current published and supported **Beta release** for
+ETLantic 0.57.0 is the current published and supported **Beta release** for
 documented, controlled, single-tenant pilots. Install the latest published `etlantic` package from PyPI. You can embed an
 HTTP control plane with **Supported** isolation profiles
 (`isolated-deployment`, `dedicated-schema`). There is no hosted multi-tenant
@@ -306,7 +306,7 @@ Never put secrets in plans, reports, or CI logs.
 
 **Pip users:** create `profiles/prod.json` yourself. Start from the JSON
 below, then **trim `plugin_allowlist` to the engines you actually install**
-(the sample uses Polars — install `etlantic-polars==0.56.0` first).
+(the sample uses Polars — install `etlantic-polars==0.57.1` first).
 
 ```json
 {
@@ -319,7 +319,7 @@ below, then **trim `plugin_allowlist` to the engines you actually install**
   "validation_policy": "strict",
   "allow_trusted_sql": false,
   "plugin_allowlist": {
-    "etlantic-polars": "==0.56.0"
+    "etlantic-polars": "==0.57.1"
   },
   "assets": {},
   "secrets": {},
@@ -335,17 +335,17 @@ python -m etlantic plan path/to/pipeline.py:MyPipeline --profile ./profiles/prod
 ```
 
 ```bash
-pip install 'etlantic==0.56.0'
-pip install 'etlantic[lsp]==0.56.0'            # optional language server
-pip install 'etlantic-polars==0.56.0'          # optional
-pip install 'etlantic-pandas==0.56.0'          # optional
-pip install 'etlantic-sql==0.56.0'             # optional
-pip install 'etlantic-pyspark==0.56.0'         # optional
-pip install 'etlantic-airflow==0.56.0'         # optional
-pip install 'etlantic-prefect==0.56.0'         # optional
-pip install 'etlantic-keyring==0.56.0'         # optional
-pip install 'etlantic-sqlmodel==0.56.0'        # optional
-pip install 'medallantic==0.56.0'              # optional
+pip install 'etlantic==0.57.1'
+pip install 'etlantic[lsp]==0.57.1'            # optional language server
+pip install 'etlantic-polars==0.57.1'          # optional
+pip install 'etlantic-pandas==0.57.1'          # optional
+pip install 'etlantic-sql==0.57.1'             # optional
+pip install 'etlantic-pyspark==0.57.1'         # optional
+pip install 'etlantic-airflow==0.57.1'         # optional
+pip install 'etlantic-prefect==0.57.1'         # optional
+pip install 'etlantic-keyring==0.57.1'         # optional
+pip install 'etlantic-sqlmodel==0.57.1'        # optional
+pip install 'medallantic==0.57.1'              # optional
 ```
 
 See [Installation](INSTALLATION.md), [Evaluator brief](EVALUATOR.md), and

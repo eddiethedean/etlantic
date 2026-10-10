@@ -1,11 +1,11 @@
 # Frequently Asked Questions
 
-> **Version boundary:** ETLantic 0.57.0 is a Beta release candidate; 0.56.2 remains the current published and supported line.
+> **Version boundary:** ETLantic 0.57.0 is the current published Beta release and supported line.
 
 
-> **Status: ETLantic 0.56.2 Beta release.** Version 0.57.0 passed candidate qualification and awaits publication; 0.56.2 remains the current published release.
+> **Status: ETLantic 0.57.0 is the published Beta release.**
 
-Practical questions for ETLantic **0.56.2**. Philosophy and contract taxonomy
+Practical questions for ETLantic **0.57.0**. Philosophy and contract taxonomy
 live under [Foundations](../02_FOUNDATIONS/README.md).
 
 ## What is ETLantic?
@@ -52,7 +52,7 @@ engine. SQL needs `etlantic-sql` (+ PostgreSQL for MERGE). PySpark needs Java.
 Yes. Pin the same minor:
 
 ```bash
-python -m pip install 'etlantic==0.56.0' 'etlantic-polars==0.56.0'
+python -m pip install 'etlantic==0.57.1' 'etlantic-polars==0.57.1'
 ```
 
 ## Why do validate/plan work but run has no data?
@@ -73,7 +73,7 @@ Use `SecretRef` — never put values in plans. Follow the
 
 ## Is ETLantic production-supported?
 
-ETLantic **0.56.2** is the current **Beta release**. Version 0.56.2 is the current published Beta release. It targets documented
+ETLantic **0.57.0** is the current **Beta release**. It targets documented
 single-tenant pilots. You can embed an HTTP control plane
 (`etlantic-fastapi`) with **Supported** isolation profiles
 (`isolated-deployment`, `dedicated-schema`). There is no hosted multi-tenant

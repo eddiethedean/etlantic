@@ -1,6 +1,6 @@
 # Evaluator Brief
 
-> **Status: ETLantic 0.56.2 is the published Beta release; 0.57.0 candidate qualification passed and publication is pending. Adaptive graduation remains pending.**
+> **Status: ETLantic 0.57.0 is the published Beta release. Adaptive graduation remains pending.**
 
 A one-page answer for enterprise evaluators and technical decision-makers.
 
@@ -12,12 +12,12 @@ A one-page answer for enterprise evaluators and technical decision-makers.
 
 ## Residual evaluation lead
 
-| Topic | 0.56 |
+| Topic | 0.57 |
 |---|---|
 | Maturity | Published **Beta release** |
 | Suitable for | Documented single-tenant pilots; Supported multi-tenant profiles |
 | Support | Community; **no formal SLA** |
-| LTS | No LTS; `0.56.x` is the current published line |
+| LTS | No LTS; `0.57.x` is the current published line |
 | Not included as GA | Unbounded scale; formal enterprise SLA; `shared-service` without real RLS |
 
 ## What ETLantic is
@@ -29,7 +29,7 @@ them; plugins execute.
 It is **not** a dataframe engine, distributed scheduler, warehouse, or secret
 manager.
 
-## What is ready in bounded 0.56.0
+## What is ready in bounded 0.57.0
 
 | Area | Ready? |
 |---|---|
@@ -103,7 +103,7 @@ For the bounded reference topology and required controls, read
 
 ## Bounded production support (do not skip)
 
-ETLantic **0.56.2** is the current published **Beta release** for documented single-tenant
+ETLantic **0.57.0** is the current published **Beta release** for documented single-tenant
 pilots and Supported multi-tenant profiles. Shipped trust controls do not
 make an arbitrary shared-service topology safe.
 
@@ -148,10 +148,10 @@ How to read status labels in deeper chapters:
 
 ## Enterprise readiness matrix
 
-| Concern | Status in 0.56 |
+| Concern | Status in 0.57 |
 |---|---|
 | License | MIT (core and official plugins) |
-| Supported versions / EOL | Current published Beta line is 0.56.x; see [SECURITY.md](https://github.com/eddiethedean/etlantic/blob/main/SECURITY.md) |
+| Supported versions / EOL | Current published Beta line is 0.57.x; see [SECURITY.md](https://github.com/eddiethedean/etlantic/blob/main/SECURITY.md) |
 | Compliance attestations (SOC2, GDPR cert) | Adopter-owned — not provided |
 | Identity / RBAC / SSO | Out of scope — use process and network isolation |
 | HA / DR / RPO / RTO | Adopter-owned topology |
@@ -165,14 +165,14 @@ How to read status labels in deeper chapters:
 Follow this path **after** the green path (Install → Quickstart → First Pipeline
 → Engine selection), or as an enterprise diligence track:
 
-1. [Installation](INSTALLATION.md) — `pip install etlantic==0.56.0`
+1. [Installation](INSTALLATION.md) — `pip install etlantic==0.57.1`
 2. [Quickstart](QUICKSTART.md) (`python -m etlantic init`; `examples/` requires a checkout)
 3. [First Pipeline](FIRST_PIPELINE.md)
 4. [Engine selection](ENGINE_SELECTION.md)
 5. [Capabilities](CAPABILITIES.md)
 6. Optional Gate A: checkout
    [`examples/interchange_polars_pandas.py`](https://github.com/eddiethedean/etlantic/blob/main/examples/interchange_polars_pandas.py)
-   with `etlantic-polars` + `etlantic-pandas` at `==0.56.0`
+   with `etlantic-polars` + `etlantic-pandas` at `==0.57.1`
 7. Optional engine examples from a checkout (portable kernels, SQL, PySpark,
    Airflow compile, Prefect)
 8. [Migration 0.41 → 0.42](../11_DEVELOPMENT/MIGRATION_0_41_TO_0_42.md) if

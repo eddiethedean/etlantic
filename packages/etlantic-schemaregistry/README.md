@@ -11,7 +11,7 @@ in inference observations.
 ## Install
 
 ```bash
-pip install 'etlantic-schemaregistry==0.57.0'
+pip install 'etlantic-schemaregistry==0.57.1'
 ```
 
 Core dependency: `etlantic>=0.57.0`. Production profiles require

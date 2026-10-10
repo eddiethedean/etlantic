@@ -318,7 +318,7 @@ intentional reviewed change; preserved schedule routes should remain compatible.
 
 ## 0.57.0 packaging, migration and release closure
 
-1. Keep 0.56.2 as published/current while implementation is pending. During
+1. During implementation, keep 0.56.2 as published/current. During
    candidate preparation align core `_version.py`, project/package versions,
    dependency floors, lock data, plugin manifests and compatibility declarations
    using existing release tooling. New extracted API users require 0.57.0; do not

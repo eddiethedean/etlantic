@@ -15,7 +15,7 @@ foundation, and post-foundation capabilities continue in later 0.x minors.
 
 Breaking changes must be documented. Official plugin packages currently share
 the core minor version (for example `0.38.0`).
-Official plugins and root extras declare the compatible 0.56 line floor (`>=0.56.0`) without a patch lockstep pin or upper cap.
+Official plugins and root extras declare the compatible 0.57 line floor (`>=0.57.0`) without a patch lockstep pin or upper cap.
 
 ## Package categories
 
