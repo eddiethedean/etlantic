@@ -266,6 +266,43 @@ def test_local_analysis_ignores_capability_shaped_literal_payloads(
     assert report.supported is True
 
 
+def test_local_execution_ignores_calls_inside_literal_sort_payloads() -> None:
+    rows = [{"id": 1}]
+
+    assert (
+        _execute_local_actions(
+            rows,
+            [
+                (
+                    "dtcs:sort",
+                    {
+                        "keys": [
+                            {
+                                "expression": {
+                                    "kind": "literal",
+                                    "value": {
+                                        "kind": "call",
+                                        "callee": "dtcs:replace",
+                                        "args": [
+                                            {"kind": "fieldRef", "target": "value"},
+                                            {
+                                                "kind": "fieldRef",
+                                                "scope": "parameter",
+                                                "target": "search",
+                                            },
+                                        ],
+                                    },
+                                }
+                            }
+                        ]
+                    },
+                )
+            ],
+        )
+        == rows
+    )
+
+
 def test_local_analysis_rejects_sort_with_no_keys() -> None:
     report = LocalTransformCompiler().analyze(
         {"actions": [{"kind": {"action": "dtcs:sort", "parameters": {"keys": []}}}]},

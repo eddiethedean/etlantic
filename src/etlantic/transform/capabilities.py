@@ -1359,6 +1359,8 @@ def validate_portable_runtime_parameters(
 
     def walk(node: Any, path: str) -> None:
         if isinstance(node, Mapping):
+            if cast(Mapping[str, Any], node).get("kind") == "literal":
+                return
             if node.get("kind") == "call":
                 callee = str(node.get("callee") or "")
                 args = list(node.get("args") or ())
