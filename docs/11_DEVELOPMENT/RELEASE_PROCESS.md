@@ -42,10 +42,21 @@ It then runs `uv lock`, regenerates plugin manifest digests, and checks those
 digests. It also regenerates and verifies the deterministic DuckDB 0.49
 evidence bundle, whose package version and manifest digest track the current
 release. It runs the adaptive 0.52 evidence campaign and refreshes its
-source-bound bundle as well, so applying a bump takes longer than the preview
-and fails if that campaign fails. Historical changelog entries and evidence
-prose remain intact; live current-minor page markers and generated evidence
-metadata stay synchronized.
+source-bound bundle with `scripts/check_adaptive_0_52.py --write`, then runs the
+verifier again. The campaign takes longer than the preview and a bump fails if
+it fails. Historical changelog entries and evidence prose remain intact; live
+current-minor page markers and generated evidence metadata stay synchronized.
+
+### Adaptive evidence for gate updates
+
+Adaptive 0.52 evidence is a CI gate. When a change updates the gate inputs or
+their source-bound signatures outside a version bump, regenerate and verify the
+evidence with:
+
+```bash
+uv run python scripts/check_adaptive_0_52.py --write
+uv run python scripts/check_adaptive_0_52.py
+```
 
 The synchronizer does not decide whether the new version is published or a
 candidate, write release notes, change support policy, or regenerate

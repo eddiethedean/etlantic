@@ -42,6 +42,17 @@ docs `current_minor` markers are updated for a minor bump. See the [full
 workflow](../docs/11_DEVELOPMENT/RELEASE_PROCESS.md#version-bump-workflow)
 before using this for a release.
 
+When developing a change to the adaptive 0.52 gate or its source-bound inputs,
+refresh and verify that evidence directly:
+
+```bash
+uv run python scripts/check_adaptive_0_52.py --write
+uv run python scripts/check_adaptive_0_52.py
+```
+
+The version bump command runs the same campaign automatically; see [adaptive
+evidence for gate updates](../docs/11_DEVELOPMENT/RELEASE_PROCESS.md#adaptive-evidence-for-gate-updates).
+
 ```bash
 # Docs-only PR
 uv run ruff check .
