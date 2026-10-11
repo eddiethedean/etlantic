@@ -172,7 +172,9 @@ def test_managed_preflight_is_backend_owned_and_pins_the_accepted_revision(
         durable = backend.api.durable_work
         assert durable is not None
         persisted = durable.get_action_job(ctx, accepted["action_id"])
-        assert json.loads(persisted.request_json)["revision_selector"] == first_revision
+        stored_request = json.loads(persisted.request_json)
+        assert stored_request["revision_selector"] == "current"
+        assert stored_request["_accepted_revision_id"] == first_revision
 
         second = service.register_definition(
             ctx,
@@ -180,6 +182,13 @@ def test_managed_preflight_is_backend_owned_and_pins_the_accepted_revision(
             pipeline_to_dict(definition_from_pipeline(_RevisedPreparationPipeline)),
         )
         assert second["revision_id"] != first_revision
+        retried = service.submit_connector_action(
+            ctx,
+            "connector.preflight",
+            {"definition_id": "preflight-pipe"},
+            idempotency_key="preflight-current-revision",
+        )
+        assert retried["action_id"] == accepted["action_id"]
 
         worker = backend.create_action_execution_host(worker_id="preflight-worker")
         assert "connector.preflight" in worker.handlers

@@ -218,9 +218,19 @@ class ActionExecutionHost:
                 if not isinstance(raw_request, dict):
                     raise ValueError("action request must be an object")
                 request = cast(dict[str, Any], raw_request)
+                has_accepted_revision_id = "_accepted_revision_id" in request
+                accepted_revision_id = request.pop("_accepted_revision_id", None)
                 typed_action = cast(ConnectorActionKind, job.action)
                 typed_request = parse_connector_action_request(typed_action, request)
+                if has_accepted_revision_id and (
+                    not isinstance(typed_request, ConnectorPreflightRequest)
+                    or not isinstance(accepted_revision_id, str)
+                    or _SAFE_EFFECT_ID.fullmatch(accepted_revision_id) is None
+                ):
+                    raise ValueError("accepted preflight revision is invalid")
                 request: dict[str, Any] = typed_request.to_dict()
+                if has_accepted_revision_id:
+                    request["_accepted_revision_id"] = accepted_revision_id
                 action_ctx = self._trusted_context(ctx, job)
             except Exception:
                 self._finish_failure(ctx, job, "invalid_action_request")

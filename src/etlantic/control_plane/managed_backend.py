@@ -246,7 +246,10 @@ class ManagedBackend:
                 result = self.managed_service.preflight_definition(
                     ctx,
                     str(request["definition_id"]),
-                    revision_selector=str(request["revision_selector"]),
+                    revision_selector=str(
+                        request.get("_accepted_revision_id")
+                        or request["revision_selector"]
+                    ),
                     check_cancelled=checkpoint,
                 )
                 checkpoint()

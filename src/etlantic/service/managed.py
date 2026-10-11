@@ -297,19 +297,28 @@ class ManagedApplicationService:
                 resource,
                 resource_in_caller_scope=True,
             )
+        prior_preflight = None
+        if isinstance(typed_request, ConnectorPreflightRequest):
+            prior_preflight = self.durable_work.get_action_job_by_idempotency(
+                ctx, action=action, idempotency_key=idempotency_key
+            )
+            if prior_preflight is not None and _same_preflight_action_intent(
+                prior_preflight, typed_request
+            ):
+                return prior_preflight.to_dict()
+        accepted_request = typed_request.to_dict()
         if isinstance(typed_request, ConnectorPreflightRequest):
             # Pin "current" when the durable job is accepted. A later worker
             # must never report readiness for a different definition revision
-            # than the caller submitted.
+            # than the caller submitted. Keep the selector as submitted so an
+            # idempotent retry can recover this accepted revision.
             resolution = self._resolve_definition_revision(
                 ctx,
                 typed_request.definition_id,
                 typed_request.revision_selector,
             )
             revision_id = _require_revision_selector(resolution.revision_id)
-            typed_request = ConnectorPreflightRequest(
-                typed_request.definition_id, revision_id
-            )
+            accepted_request["_accepted_revision_id"] = revision_id
         if isinstance(typed_request, ConnectorProvisionCleanupRequest):
             parent = self.durable_work.get_action_job(
                 ctx, typed_request.provision_action_id
@@ -320,13 +329,30 @@ class ManagedApplicationService:
             .isoformat()
             .replace("+00:00", "Z")
         )
-        return self.durable_work.accept_action_job(
-            ctx,
-            action=action,
-            idempotency_key=idempotency_key,
-            request=typed_request.to_dict(),
-            deadline_at=deadline_at,
-        ).to_dict()
+        try:
+            return self.durable_work.accept_action_job(
+                ctx,
+                action=action,
+                idempotency_key=idempotency_key,
+                request=accepted_request,
+                deadline_at=deadline_at,
+            ).to_dict()
+        except ControlPlaneError as exc:
+            # Two concurrent "current" requests can resolve on either side of
+            # a definition update. Recover the first accepted pin when their
+            # caller-visible preflight intent is identical.
+            if (
+                isinstance(typed_request, ConnectorPreflightRequest)
+                and exc.status == 409
+            ):
+                prior = self.durable_work.get_action_job_by_idempotency(
+                    ctx, action=action, idempotency_key=idempotency_key
+                )
+                if prior is not None and _same_preflight_action_intent(
+                    prior, typed_request
+                ):
+                    return prior.to_dict()
+            raise
 
     def preflight_definition(
         self,
@@ -4707,6 +4733,21 @@ def _safe_preflight_diagnostics(diagnostics: Sequence[Any]) -> list[dict[str, st
             severity = "error"
         result.append({"code": code, "severity": cast(str, severity)})
     return result
+
+
+def _same_preflight_action_intent(
+    record: ActionJobRecord, request: ConnectorPreflightRequest
+) -> bool:
+    """Compare a retry with its caller request, ignoring the accepted pin."""
+    try:
+        stored = json.loads(record.request_json)
+    except (TypeError, ValueError):
+        return False
+    if not isinstance(stored, Mapping):
+        return False
+    stored_intent = dict(cast(Mapping[str, Any], stored))
+    stored_intent.pop("_accepted_revision_id", None)
+    return stored_intent == request.to_dict()
 
 
 def _input_resource_references(
