@@ -1141,7 +1141,19 @@ def portable_shape_findings(
                 if node_kind == "call" and isinstance(node.get("callee"), str):
                     callee = str(node["callee"])
                     bounds = BASELINE_FUNCTION_ARITIES.get(callee)
-                    args = node.get("args") or []
+                    raw_args = cast(Any, node.get("args", []))
+                    if not isinstance(raw_args, (list, tuple)):
+                        findings.append(
+                            TransformSupportFinding(
+                                "PMXFORM302",
+                                f"function:{callee}:args",
+                                "call arguments must be a list",
+                                f"{path}.args",
+                            )
+                        )
+                        args: Sequence[Any] = ()
+                    else:
+                        args = cast(Sequence[Any], raw_args)
                     if bounds is not None and (
                         len(args) < bounds[0]
                         or (bounds[1] is not None and len(args) > bounds[1])

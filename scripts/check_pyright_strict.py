@@ -159,8 +159,11 @@ EXPECTED_DIGESTS = {
     # Fingerprints pin path, diagnostic rule, message, and multiplicity while
     # ignoring source coordinates. Line shifts therefore do not require a
     # manual baseline refresh; diagnostic content changes still fail closed.
-    "Darwin": "ab66efb9f7e4f92b129c6a25df04fdafc258c79f73678e4fde91bd6353e92f2b",
-    "Linux": "ab66efb9f7e4f92b129c6a25df04fdafc258c79f73678e4fde91bd6353e92f2b",
+    # The Local sort validator now validates call-argument shape before arity
+    # checks and keeps the argument sequence explicitly typed. It removes ten
+    # reviewed shadow diagnostics without adding any; the inventory is 10,059.
+    "Darwin": "c148de74cca91c6ab97a2d7c25a0ce432da0941f364b303edfb140287d9ff7ca",
+    "Linux": "c148de74cca91c6ab97a2d7c25a0ce432da0941f364b303edfb140287d9ff7ca",
 }
 
 

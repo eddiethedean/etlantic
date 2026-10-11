@@ -577,7 +577,18 @@ def _apply(
                         result = -result
                 else:
                     try:
-                        result = (left_value > right_value) - (left_value < right_value)
+                        greater = bool(left_value > right_value)
+                        less = bool(left_value < right_value)
+                        if greater and less:
+                            raise ValueError("sort comparison is not antisymmetric")
+                        if greater:
+                            result = 1
+                        elif less:
+                            result = -1
+                        elif bool(left_value == right_value):
+                            result = 0
+                        else:
+                            raise ValueError("sort comparison does not define an order")
                     except (ArithmeticError, TypeError, ValueError) as exc:
                         raise ValueError(
                             "local sort key values are not mutually orderable"

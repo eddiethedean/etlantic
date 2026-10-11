@@ -129,6 +129,30 @@ def test_local_sort_rejects_nan_values_before_deduplication(
         _sort_then_deduplicate(rows)
 
 
+def test_local_sort_rejects_partially_ordered_values() -> None:
+    rows = [{"id": 1, "key": {1}}, {"id": 1, "key": {2}}]
+
+    with pytest.raises(ValueError, match="not mutually orderable"):
+        _execute_local_actions(
+            rows,
+            [
+                (
+                    "dtcs:sort",
+                    {
+                        "keys": [
+                            {
+                                "expression": {
+                                    "kind": "fieldRef",
+                                    "target": "key",
+                                }
+                            }
+                        ]
+                    },
+                )
+            ],
+        )
+
+
 def test_local_analysis_rejects_unsupported_sort_expression_shape() -> None:
     report = LocalTransformCompiler().analyze(
         {
@@ -480,6 +504,38 @@ def test_local_analysis_rejects_sort_call_with_non_list_args() -> None:
                                         "kind": "call",
                                         "callee": "dtcs:current_date",
                                         "args": None,
+                                    }
+                                }
+                            ]
+                        },
+                    }
+                }
+            ]
+        },
+        context=TransformPlanningContext("p", "s", "profile", "local"),
+    )
+
+    assert report.supported is False
+    assert any(
+        finding.requirement == "sort:key_expression:call_args"
+        for finding in report.findings
+    )
+
+
+def test_local_analysis_rejects_non_sequence_sort_call_args_without_crashing() -> None:
+    report = LocalTransformCompiler().analyze(
+        {
+            "actions": [
+                {
+                    "kind": {
+                        "action": "dtcs:sort",
+                        "parameters": {
+                            "keys": [
+                                {
+                                    "expression": {
+                                        "kind": "call",
+                                        "callee": "dtcs:lower",
+                                        "args": 42,
                                     }
                                 }
                             ]
