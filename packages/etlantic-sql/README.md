@@ -139,9 +139,12 @@ action request or return them from the callback.
 from etlantic_sql import create_action_handlers
 from etlantic_sqlmodel import SQLModelBackendConfig, create_managed_backend
 
-def resolve_engine(ctx, connection_id):
-    # Application-owned lookup checks the saved reference and resolves its secret.
-    return connection_store.resolve_engine(ctx, connection_id)
+def resolve_engine(ctx, connection_id, *, timeout_seconds):
+    # Apply the timeout to both secret lookup and the returned engine's driver
+    # connection setup (for psycopg, connect_args={"connect_timeout": ...}).
+    return connection_store.resolve_engine(
+        ctx, connection_id, timeout_seconds=timeout_seconds
+    )
 
 backend = create_managed_backend(
     SQLModelBackendConfig(
@@ -163,7 +166,14 @@ standard managed backend also supplies a revision-pinned, read-only
 validates and plans the accepted saved definition; it does not promise that a
 later provider connection or write will succeed. The FastAPI adapter uses the
 same action handlers and worker API through its `create_managed_backend`
-configuration.
+configuration. The connection and schema handlers pass the remaining accepted
+job deadline as `timeout_seconds` and require the resolver to accept that
+keyword. Use it to bound secret resolution and the SQLAlchemy engine's
+driver-level connection timeout. Existing two-argument resolvers remain
+compatible with catalog and provisioning actions; update them before enabling
+connection tests or schema inspection, since cancellation cannot interrupt an
+in-progress resolver call or DBAPI connection setup before a driver connection
+exists.
 
 ### Explicit action provisioning
 

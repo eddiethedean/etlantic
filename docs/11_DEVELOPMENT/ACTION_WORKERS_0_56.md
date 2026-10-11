@@ -39,6 +39,15 @@ probe runs `SELECT 1`; schema inspection reads at most `max_fields + 1` column
 metadata rows from `current_schema()` and never reads source rows or changes a
 database object.
 
+Connection-test and schema-inspection handlers pass the remaining accepted job
+deadline as `timeout_seconds` and require the resolver to accept that keyword.
+Use it to bound connection-reference and secret lookup, and configure the
+SQLAlchemy engine's driver-level connection timeout. Existing two-argument
+resolvers remain compatible with catalog and provisioning actions; update them
+before enabling connection tests or schema inspection. Cancellation cannot
+interrupt arbitrary resolver work or DBAPI connection setup before a driver
+connection exists.
+
 The standard `ManagedBackend.create_action_execution_host()` installs a
 backend-owned `connector.preflight` handler when no provider-specific handler
 is configured. Acceptance pins `current` to the exact saved definition revision.

@@ -11,6 +11,7 @@ from collections.abc import Callable, Mapping
 from concurrent.futures import Future
 from contextlib import suppress
 from datetime import UTC, datetime
+from inspect import Parameter, signature
 from typing import Any, cast
 
 from sqlalchemy import (
@@ -35,7 +36,8 @@ from sqlalchemy.engine import Connection, Engine
 from etlantic.control_plane import ControlPlaneContext
 from etlantic.runtime import ActionHandler
 
-EngineResolver = Callable[[ControlPlaneContext, str], Engine]
+EngineResolver = Callable[..., Engine]
+_TimedEngineResolver = Callable[[ControlPlaneContext, str, float], Engine]
 _REGISTRY_NAME = "etlantic_connector_action_effects"
 _SAFE_IDENTIFIER = re.compile(r"[A-Za-z_][A-Za-z0-9_]{0,62}\Z")
 _TYPES: dict[str, Any] = {
@@ -318,11 +320,16 @@ def create_action_handlers(resolve_engine: EngineResolver) -> dict[str, ActionHa
 
     The callback receives trusted worker context and an opaque saved connection
     ID. It returns an application-owned SQLAlchemy engine whose credentials and
-    lifecycle remain outside action requests and receipts.
+    lifecycle remain outside action requests and receipts. Connection-test and
+    schema-inspection actions require the callback to accept a
+    ``timeout_seconds`` keyword and use it to bound secret lookup and configure
+    the engine's driver-level connection timeout. Catalog and provisioning
+    actions continue to support existing two-argument callbacks.
     """
 
     # One abandoned operation must not create an unbounded executor backlog.
     slot = threading.BoundedSemaphore(1)
+    timed_resolver = _resolver_with_timeout(resolve_engine)
 
     async def test_connection(
         ctx: ControlPlaneContext, request: Mapping[str, Any]
@@ -331,10 +338,12 @@ def create_action_handlers(resolve_engine: EngineResolver) -> dict[str, ActionHa
             raise ValueError(
                 "PostgreSQL connection test requires provider='postgresql'"
             )
+        if timed_resolver is None:
+            raise ValueError("connection tests require a timeout-aware engine resolver")
         return await _invoke_read_only(
             ctx,
             request,
-            resolve_engine=resolve_engine,
+            resolve_engine=timed_resolver,
             slot=slot,
             operation_name="connection-test",
             run=_test_postgresql_connection,
@@ -350,10 +359,14 @@ def create_action_handlers(resolve_engine: EngineResolver) -> dict[str, ActionHa
         max_fields = request.get("max_fields", 100)
         if type(max_fields) is not int or not 1 <= max_fields <= 100:
             raise ValueError("schema inspection field limit must be between 1 and 100")
+        if timed_resolver is None:
+            raise ValueError(
+                "schema inspection requires a timeout-aware engine resolver"
+            )
         return await _invoke_read_only(
             ctx,
             request,
-            resolve_engine=resolve_engine,
+            resolve_engine=timed_resolver,
             slot=slot,
             operation_name="schema-inspection",
             run=lambda engine, operation, _request: _inspect_postgresql_schema(
@@ -389,7 +402,13 @@ def create_action_handlers(resolve_engine: EngineResolver) -> dict[str, ActionHa
 
             try:
                 operation.check()
-                engine = resolve_engine(ctx, str(request["connection_id"]))
+                engine = _resolve_engine_for_operation(
+                    resolve_engine,
+                    timed_resolver,
+                    ctx,
+                    str(request["connection_id"]),
+                    operation,
+                )
                 operation.check()
                 if engine.dialect.name != "postgresql":
                     raise ValueError("PostgreSQL catalog requires a PostgreSQL engine")
@@ -473,7 +492,13 @@ def create_action_handlers(resolve_engine: EngineResolver) -> dict[str, ActionHa
         def run() -> None:
             try:
                 operation.check()
-                engine = resolve_engine(ctx, str(request["connection_id"]))
+                engine = _resolve_engine_for_operation(
+                    resolve_engine,
+                    timed_resolver,
+                    ctx,
+                    str(request["connection_id"]),
+                    operation,
+                )
                 operation.check()
                 result = _execute(engine, ctx, request, operation, cleanup=cleanup)
             except BaseException as exc:
@@ -585,7 +610,7 @@ async def _invoke_read_only(
     ctx: ControlPlaneContext,
     request: Mapping[str, Any],
     *,
-    resolve_engine: EngineResolver,
+    resolve_engine: _TimedEngineResolver,
     slot: threading.BoundedSemaphore,
     operation_name: str,
     run: Callable[[Engine, _ActionOperation, Mapping[str, Any]], Mapping[str, Any]],
@@ -601,7 +626,13 @@ async def _invoke_read_only(
     def run_operation() -> None:
         try:
             operation.check()
-            engine = resolve_engine(ctx, str(request["connection_id"]))
+            engine = _resolve_engine_for_operation(
+                resolve_engine,
+                resolve_engine,
+                ctx,
+                str(request["connection_id"]),
+                operation,
+            )
             operation.check()
             if engine.dialect.name != "postgresql":
                 raise ValueError("PostgreSQL action requires a PostgreSQL engine")
@@ -636,6 +667,49 @@ async def _invoke_read_only(
     except asyncio.CancelledError:
         operation.cancel()
         raise
+
+
+def _resolver_with_timeout(
+    resolver: EngineResolver,
+) -> _TimedEngineResolver | None:
+    """Build the bounded callback adapter when the resolver supports it."""
+    parameters: Mapping[str, Parameter] = {}
+    try:
+        parameters = signature(resolver).parameters
+    except (TypeError, ValueError):
+        parameters = {}
+    timeout_parameter = parameters.get("timeout_seconds")
+    accepts_keyword = timeout_parameter is not None and (
+        timeout_parameter.kind is not Parameter.POSITIONAL_ONLY
+    )
+    accepts_kwargs = any(
+        parameter.kind is Parameter.VAR_KEYWORD for parameter in parameters.values()
+    )
+    callback = resolver
+
+    if accepts_keyword or accepts_kwargs:
+        return lambda ctx, connection_id, timeout_seconds: callback(
+            ctx, connection_id, timeout_seconds=timeout_seconds
+        )
+    return None
+
+
+def _resolve_engine_for_operation(
+    resolver: EngineResolver,
+    timed_resolver: _TimedEngineResolver | None,
+    ctx: ControlPlaneContext,
+    connection_id: str,
+    operation: _ActionOperation,
+) -> Engine:
+    if timed_resolver is None:
+        return resolver(ctx, connection_id)
+    operation.check()
+    timeout_seconds = (
+        max(0.001, (operation.deadline - datetime.now(UTC)).total_seconds())
+        if operation.deadline is not None
+        else 30.0
+    )
+    return timed_resolver(ctx, connection_id, timeout_seconds)
 
 
 def _set_local_deadline(connection: Connection, operation: _ActionOperation) -> None:

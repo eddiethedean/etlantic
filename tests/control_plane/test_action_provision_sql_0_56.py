@@ -6,6 +6,7 @@ import os
 import uuid
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
+from types import SimpleNamespace
 from typing import Any
 
 import anyio
@@ -232,6 +233,84 @@ def test_sql_provision_schema_rejects_nullable_primary_key_before_provider_io() 
         )
 
 
+def test_sql_read_only_actions_pass_remaining_deadline_to_resolver(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    import etlantic_sql.action_handlers as action_handlers
+
+    ctx = _context()
+    resolved: list[tuple[ControlPlaneContext, str, float]] = []
+    engine = SimpleNamespace(dialect=SimpleNamespace(name="postgresql"))
+
+    def resolve_engine(
+        action_ctx: ControlPlaneContext,
+        connection_id: str,
+        *,
+        timeout_seconds: float,
+    ) -> Any:
+        resolved.append((action_ctx, connection_id, timeout_seconds))
+        return engine
+
+    def fake_test_connection(
+        _engine: Any, _operation: Any, _request: Any
+    ) -> dict[str, str | bool]:
+        return {
+            "schema": "etlantic.connector_test/1",
+            "ok": True,
+            "provider": "postgresql",
+        }
+
+    monkeypatch.setattr(
+        action_handlers, "_test_postgresql_connection", fake_test_connection
+    )
+    deadline_at = datetime.now(UTC) + timedelta(seconds=10)
+    result = anyio.run(
+        create_action_handlers(resolve_engine)["connector.test"],
+        ctx,
+        {
+            "provider": "postgresql",
+            "connection_id": "saved-postgres",
+            "_deadline_at": deadline_at.isoformat(),
+        },
+    )
+
+    assert result["ok"] is True
+    assert len(resolved) == 1
+    assert resolved[0][:2] == (ctx, "saved-postgres")
+    assert 0 < resolved[0][2] <= 10
+
+
+def test_sql_read_only_actions_reject_legacy_unbounded_resolver() -> None:
+    ctx = _context()
+    store = MemoryDurableWorkStore()
+    authorizer = MemoryAuthorizer()
+    authorizer.grant(ctx, "connector.test")
+    resolver_calls: list[str] = []
+
+    def resolve_engine(_ctx: ControlPlaneContext, connection_id: str) -> Any:
+        resolver_calls.append(connection_id)
+        raise AssertionError("unbounded resolver must not be called")
+
+    worker = ActionExecutionHost(
+        store,
+        handlers=create_action_handlers(resolve_engine),
+        authorizer=authorizer,
+    )
+    job = _accept(
+        store,
+        ctx,
+        action="connector.test",
+        key="unbounded-resolver",
+        request={"provider": "postgresql", "connection_id": "saved"},
+    )
+
+    assert worker.tick(ctx, limit=1) == 1
+    receipt = store.get_action_job(ctx, job.action_id).to_dict()
+    assert receipt["status"] == "failed"
+    assert receipt["error_code"] == "action_failed"
+    assert resolver_calls == []
+
+
 def test_postgresql_action_provision_effect_and_cleanup() -> None:
     database_url = os.environ.get("ETLANTIC_ACTION_POSTGRES_URL")
     if not database_url:
@@ -360,7 +439,10 @@ def test_postgresql_connection_test_and_bounded_schema_inspection() -> None:
             )
         resolved_engine = create_engine(
             database_url,
-            connect_args={"options": f"-csearch_path={schema_name}"},
+            connect_args={
+                "connect_timeout": 5,
+                "options": f"-csearch_path={schema_name}",
+            },
             pool_pre_ping=True,
         )
         provider_engine = resolved_engine
@@ -373,8 +455,12 @@ def test_postgresql_connection_test_and_bounded_schema_inspection() -> None:
         resolver_calls: list[tuple[ControlPlaneContext, str]] = []
 
         def resolve_engine(
-            action_ctx: ControlPlaneContext, connection_id: str
+            action_ctx: ControlPlaneContext,
+            connection_id: str,
+            *,
+            timeout_seconds: float,
         ) -> Engine:
+            assert timeout_seconds > 0
             resolver_calls.append((action_ctx, connection_id))
             return resolved_engine
 
@@ -457,7 +543,13 @@ def test_sql_connection_test_hides_revoked_reference_and_provider_errors(
     store = MemoryDurableWorkStore()
     saved_connections: dict[str, Engine] = {"saved": engine}
 
-    def resolve_engine(_ctx: ControlPlaneContext, connection_id: str) -> Engine:
+    def resolve_engine(
+        _ctx: ControlPlaneContext,
+        connection_id: str,
+        *,
+        timeout_seconds: float,
+    ) -> Engine:
+        assert timeout_seconds > 0
         if failure == "provider-outage":
             raise RuntimeError("connection password must stay private")
         return saved_connections[connection_id]

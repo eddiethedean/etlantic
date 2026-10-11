@@ -474,10 +474,18 @@ def test_postgresql_action_worker_executes_connection_schema_and_preflight() -> 
     resolver_calls: list[tuple[ControlPlaneContext, str]] = []
 
     def resolve_engine(
-        action_ctx: ControlPlaneContext, connection_id: str
+        action_ctx: ControlPlaneContext,
+        connection_id: str,
+        *,
+        timeout_seconds: float,
     ) -> sqlalchemy.engine.Engine:
+        assert timeout_seconds > 0
         resolver_calls.append((action_ctx, connection_id))
-        engine = sqlalchemy.create_engine(url, pool_pre_ping=True)
+        engine = sqlalchemy.create_engine(
+            url,
+            connect_args={"connect_timeout": max(1, int(timeout_seconds))},
+            pool_pre_ping=True,
+        )
         resolved_engines.append(engine)
         return engine
 

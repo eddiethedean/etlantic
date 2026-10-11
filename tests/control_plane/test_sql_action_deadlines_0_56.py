@@ -427,11 +427,19 @@ def test_postgresql_cancels_read_only_schema_inspection_at_the_deadline(
         pytest.skip("PostgreSQL read-only action cancellation qualification")
     authorizer = MemoryAuthorizer()
     authorizer.grant(actions.ctx, "connector.schema.inspect")
+
+    def resolve_with_timeout(
+        _ctx: ControlPlaneContext,
+        _connection_id: str,
+        *,
+        timeout_seconds: float,
+    ) -> Engine:
+        assert timeout_seconds > 0
+        return actions.engine
+
     worker = ActionExecutionHost(
         actions.store,
-        handlers=sql_actions.create_action_handlers(
-            lambda _ctx, _connection_id: actions.engine
-        ),
+        handlers=sql_actions.create_action_handlers(resolve_with_timeout),
         authorizer=authorizer,
         worker_id="sql-inspection-deadline-worker",
         lease_seconds=3,
