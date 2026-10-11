@@ -6,6 +6,7 @@ import os
 import uuid
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
+from types import SimpleNamespace
 from typing import Any
 
 import anyio
@@ -232,6 +233,84 @@ def test_sql_provision_schema_rejects_nullable_primary_key_before_provider_io() 
         )
 
 
+def test_sql_read_only_actions_pass_remaining_deadline_to_resolver(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    import etlantic_sql.action_handlers as action_handlers
+
+    ctx = _context()
+    resolved: list[tuple[ControlPlaneContext, str, float]] = []
+    engine = SimpleNamespace(dialect=SimpleNamespace(name="postgresql"))
+
+    def resolve_engine(
+        action_ctx: ControlPlaneContext,
+        connection_id: str,
+        *,
+        timeout_seconds: float,
+    ) -> Any:
+        resolved.append((action_ctx, connection_id, timeout_seconds))
+        return engine
+
+    def fake_test_connection(
+        _engine: Any, _operation: Any, _request: Any
+    ) -> dict[str, str | bool]:
+        return {
+            "schema": "etlantic.connector_test/1",
+            "ok": True,
+            "provider": "postgresql",
+        }
+
+    monkeypatch.setattr(
+        action_handlers, "_test_postgresql_connection", fake_test_connection
+    )
+    deadline_at = datetime.now(UTC) + timedelta(seconds=10)
+    result = anyio.run(
+        create_action_handlers(resolve_engine)["connector.test"],
+        ctx,
+        {
+            "provider": "postgresql",
+            "connection_id": "saved-postgres",
+            "_deadline_at": deadline_at.isoformat(),
+        },
+    )
+
+    assert result["ok"] is True
+    assert len(resolved) == 1
+    assert resolved[0][:2] == (ctx, "saved-postgres")
+    assert 0 < resolved[0][2] <= 10
+
+
+def test_sql_read_only_actions_reject_legacy_unbounded_resolver() -> None:
+    ctx = _context()
+    store = MemoryDurableWorkStore()
+    authorizer = MemoryAuthorizer()
+    authorizer.grant(ctx, "connector.test")
+    resolver_calls: list[str] = []
+
+    def resolve_engine(_ctx: ControlPlaneContext, connection_id: str) -> Any:
+        resolver_calls.append(connection_id)
+        raise AssertionError("unbounded resolver must not be called")
+
+    worker = ActionExecutionHost(
+        store,
+        handlers=create_action_handlers(resolve_engine),
+        authorizer=authorizer,
+    )
+    job = _accept(
+        store,
+        ctx,
+        action="connector.test",
+        key="unbounded-resolver",
+        request={"provider": "postgresql", "connection_id": "saved"},
+    )
+
+    assert worker.tick(ctx, limit=1) == 1
+    receipt = store.get_action_job(ctx, job.action_id).to_dict()
+    assert receipt["status"] == "failed"
+    assert receipt["error_code"] == "action_failed"
+    assert resolver_calls == []
+
+
 def test_postgresql_action_provision_effect_and_cleanup() -> None:
     database_url = os.environ.get("ETLANTIC_ACTION_POSTGRES_URL")
     if not database_url:
@@ -337,4 +416,207 @@ def test_postgresql_action_provision_effect_and_cleanup() -> None:
                     ),
                     {"connection_id": connection_id, "resource_id": resource_id},
                 )
+        engine.dispose()
+
+
+def test_postgresql_connection_test_and_bounded_schema_inspection() -> None:
+    database_url = os.environ.get("ETLANTIC_ACTION_POSTGRES_URL")
+    if not database_url:
+        pytest.skip("ETLANTIC_ACTION_POSTGRES_URL is not configured")
+    suffix = uuid.uuid4().hex[:12]
+    schema_name = f"etlantic_action_{suffix}"
+    admin_engine = create_engine(database_url, pool_pre_ping=True)
+    provider_engine: Engine | None = None
+    try:
+        with admin_engine.begin() as connection:
+            connection.exec_driver_sql(f'CREATE SCHEMA "{schema_name}"')
+            connection.exec_driver_sql(
+                f'CREATE TABLE "{schema_name}"."fixture" '
+                "(id bigint PRIMARY KEY, payload text NOT NULL)"
+            )
+            connection.exec_driver_sql(
+                f'INSERT INTO "{schema_name}"."fixture" VALUES (1, \'private-row-value\')'
+            )
+        resolved_engine = create_engine(
+            database_url,
+            connect_args={
+                "connect_timeout": 5,
+                "options": f"-csearch_path={schema_name}",
+            },
+            pool_pre_ping=True,
+        )
+        provider_engine = resolved_engine
+        assert provider_engine is not None
+        ctx = _context()
+        authorizer = MemoryAuthorizer()
+        authorizer.grant(ctx, "connector.test")
+        authorizer.grant(ctx, "connector.schema.inspect")
+        store = MemoryDurableWorkStore()
+        resolver_calls: list[tuple[ControlPlaneContext, str]] = []
+
+        def resolve_engine(
+            action_ctx: ControlPlaneContext,
+            connection_id: str,
+            *,
+            timeout_seconds: float,
+        ) -> Engine:
+            assert timeout_seconds > 0
+            resolver_calls.append((action_ctx, connection_id))
+            return resolved_engine
+
+        handlers = create_action_handlers(resolve_engine)
+        worker = ActionExecutionHost(store, handlers=handlers, authorizer=authorizer)
+        before_tables = inspect(provider_engine).get_table_names()
+        with provider_engine.connect() as connection:
+            before_rows = connection.exec_driver_sql(
+                'SELECT count(*) FROM "fixture"'
+            ).scalar_one()
+
+        tested = _accept(
+            store,
+            ctx,
+            action="connector.test",
+            key=f"postgres-connection-test-{suffix}",
+            request={"provider": "postgresql", "connection_id": f"saved-{suffix}"},
+        )
+        assert worker.tick(ctx, limit=1) == 1
+        test_receipt = store.get_action_job(ctx, tested.action_id).to_dict()
+        assert test_receipt["status"] == "succeeded"
+        assert test_receipt["result"] == {
+            "schema": "etlantic.connector_test/1",
+            "ok": True,
+            "provider": "postgresql",
+        }
+
+        inspected = _accept(
+            store,
+            ctx,
+            action="connector.schema.inspect",
+            key=f"postgres-schema-inspection-{suffix}",
+            request={
+                "provider": "postgresql",
+                "connection_id": f"saved-{suffix}",
+                "max_fields": 1,
+            },
+        )
+        assert worker.tick(ctx, limit=1) == 1
+        inspection_receipt = store.get_action_job(ctx, inspected.action_id).to_dict()
+        assert inspection_receipt["status"] == "succeeded"
+        result = inspection_receipt["result"]
+        assert result["provider"] == "postgresql"
+        assert result["has_more"] is True
+        assert len(result["fields"]) == 1
+        assert result["fields"][0] == {
+            "table": "fixture",
+            "name": "id",
+            "type": "bigint",
+            "nullable": False,
+            "primary_key": True,
+        }
+        assert "private-row-value" not in repr(result)
+        assert inspect(provider_engine).get_table_names() == before_tables
+        with provider_engine.connect() as connection:
+            after_rows = connection.exec_driver_sql(
+                'SELECT count(*) FROM "fixture"'
+            ).scalar_one()
+        assert after_rows == before_rows == 1
+        assert resolver_calls == [
+            (ctx, f"saved-{suffix}"),
+            (ctx, f"saved-{suffix}"),
+        ]
+    finally:
+        if provider_engine is not None:
+            provider_engine.dispose()
+        with admin_engine.begin() as connection:
+            connection.exec_driver_sql(f'DROP SCHEMA IF EXISTS "{schema_name}" CASCADE')
+        admin_engine.dispose()
+
+
+@pytest.mark.parametrize("failure", ["revoked", "provider-outage"])
+def test_sql_connection_test_hides_revoked_reference_and_provider_errors(
+    failure: str,
+) -> None:
+    engine = create_engine("sqlite://")
+    ctx = _context()
+    authorizer = MemoryAuthorizer()
+    authorizer.grant(ctx, "connector.test")
+    store = MemoryDurableWorkStore()
+    saved_connections: dict[str, Engine] = {"saved": engine}
+
+    def resolve_engine(
+        _ctx: ControlPlaneContext,
+        connection_id: str,
+        *,
+        timeout_seconds: float,
+    ) -> Engine:
+        assert timeout_seconds > 0
+        if failure == "provider-outage":
+            raise RuntimeError("connection password must stay private")
+        return saved_connections[connection_id]
+
+    worker = ActionExecutionHost(
+        store,
+        handlers=create_action_handlers(resolve_engine),
+        authorizer=authorizer,
+    )
+    job = _accept(
+        store,
+        ctx,
+        action="connector.test",
+        key=f"connection-{failure}",
+        request={"provider": "postgresql", "connection_id": "saved"},
+    )
+    if failure == "revoked":
+        saved_connections.pop("saved")
+    try:
+        assert worker.tick(ctx, limit=1) == 1
+        receipt = store.get_action_job(ctx, job.action_id).to_dict()
+        assert receipt["status"] == "failed"
+        assert receipt["error_code"] == "action_failed"
+        assert "password" not in repr(receipt)
+    finally:
+        engine.dispose()
+
+
+def test_sql_connection_test_rechecks_connection_authorization_before_resolution() -> (
+    None
+):
+    engine = create_engine("sqlite://")
+    ctx = _context()
+    authorizer = MemoryAuthorizer()
+    authorizer.grant(ctx, "connector.test")
+    authorizer.forbidden_resources.add(
+        (
+            ctx.tenant.tenant_id,
+            ctx.workspace.workspace_id,
+            "connector.test",
+            "connection:saved",
+        )
+    )
+    resolver_calls: list[str] = []
+
+    def resolve_engine(_ctx: ControlPlaneContext, connection_id: str) -> Engine:
+        resolver_calls.append(connection_id)
+        return engine
+
+    store = MemoryDurableWorkStore()
+    worker = ActionExecutionHost(
+        store,
+        handlers=create_action_handlers(resolve_engine),
+        authorizer=authorizer,
+    )
+    job = _accept(
+        store,
+        ctx,
+        action="connector.test",
+        key="connection-authz-recheck",
+        request={"provider": "postgresql", "connection_id": "saved"},
+    )
+    try:
+        assert worker.tick(ctx, limit=1) == 1
+        receipt = store.get_action_job(ctx, job.action_id).to_dict()
+        assert receipt["status"] == "failed"
+        assert receipt["error_code"] == "authorization_denied"
+        assert resolver_calls == []
+    finally:
         engine.dispose()

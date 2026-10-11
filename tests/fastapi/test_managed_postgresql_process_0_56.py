@@ -443,3 +443,146 @@ def test_postgresql_multiprocess_managed_service_retry_and_intent_conflict() -> 
         _cleanup_scope(cleanup_engine, changed_store, _changed_scope)
     finally:
         cleanup_engine.dispose()
+
+
+def test_postgresql_action_worker_executes_connection_schema_and_preflight() -> None:
+    url = os.environ.get("ETLANTIC_CP_TEST_URL")
+    if not url:
+        pytest.skip("set ETLANTIC_CP_TEST_URL for live PostgreSQL action qualification")
+
+    from etlantic import Profile
+    from etlantic_sql import create_action_handlers
+    from etlantic_sqlmodel import SQLModelBackendConfig
+    from etlantic_sqlmodel import (
+        create_managed_backend as create_sqlmodel_managed_backend,
+    )
+
+    scope = f"issue286-actions-{uuid.uuid4().hex}"
+    store_id = f"issue286-actions-{uuid.uuid4().hex}"
+    ctx = _context(scope)
+    authorizer = MemoryAuthorizer()
+    for action in (
+        "definition.write",
+        "connector.test",
+        "connector.schema.inspect",
+        "connector.preflight",
+        "connector.action.read",
+    ):
+        authorizer.grant(ctx, action)
+
+    resolved_engines: list[sqlalchemy.engine.Engine] = []
+    resolver_calls: list[tuple[ControlPlaneContext, str]] = []
+
+    def resolve_engine(
+        action_ctx: ControlPlaneContext,
+        connection_id: str,
+        *,
+        timeout_seconds: float,
+    ) -> sqlalchemy.engine.Engine:
+        assert timeout_seconds > 0
+        resolver_calls.append((action_ctx, connection_id))
+        engine = sqlalchemy.create_engine(
+            url,
+            connect_args={"connect_timeout": max(1, int(timeout_seconds))},
+            pool_pre_ping=True,
+        )
+        resolved_engines.append(engine)
+        return engine
+
+    migration_engine = sqlalchemy.create_engine(url, pool_pre_ping=True)
+    try:
+        assert (
+            upgrade(migration_engine) == "014_cp1_complete_principal_idempotency_0_56"
+        )
+    finally:
+        migration_engine.dispose()
+
+    backend = create_sqlmodel_managed_backend(
+        SQLModelBackendConfig(
+            database_url=url,
+            store_id=store_id,
+            profile=Profile(
+                name="issue286-action-worker",
+                security_mode="development",
+                plugin_allowlist={"etlantic": None},
+            ),
+            action_handlers=create_action_handlers(resolve_engine),
+        ),
+        authorizer=authorizer,
+    )
+    try:
+        service = backend.managed_service
+        first = service.register_definition(
+            ctx,
+            "issue286-preflight",
+            pipeline_to_dict(definition_from_pipeline(_ServicePipeline)),
+        )
+        jobs = [
+            service.submit_connector_action(
+                ctx,
+                "connector.test",
+                {"provider": "postgresql", "connection_id": "saved-postgres"},
+                idempotency_key="issue286-connection-test",
+            ),
+            service.submit_connector_action(
+                ctx,
+                "connector.schema.inspect",
+                {
+                    "provider": "postgresql",
+                    "connection_id": "saved-postgres",
+                    "max_fields": 1,
+                },
+                idempotency_key="issue286-schema-inspection",
+            ),
+            service.submit_connector_action(
+                ctx,
+                "connector.preflight",
+                {"definition_id": "issue286-preflight"},
+                idempotency_key="issue286-preflight",
+            ),
+        ]
+        assert resolver_calls == []
+        worker = backend.create_action_execution_host(worker_id="issue286-worker")
+        for _ in jobs:
+            assert worker.tick(ctx, limit=1) == 1
+        receipts = [service.get_connector_action(ctx, job["action_id"]) for job in jobs]
+        assert [receipt["status"] for receipt in receipts] == [
+            "succeeded",
+            "succeeded",
+            "succeeded",
+        ]
+        assert receipts[0]["result"] == {
+            "schema": "etlantic.connector_test/1",
+            "ok": True,
+            "provider": "postgresql",
+        }
+        assert len(receipts[1]["result"]["fields"]) <= 1
+        assert receipts[1]["result"]["has_more"] is True
+        preflight = receipts[2]["result"]
+        assert preflight["schema"] == "etlantic.connector_preflight/1"
+        assert preflight["revision_id"] == first["revision_id"]
+        assert preflight["metadata"]["selected_revision_id"] == first["revision_id"]
+        assert len(resolver_calls) == 2
+        assert [connection_id for _ctx, connection_id in resolver_calls] == [
+            "saved-postgres",
+            "saved-postgres",
+        ]
+        assert all(
+            action_ctx.principal == ctx.principal
+            and action_ctx.tenant == ctx.tenant
+            and action_ctx.workspace == ctx.workspace
+            and action_ctx.environment == ctx.environment
+            and action_ctx.security_domain == ctx.security_domain
+            and action_ctx.resource_owner_id
+            == (ctx.resource_owner_id or ctx.principal.identity_key)
+            for action_ctx, _connection_id in resolver_calls
+        )
+    finally:
+        backend.close()
+        cleanup_engine = sqlalchemy.create_engine(url, pool_pre_ping=True)
+        try:
+            _cleanup_scope(cleanup_engine, store_id, scope)
+        finally:
+            cleanup_engine.dispose()
+        for engine in resolved_engines:
+            engine.dispose()

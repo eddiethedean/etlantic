@@ -11,6 +11,7 @@ from collections.abc import Callable, Mapping
 from concurrent.futures import Future
 from contextlib import suppress
 from datetime import UTC, datetime
+from inspect import Parameter, signature
 from typing import Any, cast
 
 from sqlalchemy import (
@@ -35,7 +36,8 @@ from sqlalchemy.engine import Connection, Engine
 from etlantic.control_plane import ControlPlaneContext
 from etlantic.runtime import ActionHandler
 
-EngineResolver = Callable[[ControlPlaneContext, str], Engine]
+EngineResolver = Callable[..., Engine]
+_TimedEngineResolver = Callable[[ControlPlaneContext, str, float], Engine]
 _REGISTRY_NAME = "etlantic_connector_action_effects"
 _SAFE_IDENTIFIER = re.compile(r"[A-Za-z_][A-Za-z0-9_]{0,62}\Z")
 _TYPES: dict[str, Any] = {
@@ -314,15 +316,63 @@ def _remove_table_effect(
 
 
 def create_action_handlers(resolve_engine: EngineResolver) -> dict[str, ActionHandler]:
-    """Build PostgreSQL create-only table provisioning and cleanup handlers.
+    """Build bounded PostgreSQL connection, schema, and provisioning handlers.
 
     The callback receives trusted worker context and an opaque saved connection
     ID. It returns an application-owned SQLAlchemy engine whose credentials and
-    lifecycle remain outside action requests and receipts.
+    lifecycle remain outside action requests and receipts. Connection-test and
+    schema-inspection actions require the callback to accept a
+    ``timeout_seconds`` keyword and use it to bound secret lookup and configure
+    the engine's driver-level connection timeout. Catalog and provisioning
+    actions continue to support existing two-argument callbacks.
     """
 
     # One abandoned operation must not create an unbounded executor backlog.
     slot = threading.BoundedSemaphore(1)
+    timed_resolver = _resolver_with_timeout(resolve_engine)
+
+    async def test_connection(
+        ctx: ControlPlaneContext, request: Mapping[str, Any]
+    ) -> Mapping[str, Any]:
+        if request.get("provider") != "postgresql":
+            raise ValueError(
+                "PostgreSQL connection test requires provider='postgresql'"
+            )
+        if timed_resolver is None:
+            raise ValueError("connection tests require a timeout-aware engine resolver")
+        return await _invoke_read_only(
+            ctx,
+            request,
+            resolve_engine=timed_resolver,
+            slot=slot,
+            operation_name="connection-test",
+            run=_test_postgresql_connection,
+        )
+
+    async def inspect_schema(
+        ctx: ControlPlaneContext, request: Mapping[str, Any]
+    ) -> Mapping[str, Any]:
+        if request.get("provider") != "postgresql":
+            raise ValueError(
+                "PostgreSQL schema inspection requires provider='postgresql'"
+            )
+        max_fields = request.get("max_fields", 100)
+        if type(max_fields) is not int or not 1 <= max_fields <= 100:
+            raise ValueError("schema inspection field limit must be between 1 and 100")
+        if timed_resolver is None:
+            raise ValueError(
+                "schema inspection requires a timeout-aware engine resolver"
+            )
+        return await _invoke_read_only(
+            ctx,
+            request,
+            resolve_engine=timed_resolver,
+            slot=slot,
+            operation_name="schema-inspection",
+            run=lambda engine, operation, _request: _inspect_postgresql_schema(
+                engine, operation, max_fields=max_fields
+            ),
+        )
 
     async def catalog(
         ctx: ControlPlaneContext, request: Mapping[str, Any]
@@ -352,7 +402,13 @@ def create_action_handlers(resolve_engine: EngineResolver) -> dict[str, ActionHa
 
             try:
                 operation.check()
-                engine = resolve_engine(ctx, str(request["connection_id"]))
+                engine = _resolve_engine_for_operation(
+                    resolve_engine,
+                    timed_resolver,
+                    ctx,
+                    str(request["connection_id"]),
+                    operation,
+                )
                 operation.check()
                 if engine.dialect.name != "postgresql":
                     raise ValueError("PostgreSQL catalog requires a PostgreSQL engine")
@@ -436,7 +492,13 @@ def create_action_handlers(resolve_engine: EngineResolver) -> dict[str, ActionHa
         def run() -> None:
             try:
                 operation.check()
-                engine = resolve_engine(ctx, str(request["connection_id"]))
+                engine = _resolve_engine_for_operation(
+                    resolve_engine,
+                    timed_resolver,
+                    ctx,
+                    str(request["connection_id"]),
+                    operation,
+                )
                 operation.check()
                 result = _execute(engine, ctx, request, operation, cleanup=cleanup)
             except BaseException as exc:
@@ -472,6 +534,8 @@ def create_action_handlers(resolve_engine: EngineResolver) -> dict[str, ActionHa
         return await invoke(ctx, request, cleanup=True)
 
     return {
+        "connector.test": test_connection,
+        "connector.schema.inspect": inspect_schema,
         "connector.catalog.postgresql": catalog,
         "connector.provision": provision,
         "connector.provision.cleanup": cleanup,
@@ -540,6 +604,209 @@ class _ActionOperation:
             # A stale worker cannot publish through a newer fencing token.
             with suppress(Exception):
                 self.retain(result)
+
+
+async def _invoke_read_only(
+    ctx: ControlPlaneContext,
+    request: Mapping[str, Any],
+    *,
+    resolve_engine: _TimedEngineResolver,
+    slot: threading.BoundedSemaphore,
+    operation_name: str,
+    run: Callable[[Engine, _ActionOperation, Mapping[str, Any]], Mapping[str, Any]],
+) -> Mapping[str, Any]:
+    """Resolve and run one bounded read-only SQL action off the worker loop."""
+    operation = _ActionOperation(request)
+    while not slot.acquire(blocking=False):
+        operation.check()
+        await asyncio.sleep(0.01)
+    future: Future[Mapping[str, Any]] = Future()
+    operation.future = future
+
+    def run_operation() -> None:
+        try:
+            operation.check()
+            engine = _resolve_engine_for_operation(
+                resolve_engine,
+                resolve_engine,
+                ctx,
+                str(request["connection_id"]),
+                operation,
+            )
+            operation.check()
+            if engine.dialect.name != "postgresql":
+                raise ValueError("PostgreSQL action requires a PostgreSQL engine")
+            result = run(engine, operation, request)
+            operation.check()
+        except BaseException as exc:
+            future.set_exception(exc)
+        else:
+            future.set_result(result)
+        finally:
+            slot.release()
+            operation.retain_if_cancelled()
+
+    try:
+        threading.Thread(
+            target=run_operation,
+            name=f"etlantic-sql-{operation_name}",
+            daemon=True,
+        ).start()
+    except BaseException:
+        slot.release()
+        raise
+    wrapped = asyncio.wrap_future(future)
+
+    def consume_result(completed: asyncio.Future[Mapping[str, Any]]) -> None:
+        if not completed.cancelled():
+            completed.exception()
+
+    wrapped.add_done_callback(consume_result)
+    try:
+        return await asyncio.shield(wrapped)
+    except asyncio.CancelledError:
+        operation.cancel()
+        raise
+
+
+def _resolver_with_timeout(
+    resolver: EngineResolver,
+) -> _TimedEngineResolver | None:
+    """Build the bounded callback adapter when the resolver supports it."""
+    parameters: Mapping[str, Parameter] = {}
+    try:
+        parameters = signature(resolver).parameters
+    except (TypeError, ValueError):
+        parameters = {}
+    timeout_parameter = parameters.get("timeout_seconds")
+    accepts_keyword = timeout_parameter is not None and (
+        timeout_parameter.kind is not Parameter.POSITIONAL_ONLY
+    )
+    accepts_kwargs = any(
+        parameter.kind is Parameter.VAR_KEYWORD for parameter in parameters.values()
+    )
+    callback = resolver
+
+    if accepts_keyword or accepts_kwargs:
+        return lambda ctx, connection_id, timeout_seconds: callback(
+            ctx, connection_id, timeout_seconds=timeout_seconds
+        )
+    return None
+
+
+def _resolve_engine_for_operation(
+    resolver: EngineResolver,
+    timed_resolver: _TimedEngineResolver | None,
+    ctx: ControlPlaneContext,
+    connection_id: str,
+    operation: _ActionOperation,
+) -> Engine:
+    if timed_resolver is None:
+        return resolver(ctx, connection_id)
+    operation.check()
+    timeout_seconds = (
+        max(0.001, (operation.deadline - datetime.now(UTC)).total_seconds())
+        if operation.deadline is not None
+        else 30.0
+    )
+    return timed_resolver(ctx, connection_id, timeout_seconds)
+
+
+def _set_local_deadline(connection: Connection, operation: _ActionOperation) -> None:
+    if operation.deadline is None:
+        return
+    milliseconds = max(
+        1,
+        int((operation.deadline - datetime.now(UTC)).total_seconds() * 1000),
+    )
+    connection.exec_driver_sql(f"SET LOCAL statement_timeout = {milliseconds}")
+
+
+def _test_postgresql_connection(
+    engine: Engine,
+    operation: _ActionOperation,
+    _request: Mapping[str, Any],
+) -> Mapping[str, Any]:
+    with engine.connect() as connection:
+        with operation.driver_lock:
+            operation.driver = connection.connection.driver_connection
+        try:
+            operation.check()
+            with connection.begin():
+                _set_local_deadline(connection, operation)
+                operation.check()
+                value = connection.exec_driver_sql("SELECT 1").scalar_one()
+                operation.check()
+            if value != 1:
+                raise ValueError(
+                    "PostgreSQL connection test returned an invalid result"
+                )
+        finally:
+            with operation.driver_lock:
+                operation.driver = None
+    return {"schema": "etlantic.connector_test/1", "ok": True, "provider": "postgresql"}
+
+
+def _inspect_postgresql_schema(
+    engine: Engine,
+    operation: _ActionOperation,
+    *,
+    max_fields: int,
+) -> Mapping[str, Any]:
+    from sqlalchemy import text
+
+    query = text(
+        "SELECT c.table_name, c.column_name, c.data_type, c.is_nullable, "
+        "(kcu.column_name IS NOT NULL) AS is_primary_key "
+        "FROM information_schema.columns AS c "
+        "LEFT JOIN information_schema.table_constraints AS tc "
+        "ON tc.table_catalog = c.table_catalog "
+        "AND tc.table_schema = c.table_schema "
+        "AND tc.table_name = c.table_name "
+        "AND tc.constraint_type = 'PRIMARY KEY' "
+        "LEFT JOIN information_schema.key_column_usage AS kcu "
+        "ON kcu.constraint_catalog = tc.constraint_catalog "
+        "AND kcu.constraint_schema = tc.constraint_schema "
+        "AND kcu.constraint_name = tc.constraint_name "
+        "AND kcu.table_schema = c.table_schema "
+        "AND kcu.table_name = c.table_name "
+        "AND kcu.column_name = c.column_name "
+        "WHERE c.table_schema = current_schema() "
+        "ORDER BY c.table_name, c.ordinal_position "
+        "LIMIT :limit"
+    )
+    with engine.connect() as connection:
+        with operation.driver_lock:
+            operation.driver = connection.connection.driver_connection
+        try:
+            operation.check()
+            with connection.begin():
+                _set_local_deadline(connection, operation)
+                operation.check()
+                result = connection.execute(query, {"limit": max_fields + 1})
+                rows = [dict(row) for row in result.mappings()]
+                operation.check()
+        finally:
+            with operation.driver_lock:
+                operation.driver = None
+    has_more = len(rows) > max_fields
+    fields = [
+        {
+            "table": str(row["table_name"]),
+            "name": str(row["column_name"]),
+            "type": str(row["data_type"]),
+            "nullable": row["is_nullable"] == "YES",
+            "primary_key": bool(row["is_primary_key"]),
+        }
+        for row in rows[:max_fields]
+    ]
+    return {
+        "schema": "etlantic.connector_schema_inspection/1",
+        "provider": "postgresql",
+        "fields": fields,
+        "has_more": has_more,
+        "metadata": {"inspection": "read_only", "schema_scope": "current_schema"},
+    }
 
 
 def _execute(

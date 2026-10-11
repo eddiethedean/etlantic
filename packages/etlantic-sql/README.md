@@ -126,13 +126,63 @@ target mutation. The comparison tokens use a worker-process key and stay in
 memory; credentials and raw database/resource names are not written to plans,
 receipts or reports.
 
+### Managed connector action workers (0.57)
+
+The public `create_action_handlers(resolve_engine)` factory registers PostgreSQL
+connection tests, bounded schema inspection, live catalog lookup, and explicit
+provisioning/cleanup. `resolve_engine` runs in the action worker and receives the
+trusted `ControlPlaneContext` plus an opaque saved connection ID; resolve the
+caller-authorized reference and credentials there. Never put credentials in an
+action request or return them from the callback.
+
+```python
+from etlantic_sql import create_action_handlers
+from etlantic_sqlmodel import SQLModelBackendConfig, create_managed_backend
+
+def resolve_engine(ctx, connection_id, *, timeout_seconds):
+    # Apply the timeout to both secret lookup and the returned engine's driver
+    # connection setup (for psycopg, connect_args={"connect_timeout": ...}).
+    return connection_store.resolve_engine(
+        ctx, connection_id, timeout_seconds=timeout_seconds
+    )
+
+backend = create_managed_backend(
+    SQLModelBackendConfig(
+        database_url=control_plane_url,
+        store_id="control-plane",
+        action_handlers=create_action_handlers(resolve_engine),
+    ),
+    authorizer=authorizer,
+)
+action_worker = backend.create_action_execution_host(worker_id="actions-1")
+```
+
+Authorize `connector.test` and `connector.schema.inspect` for the caller. The
+connection probe executes only `SELECT 1`; schema inspection reads at most the
+requested number of column metadata records (1–100) from the current PostgreSQL
+schema. Neither handler reads source rows or mutates database objects. The
+standard managed backend also supplies a revision-pinned, read-only
+`connector.preflight` handler when the application has not configured one. It
+validates and plans the accepted saved definition; it does not promise that a
+later provider connection or write will succeed. The FastAPI adapter uses the
+same action handlers and worker API through its `create_managed_backend`
+configuration. The connection and schema handlers pass the remaining accepted
+job deadline as `timeout_seconds` and require the resolver to accept that
+keyword. Use it to bound secret resolution and the SQLAlchemy engine's
+driver-level connection timeout. Existing two-argument resolvers remain
+compatible with catalog and provisioning actions; update them before enabling
+connection tests or schema inspection, since cancellation cannot interrupt an
+in-progress resolver call or DBAPI connection setup before a driver connection
+exists.
+
 ### Explicit action provisioning
 
 For deployments that grant `connector.provision`, the package also provides
 `etlantic_sql.create_action_handlers(resolve_engine)`. The callback receives
 the action worker's trusted `ControlPlaneContext` and an opaque saved
-connection ID, then returns an application-owned SQLAlchemy engine. The
-factory registers PostgreSQL table create and cleanup handlers; connection
+connection ID, then returns an application-owned SQLAlchemy engine. Its
+PostgreSQL table create and cleanup handlers are available alongside the
+connection-test and schema-inspection handlers described above; connection
 URLs and credentials stay inside the deployment callback.
 
 Provisioning is create-only. The handler accepts only a typed table schema

@@ -420,6 +420,73 @@ def test_postgresql_cancels_an_in_flight_statement_at_the_deadline(
     assert inspect(actions.engine).has_table(actions.resource) is (kind == "cleanup")
 
 
+def test_postgresql_cancels_read_only_schema_inspection_at_the_deadline(
+    actions: Actions,
+) -> None:
+    if actions.engine.dialect.name != "postgresql":
+        pytest.skip("PostgreSQL read-only action cancellation qualification")
+    authorizer = MemoryAuthorizer()
+    authorizer.grant(actions.ctx, "connector.schema.inspect")
+
+    def resolve_with_timeout(
+        _ctx: ControlPlaneContext,
+        _connection_id: str,
+        *,
+        timeout_seconds: float,
+    ) -> Engine:
+        assert timeout_seconds > 0
+        return actions.engine
+
+    worker = ActionExecutionHost(
+        actions.store,
+        handlers=sql_actions.create_action_handlers(resolve_with_timeout),
+        authorizer=authorizer,
+        worker_id="sql-inspection-deadline-worker",
+        lease_seconds=3,
+    )
+    started = Event()
+    settled = Event()
+
+    def slow_catalog_query(
+        _connection: Any,
+        cursor: Any,
+        statement: str,
+        _params: Any,
+        _context: Any,
+        _many: bool,
+    ) -> None:
+        if "FROM information_schema.columns" in statement:
+            started.set()
+            try:
+                cursor.execute("SELECT pg_sleep(5)")
+            finally:
+                settled.set()
+
+    event.listen(actions.engine, "before_cursor_execute", slow_catalog_query)
+    job = actions.store.accept_action_job(
+        actions.ctx,
+        action="connector.schema.inspect",
+        idempotency_key=f"inspect-deadline-{uuid.uuid4().hex}",
+        request={
+            "provider": "postgresql",
+            "connection_id": actions.connection,
+            "max_fields": 10,
+        },
+        deadline_at=(datetime.now(UTC) + timedelta(seconds=0.4)).isoformat(),
+    )
+    try:
+        start = monotonic()
+        assert worker.tick(actions.ctx, limit=1) == 1
+        assert monotonic() - start < 1.5
+        assert started.is_set() and settled.wait(3)
+        receipt = actions.store.get_action_job(actions.ctx, job.action_id)
+        assert receipt.status == "timed_out"
+        assert receipt.error_code == "deadline_exceeded"
+        assert receipt.result_json is None
+    finally:
+        event.remove(actions.engine, "before_cursor_execute", slow_catalog_query)
+
+
 def test_unresponsive_driver_cancel_does_not_block_the_action_worker(
     actions: Actions, monkeypatch: pytest.MonkeyPatch
 ) -> None:

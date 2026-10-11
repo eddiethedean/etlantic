@@ -701,7 +701,10 @@ def test_action_worker_rechecks_authorization_and_redacts_bounded_receipts() -> 
     async def test_connection(
         action_ctx: ControlPlaneContext, request: Mapping[str, Any]
     ) -> dict[str, Any]:
-        assert request == {"provider": "mock", "connection_id": "db"}
+        assert {
+            key: value for key, value in request.items() if not key.startswith("_")
+        } == {"provider": "mock", "connection_id": "db"}
+        assert datetime.fromisoformat(str(request["_deadline_at"])).tzinfo is not None
         calls.append(action_ctx)
         return {"ok": True, "token": "provider-secret", "items": ["source"]}
 
@@ -851,9 +854,16 @@ def test_action_worker_executes_schema_and_preflight_handlers_with_typed_request
         store, handlers=handlers, authorizer=authorizer
     )
     assert worker.tick(ctx, limit=2) == 2
-    assert {action: dict(request) for action, request in calls} == {
-        action: request for action, request, _resources in cases
-    }
+    assert {
+        action: {
+            key: value for key, value in request.items() if not key.startswith("_")
+        }
+        for action, request in calls
+    } == {action: request for action, request, _resources in cases}
+    assert all(
+        datetime.fromisoformat(str(request["_deadline_at"])).tzinfo is not None
+        for _action, request in calls
+    )
     assert all(
         store.get_action_job(ctx, job.action_id).status == "succeeded"
         for job in accepted

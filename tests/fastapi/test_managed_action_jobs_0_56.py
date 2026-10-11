@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import json
 from collections.abc import Mapping
 from dataclasses import replace
 from datetime import UTC, datetime, timedelta
@@ -53,6 +54,11 @@ class _PreparationRow(Data):
 class _PreparationPipeline(Pipeline):
     source: Extract[_PreparationRow] = Extract(asset="source")
     result: Load[_PreparationRow] = Load(input=source, asset="result")
+
+
+class _RevisedPreparationPipeline(Pipeline):
+    source: Extract[_PreparationRow] = Extract(asset="source-v2")
+    result: Load[_PreparationRow] = Load(input=source, asset="result-v2")
 
 
 def _context() -> ControlPlaneContext:
@@ -138,6 +144,69 @@ def _backend(config: ManagedBackendConfig, authorizer: Authorizer) -> ManagedBac
             security_domain="action-domain",
         ),
     )
+
+
+def test_managed_preflight_is_backend_owned_and_pins_the_accepted_revision(
+    tmp_path: Path,
+) -> None:
+    ctx = _context()
+    authorizer = MemoryAuthorizer()
+    for action in ("definition.write", "connector.preflight", "connector.action.read"):
+        authorizer.grant(ctx, action)
+    backend = _backend(_config(tmp_path, _async_action_result), authorizer)
+    service = backend.api.managed_service
+    assert service is not None
+    try:
+        first = service.register_definition(
+            ctx,
+            "preflight-pipe",
+            pipeline_to_dict(definition_from_pipeline(_PreparationPipeline)),
+        )
+        first_revision = first["revision_id"]
+        accepted = service.submit_connector_action(
+            ctx,
+            "connector.preflight",
+            {"definition_id": "preflight-pipe"},
+            idempotency_key="preflight-current-revision",
+        )
+        durable = backend.api.durable_work
+        assert durable is not None
+        persisted = durable.get_action_job(ctx, accepted["action_id"])
+        stored_request = json.loads(persisted.request_json)
+        assert stored_request["revision_selector"] == "current"
+        assert stored_request["_accepted_revision_id"] == first_revision
+
+        second = service.register_definition(
+            ctx,
+            "preflight-pipe",
+            pipeline_to_dict(definition_from_pipeline(_RevisedPreparationPipeline)),
+        )
+        assert second["revision_id"] != first_revision
+        retried = service.submit_connector_action(
+            ctx,
+            "connector.preflight",
+            {"definition_id": "preflight-pipe"},
+            idempotency_key="preflight-current-revision",
+        )
+        assert retried["action_id"] == accepted["action_id"]
+
+        worker = backend.create_action_execution_host(worker_id="preflight-worker")
+        assert "connector.preflight" in worker.handlers
+        assert worker.tick(ctx, limit=1) == 1
+        receipt = service.get_connector_action(ctx, accepted["action_id"])
+        assert receipt["status"] == "succeeded"
+        result = receipt["result"]
+        assert result["schema"] == "etlantic.connector_preflight/1"
+        assert result["ok"] is True
+        assert result["revision_id"] == first_revision
+        assert result["metadata"] == {
+            "mode": "read_only_plan",
+            "selected_revision_id": first_revision,
+        }
+        assert "source" not in repr(result)
+        assert "source-v2" not in repr(result)
+    finally:
+        backend.close()
 
 
 def test_managed_run_preparation_survives_sql_backend_restart(
@@ -916,9 +985,19 @@ def test_managed_provision_is_explicit_idempotent_and_compensatable(
         )
         assert inspection.status_code == 202
         assert backend.create_action_execution_host().tick(ctx, limit=1) == 1
-        assert observed_inspections == [
-            {"provider": "mock", "connection_id": "saved-db", "max_fields": 100}
-        ]
+        assert len(observed_inspections) == 1
+        inspected_request = observed_inspections[0]
+        assert {
+            key: value
+            for key, value in inspected_request.items()
+            if not key.startswith("_")
+        } == {"provider": "mock", "connection_id": "saved-db", "max_fields": 100}
+        assert (
+            datetime.fromisoformat(
+                str(inspected_request["_deadline_at"]).replace("Z", "+00:00")
+            ).tzinfo
+            is not None
+        )
         assert provider_effects == {}
 
         submitted = client.post(
