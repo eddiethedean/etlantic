@@ -39,7 +39,7 @@ through **0.37** (stable foundation) are shipped.
 | Previous | 0.39 | Multi-tenant control plane (CP1) | Gate-ready / shipped evidence |
 | Previous | 0.38 | Data connectivity and connector SDK | Gate-ready / shipped evidence |
 | Previous | 0.56 | Complete application ETL backend with full specification and run control | Published / shipped evidence |
-| Current | 0.57 | Managed backend independence and runtime supervision (#278–#282) | Published / shipped evidence |
+| Current | 0.57 | Managed backend independence and runtime supervision (#278–#282), plus Local canonical sort fix (#283) | Gate-ready for tag/publish |
 | Later | 0.58 | Brownfield adoption bridges | Planning freeze |
 | Later | 0.59 | Operator Console | Planned |
 | Later | 0.60 | Managed runtime and enterprise provider packs | Planned |

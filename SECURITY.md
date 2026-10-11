@@ -1,5 +1,7 @@
 # Security Policy
 
+> **Release candidate:** ETLantic 0.57.2 is in preparation; 0.57.1 remains the latest published release.
+
 > **Version boundary:** ETLantic 0.57.1 is the current published Beta release and supported line.
 
 

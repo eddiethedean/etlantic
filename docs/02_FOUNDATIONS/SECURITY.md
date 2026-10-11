@@ -1,5 +1,7 @@
 # Security Model
 
+> **Release candidate:** ETLantic 0.57.2 is in preparation; 0.57.1 remains the latest published release.
+
 > **Status: ETLantic 0.57.1 Beta release.**
 
 ETLantic coordinates contracts, Python code, plugins, credentials, data

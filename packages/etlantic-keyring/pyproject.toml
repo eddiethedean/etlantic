@@ -1,6 +1,6 @@
 [project]
 name = "etlantic-keyring"
-version = "0.57.1"
+version = "0.57.2"
 description = "OS keyring secret provider for ETLantic."
 readme = "README.md"
 license = "MIT"

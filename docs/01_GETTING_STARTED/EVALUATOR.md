@@ -1,5 +1,7 @@
 # Evaluator Brief
 
+> **Release candidate:** ETLantic 0.57.2 is in preparation; 0.57.1 remains the latest published release.
+
 > **Status: ETLantic 0.57.1 is the published Beta release. Adaptive graduation remains pending.**
 
 A one-page answer for enterprise evaluators and technical decision-makers.

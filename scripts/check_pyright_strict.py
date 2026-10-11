@@ -140,15 +140,30 @@ EXPECTED_DIGESTS = {
     # The 0.57.0 release gate now checks open minor-line dependency floors; that
     # removes four stale possibly-unbound diagnostics from the docs checker.
     # The CP-GA compatibility matrix now records the same open 0.56 line floor;
-    # its helper edits shift the remaining fingerprint, with 10,025 diagnostics.
+    # its helper edits shift the remaining diagnostics, with 10,025 diagnostics.
     # Issue #273 defers worker execution imports from the FastAPI gateway and
     # makes migration-head inspection read-only. The reviewed strict inventory
     # remains at 10,025 diagnostics; source locations moved in touched paths.
     # Phase 0.57 adds managed-backend inspection and runtime roles. The
     # suppression-free diagnostic identities remain unchanged at 10,025; the
     # fingerprint moved because source locations shifted in touched files.
-    "Darwin": "eb50ef893ee8ff82278dc3f8e0be4c0b6e08d23c87a4c50a6a18888238c73c27",
-    "Linux": "eb50ef893ee8ff82278dc3f8e0be4c0b6e08d23c87a4c50a6a18888238c73c27",
+    # Issue #283 adds Local sort-expression validation and public execution
+    # regressions, with 13 reviewed shadow diagnostics and clean regular
+    # Pyright; the suppression-free inventory contains 10,072 diagnostics.
+    # The sort kind guard now narrows the expression mapping before lookup,
+    # removing one partially unknown .get diagnostic from the shadow inventory.
+    # The reviewed suppression-free inventory contains 10,071 diagnostics.
+    # Recursive validation of nested sort expressions narrows their kind before
+    # examining node fields, removing two more reviewed shadow diagnostics.
+    # The suppression-free inventory now contains 10,069 diagnostics.
+    # Fingerprints pin path, diagnostic rule, message, and multiplicity while
+    # ignoring source coordinates. Line shifts therefore do not require a
+    # manual baseline refresh; diagnostic content changes still fail closed.
+    # The Local sort validator now validates call-argument shape before arity
+    # checks and keeps the argument sequence explicitly typed. It removes ten
+    # reviewed shadow diagnostics without adding any; the inventory is 10,059.
+    "Darwin": "c148de74cca91c6ab97a2d7c25a0ce432da0941f364b303edfb140287d9ff7ca",
+    "Linux": "c148de74cca91c6ab97a2d7c25a0ce432da0941f364b303edfb140287d9ff7ca",
 }
 
 
@@ -180,13 +195,10 @@ def _diagnostic_fingerprints(payload: dict[str, Any], root: Path) -> tuple[str, 
     fingerprints: list[str] = []
     for diagnostic in payload.get("generalDiagnostics", []):
         path = Path(str(diagnostic["file"])).resolve().relative_to(resolved_root)
-        start = diagnostic["range"]["start"]
         fingerprints.append(
             json.dumps(
                 [
                     path.as_posix(),
-                    int(start["line"]),
-                    int(start["character"]),
                     str(diagnostic.get("rule") or ""),
                     str(diagnostic.get("message") or ""),
                 ],

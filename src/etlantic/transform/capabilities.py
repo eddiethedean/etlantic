@@ -6,7 +6,7 @@ from __future__ import annotations
 import json
 from collections.abc import Mapping, Sequence
 from importlib import metadata
-from typing import Any
+from typing import Any, cast
 
 from etlantic.transform.compiler import (
     TransformCapabilities,
@@ -140,6 +140,8 @@ def _plan_requires_window_v2(node: Any) -> bool:
 
 def _plan_has_window(node: Any) -> bool:
     if isinstance(node, dict):
+        if cast(Mapping[str, Any], node).get("kind") == "literal":
+            return False
         if "window" in node and node["window"] is not None:
             return True
         return any(_plan_has_window(v) for v in node.values())
@@ -150,6 +152,8 @@ def _plan_has_window(node: Any) -> bool:
 
 def _collect_call_callees(node: Any, functions: set[str]) -> None:
     if isinstance(node, dict):
+        if cast(Mapping[str, Any], node).get("kind") == "literal":
+            return
         if node.get("kind") == "call" and isinstance(node.get("callee"), str):
             functions.add(str(node["callee"]))
         for value in node.values():
@@ -184,6 +188,9 @@ def _collect_expression_requirements(
             value = node.get("value")
             if isinstance(value, Mapping) and isinstance(value.get("type"), str):
                 types.add(str(value["type"]))
+            # The literal type is a requirement, but its value is data. Do not
+            # inspect nested mappings as though they were expression nodes.
+            return
         for value in node.values():
             _collect_expression_requirements(value, functions, operators, types)
     elif isinstance(node, list):
@@ -930,13 +937,12 @@ def evaluate_adaptive_candidates(
 
 def _contains_distinct_three_state(node: Any) -> bool:
     if isinstance(node, Mapping):
-        value = node.get("value")
-        if (
-            node.get("kind") == "literal"
-            and isinstance(value, Mapping)
-            and value.get("type") in {"missing", "invalid"}
-        ):
-            return True
+        if node.get("kind") == "literal":
+            value = node.get("value")
+            return isinstance(value, Mapping) and value.get("type") in {
+                "missing",
+                "invalid",
+            }
         return any(_contains_distinct_three_state(item) for item in node.values())
     if isinstance(node, list):
         return any(_contains_distinct_three_state(item) for item in node)
@@ -950,10 +956,10 @@ def plan_requires_distinct_three_state(plan: Mapping[str, Any] | None) -> bool:
         if isinstance(node, dict):
             if node.get("kind") == "literal":
                 value = node.get("value")
-                if isinstance(value, dict):
-                    lit_type = str(value.get("type") or "")
-                    if lit_type in {"missing", "invalid"}:
-                        return True
+                return isinstance(value, dict) and str(value.get("type") or "") in {
+                    "missing",
+                    "invalid",
+                }
             return any(_walk(v) for v in node.values())
         if isinstance(node, list):
             return any(_walk(item) for item in node)
@@ -1135,7 +1141,19 @@ def portable_shape_findings(
                 if node_kind == "call" and isinstance(node.get("callee"), str):
                     callee = str(node["callee"])
                     bounds = BASELINE_FUNCTION_ARITIES.get(callee)
-                    args = node.get("args") or []
+                    raw_args = cast(Any, node.get("args", []))
+                    if not isinstance(raw_args, (list, tuple)):
+                        findings.append(
+                            TransformSupportFinding(
+                                "PMXFORM302",
+                                f"function:{callee}:args",
+                                "call arguments must be a list",
+                                f"{path}.args",
+                            )
+                        )
+                        args: Sequence[Any] = ()
+                    else:
+                        args = cast(Sequence[Any], raw_args)
                     if bounds is not None and (
                         len(args) < bounds[0]
                         or (bounds[1] is not None and len(args) > bounds[1])
@@ -1196,6 +1214,11 @@ def portable_shape_findings(
                                 )
                             )
                 for key, value in node.items():
+                    # Literal values are data, not nested expressions. Their
+                    # mappings may contain keys like ``kind`` that happen to
+                    # match or resemble expression discriminators.
+                    if node_kind == "literal" and key == "value":
+                        continue
                     _walk_expression(value, f"{path}.{key}" if path else key)
             elif isinstance(node, list):
                 for child_index, value in enumerate(node):
@@ -1316,6 +1339,10 @@ def portable_arithmetic_findings(
                             path,
                         )
             for key, value in node.items():
+                # A literal's value is data, even when its mapping resembles
+                # an expression node such as binary division.
+                if kind == "literal" and key == "value":
+                    continue
                 walk(value, f"{path}.{key}")
         elif isinstance(node, list):
             for index, value in enumerate(node):
@@ -1344,6 +1371,8 @@ def validate_portable_runtime_parameters(
 
     def walk(node: Any, path: str) -> None:
         if isinstance(node, Mapping):
+            if cast(Mapping[str, Any], node).get("kind") == "literal":
+                return
             if node.get("kind") == "call":
                 callee = str(node.get("callee") or "")
                 args = list(node.get("args") or ())

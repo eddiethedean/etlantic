@@ -12,6 +12,8 @@ from packaging.version import InvalidVersion, Version
 from etlantic.diagnostics import Diagnostic, Severity
 from etlantic.profile import Profile
 
+from ._version import __version__
+
 # In-tree stub descriptors (registry.builtin_stub_registry). These are not
 # entry-point packages and must not require package allowlist keys — otherwise
 # adopters are pushed to list short names like ``"local": null``, which widens
@@ -20,7 +22,7 @@ BUILTIN_ALLOWLIST_EXEMPT = frozenset({"local", "null", "env", "env-secrets"})
 
 _EMPTY_ALLOWLIST_REMEDIATION = (
     "Set Profile.plugin_allowlist to a non-empty map of package→pin "
-    "(for example {'etlantic-polars': '==0.57.1'}), or copy "
+    f"(for example {{'etlantic-polars': '=={__version__}'}}), or copy "
     "docs/01_GETTING_STARTED/prod.example.json. The built-in "
     "--profile production template is empty and fail-closed."
 )
@@ -346,7 +348,7 @@ def filter_plugins_by_allowlist(
                         message=(
                             f"Production plugin_allowlist entry for {pname!r} "
                             f"requires a non-empty version pin "
-                            f"(for example '==0.57.1')."
+                            f"(for example '=={__version__}')."
                         ),
                         path=("plugin", str(pname)),
                         phase=phase,

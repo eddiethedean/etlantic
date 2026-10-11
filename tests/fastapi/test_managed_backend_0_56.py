@@ -32,6 +32,7 @@ from etlantic import (
     Pipeline,
     Profile,
     Transformation,
+    __version__,
 )
 from etlantic.authoring import definition_from_pipeline
 from etlantic.authoring.serialize import pipeline_to_dict
@@ -1176,7 +1177,7 @@ def test_managed_adaptive_local_chain_is_admitted_and_observed(
             plan["metadata"]["etlantic.runtime"]["support_row"]["version_requirements"][
                 "etlantic"
             ]
-            == "0.57.1"
+            == __version__
         )
         from etlantic.runtime.adaptive_support import candidate_bundle
 

@@ -5,7 +5,13 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [0.57.1] - Unreleased
+## [0.57.2] - Unreleased
+
+### Changed
+
+- Bump the core and first-party distribution versions to 0.57.2.
+
+## [0.57.1] - 2026-10-10
 
 ### Changed
 
@@ -2243,7 +2249,8 @@ See `docs/11_DEVELOPMENT/MIGRATION_0_16_TO_0_17.md`.
 - uv + ruff toolchain, MkDocs documentation site, shared GitHub Actions
   checks, and tag-triggered PyPI release
 
-[Unreleased]: https://github.com/eddiethedean/etlantic/compare/v0.57.0...HEAD
+[Unreleased]: https://github.com/eddiethedean/etlantic/compare/v0.57.2...HEAD
+[0.57.2]: https://github.com/eddiethedean/etlantic/releases/tag/v0.57.2
 [0.57.1]: https://github.com/eddiethedean/etlantic/releases/tag/v0.57.1
 [0.57.0]: https://github.com/eddiethedean/etlantic/releases/tag/v0.57.0
 [0.51.0]: https://github.com/eddiethedean/etlantic/releases/tag/v0.51.0

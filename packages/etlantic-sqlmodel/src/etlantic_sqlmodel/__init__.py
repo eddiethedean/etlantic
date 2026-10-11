@@ -65,7 +65,7 @@ from etlantic_sqlmodel.schema import (
 )
 from sqlmodel import Field, SQLModel
 
-__version__ = "0.57.1"
+__version__ = "0.57.2"
 
 __all__ = [
     "SCHEMA_REQUIREMENTS_SCHEMA",

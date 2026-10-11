@@ -1,5 +1,7 @@
 # Your First Pipeline
 
+> **Release candidate:** ETLantic 0.57.2 is in preparation; 0.57.1 remains the latest published release.
+
 > **Version boundary:** 0.57.1 is the latest published Beta release.
 
 

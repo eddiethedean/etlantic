@@ -34,7 +34,7 @@ if TYPE_CHECKING:
         create_transform_compiler as create_transform_compiler,
     )
 
-__version__ = "0.57.1"
+__version__ = "0.57.2"
 
 
 def __getattr__(name: str) -> Any:

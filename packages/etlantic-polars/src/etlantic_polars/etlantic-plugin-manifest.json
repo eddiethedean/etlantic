@@ -5,7 +5,7 @@
     "bounded-parquet-source",
     "scan-filter-project-fusion"
   ],
-  "digest": "sha256:3bfdaf61c0f7e57f65d4ded16377fab89c42e607df1438033d2252e9811b119c",
+  "digest": "sha256:e16cf6afac2dbc66553ab69f57f30f82a845d0672e333840eb6534b28e62d5be",
   "entries": [
     {
       "capabilities": [
@@ -38,5 +38,5 @@
     "publisher": "etlantic"
   },
   "schema": "etlantic.plugin_manifest/1",
-  "version": "0.57.1"
+  "version": "0.57.2"
 }

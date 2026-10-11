@@ -49,7 +49,7 @@
         "no_write"
       ],
       "versions": {
-        "etlantic": "0.57.1"
+        "etlantic": "0.57.2"
       },
       "maturity": "Experimental"
     },
