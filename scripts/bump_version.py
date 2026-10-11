@@ -111,6 +111,11 @@ def update_release_facts(path: Path, old: str, new: str) -> str:
     return json.dumps(facts, indent=2, ensure_ascii=False) + "\n"
 
 
+def write_text_lf(path: Path, content: str) -> None:
+    """Write repository text with stable LF line endings on every platform."""
+    path.write_text(content, encoding="utf-8", newline="\n")
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(
         description="Synchronize ETLantic's lockstep 0.x.y package version.",
@@ -228,7 +233,7 @@ def main() -> int:
         return 0
 
     for path, content in changes.items():
-        path.write_text(content, encoding="utf-8")
+        write_text_lf(path, content)
 
     subprocess.run(["uv", "lock"], cwd=ROOT, check=True)
     subprocess.run(
