@@ -7,9 +7,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [0.57.2] - Unreleased
 
+### Added
+
+- Add worker-only PostgreSQL connection-test and bounded schema-inspection
+  actions, plus managed preflight against the selected saved-definition
+  revision. Preflight remains read-only and preserves accepted revision pins
+  across idempotent retries. (#286)
+
 ### Changed
 
 - Bump the core and first-party distribution versions to 0.57.2.
+
+### Fixed
+
+- Apply canonical Local sort expressions before keyed deduplication so the
+  selected record is deterministic when input order changes. (#283)
 
 ## [0.57.1] - 2026-10-10
 
