@@ -1,6 +1,6 @@
 # Documentation versioning
 
-> **Status: ETLantic 0.57.1 Beta release.** How Read the Docs aliases relate to PyPI pins.
+> **Status: ETLantic 0.57.2 Beta release.** How Read the Docs aliases relate to PyPI pins.
 > Release facts live in [`docs/release-facts.json`](../release-facts.json).
 
 ETLantic docs are published on Read the Docs.
@@ -13,7 +13,7 @@ ETLantic docs are published on Read the Docs.
 | **stable** | Moves to the newest published release. Fine for pilots tracking the tip of PyPI. |
 | **latest** | Tracks the default branch (`main`) and may document unreleased behavior. |
 
-Pair the published `etlantic==0.57.1` package with the versioned docs once the
+Pair the published `etlantic==0.57.2` package with the versioned docs once the
 `v0.57.0` RTD version is activated.
 `stable` moves to the newest published release; `latest` follows `main` and
 may document unreleased behavior. Do not mix a pinned wheel with `latest`

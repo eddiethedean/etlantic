@@ -19,7 +19,7 @@ candidate. No general connector pushdown is claimed. See the
 ## Setup
 
 ```bash
-pip install 'etlantic-polars==0.57.1'
+pip install 'etlantic-polars==0.57.2'
 ```
 
 ```python

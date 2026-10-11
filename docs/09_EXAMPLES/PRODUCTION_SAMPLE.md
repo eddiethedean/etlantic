@@ -1,6 +1,6 @@
 # Production sample pilot
 
-> **Status: Available in ETLantic 0.57.1 Beta.** Clone companion under
+> **Status: Available in ETLantic 0.57.2 Beta.** Clone companion under
 > `examples/sample_pilot/`. Demonstrates a production profile
 > (`security_mode=production` + allowlist), file I/O, SARIF validate,
 > and optional Airflow compile.
@@ -8,7 +8,7 @@
 ## PyPI path (no clone)
 
 ```bash
-python -m pip install 'etlantic[polars]==0.57.1'
+python -m pip install 'etlantic[polars]==0.57.2'
 mkdir pilot && cd pilot
 python -m etlantic init --with-toml
 ```
@@ -28,7 +28,7 @@ each discovered package or validation fails with `PMPLUG402`):
   "portable_transform_policy": "require",
   "validation_policy": "strict",
   "plugin_allowlist": {
-    "etlantic-polars": "==0.57.1"
+    "etlantic-polars": "==0.57.2"
   },
   "assets": {
     "rows": "json://data/sample.json",
@@ -49,7 +49,7 @@ python -m etlantic run pipeline.py:SamplePipeline \
 Optional Airflow compile (install `etlantic-airflow`; does not install Airflow):
 
 ```bash
-python -m pip install 'etlantic-airflow==0.57.1'
+python -m pip install 'etlantic-airflow==0.57.2'
 python -m etlantic compile pipeline.py:SamplePipeline \
   --profile profiles/prod.json --target airflow -o dags/
 ```

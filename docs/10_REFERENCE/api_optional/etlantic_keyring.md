@@ -7,13 +7,13 @@ audience: developer
 
 # etlantic-keyring API
 
-> **Status: ETLantic 0.57.1 Beta release.** OS keyring secret provider.
+> **Status: ETLantic 0.57.2 Beta release.** OS keyring secret provider.
 > Install narrative: package README. Hub: [Optional packages API](../API_OPTIONAL_PACKAGES.md).
 
 ## Setup
 
 ```bash
-pip install 'etlantic-keyring==0.57.1'
+pip install 'etlantic-keyring==0.57.2'
 ```
 
 ```python

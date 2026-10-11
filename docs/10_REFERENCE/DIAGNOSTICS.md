@@ -1,11 +1,9 @@
 # Diagnostics Reference
 
-> **Release candidate:** ETLantic 0.57.2 is in preparation; 0.57.1 remains the latest published release.
-
-> **Version boundary:** ETLantic 0.57.1 is the current published Beta release and supported line.
+> **Version boundary:** ETLantic 0.57.2 is the current published Beta release and supported line.
 
 
-> **Status: ETLantic 0.57.1 is the published Beta release.**
+> **Status: ETLantic 0.57.2 is the published Beta release.**
 
 Diagnostics are structured findings produced while loading, inspecting,
 validating, planning, compiling, or executing a pipeline.

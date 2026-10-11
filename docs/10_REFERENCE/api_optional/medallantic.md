@@ -7,13 +7,13 @@ audience: developer
 
 # medallantic API
 
-> **Status: ETLantic 0.57.1 Beta release.** Medallion facade + SparkForge migrate.
+> **Status: ETLantic 0.57.2 Beta release.** Medallion facade + SparkForge migrate.
 > Install narrative: package README. Hub: [Optional packages API](../API_OPTIONAL_PACKAGES.md).
 
 ## Setup
 
 ```bash
-pip install 'medallantic==0.57.1'
+pip install 'medallantic==0.57.2'
 ```
 
 ```python
