@@ -11,7 +11,9 @@ from pathlib import Path
 # Pyright/type-ignore comments are temporary compatibility boundaries. Locking
 # their exact inventory prevents a new suppression from silently widening the
 # strict-checking escape hatch. Paths and directive text are pinned; line
-# numbers are omitted so unrelated edits do not require re-pinning the gate.
+# numbers are omitted for file-level settings so unrelated edits do not require
+# re-pinning the gate. Inline ignores retain their line because their location
+# determines which diagnostic they suppress.
 # AC056-020 action-scope checks shifted later source lines;
 # prior AC056-019/044/031/015 work shifted other positions. AC056-021's
 # validation imports and branches shift locations again. Phase 0.56 adds two
@@ -55,8 +57,9 @@ from pathlib import Path
 # surfaces. The existing route-decorator suppression remains; no directives
 # were added or removed. Re-pin the 789-entry inventory after source shifts.
 # Prefect test isolation shifts an existing inline ignore; no directives were
-# added or removed. Re-pin the unchanged 789-entry inventory after source shifts.
-EXPECTED_DIGEST = "17ec03efacc97bd79d9097382b43f4326615195f982d2629ea7e6b874eeea3d7"
+# added or removed. Inline ignore locations are now part of the inventory, so
+# re-pin the unchanged 789-entry inventory after source shifts.
+EXPECTED_DIGEST = "2e57169563a22dc94f1b32c9c5f3de4818446a9946d6ac3d9c3caff9e23371af"
 
 _IGNORED_DIRECTORIES = frozenset(
     {
@@ -79,7 +82,8 @@ def _is_suppression(comment: str) -> bool:
     return stripped.startswith("# pyright:") or stripped.startswith("# type: ignore")
 
 
-def _inventory(root: Path) -> tuple[str, ...]:
+def suppression_inventory(root: Path) -> tuple[str, ...]:
+    """Return suppression tokens, pinning locations for inline ignores."""
     inventory: list[str] = []
     for path in sorted(root.rglob("*.py")):
         if _IGNORED_DIRECTORIES.intersection(path.relative_to(root).parts):
@@ -90,7 +94,13 @@ def _inventory(root: Path) -> tuple[str, ...]:
             for token in tokens:
                 if token.type != tokenize.COMMENT or not _is_suppression(token.string):
                     continue
-                inventory.append(f"{path.relative_to(root).as_posix()}:{token.string}")
+                relative_path = path.relative_to(root).as_posix()
+                directive = token.string
+                inline = directive.lstrip().startswith(
+                    ("# type: ignore", "# pyright: ignore")
+                )
+                location = f":{token.start[0]}" if inline else ""
+                inventory.append(f"{relative_path}{location}:{directive}")
         except tokenize.TokenError:
             # Pyright will report malformed Python separately; preserve any
             # suppressions tokenized before the syntax error for this gate.
@@ -100,7 +110,7 @@ def _inventory(root: Path) -> tuple[str, ...]:
 
 def main() -> int:
     root = Path(__file__).resolve().parent.parent
-    inventory = _inventory(root)
+    inventory = suppression_inventory(root)
     payload = "\n".join(inventory).encode()
     digest = hashlib.sha256(payload).hexdigest()
     if digest != EXPECTED_DIGEST:

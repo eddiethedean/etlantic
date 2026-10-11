@@ -153,11 +153,14 @@ EXPECTED_DIGESTS = {
     # The sort kind guard now narrows the expression mapping before lookup,
     # removing one partially unknown .get diagnostic from the shadow inventory.
     # The reviewed suppression-free inventory contains 10,071 diagnostics.
+    # Recursive validation of nested sort expressions narrows their kind before
+    # examining node fields, removing two more reviewed shadow diagnostics.
+    # The suppression-free inventory now contains 10,069 diagnostics.
     # Fingerprints pin path, diagnostic rule, message, and multiplicity while
     # ignoring source coordinates. Line shifts therefore do not require a
     # manual baseline refresh; diagnostic content changes still fail closed.
-    "Darwin": "8b14e4efdc0e47b37c06cf1aa39d2def45a9aa3fd1e1ae2568a2588c0936f0d7",
-    "Linux": "8b14e4efdc0e47b37c06cf1aa39d2def45a9aa3fd1e1ae2568a2588c0936f0d7",
+    "Darwin": "ab66efb9f7e4f92b129c6a25df04fdafc258c79f73678e4fde91bd6353e92f2b",
+    "Linux": "ab66efb9f7e4f92b129c6a25df04fdafc258c79f73678e4fde91bd6353e92f2b",
 }
 
 

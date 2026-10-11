@@ -175,6 +175,43 @@ def test_local_analysis_rejects_sort_expression_with_non_string_kind() -> None:
     )
 
 
+@pytest.mark.parametrize(
+    "nested_expression",
+    [{}, {"kind": {"unexpected": "object"}}],
+)
+def test_local_analysis_rejects_sort_expression_with_malformed_nested_kind(
+    nested_expression: dict[str, Any],
+) -> None:
+    report = LocalTransformCompiler().analyze(
+        {
+            "actions": [
+                {
+                    "kind": {
+                        "action": "dtcs:sort",
+                        "parameters": {
+                            "keys": [
+                                {
+                                    "expression": {
+                                        "kind": "call",
+                                        "callee": "dtcs:lower",
+                                        "args": [nested_expression],
+                                    }
+                                }
+                            ]
+                        },
+                    }
+                }
+            ]
+        },
+        context=TransformPlanningContext("p", "s", "profile", "local"),
+    )
+
+    assert report.supported is False
+    assert any(
+        finding.requirement == "sort:key_expression" for finding in report.findings
+    )
+
+
 def test_local_analysis_treats_literal_mapping_as_payload_not_expression() -> None:
     report = LocalTransformCompiler().analyze(
         {

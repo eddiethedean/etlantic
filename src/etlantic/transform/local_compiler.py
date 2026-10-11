@@ -255,7 +255,22 @@ def _local_sort_findings(
 
     def validate_expression(node: Any, path: str) -> None:
         if isinstance(node, Mapping):
-            if node.get("kind") == "fieldRef" and not (
+            expression_kind = node.get("kind")
+            if (
+                not isinstance(expression_kind, str)
+                or expression_kind not in expression_kinds
+            ):
+                findings.append(
+                    TransformSupportFinding(
+                        "PMXFORM302",
+                        "sort:key_expression",
+                        "sort expression node must use a supported portable expression kind",
+                        path,
+                        support="unsupported",
+                    )
+                )
+                return
+            if expression_kind == "fieldRef" and not (
                 isinstance(node.get("target"), str) and node.get("target")
             ):
                 findings.append(
@@ -267,7 +282,7 @@ def _local_sort_findings(
                         support="unsupported",
                     )
                 )
-            if node.get("kind") == "literal" and "value" not in node:
+            if expression_kind == "literal" and "value" not in node:
                 findings.append(
                     TransformSupportFinding(
                         "PMXFORM302",
@@ -277,7 +292,11 @@ def _local_sort_findings(
                         support="unsupported",
                     )
                 )
-            if node.get("kind") == "binary":
+            if expression_kind == "literal":
+                # A literal's value is payload, not another expression node.
+                # JSON objects may contain keys that resemble expressions.
+                return
+            if expression_kind == "binary":
                 if not isinstance(node.get("op"), str) or not node.get("op"):
                     findings.append(
                         TransformSupportFinding(
@@ -298,7 +317,10 @@ def _local_sort_findings(
                             support="unsupported",
                         )
                     )
-            if node.get("kind") == "unary":
+                for child_key in ("left", "right"):
+                    if child_key in node:
+                        validate_expression(node[child_key], f"{path}.{child_key}")
+            elif expression_kind == "unary":
                 if not isinstance(node.get("op"), str) or not node.get("op"):
                     findings.append(
                         TransformSupportFinding(
@@ -309,7 +331,8 @@ def _local_sort_findings(
                             support="unsupported",
                         )
                     )
-                if not ("operand" in node or "expr" in node):
+                operand_key = "expr" if "expr" in node else "operand"
+                if operand_key not in node:
                     findings.append(
                         TransformSupportFinding(
                             "PMXFORM302",
@@ -319,7 +342,9 @@ def _local_sort_findings(
                             support="unsupported",
                         )
                     )
-            if node.get("kind") == "call":
+                else:
+                    validate_expression(node[operand_key], f"{path}.{operand_key}")
+            elif expression_kind == "call":
                 callee = node.get("callee")
                 if not isinstance(callee, str) or not callee:
                     findings.append(
@@ -331,7 +356,8 @@ def _local_sort_findings(
                             support="unsupported",
                         )
                     )
-                if "args" in node and not isinstance(node.get("args"), (list, tuple)):
+                args = node.get("args", ())
+                if not isinstance(args, (list, tuple)):
                     findings.append(
                         TransformSupportFinding(
                             "PMXFORM302",
@@ -341,17 +367,10 @@ def _local_sort_findings(
                             support="unsupported",
                         )
                     )
-            for child_key, child in node.items():
-                # A literal's value is payload, not another expression node.
-                # In particular, JSON objects may legitimately contain keys
-                # such as ``kind`` that resemble expression discriminators.
-                if (
-                    cast(Mapping[str, Any], node).get("kind") == "literal"
-                    and child_key == "value"
-                ):
-                    continue
-                validate_expression(child, f"{path}.{child_key}")
-        elif isinstance(node, list):
+                else:
+                    for child_index, child in enumerate(args):
+                        validate_expression(child, f"{path}.args[{child_index}]")
+        elif isinstance(node, (list, tuple)):
             for child_index, child in enumerate(node):
                 validate_expression(child, f"{path}[{child_index}]")
 
