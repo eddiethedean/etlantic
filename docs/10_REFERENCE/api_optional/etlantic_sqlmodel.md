@@ -7,13 +7,13 @@ audience: developer
 
 # etlantic-sqlmodel API
 
-> **Status: ETLantic 0.57.1 Beta release.** SQLModel bridge helpers.
+> **Status: ETLantic 0.57.2 Beta release.** SQLModel bridge helpers.
 > Install narrative: package README. Hub: [Optional packages API](../API_OPTIONAL_PACKAGES.md).
 
 ## Setup
 
 ```bash
-pip install 'etlantic-sqlmodel==0.57.1'
+pip install 'etlantic-sqlmodel==0.57.2'
 ```
 
 ```python

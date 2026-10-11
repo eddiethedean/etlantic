@@ -8,13 +8,13 @@
   "validation_policy": "strict",
   "allow_trusted_sql": false,
   "plugin_allowlist": {
-    "etlantic-polars": "==0.57.1",
-    "etlantic-pandas": "==0.57.1",
-    "etlantic-sql": "==0.57.1",
-    "etlantic-pyspark": "==0.57.1",
-    "etlantic-datafusion": "==0.57.1",
-    "etlantic-airflow": "==0.57.1",
-    "etlantic-prefect": "==0.57.1"
+    "etlantic-polars": "==0.57.2",
+    "etlantic-pandas": "==0.57.2",
+    "etlantic-sql": "==0.57.2",
+    "etlantic-pyspark": "==0.57.2",
+    "etlantic-datafusion": "==0.57.2",
+    "etlantic-airflow": "==0.57.2",
+    "etlantic-prefect": "==0.57.2"
   },
   "assets": {
     "rows": "json://data/sample.json",

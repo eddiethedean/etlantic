@@ -62,7 +62,7 @@ audience: adopter
 
 ## Choose your path
 
-> **Status: ETLantic 0.57.1 is the published Beta release and current supported package line.**
+> **Status: ETLantic 0.57.2 is the published Beta release and current supported package line.**
 
 
 <div class="etlantic-path-grid">

@@ -1,6 +1,6 @@
 # Command-Line Interface
 
-> **Status: ETLantic 0.57.1 published Beta release.** This page
+> **Status: ETLantic 0.57.2 published Beta release.** This page
 > documents the commands implemented by the installed package.
 
 ```bash

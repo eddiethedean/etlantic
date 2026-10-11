@@ -7,12 +7,12 @@ current_minor: "0.57"
 
 # ETLantic 0.57 Release Guide
 
-> **Status: ETLantic 0.57.1 Beta release is published.**
+> **Status: ETLantic 0.57.2 Beta release is published.**
 
 ETLantic 0.57 adds the transport-independent managed backend, schedule service,
 provider schema inspection, and role status/drain contracts. Its passing
 [0.57 exit gate](../11_DEVELOPMENT/EXIT_GATE_0_57.md) records release qualification. ETLantic
-0.57.1 is published on PyPI and GitHub Releases. The 0.57.x package line
+0.57.2 is published on PyPI and GitHub Releases. The 0.57.x package line
 is supported for controlled single-tenant pilots
 and Supported control-plane isolation profiles. Explicit class-authored
 pipelines remain the supported default.

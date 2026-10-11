@@ -1,6 +1,6 @@
 # Public Surface Inventory (0.57)
 
-> **Status: 0.57.1 published Beta release and current supported line.** Canonical public surface for the
+> **Status: 0.57.2 published Beta release and current supported line.** Canonical public surface for the
 > **0.57 reference envelope**.
 
 Machine-readable companion: [`surface-inventory.json`](https://github.com/eddiethedean/etlantic/blob/main/src/etlantic/schemas/surface-inventory.json)
