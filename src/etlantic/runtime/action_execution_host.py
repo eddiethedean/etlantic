@@ -19,9 +19,12 @@ from etlantic.control_plane.action_jobs import (
     MIN_PREVIEW_RESULT_TTL_SECONDS,
     ConnectorActionKind,
     ConnectorCatalogRequest,
+    ConnectorPreflightRequest,
     ConnectorPreviewRequest,
     ConnectorProvisionCleanupRequest,
     ConnectorProvisionRequest,
+    ConnectorSchemaInspectionRequest,
+    ConnectorTestRequest,
     connector_action_resources,
     parse_connector_action_request,
     verify_provision_parent,
@@ -283,12 +286,19 @@ class ActionExecutionHost:
                 self._finish_failure(ctx, job, "invalid_action_request")
                 processed += 1
                 continue
-            if (
+            if isinstance(
+                typed_request,
+                (
+                    ConnectorTestRequest,
+                    ConnectorSchemaInspectionRequest,
+                    ConnectorPreflightRequest,
+                ),
+            ) or (
                 isinstance(typed_request, ConnectorCatalogRequest)
                 and typed_request.provider == "postgresql"
             ):
-                # The PostgreSQL handler receives the trusted job deadline,
-                # never a caller-supplied internal execution control.
+                # Built-in handlers receive the trusted job deadline, never a
+                # caller-supplied internal execution control.
                 request["_deadline_at"] = job.deadline_at
             deadline = datetime.fromisoformat(job.deadline_at.replace("Z", "+00:00"))
             remaining = (deadline - _now()).total_seconds()

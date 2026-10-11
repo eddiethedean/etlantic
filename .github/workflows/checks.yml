@@ -456,9 +456,12 @@ jobs:
       - name: Pytest SQL suite (PostgreSQL)
         env:
           ETLANTIC_SQL_URL: "postgresql+psycopg://postgres:postgres@localhost:5432/etlantic"
+          ETLANTIC_ACTION_POSTGRES_URL: "postgresql+psycopg://postgres:postgres@localhost:5432/etlantic"
         run: |
           uv run pytest -q tests/sql -m sql
           uv run pytest -q tests/portable_conformance -m sql
+          uv run pytest -q tests/control_plane/test_action_provision_sql_0_56.py
+          uv run pytest -q tests/control_plane/test_sql_action_deadlines_0_56.py -k postgresql_cancels_read_only_schema_inspection_at_the_deadline
 
       - name: PostgreSQL Unicode sigma evidence
         if: matrix.architecture == 'arm64'
@@ -570,6 +573,7 @@ jobs:
           tests/sqlmodel/test_cp1_migrations_0_51.py
           tests/fastapi/test_managed_backend_0_56.py
           tests/fastapi/test_managed_application_0_56.py
+          tests/fastapi/test_managed_action_jobs_0_56.py
           tests/fastapi/test_managed_import_isolation_0_56.py
           tests/fastapi/test_managed_postgresql_process_0_56.py
           --junitxml=${{ runner.temp }}/phase-0.57-managed-acceptance.xml

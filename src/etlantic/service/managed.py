@@ -23,6 +23,7 @@ from etlantic.authoring.serialize import (
 )
 from etlantic.control_plane.action_jobs import (
     ConnectorActionKind,
+    ConnectorPreflightRequest,
     ConnectorProvisionCleanupRequest,
     connector_action_resources,
     parse_connector_action_request,
@@ -296,6 +297,19 @@ class ManagedApplicationService:
                 resource,
                 resource_in_caller_scope=True,
             )
+        if isinstance(typed_request, ConnectorPreflightRequest):
+            # Pin "current" when the durable job is accepted. A later worker
+            # must never report readiness for a different definition revision
+            # than the caller submitted.
+            resolution = self._resolve_definition_revision(
+                ctx,
+                typed_request.definition_id,
+                typed_request.revision_selector,
+            )
+            revision_id = _require_revision_selector(resolution.revision_id)
+            typed_request = ConnectorPreflightRequest(
+                typed_request.definition_id, revision_id
+            )
         if isinstance(typed_request, ConnectorProvisionCleanupRequest):
             parent = self.durable_work.get_action_job(
                 ctx, typed_request.provision_action_id
@@ -313,6 +327,91 @@ class ManagedApplicationService:
             request=typed_request.to_dict(),
             deadline_at=deadline_at,
         ).to_dict()
+
+    def preflight_definition(
+        self,
+        ctx: ControlPlaneContext,
+        definition_id: str,
+        *,
+        revision_selector: str = "current",
+        check_cancelled: Callable[[], None] | None = None,
+    ) -> dict[str, Any]:
+        """Read-only readiness check for one pinned saved definition revision.
+
+        Preflight validates and plans the saved definition but never executes a
+        transformation, reads source rows, or mutates a sink. The response is
+        deliberately limited to stable diagnostics and revision/fingerprint
+        identifiers so resource bindings and local paths are not disclosed.
+        """
+        revision_selector = _require_revision_selector(revision_selector)
+        require_authorized(
+            self.authorizer,
+            ctx,
+            "connector.preflight",
+            f"definition:{definition_id}",
+            resource_in_caller_scope=False,
+        )
+
+        def checkpoint() -> None:
+            if check_cancelled is not None:
+                check_cancelled()
+
+        checkpoint()
+        resolution = self._resolve_definition_revision(
+            ctx, definition_id, revision_selector
+        )
+        revision_id = _require_revision_selector(resolution.revision_id)
+        definition = self._decode_definition(resolution.document)
+        profile = resolve_profile(self.profile, allow_adhoc_profile=False)
+        planning_context = self._planning_context(ctx, profile)
+        checkpoint()
+        report = validate_pipeline_like(
+            definition, context=planning_context, profile=profile
+        )
+        diagnostics = _safe_preflight_diagnostics(report.diagnostics)
+        result: dict[str, Any] = {
+            "schema": "etlantic.connector_preflight/1",
+            "ok": not report.has_errors,
+            "definition_id": definition_id,
+            "revision_id": revision_id,
+            "fingerprint": definition.fingerprint or pipeline_fingerprint(definition),
+            "diagnostics": diagnostics,
+            "metadata": {"mode": "read_only_plan"},
+        }
+        if report.has_errors:
+            return result
+
+        checkpoint()
+        typed_request = RunRequest()
+        graph = logical_graph_from_definition(definition)
+        plan = plan_pipeline_like(
+            definition,
+            context=planning_context,
+            profile=profile,
+            selection=typed_request.selection.to_plan_selection(graph),
+            request=typed_request,
+        )
+        verify_plan_fingerprint(plan)
+        if isinstance(plan, AdaptivePipelinePlan):
+            self._admit_adaptive_plan(
+                plan,
+                typed_request,
+                profile=profile,
+                workspace=managed_artifact_workspace(
+                    ctx, "admission", artifact_root=self.artifact_root
+                ),
+            )
+        checkpoint()
+        self._authorize_plan_resources(ctx, plan, action="connector.preflight")
+        self._authorize_input_resources(ctx, plan)
+        checkpoint()
+        result["ok"] = True
+        result["fingerprint"] = plan.fingerprint
+        result["metadata"] = {
+            "mode": "read_only_plan",
+            "selected_revision_id": revision_id,
+        }
+        return result
 
     def get_connector_action(
         self, ctx: ControlPlaneContext, action_id: str
@@ -4588,6 +4687,26 @@ def _require_revision_selector(value: object) -> str:
             type="etlantic.control_plane/bad_request",
         )
     return value
+
+
+def _safe_preflight_diagnostics(diagnostics: Sequence[Any]) -> list[dict[str, str]]:
+    """Keep action receipts to bounded stable codes and severities only."""
+    result: list[dict[str, str]] = []
+    for diagnostic in diagnostics[:100]:
+        raw_code = getattr(diagnostic, "code", None)
+        code = (
+            raw_code
+            if isinstance(raw_code, str)
+            and 1 <= len(raw_code) <= 64
+            and all(character.isalnum() or character in "_.-" for character in raw_code)
+            else "PMCP_PREFLIGHT_FAILED"
+        )
+        raw_severity = getattr(diagnostic, "severity", None)
+        severity = getattr(raw_severity, "value", raw_severity)
+        if severity not in {"error", "warning", "info", "note"}:
+            severity = "error"
+        result.append({"code": code, "severity": cast(str, severity)})
+    return result
 
 
 def _input_resource_references(

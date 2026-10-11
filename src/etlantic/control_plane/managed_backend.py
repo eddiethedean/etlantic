@@ -4,9 +4,10 @@ from __future__ import annotations
 
 import asyncio
 from collections.abc import Awaitable, Callable, Mapping
+from concurrent.futures import Future
 from dataclasses import dataclass, field
-from datetime import datetime
-from threading import RLock
+from datetime import UTC, datetime
+from threading import BoundedSemaphore, Event, RLock, Thread
 from typing import Any, cast
 
 from etlantic.control_plane.action_jobs import (
@@ -92,6 +93,9 @@ class ManagedBackend:
     owns_engine: bool = field(default=True, repr=False)
     _closed: bool = field(default=False, init=False, repr=False)
     _lock: RLock = field(default_factory=RLock, init=False, repr=False)
+    _preflight_slot: BoundedSemaphore = field(
+        default_factory=lambda: BoundedSemaphore(1), init=False, repr=False
+    )
     _roles: list[Any] = field(default_factory=_empty_roles, init=False, repr=False)
     _schedule_commands: Any = field(default=None, init=False, repr=False)
 
@@ -194,6 +198,7 @@ class ManagedBackend:
 
             handlers = dict(self.action_handlers)
             handlers["run.prepare"] = self._run_preparation_action
+            handlers.setdefault("connector.preflight", self._run_preflight_action)
             host = ActionExecutionHost(
                 self.durable_work,
                 handlers=handlers,
@@ -205,6 +210,74 @@ class ManagedBackend:
             )
             self._roles.append(host)
             return host
+
+    async def _run_preflight_action(
+        self,
+        ctx: ControlPlaneContext,
+        request: Mapping[str, Any],
+    ) -> Mapping[str, Any]:
+        """Run backend-owned saved-definition preflight in one bounded thread."""
+        from datetime import timedelta
+
+        deadline_value = request.get("_deadline_at")
+        deadline = (
+            datetime.fromisoformat(str(deadline_value).replace("Z", "+00:00"))
+            if deadline_value is not None
+            else None
+        )
+        if deadline is not None and deadline.tzinfo is None:
+            raise ValueError("preflight deadline must be timezone aware")
+        if deadline is None:
+            deadline = datetime.now(UTC) + timedelta(minutes=5)
+        cancelled = Event()
+
+        def checkpoint() -> None:
+            if cancelled.is_set() or datetime.now(UTC) >= deadline:
+                raise TimeoutError("definition preflight deadline exceeded")
+
+        while not self._preflight_slot.acquire(blocking=False):
+            checkpoint()
+            await asyncio.sleep(0.01)
+        future: Future[Mapping[str, Any]] = Future()
+
+        def run() -> None:
+            try:
+                checkpoint()
+                result = self.managed_service.preflight_definition(
+                    ctx,
+                    str(request["definition_id"]),
+                    revision_selector=str(request["revision_selector"]),
+                    check_cancelled=checkpoint,
+                )
+                checkpoint()
+            except BaseException as exc:
+                future.set_exception(exc)
+            else:
+                future.set_result(result)
+            finally:
+                self._preflight_slot.release()
+
+        try:
+            Thread(
+                target=run,
+                name="etlantic-definition-preflight",
+                daemon=True,
+            ).start()
+        except BaseException:
+            self._preflight_slot.release()
+            raise
+        wrapped = asyncio.wrap_future(future)
+
+        def consume_result(completed: asyncio.Future[Mapping[str, Any]]) -> None:
+            if not completed.cancelled():
+                completed.exception()
+
+        wrapped.add_done_callback(consume_result)
+        try:
+            return await asyncio.shield(wrapped)
+        except asyncio.CancelledError:
+            cancelled.set()
+            raise
 
     def create_scheduler(
         self,
