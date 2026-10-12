@@ -60,11 +60,15 @@ dispatcher rather than invoking the flow function directly.
 Before reading leased inputs or beginning connector effects, the worker
 reauthorizes the accepted principal for `run.submit`, planned resources, and
 input resources, then reevaluates current pre-execution policy and approval.
+An approval must remain approved and unexpired at worker claim; revocation or
+expiry after acceptance or dispatch fails before connector I/O. The live
+Process-worker trace covers revocation on both sides of dispatch and expiry
+between dispatch and claim ([partial campaign evidence](../../docs/11_DEVELOPMENT/evidence/phase_0_58/LIVE_APPROVAL_AUTHORITY_BOUNDARIES.json)).
 When a separate service identity runs the work, that identity also needs
 `run.execute` for the accepted definition. Missing policy for fingerprinted
 work and revoked submitter, worker, or approval authority fail closed. The live
-Process-worker tests cover those revocations, crashes after the durable report
-event append, dispatch-process death before create/after create/after link,
+Process-worker tests also cover crashes after the durable report event append,
+dispatch-process death before create/after create/after link,
 cancellation during source staging and terminal report publication, and report
 store failure recovery without repeating a committed sink effect. PostgreSQL
 retirement tests cover concurrent operators and recovery after process death
