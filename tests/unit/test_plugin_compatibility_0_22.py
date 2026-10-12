@@ -7,6 +7,7 @@ import json
 
 from typer.testing import CliRunner
 
+from etlantic import __version__
 from etlantic.capabilities import CAPABILITY_VOCABULARY_VERSION
 from etlantic.cli import app
 from etlantic.plan.model import PLAN_SCHEMA
@@ -49,10 +50,12 @@ def _manifest(**overrides: object) -> str:
 
 
 def test_compatible_manifest_passes() -> None:
+    major, minor = __version__.split(".")[:2]
+    next_minor = f"{major}.{int(minor) + 1}"
     row = evaluate_manifest_text(
         _manifest(),
         python_requires=">=3.11",
-        core_requires="etlantic>=0.57,<0.58",
+        core_requires=f"etlantic>={major}.{minor},<{next_minor}",
         allowlist=["etlantic-echo"],
     )
     assert row.ok
