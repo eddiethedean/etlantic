@@ -4791,6 +4791,9 @@ backend.close()
                 rotated_before_dispatch_snapshot = (
                     rotated_before_dispatch_record.input_snapshot or ""
                 )
+                assert "ETLANTIC_PHASE058_POSTGRES_URL" in (
+                    rotated_before_dispatch_snapshot
+                )
                 assert str(make_url(url).password) not in (
                     rotated_before_dispatch_snapshot
                 )
