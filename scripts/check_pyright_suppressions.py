@@ -83,7 +83,9 @@ from pathlib import Path
 # inline ignores across the durable store and phase 0.58 tests; none changed.
 # Phase 0.58 snapshot and canceled-dispatch persistence tests seed internal
 # durable records directly, so each adds one file-scoped private-usage boundary.
-EXPECTED_DIGEST = "f878c63f818c7c5830f9ccb8cc5d9de71d59e1777bdb2c279ca450119948af4c"
+# The response-loss cancellation outage case shifts later inline-ignore lines;
+# it adds no further suppression directives.
+EXPECTED_DIGEST = "23627e7b21781c6e5def49957283217d609b7ff7c5102f07132b547dad96dfa2"
 
 _IGNORED_DIRECTORIES = frozenset(
     {
