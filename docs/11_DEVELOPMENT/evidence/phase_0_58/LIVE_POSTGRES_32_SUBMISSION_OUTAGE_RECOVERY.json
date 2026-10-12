@@ -1,0 +1,66 @@
+{
+  "schema": "etlantic.phase_0_58.campaign_evidence/1",
+  "campaign_id": "live-postgresql-32-submission-outage-recovery-2026-10-12",
+  "recorded_at": "2026-10-12",
+  "status": "passed",
+  "qualifies_release": false,
+  "test": "tests/prefect/test_managed_prefect_0_58.py::test_process_worker_executes_targeted_csv_and_postgresql_transfers",
+  "commands": [
+    "ETLANTIC_CP_TEST_URL=postgresql+psycopg:///postgres uv run pytest -q tests/prefect/test_managed_prefect_0_58.py::test_process_worker_executes_targeted_csv_and_postgresql_transfers",
+    "ETLANTIC_CP_TEST_URL=postgresql+psycopg:///postgres uv run pytest -q tests/prefect -m prefect"
+  ],
+  "result": "The focused live Process-worker campaign passed: 1 passed in 5.25s. The complete live Prefect/PostgreSQL suite passed: 46 passed in 65.42s with no skips.",
+  "assertions": [
+    "With the self-hosted Prefect API stopped, four bounded dispatcher ticks left all 32 accepted submissions accepted, without execution attempts, sink rows, or effect-ledger records.",
+    "Dispatcher status reported unusable prerequisites during the API outage. Redacted process-local diagnostics recorded four failed ticks and Prefect API failures without submission, flow-run, or payload identifiers.",
+    "After the Prefect API restarted against the same PostgreSQL database, 32 bounded one-item ticks dispatched the backlog. Each receipt named the expected accepted target and included a nonnegative queue age.",
+    "Separate Prefect Process-worker runs completed all 32 accepted targets. Each submission has one completed execution attempt, a successful canonical report, and one committed effect record; PostgreSQL contains the expected sink data.",
+    "The full live Prefect suite also passed, covering the other managed worker, dispatch, schedule, cancellation, deployment lifecycle, and recovery cases in this test group."
+  ],
+  "runtime": {
+    "os": "macOS 26.5.2 arm64",
+    "python": "CPython 3.11.15",
+    "etlantic": "0.57.2 workspace source",
+    "etlantic_prefect": "0.57.2 workspace source",
+    "etlantic_sqlmodel": "0.57.2 workspace source",
+    "prefect": "3.7.8",
+    "sqlmodel": "0.0.39",
+    "sqlalchemy": "2.0.51",
+    "postgresql": "16.13 Homebrew",
+    "worker_pool": "Process",
+    "prefect_server": "Separately supervised API process backed by a dedicated PostgreSQL database"
+  },
+  "fingerprints": {
+    "test_source_sha256": "dd9ef33a460afb44a9c8f413b2232311306188ac8dc4bc1ded8226f068555de1",
+    "dispatcher_source_sha256": "64800f7156825e4debc3306f5d76ab672cf1447af0235a4be0872f6e7a54aa15",
+    "role_source_sha256": "7499f4808edceef8765a17d1b93eef434b24a97cd3e0caa28e27c5e974613fd0",
+    "managed_backend_source_sha256": "b565dfdc726392ba6d7138cee1f95666b3a18e07144afa5dd5423191c39e9595",
+    "uv_lock_sha256": "3b5507c03e752619016552c9fcc00e4961d9d6b3b426deb11bbdbfca240c73ec",
+    "source_sha256": "3db3167a2773ea221cdd95886ccd3a2f94585aa9d2bf0f40ba96a72bb813e1c0",
+    "source_sha256_method": "SHA-256 over sorted repository-relative source paths and file bytes, with NUL separators."
+  },
+  "source_files": [
+    "packages/etlantic-prefect/src/etlantic_prefect/dispatcher.py",
+    "src/etlantic/control_plane/managed_backend.py",
+    "src/etlantic/runtime/role.py",
+    "tests/prefect/test_managed_prefect_0_58.py",
+    "uv.lock"
+  ],
+  "limitations": [
+    "The campaign covers a bounded 32-submission burst and four immediate failed ticks; it is not a sustained-capacity benchmark or a prolonged-outage test.",
+    "Only CPython 3.11.15, Prefect 3.7.8, PostgreSQL 16.13, and the Process pool were exercised locally.",
+    "This is workspace-source evidence, not a clean installed-wheel or remote CI run for the 32-submission change. Production identity-provider, third-party backend, broader simultaneous fault, and complete release qualification evidence remain open."
+  ],
+  "ci_configuration": {
+    "workflow": ".github/workflows/checks.yml",
+    "remote_ci_run": false,
+    "fresh_installed_wheels": false,
+    "database_service": "Local PostgreSQL 16.13 service; test-specific schemas and Prefect database were cleaned after the test.",
+    "server_process": "Separately supervised Prefect API process with PostgreSQL persistence"
+  },
+  "cleanup": [
+    "The test used unique tenant, workspace, submission, deployment, sink-table, effect-ledger, and Prefect database identities.",
+    "The test stopped its Prefect API process and dropped its dedicated Prefect database and sink/effect tables; the shared local PostgreSQL service was left running."
+  ],
+  "artifacts": []
+}

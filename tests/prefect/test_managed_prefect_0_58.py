@@ -5002,7 +5002,8 @@ backend.close()
                     request=RunRequest(materialization=MaterializationPolicy.DURABLE),
                 )
                 outage_backlog = [outage_submission]
-                for backlog_index in range(2):
+                outage_backlog_size = 32
+                for backlog_index in range(outage_backlog_size - 1):
                     outage_backlog.append(
                         managed.submit_run(
                             ctx,
@@ -5072,9 +5073,9 @@ backend.close()
                     assert recovered_outage_dispatch[0]["queue_age_seconds"] >= 0
                 assert dispatcher.status().ready is True
                 recovered_diagnostics = dispatcher.diagnostics()
-                assert recovered_diagnostics["ticks"] == 7
+                assert recovered_diagnostics["ticks"] == 4 + outage_backlog_size
                 assert recovered_diagnostics["failed_ticks"] == 4
-                assert recovered_diagnostics["dispatch_attempts"] == 3
+                assert recovered_diagnostics["dispatch_attempts"] == outage_backlog_size
                 assert recovered_diagnostics["remote_api_failures"] == 4
                 queue_age_high_water = recovered_diagnostics[
                     "queue_age_high_water_seconds"
@@ -5106,11 +5107,16 @@ backend.close()
                         assert connection.execute(
                             text(f'SELECT id, payload FROM public."{outage_table}"')
                         ).all() == [(row_id, payload)]
-                        assert sorted(
-                            connection.execute(
-                                text(f'SELECT row_count FROM public."{outage_effects}"')
-                            ).all()
-                        ) == [(1,), (1,), (1,)]
+                        assert (
+                            sorted(
+                                connection.execute(
+                                    text(
+                                        f'SELECT row_count FROM public."{outage_effects}"'
+                                    )
+                                ).all()
+                            )
+                            == [(1,)] * outage_backlog_size
+                        )
                 finally:
                     outage_engine.dispose()
 

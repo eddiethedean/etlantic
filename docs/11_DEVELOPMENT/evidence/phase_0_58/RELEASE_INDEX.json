@@ -678,6 +678,18 @@
         "#296 partial",
         "#298 partial"
       ]
+    },
+    {
+      "id": "live-postgresql-32-submission-outage-recovery-2026-10-12",
+      "path": "LIVE_POSTGRES_32_SUBMISSION_OUTAGE_RECOVERY.json",
+      "status": "passed",
+      "qualifies_release": false,
+      "covers": [
+        "AC058-005 partial",
+        "058-A2 partial",
+        "#295 partial",
+        "#298 partial"
+      ]
     }
   ],
   "open_gates": [
