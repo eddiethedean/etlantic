@@ -666,11 +666,14 @@ class MemoryDurableWorkStore:
                 if (
                     submission is None
                     or submission.execution_route != execution_route
-                    or submission.status
-                    in {"cancel_requested", "cancelled", "completed", "failed"}
+                    or submission.status in {"completed", "failed"}
                 ):
                     continue
                 dispatch = self._dispatches.get((*_scope(ctx), row.submission_id))
+                if submission.status in {"cancel_requested", "cancelled"} and not (
+                    dispatch is not None and dispatch.status == "uncertain"
+                ):
+                    continue
                 if dispatch is not None and dispatch.status in {
                     "dispatched",
                     "cancelled",
@@ -841,12 +844,20 @@ class MemoryDurableWorkStore:
                 and _parse(record.retry_after_at) > current
             ):
                 return None
-            if submission.status in {
-                "cancel_requested",
-                "cancelled",
-                "completed",
-                "failed",
-            }:
+            cancelled_uncertain = (
+                record.status == "uncertain"
+                and submission.status in {"cancel_requested", "cancelled"}
+            )
+            if (
+                submission.status
+                in {
+                    "cancel_requested",
+                    "cancelled",
+                    "completed",
+                    "failed",
+                }
+                and not cancelled_uncertain
+            ):
                 return None
             if (
                 record.status == "leased"
@@ -1257,6 +1268,16 @@ class MemoryDurableWorkStore:
                 lease = self._leases.get(key)
                 if lease is not None and _parse(lease.expires_at) > now:
                     continue
+                dispatch = self._dispatches.get(key)
+                if (
+                    dispatch is not None
+                    and dispatch.status == "uncertain"
+                    and dispatch.prefect_flow_run_id is None
+                ):
+                    # A remote create may have succeeded even though its
+                    # response was lost. Keep the canonical cancellation
+                    # discoverable until the dispatcher resolves that identity.
+                    continue
                 had_running_attempt = False
                 for attempt_key, attempt in tuple(self._attempts.items()):
                     if (
@@ -1272,7 +1293,6 @@ class MemoryDurableWorkStore:
                     self._record_unknown_effect_locked(ctx, submission.submission_id)
                 cancelled = replace(submission, status="cancelled")
                 self._submissions[key] = cancelled
-                dispatch = self._dispatches.get(key)
                 if dispatch is not None and dispatch.status in {
                     "pending",
                     "reconciliation_required",
@@ -2989,17 +3009,40 @@ class MemoryDurableWorkStore:
                     json.dumps(list(key)): row.to_dict()
                     for key, row in self._effects.items()
                 },
+                "execution_route_states": {
+                    route: row.to_dict()
+                    for route, row in self._execution_route_states.items()
+                },
+                "execution_route_references": {
+                    route: sorted(references)
+                    for route, references in self._execution_route_references.items()
+                },
             }
 
     def load(self, payload: Mapping[str, Any]) -> None:
+        def _record_fields(value: Mapping[str, Any]) -> dict[str, Any]:
+            return {
+                field: data for field, data in dict(value).items() if field != "schema"
+            }
+
+        def _typed_records(raw: Sequence[Any], cls: type) -> tuple[Any, ...]:
+            return tuple(
+                item if isinstance(item, cls) else cls(**_record_fields(item))
+                for item in (raw or ())
+            )
+
         def _rows(raw: Mapping[str, Any], cls: type) -> dict[tuple[Any, ...], Any]:
             loaded: dict[tuple[Any, ...], Any] = {}
             for key, value in dict(raw or {}).items():
-                fields = {
-                    field: data
-                    for field, data in dict(value).items()
-                    if field != "schema"
-                }
+                fields = _record_fields(value)
+                if cls is DispatchRecord:
+                    fields["reconciliation_history"] = _typed_records(
+                        fields.get("reconciliation_history", ()), DispatchReconciliation
+                    )
+                elif cls is ExecutionRouteRecord:
+                    fields["history"] = _typed_records(
+                        fields.get("history", ()), ExecutionRouteTransition
+                    )
                 loaded[tuple(json.loads(key))] = cls(**fields)
             return loaded
 
@@ -3016,6 +3059,41 @@ class MemoryDurableWorkStore:
             self._leases = _rows(payload.get("leases") or {}, LeaseRecord)
             self._attempts = _rows(payload.get("attempts") or {}, AttemptRecord)
             self._effects = _rows(payload.get("effects") or {}, EffectRecord)
+            route_states: dict[str, ExecutionRouteRecord] = {}
+            for route, value in dict(
+                payload.get("execution_route_states") or {}
+            ).items():
+                validate_execution_route(route)
+                fields = _record_fields(value)
+                if fields.get("execution_route") != route:
+                    raise ValueError(
+                        "execution route snapshot key does not match its record"
+                    )
+                fields["history"] = _typed_records(
+                    fields.get("history", ()), ExecutionRouteTransition
+                )
+                route_states[route] = ExecutionRouteRecord(**fields)
+            self._execution_route_states = route_states
+
+            route_references: dict[str, set[str]] = {}
+            for route, raw_references in dict(
+                payload.get("execution_route_references") or {}
+            ).items():
+                validate_execution_route(route)
+                if not isinstance(raw_references, Sequence) or isinstance(
+                    raw_references, (str, bytes)
+                ):
+                    raise ValueError("execution route references must be a sequence")
+                references: set[str] = set()
+                for reference in cast(Sequence[object], raw_references):
+                    if not isinstance(reference, str) or not reference.strip():
+                        raise ValueError(
+                            "execution route references must be non-empty strings"
+                        )
+                    references.add(reference)
+                if references:
+                    route_references[route] = references
+            self._execution_route_references = route_references
 
 
 __all__ = ["MemoryDurableWorkStore"]

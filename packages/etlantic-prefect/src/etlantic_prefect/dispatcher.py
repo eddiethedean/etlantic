@@ -312,9 +312,21 @@ class PrefectDispatcher:
             return self._receipt(durable.get_dispatch(self.context, submission_id))
 
         remote_create_started = False
+        uncertain_resolution_started = False
         try:
             submission = durable.get_submission(self.context, submission_id)
             if submission.status not in {"accepted", "dispatched"}:
+                if dispatch.status == "uncertain" and submission.status in {
+                    "cancel_requested",
+                    "cancelled",
+                }:
+                    uncertain_resolution_started = True
+                    return await self._resolve_cancelled_uncertain_create(
+                        submission_id,
+                        creation_key=claim.creation_key,
+                        owner_id=self.owner_id,
+                        fencing_token=claim.lease_fencing_token,
+                    )
                 durable.release_dispatch(
                     self.context,
                     submission_id,
@@ -371,15 +383,89 @@ class PrefectDispatcher:
                     submission_id,
                     owner_id=self.owner_id,
                     fencing_token=claim.lease_fencing_token,
-                    outcome_uncertain=remote_create_started,
+                    outcome_uncertain=(
+                        remote_create_started or uncertain_resolution_started
+                    ),
                     error_code=(
                         "prefect_create_uncertain"
-                        if remote_create_started
+                        if remote_create_started or uncertain_resolution_started
                         else "dispatch_prepare_failed"
                     ),
                 )
             current = durable.get_dispatch(self.context, submission_id)
             return self._receipt(current)
+
+    async def _resolve_cancelled_uncertain_create(
+        self,
+        submission_id: str,
+        *,
+        creation_key: str,
+        owner_id: str,
+        fencing_token: int,
+    ) -> dict[str, Any]:
+        """Resolve a lost create response without creating or replaying work."""
+        from prefect.client.orchestration import get_client
+        from prefect.client.schemas.filters import (
+            FlowRunFilter,
+            FlowRunFilterIdempotencyKey,
+        )
+
+        durable = self.backend.durable_work
+        async with get_client() as client:
+            runs = await client.read_flow_runs(
+                flow_run_filter=FlowRunFilter(
+                    idempotency_key=FlowRunFilterIdempotencyKey(any_=[creation_key])
+                ),
+                limit=2,
+            )
+            # An empty response can be transiently stale; multiple matches are
+            # ambiguous. In either case retain the uncertain record for retry.
+            if len(runs) != 1:
+                durable.release_dispatch(
+                    self.context,
+                    submission_id,
+                    owner_id=owner_id,
+                    fencing_token=fencing_token,
+                    outcome_uncertain=True,
+                    error_code="prefect_create_uncertain",
+                )
+                return self._receipt(durable.get_dispatch(self.context, submission_id))
+
+            flow_run = runs[0]
+            durable.link_dispatch(
+                self.context,
+                submission_id,
+                owner_id=owner_id,
+                fencing_token=fencing_token,
+                prefect_flow_run_id=str(flow_run.id),
+            )
+            state = getattr(flow_run, "state", None)
+            state_type = getattr(state, "type", None)
+            state_value = getattr(state_type, "value", state_type)
+            if state_value not in {
+                "CANCELLED",
+                "COMPLETED",
+                "FAILED",
+                "CRASHED",
+            }:
+                from prefect.client.schemas.objects import State, StateType
+
+                await client.set_flow_run_state(
+                    flow_run.id,
+                    State(
+                        type=StateType.CANCELLING,
+                        message="ETLantic cancellation resolved an uncertain dispatch.",
+                    ),
+                    force=False,
+                )
+
+        durable.reconcile_cancelled_submissions(
+            self.context,
+            limit=1,
+            submission_id=submission_id,
+            execution_route=self.binding.execution_route,
+        )
+        return self._receipt(durable.get_dispatch(self.context, submission_id))
 
     @staticmethod
     def _receipt(dispatch: Any) -> dict[str, Any]:
