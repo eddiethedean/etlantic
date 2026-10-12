@@ -1,19 +1,19 @@
 ---
 status: available
 since: "0.43.0"
-current_minor: "0.57"
+current_minor: "0.58"
 audience: developer
 ---
 
 # medallantic API
 
-> **Status: ETLantic 0.57.2 Beta release.** Medallion facade + SparkForge migrate.
+> **Status: ETLantic 0.58.0 Beta release candidate.** Medallion facade + SparkForge migrate.
 > Install narrative: package README. Hub: [Optional packages API](../API_OPTIONAL_PACKAGES.md).
 
 ## Setup
 
 ```bash
-pip install 'medallantic==0.57.2'
+pip install 'medallantic==0.58.0'
 ```
 
 ```python

@@ -1,5 +1,7 @@
 # etlantic-keyring
 
+> **Release status:** ETLantic 0.58.0 is a Beta release candidate; publication is pending.
+
 Local workstation secret provider for
 [ETLantic](https://github.com/eddiethedean/etlantic) 0.57 using the Python
 [`keyring`](https://keyring.readthedocs.io/) library and OS credential stores.

@@ -1,7 +1,7 @@
 ---
 status: available
 since: "0.43.0"
-current_minor: "0.57"
+current_minor: "0.58"
 audience: developer
 ---
 
@@ -14,7 +14,7 @@ audience: developer
 ## Setup
 
 ```bash
-pip install 'etlantic-iceberg==0.57.2'
+pip install 'etlantic-iceberg==0.58.0'
 ```
 
 ```python

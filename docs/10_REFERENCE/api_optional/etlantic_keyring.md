@@ -1,19 +1,19 @@
 ---
 status: available
 since: "0.43.0"
-current_minor: "0.57"
+current_minor: "0.58"
 audience: developer
 ---
 
 # etlantic-keyring API
 
-> **Status: ETLantic 0.57.2 Beta release.** OS keyring secret provider.
+> **Status: ETLantic 0.58.0 Beta release candidate.** OS keyring secret provider.
 > Install narrative: package README. Hub: [Optional packages API](../API_OPTIONAL_PACKAGES.md).
 
 ## Setup
 
 ```bash
-pip install 'etlantic-keyring==0.57.2'
+pip install 'etlantic-keyring==0.58.0'
 ```
 
 ```python

@@ -1,6 +1,8 @@
 # Development
 
-Latest published release: ETLantic 0.57.2. See the [0.56 migration](MIGRATION_0_55_TO_0_56.md),
+Latest published release: ETLantic 0.57.2; 0.58.0 is the release candidate.
+See the [0.57 → 0.58 migration](MIGRATION_0_57_TO_0_58.md), [0.58 exit gate](EXIT_GATE_0_58.md),
+and [0.56 migration](MIGRATION_0_55_TO_0_56.md),
 [exit gate](EXIT_GATE_0_56.md), and
 [release evidence](evidence/phase_0_56/RELEASE_INDEX.json). The 0.57.0 release
 passed qualification and is published; see its [implementation plan](IMPLEMENTATION_PLAN_0_57.md),
@@ -14,7 +16,7 @@ The new [0.56 complete application backend phase](IMPLEMENTATION_PLAN_0_56.md)
 closes the [reviewed backend gaps](FINDINGS_0_56.md) through
 [ordered execution gates](EXECUTION_PLAN_0_56.md). The next
 [0.57 managed backend independence and runtime supervision phase](IMPLEMENTATION_PLAN_0_57.md)
-fully implements issues #278–#282 for 0.57.0. The planned
+fully implements issues #278–#282 for 0.57.0. The qualified candidate
 [0.58 managed Prefect phase](IMPLEMENTATION_PLAN_0_58.md) owns #290 and
 #291–#298. Brownfield, console, broader provider, and TransformationModel phases
 follow as 0.59–0.62 with scope retained.
@@ -39,6 +41,8 @@ released.
 - [Full roadmap](https://github.com/eddiethedean/etlantic/blob/main/ROADMAP.md)
 
 ## Current migrations and exit gates
+
+- [0.58 managed Prefect implementation](IMPLEMENTATION_PLAN_0_58.md), [migration 0.57 → 0.58](MIGRATION_0_57_TO_0_58.md), [exit gate](EXIT_GATE_0_58.md) (qualified candidate; publication pending)
 
 - [0.56 implementation](IMPLEMENTATION_PLAN_0_56.md), [execution](EXECUTION_PLAN_0_56.md), [migration 0.55 → 0.56](MIGRATION_0_55_TO_0_56.md), and [exit gate](EXIT_GATE_0_56.md)
 

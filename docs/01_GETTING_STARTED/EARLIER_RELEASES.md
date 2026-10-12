@@ -1,10 +1,11 @@
 # Earlier release notes
 
-> **Status: 0.57.2 is published.** Earlier release notes follow. Full history:
+> **Status: 0.57.2 is the latest published release; 0.58.0 is a candidate.** Earlier release notes follow. Full history:
 > [Changelog](../CHANGELOG.md).
 
 | Release | Notes |
 |---|---|
+| 0.57 | [What's new in 0.57](WHATS_NEW_0_57.md) |
 | 0.54 | [What's new in 0.54](WHATS_NEW_0_54.md) |
 | 0.47 | [What's new in 0.47](WHATS_NEW_0_47.md) |
 | 0.46 | [What's new in 0.46](WHATS_NEW_0_46.md) |

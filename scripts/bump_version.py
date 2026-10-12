@@ -45,6 +45,20 @@ def is_version_surface(path: Path) -> bool:
     parts = relative.parts
     if EXCLUDED_PARTS.intersection(parts):
         return False
+    # Phase-specific release notes and migration/exit-gate records describe a
+    # particular historical transition. Their live current_minor frontmatter
+    # may move, but their version examples, dependency floors, and outcomes
+    # must remain anchored to the release they document.
+    if path.name.startswith(
+        (
+            "WHATS_NEW_0_",
+            "MIGRATION_0_",
+            "EXIT_GATE_0_",
+            "IMPLEMENTATION_PLAN_0_",
+            "IMPLEMENTATION_STATUS_0_",
+        )
+    ):
+        return False
     # These are dated release records. Their version references are historical
     # evidence and must not be rewritten by a later release; live current_minor
     # frontmatter is synchronized separately below.

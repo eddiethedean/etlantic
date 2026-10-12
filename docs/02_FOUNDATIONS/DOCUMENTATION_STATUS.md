@@ -1,6 +1,9 @@
 # Documentation Status and Conventions
 
-Prefer pages marked **Available in 0.57** for the current published behavior. The current published package is 0.57.2. Follow the Green path for the latest published package. For what ships in the current package, start with
+Prefer pages marked **Available in 0.57** for behavior in the latest published
+line, 0.57.2. The 0.58.0 Beta candidate is under release review and is not yet
+published. Follow the Green path for the latest published package. For what
+ships in the current package, start with
 [Capabilities](../01_GETTING_STARTED/CAPABILITIES.md)—not chapter length or
 this legend. Maintainer release evidence:
 [Exit gate 0.39](../11_DEVELOPMENT/EXIT_GATE_0_39.md) and
@@ -33,6 +36,7 @@ completed documentation audit:
 |---|---|
 | Available in 0.57 | Tested against the current published package |
 | Candidate in 0.57 | Historical prepublication review label for the 0.57.1 material, now published |
+| Candidate in 0.58 | Release-candidate behavior under review; not yet published |
 | Shipped in 0.x | Available since that milestone (still current) |
 | Experimental | Public APIs that may change without a major version bump |
 | Partially available | Shipped and future behavior are explicitly separated |

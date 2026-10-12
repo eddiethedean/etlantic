@@ -5,6 +5,35 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.58.0] - Unreleased
+
+### Added
+
+- Add the qualified, opt-in managed Prefect execution path in
+  `etlantic-prefect`, using ETLantic's accepted-work and durable execution
+  contracts. The release candidate support profile is limited to static
+  `etlantic.plan/1` batches on self-hosted Prefect 3.7.8 Process workers backed
+  by PostgreSQL 16.15, on Ubuntu 24.04 x86_64 with Python 3.11.15, 3.12.13,
+  or 3.13.16. Qualified connectors are CSV → PostgreSQL and PostgreSQL →
+  PostgreSQL replace.
+
+### Changed
+
+- Align the core and all first-party distribution versions at 0.58.0.
+- Preserve the SQLModel migration head at
+  `014_cp1_complete_principal_idempotency_0_56`; no database migration is
+  introduced for this release.
+
+### Compatibility
+
+- Keep the existing direct Prefect execution path available. Managed execution
+  is opt-in and routes accepted ETLantic work through versioned Prefect
+  deployments and Process workers.
+
+### Release status
+
+- 0.58.0 is a release candidate. Publication and PyPI availability are pending.
+
 ## [0.57.2] - 2026-10-11
 
 ### Added
@@ -2261,7 +2290,8 @@ See `docs/11_DEVELOPMENT/MIGRATION_0_16_TO_0_17.md`.
 - uv + ruff toolchain, MkDocs documentation site, shared GitHub Actions
   checks, and tag-triggered PyPI release
 
-[Unreleased]: https://github.com/eddiethedean/etlantic/compare/v0.57.2...HEAD
+[Unreleased]: https://github.com/eddiethedean/etlantic/compare/v0.58.0...HEAD
+[0.58.0]: https://github.com/eddiethedean/etlantic/releases/tag/v0.58.0
 [0.57.2]: https://github.com/eddiethedean/etlantic/releases/tag/v0.57.2
 [0.57.1]: https://github.com/eddiethedean/etlantic/releases/tag/v0.57.1
 [0.57.0]: https://github.com/eddiethedean/etlantic/releases/tag/v0.57.0

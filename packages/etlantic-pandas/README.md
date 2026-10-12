@@ -11,10 +11,10 @@ compilation on Pandas. Keep the pin matched to core.
 ## Install
 
 ```bash
-pip install 'etlantic-pandas==0.57.2'
+pip install 'etlantic-pandas==0.58.0'
 # Optional Arrow interchange:
-pip install 'etlantic-pandas[arrow]==0.57.2'
-# pip install 'etlantic==0.57.2'
+pip install 'etlantic-pandas[arrow]==0.58.0'
+# pip install 'etlantic==0.58.0'
 ```
 
 ## Dataframe plugin

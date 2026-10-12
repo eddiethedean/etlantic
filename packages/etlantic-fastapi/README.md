@@ -1,5 +1,7 @@
 # etlantic-fastapi
 
+> **Release status:** ETLantic 0.58.0 is a Beta release candidate; publication is pending.
+
 Optional FastAPI adapter for ETLantic **0.57.0**. Use **CP1/CP2** (`ETLanticAPI`)
 when you need an embeddable, authz’d, durable-accept control-plane HTTP API.
 Use **`create_reference_app`** only for the thin non-CP authoring demo — it is
@@ -22,9 +24,9 @@ pollers observe accepted jobs outside the request.
 ## Install
 
 ```bash
-pip install 'etlantic-fastapi==0.57.2'
+pip install 'etlantic-fastapi==0.58.0'
 # keep core on the same pin:
-# pip install 'etlantic==0.57.2'
+# pip install 'etlantic==0.58.0'
 ```
 
 ## Standard SQLModel-backed managed backend
@@ -40,7 +42,7 @@ scope-isolated run reports, expiring idempotent lifecycle-event tombstones,
 immutable input resources, and indexed result-retention metadata.
 
 ```bash
-pip install 'etlantic-fastapi[managed]==0.57.2'
+pip install 'etlantic-fastapi[managed]==0.58.0'
 ```
 
 The migration is an explicit deployment step. Use the public

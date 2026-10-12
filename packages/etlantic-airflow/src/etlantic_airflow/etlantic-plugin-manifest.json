@@ -2,7 +2,7 @@
   "capabilities": [
     "orchestration"
   ],
-  "digest": "sha256:b758b84f224ff7a9a26ae6c36b350636a96e37fd75a36e7e89baf4fe5264bf85",
+  "digest": "sha256:541e38e6e06966ee4c852329b00070d0f38d5e44020d50468ac88f6feb21ce21",
   "entries": [
     {
       "capabilities": [
@@ -22,5 +22,5 @@
     "publisher": "etlantic"
   },
   "schema": "etlantic.plugin_manifest/1",
-  "version": "0.57.2"
+  "version": "0.58.0"
 }
