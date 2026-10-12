@@ -865,7 +865,7 @@ def build_backend() -> tuple[ManagedBackend, ControlPlaneContext]:
         frozen_approval_now = datetime.fromisoformat(approval_now)
         if frozen_approval_now.tzinfo is None:
             raise ValueError("phase 0.58 approval clock must include a timezone")
-        approval_memory._now = lambda: frozen_approval_now
+        approval_memory.__dict__["_now"] = lambda: frozen_approval_now
     return backend, ctx
 
 
