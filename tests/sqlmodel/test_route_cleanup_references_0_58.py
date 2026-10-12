@@ -19,6 +19,8 @@ from etlantic_sqlmodel.control_plane import (
     create_durable_tables,
 )
 
+pytestmark = pytest.mark.sqlmodel
+
 
 def _context() -> ControlPlaneContext:
     return ControlPlaneContext(
