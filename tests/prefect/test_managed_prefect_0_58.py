@@ -1335,10 +1335,13 @@ def test_dispatcher_exposes_supervisor_status_and_drain(tmp_path: Path) -> None:
     )
     registered_roles: list[Any] = []
     dispatcher = PrefectDispatcher(
-        backend=SimpleNamespace(
-            durable_work=durable,
-            register_runtime_role=registered_roles.append,
-        ),  # type: ignore[arg-type]
+        backend=cast(
+            ManagedBackend,
+            SimpleNamespace(
+                durable_work=durable,
+                register_runtime_role=registered_roles.append,
+            ),
+        ),
         context=ctx,
         binding=binding,
         owner_id="dispatcher-test",
@@ -1402,10 +1405,22 @@ def test_dispatcher_diagnostics_capture_stale_remote_links_without_ids(
                 state=SimpleNamespace(type=SimpleNamespace(value="FAILED"))
             )
 
+        async def create_flow_run_from_deployment(
+            self, *_args: Any, **_kwargs: Any
+        ) -> Any:
+            return SimpleNamespace(id=uuid4())
+
     def _get_client(**_kwargs: Any) -> _Client:
         return _Client()
 
     monkeypatch.setattr(prefect.client.orchestration, "get_client", _get_client)
+
+    async def skip_remote_binding(_self: PrefectDispatcher) -> None:
+        return None
+
+    monkeypatch.setattr(
+        PrefectDispatcher, "_verify_remote_binding", skip_remote_binding
+    )
     dispatcher = PrefectDispatcher(
         backend=SimpleNamespace(durable_work=durable),  # type: ignore[arg-type]
         context=ctx,
@@ -1413,7 +1428,7 @@ def test_dispatcher_diagnostics_capture_stale_remote_links_without_ids(
         owner_id="diagnostics-test-dispatcher",
     )
 
-    asyncio.run(dispatcher._reconcile_remote_failures(limit=10))
+    asyncio.run(dispatcher.tick(limit=10))
 
     diagnostics = dispatcher.diagnostics()
     assert diagnostics["remote_missing_observations"] == 1

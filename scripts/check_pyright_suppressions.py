@@ -74,7 +74,10 @@ from pathlib import Path
 # Dispatcher lifecycle registration and the disposal-race regression move the
 # existing Prefect test fixture ignore; the reviewed 794-entry inventory is
 # unchanged.
-EXPECTED_DIGEST = "217c8a6ced41428b59b3244135d29fddfc829162bbfcaba6472bdae37bc59ad1"
+# Dispatcher diagnostics and FastAPI route-pin coverage shift existing inline
+# fixture ignores. A redundant structural-test ignore was replaced with a cast;
+# the reviewed inventory remains 794 entries and is re-pinned here.
+EXPECTED_DIGEST = "78de9e88b0943a6efba1c9fa6de33d7b06af04855245955fd55d294def13ebca"
 
 _IGNORED_DIRECTORIES = frozenset(
     {
