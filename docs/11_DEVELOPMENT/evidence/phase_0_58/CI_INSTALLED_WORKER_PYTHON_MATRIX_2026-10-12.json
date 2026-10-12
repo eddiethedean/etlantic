@@ -4,20 +4,21 @@
   "recorded_at": "2026-10-12",
   "status": "passed",
   "qualifies_release": false,
-  "test": "tests/prefect/test_managed_prefect_0_58.py in the complete installed-wheel Prefect/PostgreSQL suite",
+  "test": "tests/prefect -m prefect in a fresh installed-wheel environment; installed headless/FastAPI route parity",
   "commands": [
     "uv sync --locked --python <matrix.python-version> --group prefect --group sql --group sqlmodel",
     "uv run pytest -q tests/prefect -m prefect",
     "Build core, Prefect, SQL, SQLModel, FastAPI, and worker-backend plugin wheels; install them in a fresh environment; run env -u PYTHONPATH <venv>/bin/python -m pytest -o pythonpath= -q tests/prefect -m prefect",
     "env -u PYTHONPATH <venv>/bin/python -m pytest -o pythonpath= -q tests/fastapi/test_managed_application_0_56.py::test_managed_headless_and_http_command_semantics_match"
   ],
-  "result": "GitHub Actions run 38269724837 passed on candidate 82c5985a3db264c18c25e452b59a1c41b8186b68. Each installed-wheel Prefect/PostgreSQL suite passed all 46 tests without failures, errors, or skips on CPython 3.11.15, 3.12.13, and 3.13.16. Installed-wheel headless/FastAPI parity passed 1 test without failures or skips on each patch. The complete repository workflow finished with 45 successful checks, 2 expected historical Adaptive 0.54 observation checks skipped, and no failures.",
+  "result": "GitHub Actions run 38282493355 passed on candidate 0881db594604fbea52c5ee4895c4cba461b1ddb0. Each installed-wheel Prefect/PostgreSQL suite passed all 48 tests without failures, errors, or skips on CPython 3.11.15, 3.12.13, and 3.13.16. Installed-wheel headless/FastAPI parity passed 1 test without failures or skips on each patch. The complete repository workflow finished with 45 successful checks, 2 expected historical Adaptive 0.54 skips, and no failures.",
   "assertions": [
-    "Core, Prefect, SQL, SQLModel, FastAPI, and the separate worker-backend plugin were built as wheels and installed in a fresh environment for each Python patch. PYTHONPATH was unset and pytest's configured pythonpath was disabled.",
-    "The installed-wheel suite includes a live Process-worker trace that pauses before PostgreSQL connector commit, stops the self-hosted Prefect API, releases the transaction, and confirms one committed sink row and effect while the canonical attempt remains running and result publication remains unpublished.",
-    "While the API is unavailable, authorized status preserves canonical ETL facts and reports remote orchestration and reconciliation as unavailable. Restarting the API lets the same worker finalize and publish once; the attempt completes and the PostgreSQL sink and effect rows remain singular.",
-    "Each installed-wheel suite also passes the managed worker, durable dispatch, lifecycle, schedule, authority, cancellation, and recovery cases without environment-gated skips.",
-    "The installed-wheel headless/FastAPI test confirms equivalent managed command behavior while preserving the Prefect execution route through both submission surfaces."
+    "Core, Prefect, SQL, SQLModel, FastAPI, and the separate worker-backend plugin were built as wheels and installed in a fresh environment for each Python patch. PYTHONPATH was unset and pytest configured pythonpath was disabled.",
+    "Each installed-wheel suite passed all 48 Prefect/PostgreSQL tests without failures, errors, or skips, including direct scheduler compatibility, resolved ready-branch concurrency, ambient retry/cache/persistence isolation, managed Process workers, durable dispatch, schedules, trust checks, cancellation, and recovery.",
+    "Each suite includes a live Process-worker trace that pauses before PostgreSQL connector commit, stops the self-hosted Prefect API, releases the transaction, and confirms one committed sink row and effect while canonical execution is still running and result publication is pending.",
+    "The authorized status projection preserves canonical ETL facts while the Prefect API is unavailable. Restarting it lets the same worker publish once; the attempt completes and PostgreSQL sink/effect rows remain singular.",
+    "Installed-wheel headless/FastAPI parity passed on every patch and preserves the same managed Prefect route through both submission surfaces.",
+    "The full repository workflow completed successfully; only the two historical Adaptive 0.54 observation jobs were skipped. The separate Prefect minimum-dependency job passed with the explicit API-version guard."
   ],
   "runtime": {
     "runner_os": "Ubuntu 24.04",
@@ -52,84 +53,101 @@
   "matrix": [
     {
       "python": "3.11.15",
-      "job_id": 114880705882,
-      "job_url": "https://github.com/eddiethedean/etlantic/actions/runs/38269724837/job/114880705882",
+      "job_id": 114922869504,
+      "job_url": "https://github.com/eddiethedean/etlantic/actions/runs/38282493355/job/114922869504",
       "prefect_postgresql_tests": {
-        "tests": 46,
+        "tests": 48,
         "failures": 0,
         "errors": 0,
         "skipped": 0,
-        "seconds": 94.834
+        "seconds": 90.08
       },
       "headless_fastapi_tests": {
         "tests": 1,
         "failures": 0,
         "errors": 0,
         "skipped": 0,
-        "seconds": 1.114
+        "seconds": 0.307
       },
-      "artifact_name": "phase-0.58-installed-worker-dc0fceca0b123028d47399419cd90c489e92c51d-py3.11.15",
-      "artifact_sha256": "5650afe757652a22531ee9f00d22f8fcda97ef96ce6503093f62f5d371c886aa"
+      "artifact_name": "phase-0.58-installed-worker-1620f4c49ff37b037856f5085d822b073a7a14c9-py3.11.15",
+      "artifact_sha256": "a5ed66e21f6242b419688028afd948aa4f633a57ea05094b1692e932fbe7ce50"
     },
     {
       "python": "3.12.13",
-      "job_id": 114880706020,
-      "job_url": "https://github.com/eddiethedean/etlantic/actions/runs/38269724837/job/114880706020",
+      "job_id": 114922869581,
+      "job_url": "https://github.com/eddiethedean/etlantic/actions/runs/38282493355/job/114922869581",
       "prefect_postgresql_tests": {
-        "tests": 46,
+        "tests": 48,
         "failures": 0,
         "errors": 0,
         "skipped": 0,
-        "seconds": 124.661
+        "seconds": 139.408
       },
       "headless_fastapi_tests": {
         "tests": 1,
         "failures": 0,
         "errors": 0,
         "skipped": 0,
-        "seconds": 1.624
+        "seconds": 0.602
       },
-      "artifact_name": "phase-0.58-installed-worker-dc0fceca0b123028d47399419cd90c489e92c51d-py3.12.13",
-      "artifact_sha256": "e25578a94d27ea492f73feb5099f1d933311249ba6a668c3056cbb3a1f4957c7"
+      "artifact_name": "phase-0.58-installed-worker-1620f4c49ff37b037856f5085d822b073a7a14c9-py3.12.13",
+      "artifact_sha256": "f98698703eb370836bf049eae81537fa0ebc92121342fe26ac27f61877ab041e"
     },
     {
       "python": "3.13.16",
-      "job_id": 114880705888,
-      "job_url": "https://github.com/eddiethedean/etlantic/actions/runs/38269724837/job/114880705888",
+      "job_id": 114922869642,
+      "job_url": "https://github.com/eddiethedean/etlantic/actions/runs/38282493355/job/114922869642",
       "prefect_postgresql_tests": {
-        "tests": 46,
+        "tests": 48,
         "failures": 0,
         "errors": 0,
         "skipped": 0,
-        "seconds": 112.343
+        "seconds": 148.047
       },
       "headless_fastapi_tests": {
         "tests": 1,
         "failures": 0,
         "errors": 0,
         "skipped": 0,
-        "seconds": 1.563
+        "seconds": 0.663
       },
-      "artifact_name": "phase-0.58-installed-worker-dc0fceca0b123028d47399419cd90c489e92c51d-py3.13.16",
-      "artifact_sha256": "8864fa9fcd90908180b84a9b1bf83cadec87fa62eeec555b7fe4216b6fd4fabd"
+      "artifact_name": "phase-0.58-installed-worker-1620f4c49ff37b037856f5085d822b073a7a14c9-py3.13.16",
+      "artifact_sha256": "1af83837b95224f58510fe7db75df2f596682eb4df63e8a9a3205084c64410a5"
     }
   ],
   "fingerprints": {
-    "candidate_commit": "82c5985a3db264c18c25e452b59a1c41b8186b68",
-    "workflow_merge_commit": "dc0fceca0b123028d47399419cd90c489e92c51d",
-    "test_source_sha256": "89491cd881897675572d648fb165946c2bfb1e8a12b99e13d64b1fd387d8ef8b",
-    "worker_plugin_source_sha256": "b5460d5e250afc1791c154c56c5132db7e58a52166e88fe86a4ed12fbadb463a",
+    "candidate_commit": "0881db594604fbea52c5ee4895c4cba461b1ddb0",
+    "workflow_merge_commit": "1620f4c49ff37b037856f5085d822b073a7a14c9",
+    "test_source_sha256": "e576a2e27a6d5307a01396e8a2a29854b32c6eb2f2b94603eb60652e9b836ae8",
+    "test_source_files": [
+      "tests/fastapi/test_managed_application_0_56.py",
+      "tests/prefect/test_managed_prefect_0_58.py",
+      "tests/prefect/test_prefect_scheduler.py",
+      "tests/prefect/worker_plugin/src/phase058_worker_backend/__init__.py"
+    ],
+    "test_source_sha256_method": "SHA-256 over sorted repository-relative test/worker-plugin paths and file bytes, with NUL separators.",
+    "worker_plugin_source_sha256": "b9a2d565a48e3d5cda30d3c8d439652a573a6d7ad65dc58486b940110acf357a",
     "uv_lock_sha256": "3b5507c03e752619016552c9fcc00e4961d9d6b3b426deb11bbdbfca240c73ec",
-    "source_sha256": "79f61fa97d6a96b765baa807d25c946454a3bb3660a2942a102abc437c13642b",
-    "source_sha256_method": "SHA-256 over sorted repository-relative source paths and file bytes, with NUL separators."
+    "source_sha256": "59bb885763eb902accb1ae2fcd95780ed2e372f131bd6af77d54d54fc310f72f",
+    "source_sha256_method": "SHA-256 over the sorted repository-relative candidate code, tests, workflow, and lock paths listed in source_files, with NUL separators."
   },
   "source_files": [
     ".github/workflows/checks.yml",
+    "packages/etlantic-prefect/src/etlantic_prefect/deployment.py",
     "packages/etlantic-prefect/src/etlantic_prefect/dispatcher.py",
+    "packages/etlantic-prefect/src/etlantic_prefect/plugin.py",
+    "packages/etlantic-prefect/src/etlantic_prefect/worker.py",
+    "packages/etlantic-sqlmodel/src/etlantic_sqlmodel/control_plane/durable_stores.py",
+    "packages/etlantic-sqlmodel/src/etlantic_sqlmodel/managed.py",
     "src/etlantic/control_plane/managed_backend.py",
-    "src/etlantic/runtime/role.py",
+    "src/etlantic/runtime/execution_host.py",
+    "src/etlantic/runtime/managed_execution.py",
+    "tests/fastapi/test_managed_application_0_56.py",
     "tests/prefect/test_managed_prefect_0_58.py",
+    "tests/prefect/test_prefect_scheduler.py",
     "tests/prefect/worker_plugin/src/phase058_worker_backend/__init__.py",
+    "tests/sqlmodel/test_managed_runtime_schema_privileges_0_57.py",
+    "tests/sqlmodel/test_managed_scheduler_postgresql_0_57.py",
     "uv.lock"
   ],
   "wheel_sha256": {
@@ -144,8 +162,8 @@
     "workflow": ".github/workflows/checks.yml",
     "workflow_name": "CI",
     "job_matrix": "Prefect managed execution",
-    "run_id": 38269724837,
-    "run_url": "https://github.com/eddiethedean/etlantic/actions/runs/38269724837",
+    "run_id": 38282493355,
+    "run_url": "https://github.com/eddiethedean/etlantic/actions/runs/38282493355",
     "workflow_status": "success",
     "workflow_successful_checks": 45,
     "workflow_skipped_checks": [
@@ -161,12 +179,12 @@
   "limitations": [
     "This matrix qualifies the static-batch etlantic.plan/1 Process-worker path on Ubuntu 24.04 for the three exact Python patches and the listed Prefect/PostgreSQL/client package versions. Other operating systems, Python/PyPI combinations, Prefect versions, server/client skews, and worker pools are outside the 0.58 support profile.",
     "The suite and companion live campaigns establish bounded recovery for the fault cuts recorded in the final qualification decision. They do not claim sustained production capacity, prolonged outages, other simultaneous fault combinations, production or third-party connectors, external identity providers, or live Posit Connect hosting.",
-    "External adopter/provider evidence and elapsed wall-clock waits are not phase requirements. Controlled-clock tests qualify time-based boundaries, including the 30-day retention cutoff. This matrix is one part of the combined release evidence; the final decision links all gates and campaigns."
+    "Evidence from an independent adopter, external provider, or external identity system and a real-time retention wait are not 0.58 phase requirements. Controlled-clock tests qualify time-based boundaries, including the 30-day cleanup cutoff; live deletion uses a bounded zero-age override."
   ],
   "artifacts": [
     {
-      "name": "phase-0.58-installed-worker-dc0fceca0b123028d47399419cd90c489e92c51d-py3.11.15",
-      "sha256": "5650afe757652a22531ee9f00d22f8fcda97ef96ce6503093f62f5d371c886aa",
+      "name": "phase-0.58-installed-worker-1620f4c49ff37b037856f5085d822b073a7a14c9-py3.11.15",
+      "sha256": "a5ed66e21f6242b419688028afd948aa4f633a57ea05094b1692e932fbe7ce50",
       "contents": [
         "phase058-clean-wheel-prefect.xml",
         "phase058-headless-fastapi-parity.xml",
@@ -175,8 +193,8 @@
       ]
     },
     {
-      "name": "phase-0.58-installed-worker-dc0fceca0b123028d47399419cd90c489e92c51d-py3.12.13",
-      "sha256": "e25578a94d27ea492f73feb5099f1d933311249ba6a668c3056cbb3a1f4957c7",
+      "name": "phase-0.58-installed-worker-1620f4c49ff37b037856f5085d822b073a7a14c9-py3.12.13",
+      "sha256": "f98698703eb370836bf049eae81537fa0ebc92121342fe26ac27f61877ab041e",
       "contents": [
         "phase058-clean-wheel-prefect.xml",
         "phase058-headless-fastapi-parity.xml",
@@ -185,8 +203,8 @@
       ]
     },
     {
-      "name": "phase-0.58-installed-worker-dc0fceca0b123028d47399419cd90c489e92c51d-py3.13.16",
-      "sha256": "8864fa9fcd90908180b84a9b1bf83cadec87fa62eeec555b7fe4216b6fd4fabd",
+      "name": "phase-0.58-installed-worker-1620f4c49ff37b037856f5085d822b073a7a14c9-py3.13.16",
+      "sha256": "1af83837b95224f58510fe7db75df2f596682eb4df63e8a9a3205084c64410a5",
       "contents": [
         "phase058-clean-wheel-prefect.xml",
         "phase058-headless-fastapi-parity.xml",

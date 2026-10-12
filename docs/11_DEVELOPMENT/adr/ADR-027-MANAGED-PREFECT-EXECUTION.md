@@ -1,7 +1,7 @@
 # ADR-027: Managed Prefect Execution
 
 Date: 2026-10-11
-Status: Accepted for the 0.58 implementation; production qualification remains open
+Status: Accepted; the bounded 0.58 managed Prefect support profile is qualified. Broader production and untested profile claims remain outside scope.
 
 ## Context
 

@@ -318,7 +318,9 @@ The managed adapters are governed by
 The managed adapter is implemented on the current 0.58 candidate under
 [phase 0.58](https://github.com/eddiethedean/etlantic/blob/main/docs/11_DEVELOPMENT/IMPLEMENTATION_PLAN_0_58.md)
 and [#290](https://github.com/eddiethedean/etlantic/issues/290) through #298;
-release qualification remains open.
+the bounded static-batch `/1` Process-worker/PostgreSQL profile is qualified for
+0.58 but is not included in the published 0.57.2 distribution. See the [final
+qualification decision](https://github.com/eddiethedean/etlantic/blob/main/docs/11_DEVELOPMENT/evidence/phase_0_58/FINAL_QUALIFICATION_DECISION_2026-10-12.json).
 The target is static-batch `/1`, self-hosted Process workers, and PostgreSQL;
 other managed capabilities require their planned qualification.
 

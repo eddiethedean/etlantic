@@ -1,0 +1,1652 @@
+{
+  "schema": "etlantic.phase_0_58.final_qualification_decision/1",
+  "phase": "0.58",
+  "decision": "qualified",
+  "recorded_at": "2026-10-12",
+  "decision_summary": "The bounded static-batch managed Prefect support profile passed every AC058 gate, adjacent phase gate, and acceptance checkbox in #290–#298. The candidate is qualified for the support profile below; publication in a 0.58 release remains separate.",
+  "candidate": {
+    "branch": "codex/phase-0-58-managed-prefect",
+    "commit": "0881db594604fbea52c5ee4895c4cba461b1ddb0",
+    "pull_request": "https://github.com/eddiethedean/etlantic/pull/300",
+    "pull_request_state": "draft",
+    "qualification_run_id": 38282493355,
+    "qualification_run_url": "https://github.com/eddiethedean/etlantic/actions/runs/38282493355",
+    "qualification_run_status": "success",
+    "workflow_result": {
+      "successful_checks": 45,
+      "expected_skips": 2,
+      "failed_checks": 0
+    }
+  },
+  "support_profile": {
+    "plan_family": "etlantic.plan/1",
+    "os": "Ubuntu 24.04 x86_64",
+    "python": [
+      "3.11.15",
+      "3.12.13",
+      "3.13.16"
+    ],
+    "etlantic_packages": "0.57.2 candidate wheels from the qualified phase-0.58 source commit",
+    "prefect": "3.7.8",
+    "postgresql": "16.15 (Debian 16.15-1.pgdg13+2)",
+    "sqlmodel": "0.0.39",
+    "sqlalchemy": "2.0.51",
+    "psycopg": "3.3.4",
+    "fastapi": "0.139.2",
+    "worker_pool": "Process",
+    "prefect_server": "Self-hosted API backed by PostgreSQL",
+    "connectors": [
+      "CSV to PostgreSQL",
+      "PostgreSQL to PostgreSQL replace"
+    ],
+    "installed_artifacts": [
+      "etlantic",
+      "etlantic-prefect",
+      "etlantic-sql",
+      "etlantic-sqlmodel",
+      "etlantic-fastapi",
+      "etlantic-phase058-test-worker-plugin"
+    ],
+    "per_python_results": [
+      {
+        "python": "3.11.15",
+        "prefect_postgresql_tests": 48,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "headless_fastapi_parity_tests": 1
+      },
+      {
+        "python": "3.12.13",
+        "prefect_postgresql_tests": 48,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "headless_fastapi_parity_tests": 1
+      },
+      {
+        "python": "3.13.16",
+        "prefect_postgresql_tests": 48,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "headless_fastapi_parity_tests": 1
+      }
+    ]
+  },
+  "gate_map": [
+    {
+      "id": "AC058-001",
+      "name": "Direct compatibility",
+      "result": "pass",
+      "evidence_files": [
+        "docs/11_DEVELOPMENT/evidence/phase_0_58/DIRECT_SCHEDULER_COMPATIBILITY.json",
+        "docs/11_DEVELOPMENT/evidence/phase_0_58/DIRECT_READY_BRANCH_CONCURRENCY.json",
+        "docs/11_DEVELOPMENT/evidence/phase_0_58/AMBIENT_PREFECT_DEFAULTS.json",
+        "docs/11_DEVELOPMENT/evidence/phase_0_58/CI_INSTALLED_WORKER_PYTHON_MATRIX_2026-10-12.json"
+      ]
+    },
+    {
+      "id": "AC058-002",
+      "name": "Worker independence",
+      "result": "pass",
+      "evidence_files": [
+        "docs/11_DEVELOPMENT/evidence/phase_0_58/CI_INSTALLED_WORKER_PYTHON_MATRIX_2026-10-12.json",
+        "docs/11_DEVELOPMENT/evidence/phase_0_58/LIVE_POSTGRES_DISPATCH_WORKER_REGRESSION.json",
+        "docs/11_DEVELOPMENT/evidence/phase_0_58/CLEAN_WHEEL_FINAL_QUALIFICATION.json"
+      ]
+    },
+    {
+      "id": "AC058-003",
+      "name": "Trust before effects",
+      "result": "pass",
+      "evidence_files": [
+        "docs/11_DEVELOPMENT/evidence/phase_0_58/LIVE_POLICY_PRE_EFFECT_DENIAL.json",
+        "docs/11_DEVELOPMENT/evidence/phase_0_58/LIVE_APPROVAL_AUTHORITY_BOUNDARIES.json",
+        "docs/11_DEVELOPMENT/evidence/phase_0_58/DEPLOYMENT_DRIFT_PRECLAIM.json",
+        "docs/11_DEVELOPMENT/evidence/phase_0_58/LIVE_WORKER_CREDENTIAL_ROTATION.json",
+        "docs/11_DEVELOPMENT/evidence/phase_0_58/CI_INSTALLED_WORKER_APPROVAL_AUTHORITY_BOUNDARIES.json"
+      ]
+    },
+    {
+      "id": "AC058-004",
+      "name": "Durable dispatch",
+      "result": "pass",
+      "evidence_files": [
+        "docs/11_DEVELOPMENT/evidence/phase_0_58/LIVE_DISPATCH_CREATE_LINK_CRASH_RECOVERY.json",
+        "docs/11_DEVELOPMENT/evidence/phase_0_58/LIVE_POSTGRES_32_SUBMISSION_OUTAGE_RECOVERY.json",
+        "docs/11_DEVELOPMENT/evidence/phase_0_58/LIVE_DISPATCH_WORKER_BACKPRESSURE_AND_DISPOSAL_2026-10-12.json",
+        "docs/11_DEVELOPMENT/evidence/phase_0_58/DISPATCH_GENERATION_RECONCILIATION.json",
+        "docs/11_DEVELOPMENT/evidence/phase_0_58/CI_INSTALLED_WORKER_PYTHON_MATRIX_2026-10-12.json"
+      ]
+    },
+    {
+      "id": "AC058-005",
+      "name": "Effect and publication safety",
+      "result": "pass",
+      "evidence_files": [
+        "docs/11_DEVELOPMENT/evidence/phase_0_58/LIVE_PRE_EFFECT_WORKER_CRASH_RECOVERY.json",
+        "docs/11_DEVELOPMENT/evidence/phase_0_58/LIVE_UNSETTLED_TRANSACTION_CRASH_RECOVERY.json",
+        "docs/11_DEVELOPMENT/evidence/phase_0_58/LIVE_PARTIAL_WRITE_CRASH_RECOVERY.json",
+        "docs/11_DEVELOPMENT/evidence/phase_0_58/LIVE_CONNECTOR_COMMIT_DURING_PREFECT_API_OUTAGE_2026-10-12.json",
+        "docs/11_DEVELOPMENT/evidence/phase_0_58/LIVE_REPORT_STORE_PUBLICATION_RECOVERY.json",
+        "docs/11_DEVELOPMENT/evidence/phase_0_58/LIVE_ARTIFACT_WRITE_CRASH_RECOVERY.json",
+        "docs/11_DEVELOPMENT/evidence/phase_0_58/CI_INSTALLED_WORKER_PYTHON_MATRIX_2026-10-12.json"
+      ]
+    },
+    {
+      "id": "AC058-006",
+      "name": "Truthful status and cancellation",
+      "result": "pass",
+      "evidence_files": [
+        "docs/11_DEVELOPMENT/evidence/phase_0_58/STATUS_CANCELLATION_RECONCILIATION.json",
+        "docs/11_DEVELOPMENT/evidence/phase_0_58/TERMINAL_STATUS_DISAGREEMENT.json",
+        "docs/11_DEVELOPMENT/evidence/phase_0_58/LIVE_POST_DISPATCH_CANCELLATION.json",
+        "docs/11_DEVELOPMENT/evidence/phase_0_58/LIVE_CANCELLATION_DURING_COMMIT.json",
+        "docs/11_DEVELOPMENT/evidence/phase_0_58/LIVE_PREFECT_API_MID_EXECUTION_RECOVERY.json",
+        "docs/11_DEVELOPMENT/evidence/phase_0_58/LIVE_REPORT_STORE_PUBLICATION_RECOVERY.json",
+        "docs/11_DEVELOPMENT/evidence/phase_0_58/CI_INSTALLED_WORKER_PYTHON_MATRIX_2026-10-12.json"
+      ]
+    },
+    {
+      "id": "AC058-007",
+      "name": "Schedule authority",
+      "result": "pass",
+      "evidence_files": [
+        "docs/11_DEVELOPMENT/evidence/phase_0_58/SCHEDULE_CLOCK_POLICY.json",
+        "docs/11_DEVELOPMENT/evidence/phase_0_58/SCHEDULE_FIRING_IDEMPOTENCY.json",
+        "docs/11_DEVELOPMENT/evidence/phase_0_58/SCHEDULE_ROUTE_TRANSFER_API.json",
+        "docs/11_DEVELOPMENT/evidence/phase_0_58/LIVE_POSTGRES_SCHEDULE_ROUTE_RECOVERY.json",
+        "docs/11_DEVELOPMENT/evidence/phase_0_58/LIVE_SCHEDULED_PROCESS_EXECUTION.json",
+        "docs/11_DEVELOPMENT/evidence/phase_0_58/CI_INSTALLED_WORKER_PYTHON_MATRIX_2026-10-12.json"
+      ]
+    },
+    {
+      "id": "AC058-008",
+      "name": "Lifecycle and isolation",
+      "result": "pass",
+      "evidence_files": [
+        "docs/11_DEVELOPMENT/evidence/phase_0_58/DEPLOYMENT_REVISION_RETENTION.json",
+        "docs/11_DEVELOPMENT/evidence/phase_0_58/LIVE_MULTIPROCESS_ROUTE_RETIREMENT_ROLLBACK.json",
+        "docs/11_DEVELOPMENT/evidence/phase_0_58/CLEAN_WHEEL_ROUTE_CLEANUP_QUALIFICATION.json",
+        "docs/11_DEVELOPMENT/evidence/phase_0_58/LIVE_WORKER_CREDENTIAL_ROTATION.json",
+        "docs/11_DEVELOPMENT/evidence/phase_0_58/LIVE_DISPATCH_WORKER_BACKPRESSURE_AND_DISPOSAL_2026-10-12.json",
+        "docs/11_DEVELOPMENT/evidence/phase_0_58/CI_INSTALLED_WORKER_PYTHON_MATRIX_2026-10-12.json"
+      ]
+    },
+    {
+      "id": "AC058-009",
+      "name": "Bounded candidate qualification",
+      "result": "pass",
+      "evidence_files": [
+        "docs/11_DEVELOPMENT/evidence/phase_0_58/CI_INSTALLED_WORKER_PYTHON_MATRIX_2026-10-12.json",
+        "docs/11_DEVELOPMENT/evidence/phase_0_58/CLEAN_WHEEL_FINAL_QUALIFICATION.json"
+      ]
+    },
+    {
+      "id": "AC058-010",
+      "name": "Contract and provider compatibility",
+      "result": "pass",
+      "evidence_files": [
+        "docs/11_DEVELOPMENT/adr/ADR-027-MANAGED-PREFECT-EXECUTION.md",
+        "docs/11_DEVELOPMENT/evidence/phase_0_58/CLEAN_WHEEL_RESTRICTED_DISPATCH_CREATE_LINK.json",
+        "docs/11_DEVELOPMENT/evidence/phase_0_58/DEPLOYMENT_DRIFT_PRECLAIM.json",
+        "docs/11_DEVELOPMENT/evidence/phase_0_58/CI_INSTALLED_WORKER_PYTHON_MATRIX_2026-10-12.json"
+      ]
+    }
+  ],
+  "adjacent_work_map": [
+    {
+      "id": "058-A1",
+      "name": "Deployment lifecycle and retention",
+      "result": "pass",
+      "evidence_files": [
+        "docs/11_DEVELOPMENT/evidence/phase_0_58/DEPLOYMENT_REVISION_RETENTION.json",
+        "docs/11_DEVELOPMENT/evidence/phase_0_58/LIVE_DEPLOYMENT_REVISION_WORKER_RETENTION.json",
+        "docs/11_DEVELOPMENT/evidence/phase_0_58/LIVE_MULTIPROCESS_ROUTE_RETIREMENT_ROLLBACK.json",
+        "docs/11_DEVELOPMENT/evidence/phase_0_58/CLEAN_WHEEL_ROUTE_CLEANUP_QUALIFICATION.json",
+        "docs/11_DEVELOPMENT/evidence/phase_0_58/CI_INSTALLED_WORKER_PYTHON_MATRIX_2026-10-12.json"
+      ]
+    },
+    {
+      "id": "058-A2",
+      "name": "Dispatch supervision and backpressure",
+      "result": "pass",
+      "evidence_files": [
+        "docs/11_DEVELOPMENT/evidence/phase_0_58/LIVE_POSTGRES_32_SUBMISSION_OUTAGE_RECOVERY.json",
+        "docs/11_DEVELOPMENT/evidence/phase_0_58/LIVE_DISPATCH_WORKER_BACKPRESSURE_AND_DISPOSAL_2026-10-12.json",
+        "docs/11_DEVELOPMENT/evidence/phase_0_58/CI_INSTALLED_WORKER_32_SUBMISSION_OUTAGE_2026-10-12.json",
+        "docs/11_DEVELOPMENT/evidence/phase_0_58/CI_INSTALLED_WORKER_PYTHON_MATRIX_2026-10-12.json"
+      ]
+    },
+    {
+      "id": "058-A3",
+      "name": "Trust and admission parity",
+      "result": "pass",
+      "evidence_files": [
+        "docs/11_DEVELOPMENT/evidence/phase_0_58/LIVE_APPROVAL_AUTHORITY_BOUNDARIES.json",
+        "docs/11_DEVELOPMENT/evidence/phase_0_58/LIVE_WORKER_CREDENTIAL_ROTATION.json",
+        "docs/11_DEVELOPMENT/evidence/phase_0_58/LIVE_RUNTIME_ROUTE_LEAST_PRIVILEGE.json",
+        "docs/11_DEVELOPMENT/evidence/phase_0_58/CI_INSTALLED_WORKER_APPROVAL_AUTHORITY_BOUNDARIES.json",
+        "docs/11_DEVELOPMENT/evidence/phase_0_58/CI_INSTALLED_WORKER_PYTHON_MATRIX_2026-10-12.json"
+      ]
+    },
+    {
+      "id": "058-A4",
+      "name": "Reproducible qualification and adoption",
+      "result": "pass",
+      "evidence_files": [
+        "docs/11_DEVELOPMENT/evidence/phase_0_58/CI_INSTALLED_WORKER_PYTHON_MATRIX_2026-10-12.json",
+        "docs/11_DEVELOPMENT/evidence/phase_0_58/DIRECT_SCHEDULER_COMPATIBILITY.json"
+      ]
+    }
+  ],
+  "issue_acceptance_map": [
+    {
+      "issue": 290,
+      "title": "[Epic][etlantic-prefect] Add managed Prefect execution on ETLantic's durable runtime",
+      "url": "https://github.com/eddiethedean/etlantic/issues/290",
+      "result": "satisfied",
+      "acceptance_criteria": [
+        {
+          "criterion_id": "290-C01",
+          "criterion": "Existing local direct execution remains compatible with isolated correlation and tested failure/concurrency behavior.",
+          "result": "satisfied",
+          "evidence_files": [
+            "docs/11_DEVELOPMENT/evidence/phase_0_58/DIRECT_SCHEDULER_COMPATIBILITY.json",
+            "docs/11_DEVELOPMENT/evidence/phase_0_58/DIRECT_READY_BRANCH_CONCURRENCY.json",
+            "docs/11_DEVELOPMENT/evidence/phase_0_58/AMBIENT_PREFECT_DEFAULTS.json",
+            "docs/11_DEVELOPMENT/evidence/phase_0_58/CI_INSTALLED_WORKER_PYTHON_MATRIX_2026-10-12.json",
+            "docs/11_DEVELOPMENT/evidence/phase_0_58/LIVE_POSTGRES_32_SUBMISSION_OUTAGE_RECOVERY.json",
+            "docs/11_DEVELOPMENT/evidence/phase_0_58/LIVE_DISPATCH_CREATE_LINK_CRASH_RECOVERY.json",
+            "docs/11_DEVELOPMENT/evidence/phase_0_58/LIVE_PREFECT_API_OUTAGE_RECOVERY.json",
+            "docs/11_DEVELOPMENT/evidence/phase_0_58/LIVE_POSTGRES_SCHEDULE_ROUTE_RECOVERY.json",
+            "docs/11_DEVELOPMENT/evidence/phase_0_58/LIVE_SCHEDULED_PROCESS_EXECUTION.json",
+            "docs/11_DEVELOPMENT/evidence/phase_0_58/LIVE_POST_DISPATCH_CANCELLATION.json",
+            "docs/11_DEVELOPMENT/evidence/phase_0_58/LIVE_REPORT_STORE_PUBLICATION_RECOVERY.json",
+            "docs/11_DEVELOPMENT/evidence/phase_0_58/LIVE_WORKER_CREDENTIAL_ROTATION.json"
+          ],
+          "verification_sources": [
+            "tests/prefect/test_prefect_scheduler.py",
+            "tests/prefect/test_managed_prefect_0_58.py",
+            "tests/sqlmodel/test_managed_runtime_schema_privileges_0_57.py",
+            "tests/fastapi/test_managed_application_0_56.py"
+          ]
+        },
+        {
+          "criterion_id": "290-C02",
+          "criterion": "Remote execution uses only trusted immutable accepted inputs and a public targeted execution path.",
+          "result": "satisfied",
+          "evidence_files": [
+            "docs/11_DEVELOPMENT/evidence/phase_0_58/DIRECT_SCHEDULER_COMPATIBILITY.json",
+            "docs/11_DEVELOPMENT/evidence/phase_0_58/DIRECT_READY_BRANCH_CONCURRENCY.json",
+            "docs/11_DEVELOPMENT/evidence/phase_0_58/AMBIENT_PREFECT_DEFAULTS.json",
+            "docs/11_DEVELOPMENT/evidence/phase_0_58/CI_INSTALLED_WORKER_PYTHON_MATRIX_2026-10-12.json",
+            "docs/11_DEVELOPMENT/evidence/phase_0_58/LIVE_POSTGRES_32_SUBMISSION_OUTAGE_RECOVERY.json",
+            "docs/11_DEVELOPMENT/evidence/phase_0_58/LIVE_DISPATCH_CREATE_LINK_CRASH_RECOVERY.json",
+            "docs/11_DEVELOPMENT/evidence/phase_0_58/LIVE_PREFECT_API_OUTAGE_RECOVERY.json",
+            "docs/11_DEVELOPMENT/evidence/phase_0_58/LIVE_POSTGRES_SCHEDULE_ROUTE_RECOVERY.json",
+            "docs/11_DEVELOPMENT/evidence/phase_0_58/LIVE_SCHEDULED_PROCESS_EXECUTION.json",
+            "docs/11_DEVELOPMENT/evidence/phase_0_58/LIVE_POST_DISPATCH_CANCELLATION.json",
+            "docs/11_DEVELOPMENT/evidence/phase_0_58/LIVE_REPORT_STORE_PUBLICATION_RECOVERY.json",
+            "docs/11_DEVELOPMENT/evidence/phase_0_58/LIVE_WORKER_CREDENTIAL_ROTATION.json"
+          ],
+          "verification_sources": [
+            "tests/prefect/test_prefect_scheduler.py",
+            "tests/prefect/test_managed_prefect_0_58.py",
+            "tests/sqlmodel/test_managed_runtime_schema_privileges_0_57.py",
+            "tests/fastapi/test_managed_application_0_56.py"
+          ]
+        },
+        {
+          "criterion_id": "290-C03",
+          "criterion": "Dispatch response loss and duplicate delivery recover without bypassing ETLantic ownership or replaying uncertain effects.",
+          "result": "satisfied",
+          "evidence_files": [
+            "docs/11_DEVELOPMENT/evidence/phase_0_58/DIRECT_SCHEDULER_COMPATIBILITY.json",
+            "docs/11_DEVELOPMENT/evidence/phase_0_58/DIRECT_READY_BRANCH_CONCURRENCY.json",
+            "docs/11_DEVELOPMENT/evidence/phase_0_58/AMBIENT_PREFECT_DEFAULTS.json",
+            "docs/11_DEVELOPMENT/evidence/phase_0_58/CI_INSTALLED_WORKER_PYTHON_MATRIX_2026-10-12.json",
+            "docs/11_DEVELOPMENT/evidence/phase_0_58/LIVE_POSTGRES_32_SUBMISSION_OUTAGE_RECOVERY.json",
+            "docs/11_DEVELOPMENT/evidence/phase_0_58/LIVE_DISPATCH_CREATE_LINK_CRASH_RECOVERY.json",
+            "docs/11_DEVELOPMENT/evidence/phase_0_58/LIVE_PREFECT_API_OUTAGE_RECOVERY.json",
+            "docs/11_DEVELOPMENT/evidence/phase_0_58/LIVE_POSTGRES_SCHEDULE_ROUTE_RECOVERY.json",
+            "docs/11_DEVELOPMENT/evidence/phase_0_58/LIVE_SCHEDULED_PROCESS_EXECUTION.json",
+            "docs/11_DEVELOPMENT/evidence/phase_0_58/LIVE_POST_DISPATCH_CANCELLATION.json",
+            "docs/11_DEVELOPMENT/evidence/phase_0_58/LIVE_REPORT_STORE_PUBLICATION_RECOVERY.json",
+            "docs/11_DEVELOPMENT/evidence/phase_0_58/LIVE_WORKER_CREDENTIAL_ROTATION.json"
+          ],
+          "verification_sources": [
+            "tests/prefect/test_prefect_scheduler.py",
+            "tests/prefect/test_managed_prefect_0_58.py",
+            "tests/sqlmodel/test_managed_runtime_schema_privileges_0_57.py",
+            "tests/fastapi/test_managed_application_0_56.py"
+          ]
+        },
+        {
+          "criterion_id": "290-C04",
+          "criterion": "Status/cancellation preserve distinct orchestration, execution, and effect/publication evidence.",
+          "result": "satisfied",
+          "evidence_files": [
+            "docs/11_DEVELOPMENT/evidence/phase_0_58/DIRECT_SCHEDULER_COMPATIBILITY.json",
+            "docs/11_DEVELOPMENT/evidence/phase_0_58/DIRECT_READY_BRANCH_CONCURRENCY.json",
+            "docs/11_DEVELOPMENT/evidence/phase_0_58/AMBIENT_PREFECT_DEFAULTS.json",
+            "docs/11_DEVELOPMENT/evidence/phase_0_58/CI_INSTALLED_WORKER_PYTHON_MATRIX_2026-10-12.json",
+            "docs/11_DEVELOPMENT/evidence/phase_0_58/LIVE_POSTGRES_32_SUBMISSION_OUTAGE_RECOVERY.json",
+            "docs/11_DEVELOPMENT/evidence/phase_0_58/LIVE_DISPATCH_CREATE_LINK_CRASH_RECOVERY.json",
+            "docs/11_DEVELOPMENT/evidence/phase_0_58/LIVE_PREFECT_API_OUTAGE_RECOVERY.json",
+            "docs/11_DEVELOPMENT/evidence/phase_0_58/LIVE_POSTGRES_SCHEDULE_ROUTE_RECOVERY.json",
+            "docs/11_DEVELOPMENT/evidence/phase_0_58/LIVE_SCHEDULED_PROCESS_EXECUTION.json",
+            "docs/11_DEVELOPMENT/evidence/phase_0_58/LIVE_POST_DISPATCH_CANCELLATION.json",
+            "docs/11_DEVELOPMENT/evidence/phase_0_58/LIVE_REPORT_STORE_PUBLICATION_RECOVERY.json",
+            "docs/11_DEVELOPMENT/evidence/phase_0_58/LIVE_WORKER_CREDENTIAL_ROTATION.json"
+          ],
+          "verification_sources": [
+            "tests/prefect/test_prefect_scheduler.py",
+            "tests/prefect/test_managed_prefect_0_58.py",
+            "tests/sqlmodel/test_managed_runtime_schema_privileges_0_57.py",
+            "tests/fastapi/test_managed_application_0_56.py"
+          ]
+        },
+        {
+          "criterion_id": "290-C05",
+          "criterion": "Recurring triggers preserve canonical firing identity and fresh admission with one timer authority.",
+          "result": "satisfied",
+          "evidence_files": [
+            "docs/11_DEVELOPMENT/evidence/phase_0_58/DIRECT_SCHEDULER_COMPATIBILITY.json",
+            "docs/11_DEVELOPMENT/evidence/phase_0_58/DIRECT_READY_BRANCH_CONCURRENCY.json",
+            "docs/11_DEVELOPMENT/evidence/phase_0_58/AMBIENT_PREFECT_DEFAULTS.json",
+            "docs/11_DEVELOPMENT/evidence/phase_0_58/CI_INSTALLED_WORKER_PYTHON_MATRIX_2026-10-12.json",
+            "docs/11_DEVELOPMENT/evidence/phase_0_58/LIVE_POSTGRES_32_SUBMISSION_OUTAGE_RECOVERY.json",
+            "docs/11_DEVELOPMENT/evidence/phase_0_58/LIVE_DISPATCH_CREATE_LINK_CRASH_RECOVERY.json",
+            "docs/11_DEVELOPMENT/evidence/phase_0_58/LIVE_PREFECT_API_OUTAGE_RECOVERY.json",
+            "docs/11_DEVELOPMENT/evidence/phase_0_58/LIVE_POSTGRES_SCHEDULE_ROUTE_RECOVERY.json",
+            "docs/11_DEVELOPMENT/evidence/phase_0_58/LIVE_SCHEDULED_PROCESS_EXECUTION.json",
+            "docs/11_DEVELOPMENT/evidence/phase_0_58/LIVE_POST_DISPATCH_CANCELLATION.json",
+            "docs/11_DEVELOPMENT/evidence/phase_0_58/LIVE_REPORT_STORE_PUBLICATION_RECOVERY.json",
+            "docs/11_DEVELOPMENT/evidence/phase_0_58/LIVE_WORKER_CREDENTIAL_ROTATION.json"
+          ],
+          "verification_sources": [
+            "tests/prefect/test_prefect_scheduler.py",
+            "tests/prefect/test_managed_prefect_0_58.py",
+            "tests/sqlmodel/test_managed_runtime_schema_privileges_0_57.py",
+            "tests/fastapi/test_managed_application_0_56.py"
+          ]
+        },
+        {
+          "criterion_id": "290-C06",
+          "criterion": "Installed-artifact, live-worker, PostgreSQL, trust/revocation, and crash tests establish the exact published matrix.",
+          "result": "satisfied",
+          "evidence_files": [
+            "docs/11_DEVELOPMENT/evidence/phase_0_58/DIRECT_SCHEDULER_COMPATIBILITY.json",
+            "docs/11_DEVELOPMENT/evidence/phase_0_58/DIRECT_READY_BRANCH_CONCURRENCY.json",
+            "docs/11_DEVELOPMENT/evidence/phase_0_58/AMBIENT_PREFECT_DEFAULTS.json",
+            "docs/11_DEVELOPMENT/evidence/phase_0_58/CI_INSTALLED_WORKER_PYTHON_MATRIX_2026-10-12.json",
+            "docs/11_DEVELOPMENT/evidence/phase_0_58/LIVE_POSTGRES_32_SUBMISSION_OUTAGE_RECOVERY.json",
+            "docs/11_DEVELOPMENT/evidence/phase_0_58/LIVE_DISPATCH_CREATE_LINK_CRASH_RECOVERY.json",
+            "docs/11_DEVELOPMENT/evidence/phase_0_58/LIVE_PREFECT_API_OUTAGE_RECOVERY.json",
+            "docs/11_DEVELOPMENT/evidence/phase_0_58/LIVE_POSTGRES_SCHEDULE_ROUTE_RECOVERY.json",
+            "docs/11_DEVELOPMENT/evidence/phase_0_58/LIVE_SCHEDULED_PROCESS_EXECUTION.json",
+            "docs/11_DEVELOPMENT/evidence/phase_0_58/LIVE_POST_DISPATCH_CANCELLATION.json",
+            "docs/11_DEVELOPMENT/evidence/phase_0_58/LIVE_REPORT_STORE_PUBLICATION_RECOVERY.json",
+            "docs/11_DEVELOPMENT/evidence/phase_0_58/LIVE_WORKER_CREDENTIAL_ROTATION.json"
+          ],
+          "verification_sources": [
+            "tests/prefect/test_prefect_scheduler.py",
+            "tests/prefect/test_managed_prefect_0_58.py",
+            "tests/sqlmodel/test_managed_runtime_schema_privileges_0_57.py",
+            "tests/fastapi/test_managed_application_0_56.py"
+          ]
+        },
+        {
+          "criterion_id": "290-C07",
+          "criterion": "Runnable host examples reuse the existing API; qualification claims and skips are explicit.",
+          "result": "satisfied",
+          "evidence_files": [
+            "docs/11_DEVELOPMENT/evidence/phase_0_58/DIRECT_SCHEDULER_COMPATIBILITY.json",
+            "docs/11_DEVELOPMENT/evidence/phase_0_58/DIRECT_READY_BRANCH_CONCURRENCY.json",
+            "docs/11_DEVELOPMENT/evidence/phase_0_58/AMBIENT_PREFECT_DEFAULTS.json",
+            "docs/11_DEVELOPMENT/evidence/phase_0_58/CI_INSTALLED_WORKER_PYTHON_MATRIX_2026-10-12.json",
+            "docs/11_DEVELOPMENT/evidence/phase_0_58/LIVE_POSTGRES_32_SUBMISSION_OUTAGE_RECOVERY.json",
+            "docs/11_DEVELOPMENT/evidence/phase_0_58/LIVE_DISPATCH_CREATE_LINK_CRASH_RECOVERY.json",
+            "docs/11_DEVELOPMENT/evidence/phase_0_58/LIVE_PREFECT_API_OUTAGE_RECOVERY.json",
+            "docs/11_DEVELOPMENT/evidence/phase_0_58/LIVE_POSTGRES_SCHEDULE_ROUTE_RECOVERY.json",
+            "docs/11_DEVELOPMENT/evidence/phase_0_58/LIVE_SCHEDULED_PROCESS_EXECUTION.json",
+            "docs/11_DEVELOPMENT/evidence/phase_0_58/LIVE_POST_DISPATCH_CANCELLATION.json",
+            "docs/11_DEVELOPMENT/evidence/phase_0_58/LIVE_REPORT_STORE_PUBLICATION_RECOVERY.json",
+            "docs/11_DEVELOPMENT/evidence/phase_0_58/LIVE_WORKER_CREDENTIAL_ROTATION.json"
+          ],
+          "verification_sources": [
+            "tests/prefect/test_prefect_scheduler.py",
+            "tests/prefect/test_managed_prefect_0_58.py",
+            "tests/sqlmodel/test_managed_runtime_schema_privileges_0_57.py",
+            "tests/fastapi/test_managed_application_0_56.py"
+          ]
+        }
+      ]
+    },
+    {
+      "issue": 291,
+      "title": "[feature][etlantic-prefect] Isolate direct-run state and qualify scheduler failure semantics",
+      "url": "https://github.com/eddiethedean/etlantic/issues/291",
+      "result": "satisfied",
+      "acceptance_criteria": [
+        {
+          "criterion_id": "291-C01",
+          "criterion": "Barrier-controlled overlapping calls on the same scheduler instance, with distinct run IDs and separate runtimes, produce disjoint and correctly attributed correlation maps, including success/failure overlap.",
+          "result": "satisfied",
+          "evidence_files": [
+            "docs/11_DEVELOPMENT/evidence/phase_0_58/DIRECT_SCHEDULER_COMPATIBILITY.json",
+            "docs/11_DEVELOPMENT/evidence/phase_0_58/DIRECT_READY_BRANCH_CONCURRENCY.json",
+            "docs/11_DEVELOPMENT/evidence/phase_0_58/AMBIENT_PREFECT_DEFAULTS.json",
+            "docs/11_DEVELOPMENT/evidence/phase_0_58/CI_INSTALLED_WORKER_PYTHON_MATRIX_2026-10-12.json"
+          ],
+          "verification_sources": [
+            "tests/prefect/test_prefect_scheduler.py"
+          ]
+        },
+        {
+          "criterion_id": "291-C02",
+          "criterion": "A node failure prevents dependent work and cannot be presented as an ETLantic success or a successful outer flow merely because a failed report was returned; report evidence remains recoverable through the existing runtime contract.",
+          "result": "satisfied",
+          "evidence_files": [
+            "docs/11_DEVELOPMENT/evidence/phase_0_58/DIRECT_SCHEDULER_COMPATIBILITY.json",
+            "docs/11_DEVELOPMENT/evidence/phase_0_58/DIRECT_READY_BRANCH_CONCURRENCY.json",
+            "docs/11_DEVELOPMENT/evidence/phase_0_58/AMBIENT_PREFECT_DEFAULTS.json",
+            "docs/11_DEVELOPMENT/evidence/phase_0_58/CI_INSTALLED_WORKER_PYTHON_MATRIX_2026-10-12.json"
+          ],
+          "verification_sources": [
+            "tests/prefect/test_prefect_scheduler.py"
+          ]
+        },
+        {
+          "criterion_id": "291-C03",
+          "criterion": "Ready branches obey the resolved concurrency limit; partial selection preserves dependency closure.",
+          "result": "satisfied",
+          "evidence_files": [
+            "docs/11_DEVELOPMENT/evidence/phase_0_58/DIRECT_SCHEDULER_COMPATIBILITY.json",
+            "docs/11_DEVELOPMENT/evidence/phase_0_58/DIRECT_READY_BRANCH_CONCURRENCY.json",
+            "docs/11_DEVELOPMENT/evidence/phase_0_58/AMBIENT_PREFECT_DEFAULTS.json",
+            "docs/11_DEVELOPMENT/evidence/phase_0_58/CI_INSTALLED_WORKER_PYTHON_MATRIX_2026-10-12.json"
+          ],
+          "verification_sources": [
+            "tests/prefect/test_prefect_scheduler.py"
+          ]
+        },
+        {
+          "criterion_id": "291-C04",
+          "criterion": "Cancellation and timeout are exercised where supported; unqualified requirements receive deterministic support findings rather than positive claims.",
+          "result": "satisfied",
+          "evidence_files": [
+            "docs/11_DEVELOPMENT/evidence/phase_0_58/DIRECT_SCHEDULER_COMPATIBILITY.json",
+            "docs/11_DEVELOPMENT/evidence/phase_0_58/DIRECT_READY_BRANCH_CONCURRENCY.json",
+            "docs/11_DEVELOPMENT/evidence/phase_0_58/AMBIENT_PREFECT_DEFAULTS.json",
+            "docs/11_DEVELOPMENT/evidence/phase_0_58/CI_INSTALLED_WORKER_PYTHON_MATRIX_2026-10-12.json"
+          ],
+          "verification_sources": [
+            "tests/prefect/test_prefect_scheduler.py"
+          ]
+        },
+        {
+          "criterion_id": "291-C05",
+          "criterion": "Outer Prefect retries remain disabled for effectful ETL execution; ETLantic retry decisions are preserved.",
+          "result": "satisfied",
+          "evidence_files": [
+            "docs/11_DEVELOPMENT/evidence/phase_0_58/DIRECT_SCHEDULER_COMPATIBILITY.json",
+            "docs/11_DEVELOPMENT/evidence/phase_0_58/DIRECT_READY_BRANCH_CONCURRENCY.json",
+            "docs/11_DEVELOPMENT/evidence/phase_0_58/AMBIENT_PREFECT_DEFAULTS.json",
+            "docs/11_DEVELOPMENT/evidence/phase_0_58/CI_INSTALLED_WORKER_PYTHON_MATRIX_2026-10-12.json"
+          ],
+          "verification_sources": [
+            "tests/prefect/test_prefect_scheduler.py"
+          ]
+        },
+        {
+          "criterion_id": "291-C06",
+          "criterion": "Core import isolation, scheduler discovery, existing report keys, and the `PMADP500` rejection of direct adaptive `/2` remain compatible.",
+          "result": "satisfied",
+          "evidence_files": [
+            "docs/11_DEVELOPMENT/evidence/phase_0_58/DIRECT_SCHEDULER_COMPATIBILITY.json",
+            "docs/11_DEVELOPMENT/evidence/phase_0_58/DIRECT_READY_BRANCH_CONCURRENCY.json",
+            "docs/11_DEVELOPMENT/evidence/phase_0_58/AMBIENT_PREFECT_DEFAULTS.json",
+            "docs/11_DEVELOPMENT/evidence/phase_0_58/CI_INSTALLED_WORKER_PYTHON_MATRIX_2026-10-12.json"
+          ],
+          "verification_sources": [
+            "tests/prefect/test_prefect_scheduler.py"
+          ]
+        }
+      ]
+    },
+    {
+      "issue": 292,
+      "title": "[feature][etlantic-prefect] Define managed execution references and admission ownership",
+      "url": "https://github.com/eddiethedean/etlantic/issues/292",
+      "result": "satisfied",
+      "acceptance_criteria": [
+        {
+          "criterion_id": "292-C01",
+          "criterion": "ADR fixes public reference/factory/targeted-execution interfaces, compatibility/version rules, payload bounds, retention requirements, and diagnostic codes.",
+          "result": "satisfied",
+          "evidence_files": [
+            "docs/11_DEVELOPMENT/evidence/phase_0_58/PRE_EXECUTION_POLICY_UNIT.json",
+            "docs/11_DEVELOPMENT/evidence/phase_0_58/LIVE_POLICY_PRE_EFFECT_DENIAL.json",
+            "docs/11_DEVELOPMENT/evidence/phase_0_58/LIVE_APPROVAL_AUTHORITY_BOUNDARIES.json",
+            "docs/11_DEVELOPMENT/evidence/phase_0_58/DEPLOYMENT_DRIFT_PRECLAIM.json",
+            "docs/11_DEVELOPMENT/evidence/phase_0_58/LIVE_RUNTIME_ROUTE_LEAST_PRIVILEGE.json",
+            "docs/11_DEVELOPMENT/evidence/phase_0_58/CLEAN_WHEEL_RESTRICTED_DISPATCH_CREATE_LINK.json",
+            "docs/11_DEVELOPMENT/evidence/phase_0_58/CI_INSTALLED_WORKER_APPROVAL_AUTHORITY_BOUNDARIES.json",
+            "docs/11_DEVELOPMENT/evidence/phase_0_58/CI_INSTALLED_WORKER_PYTHON_MATRIX_2026-10-12.json"
+          ],
+          "verification_sources": [
+            "tests/prefect/test_managed_prefect_0_58.py",
+            "tests/sqlmodel/test_managed_runtime_schema_privileges_0_57.py",
+            "tests/fastapi/test_managed_application_0_56.py"
+          ]
+        },
+        {
+          "criterion_id": "292-C02",
+          "criterion": "Reference decoding rejects unknown schemas, tampering, scope mismatch, and unsupported version combinations before connector I/O.",
+          "result": "satisfied",
+          "evidence_files": [
+            "docs/11_DEVELOPMENT/evidence/phase_0_58/PRE_EXECUTION_POLICY_UNIT.json",
+            "docs/11_DEVELOPMENT/evidence/phase_0_58/LIVE_POLICY_PRE_EFFECT_DENIAL.json",
+            "docs/11_DEVELOPMENT/evidence/phase_0_58/LIVE_APPROVAL_AUTHORITY_BOUNDARIES.json",
+            "docs/11_DEVELOPMENT/evidence/phase_0_58/DEPLOYMENT_DRIFT_PRECLAIM.json",
+            "docs/11_DEVELOPMENT/evidence/phase_0_58/LIVE_RUNTIME_ROUTE_LEAST_PRIVILEGE.json",
+            "docs/11_DEVELOPMENT/evidence/phase_0_58/CLEAN_WHEEL_RESTRICTED_DISPATCH_CREATE_LINK.json",
+            "docs/11_DEVELOPMENT/evidence/phase_0_58/CI_INSTALLED_WORKER_APPROVAL_AUTHORITY_BOUNDARIES.json",
+            "docs/11_DEVELOPMENT/evidence/phase_0_58/CI_INSTALLED_WORKER_PYTHON_MATRIX_2026-10-12.json"
+          ],
+          "verification_sources": [
+            "tests/prefect/test_managed_prefect_0_58.py",
+            "tests/sqlmodel/test_managed_runtime_schema_privileges_0_57.py",
+            "tests/fastapi/test_managed_application_0_56.py"
+          ]
+        },
+        {
+          "criterion_id": "292-C03",
+          "criterion": "Runtime construction uses trusted deployment configuration; run parameters cannot select arbitrary import paths, URLs, backend factories, credentials, job variables, or tenant authority.",
+          "result": "satisfied",
+          "evidence_files": [
+            "docs/11_DEVELOPMENT/evidence/phase_0_58/PRE_EXECUTION_POLICY_UNIT.json",
+            "docs/11_DEVELOPMENT/evidence/phase_0_58/LIVE_POLICY_PRE_EFFECT_DENIAL.json",
+            "docs/11_DEVELOPMENT/evidence/phase_0_58/LIVE_APPROVAL_AUTHORITY_BOUNDARIES.json",
+            "docs/11_DEVELOPMENT/evidence/phase_0_58/DEPLOYMENT_DRIFT_PRECLAIM.json",
+            "docs/11_DEVELOPMENT/evidence/phase_0_58/LIVE_RUNTIME_ROUTE_LEAST_PRIVILEGE.json",
+            "docs/11_DEVELOPMENT/evidence/phase_0_58/CLEAN_WHEEL_RESTRICTED_DISPATCH_CREATE_LINK.json",
+            "docs/11_DEVELOPMENT/evidence/phase_0_58/CI_INSTALLED_WORKER_APPROVAL_AUTHORITY_BOUNDARIES.json",
+            "docs/11_DEVELOPMENT/evidence/phase_0_58/CI_INSTALLED_WORKER_PYTHON_MATRIX_2026-10-12.json"
+          ],
+          "verification_sources": [
+            "tests/prefect/test_managed_prefect_0_58.py",
+            "tests/sqlmodel/test_managed_runtime_schema_privileges_0_57.py",
+            "tests/fastapi/test_managed_application_0_56.py"
+          ]
+        },
+        {
+          "criterion_id": "292-C04",
+          "criterion": "Direct and managed capability claims are separate; adding managed mode does not remove direct `require_deployment` rejection or imply external DAG compilation.",
+          "result": "satisfied",
+          "evidence_files": [
+            "docs/11_DEVELOPMENT/evidence/phase_0_58/PRE_EXECUTION_POLICY_UNIT.json",
+            "docs/11_DEVELOPMENT/evidence/phase_0_58/LIVE_POLICY_PRE_EFFECT_DENIAL.json",
+            "docs/11_DEVELOPMENT/evidence/phase_0_58/LIVE_APPROVAL_AUTHORITY_BOUNDARIES.json",
+            "docs/11_DEVELOPMENT/evidence/phase_0_58/DEPLOYMENT_DRIFT_PRECLAIM.json",
+            "docs/11_DEVELOPMENT/evidence/phase_0_58/LIVE_RUNTIME_ROUTE_LEAST_PRIVILEGE.json",
+            "docs/11_DEVELOPMENT/evidence/phase_0_58/CLEAN_WHEEL_RESTRICTED_DISPATCH_CREATE_LINK.json",
+            "docs/11_DEVELOPMENT/evidence/phase_0_58/CI_INSTALLED_WORKER_APPROVAL_AUTHORITY_BOUNDARIES.json",
+            "docs/11_DEVELOPMENT/evidence/phase_0_58/CI_INSTALLED_WORKER_PYTHON_MATRIX_2026-10-12.json"
+          ],
+          "verification_sources": [
+            "tests/prefect/test_managed_prefect_0_58.py",
+            "tests/sqlmodel/test_managed_runtime_schema_privileges_0_57.py",
+            "tests/fastapi/test_managed_application_0_56.py"
+          ]
+        },
+        {
+          "criterion_id": "292-C05",
+          "criterion": "Initial managed support is an explicitly qualified static-batch `/1` matrix. Adaptive `/2`, streaming, maps, and branches remain rejected until separately qualified.",
+          "result": "satisfied",
+          "evidence_files": [
+            "docs/11_DEVELOPMENT/evidence/phase_0_58/PRE_EXECUTION_POLICY_UNIT.json",
+            "docs/11_DEVELOPMENT/evidence/phase_0_58/LIVE_POLICY_PRE_EFFECT_DENIAL.json",
+            "docs/11_DEVELOPMENT/evidence/phase_0_58/LIVE_APPROVAL_AUTHORITY_BOUNDARIES.json",
+            "docs/11_DEVELOPMENT/evidence/phase_0_58/DEPLOYMENT_DRIFT_PRECLAIM.json",
+            "docs/11_DEVELOPMENT/evidence/phase_0_58/LIVE_RUNTIME_ROUTE_LEAST_PRIVILEGE.json",
+            "docs/11_DEVELOPMENT/evidence/phase_0_58/CLEAN_WHEEL_RESTRICTED_DISPATCH_CREATE_LINK.json",
+            "docs/11_DEVELOPMENT/evidence/phase_0_58/CI_INSTALLED_WORKER_APPROVAL_AUTHORITY_BOUNDARIES.json",
+            "docs/11_DEVELOPMENT/evidence/phase_0_58/CI_INSTALLED_WORKER_PYTHON_MATRIX_2026-10-12.json"
+          ],
+          "verification_sources": [
+            "tests/prefect/test_managed_prefect_0_58.py",
+            "tests/sqlmodel/test_managed_runtime_schema_privileges_0_57.py",
+            "tests/fastapi/test_managed_application_0_56.py"
+          ]
+        },
+        {
+          "criterion_id": "292-C06",
+          "criterion": "Duplicate references resolve to the same accepted work; cancelled, expired, revoked, or terminal work cannot start a new effectful attempt by virtue of a Prefect rerun.",
+          "result": "satisfied",
+          "evidence_files": [
+            "docs/11_DEVELOPMENT/evidence/phase_0_58/PRE_EXECUTION_POLICY_UNIT.json",
+            "docs/11_DEVELOPMENT/evidence/phase_0_58/LIVE_POLICY_PRE_EFFECT_DENIAL.json",
+            "docs/11_DEVELOPMENT/evidence/phase_0_58/LIVE_APPROVAL_AUTHORITY_BOUNDARIES.json",
+            "docs/11_DEVELOPMENT/evidence/phase_0_58/DEPLOYMENT_DRIFT_PRECLAIM.json",
+            "docs/11_DEVELOPMENT/evidence/phase_0_58/LIVE_RUNTIME_ROUTE_LEAST_PRIVILEGE.json",
+            "docs/11_DEVELOPMENT/evidence/phase_0_58/CLEAN_WHEEL_RESTRICTED_DISPATCH_CREATE_LINK.json",
+            "docs/11_DEVELOPMENT/evidence/phase_0_58/CI_INSTALLED_WORKER_APPROVAL_AUTHORITY_BOUNDARIES.json",
+            "docs/11_DEVELOPMENT/evidence/phase_0_58/CI_INSTALLED_WORKER_PYTHON_MATRIX_2026-10-12.json"
+          ],
+          "verification_sources": [
+            "tests/prefect/test_managed_prefect_0_58.py",
+            "tests/sqlmodel/test_managed_runtime_schema_privileges_0_57.py",
+            "tests/fastapi/test_managed_application_0_56.py"
+          ]
+        },
+        {
+          "criterion_id": "292-C07",
+          "criterion": "Tests exercise authorize-before-lookup, accepted authority, hash/version drift, secret-free payloads, and public installed-artifact imports.",
+          "result": "satisfied",
+          "evidence_files": [
+            "docs/11_DEVELOPMENT/evidence/phase_0_58/PRE_EXECUTION_POLICY_UNIT.json",
+            "docs/11_DEVELOPMENT/evidence/phase_0_58/LIVE_POLICY_PRE_EFFECT_DENIAL.json",
+            "docs/11_DEVELOPMENT/evidence/phase_0_58/LIVE_APPROVAL_AUTHORITY_BOUNDARIES.json",
+            "docs/11_DEVELOPMENT/evidence/phase_0_58/DEPLOYMENT_DRIFT_PRECLAIM.json",
+            "docs/11_DEVELOPMENT/evidence/phase_0_58/LIVE_RUNTIME_ROUTE_LEAST_PRIVILEGE.json",
+            "docs/11_DEVELOPMENT/evidence/phase_0_58/CLEAN_WHEEL_RESTRICTED_DISPATCH_CREATE_LINK.json",
+            "docs/11_DEVELOPMENT/evidence/phase_0_58/CI_INSTALLED_WORKER_APPROVAL_AUTHORITY_BOUNDARIES.json",
+            "docs/11_DEVELOPMENT/evidence/phase_0_58/CI_INSTALLED_WORKER_PYTHON_MATRIX_2026-10-12.json"
+          ],
+          "verification_sources": [
+            "tests/prefect/test_managed_prefect_0_58.py",
+            "tests/sqlmodel/test_managed_runtime_schema_privileges_0_57.py",
+            "tests/fastapi/test_managed_application_0_56.py"
+          ]
+        }
+      ]
+    },
+    {
+      "issue": 293,
+      "title": "[feature][etlantic-prefect] Add importable managed flows with worker-side runtime reconstruction",
+      "url": "https://github.com/eddiethedean/etlantic/issues/293",
+      "result": "satisfied",
+      "acceptance_criteria": [
+        {
+          "criterion_id": "293-C01",
+          "criterion": "An installed-package subprocess executes an accepted immutable reference with no live submitter objects; the submitter can exit before execution starts.",
+          "result": "satisfied",
+          "evidence_files": [
+            "docs/11_DEVELOPMENT/evidence/phase_0_58/CI_INSTALLED_WORKER_PYTHON_MATRIX_2026-10-12.json",
+            "docs/11_DEVELOPMENT/evidence/phase_0_58/LIVE_PRE_EFFECT_WORKER_CRASH_RECOVERY.json",
+            "docs/11_DEVELOPMENT/evidence/phase_0_58/LIVE_UNSETTLED_TRANSACTION_CRASH_RECOVERY.json",
+            "docs/11_DEVELOPMENT/evidence/phase_0_58/LIVE_PARTIAL_WRITE_CRASH_RECOVERY.json",
+            "docs/11_DEVELOPMENT/evidence/phase_0_58/LIVE_CONNECTOR_COMMIT_DURING_PREFECT_API_OUTAGE_2026-10-12.json",
+            "docs/11_DEVELOPMENT/evidence/phase_0_58/LIVE_REPORT_EVENT_APPEND_CRASH_RECOVERY.json",
+            "docs/11_DEVELOPMENT/evidence/phase_0_58/LIVE_REPORT_STORE_PUBLICATION_RECOVERY.json",
+            "docs/11_DEVELOPMENT/evidence/phase_0_58/LIVE_ARTIFACT_WRITE_CRASH_RECOVERY.json",
+            "docs/11_DEVELOPMENT/evidence/phase_0_58/LIVE_WORKER_CREDENTIAL_ROTATION.json",
+            "docs/11_DEVELOPMENT/evidence/phase_0_58/WORKER_CRASH_RECOVERY.json"
+          ],
+          "verification_sources": [
+            "tests/prefect/test_managed_prefect_0_58.py",
+            "tests/prefect/worker_plugin/src/phase058_worker_backend/__init__.py"
+          ]
+        },
+        {
+          "criterion_id": "293-C02",
+          "criterion": "Targeted execution processes only the referenced submission and never drains unrelated accepted work.",
+          "result": "satisfied",
+          "evidence_files": [
+            "docs/11_DEVELOPMENT/evidence/phase_0_58/CI_INSTALLED_WORKER_PYTHON_MATRIX_2026-10-12.json",
+            "docs/11_DEVELOPMENT/evidence/phase_0_58/LIVE_PRE_EFFECT_WORKER_CRASH_RECOVERY.json",
+            "docs/11_DEVELOPMENT/evidence/phase_0_58/LIVE_UNSETTLED_TRANSACTION_CRASH_RECOVERY.json",
+            "docs/11_DEVELOPMENT/evidence/phase_0_58/LIVE_PARTIAL_WRITE_CRASH_RECOVERY.json",
+            "docs/11_DEVELOPMENT/evidence/phase_0_58/LIVE_CONNECTOR_COMMIT_DURING_PREFECT_API_OUTAGE_2026-10-12.json",
+            "docs/11_DEVELOPMENT/evidence/phase_0_58/LIVE_REPORT_EVENT_APPEND_CRASH_RECOVERY.json",
+            "docs/11_DEVELOPMENT/evidence/phase_0_58/LIVE_REPORT_STORE_PUBLICATION_RECOVERY.json",
+            "docs/11_DEVELOPMENT/evidence/phase_0_58/LIVE_ARTIFACT_WRITE_CRASH_RECOVERY.json",
+            "docs/11_DEVELOPMENT/evidence/phase_0_58/LIVE_WORKER_CREDENTIAL_ROTATION.json",
+            "docs/11_DEVELOPMENT/evidence/phase_0_58/WORKER_CRASH_RECOVERY.json"
+          ],
+          "verification_sources": [
+            "tests/prefect/test_managed_prefect_0_58.py",
+            "tests/prefect/worker_plugin/src/phase058_worker_backend/__init__.py"
+          ]
+        },
+        {
+          "criterion_id": "293-C03",
+          "criterion": "Worker admission verifies pinned plan, code, trust, scope, and resource evidence before any connector effect.",
+          "result": "satisfied",
+          "evidence_files": [
+            "docs/11_DEVELOPMENT/evidence/phase_0_58/CI_INSTALLED_WORKER_PYTHON_MATRIX_2026-10-12.json",
+            "docs/11_DEVELOPMENT/evidence/phase_0_58/LIVE_PRE_EFFECT_WORKER_CRASH_RECOVERY.json",
+            "docs/11_DEVELOPMENT/evidence/phase_0_58/LIVE_UNSETTLED_TRANSACTION_CRASH_RECOVERY.json",
+            "docs/11_DEVELOPMENT/evidence/phase_0_58/LIVE_PARTIAL_WRITE_CRASH_RECOVERY.json",
+            "docs/11_DEVELOPMENT/evidence/phase_0_58/LIVE_CONNECTOR_COMMIT_DURING_PREFECT_API_OUTAGE_2026-10-12.json",
+            "docs/11_DEVELOPMENT/evidence/phase_0_58/LIVE_REPORT_EVENT_APPEND_CRASH_RECOVERY.json",
+            "docs/11_DEVELOPMENT/evidence/phase_0_58/LIVE_REPORT_STORE_PUBLICATION_RECOVERY.json",
+            "docs/11_DEVELOPMENT/evidence/phase_0_58/LIVE_ARTIFACT_WRITE_CRASH_RECOVERY.json",
+            "docs/11_DEVELOPMENT/evidence/phase_0_58/LIVE_WORKER_CREDENTIAL_ROTATION.json",
+            "docs/11_DEVELOPMENT/evidence/phase_0_58/WORKER_CRASH_RECOVERY.json"
+          ],
+          "verification_sources": [
+            "tests/prefect/test_managed_prefect_0_58.py",
+            "tests/prefect/worker_plugin/src/phase058_worker_backend/__init__.py"
+          ]
+        },
+        {
+          "criterion_id": "293-C04",
+          "criterion": "Duplicate concurrent invocations and duplicate delivery cannot create competing authorized effectful owners; losing/terminal invocations have documented no-op/rejection outcomes.",
+          "result": "satisfied",
+          "evidence_files": [
+            "docs/11_DEVELOPMENT/evidence/phase_0_58/CI_INSTALLED_WORKER_PYTHON_MATRIX_2026-10-12.json",
+            "docs/11_DEVELOPMENT/evidence/phase_0_58/LIVE_PRE_EFFECT_WORKER_CRASH_RECOVERY.json",
+            "docs/11_DEVELOPMENT/evidence/phase_0_58/LIVE_UNSETTLED_TRANSACTION_CRASH_RECOVERY.json",
+            "docs/11_DEVELOPMENT/evidence/phase_0_58/LIVE_PARTIAL_WRITE_CRASH_RECOVERY.json",
+            "docs/11_DEVELOPMENT/evidence/phase_0_58/LIVE_CONNECTOR_COMMIT_DURING_PREFECT_API_OUTAGE_2026-10-12.json",
+            "docs/11_DEVELOPMENT/evidence/phase_0_58/LIVE_REPORT_EVENT_APPEND_CRASH_RECOVERY.json",
+            "docs/11_DEVELOPMENT/evidence/phase_0_58/LIVE_REPORT_STORE_PUBLICATION_RECOVERY.json",
+            "docs/11_DEVELOPMENT/evidence/phase_0_58/LIVE_ARTIFACT_WRITE_CRASH_RECOVERY.json",
+            "docs/11_DEVELOPMENT/evidence/phase_0_58/LIVE_WORKER_CREDENTIAL_ROTATION.json",
+            "docs/11_DEVELOPMENT/evidence/phase_0_58/WORKER_CRASH_RECOVERY.json"
+          ],
+          "verification_sources": [
+            "tests/prefect/test_managed_prefect_0_58.py",
+            "tests/prefect/worker_plugin/src/phase058_worker_backend/__init__.py"
+          ]
+        },
+        {
+          "criterion_id": "293-C05",
+          "criterion": "ETLantic report/event/artifact publication preserves accepted run, submission, attempt, fencing, and workspace identities.",
+          "result": "satisfied",
+          "evidence_files": [
+            "docs/11_DEVELOPMENT/evidence/phase_0_58/CI_INSTALLED_WORKER_PYTHON_MATRIX_2026-10-12.json",
+            "docs/11_DEVELOPMENT/evidence/phase_0_58/LIVE_PRE_EFFECT_WORKER_CRASH_RECOVERY.json",
+            "docs/11_DEVELOPMENT/evidence/phase_0_58/LIVE_UNSETTLED_TRANSACTION_CRASH_RECOVERY.json",
+            "docs/11_DEVELOPMENT/evidence/phase_0_58/LIVE_PARTIAL_WRITE_CRASH_RECOVERY.json",
+            "docs/11_DEVELOPMENT/evidence/phase_0_58/LIVE_CONNECTOR_COMMIT_DURING_PREFECT_API_OUTAGE_2026-10-12.json",
+            "docs/11_DEVELOPMENT/evidence/phase_0_58/LIVE_REPORT_EVENT_APPEND_CRASH_RECOVERY.json",
+            "docs/11_DEVELOPMENT/evidence/phase_0_58/LIVE_REPORT_STORE_PUBLICATION_RECOVERY.json",
+            "docs/11_DEVELOPMENT/evidence/phase_0_58/LIVE_ARTIFACT_WRITE_CRASH_RECOVERY.json",
+            "docs/11_DEVELOPMENT/evidence/phase_0_58/LIVE_WORKER_CREDENTIAL_ROTATION.json",
+            "docs/11_DEVELOPMENT/evidence/phase_0_58/WORKER_CRASH_RECOVERY.json"
+          ],
+          "verification_sources": [
+            "tests/prefect/test_managed_prefect_0_58.py",
+            "tests/prefect/worker_plugin/src/phase058_worker_backend/__init__.py"
+          ]
+        },
+        {
+          "criterion_id": "293-C06",
+          "criterion": "Failed, cancelled, timed-out, unknown-effect, and failed-publication outcomes have tested Prefect mappings with no loss of durable evidence.",
+          "result": "satisfied",
+          "evidence_files": [
+            "docs/11_DEVELOPMENT/evidence/phase_0_58/CI_INSTALLED_WORKER_PYTHON_MATRIX_2026-10-12.json",
+            "docs/11_DEVELOPMENT/evidence/phase_0_58/LIVE_PRE_EFFECT_WORKER_CRASH_RECOVERY.json",
+            "docs/11_DEVELOPMENT/evidence/phase_0_58/LIVE_UNSETTLED_TRANSACTION_CRASH_RECOVERY.json",
+            "docs/11_DEVELOPMENT/evidence/phase_0_58/LIVE_PARTIAL_WRITE_CRASH_RECOVERY.json",
+            "docs/11_DEVELOPMENT/evidence/phase_0_58/LIVE_CONNECTOR_COMMIT_DURING_PREFECT_API_OUTAGE_2026-10-12.json",
+            "docs/11_DEVELOPMENT/evidence/phase_0_58/LIVE_REPORT_EVENT_APPEND_CRASH_RECOVERY.json",
+            "docs/11_DEVELOPMENT/evidence/phase_0_58/LIVE_REPORT_STORE_PUBLICATION_RECOVERY.json",
+            "docs/11_DEVELOPMENT/evidence/phase_0_58/LIVE_ARTIFACT_WRITE_CRASH_RECOVERY.json",
+            "docs/11_DEVELOPMENT/evidence/phase_0_58/LIVE_WORKER_CREDENTIAL_ROTATION.json",
+            "docs/11_DEVELOPMENT/evidence/phase_0_58/WORKER_CRASH_RECOVERY.json"
+          ],
+          "verification_sources": [
+            "tests/prefect/test_managed_prefect_0_58.py",
+            "tests/prefect/worker_plugin/src/phase058_worker_backend/__init__.py"
+          ]
+        },
+        {
+          "criterion_id": "293-C07",
+          "criterion": "Lease loss and worker interruption invoke existing recovery rules; uncertain writes require reconciliation and are never blindly replayed.",
+          "result": "satisfied",
+          "evidence_files": [
+            "docs/11_DEVELOPMENT/evidence/phase_0_58/CI_INSTALLED_WORKER_PYTHON_MATRIX_2026-10-12.json",
+            "docs/11_DEVELOPMENT/evidence/phase_0_58/LIVE_PRE_EFFECT_WORKER_CRASH_RECOVERY.json",
+            "docs/11_DEVELOPMENT/evidence/phase_0_58/LIVE_UNSETTLED_TRANSACTION_CRASH_RECOVERY.json",
+            "docs/11_DEVELOPMENT/evidence/phase_0_58/LIVE_PARTIAL_WRITE_CRASH_RECOVERY.json",
+            "docs/11_DEVELOPMENT/evidence/phase_0_58/LIVE_CONNECTOR_COMMIT_DURING_PREFECT_API_OUTAGE_2026-10-12.json",
+            "docs/11_DEVELOPMENT/evidence/phase_0_58/LIVE_REPORT_EVENT_APPEND_CRASH_RECOVERY.json",
+            "docs/11_DEVELOPMENT/evidence/phase_0_58/LIVE_REPORT_STORE_PUBLICATION_RECOVERY.json",
+            "docs/11_DEVELOPMENT/evidence/phase_0_58/LIVE_ARTIFACT_WRITE_CRASH_RECOVERY.json",
+            "docs/11_DEVELOPMENT/evidence/phase_0_58/LIVE_WORKER_CREDENTIAL_ROTATION.json",
+            "docs/11_DEVELOPMENT/evidence/phase_0_58/WORKER_CRASH_RECOVERY.json"
+          ],
+          "verification_sources": [
+            "tests/prefect/test_managed_prefect_0_58.py",
+            "tests/prefect/worker_plugin/src/phase058_worker_backend/__init__.py"
+          ]
+        },
+        {
+          "criterion_id": "293-C08",
+          "criterion": "Worker imports remain FastAPI-free, secrets stay out of Prefect parameters/results/logs, and resources close only after active execution drains.",
+          "result": "satisfied",
+          "evidence_files": [
+            "docs/11_DEVELOPMENT/evidence/phase_0_58/CI_INSTALLED_WORKER_PYTHON_MATRIX_2026-10-12.json",
+            "docs/11_DEVELOPMENT/evidence/phase_0_58/LIVE_PRE_EFFECT_WORKER_CRASH_RECOVERY.json",
+            "docs/11_DEVELOPMENT/evidence/phase_0_58/LIVE_UNSETTLED_TRANSACTION_CRASH_RECOVERY.json",
+            "docs/11_DEVELOPMENT/evidence/phase_0_58/LIVE_PARTIAL_WRITE_CRASH_RECOVERY.json",
+            "docs/11_DEVELOPMENT/evidence/phase_0_58/LIVE_CONNECTOR_COMMIT_DURING_PREFECT_API_OUTAGE_2026-10-12.json",
+            "docs/11_DEVELOPMENT/evidence/phase_0_58/LIVE_REPORT_EVENT_APPEND_CRASH_RECOVERY.json",
+            "docs/11_DEVELOPMENT/evidence/phase_0_58/LIVE_REPORT_STORE_PUBLICATION_RECOVERY.json",
+            "docs/11_DEVELOPMENT/evidence/phase_0_58/LIVE_ARTIFACT_WRITE_CRASH_RECOVERY.json",
+            "docs/11_DEVELOPMENT/evidence/phase_0_58/LIVE_WORKER_CREDENTIAL_ROTATION.json",
+            "docs/11_DEVELOPMENT/evidence/phase_0_58/WORKER_CRASH_RECOVERY.json"
+          ],
+          "verification_sources": [
+            "tests/prefect/test_managed_prefect_0_58.py",
+            "tests/prefect/worker_plugin/src/phase058_worker_backend/__init__.py"
+          ]
+        }
+      ]
+    },
+    {
+      "issue": 294,
+      "title": "[feature][etlantic-prefect] Register versioned managed deployments for Prefect work pools",
+      "url": "https://github.com/eddiethedean/etlantic/issues/294",
+      "result": "satisfied",
+      "acceptance_criteria": [
+        {
+          "criterion_id": "294-C01",
+          "criterion": "The adapter registers the importable flow and returns deployment ID, resolved configuration fingerprint, and code/version evidence.",
+          "result": "satisfied",
+          "evidence_files": [
+            "docs/11_DEVELOPMENT/evidence/phase_0_58/CI_INSTALLED_WORKER_PYTHON_MATRIX_2026-10-12.json",
+            "docs/11_DEVELOPMENT/evidence/phase_0_58/DEPLOYMENT_REVISION_RETENTION.json",
+            "docs/11_DEVELOPMENT/evidence/phase_0_58/LIVE_DEPLOYMENT_REVISION_WORKER_RETENTION.json",
+            "docs/11_DEVELOPMENT/evidence/phase_0_58/ROUTE_LIFECYCLE_RETIREMENT.json",
+            "docs/11_DEVELOPMENT/evidence/phase_0_58/LIVE_MULTIPROCESS_ROUTE_RETIREMENT_ROLLBACK.json",
+            "docs/11_DEVELOPMENT/evidence/phase_0_58/CLEAN_WHEEL_ROUTE_CLEANUP_QUALIFICATION.json",
+            "docs/11_DEVELOPMENT/evidence/phase_0_58/SCHEDULE_ROUTE_TRANSFER_API.json"
+          ],
+          "verification_sources": [
+            "tests/prefect/test_managed_prefect_0_58.py"
+          ]
+        },
+        {
+          "criterion_id": "294-C02",
+          "criterion": "Stable specification/identity supports documented repeat registration and update behavior; conflicting ownership/version changes are surfaced rather than silently retargeted.",
+          "result": "satisfied",
+          "evidence_files": [
+            "docs/11_DEVELOPMENT/evidence/phase_0_58/CI_INSTALLED_WORKER_PYTHON_MATRIX_2026-10-12.json",
+            "docs/11_DEVELOPMENT/evidence/phase_0_58/DEPLOYMENT_REVISION_RETENTION.json",
+            "docs/11_DEVELOPMENT/evidence/phase_0_58/LIVE_DEPLOYMENT_REVISION_WORKER_RETENTION.json",
+            "docs/11_DEVELOPMENT/evidence/phase_0_58/ROUTE_LIFECYCLE_RETIREMENT.json",
+            "docs/11_DEVELOPMENT/evidence/phase_0_58/LIVE_MULTIPROCESS_ROUTE_RETIREMENT_ROLLBACK.json",
+            "docs/11_DEVELOPMENT/evidence/phase_0_58/CLEAN_WHEEL_ROUTE_CLEANUP_QUALIFICATION.json",
+            "docs/11_DEVELOPMENT/evidence/phase_0_58/SCHEDULE_ROUTE_TRANSFER_API.json"
+          ],
+          "verification_sources": [
+            "tests/prefect/test_managed_prefect_0_58.py"
+          ]
+        },
+        {
+          "criterion_id": "294-C03",
+          "criterion": "Process-pool integration executes in a distinct worker process against the configured server and durable backend.",
+          "result": "satisfied",
+          "evidence_files": [
+            "docs/11_DEVELOPMENT/evidence/phase_0_58/CI_INSTALLED_WORKER_PYTHON_MATRIX_2026-10-12.json",
+            "docs/11_DEVELOPMENT/evidence/phase_0_58/DEPLOYMENT_REVISION_RETENTION.json",
+            "docs/11_DEVELOPMENT/evidence/phase_0_58/LIVE_DEPLOYMENT_REVISION_WORKER_RETENTION.json",
+            "docs/11_DEVELOPMENT/evidence/phase_0_58/ROUTE_LIFECYCLE_RETIREMENT.json",
+            "docs/11_DEVELOPMENT/evidence/phase_0_58/LIVE_MULTIPROCESS_ROUTE_RETIREMENT_ROLLBACK.json",
+            "docs/11_DEVELOPMENT/evidence/phase_0_58/CLEAN_WHEEL_ROUTE_CLEANUP_QUALIFICATION.json",
+            "docs/11_DEVELOPMENT/evidence/phase_0_58/SCHEDULE_ROUTE_TRANSFER_API.json"
+          ],
+          "verification_sources": [
+            "tests/prefect/test_managed_prefect_0_58.py"
+          ]
+        },
+        {
+          "criterion_id": "294-C04",
+          "criterion": "Worker verifies expected code/environment evidence at admission; mutable branch/tag drift cannot run a different accepted plan unnoticed.",
+          "result": "satisfied",
+          "evidence_files": [
+            "docs/11_DEVELOPMENT/evidence/phase_0_58/CI_INSTALLED_WORKER_PYTHON_MATRIX_2026-10-12.json",
+            "docs/11_DEVELOPMENT/evidence/phase_0_58/DEPLOYMENT_REVISION_RETENTION.json",
+            "docs/11_DEVELOPMENT/evidence/phase_0_58/LIVE_DEPLOYMENT_REVISION_WORKER_RETENTION.json",
+            "docs/11_DEVELOPMENT/evidence/phase_0_58/ROUTE_LIFECYCLE_RETIREMENT.json",
+            "docs/11_DEVELOPMENT/evidence/phase_0_58/LIVE_MULTIPROCESS_ROUTE_RETIREMENT_ROLLBACK.json",
+            "docs/11_DEVELOPMENT/evidence/phase_0_58/CLEAN_WHEEL_ROUTE_CLEANUP_QUALIFICATION.json",
+            "docs/11_DEVELOPMENT/evidence/phase_0_58/SCHEDULE_ROUTE_TRANSFER_API.json"
+          ],
+          "verification_sources": [
+            "tests/prefect/test_managed_prefect_0_58.py"
+          ]
+        },
+        {
+          "criterion_id": "294-C05",
+          "criterion": "Run parameters and caller job-variable overrides cannot replace trusted entrypoints, backend credentials, images, scopes, or infrastructure policy.",
+          "result": "satisfied",
+          "evidence_files": [
+            "docs/11_DEVELOPMENT/evidence/phase_0_58/CI_INSTALLED_WORKER_PYTHON_MATRIX_2026-10-12.json",
+            "docs/11_DEVELOPMENT/evidence/phase_0_58/DEPLOYMENT_REVISION_RETENTION.json",
+            "docs/11_DEVELOPMENT/evidence/phase_0_58/LIVE_DEPLOYMENT_REVISION_WORKER_RETENTION.json",
+            "docs/11_DEVELOPMENT/evidence/phase_0_58/ROUTE_LIFECYCLE_RETIREMENT.json",
+            "docs/11_DEVELOPMENT/evidence/phase_0_58/LIVE_MULTIPROCESS_ROUTE_RETIREMENT_ROLLBACK.json",
+            "docs/11_DEVELOPMENT/evidence/phase_0_58/CLEAN_WHEEL_ROUTE_CLEANUP_QUALIFICATION.json",
+            "docs/11_DEVELOPMENT/evidence/phase_0_58/SCHEDULE_ROUTE_TRANSFER_API.json"
+          ],
+          "verification_sources": [
+            "tests/prefect/test_managed_prefect_0_58.py"
+          ]
+        },
+        {
+          "criterion_id": "294-C06",
+          "criterion": "Validate unsupported pool/features and incompatible Prefect versions clearly; import and local direct execution contact no deployment service.",
+          "result": "satisfied",
+          "evidence_files": [
+            "docs/11_DEVELOPMENT/evidence/phase_0_58/CI_INSTALLED_WORKER_PYTHON_MATRIX_2026-10-12.json",
+            "docs/11_DEVELOPMENT/evidence/phase_0_58/DEPLOYMENT_REVISION_RETENTION.json",
+            "docs/11_DEVELOPMENT/evidence/phase_0_58/LIVE_DEPLOYMENT_REVISION_WORKER_RETENTION.json",
+            "docs/11_DEVELOPMENT/evidence/phase_0_58/ROUTE_LIFECYCLE_RETIREMENT.json",
+            "docs/11_DEVELOPMENT/evidence/phase_0_58/LIVE_MULTIPROCESS_ROUTE_RETIREMENT_ROLLBACK.json",
+            "docs/11_DEVELOPMENT/evidence/phase_0_58/CLEAN_WHEEL_ROUTE_CLEANUP_QUALIFICATION.json",
+            "docs/11_DEVELOPMENT/evidence/phase_0_58/SCHEDULE_ROUTE_TRANSFER_API.json"
+          ],
+          "verification_sources": [
+            "tests/prefect/test_managed_prefect_0_58.py"
+          ]
+        },
+        {
+          "criterion_id": "294-C07",
+          "criterion": "Document explicit update/rollback and drain behavior; replacing a deployment cannot erase accepted-work or effect evidence.",
+          "result": "satisfied",
+          "evidence_files": [
+            "docs/11_DEVELOPMENT/evidence/phase_0_58/CI_INSTALLED_WORKER_PYTHON_MATRIX_2026-10-12.json",
+            "docs/11_DEVELOPMENT/evidence/phase_0_58/DEPLOYMENT_REVISION_RETENTION.json",
+            "docs/11_DEVELOPMENT/evidence/phase_0_58/LIVE_DEPLOYMENT_REVISION_WORKER_RETENTION.json",
+            "docs/11_DEVELOPMENT/evidence/phase_0_58/ROUTE_LIFECYCLE_RETIREMENT.json",
+            "docs/11_DEVELOPMENT/evidence/phase_0_58/LIVE_MULTIPROCESS_ROUTE_RETIREMENT_ROLLBACK.json",
+            "docs/11_DEVELOPMENT/evidence/phase_0_58/CLEAN_WHEEL_ROUTE_CLEANUP_QUALIFICATION.json",
+            "docs/11_DEVELOPMENT/evidence/phase_0_58/SCHEDULE_ROUTE_TRANSFER_API.json"
+          ],
+          "verification_sources": [
+            "tests/prefect/test_managed_prefect_0_58.py"
+          ]
+        }
+      ]
+    },
+    {
+      "issue": 295,
+      "title": "[feature][etlantic-prefect] Dispatch accepted work durably with idempotent Prefect run creation",
+      "url": "https://github.com/eddiethedean/etlantic/issues/295",
+      "result": "satisfied",
+      "acceptance_criteria": [
+        {
+          "criterion_id": "295-C01",
+          "criterion": "Durable acceptance precedes dispatch; a caller's acceptance receipt does not depend on Prefect availability or mean execution succeeded.",
+          "result": "satisfied",
+          "evidence_files": [
+            "docs/11_DEVELOPMENT/evidence/phase_0_58/CI_INSTALLED_WORKER_PYTHON_MATRIX_2026-10-12.json",
+            "docs/11_DEVELOPMENT/evidence/phase_0_58/DISPATCH_GENERATION_RECONCILIATION.json",
+            "docs/11_DEVELOPMENT/evidence/phase_0_58/REMOTE_MISSING_DISPATCH_REARM.json",
+            "docs/11_DEVELOPMENT/evidence/phase_0_58/LIVE_DISPATCH_CREATE_LINK_CRASH_RECOVERY.json",
+            "docs/11_DEVELOPMENT/evidence/phase_0_58/LIVE_POSTGRES_32_SUBMISSION_OUTAGE_RECOVERY.json",
+            "docs/11_DEVELOPMENT/evidence/phase_0_58/LIVE_DISPATCH_WORKER_BACKPRESSURE_AND_DISPOSAL_2026-10-12.json",
+            "docs/11_DEVELOPMENT/evidence/phase_0_58/LIVE_PREFECT_API_OUTAGE_RECOVERY.json",
+            "docs/11_DEVELOPMENT/evidence/phase_0_58/CI_INSTALLED_WORKER_32_SUBMISSION_OUTAGE_2026-10-12.json"
+          ],
+          "verification_sources": [
+            "tests/prefect/test_managed_prefect_0_58.py",
+            "tests/sqlmodel/test_managed_scheduler_postgresql_0_57.py"
+          ]
+        },
+        {
+          "criterion_id": "295-C02",
+          "criterion": "Test crashes before creation, after server acceptance but before response, after correlation persistence, and before dispatch acknowledgement.",
+          "result": "satisfied",
+          "evidence_files": [
+            "docs/11_DEVELOPMENT/evidence/phase_0_58/CI_INSTALLED_WORKER_PYTHON_MATRIX_2026-10-12.json",
+            "docs/11_DEVELOPMENT/evidence/phase_0_58/DISPATCH_GENERATION_RECONCILIATION.json",
+            "docs/11_DEVELOPMENT/evidence/phase_0_58/REMOTE_MISSING_DISPATCH_REARM.json",
+            "docs/11_DEVELOPMENT/evidence/phase_0_58/LIVE_DISPATCH_CREATE_LINK_CRASH_RECOVERY.json",
+            "docs/11_DEVELOPMENT/evidence/phase_0_58/LIVE_POSTGRES_32_SUBMISSION_OUTAGE_RECOVERY.json",
+            "docs/11_DEVELOPMENT/evidence/phase_0_58/LIVE_DISPATCH_WORKER_BACKPRESSURE_AND_DISPOSAL_2026-10-12.json",
+            "docs/11_DEVELOPMENT/evidence/phase_0_58/LIVE_PREFECT_API_OUTAGE_RECOVERY.json",
+            "docs/11_DEVELOPMENT/evidence/phase_0_58/CI_INSTALLED_WORKER_32_SUBMISSION_OUTAGE_2026-10-12.json"
+          ],
+          "verification_sources": [
+            "tests/prefect/test_managed_prefect_0_58.py",
+            "tests/sqlmodel/test_managed_scheduler_postgresql_0_57.py"
+          ]
+        },
+        {
+          "criterion_id": "295-C03",
+          "criterion": "Retrying ambiguous creation uses the same scoped key, deployment, and parameters and resolves the existing flow run under the qualified Prefect contract.",
+          "result": "satisfied",
+          "evidence_files": [
+            "docs/11_DEVELOPMENT/evidence/phase_0_58/CI_INSTALLED_WORKER_PYTHON_MATRIX_2026-10-12.json",
+            "docs/11_DEVELOPMENT/evidence/phase_0_58/DISPATCH_GENERATION_RECONCILIATION.json",
+            "docs/11_DEVELOPMENT/evidence/phase_0_58/REMOTE_MISSING_DISPATCH_REARM.json",
+            "docs/11_DEVELOPMENT/evidence/phase_0_58/LIVE_DISPATCH_CREATE_LINK_CRASH_RECOVERY.json",
+            "docs/11_DEVELOPMENT/evidence/phase_0_58/LIVE_POSTGRES_32_SUBMISSION_OUTAGE_RECOVERY.json",
+            "docs/11_DEVELOPMENT/evidence/phase_0_58/LIVE_DISPATCH_WORKER_BACKPRESSURE_AND_DISPOSAL_2026-10-12.json",
+            "docs/11_DEVELOPMENT/evidence/phase_0_58/LIVE_PREFECT_API_OUTAGE_RECOVERY.json",
+            "docs/11_DEVELOPMENT/evidence/phase_0_58/CI_INSTALLED_WORKER_32_SUBMISSION_OUTAGE_2026-10-12.json"
+          ],
+          "verification_sources": [
+            "tests/prefect/test_managed_prefect_0_58.py",
+            "tests/sqlmodel/test_managed_scheduler_postgresql_0_57.py"
+          ]
+        },
+        {
+          "criterion_id": "295-C04",
+          "criterion": "Multiple dispatchers and duplicate outbox delivery converge on one dispatch record; worker fencing remains authoritative even if extra remote runs exist.",
+          "result": "satisfied",
+          "evidence_files": [
+            "docs/11_DEVELOPMENT/evidence/phase_0_58/CI_INSTALLED_WORKER_PYTHON_MATRIX_2026-10-12.json",
+            "docs/11_DEVELOPMENT/evidence/phase_0_58/DISPATCH_GENERATION_RECONCILIATION.json",
+            "docs/11_DEVELOPMENT/evidence/phase_0_58/REMOTE_MISSING_DISPATCH_REARM.json",
+            "docs/11_DEVELOPMENT/evidence/phase_0_58/LIVE_DISPATCH_CREATE_LINK_CRASH_RECOVERY.json",
+            "docs/11_DEVELOPMENT/evidence/phase_0_58/LIVE_POSTGRES_32_SUBMISSION_OUTAGE_RECOVERY.json",
+            "docs/11_DEVELOPMENT/evidence/phase_0_58/LIVE_DISPATCH_WORKER_BACKPRESSURE_AND_DISPOSAL_2026-10-12.json",
+            "docs/11_DEVELOPMENT/evidence/phase_0_58/LIVE_PREFECT_API_OUTAGE_RECOVERY.json",
+            "docs/11_DEVELOPMENT/evidence/phase_0_58/CI_INSTALLED_WORKER_32_SUBMISSION_OUTAGE_2026-10-12.json"
+          ],
+          "verification_sources": [
+            "tests/prefect/test_managed_prefect_0_58.py",
+            "tests/sqlmodel/test_managed_scheduler_postgresql_0_57.py"
+          ]
+        },
+        {
+          "criterion_id": "295-C05",
+          "criterion": "Same dispatch identity with different payload/deployment fingerprint fails with a conflict; deliberate redispatch/retry generations require explicit authorized recovery.",
+          "result": "satisfied",
+          "evidence_files": [
+            "docs/11_DEVELOPMENT/evidence/phase_0_58/CI_INSTALLED_WORKER_PYTHON_MATRIX_2026-10-12.json",
+            "docs/11_DEVELOPMENT/evidence/phase_0_58/DISPATCH_GENERATION_RECONCILIATION.json",
+            "docs/11_DEVELOPMENT/evidence/phase_0_58/REMOTE_MISSING_DISPATCH_REARM.json",
+            "docs/11_DEVELOPMENT/evidence/phase_0_58/LIVE_DISPATCH_CREATE_LINK_CRASH_RECOVERY.json",
+            "docs/11_DEVELOPMENT/evidence/phase_0_58/LIVE_POSTGRES_32_SUBMISSION_OUTAGE_RECOVERY.json",
+            "docs/11_DEVELOPMENT/evidence/phase_0_58/LIVE_DISPATCH_WORKER_BACKPRESSURE_AND_DISPOSAL_2026-10-12.json",
+            "docs/11_DEVELOPMENT/evidence/phase_0_58/LIVE_PREFECT_API_OUTAGE_RECOVERY.json",
+            "docs/11_DEVELOPMENT/evidence/phase_0_58/CI_INSTALLED_WORKER_32_SUBMISSION_OUTAGE_2026-10-12.json"
+          ],
+          "verification_sources": [
+            "tests/prefect/test_managed_prefect_0_58.py",
+            "tests/sqlmodel/test_managed_scheduler_postgresql_0_57.py"
+          ]
+        },
+        {
+          "criterion_id": "295-C06",
+          "criterion": "Bounded backoff, queue limits, terminal dispatch diagnostics, orphan reconciliation, and API outage/restart behavior are documented and tested.",
+          "result": "satisfied",
+          "evidence_files": [
+            "docs/11_DEVELOPMENT/evidence/phase_0_58/CI_INSTALLED_WORKER_PYTHON_MATRIX_2026-10-12.json",
+            "docs/11_DEVELOPMENT/evidence/phase_0_58/DISPATCH_GENERATION_RECONCILIATION.json",
+            "docs/11_DEVELOPMENT/evidence/phase_0_58/REMOTE_MISSING_DISPATCH_REARM.json",
+            "docs/11_DEVELOPMENT/evidence/phase_0_58/LIVE_DISPATCH_CREATE_LINK_CRASH_RECOVERY.json",
+            "docs/11_DEVELOPMENT/evidence/phase_0_58/LIVE_POSTGRES_32_SUBMISSION_OUTAGE_RECOVERY.json",
+            "docs/11_DEVELOPMENT/evidence/phase_0_58/LIVE_DISPATCH_WORKER_BACKPRESSURE_AND_DISPOSAL_2026-10-12.json",
+            "docs/11_DEVELOPMENT/evidence/phase_0_58/LIVE_PREFECT_API_OUTAGE_RECOVERY.json",
+            "docs/11_DEVELOPMENT/evidence/phase_0_58/CI_INSTALLED_WORKER_32_SUBMISSION_OUTAGE_2026-10-12.json"
+          ],
+          "verification_sources": [
+            "tests/prefect/test_managed_prefect_0_58.py",
+            "tests/sqlmodel/test_managed_scheduler_postgresql_0_57.py"
+          ]
+        },
+        {
+          "criterion_id": "295-C07",
+          "criterion": "Expired/revoked/cancelled work is checked at dispatch and worker admission; tags or keys do not leak sensitive scope information.",
+          "result": "satisfied",
+          "evidence_files": [
+            "docs/11_DEVELOPMENT/evidence/phase_0_58/CI_INSTALLED_WORKER_PYTHON_MATRIX_2026-10-12.json",
+            "docs/11_DEVELOPMENT/evidence/phase_0_58/DISPATCH_GENERATION_RECONCILIATION.json",
+            "docs/11_DEVELOPMENT/evidence/phase_0_58/REMOTE_MISSING_DISPATCH_REARM.json",
+            "docs/11_DEVELOPMENT/evidence/phase_0_58/LIVE_DISPATCH_CREATE_LINK_CRASH_RECOVERY.json",
+            "docs/11_DEVELOPMENT/evidence/phase_0_58/LIVE_POSTGRES_32_SUBMISSION_OUTAGE_RECOVERY.json",
+            "docs/11_DEVELOPMENT/evidence/phase_0_58/LIVE_DISPATCH_WORKER_BACKPRESSURE_AND_DISPOSAL_2026-10-12.json",
+            "docs/11_DEVELOPMENT/evidence/phase_0_58/LIVE_PREFECT_API_OUTAGE_RECOVERY.json",
+            "docs/11_DEVELOPMENT/evidence/phase_0_58/CI_INSTALLED_WORKER_32_SUBMISSION_OUTAGE_2026-10-12.json"
+          ],
+          "verification_sources": [
+            "tests/prefect/test_managed_prefect_0_58.py",
+            "tests/sqlmodel/test_managed_scheduler_postgresql_0_57.py"
+          ]
+        },
+        {
+          "criterion_id": "295-C08",
+          "criterion": "No distributed-transaction or exactly-once external-effect claim is made; unknown commit states remain blocked for reconciliation.",
+          "result": "satisfied",
+          "evidence_files": [
+            "docs/11_DEVELOPMENT/evidence/phase_0_58/CI_INSTALLED_WORKER_PYTHON_MATRIX_2026-10-12.json",
+            "docs/11_DEVELOPMENT/evidence/phase_0_58/DISPATCH_GENERATION_RECONCILIATION.json",
+            "docs/11_DEVELOPMENT/evidence/phase_0_58/REMOTE_MISSING_DISPATCH_REARM.json",
+            "docs/11_DEVELOPMENT/evidence/phase_0_58/LIVE_DISPATCH_CREATE_LINK_CRASH_RECOVERY.json",
+            "docs/11_DEVELOPMENT/evidence/phase_0_58/LIVE_POSTGRES_32_SUBMISSION_OUTAGE_RECOVERY.json",
+            "docs/11_DEVELOPMENT/evidence/phase_0_58/LIVE_DISPATCH_WORKER_BACKPRESSURE_AND_DISPOSAL_2026-10-12.json",
+            "docs/11_DEVELOPMENT/evidence/phase_0_58/LIVE_PREFECT_API_OUTAGE_RECOVERY.json",
+            "docs/11_DEVELOPMENT/evidence/phase_0_58/CI_INSTALLED_WORKER_32_SUBMISSION_OUTAGE_2026-10-12.json"
+          ],
+          "verification_sources": [
+            "tests/prefect/test_managed_prefect_0_58.py",
+            "tests/sqlmodel/test_managed_scheduler_postgresql_0_57.py"
+          ]
+        }
+      ]
+    },
+    {
+      "issue": 296,
+      "title": "[feature][etlantic-prefect] Expose scoped run status, correlation, cancellation, and reconciliation",
+      "url": "https://github.com/eddiethedean/etlantic/issues/296",
+      "result": "satisfied",
+      "acceptance_criteria": [
+        {
+          "criterion_id": "296-C01",
+          "criterion": "Publish a reviewed state/outcome mapping covering queued, running, completed, failed, cancelling, cancelled, crashed, missing remote run, stale observation, failed publication, and reconciliation-required.",
+          "result": "satisfied",
+          "evidence_files": [
+            "docs/11_DEVELOPMENT/evidence/phase_0_58/CI_INSTALLED_WORKER_PYTHON_MATRIX_2026-10-12.json",
+            "docs/11_DEVELOPMENT/evidence/phase_0_58/STATUS_CANCELLATION_RECONCILIATION.json",
+            "docs/11_DEVELOPMENT/evidence/phase_0_58/TERMINAL_STATUS_DISAGREEMENT.json",
+            "docs/11_DEVELOPMENT/evidence/phase_0_58/LIVE_POST_DISPATCH_CANCELLATION.json",
+            "docs/11_DEVELOPMENT/evidence/phase_0_58/LIVE_CANCELLATION_DURING_COMMIT.json",
+            "docs/11_DEVELOPMENT/evidence/phase_0_58/LIVE_PREFECT_API_MID_EXECUTION_RECOVERY.json",
+            "docs/11_DEVELOPMENT/evidence/phase_0_58/LIVE_REPORT_STORE_PUBLICATION_RECOVERY.json",
+            "docs/11_DEVELOPMENT/evidence/phase_0_58/LIVE_CONNECTOR_COMMIT_DURING_PREFECT_API_OUTAGE_2026-10-12.json"
+          ],
+          "verification_sources": [
+            "tests/prefect/test_managed_prefect_0_58.py",
+            "tests/prefect/test_prefect_scheduler.py"
+          ]
+        },
+        {
+          "criterion_id": "296-C02",
+          "criterion": "Authorization precedes lookup and respects accepted scope and disclosure policy; callers cannot cancel/read another tenant's run by supplying a Prefect ID.",
+          "result": "satisfied",
+          "evidence_files": [
+            "docs/11_DEVELOPMENT/evidence/phase_0_58/CI_INSTALLED_WORKER_PYTHON_MATRIX_2026-10-12.json",
+            "docs/11_DEVELOPMENT/evidence/phase_0_58/STATUS_CANCELLATION_RECONCILIATION.json",
+            "docs/11_DEVELOPMENT/evidence/phase_0_58/TERMINAL_STATUS_DISAGREEMENT.json",
+            "docs/11_DEVELOPMENT/evidence/phase_0_58/LIVE_POST_DISPATCH_CANCELLATION.json",
+            "docs/11_DEVELOPMENT/evidence/phase_0_58/LIVE_CANCELLATION_DURING_COMMIT.json",
+            "docs/11_DEVELOPMENT/evidence/phase_0_58/LIVE_PREFECT_API_MID_EXECUTION_RECOVERY.json",
+            "docs/11_DEVELOPMENT/evidence/phase_0_58/LIVE_REPORT_STORE_PUBLICATION_RECOVERY.json",
+            "docs/11_DEVELOPMENT/evidence/phase_0_58/LIVE_CONNECTOR_COMMIT_DURING_PREFECT_API_OUTAGE_2026-10-12.json"
+          ],
+          "verification_sources": [
+            "tests/prefect/test_managed_prefect_0_58.py",
+            "tests/prefect/test_prefect_scheduler.py"
+          ]
+        },
+        {
+          "criterion_id": "296-C03",
+          "criterion": "Completed orchestration without successful ETL evidence is not reported as ETL success; Prefect crash/cancellation cannot erase known or uncertain effects.",
+          "result": "satisfied",
+          "evidence_files": [
+            "docs/11_DEVELOPMENT/evidence/phase_0_58/CI_INSTALLED_WORKER_PYTHON_MATRIX_2026-10-12.json",
+            "docs/11_DEVELOPMENT/evidence/phase_0_58/STATUS_CANCELLATION_RECONCILIATION.json",
+            "docs/11_DEVELOPMENT/evidence/phase_0_58/TERMINAL_STATUS_DISAGREEMENT.json",
+            "docs/11_DEVELOPMENT/evidence/phase_0_58/LIVE_POST_DISPATCH_CANCELLATION.json",
+            "docs/11_DEVELOPMENT/evidence/phase_0_58/LIVE_CANCELLATION_DURING_COMMIT.json",
+            "docs/11_DEVELOPMENT/evidence/phase_0_58/LIVE_PREFECT_API_MID_EXECUTION_RECOVERY.json",
+            "docs/11_DEVELOPMENT/evidence/phase_0_58/LIVE_REPORT_STORE_PUBLICATION_RECOVERY.json",
+            "docs/11_DEVELOPMENT/evidence/phase_0_58/LIVE_CONNECTOR_COMMIT_DURING_PREFECT_API_OUTAGE_2026-10-12.json"
+          ],
+          "verification_sources": [
+            "tests/prefect/test_managed_prefect_0_58.py",
+            "tests/prefect/test_prefect_scheduler.py"
+          ]
+        },
+        {
+          "criterion_id": "296-C04",
+          "criterion": "Test cancellation before dispatch, between dispatch and claim, during staging/publication, after terminal success, and after lost cancellation response.",
+          "result": "satisfied",
+          "evidence_files": [
+            "docs/11_DEVELOPMENT/evidence/phase_0_58/CI_INSTALLED_WORKER_PYTHON_MATRIX_2026-10-12.json",
+            "docs/11_DEVELOPMENT/evidence/phase_0_58/STATUS_CANCELLATION_RECONCILIATION.json",
+            "docs/11_DEVELOPMENT/evidence/phase_0_58/TERMINAL_STATUS_DISAGREEMENT.json",
+            "docs/11_DEVELOPMENT/evidence/phase_0_58/LIVE_POST_DISPATCH_CANCELLATION.json",
+            "docs/11_DEVELOPMENT/evidence/phase_0_58/LIVE_CANCELLATION_DURING_COMMIT.json",
+            "docs/11_DEVELOPMENT/evidence/phase_0_58/LIVE_PREFECT_API_MID_EXECUTION_RECOVERY.json",
+            "docs/11_DEVELOPMENT/evidence/phase_0_58/LIVE_REPORT_STORE_PUBLICATION_RECOVERY.json",
+            "docs/11_DEVELOPMENT/evidence/phase_0_58/LIVE_CONNECTOR_COMMIT_DURING_PREFECT_API_OUTAGE_2026-10-12.json"
+          ],
+          "verification_sources": [
+            "tests/prefect/test_managed_prefect_0_58.py",
+            "tests/prefect/test_prefect_scheduler.py"
+          ]
+        },
+        {
+          "criterion_id": "296-C05",
+          "criterion": "Repeated cancellation is idempotent; terminal outcomes and effect records are never rewritten merely to match a late Prefect state.",
+          "result": "satisfied",
+          "evidence_files": [
+            "docs/11_DEVELOPMENT/evidence/phase_0_58/CI_INSTALLED_WORKER_PYTHON_MATRIX_2026-10-12.json",
+            "docs/11_DEVELOPMENT/evidence/phase_0_58/STATUS_CANCELLATION_RECONCILIATION.json",
+            "docs/11_DEVELOPMENT/evidence/phase_0_58/TERMINAL_STATUS_DISAGREEMENT.json",
+            "docs/11_DEVELOPMENT/evidence/phase_0_58/LIVE_POST_DISPATCH_CANCELLATION.json",
+            "docs/11_DEVELOPMENT/evidence/phase_0_58/LIVE_CANCELLATION_DURING_COMMIT.json",
+            "docs/11_DEVELOPMENT/evidence/phase_0_58/LIVE_PREFECT_API_MID_EXECUTION_RECOVERY.json",
+            "docs/11_DEVELOPMENT/evidence/phase_0_58/LIVE_REPORT_STORE_PUBLICATION_RECOVERY.json",
+            "docs/11_DEVELOPMENT/evidence/phase_0_58/LIVE_CONNECTOR_COMMIT_DURING_PREFECT_API_OUTAGE_2026-10-12.json"
+          ],
+          "verification_sources": [
+            "tests/prefect/test_managed_prefect_0_58.py",
+            "tests/prefect/test_prefect_scheduler.py"
+          ]
+        },
+        {
+          "criterion_id": "296-C06",
+          "criterion": "Forced process termination and expired leases recover through canonical ETLantic logic; unknown writes expose reconciliation-required and prohibit automatic rerun.",
+          "result": "satisfied",
+          "evidence_files": [
+            "docs/11_DEVELOPMENT/evidence/phase_0_58/CI_INSTALLED_WORKER_PYTHON_MATRIX_2026-10-12.json",
+            "docs/11_DEVELOPMENT/evidence/phase_0_58/STATUS_CANCELLATION_RECONCILIATION.json",
+            "docs/11_DEVELOPMENT/evidence/phase_0_58/TERMINAL_STATUS_DISAGREEMENT.json",
+            "docs/11_DEVELOPMENT/evidence/phase_0_58/LIVE_POST_DISPATCH_CANCELLATION.json",
+            "docs/11_DEVELOPMENT/evidence/phase_0_58/LIVE_CANCELLATION_DURING_COMMIT.json",
+            "docs/11_DEVELOPMENT/evidence/phase_0_58/LIVE_PREFECT_API_MID_EXECUTION_RECOVERY.json",
+            "docs/11_DEVELOPMENT/evidence/phase_0_58/LIVE_REPORT_STORE_PUBLICATION_RECOVERY.json",
+            "docs/11_DEVELOPMENT/evidence/phase_0_58/LIVE_CONNECTOR_COMMIT_DURING_PREFECT_API_OUTAGE_2026-10-12.json"
+          ],
+          "verification_sources": [
+            "tests/prefect/test_managed_prefect_0_58.py",
+            "tests/prefect/test_prefect_scheduler.py"
+          ]
+        },
+        {
+          "criterion_id": "296-C07",
+          "criterion": "Status reads are bounded, redacted, and do not execute work, resolve execution secrets, or mutate effect state.",
+          "result": "satisfied",
+          "evidence_files": [
+            "docs/11_DEVELOPMENT/evidence/phase_0_58/CI_INSTALLED_WORKER_PYTHON_MATRIX_2026-10-12.json",
+            "docs/11_DEVELOPMENT/evidence/phase_0_58/STATUS_CANCELLATION_RECONCILIATION.json",
+            "docs/11_DEVELOPMENT/evidence/phase_0_58/TERMINAL_STATUS_DISAGREEMENT.json",
+            "docs/11_DEVELOPMENT/evidence/phase_0_58/LIVE_POST_DISPATCH_CANCELLATION.json",
+            "docs/11_DEVELOPMENT/evidence/phase_0_58/LIVE_CANCELLATION_DURING_COMMIT.json",
+            "docs/11_DEVELOPMENT/evidence/phase_0_58/LIVE_PREFECT_API_MID_EXECUTION_RECOVERY.json",
+            "docs/11_DEVELOPMENT/evidence/phase_0_58/LIVE_REPORT_STORE_PUBLICATION_RECOVERY.json",
+            "docs/11_DEVELOPMENT/evidence/phase_0_58/LIVE_CONNECTOR_COMMIT_DURING_PREFECT_API_OUTAGE_2026-10-12.json"
+          ],
+          "verification_sources": [
+            "tests/prefect/test_managed_prefect_0_58.py",
+            "tests/prefect/test_prefect_scheduler.py"
+          ]
+        },
+        {
+          "criterion_id": "296-C08",
+          "criterion": "Preserve existing report metadata keys and add verified Prefect correlation without treating synthetic identifiers as observed remote IDs.",
+          "result": "satisfied",
+          "evidence_files": [
+            "docs/11_DEVELOPMENT/evidence/phase_0_58/CI_INSTALLED_WORKER_PYTHON_MATRIX_2026-10-12.json",
+            "docs/11_DEVELOPMENT/evidence/phase_0_58/STATUS_CANCELLATION_RECONCILIATION.json",
+            "docs/11_DEVELOPMENT/evidence/phase_0_58/TERMINAL_STATUS_DISAGREEMENT.json",
+            "docs/11_DEVELOPMENT/evidence/phase_0_58/LIVE_POST_DISPATCH_CANCELLATION.json",
+            "docs/11_DEVELOPMENT/evidence/phase_0_58/LIVE_CANCELLATION_DURING_COMMIT.json",
+            "docs/11_DEVELOPMENT/evidence/phase_0_58/LIVE_PREFECT_API_MID_EXECUTION_RECOVERY.json",
+            "docs/11_DEVELOPMENT/evidence/phase_0_58/LIVE_REPORT_STORE_PUBLICATION_RECOVERY.json",
+            "docs/11_DEVELOPMENT/evidence/phase_0_58/LIVE_CONNECTOR_COMMIT_DURING_PREFECT_API_OUTAGE_2026-10-12.json"
+          ],
+          "verification_sources": [
+            "tests/prefect/test_managed_prefect_0_58.py",
+            "tests/prefect/test_prefect_scheduler.py"
+          ]
+        }
+      ]
+    },
+    {
+      "issue": 297,
+      "title": "[feature][etlantic-prefect] Integrate recurring triggers through canonical schedule admission",
+      "url": "https://github.com/eddiethedean/etlantic/issues/297",
+      "result": "satisfied",
+      "acceptance_criteria": [
+        {
+          "criterion_id": "297-C01",
+          "criterion": "Manual and scheduled paths share canonical admission, revision/policy/resource checks, accepted authority, and durable work.",
+          "result": "satisfied",
+          "evidence_files": [
+            "docs/11_DEVELOPMENT/evidence/phase_0_58/CI_INSTALLED_WORKER_PYTHON_MATRIX_2026-10-12.json",
+            "docs/11_DEVELOPMENT/evidence/phase_0_58/SCHEDULE_CLOCK_POLICY.json",
+            "docs/11_DEVELOPMENT/evidence/phase_0_58/SCHEDULE_FIRING_IDEMPOTENCY.json",
+            "docs/11_DEVELOPMENT/evidence/phase_0_58/SCHEDULE_ROUTE_TRANSFER_API.json",
+            "docs/11_DEVELOPMENT/evidence/phase_0_58/LIVE_POSTGRES_SCHEDULE_ROUTE_RECOVERY.json",
+            "docs/11_DEVELOPMENT/evidence/phase_0_58/LIVE_SCHEDULED_PROCESS_EXECUTION.json",
+            "docs/11_DEVELOPMENT/evidence/phase_0_58/CLEAN_WHEEL_ROUTE_CLEANUP_QUALIFICATION.json"
+          ],
+          "verification_sources": [
+            "tests/prefect/test_managed_prefect_0_58.py"
+          ]
+        },
+        {
+          "criterion_id": "297-C02",
+          "criterion": "Duplicate/replayed Prefect triggers for the same schedule revision and nominal time return the same accepted occurrence rather than rerunning effects.",
+          "result": "satisfied",
+          "evidence_files": [
+            "docs/11_DEVELOPMENT/evidence/phase_0_58/CI_INSTALLED_WORKER_PYTHON_MATRIX_2026-10-12.json",
+            "docs/11_DEVELOPMENT/evidence/phase_0_58/SCHEDULE_CLOCK_POLICY.json",
+            "docs/11_DEVELOPMENT/evidence/phase_0_58/SCHEDULE_FIRING_IDEMPOTENCY.json",
+            "docs/11_DEVELOPMENT/evidence/phase_0_58/SCHEDULE_ROUTE_TRANSFER_API.json",
+            "docs/11_DEVELOPMENT/evidence/phase_0_58/LIVE_POSTGRES_SCHEDULE_ROUTE_RECOVERY.json",
+            "docs/11_DEVELOPMENT/evidence/phase_0_58/LIVE_SCHEDULED_PROCESS_EXECUTION.json",
+            "docs/11_DEVELOPMENT/evidence/phase_0_58/CLEAN_WHEEL_ROUTE_CLEANUP_QUALIFICATION.json"
+          ],
+          "verification_sources": [
+            "tests/prefect/test_managed_prefect_0_58.py"
+          ]
+        },
+        {
+          "criterion_id": "297-C03",
+          "criterion": "Each new occurrence receives fresh admission and its own execution reference; no recurring execution deployment reuses a fixed accepted reference.",
+          "result": "satisfied",
+          "evidence_files": [
+            "docs/11_DEVELOPMENT/evidence/phase_0_58/CI_INSTALLED_WORKER_PYTHON_MATRIX_2026-10-12.json",
+            "docs/11_DEVELOPMENT/evidence/phase_0_58/SCHEDULE_CLOCK_POLICY.json",
+            "docs/11_DEVELOPMENT/evidence/phase_0_58/SCHEDULE_FIRING_IDEMPOTENCY.json",
+            "docs/11_DEVELOPMENT/evidence/phase_0_58/SCHEDULE_ROUTE_TRANSFER_API.json",
+            "docs/11_DEVELOPMENT/evidence/phase_0_58/LIVE_POSTGRES_SCHEDULE_ROUTE_RECOVERY.json",
+            "docs/11_DEVELOPMENT/evidence/phase_0_58/LIVE_SCHEDULED_PROCESS_EXECUTION.json",
+            "docs/11_DEVELOPMENT/evidence/phase_0_58/CLEAN_WHEEL_ROUTE_CLEANUP_QUALIFICATION.json"
+          ],
+          "verification_sources": [
+            "tests/prefect/test_managed_prefect_0_58.py"
+          ]
+        },
+        {
+          "criterion_id": "297-C04",
+          "criterion": "Define and test timezone/DST, cron/interval support, misfire, bounded catch-up, overlap, pause/resume/delete, and revision changes; unsupported parity fails explicitly.",
+          "result": "satisfied",
+          "evidence_files": [
+            "docs/11_DEVELOPMENT/evidence/phase_0_58/CI_INSTALLED_WORKER_PYTHON_MATRIX_2026-10-12.json",
+            "docs/11_DEVELOPMENT/evidence/phase_0_58/SCHEDULE_CLOCK_POLICY.json",
+            "docs/11_DEVELOPMENT/evidence/phase_0_58/SCHEDULE_FIRING_IDEMPOTENCY.json",
+            "docs/11_DEVELOPMENT/evidence/phase_0_58/SCHEDULE_ROUTE_TRANSFER_API.json",
+            "docs/11_DEVELOPMENT/evidence/phase_0_58/LIVE_POSTGRES_SCHEDULE_ROUTE_RECOVERY.json",
+            "docs/11_DEVELOPMENT/evidence/phase_0_58/LIVE_SCHEDULED_PROCESS_EXECUTION.json",
+            "docs/11_DEVELOPMENT/evidence/phase_0_58/CLEAN_WHEEL_ROUTE_CLEANUP_QUALIFICATION.json"
+          ],
+          "verification_sources": [
+            "tests/prefect/test_managed_prefect_0_58.py"
+          ]
+        },
+        {
+          "criterion_id": "297-C05",
+          "criterion": "Only the designated timer authority creates occurrences; switching authority handles pending firings and old triggers without duplicate acceptance.",
+          "result": "satisfied",
+          "evidence_files": [
+            "docs/11_DEVELOPMENT/evidence/phase_0_58/CI_INSTALLED_WORKER_PYTHON_MATRIX_2026-10-12.json",
+            "docs/11_DEVELOPMENT/evidence/phase_0_58/SCHEDULE_CLOCK_POLICY.json",
+            "docs/11_DEVELOPMENT/evidence/phase_0_58/SCHEDULE_FIRING_IDEMPOTENCY.json",
+            "docs/11_DEVELOPMENT/evidence/phase_0_58/SCHEDULE_ROUTE_TRANSFER_API.json",
+            "docs/11_DEVELOPMENT/evidence/phase_0_58/LIVE_POSTGRES_SCHEDULE_ROUTE_RECOVERY.json",
+            "docs/11_DEVELOPMENT/evidence/phase_0_58/LIVE_SCHEDULED_PROCESS_EXECUTION.json",
+            "docs/11_DEVELOPMENT/evidence/phase_0_58/CLEAN_WHEEL_ROUTE_CLEANUP_QUALIFICATION.json"
+          ],
+          "verification_sources": [
+            "tests/prefect/test_managed_prefect_0_58.py"
+          ]
+        },
+        {
+          "criterion_id": "297-C06",
+          "criterion": "Restart across preparation, firing claim, accept, link, and dispatch recovers using existing ETLantic semantics.",
+          "result": "satisfied",
+          "evidence_files": [
+            "docs/11_DEVELOPMENT/evidence/phase_0_58/CI_INSTALLED_WORKER_PYTHON_MATRIX_2026-10-12.json",
+            "docs/11_DEVELOPMENT/evidence/phase_0_58/SCHEDULE_CLOCK_POLICY.json",
+            "docs/11_DEVELOPMENT/evidence/phase_0_58/SCHEDULE_FIRING_IDEMPOTENCY.json",
+            "docs/11_DEVELOPMENT/evidence/phase_0_58/SCHEDULE_ROUTE_TRANSFER_API.json",
+            "docs/11_DEVELOPMENT/evidence/phase_0_58/LIVE_POSTGRES_SCHEDULE_ROUTE_RECOVERY.json",
+            "docs/11_DEVELOPMENT/evidence/phase_0_58/LIVE_SCHEDULED_PROCESS_EXECUTION.json",
+            "docs/11_DEVELOPMENT/evidence/phase_0_58/CLEAN_WHEEL_ROUTE_CLEANUP_QUALIFICATION.json"
+          ],
+          "verification_sources": [
+            "tests/prefect/test_managed_prefect_0_58.py"
+          ]
+        },
+        {
+          "criterion_id": "297-C07",
+          "criterion": "Test revocation, approval expiry, credential changes, schedule amendment, and cancelled occurrences without falling back to newer unapproved definitions.",
+          "result": "satisfied",
+          "evidence_files": [
+            "docs/11_DEVELOPMENT/evidence/phase_0_58/CI_INSTALLED_WORKER_PYTHON_MATRIX_2026-10-12.json",
+            "docs/11_DEVELOPMENT/evidence/phase_0_58/SCHEDULE_CLOCK_POLICY.json",
+            "docs/11_DEVELOPMENT/evidence/phase_0_58/SCHEDULE_FIRING_IDEMPOTENCY.json",
+            "docs/11_DEVELOPMENT/evidence/phase_0_58/SCHEDULE_ROUTE_TRANSFER_API.json",
+            "docs/11_DEVELOPMENT/evidence/phase_0_58/LIVE_POSTGRES_SCHEDULE_ROUTE_RECOVERY.json",
+            "docs/11_DEVELOPMENT/evidence/phase_0_58/LIVE_SCHEDULED_PROCESS_EXECUTION.json",
+            "docs/11_DEVELOPMENT/evidence/phase_0_58/CLEAN_WHEEL_ROUTE_CLEANUP_QUALIFICATION.json"
+          ],
+          "verification_sources": [
+            "tests/prefect/test_managed_prefect_0_58.py"
+          ]
+        },
+        {
+          "criterion_id": "297-C08",
+          "criterion": "Prefect-native support is advertised only for the tested semantic matrix; otherwise the ETLantic-timer/Prefect-dispatch path remains the supported path.",
+          "result": "satisfied",
+          "evidence_files": [
+            "docs/11_DEVELOPMENT/evidence/phase_0_58/CI_INSTALLED_WORKER_PYTHON_MATRIX_2026-10-12.json",
+            "docs/11_DEVELOPMENT/evidence/phase_0_58/SCHEDULE_CLOCK_POLICY.json",
+            "docs/11_DEVELOPMENT/evidence/phase_0_58/SCHEDULE_FIRING_IDEMPOTENCY.json",
+            "docs/11_DEVELOPMENT/evidence/phase_0_58/SCHEDULE_ROUTE_TRANSFER_API.json",
+            "docs/11_DEVELOPMENT/evidence/phase_0_58/LIVE_POSTGRES_SCHEDULE_ROUTE_RECOVERY.json",
+            "docs/11_DEVELOPMENT/evidence/phase_0_58/LIVE_SCHEDULED_PROCESS_EXECUTION.json",
+            "docs/11_DEVELOPMENT/evidence/phase_0_58/CLEAN_WHEEL_ROUTE_CLEANUP_QUALIFICATION.json"
+          ],
+          "verification_sources": [
+            "tests/prefect/test_managed_prefect_0_58.py"
+          ]
+        }
+      ]
+    },
+    {
+      "issue": 298,
+      "title": "[feature][etlantic-prefect] Qualify managed recovery and document FastAPI/Posit Connect composition",
+      "url": "https://github.com/eddiethedean/etlantic/issues/298",
+      "result": "satisfied",
+      "acceptance_criteria": [
+        {
+          "criterion_id": "298-C01",
+          "criterion": "Blocking CI covers direct-mode compatibility plus real installed subprocess and self-hosted Prefect/Process-worker execution; fakes and skips are labelled separately from live proof.",
+          "result": "satisfied",
+          "evidence_files": [
+            "docs/11_DEVELOPMENT/evidence/phase_0_58/CI_INSTALLED_WORKER_PYTHON_MATRIX_2026-10-12.json",
+            "docs/11_DEVELOPMENT/evidence/phase_0_58/CLEAN_WHEEL_FINAL_QUALIFICATION.json",
+            "docs/11_DEVELOPMENT/evidence/phase_0_58/LIVE_DISPATCH_WORKER_BACKPRESSURE_AND_DISPOSAL_2026-10-12.json",
+            "docs/11_DEVELOPMENT/evidence/phase_0_58/LIVE_POSTGRES_32_SUBMISSION_OUTAGE_RECOVERY.json",
+            "docs/11_DEVELOPMENT/evidence/phase_0_58/LIVE_CONNECTOR_COMMIT_DURING_PREFECT_API_OUTAGE_2026-10-12.json",
+            "docs/11_DEVELOPMENT/evidence/phase_0_58/LIVE_APPROVAL_AUTHORITY_BOUNDARIES.json",
+            "docs/11_DEVELOPMENT/evidence/phase_0_58/LIVE_MULTIPROCESS_ROUTE_RETIREMENT_ROLLBACK.json",
+            "docs/11_DEVELOPMENT/evidence/phase_0_58/CLEAN_WHEEL_ROUTE_CLEANUP_QUALIFICATION.json"
+          ],
+          "verification_sources": [
+            "tests/prefect -m prefect",
+            "tests/fastapi/test_managed_application_0_56.py::test_managed_headless_and_http_command_semantics_match"
+          ]
+        },
+        {
+          "criterion_id": "298-C02",
+          "criterion": "PostgreSQL qualification covers two dispatchers/workers, restart, response loss, duplicate delivery, lease expiry/fencing, and delayed report/event/artifact publication.",
+          "result": "satisfied",
+          "evidence_files": [
+            "docs/11_DEVELOPMENT/evidence/phase_0_58/CI_INSTALLED_WORKER_PYTHON_MATRIX_2026-10-12.json",
+            "docs/11_DEVELOPMENT/evidence/phase_0_58/CLEAN_WHEEL_FINAL_QUALIFICATION.json",
+            "docs/11_DEVELOPMENT/evidence/phase_0_58/LIVE_DISPATCH_WORKER_BACKPRESSURE_AND_DISPOSAL_2026-10-12.json",
+            "docs/11_DEVELOPMENT/evidence/phase_0_58/LIVE_POSTGRES_32_SUBMISSION_OUTAGE_RECOVERY.json",
+            "docs/11_DEVELOPMENT/evidence/phase_0_58/LIVE_CONNECTOR_COMMIT_DURING_PREFECT_API_OUTAGE_2026-10-12.json",
+            "docs/11_DEVELOPMENT/evidence/phase_0_58/LIVE_APPROVAL_AUTHORITY_BOUNDARIES.json",
+            "docs/11_DEVELOPMENT/evidence/phase_0_58/LIVE_MULTIPROCESS_ROUTE_RETIREMENT_ROLLBACK.json",
+            "docs/11_DEVELOPMENT/evidence/phase_0_58/CLEAN_WHEEL_ROUTE_CLEANUP_QUALIFICATION.json"
+          ],
+          "verification_sources": [
+            "tests/prefect -m prefect",
+            "tests/fastapi/test_managed_application_0_56.py::test_managed_headless_and_http_command_semantics_match"
+          ]
+        },
+        {
+          "criterion_id": "298-C03",
+          "criterion": "Fault tests cover worker death before effects, during an uncertain external write, and after an effect but before durable result publication; no blind replay or invented success.",
+          "result": "satisfied",
+          "evidence_files": [
+            "docs/11_DEVELOPMENT/evidence/phase_0_58/CI_INSTALLED_WORKER_PYTHON_MATRIX_2026-10-12.json",
+            "docs/11_DEVELOPMENT/evidence/phase_0_58/CLEAN_WHEEL_FINAL_QUALIFICATION.json",
+            "docs/11_DEVELOPMENT/evidence/phase_0_58/LIVE_DISPATCH_WORKER_BACKPRESSURE_AND_DISPOSAL_2026-10-12.json",
+            "docs/11_DEVELOPMENT/evidence/phase_0_58/LIVE_POSTGRES_32_SUBMISSION_OUTAGE_RECOVERY.json",
+            "docs/11_DEVELOPMENT/evidence/phase_0_58/LIVE_CONNECTOR_COMMIT_DURING_PREFECT_API_OUTAGE_2026-10-12.json",
+            "docs/11_DEVELOPMENT/evidence/phase_0_58/LIVE_APPROVAL_AUTHORITY_BOUNDARIES.json",
+            "docs/11_DEVELOPMENT/evidence/phase_0_58/LIVE_MULTIPROCESS_ROUTE_RETIREMENT_ROLLBACK.json",
+            "docs/11_DEVELOPMENT/evidence/phase_0_58/CLEAN_WHEEL_ROUTE_CLEANUP_QUALIFICATION.json"
+          ],
+          "verification_sources": [
+            "tests/prefect -m prefect",
+            "tests/fastapi/test_managed_application_0_56.py::test_managed_headless_and_http_command_semantics_match"
+          ]
+        },
+        {
+          "criterion_id": "298-C04",
+          "criterion": "Credential revocation, cross-scope references, code/plan tampering, unsupported plan schemas/features, quota pressure, cancellation, and infrastructure outages fail with durable, redacted evidence.",
+          "result": "satisfied",
+          "evidence_files": [
+            "docs/11_DEVELOPMENT/evidence/phase_0_58/CI_INSTALLED_WORKER_PYTHON_MATRIX_2026-10-12.json",
+            "docs/11_DEVELOPMENT/evidence/phase_0_58/CLEAN_WHEEL_FINAL_QUALIFICATION.json",
+            "docs/11_DEVELOPMENT/evidence/phase_0_58/LIVE_DISPATCH_WORKER_BACKPRESSURE_AND_DISPOSAL_2026-10-12.json",
+            "docs/11_DEVELOPMENT/evidence/phase_0_58/LIVE_POSTGRES_32_SUBMISSION_OUTAGE_RECOVERY.json",
+            "docs/11_DEVELOPMENT/evidence/phase_0_58/LIVE_CONNECTOR_COMMIT_DURING_PREFECT_API_OUTAGE_2026-10-12.json",
+            "docs/11_DEVELOPMENT/evidence/phase_0_58/LIVE_APPROVAL_AUTHORITY_BOUNDARIES.json",
+            "docs/11_DEVELOPMENT/evidence/phase_0_58/LIVE_MULTIPROCESS_ROUTE_RETIREMENT_ROLLBACK.json",
+            "docs/11_DEVELOPMENT/evidence/phase_0_58/CLEAN_WHEEL_ROUTE_CLEANUP_QUALIFICATION.json"
+          ],
+          "verification_sources": [
+            "tests/prefect -m prefect",
+            "tests/fastapi/test_managed_application_0_56.py::test_managed_headless_and_http_command_semantics_match"
+          ]
+        },
+        {
+          "criterion_id": "298-C05",
+          "criterion": "Global Prefect persistence/cache/retry defaults cannot leak data or skip/repeat effectful execution outside the adapter policy.",
+          "result": "satisfied",
+          "evidence_files": [
+            "docs/11_DEVELOPMENT/evidence/phase_0_58/CI_INSTALLED_WORKER_PYTHON_MATRIX_2026-10-12.json",
+            "docs/11_DEVELOPMENT/evidence/phase_0_58/CLEAN_WHEEL_FINAL_QUALIFICATION.json",
+            "docs/11_DEVELOPMENT/evidence/phase_0_58/LIVE_DISPATCH_WORKER_BACKPRESSURE_AND_DISPOSAL_2026-10-12.json",
+            "docs/11_DEVELOPMENT/evidence/phase_0_58/LIVE_POSTGRES_32_SUBMISSION_OUTAGE_RECOVERY.json",
+            "docs/11_DEVELOPMENT/evidence/phase_0_58/LIVE_CONNECTOR_COMMIT_DURING_PREFECT_API_OUTAGE_2026-10-12.json",
+            "docs/11_DEVELOPMENT/evidence/phase_0_58/LIVE_APPROVAL_AUTHORITY_BOUNDARIES.json",
+            "docs/11_DEVELOPMENT/evidence/phase_0_58/LIVE_MULTIPROCESS_ROUTE_RETIREMENT_ROLLBACK.json",
+            "docs/11_DEVELOPMENT/evidence/phase_0_58/CLEAN_WHEEL_ROUTE_CLEANUP_QUALIFICATION.json"
+          ],
+          "verification_sources": [
+            "tests/prefect -m prefect",
+            "tests/fastapi/test_managed_application_0_56.py::test_managed_headless_and_http_command_semantics_match"
+          ]
+        },
+        {
+          "criterion_id": "298-C06",
+          "criterion": "FastAPI composition uses existing canonical services and durable acceptance; tests exercise HTTP/headless parity and API restart without losing accepted work.",
+          "result": "satisfied",
+          "evidence_files": [
+            "docs/11_DEVELOPMENT/evidence/phase_0_58/CI_INSTALLED_WORKER_PYTHON_MATRIX_2026-10-12.json",
+            "docs/11_DEVELOPMENT/evidence/phase_0_58/CLEAN_WHEEL_FINAL_QUALIFICATION.json",
+            "docs/11_DEVELOPMENT/evidence/phase_0_58/LIVE_DISPATCH_WORKER_BACKPRESSURE_AND_DISPOSAL_2026-10-12.json",
+            "docs/11_DEVELOPMENT/evidence/phase_0_58/LIVE_POSTGRES_32_SUBMISSION_OUTAGE_RECOVERY.json",
+            "docs/11_DEVELOPMENT/evidence/phase_0_58/LIVE_CONNECTOR_COMMIT_DURING_PREFECT_API_OUTAGE_2026-10-12.json",
+            "docs/11_DEVELOPMENT/evidence/phase_0_58/LIVE_APPROVAL_AUTHORITY_BOUNDARIES.json",
+            "docs/11_DEVELOPMENT/evidence/phase_0_58/LIVE_MULTIPROCESS_ROUTE_RETIREMENT_ROLLBACK.json",
+            "docs/11_DEVELOPMENT/evidence/phase_0_58/CLEAN_WHEEL_ROUTE_CLEANUP_QUALIFICATION.json"
+          ],
+          "verification_sources": [
+            "tests/prefect -m prefect",
+            "tests/fastapi/test_managed_application_0_56.py::test_managed_headless_and_http_command_semantics_match"
+          ]
+        },
+        {
+          "criterion_id": "298-C07",
+          "criterion": "Document secrets, retention, reconciliation, deployment update/rollback, graceful drain, least-privilege roles, metrics, and limits; do not claim universal pool support or exactly-once effects.",
+          "result": "satisfied",
+          "evidence_files": [
+            "docs/11_DEVELOPMENT/evidence/phase_0_58/CI_INSTALLED_WORKER_PYTHON_MATRIX_2026-10-12.json",
+            "docs/11_DEVELOPMENT/evidence/phase_0_58/CLEAN_WHEEL_FINAL_QUALIFICATION.json",
+            "docs/11_DEVELOPMENT/evidence/phase_0_58/LIVE_DISPATCH_WORKER_BACKPRESSURE_AND_DISPOSAL_2026-10-12.json",
+            "docs/11_DEVELOPMENT/evidence/phase_0_58/LIVE_POSTGRES_32_SUBMISSION_OUTAGE_RECOVERY.json",
+            "docs/11_DEVELOPMENT/evidence/phase_0_58/LIVE_CONNECTOR_COMMIT_DURING_PREFECT_API_OUTAGE_2026-10-12.json",
+            "docs/11_DEVELOPMENT/evidence/phase_0_58/LIVE_APPROVAL_AUTHORITY_BOUNDARIES.json",
+            "docs/11_DEVELOPMENT/evidence/phase_0_58/LIVE_MULTIPROCESS_ROUTE_RETIREMENT_ROLLBACK.json",
+            "docs/11_DEVELOPMENT/evidence/phase_0_58/CLEAN_WHEEL_ROUTE_CLEANUP_QUALIFICATION.json"
+          ],
+          "verification_sources": [
+            "tests/prefect -m prefect",
+            "tests/fastapi/test_managed_application_0_56.py::test_managed_headless_and_http_command_semantics_match"
+          ]
+        },
+        {
+          "criterion_id": "298-C08",
+          "criterion": "Posit Connect instructions distinguish a documented recipe from live Connect qualification and include ASGI entrypoint/dependency configuration and external-role reachability.",
+          "result": "satisfied",
+          "evidence_files": [
+            "docs/11_DEVELOPMENT/evidence/phase_0_58/CI_INSTALLED_WORKER_PYTHON_MATRIX_2026-10-12.json",
+            "docs/11_DEVELOPMENT/evidence/phase_0_58/CLEAN_WHEEL_FINAL_QUALIFICATION.json",
+            "docs/11_DEVELOPMENT/evidence/phase_0_58/LIVE_DISPATCH_WORKER_BACKPRESSURE_AND_DISPOSAL_2026-10-12.json",
+            "docs/11_DEVELOPMENT/evidence/phase_0_58/LIVE_POSTGRES_32_SUBMISSION_OUTAGE_RECOVERY.json",
+            "docs/11_DEVELOPMENT/evidence/phase_0_58/LIVE_CONNECTOR_COMMIT_DURING_PREFECT_API_OUTAGE_2026-10-12.json",
+            "docs/11_DEVELOPMENT/evidence/phase_0_58/LIVE_APPROVAL_AUTHORITY_BOUNDARIES.json",
+            "docs/11_DEVELOPMENT/evidence/phase_0_58/LIVE_MULTIPROCESS_ROUTE_RETIREMENT_ROLLBACK.json",
+            "docs/11_DEVELOPMENT/evidence/phase_0_58/CLEAN_WHEEL_ROUTE_CLEANUP_QUALIFICATION.json"
+          ],
+          "verification_sources": [
+            "tests/prefect -m prefect",
+            "tests/fastapi/test_managed_application_0_56.py::test_managed_headless_and_http_command_semantics_match"
+          ]
+        },
+        {
+          "criterion_id": "298-C09",
+          "criterion": "Update package README, Prefect example, scheduler plan, capability/maturity table, and stale version references as part of implementation; core installation remains Prefect/FastAPI-free.",
+          "result": "satisfied",
+          "evidence_files": [
+            "docs/11_DEVELOPMENT/evidence/phase_0_58/CI_INSTALLED_WORKER_PYTHON_MATRIX_2026-10-12.json",
+            "docs/11_DEVELOPMENT/evidence/phase_0_58/CLEAN_WHEEL_FINAL_QUALIFICATION.json",
+            "docs/11_DEVELOPMENT/evidence/phase_0_58/LIVE_DISPATCH_WORKER_BACKPRESSURE_AND_DISPOSAL_2026-10-12.json",
+            "docs/11_DEVELOPMENT/evidence/phase_0_58/LIVE_POSTGRES_32_SUBMISSION_OUTAGE_RECOVERY.json",
+            "docs/11_DEVELOPMENT/evidence/phase_0_58/LIVE_CONNECTOR_COMMIT_DURING_PREFECT_API_OUTAGE_2026-10-12.json",
+            "docs/11_DEVELOPMENT/evidence/phase_0_58/LIVE_APPROVAL_AUTHORITY_BOUNDARIES.json",
+            "docs/11_DEVELOPMENT/evidence/phase_0_58/LIVE_MULTIPROCESS_ROUTE_RETIREMENT_ROLLBACK.json",
+            "docs/11_DEVELOPMENT/evidence/phase_0_58/CLEAN_WHEEL_ROUTE_CLEANUP_QUALIFICATION.json"
+          ],
+          "verification_sources": [
+            "tests/prefect -m prefect",
+            "tests/fastapi/test_managed_application_0_56.py::test_managed_headless_and_http_command_semantics_match"
+          ]
+        }
+      ]
+    }
+  ],
+  "time_boundary_evidence": {
+    "default_retention_age": "30 days",
+    "wall_clock_wait_required": false,
+    "evidence": [
+      "The frozen-clock cleanup test denies deletion one second before the configured 30-day cutoff and permits it at the exact cutoff.",
+      "The bounded live deployment cleanup uses a test-only zero-age override and verifies route/reference checks, paused binding state, and delete-response recovery."
+    ],
+    "evidence_files": [
+      "docs/11_DEVELOPMENT/evidence/phase_0_58/LIVE_MULTIPROCESS_ROUTE_RETIREMENT_ROLLBACK.json",
+      "docs/11_DEVELOPMENT/evidence/phase_0_58/CLEAN_WHEEL_ROUTE_CLEANUP_QUALIFICATION.json",
+      "docs/11_DEVELOPMENT/evidence/phase_0_58/CI_INSTALLED_WORKER_PYTHON_MATRIX_2026-10-12.json"
+    ]
+  },
+  "evidence_scope_exclusions": [
+    {
+      "claim": "Independent adopter or external consumer evidence",
+      "required": false
+    },
+    {
+      "claim": "External identity-provider or third-party provider/connector live evidence",
+      "required": false
+    },
+    {
+      "claim": "Live Posit Connect hosting evidence",
+      "required": false,
+      "published_position": "Documented recipe only"
+    },
+    {
+      "claim": "A real-time 30-day retention wait or other elapsed wall-clock evidence",
+      "required": false
+    },
+    {
+      "claim": "Sustained production capacity, prolonged outage, other simultaneous fault combinations, untested operating systems, Prefect versions, server/client skews, worker pools, plan families, or connectors",
+      "qualified": false
+    }
+  ],
+  "remaining_gates": []
+}

@@ -1,7 +1,7 @@
 # Local Scheduler and Prefect Integration Plan
 
-> **Plan status: Shipped local MVP in 0.16+** (`etlantic-prefect`); managed
-> execution is planned in [0.58](IMPLEMENTATION_PLAN_0_58.md) under
+> **Plan status: Shipped local MVP in 0.16+** (`etlantic-prefect`); the bounded
+> managed Prefect profile is qualified for [0.58](IMPLEMENTATION_PLAN_0_58.md) and
 > [#290](https://github.com/eddiethedean/etlantic/issues/290) and #291–#298.
 > Durable cron / separately supervised scheduler and execution-host **service**
 > roles originate in 0.47 — not this `etlantic.scheduler/1` protocol

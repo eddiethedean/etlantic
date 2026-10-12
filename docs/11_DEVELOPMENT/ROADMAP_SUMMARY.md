@@ -49,7 +49,7 @@ For the status, current boundary, and owner of every domain plan, use the
 | Previous | 0.55 | Scoped Experimental inferred-model authoring | Published — [exit gate](EXIT_GATE_0_55.md) |
 | Previous | 0.56 | Complete application ETL backend with full specification and run control | Published — [exit gate](EXIT_GATE_0_56.md) |
 | Current | 0.57 | Managed backend independence and runtime supervision (#278–#282) | 0.57.0 published; 0.57.2 candidate — [implementation plan](IMPLEMENTATION_PLAN_0_57.md), [exit gate](EXIT_GATE_0_57.md) |
-| In progress | 0.58 | Managed Prefect execution | Candidate implementation is being validated; release qualification remains open — [implementation plan](IMPLEMENTATION_PLAN_0_58.md), [#290](https://github.com/eddiethedean/etlantic/issues/290) |
+| Qualified candidate | 0.58 | Managed Prefect execution | Bounded static-batch Process-worker/PostgreSQL profile qualified; publication remains pending for 0.58 — [implementation plan](IMPLEMENTATION_PLAN_0_58.md), [final decision](evidence/phase_0_58/FINAL_QUALIFICATION_DECISION_2026-10-12.json), [#290](https://github.com/eddiethedean/etlantic/issues/290) |
 | Later | 0.59 | Brownfield adoption bridges | Planning freeze — [implementation plan](IMPLEMENTATION_PLAN_0_59.md) |
 | Later | 0.60 | Operator console | Planned — [implementation plan](IMPLEMENTATION_PLAN_0_60.md) |
 | Later | 0.61 | Managed runtime and enterprise provider packs | Planned — [implementation plan](IMPLEMENTATION_PLAN_0_61.md) |

@@ -1,7 +1,7 @@
 ---
 title: ETLantic 0.58 Implementation Plan
 description: Managed Prefect execution on ETLantic's durable runtime, qualified within an explicit candidate support scope.
-plan_status: in_progress
+plan_status: qualified
 plan_last_reviewed: 2026-10-12
 ---
 
@@ -197,8 +197,8 @@ them in #298's integrated release gate.
 | ID | Scope and owner | Required evidence |
 |---|---|---|
 | 058-A1 | Deployment lifecycle and retention (#292, #294, #298): keep accepted code/envelope/artifact dependencies available through queued and running work; durably stop new admissions before drain; retain the immutable deployment through retirement; explicit update/rollback ownership; bounded cleanup only after route/reference checks | Old accepted work survives deployment replacement and submitter exit; route retirement waits for canonical work and live schedule references to drain, retains the paused binding, and reactivation checks the exact fingerprint; live PostgreSQL multiprocess evidence covers concurrent route compare-and-swap, Prefect API restart while the route remains draining, process death after remote pause but before the retired-state CAS, recovery without reopening admissions, and exact-binding rollback after SQLModel store reopen. Explicit orphan cleanup checks the configured retention cutoff, zero canonical submission history and schedule references, a paused exact binding, and no Prefect flow-run history; `retired -> cleanup_pending -> cleaned` fences reactivation across delete-response loss. A real unused deployment was retired and deleted against the local PostgreSQL-backed Prefect server; a frozen-clock contract denies cleanup one second before the configured 30-day boundary and passes at the exact cutoff before exercising delete-response recovery. The live deletion uses a zero-second test override. This boundary test is sufficient; elapsed wall-clock retention is not required. |
-| 058-A2 | Dispatch supervision and backpressure (#295, #296, #298): public role status/drain consistent with 0.57; queue-age/outage/stale-correlation metrics; bounded retries, remote lookup, and reconciliation | Live PostgreSQL-backed outage coverage repeats four bounded failed ticks with 32 accepted submissions, then drains that backlog one item per tick and completes every target once ([32-submission campaign](evidence/phase_0_58/LIVE_POSTGRES_32_SUBMISSION_OUTAGE_RECOVERY.json)). The blocking installed-wheel Prefect/PostgreSQL suite includes this test and passes all 46 tests without skips on the declared Python matrix ([final CI evidence](evidence/phase_0_58/CI_INSTALLED_WORKER_PYTHON_MATRIX_2026-10-12.json)). The public provider-free `PrefectDispatcher.diagnostics()` snapshot reports process-local tick failures, Prefect API failures, remote create attempts, uncertain creates, missing/failed remote-run observations, and queue-age high water without identifiers or payloads. A concurrent failure trace holds a Process worker after its sink effect/report/event commit while a separate dispatcher process holds a second route lease before remote creation; both processes then hard-exit. Worker recovery publishes without a second effect, and dispatcher recovery reuses the same creation key. A deterministic dispatcher/close race proves backend shutdown requests drain and refuses engine disposal while the adapter tick remains active. The connector-commit outage trace passed locally and in the installed-wheel Python matrix; the matrix runs all 46 Prefect/PostgreSQL tests without skips on CPython 3.11.15, 3.12.13, and 3.13.16 ([CI evidence](evidence/phase_0_58/CI_INSTALLED_WORKER_PYTHON_MATRIX_2026-10-12.json)). The bounded backlog and outage/restart campaigns satisfy the 0.58 capacity and outage evidence scope; sustained production capacity and prolonged outage claims are excluded. The bounded backlog, diagnostics, simultaneous fault, and drain evidence pass for the supported profile. Higher sustained capacity, prolonged outages, and untested concurrent fault combinations are outside the support claim. |
-| 058-A3 | Trust and admission parity (#292, #293, #295, #296, #297): same accepted authority across headless/HTTP/schedules, worker identity and credential rotation, least-privilege provider storage grants | Two-tenant/two-workspace non-enumeration; revoke/expire/rotate between accept, dispatch, and claim; ambient retry/cache/persistence overrides; inspection without startup DDL. The Process-worker test now covers an approval revoked after acceptance but before dispatch, another revoked after dispatch but before claim, and a valid approval expiring at claim; each path fails before sink/effect writes. The live local PostgreSQL campaign passes these boundaries with separate Process workers and a PostgreSQL-backed Prefect API. Blocking installed-wheel Prefect/PostgreSQL CI run 38269724837 on candidate `82c5985` passed all 46 tests without skips on each exact Python patch, including these authority boundaries; wheel digests and JUnit reports are in the [matrix evidence](evidence/phase_0_58/CI_INSTALLED_WORKER_PYTHON_MATRIX_2026-10-12.json). The full workflow completed with 45 successful checks, 2 expected Adaptive 0.54 skips, and no failures. Core and SQLModel tests verify that an approved request stops satisfying policy at expiry after store reopen. Approval revocation before dispatch and before claim, approval expiry before claim, and sink-credential rotation after durable dispatch and before claim pass. The accepted snapshot contains only the credential alias; external identity providers and untested combinations are outside the support claim. |
+| 058-A2 | Dispatch supervision and backpressure (#295, #296, #298): public role status/drain consistent with 0.57; queue-age/outage/stale-correlation metrics; bounded retries, remote lookup, and reconciliation | Live PostgreSQL-backed outage coverage repeats four bounded failed ticks with 32 accepted submissions, then drains that backlog one item per tick and completes every target once ([32-submission campaign](evidence/phase_0_58/LIVE_POSTGRES_32_SUBMISSION_OUTAGE_RECOVERY.json)). The blocking installed-wheel Prefect/PostgreSQL suite includes this test and passes all 48 tests without skips on the declared Python matrix ([final CI evidence](evidence/phase_0_58/CI_INSTALLED_WORKER_PYTHON_MATRIX_2026-10-12.json)). The public provider-free `PrefectDispatcher.diagnostics()` snapshot reports process-local tick failures, Prefect API failures, remote create attempts, uncertain creates, missing/failed remote-run observations, and queue-age high water without identifiers or payloads. A concurrent failure trace holds a Process worker after its sink effect/report/event commit while a separate dispatcher process holds a second route lease before remote creation; both processes then hard-exit. Worker recovery publishes without a second effect, and dispatcher recovery reuses the same creation key. A deterministic dispatcher/close race proves backend shutdown requests drain and refuses engine disposal while the adapter tick remains active. The connector-commit outage trace passed locally and in the installed-wheel Python matrix; the matrix runs all 48 Prefect/PostgreSQL tests without skips on CPython 3.11.15, 3.12.13, and 3.13.16 ([CI evidence](evidence/phase_0_58/CI_INSTALLED_WORKER_PYTHON_MATRIX_2026-10-12.json)). The bounded backlog and outage/restart campaigns satisfy the 0.58 capacity and outage evidence scope; sustained production capacity and prolonged outage claims are excluded. The bounded backlog, diagnostics, simultaneous fault, and drain evidence pass for the supported profile. Higher sustained capacity, prolonged outages, and untested concurrent fault combinations are outside the support claim. |
+| 058-A3 | Trust and admission parity (#292, #293, #295, #296, #297): same accepted authority across headless/HTTP/schedules, worker identity and credential rotation, least-privilege provider storage grants | Two-tenant/two-workspace non-enumeration; revoke/expire/rotate between accept, dispatch, and claim; ambient retry/cache/persistence overrides; inspection without startup DDL. The Process-worker test now covers an approval revoked after acceptance but before dispatch, another revoked after dispatch but before claim, and a valid approval expiring at claim; each path fails before sink/effect writes. The live local PostgreSQL campaign passes these boundaries with separate Process workers and a PostgreSQL-backed Prefect API. Blocking installed-wheel Prefect/PostgreSQL CI run 38282493355 on the final candidate passed all 48 tests without skips on each exact Python patch, including these authority boundaries; wheel digests and JUnit reports are in the [matrix evidence](evidence/phase_0_58/CI_INSTALLED_WORKER_PYTHON_MATRIX_2026-10-12.json). The full workflow completed with 45 successful checks, 2 expected Adaptive 0.54 skips, and no failures. Core and SQLModel tests verify that an approved request stops satisfying policy at expiry after store reopen. Approval revocation before dispatch and before claim, approval expiry before claim, and sink-credential rotation after durable dispatch and before claim pass. The accepted snapshot contains only the credential alias; external identity providers and untested combinations are outside the support claim. |
 | 058-A4 | Reproducible qualification and adoption (#291, #298): reusable direct/managed conformance fixtures, version-skew and upgrade rehearsal, runnable authenticated host recipes, capability and diagnostic documentation | Clean installed wheels; exact supported/rejected candidate matrix; every retained gate linked to a command/artifact; fakes and skips identified separately. An independent consumer and live Posit Connect hosting are out of scope; the Posit recipe remains documented. Passed. The candidate matrix, reproducible commands, scope limits, and host recipes are recorded in the evidence ledger and package documentation. |
 
 ## Delivery Sequence (completed)
@@ -228,149 +228,36 @@ surfaces remain outside the reviewed contract.
 
 ## Implementation Progress
 
-Requalification is in progress after adding direct-scheduler proofs for resolved
-ready-branch concurrency and isolation from ambient Prefect retry, cache, and
-persistence defaults. Both tests and the complete direct scheduler suite pass
-locally; the installed-wheel candidate matrix is the remaining check before a
-new final decision is recorded.
+The 0.58 candidate at commit `0881db594604fbea52c5ee4895c4cba461b1ddb0` is
+qualified for the bounded support profile in this plan. GitHub Actions run
+[38282493355](https://github.com/eddiethedean/etlantic/actions/runs/38282493355)
+passed all 48 installed-wheel Prefect/PostgreSQL tests without failures,
+errors, or skips on CPython 3.11.15, 3.12.13, and 3.13.16. Installed-wheel
+headless/FastAPI parity passed on all three patches. The full workflow finished
+with 45 successful checks, two expected historical Adaptive 0.54 skips, and
+no failures. The [matrix evidence](evidence/phase_0_58/CI_INSTALLED_WORKER_PYTHON_MATRIX_2026-10-12.json)
+records exact package versions, manifests, JUnit results, wheel digests, and
+artifact hashes.
 
-The current code implements the managed worker, versioned Process deployment,
-durable dispatch, status/cancellation coordination, and schedule route pinning.
-The managed Prefect module contains 29 contract tests; without a database, the
-local Prefect suite reports 37 passed and 2 environment-gated skips. With the
-local PostgreSQL service configured, the current source-checkout suite passes
-46 tests with no skips. The added connector-commit/API-outage trace passed as
-one live source-checkout test in 34.71s; its bounded assertions and runtime are
-recorded in [local campaign evidence](evidence/phase_0_58/LIVE_CONNECTOR_COMMIT_DURING_PREFECT_API_OUTAGE_2026-10-12.json).
-GitHub Actions run 38269724837 completed the full repository workflow
-successfully. Its installed-wheel Prefect/PostgreSQL suite passed all 46 tests
-without failures or skips on exact CPython 3.11.15, 3.12.13, and 3.13.16, with
-installed headless/FastAPI parity on each patch. The new connector-commit/API-
-outage trace is included in all three runs. The [matrix evidence](evidence/phase_0_58/CI_INSTALLED_WORKER_PYTHON_MATRIX_2026-10-12.json) records the manifests, JUnit results, wheel digests, and artifact hashes.
-The PostgreSQL-gated live suite also covers exhausted-generation persistence
-and stale-CAS behavior. The PostgreSQL-gated
-live worker campaign includes a separate Prefect Process worker that runs
-targeted CSV-to-PostgreSQL and PostgreSQL-to-PostgreSQL transfers. The direct
-scheduler suite proves
-barrier-controlled overlap between a successful and a failing run on the same
-scheduler, disjoint actual Prefect flow/task identities, timeout failure
-propagation, selection dependency closure, ETLantic-owned retry behavior, and
-admission rejection for unqualified cancellation policies. Caller and Prefect
-API cancellation stop an in-flight direct run promptly and retain a canonical
-cancelled report. A separate installed-wheel campaign reruns six dispatch,
-status, cancellation, route-drain, and SQLModel snapshot tests with the core,
-Prefect, and SQLModel packages loaded from a clean environment's `site-packages`;
-pytest's configured `pythonpath` is disabled. A clean-wheel FastAPI/headless
-parity test also passes with the FastAPI wheel installed and the Prefect
-execution route preserved through both submission surfaces. A separate fresh
-installation of core, Prefect, SQL, SQLModel, and FastAPI wheels passes seven
-dispatch-generation reconciliation tests, including the authorized HTTP
-operator endpoint; all five package imports resolve from the isolated
-environment's `site-packages`. The full FastAPI managed-application regression
-module passes with 84 tests. Other local regressions passed: 357 control-plane
-tests (20 skipped); 87 SQLModel tests (7 skipped) with PostgreSQL enabled;
-250 runtime tests (203 skipped); 57 schedule tests (2 skipped); five
-schedule-route tests; and three service tests. Ruff,
-documentation, the 794-entry suppression inventory, the locked 10,092-result
-strict Pyright scan, and regular Pyright with zero errors also pass. The live
-Process-worker campaign starts two distinct
-Prefect runs for one accepted reference on separate workers; both orchestration
-runs complete, while PostgreSQL records one canonical execution attempt and
-report. Two live dispatcher ticks are also overlapped at the remote-create
-boundary; one durable claim creates and links the run while the competing
-dispatcher finds no ready dispatch candidate while that lease is held. A new
-source-checkout campaign stops the Prefect API while a Process worker is held at
-the PostgreSQL connector-commit boundary, verifies one committed sink/effect
-while status and result publication remain pending, then restarts the API and
-confirms one completed publication ([local evidence](evidence/phase_0_58/LIVE_CONNECTOR_COMMIT_DURING_PREFECT_API_OUTAGE_2026-10-12.json)).
-An accepted submission also remains pinned to deployment revision 1 after
-revision 2 is registered; the new route cannot pick it up, while the retained
-revision-1 dispatcher can still create and link its flow run.
-In the live installed-wheel Process-worker campaign, changing the remote
-deployment environment after dispatch causes the worker flow to fail before
-backend construction, canonical attempt creation, or PostgreSQL sink effects.
-After the deployment is restored, dispatch reconciliation gives that accepted
-submission a new bounded creation generation; the replacement Process flow
-completes one canonical attempt and one PostgreSQL effect.
-Additional traces cover a PostgreSQL-backed Prefect lost-create-response retry,
-duplicate schedule firing,
-cross-tenant status/cancellation denial, late remote status after durable
-cancellation, and a submitting subprocess that exits before dispatch and worker
-execution. A Process worker was also paused after its PostgreSQL sink effect
-and successful canonical report were durable but before host finalization; a
-durable cancellation request was observed during that pause, and completion
-preserved the committed effect, successful report, and completed attempt. A
-second live trace requested cancellation while PostgreSQL held a prepared
-replacement transaction at its commit boundary; the worker observed the durable
-request before release, committed once, retained the cancelled report, and kept
-the connector effect classified as committed. The
-test supervisor starts a separate Prefect API process backed by
-its own PostgreSQL database. The live-wheel campaign restarts that API after a
-completed target and verifies that the stored flow run and deployment remain
-readable before later work is dispatched. Real Process-worker fault traces now
-cover a crash after a PostgreSQL sink effect and durable pending report but
-before host finalization; recovery publishes the canonical report without a
-second connector effect. Another crash exits immediately after the durable
-`run.completed` event append and before adapter return; recovery preserves one
-start/completion event per attempt and one connector effect. A crash after
-PostgreSQL commits but before ETLantic receives the connector receipt is
-recovered as an unknown effect without replaying the write. A crash after the
-durable claim but before the adapter begins is recovered as a lost attempt
-followed by one successful execution and one sink effect. A crash after
-PostgreSQL stages replacement rows and its effect-ledger insert but before
-commit proves the uncommitted transaction rolls back; recovery retries once
-and commits one sink effect. A separate trace exits after the replace-target
-DELETE but before inserts; a second connection continues to see the original
-rows, rollback restores them, and recovery commits one replacement. Non-
-transactional third-party connector partial effects are outside the support
-claim. Report-store, event, and durable-artifact publication cuts are covered
-by the linked live campaigns.
-A separate submitter process also exits after routed acceptance but before a
-dispatch record exists; the bounded PostgreSQL scan still discovers and routes
-the accepted target. A separate restricted-role PostgreSQL test confirms that
-read-only schema inspection and backend construction need no DDL, then persists
-the Prefect route and discovers its accepted submission with table DML grants
-and no schema `CREATE` privilege. The expanded clean-wheel test now registers a
-versioned Process deployment, accepts canonical work, creates its Prefect flow
-run, and links the remote ID durably under those same grants. A separate
-dispatcher child dies after its durable claim
-but before remote creation, after Prefect creates a flow run but before durable
-linkage, and after durable linkage but before its tick returns. Recovery creates
-and executes each accepted target once, and the post-link retry creates no
-second flow run. A durable active/draining/retired/cleanup-pending/cleaned route
-lifecycle blocks new admissions without redirecting prior accepts; schedule
-creation reserves its route durably, route retirement waits for those
-reservations and active work to drain, and cleanup requires zero canonical
-submission history. Cleanup verifies the exact paused Process binding, all
-schedule and canonical references, and absence of every Prefect flow-run state
-before entering its irreversible fence. A lost delete response leaves the
-route cleanup-pending and retry finalizes an already-removed deployment without
-reopening admissions. Memory, SQLite, simulated response-loss, and a live
-PostgreSQL-backed Prefect API campaign that deletes an unused deployment pass.
-The live campaign sets the retention threshold to zero for bounded execution;
-a frozen-clock contract denies deletion one second before the default 30-day
-boundary and permits it at the exact cutoff. Blocking CI exercises these
-frozen-clock and route-lifecycle contracts; no real-time 30-day wait is required. Explicit
-reactivation still verifies the binding and Process pool before reopening a
-retired route. Live PostgreSQL retirement covers the pause-to-retired CAS
-boundary and API restart; three bounded API-outage traces cover a queued
-pre-dispatch item, a worker held after effect commit while result publication
-is pending, and connector commit while the API is stopped before host finalization. The bounded outage/backlog and simultaneous dispatcher/worker failure traces meet
-the scoped fault evidence. Long-duration outage, production-capacity, and other
-untested fault-combination claims are outside scope. The two new direct
-scheduler checks pass locally; the installed-wheel matrix for the current
-candidate is pending.
+The complete direct scheduler suite passed 18 tests locally. The installed
+matrix also executes the ready-branch concurrency and ambient retry/cache/
+persistence checks in its 48-test suite. The combined [final decision](evidence/phase_0_58/FINAL_QUALIFICATION_DECISION_2026-10-12.json)
+maps AC058-001–010, 058-A1–A4, and every acceptance checkbox in #290–#298 to
+their evidence. It records the bounded support claim, external evidence
+exclusions, and controlled-clock retention result. No independent adopter,
+external provider or identity-provider, live Posit Connect, or elapsed
+wall-clock retention evidence is required.
 
 | Workstream | Code now present | Qualification outcome |
 |---|---|---|
-| #291 | Per-invocation correlation; actual Prefect IDs distinguished from fallbacks; no automatic retries/cache/result persistence; failed ETL reports fail the flow; barrier overlap/failure, caller and Prefect API cancellation, effect-boundary cancellation with reconciled committed receipt, run/step timeout propagation, selection dependency closure, ETLantic retry behavior, resolved ready-branch concurrency, ambient retry/cache/persistence isolation, and unsupported cancellation-policy findings are tested | Existing checks and the two added tests pass locally; the current installed-wheel candidate matrix is pending. |
+| #291 | Per-invocation correlation; actual Prefect IDs distinguished from fallbacks; no automatic retries/cache/result persistence; failed ETL reports fail the flow; barrier overlap/failure, caller and Prefect API cancellation, effect-boundary cancellation with reconciled committed receipt, run/step timeout propagation, selection dependency closure, ETLantic retry behavior, resolved ready-branch concurrency, ambient retry/cache/persistence isolation, and unsupported cancellation-policy findings are tested | Passed on the exact installed-wheel matrix, including both added direct-scheduler gates; see the final decision and matrix evidence. |
 | #292 | ADR-027; bounded immutable-reference schema; envelope and plan fingerprint checks; trusted acceptance route pinning and route-aware targeted host polling; accepted-principal run-submit/resource/input authorization and current pre-execution policy/approval are rechecked before resource reads or connector effects; a distinct worker principal must hold run.execute; fingerprinted work fails closed if its current policy provider is missing; approved policy requests expire before worker effects even when approval occurred before dispatch; a mismatched worker runtime version is rejected and remote environment drift blocks dispatch before claim; a restricted PostgreSQL role with no DDL authority registers a versioned Process deployment, accepts routed work, and completes remote create/link under table DML grants | Passed. Admission, authority, credential, runtime drift, and least-privilege evidence are mapped in the [release index](evidence/phase_0_58/RELEASE_INDEX.json). |
 | #293 | Importable worker flow; trusted installed backend factory; targeted canonical host execution; durable dispatch-intent and binding checks; ordinary host polling leaves Prefect-routed accepted work untouched; a separate submitter subprocess exits before a Process worker executes its target over shared PostgreSQL storage; two distinct Prefect Process runs on separate workers race for one accepted reference and produce one canonical attempt/report; real Process child crashes before adapter effects, during a prepared but uncommitted PostgreSQL transaction, immediately after a replace DELETE inside an open transaction, after the connector receipt but before host finalization, after the durable report event append but before adapter return, and after PostgreSQL commit but before ETLantic receives the receipt; worker-time policy denial, submitter revocation, distinct worker-principal denial, revoked approval after dispatch, and a missing current policy provider block effects; recovery retries known-no-effect, partial and rolled-back writes once, republishes after the effect receipt once, and preserves the lost connector receipt as unknown without replay; a live Process test now recovers a failed terminal report-store write from durable result evidence without repeating the connector effect; a Process worker hard-killed after the durable result-publication row commits but before artifact-bearing report publication returns is recovered from that snapshot, with durable artifact files verified and no second PostgreSQL effect; a separately installed test backend independently commits one PostgreSQL row before worker death, and recovery preserves the partial row while recording an unknown effect without replay; clean-wheel Process-worker suite passes with core, Prefect, FastAPI, SQL, SQLModel, and separately built test backend wheels installed in a fresh environment | Passed. Targeted worker execution and report/event/artifact recovery cuts are mapped in the [release index](evidence/phase_0_58/RELEASE_INDEX.json). |
 | #294 | Typed versioned spec; runtime/source/lock fingerprints; read-only preview; explicit Process-pool registration; guarded worker environment; verification before resume; a PostgreSQL-backed queued revision-1 submission remains bound after revision 2 is registered, revision 2 cannot claim it, and a real Process worker completes it through revision 1; re-registering the prior immutable specification restores its existing binding as an explicit rollback without retargeting accepted work; unexpected remote environment fields are rejected before dispatch claim; a real Process worker rejects remote configuration drift introduced after dispatch before creating an ETLantic attempt or connector effect; durable active/draining/retired/cleanup-pending/cleaned route lifecycle blocks new admissions, counts durable schedule reservations and historical canonical submissions before cleanup, retains the paused binding, and supports verified reactivation only before cleanup starts; two spawned processes now race live PostgreSQL retirement and converge on the retained paused revision; a process killed after the remote pause but before retired-state persistence leaves the route draining and paused, and a retry completes retirement; a reopened SQLModel backend reactivates the exact prior binding while leaving revision 2 unchanged; restarting the Prefect API while the route is draining preserves the two deployments and closed admission gate; the frozen-clock contract covers the default 30-day cleanup boundary and delete-response recovery, while a local live Prefect/PostgreSQL campaign deletes an unused binding | Passed. Version retention, drain, rollback, controlled-clock cleanup, and bounded live deletion are mapped in the [release index](evidence/phase_0_58/RELEASE_INDEX.json). |
 | #295 | Durable route-scoped polling; stable create identity; fenced correlation; uncertain-create backoff; supervisor status/drain; queue-age receipts and a provider-free process-local diagnostics snapshot for outage, create, and stale-remote observations; remote preflight; live PostgreSQL-backed Prefect response-loss test confirms retry deduplicates and links the original run; overlapped live dispatchers produce one claim and one linked flow run; a submitter exits after atomic routed acceptance and before dispatch-record creation, then the bounded scan discovers its work; separate dispatcher processes crash after claim/before remote create, after remote create/before link, and after durable link/before tick acknowledgement; all three targets recover and complete once, and the post-link retry creates no second flow run; after-effect worker-crash recovery preserves one connector effect-ledger record and publishes the canonical report; a terminal remote failure before any ETL attempt is conditionally rearmed under a new bounded creation generation and completes once; a linked run that remains missing beyond a 300-second grace can also rearm, guarded by exact flow-run identity, bounded generations, and absence of ETL lease/attempt/effect/publication; automatic generation exhaustion now becomes durable `reconciliation_required`, blocks dispatcher claims, appears with the remote observation in authorized status, and can only be rearmed by an authorized exact-generation operator action through the headless service or `POST /v1/dispatches/{submission_id}/reconcile`; installed-wheel HTTP coverage proves opaque cross-tenant denial, evidence redaction, stale-request conflict, and audit emission; a live PostgreSQL SQLModel test proves exhausted-generation persistence, exact generation/flow-run CAS, audit-history reconstruction, and refusal of automatic claims; a route-scoped cursor advances through bounded reconciliation pages so persistent early records do not starve later dispatches | Passed. Ambiguous create, reconciliation, bounded outage/backlog, and restart recovery are mapped in the [release index](evidence/phase_0_58/RELEASE_INDEX.json). |
 | #296 | Authorized canonical status/cancellation first; separate timestamped Prefect observation and cooperative cancellation result; contract tests cover cross-tenant opaque denial, lost cancellation response, a late remote terminal state, and a remote Failed observation after canonical completion; status reports the conflict without changing the completed submission or attempt; live Process-worker tests cover cancellation after dispatch but before claim with no sink effect, during source-batch staging before the transformation is released, after a committed sink effect and successful durable report but before host finalization, while a terminal report-store write is paused after connector commit, and while a prepared PostgreSQL transaction is paused at commit; source staging cancellation publishes a cancelled report with no sink effect, report-store failure recovers the completed report without repeating the effect; a worker killed after the durable result snapshot commit leaves the report pending, then host recovery publishes it with retained artifact files and no second effect; commit-boundary cancellation commits once with a cancelled report; a forced live Prefect Failed state conflicts with the completed ETL record without rewriting its report or effect, and a mid-execution Prefect API restart preserves canonical status across an unavailable remote observation; a separate live trace commits a PostgreSQL sink exactly once while the Prefect API is stopped at the connector-commit boundary, leaves the result unpublished, then completes after API restart | Passed. Canonical status, cancellation, remote disagreement, authority checks, and publication recovery are mapped in the [release index](evidence/phase_0_58/RELEASE_INDEX.json). |
 | #297 | ETLantic timer remains the sole recurrence authority; schedule snapshots pin the route and include it in their admission policy fingerprint; duplicate same-occurrence admission returns the original firing and submission even after a route default change; deterministic tests cover DST gaps/folds, bounded catch-up, misfire skip, overlap skip, and effective windows; a live PostgreSQL leader-recovery trace retains the Prefect route through an accepted but unlinked firing; two independent live scheduler instances race for the PostgreSQL leader lease and admit one firing; a Process worker completes that firing with checked sink output; registrar rejects a managed deployment after a native Prefect schedule is added; explicit guarded transfer waits for active firing drain, leaves the old accepted submission on route A, and persists route B plus its new revision across a store/process restart before admitting new work | Passed. Timer authority, occurrence replay, leader recovery, transfer, and live worker execution are mapped in the [release index](evidence/phase_0_58/RELEASE_INDEX.json). |
-| #298 | Focused direct/managed contract tests, a separately supervised Prefect server backed by PostgreSQL, a graceful API restart with persisted flow-run/deployment reads, live deployment-revision retention through an old-revision Process worker, a live scheduled Process-worker execution, dual-dispatcher single-create and duplicate-worker single-ownership evidence, Process-worker recovery before effects, after fully staged but uncommitted writes, and after effects, unknown-effect handling after lost connector receipt, dispatcher recovery after create-before-link process death, worker-side deployment drift rejection, native-trigger rejection and prior-version rollback, memory/SQLite route drain-retire-reactivation and cleanup-fence contracts, live multiprocess PostgreSQL retirement including API restart while draining, process death after Prefect pause, store-reopen rollback, and deletion of an unused live Prefect deployment after PostgreSQL route retirement; report-store publication recovery after cancellation including a Process hard kill after durable result-snapshot commit; Process-flow pilots for CSV→PostgreSQL and PostgreSQL-to-PostgreSQL replace mode; restricted-role deployment registration plus durable dispatch create/link; standard FastAPI configuration that pins the reviewed Prefect route at durable acceptance; a Posit Connect ASGI deployment recipe; package/host supervision guidance; and a blocking CI Prefect job that builds and installs core, Prefect, FastAPI, SQL, SQLModel, and a separate backend-plugin wheel. The previous candidate's matrix passed all 46 installed-wheel Prefect/PostgreSQL tests without skips on CPython 3.11.15, 3.12.13, and 3.13.16; current-candidate requalification must rerun the matrix with both direct-scheduler additions. |
+| #298 | Focused direct/managed contract tests, a separately supervised Prefect server backed by PostgreSQL, a graceful API restart with persisted flow-run/deployment reads, live deployment-revision retention through an old-revision Process worker, a live scheduled Process-worker execution, dual-dispatcher single-create and duplicate-worker single-ownership evidence, Process-worker recovery before effects, after fully staged but uncommitted writes, and after effects, unknown-effect handling after lost connector receipt, dispatcher recovery after create-before-link process death, worker-side deployment drift rejection, native-trigger rejection and prior-version rollback, memory/SQLite route drain-retire-reactivation and cleanup-fence contracts, live multiprocess PostgreSQL retirement including API restart while draining, process death after Prefect pause, store-reopen rollback, and deletion of an unused live Prefect deployment after PostgreSQL route retirement; report-store publication recovery after cancellation including a Process hard kill after durable result-snapshot commit; Process-flow pilots for CSV→PostgreSQL and PostgreSQL-to-PostgreSQL replace mode; restricted-role deployment registration plus durable dispatch create/link; standard FastAPI configuration that pins the reviewed Prefect route at durable acceptance; a Posit Connect ASGI deployment recipe; package/host supervision guidance; and a blocking CI Prefect job that builds and installs core, Prefect, FastAPI, SQL, SQLModel, and a separate backend-plugin wheel. The final candidate matrix passed all 48 installed-wheel Prefect/PostgreSQL tests without skips on CPython 3.11.15, 3.12.13, and 3.13.16; run 38282493355 and its artifacts are recorded in the final matrix evidence. |
 
 ## Exit Gates
 
@@ -455,12 +342,11 @@ are not used as evidence.
 | Isolation and provider upgrade | #292/#295/#296/#298; AC058-003, 008, 010 | Two tenants and two workspaces; unauthorized read/cancel before lookup; one live environment-backed sink credential rotation after dispatch and before claim, with only the alias stored in the accepted snapshot; the supported revoke/expire/rotation boundaries pass; old records and read-only startup grants; independent version drift; redacted control payloads/logs/telemetry |
 | Live pilot and host parity | #298; AC058-009 plus all applicable gates | Self-hosted server, real Process workers and PostgreSQL; CSV→PostgreSQL and PostgreSQL→PostgreSQL output/quality/report checks; HTTP/headless equivalence; restart API after acceptance; separately supervised roles retain progress |
 
-Core implementation and prior candidate evidence are complete. Phase status
-remains in progress until the current installed-wheel matrix includes the two
-new direct-scheduler tests. The final decision will map AC058-001–010,
-058-A1–A4, and #291–#298 to their campaigns and record the exact candidate
-matrix, exclusions, and decision; the [release index](evidence/phase_0_58/RELEASE_INDEX.json)
-tracks the remaining gate.
+Core implementation and qualification are complete for the declared support profile.
+The [final decision](evidence/phase_0_58/FINAL_QUALIFICATION_DECISION_2026-10-12.json)
+maps AC058-001–010, 058-A1–A4, and each #290–#298 acceptance checkbox to its
+evidence. The [release index](evidence/phase_0_58/RELEASE_INDEX.json) records
+no remaining gates.
 
 Run fast contract/direct/rejection fixtures on ordinary changes. Installed
 worker and live Process/PostgreSQL campaigns are blocking integration checks
