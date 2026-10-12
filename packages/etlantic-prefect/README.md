@@ -49,10 +49,11 @@ clean-wheel HTTP/headless parity test also preserves a pinned Prefect route. The
 installed-wheel campaign also verifies that a worker fails closed if remote
 deployment settings drift after dispatch, and retries that terminal pre-attempt
 failure under a new creation generation after the deployment is restored. The
-path remains unqualified for production because broader crash/recovery,
-effect-boundary, API/headless authorization and lifecycle parity, and
-version-support gates are still open. Direct scheduler use remains the local
-MVP described above. In managed mode,
+path is being qualified against the bounded 0.58 candidate profile; remaining
+local gates are listed in the [phase plan](../../docs/11_DEVELOPMENT/IMPLEMENTATION_PLAN_0_58.md).
+Production identity providers, independent consumers, external connectors, and
+elapsed-time evidence are not phase requirements. Direct scheduler
+use remains the local MVP described above. In managed mode,
 `PrefectDispatcher` creates a flow run for the registered entrypoint and passes
 it a bounded `ManagedExecutionReference`; host applications operate the
 dispatcher rather than invoking the flow function directly.
@@ -97,10 +98,10 @@ Process-worker recovery also covers a hard kill during a partial artifact
 staging write before atomic replacement, a sink credential rotation after
 dispatch but before claim, and a test backend that independently commits a
 partial sink row before worker death. Recovery keeps that row, marks the effect
-unknown, and does not replay it. This fault fixture does not qualify a production
-or third-party connector; broader authority rotation, prolonged outages, and
-connector-I/O failures outside the tested PostgreSQL commit boundary remain
-unqualified.
+unknown, and does not replay it. This fixture exercises PostgreSQL recovery;
+the 0.58 support claim covers only its tested PostgreSQL-backed modes. Other
+connectors are outside this phase. Broader in-repository authority-rotation
+cases remain listed as local gates; prolonged-outage evidence is not required.
 
 The local clean-wheel campaign passed 44 Prefect tests with no skips and the
 headless/FastAPI parity test on Python 3.11.15, Prefect 3.7.8, PostgreSQL 16.13,
@@ -113,9 +114,9 @@ headless/FastAPI parity on each patch. It includes the connector-commit/API-
 outage trace and approval revocation/expiry checks. The [matrix evidence
 record](../../docs/11_DEVELOPMENT/evidence/phase_0_58/CI_INSTALLED_WORKER_PYTHON_MATRIX_2026-10-12.json)
 contains runtime manifests, JUnit reports, wheel digests, and artifact hashes.
-These versions are tested candidate environments, not a production support
-commitment. Other Python and Prefect versions, operating systems, and worker
-pools remain unqualified.
+These versions define the tested candidate profile. Other Python and Prefect
+versions, operating systems, databases, and worker pools are outside the 0.58
+support claim and do not require qualification evidence for this phase.
 The expanded restricted-role PostgreSQL test also completes versioned
 deployment registration, routed acceptance, and remote dispatch create/link
 using table DML grants without schema `CREATE` privilege.
@@ -137,11 +138,11 @@ The local clean-wheel run also passed the partial-effect and mid-execution API r
 | Managed capability | Current evidence and boundary |
 |---|---|
 | Plan and envelope | Static-batch `etlantic.plan/1` through `etlantic.execution_envelope/2`; adaptive `etlantic.plan/2` is rejected before connector I/O. |
-| Data paths | Live Process-worker CSV-to-PostgreSQL and PostgreSQL-to-PostgreSQL replace-mode runs. Other connectors and writer modes are unqualified. |
+| Data paths | Live Process-worker CSV-to-PostgreSQL and PostgreSQL-to-PostgreSQL replace-mode runs. Other connectors and writer modes are outside the 0.58 support claim. |
 | Worker pool | Process pool is the only accepted pool and was exercised in the recorded environment; other pool types are rejected at registration. |
 | Prefect hosting | Self-hosted API with PostgreSQL persistence. Prefect Cloud, Docker, Kubernetes, and other pools have no managed support claim. |
 | Host composition | Headless and FastAPI command parity passed from installed wheels. Posit Connect is a deployment recipe, not a live-qualified host. |
-| Production status | No managed version tuple is production-qualified. Blocking CI has exercised the installed Process-worker path on Ubuntu 24.04 with CPython 3.11.15, 3.12.13, and 3.13.16, Prefect 3.7.8, PostgreSQL 16.15, and the 0.57.2 candidate wheels; other Python, Prefect, operating-system, database, pool, and hosting combinations remain unqualified. The connector-commit/API-outage scenario passed in the three-patch installed-wheel matrix; this bounded trace does not qualify prolonged outages or sustained capacity. |
+| Qualification boundary | The candidate profile is Ubuntu 24.04, CPython 3.11.15/3.12.13/3.13.16, Prefect 3.7.8, PostgreSQL 16.15, the 0.57.2 candidate wheels, and the Process pool. Other combinations are unsupported in this phase. No production identity provider, third-party connector, external consumer, live Posit host, prolonged outage, sustained production-capacity, or elapsed-time evidence is required; no claim is made for them. |
 
 The same scoped reference can read ETLantic's canonical run projection or
 persist an authorized ETLantic cancellation:
@@ -239,7 +240,9 @@ route or delete it through the authorized schedule service before retrying
 retirement.
 
 An operator may remove an unused retired deployment with `registrar.cleanup`.
-The default retention is 30 days after retirement. Cleanup requires no
+The default retention is 30 days after retirement. Controlled-clock boundary
+tests verify time-based behavior; no wall-clock delay or retention interval is
+required as phase evidence. Cleanup requires no
 canonical submission history, no schedule records or reservations, the exact
 paused Process binding, and no Prefect flow run in any state. It records a
 durable `cleanup_pending` fence before deletion, so reactivation is refused

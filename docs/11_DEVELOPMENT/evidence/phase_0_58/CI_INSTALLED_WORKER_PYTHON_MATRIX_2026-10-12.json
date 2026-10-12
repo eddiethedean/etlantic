@@ -22,7 +22,11 @@
   "runtime": {
     "runner_os": "Ubuntu 24.04",
     "runner_arch": "x86_64",
-    "python_patches": ["3.11.15", "3.12.13", "3.13.16"],
+    "python_patches": [
+      "3.11.15",
+      "3.12.13",
+      "3.13.16"
+    ],
     "packages": {
       "etlantic": "0.57.2 candidate wheel",
       "etlantic-prefect": "0.57.2 candidate wheel",
@@ -50,8 +54,20 @@
       "python": "3.11.15",
       "job_id": 114720647870,
       "job_url": "https://github.com/eddiethedean/etlantic/actions/runs/38222124256/job/114720647870",
-      "prefect_postgresql_tests": {"tests": 46, "failures": 0, "errors": 0, "skipped": 0, "seconds": 115.518},
-      "headless_fastapi_tests": {"tests": 1, "failures": 0, "errors": 0, "skipped": 0, "seconds": 1.397},
+      "prefect_postgresql_tests": {
+        "tests": 46,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "seconds": 115.518
+      },
+      "headless_fastapi_tests": {
+        "tests": 1,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "seconds": 1.397
+      },
       "artifact_name": "phase-0.58-installed-worker-a6265680ec2a4a25c5cc4d196e16a75aaeaf2278-py3.11.15",
       "artifact_sha256": "dd770aa3fdaf6f47e87fa1950f6339445e559e5579a03949a3b7c09af8f63740"
     },
@@ -59,8 +75,20 @@
       "python": "3.12.13",
       "job_id": 114720648240,
       "job_url": "https://github.com/eddiethedean/etlantic/actions/runs/38222124256/job/114720648240",
-      "prefect_postgresql_tests": {"tests": 46, "failures": 0, "errors": 0, "skipped": 0, "seconds": 135.032},
-      "headless_fastapi_tests": {"tests": 1, "failures": 0, "errors": 0, "skipped": 0, "seconds": 1.805},
+      "prefect_postgresql_tests": {
+        "tests": 46,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "seconds": 135.032
+      },
+      "headless_fastapi_tests": {
+        "tests": 1,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "seconds": 1.805
+      },
       "artifact_name": "phase-0.58-installed-worker-a6265680ec2a4a25c5cc4d196e16a75aaeaf2278-py3.12.13",
       "artifact_sha256": "da7ef443a8eae25f60c737d45ae9081cb8b9d4e8379af1537fd24b0dc63d3585"
     },
@@ -68,8 +96,20 @@
       "python": "3.13.16",
       "job_id": 114720648315,
       "job_url": "https://github.com/eddiethedean/etlantic/actions/runs/38222124256/job/114720648315",
-      "prefect_postgresql_tests": {"tests": 46, "failures": 0, "errors": 0, "skipped": 0, "seconds": 123.8},
-      "headless_fastapi_tests": {"tests": 1, "failures": 0, "errors": 0, "skipped": 0, "seconds": 1.664},
+      "prefect_postgresql_tests": {
+        "tests": 46,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "seconds": 123.8
+      },
+      "headless_fastapi_tests": {
+        "tests": 1,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "seconds": 1.664
+      },
       "artifact_name": "phase-0.58-installed-worker-a6265680ec2a4a25c5cc4d196e16a75aaeaf2278-py3.13.16",
       "artifact_sha256": "26f65d9822b03373298c7cf8e66037225386ba1dfe780c31f78f80cae408d627"
     }
@@ -119,24 +159,39 @@
     "artifact_upload": "One manifest, two JUnit reports, and wheel digests per Python patch"
   },
   "limitations": [
-    "This proves the static-batch etlantic.plan/1 Process-worker path on Ubuntu 24.04 for the three exact Python patches and the listed Prefect/PostgreSQL/client package versions. Other operating systems, Python/PyPI combinations, Prefect versions, server/client skews, and worker pools remain unqualified.",
-    "The connector-commit outage is a bounded recovery trace, not sustained-capacity or prolonged-outage evidence. It does not qualify simultaneous multi-process server faults, production or third-party connectors, external identity providers, Posit Connect hosting, or an elapsed 30-day retention interval. The integrated release decision remains open."
+    "This proves the static-batch etlantic.plan/1 Process-worker path on Ubuntu 24.04 for the three exact Python patches and the listed Prefect/PostgreSQL/client package versions. Other operating systems, Python/PyPI combinations, Prefect versions, server/client skews, and worker pools are outside the 0.58 support profile.",
+    "The connector-commit outage is a bounded recovery trace; this campaign does not measure sustained capacity, long-duration outages, or other simultaneous multi-process faults. Production or third-party connectors, external identity providers, Posit Connect hosting, and elapsed wall-clock waits are outside the phase evidence requirements and receive no support claim. Controlled-clock tests cover time-based behavior, including the 30-day retention boundary. Remaining release gates are listed in the implementation plan."
   ],
   "artifacts": [
     {
       "name": "phase-0.58-installed-worker-a6265680ec2a4a25c5cc4d196e16a75aaeaf2278-py3.11.15",
       "sha256": "dd770aa3fdaf6f47e87fa1950f6339445e559e5579a03949a3b7c09af8f63740",
-      "contents": ["phase058-clean-wheel-prefect.xml", "phase058-headless-fastapi-parity.xml", "phase058-runtime.json", "phase058-wheel-sha256.txt"]
+      "contents": [
+        "phase058-clean-wheel-prefect.xml",
+        "phase058-headless-fastapi-parity.xml",
+        "phase058-runtime.json",
+        "phase058-wheel-sha256.txt"
+      ]
     },
     {
       "name": "phase-0.58-installed-worker-a6265680ec2a4a25c5cc4d196e16a75aaeaf2278-py3.12.13",
       "sha256": "da7ef443a8eae25f60c737d45ae9081cb8b9d4e8379af1537fd24b0dc63d3585",
-      "contents": ["phase058-clean-wheel-prefect.xml", "phase058-headless-fastapi-parity.xml", "phase058-runtime.json", "phase058-wheel-sha256.txt"]
+      "contents": [
+        "phase058-clean-wheel-prefect.xml",
+        "phase058-headless-fastapi-parity.xml",
+        "phase058-runtime.json",
+        "phase058-wheel-sha256.txt"
+      ]
     },
     {
       "name": "phase-0.58-installed-worker-a6265680ec2a4a25c5cc4d196e16a75aaeaf2278-py3.13.16",
       "sha256": "26f65d9822b03373298c7cf8e66037225386ba1dfe780c31f78f80cae408d627",
-      "contents": ["phase058-clean-wheel-prefect.xml", "phase058-headless-fastapi-parity.xml", "phase058-runtime.json", "phase058-wheel-sha256.txt"]
+      "contents": [
+        "phase058-clean-wheel-prefect.xml",
+        "phase058-headless-fastapi-parity.xml",
+        "phase058-runtime.json",
+        "phase058-wheel-sha256.txt"
+      ]
     }
   ]
 }
