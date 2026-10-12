@@ -1,0 +1,30 @@
+{
+  "schema": "etlantic.phase_0_58.campaign_evidence/1",
+  "campaign_id": "remote-missing-dispatch-rearm-2026-10-11",
+  "recorded_at": "2026-10-11",
+  "status": "passed",
+  "qualifies_release": false,
+  "test": "tests/prefect/test_managed_prefect_0_58.py::test_remote_failure_rearm_is_versioned_and_requires_no_etl_attempt; tests/prefect/test_managed_prefect_0_58.py::test_missing_prefect_run_rearms_only_after_grace_and_without_attempt; tests/prefect/test_managed_prefect_0_58.py::test_dispatch_reconciliation_scan_advances_beyond_first_page",
+  "command": ".venv/bin/python -m pytest -q tests/prefect/test_managed_prefect_0_58.py::test_remote_failure_rearm_is_versioned_and_requires_no_etl_attempt tests/prefect/test_managed_prefect_0_58.py::test_missing_prefect_run_rearms_only_after_grace_and_without_attempt tests/prefect/test_managed_prefect_0_58.py::test_dispatch_reconciliation_scan_advances_beyond_first_page",
+  "result": "3 passed in 5.59s",
+  "assertions": [
+    "A linked remote run reported missing is left untouched inside the configured 300-second grace interval.",
+    "After the grace interval, a scoped missing-run observation rearms one bounded dispatch generation with a new creation key and a redacted diagnostic reason.",
+    "The durable transition requires the exact currently linked flow-run identity, accepted canonical work, no active execution lease, no attempt, no effect, and no result publication; existing failure rearm generation limits remain enforced.",
+    "The test exercises Prefect's ObjectNotFound exception shape through a controlled async client and leaves canonical ETL status and attempt history unchanged.",
+    "A route-scoped dispatcher cursor advances across one-item pages; three persistently missing remote runs all receive bounded rearm over three ticks instead of the first item monopolizing reconciliation."
+  ],
+  "runtime": {
+    "python": "3.11.15",
+    "etlantic": "0.57.2 workspace source",
+    "etlantic_prefect": "0.57.2 workspace source",
+    "prefect_client": "3.7.8",
+    "durable_store": "MemoryDurableWorkStore",
+    "prefect_api": "controlled async client fixture raising prefect.exceptions.ObjectNotFound"
+  },
+  "limitations": [
+    "This is a controlled-client contract test using MemoryDurableWorkStore, not live Prefect/PostgreSQL evidence; it does not qualify eventual consistency or outage behavior on a self-hosted Prefect server.",
+    "A missing-run rearm does not prove that the old orchestration run never started; canonical execution leasing and fencing remain the authority if a late worker races with its replacement."
+  ],
+  "artifacts": []
+}

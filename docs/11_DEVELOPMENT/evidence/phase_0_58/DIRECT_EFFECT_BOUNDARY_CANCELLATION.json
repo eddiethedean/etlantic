@@ -1,0 +1,44 @@
+{
+  "schema": "etlantic.phase_0_58.campaign_evidence/1",
+  "campaign_id": "direct-effect-boundary-cancellation-2026-10-11",
+  "recorded_at": "2026-10-11",
+  "status": "passed",
+  "qualifies_release": false,
+  "test": "tests/prefect/test_prefect_scheduler.py",
+  "command": "uv run pytest -q tests/prefect/test_prefect_scheduler.py -m prefect",
+  "result": "16 passed in 29.71s.",
+  "assertions": [
+    "A caller cancels a direct PrefectScheduler execution while the sink commit is blocked after the external effect has occurred; reconciliation reports the committed publication receipt in the final ETL report.",
+    "The ETL run remains CANCELLED, the sink effect occurs once, commit is called once, reconciliation is called once, and abort is never called.",
+    "The same direct scheduler module retains coverage for overlapping success/failure runs, Prefect IDs, cancellation, timeout, dependency selection, ETLantic retry policy, unsupported cancellation policies, discovery, and adaptive-plan rejection."
+  ],
+  "runtime": {
+    "python": "3.11.15",
+    "etlantic": "0.57.2 workspace environment",
+    "etlantic_prefect": "0.57.2 workspace environment",
+    "prefect": "3.7.8",
+    "prefect_server": "Prefect temporary test server with SQLite"
+  },
+  "fingerprints": {
+    "source_sha256": "174ca7ec8f18ad80c3b9647240455ebe48b6b8446be4fb3b95f008305aa051da",
+    "source_sha256_method": "SHA-256 over sorted repository-relative source paths and file bytes, with NUL separators.",
+    "uv_lock_sha256": "3b5507c03e752619016552c9fcc00e4961d9d6b3b426deb11bbdbfca240c73ec"
+  },
+  "source_files": [
+    "packages/etlantic-prefect/src/etlantic_prefect/plugin.py",
+    "src/etlantic/runtime/orchestrator.py",
+    "tests/prefect/test_prefect_scheduler.py",
+    "uv.lock"
+  ],
+  "limitations": [
+    "This is direct scheduler evidence in the workspace environment, not installed-wheel evidence or a production sink conformance result.",
+    "Only the blocked-commit cancellation boundary is added here; broader connector and publication-boundary combinations remain open.",
+    "The full phase release decision remains open."
+  ],
+  "ci_configuration": {
+    "workflow": ".github/workflows/checks.yml",
+    "job": "prefect",
+    "remote_ci_run": false
+  },
+  "artifacts": []
+}

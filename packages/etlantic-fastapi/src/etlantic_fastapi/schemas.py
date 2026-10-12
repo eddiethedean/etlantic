@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from typing import Any, Literal
 
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, Field, field_validator
 
 from etlantic.control_plane import LifecycleState
 
@@ -98,6 +98,33 @@ class RunSubmitBody(BaseModel):
 
     idempotency_key: str | None = None
     payload: dict[str, Any] | None = None
+
+
+class DispatchReconciliationBody(BaseModel):
+    """Authorized operator evidence to resume an exhausted Prefect dispatch."""
+
+    expected_generation: int = Field(ge=1)
+    expected_flow_run_id: str = Field(min_length=1, max_length=128)
+    evidence: str = Field(min_length=1, max_length=2048)
+
+    model_config = {"extra": "forbid"}
+
+    @field_validator("expected_flow_run_id", "evidence")
+    @classmethod
+    def require_nonblank_value(cls, value: str) -> str:
+        if not value.strip():
+            raise ValueError("value must not be blank")
+        return value
+
+
+class DispatchReconciliationResponse(BaseModel):
+    schema_: str = Field(
+        alias="schema",
+        default="etlantic.control_plane.dispatch_reconciliation_result/1",
+    )
+    dispatch: dict[str, Any]
+
+    model_config = {"extra": "forbid", "populate_by_name": True}
 
 
 class ScheduleSpecBody(BaseModel):
@@ -526,6 +553,8 @@ __all__ = [
     "DefinitionGetResponse",
     "DefinitionListResponse",
     "DefinitionSummary",
+    "DispatchReconciliationBody",
+    "DispatchReconciliationResponse",
     "DurableCheckpointCasBody",
     "DurableFinishAttemptBody",
     "DurableLeaseBody",

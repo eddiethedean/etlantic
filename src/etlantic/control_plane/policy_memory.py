@@ -44,6 +44,7 @@ class MemoryPolicyProvider:
                 "pre_plan": "allow",
                 "post_plan": "allow",
                 "pre_submit": "allow",
+                "pre_execution": "allow",
                 "post_execution": "allow",
                 "pre_promote": "require_approval",
                 "pre_repair": "allow",

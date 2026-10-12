@@ -1,0 +1,43 @@
+{
+  "schema": "etlantic.phase_0_58.campaign_evidence/1",
+  "campaign_id": "live-postgresql-schedule-route-recovery-2026-10-11",
+  "recorded_at": "2026-10-11",
+  "status": "passed",
+  "qualifies_release": false,
+  "test": "tests/sqlmodel/test_managed_scheduler_postgresql_0_57.py::test_postgresql_two_schedulers_recover_accepted_unlinked_firing",
+  "command": "ETLANTIC_SQLMODEL_TEST_URL=<isolated PostgreSQL service URL> .venv/bin/python -m pytest -q tests/sqlmodel/test_managed_scheduler_postgresql_0_57.py::test_postgresql_two_schedulers_recover_accepted_unlinked_firing tests/prefect/test_managed_prefect_0_58.py::test_managed_schedule_route_transfer_waits_for_drain_and_survives_reload",
+  "result": "2 passed in 6.76s",
+  "assertions": [
+    "The PostgreSQL schedule record retained its pinned Prefect execution route.",
+    "One independent scheduler process accepted a firing and then lost the durable firing link; a second process remained standby while the first leader lease was held.",
+    "After the leader lease was released, a separate scheduler process recovered and linked the existing accepted submission instead of creating a second one.",
+    "The recovered accepted submission remained on the schedule's original Prefect execution route, and its route-filtered durable outbox entry remained pending for dispatch.",
+    "An amendment that requested route B was rejected while the prior firing remained active; after the canonical attempt completed, the guarded amendment created a new schedule revision on route B and recorded route A as its predecessor.",
+    "The PostgreSQL schedule store was reopened in a fresh process-backed adapter; the route-B revision survived, the old firing and completed submission remained on revision/route A, and a subsequent due firing was admitted on route B."
+  ],
+  "runtime": {
+    "python": "3.11.15",
+    "etlantic": "0.57.2",
+    "etlantic_sqlmodel": "0.57.2",
+    "sqlalchemy": "2.0.51",
+    "psycopg": "3.3.4",
+    "postgresql": "16.14",
+    "scheduler_processes": "Independent spawned processes",
+    "durable_work_store": "SQLModel/PostgreSQL",
+    "schedule_store": "SQLModel/PostgreSQL"
+  },
+  "limitations": [
+    "This proves durable leader/standby and accepted-firing recovery with a pinned Prefect route; it does not start a Prefect flow or qualify a live recurring managed execution.",
+    "This adds a managed route-transfer and restart trace to leader/firing recovery; native Prefect trigger rejection and broader schedule outage behavior remain open."
+  ],
+  "ci_configuration": {
+    "workflow": "local-only",
+    "job": "not configured in CI",
+    "remote_ci_run": false,
+    "database_service": "PostgreSQL 16"
+  },
+  "cleanup": [
+    "The test uses a unique durable store identifier and removes its durable and schedule rows before closing the engine."
+  ],
+  "artifacts": []
+}

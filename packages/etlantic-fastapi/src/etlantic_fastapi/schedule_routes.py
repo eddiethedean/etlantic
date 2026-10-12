@@ -131,6 +131,18 @@ def register_schedule_routes(
     ) -> dict[str, Any]:
         return service().get(ctx, schedule_id).to_dict()
 
+    @router.delete(
+        "/v1/schedules/{schedule_id}",
+        operation_id="cp_delete_schedule",
+        tags=["schedules"],
+    )
+    def delete_schedule(
+        schedule_id: str,
+        ctx: ControlPlaneContext = Depends(get_ctx),
+    ) -> dict[str, Any]:
+        service().authorize(ctx, "schedule.write", f"schedule:{schedule_id}")
+        return service().delete(ctx, schedule_id).to_dict()
+
     @router.post(
         "/v1/schedules/{schedule_id}/amend",
         operation_id="cp_amend_schedule",
@@ -142,9 +154,13 @@ def register_schedule_routes(
         ctx: ControlPlaneContext = Depends(get_ctx),
     ) -> dict[str, Any]:
         service().authorize(ctx, "schedule.write", f"schedule:{schedule_id}")
-        if set(body) != {"expected_revision_id", "spec"}:
+        if not {"expected_revision_id", "spec"}.issubset(body) or set(body) - {
+            "expected_revision_id",
+            "spec",
+            "transfer_execution_route",
+        }:
             raise ControlPlaneError(
-                "Schedule amendment requires expected_revision_id and spec",
+                "Schedule amendment requires expected_revision_id and spec; only the managed route transfer option may also be supplied",
                 code="PMCP400",
                 status=400,
                 title="Bad Request",
@@ -159,6 +175,15 @@ def register_schedule_routes(
                 title="Bad Request",
                 type="etlantic.control_plane/bad_request",
             )
+        transfer_execution_route = body.get("transfer_execution_route", False)
+        if type(transfer_execution_route) is not bool:
+            raise ControlPlaneError(
+                "transfer_execution_route must be a boolean",
+                code="PMCP400",
+                status=400,
+                title="Bad Request",
+                type="etlantic.control_plane/bad_request",
+            )
         return (
             service()
             .amend(
@@ -166,6 +191,7 @@ def register_schedule_routes(
                 schedule_id,
                 expected_revision_id=revision,
                 spec=spec_from(body.get("spec")),
+                transfer_execution_route=transfer_execution_route,
             )
             .to_dict()
         )

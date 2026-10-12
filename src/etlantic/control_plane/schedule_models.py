@@ -7,6 +7,7 @@ from collections.abc import Mapping
 from dataclasses import asdict, dataclass, field
 from typing import Any, Literal
 
+from etlantic.control_plane.durable_models import validate_execution_route
 from etlantic.control_plane.models import Principal
 from etlantic.control_plane.redaction import (
     redact_control_plane_payload,
@@ -192,6 +193,9 @@ class ScheduleRecord:
     metadata: Mapping[str, Any] = field(default_factory=dict)
     revision_policy: ScheduleRevisionPolicy = "pinned"
     workload_identity: Principal | None = None
+    # Managed occurrences inherit the route selected when this revision was
+    # created. Older schedule snapshots default to local polling.
+    execution_route: str = "local"
     # Runtime-only values are attached after an occurrence has been claimed.
     # They are never emitted by to_dict or persisted in the schedule snapshot.
     occurrence_snapshot: Mapping[str, Any] | None = field(
@@ -204,6 +208,7 @@ class ScheduleRecord:
     def __post_init__(self) -> None:
         if self.revision_policy not in ("pinned", "latest-approved"):
             raise ValueError("schedule revision_policy is unsupported")
+        validate_execution_route(self.execution_route)
         if self.workload_identity is not None and self.workload_identity.kind not in (
             "workload",
             "service",
@@ -235,6 +240,7 @@ class ScheduleRecord:
                 if self.workload_identity is not None
                 else None
             ),
+            "execution_route": self.execution_route,
         }
         assert_schedule_payload_clean(payload)
         return payload
@@ -271,6 +277,9 @@ class ScheduleRecord:
                 Principal.from_dict(data["workload_identity"])
                 if isinstance(data.get("workload_identity"), Mapping)
                 else None
+            ),
+            execution_route=validate_execution_route(
+                data.get("execution_route", "local")
             ),
         )
 

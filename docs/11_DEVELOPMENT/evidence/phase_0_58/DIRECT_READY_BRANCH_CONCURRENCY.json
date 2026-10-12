@@ -1,0 +1,25 @@
+{
+  "schema": "etlantic.phase_0_58.campaign_evidence/1",
+  "campaign_id": "direct-ready-branch-concurrency-2026-10-12",
+  "recorded_at": "2026-10-12",
+  "status": "passed",
+  "qualifies_release": false,
+  "test": "tests/prefect/test_prefect_scheduler.py::test_prefect_ready_branches_respect_resolved_concurrency_limit",
+  "command": "uv run --locked pytest -q tests/prefect/test_prefect_scheduler.py::test_prefect_ready_branches_respect_resolved_concurrency_limit",
+  "result": "1 passed in 7.23s.",
+  "assertions": [
+    "Three independent ready branches execute with peak active-node concurrency exactly equal to the resolved Profile limit of two.",
+    "The request metadata asks for concurrency three; the plan's resolved Profile setting remains authoritative.",
+    "All three branches publish their outputs and the ETLantic report succeeds."
+  ],
+  "runtime": {
+    "python": "3.11.14",
+    "prefect": "3.7.8",
+    "prefect_server": "Prefect temporary test server with its own SQLite test database",
+    "execution_mode": "Direct PrefectScheduler with ETLantic LocalOrchestrator"
+  },
+  "limitations": [
+    "This focused source-checkout test verifies the direct scheduler's resolved concurrency limit; the installed-wheel candidate matrix must include it before final qualification."
+  ],
+  "artifacts": []
+}

@@ -10,6 +10,7 @@ from dataclasses import dataclass, field
 from datetime import datetime
 from typing import TYPE_CHECKING, Any, cast
 
+from etlantic.control_plane import validate_execution_route
 from etlantic.control_plane.action_jobs import (
     MAX_PREVIEW_RESULT_TTL_SECONDS,
     MIN_PREVIEW_RESULT_TTL_SECONDS,
@@ -123,12 +124,14 @@ class ManagedBackendConfig:
     require_attestations: bool = False
     schedule_parameter_resolver: Any = field(default=None, repr=False)
     schedule_clock: Any = field(default=None, repr=False)
+    execution_route: str = "local"
 
     def __post_init__(self) -> None:
         if not _is_nonempty_text(self.database_url):
             raise ValueError("database_url must be a non-empty SQLAlchemy URL")
         if not _is_nonempty_text(self.store_id):
             raise ValueError("store_id must be non-empty")
+        validate_execution_route(self.execution_route)
         if (
             type(self.event_retention_max_events_per_scope) is not int
             or self.event_retention_max_events_per_scope < 1
@@ -497,6 +500,7 @@ def create_managed_backend(
         database_url=config.database_url,
         store_id=config.store_id,
         profile=config.profile,
+        execution_route=config.execution_route,
         engine_options=config.engine_options,
         event_retention_max_events_per_scope=(
             config.event_retention_max_events_per_scope

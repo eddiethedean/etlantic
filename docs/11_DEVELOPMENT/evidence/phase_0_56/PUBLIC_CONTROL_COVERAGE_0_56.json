@@ -248,6 +248,21 @@
         "tests/fastapi/test_schedule_routes_0_47.py"
       ]
     },
+    "dispatches": {
+      "storage_mode": "durable-prefect-dispatch-store",
+      "storage_anchor": {
+        "path": "src/etlantic/control_plane/durable_protocols.py",
+        "symbol": "class DurableWorkStore"
+      },
+      "runtime_anchor": {
+        "path": "src/etlantic/service/managed.py",
+        "symbol": "def rearm_exhausted_prefect_dispatch"
+      },
+      "evidence_tests": [
+        "tests/fastapi/test_managed_application_0_56.py",
+        "tests/fastapi/test_phase_0_56_authorization_order.py"
+      ]
+    },
     "intelligence": {
       "storage_mode": "derived-from-definition-and-planning-context",
       "storage_anchor": {
@@ -1818,6 +1833,72 @@
           "surface": "parameter",
           "location": "path",
           "path": "definition_id",
+          "required": true,
+          "type": "string"
+        },
+        {
+          "surface": "response",
+          "status_code": "422",
+          "media_type": "application/json",
+          "path": "detail",
+          "required": false,
+          "type": "array"
+        },
+        {
+          "surface": "response",
+          "status_code": "422",
+          "media_type": "application/json",
+          "path": "detail[].ctx",
+          "required": false,
+          "type": "object"
+        },
+        {
+          "surface": "response",
+          "status_code": "422",
+          "media_type": "application/json",
+          "path": "detail[].input",
+          "required": false,
+          "type": "object"
+        },
+        {
+          "surface": "response",
+          "status_code": "422",
+          "media_type": "application/json",
+          "path": "detail[].loc",
+          "required": true,
+          "type": "array"
+        },
+        {
+          "surface": "response",
+          "status_code": "422",
+          "media_type": "application/json",
+          "path": "detail[].msg",
+          "required": true,
+          "type": "string"
+        },
+        {
+          "surface": "response",
+          "status_code": "422",
+          "media_type": "application/json",
+          "path": "detail[].type",
+          "required": true,
+          "type": "string"
+        }
+      ]
+    },
+    {
+      "operation_id": "cp_delete_schedule",
+      "method": "DELETE",
+      "path": "/v1/schedules/{schedule_id}",
+      "tag": "schedules",
+      "kind": "command",
+      "handler": "delete_schedule",
+      "coverage": "mapped",
+      "fields": [
+        {
+          "surface": "parameter",
+          "location": "path",
+          "path": "schedule_id",
           "required": true,
           "type": "string"
         },
@@ -6102,6 +6183,109 @@
           "path": "stores_injected",
           "required": true,
           "type": "boolean"
+        }
+      ]
+    },
+    {
+      "operation_id": "cp_reconcile_prefect_dispatch",
+      "method": "POST",
+      "path": "/v1/dispatches/{submission_id}/reconcile",
+      "tag": "dispatches",
+      "kind": "command",
+      "handler": "reconcile_prefect_dispatch",
+      "coverage": "mapped",
+      "fields": [
+        {
+          "surface": "parameter",
+          "location": "path",
+          "path": "submission_id",
+          "required": true,
+          "type": "string"
+        },
+        {
+          "surface": "request",
+          "media_type": "application/json",
+          "path": "evidence",
+          "required": true,
+          "type": "string"
+        },
+        {
+          "surface": "request",
+          "media_type": "application/json",
+          "path": "expected_flow_run_id",
+          "required": true,
+          "type": "string"
+        },
+        {
+          "surface": "request",
+          "media_type": "application/json",
+          "path": "expected_generation",
+          "required": true,
+          "type": "integer"
+        },
+        {
+          "surface": "response",
+          "status_code": "200",
+          "media_type": "application/json",
+          "path": "dispatch",
+          "required": true,
+          "type": "object"
+        },
+        {
+          "surface": "response",
+          "status_code": "200",
+          "media_type": "application/json",
+          "path": "schema",
+          "required": false,
+          "type": "string"
+        },
+        {
+          "surface": "response",
+          "status_code": "422",
+          "media_type": "application/json",
+          "path": "detail",
+          "required": false,
+          "type": "array"
+        },
+        {
+          "surface": "response",
+          "status_code": "422",
+          "media_type": "application/json",
+          "path": "detail[].ctx",
+          "required": false,
+          "type": "object"
+        },
+        {
+          "surface": "response",
+          "status_code": "422",
+          "media_type": "application/json",
+          "path": "detail[].input",
+          "required": false,
+          "type": "object"
+        },
+        {
+          "surface": "response",
+          "status_code": "422",
+          "media_type": "application/json",
+          "path": "detail[].loc",
+          "required": true,
+          "type": "array"
+        },
+        {
+          "surface": "response",
+          "status_code": "422",
+          "media_type": "application/json",
+          "path": "detail[].msg",
+          "required": true,
+          "type": "string"
+        },
+        {
+          "surface": "response",
+          "status_code": "422",
+          "media_type": "application/json",
+          "path": "detail[].type",
+          "required": true,
+          "type": "string"
         }
       ]
     },

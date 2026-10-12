@@ -1,0 +1,25 @@
+{
+  "schema": "etlantic.phase_0_58.campaign_evidence/1",
+  "campaign_id": "managed-schedule-firing-idempotency-2026-10-11",
+  "recorded_at": "2026-10-11",
+  "status": "passed",
+  "qualifies_release": false,
+  "test": "tests/prefect/test_managed_prefect_0_58.py::test_managed_schedule_duplicate_firing_reuses_one_accepted_submission",
+  "command": "uv run pytest -q tests/prefect/test_managed_prefect_0_58.py::test_managed_schedule_duplicate_firing_reuses_one_accepted_submission",
+  "result": "1 passed in 1.80s",
+  "assertions": [
+    "Two triggers for the same schedule revision and nominal firing time returned the same immutable firing record and canonical submission.",
+    "A default execution-route change after schedule creation did not redirect the replayed firing.",
+    "Only one firing record was stored and no worker attempt was created by admission or replay."
+  ],
+  "runtime": {
+    "python": "3.11.15",
+    "etlantic": "0.57.2",
+    "schedule_store": "MemoryScheduleStore",
+    "durable_work_store": "MemoryDurableWorkStore"
+  },
+  "limitations": [
+    "This contract test uses in-memory providers; PostgreSQL restart, competing timer owners, DST, misfire, catch-up, overlap, revision transfer, and native-trigger rejection fixtures remain open."
+  ],
+  "artifacts": []
+}

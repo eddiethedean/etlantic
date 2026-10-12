@@ -83,12 +83,15 @@ class ScheduleStore(Protocol):
         secret_refs: dict[str, Mapping[str, object] | str] | None = None,
         revision_policy: str = "pinned",
         workload_identity: Principal | None = None,
+        execution_route: str = "local",
         next_fire_at: str | None = None,
     ) -> ScheduleRecord: ...
 
     def get(self, ctx: ControlPlaneContext, schedule_id: str) -> ScheduleRecord: ...
 
     def list_schedules(self, ctx: ControlPlaneContext) -> Sequence[ScheduleRecord]: ...
+
+    def execution_route_reference_count(self, execution_route: str) -> int: ...
 
     def pause(self, ctx: ControlPlaneContext, schedule_id: str) -> ScheduleRecord: ...
 
@@ -102,6 +105,8 @@ class ScheduleStore(Protocol):
         expected_revision_id: str,
         spec: ScheduleSpec,
         next_fire_at: str | None,
+        execution_route: str | None = None,
+        policy_fingerprint: str | None = None,
         durable: DurableWorkStore | None = None,
     ) -> ScheduleRecord: ...
 

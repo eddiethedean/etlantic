@@ -29,11 +29,21 @@ from etlantic.control_plane.action_jobs import (
     parse_connector_action_request,
     verify_provision_parent,
 )
-from etlantic.control_plane.authz import require_authorized, require_authorized_run
+from etlantic.control_plane.authz import (
+    require_authorized,
+    require_authorized_run,
+    validate_control_plane_context,
+)
 from etlantic.control_plane.durable_models import (
+    EXECUTION_ROUTE_LIFECYCLE_SCHEMA,
     ActionJobRecord,
+    DispatchRecord,
+    ExecutionRouteLifecycle,
+    ExecutionRouteRecord,
+    ExecutionRouteWorkload,
     SubmissionRecord,
     execution_context_from_submission,
+    validate_execution_route,
 )
 from etlantic.control_plane.durable_protocols import DurableWorkStore
 from etlantic.control_plane.errors import ControlPlaneError
@@ -48,7 +58,10 @@ from etlantic.control_plane.models import (
     AcceptResult,
     ControlPlaneContext,
 )
-from etlantic.control_plane.policy_gates import gate_pre_submit
+from etlantic.control_plane.policy_gates import (
+    gate_pre_execution,
+    gate_pre_submit,
+)
 from etlantic.control_plane.protocols import (
     Authorizer,
     DefinitionRepository,
@@ -57,7 +70,10 @@ from etlantic.control_plane.protocols import (
     SubmissionStore,
 )
 from etlantic.control_plane.quota_models import QuotaDecision, quota_idempotency_key
-from etlantic.control_plane.redaction import redact_control_plane_payload
+from etlantic.control_plane.redaction import (
+    redact_control_plane_payload,
+    redact_control_plane_text,
+)
 from etlantic.control_plane.schedule_models import ScheduleRecord, firing_key
 from etlantic.io_policy import SafeIoPolicy, read_text_safe
 from etlantic.lifecycle.runtime import PipelineRuntime
@@ -76,6 +92,7 @@ from etlantic.reports.retention import (
 from etlantic.runtime.artifact_coordination import apply_artifact_expiry
 from etlantic.runtime.artifacts import artifact_storage_path
 from etlantic.runtime.logging import redact_message
+from etlantic.runtime.managed_errors import ExecutionRejected
 from etlantic.runtime.managed_execution import (
     managed_artifact_run_id,
     managed_artifact_workspace,
@@ -92,6 +109,18 @@ def _mapping(value: object) -> Mapping[str, Any]:
     if isinstance(value, Mapping):
         return cast(Mapping[str, Any], value)
     return {}
+
+
+def _accepted_execution_route(
+    payload: Mapping[str, Any] | None, *, fallback: str
+) -> str:
+    value = (
+        payload.get("execution_route", fallback) if payload is not None else fallback
+    )
+    try:
+        return validate_execution_route(value)
+    except (TypeError, ValueError) as exc:
+        raise ControlPlaneError.conflict("Accepted execution route is invalid") from exc
 
 
 def _connector_action_cursor_scope(ctx: ControlPlaneContext) -> str:
@@ -172,6 +201,7 @@ class ManagedApplicationService:
     audit: Any = None
     attestations: Any = None
     require_attestations: bool = False
+    execution_route: str = "local"
     planning_context_factory: (
         Callable[[ControlPlaneContext, Any], PlanningContext] | None
     ) = None
@@ -529,6 +559,156 @@ class ManagedApplicationService:
             "items": [record.to_dict() for record in page],
             "next_cursor": next_cursor,
             "has_more": has_more,
+        }
+
+    def get_execution_route_lifecycle(
+        self, ctx: ControlPlaneContext, execution_route: str
+    ) -> dict[str, Any]:
+        """Inspect route state and its redacted store-wide drain counters."""
+        validate_control_plane_context(ctx)
+        route = validate_execution_route(execution_route)
+        require_authorized(
+            self.authorizer,
+            ctx,
+            "execution.route.manage",
+            f"execution-route:{route}",
+            resource_in_caller_scope=False,
+        )
+        state: ExecutionRouteRecord = self.durable_work.get_execution_route_state(
+            ctx, route
+        )
+        workload: ExecutionRouteWorkload = self.durable_work.execution_route_workload(
+            ctx, route
+        )
+        references = self.durable_work.execution_route_reference_counts(ctx, route)
+        return {
+            "schema": EXECUTION_ROUTE_LIFECYCLE_SCHEMA,
+            "execution_route": route,
+            "status": state.status,
+            "revision": state.revision,
+            "changed_at": state.changed_at,
+            "history": [item.to_dict() for item in state.history],
+            "workload": workload.to_dict(),
+            "references": references,
+        }
+
+    def transition_execution_route_lifecycle(
+        self,
+        ctx: ControlPlaneContext,
+        execution_route: str,
+        *,
+        expected_revision: int,
+        status: ExecutionRouteLifecycle,
+    ) -> dict[str, Any]:
+        """CAS a route drain/retirement after dedicated operator authorization."""
+        validate_control_plane_context(ctx)
+        route = validate_execution_route(execution_route)
+        require_authorized(
+            self.authorizer,
+            ctx,
+            "execution.route.manage",
+            f"execution-route:{route}",
+            resource_in_caller_scope=False,
+        )
+        state = self.durable_work.transition_execution_route_state(
+            ctx,
+            route,
+            expected_revision=expected_revision,
+            status=status,
+        )
+        if self.events is not None and state.revision == expected_revision + 1:
+            payload = {
+                "execution_route": route,
+                "revision": state.revision,
+                "status": state.status,
+                "changed_at": state.changed_at,
+            }
+            append_once = getattr(self.events, "append_once", None)
+            if callable(append_once):
+                append_once(
+                    ctx,
+                    event_key=f"execution-route:{route}:{state.revision}",
+                    kind="execution.route_lifecycle_changed",
+                    payload=payload,
+                )
+            else:
+                self.events.append(
+                    ctx, kind="execution.route_lifecycle_changed", payload=payload
+                )
+        workload = self.durable_work.execution_route_workload(ctx, route)
+        references = self.durable_work.execution_route_reference_counts(ctx, route)
+        return {
+            "schema": EXECUTION_ROUTE_LIFECYCLE_SCHEMA,
+            "execution_route": route,
+            "status": state.status,
+            "revision": state.revision,
+            "changed_at": state.changed_at,
+            "history": [item.to_dict() for item in state.history],
+            "workload": workload.to_dict(),
+            "references": references,
+        }
+
+    def rearm_exhausted_prefect_dispatch(
+        self,
+        ctx: ControlPlaneContext,
+        submission_id: str,
+        *,
+        expected_generation: int,
+        expected_flow_run_id: str,
+        evidence: str,
+    ) -> dict[str, Any]:
+        """Authorize one explicit retry after bounded pre-execution dispatch."""
+        validate_control_plane_context(ctx)
+        if not submission_id.strip() or len(submission_id) > 256:
+            raise ValueError("submission_id must contain 1 to 256 characters")
+        if not evidence.strip() or len(evidence) > 2048:
+            raise ValueError("evidence must contain 1 to 2048 characters")
+        require_authorized(
+            self.authorizer,
+            ctx,
+            "execution.dispatch.reconcile",
+            f"submission:{submission_id}",
+        )
+        safe_evidence = redact_control_plane_text(evidence.strip())
+        evidence_sha256 = hashlib.sha256(safe_evidence.encode("utf-8")).hexdigest()
+        dispatch: DispatchRecord = (
+            self.durable_work.rearm_reconciliation_required_dispatch(
+                ctx,
+                submission_id,
+                expected_generation=expected_generation,
+                expected_flow_run_id=expected_flow_run_id,
+                evidence_sha256=evidence_sha256,
+            )
+        )
+        payload = {
+            "submission_id": dispatch.submission_id,
+            "execution_route": dispatch.execution_route,
+            "from_generation": expected_generation,
+            "to_generation": dispatch.generation,
+            "prefect_flow_run_id": expected_flow_run_id,
+            "evidence_sha256": evidence_sha256,
+            "principal_subject": ctx.principal.subject,
+            "principal_issuer": ctx.principal.issuer,
+            "occurred_at": dispatch.updated_at,
+        }
+        if self.events is not None:
+            append_once = getattr(self.events, "append_once", None)
+            if callable(append_once):
+                append_once(
+                    ctx,
+                    event_key=(
+                        f"prefect-dispatch:{submission_id}:generation:{dispatch.generation}"
+                    ),
+                    kind="execution.dispatch_reconciled",
+                    payload=payload,
+                )
+            else:
+                self.events.append(
+                    ctx, kind="execution.dispatch_reconciled", payload=payload
+                )
+        return {
+            "schema": "etlantic.control_plane.dispatch_reconciliation_result/1",
+            "dispatch": dispatch.to_dict(),
         }
 
     def edit_definition(
@@ -941,6 +1121,7 @@ class ManagedApplicationService:
             ),
             revision_selector=prepared.definition_revision_id,
             _profile_override=profile,
+            _execution_route=prepared.execution_route,
         )
         submission = self.durable_work.get_submission(ctx, receipt.submission_id)
         if not submission.input_snapshot:
@@ -1360,6 +1541,7 @@ class ManagedApplicationService:
         revision_selector: str = "current",
         _preparation_control: _PreparationControl | None = None,
         _profile_override: Profile | None = None,
+        _execution_route: str | None = None,
     ) -> AcceptReceipt:
         """Prepare, bind and durably accept one managed execution."""
         if not idempotency_key.strip():
@@ -1371,6 +1553,9 @@ class ManagedApplicationService:
                 type="etlantic.control_plane/bad_request",
             )
         revision_selector = _require_revision_selector(revision_selector)
+        execution_route = validate_execution_route(
+            self.execution_route if _execution_route is None else _execution_route
+        )
         # Authorization is always evaluated before either idempotency or
         # definition lookup. A prior receipt does not grant continued access.
         require_authorized(
@@ -1400,6 +1585,19 @@ class ManagedApplicationService:
         prior_durable = self.durable_work.get_submission_by_idempotency(
             ctx, idempotency_key=idempotency_key, operation="run.submit"
         )
+        if prior_durable is not None:
+            execution_route = validate_execution_route(prior_durable.execution_route)
+            if (
+                prior_payload is not None
+                and "execution_route" in prior_payload
+                and _accepted_execution_route(prior_payload, fallback="local")
+                != execution_route
+            ):
+                raise ControlPlaneError.conflict(
+                    "Control-plane and execution routes are inconsistent"
+                )
+        elif prior_receipt is not None:
+            execution_route = _accepted_execution_route(prior_payload, fallback="local")
 
         if (
             typed_request.intent is RunIntent.RESUME
@@ -1429,6 +1627,7 @@ class ManagedApplicationService:
                     idempotency_key=idempotency_key,
                     envelope=envelope,
                     receipt=prior_receipt,
+                    execution_route=execution_route,
                 )
             elif prior_durable.submission_id != prior_receipt.submission_id:
                 raise ControlPlaneError.conflict(
@@ -1469,7 +1668,9 @@ class ManagedApplicationService:
                 raise ControlPlaneError.conflict(
                     "Idempotency key reuse with a different definition"
                 )
-            payload = self._acceptance_payload(envelope)
+            payload = self._acceptance_payload(
+                envelope, execution_route=execution_route
+            )
             receipt_result = self.submissions.accept(
                 ctx,
                 idempotency_key=idempotency_key,
@@ -1662,7 +1863,7 @@ class ManagedApplicationService:
                 ),
             },
         )
-        payload = self._acceptance_payload(envelope)
+        payload = self._acceptance_payload(envelope, execution_route=execution_route)
         if _preparation_control is not None:
             try:
                 _preparation_control.begin_acceptance()
@@ -1748,6 +1949,7 @@ class ManagedApplicationService:
                 envelope=envelope,
                 submission_id=receipt_result.receipt.submission_id,
                 run_id=expected_run_id,
+                execution_route=execution_route,
             )
         except Exception as exc:
             # Durable acceptance and its outbox are committed atomically by
@@ -2921,6 +3123,8 @@ class ManagedApplicationService:
         parent_submission_id: str,
     ) -> AcceptReceipt:
         """Idempotently accept a lifecycle command and its verified envelope."""
+        parent_submission = self.durable_work.get_submission(ctx, parent_submission_id)
+        execution_route = validate_execution_route(parent_submission.execution_route)
         parent_attempt_id: str | None = None
         list_attempts = getattr(self.durable_work, "list_attempts", None)
         if callable(list_attempts):
@@ -2959,6 +3163,19 @@ class ManagedApplicationService:
         prior_durable = self.durable_work.get_submission_by_idempotency(
             ctx, idempotency_key=idempotency_key, operation=operation
         )
+        if prior_durable is not None:
+            execution_route = validate_execution_route(prior_durable.execution_route)
+            if (
+                prior_payload is not None
+                and "execution_route" in prior_payload
+                and _accepted_execution_route(prior_payload, fallback="local")
+                != execution_route
+            ):
+                raise ControlPlaneError.conflict(
+                    "Control-plane and lifecycle execution routes are inconsistent"
+                )
+        elif prior_payload is not None and "execution_route" in prior_payload:
+            execution_route = _accepted_execution_route(prior_payload, fallback="local")
         expected_envelope = envelope.to_json()
         expected_run_id = managed_run_id(ctx, idempotency_key, operation=operation)
         if prior_receipt is not None:
@@ -2997,7 +3214,7 @@ class ManagedApplicationService:
                 )
             envelope = self._parse_envelope(prior_snapshot)
             expected_envelope = envelope.to_json()
-        payload = self._acceptance_payload(envelope)
+        payload = self._acceptance_payload(envelope, execution_route=execution_route)
         payload.update(
             {
                 "command": operation.removeprefix("run."),
@@ -3018,11 +3235,13 @@ class ManagedApplicationService:
                     envelope=envelope,
                     submission_id=prior_receipt.submission_id,
                     run_id=prior_receipt.resource_id,
+                    execution_route=execution_route,
                 )
             elif (
                 prior_durable.submission_id != prior_receipt.submission_id
                 or prior_durable.input_snapshot != expected_envelope
                 or prior_durable.run_id != expected_run_id
+                or prior_durable.execution_route != execution_route
             ):
                 raise ControlPlaneError.conflict(
                     "Control-plane and execution retry snapshots are inconsistent"
@@ -3213,6 +3432,7 @@ class ManagedApplicationService:
             envelope=envelope,
             submission_id=receipt_result.receipt.submission_id,
             run_id=expected_run_id,
+            execution_route=execution_route,
         )
         if receipt_result.created and self.events is not None:
             with suppress(Exception):
@@ -3237,6 +3457,7 @@ class ManagedApplicationService:
         envelope: ExecutionEnvelope,
         submission_id: str,
         run_id: str,
+        execution_route: str,
     ) -> SubmissionRecord:
         if run_id != managed_run_id(ctx, idempotency_key, operation=operation):
             raise ControlPlaneError.conflict(
@@ -3270,6 +3491,7 @@ class ManagedApplicationService:
                 input_snapshot=envelope.to_json(),
                 submission_id=submission_id,
                 run_id=run_id,
+                execution_route=execution_route,
             )
             return row
         except Exception as exc:
@@ -3289,6 +3511,7 @@ class ManagedApplicationService:
                     or recovered.operation != operation
                     or recovered.input_snapshot != envelope.to_json()
                     or (recovered.run_id is not None and recovered.run_id != run_id)
+                    or recovered.execution_route != execution_route
                 ):
                     raise ControlPlaneError.conflict(
                         "Durable lifecycle acceptance conflicts with the CP1 receipt"
@@ -4257,6 +4480,71 @@ class ManagedApplicationService:
                 resource_in_caller_scope=False,
             )
 
+    def authorize_accepted_execution(
+        self,
+        ctx: ControlPlaneContext,
+        submission: SubmissionRecord,
+        envelope: ExecutionEnvelope,
+        plan: PlanDocument,
+    ) -> None:
+        """Reauthorize immutable accepted work immediately before resource use."""
+        try:
+            worker_ctx = validate_control_plane_context(ctx)
+            accepted_ctx = execution_context_from_submission(submission)
+            if accepted_ctx is None or (
+                worker_ctx.tenant != accepted_ctx.tenant
+                or worker_ctx.workspace != accepted_ctx.workspace
+            ):
+                raise ExecutionRejected(
+                    "Accepted execution scope does not match its worker context"
+                )
+            if submission.policy_fingerprint != envelope.policy_fingerprint:
+                raise ExecutionRejected(
+                    "Accepted policy fingerprint does not match its durable record"
+                )
+            if worker_ctx.principal != accepted_ctx.principal:
+                require_authorized(
+                    self.authorizer,
+                    worker_ctx,
+                    "run.execute",
+                    f"definition:{envelope.definition_id}",
+                    resource_in_caller_scope=False,
+                )
+            require_authorized(
+                self.authorizer,
+                accepted_ctx,
+                "run.submit",
+                f"definition:{envelope.definition_id}",
+                resource_in_caller_scope=False,
+            )
+            self._authorize_plan_resources(accepted_ctx, plan, action="run.submit")
+            self._authorize_input_resources(accepted_ctx, plan)
+            gate_pre_execution(
+                accepted_ctx,
+                policy=self.policy,
+                approvals=self.approvals,
+                audit=self.audit,
+                plan_fingerprint=envelope.effective_fingerprint,
+                revision_id=envelope.revision_id,
+                resource=f"definition:{envelope.definition_id}",
+                attributes={
+                    "operation": submission.operation,
+                    "profile_name": envelope.profile_name,
+                    "execution_route": submission.execution_route,
+                },
+                required=(
+                    self.policy is not None
+                    or submission.policy_fingerprint is not None
+                    or envelope.policy_fingerprint is not None
+                ),
+            )
+        except ExecutionRejected:
+            raise
+        except Exception as exc:
+            raise ExecutionRejected(
+                "Accepted execution is no longer authorized or permitted"
+            ) from exc
+
     def _authorize_input_resources(
         self,
         ctx: ControlPlaneContext,
@@ -4423,8 +4711,15 @@ class ManagedApplicationService:
         )
         return accepted.to_json() == requested_with_admission.to_json()
 
-    @staticmethod
-    def _acceptance_payload(envelope: ExecutionEnvelope) -> dict[str, Any]:
+    def _acceptance_payload(
+        self,
+        envelope: ExecutionEnvelope,
+        *,
+        execution_route: str | None = None,
+    ) -> dict[str, Any]:
+        route = validate_execution_route(
+            self.execution_route if execution_route is None else execution_route
+        )
         return {
             "definition_id": envelope.definition_id,
             "revision_selector": envelope.revision_selector,
@@ -4435,6 +4730,7 @@ class ManagedApplicationService:
             # Kept as a JSON string so CP1 redaction preserves extension keys
             # and the exact digest-verified accepted bytes.
             "execution_envelope": envelope.to_json(),
+            "execution_route": route,
         }
 
     @staticmethod
@@ -4483,6 +4779,7 @@ class ManagedApplicationService:
         idempotency_key: str,
         envelope: ExecutionEnvelope,
         receipt: AcceptReceipt,
+        execution_route: str,
     ) -> None:
         """Repair partial acceptance only while its CP1 and quota claims remain live."""
         run_id = receipt.resource_id
@@ -4559,6 +4856,7 @@ class ManagedApplicationService:
                 envelope=envelope,
                 submission_id=receipt.submission_id,
                 run_id=run_id,
+                execution_route=execution_route,
             )
             accepted_durable = True
             # Together with compensation's post-cancel durable check, this
@@ -4583,6 +4881,7 @@ class ManagedApplicationService:
         envelope: ExecutionEnvelope,
         submission_id: str,
         run_id: str,
+        execution_route: str,
     ) -> SubmissionRecord:
         if run_id != managed_run_id(ctx, idempotency_key):
             raise ControlPlaneError.conflict(
@@ -4599,6 +4898,7 @@ class ManagedApplicationService:
             input_snapshot=envelope.to_json(),
             submission_id=submission_id,
             run_id=run_id,
+            execution_route=execution_route,
         )
         return row
 

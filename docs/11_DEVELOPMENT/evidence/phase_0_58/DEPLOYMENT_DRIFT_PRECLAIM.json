@@ -1,0 +1,62 @@
+{
+  "schema": "etlantic.phase_0_58.campaign_evidence/1",
+  "campaign_id": "installed-deployment-drift-preclaim-2026-10-11",
+  "recorded_at": "2026-10-11",
+  "status": "passed",
+  "qualifies_release": false,
+  "test": [
+    "tests/prefect/test_managed_prefect_0_58.py::test_managed_deployment_binding_round_trips_and_rejects_tampering",
+    "tests/prefect/test_managed_prefect_0_58.py::test_dispatcher_rejects_deployment_drift_before_claiming_work",
+    "tests/prefect/test_managed_prefect_0_58.py::test_process_worker_executes_targeted_csv_and_postgresql_transfers",
+    "tests/prefect/test_managed_prefect_0_58.py::test_managed_deployment_rejects_native_prefect_schedules"
+  ],
+  "command": "env -u PYTHONPATH ETLANTIC_CP_TEST_URL=<isolated PostgreSQL service URL> ETLANTIC_PHASE058_INSTALLED_BACKEND_PLUGIN=1 /tmp/phase058-final-wheel-venv/bin/python -m pytest -o pythonpath= -q tests/prefect -m prefect",
+  "result": "The final isolated installed-wheel Prefect suite passed: 32 passed in 45.34s, including dispatcher preflight rejection, live worker-side drift rejection, bounded orphan rearm, native-trigger rejection, rollback binding checks, and cancellation at the PostgreSQL commit boundary.",
+  "assertions": [
+    "A self-consistent managed deployment binding with a Prefect runtime version different from the installed runtime was rejected by the worker binding check.",
+    "The dispatcher rejected an unexpected remote worker environment before claiming accepted work; the target remained in the pending route queue and had no execution attempt.",
+    "After dispatch, a real Process worker detected remote deployment environment drift, failed before constructing the ETLantic backend or recording an execution attempt, and left the accepted submission unresolved with empty PostgreSQL sink and effect-ledger tables.",
+    "The deployment and work-pool checks ran against the installed etlantic-prefect wheel in a fresh environment with inherited PYTHONPATH unset."
+  ],
+  "runtime": {
+    "python": "3.11.15",
+    "etlantic": "0.57.2",
+    "etlantic_prefect": "0.57.2",
+    "prefect": "3.7.8",
+    "worker_pool": "Process",
+    "deployment_store": "Dispatcher preflight: Prefect temporary SQLite server; worker-side drift: separately supervised Prefect server backed by PostgreSQL",
+    "durable_work_store": "Dispatcher preflight: MemoryDurableWorkStore; worker-side drift: PostgreSQL-backed SQLModel durable store",
+    "wheel_environment": "Fresh virtual environment; inherited PYTHONPATH unset; pytest pythonpath override disabled repository source injection; package origins asserted under site-packages in the live Process-worker test."
+  },
+  "limitations": [
+    "Credential rotation/revocation and production deployment retirement or rollback are not exercised by this campaign.",
+    "Missing or ambiguous remote flow-run IDs and exhaustion of the bounded retry generations remain manual reconciliation cases; remote server outage and full release support are not qualified."
+  ],
+  "ci_configuration": {
+    "workflow": ".github/workflows/checks.yml",
+    "job": "prefect",
+    "remote_ci_run": false,
+    "fresh_venv": true,
+    "installed_wheels": [
+      "etlantic",
+      "etlantic-prefect",
+      "etlantic-fastapi",
+      "etlantic-sql",
+      "etlantic-sqlmodel",
+      "etlantic-phase058-test-worker-plugin"
+    ]
+  },
+  "artifacts": [],
+  "wheel_sha256": {
+    "etlantic-0.57.2-py3-none-any.whl": "da755b6736a770881cf67c0be135a1274086a52abe8674a56e71e82e56b401f1",
+    "etlantic_fastapi-0.57.2-py3-none-any.whl": "b6c292549a0db200fb38d4618c45ff171476f47ba96c5057040ea0153d557d4b",
+    "etlantic_prefect-0.57.2-py3-none-any.whl": "fa799197a9593854a23385ac4af86ae5c8cd302ddd221b1b4dc525e404f0a21d",
+    "etlantic_sql-0.57.2-py3-none-any.whl": "9019d028b077ab3e90a80de7f3c43e0cd7cb555a4abc43252e4bbe96d3c33ca4",
+    "etlantic_sqlmodel-0.57.2-py3-none-any.whl": "395c13c0d8dcd97dfda1e723c30c00e45f72f5a1bfff29a2fa36669924751995",
+    "etlantic_phase058_test_worker_plugin-0.1.0-py3-none-any.whl": "cfa92f0ca1ef8306f907e9d8b9c6ce5967f8690b18488184cf6b79ebe747f737"
+  },
+  "fingerprints": {
+    "etlantic_prefect_source_sha256": "a7d3d3c212663e8791bd76b335cc26f0b3258568467ec7b16c63e7e54ca24de9",
+    "uv_lock_sha256": "3b5507c03e752619016552c9fcc00e4961d9d6b3b426deb11bbdbfca240c73ec"
+  }
+}

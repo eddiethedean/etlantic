@@ -1,0 +1,104 @@
+{
+  "schema": "etlantic.phase_0_58.campaign_evidence/1",
+  "campaign_id": "clean-wheel-prefect-postgresql-final-2026-10-11",
+  "recorded_at": "2026-10-11",
+  "status": "passed",
+  "qualifies_release": false,
+  "test": "tests/prefect -m prefect; tests/fastapi/test_managed_application_0_56.py::test_managed_headless_and_http_command_semantics_match",
+  "command": "Build core, Prefect, SQL, SQLModel, FastAPI, and the separate worker-plugin wheels; install them into a fresh Python 3.11 environment from the locked requirements; run with PYTHONPATH unset and pytest pythonpath disabled: python -m pytest -o pythonpath= -q tests/prefect -m prefect, then python -m pytest -o pythonpath= -q tests/fastapi/test_managed_application_0_56.py::test_managed_headless_and_http_command_semantics_match.",
+  "result": "Installed-wheel Prefect/PostgreSQL suite: 41 passed in 49.72s with no skips. Installed-wheel headless/FastAPI parity: 1 passed in 0.53s.",
+  "assertions": [
+    "Core, Prefect, SQL, SQLModel, FastAPI, and the worker-backend plugin resolved from the fresh environment installed wheels with PYTHONPATH unset.",
+    "All Prefect contract, recovery, security, schedule, lifecycle, Process-worker, and live PostgreSQL tests ran without environment-gated skips.",
+    "The suite includes separate Process-worker execution, PostgreSQL crash/effect recovery, source-staging and report-publication cancellation, remote terminal disagreement, and the live multiprocess retirement crash/retry and rollback campaign.",
+    "The installed-wheel suite includes a real Process worker hard-killed after the durable result-publication row commits but before artifact-bearing report publication returns; it verifies retained durable artifact files, pending publication across the crash, recovery from the same report snapshot, and no repeated PostgreSQL effect.",
+    "The installed-wheel suite also restarts Prefect at the exact remote-pause/retired-state-CAS cut and hard-kills a Process worker during a partial artifact staging write; recovery preserves the closed admission gate, removes the abandoned temporary file, writes a complete artifact, and records one PostgreSQL effect.",
+    "The suite rotates the environment-backed PostgreSQL sink credential after durable dispatch and before worker claim; only the credential alias is in the accepted snapshot, and the worker completes using a dedicated least-privilege role.",
+    "The existing headless and FastAPI managed-route parity test passed from the installed package environment.",
+    "The installed-wheel suite stops the PostgreSQL-backed Prefect API after the Process worker commits a sink effect and stores its successful report but before host finalization. Authorized status keeps the canonical run state and reports remote orchestration unavailable; restarting the same API database lets the held worker finalize once with one effect and one completed attempt."
+  ],
+  "runtime": {
+    "python": "3.11.15",
+    "etlantic": "0.57.2 wheel",
+    "etlantic_prefect": "0.57.2 wheel",
+    "etlantic_sql": "0.57.2 wheel",
+    "etlantic_sqlmodel": "0.57.2 wheel",
+    "etlantic_fastapi": "0.57.2 wheel",
+    "prefect": "3.7.8",
+    "sqlmodel": "0.0.39",
+    "sqlalchemy": "2.0.51",
+    "psycopg": "3.3.4",
+    "postgresql": "16.13 (Homebrew)",
+    "worker_pool": "Process",
+    "prefect_server": "Separately supervised API process backed by per-test PostgreSQL databases",
+    "worker_backend_plugin": "Separately built and installed etlantic-phase058-test-worker-plugin 0.1.0 wheel"
+  },
+  "fingerprints": {
+    "etlantic_prefect_installed_source_sha256": "b373799f7a1c5b99ca509d7eaf21628b357eaaf03f8bee55b8df604ff4bb2e6d",
+    "test_source_sha256": "e0e91b796f99cb391b8c41fdd40a3bcc98f6e80200ccdc522b1768603d4ca4c0",
+    "worker_plugin_source_sha256": "4a6d921fed6314db4de83c8c2418249c6409bb424bad47b980aa99a5ea9f2d7c",
+    "uv_lock_sha256": "3b5507c03e752619016552c9fcc00e4961d9d6b3b426deb11bbdbfca240c73ec"
+  },
+  "source_files": [
+    "packages/etlantic-prefect/src/etlantic_prefect/deployment.py",
+    "packages/etlantic-prefect/src/etlantic_prefect/dispatcher.py",
+    "packages/etlantic-prefect/src/etlantic_prefect/worker.py",
+    "packages/etlantic-sqlmodel/src/etlantic_sqlmodel/control_plane/durable_stores.py",
+    "packages/etlantic-sqlmodel/src/etlantic_sqlmodel/managed.py",
+    "src/etlantic/control_plane/managed_backend.py",
+    "src/etlantic/io_policy.py",
+    "src/etlantic/runtime/execution_host.py",
+    "src/etlantic/runtime/managed_execution.py",
+    "tests/prefect/test_managed_prefect_0_58.py",
+    "tests/prefect/worker_plugin/src/phase058_worker_backend/__init__.py",
+    "uv.lock"
+  ],
+  "source_sha256": "24671e5dbda84e7fe2b9927ce3f36a053bb2cc6536a8952d7156859ce1286db0",
+  "source_sha256_method": "SHA-256 over sorted repository-relative source paths and file bytes, with NUL separators.",
+  "wheel_artifacts": [
+    {
+      "name": "etlantic-0.57.2-py3-none-any.whl",
+      "sha256": "e0c5c158aad63959f05de193f1f665ad79aca581d494b0645a634bd4c15a0dff"
+    },
+    {
+      "name": "etlantic_prefect-0.57.2-py3-none-any.whl",
+      "sha256": "0f20bdafe08312baaa7b61a4764afe9aa0ee933893dc27935541b0113caa9062"
+    },
+    {
+      "name": "etlantic_sql-0.57.2-py3-none-any.whl",
+      "sha256": "9019d028b077ab3e90a80de7f3c43e0cd7cb555a4abc43252e4bbe96d3c33ca4"
+    },
+    {
+      "name": "etlantic_sqlmodel-0.57.2-py3-none-any.whl",
+      "sha256": "fd1195e168cd7e7e885d04d3bff185201358f17cd845e1aa934222e43c59f8ed"
+    },
+    {
+      "name": "etlantic_fastapi-0.57.2-py3-none-any.whl",
+      "sha256": "18ea8c7eedbb47d6661d6cd4f1bf3ba41543a6f3307ba904432191382c9c4508"
+    },
+    {
+      "name": "etlantic_phase058_test_worker_plugin-0.1.0-py3-none-any.whl",
+      "sha256": "10e728ec67f4cd99a103218120ee0c474a37c334896850b4f9c0428f2f2fb3bf"
+    }
+  ],
+  "limitations": [
+    "This is a local clean-wheel qualification campaign, not remote CI evidence or a production support commitment.",
+    "Only CPython 3.11.15, Prefect 3.7.8, PostgreSQL 16.13, and the Process pool were exercised; other versions, operating systems, hosting modes, and work pools remain unqualified.",
+    "The partial-effect fault is an integration fixture, not a production or third-party connector conformance result. Broader connector behavior, remaining outage and authority-rotation combinations, bounded deployment orphan cleanup, remote CI evidence, and the integrated release decision remain open."
+  ],
+  "ci_configuration": {
+    "workflow": ".github/workflows/checks.yml",
+    "job": "prefect installed-wheel job; reproduced locally",
+    "remote_ci_run": false,
+    "fresh_installed_wheels": true,
+    "pythonpath_unset": true,
+    "pytest_pythonpath_disabled": true,
+    "database_service": "Local PostgreSQL 16.13; per-test SQLModel rows and Prefect databases were cleaned.",
+    "server_process": "Separate Prefect API process with PostgreSQL persistence"
+  },
+  "cleanup": [
+    "The test suite used unique tenant, workspace, submission, deployment, and database identities; scoped test data was removed by the fixtures.",
+    "The shared local PostgreSQL service and the temporary installed-wheel environment were left intact; the suite stopped its per-test Prefect servers and dropped their dedicated databases."
+  ],
+  "artifacts": []
+}

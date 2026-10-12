@@ -9,6 +9,7 @@ the API, dispatcher, execution host, and optional persistence adapters.
 from __future__ import annotations
 
 import json
+import re
 from collections.abc import Mapping
 from dataclasses import asdict, dataclass, field
 from datetime import UTC, datetime
@@ -32,6 +33,8 @@ SUBMISSION_RECORD_SCHEMA = "etlantic.control_plane.submission_record/1"
 OUTBOX_RECORD_SCHEMA = "etlantic.control_plane.outbox_record/1"
 LEASE_RECORD_SCHEMA = "etlantic.control_plane.lease_record/1"
 ATTEMPT_RECORD_SCHEMA = "etlantic.control_plane.attempt_record/1"
+DISPATCH_RECORD_SCHEMA = "etlantic.control_plane.dispatch_record/2"
+DISPATCH_RECONCILIATION_SCHEMA = "etlantic.control_plane.dispatch_reconciliation/1"
 CHECKPOINT_RECORD_SCHEMA = "etlantic.control_plane.checkpoint_record/1"
 EFFECT_RECORD_SCHEMA = "etlantic.control_plane.effect_record/1"
 REPLAY_RECORD_SCHEMA = "etlantic.control_plane.replay_record/1"
@@ -46,6 +49,13 @@ STATE_DIAGNOSTIC_SCHEMA = "etlantic.control_plane.state_diagnostic/1"
 BASELINE_ACK_SCHEMA = "etlantic.control_plane.baseline_acknowledgement/1"
 ACTION_JOB_SCHEMA = "etlantic.control_plane.action_job/1"
 RESULT_PUBLICATION_SCHEMA = "etlantic.control_plane.result_publication/1"
+EXECUTION_ROUTE_RECORD_SCHEMA = "etlantic.control_plane.execution_route/2"
+EXECUTION_ROUTE_TRANSITION_SCHEMA = (
+    "etlantic.control_plane.execution_route_transition/2"
+)
+EXECUTION_ROUTE_WORKLOAD_SCHEMA = "etlantic.control_plane.execution_route_workload/1"
+EXECUTION_ROUTE_LIFECYCLE_SCHEMA = "etlantic.control_plane.execution_route_lifecycle/2"
+EXECUTION_ROUTE_PATTERN = re.compile(r"^(?:local|prefect:[0-9a-f]{64})$")
 
 STATE_NAMESPACES = ("cursor:", "watermark:", "partition:", "snapshot:", "checkpoint:")
 
@@ -65,6 +75,17 @@ ActionJobStatus = Literal[
     "failed",
     "timed_out",
     "cancelled",
+]
+DispatchStatus = Literal[
+    "pending",
+    "leased",
+    "uncertain",
+    "dispatched",
+    "cancelled",
+    "reconciliation_required",
+]
+ExecutionRouteLifecycle = Literal[
+    "active", "draining", "retired", "cleanup_pending", "cleaned"
 ]
 
 
@@ -108,6 +129,7 @@ class SubmissionRecord:
     security_domain_id: str | None = None
     resource_owner_id: str | None = None
     run_id: str | None = None
+    execution_route: str = "local"
 
     def to_dict(self) -> dict[str, Any]:
         payload = asdict(self)
@@ -119,6 +141,86 @@ class SubmissionRecord:
             **payload,
             "metadata": _metadata(self.metadata),
         }
+
+
+@dataclass(frozen=True, slots=True)
+class ExecutionRouteTransition:
+    """One redacted, durable change to route admission ownership."""
+
+    revision: int
+    from_status: ExecutionRouteLifecycle
+    to_status: ExecutionRouteLifecycle
+    changed_at: str
+    principal_subject: str
+    principal_issuer: str | None = None
+
+    def to_dict(self) -> dict[str, Any]:
+        return {"schema": EXECUTION_ROUTE_TRANSITION_SCHEMA, **asdict(self)}
+
+
+@dataclass(frozen=True, slots=True)
+class ExecutionRouteRecord:
+    """Durable admission lifecycle for one immutable execution route."""
+
+    execution_route: str
+    status: ExecutionRouteLifecycle = "active"
+    revision: int = 0
+    changed_at: str | None = None
+    history: tuple[ExecutionRouteTransition, ...] = ()
+
+    def to_dict(self) -> dict[str, Any]:
+        return {
+            "schema": EXECUTION_ROUTE_RECORD_SCHEMA,
+            "execution_route": self.execution_route,
+            "status": self.status,
+            "revision": self.revision,
+            "changed_at": self.changed_at,
+            "history": [item.to_dict() for item in self.history],
+        }
+
+
+@dataclass(frozen=True, slots=True)
+class ExecutionRouteWorkload:
+    """Redacted counts that must reach zero before a route can be retired."""
+
+    execution_route: str
+    active_submissions: int = 0
+    active_attempts: int = 0
+    incomplete_dispatches: int = 0
+    unresolved_effects: int = 0
+    pending_publications: int = 0
+    unpublished_outboxes: int = 0
+
+    @property
+    def drained(self) -> bool:
+        return not any(
+            (
+                self.active_submissions,
+                self.active_attempts,
+                self.incomplete_dispatches,
+                self.unresolved_effects,
+                self.pending_publications,
+                self.unpublished_outboxes,
+            )
+        )
+
+    def to_dict(self) -> dict[str, Any]:
+        return {
+            "schema": EXECUTION_ROUTE_WORKLOAD_SCHEMA,
+            **asdict(self),
+            "drained": self.drained,
+        }
+
+
+def validate_execution_route(value: object) -> str:
+    """Validate a pinned execution route (`local` or a Prefect binding digest)."""
+    if (
+        not isinstance(value, str)
+        or len(value) > 72
+        or EXECUTION_ROUTE_PATTERN.fullmatch(value) is None
+    ):
+        raise ValueError("execution_route must be 'local' or 'prefect:<sha256>'")
+    return value
 
 
 @dataclass(frozen=True, slots=True)
@@ -185,6 +287,57 @@ class OutboxRecord:
             "schema": OUTBOX_RECORD_SCHEMA,
             **asdict(self),
             "metadata": _metadata(self.metadata),
+        }
+
+
+@dataclass(frozen=True, slots=True)
+class DispatchReconciliation:
+    """Auditable operator authorization to resume exhausted pre-claim dispatch."""
+
+    from_generation: int
+    to_generation: int
+    prefect_flow_run_id: str
+    authorized_at: str
+    principal_subject: str
+    principal_issuer: str | None
+    evidence_sha256: str
+
+    def to_dict(self) -> dict[str, Any]:
+        return {"schema": DISPATCH_RECONCILIATION_SCHEMA, **asdict(self)}
+
+
+@dataclass(frozen=True, slots=True)
+class DispatchRecord:
+    """Durable, fenced Prefect delivery state for one immutable submission."""
+
+    submission_id: str
+    tenant_id: str
+    workspace_id: str
+    execution_route: str
+    binding_fingerprint: str
+    plan_fingerprint: str
+    envelope_sha256: str
+    generation: int
+    creation_key: str
+    created_at: str
+    updated_at: str
+    status: DispatchStatus = "pending"
+    dispatch_attempts: int = 0
+    lease_owner_id: str | None = None
+    lease_fencing_token: int = 0
+    lease_expires_at: str | None = None
+    retry_after_at: str | None = None
+    prefect_flow_run_id: str | None = None
+    last_error_code: str | None = None
+    reconciliation_history: tuple[DispatchReconciliation, ...] = ()
+
+    def to_dict(self) -> dict[str, Any]:
+        return {
+            "schema": DISPATCH_RECORD_SCHEMA,
+            **asdict(self),
+            "reconciliation_history": [
+                item.to_dict() for item in self.reconciliation_history
+            ],
         }
 
 
@@ -565,6 +718,10 @@ __all__ = [
     "CHECKPOINT_RECORD_SCHEMA",
     "DIFF_RECORD_SCHEMA",
     "EFFECT_RECORD_SCHEMA",
+    "EXECUTION_ROUTE_LIFECYCLE_SCHEMA",
+    "EXECUTION_ROUTE_RECORD_SCHEMA",
+    "EXECUTION_ROUTE_TRANSITION_SCHEMA",
+    "EXECUTION_ROUTE_WORKLOAD_SCHEMA",
     "LEASE_RECORD_SCHEMA",
     "OUTBOX_RECORD_SCHEMA",
     "PREVIEW_WORKSPACE_SCHEMA",
@@ -584,6 +741,10 @@ __all__ = [
     "DiffRecord",
     "EffectRecord",
     "EffectStatus",
+    "ExecutionRouteLifecycle",
+    "ExecutionRouteRecord",
+    "ExecutionRouteTransition",
+    "ExecutionRouteWorkload",
     "LeaseRecord",
     "OutboxRecord",
     "PreviewWorkspace",

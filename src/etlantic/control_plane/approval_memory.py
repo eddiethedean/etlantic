@@ -133,6 +133,7 @@ class MemoryApprovalStore:
             record = self._approvals.get(key)
             if record is None:
                 raise ControlPlaneError.not_found("approval not found")
+            record = self._refresh(record)
             if record.status not in ("pending", "approved"):
                 raise ControlPlaneError.conflict(
                     f"cannot revoke approval in status {record.status}"
@@ -194,7 +195,7 @@ class MemoryApprovalStore:
 
     def _refresh(self, record: ApprovalRequest) -> ApprovalRequest:
         if (
-            record.status == "pending"
+            record.status in ("pending", "approved")
             and record.expires_at is not None
             and record.expires_at <= _now()
         ):

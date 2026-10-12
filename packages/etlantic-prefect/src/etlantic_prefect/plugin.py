@@ -1,11 +1,16 @@
+# pyright: reportUnknownMemberType=false, reportAttributeAccessIssue=false
 """Prefect ExecutionScheduler for ETLantic (etlantic.scheduler/1)."""
 
 from __future__ import annotations
 
-from typing import Any
+from collections.abc import Awaitable, Callable
+from threading import Event
+from typing import Any, cast
 
 import anyio
+from anyio.abc import TaskGroup
 
+from etlantic.exceptions import PipelineExecutionError
 from etlantic.plan.model import PipelinePlan
 from etlantic.reports.model import PipelineRunReport
 from etlantic.runtime.request import RunRequest
@@ -16,22 +21,23 @@ from etlantic.runtime.scheduler import (
     SchedulerSupportReport,
     SchedulingContext,
 )
+from etlantic.runtime.state import RunStatus
 
 __version__ = "0.57.2"
 
 
-def _prefect_future_id(fut: Any, *, run_id: str, name: str) -> str:
-    """Best-effort Prefect task-run identity for ETLantic correlation metadata."""
+def _prefect_future_id(fut: Any, *, run_id: str, name: str) -> tuple[str, bool]:
+    """Return a task-run identity and whether Prefect supplied the identity."""
     task_run_id = getattr(fut, "task_run_id", None)
     if task_run_id is not None:
-        return str(task_run_id)
+        return str(task_run_id), True
     state = getattr(fut, "state", None)
     state_task_run_id = (
         getattr(state, "task_run_id", None) if state is not None else None
     )
     if state_task_run_id is not None:
-        return str(state_task_run_id)
-    return f"prefect-task:{run_id}:{name}"
+        return str(state_task_run_id), True
+    return f"prefect-task:{run_id}:{name}", False
 
 
 class PrefectScheduler:
@@ -46,7 +52,6 @@ class PrefectScheduler:
             external_compilation=False,
             metadata={"prefect_major": 3, "deployment": False},
         )
-        self._task_correlation: dict[str, str] = {}
 
     @property
     def info(self) -> SchedulerInfo:
@@ -76,7 +81,7 @@ class PrefectScheduler:
                 ),
             )
         findings: list[SchedulerSupportFinding] = []
-        if plan.logical_graph is None or not plan.logical_graph.nodes:
+        if not plan.logical_graph.nodes:
             findings.append(
                 SchedulerSupportFinding(
                     code="PMSCHED101",
@@ -110,7 +115,22 @@ class PrefectScheduler:
                         reason="Concurrency must be >= 1",
                     )
                 )
-        # Durable scheduling / deployment is explicitly out of the 0.16 MVP.
+        cancellation = request.cancellation
+        if (
+            cancellation.cooperative is False
+            or cancellation.abandon_after_seconds is not None
+        ):
+            findings.append(
+                SchedulerSupportFinding(
+                    code="PMSCHED103",
+                    requirement="cancellation_policy",
+                    reason=(
+                        "Prefect direct execution supports only cooperative "
+                        "cancellation without bounded abandonment"
+                    ),
+                )
+            )
+        # This direct scheduler path does not provision durable deployments.
         if request.metadata.get("require_deployment") or settings.get(
             "require_deployment"
         ):
@@ -119,22 +139,50 @@ class PrefectScheduler:
                     code="PMSCHED201",
                     requirement="deployment",
                     reason=(
-                        "Prefect deployment/serve is not part of the 0.16 MVP; "
-                        "use local direct invocation only"
+                        "Prefect deployment provisioning is separate from direct "
+                        "local invocation; use the managed deployment API"
                     ),
                 )
             )
         return SchedulerSupportReport(supported=not findings, findings=tuple(findings))
 
-    def _make_wave_runner(self, *, run_id: str) -> Any:
+    def _make_wave_runner(
+        self,
+        *,
+        run_id: str,
+        correlation: dict[str, str],
+        observed_ids: set[str],
+        cancellation_event: Event,
+    ) -> Any:
+        from prefect.cache_policies import NO_CACHE
         from prefect.tasks import task
 
-        correlation = self._task_correlation
-
         async def wave_runner(ready: list[str], run_one: Any) -> None:
-            @task(name="etlantic-node", retries=0, persist_result=False)
+            @task(
+                name="etlantic-node",
+                retries=0,
+                persist_result=False,
+                cache_policy=NO_CACHE,
+            )
             async def bound_node_task(node_name: str) -> str:
-                await run_one(node_name)
+                node_completed = anyio.Event()
+
+                async def execute_node() -> None:
+                    await run_one(node_name)
+                    node_completed.set()
+
+                async def observe_cancellation(
+                    task_group: TaskGroup,
+                ) -> None:
+                    while not node_completed.is_set():
+                        if cancellation_event.is_set():
+                            task_group.cancel_scope.cancel()
+                            return
+                        await anyio.sleep(0.02)
+
+                async with anyio.create_task_group() as node_group:
+                    node_group.start_soon(execute_node)
+                    node_group.start_soon(observe_cancellation, node_group)
                 return node_name
 
             futures = [
@@ -142,17 +190,49 @@ class PrefectScheduler:
                 for name in ready
             ]
             for name, fut in zip(ready, futures, strict=True):
-                correlation[name] = _prefect_future_id(fut, run_id=run_id, name=name)
+                task_id, observed = _prefect_future_id(fut, run_id=run_id, name=name)
+                correlation[name] = task_id
+                if observed:
+                    observed_ids.add(name)
 
-            async def _wait(fut: Any) -> Any:
-                result_async = getattr(fut, "result_async", None)
+            async def _wait(fut: Any) -> None:
+                result_async = cast(
+                    Callable[[], Awaitable[Any]] | None,
+                    getattr(fut, "result_async", None),
+                )
                 if callable(result_async):
-                    return await result_async()
-                return await anyio.to_thread.run_sync(fut.result)
+                    await result_async()
+                    return
+                await anyio.to_thread.run_sync(cast(Callable[[], Any], fut.result))
+
+            completed = anyio.Event()
+            remaining = len(futures)
+            wait_failures: list[BaseException] = []
+
+            async def _wait_and_track(fut: Any) -> None:
+                nonlocal remaining
+                try:
+                    await _wait(fut)
+                except BaseException as exc:
+                    if not isinstance(exc, anyio.get_cancelled_exc_class()):
+                        wait_failures.append(exc)
+                    raise
+                remaining -= 1
+                if remaining == 0:
+                    completed.set()
 
             async with anyio.create_task_group() as tg:
                 for fut in futures:
-                    tg.start_soon(_wait, fut)
+                    tg.start_soon(_wait_and_track, fut)
+                try:
+                    await completed.wait()
+                except BaseException as exc:
+                    if (
+                        isinstance(exc, anyio.get_cancelled_exc_class())
+                        and not wait_failures
+                    ):
+                        cancellation_event.set()
+                    raise
 
         return wave_runner
 
@@ -174,8 +254,6 @@ class PrefectScheduler:
         )
         report = self.analyze(plan, request=request, context=ctx)
         if not report.supported:
-            from etlantic.exceptions import PipelineExecutionError
-
             detail = "; ".join(f"{f.code}: {f.reason}" for f in report.findings)
             code = report.findings[0].code if report.findings else None
             raise PipelineExecutionError(
@@ -188,11 +266,24 @@ class PrefectScheduler:
 
         from etlantic.runtime.orchestrator import LocalOrchestrator
 
-        self._task_correlation = {}
         run_key = ctx.run_id or plan.plan_id or "run"
+        cancellation_event = Event()
+        correlation: dict[str, str] = {}
+        observed_task_ids: set[str] = set()
+        result_holder: dict[str, PipelineRunReport] = {}
+        flow_run_id: list[str] = []
 
-        @flow(name=f"etlantic:{plan.pipeline_id}", retries=0)
+        @flow(
+            name=f"etlantic:{plan.pipeline_id}",
+            retries=0,
+            persist_result=False,
+        )
         async def pipeline_flow() -> PipelineRunReport:
+            from prefect.runtime import flow_run
+
+            current_flow_run_id = getattr(flow_run, "id", None)
+            if current_flow_run_id is not None:
+                flow_run_id.append(str(current_flow_run_id))
             host = LocalOrchestrator(
                 runtime=runtime,
                 plan=plan,
@@ -200,20 +291,62 @@ class PrefectScheduler:
                 pipeline_cls=pipeline_cls,
                 workspace=workspace,
                 artifacts=artifact_store,
-                wave_runner=self._make_wave_runner(run_id=str(run_key)),
+                wave_runner=self._make_wave_runner(
+                    run_id=str(run_key),
+                    correlation=correlation,
+                    observed_ids=observed_task_ids,
+                    cancellation_event=cancellation_event,
+                ),
+                cancellation_event=cancellation_event,
                 run_id=str(run_key),
             )
-            return await host.execute()
+            run_report = await host.execute()
+            result_holder["report"] = run_report
+            if run_report.status is not RunStatus.SUCCEEDED:
+                raise PipelineExecutionError(
+                    "Prefect flow completed with an unsuccessful ETLantic report",
+                    run_id=run_report.run_id,
+                    report=run_report,
+                    stage="execution",
+                )
+            return run_report
 
-        result = pipeline_flow()
-        if hasattr(result, "__await__"):
-            result = await result  # type: ignore[misc]
+        flow_error: PipelineExecutionError | None = None
+        try:
+            result = pipeline_flow()
+            if hasattr(result, "__await__"):
+                result = await cast(Awaitable[PipelineRunReport], result)
+        except PipelineExecutionError as exc:
+            flow_error = exc
+            result = exc.report
+        if not isinstance(result, PipelineRunReport):
+            result = result_holder.get("report")
+        if not isinstance(result, PipelineRunReport):
+            raise PipelineExecutionError(
+                "Prefect flow finished without an ETLantic run report",
+                run_id=str(run_key),
+                stage="publication",
+            )
         result.metadata.setdefault("etlantic.scheduler", self.info.name)
         result.metadata.setdefault("etlantic.scheduler_protocol", SCHEDULER_PROTOCOL)
         result.metadata.setdefault(
-            "etlantic.prefect.task_correlation", dict(self._task_correlation)
+            "etlantic.prefect.task_correlation", dict(correlation)
+        )
+        result.metadata.setdefault(
+            "etlantic.prefect.task_correlation_observed_ids",
+            sorted(observed_task_ids),
         )
         result.metadata.setdefault("etlantic.prefect.run_id", str(run_key))
+        if flow_run_id:
+            result.metadata.setdefault("etlantic.prefect.flow_run_id", flow_run_id[0])
+        if flow_error is not None:
+            raise PipelineExecutionError(
+                str(flow_error),
+                run_id=result.run_id,
+                report=result,
+                code=flow_error.code,
+                stage=flow_error.stage,
+            ) from flow_error
         return result
 
 

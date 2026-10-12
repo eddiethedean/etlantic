@@ -1,0 +1,43 @@
+{
+  "schema": "etlantic.phase_0_58.campaign_evidence/1",
+  "campaign_id": "route-lifecycle-retirement-contract-2026-10-11",
+  "recorded_at": "2026-10-11",
+  "status": "passed",
+  "qualifies_release": false,
+  "test": "tests/prefect/test_managed_prefect_0_58.py::test_deployment_retirement_drains_route_and_retains_binding; tests/prefect/test_managed_prefect_0_58.py::test_sqlmodel_dispatch_snapshot_survives_store_reconstruction",
+  "command": "env -u PYTHONPATH /tmp/phase058-final-wheel-venv/bin/python -m pytest -o pythonpath= -q tests/prefect/test_managed_prefect_0_58.py::test_deployment_retirement_drains_route_and_retains_binding tests/prefect/test_managed_prefect_0_58.py::test_sqlmodel_dispatch_snapshot_survives_store_reconstruction",
+  "result": "2 passed in 1.33s",
+  "assertions": [
+    "The route lifecycle transitions use compare-and-swap revisions and retain a bounded audit history with the acting principal.",
+    "New acceptance is rejected after draining begins and after retirement; an existing idempotent acceptance remains readable and pinned to its original route.",
+    "Retirement is refused while canonical submissions, outboxes, attempts, dispatches, effects, or result publications remain, and remains draining while the Prefect client reports an active flow run.",
+    "After canonical and remote work drain, the registrar pauses and retains the immutable deployment; reactivation verifies the deployment and Process pool before resuming it and reopening admissions.",
+    "SQLModel durable snapshot reconstruction preserves route status, revision, audit history, and workload counters without adding a provider table."
+  ],
+  "runtime": {
+    "python": "CPython 3.11.15",
+    "etlantic": "0.57.2 installed wheel",
+    "etlantic_prefect": "0.57.2 installed wheel",
+    "etlantic_sqlmodel": "0.57.2 installed wheel",
+    "prefect_client": "3.7.8",
+    "durable_stores": [
+      "MemoryDurableWorkStore",
+      "SQLModelDurableWorkStore with SQLite"
+    ],
+    "prefect_api": "controlled asynchronous client fixture",
+    "wheel_environment": "Fresh-environment package origins; inherited PYTHONPATH unset and pytest source injection disabled."
+  },
+  "limitations": [
+    "This campaign uses a controlled Prefect client and SQLite provider reconstruction; it does not prove route drain, retirement, or rollback across live processes, PostgreSQL, or a self-hosted Prefect server.",
+    "Retired deployments and Prefect history are retained indefinitely; scoped orphan cleanup and its retention window remain open.",
+    "The store-wide lifecycle requires all API and worker processes to share the same durable SQLModel store_id."
+  ],
+  "source_sha256": "b33649e84a68bcae7f4456cdeb8a991f5dede02082b6e53bd27a5673f5f032b3",
+  "lockfile_sha256": "3b5507c03e752619016552c9fcc00e4961d9d6b3b426deb11bbdbfca240c73ec",
+  "wheel_sha256": {
+    "etlantic-0.57.2-py3-none-any.whl": "128f31114a3a306946264c2021f5c106850a7a7ec097ec652cbf966ec429c88a",
+    "etlantic_prefect-0.57.2-py3-none-any.whl": "a2567a9b3308deefc213909e1786e1598f01797d3750dee87cb1e641e2216915",
+    "etlantic_sqlmodel-0.57.2-py3-none-any.whl": "aab7b40a05594d0fd362d78ca16a0282334e3a4e6497aadc4295e4b0081a14d4"
+  },
+  "artifacts": []
+}

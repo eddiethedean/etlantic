@@ -1,0 +1,45 @@
+{
+  "schema": "etlantic.phase_0_58.campaign_evidence/1",
+  "campaign_id": "prefect-postgresql-ci-smoke-2026-10-11",
+  "recorded_at": "2026-10-11",
+  "status": "passed",
+  "qualifies_release": false,
+  "test": "tests/prefect/test_managed_prefect_0_58.py",
+  "command": "ETLANTIC_CP_TEST_URL=<isolated PostgreSQL service URL> uv run pytest -q tests/prefect/test_managed_prefect_0_58.py",
+  "result": "10 passed in 19.13s",
+  "assertions": [
+    "The two PostgreSQL-gated tests ran without skips, including single-claim/retry-identity behavior and separate Prefect Process-worker execution.",
+    "A separate Process worker executed the dispatched target, left another accepted submission untouched, and published canonical results.",
+    "Replace-mode CSV-to-PostgreSQL and PostgreSQL-to-PostgreSQL runs produced the expected rows and effect records.",
+    "Prefect deployment registration and remote deployment binding were verified."
+  ],
+  "runtime": {
+    "python": "3.11.14",
+    "etlantic": "0.57.2",
+    "etlantic_prefect": "0.57.2",
+    "etlantic_sqlmodel": "0.57.2",
+    "etlantic_sql": "0.57.2",
+    "prefect": "3.7.8",
+    "postgresql": "16.14",
+    "worker_pool": "Process",
+    "prefect_server": "Prefect temporary test server with its own SQLite test database"
+  },
+  "fingerprints": {
+    "etlantic_prefect_source_sha256": "40e76acb70dccf1e0d71892d8becd35aa1096f338166d6c4262c1b1aa9deb8e5",
+    "uv_lock_sha256": "3b5507c03e752619016552c9fcc00e4961d9d6b3b426deb11bbdbfca240c73ec"
+  },
+  "limitations": [
+    "The run used the uv-managed editable development environment rather than clean installed wheels.",
+    "The submitting process stayed alive during worker execution.",
+    "Prefect used its temporary SQLite test server, not a separately supervised self-hosted server with PostgreSQL storage.",
+    "This smoke does not cover crash/lost-response recovery, cancellation races, API restart parity, tenant isolation, recurring schedules, least-privilege grants, or upgrade/rollback."
+  ],
+  "ci_enforcement": {
+    "workflow": ".github/workflows/checks.yml",
+    "job": "prefect",
+    "database_service": "postgres:16",
+    "dependency_groups": ["prefect", "sql", "sqlmodel"],
+    "test_environment_variable": "ETLANTIC_CP_TEST_URL"
+  },
+  "artifacts": []
+}

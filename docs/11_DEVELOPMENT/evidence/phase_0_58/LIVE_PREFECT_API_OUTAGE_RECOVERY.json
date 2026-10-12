@@ -1,0 +1,63 @@
+{
+  "schema": "etlantic.phase_0_58.campaign_evidence/1",
+  "campaign_id": "live-postgresql-prefect-api-outage-recovery-2026-10-11",
+  "recorded_at": "2026-10-11",
+  "status": "passed",
+  "qualifies_release": false,
+  "test": "tests/prefect/test_managed_prefect_0_58.py::test_process_worker_executes_targeted_csv_and_postgresql_transfers",
+  "command": "ETLANTIC_CP_TEST_URL=<local PostgreSQL+psycopg URL> uv run pytest -q tests/prefect/test_managed_prefect_0_58.py::test_process_worker_executes_targeted_csv_and_postgresql_transfers",
+  "result": "Workspace-source live Process-worker test passed: 1 passed in 22.28s.",
+  "assertions": [
+    "With the self-hosted Prefect API stopped, the durable dispatcher tick failed before claiming the accepted submission; the canonical submission remained accepted, no execution attempt existed, and PostgreSQL contained no sink row or effect-ledger record.",
+    "The dispatcher's local role status reported unusable prerequisites with the bounded dispatch_tick_failed reason, zero in-flight work, and no fabricated ready state.",
+    "After restarting the Prefect API against the same PostgreSQL database, one bounded dispatcher tick linked the accepted submission to a flow run; a separate Process worker completed it and the API reported ready again.",
+    "The recovered run produced the expected PostgreSQL row, one committed effect-ledger record, one completed attempt, and a successful canonical report."
+  ],
+  "runtime": {
+    "python": "3.11.15",
+    "etlantic": "0.57.2 workspace source",
+    "etlantic_prefect": "0.57.2 workspace source",
+    "etlantic_sqlmodel": "0.57.2 workspace source",
+    "prefect": "3.7.8",
+    "sqlmodel": "0.0.39",
+    "sqlalchemy": "2.0.51",
+    "psycopg": "3.3.4",
+    "postgresql": "16.13 (Homebrew)",
+    "worker_pool": "Process",
+    "prefect_server": "Separately supervised API process backed by PostgreSQL; stopped and restarted against the same database during the campaign",
+    "worker_backend_plugin": "Repository integration-test fixture imported through its temporary test entry-point shim; not an installed-wheel run"
+  },
+  "fingerprints": {
+    "dispatcher_source_sha256": "a1f3690ed5e80c9bbe56bf356b6111f42c6074c8042fdf6ca1f0abc6510c1e9a",
+    "runtime_role_source_sha256": "7499f4808edceef8765a17d1b93eef434b24a97cd3e0caa28e27c5e974613fd0",
+    "test_source_sha256": "3cba2c9c3dd882dd43c4520f57fde1910245478b48477811b617a0e26619e295",
+    "worker_plugin_source_sha256": "f061313e8c4b1ea4321e442fddccd07d5bc9945ae239d92c469c996ee7635505",
+    "uv_lock_sha256": "3b5507c03e752619016552c9fcc00e4961d9d6b3b426deb11bbdbfca240c73ec"
+  },
+  "source_files": [
+    "packages/etlantic-prefect/src/etlantic_prefect/dispatcher.py",
+    "src/etlantic/runtime/role.py",
+    "tests/prefect/test_managed_prefect_0_58.py",
+    "tests/prefect/worker_plugin/src/phase058_worker_backend/__init__.py",
+    "uv.lock"
+  ],
+  "source_sha256": "7608a07cc57f877f98d4f94ab3c14a45a174eed080fe75560c169f187245ed71",
+  "source_sha256_method": "SHA-256 over sorted repository-relative source paths and file bytes, with NUL separators.",
+  "limitations": [
+    "This trace covers one accepted backlog item during a Prefect API outage before dispatch. It does not cover a mid-execution API loss, simultaneous dispatcher/worker process death, prolonged outage/backpressure, or resource disposal during active work.",
+    "This is local workspace-source evidence for CPython 3.11.15, Prefect 3.7.8, PostgreSQL 16.13, and the Process pool; remote CI and the complete supported-version and hosting matrix remain open."
+  ],
+  "ci_configuration": {
+    "workflow": ".github/workflows/checks.yml",
+    "job": "prefect",
+    "remote_ci_run": false,
+    "fresh_installed_wheels": false,
+    "database_service": "Local PostgreSQL 16.13; per-test rows and dedicated Prefect database were cleaned after the test.",
+    "server_process": "Separately supervised Prefect API process with PostgreSQL persistence"
+  },
+  "cleanup": [
+    "The test used unique tenant, workspace, submission, deployment, sink-table, and effect-ledger identities; scoped SQLModel rows were removed after the run.",
+    "The per-test Prefect database was dropped after the API process stopped; the shared local PostgreSQL service was left running."
+  ],
+  "artifacts": []
+}

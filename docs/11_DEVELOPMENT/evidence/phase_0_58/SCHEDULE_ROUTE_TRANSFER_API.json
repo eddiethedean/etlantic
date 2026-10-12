@@ -1,0 +1,26 @@
+{
+  "schema": "etlantic.phase_0_58.campaign_evidence/1",
+  "campaign_id": "schedule-route-transfer-api-contract-2026-10-11",
+  "recorded_at": "2026-10-11",
+  "status": "passed",
+  "qualifies_release": false,
+  "test": "tests/fastapi/test_schedule_routes_0_47.py::test_schedule_route_transfer_accepts_only_the_managed_boolean",
+  "command": "uv run pytest -q tests/fastapi/test_schedule_routes_0_47.py::test_schedule_route_transfer_accepts_only_the_managed_boolean",
+  "result": "1 passed in 0.39s",
+  "assertions": [
+    "The schedule amendment endpoint forwards an explicit boolean transfer request to the schedule service.",
+    "A string value is rejected as a bad request, and callers cannot supply an arbitrary execution route."
+  ],
+  "runtime": {
+    "python": "CPython 3.11.15",
+    "etlantic_fastapi": "0.57.2 workspace source",
+    "fastapi": "0.139.2",
+    "providers": "Controlled schedule service and test request context"
+  },
+  "limitations": [
+    "This verifies HTTP body validation and delegation only; route transfer drain and restart semantics are separately covered by memory and PostgreSQL scheduler tests."
+  ],
+  "source_sha256": "3144a913afec6d8d7c5f348b5817e6146f787bd0b021710f65b0e16f5a9c9cc0",
+  "lockfile_sha256": "3b5507c03e752619016552c9fcc00e4961d9d6b3b426deb11bbdbfca240c73ec",
+  "artifacts": []
+}

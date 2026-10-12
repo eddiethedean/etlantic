@@ -68,9 +68,11 @@ ETLantic is designed to support:
 - Local execution via built-in `LocalScheduler`
 - Airflow via `etlantic-airflow` (`OrchestratorPlugin` / `compile_plan`)
 - Prefect via shipped `etlantic-prefect` (`ExecutionScheduler`, local MVP)
-- Planned 0.58 compile or scheduler adapters (Dagster, expanded Prefect, and
-  Argo) behind the matching protocol; additional cloud workflow services remain
-  candidates
+- [0.58 managed Prefect adapter](../11_DEVELOPMENT/IMPLEMENTATION_PLAN_0_58.md)
+  is implemented for canonical durable admission and targeted local execution
+  in remote workers; it remains unqualified for production pending its live gate
+- Planned 0.59 Dagster/Argo compilers and Prefect brownfield interoperability
+  over that managed adapter; additional cloud workflow services remain candidates
 
 Do not assume every platform is a compile target. Prefect's shipped path is
 local direct execution, not DAG artifact generation.

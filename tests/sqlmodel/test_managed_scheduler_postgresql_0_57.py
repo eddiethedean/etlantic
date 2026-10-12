@@ -6,7 +6,7 @@ import hashlib
 import os
 import uuid
 from concurrent.futures import ProcessPoolExecutor
-from datetime import UTC, datetime
+from datetime import datetime
 from multiprocessing import get_context
 from typing import Any
 
@@ -21,6 +21,7 @@ from sqlalchemy import text
 
 from etlantic.control_plane import (
     ControlPlaneContext,
+    ControlPlaneError,
     DurableWorkStore,
     EnvironmentRef,
     FakeScheduleClock,
@@ -67,7 +68,11 @@ class _FailOnceLinkStore(SQLModelScheduleStore):
 
 
 def _scheduler_process_tick(
-    url: str, store_id: str, owner_id: str, fail_link: bool
+    url: str,
+    store_id: str,
+    owner_id: str,
+    fail_link: bool,
+    clock_at: str = "2026-10-01T12:00:00Z",
 ) -> tuple[int, str]:
     """Run one scheduler tick in a short-lived, independent process."""
     engine = sqlalchemy.create_engine(url, pool_pre_ping=True)
@@ -100,6 +105,7 @@ def _scheduler_process_tick(
                 plan_fingerprint="phase057-plan",
                 revision_id="phase057-definition-rev",
                 input_snapshot='{"schema":"etlantic.execution_envelope/1"}',
+                execution_route=occurrence.execution_route,
             )
             return accepted.submission_id, "phase057-plan"
 
@@ -116,7 +122,9 @@ def _scheduler_process_tick(
         scheduler = SchedulerService(
             schedules,
             durable=durable,
-            clock=FakeScheduleClock(datetime(2026, 10, 1, 12, 0, tzinfo=UTC)),
+            clock=FakeScheduleClock(
+                datetime.fromisoformat(clock_at.replace("Z", "+00:00"))
+            ),
             owner_id=owner_id,
             # Keep the lease alive while each independent process starts. The
             # test explicitly releases it once standby behavior is verified.
@@ -148,13 +156,18 @@ def test_postgresql_two_schedulers_recover_accepted_unlinked_firing() -> None:
         )
         schedules = _FailOnceLinkStore(engine, store_id=store_id)
         durable = SQLModelDurableWorkStore(engine, store_id=store_id)
+        execution_route = "prefect:" + "5" * 64
         schedule = schedules.create(
             ctx,
             definition_id="phase057-pipeline",
             definition_revision_id="phase057-definition-rev",
             profile_name="test",
             spec=ScheduleSpec(kind="interval", interval_seconds=60, overlap="queue"),
+            execution_route=execution_route,
             next_fire_at="2026-10-01T12:00:00Z",
+        )
+        assert (
+            schedules.get(ctx, schedule.schedule_id).execution_route == execution_route
         )
 
         with ProcessPoolExecutor(
@@ -167,7 +180,7 @@ def test_postgresql_two_schedulers_recover_accepted_unlinked_firing() -> None:
         firing = schedules.list_firings(ctx, schedule.schedule_id)[0]
         assert firing.status == "accepted"
         assert firing.submission_id is None
-        assert len(durable.pending_outbox(ctx)) == 1
+        assert len(durable.pending_outbox(ctx, execution_route=execution_route)) == 1
         with ProcessPoolExecutor(
             max_workers=1, mp_context=get_context("spawn")
         ) as process:
@@ -188,9 +201,94 @@ def test_postgresql_two_schedulers_recover_accepted_unlinked_firing() -> None:
         assert recovery_result == (0, "idle")
         firing = schedules.list_firings(ctx, schedule.schedule_id)[0]
         assert firing.submission_id is not None
-        assert len(durable.pending_outbox(ctx)) == 1
+        assert len(durable.pending_outbox(ctx, execution_route=execution_route)) == 1
         accepted = durable.get_submission(ctx, firing.submission_id)
         assert accepted.plan_fingerprint == "phase057-plan"
+        assert accepted.execution_route == execution_route
+
+        route_b = "prefect:" + "6" * 64
+        with pytest.raises(ControlPlaneError) as active_transfer:
+            schedules.amend(
+                ctx,
+                schedule.schedule_id,
+                expected_revision_id=schedule.revision_id,
+                spec=ScheduleSpec(
+                    kind="interval", interval_seconds=60, overlap="queue"
+                ),
+                next_fire_at="2026-10-01T12:01:00Z",
+                execution_route=route_b,
+                policy_fingerprint="route-b-policy",
+                durable=durable,
+            )
+        assert active_transfer.value.extensions.get("reason") == "active_firing"
+
+        lease = durable.acquire_lease(
+            ctx,
+            accepted.submission_id,
+            owner_id="schedule-transfer-test",
+            ttl_seconds=60,
+        )
+        attempt = durable.start_attempt(
+            ctx,
+            accepted.submission_id,
+            owner_id=lease.owner_id,
+            fencing_token=lease.fencing_token,
+        )
+        durable.finish_attempt(
+            ctx,
+            attempt.attempt_id,
+            owner_id=lease.owner_id,
+            fencing_token=lease.fencing_token,
+            status="completed",
+        )
+        amended = schedules.amend(
+            ctx,
+            schedule.schedule_id,
+            expected_revision_id=schedule.revision_id,
+            spec=ScheduleSpec(kind="interval", interval_seconds=60, overlap="queue"),
+            next_fire_at="2026-10-01T12:01:00Z",
+            execution_route=route_b,
+            policy_fingerprint="route-b-policy",
+            durable=durable,
+        )
+        assert amended.revision_id != schedule.revision_id
+        assert amended.execution_route == route_b
+        assert amended.metadata["execution_route_amended_from"] == execution_route
+
+        # Reopen both adapters to prove the route and revision are persisted.
+        engine.dispose()
+        engine = sqlalchemy.create_engine(url, pool_pre_ping=True)
+        schedules = SQLModelScheduleStore(engine, store_id=store_id)
+        durable = SQLModelDurableWorkStore(engine, store_id=store_id)
+        restored = schedules.get(ctx, schedule.schedule_id)
+        assert restored == amended
+        old_firing = schedules.list_firings(ctx, schedule.schedule_id)[0]
+        old_submission = durable.get_submission(ctx, accepted.submission_id)
+        assert old_firing.revision_id == schedule.revision_id
+        assert old_firing.submission_id == accepted.submission_id
+        assert old_submission.execution_route == execution_route
+        assert old_submission.status == "completed"
+
+        with ProcessPoolExecutor(
+            max_workers=1, mp_context=get_context("spawn")
+        ) as process:
+            next_result = process.submit(
+                _scheduler_process_tick,
+                url,
+                store_id,
+                "scheduler-b",
+                False,
+                "2026-10-01T12:01:00Z",
+            ).result(timeout=30)
+        assert next_result == (1, "idle")
+        firings = schedules.list_firings(ctx, schedule.schedule_id)
+        assert len(firings) == 2
+        new_firing = next(
+            item for item in firings if item.revision_id == amended.revision_id
+        )
+        assert new_firing.submission_id is not None
+        new_submission = durable.get_submission(ctx, new_firing.submission_id)
+        assert new_submission.execution_route == route_b
     finally:
         with engine.begin() as connection:
             for table in (

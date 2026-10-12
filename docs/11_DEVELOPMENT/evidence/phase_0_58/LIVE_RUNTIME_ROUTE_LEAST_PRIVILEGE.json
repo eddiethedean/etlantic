@@ -1,0 +1,45 @@
+{
+  "schema": "etlantic.phase_0_58.campaign_evidence/1",
+  "campaign_id": "live-postgresql-runtime-route-least-privilege-2026-10-11",
+  "recorded_at": "2026-10-11",
+  "status": "passed",
+  "qualifies_release": false,
+  "test": "tests/sqlmodel/test_managed_runtime_schema_privileges_0_57.py::test_restricted_postgresql_role_inspects_schema_and_runs_headless_scheduler",
+  "command": "ETLANTIC_SQLMODEL_TEST_URL='postgresql+psycopg://<admin credentials>@<isolated PostgreSQL service>/postgres' uv run pytest -q tests/sqlmodel/test_managed_runtime_schema_privileges_0_57.py",
+  "result": "1 passed in 6.28s",
+  "assertions": [
+    "An explicitly migrated schema was inspected and a managed backend was constructed with a runtime role granted no schema CREATE privilege; inspection performed no DDL, DML, or commit.",
+    "The restricted role persisted a Prefect execution route atomically with accepted-work outbox state and discovered the routed submission through the bounded pending-dispatch scan using ordinary table DML grants.",
+    "The runtime role still had no CREATE privilege after acceptance and route discovery."
+  ],
+  "runtime": {
+    "python": "3.11.15",
+    "etlantic": "0.57.2",
+    "etlantic_sqlmodel": "0.57.2",
+    "sqlmodel": "0.0.39",
+    "sqlalchemy": "2.0.51",
+    "postgresql": "16.14",
+    "schema": "Dedicated test schema; migrations run explicitly with an operator connection before runtime credentials are granted."
+  },
+  "fingerprints": {
+    "test_source_sha256": "9296e07ed4ff4862b44a37917c8fbda3c0663f2ca601bc0c1a06e50f185fa8dd",
+    "uv_lock_sha256": "3b5507c03e752619016552c9fcc00e4961d9d6b3b426deb11bbdbfca240c73ec"
+  },
+  "limitations": [
+    "The test confirms acceptance and bounded routed-work discovery only; it does not construct a valid managed execution envelope or exercise remote dispatch under the restricted role.",
+    "The role has DML privileges over tables in the dedicated test schema; column-level grants and multi-tenant isolation are not assessed.",
+    "This is one local PostgreSQL qualification and does not replace the final candidate remote-CI run or release ledger decision."
+  ],
+  "ci_configuration": {
+    "workflow": ".github/workflows/checks.yml",
+    "job": "prefect / Runtime-role schema and routed-work privilege check",
+    "remote_ci_run": false,
+    "local_database_service": "PostgreSQL 16.14 on 127.0.0.1:55432",
+    "database_role": "Dedicated runtime role with CONNECT, schema USAGE, table DML, sequence usage/select/update, and no schema CREATE.",
+    "remote_test_service": "GitHub Actions postgres:16 service on localhost:5432 (configured, not yet observed on remote CI)"
+  },
+  "cleanup": [
+    "The test drops its unique schema and role in a finally block."
+  ],
+  "artifacts": []
+}

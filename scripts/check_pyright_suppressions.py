@@ -58,8 +58,28 @@ from pathlib import Path
 # were added or removed. Re-pin the 789-entry inventory after source shifts.
 # Prefect test isolation shifts an existing inline ignore; no directives were
 # added or removed. Inline ignore locations are now part of the inventory, so
-# re-pin the unchanged 789-entry inventory after source shifts.
-EXPECTED_DIGEST = "2e57169563a22dc94f1b32c9c5f3de4818446a9946d6ac3d9c3caff9e23371af"
+# re-pin the unchanged 789-entry 0.57.2 baseline after source shifts.
+# Phase 0.58 adds six reviewed boundaries: Prefect's dynamic scheduler surface,
+# typed fixtures for the managed contract suite, and test-only backend method
+# injection plus structural dispatcher doubles. A newly added async-result
+# ignore was replaced with an explicit Awaitable cast. Re-pin the 795-entry
+# inventory after reviewing those changes.
+# The test backend now lives in a separately buildable wheel fixture; its
+# reviewed method-assignment exception moved with the package.
+# Direct scheduler hardening replaces a narrow legacy ignore with a reviewed
+# Prefect dynamic-API boundary, and the managed contract fixtures add their
+# file-scoped/test-backend boundaries. The reviewed inventory is 794 entries.
+# The phase 0.58 dispatch-reconciliation authorization guard and its CP1 matrix
+# coverage shift existing inline ignores without adding or removing directives.
+# Dispatcher lifecycle registration and the disposal-race regression move the
+# existing Prefect test fixture ignore; the reviewed 794-entry inventory is
+# unchanged.
+# Dispatcher diagnostics and FastAPI route-pin coverage shift existing inline
+# fixture ignores. A redundant structural-test ignore was replaced with a cast;
+# the reviewed inventory remains 794 entries and is re-pinned here.
+# Direct scheduler test annotations add one import line above an existing inline
+# ignore. No suppression was added or removed; re-pin the shifted 794-entry list.
+EXPECTED_DIGEST = "9b94c427ac143b3444be84fccec137f969ed48237c148cd54241fb7c2151a534"
 
 _IGNORED_DIRECTORIES = frozenset(
     {

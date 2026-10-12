@@ -9,9 +9,10 @@ plan_last_reviewed: 2026-10-08
 
 **Planned for 0.57.0; source implementation is in place and qualification is
 pending.** This phase fully implements GitHub issues #278–#282. It replaces the former 0.57
-brownfield phase, whose complete scope moves to [0.58](IMPLEMENTATION_PLAN_0_58.md).
+brownfield phase, whose complete scope now sits in [0.59](IMPLEMENTATION_PLAN_0_59.md)
+after insertion of [0.58 managed Prefect execution](IMPLEMENTATION_PLAN_0_58.md).
 The console, enterprise provider packs, and TransformationModel incubation move
-to 0.59, 0.60, and 0.61 respectively. No release date is implied.
+to 0.60, 0.61, and 0.62 respectively. No release date is implied.
 
 ## Outcome and baseline
 
@@ -340,7 +341,7 @@ intentional reviewed change; preserved schedule routes should remain compatible.
    Build/install rehearsals and all I278–I282 cases must pass before v0.57.0.
 6. Close #278–#282 only with links to merged implementation and passing acceptance
    evidence from the final candidate. No required acceptance bullet is deferred
-   into 0.58. Brownfield and later phases consume these public contracts and do
+   into 0.59. Brownfield and later phases consume these public contracts and do
    not reconstruct the graph, inspect internal schema, or duplicate ETL state.
 
 **Release blockers:** FastAPI required by headless construction; HTTP-owned

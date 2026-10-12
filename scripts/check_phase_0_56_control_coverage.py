@@ -253,6 +253,20 @@ FLOWS: dict[str, dict[str, Any]] = {
             "tests/fastapi/test_schedule_routes_0_47.py",
         ],
     },
+    "dispatches": {
+        "storage_mode": "durable-prefect-dispatch-store",
+        "storage_anchor": _anchor(
+            "src/etlantic/control_plane/durable_protocols.py", "class DurableWorkStore"
+        ),
+        "runtime_anchor": _anchor(
+            "src/etlantic/service/managed.py",
+            "def rearm_exhausted_prefect_dispatch",
+        ),
+        "evidence_tests": [
+            "tests/fastapi/test_managed_application_0_56.py",
+            "tests/fastapi/test_phase_0_56_authorization_order.py",
+        ],
+    },
     "intelligence": {
         "storage_mode": "derived-from-definition-and-planning-context",
         "storage_anchor": _anchor(

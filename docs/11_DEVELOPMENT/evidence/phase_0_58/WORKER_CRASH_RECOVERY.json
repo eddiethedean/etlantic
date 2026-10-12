@@ -1,0 +1,64 @@
+{
+  "schema": "etlantic.phase_0_58.campaign_evidence/1",
+  "campaign_id": "installed-process-worker-post-effect-crash-recovery-2026-10-11",
+  "recorded_at": "2026-10-11",
+  "status": "passed",
+  "qualifies_release": false,
+  "test": "tests/prefect/test_managed_prefect_0_58.py::test_process_worker_executes_targeted_csv_and_postgresql_transfers",
+  "command": "env -u PYTHONPATH ETLANTIC_CP_TEST_URL=<isolated PostgreSQL service URL> ETLANTIC_PHASE058_INSTALLED_BACKEND_PLUGIN=1 /tmp/phase058-wheel-venv/bin/python -m pytest -o pythonpath= -q tests/prefect -m prefect",
+  "result": "Verified in the isolated installed-wheel Prefect suite: 30 passed in 39.93s; focused coverage: tests/prefect/test_managed_prefect_0_58.py::test_process_worker_executes_targeted_csv_and_postgresql_transfers.",
+  "assertions": [
+    "A real Prefect Process worker was held after the managed execution adapter returned: the PostgreSQL sink effect and durable pending report publication existed, the canonical attempt remained running, and the report had not been published.",
+    "The worker child exited abruptly before ETLantic finalized its attempt; the Prefect flow was observed in CRASHED or FAILED state.",
+    "After releasing the abandoned execution lease, the installed worker backend recovered the same accepted submission into a lost attempt followed by a completed attempt and published a successful canonical report.",
+    "The committed canonical effect record remained present and the PostgreSQL connector effect-ledger count did not grow during recovery, leaving exactly one physical sink-effect record for the accepted submission.",
+    "A second real Process worker exited after PostgreSQL committed the sink transaction but before ETLantic received the connector commit receipt; the external effect ledger contained one committed row while canonical effect evidence was absent.",
+    "Recovery of the lost commit receipt produced a failed submission with an authoritative unknown effect and two lost attempts; it did not invoke the connector again, and the PostgreSQL effect-ledger count remained unchanged.",
+    "The recovery fixture was loaded from the separately built backend-plugin wheel with inherited PYTHONPATH unset; durable work and sink effects used PostgreSQL, and the separately supervised Prefect server used its own PostgreSQL database."
+  ],
+  "runtime": {
+    "python": "3.11.15",
+    "etlantic": "0.57.2",
+    "etlantic_prefect": "0.57.2",
+    "etlantic_sqlmodel": "0.57.2",
+    "prefect": "3.7.8",
+    "postgresql": "16.14",
+    "sqlalchemy": "2.0.51",
+    "psycopg": "3.3.4",
+    "worker_pool": "Process",
+    "worker_backend_plugin": "etlantic-phase058-test-worker-plugin 0.1.0 installed from a separately built wheel",
+    "durable_work_store": "SQLModel/PostgreSQL",
+    "prefect_server": "Separately supervised Prefect server process with a dedicated PostgreSQL database",
+    "wheel_environment": "Fresh virtual environment; inherited PYTHONPATH unset; pytest pythonpath override disabled repository source injection; package origins asserted under site-packages in the live Process-worker test."
+  },
+  "wheel_sha256": {
+    "etlantic-0.57.2-py3-none-any.whl": "6478f5d30a973ef369d44a673962bfd52663bd1bb1a247b7d6b5941c17f3f175",
+    "etlantic_prefect-0.57.2-py3-none-any.whl": "17c69327f2908c0fac68e139ae952ca82c53da5ede6d22b0ce21a34671650f4d",
+    "etlantic_sql-0.57.2-py3-none-any.whl": "9019d028b077ab3e90a80de7f3c43e0cd7cb555a4abc43252e4bbe96d3c33ca4",
+    "etlantic_sqlmodel-0.57.2-py3-none-any.whl": "ac472c909b1826822f429a546608b5c8b02c3154812333061ef5d633e33ad981",
+    "etlantic_fastapi-0.57.2-py3-none-any.whl": "b6c292549a0db200fb38d4618c45ff171476f47ba96c5057040ea0153d557d4b",
+    "etlantic_phase058_test_worker_plugin-0.1.0-py3-none-any.whl": "979ec9bdb79402d696b0afd0457ab71d4473b5b5de764e543634bcd18dfd6d9b"
+  },
+  "limitations": [
+    "This campaign covers death after the connector commit receipt but before host finalization, and death after PostgreSQL commits but before ETLantic receives that connector receipt. It does not cover worker death before effects, during an unsettled/partial connector transaction, or during report/event/artifact publication.",
+    "The backend wheel is a qualification fixture rather than an independent production consumer; this test does not qualify a production deployment or an exactly-once guarantee for arbitrary external effects.",
+    "This targeted recovery test does not qualify multi-process Prefect server failure, dispatch create/link/ack crashes, outage backlog recovery, or the remaining phase 0.58 lifecycle and authorization gates."
+  ],
+  "ci_configuration": {
+    "workflow": ".github/workflows/checks.yml",
+    "job": "prefect",
+    "remote_ci_run": false,
+    "fresh_venv": true,
+    "installed_wheels": [
+      "etlantic",
+      "etlantic-prefect",
+      "etlantic-sqlmodel",
+      "etlantic-phase058-test-worker-plugin"
+    ]
+  },
+  "cleanup": [
+    "The live campaign uses unique tenant, workspace, submission, deployment, and sink-effect identities; test cleanup removes its durable records.",
+    "The separately created Prefect PostgreSQL database is dropped after the test campaign."
+  ],
+  "artifacts": []
+}

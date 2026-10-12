@@ -1,0 +1,41 @@
+{
+  "schema": "etlantic.phase_0_58.campaign_evidence/1",
+  "campaign_id": "local-process-worker-postgresql-smoke-2026-10-11",
+  "recorded_at": "2026-10-11",
+  "status": "passed",
+  "qualifies_release": false,
+  "test": "tests/prefect/test_managed_prefect_0_58.py::test_process_worker_executes_targeted_csv_and_postgresql_transfers",
+  "command": "ETLANTIC_CP_TEST_URL=postgresql+psycopg://etlantic_test@127.0.0.1:55432/etlantic_test uv run pytest -q tests/prefect/test_managed_prefect_0_58.py::test_process_worker_executes_targeted_csv_and_postgresql_transfers",
+  "result": "1 passed in 15.12s",
+  "assertions": [
+    "A versioned managed deployment was registered and remotely verified.",
+    "A Process worker launched separate Prefect flow processes and reconstructed the trusted backend through an installed entry-point group.",
+    "Only the accepted submission referenced by the dispatched flow was attempted; a second accepted submission remained untouched.",
+    "A CSV input was written to PostgreSQL and a second run copied it PostgreSQL-to-PostgreSQL; both replace-mode writes produced an effect record and canonical report.",
+    "The managed flows completed, their canonical reports were readable from SQLModel-backed stores, and the PostgreSQL targets contained the expected rows.",
+    "The flow-run record was verified against the bound Prefect deployment ID."
+  ],
+  "runtime": {
+    "python": "3.11.15",
+    "etlantic": "0.57.2",
+    "etlantic_prefect": "0.57.2",
+    "prefect_client_and_test_server": "3.7.8",
+    "etlantic_sqlmodel": "0.57.2",
+    "etlantic_sql": "0.57.2",
+    "postgresql": "16.14",
+    "worker_pool": "Process",
+    "prefect_server": "Prefect temporary test server with its own SQLite test database"
+  },
+  "fingerprints": {
+    "etlantic_prefect_source_sha256": "40e76acb70dccf1e0d71892d8becd35aa1096f338166d6c4262c1b1aa9deb8e5",
+    "uv_lock_sha256": "3b5507c03e752619016552c9fcc00e4961d9d6b3b426deb11bbdbfca240c73ec"
+  },
+  "limitations": [
+    "Packages were loaded from the uv-managed editable development environment; a clean wheel consumer was not tested.",
+    "The submitting process remained alive while the separate Process worker executed.",
+    "Only replace-mode CSV-to-PostgreSQL and PostgreSQL-to-PostgreSQL pilots were run; other writer modes were not qualified here.",
+    "Prefect's temporary SQLite server emitted a transient database-lock warning while worker readiness loops overlapped; the flow still completed and the test passed.",
+    "This smoke did not exercise crash/lost-response recovery, cancellation races, API restart parity, multi-tenant isolation, recurring schedules, least-privilege database grants, or upgrade/rollback."
+  ],
+  "artifacts": []
+}

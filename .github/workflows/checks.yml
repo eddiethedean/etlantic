@@ -615,7 +615,6 @@ jobs:
         uses: astral-sh/setup-uv@v9.0.0
         with:
           version: "0.12.0"
-          python-version: ${{ matrix.python-version }}
           enable-cache: true
           github-token: ${{ secrets.GITHUB_TOKEN }}
 
@@ -769,21 +768,44 @@ jobs:
         run: uv run python examples/airflow_compile.py
 
   prefect:
-    name: Prefect scheduler plugin
-    runs-on: ubuntu-latest
+    name: Prefect managed execution (Python ${{ matrix.python-version }})
+    runs-on: ubuntu-24.04
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ["3.11.15", "3.12.13", "3.13.16"]
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: etlantic
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
     steps:
       - uses: actions/checkout@v7
+
+      - name: Set up exact Python
+        uses: actions/setup-python@v7
+        with:
+          python-version: ${{ matrix.python-version }}
 
       - name: Install uv
         uses: astral-sh/setup-uv@v9.0.0
         with:
           version: "0.12.0"
-          python-version: "3.11"
+          python-version: ${{ matrix.python-version }}
           enable-cache: true
           github-token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Sync with Prefect plugin
-        run: uv sync --locked --group prefect
+        run: uv sync --locked --python "${{ matrix.python-version }}" --group prefect --group sql --group sqlmodel
 
       - name: Discovery smoke
         run: |
@@ -795,7 +817,136 @@ jobs:
           "
 
       - name: Pytest Prefect suite
+        env:
+          ETLANTIC_CP_TEST_URL: "postgresql+psycopg://postgres:postgres@localhost:5432/etlantic"
         run: uv run pytest -q tests/prefect -m prefect
+
+      - name: Runtime-role schema and routed-work privilege check
+        env:
+          ETLANTIC_SQLMODEL_TEST_URL: "postgresql+psycopg://postgres:postgres@localhost:5432/etlantic"
+        run: uv run pytest -q tests/sqlmodel/test_managed_runtime_schema_privileges_0_57.py
+
+      - name: Build clean-wheel managed execution environment
+        run: |
+          phase058_wheel_dir="$RUNNER_TEMP/phase058-wheels"
+          phase058_backend_plugin_wheel_dir="$RUNNER_TEMP/phase058-worker-plugin"
+          phase058_venv_dir="$RUNNER_TEMP/phase058-venv"
+          phase058_requirements="$RUNNER_TEMP/phase058-wheel-requirements.txt"
+          mkdir -p "$phase058_wheel_dir" "$phase058_backend_plugin_wheel_dir"
+          for package in etlantic etlantic-prefect etlantic-sql etlantic-sqlmodel etlantic-fastapi; do
+            uv build --package "$package" --wheel --out-dir "$phase058_wheel_dir"
+          done
+          uv build --no-config --wheel \
+            --directory tests/prefect/worker_plugin \
+            --out-dir "$phase058_backend_plugin_wheel_dir"
+          uv export --locked --no-default-groups \
+            --group dev --group prefect --group sql --group sqlmodel \
+            --extra fastapi \
+            --no-emit-workspace --format requirements.txt \
+            --output-file "$phase058_requirements"
+          uv venv --python "${{ matrix.python-version }}" "$phase058_venv_dir"
+          uv pip sync --python "$phase058_venv_dir/bin/python" \
+            "$phase058_requirements"
+          uv pip install --python "$phase058_venv_dir/bin/python" --no-deps \
+            "$phase058_wheel_dir"/*.whl
+          uv pip install --python "$phase058_venv_dir/bin/python" --no-deps \
+            "$phase058_backend_plugin_wheel_dir"/*.whl
+          "$phase058_venv_dir/bin/python" -c '
+          from pathlib import Path
+          import sys
+          import etlantic, etlantic_fastapi, etlantic_prefect, etlantic_sql, etlantic_sqlmodel
+          modules = (etlantic, etlantic_fastapi, etlantic_prefect, etlantic_sql, etlantic_sqlmodel)
+          assert all(Path(module.__file__).resolve().is_relative_to(Path(sys.prefix).resolve()) for module in modules)
+          '
+
+      - name: Installed-wheel Prefect and managed Process-worker suite
+        env:
+          ETLANTIC_CP_TEST_URL: "postgresql+psycopg://postgres:postgres@localhost:5432/etlantic"
+          ETLANTIC_PHASE058_INSTALLED_BACKEND_PLUGIN: "1"
+        run: |
+          env -u PYTHONPATH "$RUNNER_TEMP/phase058-venv/bin/python" -m pytest \
+            -o pythonpath= -q tests/prefect -m prefect \
+            --junitxml="$RUNNER_TEMP/phase058-clean-wheel-prefect.xml"
+
+      - name: Installed-wheel headless and FastAPI managed-route parity
+        run: |
+          env -u PYTHONPATH "$RUNNER_TEMP/phase058-venv/bin/python" -m pytest \
+            -o pythonpath= -q tests/fastapi/test_managed_application_0_56.py::test_managed_headless_and_http_command_semantics_match \
+            --junitxml="$RUNNER_TEMP/phase058-headless-fastapi-parity.xml"
+
+      - name: Record installed-worker qualification runtime
+        env:
+          ETLANTIC_CP_TEST_URL: "postgresql+psycopg://postgres:postgres@localhost:5432/etlantic"
+        run: |
+          "$RUNNER_TEMP/phase058-venv/bin/python" - <<'PY'
+          import importlib.metadata
+          import json
+          import os
+          import platform
+          import sys
+          from pathlib import Path
+
+          from sqlalchemy import create_engine, text
+
+          distributions = (
+              "etlantic",
+              "etlantic-prefect",
+              "etlantic-sql",
+              "etlantic-sqlmodel",
+              "etlantic-fastapi",
+              "etlantic-phase058-test-worker-plugin",
+              "prefect",
+              "sqlmodel",
+              "sqlalchemy",
+              "psycopg",
+              "fastapi",
+          )
+          engine = create_engine(os.environ["ETLANTIC_CP_TEST_URL"])
+          try:
+              with engine.connect() as connection:
+                  postgresql_version = connection.execute(
+                      text("SELECT version()")
+                  ).scalar_one()
+          finally:
+              engine.dispose()
+
+          manifest = {
+              "schema": "etlantic.phase_0_58.runtime_manifest/1",
+              "runner_os": os.environ.get("RUNNER_OS"),
+              "runner_arch": os.environ.get("RUNNER_ARCH"),
+              "platform": platform.platform(),
+              "python": sys.version,
+              "packages": {
+                  name: importlib.metadata.version(name) for name in distributions
+              },
+              "postgresql": postgresql_version,
+              "plan_family": "etlantic.plan/1",
+              "worker_pool": "Process",
+              "prefect_server": "self-hosted API backed by PostgreSQL",
+              "connector_modes": ["CSV to PostgreSQL", "PostgreSQL to PostgreSQL replace"],
+          }
+          output = Path(os.environ["RUNNER_TEMP"]) / "phase058-runtime.json"
+          output.write_text(json.dumps(manifest, indent=2) + "\n", encoding="utf-8")
+          PY
+
+      - name: Record installed-wheel digests
+        if: always()
+        run: |
+          sha256sum "$RUNNER_TEMP/phase058-wheels"/*.whl \
+            "$RUNNER_TEMP/phase058-worker-plugin"/*.whl \
+            > "$RUNNER_TEMP/phase058-wheel-sha256.txt"
+
+      - name: Preserve phase 0.58 installed-worker evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: phase-0.58-installed-worker-${{ github.sha }}-py${{ matrix.python-version }}
+          path: |
+            ${{ runner.temp }}/phase058-clean-wheel-prefect.xml
+            ${{ runner.temp }}/phase058-headless-fastapi-parity.xml
+            ${{ runner.temp }}/phase058-runtime.json
+            ${{ runner.temp }}/phase058-wheel-sha256.txt
+          if-no-files-found: warn
 
       - name: Runnable Prefect example
         run: uv run python examples/prefect_run.py
@@ -1323,4 +1474,9 @@ jobs:
           cp "$RUNNER_TEMP/uv.lock" uv.lock
 
       - name: Optional package suites at dependency minimums
-        run: uv run --no-sync pytest -q -n 8 --dist=load -m "not airflow and not real_pyspark" tests/polars_compiler tests/pandas_compiler tests/dataframe tests/portable_conformance tests/datafusion tests/duckdb tests/sql tests/sqlmodel tests/fastapi tests/prefect tests/keyring tests/s3
+        run: uv run --no-sync pytest -q -n 8 --dist=load -m "not airflow and not real_pyspark" tests/polars_compiler tests/pandas_compiler tests/dataframe tests/portable_conformance tests/datafusion tests/duckdb tests/sql tests/sqlmodel tests/fastapi tests/keyring tests/s3
+
+      - name: Prefect suite at dependency minimums
+        # Prefect's test harness starts an ephemeral API server per test. Keep
+        # these subprocess-heavy cases serial to avoid worker startup timeouts.
+        run: uv run --no-sync pytest -q -m "not airflow and not real_pyspark" tests/prefect

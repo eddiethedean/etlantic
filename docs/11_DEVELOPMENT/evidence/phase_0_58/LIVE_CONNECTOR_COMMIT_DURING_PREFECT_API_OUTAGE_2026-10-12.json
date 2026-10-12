@@ -1,0 +1,67 @@
+{
+  "schema": "etlantic.phase_0_58.campaign_evidence/1",
+  "campaign_id": "live-connector-commit-during-prefect-api-outage-2026-10-12",
+  "recorded_at": "2026-10-12",
+  "status": "passed",
+  "qualifies_release": false,
+  "test": "tests/prefect/test_managed_prefect_0_58.py::test_process_worker_executes_targeted_csv_and_postgresql_transfers",
+  "command": "ETLANTIC_CP_TEST_URL=postgresql+psycopg://<test-user>:<test-password>@127.0.0.1:<mapped-port>/postgres uv run --locked --python 3.11.14 pytest tests/prefect/test_managed_prefect_0_58.py::test_process_worker_executes_targeted_csv_and_postgresql_transfers -q",
+  "result": "1 passed in 34.71s against a local self-hosted Prefect API and PostgreSQL 16 container.",
+  "assertions": [
+    "A durable CSV-to-PostgreSQL submission is dispatched to a separate Process worker. The worker pauses at the connector commit boundary and confirms that no sink rows or effect records are visible before commit.",
+    "The separately supervised Prefect API is stopped while the worker is paused at connector commit. The connector commits once; while the API remains unavailable, PostgreSQL shows one sink row and one effect record, the canonical attempt remains running, the ETL report is succeeded, and result publication remains pending.",
+    "An authorized status read while the API is down preserves the canonical running state and reports remote orchestration and reconciliation as unavailable.",
+    "The API restarts against the same PostgreSQL database. The worker resumes host finalization and publishes the existing result; PostgreSQL still shows one sink row and effect record, and the canonical submission and attempt complete exactly once."
+  ],
+  "runtime": {
+    "platform": "macOS 26.5.2 arm64 host; PostgreSQL ran in Docker",
+    "python": "CPython 3.11.14",
+    "etlantic_packages": "0.57.2 source checkout",
+    "prefect": "3.7.8",
+    "sqlmodel": "0.0.39",
+    "sqlalchemy": "2.0.51",
+    "psycopg": "3.3.4",
+    "asyncpg": "0.31.0",
+    "postgresql": "16.14 (Debian 16.14-1.pgdg13+1, postgres:16 container)",
+    "worker_pool": "Process",
+    "prefect_server": "Separately supervised self-hosted API process; stopped during connector commit and restarted before worker finalization"
+  },
+  "fingerprints": {
+    "base_commit": "77a6277268df03a6004a597125624747f8c4f90c",
+    "test_source_sha256": "89491cd881897675572d648fb165946c2bfb1e8a12b99e13d64b1fd387d8ef8b",
+    "worker_plugin_source_sha256": "b5460d5e250afc1791c154c56c5132db7e58a52166e88fe86a4ed12fbadb463a",
+    "uv_lock_sha256": "3b5507c03e752619016552c9fcc00e4961d9d6b3b426deb11bbdbfca240c73ec",
+    "source_sha256": "fdd787f92baeadfdd133473efe8e05daf9f4b5614d2da3b9965cd6350b6c6c3f",
+    "source_sha256_method": "SHA-256 over sorted repository-relative source paths and file bytes, with NUL separators."
+  },
+  "source_files": [
+    "packages/etlantic-prefect/src/etlantic_prefect/deployment.py",
+    "packages/etlantic-prefect/src/etlantic_prefect/dispatcher.py",
+    "packages/etlantic-prefect/src/etlantic_prefect/worker.py",
+    "packages/etlantic-sqlmodel/src/etlantic_sqlmodel/control_plane/durable_stores.py",
+    "packages/etlantic-sqlmodel/src/etlantic_sqlmodel/managed.py",
+    "src/etlantic/control_plane/managed_backend.py",
+    "src/etlantic/io_policy.py",
+    "src/etlantic/runtime/execution_host.py",
+    "src/etlantic/runtime/managed_execution.py",
+    "tests/prefect/test_managed_prefect_0_58.py",
+    "tests/prefect/worker_plugin/src/phase058_worker_backend/__init__.py",
+    "uv.lock"
+  ],
+  "limitations": [
+    "This is one local source-checkout integration run, not installed-wheel or multi-version CI evidence. The exact CPython patch matrix is recorded separately after the blocking installed-wheel workflow completes.",
+    "The outage lasts only across connector commit and host finalization. Prolonged API outages, simultaneous multi-process failures, sustained capacity, production hosting, third-party connectors, and a real 30-day retention interval remain unqualified."
+  ],
+  "ci_configuration": {
+    "workflow": ".github/workflows/checks.yml",
+    "job": "Local source-checkout replay of the Prefect managed execution scenario",
+    "remote_ci_run": false,
+    "database_service": "Temporary postgres:16 Docker container mapped to an ephemeral localhost port",
+    "server_process": "Separate Prefect API process with PostgreSQL persistence"
+  },
+  "cleanup": [
+    "The test used unique tenant, workspace, submission, deployment, sink-table, effect-ledger, and Prefect database identities; test-owned tables and the dedicated Prefect database were removed.",
+    "The temporary PostgreSQL container was removed after the campaign."
+  ],
+  "artifacts": []
+}

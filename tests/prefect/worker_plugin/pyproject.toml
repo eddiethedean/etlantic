@@ -1,0 +1,20 @@
+[project]
+name = "etlantic-phase058-test-worker-plugin"
+version = "0.1.0"
+description = "Separately installed worker backend used by phase 0.58 integration tests."
+requires-python = ">=3.11"
+dependencies = [
+    "etlantic>=0.57.0",
+    "etlantic-sql>=0.57.0",
+    "etlantic-sqlmodel>=0.57.0",
+]
+
+[project.entry-points."etlantic.prefect_worker_backends"]
+phase058_process_backend = "phase058_worker_backend:build_backend"
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/phase058_worker_backend"]

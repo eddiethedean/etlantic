@@ -45,6 +45,19 @@ FastAPI `BackgroundTasks` for heavy pipeline work. See
 | Ready probe without stores | **503** `status=not_ready` (`/health` stays **200**) |
 | Reference app | Sync only; not a control plane |
 
+## Managed Prefect dispatch reconciliation
+
+When CP1 is composed with a managed execution service,
+`POST /v1/dispatches/{submission_id}/reconcile` exposes the operator recovery
+path for a dispatch that exhausted its automatic pre-execution generations.
+The caller needs `execution.dispatch.reconcile` for the accepted work's
+tenant and workspace and must send the exact `expected_generation`,
+`expected_flow_run_id`, and a bounded `evidence` note. A stale generation or run
+ID returns **409**; an out-of-scope request remains an opaque **404**. The
+service stores only a digest of the redacted evidence note, records the acting
+principal in durable dispatch history, and emits an audit event. The response
+contains the resulting dispatch projection, not the note.
+
 ## Public API
 
 ::: etlantic_fastapi

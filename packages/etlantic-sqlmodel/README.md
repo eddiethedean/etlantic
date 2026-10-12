@@ -99,7 +99,10 @@ scheduler = backend.create_scheduler(owner_id="scheduler-1")
 Each role exposes `status()`, `request_drain()`, and a `ready()` convenience
 method. Run blocking ticks on consumer-owned threads. After requesting drain,
 join those threads before calling `backend.close()`; close refuses to dispose an
-owned engine while a role tick remains active. The schedule service owns command
+owned engine while a role tick remains active. Optional adapter roles should
+register their shared lifecycle with `backend.register_runtime_role(role)`;
+`PrefectDispatcher` registers automatically. This keeps backend shutdown from
+disposing shared stores during an adapter tick. The schedule service owns command
 authorization and trigger recovery for both headless and HTTP callers.
 
 `schema_requirements()` publishes required managed-store tables, columns, primary

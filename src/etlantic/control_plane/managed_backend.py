@@ -22,6 +22,7 @@ from etlantic.control_plane.models import ControlPlaneContext
 from etlantic.control_plane.protocols import Authorizer, IdempotentEventStore
 from etlantic.profile import Profile
 from etlantic.reports.retention import ArtifactRetentionResult
+from etlantic.runtime.role import RuntimeRoleLifecycle
 
 ActionHandler = Callable[
     [ControlPlaneContext, Mapping[str, Any]], Awaitable[Mapping[str, Any]]
@@ -132,6 +133,19 @@ class ManagedBackend:
         ):
             raise ValueError("event_idempotency_retention_seconds must be positive")
 
+    def register_runtime_role(self, role: RuntimeRoleLifecycle) -> None:
+        """Track an optional adapter role so close drains it before disposing stores.
+
+        Adapter-owned dispatchers and workers share backend resources but are
+        constructed outside this provider-owned graph. Register their public
+        lifecycle object here so resource disposal observes their in-flight
+        work just like the built-in roles.
+        """
+        with self._lock:
+            self._ensure_open()
+            if not any(existing is role for existing in self._roles):
+                self._roles.append(role)
+
     @property
     def schedule_service(self) -> Any:
         """Return authorized schedule commands over this shared graph."""
@@ -179,6 +193,9 @@ class ManagedBackend:
                     artifact_root=self.artifact_root,
                     artifact_report_resolver=self.managed_service.resolve_artifact_report,
                     event_publisher=publish_event,
+                    pre_execution_authorizer=(
+                        self.managed_service.authorize_accepted_execution
+                    ),
                     profile=self.execution_profile,
                     input_resource_store=self.input_resources,
                     run_artifact_retention_seconds=self.run_artifact_retention_seconds,
@@ -188,6 +205,39 @@ class ManagedBackend:
             )
             self._roles.append(host)
             return host
+
+    def execute_submission(
+        self,
+        ctx: ControlPlaneContext,
+        submission_id: str,
+        *,
+        owner_id: str,
+        execution_route: str,
+        ttl_seconds: int = 30,
+    ) -> Mapping[str, Any]:
+        """Execute exactly one accepted submission using canonical host ownership.
+
+        ``ctx`` must come from trusted worker configuration. The submission ID
+        only locates work inside that authorized tenant/workspace scope.
+        """
+        if not _is_nonempty_text(submission_id):
+            raise ValueError("submission_id must be a non-empty identifier")
+        submission = self.durable_work.get_submission(ctx, submission_id)
+        host = self.create_execution_host(owner_id=owner_id, ttl_seconds=ttl_seconds)
+        processed = host.execute_submission(
+            ctx, submission_id, execution_route=execution_route
+        )
+        submission = self.durable_work.get_submission(ctx, submission_id)
+        publication = self.durable_work.get_latest_result_publication(
+            ctx, submission_id
+        )
+        return {
+            "submission_id": submission_id,
+            "status": submission.status,
+            "attempt_id": publication.attempt_id if publication else None,
+            "report_sha256": publication.report_sha256 if publication else None,
+            "executed": processed == 1,
+        }
 
     def create_action_execution_host(
         self, *, worker_id: str = "action-worker-1"

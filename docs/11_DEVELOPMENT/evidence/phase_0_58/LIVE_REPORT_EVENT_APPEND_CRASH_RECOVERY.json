@@ -1,0 +1,55 @@
+{
+  "schema": "etlantic.phase_0_58.campaign_evidence/1",
+  "campaign_id": "live-postgresql-report-event-append-crash-recovery-2026-10-11",
+  "recorded_at": "2026-10-11",
+  "status": "passed",
+  "qualifies_release": false,
+  "test": "tests/prefect/test_managed_prefect_0_58.py::test_process_worker_executes_targeted_csv_and_postgresql_transfers",
+  "command": "env -u PYTHONPATH ETLANTIC_CP_TEST_URL=<isolated PostgreSQL service URL> ETLANTIC_PHASE058_INSTALLED_BACKEND_PLUGIN=1 /tmp/phase058-wheel-venv/bin/python -m pytest -o pythonpath= -q tests/prefect -m prefect",
+  "result": "Verified in the isolated installed-wheel Prefect suite: 30 passed in 39.93s; focused coverage: tests/prefect/test_managed_prefect_0_58.py::test_process_worker_executes_targeted_csv_and_postgresql_transfers.",
+  "assertions": [
+    "A real Process worker exited after the PostgreSQL sink effect, durable pending result publication, and run.completed event append, before the adapter returned to host finalization.",
+    "At the crash boundary, the result publication remained pending, the sink had exactly one durable effect, and the event store contained one run.started and one run.completed event for the crashed attempt.",
+    "The Prefect Process run failed after its worker process exited; controlled recovery completed the canonical submission, published the durable report, and did not add another sink effect.",
+    "Recovery produced one run.started and one run.completed event for each of the two distinct canonical attempts, with unique event IDs and no duplicate event within an attempt.",
+    "The worker backend came from a separately built wheel and the worker process ran with inherited PYTHONPATH unset."
+  ],
+  "runtime": {
+    "python": "3.11.15",
+    "etlantic": "0.57.2",
+    "etlantic_prefect": "0.57.2",
+    "etlantic_sqlmodel": "0.57.2",
+    "prefect": "3.7.8",
+    "postgresql": "16.14",
+    "worker_pool": "Process",
+    "worker_backend_plugin": "etlantic-phase058-test-worker-plugin 0.1.0 installed from a separately built wheel",
+    "wheel_environment": "Fresh virtual environment; inherited PYTHONPATH unset; pytest pythonpath override disabled repository source injection; package origins asserted under site-packages in the live Process-worker test."
+  },
+  "wheel_sha256": {
+    "etlantic-0.57.2-py3-none-any.whl": "6478f5d30a973ef369d44a673962bfd52663bd1bb1a247b7d6b5941c17f3f175",
+    "etlantic_prefect-0.57.2-py3-none-any.whl": "17c69327f2908c0fac68e139ae952ca82c53da5ede6d22b0ce21a34671650f4d",
+    "etlantic_sql-0.57.2-py3-none-any.whl": "9019d028b077ab3e90a80de7f3c43e0cd7cb555a4abc43252e4bbe96d3c33ca4",
+    "etlantic_sqlmodel-0.57.2-py3-none-any.whl": "ac472c909b1826822f429a546608b5c8b02c3154812333061ef5d633e33ad981",
+    "etlantic_fastapi-0.57.2-py3-none-any.whl": "b6c292549a0db200fb38d4618c45ff171476f47ba96c5057040ea0153d557d4b",
+    "etlantic_phase058_test_worker_plugin-0.1.0-py3-none-any.whl": "979ec9bdb79402d696b0afd0457ab71d4473b5b5de764e543634bcd18dfd6d9b"
+  },
+  "fingerprints": {
+    "etlantic_prefect_source_sha256": "2c7674aa1aa4fd0b3c7d3ded1ca837a1a1312b4453d88854c22e071cc47a1002",
+    "uv_lock_sha256": "3b5507c03e752619016552c9fcc00e4961d9d6b3b426deb11bbdbfca240c73ec"
+  },
+  "limitations": [
+    "This trace covers a crash after the report event append returns; interruptions inside report-store writes and durable-artifact publication remain open.",
+    "The campaign uses PostgreSQL transactional sink effects; non-transactional connector partial effects and remote CI evidence remain unqualified."
+  ],
+  "ci_configuration": {
+    "workflow": ".github/workflows/checks.yml",
+    "job": "prefect",
+    "remote_ci_run": false,
+    "fresh_venv": true
+  },
+  "cleanup": [
+    "The test uses unique tenant, workspace, submission, deployment, destination table, and effect-ledger identities.",
+    "The separately created Prefect PostgreSQL database and SQL sink tables are removed after the test campaign."
+  ],
+  "artifacts": []
+}

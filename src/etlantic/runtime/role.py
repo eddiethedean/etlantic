@@ -7,7 +7,7 @@ from datetime import UTC, datetime
 from threading import Lock
 from typing import Literal
 
-RoleKind = Literal["scheduler", "run_worker", "action_worker"]
+RoleKind = Literal["scheduler", "run_worker", "action_worker", "dispatcher"]
 Activity = Literal["idle", "active", "standby"]
 Admission = Literal["accepting", "draining", "stopped"]
 Prerequisites = Literal["unknown", "usable", "unusable"]
@@ -18,6 +18,9 @@ _SAFE_REASON_CODES = frozenset(
         "scheduler_tick_failed",
         "schedule_store_unavailable",
         "schedule_dispatch_failed",
+        "dispatch_store_unavailable",
+        "prefect_unavailable",
+        "dispatch_tick_failed",
         "occurrence_recovery_failed",
         "worker_tick_failed",
         "lease_store_unavailable",

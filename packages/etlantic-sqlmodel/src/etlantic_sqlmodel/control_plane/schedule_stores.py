@@ -133,6 +133,7 @@ class SQLModelScheduleStore:
         secret_refs: dict[str, Mapping[str, Any] | str] | None = None,
         revision_policy: str = "pinned",
         workload_identity: Principal | None = None,
+        execution_route: str = "local",
         next_fire_at: str | None = None,
     ) -> ScheduleRecord:
         return self._txn(
@@ -148,6 +149,7 @@ class SQLModelScheduleStore:
                 secret_refs=secret_refs,
                 revision_policy=revision_policy,
                 workload_identity=workload_identity,
+                execution_route=execution_route,
                 next_fire_at=next_fire_at,
             )
         )
@@ -157,6 +159,11 @@ class SQLModelScheduleStore:
 
     def list_schedules(self, ctx: ControlPlaneContext) -> Sequence[ScheduleRecord]:
         return self._read_only(lambda m: m.list_schedules(ctx))
+
+    def execution_route_reference_count(self, execution_route: str) -> int:
+        return self._read_only(
+            lambda m: m.execution_route_reference_count(execution_route)
+        )
 
     def pause(self, ctx: ControlPlaneContext, schedule_id: str) -> ScheduleRecord:
         return self._txn(lambda m: m.pause(ctx, schedule_id))
@@ -172,6 +179,8 @@ class SQLModelScheduleStore:
         expected_revision_id: str,
         spec: ScheduleSpec,
         next_fire_at: str | None,
+        execution_route: str | None = None,
+        policy_fingerprint: str | None = None,
         durable: DurableWorkStore | None = None,
     ) -> ScheduleRecord:
         return self._txn(
@@ -181,6 +190,8 @@ class SQLModelScheduleStore:
                 expected_revision_id=expected_revision_id,
                 spec=spec,
                 next_fire_at=next_fire_at,
+                execution_route=execution_route,
+                policy_fingerprint=policy_fingerprint,
                 durable=durable,
             )
         )

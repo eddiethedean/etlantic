@@ -1,0 +1,111 @@
+{
+  "schema": "etlantic.phase_0_58.campaign_evidence/1",
+  "campaign_id": "clean-wheel-route-cleanup-qualification-2026-10-11",
+  "recorded_at": "2026-10-11",
+  "status": "passed",
+  "qualifies_release": false,
+  "test": "tests/prefect -m prefect; tests/fastapi/test_managed_application_0_56.py::test_managed_headless_and_http_command_semantics_match",
+  "commands": [
+    "Build etlantic, etlantic-prefect, etlantic-sql, etlantic-sqlmodel, etlantic-fastapi, and the separate worker-plugin wheels; install them into a new Python 3.11 environment from locked requirements.",
+    "ETLANTIC_CP_TEST_URL=postgresql+psycopg:///postgres ETLANTIC_PHASE058_INSTALLED_BACKEND_PLUGIN=1 env -u PYTHONPATH /tmp/phase058-route-cleanup-venv/bin/python -m pytest -o pythonpath= -q tests/prefect -m prefect",
+    "env -u PYTHONPATH /tmp/phase058-route-cleanup-venv/bin/python -m pytest -o pythonpath= -q tests/fastapi/test_managed_application_0_56.py::test_managed_headless_and_http_command_semantics_match"
+  ],
+  "result": "Installed-wheel Prefect/PostgreSQL suite: 43 passed in 52.01s with no skips. Installed-wheel headless/FastAPI route parity: 1 passed in 0.54s.",
+  "assertions": [
+    "All five ETLantic package imports and the separate worker-backend plugin resolve from the newly built wheels in the isolated Python 3.11 environment, with PYTHONPATH unset and pytest's configured pythonpath disabled.",
+    "The Prefect suite includes live PostgreSQL multiprocess retirement followed by deletion of an unused exact Prefect deployment; it also covers cleanup refusal for retained route references, retention denial, cleanup-pending reactivation fencing, and retry after a lost delete response.",
+    "Managed schedule creation reserves its execution route durably; route retirement remains blocked until the schedule is deleted through the schedule service, which releases the reservation.",
+    "The live campaign overrides the 30-day minimum retention to zero seconds to keep the test bounded; it confirms the exact deletion path but does not establish elapsed production retention.",
+    "The installed FastAPI/headless parity test preserves equivalent managed-route semantics across both submission surfaces.",
+    "A frozen-clock test denies cleanup one second before the default 30-day retention cutoff and allows the cleanup attempt at the exact cutoff; the live deletion keeps its bounded zero-second override."
+  ],
+  "runtime": {
+    "python": "3.11.15",
+    "etlantic": "0.57.2 wheel",
+    "etlantic_prefect": "0.57.2 wheel",
+    "etlantic_sql": "0.57.2 wheel",
+    "etlantic_sqlmodel": "0.57.2 wheel",
+    "etlantic_fastapi": "0.57.2 wheel",
+    "prefect": "3.7.8",
+    "sqlmodel": "0.0.39",
+    "sqlalchemy": "2.0.51",
+    "psycopg": "3.3.4",
+    "postgresql": "16.13 (Homebrew)",
+    "worker_pool": "Process",
+    "prefect_server": "Separately supervised API process backed by per-test PostgreSQL databases",
+    "worker_backend_plugin": "Separately built and installed etlantic-phase058-test-worker-plugin 0.1.0 wheel"
+  },
+  "fingerprints": {
+    "implementation_source_sha256": "5e5b3a7972ed405d8fc75a34e7ee98fffd28392920e25396b23899e0c48428c1",
+    "test_source_sha256": "7a67aee9239278591224cf1f87199ec457ce74457838334d83efc8da7cc0d077",
+    "uv_lock_sha256": "3b5507c03e752619016552c9fcc00e4961d9d6b3b426deb11bbdbfca240c73ec"
+  },
+  "source_files": [
+    ".github/workflows/checks.yml",
+    "packages/etlantic-fastapi/src/etlantic_fastapi/schedule_routes.py",
+    "packages/etlantic-prefect/src/etlantic_prefect/deployment.py",
+    "packages/etlantic-sqlmodel/src/etlantic_sqlmodel/control_plane/durable_stores.py",
+    "packages/etlantic-sqlmodel/src/etlantic_sqlmodel/control_plane/schedule_stores.py",
+    "src/etlantic/control_plane/durable_memory.py",
+    "src/etlantic/control_plane/durable_models.py",
+    "src/etlantic/control_plane/durable_protocols.py",
+    "src/etlantic/control_plane/schedule_memory.py",
+    "src/etlantic/control_plane/schedule_protocols.py",
+    "src/etlantic/service/managed.py",
+    "src/etlantic/service/schedule.py",
+    "tests/fastapi/test_schedule_routes_0_47.py",
+    "tests/prefect/test_managed_prefect_0_58.py",
+    "tests/prefect/worker_plugin/src/phase058_worker_backend/__init__.py",
+    "tests/sqlmodel/test_route_cleanup_references_0_58.py",
+    "uv.lock"
+  ],
+  "source_sha256": "0bd41640dcce092c17d44496ececec38c0771197734a0baecb05f92bfa1f669c",
+  "source_sha256_method": "SHA-256 over sorted repository-relative source paths and file bytes, with NUL separators.",
+  "wheel_artifacts": [
+    {
+      "name": "etlantic-0.57.2-py3-none-any.whl",
+      "sha256": "12cdf7132476a1b3f195dd38b781eac16646cbd300e665b56531106354c8039f"
+    },
+    {
+      "name": "etlantic_prefect-0.57.2-py3-none-any.whl",
+      "sha256": "e2937f49bd8e38c84662783aea401d832f9cc5c82f839b171e1a70e2688f2ea1"
+    },
+    {
+      "name": "etlantic_sql-0.57.2-py3-none-any.whl",
+      "sha256": "9019d028b077ab3e90a80de7f3c43e0cd7cb555a4abc43252e4bbe96d3c33ca4"
+    },
+    {
+      "name": "etlantic_sqlmodel-0.57.2-py3-none-any.whl",
+      "sha256": "8feaa93d7fba12408c938309b0c91747133d899e9dbf14087eca934636ceaaf4"
+    },
+    {
+      "name": "etlantic_fastapi-0.57.2-py3-none-any.whl",
+      "sha256": "1f3c08a263a2040e1e482d28c6c901104b7fedaea3f56e90cdfe016066ed834a"
+    },
+    {
+      "name": "etlantic_phase058_test_worker_plugin-0.1.0-py3-none-any.whl",
+      "sha256": "10e728ec67f4cd99a103218120ee0c474a37c334896850b4f9c0428f2f2fb3bf"
+    }
+  ],
+  "limitations": [
+    "This is a local installed-wheel campaign, not remote CI evidence or a production support commitment.",
+    "Only CPython 3.11.15, Prefect 3.7.8, PostgreSQL 16.13, and the Process pool were exercised; other versions, operating systems, hosting modes, and work pools remain unqualified.",
+    "The real 30-day retention interval has not elapsed; the live cleanup test uses a zero-second test override.",
+    "The full phase release decision remains open, including remote CI, the complete support matrix, broader server fault/recovery, and independent production connector conformance."
+  ],
+  "ci_configuration": {
+    "workflow": ".github/workflows/checks.yml",
+    "job": "prefect installed-wheel job; reproduced locally",
+    "remote_ci_run": false,
+    "fresh_installed_wheels": true,
+    "pythonpath_unset": true,
+    "pytest_pythonpath_disabled": true,
+    "database_service": "Local PostgreSQL 16.13; test-owned rows and dedicated Prefect databases were cleaned by fixtures.",
+    "server_process": "Separate Prefect API process with PostgreSQL persistence"
+  },
+  "cleanup": [
+    "The suite used unique route, tenant, workspace, deployment, and database identities; fixture-owned SQLModel state and dedicated Prefect databases were removed after each test.",
+    "The shared local PostgreSQL service and temporary installed-wheel environment were left intact; per-test Prefect API processes were stopped."
+  ],
+  "artifacts": []
+}

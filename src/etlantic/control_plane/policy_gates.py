@@ -215,6 +215,48 @@ def gate_pre_submit(
     return decision, quota_decision
 
 
+def gate_pre_execution(
+    ctx: ControlPlaneContext,
+    *,
+    policy: PolicyProvider | None,
+    approvals: ApprovalStore | None = None,
+    audit: AuditEvidenceStore | None = None,
+    plan_fingerprint: str,
+    revision_id: str | None,
+    resource: str,
+    attributes: Mapping[str, Any] | None = None,
+    required: bool = False,
+) -> PolicyDecision | None:
+    """Recheck mutable policy and approval state immediately before effects."""
+    decision = evaluate_policy(
+        policy,
+        ctx,
+        hook="pre_execution",
+        plan_fingerprint=plan_fingerprint,
+        revision_id=revision_id,
+        resource=resource,
+        attributes=attributes,
+        required=required,
+    )
+    if audit is not None:
+        audit.append(
+            ctx,
+            action="pre_execution",
+            resource=resource,
+            decision_refs=([decision.decision_id] if decision is not None else []),
+            metadata={
+                "policy_fingerprint": (
+                    decision.policy_fingerprint if decision is not None else None
+                ),
+                "plan_fingerprint": plan_fingerprint,
+                "revision_id": revision_id,
+                "outcome": decision.effect if decision is not None else "allow",
+            },
+        )
+    enforce_policy_decision(decision, approvals=approvals, ctx=ctx)
+    return decision
+
+
 def gate_pre_promote(
     ctx: ControlPlaneContext,
     *,
@@ -298,6 +340,7 @@ def gate_pre_plan(
 __all__ = [
     "enforce_policy_decision",
     "evaluate_policy",
+    "gate_pre_execution",
     "gate_pre_plan",
     "gate_pre_promote",
     "gate_pre_submit",

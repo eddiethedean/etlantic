@@ -1,8 +1,9 @@
 {
   "capabilities": [
+    "managed_execution",
     "scheduler"
   ],
-  "digest": "sha256:bc03d4aa116d9b6c5a4650952f7e2fd6c9e3dade4b8790203fd9a0239d00832b",
+  "digest": "sha256:0340c7b4ce31694ef635511630f3cc1b2c2e4c45a909188448a81594db99ab0c",
   "entries": [
     {
       "capabilities": [

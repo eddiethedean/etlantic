@@ -27,7 +27,13 @@ from etlantic.control_plane.durable_models import (
     BaselineAcknowledgement,
     CheckpointRecord,
     DiffRecord,
+    DispatchReconciliation,
+    DispatchRecord,
     EffectRecord,
+    ExecutionRouteLifecycle,
+    ExecutionRouteRecord,
+    ExecutionRouteTransition,
+    ExecutionRouteWorkload,
     ExecutionScopePage,
     LeaseRecord,
     OutboxRecord,
@@ -94,6 +100,7 @@ def _dump_store(store: MemoryDurableWorkStore) -> dict[str, Any]:
         },
         "idempotency": {_encode_key(k): v for k, v in store._idempotency.items()},
         "outbox": {_encode_key(k): asdict(v) for k, v in store._outbox.items()},
+        "dispatches": {_encode_key(k): asdict(v) for k, v in store._dispatches.items()},
         "leases": {_encode_key(k): asdict(v) for k, v in store._leases.items()},
         "attempts": {_encode_key(k): asdict(v) for k, v in store._attempts.items()},
         "result_publications": {
@@ -108,6 +115,14 @@ def _dump_store(store: MemoryDurableWorkStore) -> dict[str, Any]:
         "shadows": {_encode_key(k): asdict(v) for k, v in store._shadows.items()},
         "baselines": {_encode_key(k): asdict(v) for k, v in store._baselines.items()},
         "diagnostics": [asdict(d) for d in store._diagnostics],
+        "execution_route_states": {
+            route: asdict(record)
+            for route, record in store._execution_route_states.items()
+        },
+        "execution_route_references": {
+            route: sorted(references)
+            for route, references in store._execution_route_references.items()
+        },
     }
 
 
@@ -131,6 +146,20 @@ def _load_store(payload: Mapping[str, Any]) -> MemoryDurableWorkStore:
     store._outbox = {
         _decode_key(k): OutboxRecord(**v)  # type: ignore[arg-type]
         for k, v in dict(payload.get("outbox") or {}).items()
+    }
+    store._dispatches = {
+        _decode_key(k): DispatchRecord(
+            **{
+                **cast(dict[str, Any], v),
+                "reconciliation_history": tuple(
+                    DispatchReconciliation(**cast(dict[str, Any], item))
+                    for item in cast(dict[str, Any], v).get(
+                        "reconciliation_history", ()
+                    )
+                ),
+            }
+        )
+        for k, v in dict(payload.get("dispatches") or {}).items()
     }
     store._leases = {
         _decode_key(k): LeaseRecord(**v)  # type: ignore[arg-type]
@@ -172,6 +201,25 @@ def _load_store(payload: Mapping[str, Any]) -> MemoryDurableWorkStore:
         StateDiagnostic(**d)  # type: ignore[arg-type]
         for d in list(payload.get("diagnostics") or [])
     ]
+    store._execution_route_states = {}
+    for route, raw in dict(payload.get("execution_route_states") or {}).items():
+        value = cast(dict[str, Any], raw)
+        store._execution_route_states[route] = ExecutionRouteRecord(
+            execution_route=value["execution_route"],
+            status=value["status"],
+            revision=value["revision"],
+            changed_at=value.get("changed_at"),
+            history=tuple(
+                ExecutionRouteTransition(**cast(dict[str, Any], item))
+                for item in value.get("history", ())
+            ),
+        )
+    store._execution_route_references = {
+        route: set(cast(list[str], references))
+        for route, references in dict(
+            payload.get("execution_route_references") or {}
+        ).items()
+    }
     return store
 
 
@@ -446,6 +494,8 @@ class SQLModelDurableWorkStore:
         limit: int = 100,
         include_terminal: bool = False,
         terminal_only: bool = False,
+        submission_id: str | None = None,
+        execution_route: str = "local",
     ):
         return self._read_only(
             lambda m: m.pending_outbox(
@@ -453,6 +503,235 @@ class SQLModelDurableWorkStore:
                 limit=limit,
                 include_terminal=include_terminal,
                 terminal_only=terminal_only,
+                submission_id=submission_id,
+                execution_route=execution_route,
+            )
+        )
+
+    def pending_dispatches(
+        self,
+        ctx: ControlPlaneContext,
+        *,
+        execution_route: str,
+        limit: int = 100,
+    ):
+        return self._read_only(
+            lambda m: m.pending_dispatches(
+                ctx, execution_route=execution_route, limit=limit
+            )
+        )
+
+    def get_execution_route_state(
+        self, ctx: ControlPlaneContext, execution_route: str
+    ) -> ExecutionRouteRecord:
+        return self._read_only(
+            lambda m: m.get_execution_route_state(ctx, execution_route)
+        )
+
+    def execution_route_workload(
+        self, ctx: ControlPlaneContext, execution_route: str
+    ) -> ExecutionRouteWorkload:
+        return self._read_only(
+            lambda m: m.execution_route_workload(ctx, execution_route)
+        )
+
+    def execution_route_reference_counts(
+        self, ctx: ControlPlaneContext, execution_route: str
+    ) -> dict[str, int]:
+        return self._read_only(
+            lambda m: m.execution_route_reference_counts(ctx, execution_route)
+        )
+
+    def reserve_execution_route_reference(
+        self,
+        ctx: ControlPlaneContext,
+        execution_route: str,
+        reference_id: str,
+    ) -> None:
+        self._txn(
+            lambda m: m.reserve_execution_route_reference(
+                ctx, execution_route, reference_id
+            )
+        )
+
+    def release_execution_route_reference(
+        self,
+        ctx: ControlPlaneContext,
+        execution_route: str,
+        reference_id: str,
+    ) -> None:
+        self._txn(
+            lambda m: m.release_execution_route_reference(
+                ctx, execution_route, reference_id
+            )
+        )
+
+    def release_execution_route_reference_id(
+        self, ctx: ControlPlaneContext, reference_id: str
+    ) -> None:
+        self._txn(lambda m: m.release_execution_route_reference_id(ctx, reference_id))
+
+    def transition_execution_route_state(
+        self,
+        ctx: ControlPlaneContext,
+        execution_route: str,
+        *,
+        expected_revision: int,
+        status: ExecutionRouteLifecycle,
+        now: datetime | None = None,
+    ) -> ExecutionRouteRecord:
+        return self._txn(
+            lambda m: m.transition_execution_route_state(
+                ctx,
+                execution_route,
+                expected_revision=expected_revision,
+                status=status,
+                now=now,
+            )
+        )
+
+    def dispatched_for_reconciliation(
+        self,
+        ctx: ControlPlaneContext,
+        *,
+        execution_route: str,
+        limit: int = 100,
+        after_submission_id: str | None = None,
+    ):
+        return self._read_only(
+            lambda m: m.dispatched_for_reconciliation(
+                ctx,
+                execution_route=execution_route,
+                limit=limit,
+                after_submission_id=after_submission_id,
+            )
+        )
+
+    def prepare_dispatch(self, ctx: ControlPlaneContext, submission_id: str):
+        return self._txn(lambda m: m.prepare_dispatch(ctx, submission_id))
+
+    def get_dispatch(self, ctx: ControlPlaneContext, submission_id: str):
+        return self._read_only(lambda m: m.get_dispatch(ctx, submission_id))
+
+    def claim_dispatch(
+        self,
+        ctx: ControlPlaneContext,
+        submission_id: str,
+        *,
+        owner_id: str,
+        lease_seconds: int = 30,
+        now: datetime | None = None,
+    ):
+        return self._txn(
+            lambda m: m.claim_dispatch(
+                ctx,
+                submission_id,
+                owner_id=owner_id,
+                lease_seconds=lease_seconds,
+                now=now,
+            )
+        )
+
+    def link_dispatch(
+        self,
+        ctx: ControlPlaneContext,
+        submission_id: str,
+        *,
+        owner_id: str,
+        fencing_token: int,
+        prefect_flow_run_id: str,
+        now: datetime | None = None,
+    ):
+        return self._txn(
+            lambda m: m.link_dispatch(
+                ctx,
+                submission_id,
+                owner_id=owner_id,
+                fencing_token=fencing_token,
+                prefect_flow_run_id=prefect_flow_run_id,
+                now=now,
+            )
+        )
+
+    def release_dispatch(
+        self,
+        ctx: ControlPlaneContext,
+        submission_id: str,
+        *,
+        owner_id: str,
+        fencing_token: int,
+        outcome_uncertain: bool,
+        cancelled: bool = False,
+        error_code: str | None = None,
+        now: datetime | None = None,
+    ):
+        return self._txn(
+            lambda m: m.release_dispatch(
+                ctx,
+                submission_id,
+                owner_id=owner_id,
+                fencing_token=fencing_token,
+                outcome_uncertain=outcome_uncertain,
+                cancelled=cancelled,
+                error_code=error_code,
+                now=now,
+            )
+        )
+
+    def rearm_dispatch_after_remote_failure(
+        self,
+        ctx: ControlPlaneContext,
+        submission_id: str,
+        *,
+        expected_flow_run_id: str,
+        now: datetime | None = None,
+    ):
+        return self._txn(
+            lambda m: m.rearm_dispatch_after_remote_failure(
+                ctx,
+                submission_id,
+                expected_flow_run_id=expected_flow_run_id,
+                now=now,
+            )
+        )
+
+    def rearm_dispatch_after_remote_missing(
+        self,
+        ctx: ControlPlaneContext,
+        submission_id: str,
+        *,
+        expected_flow_run_id: str,
+        minimum_age_seconds: int = 300,
+        now: datetime | None = None,
+    ):
+        return self._txn(
+            lambda m: m.rearm_dispatch_after_remote_missing(
+                ctx,
+                submission_id,
+                expected_flow_run_id=expected_flow_run_id,
+                minimum_age_seconds=minimum_age_seconds,
+                now=now,
+            )
+        )
+
+    def rearm_reconciliation_required_dispatch(
+        self,
+        ctx: ControlPlaneContext,
+        submission_id: str,
+        *,
+        expected_generation: int,
+        expected_flow_run_id: str,
+        evidence_sha256: str,
+        now: datetime | None = None,
+    ):
+        return self._txn(
+            lambda m: m.rearm_reconciliation_required_dispatch(
+                ctx,
+                submission_id,
+                expected_generation=expected_generation,
+                expected_flow_run_id=expected_flow_run_id,
+                evidence_sha256=evidence_sha256,
+                now=now,
             )
         )
 

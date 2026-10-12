@@ -1,98 +1,100 @@
 ---
 title: ETLantic 0.59 Implementation Plan
-description: Implementation-grade plan for the separately deployable operator console.
+description: Implementation-grade plan for brownfield metadata bridges and orchestration compilers.
 plan_status: current
-plan_last_reviewed: 2026-10-08
+plan_last_reviewed: 2026-10-11
 ---
 
 # ETLantic 0.59 Implementation Plan
 
-Phase 0.59 delivers a separately deployable, read-only-first operator console.
-It consumes the versioned control-plane API through a generated client and uses
-the shared artifact language from the [UI/UX plan](UI_UX_PLAN.md).
+Phase 0.59 lets existing projects adopt ETLantic incrementally through static
+metadata readers, semantic comparison, safe skeleton generation, and
+orchestration compilers. The
+[adoption ecosystem plan](ADOPTION_ECOSYSTEM_PLAN.md) governs brownfield and
+interoperability boundaries.
 
 ## Outcome
 
-Authorized operators can inspect definitions, revisions, plans, diffs, runs,
-attempts, events, lineage, partitions, checkpoints, quality, schema, repairs,
-backfills, delivery objectives, deadline/escalation state, erasure operations,
-dynamic expansions and branches, dead-letter/redrive state, schema-registry
-compatibility, quotas, policy, approvals, audit, providers, and health.
-Privileged actions reuse API policy, idempotency, approval, and audit paths
-exactly.
+Teams can import metadata from real dbt and ETL projects without executing their
+code, identify what ETLantic can and cannot preserve, generate reviewable
+skeletons, compile qualified pipelines to Dagster or Argo, integrate Prefect
+through its managed adapter, and compare
+old and new paths side by side without a flag-day migration.
 
 This phase moves from 0.58 to 0.59 after insertion of the
-[0.57 managed backend independence phase](IMPLEMENTATION_PLAN_0_57.md). Its
+[0.58 managed Prefect phase](IMPLEMENTATION_PLAN_0_58.md). Its
 complete scope is retained.
 
 ## Prerequisites And Non-Goals
 
-- 0.56 shared services, real result projections and allowed-action schemas
-  are prerequisites; console code must not fill backend implementation gaps.
-- 0.57 owns headless backend/schedule parity, schema inspection, and runtime
-  status/drain contracts. Console health views project those facts; they do not
-  infer library health from work counts or implement another ETL state machine.
-- 0.43 API/auth/event support and 0.44 artifact/interaction contracts are stable;
-  0.46–0.58 capabilities appear only where the server advertises them.
-- The console owns no source of truth, authorization rule, execution path, policy
-  engine, schema authority, or provider credential.
-- The core and API packages never depend on frontend code or its toolchain.
-- Preview rendering is bounded and hostile content is treated as data, not markup
-  or executable instruction.
+- 0.56 public services supply execution and control for adopted pipelines;
+  migration tools preserve imported specification choices and use that authority.
+- 0.57 supplies the transport-independent backend, authorized schedule services,
+  complete role factories, provider schema inspection, and role supervision;
+  adopters use those public contracts rather than assemble another service graph.
+- 0.58 supplies the qualified managed Prefect deployment/dispatch adapter.
+  Brownfield migration reuses its accepted references, targeted execution,
+  correlation, schedule admission, and effect/publication authority. Broader
+  dynamic plan semantics require new conformance or explicit rejection; a
+  migration bridge cannot silently broaden the initial static-batch `/1` matrix.
+- Stable registry identities, semantic plan diff, generated-code preservation,
+  and conformance protocols from earlier phases are available, including 0.46
+  bounded dynamic-control identities and capability rules.
+- 0.55 inferred models may provide reviewable starting contracts for migration
+  skeletons. A draft inferred from observed data is not an accepted contract
+  until the owner reviews and binds it to a stable source.
+- Readers parse supported static artifacts only; they do not execute Jinja,
+  macros, Python project code, hooks, or package installation.
+- External dbt or orchestration ownership can remain authoritative. Import does
+  not silently transfer ownership to ETLantic.
+- Compilers reject semantics they cannot preserve; they do not approximate
+  retries, partitions, schedules, assets, state, policy, dynamic mapping,
+  branch/failure/compensation behavior, or external effects.
 
 ## Workstreams
 
 | ID | Workstream | Deliverables | Completion evidence |
 |---|---|---|---|
-| 059-F | Frontend foundation | Separate package/deployment, pinned generated client, session/bootstrap, capability negotiation, routing | Clean build/deploy and client/server compatibility matrix |
-| 059-R | Read surfaces | Scoped list/detail views for definitions through health; stable URLs and breadcrumbs | View fixture matrix, pagination, empty/error/loading states |
-| 059-E | Live events | Resumable run/event views, cursor persistence, history fallback, reconnect and duplicate suppression | Refresh/disconnect/cursor-expiry tests |
-| 059-A | Privileged actions | Cancel, retry, repair, backfill, approve, promote, authorize/retry erasure, suspend, containment actions through public API | Policy/idempotency/approval/audit equivalence traces |
-| 059-D | Objectives and dynamic execution | Deadline timelines, breach/escalation/recovery state, map/reduce children, branch decisions, stable identities, bounds, and capability explanations | Clock/reconnect/dedupe fixtures plus large bounded expansion and branch-state tests |
-| 059-P | Privacy and stream errors | Erasure request/plan/provider/reconciliation views plus payload-free DLQ/redrive and schema-compatibility views | No-subject/no-payload browser-state tests and partial/unsupported outcome fixtures |
-| 059-S | Security/privacy | Object authorization, non-enumeration, cache partitioning, bounded previews, CSP, hostile-content redaction | Two-tenant/two-workspace UI leakage campaign |
-| 059-U | Usability/accessibility | Keyboard/screen-reader flows, localization readiness, responsive layouts, latency budgets | WCAG-oriented audit, locale/pseudo-localization, performance report |
-| 059-T | Test fixtures | Deterministic generated-client mocks plus integrated API fixtures for all capability states | CI visual/interaction tests without production credentials |
-| 059-O | Operations | OCI image, configuration, health, telemetry, upgrade/rollback and incident runbooks | Deployment, version-skew, failover, and rollback drill |
+| 059-D | dbt bridge | Manifest/catalog/run-results readers; model/source/test/exposure/metric metadata; stable identity mapping | Versioned public dbt artifact corpus with no code/Jinja execution |
+| 059-M | ETL migration model | Sources, transforms, joins, filters, assertions, schedules, retries, partitions, dynamic maps/reduces, conditions, failure/compensation paths, effects, ownership, fidelity states | Representative framework-neutral migration fixtures |
+| 059-G | Skeleton generation | Safe ETLantic project skeletons, TODO/fidelity markers, user-region preservation, repeatable regeneration | Golden output and incremental re-run tests |
+| 059-S | Semantic diff | Source/field/transform/quality/state/schedule/dynamic-control/effect comparison with explicit unsupported/lossy results | Side-by-side fixture report and false-equivalence tests |
+| 059-O | Orchestration interoperability | Dagster definitions compiler, Prefect fidelity/migration integration over the 0.58 managed adapter, Argo workflow compiler, including truthful 0.46 dynamic-control lowering/rejection | Backend conformance and rejection matrix; Prefect admission and execution authority retained |
+| 059-V | Side-by-side validation | Shadow/dual-run correlation, bounded result/quality/lineage comparison, cutover evidence | Realistic incremental migration campaign |
+| 059-F | Fixture ecosystem | Versioned real-world-shape projects, anonymized metadata, compatibility matrix, contribution guide | CI corpus across supported artifact/backend versions |
 
 ## Delivery Sequence
 
-1. Freeze console information architecture, threat model, and generated-client
-   version policy.
-2. Implement read-only registry, plan, run, quality, schema, delivery-objective,
-   erasure, dynamic-control, dead-letter, and operations views.
-3. Add resumable live events, bounded previews, deadline/escalation timelines,
-   dynamic child/branch navigation, and lineage/partition navigation.
-4. Add privileged actions only through existing API commands and approvals.
-5. Complete accessibility, localization, hostile-content, isolation, and
-   performance qualification.
-6. Publish deployment artifacts and the supported server/client matrix.
+1. Freeze fidelity vocabulary and the framework-neutral migration model.
+2. Implement static dbt artifact readers against versioned fixtures.
+3. Add semantic diff and safe skeleton generation before orchestration output.
+4. Qualify Dagster and Argo compilers and Prefect managed interoperability
+   independently, preserving each protocol and capability boundary.
+5. Add side-by-side validation and incremental ownership/cutover workflows.
+6. Publish support matrices per source artifact and orchestration backend.
 
 ## Exit Gates
 
-- The console contains no independent database, authorization decision, schema
-  mutation, run scheduler, secret resolver, or provider control path.
-- Every mutation produces the same policy, idempotency, approval, state-machine,
-  and audit evidence as the equivalent API operation.
-- Unauthorized scope cannot leak through counts, search, links, error shape,
-  browser/server caches, history, event streams, downloadable artifacts, or
-  timing-sensitive pagination behavior.
-- Refresh and reconnect resume events without duplicating attempts or actions.
-- Hostile names, diagnostics, payloads, and artifact previews are bounded,
-  escaped, redacted, and covered by content-security policy.
-- Erasure and dead-letter views never place data-subject values or event
-  payloads in browser state, URLs, telemetry, caches, logs, or fixtures, and
-  cannot report completion while required effects remain unknown or
-  unreconciled.
-- Critical workflows pass keyboard and screen-reader review, localization
-  readiness, responsive layouts, and published latency budgets.
-- The console deploys, upgrades, rolls back, and version-negotiates independently
-  from ETLantic core and the control-plane API.
+- Brownfield inspection performs no project code, Jinja, hook, macro, dependency,
+  secret, network, or data execution.
+- Every imported element has provenance and an exact, lossy, unsupported, or
+  externally-owned fidelity status.
+- Skeleton generation is deterministic, reviewable, preserves user regions, and
+  does not overwrite existing ownership without an explicit operation.
+- Semantic diff never labels unsupported behavior equivalent.
+- Each compiler preserves declared semantics or fails before emitting a runnable
+  artifact with a stable capability diagnostic.
+- Supported map/reduce and conditional/failure/compensation constructs retain
+  stable logical and expanded identities, bounds, retry/replay behavior, and
+  report correlation on every compiler that claims them.
+- A realistic project adopts ETLantic incrementally, retains an external owner
+  where chosen, runs side-by-side, and produces cutover evidence without a
+  flag-day rewrite.
 
 ## Required Release Evidence
 
-- Generated-client compatibility and deployment report.
-- Full view/action-to-API traceability matrix.
-- Cross-tenant UI leakage and hostile-content report.
-- Event reconnect/refresh results.
-- Accessibility, localization, and performance audits.
+- Static-reader no-execution security report.
+- Import fidelity and semantic-diff corpus.
+- Generator determinism/preservation report.
+- Per-backend compiler conformance and rejection matrix.
+- Incremental brownfield migration case study with side-by-side evidence.

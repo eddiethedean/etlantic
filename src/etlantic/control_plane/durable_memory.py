@@ -29,7 +29,13 @@ from etlantic.control_plane.durable_models import (
     BaselineAcknowledgement,
     CheckpointRecord,
     DiffRecord,
+    DispatchReconciliation,
+    DispatchRecord,
     EffectRecord,
+    ExecutionRouteLifecycle,
+    ExecutionRouteRecord,
+    ExecutionRouteTransition,
+    ExecutionRouteWorkload,
     ExecutionScopePage,
     LeaseRecord,
     OutboxRecord,
@@ -42,6 +48,7 @@ from etlantic.control_plane.durable_models import (
     StateTransitionExplanation,
     SubmissionRecord,
     execution_context_from_submission,
+    validate_execution_route,
 )
 from etlantic.control_plane.errors import ControlPlaneError
 from etlantic.control_plane.models import (
@@ -71,6 +78,7 @@ def _scope(ctx: ControlPlaneContext) -> tuple[str, str]:
 
 
 _NON_TERMINAL = {"accepted", "dispatched", "cancel_requested"}
+_MAX_DISPATCH_GENERATIONS = 3
 _ACTION_ERROR_CODES = frozenset(
     {
         "action_failed",
@@ -84,6 +92,15 @@ _ACTION_ERROR_CODES = frozenset(
         "result_limit_exceeded",
     }
 )
+
+
+def _dispatch_creation_key(
+    key: tuple[str, str, str], binding_fingerprint: str, generation: int
+) -> str:
+    identity = json.dumps(
+        [*key, binding_fingerprint, generation], separators=(",", ":")
+    )
+    return "etlantic-" + hashlib.sha256(identity.encode("utf-8")).hexdigest()
 
 
 def _require_namespaced_checkpoint_id(checkpoint_id: str) -> None:
@@ -102,6 +119,7 @@ class MemoryDurableWorkStore:
         self._submissions: dict[tuple[str, str, str], SubmissionRecord] = {}
         self._idempotency: dict[tuple[str, str, str, str, str, str, str], str] = {}
         self._outbox: dict[tuple[str, str, str], OutboxRecord] = {}
+        self._dispatches: dict[tuple[str, str, str], DispatchRecord] = {}
         self._leases: dict[tuple[str, str, str], LeaseRecord] = {}
         self._attempts: dict[tuple[str, str, str], AttemptRecord] = {}
         self._result_publications: dict[
@@ -116,6 +134,8 @@ class MemoryDurableWorkStore:
         self._action_jobs: dict[tuple[str, str, str], ActionJobRecord] = {}
         self._action_idempotency: dict[tuple[str, ...], str] = {}
         self._diagnostics: list[StateDiagnostic] = []
+        self._execution_route_states: dict[str, ExecutionRouteRecord] = {}
+        self._execution_route_references: dict[str, set[str]] = {}
         self._lock = threading.RLock()
 
     def accept(
@@ -133,6 +153,7 @@ class MemoryDurableWorkStore:
         schema_baseline_id: str | None = None,
         submission_id: str | None = None,
         run_id: str | None = None,
+        execution_route: str = "local",
     ) -> tuple[SubmissionRecord, bool]:
         self._require_nonempty(
             idempotency_key,
@@ -146,6 +167,7 @@ class MemoryDurableWorkStore:
             self._require_nonempty(submission_id, "submission_id")
         if run_id is not None:
             self._require_nonempty(run_id, "run_id")
+        validate_execution_route(execution_route)
         idem = (
             *_scope(ctx),
             ctx.principal.issuer or "",
@@ -166,6 +188,7 @@ class MemoryDurableWorkStore:
             ctx.environment.name,
             ctx.security_domain.domain_id,
             ctx.resource_owner_id,
+            execution_route,
         )
         with self._lock:
             existing_id = self._idempotency.get(idem)
@@ -182,6 +205,7 @@ class MemoryDurableWorkStore:
                     prior.environment,
                     prior.security_domain_id,
                     prior.resource_owner_id,
+                    prior.execution_route,
                 )
                 if actual != requested:
                     raise ControlPlaneError.conflict(
@@ -200,6 +224,18 @@ class MemoryDurableWorkStore:
                         "Idempotency key reuse with different run_id"
                     )
                 return deepcopy(prior), False
+            route_state = self._execution_route_states.get(
+                execution_route, ExecutionRouteRecord(execution_route)
+            )
+            if route_state.status != "active":
+                raise ControlPlaneError.conflict(
+                    "Execution route is not accepting new submissions",
+                    extensions={
+                        "reason": f"execution_route_{route_state.status}",
+                        "execution_route": execution_route,
+                        "route_revision": route_state.revision,
+                    },
+                )
             if self.admission_limit is not None:
                 in_flight = sum(
                     1
@@ -236,6 +272,7 @@ class MemoryDurableWorkStore:
                 security_domain_id=ctx.security_domain.domain_id,
                 resource_owner_id=ctx.resource_owner_id,
                 run_id=run_id,
+                execution_route=execution_route,
             )
             payload = hashlib.sha256(
                 "|".join(str(v or "") for v in requested).encode()
@@ -251,6 +288,258 @@ class MemoryDurableWorkStore:
             self._outbox[(*_scope(ctx), outbox.outbox_id)] = outbox
             self._idempotency[idem] = submission_id
             return deepcopy(record), True
+
+    def get_execution_route_state(
+        self, ctx: ControlPlaneContext, execution_route: str
+    ) -> ExecutionRouteRecord:
+        """Read the store-wide lifecycle of a Prefect execution route."""
+        validate_execution_route(execution_route)
+        if not execution_route.startswith("prefect:"):
+            raise ValueError("route lifecycle applies only to Prefect routes")
+        with self._lock:
+            return deepcopy(
+                self._execution_route_states.get(
+                    execution_route, ExecutionRouteRecord(execution_route)
+                )
+            )
+
+    def execution_route_workload(
+        self, ctx: ControlPlaneContext, execution_route: str
+    ) -> ExecutionRouteWorkload:
+        """Count store-wide work and evidence that still depends on a route."""
+        validate_execution_route(execution_route)
+        if not execution_route.startswith("prefect:"):
+            raise ValueError("route lifecycle applies only to Prefect routes")
+        with self._lock:
+            return self._execution_route_workload_unlocked(execution_route)
+
+    def execution_route_reference_counts(
+        self, ctx: ControlPlaneContext, execution_route: str
+    ) -> dict[str, int]:
+        """Count all canonical history and active schedule reservations."""
+        validate_execution_route(execution_route)
+        if not execution_route.startswith("prefect:"):
+            raise ValueError("route lifecycle applies only to Prefect routes")
+        with self._lock:
+            return self._execution_route_reference_counts_unlocked(execution_route)
+
+    def reserve_execution_route_reference(
+        self,
+        ctx: ControlPlaneContext,
+        execution_route: str,
+        reference_id: str,
+    ) -> None:
+        """Fence schedule admission against route cleanup with a durable hold."""
+        validate_execution_route(execution_route)
+        if not execution_route.startswith("prefect:"):
+            raise ValueError("route references apply only to Prefect routes")
+        if not reference_id.strip():
+            raise ValueError("reference_id must be a non-empty string")
+        with self._lock:
+            state = self._execution_route_states.get(
+                execution_route, ExecutionRouteRecord(execution_route)
+            )
+            if state.status != "active":
+                raise ControlPlaneError.conflict(
+                    "Execution route is not accepting new schedule references",
+                    extensions={
+                        "reason": f"execution_route_{state.status}",
+                        "execution_route": execution_route,
+                        "route_revision": state.revision,
+                    },
+                )
+            self._execution_route_references.setdefault(execution_route, set()).add(
+                reference_id
+            )
+
+    def release_execution_route_reference(
+        self,
+        ctx: ControlPlaneContext,
+        execution_route: str,
+        reference_id: str,
+    ) -> None:
+        """Release an existing schedule hold after its record is deleted/moved."""
+        validate_execution_route(execution_route)
+        if not execution_route.startswith("prefect:"):
+            raise ValueError("route references apply only to Prefect routes")
+        if not reference_id.strip():
+            raise ValueError("reference_id must be a non-empty string")
+        with self._lock:
+            references = self._execution_route_references.get(execution_route)
+            if references is not None:
+                references.discard(reference_id)
+                if not references:
+                    self._execution_route_references.pop(execution_route, None)
+
+    def release_execution_route_reference_id(
+        self, ctx: ControlPlaneContext, reference_id: str
+    ) -> None:
+        """Release one scoped reference after its schedule is confirmed absent."""
+        if not reference_id.strip():
+            raise ValueError("reference_id must be a non-empty string")
+        with self._lock:
+            for route, references in tuple(self._execution_route_references.items()):
+                references.discard(reference_id)
+                if not references:
+                    self._execution_route_references.pop(route, None)
+
+    def transition_execution_route_state(
+        self,
+        ctx: ControlPlaneContext,
+        execution_route: str,
+        *,
+        expected_revision: int,
+        status: ExecutionRouteLifecycle,
+        now: datetime | None = None,
+    ) -> ExecutionRouteRecord:
+        """CAS a route lifecycle and refuse retirement while durable work remains."""
+        validate_execution_route(execution_route)
+        if not execution_route.startswith("prefect:"):
+            raise ValueError("route lifecycle applies only to Prefect routes")
+        if type(expected_revision) is not int or expected_revision < 0:
+            raise ValueError("expected_revision must be a non-negative integer")
+        if status not in {
+            "active",
+            "draining",
+            "retired",
+            "cleanup_pending",
+            "cleaned",
+        }:
+            raise ValueError("unsupported execution route lifecycle state")
+        with self._lock:
+            prior = self._execution_route_states.get(
+                execution_route, ExecutionRouteRecord(execution_route)
+            )
+            if prior.revision != expected_revision:
+                raise ControlPlaneError.conflict(
+                    "Execution route lifecycle revision is stale",
+                    extensions={"reason": "stale_route_revision"},
+                )
+            allowed = {
+                ("active", "draining"),
+                ("draining", "active"),
+                ("draining", "retired"),
+                ("retired", "active"),
+                ("retired", "cleanup_pending"),
+                ("cleanup_pending", "cleaned"),
+            }
+            if status == prior.status:
+                return deepcopy(prior)
+            if (prior.status, status) not in allowed:
+                raise ControlPlaneError.conflict(
+                    "Execution route lifecycle transition is invalid",
+                    extensions={"reason": "invalid_route_transition"},
+                )
+            if status == "retired":
+                workload = self._execution_route_workload_unlocked(execution_route)
+                if not workload.drained:
+                    raise ControlPlaneError.conflict(
+                        "Execution route still owns durable work or publication evidence",
+                        extensions={
+                            "reason": "execution_route_not_drained",
+                            "workload": workload.to_dict(),
+                        },
+                    )
+                references = self._execution_route_reference_counts_unlocked(
+                    execution_route
+                )
+                if references["schedule_reservations"]:
+                    raise ControlPlaneError.conflict(
+                        "Execution route still has scheduled references",
+                        extensions={
+                            "reason": "execution_route_referenced",
+                            "references": references,
+                        },
+                    )
+            if status == "cleanup_pending":
+                workload = self._execution_route_workload_unlocked(execution_route)
+                references = self._execution_route_reference_counts_unlocked(
+                    execution_route
+                )
+                if not workload.drained or any(references.values()):
+                    raise ControlPlaneError.conflict(
+                        "Execution route still has work or durable references",
+                        extensions={
+                            "reason": "execution_route_referenced",
+                            "workload": workload.to_dict(),
+                            "references": references,
+                        },
+                    )
+            current = now or _now()
+            updated = ExecutionRouteRecord(
+                execution_route=execution_route,
+                status=status,
+                revision=prior.revision + 1,
+                changed_at=_iso(current),
+                history=(
+                    *prior.history,
+                    ExecutionRouteTransition(
+                        revision=prior.revision + 1,
+                        from_status=prior.status,
+                        to_status=status,
+                        changed_at=_iso(current),
+                        principal_subject=ctx.principal.subject,
+                        principal_issuer=ctx.principal.issuer,
+                    ),
+                )[-64:],
+            )
+            self._execution_route_states[execution_route] = updated
+            return deepcopy(updated)
+
+    def _execution_route_reference_counts_unlocked(
+        self, execution_route: str
+    ) -> dict[str, int]:
+        return {
+            "canonical_submissions": sum(
+                row.execution_route == execution_route
+                for row in self._submissions.values()
+            ),
+            "schedule_reservations": len(
+                self._execution_route_references.get(execution_route, set())
+            ),
+        }
+
+    def _execution_route_workload_unlocked(
+        self, execution_route: str
+    ) -> ExecutionRouteWorkload:
+        submissions = {
+            key: row
+            for key, row in self._submissions.items()
+            if row.execution_route == execution_route
+        }
+        keys = set(submissions)
+        return ExecutionRouteWorkload(
+            execution_route=execution_route,
+            active_submissions=sum(
+                row.status in {"accepted", "dispatched", "cancel_requested"}
+                for row in submissions.values()
+            ),
+            active_attempts=sum(
+                attempt.status == "running"
+                for key, attempt in self._attempts.items()
+                if (*key[:2], attempt.submission_id) in keys
+            ),
+            incomplete_dispatches=sum(
+                dispatch.status not in {"dispatched", "cancelled"}
+                for key, dispatch in self._dispatches.items()
+                if key in keys
+            ),
+            unresolved_effects=sum(
+                effect.status in {"pending", "unknown"}
+                for key, effect in self._effects.items()
+                if (*key[:2], effect.submission_id) in keys
+            ),
+            pending_publications=sum(
+                record.published_at is None
+                for key, record in self._result_publications.items()
+                if (*key[:2], record.submission_id) in keys
+            ),
+            unpublished_outboxes=sum(
+                outbox.published_at is None
+                for key, outbox in self._outbox.items()
+                if (*key[:2], outbox.submission_id) in keys
+            ),
+        )
 
     @staticmethod
     def _require_nonempty(*values: str) -> None:
@@ -319,14 +608,20 @@ class MemoryDurableWorkStore:
         limit: int = 100,
         include_terminal: bool = False,
         terminal_only: bool = False,
+        submission_id: str | None = None,
+        execution_route: str = "local",
     ) -> list[OutboxRecord]:
+        validate_execution_route(execution_route)
         with self._lock:
             return [
                 deepcopy(row)
                 for (t, w, _), row in self._outbox.items()
                 if (t, w) == _scope(ctx)
+                and (submission_id is None or row.submission_id == submission_id)
                 and row.published_at is None
                 and self._submissions.get((t, w, row.submission_id)) is not None
+                and self._submissions[(t, w, row.submission_id)].execution_route
+                == execution_route
                 and (
                     self._submissions[(t, w, row.submission_id)].status
                     in {"cancelled", "completed", "failed"}
@@ -336,6 +631,557 @@ class MemoryDurableWorkStore:
                     not in {"cancelled", "completed", "failed"}
                 )
             ][: max(0, limit)]
+
+    def pending_dispatches(
+        self,
+        ctx: ControlPlaneContext,
+        *,
+        execution_route: str,
+        limit: int = 100,
+    ) -> list[OutboxRecord]:
+        """List bounded accepted work needing remote delivery or recovery."""
+        validate_execution_route(execution_route)
+        if not execution_route.startswith("prefect:"):
+            raise ValueError("dispatch polling requires a Prefect execution route")
+        if type(limit) is not int or not 1 <= limit <= 1000:
+            raise ValueError("limit must be between 1 and 1000")
+        now = _now()
+        with self._lock:
+            candidates = sorted(
+                (
+                    row
+                    for (tenant_id, workspace_id, _), row in self._outbox.items()
+                    if (tenant_id, workspace_id) == _scope(ctx)
+                    and row.published_at is None
+                ),
+                key=lambda row: (row.created_at, row.outbox_id),
+            )
+            ready: list[OutboxRecord] = []
+            for row in candidates:
+                submission = self._submissions.get((*_scope(ctx), row.submission_id))
+                if (
+                    submission is None
+                    or submission.execution_route != execution_route
+                    or submission.status
+                    in {"cancel_requested", "cancelled", "completed", "failed"}
+                ):
+                    continue
+                dispatch = self._dispatches.get((*_scope(ctx), row.submission_id))
+                if dispatch is not None and dispatch.status in {
+                    "dispatched",
+                    "cancelled",
+                    "reconciliation_required",
+                }:
+                    continue
+                if (
+                    dispatch is not None
+                    and dispatch.retry_after_at is not None
+                    and _parse(dispatch.retry_after_at) > now
+                ):
+                    continue
+                if (
+                    dispatch is not None
+                    and dispatch.status == "leased"
+                    and dispatch.lease_expires_at is not None
+                    and _parse(dispatch.lease_expires_at) > now
+                ):
+                    continue
+                ready.append(deepcopy(row))
+                if len(ready) >= limit:
+                    break
+            return ready
+
+    def dispatched_for_reconciliation(
+        self,
+        ctx: ControlPlaneContext,
+        *,
+        execution_route: str,
+        limit: int = 100,
+        after_submission_id: str | None = None,
+    ) -> list[DispatchRecord]:
+        """Return a bounded route-scoped page of linked dispatches."""
+        validate_execution_route(execution_route)
+        if not execution_route.startswith("prefect:"):
+            raise ValueError("dispatch reconciliation requires a Prefect route")
+        if type(limit) is not int or not 1 <= limit <= 1000:
+            raise ValueError("limit must be between 1 and 1000")
+        scope = _scope(ctx)
+        with self._lock:
+            rows = [
+                record
+                for key, record in self._dispatches.items()
+                if key[:2] == scope
+                and record.execution_route == execution_route
+                and record.status == "dispatched"
+                and record.prefect_flow_run_id is not None
+                and (
+                    after_submission_id is None
+                    or record.submission_id > after_submission_id
+                )
+                and (submission := self._submissions.get(key)) is not None
+                and submission.status == "accepted"
+            ]
+            rows.sort(key=lambda item: item.submission_id)
+            return deepcopy(rows[:limit])
+
+    def prepare_dispatch(
+        self, ctx: ControlPlaneContext, submission_id: str
+    ) -> DispatchRecord:
+        """Persist the immutable dispatch identity before any remote create."""
+        with self._lock:
+            key = (*_scope(ctx), submission_id)
+            submission = self._submissions.get(key)
+            if submission is None:
+                raise ControlPlaneError.not_found("Submission not found")
+            route = validate_execution_route(submission.execution_route)
+            if not route.startswith("prefect:"):
+                raise ControlPlaneError.conflict(
+                    "Submission is not assigned to a Prefect execution route"
+                )
+            if not submission.input_snapshot:
+                raise ControlPlaneError.conflict(
+                    "Prefect dispatch requires an immutable execution envelope"
+                )
+            from etlantic.control_plane.execution_envelope import ExecutionEnvelope
+            from etlantic.plan.model import PLAN_SCHEMA
+
+            envelope = ExecutionEnvelope.from_json(submission.input_snapshot)
+            if (
+                envelope.plan_fingerprint != submission.plan_fingerprint
+                or envelope.plan_document.get("schema") != PLAN_SCHEMA
+            ):
+                raise ControlPlaneError.conflict(
+                    "Submission envelope is unsupported for managed Prefect dispatch"
+                )
+            binding = route.removeprefix("prefect:")
+            digest = hashlib.sha256(
+                submission.input_snapshot.encode("utf-8")
+            ).hexdigest()
+            existing = self._dispatches.get(key)
+            generation = existing.generation if existing is not None else 1
+            creation_key = _dispatch_creation_key(key, binding, generation)
+            if existing is not None:
+                if (
+                    existing.execution_route != route
+                    or existing.binding_fingerprint != binding
+                    or existing.plan_fingerprint != submission.plan_fingerprint
+                    or existing.envelope_sha256 != digest
+                    or existing.generation != generation
+                    or existing.creation_key != creation_key
+                ):
+                    raise ControlPlaneError.conflict(
+                        "Accepted dispatch identity conflicts with its durable record"
+                    )
+                return deepcopy(existing)
+            status = (
+                "cancelled"
+                if submission.status
+                in {"cancel_requested", "cancelled", "completed", "failed"}
+                else "pending"
+            )
+            now = _iso()
+            record = DispatchRecord(
+                submission_id=submission_id,
+                tenant_id=ctx.tenant.tenant_id,
+                workspace_id=ctx.workspace.workspace_id,
+                execution_route=route,
+                binding_fingerprint=binding,
+                plan_fingerprint=submission.plan_fingerprint,
+                envelope_sha256=digest,
+                generation=generation,
+                creation_key=creation_key,
+                created_at=now,
+                updated_at=now,
+                status=status,
+            )
+            self._dispatches[key] = record
+            return deepcopy(record)
+
+    def get_dispatch(
+        self, ctx: ControlPlaneContext, submission_id: str
+    ) -> DispatchRecord:
+        with self._lock:
+            record = self._dispatches.get((*_scope(ctx), submission_id))
+            if record is None:
+                raise ControlPlaneError.not_found("Dispatch record not found")
+            return deepcopy(record)
+
+    def claim_dispatch(
+        self,
+        ctx: ControlPlaneContext,
+        submission_id: str,
+        *,
+        owner_id: str,
+        lease_seconds: int = 30,
+        now: datetime | None = None,
+    ) -> DispatchRecord | None:
+        if not owner_id.strip() or len(owner_id) > 256:
+            raise ValueError("owner_id must contain 1 to 256 characters")
+        if type(lease_seconds) is not int or not 1 <= lease_seconds <= 600:
+            raise ValueError("lease_seconds must be between 1 and 600")
+        current = now or _now()
+        key = (*_scope(ctx), submission_id)
+        with self._lock:
+            record = self._dispatches.get(key)
+            submission = self._submissions.get(key)
+            if record is None or submission is None:
+                raise ControlPlaneError.not_found("Dispatch candidate not found")
+            if record.status in {
+                "dispatched",
+                "cancelled",
+                "reconciliation_required",
+            }:
+                return None
+            if (
+                record.retry_after_at is not None
+                and _parse(record.retry_after_at) > current
+            ):
+                return None
+            if submission.status in {
+                "cancel_requested",
+                "cancelled",
+                "completed",
+                "failed",
+            }:
+                return None
+            if (
+                record.status == "leased"
+                and record.lease_expires_at is not None
+                and _parse(record.lease_expires_at) > current
+            ):
+                return None
+            claimed = replace(
+                record,
+                status="leased",
+                dispatch_attempts=record.dispatch_attempts + 1,
+                lease_owner_id=owner_id,
+                lease_fencing_token=record.lease_fencing_token + 1,
+                lease_expires_at=_iso(current + timedelta(seconds=lease_seconds)),
+                updated_at=_iso(current),
+            )
+            self._dispatches[key] = claimed
+            return deepcopy(claimed)
+
+    def link_dispatch(
+        self,
+        ctx: ControlPlaneContext,
+        submission_id: str,
+        *,
+        owner_id: str,
+        fencing_token: int,
+        prefect_flow_run_id: str,
+        now: datetime | None = None,
+    ) -> DispatchRecord:
+        if not prefect_flow_run_id.strip() or len(prefect_flow_run_id) > 128:
+            raise ValueError("prefect_flow_run_id must contain 1 to 128 characters")
+        current = now or _now()
+        key = (*_scope(ctx), submission_id)
+        with self._lock:
+            record = self._dispatches.get(key)
+            if record is None:
+                raise ControlPlaneError.not_found("Dispatch record not found")
+            if record.status == "dispatched":
+                if record.prefect_flow_run_id == prefect_flow_run_id:
+                    return deepcopy(record)
+                raise ControlPlaneError.conflict(
+                    "Dispatch is already linked to a different Prefect flow run"
+                )
+            if (
+                record.status != "leased"
+                or record.lease_owner_id != owner_id
+                or record.lease_fencing_token != fencing_token
+                or record.lease_expires_at is None
+                or _parse(record.lease_expires_at) <= current
+            ):
+                raise ControlPlaneError.conflict("Dispatch lease was lost")
+            linked = replace(
+                record,
+                status="dispatched",
+                prefect_flow_run_id=prefect_flow_run_id,
+                lease_owner_id=None,
+                lease_expires_at=None,
+                retry_after_at=None,
+                last_error_code=None,
+                updated_at=_iso(current),
+            )
+            self._dispatches[key] = linked
+            return deepcopy(linked)
+
+    def release_dispatch(
+        self,
+        ctx: ControlPlaneContext,
+        submission_id: str,
+        *,
+        owner_id: str,
+        fencing_token: int,
+        outcome_uncertain: bool,
+        cancelled: bool = False,
+        error_code: str | None = None,
+        now: datetime | None = None,
+    ) -> DispatchRecord:
+        if error_code is not None and (
+            len(error_code) > 64
+            or not all(
+                char.islower() or char.isdigit() or char == "_" for char in error_code
+            )
+        ):
+            raise ValueError("error_code must be a bounded lowercase diagnostic token")
+        current = now or _now()
+        key = (*_scope(ctx), submission_id)
+        with self._lock:
+            record = self._dispatches.get(key)
+            if record is None:
+                raise ControlPlaneError.not_found("Dispatch record not found")
+            if record.status == "dispatched":
+                return deepcopy(record)
+            if (
+                record.status != "leased"
+                or record.lease_owner_id != owner_id
+                or record.lease_fencing_token != fencing_token
+            ):
+                raise ControlPlaneError.conflict("Dispatch lease was lost")
+            released = replace(
+                record,
+                status=(
+                    "cancelled"
+                    if cancelled
+                    else "uncertain"
+                    if outcome_uncertain
+                    else "pending"
+                ),
+                lease_owner_id=None,
+                lease_expires_at=None,
+                retry_after_at=(
+                    None
+                    if cancelled
+                    else _iso(
+                        current
+                        + timedelta(
+                            seconds=min(
+                                300,
+                                2 ** min(record.dispatch_attempts, 9),
+                            )
+                        )
+                    )
+                ),
+                last_error_code=error_code,
+                updated_at=_iso(current),
+            )
+            self._dispatches[key] = released
+            return deepcopy(released)
+
+    def rearm_dispatch_after_remote_failure(
+        self,
+        ctx: ControlPlaneContext,
+        submission_id: str,
+        *,
+        expected_flow_run_id: str,
+        now: datetime | None = None,
+    ) -> DispatchRecord | None:
+        """Retry only a terminal remote failure proven to predate ETL execution."""
+        return self._rearm_dispatch_if_unclaimed(
+            ctx,
+            submission_id,
+            expected_flow_run_id=expected_flow_run_id,
+            reason_code="remote_failed_before_claim",
+            now=now,
+        )
+
+    def rearm_dispatch_after_remote_missing(
+        self,
+        ctx: ControlPlaneContext,
+        submission_id: str,
+        *,
+        expected_flow_run_id: str,
+        minimum_age_seconds: int = 300,
+        now: datetime | None = None,
+    ) -> DispatchRecord | None:
+        """Rearm an aged missing run only if ETL execution never acquired work."""
+        if (
+            type(minimum_age_seconds) is not int
+            or not 30 <= minimum_age_seconds <= 86_400
+        ):
+            raise ValueError("minimum_age_seconds must be between 30 and 86400")
+        return self._rearm_dispatch_if_unclaimed(
+            ctx,
+            submission_id,
+            expected_flow_run_id=expected_flow_run_id,
+            reason_code="remote_missing_before_claim",
+            minimum_age_seconds=minimum_age_seconds,
+            now=now,
+        )
+
+    def _rearm_dispatch_if_unclaimed(
+        self,
+        ctx: ControlPlaneContext,
+        submission_id: str,
+        *,
+        expected_flow_run_id: str,
+        reason_code: str,
+        minimum_age_seconds: int = 0,
+        now: datetime | None = None,
+    ) -> DispatchRecord | None:
+        """Create a bounded generation only while no ETL effect could exist."""
+        if not expected_flow_run_id.strip() or len(expected_flow_run_id) > 128:
+            raise ValueError("expected_flow_run_id must be a bounded identifier")
+        current = now or _now()
+        wall_now = _now()
+        key = (*_scope(ctx), submission_id)
+        with self._lock:
+            record = self._dispatches.get(key)
+            submission = self._submissions.get(key)
+            lease = self._leases.get(key)
+            if (
+                record is None
+                or submission is None
+                or record.status != "dispatched"
+                or record.prefect_flow_run_id != expected_flow_run_id
+                or submission.status != "accepted"
+                or (
+                    minimum_age_seconds > 0
+                    and _parse(record.updated_at)
+                    > current - timedelta(seconds=minimum_age_seconds)
+                )
+                or (lease is not None and _parse(lease.expires_at) > wall_now)
+                or any(
+                    attempt.submission_id == submission_id
+                    and (attempt.tenant_id, attempt.workspace_id) == _scope(ctx)
+                    for attempt in self._attempts.values()
+                )
+                or any(
+                    effect.submission_id == submission_id
+                    and (effect.tenant_id, effect.workspace_id) == _scope(ctx)
+                    for effect in self._effects.values()
+                )
+                or any(
+                    publication.submission_id == submission_id
+                    and (publication.tenant_id, publication.workspace_id) == _scope(ctx)
+                    for publication in self._result_publications.values()
+                )
+            ):
+                return None
+            if record.generation >= _MAX_DISPATCH_GENERATIONS:
+                reconciliation_required = replace(
+                    record,
+                    status="reconciliation_required",
+                    retry_after_at=None,
+                    last_error_code="dispatch_generation_exhausted",
+                    updated_at=_iso(current),
+                )
+                self._dispatches[key] = reconciliation_required
+                return deepcopy(reconciliation_required)
+            generation = record.generation + 1
+            rearmed = replace(
+                record,
+                generation=generation,
+                creation_key=_dispatch_creation_key(
+                    key, record.binding_fingerprint, generation
+                ),
+                status="pending",
+                prefect_flow_run_id=None,
+                retry_after_at=None,
+                last_error_code=reason_code,
+                updated_at=_iso(current),
+            )
+            self._dispatches[key] = rearmed
+            return deepcopy(rearmed)
+
+    def rearm_reconciliation_required_dispatch(
+        self,
+        ctx: ControlPlaneContext,
+        submission_id: str,
+        *,
+        expected_generation: int,
+        expected_flow_run_id: str,
+        evidence_sha256: str,
+        now: datetime | None = None,
+    ) -> DispatchRecord:
+        """Record explicit operator approval for one exhausted pre-claim retry."""
+        if type(expected_generation) is not int or expected_generation < 1:
+            raise ValueError("expected_generation must be a positive integer")
+        if not expected_flow_run_id.strip() or len(expected_flow_run_id) > 128:
+            raise ValueError("expected_flow_run_id must be a bounded identifier")
+        if len(evidence_sha256) != 64 or any(
+            char not in "0123456789abcdef" for char in evidence_sha256
+        ):
+            raise ValueError("evidence_sha256 must be a lowercase SHA-256 digest")
+        current = now or _now()
+        key = (*_scope(ctx), submission_id)
+        with self._lock:
+            record = self._dispatches.get(key)
+            submission = self._submissions.get(key)
+            if record is None or submission is None:
+                raise ControlPlaneError.not_found("Dispatch record not found")
+            if (
+                record.status != "reconciliation_required"
+                or record.generation != expected_generation
+                or record.prefect_flow_run_id != expected_flow_run_id
+                or submission.status != "accepted"
+            ):
+                raise ControlPlaneError.conflict(
+                    "Dispatch no longer matches the reconciled generation",
+                    extensions={"reason": "stale_dispatch_reconciliation"},
+                )
+            route_state = self._execution_route_states.get(
+                record.execution_route, ExecutionRouteRecord(record.execution_route)
+            )
+            if route_state.status != "active":
+                raise ControlPlaneError.conflict(
+                    "Execution route must be active before dispatch reconciliation",
+                    extensions={"reason": "execution_route_not_active"},
+                )
+            lease = self._leases.get(key)
+            if lease is not None and _parse(lease.expires_at) > current:
+                raise ControlPlaneError.conflict(
+                    "Dispatch cannot be reconciled while an execution lease is active",
+                    extensions={"reason": "execution_lease_active"},
+                )
+            if (
+                any(
+                    attempt.submission_id == submission_id
+                    and (attempt.tenant_id, attempt.workspace_id) == _scope(ctx)
+                    for attempt in self._attempts.values()
+                )
+                or any(
+                    effect.submission_id == submission_id
+                    and (effect.tenant_id, effect.workspace_id) == _scope(ctx)
+                    for effect in self._effects.values()
+                )
+                or any(
+                    publication.submission_id == submission_id
+                    and (publication.tenant_id, publication.workspace_id) == _scope(ctx)
+                    for publication in self._result_publications.values()
+                )
+            ):
+                raise ControlPlaneError.conflict(
+                    "Dispatch cannot be reconciled after canonical execution began",
+                    extensions={"reason": "canonical_execution_started"},
+                )
+            generation = record.generation + 1
+            audit = DispatchReconciliation(
+                from_generation=record.generation,
+                to_generation=generation,
+                prefect_flow_run_id=expected_flow_run_id,
+                authorized_at=_iso(current),
+                principal_subject=ctx.principal.subject,
+                principal_issuer=ctx.principal.issuer,
+                evidence_sha256=evidence_sha256,
+            )
+            rearmed = replace(
+                record,
+                generation=generation,
+                creation_key=_dispatch_creation_key(
+                    key, record.binding_fingerprint, generation
+                ),
+                status="pending",
+                prefect_flow_run_id=None,
+                retry_after_at=None,
+                last_error_code="operator_reconciled_preclaim",
+                updated_at=_iso(current),
+                reconciliation_history=(*record.reconciliation_history, audit)[-64:],
+            )
+            self._dispatches[key] = rearmed
+            return deepcopy(rearmed)
 
     def reconcile_terminal_outbox(
         self, ctx: ControlPlaneContext, *, limit: int = 100
@@ -410,6 +1256,22 @@ class MemoryDurableWorkStore:
                     self._record_unknown_effect_locked(ctx, submission.submission_id)
                 cancelled = replace(submission, status="cancelled")
                 self._submissions[key] = cancelled
+                dispatch = self._dispatches.get(key)
+                if dispatch is not None and dispatch.status in {
+                    "pending",
+                    "reconciliation_required",
+                }:
+                    self._dispatches[key] = replace(
+                        dispatch,
+                        status="cancelled",
+                        retry_after_at=None,
+                        last_error_code=(
+                            "cancelled_before_dispatch"
+                            if dispatch.status == "pending"
+                            else "cancelled_after_dispatch_exhaustion"
+                        ),
+                        updated_at=_iso(now),
+                    )
                 if acknowledge_outbox:
                     self._ack_submission_outbox_locked(ctx, submission.submission_id)
                 reconciled.append(deepcopy(cancelled))
@@ -2095,6 +2957,10 @@ class MemoryDurableWorkStore:
                     json.dumps(list(key)): row.to_dict()
                     for key, row in self._outbox.items()
                 },
+                "dispatches": {
+                    json.dumps(list(key)): row.to_dict()
+                    for key, row in self._dispatches.items()
+                },
                 "leases": {
                     json.dumps(list(key)): row.to_dict()
                     for key, row in self._leases.items()
@@ -2130,6 +2996,7 @@ class MemoryDurableWorkStore:
                 for key, value in dict(payload.get("idempotency") or {}).items()
             }
             self._outbox = _rows(payload.get("outbox") or {}, OutboxRecord)
+            self._dispatches = _rows(payload.get("dispatches") or {}, DispatchRecord)
             self._leases = _rows(payload.get("leases") or {}, LeaseRecord)
             self._attempts = _rows(payload.get("attempts") or {}, AttemptRecord)
             self._effects = _rows(payload.get("effects") or {}, EffectRecord)

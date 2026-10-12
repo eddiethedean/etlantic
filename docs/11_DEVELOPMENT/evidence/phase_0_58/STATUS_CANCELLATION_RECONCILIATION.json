@@ -1,0 +1,29 @@
+{
+  "schema": "etlantic.phase_0_58.campaign_evidence/1",
+  "campaign_id": "status-cancellation-reconciliation-2026-10-11",
+  "recorded_at": "2026-10-11",
+  "status": "passed",
+  "qualifies_release": false,
+  "test": "tests/prefect/test_managed_prefect_0_58.py::test_managed_cancellation_is_durable_before_remote_retry_and_status_reconcile",
+  "command": "uv run pytest -q tests/prefect/test_managed_prefect_0_58.py::test_managed_cancellation_is_durable_before_remote_retry_and_status_reconcile",
+  "result": "1 passed in 0.83s",
+  "assertions": [
+    "Cross-tenant run status and cancellation requests returned opaque 404 responses and did not change the authorized tenant's accepted work.",
+    "ETLantic durably recorded cancel_requested before the adapter contacted Prefect.",
+    "A simulated lost Prefect cancellation response left the canonical request intact; retry requested cancellation again without changing canonical state.",
+    "A later Prefect Completed observation was projected as reconciliation-required while canonical ETL status remained cancel_requested."
+  ],
+  "runtime": {
+    "python": "3.11.15",
+    "etlantic": "0.57.2",
+    "etlantic_prefect": "0.57.2",
+    "prefect_client": "3.7.8",
+    "durable_store": "MemoryDurableWorkStore",
+    "submission_store": "MemorySubmissionStore",
+    "prefect_api": "controlled client fixture"
+  },
+  "limitations": [
+    "This is an in-memory contract test with a controlled Prefect client; live cancellation during staging, commit, publication, and terminal races remains open."
+  ],
+  "artifacts": []
+}

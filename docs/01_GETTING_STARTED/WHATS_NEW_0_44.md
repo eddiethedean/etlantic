@@ -33,7 +33,7 @@
 
 ## Not in 0.44
 
-- Operator Console (0.59)
+- Operator Console (0.60)
 - Planner / optimization SDK (0.45)
 - Full React interactive HTML product workspace (UI/UX Phase 2)
 - Closing deferred CP-GA multi-process / OpenLineage product drills

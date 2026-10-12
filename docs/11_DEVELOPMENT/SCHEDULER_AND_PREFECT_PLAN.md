@@ -1,9 +1,10 @@
 # Local Scheduler and Prefect Integration Plan
 
-> **Plan status: Shipped local MVP in 0.16+** (`etlantic-prefect`); remaining
-> deploy and serve scope is open. Durable cron / separately supervised scheduler
-> and execution-host **service** roles are the 0.47 planning freeze — not this
-> `etlantic.scheduler/1` protocol
+> **Plan status: Shipped local MVP in 0.16+** (`etlantic-prefect`); the bounded
+> managed Prefect profile is qualified for [0.58](IMPLEMENTATION_PLAN_0_58.md) and
+> [#290](https://github.com/eddiethedean/etlantic/issues/290) and #291–#298.
+> Durable cron / separately supervised scheduler and execution-host **service**
+> roles originate in 0.47 — not this `etlantic.scheduler/1` protocol
 > ([IMPLEMENTATION_PLAN_0_47](IMPLEMENTATION_PLAN_0_47.md),
 > [ADR-023](adr/ADR-023-SCHEDULER-SERVICE-AND-FEDERATION.md)).
 >
@@ -12,16 +13,17 @@
 > `etlantic-airflow` provides external artifact compilation. Production
 > profiles must explicitly select and allowlist their orchestrator.
 > `etlantic schedule` / `scheduler serve` / `worker serve` exist in the bounded
-> 0.47 service scope. Their complete prepared-submission and real managed-runtime
-> path is a [0.56 requirement](IMPLEMENTATION_PLAN_0_56.md), with current gaps
-> recorded in the [source review](FINDINGS_0_56.md).
+> 0.47 service scope, with complete prepared-submission and real managed-runtime
+> contracts from [0.56](IMPLEMENTATION_PLAN_0_56.md) and headless factories,
+> schedule services, and status/drain from [0.57](IMPLEMENTATION_PLAN_0_57.md).
+> Remote Prefect deployments and worker reconstruction are not shipped.
 >
 > **Scope:** ETLantic core, `etlantic.orchestration`, and optional orchestrator
 > packages. See [Capabilities](../01_GETTING_STARTED/CAPABILITIES.md) and the
 > [Planning Hub](PLAN_INDEX.md).
 >
-> **Review trigger:** Update when Prefect deploy/serve work enters scope, the
-> scheduler protocol changes, or conformance claims expand.
+> **Review trigger:** Update when #292 freezes managed contracts, the scheduler
+> protocol or version matrix changes, or conformance gates pass.
 
 ## Decision
 
@@ -289,6 +291,68 @@ Exit gate:
 `etlantic-prefect` passes the minimal public scheduler conformance suite as an
 optional plugin; `LocalScheduler` remains the default and `etlantic-airflow`
 remains the reference external compiler.
+
+## 0.58: Managed Prefect Execution
+
+The [0.58 implementation plan](IMPLEMENTATION_PLAN_0_58.md) owns #290 and
+#291–#298. This follow-on hardens direct scheduling and adds a separate managed
+adapter. It does not change direct deployment capability rejection or introduce
+an Airflow-style Prefect compiler.
+
+The managed path is:
+
+```text
+Authorized preparation/admission → durable accepted ExecutionEnvelope
+        ↓
+Separately supervised dispatcher → versioned Prefect deployment
+        ↓
+Installed Process worker → trusted backend reconstruction
+        ↓
+Public targeted execution → canonical ownership/fencing + local executor
+        ↓
+Durable ETL report/effect/publication evidence + Prefect correlation
+```
+
+Each flow receives a bounded immutable accepted reference. Worker credentials
+and trusted deployment configuration establish authority; reference parameters
+cannot select arbitrary code, backends, secrets, or tenant scope. Execution uses
+the existing claim/heartbeat/cancellation/recovery/publication contract and
+processes only the target. It does not nest the direct Prefect scheduler.
+
+Managed routing is an explicit authorized binding; it does not reinterpret
+`Profile(orchestrator="prefect")`, which continues to select direct scheduling.
+Polling and targeted claims enforce the same route eligibility. Dispatch
+acknowledgement confirms delivery only and cannot acknowledge execution work or
+result publication. Queued work retains its immutable deployment binding through
+updates; a mutable deployment ID alone is insufficient revision evidence.
+
+ETLantic retains retry and effect authority. Disable outer retries, caching,
+and payload persistence explicitly; unsuccessful or uncertain ETL outcomes
+cannot be hidden by a successful outer flow. Durable dispatch and authorized
+status/cancel keep orchestration observations separate from ETL facts.
+
+ETLantic is the initial timer authority. Every occurrence obtains fresh
+canonical admission; a fixed accepted reference cannot be reused as a recurring
+execution parameter. Optional native triggers need explicit firing/revision and
+DST/misfire/catch-up/overlap parity plus safe authority transfer.
+
+First qualify static-batch `/1`, installed packages, a self-hosted server,
+Process workers, and PostgreSQL. Adaptive `/2`, dynamic control, streaming,
+Cloud, and other pools remain separate qualification programs. Complete #291
+and #292, prove an installed worker after submitter exit in #293, then add
+registration, dispatch, status, schedules, and the real recovery campaign.
+The existing `etlantic.execution_envelope/2` is a separate version axis from
+`etlantic.plan/2`; supported `/1` plans continue to use that canonical envelope.
+The mandatory pilot includes effectful CSV→PostgreSQL and PostgreSQL→PostgreSQL
+paths, with ten stable AC058 gates and per-issue acceptance evidence in the
+phase plan. Native Prefect timer support remains optional.
+
+Adjacent required gates cover accepted-input retention across deployment
+updates, rollback/drain, bounded dispatcher supervision/backpressure,
+cross-tenant trust/revocation, and reproducible compatibility/upgrade evidence.
+Host examples reuse existing headless/FastAPI services; Posit Connect hosts
+the API while external roles dispatch and execute. A recipe is not live hosting
+qualification. The full issue-to-gate matrix remains in the phase plan.
 
 ## Default selection policy
 

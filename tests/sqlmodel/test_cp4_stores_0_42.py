@@ -4,6 +4,8 @@
 from __future__ import annotations
 
 from concurrent.futures import ThreadPoolExecutor
+from dataclasses import replace
+from datetime import UTC, datetime, timedelta
 from pathlib import Path
 from threading import Barrier, Event, local
 from typing import Any
@@ -25,6 +27,7 @@ from etlantic.control_plane import (
     WorkspaceRef,
 )
 from etlantic_sqlmodel.control_plane.cp4_stores import (
+    SQLModelApprovalStore,
     SQLModelAuditEvidenceStore,
     SQLModelPolicyProvider,
     SQLModelQuotaProvider,
@@ -92,6 +95,53 @@ def test_policy_sql_round_trip(tmp_path: Path) -> None:
     assert decision.effect == "deny"
     again = SQLModelPolicyProvider(engine)
     assert again.decide(c, hook="pre_submit", plan_fingerprint="p1").effect == "deny"
+
+
+def test_approved_sqlmodel_approval_expires_before_execution(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    from etlantic.control_plane import approval_memory
+
+    engine = create_sqlite_engine(f"sqlite:///{tmp_path / 'approval-expiry.db'}")
+    apply_migrations(engine)
+    create_cp4_tables(engine)
+    clock = [datetime(2026, 10, 1, tzinfo=UTC)]
+    monkeypatch.setattr(approval_memory, "_now", lambda: clock[0])
+    ctx = _ctx()
+    store_id = "approval-expiry"
+    store = SQLModelApprovalStore(engine, store_id=store_id)
+    expires_at = clock[0] + timedelta(minutes=5)
+    request = store.create(
+        ctx,
+        hook="pre_execution",
+        plan_fingerprint="accepted-plan",
+        policy_fingerprint="policy-v1",
+        revision_id="revision-1",
+        expires_at=expires_at,
+    )
+    store.decide(
+        replace(ctx, principal=Principal("reviewer", issuer="tests")),
+        approval_id=request.approval_id,
+        approve=True,
+    )
+    assert store.is_satisfied(
+        ctx,
+        hook="pre_execution",
+        plan_fingerprint="accepted-plan",
+        policy_fingerprint="policy-v1",
+        revision_id="revision-1",
+    )
+
+    clock[0] = expires_at
+    reopened = SQLModelApprovalStore(engine, store_id=store_id)
+    assert not reopened.is_satisfied(
+        ctx,
+        hook="pre_execution",
+        plan_fingerprint="accepted-plan",
+        policy_fingerprint="policy-v1",
+        revision_id="revision-1",
+    )
+    assert reopened.get(ctx, approval_id=request.approval_id).status == "expired"
 
 
 def test_quota_idempotency_survives_store_reopen(tmp_path: Path) -> None:

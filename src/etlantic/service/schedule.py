@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import hashlib
 import json
+import uuid
 from collections.abc import Callable, Iterable, Mapping
 from dataclasses import replace
 from datetime import UTC, datetime
@@ -18,7 +19,9 @@ from etlantic.control_plane import (
     require_authorized,
     validate_control_plane_context,
 )
+from etlantic.control_plane.durable_models import validate_execution_route
 from etlantic.control_plane.protocols import Authorizer
+from etlantic.control_plane.schedule_models import ScheduleRecord
 from etlantic.control_plane.schedule_protocols import ScheduleStore
 
 T = TypeVar("T")
@@ -50,6 +53,38 @@ def _is_aware_datetime(value: object) -> bool:
         and value.tzinfo is not None
         and value.utcoffset() is not None
     )
+
+
+def _managed_schedule_policy_fingerprint(
+    *,
+    revision_policy: str,
+    definition_revision_id: str | None,
+    parameter_refs: Mapping[str, str],
+    secret_refs: Mapping[str, Any],
+    workload_identity: Principal | None,
+    profile_name: str,
+    execution_route: str,
+) -> str:
+    policy_data = {
+        "revision_policy": revision_policy,
+        "definition_revision_id": definition_revision_id,
+        "parameter_refs": dict(parameter_refs),
+        "secret_refs": dict(secret_refs),
+        "workload_identity": (
+            workload_identity.to_dict() if workload_identity is not None else None
+        ),
+        "profile_name": profile_name,
+        "execution_route": execution_route,
+    }
+    return hashlib.sha256(
+        json.dumps(
+            policy_data,
+            sort_keys=True,
+            separators=(",", ":"),
+            ensure_ascii=False,
+            allow_nan=False,
+        ).encode("utf-8")
+    ).hexdigest()
 
 
 def _bad_request(message: str) -> ControlPlaneError:
@@ -128,6 +163,7 @@ class ScheduleApplicationService:
         secret_refs: Mapping[str, Any] | None = None,
         revision_selector: str = "current",
         workload_identity: Principal | None = None,
+        schedule_id: str | None = None,
     ) -> Any:
         validate_control_plane_context(ctx)
         require_authorized(
@@ -138,6 +174,7 @@ class ScheduleApplicationService:
             resource_in_caller_scope=False,
         )
         schedule_store = self._require_schedule_store()
+        sid = schedule_id or f"sch-{uuid.uuid4().hex[:16]}"
         parameters = self._normalize_parameter_refs(parameter_refs)
         secrets = self._normalize_secret_refs(secret_refs)
         if workload_identity is not None:
@@ -150,7 +187,11 @@ class ScheduleApplicationService:
             raise _bad_request("policy_fingerprint must be a string")
         definition_revision_id = None
         revision_policy = "pinned"
+        execution_route = "local"
         if self.managed_service is not None:
+            execution_route = validate_execution_route(
+                getattr(self.managed_service, "execution_route", "local")
+            )
             if workload_identity is not None:
                 if workload_identity.kind not in ("workload", "service"):
                     raise _bad_request(
@@ -184,43 +225,46 @@ class ScheduleApplicationService:
                 )
             profile_name = effective_profile
             secrets = normalized_secrets
-            policy_data = {
-                "revision_policy": revision_policy,
-                "definition_revision_id": definition_revision_id,
-                "parameter_refs": parameters,
-                "secret_refs": secrets,
-                "workload_identity": (
-                    workload_identity.to_dict()
-                    if workload_identity is not None
-                    else None
-                ),
-                "profile_name": profile_name,
-            }
-            policy_fingerprint = hashlib.sha256(
-                json.dumps(
-                    policy_data,
-                    sort_keys=True,
-                    separators=(",", ":"),
-                    ensure_ascii=False,
-                    allow_nan=False,
-                ).encode("utf-8")
-            ).hexdigest()
+            policy_fingerprint = _managed_schedule_policy_fingerprint(
+                revision_policy=revision_policy,
+                definition_revision_id=definition_revision_id,
+                parameter_refs=parameters,
+                secret_refs=secrets,
+                workload_identity=workload_identity,
+                profile_name=effective_profile,
+                execution_route=execution_route,
+            )
 
         profile_name = profile_name or "default"
         next_fire = next_fire_after(spec, after=self._now())
-        return schedule_store.create(
-            ctx,
-            definition_id=definition_id,
-            profile_name=profile_name,
-            spec=spec,
-            next_fire_at=_iso(next_fire),
-            policy_fingerprint=policy_fingerprint,
-            definition_revision_id=definition_revision_id,
-            parameter_refs=parameters,
-            secret_refs=secrets,
-            revision_policy=revision_policy,
-            workload_identity=workload_identity,
-        )
+        reference_id = self._schedule_route_reference_id(ctx, sid)
+        reserved = execution_route.startswith("prefect:")
+        if reserved:
+            self._reserve_schedule_route_reference(ctx, execution_route, reference_id)
+        try:
+            return schedule_store.create(
+                ctx,
+                definition_id=definition_id,
+                profile_name=profile_name,
+                spec=spec,
+                schedule_id=sid,
+                next_fire_at=_iso(next_fire),
+                policy_fingerprint=policy_fingerprint,
+                definition_revision_id=definition_revision_id,
+                parameter_refs=parameters,
+                secret_refs=secrets,
+                revision_policy=revision_policy,
+                workload_identity=workload_identity,
+                execution_route=execution_route,
+            )
+        except BaseException:
+            # The store may have committed before a connection failure. Keep
+            # the reservation unless a follow-up read proves the record absent.
+            if reserved:
+                self._release_if_schedule_absent(
+                    ctx, schedule_store, sid, execution_route, reference_id
+                )
+            raise
 
     def list_definition(
         self, ctx: ControlPlaneContext, definition_id: str
@@ -261,6 +305,7 @@ class ScheduleApplicationService:
         *,
         expected_revision_id: str,
         spec: ScheduleSpec,
+        transfer_execution_route: bool = False,
     ) -> Any:
         validate_control_plane_context(ctx)
         require_authorized(
@@ -273,8 +318,10 @@ class ScheduleApplicationService:
         schedule_store = self._require_schedule_store()
         if not _is_nonempty_text(expected_revision_id):
             raise _bad_request("Schedule amendment requires an expected revision")
-        amend = getattr(schedule_store, "amend", None)
-        if not callable(amend):
+        if type(transfer_execution_route) is not bool:
+            raise _bad_request("transfer_execution_route must be a boolean")
+        amend_method = getattr(schedule_store, "amend", None)
+        if not callable(amend_method):
             raise ControlPlaneError(
                 "Schedule store does not support safe amendments",
                 code="PMCP501",
@@ -282,21 +329,102 @@ class ScheduleApplicationService:
                 title="Not Implemented",
                 type="etlantic.control_plane/not_implemented",
             )
+        amend = cast(Callable[..., ScheduleRecord], amend_method)
+        execution_route: str | None = None
+        policy_fingerprint: str | None = None
+        prior_route: str | None = None
+        if transfer_execution_route:
+            if self.managed_service is None:
+                raise _bad_request(
+                    "Execution-route transfer requires managed execution"
+                )
+            current = schedule_store.get(ctx, schedule_id)
+            prior_route = current.execution_route
+            execution_route = validate_execution_route(
+                getattr(self.managed_service, "execution_route", "local")
+            )
+            policy_fingerprint = _managed_schedule_policy_fingerprint(
+                revision_policy=current.revision_policy,
+                definition_revision_id=current.definition_revision_id,
+                parameter_refs=current.parameter_refs,
+                secret_refs=current.secret_refs,
+                workload_identity=current.workload_identity,
+                profile_name=current.profile_name,
+                execution_route=execution_route,
+            )
         next_fire = next_fire_after(spec, after=self._now())
-        return amend(
-            ctx,
-            schedule_id,
-            expected_revision_id=expected_revision_id,
-            spec=spec,
-            next_fire_at=_iso(next_fire),
-            durable=self.durable_work,
+        reference_id = self._schedule_route_reference_id(ctx, schedule_id)
+        reserved_new_route = (
+            execution_route is not None
+            and execution_route.startswith("prefect:")
+            and execution_route != prior_route
         )
+        if reserved_new_route:
+            assert execution_route is not None
+            self._reserve_schedule_route_reference(ctx, execution_route, reference_id)
+        try:
+            amended = amend(
+                ctx,
+                schedule_id,
+                expected_revision_id=expected_revision_id,
+                spec=spec,
+                next_fire_at=_iso(next_fire),
+                execution_route=execution_route,
+                policy_fingerprint=policy_fingerprint,
+                durable=self.durable_work,
+            )
+        except BaseException:
+            if reserved_new_route and execution_route is not None:
+                self._release_if_schedule_route_is_not(
+                    ctx,
+                    schedule_store,
+                    schedule_id,
+                    execution_route,
+                    reference_id,
+                )
+            raise
+        if (
+            prior_route
+            and prior_route.startswith("prefect:")
+            and prior_route != amended.execution_route
+        ):
+            self._release_schedule_route_reference(ctx, prior_route, reference_id)
+        return amended
 
     def pause(self, ctx: ControlPlaneContext, schedule_id: str) -> Any:
         return self._mutate(ctx, schedule_id, "pause")
 
     def resume(self, ctx: ControlPlaneContext, schedule_id: str) -> Any:
         return self._mutate(ctx, schedule_id, "resume")
+
+    def delete(self, ctx: ControlPlaneContext, schedule_id: str) -> Any:
+        validate_control_plane_context(ctx)
+        require_authorized(
+            self.authorizer,
+            ctx,
+            "schedule.write",
+            f"schedule:{schedule_id}",
+            resource_in_caller_scope=False,
+        )
+        schedule_store = self._require_schedule_store()
+        reference_id = self._schedule_route_reference_id(ctx, schedule_id)
+        try:
+            deleted = schedule_store.delete(ctx, schedule_id)
+        except ControlPlaneError as exc:
+            if exc.status == 404:
+                release = getattr(
+                    self.durable_work, "release_execution_route_reference_id", None
+                )
+                if callable(release):
+                    release(ctx, reference_id)
+            raise
+        if deleted.execution_route.startswith("prefect:"):
+            self._release_schedule_route_reference(
+                ctx,
+                deleted.execution_route,
+                reference_id,
+            )
+        return deleted
 
     def preview(self, ctx: ControlPlaneContext, schedule_id: str) -> dict[str, Any]:
         record = self.get(ctx, schedule_id)
@@ -467,6 +595,80 @@ class ScheduleApplicationService:
         )
         schedule_store = self._require_schedule_store()
         return getattr(schedule_store, operation)(ctx, schedule_id)
+
+    def _reserve_schedule_route_reference(
+        self, ctx: ControlPlaneContext, execution_route: str, reference_id: str
+    ) -> None:
+        reserve = getattr(self.durable_work, "reserve_execution_route_reference", None)
+        if not callable(reserve):
+            raise ControlPlaneError(
+                "Managed schedule route fencing requires durable work storage",
+                code="PMCP503",
+                status=503,
+                title="Service Unavailable",
+                type="etlantic.control_plane/unavailable",
+            )
+        reserve(ctx, execution_route, reference_id)
+
+    def _release_schedule_route_reference(
+        self, ctx: ControlPlaneContext, execution_route: str, reference_id: str
+    ) -> None:
+        release = getattr(self.durable_work, "release_execution_route_reference", None)
+        if not callable(release):
+            raise ControlPlaneError(
+                "Managed schedule route fencing requires durable work storage",
+                code="PMCP503",
+                status=503,
+                title="Service Unavailable",
+                type="etlantic.control_plane/unavailable",
+            )
+        release(ctx, execution_route, reference_id)
+
+    def _release_if_schedule_absent(
+        self,
+        ctx: ControlPlaneContext,
+        schedule_store: ScheduleStore,
+        schedule_id: str,
+        execution_route: str,
+        reference_id: str,
+    ) -> None:
+        try:
+            record = schedule_store.get(ctx, schedule_id)
+        except ControlPlaneError as exc:
+            if exc.status == 404:
+                self._release_schedule_route_reference(
+                    ctx, execution_route, reference_id
+                )
+            return
+        if record.execution_route != execution_route:
+            self._release_schedule_route_reference(ctx, execution_route, reference_id)
+
+    def _release_if_schedule_route_is_not(
+        self,
+        ctx: ControlPlaneContext,
+        schedule_store: ScheduleStore,
+        schedule_id: str,
+        execution_route: str,
+        reference_id: str,
+    ) -> None:
+        try:
+            record = schedule_store.get(ctx, schedule_id)
+        except ControlPlaneError as exc:
+            if exc.status == 404:
+                self._release_schedule_route_reference(
+                    ctx, execution_route, reference_id
+                )
+            return
+        if record.execution_route != execution_route:
+            self._release_schedule_route_reference(ctx, execution_route, reference_id)
+
+    @staticmethod
+    def _schedule_route_reference_id(ctx: ControlPlaneContext, schedule_id: str) -> str:
+        encoded = json.dumps(
+            [ctx.tenant.tenant_id, ctx.workspace.workspace_id, schedule_id],
+            separators=(",", ":"),
+        ).encode("utf-8")
+        return "schedule:" + hashlib.sha256(encoded).hexdigest()
 
     @staticmethod
     def _occurrence_record(record: Any, firing: Any) -> Any:

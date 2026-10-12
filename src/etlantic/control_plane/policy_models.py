@@ -24,6 +24,7 @@ PolicyHook = Literal[
     "pre_plan",
     "post_plan",
     "pre_submit",
+    "pre_execution",
     "post_execution",
     "pre_promote",
     "pre_repair",
