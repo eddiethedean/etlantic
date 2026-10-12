@@ -54,6 +54,9 @@ class PrefectDispatcher:
             or not 30 <= self.missing_run_grace_seconds <= 86_400
         ):
             raise ValueError("missing_run_grace_seconds must be between 30 and 86400")
+        register_runtime_role = getattr(self.backend, "register_runtime_role", None)
+        if callable(register_runtime_role):
+            register_runtime_role(self._role)
 
     @classmethod
     def from_environment(

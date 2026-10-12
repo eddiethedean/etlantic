@@ -663,6 +663,21 @@
         "#297 partial",
         "#298 partial"
       ]
+    },
+    {
+      "id": "live-postgresql-dispatch-worker-backpressure-disposal-2026-10-12",
+      "path": "LIVE_DISPATCH_WORKER_BACKPRESSURE_AND_DISPOSAL_2026-10-12.json",
+      "status": "passed",
+      "qualifies_release": false,
+      "covers": [
+        "AC058-004 partial",
+        "AC058-005 partial",
+        "AC058-008 partial",
+        "058-A2 partial",
+        "#295 partial",
+        "#296 partial",
+        "#298 partial"
+      ]
     }
   ],
   "open_gates": [

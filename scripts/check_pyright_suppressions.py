@@ -71,7 +71,10 @@ from pathlib import Path
 # file-scoped/test-backend boundaries. The reviewed inventory is 794 entries.
 # The phase 0.58 dispatch-reconciliation authorization guard and its CP1 matrix
 # coverage shift existing inline ignores without adding or removing directives.
-EXPECTED_DIGEST = "7047c4e0492e04af5ceac380a27fd78eff68ba24aeb3a8e43a575a96737fe16a"
+# Dispatcher lifecycle registration and the disposal-race regression move the
+# existing Prefect test fixture ignore; the reviewed 794-entry inventory is
+# unchanged.
+EXPECTED_DIGEST = "217c8a6ced41428b59b3244135d29fddfc829162bbfcaba6472bdae37bc59ad1"
 
 _IGNORED_DIRECTORIES = frozenset(
     {

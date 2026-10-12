@@ -56,6 +56,9 @@ MVP described above. In managed mode,
 `PrefectDispatcher` creates a flow run for the registered entrypoint and passes
 it a bounded `ManagedExecutionReference`; host applications operate the
 dispatcher rather than invoking the flow function directly.
+When constructed with a `ManagedBackend`, the dispatcher registers its lifecycle
+with that backend. Request drain and join active dispatch work before closing
+the backend; a close racing an active tick will refuse to dispose shared stores.
 
 Before reading leased inputs or beginning connector effects, the worker
 reauthorizes the accepted principal for `run.submit`, planned resources, and

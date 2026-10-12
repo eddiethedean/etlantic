@@ -1315,16 +1315,93 @@ def test_dispatcher_exposes_supervisor_status_and_drain(tmp_path: Path) -> None:
     ctx, _authz, durable, _service = _managed_service(
         tmp_path, execution_route=binding.execution_route
     )
+    registered_roles: list[Any] = []
     dispatcher = PrefectDispatcher(
-        backend=SimpleNamespace(durable_work=durable),  # type: ignore[arg-type]
+        backend=SimpleNamespace(
+            durable_work=durable,
+            register_runtime_role=registered_roles.append,
+        ),  # type: ignore[arg-type]
         context=ctx,
         binding=binding,
         owner_id="dispatcher-test",
     )
+    assert len(registered_roles) == 1
+    assert registered_roles[0].status().role == "dispatcher"
     assert dispatcher.status().role == "dispatcher"
     assert dispatcher.status().admission == "accepting"
     assert dispatcher.request_drain().admission == "stopped"
     assert asyncio.run(dispatcher.tick()) == []
+
+
+def test_backend_close_waits_for_registered_dispatcher_before_disposal(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    class _TrackedEngine:
+        disposed = False
+
+        def dispose(self) -> None:
+            self.disposed = True
+
+    binding = ManagedDeploymentBinding(
+        spec=_spec("dispatcher-close-race"), deployment_id=uuid4()
+    )
+    ctx, authz, durable, service = _managed_service(
+        tmp_path, execution_route=binding.execution_route
+    )
+    engine = _TrackedEngine()
+    backend = ManagedBackend(
+        authorizer=authz,
+        engine=engine,
+        managed_service=service,
+        registry=SimpleNamespace(),
+        definitions=SimpleNamespace(),
+        submissions=SimpleNamespace(),
+        events=SimpleNamespace(),
+        durable_work=durable,
+        schedule_store=MemoryScheduleStore(),
+        input_resources=SimpleNamespace(),
+        report_store_factory=lambda _ctx: None,
+    )
+    dispatcher = PrefectDispatcher(
+        backend=backend,
+        context=ctx,
+        binding=binding,
+        owner_id="dispatcher-close-race",
+    )
+    entered = asyncio.Event()
+    release = asyncio.Event()
+
+    async def hold_remote_check(_self: PrefectDispatcher) -> None:
+        entered.set()
+        await release.wait()
+
+    async def skip_reconciliation(
+        _self: PrefectDispatcher, *, limit: int, now: datetime | None = None
+    ) -> None:
+        del limit, now
+
+    monkeypatch.setattr(PrefectDispatcher, "_verify_remote_binding", hold_remote_check)
+    monkeypatch.setattr(
+        PrefectDispatcher, "_reconcile_remote_failures", skip_reconciliation
+    )
+
+    async def exercise() -> None:
+        tick = asyncio.create_task(dispatcher.tick(limit=1))
+        await asyncio.wait_for(entered.wait(), timeout=1)
+        with pytest.raises(RuntimeError, match="roles are still active"):
+            backend.close()
+        assert dispatcher.status().admission == "draining"
+        assert dispatcher.status().in_flight == 1
+        assert not engine.disposed
+
+        release.set()
+        assert await tick == []
+        assert dispatcher.status().admission == "stopped"
+        assert dispatcher.status().in_flight == 0
+        backend.close()
+        assert engine.disposed
+
+    asyncio.run(exercise())
 
 
 def test_managed_schedule_pins_route_across_runtime_configuration_change(
@@ -4819,21 +4896,37 @@ backend.close()
                     idempotency_key=f"phase058-prefect-api-outage-{scope}",
                     request=RunRequest(materialization=MaterializationPolicy.DURABLE),
                 )
-                stop_prefect_server()
-                with pytest.raises(ConnectError):
-                    await dispatcher.tick(limit=1)
-                assert (
-                    backend.durable_work.get_submission(
-                        ctx, outage_submission.submission_id
-                    ).status
-                    == "accepted"
-                )
-                assert (
-                    backend.durable_work.list_attempts(
-                        ctx, outage_submission.submission_id
+                outage_backlog = [outage_submission]
+                for backlog_index in range(2):
+                    outage_backlog.append(
+                        managed.submit_run(
+                            ctx,
+                            "phase058-process-pipeline",
+                            idempotency_key=(
+                                f"phase058-prefect-api-outage-{backlog_index + 1}-{scope}"
+                            ),
+                            request=RunRequest(
+                                materialization=MaterializationPolicy.DURABLE
+                            ),
+                        )
                     )
-                    == []
-                )
+                stop_prefect_server()
+                for _ in range(4):
+                    with pytest.raises(ConnectError):
+                        await dispatcher.tick(limit=1)
+                    for queued in outage_backlog:
+                        assert (
+                            backend.durable_work.get_submission(
+                                ctx, queued.submission_id
+                            ).status
+                            == "accepted"
+                        )
+                        assert (
+                            backend.durable_work.list_attempts(
+                                ctx, queued.submission_id
+                            )
+                            == []
+                        )
                 outage_role_status = dispatcher.status()
                 assert outage_role_status.admission == "accepting"
                 assert outage_role_status.prerequisites == "unusable"
@@ -4858,37 +4951,46 @@ backend.close()
                     outage_engine.dispose()
 
                 restart_prefect_server()
-                recovered_outage_dispatch = await dispatcher.tick(limit=1)
-                assert len(recovered_outage_dispatch) == 1
-                assert (
-                    recovered_outage_dispatch[0]["submission_id"]
-                    == outage_submission.submission_id
-                )
-                assert recovered_outage_dispatch[0]["status"] == "dispatched"
+                for queued in outage_backlog:
+                    recovered_outage_dispatch = await dispatcher.tick(limit=1)
+                    assert len(recovered_outage_dispatch) == 1
+                    assert (
+                        recovered_outage_dispatch[0]["submission_id"]
+                        == queued.submission_id
+                    )
+                    assert recovered_outage_dispatch[0]["status"] == "dispatched"
+                    assert recovered_outage_dispatch[0]["queue_age_seconds"] >= 0
                 assert dispatcher.status().ready is True
-                await ProcessWorker(
-                    work_pool_name=spec.work_pool_name,
-                    name=f"phase058-outage-recovery-worker-{scope[:8]}",
-                ).start(run_once=True, printer=lambda *_args, **_kwargs: None)
-                outage_attempts = backend.durable_work.list_attempts(
-                    ctx, outage_submission.submission_id
-                )
-                assert [item.status for item in outage_attempts] == ["completed"]
-                assert (
-                    managed.get_run_report(ctx, str(outage_submission.resource_id))[
-                        "status"
-                    ]
-                    == "succeeded"
-                )
+                for backlog_index, queued in enumerate(outage_backlog):
+                    await ProcessWorker(
+                        work_pool_name=spec.work_pool_name,
+                        name=(f"phase058-outage-recovery-{backlog_index}-{scope[:8]}"),
+                    ).start(run_once=True, printer=lambda *_args, **_kwargs: None)
+                    outage_attempts = backend.durable_work.list_attempts(
+                        ctx, queued.submission_id
+                    )
+                    assert [item.status for item in outage_attempts] == ["completed"]
+                    assert (
+                        backend.durable_work.get_submission(
+                            ctx, queued.submission_id
+                        ).status
+                        == "completed"
+                    )
+                    assert (
+                        managed.get_run_report(ctx, str(queued.resource_id))["status"]
+                        == "succeeded"
+                    )
                 outage_engine = create_engine(url, pool_pre_ping=True)
                 try:
                     with outage_engine.connect() as connection:
                         assert connection.execute(
                             text(f'SELECT id, payload FROM public."{outage_table}"')
                         ).all() == [(row_id, payload)]
-                        assert connection.execute(
-                            text(f'SELECT row_count FROM public."{outage_effects}"')
-                        ).all() == [(1,)]
+                        assert sorted(
+                            connection.execute(
+                                text(f'SELECT row_count FROM public."{outage_effects}"')
+                            ).all()
+                        ) == [(1,), (1,), (1,)]
                 finally:
                     outage_engine.dispose()
 
@@ -5814,6 +5916,252 @@ backend.close()
                     recovery_backend.close()
                     worker_backend_fixture.restore_test_execution_host_factory()
                 assert effect_ledger_count() == effects_before_crash + 1
+
+                # Crash independent dispatcher and worker processes while both
+                # own durable work, then recover each boundary without replaying
+                # the worker's already committed connector effect.
+                source_kind = "postgresql"
+                destination_table = postgres_postgres_table
+                destination_effects = postgres_postgres_effects
+                for key, value in {
+                    "ETLANTIC_PHASE058_SOURCE_KIND": source_kind,
+                    "ETLANTIC_PHASE058_DESTINATION_TABLE": destination_table,
+                    "ETLANTIC_PHASE058_EFFECT_TABLE": destination_effects,
+                }.items():
+                    monkeypatch.setenv(key, value)
+                concurrent_worker_crash = managed.submit_run(
+                    ctx,
+                    "phase058-process-pipeline",
+                    idempotency_key=f"phase058-concurrent-role-crash-worker-{scope}",
+                    request=RunRequest(materialization=MaterializationPolicy.DURABLE),
+                )
+                concurrent_worker_dispatch = await dispatcher.tick(limit=1)
+                assert len(concurrent_worker_dispatch) == 1
+                assert (
+                    concurrent_worker_dispatch[0]["submission_id"]
+                    == concurrent_worker_crash.submission_id
+                )
+                concurrent_effects_before = effect_ledger_count()
+                concurrent_worker_marker = (
+                    tmp_path / f"phase058-concurrent-worker-{scope}"
+                )
+                concurrent_worker_release = (
+                    tmp_path / f"phase058-release-concurrent-worker-{scope}"
+                )
+                monkeypatch.setenv(
+                    "ETLANTIC_PHASE058_CRASH_AFTER_REPORT_EVENT_SUBMISSION",
+                    concurrent_worker_crash.submission_id,
+                )
+                monkeypatch.setenv(
+                    "ETLANTIC_PHASE058_CRASH_AFTER_REPORT_EVENT_MARKER",
+                    str(concurrent_worker_marker),
+                )
+                monkeypatch.setenv(
+                    "ETLANTIC_PHASE058_CRASH_AFTER_REPORT_EVENT_RELEASE",
+                    str(concurrent_worker_release),
+                )
+                concurrent_worker_task = asyncio.create_task(
+                    ProcessWorker(
+                        work_pool_name=spec.work_pool_name,
+                        name=f"phase058-concurrent-worker-{scope[:8]}",
+                    ).start(run_once=True, printer=lambda *_args, **_kwargs: None)
+                )
+                concurrent_dispatch_crash = managed.submit_run(
+                    ctx,
+                    "phase058-process-pipeline",
+                    idempotency_key=f"phase058-concurrent-role-crash-dispatch-{scope}",
+                    request=RunRequest(materialization=MaterializationPolicy.DURABLE),
+                )
+                concurrent_dispatch_marker = (
+                    tmp_path / f"phase058-concurrent-dispatch-{scope}"
+                )
+                concurrent_dispatch_release = (
+                    tmp_path / f"phase058-release-concurrent-dispatch-{scope}"
+                )
+                concurrent_dispatch_env = os.environ.copy()
+                concurrent_dispatch_env.update(
+                    {
+                        "ETLANTIC_PHASE058_DISPATCH_FAULT_STAGE": (
+                            "before_remote_create"
+                        ),
+                        "ETLANTIC_PHASE058_DISPATCH_FAULT_MARKER": str(
+                            concurrent_dispatch_marker
+                        ),
+                        "ETLANTIC_PHASE058_DISPATCH_FAULT_RELEASE": str(
+                            concurrent_dispatch_release
+                        ),
+                        "ETLANTIC_PHASE058_DISPATCH_OWNER": (
+                            f"dispatcher-concurrent-crash-{scope}"
+                        ),
+                    }
+                )
+                concurrent_dispatch_process = subprocess.Popen(
+                    [sys.executable, "-c", dispatch_crash_code],
+                    env=concurrent_dispatch_env,
+                    stdout=subprocess.PIPE,
+                    stderr=subprocess.PIPE,
+                    text=True,
+                )
+                concurrent_worker_error: BaseException | None = None
+                concurrent_dispatch_error: BaseException | None = None
+                try:
+                    await asyncio.wait_for(
+                        asyncio.to_thread(_wait_for_marker, concurrent_worker_marker),
+                        timeout=65,
+                    )
+                    concurrent_dispatch_claim = backend.durable_work.get_dispatch(
+                        ctx, concurrent_dispatch_crash.submission_id
+                    )
+                    assert concurrent_dispatch_claim.status == "leased"
+                    assert concurrent_dispatch_claim.prefect_flow_run_id is None
+                    assert concurrent_dispatch_claim.creation_key == (
+                        concurrent_dispatch_marker.read_text(encoding="utf-8")
+                    )
+                    assert effect_ledger_count() == concurrent_effects_before + 1
+                    concurrent_worker_attempts = backend.durable_work.list_attempts(
+                        ctx, concurrent_worker_crash.submission_id
+                    )
+                    assert [item.status for item in concurrent_worker_attempts] == [
+                        "running"
+                    ]
+                    concurrent_publication = (
+                        backend.durable_work.get_latest_result_publication(
+                            ctx, concurrent_worker_crash.submission_id
+                        )
+                    )
+                    assert concurrent_publication is not None
+                    assert concurrent_publication.published_at is None
+                    await asyncio.wait_for(
+                        asyncio.to_thread(_wait_for_marker, concurrent_dispatch_marker),
+                        timeout=65,
+                    )
+                    concurrent_dispatch_claim = backend.durable_work.get_dispatch(
+                        ctx, concurrent_dispatch_crash.submission_id
+                    )
+                    assert concurrent_dispatch_claim.status == "leased"
+                    assert concurrent_dispatch_claim.prefect_flow_run_id is None
+                finally:
+                    concurrent_worker_release.touch(exist_ok=True)
+                    concurrent_dispatch_release.touch(exist_ok=True)
+                    try:
+                        await asyncio.wait_for(concurrent_worker_task, timeout=60)
+                    except BaseException as exc:
+                        concurrent_worker_error = exc
+                    try:
+                        await asyncio.wait_for(
+                            asyncio.to_thread(
+                                concurrent_dispatch_process.communicate, timeout=60
+                            ),
+                            timeout=65,
+                        )
+                    except BaseException as exc:
+                        concurrent_dispatch_error = exc
+                    for variable in (
+                        "ETLANTIC_PHASE058_CRASH_AFTER_REPORT_EVENT_SUBMISSION",
+                        "ETLANTIC_PHASE058_CRASH_AFTER_REPORT_EVENT_MARKER",
+                        "ETLANTIC_PHASE058_CRASH_AFTER_REPORT_EVENT_RELEASE",
+                    ):
+                        monkeypatch.delenv(variable, raising=False)
+                assert concurrent_worker_error is None, repr(concurrent_worker_error)
+                assert concurrent_dispatch_error is None, repr(
+                    concurrent_dispatch_error
+                )
+                assert concurrent_dispatch_process.returncode == 74
+                async with get_client() as client:
+                    concurrent_worker_remote = await client.read_flow_run(
+                        UUID(str(concurrent_worker_dispatch[0]["prefect_flow_run_id"]))
+                    )
+                assert concurrent_worker_remote.state is not None
+                assert getattr(
+                    concurrent_worker_remote.state.type,
+                    "value",
+                    concurrent_worker_remote.state.type,
+                ) in {"CRASHED", "FAILED"}
+                concurrent_worker_attempt = backend.durable_work.list_attempts(
+                    ctx, concurrent_worker_crash.submission_id
+                )[0]
+                backend.durable_work.release_lease(
+                    ctx,
+                    concurrent_worker_crash.submission_id,
+                    owner_id=concurrent_worker_attempt.owner_id,
+                    fencing_token=concurrent_worker_attempt.fencing_token,
+                )
+                concurrent_recovery_backend, concurrent_recovery_ctx = (
+                    worker_backend_fixture.build_backend()
+                )
+                try:
+                    concurrent_recovered_worker = (
+                        concurrent_recovery_backend.execute_submission(
+                            concurrent_recovery_ctx,
+                            concurrent_worker_crash.submission_id,
+                            owner_id=f"phase058-concurrent-worker-recovery-{scope}",
+                            execution_route=binding.execution_route,
+                        )
+                    )
+                    assert concurrent_recovered_worker["status"] == "completed"
+                    assert [
+                        item.status
+                        for item in concurrent_recovery_backend.durable_work.list_attempts(
+                            concurrent_recovery_ctx,
+                            concurrent_worker_crash.submission_id,
+                        )
+                    ] == ["lost", "completed"]
+                    assert (
+                        concurrent_recovery_backend.durable_work.get_effect(
+                            concurrent_recovery_ctx,
+                            f"{concurrent_worker_crash.submission_id}:execution",
+                        ).status
+                        == "committed"
+                    )
+                finally:
+                    concurrent_recovery_backend.close()
+                    worker_backend_fixture.restore_test_execution_host_factory()
+                assert effect_ledger_count() == concurrent_effects_before + 1
+
+                concurrent_dispatch_claim = backend.durable_work.get_dispatch(
+                    ctx, concurrent_dispatch_crash.submission_id
+                )
+                assert concurrent_dispatch_claim.status == "leased"
+                assert concurrent_dispatch_claim.prefect_flow_run_id is None
+                assert concurrent_dispatch_claim.lease_expires_at is not None
+                concurrent_dispatch_expiry = datetime.fromisoformat(
+                    concurrent_dispatch_claim.lease_expires_at.replace("Z", "+00:00")
+                )
+                while concurrent_dispatch_expiry > datetime.now(UTC):
+                    await asyncio.sleep(0.05)
+                concurrent_recovery_dispatcher = PrefectDispatcher(
+                    backend=backend,
+                    context=ctx,
+                    binding=binding,
+                    owner_id=f"dispatcher-concurrent-recovery-{scope}",
+                    lease_seconds=1,
+                )
+                concurrent_dispatch_receipts = (
+                    await concurrent_recovery_dispatcher.tick(limit=1)
+                )
+                assert len(concurrent_dispatch_receipts) == 1
+                assert (
+                    concurrent_dispatch_receipts[0]["submission_id"]
+                    == concurrent_dispatch_crash.submission_id
+                )
+                assert concurrent_dispatch_receipts[0]["status"] == "dispatched"
+                recovered_concurrent_dispatch = backend.durable_work.get_dispatch(
+                    ctx, concurrent_dispatch_crash.submission_id
+                )
+                assert recovered_concurrent_dispatch.creation_key == (
+                    concurrent_dispatch_marker.read_text(encoding="utf-8")
+                )
+                await ProcessWorker(
+                    work_pool_name=spec.work_pool_name,
+                    name=f"phase058-concurrent-dispatch-recovery-worker-{scope[:8]}",
+                ).start(run_once=True, printer=lambda *_args, **_kwargs: None)
+                assert (
+                    backend.durable_work.get_submission(
+                        ctx, concurrent_dispatch_crash.submission_id
+                    ).status
+                    == "completed"
+                )
+                assert effect_ledger_count() == concurrent_effects_before + 2
 
                 before_effect = managed.submit_run(
                     ctx,

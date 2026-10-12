@@ -22,6 +22,7 @@ from etlantic.control_plane.models import ControlPlaneContext
 from etlantic.control_plane.protocols import Authorizer, IdempotentEventStore
 from etlantic.profile import Profile
 from etlantic.reports.retention import ArtifactRetentionResult
+from etlantic.runtime.role import RuntimeRoleLifecycle
 
 ActionHandler = Callable[
     [ControlPlaneContext, Mapping[str, Any]], Awaitable[Mapping[str, Any]]
@@ -131,6 +132,19 @@ class ManagedBackend:
             or self.event_idempotency_retention_seconds < 1
         ):
             raise ValueError("event_idempotency_retention_seconds must be positive")
+
+    def register_runtime_role(self, role: RuntimeRoleLifecycle) -> None:
+        """Track an optional adapter role so close drains it before disposing stores.
+
+        Adapter-owned dispatchers and workers share backend resources but are
+        constructed outside this provider-owned graph. Register their public
+        lifecycle object here so resource disposal observes their in-flight
+        work just like the built-in roles.
+        """
+        with self._lock:
+            self._ensure_open()
+            if not any(existing is role for existing in self._roles):
+                self._roles.append(role)
 
     @property
     def schedule_service(self) -> Any:
