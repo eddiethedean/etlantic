@@ -3278,6 +3278,8 @@ def test_process_worker_executes_targeted_csv_and_postgresql_transfers(
     mid_outage_effects = f"etlantic_phase058_midoutagefx_{scope[:16]}"
     nontransactional_table = f"etlantic_phase058_nontx_{scope[:16]}"
     nontransactional_effects = f"etlantic_phase058_nontxfx_{scope[:16]}"
+    rotated_before_dispatch_table = f"etlantic_phase058_rotpre_{scope[:16]}"
+    rotated_before_dispatch_effects = f"etlantic_phase058_rotprefx_{scope[:16]}"
     rotated_credential_role = f"p058_worker_{scope[:12]}"
     rotated_credential_password = uuid4().hex
     drift_table = f"etlantic_phase058_drift_{scope[:16]}"
@@ -3356,6 +3358,7 @@ def test_process_worker_executes_targeted_csv_and_postgresql_transfers(
                 outage_table,
                 mid_outage_table,
                 nontransactional_table,
+                rotated_before_dispatch_table,
                 drift_table,
             ):
                 connection.execute(
@@ -3378,6 +3381,7 @@ def test_process_worker_executes_targeted_csv_and_postgresql_transfers(
                 outage_effects,
                 mid_outage_effects,
                 nontransactional_effects,
+                rotated_before_dispatch_effects,
                 drift_effects,
             ):
                 connection.execute(
@@ -3411,7 +3415,9 @@ def test_process_worker_executes_targeted_csv_and_postgresql_transfers(
             connection.exec_driver_sql(f"GRANT USAGE ON SCHEMA public TO {quoted_role}")
             connection.exec_driver_sql(
                 "GRANT SELECT, INSERT, UPDATE, DELETE "
-                f'ON TABLE public."{artifact_crash_table}", '
+                f'ON TABLE public."{rotated_before_dispatch_table}", '
+                f'public."{rotated_before_dispatch_effects}", '
+                f'public."{artifact_crash_table}", '
                 f'public."{artifact_crash_effects}" TO {quoted_role}'
             )
     finally:
@@ -4761,6 +4767,116 @@ backend.close()
                         ).all() == [(1,)]
                 finally:
                     publication_engine.dispose()
+
+                source_kind = "csv"
+                destination_table = rotated_before_dispatch_table
+                destination_effects = rotated_before_dispatch_effects
+                for key, value in {
+                    "ETLANTIC_PHASE058_SOURCE_KIND": source_kind,
+                    "ETLANTIC_PHASE058_DESTINATION_TABLE": destination_table,
+                    "ETLANTIC_PHASE058_EFFECT_TABLE": destination_effects,
+                }.items():
+                    monkeypatch.setenv(key, value)
+                rotated_before_dispatch = managed.submit_run(
+                    ctx,
+                    "phase058-process-pipeline",
+                    idempotency_key=(
+                        f"phase058-credential-rotation-before-dispatch-{scope}"
+                    ),
+                    request=RunRequest(materialization=MaterializationPolicy.DURABLE),
+                )
+                rotated_before_dispatch_record = backend.durable_work.get_submission(
+                    ctx, rotated_before_dispatch.submission_id
+                )
+                rotated_before_dispatch_snapshot = (
+                    rotated_before_dispatch_record.input_snapshot or ""
+                )
+                assert str(make_url(url).password) not in (
+                    rotated_before_dispatch_snapshot
+                )
+                assert rotated_credential_password not in (
+                    rotated_before_dispatch_snapshot
+                )
+                rotated_connector_url = make_url(url).set(
+                    username=rotated_credential_role,
+                    password=rotated_credential_password,
+                )
+                monkeypatch.setenv(
+                    "ETLANTIC_PHASE058_POSTGRES_URL", str(rotated_connector_url)
+                )
+                rotated_before_dispatch_worker: asyncio.Task[None] | None = None
+                rotated_before_dispatch_worker_error: BaseException | None = None
+                try:
+                    rotated_before_dispatch_result = await dispatcher.tick(limit=1)
+                    assert len(rotated_before_dispatch_result) == 1
+                    assert (
+                        rotated_before_dispatch_result[0]["submission_id"]
+                        == rotated_before_dispatch.submission_id
+                    )
+                    rotated_before_dispatch_worker = asyncio.create_task(
+                        ProcessWorker(
+                            work_pool_name=spec.work_pool_name,
+                            name=f"phase058-rotation-before-dispatch-{scope[:8]}",
+                        ).start(run_once=True, printer=lambda *_args, **_kwargs: None)
+                    )
+                    await asyncio.wait_for(rotated_before_dispatch_worker, timeout=60)
+                except BaseException as exc:
+                    rotated_before_dispatch_worker_error = exc
+                finally:
+                    if (
+                        rotated_before_dispatch_worker is not None
+                        and not rotated_before_dispatch_worker.done()
+                    ):
+                        try:
+                            await asyncio.wait_for(
+                                rotated_before_dispatch_worker, timeout=60
+                            )
+                        except BaseException as exc:
+                            rotated_before_dispatch_worker_error = exc
+                    monkeypatch.setenv("ETLANTIC_PHASE058_POSTGRES_URL", url)
+                assert rotated_before_dispatch_worker_error is None, repr(
+                    rotated_before_dispatch_worker_error
+                )
+                assert (
+                    backend.durable_work.get_submission(
+                        ctx, rotated_before_dispatch.submission_id
+                    ).status
+                    == "completed"
+                )
+                assert [
+                    item.status
+                    for item in backend.durable_work.list_attempts(
+                        ctx, rotated_before_dispatch.submission_id
+                    )
+                ] == ["completed"]
+                assert (
+                    backend.durable_work.get_effect(
+                        ctx,
+                        f"{rotated_before_dispatch.submission_id}:execution",
+                    ).status
+                    == "committed"
+                )
+                assert (
+                    managed.get_run_report(
+                        ctx, str(rotated_before_dispatch.resource_id)
+                    )["status"]
+                    == "succeeded"
+                )
+                rotated_before_dispatch_engine = create_engine(url, pool_pre_ping=True)
+                try:
+                    with rotated_before_dispatch_engine.connect() as connection:
+                        assert connection.execute(
+                            text(
+                                f'SELECT id, payload FROM public."{rotated_before_dispatch_table}"'
+                            )
+                        ).all() == [(row_id, payload)]
+                        assert connection.execute(
+                            text(
+                                f'SELECT row_count FROM public."{rotated_before_dispatch_effects}"'
+                            )
+                        ).all() == [(1,)]
+                finally:
+                    rotated_before_dispatch_engine.dispose()
 
                 source_kind = "csv"
                 destination_table = artifact_crash_table
@@ -7683,6 +7799,8 @@ backend.close()
                     mid_outage_effects,
                     nontransactional_table,
                     nontransactional_effects,
+                    rotated_before_dispatch_table,
+                    rotated_before_dispatch_effects,
                 ):
                     connection.execute(text(f'DROP TABLE IF EXISTS public."{table}"'))
                 quoted_role = cleanup_engine.dialect.identifier_preparer.quote(
