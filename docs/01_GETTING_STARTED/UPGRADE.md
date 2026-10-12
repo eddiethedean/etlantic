@@ -1,6 +1,6 @@
 # Upgrade Hub
 
-> **Status: 0.58.0 is the release candidate; 0.57.x remains the published upgrade target.**
+> **Status: 0.58.0 is the current published release and upgrade target.**
 
 !!! warning "Upgraders only"
     New users: start at the [docs home green path](../README.md) or
@@ -9,16 +9,15 @@
 Upgrade between ETLantic 0.x releases using the guides below. Always pin core
 and first-party plugins to the **same minor** after upgrading.
 
-The latest published upgrade target is 0.57.2. The 0.58.0 candidate adds
-managed Prefect execution; its migration guide is available for review before
-publication. Older paths must complete the listed migrations through 0.56,
-then apply the 0.56 → 0.57 guide.
+The latest published upgrade target is 0.58.0. It adds managed Prefect
+execution; its migration guide covers the change. Older paths must complete
+the listed migrations through 0.56, then apply the 0.56 → 0.57 guide.
 
 Historical release notes: [Earlier releases](EARLIER_RELEASES.md).
 
 ## 0.58 configuration cheat sheet
 
-The 0.58.0 candidate keeps core and plugin packages aligned at the same patch.
+The 0.58.0 release keeps core and plugin packages aligned at the same patch.
 Managed Prefect execution is optional and limited to the support profile in
 [What's New in 0.58](WHATS_NEW_0_58.md). It introduces no SQLModel migration;
 the existing migration head remains
@@ -42,12 +41,11 @@ partition capabilities. See [Migration 0.55 → 0.56](../11_DEVELOPMENT/MIGRATIO
 
 ## Current target
 
-**ETLantic 0.58.0** (Beta release candidate) — choose the
+**ETLantic 0.58.0** (published Beta release) — choose the
 [0.57 → 0.58 migration guide](../11_DEVELOPMENT/MIGRATION_0_57_TO_0_58.md).
-The published upgrade target remains 0.57.2 until release.
 
 |---|---|
-| 0.57.x | [Migration 0.57 → 0.58](../11_DEVELOPMENT/MIGRATION_0_57_TO_0_58.md) (candidate guide) |
+| 0.57.x | [Migration 0.57 → 0.58](../11_DEVELOPMENT/MIGRATION_0_57_TO_0_58.md) |
 | 0.55.x | [Migration 0.55 → 0.56](../11_DEVELOPMENT/MIGRATION_0_55_TO_0_56.md) |
 | 0.54.x | [Migration 0.54 → 0.55](../11_DEVELOPMENT/MIGRATION_0_54_TO_0_55.md) |
 | 0.53.x | [Migration 0.53 → 0.54](../11_DEVELOPMENT/MIGRATION_0_53_TO_0_54.md), then [0.54 → 0.55](../11_DEVELOPMENT/MIGRATION_0_54_TO_0_55.md) |
@@ -131,7 +129,7 @@ interchange descriptors. Review [CHANGELOG](../CHANGELOG.md).
 
 | From → To | Guide |
 |---|---|
-| 0.57 → 0.58 | [MIGRATION_0_57_TO_0_58](../11_DEVELOPMENT/MIGRATION_0_57_TO_0_58.md) (candidate) |
+| 0.57 → 0.58 | [MIGRATION_0_57_TO_0_58](../11_DEVELOPMENT/MIGRATION_0_57_TO_0_58.md) |
 | 0.47 → 0.48 | [MIGRATION_0_47_TO_0_48](../11_DEVELOPMENT/MIGRATION_0_47_TO_0_48.md) |
 | 0.46 → 0.47 | [MIGRATION_0_46_TO_0_47](../11_DEVELOPMENT/MIGRATION_0_46_TO_0_47.md) |
 | 0.45 → 0.46 | [MIGRATION_0_45_TO_0_46](../11_DEVELOPMENT/MIGRATION_0_45_TO_0_46.md) |

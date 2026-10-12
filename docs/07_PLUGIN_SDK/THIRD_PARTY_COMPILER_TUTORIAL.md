@@ -1,6 +1,6 @@
 # Third-Party Portable Compiler Tutorial
 
-> **Status: ETLantic 0.58.0 Beta release candidate.**
+> **Status: ETLantic 0.58.0 Beta release.**
 
 ETLantic discovers portable transformation compilers through the
 `etlantic.transform_compilers` entry-point group. A compiler analyzes,

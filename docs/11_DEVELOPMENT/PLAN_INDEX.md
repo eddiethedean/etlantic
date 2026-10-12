@@ -1,6 +1,6 @@
 # Planning Hub
 
-> **Status: ETLantic 0.58.0 is the Beta release candidate; 0.57.x remains the latest published and supported line.**
+> **Status: ETLantic 0.58.0 is the published Beta release and supported line.**
 > Inferred-model authoring is qualified only for the scoped Experimental surface in the 0.55 exit gate. Adaptive execution remains Experimental and graduation remains pending.
 > Human-governed AI context/proposal surfaces are Available; MCP extra is
 > Experimental. Streaming and bounded dynamic control are Supported in core; Kafka and
@@ -13,7 +13,7 @@ ETLantic's planning documents describe intended outcomes, dependencies, and
 release gates. They are **not** a substitute for current product documentation.
 
 !!! important "Use the right source of truth"
-    - To learn what **ETLantic 0.58 can do now**, including the candidate support profile, use
+    - To learn what **ETLantic 0.58 can do now**, including the qualified managed Prefect profile, use
       [Capabilities](../01_GETTING_STARTED/CAPABILITIES.md), the
       [CLI reference](../10_REFERENCE/CLI.md), and the
       [Python API reference](../10_REFERENCE/API_REFERENCE.md).
@@ -68,8 +68,8 @@ is available and its release gate has passed.
 
 ## Portfolio at a glance
 
-Status is relative to the **0.58.0 release candidate**; 0.57.x remains the
-published support line until release.
+Status is relative to the published **0.58.0 release**; 0.58.x is the current
+support line.
 See the [0.55 scoped exit gate](EXIT_GATE_0_55.md) for qualification evidence.
 Prior scheduler/federation evidence remains in **0.47**; Streaming evidence remains in **0.46**; Optimization SDK evidence remains
 in **0.45**; Developer Intelligence remains in **0.44**; CP-GA evidence remains
@@ -79,7 +79,7 @@ evidence remains in **0.38**.
 
 | Plan | Status | Current boundary | Next horizon or gate |
 |---|---|---|---|
-| [Main roadmap](https://github.com/eddiethedean/etlantic/blob/main/ROADMAP.md) | Current sequence | 0.58 managed Prefect candidate; 0.57.x published | [ROADMAP](https://github.com/eddiethedean/etlantic/blob/main/ROADMAP.md) §§ 0.56–0.62 |
+| [Main roadmap](https://github.com/eddiethedean/etlantic/blob/main/ROADMAP.md) | Current sequence | 0.58 managed Prefect published; 0.58.x supported | [ROADMAP](https://github.com/eddiethedean/etlantic/blob/main/ROADMAP.md) §§ 0.56–0.62 |
 | [0.49 implementation plan](IMPLEMENTATION_PLAN_0_49.md) | Implemented qualified subset | Optional DuckDB engine package, embedded runtime, dialect/compiler subset, security policy, and qualification evidence; advanced matrix/release evidence remains tracked in the exit gate | [Exit gate 0.49](EXIT_GATE_0_49.md) · [findings ledger](FINDINGS_0_49.md) · [epic #110](https://github.com/eddiethedean/etlantic/issues/110) |
 | [0.50 implementation plan](IMPLEMENTATION_PLAN_0_50.md) | Published; technical qualification complete | Frozen seven-engine baseline, pushdown conformance, and requirement-level evidence generated for 0.51 consumption | [Exit gate 0.50](EXIT_GATE_0_50.md) · [evidence index](evidence/portable_0_50/portable_evidence_index_0_50.json) |
 | [0.51 implementation plan](IMPLEMENTATION_PLAN_0_51.md) | Foundation published; adaptive qualification pending | Profile policy, report metadata migration, and closed `/2` wire model are implemented; candidate discovery, solver, and runtime remain unavailable | [ADR-025](adr/ADR-025-ADAPTIVE-EXECUTION-AND-PHYSICAL-DAG.md) · [Exit gate 0.51](EXIT_GATE_0_51.md) · [epic #30](https://github.com/eddiethedean/etlantic/issues/30) |
@@ -123,7 +123,7 @@ evidence remains in **0.38**.
 | [Schema drift and evolution](SCHEMA_DRIFT_PLAN.md) | Partially shipped, living plan | File-backed history, inspection, comparison, impact, and acknowledgement workflows exist | Registry-backed history at 0.40 |
 | [SQLModel integration](SQLMODEL_INTEGRATION_PLAN.md) | Bridge and control-plane stores shipped; complete application path pending | Reuse persistence/migrations for prepared acceptance and runtime results | [0.56 real-store and migration gates](EXECUTION_PLAN_0_56.md) |
 | [FastAPI integration](FASTAPI_INTEGRATION_PLAN.md) | Graduated host in 0.43 for Supported profiles | `ETLanticAPI` + thin `create_reference_app`; CPn alone ≠ GA; 0.47 schedule routes are Available | [0.56 shared services](IMPLEMENTATION_PLAN_0_56.md); Operator Console 0.60 |
-| [Local scheduler and Prefect](SCHEDULER_AND_PREFECT_PLAN.md) | Local MVP and durable service foundations shipped; bounded 0.58 managed Prefect candidate qualified and awaiting publication | Direct scheduling plus 0.56/0.57 managed execution, headless schedule, and supervision contracts exist | [0.58 managed Prefect execution](IMPLEMENTATION_PLAN_0_58.md), [qualification decision](evidence/phase_0_58/FINAL_QUALIFICATION_DECISION_2026-10-12.json), #290 / #291–#298 |
+| [Local scheduler and Prefect](SCHEDULER_AND_PREFECT_PLAN.md) | Local MVP and durable service foundations shipped; bounded 0.58 managed Prefect profile published and qualified | Direct scheduling plus 0.56/0.57 managed execution, headless schedule, and supervision contracts exist | [0.58 managed Prefect execution](IMPLEMENTATION_PLAN_0_58.md), [qualification decision](evidence/phase_0_58/FINAL_QUALIFICATION_DECISION_2026-10-12.json), #290 / #291–#298 |
 | [Portable transformations](PORTABLE_TRANSFORM_PLAN.md) | Shipped record with follow-up work | Authoring, planning, conformance, and first-party compilers exist; support remains operation- and backend-specific | Expand only through the published compiler matrix and conformance gates |
 | [Versioned tabular interchange](INTEROPERABILITY_FOUNDATION_PLAN.md) | Gate A shipped record | Polars↔Pandas Gate A exists; DataFusion Gate B remains experimental | Gate B graduates only after its explicit criteria pass |
 | [ContractModel upgrade](CONTRACTMODEL_UPGRADE_PLAN.md) | Historical review baseline with active follow-ups | The original review targeted ContractModel 0.1.2; ETLantic 0.36 requires ContractModel 0.2.x | Revalidate remaining proposals against the current upstream API |

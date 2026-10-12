@@ -1,6 +1,6 @@
 # Documentation versioning
 
-> **Status: ETLantic 0.58.0 Beta release candidate.** How Read the Docs aliases relate to PyPI pins.
+> **Status: ETLantic 0.58.0 Beta release.** How Read the Docs aliases relate to PyPI pins.
 > Release facts live in [`docs/release-facts.json`](../release-facts.json).
 
 ETLantic docs are published on Read the Docs.
@@ -9,14 +9,13 @@ ETLantic docs are published on Read the Docs.
 
 | Alias / slug | Meaning |
 |---|---|
-| **`/en/v0.58.0/`** | Intended immutable docs path for the 0.58.0 candidate; activate it after the release tag is published. |
+| **`/en/v0.58.0/`** | Immutable docs path for the published 0.58.0 release. |
 | **`/en/v0.57.0/`** | Intended immutable docs path for `v0.57.0`. Activate the tag in Read the Docs before using this URL. |
 | **stable** | Moves to the newest published release. Fine for pilots tracking the tip of PyPI. |
 | **latest** | Tracks the default branch (`main`) and may document unreleased behavior. |
 
-Pair the `etlantic==0.58.0` package with the versioned docs after the candidate
-is published. Until then, 0.57.2 is the latest published package and `stable`
-continues to point to that published release.
+Pair the `etlantic==0.58.0` package with its versioned docs. The `stable`
+alias follows the latest published release.
 `stable` moves to the newest published release; `latest` follows `main` and
 may document unreleased behavior. Do not mix a pinned wheel with `latest`
 docs that describe a newer branch tip.
@@ -24,7 +23,7 @@ docs that describe a newer branch tip.
 ### Maintainer: activate a tag on Read the Docs
 
 1. Open the ETLantic project on Read the Docs → **Versions**.
-2. After release, activate the git tag `v0.58.0` (build if inactive).
+2. Confirm the git tag `v0.58.0` is active and built.
 3. Keep **latest** = `main` and **stable** = newest published tag.
 4. Confirm `https://etlantic.readthedocs.io/en/v0.58.0/` returns 200.
 

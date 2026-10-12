@@ -57,7 +57,7 @@ python -m etlantic compile pipeline.py:SamplePipeline \
 ## Clone companion
 
 ```bash
-git clone --branch v0.57.0 https://github.com/eddiethedean/etlantic.git
+git clone --branch v0.58.0 https://github.com/eddiethedean/etlantic.git
 cd etlantic
 uv sync --group dataframes
 uv run python examples/sample_pilot/run_pilot.py

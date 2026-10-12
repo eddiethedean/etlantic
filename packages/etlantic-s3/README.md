@@ -1,9 +1,9 @@
 # etlantic-s3 (Experimental / Preview)
 
-> **Release status:** ETLantic 0.58.0 is a Beta release candidate; publication is pending.
+> **Release status:** ETLantic 0.58.0 is the published Beta release (2026-10-12).
 
 
-Version **0.57.0** (lockstep with ETLantic core).
+Version **0.58.0** (lockstep with ETLantic core).
 S3-compatible object-store connector for
 [ETLantic](https://github.com/eddiethedean/etlantic) **0.43**. Install when
 pipelines need Experimental `s3` source/sink/storage connectors (fake/CI path

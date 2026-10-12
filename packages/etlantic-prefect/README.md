@@ -49,8 +49,8 @@ clean-wheel HTTP/headless parity test also preserves a pinned Prefect route. The
 installed-wheel campaign also verifies that a worker fails closed if remote
 deployment settings drift after dispatch, and retries that terminal pre-attempt
 failure under a new creation generation after the deployment is restored. The
-path is being qualified against the bounded 0.58 candidate profile; remaining
-local gates are listed in the [phase plan](../../docs/11_DEVELOPMENT/IMPLEMENTATION_PLAN_0_58.md).
+path was qualified against the bounded 0.58.0 release profile; the full scope
+and qualification evidence are recorded in the [phase plan](../../docs/11_DEVELOPMENT/IMPLEMENTATION_PLAN_0_58.md).
 Production identity providers, independent consumers, external connectors, and
 elapsed-time evidence are not phase requirements. Direct scheduler
 use remains the local MVP described above. In managed mode,
@@ -114,7 +114,7 @@ headless/FastAPI parity on each patch. It includes the connector-commit/API-
 outage trace and approval revocation/expiry checks. The [matrix evidence
 record](../../docs/11_DEVELOPMENT/evidence/phase_0_58/CI_INSTALLED_WORKER_PYTHON_MATRIX_2026-10-12.json)
 contains runtime manifests, JUnit reports, wheel digests, and artifact hashes.
-These versions define the tested candidate profile. Other Python and Prefect
+These versions define the tested support profile. Other Python and Prefect
 versions, operating systems, databases, and worker pools are outside the 0.58
 support claim and do not require qualification evidence for this phase.
 The expanded restricted-role PostgreSQL test also completes versioned
@@ -142,7 +142,7 @@ The local clean-wheel run also passed the partial-effect and mid-execution API r
 | Worker pool | Process pool is the only accepted pool and was exercised in the recorded environment; other pool types are rejected at registration. |
 | Prefect hosting | Self-hosted API with PostgreSQL persistence. Prefect Cloud, Docker, Kubernetes, and other pools have no managed support claim. |
 | Host composition | Headless and FastAPI command parity passed from installed wheels. Posit Connect is a deployment recipe, not a live-qualified host. |
-| Qualification boundary | The candidate profile is Ubuntu 24.04, CPython 3.11.15/3.12.13/3.13.16, Prefect 3.7.8, PostgreSQL 16.15, the 0.58.0 candidate wheels, and the Process pool. Other combinations are unsupported in this phase. No production identity provider, third-party connector, external consumer, live Posit host, prolonged outage, sustained production-capacity, or elapsed-time evidence is required; no claim is made for them. |
+| Qualification boundary | The published 0.58.0 profile is Ubuntu 24.04, CPython 3.11.15/3.12.13/3.13.16, Prefect 3.7.8, PostgreSQL 16.15, and the Process pool. Other combinations are unsupported. No production identity provider, third-party connector, external consumer, live Posit host, prolonged outage, sustained production-capacity, or elapsed-time evidence is required; no claim is made for them. |
 
 The same scoped reference can read ETLantic's canonical run projection or
 persist an authorized ETLantic cancellation:
@@ -315,11 +315,11 @@ operator rearms or cancels the unresolved acceptance.
 
 The managed adapters are governed by
 [ADR-027](https://github.com/eddiethedean/etlantic/blob/main/docs/11_DEVELOPMENT/adr/ADR-027-MANAGED-PREFECT-EXECUTION.md).
-The managed adapter is implemented on the current 0.58 candidate under
+The managed adapter is implemented in the current 0.58 release under
 [phase 0.58](https://github.com/eddiethedean/etlantic/blob/main/docs/11_DEVELOPMENT/IMPLEMENTATION_PLAN_0_58.md)
 and [#290](https://github.com/eddiethedean/etlantic/issues/290) through #298;
 the bounded static-batch `/1` Process-worker/PostgreSQL profile is qualified for
-the 0.58.0 candidate. It is not in the currently published 0.57.2 distribution.
+the published 0.58.0 release. It is not available in the 0.57.2 distribution.
 See the [final
 qualification decision](https://github.com/eddiethedean/etlantic/blob/main/docs/11_DEVELOPMENT/evidence/phase_0_58/FINAL_QUALIFICATION_DECISION_2026-10-12.json).
 The target is static-batch `/1`, self-hosted Process workers, and PostgreSQL;
@@ -335,6 +335,6 @@ other managed capabilities require their planned qualification.
 
 ## Links
 
-[Prefect example](https://etlantic.readthedocs.io/en/v0.57.0/09_EXAMPLES/PREFECT_RUN/) ·
+[Prefect example](https://etlantic.readthedocs.io/en/v0.58.0/09_EXAMPLES/PREFECT_RUN/) ·
 [Source](https://github.com/eddiethedean/etlantic/tree/main/packages/etlantic-prefect) ·
 [Issues](https://github.com/eddiethedean/etlantic/issues)

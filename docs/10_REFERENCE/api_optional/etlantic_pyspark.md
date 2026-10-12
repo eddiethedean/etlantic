@@ -7,7 +7,7 @@ audience: developer
 
 # etlantic-pyspark API
 
-> **Status: ETLantic 0.58.0 Beta release candidate.** PySpark plugin + portable compiler.
+> **Status: ETLantic 0.58.0 Beta release.** PySpark plugin + portable compiler.
 > Install narrative: package README. Hub: [Optional packages API](../API_OPTIONAL_PACKAGES.md).
 
 ## Setup

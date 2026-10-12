@@ -1,6 +1,6 @@
 # etlantic-schemaregistry (Experimental / Preview)
 
-Version **0.57.0** (lockstep with ETLantic core).
+Version **0.58.0** (lockstep with ETLantic core).
 Confluent-compatible schema-registry adapter over the core wire protocol.
 The read-only HTTP adapter fetches one bounded subject version from a
 Confluent-compatible registry. It never registers schemas or stores documents

@@ -7,13 +7,16 @@ audience: developer
 
 # etlantic-prefect API
 
-> **Status: ETLantic 0.58.0 Beta release candidate.** Prefect local scheduler MVP.
+> **Status: ETLantic 0.58.0 Beta release.** Prefect direct and bounded managed execution.
 > Install narrative: package README. Hub: [Optional packages API](../API_OPTIONAL_PACKAGES.md).
 
-The managed Process-deployment adapter implemented under phase 0.58 is
-experimental and is not production-qualified. See the package guide and
-[phase 0.58 implementation plan](../../11_DEVELOPMENT/IMPLEMENTATION_PLAN_0_58.md)
-for its trusted backend, dispatcher, worker, and current qualification status.
+The managed Process-deployment adapter is qualified for static-batch
+`etlantic.plan/1` work on a self-hosted Prefect API backed by PostgreSQL, using
+the Process worker pool and the documented Ubuntu/Python matrix. Other pools,
+hosting services, connectors, and plan families are outside this support
+profile. See the package guide and [phase 0.58 implementation
+plan](../../11_DEVELOPMENT/IMPLEMENTATION_PLAN_0_58.md) for its trusted
+backend, dispatcher, worker, and qualification evidence.
 
 ## Setup
 

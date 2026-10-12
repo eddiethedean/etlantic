@@ -1,20 +1,20 @@
 # Current Capabilities and Limitations
 
-> **Version boundary:** ETLantic 0.58.0 is a Beta release candidate; 0.57.x remains the published and supported line.
+> **Version boundary:** ETLantic 0.58.0 is the published Beta release and supported line.
 
 
-> **Status: ETLantic 0.58.0 is a Beta release candidate; 0.57.x remains the published and supported line.** This page records
-> the published 0.56 envelope for controlled single-tenant pilots and
+> **Status: ETLantic 0.58.0 is the published Beta release.** This page records
+> the current envelope for controlled single-tenant pilots and
 > Supported isolation profiles.
 
 !!! tip "Adopter brief"
     Read **What works today** and **Limits** first. Residual gaps and CI
     starter JSON are further down for evaluators.
 
-## What works today (0.57 published; 0.58 candidate)
+## What works today (0.58 published)
 
-ETLantic 0.58.0 is the current **Beta release candidate**. The latest
-published and supported line is 0.57.x, for documented, controlled,
+ETLantic 0.58.0 is the current **published Beta release** and supported line
+for documented, controlled,
 single-tenant pilots. Install the latest published `etlantic` package from PyPI. You can embed an
 HTTP control plane with **Supported** isolation profiles
 (`isolated-deployment`, `dedicated-schema`). There is no hosted multi-tenant
@@ -43,7 +43,7 @@ Fit check: [Compare](COMPARE.md).
 | Validation | Wiring, contracts, capabilities, trust — before any write |
 | Planning / optimization | Deterministic `PipelinePlan`; advisory `optimize_plan` / `etlantic plan optimize` with evidence, cost, proofs, and shadow compare |
 | Engines | Portable baseline technically qualified on Local, Polars, Pandas, SQL, PySpark, DataFusion, and DuckDB; advanced profiles remain engine-specific |
-| Compile / schedule | Airflow DAG compile (`etlantic-airflow`); Prefect local MVP (`etlantic-prefect`); FastAPI-fronted schedules (`etlantic schedule`, `scheduler serve`, `worker serve`) |
+| Compile / schedule | Airflow DAG compile (`etlantic-airflow`); Prefect local and bounded managed execution (`etlantic-prefect`); FastAPI-fronted schedules (`etlantic schedule`, `scheduler serve`, `worker serve`) |
 | Agents | Bounded context bundles, proposal sandbox, `generate --kind agents`; apply via 0.42 approvals |
 | Ops | SARIF/JSON diagnostics; secret-free plans; production `plugin_allowlist`, `optimization_pass_allowlist`, `schema_registry_allowlist`, and `resource_provider_allowlist` |
 | Observability and evidence | Lifecycle correlation; observability providers; run-history providers; event consumers; `etlantic report query` |
@@ -279,9 +279,9 @@ See also [Experimental surfaces](EXPERIMENTAL_SURFACES.md).
 | Data-first authoring and inferred data models | **Experimental, scoped qualification in 0.55** for bounded records, CSV, JSON, Pandas, and Polars inference; portable transfer; metadata-only provider inspection; and transactional SQLite write-mode checks. See the [0.55 exit gate](../11_DEVELOPMENT/EXIT_GATE_0_55.md) and [evidence index](../11_DEVELOPMENT/evidence/inference_0_55/index.json). |
 | Bounded dynamic mapping/reduction and explicit conditional/failure/compensation branches | **Supported** (core) in 0.46 — [exit gate](../11_DEVELOPMENT/EXIT_GATE_0_46.md) / [ADR-022](../11_DEVELOPMENT/adr/ADR-022-DYNAMIC-CONTROL-AND-STREAMING.md) |
 | Streaming poison-record/DLQ policy and schema-registry interoperability | **Supported** core policy/protocol in 0.46; Kafka (`etlantic-kafka`) and Confluent adapter (`etlantic-schemaregistry`) remain **Experimental** — never Available-in-core |
-| Complete application ETL backend | **Candidate qualified for 0.56** — shared authorized services, real managed execution/results, full specification/run controls, live PostgreSQL/CSV qualification and Semblance-backed Foundry API qualification; no live Foundry account required. See [plan](../11_DEVELOPMENT/IMPLEMENTATION_PLAN_0_56.md) and [reviewed gaps](../11_DEVELOPMENT/FINDINGS_0_56.md) |
-| Transport-independent managed backend, shared schedule commands, complete scheduler factory, provider schema inspection, and role supervision (#278–#282) | Planned for 0.57.0; [implementation plan](../11_DEVELOPMENT/IMPLEMENTATION_PLAN_0_57.md) |
-| Managed Prefect execution | The bounded [0.58 support profile](../11_DEVELOPMENT/IMPLEMENTATION_PLAN_0_58.md) is qualified for static-batch `/1`, self-hosted Prefect Process workers, PostgreSQL, and the documented Python matrix; it is part of the 0.58.0 release candidate. See the [qualification decision](../11_DEVELOPMENT/evidence/phase_0_58/FINAL_QUALIFICATION_DECISION_2026-10-12.json). |
+| Complete application ETL backend | **Published and qualified in 0.56** — shared authorized services, real managed execution/results, full specification/run controls, live PostgreSQL/CSV qualification and Semblance-backed Foundry API qualification; no live Foundry account required. See [plan](../11_DEVELOPMENT/IMPLEMENTATION_PLAN_0_56.md) and [reviewed gaps](../11_DEVELOPMENT/FINDINGS_0_56.md) |
+| Transport-independent managed backend, shared schedule commands, complete scheduler factory, provider schema inspection, and role supervision (#278–#282) | **Published in 0.57**; [implementation plan](../11_DEVELOPMENT/IMPLEMENTATION_PLAN_0_57.md) |
+| Managed Prefect execution | The bounded [0.58 support profile](../11_DEVELOPMENT/IMPLEMENTATION_PLAN_0_58.md) is qualified for static-batch `/1`, self-hosted Prefect Process workers, PostgreSQL, and the documented Python matrix; it is part of the published 0.58.0 release. See the [qualification decision](../11_DEVELOPMENT/evidence/phase_0_58/FINAL_QUALIFICATION_DECISION_2026-10-12.json). |
 | Dagster / Argo compilers and Prefect migration interoperability | Planned brownfield bridges in 0.59; Prefect reuses the 0.58 managed adapter |
 | Read-only-first operator console | Planned first-class for 0.60 |
 | AWS/Azure/GCP/Vault secret-provider packs | Planned as optional providers in 0.61 |

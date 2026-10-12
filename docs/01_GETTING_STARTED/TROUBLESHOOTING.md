@@ -1,6 +1,6 @@
 # Troubleshooting
 
-> **Status: ETLantic 0.58.0 Beta release candidate.**
+> **Status: ETLantic 0.58.0 Beta release.**
 
 ## Quickstart stuck?
 
@@ -26,7 +26,7 @@ py -3.11 --version
 
 ## Installed version is older than the docs
 
-These docs describe ETLantic **0.57.0**. Confirm what you installed:
+These docs describe ETLantic **0.58.0**. Confirm what you installed:
 
 ```bash
 python -c "import etlantic; print(etlantic.__version__)"
@@ -38,10 +38,10 @@ Until you have the docs train version, upgrade from PyPI:
 ```bash
 python -m pip uninstall -y etlantic
 python -m pip install 'etlantic==0.58.0'
-python -m etlantic --version   # expect 0.57.0
+python -m etlantic --version   # expect 0.58.0
 ```
 
-Or accept compatible 0.49.x patches within the minor:
+Or accept compatible 0.58.x patches within the minor:
 
 ```bash
 python -m pip install --upgrade 'etlantic>=0.58.0,<0.59'
@@ -74,7 +74,7 @@ pipeline classes at module scope, but put seed/run side effects under
 
 ## Plugin install fails (`etlantic-polars`, `etlantic-pyspark`, …)
 
-Those packages ship with ETLantic 0.57.0 as separate distributions. Keep every
+Those packages ship with ETLantic 0.58.0 as separate distributions. Keep every
 plugin on the same minor as core.
 
 From PyPI:
@@ -114,8 +114,8 @@ Compare distributions in the same interpreter:
 python -c "import importlib.metadata as m; print(m.version('etlantic')); print(m.version('etlantic-polars'))"
 ```
 
-Core **0.57.x** requires official plugins from the **same** minor
-(`0.57.x`). Do not mix plugins from a different minor with core (for example
+Core **0.58.x** requires official plugins from the **same** minor
+(`0.58.x`). Do not mix plugins from a different minor with core (for example
 `0.25` plugins with `0.26` core). Remove stale plugin
 versions and install matching pins, for example:
 
@@ -350,7 +350,7 @@ Only run the removal command from the repository root after confirming
 
 Python puts the current directory early on `sys.path`. Running from an
 ETLantic source checkout can therefore import checkout code instead of the
-0.57.0 wheel in your environment. Check the imported path:
+0.58.0 wheel in your environment. Check the imported path:
 
 ```bash
 python -c "import etlantic; print(etlantic.__version__); print(etlantic.__file__)"

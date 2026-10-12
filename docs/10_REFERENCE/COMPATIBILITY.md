@@ -1,10 +1,10 @@
 # Compatibility Matrix
 
-> **Status: ETLantic 0.58.0 Beta release candidate.**
+> **Status: ETLantic 0.58.0 Beta release.**
 
 This table describes the declared compatibility of the ETLantic 0.58.0 Beta
-release candidate. Package pins in this table target candidate artifacts and
-will resolve from PyPI after publication.
+release. Package pins in this table target published artifacts available from
+PyPI.
 Foundation policy summary ([ODCS](../03_DATA_CONTRACTS/ODCS.md) /
 [DTCS](../04_TRANSFORMATIONS/DTCS.md) / [DPCS](../05_PIPELINES/DPCS.md) /
 ContractModel / Python):

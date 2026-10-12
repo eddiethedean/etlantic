@@ -1,8 +1,8 @@
 # etlantic-fastapi
 
-> **Release status:** ETLantic 0.58.0 is a Beta release candidate; publication is pending.
+> **Release status:** ETLantic 0.58.0 is the published Beta release (2026-10-12).
 
-Optional FastAPI adapter for ETLantic **0.57.0**. Use **CP1/CP2** (`ETLanticAPI`)
+Optional FastAPI adapter for ETLantic **0.58.0**. Use **CP1/CP2** (`ETLanticAPI`)
 when you need an embeddable, authz’d, durable-accept control-plane HTTP API.
 Use **`create_reference_app`** only for the thin non-CP authoring demo — it is
 not the control plane. CP2 is incubation, **not** multi-tenant GA (0.43).
