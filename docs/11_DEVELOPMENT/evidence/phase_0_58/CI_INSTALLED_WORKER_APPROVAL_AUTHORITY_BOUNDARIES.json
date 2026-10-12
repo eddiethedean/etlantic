@@ -1,0 +1,86 @@
+{
+  "schema": "etlantic.phase_0_58.campaign_evidence/1",
+  "campaign_id": "ci-installed-wheel-approval-authority-boundaries-2026-10-12",
+  "recorded_at": "2026-10-12",
+  "status": "passed",
+  "qualifies_release": false,
+  "test": "tests/prefect/test_managed_prefect_0_58.py::test_process_worker_executes_targeted_csv_and_postgresql_transfers in the complete installed-wheel Prefect suite",
+  "commands": [
+    "uv run pytest -q tests/prefect -m prefect",
+    "Build core, Prefect, SQL, SQLModel, FastAPI, and worker-backend plugin wheels; install into a fresh Python 3.11 environment; run env -u PYTHONPATH <venv>/bin/python -m pytest -o pythonpath= -q tests/prefect -m prefect"
+  ],
+  "result": "GitHub Actions run 916 passed the workspace Prefect/PostgreSQL suite (44 passed) and the fresh installed-wheel Prefect/PostgreSQL suite (44 passed in 105.41s, no failures or skips). Installed-wheel headless/FastAPI parity passed (1 test). The full workflow completed with 43 successful checks, 3 skipped checks, and no failures.",
+  "assertions": [
+    "The built core, Prefect, SQL, SQLModel, and FastAPI wheels and a separately built worker-backend plugin were installed into a fresh environment; PYTHONPATH was unset and pytest's configured pythonpath was disabled.",
+    "The installed-wheel Process-worker test revokes an approved request after acceptance but before dispatch, revokes another after dispatch but before claim, and expires a still-valid approval before claim.",
+    "Each authority failure leaves the canonical submission and attempt failed before connector I/O, with no destination rows or execution effect record.",
+    "Package origins and the worker-backend entry point are checked from the isolated installed environment; the self-hosted Prefect API and PostgreSQL service run in the CI job."
+  ],
+  "runtime": {
+    "runner": "ubuntu-latest",
+    "python": "3.11 (GitHub Actions managed patch version)",
+    "etlantic": "0.57.2 candidate wheel",
+    "etlantic_prefect": "0.57.2 candidate wheel",
+    "etlantic_sql": "0.57.2 candidate wheel",
+    "etlantic_sqlmodel": "0.57.2 candidate wheel",
+    "etlantic_fastapi": "0.57.2 candidate wheel",
+    "worker_backend_plugin": "etlantic-phase058-test-worker-plugin 0.1.0 candidate wheel",
+    "prefect": "3.7.8",
+    "sqlmodel": "0.0.39",
+    "sqlalchemy": "2.0.51",
+    "psycopg": "3.3.4",
+    "postgresql": "16 (postgres:16 CI service)",
+    "worker_pool": "Process",
+    "prefect_server": "Self-hosted Prefect API backed by the PostgreSQL CI service"
+  },
+  "fingerprints": {
+    "candidate_commit": "7336d377128c5b0bbec35026715c7f167fa94a0c",
+    "source_sha256": "c3da13307870634723e36e8d8bd892dba5ec710ee3986956dea45fcd7cbb03b7",
+    "source_sha256_method": "SHA-256 over sorted repository-relative source paths and file bytes, with NUL separators.",
+    "test_source_sha256": "1fb5c027c3bf1d11478b893e77b6490aef4ed5a57141341e85bc23d09df56885",
+    "uv_lock_sha256": "3b5507c03e752619016552c9fcc00e4961d9d6b3b426deb11bbdbfca240c73ec"
+  },
+  "wheel_sha256": {
+    "etlantic-0.57.2-py3-none-any.whl": "a408d9f278a90b56cd7771fd9acd7c50dea22ed23ca4fec59bbe5318157aee18",
+    "etlantic_fastapi-0.57.2-py3-none-any.whl": "2d6943bd50045924ca3d1c5fa61917b2b5c11027a372af6a5caaf339d1739eee",
+    "etlantic_prefect-0.57.2-py3-none-any.whl": "832061a0d2e7f05635c7cdff71e60491f48e92210bef448ffa25cc1b81abde06",
+    "etlantic_sql-0.57.2-py3-none-any.whl": "8691963026f3d090f60560b2880880356cf9dfac7b0455f9280542951274a8e5",
+    "etlantic_sqlmodel-0.57.2-py3-none-any.whl": "8feaa93d7fba12408c938309b0c91747133d899e9dbf14087eca934636ceaaf4",
+    "etlantic_phase058_test_worker_plugin-0.1.0-py3-none-any.whl": "49b5b062d2bab8e15d6f893219fe6ee5eb97894f4cd8ec593b528acba79d560f"
+  },
+  "ci_configuration": {
+    "workflow": ".github/workflows/checks.yml",
+    "job": "Prefect scheduler and managed execution",
+    "run_id": 38207598830,
+    "job_id": 114674535889,
+    "run_url": "https://github.com/eddiethedean/etlantic/actions/runs/38207598830",
+    "job_url": "https://github.com/eddiethedean/etlantic/actions/runs/38207598830/job/114674535889",
+    "artifact_name": "phase-0.58-installed-worker-104a230028ee8e5b04702cceab65ab5feda50088",
+    "artifact_sha256": "6ad35e76466e087dda3ac045830a8182bf799f68535fc7720930af38a15cbaf6",
+    "workflow_run_was_still_in_progress_when_this_job_completed": true,
+    "workflow_run_final_status": "success",
+    "workflow_run_successful_checks": 43,
+    "workflow_run_skipped_checks": [
+      "Checks / Verify observed adaptive 0.54 matrix",
+      "Checks / Adaptive 0.54 observation (${{ matrix.os }}, ${{ matrix.python-version }})",
+      "etlantic-plugin-echo conformance"
+    ],
+    "workflow_run_failed_checks": 0
+  },
+  "limitations": [
+    "This is one CI version tuple, not a full supported-version or operating-system matrix for managed Prefect execution.",
+    "The full CI workflow passes on this candidate, but the integrated phase release decision remains open; a passing installed-worker job does not qualify production or third-party connectors.",
+    "External identity-provider revocation, credential rotation at every authority boundary, and elapsed 30-day retention remain unqualified."
+  ],
+  "artifacts": [
+    {
+      "name": "phase-0.58-installed-worker-104a230028ee8e5b04702cceab65ab5feda50088",
+      "sha256": "6ad35e76466e087dda3ac045830a8182bf799f68535fc7720930af38a15cbaf6",
+      "contents": [
+        "phase058-clean-wheel-prefect.xml",
+        "phase058-headless-fastapi-parity.xml",
+        "phase058-wheel-sha256.txt"
+      ]
+    }
+  ]
+}

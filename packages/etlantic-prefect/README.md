@@ -88,19 +88,23 @@ unknown, and does not replay it. This fault fixture does not qualify a productio
 or third-party connector; broader authority rotation and longer or mid-execution
 outages also remain unqualified.
 
-The latest clean-wheel campaign passed 44 Prefect tests with no skips and the
+The local clean-wheel campaign passed 44 Prefect tests with no skips and the
 headless/FastAPI parity test on Python 3.11.15, Prefect 3.7.8, PostgreSQL 16.13,
 the Process worker pool, and ETLantic core/Prefect/FastAPI/SQL/SQLModel 0.57.2
-wheels plus the separately built test backend. These versions record the
-campaign environment; they are not yet a production support commitment. Other
-Python and Prefect versions and other Prefect worker pools remain unqualified.
+wheels plus the separately built test backend. The blocking CI clean-wheel job
+on candidate `7336d377` also passed all 44 installed-wheel Prefect tests without
+skips on `ubuntu-latest`, Python 3.11, and PostgreSQL 16; it includes the
+approval revocation and expiry checks. Its [wheel digests and test report](../../docs/11_DEVELOPMENT/evidence/phase_0_58/CI_INSTALLED_WORKER_APPROVAL_AUTHORITY_BOUNDARIES.json)
+are recorded in the phase ledger. These versions record tested candidate
+environments; they are not yet a production support commitment. Other Python
+and Prefect versions and other Prefect worker pools remain unqualified.
 The expanded restricted-role PostgreSQL test also completes versioned
 deployment registration, routed acceptance, and remote dispatch create/link
 using table DML grants without schema `CREATE` privilege.
 The [phase 0.58 evidence ledger](../../docs/11_DEVELOPMENT/evidence/phase_0_58/RELEASE_INDEX.json)
 tracks the remaining qualification work.
 
-The latest clean-wheel run also passed the partial-effect and mid-execution API recovery traces. The exact local clean-wheel environment was:
+The local clean-wheel run also passed the partial-effect and mid-execution API recovery traces. The exact local clean-wheel environment was:
 
 | Component | Exercised version/configuration |
 |---|---|

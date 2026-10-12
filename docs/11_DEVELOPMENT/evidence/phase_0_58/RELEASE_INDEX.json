@@ -333,6 +333,22 @@
       ]
     },
     {
+      "id": "ci-installed-wheel-approval-authority-boundaries-2026-10-12",
+      "path": "CI_INSTALLED_WORKER_APPROVAL_AUTHORITY_BOUNDARIES.json",
+      "status": "passed",
+      "qualifies_release": false,
+      "covers": [
+        "AC058-002 partial",
+        "AC058-003 partial",
+        "AC058-005 partial",
+        "AC058-009 partial",
+        "058-A3 partial",
+        "#292 partial",
+        "#293 partial",
+        "#298 partial"
+      ]
+    },
+    {
       "id": "live-postgresql-report-event-append-crash-recovery-2026-10-11",
       "path": "LIVE_REPORT_EVENT_APPEND_CRASH_RECOVERY.json",
       "status": "passed",
