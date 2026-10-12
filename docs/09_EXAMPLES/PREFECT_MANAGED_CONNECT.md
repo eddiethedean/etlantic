@@ -103,10 +103,10 @@ secret configuration and must use the registered versioned deployment.
 
 ## Qualification boundary
 
-Before relying on this hosting layout, qualify it in the target Connect
-version: app startup and shutdown, database pool limits, proxy/authentication
-behavior, environment and secret rotation, network paths, and recovery while
-Connect or a separate dispatcher/worker process restarts. Also run the
-phase 0.58 recovery and retention evidence against the real deployment. Until
-that evidence is recorded, Posit Connect remains a recipe-only host and phase
-0.58 remains unqualified for production.
+Before relying on this hosting layout in a deployment, verify app startup and
+shutdown, database pool limits, proxy/authentication behavior, environment and
+secret rotation, network paths, and recovery while Connect or a separately
+supervised dispatcher/worker restarts. These checks are deployment-specific
+operational guidance, not phase 0.58 evidence requirements. Phase 0.58
+qualification applies only to the declared self-hosted support profile;
+Posit Connect remains a documented recipe with no hosting support claim.
