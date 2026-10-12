@@ -1,13 +1,13 @@
 ---
 status: available
 since: "0.43.0"
-current_minor: "0.57"
+current_minor: "0.58"
 audience: developer
 ---
 
 # etlantic-prefect API
 
-> **Status: ETLantic 0.57.2 Beta release.** Prefect local scheduler MVP.
+> **Status: ETLantic 0.58.0 Beta release candidate.** Prefect local scheduler MVP.
 > Install narrative: package README. Hub: [Optional packages API](../API_OPTIONAL_PACKAGES.md).
 
 The managed Process-deployment adapter implemented under phase 0.58 is
@@ -18,7 +18,7 @@ for its trusted backend, dispatcher, worker, and current qualification status.
 ## Setup
 
 ```bash
-pip install 'etlantic-prefect==0.57.2'
+pip install 'etlantic-prefect==0.58.0'
 ```
 
 ```python

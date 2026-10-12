@@ -1,9 +1,9 @@
 # Current Capabilities and Limitations
 
-> **Version boundary:** ETLantic 0.57.2 is the current published Beta release and supported line.
+> **Version boundary:** ETLantic 0.58.0 is a Beta release candidate; 0.57.x remains the published and supported line.
 
 
-> **Status: ETLantic 0.57.2 is the published Beta release and current supported line.** This page records
+> **Status: ETLantic 0.58.0 is a Beta release candidate; 0.57.x remains the published and supported line.** This page records
 > the published 0.56 envelope for controlled single-tenant pilots and
 > Supported isolation profiles.
 
@@ -11,10 +11,11 @@
     Read **What works today** and **Limits** first. Residual gaps and CI
     starter JSON are further down for evaluators.
 
-## What works today (0.57)
+## What works today (0.57 published; 0.58 candidate)
 
-ETLantic 0.57.2 is the current published and supported **Beta release** for
-documented, controlled, single-tenant pilots. Install the latest published `etlantic` package from PyPI. You can embed an
+ETLantic 0.58.0 is the current **Beta release candidate**. The latest
+published and supported line is 0.57.x, for documented, controlled,
+single-tenant pilots. Install the latest published `etlantic` package from PyPI. You can embed an
 HTTP control plane with **Supported** isolation profiles
 (`isolated-deployment`, `dedicated-schema`). There is no hosted multi-tenant
 SaaS and no SLA. It validates and
@@ -280,7 +281,7 @@ See also [Experimental surfaces](EXPERIMENTAL_SURFACES.md).
 | Streaming poison-record/DLQ policy and schema-registry interoperability | **Supported** core policy/protocol in 0.46; Kafka (`etlantic-kafka`) and Confluent adapter (`etlantic-schemaregistry`) remain **Experimental** — never Available-in-core |
 | Complete application ETL backend | **Candidate qualified for 0.56** — shared authorized services, real managed execution/results, full specification/run controls, live PostgreSQL/CSV qualification and Semblance-backed Foundry API qualification; no live Foundry account required. See [plan](../11_DEVELOPMENT/IMPLEMENTATION_PLAN_0_56.md) and [reviewed gaps](../11_DEVELOPMENT/FINDINGS_0_56.md) |
 | Transport-independent managed backend, shared schedule commands, complete scheduler factory, provider schema inspection, and role supervision (#278–#282) | Planned for 0.57.0; [implementation plan](../11_DEVELOPMENT/IMPLEMENTATION_PLAN_0_57.md) |
-| Managed Prefect execution | The bounded [0.58 support profile](../11_DEVELOPMENT/IMPLEMENTATION_PLAN_0_58.md) is qualified for static-batch `/1`, self-hosted Prefect Process workers, PostgreSQL, and the documented Python matrix; it is not included in published 0.57.2. External adopter/provider evidence and elapsed wall-clock retention are not phase requirements. See the [qualification decision](../11_DEVELOPMENT/evidence/phase_0_58/FINAL_QUALIFICATION_DECISION_2026-10-12.json). |
+| Managed Prefect execution | The bounded [0.58 support profile](../11_DEVELOPMENT/IMPLEMENTATION_PLAN_0_58.md) is qualified for static-batch `/1`, self-hosted Prefect Process workers, PostgreSQL, and the documented Python matrix; it is part of the 0.58.0 release candidate. See the [qualification decision](../11_DEVELOPMENT/evidence/phase_0_58/FINAL_QUALIFICATION_DECISION_2026-10-12.json). |
 | Dagster / Argo compilers and Prefect migration interoperability | Planned brownfield bridges in 0.59; Prefect reuses the 0.58 managed adapter |
 | Read-only-first operator console | Planned first-class for 0.60 |
 | AWS/Azure/GCP/Vault secret-provider packs | Planned as optional providers in 0.61 |
@@ -307,7 +308,7 @@ Never put secrets in plans, reports, or CI logs.
 
 **Pip users:** create `profiles/prod.json` yourself. Start from the JSON
 below, then **trim `plugin_allowlist` to the engines you actually install**
-(the sample uses Polars — install `etlantic-polars==0.57.2` first).
+(the sample uses Polars — install `etlantic-polars==0.58.0` first).
 
 ```json
 {
@@ -320,7 +321,7 @@ below, then **trim `plugin_allowlist` to the engines you actually install**
   "validation_policy": "strict",
   "allow_trusted_sql": false,
   "plugin_allowlist": {
-    "etlantic-polars": "==0.57.2"
+    "etlantic-polars": "==0.58.0"
   },
   "assets": {},
   "secrets": {},
@@ -336,17 +337,17 @@ python -m etlantic plan path/to/pipeline.py:MyPipeline --profile ./profiles/prod
 ```
 
 ```bash
-pip install 'etlantic==0.57.2'
-pip install 'etlantic[lsp]==0.57.2'            # optional language server
-pip install 'etlantic-polars==0.57.2'          # optional
-pip install 'etlantic-pandas==0.57.2'          # optional
-pip install 'etlantic-sql==0.57.2'             # optional
-pip install 'etlantic-pyspark==0.57.2'         # optional
-pip install 'etlantic-airflow==0.57.2'         # optional
-pip install 'etlantic-prefect==0.57.2'         # optional
-pip install 'etlantic-keyring==0.57.2'         # optional
-pip install 'etlantic-sqlmodel==0.57.2'        # optional
-pip install 'medallantic==0.57.2'              # optional
+pip install 'etlantic==0.58.0'
+pip install 'etlantic[lsp]==0.58.0'            # optional language server
+pip install 'etlantic-polars==0.58.0'          # optional
+pip install 'etlantic-pandas==0.58.0'          # optional
+pip install 'etlantic-sql==0.58.0'             # optional
+pip install 'etlantic-pyspark==0.58.0'         # optional
+pip install 'etlantic-airflow==0.58.0'         # optional
+pip install 'etlantic-prefect==0.58.0'         # optional
+pip install 'etlantic-keyring==0.58.0'         # optional
+pip install 'etlantic-sqlmodel==0.58.0'        # optional
+pip install 'medallantic==0.58.0'              # optional
 ```
 
 See [Installation](INSTALLATION.md), [Evaluator brief](EVALUATOR.md), and

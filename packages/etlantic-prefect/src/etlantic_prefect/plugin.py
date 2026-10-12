@@ -23,7 +23,7 @@ from etlantic.runtime.scheduler import (
 )
 from etlantic.runtime.state import RunStatus
 
-__version__ = "0.57.2"
+__version__ = "0.58.0"
 
 
 def _prefect_future_id(fut: Any, *, run_id: str, name: str) -> tuple[str, bool]:

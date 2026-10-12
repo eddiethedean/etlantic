@@ -1,34 +1,32 @@
 ---
-title: ETLantic 0.57 Release Guide
+title: ETLantic 0.58 Release Candidate Guide
 status: available
-since: "0.57.0"
-current_minor: "0.57"
+since: "0.58.0"
+current_minor: "0.58"
 ---
 
-# ETLantic 0.57 Release Guide
+# ETLantic 0.58 Release Candidate Guide
 
-> **Status: ETLantic 0.57.2 Beta release is published.**
+> **Status: ETLantic 0.58.0 Beta release candidate; publication is pending.**
 
-ETLantic 0.57 adds the transport-independent managed backend, schedule service,
-provider schema inspection, and role status/drain contracts. Its passing
-[0.57 exit gate](../11_DEVELOPMENT/EXIT_GATE_0_57.md) records release qualification. ETLantic
-0.57.2 is published on PyPI and GitHub Releases. The 0.57.x package line
-is supported for controlled single-tenant pilots
-and Supported control-plane isolation profiles. Explicit class-authored
-pipelines remain the supported default.
+The latest published and supported package line is 0.57.x. This 0.58.0
+candidate adds an opt-in managed Prefect path for the bounded support profile
+in the [qualification decision](../11_DEVELOPMENT/evidence/phase_0_58/FINAL_QUALIFICATION_DECISION_2026-10-12.json).
+Its [exit gate](../11_DEVELOPMENT/EXIT_GATE_0_58.md) records the release
+checks. Explicit class-authored pipelines and direct Prefect execution remain
+available.
 
-Partition repair and backfill require configured PostgreSQL
-partition columns and explicitly allowed capabilities. Unsupported providers
-fail closed. See [What's new in 0.57](WHATS_NEW_0_57.md) and [Migration
-0.56 → 0.57](../11_DEVELOPMENT/MIGRATION_0_56_TO_0_57.md).
+See [What's new in 0.58](WHATS_NEW_0_58.md), [Migration 0.57 → 0.58](../11_DEVELOPMENT/MIGRATION_0_57_TO_0_58.md),
+and [What's new in 0.57](WHATS_NEW_0_57.md) for the latest published release.
 
 ## After first success
 
 1. Optional: [Programmatic authoring](../05_PIPELINES/PROGRAMMATIC_AUTHORING.md)
 2. [Capabilities](CAPABILITIES.md) — current capability and support boundaries
-3. [What's new in 0.57](WHATS_NEW_0_57.md)
-4. [Learning path](LEARNING_PATH.md)
-5. [Upgrade](UPGRADE.md) for migration paths
+3. [What's new in 0.58](WHATS_NEW_0_58.md) (release candidate)
+4. [What's new in 0.57](WHATS_NEW_0_57.md) (latest published release)
+5. [Learning path](LEARNING_PATH.md)
+6. [Upgrade](UPGRADE.md) for migration paths
 
 Prefer `import etlantic as etl` for application code. See the [Quickstart](QUICKSTART.md)
 for the CLI-first path and the [API reference](../10_REFERENCE/API_REFERENCE.md)

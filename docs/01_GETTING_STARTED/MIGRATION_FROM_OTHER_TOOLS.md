@@ -48,7 +48,7 @@ pipelines. Typical coexistence:
 | Tool | ETLantic relationship in 0.39 |
 |---|---|
 | Dagster | No compiler plugin; a Definitions compiler is planned for 0.59 |
-| Prefect | Optional `etlantic-prefect` local MVP (direct execution); the bounded managed profile is qualified for [0.58](../11_DEVELOPMENT/IMPLEMENTATION_PLAN_0_58.md) but is not in published 0.57.2; brownfield interoperability follows in 0.59 |
+| Prefect | Optional `etlantic-prefect` local MVP (direct execution); the bounded managed profile is in the 0.58.0 candidate and qualified for the documented support profile; brownfield interoperability follows in 0.59 |
 
 Author once in ETLantic, then choose whether to run locally, compile to Airflow,
 or keep the existing orchestrator and call ETLantic validate/plan from CI.

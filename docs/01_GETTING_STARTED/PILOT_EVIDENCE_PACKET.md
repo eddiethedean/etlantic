@@ -1,6 +1,6 @@
 # Pilot evidence packet
 
-> **Status: ETLantic 0.57.2 Beta release.** Reproducible checklist for a
+> **Status: ETLantic 0.58.0 Beta release candidate.** Reproducible checklist for a
 > controlled single-tenant pilot. This is an in-repo evidence template, not an
 > independent third-party case study.
 
@@ -14,10 +14,10 @@ Related evaluator pages (also in this packet):
 
 | Component | Pin |
 |---|---|
-| Core | `etlantic==0.57.2` |
+| Core | `etlantic==0.58.0` |
 | Docs | `https://etlantic.readthedocs.io/en/stable/` (pin `v0.57.0` if you need a frozen tree) |
 | Optional engines | Matching `0.53.0` plugins (`etlantic-polars`, `etlantic-sql`, …) |
-| Facade | `medallantic==0.57.2` when used |
+| Facade | `medallantic==0.58.0` when used |
 
 ## Topology (reference)
 

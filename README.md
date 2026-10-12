@@ -51,8 +51,10 @@ python -m etlantic validate pipeline.py:SamplePipeline --profile development
 python -m etlantic run pipeline.py:SamplePipeline --profile development
 ```
 
-ETLantic 0.57.2 is the current published Beta release and supported line. The run should succeed
-and write Ada and Grace to `data/out.json`. See the
+ETLantic 0.58.0 is the current Beta release candidate. The latest published
+and supported line remains 0.57.x. The run should succeed and write Ada and
+Grace to `data/out.json`. Until publication, `pip install etlantic` installs
+the latest published 0.57.x package. See the
 [full Quickstart](https://etlantic.readthedocs.io/en/stable/01_GETTING_STARTED/QUICKSTART/)
 for setup details and expected output.
 
@@ -104,7 +106,7 @@ The public CLI (see the
 Core has no dataframe, database, Spark, or orchestrator dependency. Install
 only the integrations a pipeline needs:
 
-| Capability | 0.57 |
+| Capability | 0.58 |
 |---|---|
 | Local Python + JSON/CSV | `etlantic` |
 | Polars or Pandas | `etlantic[polars]` or `etlantic[pandas]` |
@@ -143,8 +145,9 @@ before a pilot.
 ## Learn more
 
 These links use the Read the Docs **stable** alias, which remains on the latest
-published release. The immutable patch-release tree is at
-[v0.55.0](https://etlantic.readthedocs.io/en/v0.55.0/).
+published release. During candidate review, that is 0.57.2. The immutable
+patch-release tree is at
+[v0.57.2](https://etlantic.readthedocs.io/en/v0.57.2/).
 
 - [Quickstart](https://etlantic.readthedocs.io/en/stable/01_GETTING_STARTED/QUICKSTART/)
   and [first pipeline](https://etlantic.readthedocs.io/en/stable/01_GETTING_STARTED/FIRST_PIPELINE/)

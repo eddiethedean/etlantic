@@ -1,5 +1,7 @@
 # etlantic-datafusion
 
+> **Release status:** ETLantic 0.58.0 is a Beta release candidate; publication is pending.
+
 Version **0.57.0** (provisional implementation; lockstep with ETLantic core).
 
 This package provides a capability-gated DataFusion dataframe plugin and a

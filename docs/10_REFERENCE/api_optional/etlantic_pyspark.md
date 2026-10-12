@@ -1,19 +1,19 @@
 ---
 status: available
 since: "0.43.0"
-current_minor: "0.57"
+current_minor: "0.58"
 audience: developer
 ---
 
 # etlantic-pyspark API
 
-> **Status: ETLantic 0.57.2 Beta release.** PySpark plugin + portable compiler.
+> **Status: ETLantic 0.58.0 Beta release candidate.** PySpark plugin + portable compiler.
 > Install narrative: package README. Hub: [Optional packages API](../API_OPTIONAL_PACKAGES.md).
 
 ## Setup
 
 ```bash
-pip install 'etlantic-pyspark==0.57.2'
+pip install 'etlantic-pyspark==0.58.0'
 ```
 
 ```python

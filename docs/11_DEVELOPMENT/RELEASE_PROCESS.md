@@ -15,7 +15,8 @@ foundation, and post-foundation capabilities continue in later 0.x minors.
 
 Breaking changes must be documented. Official plugin packages currently share
 the core minor version (for example `0.38.0`).
-Official plugins and root extras declare the compatible 0.57 line floor (`>=0.57.0`) without a patch lockstep pin or upper cap.
+Official plugins and root extras declare the compatible 0.58 line floor
+(`>=0.58.0`) without a patch lockstep pin or upper cap.
 
 ## Version bump workflow
 
@@ -28,8 +29,8 @@ repository checkout and considers tracked files only.
 Preview first, then apply the same version:
 
 ```bash
-uv run python scripts/bump_version.py 0.57.3 --dry-run
-uv run python scripts/bump_version.py 0.57.3
+uv run python scripts/bump_version.py 0.58.1 --dry-run
+uv run python scripts/bump_version.py 0.58.1
 ```
 
 The preview lists tracked version-surface files whose contents will change and

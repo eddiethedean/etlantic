@@ -13,9 +13,9 @@
   "environment": {
     "architecture": "arm64",
     "os": "darwin",
-    "python": "3.11.15"
+    "python": "3.11.14"
   },
-  "etlantic_version": "0.57.2",
+  "etlantic_version": "0.58.0",
   "fixtures": [
     "duckdb.protocol",
     "duckdb.transform.conformance",
@@ -26,9 +26,9 @@
   ],
   "generator_version": "0.49.1",
   "kind": "security_policy",
-  "manifest_digest": "sha256:d245a9ee67ca9eb168601b7d35ee6a7ab377c9a95316fbd46eb07ff45726dd3c",
+  "manifest_digest": "sha256:6dc719f23624cf951e940674a10fa13903611bce9474ed37aa0836fd6f818ea4",
   "package": "etlantic-duckdb",
-  "package_version": "0.57.2",
+  "package_version": "0.58.0",
   "phase": "0.49",
   "result": "pass",
   "schema": "etlantic.duckdb.evidence/1",

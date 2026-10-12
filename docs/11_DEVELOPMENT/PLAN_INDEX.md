@@ -1,6 +1,6 @@
 # Planning Hub
 
-> **Status: ETLantic 0.57.2 is the latest published Beta release and supported line.**
+> **Status: ETLantic 0.58.0 is the Beta release candidate; 0.57.x remains the latest published and supported line.**
 > Inferred-model authoring is qualified only for the scoped Experimental surface in the 0.55 exit gate. Adaptive execution remains Experimental and graduation remains pending.
 > Human-governed AI context/proposal surfaces are Available; MCP extra is
 > Experimental. Streaming and bounded dynamic control are Supported in core; Kafka and
@@ -13,7 +13,7 @@ ETLantic's planning documents describe intended outcomes, dependencies, and
 release gates. They are **not** a substitute for current product documentation.
 
 !!! important "Use the right source of truth"
-    - To learn what **ETLantic 0.57 can do now**, use
+    - To learn what **ETLantic 0.58 can do now**, including the candidate support profile, use
       [Capabilities](../01_GETTING_STARTED/CAPABILITIES.md), the
       [CLI reference](../10_REFERENCE/CLI.md), and the
       [Python API reference](../10_REFERENCE/API_REFERENCE.md).
@@ -68,7 +68,8 @@ is available and its release gate has passed.
 
 ## Portfolio at a glance
 
-Status is relative to the **published 0.57.2 release**.
+Status is relative to the **0.58.0 release candidate**; 0.57.x remains the
+published support line until release.
 See the [0.55 scoped exit gate](EXIT_GATE_0_55.md) for qualification evidence.
 Prior scheduler/federation evidence remains in **0.47**; Streaming evidence remains in **0.46**; Optimization SDK evidence remains
 in **0.45**; Developer Intelligence remains in **0.44**; CP-GA evidence remains
@@ -78,7 +79,7 @@ evidence remains in **0.38**.
 
 | Plan | Status | Current boundary | Next horizon or gate |
 |---|---|---|---|
-| [Main roadmap](https://github.com/eddiethedean/etlantic/blob/main/ROADMAP.md) | Current sequence | 0.57 backend independence published | [ROADMAP](https://github.com/eddiethedean/etlantic/blob/main/ROADMAP.md) §§ 0.56–0.62 |
+| [Main roadmap](https://github.com/eddiethedean/etlantic/blob/main/ROADMAP.md) | Current sequence | 0.58 managed Prefect candidate; 0.57.x published | [ROADMAP](https://github.com/eddiethedean/etlantic/blob/main/ROADMAP.md) §§ 0.56–0.62 |
 | [0.49 implementation plan](IMPLEMENTATION_PLAN_0_49.md) | Implemented qualified subset | Optional DuckDB engine package, embedded runtime, dialect/compiler subset, security policy, and qualification evidence; advanced matrix/release evidence remains tracked in the exit gate | [Exit gate 0.49](EXIT_GATE_0_49.md) · [findings ledger](FINDINGS_0_49.md) · [epic #110](https://github.com/eddiethedean/etlantic/issues/110) |
 | [0.50 implementation plan](IMPLEMENTATION_PLAN_0_50.md) | Published; technical qualification complete | Frozen seven-engine baseline, pushdown conformance, and requirement-level evidence generated for 0.51 consumption | [Exit gate 0.50](EXIT_GATE_0_50.md) · [evidence index](evidence/portable_0_50/portable_evidence_index_0_50.json) |
 | [0.51 implementation plan](IMPLEMENTATION_PLAN_0_51.md) | Foundation published; adaptive qualification pending | Profile policy, report metadata migration, and closed `/2` wire model are implemented; candidate discovery, solver, and runtime remain unavailable | [ADR-025](adr/ADR-025-ADAPTIVE-EXECUTION-AND-PHYSICAL-DAG.md) · [Exit gate 0.51](EXIT_GATE_0_51.md) · [epic #30](https://github.com/eddiethedean/etlantic/issues/30) |
