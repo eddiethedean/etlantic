@@ -3,6 +3,10 @@
 from __future__ import annotations
 
 import pytest
+
+pytest.importorskip("sqlalchemy")
+pytest.importorskip("etlantic_sqlmodel")
+
 from sqlalchemy import create_engine
 
 from etlantic.control_plane import (
