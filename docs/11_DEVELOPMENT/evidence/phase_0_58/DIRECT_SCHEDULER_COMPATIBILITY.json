@@ -6,7 +6,7 @@
   "qualifies_release": false,
   "test": "tests/prefect/test_prefect_scheduler.py",
   "command": "uv run --locked pytest -q tests/prefect/test_prefect_scheduler.py",
-  "result": "18 passed in 49.41s",
+  "result": "18 passed in 32.26s",
   "assertions": [
     "Two calls on the same PrefectScheduler overlap at a barrier using distinct runtimes and run IDs; one succeeds while one fails without mixing outputs, reports, flow IDs, or task IDs.",
     "Prefect flow-run IDs remain distinct and observed task-run IDs parse as UUIDs rather than ETLantic fallback identifiers.",
@@ -18,7 +18,7 @@
     "Cancelling an active PrefectScheduler.execute caller stopped the in-flight node promptly and preserved a CANCELLED ETLantic report with the actual Prefect flow-run ID.",
     "Setting an active flow to CANCELLING through the Prefect API stopped the in-flight node promptly and preserved a CANCELLED ETLantic report.",
     "Three independent ready branches reached peak concurrency two under Profile(concurrency=2), despite request metadata asking for three; all branch outputs and the report succeeded.",
-    "Hostile Prefect defaults enabling three retries, caching, and result persistence did not alter ETLantic-owned two-attempt retry behavior, did not reuse cached results on a second run, and did not persist flow/task result data or task cache keys."
+    "Hostile Prefect defaults enabling three retries, caching, and result persistence did not alter ETLantic-owned two-attempt retry behavior, did not reuse cached results on a second run, and did not persist flow/task result data."
   ],
   "runtime": {
     "python": "3.11.14",

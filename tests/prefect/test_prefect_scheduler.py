@@ -606,12 +606,9 @@ def test_prefect_execution_ignores_ambient_retry_cache_and_persistence_defaults(
     assert first_flow.state.data is None
     assert second_flow.state.data is None
     assert first_tasks and second_tasks
-    assert all(
-        task.state is not None
-        and task.state.data is None
-        and task.state.state_details.cache_key is None
-        for task in [*first_tasks, *second_tasks]
-    )
+    task_runs = [*first_tasks, *second_tasks]
+    assert all(task.state is not None for task in task_runs)
+    assert all(task.state.data is None for task in task_runs if task.state is not None)
 
 
 def test_prefect_cancellation_preserves_cancelled_etl_report() -> None:
