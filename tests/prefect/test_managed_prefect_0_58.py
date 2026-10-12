@@ -2459,10 +2459,7 @@ def test_postgresql_multiprocess_retirement_and_revision_rollback(
 
 def test_managed_deployment_rejects_native_prefect_schedules() -> None:
     from prefect.client.orchestration import get_client
-    from prefect.client.schemas.actions import (
-        DeploymentScheduleCreate,
-        WorkPoolCreate,
-    )
+    from prefect.client.schemas.actions import WorkPoolCreate
     from prefect.client.schemas.schedules import IntervalSchedule
     from prefect.testing.utilities import prefect_test_harness
 
@@ -2481,11 +2478,7 @@ def test_managed_deployment_rejects_native_prefect_schedules() -> None:
         async with get_client() as client:
             await client.create_deployment_schedules(
                 binding.deployment_id,
-                schedules=[
-                    DeploymentScheduleCreate(
-                        schedule=IntervalSchedule(interval=timedelta(seconds=60))
-                    )
-                ],
+                schedules=[(IntervalSchedule(interval=timedelta(seconds=60)), True)],
             )
         with pytest.raises(RuntimeError, match="deployment"):
             await registrar.preview(spec)
