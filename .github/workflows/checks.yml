@@ -769,8 +769,12 @@ jobs:
         run: uv run python examples/airflow_compile.py
 
   prefect:
-    name: Prefect scheduler and managed execution
-    runs-on: ubuntu-latest
+    name: Prefect managed execution (Python ${{ matrix.python-version }})
+    runs-on: ubuntu-24.04
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ["3.11.15", "3.12.13", "3.13.16"]
     services:
       postgres:
         image: postgres:16
@@ -792,7 +796,7 @@ jobs:
         uses: astral-sh/setup-uv@v9.0.0
         with:
           version: "0.12.0"
-          python-version: "3.11"
+          python-version: ${{ matrix.python-version }}
           enable-cache: true
           github-token: ${{ secrets.GITHUB_TOKEN }}
 
@@ -836,7 +840,7 @@ jobs:
             --extra fastapi \
             --no-emit-workspace --format requirements.txt \
             --output-file "$phase058_requirements"
-          uv venv --python 3.11 "$phase058_venv_dir"
+          uv venv --python "${{ matrix.python-version }}" "$phase058_venv_dir"
           uv pip sync --python "$phase058_venv_dir/bin/python" \
             "$phase058_requirements"
           uv pip install --python "$phase058_venv_dir/bin/python" --no-deps \
@@ -866,6 +870,61 @@ jobs:
             -o pythonpath= -q tests/fastapi/test_managed_application_0_56.py::test_managed_headless_and_http_command_semantics_match \
             --junitxml="$RUNNER_TEMP/phase058-headless-fastapi-parity.xml"
 
+      - name: Record installed-worker qualification runtime
+        env:
+          ETLANTIC_CP_TEST_URL: "postgresql+psycopg://postgres:postgres@localhost:5432/etlantic"
+        run: |
+          "$RUNNER_TEMP/phase058-venv/bin/python" - <<'PY'
+          import importlib.metadata
+          import json
+          import os
+          import platform
+          import sys
+          from pathlib import Path
+
+          from sqlalchemy import create_engine, text
+
+          distributions = (
+              "etlantic",
+              "etlantic-prefect",
+              "etlantic-sql",
+              "etlantic-sqlmodel",
+              "etlantic-fastapi",
+              "etlantic-phase058-test-worker-plugin",
+              "prefect",
+              "sqlmodel",
+              "sqlalchemy",
+              "psycopg",
+              "fastapi",
+          )
+          engine = create_engine(os.environ["ETLANTIC_CP_TEST_URL"])
+          try:
+              with engine.connect() as connection:
+                  postgresql_version = connection.execute(
+                      text("SELECT version()")
+                  ).scalar_one()
+          finally:
+              engine.dispose()
+
+          manifest = {
+              "schema": "etlantic.phase_0_58.runtime_manifest/1",
+              "runner_os": os.environ.get("RUNNER_OS"),
+              "runner_arch": os.environ.get("RUNNER_ARCH"),
+              "platform": platform.platform(),
+              "python": sys.version,
+              "packages": {
+                  name: importlib.metadata.version(name) for name in distributions
+              },
+              "postgresql": postgresql_version,
+              "plan_family": "etlantic.plan/1",
+              "worker_pool": "Process",
+              "prefect_server": "self-hosted API backed by PostgreSQL",
+              "connector_modes": ["CSV to PostgreSQL", "PostgreSQL to PostgreSQL replace"],
+          }
+          output = Path(os.environ["RUNNER_TEMP"]) / "phase058-runtime.json"
+          output.write_text(json.dumps(manifest, indent=2) + "\n", encoding="utf-8")
+          PY
+
       - name: Record installed-wheel digests
         if: always()
         run: |
@@ -877,10 +936,11 @@ jobs:
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: phase-0.58-installed-worker-${{ github.sha }}
+          name: phase-0.58-installed-worker-${{ github.sha }}-py${{ matrix.python-version }}
           path: |
             ${{ runner.temp }}/phase058-clean-wheel-prefect.xml
             ${{ runner.temp }}/phase058-headless-fastapi-parity.xml
+            ${{ runner.temp }}/phase058-runtime.json
             ${{ runner.temp }}/phase058-wheel-sha256.txt
           if-no-files-found: warn
 
