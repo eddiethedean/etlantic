@@ -107,17 +107,15 @@ headless/FastAPI parity test on Python 3.11.15, Prefect 3.7.8, PostgreSQL 16.13,
 the Process worker pool, and ETLantic core/Prefect/FastAPI/SQL/SQLModel 0.57.2
 wheels plus the separately built test backend. The earlier blocking CI
 clean-wheel job on candidate `7336d377` passed all 44 installed-wheel tests.
-GitHub Actions run 38219651878 passed all 46 installed-wheel tests without
+GitHub Actions run 38222124256 passed all 46 installed-wheel tests without
 skips on Ubuntu 24.04 with CPython 3.11.15, 3.12.13, and 3.13.16, plus installed
-headless/FastAPI parity on each patch. It includes the approval revocation and
-expiry checks but predates the connector-commit/API-outage trace above; a new
-blocking run for that trace is pending. The earlier 3.11 campaign's [wheel
-digests, JUnit report, and run
-record](../../docs/11_DEVELOPMENT/evidence/phase_0_58/CI_INSTALLED_WORKER_32_SUBMISSION_OUTAGE_2026-10-12.json)
-are recorded in the phase ledger. These versions record tested candidate
-environments; they are not yet a production support commitment. Other Python
-versions, operating systems, Prefect versions, and worker pools remain
-unqualified.
+headless/FastAPI parity on each patch. It includes the connector-commit/API-
+outage trace and approval revocation/expiry checks. The [matrix evidence
+record](../../docs/11_DEVELOPMENT/evidence/phase_0_58/CI_INSTALLED_WORKER_PYTHON_MATRIX_2026-10-12.json)
+contains runtime manifests, JUnit reports, wheel digests, and artifact hashes.
+These versions are tested candidate environments, not a production support
+commitment. Other Python and Prefect versions, operating systems, and worker
+pools remain unqualified.
 The expanded restricted-role PostgreSQL test also completes versioned
 deployment registration, routed acceptance, and remote dispatch create/link
 using table DML grants without schema `CREATE` privilege.
@@ -143,7 +141,7 @@ The local clean-wheel run also passed the partial-effect and mid-execution API r
 | Worker pool | Process pool is the only accepted pool and was exercised in the recorded environment; other pool types are rejected at registration. |
 | Prefect hosting | Self-hosted API with PostgreSQL persistence. Prefect Cloud, Docker, Kubernetes, and other pools have no managed support claim. |
 | Host composition | Headless and FastAPI command parity passed from installed wheels. Posit Connect is a deployment recipe, not a live-qualified host. |
-| Production status | No managed version tuple is production-qualified. Blocking CI has exercised the installed Process-worker path on Ubuntu 24.04 with CPython 3.11.15, 3.12.13, and 3.13.16, Prefect 3.7.8, PostgreSQL 16.15, and the 0.57.2 candidate wheels; other Python, Prefect, operating-system, database, pool, and hosting combinations remain unqualified. The new connector-commit/API-outage scenario still awaits its installed-wheel run. |
+| Production status | No managed version tuple is production-qualified. Blocking CI has exercised the installed Process-worker path on Ubuntu 24.04 with CPython 3.11.15, 3.12.13, and 3.13.16, Prefect 3.7.8, PostgreSQL 16.15, and the 0.57.2 candidate wheels; other Python, Prefect, operating-system, database, pool, and hosting combinations remain unqualified. The connector-commit/API-outage scenario passed in the three-patch installed-wheel matrix; this bounded trace does not qualify prolonged outages or sustained capacity. |
 
 The same scoped reference can read ETLantic's canonical run projection or
 persist an authorized ETLantic cancellation:

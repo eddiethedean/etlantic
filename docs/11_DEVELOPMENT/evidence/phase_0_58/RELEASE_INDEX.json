@@ -716,6 +716,36 @@
         "#296 partial",
         "#298 partial"
       ]
+    },
+    {
+      "id": "ci-installed-worker-python-matrix-2026-10-12",
+      "path": "CI_INSTALLED_WORKER_PYTHON_MATRIX_2026-10-12.json",
+      "status": "passed",
+      "qualifies_release": false,
+      "covers": [
+        "AC058-001 partial",
+        "AC058-002 partial",
+        "AC058-003 partial",
+        "AC058-004 partial",
+        "AC058-005 partial",
+        "AC058-006 partial",
+        "AC058-007 partial",
+        "AC058-008 partial",
+        "AC058-009 partial",
+        "AC058-010 partial",
+        "058-A1 partial",
+        "058-A2 partial",
+        "058-A3 partial",
+        "058-A4 partial",
+        "#291 partial",
+        "#292 partial",
+        "#293 partial",
+        "#294 partial",
+        "#295 partial",
+        "#296 partial",
+        "#297 partial",
+        "#298 partial"
+      ]
     }
   ],
   "open_gates": [

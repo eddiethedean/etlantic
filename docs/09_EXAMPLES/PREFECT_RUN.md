@@ -63,9 +63,13 @@ deployment, a durable ETLantic dispatcher, and PostgreSQL-backed control-plane
 stores. The clean-wheel campaign covers separate Process workers, both
 CSV-to-PostgreSQL and PostgreSQL-to-PostgreSQL replace-mode transfers, submitter
 exit, uncertain-create recovery, post-dispatch deployment-drift rejection with
-bounded pre-attempt recovery, and a graceful Prefect API restart. It does not
-qualify the path for production: broader crash/effect recovery, host parity, and
-the full supported-version matrix remain open. Deployment setup, trusted worker
+bounded pre-attempt recovery, and a graceful Prefect API restart. The blocking installed-wheel matrix passes on Ubuntu 24.04 with CPython
+3.11.15, 3.12.13, and 3.13.16, including the connector-commit/API-outage trace;
+see the [phase evidence](../11_DEVELOPMENT/evidence/phase_0_58/CI_INSTALLED_WORKER_PYTHON_MATRIX_2026-10-12.json).
+The path remains unqualified for production while prolonged and simultaneous
+server faults, sustained capacity, independent connector and identity-provider
+evidence, a real 30-day retention interval, and other operating systems and
+hosting combinations remain open. Deployment setup, trusted worker
 configuration, supervision, and qualification status are documented in the
 [`etlantic-prefect` package guide](https://github.com/eddiethedean/etlantic/blob/main/packages/etlantic-prefect/README.md)
 and [phase 0.58 plan](../11_DEVELOPMENT/IMPLEMENTATION_PLAN_0_58.md).
