@@ -1,14 +1,13 @@
 ---
 title: What's New in ETLantic 0.58
-status: candidate
+status: available
 since: "0.58.0"
 current_minor: "0.58"
 ---
 
 # What's New in ETLantic 0.58
 
-> **Status: ETLantic 0.58.0 Beta release candidate; publication is pending.**
-> The latest published and supported package line remains 0.57.x.
+> **Status: ETLantic 0.58.0 Beta release, published 2026-10-12.**
 
 ETLantic 0.58 adds an opt-in managed execution path through the optional
 `etlantic-prefect` package. It connects ETLantic's durable accepted-work model
@@ -34,8 +33,8 @@ for gate-by-gate evidence.
 These results define a bounded support profile. They do not establish support
 for other operating systems, Python patch levels, Prefect pools or services,
 databases, connectors, or plan families. Follow the
-the [Migration 0.57 → 0.58 guide](../11_DEVELOPMENT/MIGRATION_0_57_TO_0_58.md) before enabling
-managed execution.
+[Migration 0.57 → 0.58 guide](../11_DEVELOPMENT/MIGRATION_0_57_TO_0_58.md)
+before enabling managed execution.
 
 ## Compatibility and release status
 
@@ -45,7 +44,7 @@ SQLModel migration head remains
 migration. Existing direct Prefect execution and existing pipelines continue
 to work without enabling the managed path.
 
-Version 0.58.0 is a release candidate and is not yet available from PyPI. The
-latest published package is 0.57.2. Candidate installation and validation
-instructions are in [Installation](INSTALLATION.md) and the
-[release exit gate](../11_DEVELOPMENT/EXIT_GATE_0_58.md).
+Version 0.58.0 is available from PyPI. Install the matching core and optional
+plugin packages by following [Installation](INSTALLATION.md). The
+[release exit gate](../11_DEVELOPMENT/EXIT_GATE_0_58.md) records the
+qualification and successful release workflow.

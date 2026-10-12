@@ -1,6 +1,6 @@
 # Enterprise Evaluation Guide
 
-> **Status: ETLantic 0.58.0 is a Beta release candidate; publication is pending.** Deep diligence packet for the 0.56 release. The published supported package line is 0.57.x. Start with the
+> **Status: ETLantic 0.58.0 is the published Beta release and supported package line.** Deep diligence packet for controlled evaluation. Start with the
 > one-page [Evaluator Brief](EVALUATOR.md) for residual risk and the capability
 > matrix; use this page to assemble review links and artifacts.
 
@@ -84,18 +84,18 @@ and fill `assets` for your pipeline bindings before production-profile testing.
 
 ### Verify release attestations
 
-Verify a GitHub Release asset (example: wheel from the `v0.57.0` release):
+Verify a GitHub Release asset (example: wheel from the `v0.58.0` release):
 
 ```bash
 # Download the wheel from the GitHub Release, then:
-gh attestation verify path/to/etlantic-0.57.0-*.whl \
+gh attestation verify path/to/etlantic-0.58.0-*.whl \
   --owner eddiethedean \
   --repo etlantic
 ```
 
 Verify the published SHA-256 manifest (`release-artifacts.json`) and GitHub
 build provenance attestations from the
-[v0.57.0 GitHub Release](https://github.com/eddiethedean/etlantic/releases/tag/v0.57.0).
+[v0.58.0 GitHub Release](https://github.com/eddiethedean/etlantic/releases/tag/v0.58.0).
 CycloneDX SBOM generation is optional: the release may include
 `etlantic-environment.cdx.json` or `sbom-warning.txt`—confirm the published
 asset before recording supply-chain evidence. Full checklist:
@@ -147,6 +147,6 @@ adopter-owned ops.
 
 ## Next steps
 
-- Practitioners: continue the [Current 0.57 Guide](CURRENT_VERSION.md)
+- Practitioners: continue the [Current 0.58 Guide](CURRENT_VERSION.md)
 - Decision-makers: return to [Evaluator Brief](EVALUATOR.md) with this checklist
 - Production pilots: [Pilot walkthrough](../06_EXECUTION/PILOT_WALKTHROUGH.md)

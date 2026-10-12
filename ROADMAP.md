@@ -6,10 +6,10 @@
 > [Capabilities](docs/01_GETTING_STARTED/CAPABILITIES.md) for what ships now.
 > Review this header for every release or sequence change.
 
-**Latest published release:** ETLantic **0.57.2** (Beta). **0.58.0 is a
-release candidate** for the qualified managed Prefect support profile; publication
-is pending. The 0.57 release adds managed backend independence and runtime
-supervision. The 0.56 release completes the application backend. The scoped
+**Latest published release:** ETLantic **0.58.0** (Beta), with the qualified
+managed Prefect support profile. The 0.57 release adds managed backend
+independence and runtime supervision. The 0.56 release completes the
+application backend. The scoped
 inferred-model authoring surface remains Experimental. Adaptive execution also
 remains Experimental; its independent graduation is still pending. See the [0.55 exit gate](docs/11_DEVELOPMENT/EXIT_GATE_0_55.md)
 and [0.54 exit gate](docs/11_DEVELOPMENT/EXIT_GATE_0_54.md).
@@ -40,14 +40,14 @@ through **0.37** (stable foundation) are shipped.
 | Previous | 0.39 | Multi-tenant control plane (CP1) | Gate-ready / shipped evidence |
 | Previous | 0.38 | Data connectivity and connector SDK | Gate-ready / shipped evidence |
 | Previous | 0.56 | Complete application ETL backend with full specification and run control | Published / shipped evidence |
-| Previous | 0.57 | Managed backend independence and runtime supervision (#278–#282), plus Local canonical sort fix (#283) | Published / shipped evidence; 0.57.x is the supported line |
-| Current | 0.58 | Managed Prefect Execution (#290 / #291–#298) | Gate-ready for tag/publish |
+| Previous | 0.57 | Managed backend independence and runtime supervision (#278–#282), plus Local canonical sort fix (#283) | Published / shipped evidence |
+| Current | 0.58 | Managed Prefect Execution (#290 / #291–#298) | Published / shipped evidence |
 | Later | 0.59 | Brownfield adoption bridges | Planning freeze |
 | Later | 0.60 | Operator Console | Planned |
 | Later | 0.61 | Managed runtime and enterprise provider packs | Planned |
 | Later | 0.62 | TransformationModel incubation | Proposed |
 | Foundation | 0.36–0.37 | Joint burn-in → stable foundation | Gate-ready (0.37) |
-| Post-foundation | 0.38–0.62 | Connectivity → control plane → developer intelligence → optimization → streaming → federation → governed AI → DuckDB package → portable-engine baseline → adaptive execution → inferred model authoring → complete application backend → backend independence → managed Prefect → adoption → operations → providers → modeling incubation | In progress (0.57 published; 0.58 qualified candidate; adaptive graduation pending) |
+| Post-foundation | 0.38–0.62 | Connectivity → control plane → developer intelligence → optimization → streaming → federation → governed AI → DuckDB package → portable-engine baseline → adaptive execution → inferred model authoring → complete application backend → backend independence → managed Prefect → adoption → operations → providers → modeling incubation | In progress (0.58 published; adaptive graduation pending) |
 
 For connectivity evidence, see
 [What's New in 0.38](docs/01_GETTING_STARTED/WHATS_NEW_0_38.md) and the

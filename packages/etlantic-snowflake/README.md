@@ -1,9 +1,9 @@
 # etlantic-snowflake (Experimental)
 
-> **Release status:** ETLantic 0.58.0 is a Beta release candidate; publication is pending.
+> **Release status:** ETLantic 0.58.0 is the published Beta release (2026-10-12).
 
 
-Version **0.57.0** (lockstep with ETLantic core).
+Version **0.58.0** (lockstep with ETLantic core).
 Native Snowflake connector for
 [ETLantic](https://github.com/eddiethedean/etlantic) **0.43**. Install when
 pipelines need Experimental `snowflake` source/sink/storage connectors. CI

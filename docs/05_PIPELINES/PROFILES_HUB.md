@@ -1,6 +1,6 @@
 # Profiles hub
 
-> **Status: ETLantic 0.58.0 Beta release candidate.** Start here for environment,
+> **Status: ETLantic 0.58.0 Beta release.** Start here for environment,
 > allowlist, and production trust. Detail pages remain authoritative.
 
 ## Read in this order

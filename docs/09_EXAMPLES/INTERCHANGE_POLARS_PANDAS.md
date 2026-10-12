@@ -1,6 +1,6 @@
 # Polars ↔ Pandas Interchange
 
-!!! success "**Status: Available in ETLantic 0.57.0 Beta**"
+!!! success "**Status: Available in ETLantic 0.58.0 Beta**"
     Gate A versioned tabular interchange (`etlantic.interchange/1`) shipped in
     0.18.0 for compatible Polars↔Pandas cross-engine boundaries.
 
@@ -185,7 +185,7 @@ Optional:
 
 ```bash
 curl -fsSL -o interchange_polars_pandas.py \
-  https://raw.githubusercontent.com/eddiethedean/etlantic/v0.57.0/examples/interchange_polars_pandas.py
+  https://raw.githubusercontent.com/eddiethedean/etlantic/v0.58.0/examples/interchange_polars_pandas.py
 python interchange_polars_pandas.py
 ```
 

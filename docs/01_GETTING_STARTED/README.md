@@ -13,8 +13,8 @@ Capabilities teaser: [Capabilities](CAPABILITIES.md) (full matrix after first su
 
 After Ada/Grace success: [SDK 10 minutes](SDK_10_MINUTES.md) (secondary),
 [FAQ](FAQ.md), [Troubleshooting](TROUBLESHOOTING.md), [Upgrade](UPGRADE.md),
-[What's New in 0.58](WHATS_NEW_0_58.md) (release candidate), and
-[What's New in 0.57](WHATS_NEW_0_57.md) (latest published Beta release).
+[What's New in 0.58](WHATS_NEW_0_58.md) (current release), and
+[What's New in 0.57](WHATS_NEW_0_57.md) (previous Beta release).
 
 Ignore **Project → Archive index** (and maintainer plans linked from it) until you contribute.
 
@@ -31,6 +31,6 @@ Ignore **Project → Archive index** (and maintainer plans linked from it) until
     from a checkout for that path. Prefer the same `--profile` for validate,
     plan, and run (`development` by default when omitted).
 
-ETLantic 0.57.x is the current published **Beta** line for documented
-single-tenant pilots; 0.58.0 remains a candidate.
+ETLantic 0.58.x is the current published **Beta** line for documented
+single-tenant pilots.
 Prefer `import etlantic as etl` for application code after the CLI green path.

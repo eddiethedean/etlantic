@@ -1,8 +1,8 @@
 # etlantic-datafusion
 
-> **Release status:** ETLantic 0.58.0 is a Beta release candidate; publication is pending.
+> **Release status:** ETLantic 0.58.0 is the published Beta release (2026-10-12).
 
-Version **0.57.0** (provisional implementation; lockstep with ETLantic core).
+Version **0.58.0** (provisional implementation; lockstep with ETLantic core).
 
 This package provides a capability-gated DataFusion dataframe plugin and a
 portable DTCS transform compiler. Native dependencies are installed with the
@@ -25,6 +25,6 @@ eligible for adaptive execution; engine-specific bodies are not.
 
 ## Links
 
-[Capabilities](https://etlantic.readthedocs.io/en/v0.57.0/01_GETTING_STARTED/CAPABILITIES/) ·
+[Capabilities](https://etlantic.readthedocs.io/en/v0.58.0/01_GETTING_STARTED/CAPABILITIES/) ·
 [Source](https://github.com/eddiethedean/etlantic/tree/main/packages/etlantic-datafusion) ·
 [Issues](https://github.com/eddiethedean/etlantic/issues)

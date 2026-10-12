@@ -7,7 +7,7 @@ audience: developer
 
 # etlantic-sqlmodel API
 
-> **Status: ETLantic 0.58.0 Beta release candidate.** SQLModel bridge helpers.
+> **Status: ETLantic 0.58.0 Beta release.** SQLModel bridge helpers.
 > Install narrative: package README. Hub: [Optional packages API](../API_OPTIONAL_PACKAGES.md).
 
 ## Setup

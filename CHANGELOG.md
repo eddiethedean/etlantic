@@ -5,13 +5,13 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [0.58.0] - Unreleased
+## [0.58.0] - 2026-10-12
 
 ### Added
 
 - Add the qualified, opt-in managed Prefect execution path in
   `etlantic-prefect`, using ETLantic's accepted-work and durable execution
-  contracts. The release candidate support profile is limited to static
+  contracts. The qualified support profile is limited to static
   `etlantic.plan/1` batches on self-hosted Prefect 3.7.8 Process workers backed
   by PostgreSQL 16.15, on Ubuntu 24.04 x86_64 with Python 3.11.15, 3.12.13,
   or 3.13.16. Qualified connectors are CSV → PostgreSQL and PostgreSQL →
@@ -32,7 +32,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Release status
 
-- 0.58.0 is a release candidate. Publication and PyPI availability are pending.
+- ETLantic 0.58.0 and its 25 first-party distributions were published to
+  PyPI. The tag-triggered Release workflow completed successfully; see the
+  [GitHub release](https://github.com/eddiethedean/etlantic/releases/tag/v0.58.0).
 
 ## [0.57.2] - 2026-10-11
 

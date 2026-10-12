@@ -1,15 +1,17 @@
 ---
 title: ETLantic 0.58 Exit Gate
-status: candidate
+status: published
 current_minor: "0.58"
 ---
 
 # ETLantic 0.58 Exit Gate — Managed Prefect Execution
 
-**Candidate decision: QUALIFIED for the bounded support profile.** The phase
+**Release decision: GO; v0.58.0 was published on 2026-10-12.** The phase
 implementation from PR [#300](https://github.com/eddiethedean/etlantic/pull/300)
-was merged into `main` as `188f0ec1c5f37db8a81845acabe2a6be0902090e`.
-Publication of version 0.58.0 remains a separate release action.
+and the P1 Prefect cancellation fix from PR
+[#302](https://github.com/eddiethedean/etlantic/pull/302) are merged into
+`main` at `f69ab909284d68b0bebfb041f49c5fe5a644a226`. The published release is
+[v0.58.0](https://github.com/eddiethedean/etlantic/releases/tag/v0.58.0).
 
 ## Qualified support profile
 
@@ -32,13 +34,13 @@ acceptance item in #290–#298 as passed:
 The qualification run completed 45 checks successfully with two expected
 skips and no failures. The installed-wheel Prefect/PostgreSQL suite passed 48
 tests on each supported Python version, including headless/FastAPI parity.
-Candidate qualification evidence establishes this profile only; broader
+Qualification evidence establishes this profile only; broader
 provider and runtime combinations remain outside its scope.
 
 No SQLModel migration was added. The schema migration head remains
 `014_cp1_complete_principal_idempotency_0_56`.
 
-## 0.58.0 release preparation
+## 0.58.0 release record
 
 - [x] Align core and first-party distribution versions at 0.58.0.
 - [x] Refresh the lockfile and plugin manifest digests.
@@ -51,13 +53,11 @@ No SQLModel migration was added. The schema migration head remains
 - [x] Pass Medallantic parity tests (94 passed) and verify the refreshed adaptive
   evidence (18 acceptance criteria).
 - [x] Pass full GitHub CI for the release candidate (47 jobs).
-- [ ] Merge the release-preparation change before tagging or publishing.
+- [x] Merge the release-preparation change before tagging or publishing.
+- [x] Pass post-merge main CI (run [38306010902](https://github.com/eddiethedean/etlantic/actions/runs/38306010902)).
+- [x] Pass the tag-triggered Release workflow (run [38306117142](https://github.com/eddiethedean/etlantic/actions/runs/38306117142)).
+- [x] Publish GitHub release `v0.58.0` and the lockstep first-party distributions.
 
-Local check results: `scripts/check_docs.py`, `mkdocs build --strict`,
-`scripts/check_plugin_manifests.py`, `scripts/check_release.py`, and
-`git diff --check` passed. The release checker reports that the 0.58.0 versions
-are not yet on PyPI for all 25 projects; that is expected before publication.
-
-The current published line remains 0.57.x until the 0.58.0 tag and publication
-workflow complete. See the [release process](RELEASE_PROCESS.md) before any
-tag or publish operation.
+The release was published at 2026-10-12T21:09:14Z. The current supported line
+is 0.58.x. See the [release process](RELEASE_PROCESS.md) for the workflow used
+to publish this release.

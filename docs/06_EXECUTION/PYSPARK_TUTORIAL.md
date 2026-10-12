@@ -42,7 +42,7 @@ Databricks / EMR / Spark Connect providers are **not** included in 0.38.
 
 ```bash
 python -m pip install 'etlantic==0.58.0' 'etlantic-pyspark==0.58.0'
-git clone --branch v0.57.0 https://github.com/eddiethedean/etlantic.git
+git clone --branch v0.58.0 https://github.com/eddiethedean/etlantic.git
 cd etlantic
 python examples/pyspark_local.py
 ```

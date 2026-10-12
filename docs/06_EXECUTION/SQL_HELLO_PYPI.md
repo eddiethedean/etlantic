@@ -12,7 +12,7 @@ After [Quickstart](../01_GETTING_STARTED/QUICKSTART.md) success on local
 Python, use this page to prove `etlantic-sql` installs and runs.
 
 Companion script (clone / optional download):
-[`examples/sql_hello_pypi.py`](https://github.com/eddiethedean/etlantic/blob/v0.57.0/examples/sql_hello_pypi.py).
+[`examples/sql_hello_pypi.py`](https://github.com/eddiethedean/etlantic/blob/v0.58.0/examples/sql_hello_pypi.py).
 
 ## 1. Install
 
@@ -158,7 +158,7 @@ Optional raw download from the tagged release (still no full clone):
 
 ```bash
 curl -fsSL -o sql_hello.py \
-  https://raw.githubusercontent.com/eddiethedean/etlantic/v0.57.0/examples/sql_hello_pypi.py
+  https://raw.githubusercontent.com/eddiethedean/etlantic/v0.58.0/examples/sql_hello_pypi.py
 python sql_hello.py
 ```
 

@@ -1,6 +1,6 @@
 # Evaluator Brief
 
-> **Status: ETLantic 0.58.0 is a Beta release candidate; publication is pending. Adaptive graduation remains pending.**
+> **Status: ETLantic 0.58.0 is the published Beta release. Adaptive graduation remains pending.**
 
 A one-page answer for enterprise evaluators and technical decision-makers.
 
@@ -12,12 +12,12 @@ A one-page answer for enterprise evaluators and technical decision-makers.
 
 ## Residual evaluation lead
 
-| Topic | 0.57 |
+| Topic | 0.58 |
 |---|---|
 | Maturity | Published **Beta release** |
 | Suitable for | Documented single-tenant pilots; Supported multi-tenant profiles |
 | Support | Community; **no formal SLA** |
-| LTS | No LTS; `0.57.x` is the current published line |
+| LTS | No LTS; `0.58.x` is the current published line |
 | Not included as GA | Unbounded scale; formal enterprise SLA; `shared-service` without real RLS |
 
 ## What ETLantic is
@@ -29,7 +29,7 @@ them; plugins execute.
 It is **not** a dataframe engine, distributed scheduler, warehouse, or secret
 manager.
 
-## What is ready in bounded 0.57.0
+## What is ready in 0.58.0
 
 | Area | Ready? |
 |---|---|
@@ -51,6 +51,7 @@ manager.
 | PySpark plugin (`etlantic-pyspark`) | Yes (local provider; batch production path) |
 | Structured Streaming | Experimental |
 | Airflow / orchestrator compilation | Yes (`etlantic-airflow`) |
+| Managed Prefect execution | Yes, within the qualified static-batch Process-worker/PostgreSQL support profile |
 | DTCS 3.0 portable plan models/profiles | Yes (install `dtcs>=0.13,<1`; content floor `dtcs` 0.14.0) |
 | `@Transformation.portable` authoring | Yes (0.11) |
 | Portable Polars compiler (kernel + relational `/1`) | Yes (0.13+) |
@@ -79,7 +80,7 @@ manager.
   unsafe-serialization prohibition, versioned `SecurityEvent`, release digests /
   attestations (see [Release artifact verification](RELEASE_ARTIFACT_VERIFICATION.md))
   digests and GitHub attestations
-- Report vulnerabilities privately; security fixes are supported on 0.50.x
+- Report vulnerabilities privately; security fixes are supported on 0.58.x
 
 ### Shipped trust controls vs residual gaps
 
@@ -103,7 +104,7 @@ For the bounded reference topology and required controls, read
 
 ## Bounded production support (do not skip)
 
-ETLantic **0.58.0** is the current **Beta release candidate**; 0.57.x remains the published and supported line for documented single-tenant
+ETLantic **0.58.0** is the current **published Beta release** and supported line for documented single-tenant
 pilots and Supported multi-tenant profiles. Shipped trust controls do not
 make an arbitrary shared-service topology safe.
 
@@ -148,10 +149,10 @@ How to read status labels in deeper chapters:
 
 ## Enterprise readiness matrix
 
-| Concern | Status in 0.57 |
+| Concern | Status in 0.58 |
 |---|---|
 | License | MIT (core and official plugins) |
-| Supported versions / EOL | Current published Beta line is 0.57.x; see [SECURITY.md](https://github.com/eddiethedean/etlantic/blob/main/SECURITY.md) |
+| Supported versions / EOL | Current published Beta line is 0.58.x; see [SECURITY.md](https://github.com/eddiethedean/etlantic/blob/main/SECURITY.md) |
 | Compliance attestations (SOC2, GDPR cert) | Adopter-owned — not provided |
 | Identity / RBAC / SSO | Out of scope — use process and network isolation |
 | HA / DR / RPO / RTO | Adopter-owned topology |

@@ -1,9 +1,9 @@
 # Frequently Asked Questions
 
-> **Version boundary:** ETLantic 0.58.0 is a Beta release candidate; 0.57.x remains the published and supported line.
+> **Version boundary:** ETLantic 0.58.0 is the published Beta release and supported line.
 
 
-> **Status: ETLantic 0.58.0 is a Beta release candidate; publication is pending.**
+> **Status: ETLantic 0.58.0 is the published Beta release.**
 
 Practical questions for ETLantic **0.58.0**. Philosophy and contract taxonomy
 live under [Foundations](../02_FOUNDATIONS/README.md).
@@ -82,7 +82,7 @@ SaaS. See [Capabilities](CAPABILITIES.md) and
 
 ## Available vs Experimental?
 
-**Available** means it is in the current 0.56 product envelope: documented, tested, and
+**Available** means it is in the current 0.58 product envelope: documented, tested, and
 covered by the Beta support policy (current minor only, no SLA).
 **Experimental** means Alpha extras (Kafka, Iceberg, MCP, DataFusion, k8s,
 Spark Connect, `shared-service` isolation) that may change or stay fake-first.

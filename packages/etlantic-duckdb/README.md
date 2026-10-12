@@ -1,6 +1,6 @@
 # etlantic-duckdb
 
-> **Release status:** ETLantic 0.58.0 is a Beta release candidate; publication is pending.
+> **Release status:** ETLantic 0.58.0 is the published Beta release (2026-10-12).
 
 Optional DuckDB support for ETLantic 0.57. The package is driver-free from core and
 is selected explicitly with `Profile(sql_engine="duckdb")`.

@@ -1,6 +1,6 @@
 # CI Integration
 
-> **Status: ETLantic 0.58.0 Beta release candidate.**
+> **Status: ETLantic 0.58.0 Beta release.**
 
 Validate without executing transformation code and publish SARIF diagnostics.
 

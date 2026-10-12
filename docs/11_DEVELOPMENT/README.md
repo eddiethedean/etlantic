@@ -1,6 +1,6 @@
 # Development
 
-Latest published release: ETLantic 0.57.2; 0.58.0 is the release candidate.
+Latest published release: ETLantic 0.58.0 (Beta).
 See the [0.57 → 0.58 migration](MIGRATION_0_57_TO_0_58.md), [0.58 exit gate](EXIT_GATE_0_58.md),
 and [0.56 migration](MIGRATION_0_55_TO_0_56.md),
 [exit gate](EXIT_GATE_0_56.md), and
@@ -16,7 +16,7 @@ The new [0.56 complete application backend phase](IMPLEMENTATION_PLAN_0_56.md)
 closes the [reviewed backend gaps](FINDINGS_0_56.md) through
 [ordered execution gates](EXECUTION_PLAN_0_56.md). The next
 [0.57 managed backend independence and runtime supervision phase](IMPLEMENTATION_PLAN_0_57.md)
-fully implements issues #278–#282 for 0.57.0. The qualified candidate
+fully implements issues #278–#282 for 0.57.0. The qualified
 [0.58 managed Prefect phase](IMPLEMENTATION_PLAN_0_58.md) owns #290 and
 #291–#298. Brownfield, console, broader provider, and TransformationModel phases
 follow as 0.59–0.62 with scope retained.
@@ -42,7 +42,7 @@ released.
 
 ## Current migrations and exit gates
 
-- [0.58 managed Prefect implementation](IMPLEMENTATION_PLAN_0_58.md), [migration 0.57 → 0.58](MIGRATION_0_57_TO_0_58.md), [exit gate](EXIT_GATE_0_58.md) (qualified candidate; publication pending)
+- [0.58 managed Prefect implementation](IMPLEMENTATION_PLAN_0_58.md), [migration 0.57 → 0.58](MIGRATION_0_57_TO_0_58.md), [exit gate](EXIT_GATE_0_58.md) (published; bounded support profile qualified)
 
 - [0.56 implementation](IMPLEMENTATION_PLAN_0_56.md), [execution](EXECUTION_PLAN_0_56.md), [migration 0.55 → 0.56](MIGRATION_0_55_TO_0_56.md), and [exit gate](EXIT_GATE_0_56.md)
 
@@ -64,7 +64,7 @@ released.
   [exit gate](EXIT_GATE_0_51.md) ([epic #30](https://github.com/eddiethedean/etlantic/issues/30))
 - [0.52 release-blocker remediation and verification](REMEDIATION_0_52.md)
 - [0.48 implementation plan](IMPLEMENTATION_PLAN_0_48.md) (Gate-ready)
-- [0.58 managed Prefect implementation plan](IMPLEMENTATION_PLAN_0_58.md) (Qualified candidate; bounded support profile)
+- [0.58 managed Prefect implementation plan](IMPLEMENTATION_PLAN_0_58.md) (Published; bounded support profile qualified)
 - [ADR-027: Managed Prefect execution](adr/ADR-027-MANAGED-PREFECT-EXECUTION.md) (Accepted; 0.58 support profile qualified)
 - [ADR-024: Human-governed AI](adr/ADR-024-HUMAN-GOVERNED-AI.md) (Accepted)
 - [ADR-026: Managed backend independence and runtime supervision](adr/ADR-026-MANAGED-BACKEND-INDEPENDENCE-AND-SUPERVISION.md) (Accepted)

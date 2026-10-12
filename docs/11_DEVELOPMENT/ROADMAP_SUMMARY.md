@@ -4,9 +4,8 @@ ETLantic **0.35.0** closed **Migration Completion and Joint Freeze (M7)**.
 **0.36.0** closed joint compatibility burn-in. **0.37** closed the
 stable-foundation gate. **0.38.0** closed the connectivity line.
 **0.39.0** closed CP1 incubation. **0.40.0** closed CP2 registry incubation.
-**0.57.2** is the latest published **Beta release**. **0.58.0 is a release
-candidate** for managed Prefect execution; its bounded support profile is
-qualified and publication is pending. Phase 0.56 is published; see its exit
+**0.58.0** is the latest published **Beta release**, with a bounded managed
+Prefect support profile. Phase 0.56 is published; see its exit
 gate and migration guide. Adaptive graduation remains pending. The 0.54
 release added public conformance and the bounded source/fusion reference; its
 local adaptive physical-DAG execution is Experimental and fixture-qualified.
@@ -49,14 +48,14 @@ For the status, current boundary, and owner of every domain plan, use the
 | Previous | 0.54 | Adaptive conformance and bounded scan/filter/project implementation | Published Beta; graduation pending — [plan](IMPLEMENTATION_PLAN_0_54.md), [exit gate](EXIT_GATE_0_54.md) |
 | Previous | 0.55 | Scoped Experimental inferred-model authoring | Published — [exit gate](EXIT_GATE_0_55.md) |
 | Previous | 0.56 | Complete application ETL backend with full specification and run control | Published — [exit gate](EXIT_GATE_0_56.md) |
-| Previous | 0.57 | Managed backend independence and runtime supervision (#278–#282) | 0.57.2 is the latest published and supported patch — [implementation plan](IMPLEMENTATION_PLAN_0_57.md), [exit gate](EXIT_GATE_0_57.md) |
-| Current | 0.58 | Managed Prefect execution | Bounded static-batch Process-worker/PostgreSQL profile qualified; candidate publication pending — [implementation plan](IMPLEMENTATION_PLAN_0_58.md), [final decision](evidence/phase_0_58/FINAL_QUALIFICATION_DECISION_2026-10-12.json), [#290](https://github.com/eddiethedean/etlantic/issues/290) |
+| Previous | 0.57 | Managed backend independence and runtime supervision (#278–#282) | Published — [implementation plan](IMPLEMENTATION_PLAN_0_57.md), [exit gate](EXIT_GATE_0_57.md) |
+| Current | 0.58 | Managed Prefect execution | Published; bounded static-batch Process-worker/PostgreSQL profile qualified — [implementation plan](IMPLEMENTATION_PLAN_0_58.md), [final decision](evidence/phase_0_58/FINAL_QUALIFICATION_DECISION_2026-10-12.json), [#290](https://github.com/eddiethedean/etlantic/issues/290) |
 | Later | 0.59 | Brownfield adoption bridges | Planning freeze — [implementation plan](IMPLEMENTATION_PLAN_0_59.md) |
 | Later | 0.60 | Operator console | Planned — [implementation plan](IMPLEMENTATION_PLAN_0_60.md) |
 | Later | 0.61 | Managed runtime and enterprise provider packs | Planned — [implementation plan](IMPLEMENTATION_PLAN_0_61.md) |
 | Later | 0.62 | TransformationModel incubation | Proposed — [implementation plan](IMPLEMENTATION_PLAN_0_62.md) |
 | Foundation | 0.36–0.37 | Joint burn-in → stable foundation | Gate-ready (0.37) |
-| Post-foundation | 0.38–0.62 | Connectivity → control plane → intelligence → federation → governed AI → DuckDB package → portable-engine baseline → adaptive execution → inferred model authoring → complete application backend → backend independence → managed Prefect → adoption → operations → providers → modeling incubation | Candidate review (0.56 is published Beta; adaptive graduation pending) |
+| Post-foundation | 0.38–0.62 | Connectivity → control plane → intelligence → federation → governed AI → DuckDB package → portable-engine baseline → adaptive execution → inferred model authoring → complete application backend → backend independence → managed Prefect → adoption → operations → providers → modeling incubation | In progress (0.58 is published Beta; adaptive graduation pending) |
 
 “Planned” records capability order only. It does not imply a release date or
 that the capability is available in the current package.

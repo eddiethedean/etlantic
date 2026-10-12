@@ -1,17 +1,15 @@
 # Your First Pipeline
 
-> **Version boundary:** 0.58.0 is the Beta release candidate; 0.57.x remains the latest published line.
+> **Version boundary:** 0.58.0 is the latest published Beta release.
 
 
-> **Status: ETLantic 0.58.0 Beta release candidate.** Extends the project from
+> **Status: ETLantic 0.58.0 Beta release.** Extends the project from
 > [Quickstart](QUICKSTART.md). Local Python + JSON assets only.
 
 !!! tip "PyPI vs clone"
     This page is **PyPI-only**. No repository checkout required.
 
-The 0.58.0 package pin below becomes available from PyPI after publication.
-Until then, follow the published 0.57.2 quickstart or use candidate wheels as
-described in [Installation](INSTALLATION.md).
+The 0.58.0 package pin below installs from PyPI.
 
 ## Start from the init project
 

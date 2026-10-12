@@ -1,14 +1,13 @@
 ---
 title: Migration from 0.57 to 0.58
-status: candidate
+status: available
 since: "0.58.0"
 current_minor: "0.58"
 ---
 
 # Migration from 0.57 to 0.58
 
-> **Status: Candidate guide for ETLantic 0.58.0; publication is pending.**
-> The latest published line is 0.57.x.
+> **Status: Migration guide for the published ETLantic 0.58.0 release.**
 
 For existing 0.57 deployments, the 0.58 upgrade keeps package versions in
 lockstep and adds an optional managed Prefect execution path. Existing pipeline
@@ -17,11 +16,8 @@ who opt into the managed path need the additional Prefect configuration below.
 
 ## Package upgrade
 
-Install ETLantic and any first-party plugins at the same version. The candidate
-version is `0.58.0`; candidate wheels are not available from PyPI before
-publication. Use the release artifacts from the candidate build or a checkout
-of the release candidate. For an existing published installation, remain on
-the latest 0.57.x patch until 0.58.0 is published.
+Install ETLantic and any first-party plugins at the same version. The published
+version is `0.58.0`; install it and its plugins from PyPI.
 
 First-party plugins declare the compatible core floor `etlantic>=0.58.0`;
 deployment lockfiles should pin the core and selected plugins to `0.58.0`.
@@ -52,7 +48,7 @@ provisioning controls.
 ## Rollout
 
 1. Upgrade the core and the plugins used by the deployment to matching 0.58.0
-   candidate artifacts.
+   release artifacts.
 2. Apply the deployment's normal database migration procedure and confirm the
    existing schema is at a compatible head; no 0.58 migration is expected.
 3. Keep existing direct Prefect flows unchanged while validating managed
@@ -61,5 +57,5 @@ provisioning controls.
    cancellation, and recovery through the shared ETLantic service interface.
 
 See [What's New in 0.58](../01_GETTING_STARTED/WHATS_NEW_0_58.md) and the
-[release exit gate](EXIT_GATE_0_58.md). Until publication, 0.57.x remains the
-published and supported package line.
+[release exit gate](EXIT_GATE_0_58.md) for the published support boundary and
+qualification evidence.

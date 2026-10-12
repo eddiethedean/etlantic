@@ -50,7 +50,7 @@ Repository scripts under `examples/` are **not** in the PyPI wheel.
 
 ```bash
 python -m pip install 'etlantic==0.58.0' 'etlantic-pandas==0.58.0'
-git clone --branch v0.57.0 https://github.com/eddiethedean/etlantic.git
+git clone --branch v0.58.0 https://github.com/eddiethedean/etlantic.git
 cd etlantic
 python examples/dataframe_parity.py pandas
 ```
