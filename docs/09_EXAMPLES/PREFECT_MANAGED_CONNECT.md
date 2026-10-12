@@ -1,8 +1,9 @@
 # Managed Prefect on Posit Connect
 
-> **Status: deployment recipe only.** The managed Prefect path has not been
-> live-qualified on Posit Connect. This guide describes a host composition; it
-> does not add Connect to ETLantic's supported hosting matrix.
+!!! warning "Status: Available in ETLantic 0.57.2 Beta (deployment recipe only)"
+    The managed Prefect path has not been live-qualified on Posit Connect. This
+    guide describes a host composition; it does not add Connect to ETLantic's
+    supported hosting matrix.
 
 This layout runs the FastAPI control plane as a Connect ASGI app, while a
 separately supervised Prefect dispatcher and Process worker handle execution.
