@@ -690,6 +690,18 @@
         "#295 partial",
         "#298 partial"
       ]
+    },
+    {
+      "id": "ci-installed-wheel-32-submission-outage-2026-10-12",
+      "path": "CI_INSTALLED_WORKER_32_SUBMISSION_OUTAGE_2026-10-12.json",
+      "status": "passed",
+      "qualifies_release": false,
+      "covers": [
+        "AC058-005 partial",
+        "058-A2 partial",
+        "#295 partial",
+        "#298 partial"
+      ]
     }
   ],
   "open_gates": [

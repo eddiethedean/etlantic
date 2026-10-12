@@ -1,0 +1,96 @@
+{
+  "schema": "etlantic.phase_0_58.campaign_evidence/1",
+  "campaign_id": "ci-installed-wheel-32-submission-outage-2026-10-12",
+  "recorded_at": "2026-10-12",
+  "status": "passed",
+  "qualifies_release": false,
+  "test": "tests/prefect/test_managed_prefect_0_58.py::test_process_worker_executes_targeted_csv_and_postgresql_transfers in the complete installed-wheel Prefect suite",
+  "commands": [
+    "uv run pytest -q tests/prefect -m prefect",
+    "Build core, Prefect, SQL, SQLModel, FastAPI, and worker-backend plugin wheels; install into a fresh Python 3.11 environment; run env -u PYTHONPATH <venv>/bin/python -m pytest -o pythonpath= -q tests/prefect -m prefect",
+    "env -u PYTHONPATH <venv>/bin/python -m pytest -o pythonpath= -q tests/fastapi/test_managed_application_0_56.py::test_managed_headless_and_http_command_semantics_match"
+  ],
+  "result": "GitHub Actions run 38215564023 passed on candidate 1ea188822dacf9dd4c9d8af40d040ce04482775d. The installed-wheel Prefect/PostgreSQL suite passed 46 tests in 110.82s with no failures or skips. Installed-wheel headless/FastAPI route parity passed 1 test in 1.26s. The complete workflow finished with 43 successful checks, 2 expected historical Adaptive 0.54 skips, and no failures.",
+  "assertions": [
+    "Core, Prefect, SQL, SQLModel, FastAPI, and the separate worker-backend plugin were built as wheels and installed in a fresh Python 3.11 environment; PYTHONPATH was unset and pytest's configured pythonpath was disabled.",
+    "The installed-wheel live PostgreSQL suite passed the 32-submission Prefect API outage burst: no targets were claimed or effected while the API was down, and after restart the bounded dispatcher and separate Process workers completed all 32 once.",
+    "The same suite passed the managed worker, dispatch, schedule, cancellation, deployment lifecycle, authority, and recovery cases without environment-gated skips.",
+    "The installed headless/FastAPI test confirmed matching managed command behavior with the Prefect execution route preserved through both submission surfaces.",
+    "The full repository CI workflow passed all required jobs. The only skipped checks were the two historical Adaptive 0.54 observation gates."
+  ],
+  "runtime": {
+    "runner": "ubuntu-latest",
+    "python": "3.11 (fresh uv virtual environment; runner-managed patch version)",
+    "etlantic": "0.57.2 candidate wheel",
+    "etlantic_prefect": "0.57.2 candidate wheel",
+    "etlantic_sql": "0.57.2 candidate wheel",
+    "etlantic_sqlmodel": "0.57.2 candidate wheel",
+    "etlantic_fastapi": "0.57.2 candidate wheel",
+    "worker_backend_plugin": "etlantic-phase058-test-worker-plugin 0.1.0 candidate wheel",
+    "prefect": "3.7.8",
+    "sqlmodel": "0.0.39",
+    "sqlalchemy": "2.0.51",
+    "psycopg": "3.3.4",
+    "postgresql": "16 (postgres:16 CI service)",
+    "worker_pool": "Process",
+    "prefect_server": "Self-hosted Prefect API backed by the PostgreSQL CI service"
+  },
+  "fingerprints": {
+    "candidate_commit": "1ea188822dacf9dd4c9d8af40d040ce04482775d",
+    "test_source_sha256": "dd9ef33a460afb44a9c8f413b2232311306188ac8dc4bc1ded8226f068555de1",
+    "worker_plugin_source_sha256": "b5460d5e250afc1791c154c56c5132db7e58a52166e88fe86a4ed12fbadb463a",
+    "uv_lock_sha256": "3b5507c03e752619016552c9fcc00e4961d9d6b3b426deb11bbdbfca240c73ec",
+    "source_sha256": "581f783355ccb0e2508c76baa73301d5609f0f9e3f03c9b7cca8d2a7350822d1",
+    "source_sha256_method": "SHA-256 over sorted repository-relative source paths and file bytes, with NUL separators."
+  },
+  "wheel_sha256": {
+    "etlantic-0.57.2-py3-none-any.whl": "5c057d9be729207d86998ef3aba25d109063fd193be22dcc2bb87ba9447bfca4",
+    "etlantic_fastapi-0.57.2-py3-none-any.whl": "7f9e0996d3a56b67b0133e3b5440a915a8ac605875a3a87ccc1f23a2b3d729bc",
+    "etlantic_prefect-0.57.2-py3-none-any.whl": "f5b07fdcc3931f54b8e6e3b8cba3c8d31659c5e0acd4a1b6f69fc56f104a4044",
+    "etlantic_sql-0.57.2-py3-none-any.whl": "8691963026f3d090f60560b2880880356cf9dfac7b0455f9280542951274a8e5",
+    "etlantic_sqlmodel-0.57.2-py3-none-any.whl": "c024e3308dbec4c281214e8e12fc1e5c30ef1321361800788a5bf0f2ecd3ed75",
+    "etlantic_phase058_test_worker_plugin-0.1.0-py3-none-any.whl": "49b5b062d2bab8e15d6f893219fe6ee5eb97894f4cd8ec593b528acba79d560f"
+  },
+  "ci_configuration": {
+    "workflow": ".github/workflows/checks.yml",
+    "job": "Prefect scheduler and managed execution",
+    "run_id": 38215564023,
+    "job_id": 114699446126,
+    "run_url": "https://github.com/eddiethedean/etlantic/actions/runs/38215564023",
+    "job_url": "https://github.com/eddiethedean/etlantic/actions/runs/38215564023/job/114699446126",
+    "artifact_name": "phase-0.58-installed-worker-84114a0d66acd04aa37cb2f63789a386a58032c7",
+    "artifact_sha256": "8d8dcf3ee858b053f5be6e22b5a802bdd0dd567deaf8940fcf9f2c168337cdeb",
+    "workflow_run_final_status": "success",
+    "workflow_successful_checks": 43,
+    "workflow_skipped_checks": [
+      "Checks / Adaptive 0.54 observation (${{ matrix.os }}, ${{ matrix.python-version }})",
+      "Checks / Verify observed adaptive 0.54 matrix"
+    ],
+    "workflow_failed_checks": 0
+  },
+  "source_files": [
+    ".github/workflows/checks.yml",
+    "packages/etlantic-prefect/src/etlantic_prefect/dispatcher.py",
+    "src/etlantic/control_plane/managed_backend.py",
+    "src/etlantic/runtime/role.py",
+    "tests/prefect/test_managed_prefect_0_58.py",
+    "tests/prefect/worker_plugin/src/phase058_worker_backend/__init__.py",
+    "uv.lock"
+  ],
+  "limitations": [
+    "This proves one installed-wheel tuple on ubuntu-latest, Python 3.11, PostgreSQL 16, Prefect 3.7.8, and the Process pool; it is not a complete supported-version or operating-system matrix.",
+    "The 32-submission outage case is a bounded burst, not a sustained-capacity or prolonged-outage qualification.",
+    "The run does not qualify production hosting, Posit Connect, Prefect Cloud, other pools, an independent third-party backend, a real 30-day retention interval, or external identity-provider behavior. The integrated phase release decision remains open."
+  ],
+  "artifacts": [
+    {
+      "name": "phase-0.58-installed-worker-84114a0d66acd04aa37cb2f63789a386a58032c7",
+      "sha256": "8d8dcf3ee858b053f5be6e22b5a802bdd0dd567deaf8940fcf9f2c168337cdeb",
+      "contents": [
+        "phase058-clean-wheel-prefect.xml",
+        "phase058-headless-fastapi-parity.xml",
+        "phase058-wheel-sha256.txt"
+      ]
+    }
+  ]
+}

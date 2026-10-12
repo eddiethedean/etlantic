@@ -82,13 +82,14 @@ cancellation during source staging and terminal report publication, and report
 store failure recovery without repeating a committed sink effect. PostgreSQL
 retirement tests cover concurrent operators and recovery after process death
 between remote pause and durable retirement, including a Prefect API restart at
-that exact boundary. A queued submission also survives an API outage before
-dispatch: the dispatcher reports unusable prerequisites without claiming work,
-then a bounded tick and separate Process worker recover it after restart. A
-second trace stops the API after the worker commits its effect and report but
-before host finalization; the
-canonical run stays authoritative while remote status is unavailable, and API
-restart lets that worker finish publication without repeating the effect.
+that exact boundary. A live PostgreSQL campaign leaves a 32-submission backlog
+unclaimed across four bounded failed dispatcher ticks while the Prefect API is
+stopped, then drains it one item per tick and completes every target once with
+a separate Process worker ([campaign evidence](../../docs/11_DEVELOPMENT/evidence/phase_0_58/LIVE_POSTGRES_32_SUBMISSION_OUTAGE_RECOVERY.json)).
+A second trace stops the API after the worker commits its effect and report but
+before host finalization; the canonical run stays authoritative while remote
+status is unavailable, and API restart lets that worker finish publication
+without repeating the effect.
 Process-worker recovery also covers a hard kill during a partial artifact
 staging write before atomic replacement, a sink credential rotation after
 dispatch but before claim, and a test backend that independently commits a
@@ -100,10 +101,12 @@ outages also remain unqualified.
 The local clean-wheel campaign passed 44 Prefect tests with no skips and the
 headless/FastAPI parity test on Python 3.11.15, Prefect 3.7.8, PostgreSQL 16.13,
 the Process worker pool, and ETLantic core/Prefect/FastAPI/SQL/SQLModel 0.57.2
-wheels plus the separately built test backend. The blocking CI clean-wheel job
-on candidate `7336d377` also passed all 44 installed-wheel Prefect tests without
-skips on `ubuntu-latest`, Python 3.11, and PostgreSQL 16; it includes the
-approval revocation and expiry checks. Its [wheel digests and test report](../../docs/11_DEVELOPMENT/evidence/phase_0_58/CI_INSTALLED_WORKER_APPROVAL_AUTHORITY_BOUNDARIES.json)
+wheels plus the separately built test backend. The earlier blocking CI
+clean-wheel job on candidate `7336d377` passed all 44 installed-wheel tests;
+the latest blocking CI run on candidate `1ea1888` passed all 46 with no skips,
+including the expanded outage campaign and approval revocation and expiry
+checks. Its [wheel digests, JUnit report, and full run
+record](../../docs/11_DEVELOPMENT/evidence/phase_0_58/CI_INSTALLED_WORKER_32_SUBMISSION_OUTAGE_2026-10-12.json)
 are recorded in the phase ledger. These versions record tested candidate
 environments; they are not yet a production support commitment. Other Python
 and Prefect versions and other Prefect worker pools remain unqualified.
