@@ -8,7 +8,6 @@ import os
 import tempfile
 import time
 from collections.abc import Callable, Mapping, Sequence
-from datetime import datetime
 from pathlib import Path
 from threading import Event, Thread
 from typing import Any, cast
@@ -556,15 +555,6 @@ def _context() -> ControlPlaneContext:
 
 def build_backend() -> tuple[ManagedBackend, ControlPlaneContext]:
     """Reconstruct the trusted SQL backend from worker-process configuration."""
-    approval_now = os.environ.get("ETLANTIC_PHASE058_APPROVAL_NOW")
-    if approval_now:
-        from etlantic.control_plane import approval_memory
-
-        frozen_approval_now = datetime.fromisoformat(approval_now)
-        if frozen_approval_now.tzinfo is None:
-            raise ValueError("phase 0.58 approval clock must include a timezone")
-        approval_memory._now = lambda: frozen_approval_now
-
     profile = Profile(
         name="phase058-process-worker",
         security_mode="development",
@@ -866,6 +856,16 @@ def build_backend() -> tuple[ManagedBackend, ControlPlaneContext]:
     # The fixture's provider assembly is worker-side configuration, just as a
     # deployed application would install its connector factory with the backend.
     ManagedBackend.create_execution_host = create_execution_host  # type: ignore[method-assign]
+    approval_now = os.environ.get("ETLANTIC_PHASE058_APPROVAL_NOW")
+    if approval_now:
+        from datetime import datetime
+
+        from etlantic.control_plane import approval_memory
+
+        frozen_approval_now = datetime.fromisoformat(approval_now)
+        if frozen_approval_now.tzinfo is None:
+            raise ValueError("phase 0.58 approval clock must include a timezone")
+        approval_memory._now = lambda: frozen_approval_now
     return backend, ctx
 
 
