@@ -280,7 +280,7 @@ See also [Experimental surfaces](EXPERIMENTAL_SURFACES.md).
 | Streaming poison-record/DLQ policy and schema-registry interoperability | **Supported** core policy/protocol in 0.46; Kafka (`etlantic-kafka`) and Confluent adapter (`etlantic-schemaregistry`) remain **Experimental** — never Available-in-core |
 | Complete application ETL backend | **Candidate qualified for 0.56** — shared authorized services, real managed execution/results, full specification/run controls, live PostgreSQL/CSV qualification and Semblance-backed Foundry API qualification; no live Foundry account required. See [plan](../11_DEVELOPMENT/IMPLEMENTATION_PLAN_0_56.md) and [reviewed gaps](../11_DEVELOPMENT/FINDINGS_0_56.md) |
 | Transport-independent managed backend, shared schedule commands, complete scheduler factory, provider schema inspection, and role supervision (#278–#282) | Planned for 0.57.0; [implementation plan](../11_DEVELOPMENT/IMPLEMENTATION_PLAN_0_57.md) |
-| Managed Prefect execution | Planned for [0.58](../11_DEVELOPMENT/IMPLEMENTATION_PLAN_0_58.md) (#290): accepted references, installed workers, deployments, durable dispatch, status/cancel, schedules, and recovery qualification |
+| Managed Prefect execution | Candidate implementation is in progress for [0.58](../11_DEVELOPMENT/IMPLEMENTATION_PLAN_0_58.md) (#290 and #291–#298); not included in published 0.57.2 and not yet release-qualified |
 | Dagster / Argo compilers and Prefect migration interoperability | Planned brownfield bridges in 0.59; Prefect reuses the 0.58 managed adapter |
 | Read-only-first operator console | Planned first-class for 0.60 |
 | AWS/Azure/GCP/Vault secret-provider packs | Planned as optional providers in 0.61 |

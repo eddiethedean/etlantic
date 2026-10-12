@@ -702,6 +702,20 @@
         "#295 partial",
         "#298 partial"
       ]
+    },
+    {
+      "id": "live-connector-commit-during-prefect-api-outage-2026-10-12",
+      "path": "LIVE_CONNECTOR_COMMIT_DURING_PREFECT_API_OUTAGE_2026-10-12.json",
+      "status": "passed",
+      "qualifies_release": false,
+      "covers": [
+        "AC058-005 partial",
+        "AC058-006 partial",
+        "058-A2 partial",
+        "#293 partial",
+        "#296 partial",
+        "#298 partial"
+      ]
     }
   ],
   "open_gates": [

@@ -89,27 +89,35 @@ a separate Process worker ([campaign evidence](../../docs/11_DEVELOPMENT/evidenc
 A second trace stops the API after the worker commits its effect and report but
 before host finalization; the canonical run stays authoritative while remote
 status is unavailable, and API restart lets that worker finish publication
-without repeating the effect.
+without repeating the effect. A separate bounded trace stops the API while a
+worker is paused at the PostgreSQL connector-commit boundary, commits one sink
+effect with result publication pending, then restarts the API and completes the
+same attempt once ([local evidence](../../docs/11_DEVELOPMENT/evidence/phase_0_58/LIVE_CONNECTOR_COMMIT_DURING_PREFECT_API_OUTAGE_2026-10-12.json)).
 Process-worker recovery also covers a hard kill during a partial artifact
 staging write before atomic replacement, a sink credential rotation after
 dispatch but before claim, and a test backend that independently commits a
 partial sink row before worker death. Recovery keeps that row, marks the effect
 unknown, and does not replay it. This fault fixture does not qualify a production
-or third-party connector; broader authority rotation and longer or mid-execution
-outages also remain unqualified.
+or third-party connector; broader authority rotation, prolonged outages, and
+connector-I/O failures outside the tested PostgreSQL commit boundary remain
+unqualified.
 
 The local clean-wheel campaign passed 44 Prefect tests with no skips and the
 headless/FastAPI parity test on Python 3.11.15, Prefect 3.7.8, PostgreSQL 16.13,
 the Process worker pool, and ETLantic core/Prefect/FastAPI/SQL/SQLModel 0.57.2
 wheels plus the separately built test backend. The earlier blocking CI
-clean-wheel job on candidate `7336d377` passed all 44 installed-wheel tests;
-the latest blocking CI run on candidate `1ea1888` passed all 46 with no skips,
-including the expanded outage campaign and approval revocation and expiry
-checks. Its [wheel digests, JUnit report, and full run
+clean-wheel job on candidate `7336d377` passed all 44 installed-wheel tests.
+GitHub Actions run 38219651878 passed all 46 installed-wheel tests without
+skips on Ubuntu 24.04 with CPython 3.11.15, 3.12.13, and 3.13.16, plus installed
+headless/FastAPI parity on each patch. It includes the approval revocation and
+expiry checks but predates the connector-commit/API-outage trace above; a new
+blocking run for that trace is pending. The earlier 3.11 campaign's [wheel
+digests, JUnit report, and run
 record](../../docs/11_DEVELOPMENT/evidence/phase_0_58/CI_INSTALLED_WORKER_32_SUBMISSION_OUTAGE_2026-10-12.json)
 are recorded in the phase ledger. These versions record tested candidate
 environments; they are not yet a production support commitment. Other Python
-and Prefect versions and other Prefect worker pools remain unqualified.
+versions, operating systems, Prefect versions, and worker pools remain
+unqualified.
 The expanded restricted-role PostgreSQL test also completes versioned
 deployment registration, routed acceptance, and remote dispatch create/link
 using table DML grants without schema `CREATE` privilege.
@@ -135,7 +143,7 @@ The local clean-wheel run also passed the partial-effect and mid-execution API r
 | Worker pool | Process pool is the only accepted pool and was exercised in the recorded environment; other pool types are rejected at registration. |
 | Prefect hosting | Self-hosted API with PostgreSQL persistence. Prefect Cloud, Docker, Kubernetes, and other pools have no managed support claim. |
 | Host composition | Headless and FastAPI command parity passed from installed wheels. Posit Connect is a deployment recipe, not a live-qualified host. |
-| Production status | No managed version tuple is production-qualified. The table above records one local candidate configuration; other Python, Prefect, operating-system, database, and hosting combinations remain unqualified. |
+| Production status | No managed version tuple is production-qualified. Blocking CI has exercised the installed Process-worker path on Ubuntu 24.04 with CPython 3.11.15, 3.12.13, and 3.13.16, Prefect 3.7.8, PostgreSQL 16.15, and the 0.57.2 candidate wheels; other Python, Prefect, operating-system, database, pool, and hosting combinations remain unqualified. The new connector-commit/API-outage scenario still awaits its installed-wheel run. |
 
 The same scoped reference can read ETLantic's canonical run projection or
 persist an authorized ETLantic cancellation:
@@ -306,9 +314,10 @@ operator rearms or cancels the unresolved acceptance.
 
 The managed adapters are governed by
 [ADR-027](https://github.com/eddiethedean/etlantic/blob/main/docs/11_DEVELOPMENT/adr/ADR-027-MANAGED-PREFECT-EXECUTION.md).
-The managed adapter is being completed under
+The managed adapter is implemented on the current 0.58 candidate under
 [phase 0.58](https://github.com/eddiethedean/etlantic/blob/main/docs/11_DEVELOPMENT/IMPLEMENTATION_PLAN_0_58.md)
-under [#290](https://github.com/eddiethedean/etlantic/issues/290) and #291–#298.
+and [#290](https://github.com/eddiethedean/etlantic/issues/290) through #298;
+release qualification remains open.
 The target is static-batch `/1`, self-hosted Process workers, and PostgreSQL;
 other managed capabilities require their planned qualification.
 

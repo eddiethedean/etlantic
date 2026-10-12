@@ -3276,6 +3276,8 @@ def test_process_worker_executes_targeted_csv_and_postgresql_transfers(
     outage_effects = f"etlantic_phase058_outagefx_{scope[:16]}"
     mid_outage_table = f"etlantic_phase058_midoutage_{scope[:16]}"
     mid_outage_effects = f"etlantic_phase058_midoutagefx_{scope[:16]}"
+    connector_outage_table = f"etlantic_phase058_connectoroutage_{scope[:16]}"
+    connector_outage_effects = f"etlantic_phase058_connectoroutagefx_{scope[:16]}"
     nontransactional_table = f"etlantic_phase058_nontx_{scope[:16]}"
     nontransactional_effects = f"etlantic_phase058_nontxfx_{scope[:16]}"
     rotated_before_dispatch_table = f"etlantic_phase058_rotpre_{scope[:16]}"
@@ -3357,6 +3359,7 @@ def test_process_worker_executes_targeted_csv_and_postgresql_transfers(
                 artifact_crash_table,
                 outage_table,
                 mid_outage_table,
+                connector_outage_table,
                 nontransactional_table,
                 rotated_before_dispatch_table,
                 drift_table,
@@ -3380,6 +3383,7 @@ def test_process_worker_executes_targeted_csv_and_postgresql_transfers(
                 artifact_crash_effects,
                 outage_effects,
                 mid_outage_effects,
+                connector_outage_effects,
                 nontransactional_effects,
                 rotated_before_dispatch_effects,
                 drift_effects,
@@ -5378,6 +5382,232 @@ backend.close()
                         ).all() == [(1,)]
                 finally:
                     mid_outage_engine.dispose()
+
+                source_kind = "csv"
+                destination_table = connector_outage_table
+                destination_effects = connector_outage_effects
+                for key, value in {
+                    "ETLANTIC_PHASE058_SOURCE_KIND": source_kind,
+                    "ETLANTIC_PHASE058_DESTINATION_TABLE": destination_table,
+                    "ETLANTIC_PHASE058_EFFECT_TABLE": destination_effects,
+                }.items():
+                    monkeypatch.setenv(key, value)
+                connector_api_outage = managed.submit_run(
+                    ctx,
+                    "phase058-process-pipeline",
+                    idempotency_key=(
+                        f"phase058-connector-commit-during-api-outage-{scope}"
+                    ),
+                    request=RunRequest(materialization=MaterializationPolicy.DURABLE),
+                )
+                connector_api_dispatch = await dispatcher.tick(limit=1)
+                assert len(connector_api_dispatch) == 1
+                assert (
+                    connector_api_dispatch[0]["submission_id"]
+                    == connector_api_outage.submission_id
+                )
+                connector_commit_marker = (
+                    tmp_path / f"phase058-connector-outage-commit-{scope}"
+                )
+                connector_commit_release = (
+                    tmp_path / f"phase058-connector-outage-commit-release-{scope}"
+                )
+                connector_adapter_marker = (
+                    tmp_path / f"phase058-connector-outage-adapter-{scope}"
+                )
+                connector_adapter_release = (
+                    tmp_path / f"phase058-connector-outage-adapter-release-{scope}"
+                )
+                for key, value in {
+                    "ETLANTIC_PHASE058_HOLD_BEFORE_CONNECTOR_COMMIT": "1",
+                    "ETLANTIC_PHASE058_COMMIT_HOLD_MARKER": str(
+                        connector_commit_marker
+                    ),
+                    "ETLANTIC_PHASE058_COMMIT_HOLD_RELEASE": str(
+                        connector_commit_release
+                    ),
+                    "ETLANTIC_PHASE058_HOLD_AFTER_ADAPTER_SUBMISSION": (
+                        connector_api_outage.submission_id
+                    ),
+                    "ETLANTIC_PHASE058_HOLD_AFTER_ADAPTER_MARKER": str(
+                        connector_adapter_marker
+                    ),
+                    "ETLANTIC_PHASE058_HOLD_AFTER_ADAPTER_RELEASE": str(
+                        connector_adapter_release
+                    ),
+                }.items():
+                    monkeypatch.setenv(key, value)
+                connector_api_worker = asyncio.create_task(
+                    ProcessWorker(
+                        work_pool_name=spec.work_pool_name,
+                        name=f"phase058-connector-outage-worker-{scope[:8]}",
+                    ).start(run_once=True, printer=lambda *_args, **_kwargs: None)
+                )
+                connector_api_worker_error: BaseException | None = None
+                prefect_server_stopped = False
+                try:
+                    await asyncio.wait_for(
+                        asyncio.to_thread(_wait_for_marker, connector_commit_marker),
+                        timeout=65,
+                    )
+                    held_connector_attempts = backend.durable_work.list_attempts(
+                        ctx, connector_api_outage.submission_id
+                    )
+                    assert len(held_connector_attempts) == 1
+                    assert held_connector_attempts[0].status == "running"
+                    connector_outage_engine = create_engine(url, pool_pre_ping=True)
+                    try:
+                        with connector_outage_engine.connect() as connection:
+                            assert (
+                                connection.execute(
+                                    text(
+                                        f'SELECT id, payload FROM public."{connector_outage_table}"'
+                                    )
+                                ).all()
+                                == []
+                            )
+                            assert (
+                                connection.execute(
+                                    text(
+                                        f'SELECT effect_id FROM public."{connector_outage_effects}"'
+                                    )
+                                ).all()
+                                == []
+                            )
+                    finally:
+                        connector_outage_engine.dispose()
+
+                    stop_prefect_server()
+                    prefect_server_stopped = True
+                    connector_commit_release.touch(exist_ok=True)
+                    await asyncio.wait_for(
+                        asyncio.to_thread(_wait_for_marker, connector_adapter_marker),
+                        timeout=65,
+                    )
+                    assert backend.durable_work.get_submission(
+                        ctx, connector_api_outage.submission_id
+                    ).status in {"dispatched", "running"}
+                    assert [
+                        item.status
+                        for item in backend.durable_work.list_attempts(
+                            ctx, connector_api_outage.submission_id
+                        )
+                    ] == ["running"]
+                    assert (
+                        managed.get_run_report(
+                            ctx, str(connector_api_outage.resource_id)
+                        )["status"]
+                        == "succeeded"
+                    )
+                    connector_publication = (
+                        backend.durable_work.get_latest_result_publication(
+                            ctx, connector_api_outage.submission_id
+                        )
+                    )
+                    assert connector_publication is not None
+                    assert connector_publication.published_at is None
+                    assert (
+                        backend.durable_work.get_effect(
+                            ctx,
+                            f"{connector_api_outage.submission_id}:execution",
+                        ).status
+                        == "committed"
+                    )
+                    connector_outage_engine = create_engine(url, pool_pre_ping=True)
+                    try:
+                        with connector_outage_engine.connect() as connection:
+                            assert connection.execute(
+                                text(
+                                    f'SELECT id, payload FROM public."{connector_outage_table}"'
+                                )
+                            ).all() == [(row_id, payload)]
+                            assert connection.execute(
+                                text(
+                                    f'SELECT row_count FROM public."{connector_outage_effects}"'
+                                )
+                            ).all() == [(1,)]
+                    finally:
+                        connector_outage_engine.dispose()
+                    connector_reference = ManagedExecutionReference.from_submission(
+                        backend.durable_work.get_submission(
+                            ctx, connector_api_outage.submission_id
+                        )
+                    ).to_dict()
+                    connector_status_during_outage = await asyncio.to_thread(
+                        get_managed_run_status, connector_reference
+                    )
+                    assert connector_status_during_outage["status"] in {
+                        "dispatched",
+                        "running",
+                    }
+                    assert (
+                        connector_status_during_outage["remote_orchestration"]["status"]
+                        == "unavailable"
+                    )
+                    assert (
+                        connector_status_during_outage["reconciliation"]["status"]
+                        == "unavailable"
+                    )
+                    restart_prefect_server()
+                    prefect_server_stopped = False
+                except BaseException as exc:
+                    connector_api_worker_error = exc
+                finally:
+                    connector_commit_release.touch(exist_ok=True)
+                    connector_adapter_release.touch(exist_ok=True)
+                    if prefect_server_stopped:
+                        try:
+                            restart_prefect_server()
+                            prefect_server_stopped = False
+                        except BaseException as exc:
+                            connector_api_worker_error = exc
+                    try:
+                        await asyncio.wait_for(connector_api_worker, timeout=60)
+                    except BaseException as exc:
+                        connector_api_worker_error = exc
+                    for variable in (
+                        "ETLANTIC_PHASE058_HOLD_BEFORE_CONNECTOR_COMMIT",
+                        "ETLANTIC_PHASE058_COMMIT_HOLD_MARKER",
+                        "ETLANTIC_PHASE058_COMMIT_HOLD_RELEASE",
+                        "ETLANTIC_PHASE058_HOLD_AFTER_ADAPTER_SUBMISSION",
+                        "ETLANTIC_PHASE058_HOLD_AFTER_ADAPTER_MARKER",
+                        "ETLANTIC_PHASE058_HOLD_AFTER_ADAPTER_RELEASE",
+                    ):
+                        monkeypatch.delenv(variable, raising=False)
+                assert connector_api_worker_error is None, repr(
+                    connector_api_worker_error
+                )
+                assert (
+                    backend.durable_work.get_submission(
+                        ctx, connector_api_outage.submission_id
+                    ).status
+                    == "completed"
+                )
+                assert [
+                    item.status
+                    for item in backend.durable_work.list_attempts(
+                        ctx, connector_api_outage.submission_id
+                    )
+                ] == ["completed"]
+                recovered_connector_publication = (
+                    backend.durable_work.get_latest_result_publication(
+                        ctx, connector_api_outage.submission_id
+                    )
+                )
+                assert recovered_connector_publication is not None
+                assert recovered_connector_publication.published_at is not None
+                assert (
+                    managed.get_run_report(ctx, str(connector_api_outage.resource_id))[
+                        "status"
+                    ]
+                    == "succeeded"
+                )
+                assert (
+                    backend.durable_work.get_effect(
+                        ctx, f"{connector_api_outage.submission_id}:execution"
+                    ).status
+                    == "committed"
+                )
 
                 source_kind = "postgresql"
                 destination_table = cancelled_table
@@ -7800,6 +8030,8 @@ backend.close()
                     outage_effects,
                     mid_outage_table,
                     mid_outage_effects,
+                    connector_outage_table,
+                    connector_outage_effects,
                     nontransactional_table,
                     nontransactional_effects,
                     rotated_before_dispatch_table,
