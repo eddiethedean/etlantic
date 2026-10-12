@@ -47,7 +47,10 @@ No SQLModel migration was added. The schema migration head remains
 - [x] Pass local release readiness, docs, manifest, and release-facts checks.
 - [x] Build all 25 distributions as wheels and source distributions.
 - [x] Run the Prefect suite (44 passed, 4 skipped) and version-bump regression tests (3 passed).
-- [ ] Pass GitHub CI for the prepared release branch.
+- [x] Pass the installed-wheel unit and CLI suite (451 passed, 10 skipped).
+- [x] Pass Medallantic parity tests (94 passed) and verify the refreshed adaptive
+  evidence (18 acceptance criteria).
+- [x] Pass full GitHub CI for the release candidate (47 jobs).
 - [ ] Merge the release-preparation change before tagging or publishing.
 
 Local check results: `scripts/check_docs.py`, `mkdocs build --strict`,
