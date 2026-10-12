@@ -145,12 +145,13 @@ class DurableWorkStore(Protocol):
         include_terminal: bool = False,
         terminal_only: bool = False,
         submission_id: str | None = None,
-        execution_route: str = "local",
+        execution_route: str | None = "local",
     ) -> Sequence[OutboxRecord]:
         """List unpublished work, filtering status before applying ``limit``.
 
         ``terminal_only`` selects cancelled, completed and failed submissions
         regardless of ``include_terminal``; the default selects active work.
+        ``execution_route=None`` includes unpublished work from every route.
         """
         ...
 
@@ -287,6 +288,8 @@ class DurableWorkStore(Protocol):
         *,
         limit: int = 100,
         acknowledge_outbox: bool = True,
+        submission_id: str | None = None,
+        execution_route: str | None = None,
     ) -> Sequence[SubmissionRecord]: ...
     def get_submission(
         self, ctx: ControlPlaneContext, submission_id: str

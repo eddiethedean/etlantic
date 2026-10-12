@@ -609,9 +609,10 @@ class MemoryDurableWorkStore:
         include_terminal: bool = False,
         terminal_only: bool = False,
         submission_id: str | None = None,
-        execution_route: str = "local",
+        execution_route: str | None = "local",
     ) -> list[OutboxRecord]:
-        validate_execution_route(execution_route)
+        if execution_route is not None:
+            validate_execution_route(execution_route)
         with self._lock:
             return [
                 deepcopy(row)
@@ -620,8 +621,11 @@ class MemoryDurableWorkStore:
                 and (submission_id is None or row.submission_id == submission_id)
                 and row.published_at is None
                 and self._submissions.get((t, w, row.submission_id)) is not None
-                and self._submissions[(t, w, row.submission_id)].execution_route
-                == execution_route
+                and (
+                    execution_route is None
+                    or self._submissions[(t, w, row.submission_id)].execution_route
+                    == execution_route
+                )
                 and (
                     self._submissions[(t, w, row.submission_id)].status
                     in {"cancelled", "completed", "failed"}
@@ -1222,8 +1226,14 @@ class MemoryDurableWorkStore:
         *,
         limit: int = 100,
         acknowledge_outbox: bool = True,
+        submission_id: str | None = None,
+        execution_route: str | None = None,
     ) -> list[SubmissionRecord]:
         """Finalize cancellation requests after their worker lease expires."""
+        if submission_id is not None and not submission_id.strip():
+            raise ValueError("submission_id must be a non-empty identifier")
+        if execution_route is not None:
+            validate_execution_route(execution_route)
         reconciled: list[SubmissionRecord] = []
         now = _now()
         with self._lock:
@@ -1231,7 +1241,13 @@ class MemoryDurableWorkStore:
                 (
                     (key, row)
                     for key, row in self._submissions.items()
-                    if key[:2] == _scope(ctx) and row.status == "cancel_requested"
+                    if key[:2] == _scope(ctx)
+                    and row.status == "cancel_requested"
+                    and (submission_id is None or row.submission_id == submission_id)
+                    and (
+                        execution_route is None
+                        or row.execution_route == execution_route
+                    )
                 ),
                 key=lambda item: (item[1].created_at, item[1].submission_id),
             )

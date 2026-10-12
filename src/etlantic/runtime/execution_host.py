@@ -438,13 +438,18 @@ class ExecutionHost:
             self.durable.reconcile_cancelled_submissions(
                 ctx, limit=limit, acknowledge_outbox=False
             )
-            self._reconcile_terminal_work(
-                ctx, limit=limit, execution_route=execution_route
-            )
+            self._reconcile_terminal_work(ctx, limit=limit, execution_route=None)
             result_publications_healthy = self._reconcile_result_publications(
                 ctx, limit=limit
             )
         else:
+            self.durable.reconcile_cancelled_submissions(
+                ctx,
+                limit=1,
+                acknowledge_outbox=False,
+                submission_id=submission_id,
+                execution_route=execution_route,
+            )
             self._reconcile_terminal_work(
                 ctx,
                 limit=1,
@@ -687,7 +692,7 @@ class ExecutionHost:
         *,
         limit: int,
         submission_id: str | None = None,
-        execution_route: str = "local",
+        execution_route: str | None = "local",
     ) -> None:
         """Acknowledge terminal work only after its quota cleanup is durable."""
         for item in self.durable.pending_outbox(

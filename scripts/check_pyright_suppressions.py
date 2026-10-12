@@ -79,7 +79,9 @@ from pathlib import Path
 # the reviewed inventory remains 794 entries and is re-pinned here.
 # Direct scheduler test annotations add one import line above an existing inline
 # ignore. No suppression was added or removed; re-pin the shifted 794-entry list.
-EXPECTED_DIGEST = "9b94c427ac143b3444be84fccec137f969ed48237c148cd54241fb7c2151a534"
+# Targeted cancellation reconciliation and its regression shift five existing
+# inline ignores across the durable store and phase 0.58 tests; none changed.
+EXPECTED_DIGEST = "2f79496d657336cf95b3a5aa896e5a158e32011f70968510e3ff36edc547063f"
 
 _IGNORED_DIRECTORIES = frozenset(
     {
