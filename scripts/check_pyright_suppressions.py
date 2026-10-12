@@ -81,7 +81,9 @@ from pathlib import Path
 # ignore. No suppression was added or removed; re-pin the shifted 794-entry list.
 # Targeted cancellation reconciliation and its regression shift five existing
 # inline ignores across the durable store and phase 0.58 tests; none changed.
-EXPECTED_DIGEST = "2f79496d657336cf95b3a5aa896e5a158e32011f70968510e3ff36edc547063f"
+# Phase 0.58 snapshot and canceled-dispatch persistence tests seed internal
+# durable records directly, so each adds one file-scoped private-usage boundary.
+EXPECTED_DIGEST = "f878c63f818c7c5830f9ccb8cc5d9de71d59e1777bdb2c279ca450119948af4c"
 
 _IGNORED_DIRECTORIES = frozenset(
     {

@@ -666,11 +666,14 @@ class MemoryDurableWorkStore:
                 if (
                     submission is None
                     or submission.execution_route != execution_route
-                    or submission.status
-                    in {"cancel_requested", "cancelled", "completed", "failed"}
+                    or submission.status in {"completed", "failed"}
                 ):
                     continue
                 dispatch = self._dispatches.get((*_scope(ctx), row.submission_id))
+                if submission.status in {"cancel_requested", "cancelled"} and not (
+                    dispatch is not None and dispatch.status == "uncertain"
+                ):
+                    continue
                 if dispatch is not None and dispatch.status in {
                     "dispatched",
                     "cancelled",
@@ -841,12 +844,20 @@ class MemoryDurableWorkStore:
                 and _parse(record.retry_after_at) > current
             ):
                 return None
-            if submission.status in {
-                "cancel_requested",
-                "cancelled",
-                "completed",
-                "failed",
-            }:
+            cancelled_uncertain = (
+                record.status == "uncertain"
+                and submission.status in {"cancel_requested", "cancelled"}
+            )
+            if (
+                submission.status
+                in {
+                    "cancel_requested",
+                    "cancelled",
+                    "completed",
+                    "failed",
+                }
+                and not cancelled_uncertain
+            ):
                 return None
             if (
                 record.status == "leased"
@@ -1257,6 +1268,16 @@ class MemoryDurableWorkStore:
                 lease = self._leases.get(key)
                 if lease is not None and _parse(lease.expires_at) > now:
                     continue
+                dispatch = self._dispatches.get(key)
+                if (
+                    dispatch is not None
+                    and dispatch.status == "uncertain"
+                    and dispatch.prefect_flow_run_id is None
+                ):
+                    # A remote create may have succeeded even though its
+                    # response was lost. Keep the canonical cancellation
+                    # discoverable until the dispatcher resolves that identity.
+                    continue
                 had_running_attempt = False
                 for attempt_key, attempt in tuple(self._attempts.items()):
                     if (
@@ -1272,7 +1293,6 @@ class MemoryDurableWorkStore:
                     self._record_unknown_effect_locked(ctx, submission.submission_id)
                 cancelled = replace(submission, status="cancelled")
                 self._submissions[key] = cancelled
-                dispatch = self._dispatches.get(key)
                 if dispatch is not None and dispatch.status in {
                     "pending",
                     "reconciliation_required",
