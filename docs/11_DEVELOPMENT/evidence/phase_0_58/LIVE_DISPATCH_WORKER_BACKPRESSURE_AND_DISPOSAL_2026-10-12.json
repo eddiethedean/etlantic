@@ -4,12 +4,14 @@
   "recorded_at": "2026-10-12",
   "status": "passed",
   "qualifies_release": false,
-  "test": "tests/prefect/test_managed_prefect_0_58.py::test_process_worker_executes_targeted_csv_and_postgresql_transfers; tests/prefect/test_managed_prefect_0_58.py::test_backend_close_waits_for_registered_dispatcher_before_disposal",
+  "test": "tests/prefect -m prefect",
   "command": "ETLANTIC_CP_TEST_URL=<isolated PostgreSQL service URL> uv run pytest -q tests/prefect -m prefect",
-  "result": "The full live Prefect suite passed: 45 passed in 85.47s. This includes the separate dispatcher/close race and the self-hosted Prefect/PostgreSQL Process-worker campaign.",
+  "result": "The full live Prefect suite passed: 46 passed in 61.32s. This includes the separate dispatcher/close race, read-only dispatcher diagnostics, and the self-hosted Prefect/PostgreSQL Process-worker campaign.",
   "assertions": [
     "Four bounded dispatcher ticks against an unavailable Prefect API left all three accepted submissions unclaimed, with no execution attempts or sink effects.",
     "After Prefect API restart, one-item dispatch ticks drained the three-item backlog; separate Process-worker runs completed each target once, with one sink effect per accepted submission and nonnegative queue-age receipts.",
+    "Provider-free dispatcher diagnostics recorded four failed Prefect API preflights during the outage, then three successful remote create attempts; the queue-age high-water value was nonnegative and the snapshot contained no submission or flow-run identifiers.",
+    "A focused stale-correlation contract test recorded one missing remote run and one terminal remote failure without including either flow-run ID in diagnostics.",
     "A Prefect Process flow-run process was held after the sink effect, successful report, and run.completed event were durable. While it was held, a separate dispatcher process claimed another accepted target and was held before remote creation.",
     "Both independent processes were released to hard-exit. The worker flow run was observed as CRASHED or FAILED; the dispatcher exited at the pre-create fault point with a leased dispatch and no Prefect flow-run ID.",
     "Worker recovery published the already committed result without creating a second sink effect. Dispatcher recovery reused the persisted creation key, linked a flow run, and completed the other target exactly once.",
@@ -32,8 +34,8 @@
   },
   "source_sha256": {
     "src/etlantic/control_plane/managed_backend.py": "b565dfdc726392ba6d7138cee1f95666b3a18e07144afa5dd5423191c39e9595",
-    "packages/etlantic-prefect/src/etlantic_prefect/dispatcher.py": "378a8bf7fcf941508177b997b20b33ef29a1e4e5e4e425917a5fff252e0d3dac",
-    "tests/prefect/test_managed_prefect_0_58.py": "777dd40b9020d927e19c4b522811c0cd01c0013e1583b332501b741b9a47d61e"
+    "packages/etlantic-prefect/src/etlantic_prefect/dispatcher.py": "64800f7156825e4debc3306f5d76ab672cf1447af0235a4be0872f6e7a54aa15",
+    "tests/prefect/test_managed_prefect_0_58.py": "1e489a3f2653335980d6db021b186d7656853e2faeba3d709e6b3f2f7aa52461"
   },
   "configuration_sha256": {
     ".github/workflows/checks.yml": "74451d2cb66afdcb62b8bc70d9c482cb080429210f696a9f1304de6f574c9a21",

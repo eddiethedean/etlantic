@@ -59,6 +59,12 @@ dispatcher rather than invoking the flow function directly.
 When constructed with a `ManagedBackend`, the dispatcher registers its lifecycle
 with that backend. Request drain and join active dispatch work before closing
 the backend; a close racing an active tick will refuse to dispose shared stores.
+`dispatcher.diagnostics()` provides a provider-free snapshot of process-local
+tick failures, create attempts, uncertain creates, missing or failed remote-run
+observations, Prefect API failures, and the queue-age high-water mark. It
+contains no run identifiers or provider payloads and resets when the dispatcher
+process restarts; export it through the host's existing metrics service when
+durable or fleet-wide metrics are required.
 
 Before reading leased inputs or beginning connector effects, the worker
 reauthorizes the accepted principal for `run.submit`, planned resources, and

@@ -5,6 +5,7 @@ from __future__ import annotations
 from contextlib import suppress
 from dataclasses import dataclass, field
 from datetime import UTC, datetime
+from threading import Lock
 from typing import Any
 
 from etlantic.control_plane import (
@@ -15,6 +16,24 @@ from etlantic.control_plane import (
 from etlantic.runtime.role import RuntimeRoleLifecycle, RuntimeRoleStatus
 from etlantic_prefect.deployment import ManagedDeploymentBinding
 from etlantic_prefect.worker import ManagedExecutionReference
+
+
+@dataclass(slots=True)
+class _DispatcherDiagnostics:
+    """Process-local counters; identifiers and provider payloads are excluded."""
+
+    ticks: int = 0
+    failed_ticks: int = 0
+    dispatch_attempts: int = 0
+    uncertain_creates: int = 0
+    remote_api_failures: int = 0
+    remote_missing_observations: int = 0
+    remote_terminal_failure_observations: int = 0
+    dispatch_errors: int = 0
+    queue_age_high_water_seconds: float | None = None
+    last_observed_at: str = field(
+        default_factory=lambda: datetime.now(UTC).isoformat().replace("+00:00", "Z")
+    )
 
 
 @dataclass(slots=True)
@@ -41,6 +60,10 @@ class PrefectDispatcher:
         repr=False,
     )
     _reconciliation_cursor: str | None = field(default=None, init=False, repr=False)
+    _diagnostics: _DispatcherDiagnostics = field(
+        default_factory=_DispatcherDiagnostics, init=False, repr=False
+    )
+    _diagnostics_lock: Lock = field(default_factory=Lock, init=False, repr=False)
 
     def __post_init__(self) -> None:
         validate_control_plane_context(self.context)
@@ -85,6 +108,7 @@ class PrefectDispatcher:
             raise ValueError("limit must be between 1 and 100")
         if not self._role.begin_tick():
             return []
+        self._record_diagnostic(ticks=1)
         try:
             await self._verify_remote_binding()
             await self._reconcile_remote_failures(limit=limit)
@@ -102,11 +126,17 @@ class PrefectDispatcher:
                     receipt = await self._dispatch_submission(candidate.submission_id)
                     results.append(receipt)
                     if receipt.get("error_code"):
+                        self._record_diagnostic(dispatch_errors=1)
                         reason_code = (
                             "prefect_unavailable"
                             if receipt["error_code"] == "prefect_create_uncertain"
                             else "dispatch_store_unavailable"
                         )
+                        if receipt["error_code"] == "prefect_create_uncertain":
+                            self._record_diagnostic(uncertain_creates=1)
+                    queue_age = receipt.get("queue_age_seconds")
+                    if isinstance(queue_age, (int, float)):
+                        self._record_queue_age(float(queue_age))
                 finally:
                     self._role.end_dispatch()
             self._role.observe_prerequisites(
@@ -114,6 +144,7 @@ class PrefectDispatcher:
             )
             return results
         except Exception:
+            self._record_diagnostic(failed_ticks=1)
             self._role.observe_prerequisites(
                 "unusable", reason_code="dispatch_tick_failed"
             )
@@ -146,47 +177,113 @@ class PrefectDispatcher:
         if not candidates:
             return
         self._reconciliation_cursor = candidates[-1].submission_id
-        async with get_client() as client:
-            for dispatch in candidates:
-                flow_run_id = dispatch.prefect_flow_run_id
-                if flow_run_id is None:
-                    continue
-                try:
-                    flow_run = await client.read_flow_run(UUID(flow_run_id))
-                except ObjectNotFound:
-                    self.backend.durable_work.rearm_dispatch_after_remote_missing(
+        client_ready = False
+        try:
+            async with get_client() as client:
+                client_ready = True
+                for dispatch in candidates:
+                    flow_run_id = dispatch.prefect_flow_run_id
+                    if flow_run_id is None:
+                        continue
+                    try:
+                        flow_run = await client.read_flow_run(UUID(flow_run_id))
+                    except ObjectNotFound:
+                        self._record_diagnostic(remote_missing_observations=1)
+                        self.backend.durable_work.rearm_dispatch_after_remote_missing(
+                            self.context,
+                            dispatch.submission_id,
+                            expected_flow_run_id=flow_run_id,
+                            minimum_age_seconds=self.missing_run_grace_seconds,
+                            now=now,
+                        )
+                        continue
+                    except Exception:
+                        self._record_diagnostic(remote_api_failures=1)
+                        raise
+                    state = getattr(flow_run, "state", None)
+                    state_type = getattr(state, "type", None)
+                    state_value = getattr(state_type, "value", state_type)
+                    if state_value not in {"FAILED", "CRASHED"}:
+                        continue
+                    self._record_diagnostic(remote_terminal_failure_observations=1)
+                    self.backend.durable_work.rearm_dispatch_after_remote_failure(
                         self.context,
                         dispatch.submission_id,
                         expected_flow_run_id=flow_run_id,
-                        minimum_age_seconds=self.missing_run_grace_seconds,
                         now=now,
                     )
-                    continue
-                state = getattr(flow_run, "state", None)
-                state_type = getattr(state, "type", None)
-                state_value = getattr(state_type, "value", state_type)
-                if state_value not in {"FAILED", "CRASHED"}:
-                    continue
-                self.backend.durable_work.rearm_dispatch_after_remote_failure(
-                    self.context,
-                    dispatch.submission_id,
-                    expected_flow_run_id=flow_run_id,
-                    now=now,
-                )
+        except Exception:
+            if not client_ready:
+                self._record_diagnostic(remote_api_failures=1)
+            raise
 
     async def _verify_remote_binding(self) -> None:
         """Fail before a claim if the remote deployment or pool has drifted."""
         from prefect.client.orchestration import get_client
 
-        async with get_client() as client:
-            deployment = await client.read_deployment(self.binding.deployment_id)
-            pool = await client.read_work_pool(self.binding.spec.work_pool_name)
+        try:
+            async with get_client() as client:
+                deployment = await client.read_deployment(self.binding.deployment_id)
+                pool = await client.read_work_pool(self.binding.spec.work_pool_name)
+        except Exception:
+            self._record_diagnostic(remote_api_failures=1)
+            raise
         self.binding.verify_remote_deployment(deployment)
         self.binding.verify_remote_work_pool(pool)
 
     def status(self) -> RuntimeRoleStatus:
         """Return cached local dispatcher readiness without provider I/O."""
         return self._role.status()
+
+    def diagnostics(self) -> dict[str, int | float | str | None]:
+        """Return bounded process-local dispatch counters without provider I/O."""
+        with self._diagnostics_lock:
+            snapshot = self._diagnostics
+            return {
+                "schema": "etlantic.prefect_dispatcher_diagnostics/1",
+                "ticks": snapshot.ticks,
+                "failed_ticks": snapshot.failed_ticks,
+                "dispatch_attempts": snapshot.dispatch_attempts,
+                "uncertain_creates": snapshot.uncertain_creates,
+                "remote_api_failures": snapshot.remote_api_failures,
+                "dispatch_errors": snapshot.dispatch_errors,
+                "remote_missing_observations": snapshot.remote_missing_observations,
+                "remote_terminal_failure_observations": (
+                    snapshot.remote_terminal_failure_observations
+                ),
+                "queue_age_high_water_seconds": (snapshot.queue_age_high_water_seconds),
+                "observed_at": snapshot.last_observed_at,
+            }
+
+    def _record_diagnostic(self, **increments: int) -> None:
+        with self._diagnostics_lock:
+            for name, amount in increments.items():
+                if name not in {
+                    "ticks",
+                    "failed_ticks",
+                    "dispatch_attempts",
+                    "uncertain_creates",
+                    "remote_api_failures",
+                    "remote_missing_observations",
+                    "remote_terminal_failure_observations",
+                    "dispatch_errors",
+                }:
+                    raise ValueError("unknown dispatcher diagnostic counter")
+                setattr(
+                    self._diagnostics, name, getattr(self._diagnostics, name) + amount
+                )
+            self._diagnostics.last_observed_at = (
+                datetime.now(UTC).isoformat().replace("+00:00", "Z")
+            )
+
+    def _record_queue_age(self, queue_age_seconds: float) -> None:
+        with self._diagnostics_lock:
+            current = self._diagnostics.queue_age_high_water_seconds
+            if current is None or queue_age_seconds > current:
+                self._diagnostics.queue_age_high_water_seconds = queue_age_seconds
+            self._diagnostics.last_observed_at = (
+                datetime.now(UTC).isoformat().replace("+00:00", "Z")
+            )
 
     def request_drain(self) -> RuntimeRoleStatus:
         """Stop new dispatcher ticks and claims while an active create finishes."""
@@ -245,13 +342,18 @@ class PrefectDispatcher:
 
             async with get_client() as client:
                 remote_create_started = True
-                flow_run = await client.create_flow_run_from_deployment(
-                    self.binding.deployment_id,
-                    parameters={"reference": reference.to_dict()},
-                    idempotency_key=claim.creation_key,
-                    name=f"etlantic-{claim.envelope_sha256[:16]}",
-                    tags=["etlantic-managed"],
-                )
+                self._record_diagnostic(dispatch_attempts=1)
+                try:
+                    flow_run = await client.create_flow_run_from_deployment(
+                        self.binding.deployment_id,
+                        parameters={"reference": reference.to_dict()},
+                        idempotency_key=claim.creation_key,
+                        name=f"etlantic-{claim.envelope_sha256[:16]}",
+                        tags=["etlantic-managed"],
+                    )
+                except Exception:
+                    self._record_diagnostic(remote_api_failures=1)
+                    raise
             linked = durable.link_dispatch(
                 self.context,
                 submission_id,

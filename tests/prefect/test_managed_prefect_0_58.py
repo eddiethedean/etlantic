@@ -948,6 +948,14 @@ def test_dispatcher_recovers_lost_create_response_with_prefect_idempotency(
         assert first[0]["status"] == "uncertain"
         assert first[0]["error_code"] == "prefect_create_uncertain"
         assert len(accepted_remote_runs) == 1
+        first_diagnostics = dispatcher.diagnostics()
+        assert first_diagnostics["ticks"] == 1
+        assert first_diagnostics["dispatch_attempts"] == 1
+        assert first_diagnostics["uncertain_creates"] == 1
+        assert first_diagnostics["remote_api_failures"] == 1
+        assert first_diagnostics["dispatch_errors"] == 1
+        assert first_diagnostics["queue_age_high_water_seconds"] is not None
+        assert receipt.submission_id not in str(first_diagnostics)
 
         now[0] += timedelta(seconds=3)
         second = await dispatcher.tick(limit=1)
@@ -959,6 +967,16 @@ def test_dispatcher_recovers_lost_create_response_with_prefect_idempotency(
         assert accepted_remote_runs[1].id == accepted_remote_runs[0].id
         assert create_calls[0]["idempotency_key"] == create_calls[1]["idempotency_key"]
         assert create_calls[0]["parameters"] == create_calls[1]["parameters"]
+        diagnostics = dispatcher.diagnostics()
+        assert diagnostics["ticks"] == 2
+        assert diagnostics["failed_ticks"] == 0
+        assert diagnostics["dispatch_attempts"] == 2
+        assert diagnostics["uncertain_creates"] == 1
+        assert diagnostics["remote_api_failures"] == 1
+        queue_age_high_water = diagnostics["queue_age_high_water_seconds"]
+        assert isinstance(queue_age_high_water, (int, float))
+        assert queue_age_high_water >= 0
+        assert str(accepted_remote_runs[0].id) not in str(diagnostics)
         dispatch = durable.get_dispatch(ctx, receipt.submission_id)
         assert dispatch.dispatch_attempts == 2
         assert dispatch.creation_key == create_calls[0]["idempotency_key"]
@@ -1331,6 +1349,78 @@ def test_dispatcher_exposes_supervisor_status_and_drain(tmp_path: Path) -> None:
     assert dispatcher.status().admission == "accepting"
     assert dispatcher.request_drain().admission == "stopped"
     assert asyncio.run(dispatcher.tick()) == []
+
+
+def test_dispatcher_diagnostics_capture_stale_remote_links_without_ids(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    import prefect.client.orchestration
+    from prefect.exceptions import ObjectNotFound
+
+    binding = ManagedDeploymentBinding(
+        spec=_spec("dispatcher-stale-link-diagnostics"), deployment_id=uuid4()
+    )
+    ctx, _authz, durable, service = _managed_service(
+        tmp_path, execution_route=binding.execution_route
+    )
+    failed = service.submit_run(ctx, "pipeline-058", idempotency_key="stale-failed-run")
+    missing = service.submit_run(
+        ctx, "pipeline-058", idempotency_key="stale-missing-run"
+    )
+    failed_flow_id = str(uuid4())
+    missing_flow_id = str(uuid4())
+    for receipt, flow_run_id in (
+        (failed, failed_flow_id),
+        (missing, missing_flow_id),
+    ):
+        durable.prepare_dispatch(ctx, receipt.submission_id)
+        claim = durable.claim_dispatch(
+            ctx,
+            receipt.submission_id,
+            owner_id="diagnostics-test-dispatcher",
+        )
+        assert claim is not None
+        durable.link_dispatch(
+            ctx,
+            receipt.submission_id,
+            owner_id="diagnostics-test-dispatcher",
+            fencing_token=claim.lease_fencing_token,
+            prefect_flow_run_id=flow_run_id,
+        )
+
+    class _Client:
+        async def __aenter__(self) -> _Client:
+            return self
+
+        async def __aexit__(self, *_args: object) -> None:
+            return None
+
+        async def read_flow_run(self, flow_run_id: UUID) -> Any:
+            if str(flow_run_id) == missing_flow_id:
+                raise ObjectNotFound(RuntimeError("fixture remote run is missing"))
+            return SimpleNamespace(
+                state=SimpleNamespace(type=SimpleNamespace(value="FAILED"))
+            )
+
+    def _get_client(**_kwargs: Any) -> _Client:
+        return _Client()
+
+    monkeypatch.setattr(prefect.client.orchestration, "get_client", _get_client)
+    dispatcher = PrefectDispatcher(
+        backend=SimpleNamespace(durable_work=durable),  # type: ignore[arg-type]
+        context=ctx,
+        binding=binding,
+        owner_id="diagnostics-test-dispatcher",
+    )
+
+    asyncio.run(dispatcher._reconcile_remote_failures(limit=10))
+
+    diagnostics = dispatcher.diagnostics()
+    assert diagnostics["remote_missing_observations"] == 1
+    assert diagnostics["remote_terminal_failure_observations"] == 1
+    assert diagnostics["remote_api_failures"] == 0
+    assert failed_flow_id not in str(diagnostics)
+    assert missing_flow_id not in str(diagnostics)
 
 
 def test_backend_close_waits_for_registered_dispatcher_before_disposal(
@@ -4932,6 +5022,11 @@ backend.close()
                 assert outage_role_status.prerequisites == "unusable"
                 assert outage_role_status.reason_code == "dispatch_tick_failed"
                 assert outage_role_status.in_flight == 0
+                outage_diagnostics = dispatcher.diagnostics()
+                assert outage_diagnostics["failed_ticks"] == 4
+                assert outage_diagnostics["dispatch_attempts"] == 0
+                assert outage_diagnostics["uncertain_creates"] == 0
+                assert outage_diagnostics["remote_api_failures"] == 4
                 outage_engine = create_engine(url, pool_pre_ping=True)
                 try:
                     with outage_engine.connect() as connection:
@@ -4961,6 +5056,16 @@ backend.close()
                     assert recovered_outage_dispatch[0]["status"] == "dispatched"
                     assert recovered_outage_dispatch[0]["queue_age_seconds"] >= 0
                 assert dispatcher.status().ready is True
+                recovered_diagnostics = dispatcher.diagnostics()
+                assert recovered_diagnostics["ticks"] == 7
+                assert recovered_diagnostics["failed_ticks"] == 4
+                assert recovered_diagnostics["dispatch_attempts"] == 3
+                assert recovered_diagnostics["remote_api_failures"] == 4
+                queue_age_high_water = recovered_diagnostics[
+                    "queue_age_high_water_seconds"
+                ]
+                assert isinstance(queue_age_high_water, (int, float))
+                assert queue_age_high_water >= 0
                 for backlog_index, queued in enumerate(outage_backlog):
                     await ProcessWorker(
                         work_pool_name=spec.work_pool_name,
