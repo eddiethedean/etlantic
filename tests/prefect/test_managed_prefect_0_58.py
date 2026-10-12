@@ -575,6 +575,69 @@ def test_remote_status_and_cancellation_remain_separate_observations(
     )
 
 
+def test_targeted_host_finalizes_only_targeted_prefect_cancellation(
+    tmp_path: Path,
+) -> None:
+    from etlantic.runtime.execution_host import ExecutionHost
+
+    binding = ManagedDeploymentBinding(
+        spec=_spec(f"targeted-cancel-{uuid4().hex[:8]}"), deployment_id=uuid4()
+    )
+    ctx, _authz, durable, managed = _managed_service(
+        tmp_path, execution_route=binding.execution_route
+    )
+    targeted = managed.submit_run(
+        ctx, "pipeline-058", idempotency_key="targeted-prefect-cancel"
+    )
+    unrelated = managed.submit_run(
+        ctx, "pipeline-058", idempotency_key="unrelated-prefect-cancel"
+    )
+    durable.cancel_submission(ctx, targeted.submission_id)
+    durable.cancel_submission(ctx, unrelated.submission_id)
+
+    host = ExecutionHost(durable, owner_id="targeted-prefect-worker")
+    assert (
+        host.execute_submission(
+            ctx,
+            targeted.submission_id,
+            execution_route=binding.execution_route,
+        )
+        == 0
+    )
+    assert durable.get_submission(ctx, targeted.submission_id).status == "cancelled"
+    assert durable.get_submission(ctx, unrelated.submission_id).status == (
+        "cancel_requested"
+    )
+    assert (
+        durable.pending_outbox(
+            ctx,
+            terminal_only=True,
+            submission_id=targeted.submission_id,
+            execution_route=binding.execution_route,
+        )
+        == []
+    )
+    assert durable.pending_outbox(
+        ctx,
+        submission_id=unrelated.submission_id,
+        execution_route=binding.execution_route,
+    )
+
+    # The ordinary polling path also cleans terminal outboxes for Prefect work,
+    # even though its execution queue is the local route.
+    assert host.tick(ctx, limit=1) == 0
+    assert durable.get_submission(ctx, unrelated.submission_id).status == "cancelled"
+    assert (
+        durable.pending_outbox(
+            ctx,
+            terminal_only=True,
+            submission_id=unrelated.submission_id,
+            execution_route=binding.execution_route,
+        )
+        == []
+    )
+
+
 def test_managed_cancellation_is_durable_before_remote_retry_and_status_reconcile(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:

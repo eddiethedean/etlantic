@@ -495,7 +495,7 @@ class SQLModelDurableWorkStore:
         include_terminal: bool = False,
         terminal_only: bool = False,
         submission_id: str | None = None,
-        execution_route: str = "local",
+        execution_route: str | None = "local",
     ):
         return self._read_only(
             lambda m: m.pending_outbox(
@@ -744,10 +744,16 @@ class SQLModelDurableWorkStore:
         *,
         limit: int = 100,
         acknowledge_outbox: bool = True,
+        submission_id: str | None = None,
+        execution_route: str | None = None,
     ):
         return self._txn(
             lambda m: m.reconcile_cancelled_submissions(
-                ctx, limit=limit, acknowledge_outbox=acknowledge_outbox
+                ctx,
+                limit=limit,
+                acknowledge_outbox=acknowledge_outbox,
+                submission_id=submission_id,
+                execution_route=execution_route,
             )
         )
 
