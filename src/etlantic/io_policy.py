@@ -7,6 +7,7 @@ import contextlib
 import hashlib
 import json
 import os
+import stat
 import tempfile
 import time
 from collections.abc import Callable
@@ -634,6 +635,24 @@ def _replace_with_retry(source: str, destination: Path) -> None:
             delay = min(delay * 2, 0.05)
 
 
+def _remove_abandoned_atomic_write_temps(destination: Path) -> None:
+    """Remove interrupted atomic-write staging files for one destination."""
+    prefix = f".{destination.name}."
+    for candidate in destination.parent.iterdir():
+        if not candidate.name.startswith(prefix) or not candidate.name.endswith(".tmp"):
+            continue
+        try:
+            mode = candidate.lstat().st_mode
+        except FileNotFoundError:
+            continue
+        if not stat.S_ISREG(mode):
+            continue
+        try:
+            candidate.unlink()
+        except FileNotFoundError:
+            continue
+
+
 def write_text_safe(
     path: str | Path,
     text: str,
@@ -642,7 +661,11 @@ def write_text_safe(
     run_id: str = "io",
     encoding: str = "utf-8",
 ) -> SafeIoResult:
-    """Atomic, locked, integrity-aware text write under policy."""
+    """Atomically write text and discard abandoned staging files for its target.
+
+    Callers that disable the per-file lock must serialize writes to a target
+    through a broader lock before stale staging files are removed.
+    """
     resolved, events = resolve_under_policy(path, policy, run_id=run_id)
     resolved.parent.mkdir(parents=True, exist_ok=True, mode=0o700)
 
@@ -668,6 +691,7 @@ def write_text_safe(
     if policy.enable_locking:
         lock = _acquire_lock(resolved, timeout=policy.lock_timeout_seconds)
     try:
+        _remove_abandoned_atomic_write_temps(resolved)
         if (
             policy.overwrite_policy in {"allow", "atomic_replace"}
             or not resolved.exists()

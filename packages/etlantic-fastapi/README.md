@@ -91,6 +91,10 @@ its engine ownership and service graph. The legacy `create_managed_backend(...)`
 constructor remains available and delegates to the provider factory.
 The core handle exposes the same `schedule_service` used by HTTP routes, so
 authorization, timing, and trigger recovery stay shared across transports.
+The schedule API supports create, amend, pause, resume, and delete. Managed
+Prefect schedules hold a durable route reference; deleting or transferring a
+schedule releases its old route only after the schedule record is updated, so
+an operator can drain and retire that route safely.
 
 Run ETL in a separate worker process with the same migrated backend settings:
 
@@ -218,6 +222,20 @@ history reads; operators can also call
 the same `idempotency_retention_seconds` setting. Migration 012 assigns existing
 tombstones the 90-day default expiry; newer tombstones use the configured
 window.
+
+### Managed Prefect dispatch recovery
+
+For a managed Prefect execution route, the HTTP operator path is
+`POST /v1/dispatches/{submission_id}/reconcile`. It is available when the
+application includes a `ManagedApplicationService` and requires
+`execution.dispatch.reconcile` in the accepted work's tenant and workspace.
+The request carries the exact `expected_generation`, `expected_flow_run_id`,
+and a bounded `evidence` note. Stale identity returns `409`; out-of-scope work
+returns the opaque `404`. The service rechecks that no canonical lease,
+attempt, effect, or publication exists before creating a new dispatch
+generation. It stores the redacted evidence digest and acting principal in
+durable history, emits `execution.dispatch_reconciled`, and does not persist
+the evidence note itself.
 
 ### Managed rerun and replay commands
 

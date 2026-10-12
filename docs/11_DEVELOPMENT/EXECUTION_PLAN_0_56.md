@@ -30,8 +30,9 @@ change to the compatibility baseline.
 0.56 owns the complete generic application backend, live isolated PostgreSQL
 qualification, immutable CSV inputs, and Foundry API qualification against
 Semblance loopback simulators. A live Foundry account is not required. Later
-0.57 backend independence and supervision, 0.58 brownfield import, 0.59 console,
-0.60 additional enterprise runtime/provider packs and 0.61 modeling incubation
+0.57 backend independence and supervision, 0.58 managed Prefect execution,
+0.59 brownfield import, 0.60 console,
+0.61 additional enterprise runtime/provider packs and 0.62 modeling incubation
 consume this service. They cannot be used to defer a required 0.56 backend gap.
 
 ## Delivery sequence

@@ -13,6 +13,7 @@ from dataclasses import asdict, replace
 from datetime import UTC, datetime, timedelta
 from typing import Any
 
+from etlantic.control_plane.durable_models import validate_execution_route
 from etlantic.control_plane.durable_protocols import DurableWorkStore
 from etlantic.control_plane.errors import ControlPlaneError
 from etlantic.control_plane.models import ControlPlaneContext, Principal
@@ -89,6 +90,7 @@ class MemoryScheduleStore:
         secret_refs: dict[str, Mapping[str, Any] | str] | None = None,
         revision_policy: str = "pinned",
         workload_identity: Principal | None = None,
+        execution_route: str = "local",
         next_fire_at: str | None = None,
     ) -> ScheduleRecord:
         sid = (schedule_id or f"sch-{uuid.uuid4().hex[:16]}").strip()
@@ -115,6 +117,7 @@ class MemoryScheduleStore:
             },
             revision_policy=revision_policy,  # type: ignore[arg-type]
             workload_identity=workload_identity,
+            execution_route=validate_execution_route(execution_route),
         )
         key = (*_scope(ctx), sid)
         with self._lock:
@@ -140,6 +143,15 @@ class MemoryScheduleStore:
                 if (tenant, workspace) == scope and rec.status != "deleted"
             )
 
+    def execution_route_reference_count(self, execution_route: str) -> int:
+        """Count live schedules across every scope that pin this route."""
+        route = validate_execution_route(execution_route)
+        with self._lock:
+            return sum(
+                record.execution_route == route and record.status != "deleted"
+                for record in self._schedules.values()
+            )
+
     def pause(self, ctx: ControlPlaneContext, schedule_id: str) -> ScheduleRecord:
         return self._set_status(ctx, schedule_id, "paused")
 
@@ -154,6 +166,8 @@ class MemoryScheduleStore:
         expected_revision_id: str,
         spec: ScheduleSpec,
         next_fire_at: str | None,
+        execution_route: str | None = None,
+        policy_fingerprint: str | None = None,
         durable: DurableWorkStore | None = None,
     ) -> ScheduleRecord:
         """Create a new schedule revision after active firings have drained."""
@@ -176,6 +190,13 @@ class MemoryScheduleStore:
                 )
             metadata = dict(record.metadata)
             metadata["amends_revision_id"] = record.revision_id
+            amended_route = (
+                record.execution_route
+                if execution_route is None
+                else validate_execution_route(execution_route)
+            )
+            if amended_route != record.execution_route:
+                metadata["execution_route_amended_from"] = record.execution_route
             amended = replace(
                 record,
                 revision_id=f"rev-{uuid.uuid4().hex[:12]}",
@@ -183,6 +204,12 @@ class MemoryScheduleStore:
                 next_fire_at=next_fire_at,
                 updated_at=_iso(),
                 metadata=metadata,
+                execution_route=amended_route,
+                policy_fingerprint=(
+                    record.policy_fingerprint
+                    if policy_fingerprint is None
+                    else policy_fingerprint
+                ),
             )
             self._schedules[key] = amended
             return deepcopy(amended)

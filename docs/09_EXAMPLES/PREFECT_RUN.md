@@ -5,7 +5,7 @@
 
 !!! warning "Clone required"
     `examples/prefect_run.py` is **not** on the PyPI wheel. Use a git checkout
-    (prefer the `v0.57.0` tag) plus `uv sync --group prefect`.
+    plus `uv sync --group prefect`.
 
 ## Install and run
 
@@ -55,6 +55,20 @@ Run identifiers, timestamps, and durations vary. Prefect consumes the resolved
 `PipelinePlan`; it does not reinterpret or re-plan the pipeline.
 The example's transformation is portable, so its body remains eligible for
 future adaptive planning before the resolved plan reaches Prefect.
+
+## Managed execution
+
+Phase 0.58 adds an experimental managed path using a versioned Prefect Process
+deployment, a durable ETLantic dispatcher, and PostgreSQL-backed control-plane
+stores. The clean-wheel campaign covers separate Process workers, both
+CSV-to-PostgreSQL and PostgreSQL-to-PostgreSQL replace-mode transfers, submitter
+exit, uncertain-create recovery, post-dispatch deployment-drift rejection with
+bounded pre-attempt recovery, and a graceful Prefect API restart. It does not
+qualify the path for production: broader crash/effect recovery, host parity, and
+the full supported-version matrix remain open. Deployment setup, trusted worker
+configuration, supervision, and qualification status are documented in the
+[`etlantic-prefect` package guide](../../packages/etlantic-prefect/README.md)
+and [phase 0.58 plan](../11_DEVELOPMENT/IMPLEMENTATION_PLAN_0_58.md).
 
 For deployment boundaries, see [Deployment](../06_EXECUTION/DEPLOYMENT.md) and
 [Production Profiles](../06_EXECUTION/PRODUCTION_PROFILES.md).

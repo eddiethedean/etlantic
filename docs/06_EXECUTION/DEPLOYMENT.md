@@ -70,7 +70,11 @@ Checklist: [Airflow tutorial](AIRFLOW_TUTORIAL.md),
 1. Install `etlantic-prefect==0.57.2`.
 2. Set `Profile(orchestrator="prefect")` and call `Pipeline.run` / `arun`.
 3. Prefect consumes the resolved plan (direct execution). Deployment/serve
-   flows remain future—do not assume them from this package.
+   are separate from this direct path. A managed execution adapter is now
+   implemented for phase 0.58 with versioned Process deployments, durable
+   acceptance/dispatch, and ETLantic-owned execution state. It remains
+   unqualified for production pending the live PostgreSQL and independent
+   worker campaign; see the [phase 0.58 implementation plan](../11_DEVELOPMENT/IMPLEMENTATION_PLAN_0_58.md).
 
 Checklist: [Prefect example](../09_EXAMPLES/PREFECT_RUN.md).
 

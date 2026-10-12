@@ -1,0 +1,63 @@
+{
+  "schema": "etlantic.phase_0_58.campaign_evidence/1",
+  "campaign_id": "live-postgresql-artifact-write-crash-recovery-2026-10-11",
+  "recorded_at": "2026-10-11",
+  "status": "passed",
+  "qualifies_release": false,
+  "test": "tests/prefect/test_managed_prefect_0_58.py::test_process_worker_executes_targeted_csv_and_postgresql_transfers",
+  "command": "ETLANTIC_CP_TEST_URL=<local PostgreSQL+psycopg URL> uv run pytest -q tests/prefect/test_managed_prefect_0_58.py::test_process_worker_executes_targeted_csv_and_postgresql_transfers",
+  "result": "Workspace-source live Process-worker test passed: 1 passed in 20.24s.",
+  "assertions": [
+    "A real Process worker was hard-killed after writing a partial source-artifact staging file but before the atomic rename; the destination artifact and durable result publication did not exist, and PostgreSQL showed no sink write or effect-ledger record.",
+    "The managed artifact store used the run-scoped workspace lock as its write serialization boundary, so no crash-persistent per-file lock blocked recovery.",
+    "Recovery marked the first attempt lost, executed a second attempt, removed the abandoned staging file for that exact artifact destination, wrote a complete JSON artifact, and published a successful report.",
+    "The recovered PostgreSQL sink contained the expected row and exactly one effect-ledger record; the durable execution effect was committed and the artifact JSON matched the accepted CSV row. The same trace rotates the sink credential after dispatch and before claim; the worker succeeds with the rotated role, while neither old nor new password appears in the accepted execution snapshot."
+  ],
+  "runtime": {
+    "python": "3.11.15",
+    "etlantic": "0.57.2 workspace source",
+    "etlantic_prefect": "0.57.2 workspace source",
+    "etlantic_sqlmodel": "0.57.2 workspace source",
+    "prefect": "3.7.8",
+    "sqlmodel": "0.0.39",
+    "sqlalchemy": "2.0.51",
+    "psycopg": "3.3.4",
+    "postgresql": "16.13 (Homebrew)",
+    "worker_pool": "Process",
+    "prefect_server": "Separately supervised API process backed by PostgreSQL",
+    "worker_backend_plugin": "Repository integration-test fixture imported through its temporary test entry-point shim; not an installed-wheel run"
+  },
+  "fingerprints": {
+    "io_policy_source_sha256": "ade4697f8d7a8462720f51f38af39a56f9e9f5d82a3eea075e320bb3a93fdeeb",
+    "managed_execution_source_sha256": "6b8a786ca3bd42c60d4cb0fb614ec73a8acd3c92c575bc01402d00e6f52e8930",
+    "test_source_sha256": "24d85443085c3bf252a88224832e6db47c2b8c4bf0db12c1d354e1ce315f39fd",
+    "worker_plugin_source_sha256": "f061313e8c4b1ea4321e442fddccd07d5bc9945ae239d92c469c996ee7635505",
+    "uv_lock_sha256": "3b5507c03e752619016552c9fcc00e4961d9d6b3b426deb11bbdbfca240c73ec"
+  },
+  "source_files": [
+    "src/etlantic/io_policy.py",
+    "src/etlantic/runtime/managed_execution.py",
+    "tests/prefect/test_managed_prefect_0_58.py",
+    "tests/prefect/worker_plugin/src/phase058_worker_backend/__init__.py",
+    "uv.lock"
+  ],
+  "source_sha256": "cfb57303881c810b1fce77e5047997a83447b0461cc131a2870fe62c87ce931d",
+  "source_sha256_method": "SHA-256 over sorted repository-relative source paths and file bytes, with NUL separators.",
+  "limitations": [
+    "This trace covers a process hard kill while writing a managed durable artifact before an external effect. It does not claim power-loss durability across filesystem or device failure, crash points in report storage, or recovery of non-transactional connector partial effects.",
+    "This is local workspace-source evidence for CPython 3.11.15, Prefect 3.7.8, PostgreSQL 16.13, and the Process pool; remote CI and the complete supported-version and hosting matrix remain open."
+  ],
+  "ci_configuration": {
+    "workflow": ".github/workflows/checks.yml",
+    "job": "prefect",
+    "remote_ci_run": false,
+    "fresh_installed_wheels": false,
+    "database_service": "Local PostgreSQL 16.13; unique fixture rows and dedicated Prefect database were cleaned after the test.",
+    "server_process": "Separate Prefect API process with PostgreSQL persistence"
+  },
+  "cleanup": [
+    "The test used unique tenant, workspace, submission, deployment, artifact, sink-table, and effect-ledger identities; scoped SQLModel rows were removed after the run.",
+    "The per-test Prefect database was dropped after the API process stopped; the shared local PostgreSQL service was left running."
+  ],
+  "artifacts": []
+}

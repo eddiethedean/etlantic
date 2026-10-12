@@ -156,14 +156,20 @@ EXPECTED_DIGESTS = {
     # Recursive validation of nested sort expressions narrows their kind before
     # examining node fields, removing two more reviewed shadow diagnostics.
     # The suppression-free inventory now contains 10,069 diagnostics.
-    # Fingerprints pin path, diagnostic rule, message, and multiplicity while
-    # ignoring source coordinates. Line shifts therefore do not require a
-    # manual baseline refresh; diagnostic content changes still fail closed.
     # The Local sort validator now validates call-argument shape before arity
     # checks and keeps the argument sequence explicitly typed. It removes ten
     # reviewed shadow diagnostics without adding any; the inventory is 10,059.
-    "Darwin": "c148de74cca91c6ab97a2d7c25a0ce432da0941f364b303edfb140287d9ff7ca",
-    "Linux": "c148de74cca91c6ab97a2d7c25a0ce432da0941f364b303edfb140287d9ff7ca",
+    # Phase 0.58 adds direct/managed Prefect contracts and route-aware schedules.
+    # With the same locked all-groups + FastAPI/LSP environment used by CI,
+    # review found a net 21 suppression-free diagnostics across the Prefect
+    # compatibility tests; the new managed package modules add none. The
+    # pre-execution policy gate adds one PolicyHook literal. The current main
+    # baseline contains 10,080 suppression-free diagnostics.
+    # Fingerprints pin path, diagnostic rule, message, and multiplicity while
+    # ignoring source coordinates. Line shifts therefore do not require a
+    # manual baseline refresh; diagnostic content changes still fail closed.
+    "Darwin": "ce35a791e1df61071d9ff708bd2d3cf88bc255626a2ad9514503c64ff7bc6fe3",
+    "Linux": "ce35a791e1df61071d9ff708bd2d3cf88bc255626a2ad9514503c64ff7bc6fe3",
 }
 
 

@@ -287,6 +287,9 @@ class LocalOrchestrator:
     # Optional wave coordinator for ExecutionScheduler plugins (e.g. Prefect).
     # Signature: async (ready_names, run_one) -> None
     wave_runner: Any | None = field(default=None, repr=False)
+    # Scheduler-owned cancellation token scoped to this invocation. It composes
+    # with runtime-level managed cancellation without mutating shared runtime state.
+    cancellation_event: Any | None = field(default=None, repr=False)
     # Optional caller-supplied run id (scheduler plugins should thread this).
     run_id: str | None = field(default=None)
     physical_mode: bool = field(default=False, repr=False)
@@ -713,16 +716,21 @@ class LocalOrchestrator:
         self, operation: Callable[[], Awaitable[None]]
     ) -> None:
         """Watch cancellation and provider leases during the complete run body."""
-        cancellation = getattr(self.runtime, "external_cancel_event", None)
-        if cancellation is not None and not callable(
-            getattr(cancellation, "is_set", None)
-        ):
+        cancellations = tuple(
+            event
+            for event in (
+                getattr(self.runtime, "external_cancel_event", None),
+                self.cancellation_event,
+            )
+            if event is not None
+        )
+        if any(not callable(getattr(event, "is_set", None)) for event in cancellations):
             raise PipelineExecutionError(
                 "Managed cancellation token does not support is_set()",
                 code="PMEXEC411",
                 stage="admission",
             )
-        if cancellation is not None and cancellation.is_set():
+        if any(event.is_set() for event in cancellations):
             raise _ManagedCancellation
 
         stop_monitor = anyio.Event()
@@ -731,7 +739,7 @@ class LocalOrchestrator:
 
         async def renew_due_leases(scope: anyio.CancelScope) -> None:
             while not stop_monitor.is_set():
-                if cancellation is not None and cancellation.is_set():
+                if any(event.is_set() for event in cancellations):
                     scope.cancel()
                     return
                 now = datetime.now(UTC)
@@ -822,7 +830,7 @@ class LocalOrchestrator:
             with anyio.CancelScope(shield=True):
                 await self._revoke_secret_leases()
         if execution_scope.cancel_called:
-            if cancellation is not None and cancellation.is_set():
+            if any(event.is_set() for event in cancellations):
                 raise _ManagedCancellation
             if self._secret_lease_failure:
                 raise _SecretLeaseLost
@@ -5334,6 +5342,23 @@ class LocalOrchestrator:
             receipt = getattr(exc, "commit_receipt", None)
             if receipt is not None:
                 self._sink_commit_receipts.append(receipt)
+                publication_unit = next(
+                    (
+                        unit.identity
+                        for unit in self.plan.physical_units
+                        if unit.metadata.get("etlantic.physical_kind") == "publication"
+                        and unit.metadata.get("etlantic.logical_node") == node_name
+                    ),
+                    node_name,
+                )
+                self._publication_receipt_summaries.append(
+                    {
+                        "status": getattr(receipt, "status", "unknown"),
+                        "publication_id": getattr(receipt, "publication_id", None),
+                        "unit_id": publication_unit,
+                        "provider": provider_name,
+                    }
+                )
                 if getattr(receipt, "status", None) == "unknown":
                     self._unknown_publications.append(
                         {

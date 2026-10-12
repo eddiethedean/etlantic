@@ -67,7 +67,7 @@ from etlantic.control_plane import (
     TenantRef,
     WorkspaceRef,
 )
-from etlantic.control_plane.durable_models import SubmissionRecord
+from etlantic.control_plane.durable_models import DispatchRecord, SubmissionRecord
 from etlantic.control_plane.errors import ControlPlaneError
 from etlantic.lifecycle.runtime import PipelineRuntime
 from etlantic.profile import PlacementTarget, Profile, resolve_profile
@@ -179,6 +179,7 @@ def _wired(
     tmp_path: Path,
     *,
     profile: Profile | str = "development",
+    execution_route: str = "local",
 ) -> tuple[
     ControlPlaneContext,
     MemoryAuthorizer,
@@ -219,6 +220,7 @@ def _wired(
         durable_work=durable,
         events=events,
         profile=profile,
+        execution_route=execution_route,
         report_root=tmp_path / "reports",
     )
     definition = definition_from_pipeline(ManagedPipeline)
@@ -704,6 +706,7 @@ def test_cp1_only_legacy_envelope_recovers_quota_admission(tmp_path: Path) -> No
         idempotency_key="legacy-quota-recovery",
         envelope=legacy_envelope,
         receipt=receipt,
+        execution_route=record.execution_route,
     )
 
     recovered = durable.get_submission(ctx, receipt.submission_id)
@@ -1664,8 +1667,9 @@ def test_managed_headless_and_http_command_semantics_match(tmp_path: Path) -> No
         security_mode="development",
         plugin_allowlist={"etlantic": None},
     )
+    execution_route = "prefect:" + "a" * 64
     ctx, authz, definitions, submissions, durable, events, service = _wired(
-        tmp_path, profile=profile
+        tmp_path, profile=profile, execution_route=execution_route
     )
 
     api = ETLanticAPI(
@@ -1777,6 +1781,10 @@ def test_managed_headless_and_http_command_semantics_match(tmp_path: Path) -> No
     assert http_receipt.json()["status"] == headless_receipt.status
     assert http_receipt.json()["submission_id"] == headless_receipt.submission_id
     assert http_receipt.json()["acceptance_id"] == headless_receipt.acceptance_id
+    assert (
+        durable.get_submission(ctx, headless_receipt.submission_id).execution_route
+        == execution_route
+    )
 
     headless_status = service.get_run_status(ctx, str(headless_receipt.resource_id))
     http_status = client.get(
@@ -2578,6 +2586,93 @@ def test_headless_and_http_share_run_actions_and_cancellation(tmp_path) -> None:
     assert cancelled.json()["status"] == headless_cancelled["status"]
 
 
+def test_http_exhausted_prefect_dispatch_reconciliation_is_authorized_and_cas(
+    tmp_path: Path,
+) -> None:
+    profile = Profile(
+        name="dispatch-reconciliation-http",
+        security_mode="development",
+        plugin_allowlist={"etlantic": None},
+    )
+    route = "prefect:" + "f" * 64
+    ctx, authz, definitions, submissions, durable, events, service = _wired(
+        tmp_path, profile=profile, execution_route=route
+    )
+    authz.grant(ctx, "execution.dispatch.reconcile")
+    receipt = service.submit_run(
+        ctx, "pipe", idempotency_key="http-exhausted-dispatch-reconcile"
+    )
+    exhausted: DispatchRecord | None = None
+    for generation in range(1, 4):
+        dispatch = durable.prepare_dispatch(ctx, receipt.submission_id)
+        assert dispatch.generation == generation
+        owner = f"http-dispatcher-{generation}"
+        claim = durable.claim_dispatch(ctx, receipt.submission_id, owner_id=owner)
+        assert claim is not None
+        flow_run_id = f"flow-run-{generation}"
+        durable.link_dispatch(
+            ctx,
+            receipt.submission_id,
+            owner_id=owner,
+            fencing_token=claim.lease_fencing_token,
+            prefect_flow_run_id=flow_run_id,
+        )
+        exhausted = durable.rearm_dispatch_after_remote_failure(
+            ctx, receipt.submission_id, expected_flow_run_id=flow_run_id
+        )
+    assert exhausted is not None
+    assert exhausted.status == "reconciliation_required"
+
+    api = ETLanticAPI(
+        authorizer=authz,
+        definitions=definitions,
+        submissions=submissions,
+        events=events,
+        durable_work=durable,
+        managed_service=service,
+        profile=profile,
+        context_factory=membership_context_factory(
+            {
+                "alice": ("tenant-a", "ws-1", "development", "default"),
+                "bob": ("tenant-b", "ws-outside", "development", "default"),
+            }
+        ),
+        principal_dependency=principal_from_header,
+    ).enable_managed_execution()
+    client = cast(Any, TestClient(create_app(api)))
+    path = f"/v1/dispatches/{receipt.submission_id}/reconcile"
+    body = {
+        "expected_generation": exhausted.generation,
+        "expected_flow_run_id": exhausted.prefect_flow_run_id,
+        "evidence": "Prefect confirmed this run failed before ETLantic claim.",
+    }
+
+    denied = client.post(path, headers={"X-Principal": "bob"}, json=body)
+    assert denied.status_code == 404
+    assert durable.get_dispatch(ctx, receipt.submission_id).status == (
+        "reconciliation_required"
+    )
+
+    reconciled = client.post(path, headers={"X-Principal": "alice"}, json=body)
+    assert reconciled.status_code == 200
+    result = reconciled.json()
+    assert result["schema"] == (
+        "etlantic.control_plane.dispatch_reconciliation_result/1"
+    )
+    assert result["dispatch"]["status"] == "pending"
+    assert result["dispatch"]["generation"] == exhausted.generation + 1
+    assert body["evidence"] not in reconciled.text
+
+    stale = client.post(path, headers={"X-Principal": "alice"}, json=body)
+    assert stale.status_code == 409
+    audit_events = [
+        event
+        for event in events.list_after_cursor(ctx, None, limit=20)
+        if event.kind == "execution.dispatch_reconciled"
+    ]
+    assert len(audit_events) == 1
+
+
 def test_retry_reuses_accepted_plan_and_runs_through_http(tmp_path) -> None:
     from etlantic.control_plane.durable_models import EffectRecord
     from etlantic.runtime.managed_errors import ExecutionRejected
@@ -3179,8 +3274,11 @@ def test_managed_worker_stops_real_runtime_without_writing_target(
         assert any(
             item.get("code") == "PMEXEC408" for item in report.get("diagnostics", [])
         )
+    # Explicit cancellation before call_next proves no effect began. A timeout
+    # remains unknown because generic runtime interruption can occur after effects.
+    expected_effect_status = "none" if run_timeout is None else "unknown"
     assert durable.get_effect(ctx, f"{receipt.submission_id}:execution").status == (
-        "unknown"
+        expected_effect_status
     )
 
 

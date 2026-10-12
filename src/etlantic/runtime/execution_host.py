@@ -18,6 +18,7 @@ from etlantic.control_plane.durable_models import (
     ExecutionScopePage,
     ResultPublicationRecord,
     SubmissionRecord,
+    validate_execution_route,
 )
 from etlantic.control_plane.durable_protocols import DurableWorkStore
 from etlantic.control_plane.errors import ControlPlaneError
@@ -315,12 +316,27 @@ class ExecutionHost:
                 fencing_token=fencing_token,
             )
 
-    def tick(self, ctx: ControlPlaneContext, *, limit: int = 20) -> int:
+    def tick(
+        self,
+        ctx: ControlPlaneContext,
+        *,
+        limit: int = 20,
+        submission_id: str | None = None,
+        execution_route: str = "local",
+    ) -> int:
         validate_control_plane_context(ctx)
+        validate_execution_route(execution_route)
+        if submission_id is not None and not _is_nonempty_text(submission_id):
+            raise ValueError("submission_id must be a non-empty identifier")
         if not self._role.begin_tick():
             return 0
         try:
-            return self._tick(ctx, limit=limit)
+            return self._tick(
+                ctx,
+                limit=limit,
+                submission_id=submission_id,
+                execution_route=execution_route,
+            )
         except Exception:
             self._role.observe_prerequisites(
                 "unusable", reason_code="worker_tick_failed"
@@ -329,12 +345,38 @@ class ExecutionHost:
         finally:
             self._role.end_tick()
 
-    def _tick(self, ctx: ControlPlaneContext, *, limit: int = 20) -> int:
+    def execute_submission(
+        self,
+        ctx: ControlPlaneContext,
+        submission_id: str,
+        *,
+        execution_route: str,
+    ) -> int:
+        """Execute one accepted submission through the ordinary fenced host path."""
+        return self.tick(
+            ctx,
+            limit=1,
+            submission_id=submission_id,
+            execution_route=execution_route,
+        )
+
+    def _tick(
+        self,
+        ctx: ControlPlaneContext,
+        *,
+        limit: int = 20,
+        submission_id: str | None = None,
+        execution_route: str = "local",
+    ) -> int:
         if self.draining:
             return 0
         cleanup_artifacts = getattr(self.runner, "cleanup_expired_run_artifacts", None)
         retention_enabled = getattr(self.runner, "run_artifact_retention_enabled", True)
-        if callable(cleanup_artifacts) and retention_enabled is not False:
+        if (
+            submission_id is None
+            and callable(cleanup_artifacts)
+            and retention_enabled is not False
+        ):
             workspace = (ctx.tenant.tenant_id, ctx.workspace.workspace_id)
             if workspace != self._retention_scope_workspace:
                 self._retention_scope_workspace = workspace
@@ -391,15 +433,31 @@ class ExecutionHost:
                 for key, cleanup_ctx in cleanup_contexts.items():
                     if self._cleanup_retention_scope(cleanup_artifacts, cleanup_ctx):
                         self._queue_retention_retry(key, cleanup_ctx)
-        self.durable.reconcile_cancelled_submissions(
-            ctx, limit=limit, acknowledge_outbox=False
-        )
-        self._reconcile_terminal_work(ctx, limit=limit)
-        result_publications_healthy = self._reconcile_result_publications(
-            ctx, limit=limit
-        )
+        result_publications_healthy = True
+        if submission_id is None:
+            self.durable.reconcile_cancelled_submissions(
+                ctx, limit=limit, acknowledge_outbox=False
+            )
+            self._reconcile_terminal_work(
+                ctx, limit=limit, execution_route=execution_route
+            )
+            result_publications_healthy = self._reconcile_result_publications(
+                ctx, limit=limit
+            )
+        else:
+            self._reconcile_terminal_work(
+                ctx,
+                limit=1,
+                submission_id=submission_id,
+                execution_route=execution_route,
+            )
         processed = 0
-        pending_items = self.durable.pending_outbox(ctx, limit=limit)
+        pending_items = self.durable.pending_outbox(
+            ctx,
+            limit=limit,
+            submission_id=submission_id,
+            execution_route=execution_route,
+        )
         if result_publications_healthy:
             self._role.observe_prerequisites("usable")
         else:
@@ -547,9 +605,10 @@ class ExecutionHost:
                 )
                 terminal_status = "completed"
             elif outcome.status is RunStatus.CANCELLED:
-                self._record_unknown_effect(
+                self._record_report_effect(
                     ctx,
                     item.submission_id,
+                    outcome,
                     attempt_id=attempt.attempt_id,
                     fencing_token=lease.fencing_token,
                 )
@@ -622,9 +681,22 @@ class ExecutionHost:
             monitor.join(timeout=max(1.0, self.ttl_seconds / 2))
         return outcome, error, lease_lost, cancel
 
-    def _reconcile_terminal_work(self, ctx: ControlPlaneContext, *, limit: int) -> None:
+    def _reconcile_terminal_work(
+        self,
+        ctx: ControlPlaneContext,
+        *,
+        limit: int,
+        submission_id: str | None = None,
+        execution_route: str = "local",
+    ) -> None:
         """Acknowledge terminal work only after its quota cleanup is durable."""
-        for item in self.durable.pending_outbox(ctx, limit=limit, terminal_only=True):
+        for item in self.durable.pending_outbox(
+            ctx,
+            limit=limit,
+            terminal_only=True,
+            submission_id=submission_id,
+            execution_route=execution_route,
+        ):
             submission = self.durable.get_submission(ctx, item.submission_id)
             if submission.status not in {"cancelled", "completed", "failed"}:
                 continue
@@ -921,7 +993,7 @@ class ExecutionHost:
             execution.get("no_write") is True
         )
         effect_status = "none" if no_write else "committed"
-        if report.status is RunStatus.FAILED:
+        if report.status in {RunStatus.FAILED, RunStatus.CANCELLED}:
             effect_status = classify_failed_report_effect(report)
         self.durable.record_attempt_effect(
             ctx,

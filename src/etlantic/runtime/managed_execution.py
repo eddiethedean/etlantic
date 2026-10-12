@@ -31,6 +31,7 @@ from etlantic.exceptions import (
     PipelineExecutionError,
     PipelineTimeoutError,
 )
+from etlantic.io_policy import SafeIoPolicy
 from etlantic.lifecycle.runtime import PipelineRuntime
 from etlantic.plan.adaptive_model import AdaptivePipelinePlan, PlanDocument
 from etlantic.plan.freeze import mutable_copy
@@ -266,6 +267,10 @@ class ManagedExecutionAdapter:
         ) = None,
         runtime_factory: Any = PipelineRuntime,
         secret_alias_authorizer: SecretAliasAuthorizer | None = None,
+        pre_execution_authorizer: Callable[
+            [ControlPlaneContext, Any, ExecutionEnvelope, PlanDocument], None
+        ]
+        | None = None,
         profile: str | Profile | None = None,
         input_resource_store: InputResourceStore | None = None,
         run_artifact_retention_seconds: int | None = None,
@@ -297,6 +302,7 @@ class ManagedExecutionAdapter:
         self.event_publisher = event_publisher
         self.runtime_factory = runtime_factory
         self.secret_alias_authorizer = secret_alias_authorizer
+        self.pre_execution_authorizer = pre_execution_authorizer
         self.profile = resolve_profile(profile) if profile is not None else None
         self.input_resource_store = input_resource_store
         self.run_artifact_retention_seconds = run_artifact_retention_seconds
@@ -410,6 +416,7 @@ class ManagedExecutionAdapter:
     ) -> PipelineRunReport:
         if submission.submission_id != submission_id:
             raise ExecutionRejected("Submission identity does not match the lease")
+        worker_ctx = ctx
         ctx = accepted_execution_context(ctx, submission)
         if not submission.input_snapshot:
             raise ExecutionRejected(
@@ -486,6 +493,7 @@ class ManagedExecutionAdapter:
                 result_publisher=result_publisher,
                 result_reader=result_reader,
                 checkpoint_publisher=checkpoint_publisher,
+                worker_context=worker_ctx,
             )
         with artifact_workspace_lock(workspace, cancel_event=cancel_event):
             return self._execute(
@@ -499,6 +507,7 @@ class ManagedExecutionAdapter:
                 result_publisher=result_publisher,
                 result_reader=result_reader,
                 checkpoint_publisher=checkpoint_publisher,
+                worker_context=worker_ctx,
             )
 
     def _execute(
@@ -515,6 +524,7 @@ class ManagedExecutionAdapter:
         | None = None,
         result_reader: Callable[[], ResultPublicationRecord | None] | None = None,
         checkpoint_publisher: Callable[[str, str], None] | None = None,
+        worker_context: ControlPlaneContext | None = None,
     ) -> PipelineRunReport:
         if submission.submission_id != submission_id:
             raise ExecutionRejected("Submission identity does not match the lease")
@@ -552,6 +562,11 @@ class ManagedExecutionAdapter:
             raise ExecutionRejected(
                 "Accepted plan or run controls are invalid"
             ) from exc
+
+        if self.pre_execution_authorizer is not None:
+            self.pre_execution_authorizer(
+                worker_context or ctx, submission, envelope, plan
+            )
 
         has_input_resources = _plan_has_input_resources(plan)
         input_resource_store = self.input_resource_store
@@ -763,6 +778,13 @@ class ManagedExecutionAdapter:
                     runtime=runtime,
                     artifact_store=ArtifactStore(
                         workspace=workspace,
+                        policy=SafeIoPolicy.for_root(
+                            workspace,
+                            security_domain=ctx.security_domain.domain_id,
+                            tenant=ctx.tenant.tenant_id,
+                            environment=ctx.environment.name,
+                            enable_locking=False,
+                        ),
                         hash_identities=True,
                     ),
                     run_id=run_id,

@@ -23,6 +23,7 @@ from etlantic.control_plane import (
     MemoryScheduleStore,
     MemorySubmissionStore,
     Principal,
+    ScheduleSpec,
     SecurityDomain,
     TenantRef,
     WorkspaceRef,
@@ -101,6 +102,26 @@ def test_schedule_routes_create_trigger_and_health() -> None:
     assert "hosts" not in workers.json()
 
 
+def test_schedule_delete_releases_the_canonical_schedule_record() -> None:
+    client, store, _durable = _client()
+    headers = {"X-Principal": "alice"}
+    created = client.post(
+        "/v1/definitions/pipe-1/schedules",
+        headers=headers,
+        json={"kind": "interval", "interval_seconds": 60},
+    )
+    assert created.status_code == 201, created.text
+    schedule_id = created.json()["schedule_id"]
+
+    deleted = client.delete(f"/v1/schedules/{schedule_id}", headers=headers)
+    assert deleted.status_code == 200, deleted.text
+    assert deleted.json()["status"] == "deleted"
+    assert store.list_schedules(_ctx()) == ()
+    assert (
+        client.get(f"/v1/schedules/{schedule_id}", headers=headers).status_code == 404
+    )
+
+
 def test_schedule_store_missing_is_501() -> None:
     authz = MemoryAuthorizer()
     ctx = _ctx()
@@ -167,3 +188,84 @@ def test_schedule_amendment_is_revision_guarded() -> None:
     )
     assert stale.status_code == 409, stale.text
     assert stale.json()["extensions"]["reason"] == "stale_revision"
+
+
+def test_schedule_route_transfer_accepts_only_the_managed_boolean() -> None:
+    from etlantic.control_plane.errors import ControlPlaneError
+    from etlantic_fastapi.schedule_routes import register_schedule_routes
+    from fastapi import APIRouter, FastAPI
+
+    class _Schedule:
+        def to_dict(self) -> dict[str, Any]:
+            return {"execution_route": "prefect:" + "a" * 64}
+
+    class _ScheduleService:
+        transfer_execution_route: bool | None = None
+
+        def authorize(self, *_args: object) -> None:
+            return None
+
+        def amend(
+            self,
+            _ctx: ControlPlaneContext,
+            _schedule_id: str,
+            *,
+            expected_revision_id: str,
+            spec: Any,
+            transfer_execution_route: bool = False,
+        ) -> _Schedule:
+            assert expected_revision_id == "revision-a"
+            assert isinstance(spec, ScheduleSpec)
+            self.transfer_execution_route = transfer_execution_route
+            return _Schedule()
+
+    class _API:
+        def __init__(self) -> None:
+            self.schedule_service = _ScheduleService()
+
+        def get_schedule_service(self) -> _ScheduleService:
+            return self.schedule_service
+
+    api = _API()
+    router = APIRouter()
+    register_schedule_routes(router, api, lambda: _ctx())
+    app = FastAPI()
+    app.include_router(router)
+    client = TestClient(app)
+    headers = {"X-Principal": "alice"}
+    response = client.post(
+        "/v1/schedules/schedule-a/amend",
+        headers=headers,
+        json={
+            "expected_revision_id": "revision-a",
+            "spec": {"kind": "interval", "interval_seconds": 120},
+            "transfer_execution_route": True,
+        },
+    )
+    assert response.status_code == 200, response.text
+    assert api.schedule_service.transfer_execution_route is True
+    assert response.json()["execution_route"] == "prefect:" + "a" * 64
+
+    with pytest.raises(ControlPlaneError) as invalid_flag:
+        client.post(
+            "/v1/schedules/schedule-a/amend",
+            headers=headers,
+            json={
+                "expected_revision_id": "revision-a",
+                "spec": {"kind": "interval", "interval_seconds": 120},
+                "transfer_execution_route": "true",
+            },
+        )
+    assert invalid_flag.value.status == 400
+
+    with pytest.raises(ControlPlaneError) as arbitrary_route:
+        client.post(
+            "/v1/schedules/schedule-a/amend",
+            headers=headers,
+            json={
+                "expected_revision_id": "revision-a",
+                "spec": {"kind": "interval", "interval_seconds": 120},
+                "execution_route": "prefect:" + "b" * 64,
+            },
+        )
+    assert arbitrary_route.value.status == 400

@@ -529,10 +529,11 @@ def check_zero_x_roadmap_phases() -> None:
         "## 0.55 — Optional Data-First Authoring and Inferred Data Models",
         "## 0.56 — Complete Application ETL Backend",
         "## 0.57 — Managed Backend Independence and Runtime Supervision",
-        "## 0.58 — Brownfield Adoption Bridges",
-        "## 0.59 — Operator Console",
-        "## 0.60 — Managed Runtime and Enterprise Provider Packs",
-        "## 0.61 — TransformationModel Incubation",
+        "## 0.58 — Managed Prefect Execution",
+        "## 0.59 — Brownfield Adoption Bridges",
+        "## 0.60 — Operator Console",
+        "## 0.61 — Managed Runtime and Enterprise Provider Packs",
+        "## 0.62 — TransformationModel Incubation",
     )
     for marker in required_markers:
         if marker not in roadmap:
@@ -582,18 +583,22 @@ def check_zero_x_roadmap_phases() -> None:
         ),
         "0.58": (
             "IMPLEMENTATION_PLAN_0_58.md",
-            "brownfield metadata bridges",
+            "Managed Prefect execution",
         ),
         "0.59": (
             "IMPLEMENTATION_PLAN_0_59.md",
-            "operator console",
+            "brownfield metadata bridges",
         ),
         "0.60": (
             "IMPLEMENTATION_PLAN_0_60.md",
-            "provider packs",
+            "operator console",
         ),
         "0.61": (
             "IMPLEMENTATION_PLAN_0_61.md",
+            "provider packs",
+        ),
+        "0.62": (
+            "IMPLEMENTATION_PLAN_0_62.md",
             "TransformationModel",
         ),
     }

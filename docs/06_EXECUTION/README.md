@@ -17,9 +17,12 @@ Execution is the final stage of the ETLantic lifecycle.
 After a pipeline has been modeled, validated, and planned, an execution plugin
 realizes the resulting **Pipeline Plan** using a specific runtime such as local
 Python, Polars, Airflow, Prefect (direct scheduler), or another supported
-backend. Dagster and Prefect **orchestrator compilers** are not shipped; their
-first-class brownfield bridges are assigned to 0.58. `etlantic-prefect` ships
-today as a local MVP direct-execution scheduler.
+backend. Dagster and Argo compilers are planned in the 0.59 brownfield phase.
+`etlantic-prefect` ships today as a local MVP direct-execution scheduler;
+[0.58 managed Prefect execution](../11_DEVELOPMENT/IMPLEMENTATION_PLAN_0_58.md)
+adds planned remote deployments and worker execution over canonical accepted
+work. Its 0.59 brownfield interoperability uses that adapter; Prefect is not a
+DAG artifact compiler.
 
 ETLantic intentionally separates execution from modeling. The core library
 coordinates execution from a resolved `PipelinePlan`, while plugins and

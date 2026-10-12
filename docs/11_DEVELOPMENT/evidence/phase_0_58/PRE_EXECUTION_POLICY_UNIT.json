@@ -1,0 +1,32 @@
+{
+  "schema": "etlantic.phase_0_58.campaign_evidence/1",
+  "campaign_id": "pre-execution-policy-approval-audit-unit-2026-10-11",
+  "recorded_at": "2026-10-11",
+  "status": "passed",
+  "qualifies_release": false,
+  "test": "tests/control_plane/test_policy_0_42.py",
+  "command": "uv run pytest -q tests/control_plane/test_policy_0_42.py",
+  "result": "12 passed in 0.65s",
+  "assertions": [
+    "Current pre-execution policy is evaluated again after acceptance; changing the provider decision from allow to deny blocks the operation.",
+    "Allow and deny decisions are written to the hash-chained audit store before execution continues or denial is raised.",
+    "A required policy provider that is absent fails closed with an unavailable error.",
+    "A current require_approval decision blocks without a satisfied approval and allows only after an independent reviewer approves the matching plan, policy fingerprint, and revision."
+  ],
+  "runtime": {
+    "python": "3.11.15",
+    "etlantic": "0.57.2",
+    "policy_provider": "MemoryPolicyProvider",
+    "audit_store": "MemoryAuditEvidenceStore",
+    "approval_store": "MemoryApprovalStore"
+  },
+  "limitations": [
+    "This unit campaign exercises in-memory reference providers. It does not qualify external policy, audit, or approval providers or their cross-process consistency."
+  ],
+  "ci_configuration": {
+    "workflow": ".github/workflows/checks.yml",
+    "remote_ci_run": false
+  },
+  "cleanup": [],
+  "artifacts": []
+}

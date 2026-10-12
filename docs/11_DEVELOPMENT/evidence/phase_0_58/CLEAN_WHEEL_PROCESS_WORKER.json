@@ -1,0 +1,142 @@
+{
+  "schema": "etlantic.phase_0_58.campaign_evidence/1",
+  "campaign_id": "clean-wheel-process-worker-2026-10-11",
+  "recorded_at": "2026-10-11",
+  "status": "passed",
+  "qualifies_release": false,
+  "test": [
+    "tests/prefect -m prefect",
+    "tests/sqlmodel/test_managed_scheduler_postgresql_0_57.py::test_postgresql_two_schedulers_recover_accepted_unlinked_firing",
+    "tests/prefect/test_managed_prefect_0_58.py::test_remote_terminal_disagreement_does_not_rewrite_completed_run",
+    "tests/fastapi/test_managed_application_0_56.py::test_managed_headless_and_http_command_semantics_match"
+  ],
+  "commands": [
+    "uv build --wheel --out-dir /tmp/phase058-final-wheel-dist .",
+    "uv build --wheel --out-dir /tmp/phase058-final-wheel-dist packages/etlantic-prefect",
+    "uv build --package etlantic-sql --wheel --out-dir /tmp/phase058-final-wheel-dist",
+    "uv build --wheel --out-dir /tmp/phase058-final-wheel-dist packages/etlantic-sqlmodel",
+    "uv build --wheel --out-dir /tmp/phase058-final-wheel-dist packages/etlantic-fastapi",
+    "uv build --no-config --wheel --directory tests/prefect/worker_plugin --out-dir /tmp/phase058-final-worker-plugin",
+    "uv export --locked --no-default-groups --group dev --group prefect --group sql --group sqlmodel --extra fastapi --no-emit-workspace --format requirements.txt --output-file /tmp/phase058-final-wheel-requirements.txt",
+    "uv venv --python 3.11 /tmp/phase058-final-wheel-venv",
+    "uv pip sync --python /tmp/phase058-final-wheel-venv/bin/python /tmp/phase058-final-wheel-requirements.txt",
+    "uv pip install --python /tmp/phase058-final-wheel-venv/bin/python --no-deps /tmp/phase058-final-wheel-dist/*.whl",
+    "uv pip install --python /tmp/phase058-final-wheel-venv/bin/python --no-deps /tmp/phase058-final-worker-plugin/*.whl",
+    "uv pip install --python /tmp/phase058-final-wheel-venv/bin/python --no-deps --reinstall /tmp/phase058-final-wheel-dist/etlantic-0.57.2-py3-none-any.whl",
+    "env -u PYTHONPATH ETLANTIC_CP_TEST_URL=<isolated PostgreSQL service URL> ETLANTIC_PHASE058_INSTALLED_BACKEND_PLUGIN=1 PREFECT_LOGGING_LEVEL=ERROR /tmp/phase058-final-wheel-venv/bin/python -m pytest -o pythonpath= -q tests/prefect -m prefect",
+    "env -u PYTHONPATH ETLANTIC_SQLMODEL_TEST_URL=<isolated PostgreSQL service URL> /tmp/phase058-final-wheel-venv/bin/python -m pytest -o pythonpath= -q tests/sqlmodel/test_managed_scheduler_postgresql_0_57.py::test_postgresql_two_schedulers_recover_accepted_unlinked_firing",
+    "env -u PYTHONPATH /tmp/phase058-final-wheel-venv/bin/python -m pytest -o pythonpath= -q tests/prefect/test_managed_prefect_0_58.py::test_remote_terminal_disagreement_does_not_rewrite_completed_run",
+    "env -u PYTHONPATH /tmp/phase058-final-wheel-venv/bin/python -m pytest -o pythonpath= -q tests/fastapi/test_managed_application_0_56.py::test_managed_headless_and_http_command_semantics_match"
+  ],
+  "result": "35 passed in 40.32s in the installed-wheel Prefect suite; live installed-wheel PostgreSQL schedule recovery/route transfer: 1 passed in 3.73s; installed-wheel terminal disagreement projection: 1 passed in 0.84s; installed-wheel headless/FastAPI parity: 1 passed in 0.66s",
+  "assertions": [
+    "The clean-wheel FastAPI/headless parity test preserved the pinned Prefect execution route across both HTTP and headless submission surfaces.",
+    "The clean-wheel pytest runs disabled the repository's configured pythonpath; the live worker test asserted that core, Prefect, SQL, SQLModel, FastAPI, and the backend plugin resolved from the virtual environment's site-packages.",
+    "ETLantic core, Prefect, SQL connector, and SQLModel imports resolved from the fresh virtual environment's site-packages.",
+    "The worker-backend entry point came from a separately built wheel; its module resolved under site-packages with PYTHONPATH unset.",
+    "A mismatched runtime version was rejected during binding validation, and the dispatcher rejected a changed remote worker environment before claiming work; the accepted target remained pending with no execution attempt.",
+    "After dispatch, a real installed-wheel Process worker rejected remote deployment environment drift before constructing the ETLantic backend or creating a canonical attempt; the Prefect flow failed, the canonical submission remained accepted, and PostgreSQL sink and effect-ledger tables stayed empty.",
+    "After a separate submitter exited with routed work accepted but no dispatch record created, the bounded PostgreSQL pending-dispatch scan discovered that work and the Prefect dispatcher delivered it.",
+    "Two distinct Prefect Process workers completed separate flow runs for one accepted reference, while PostgreSQL recorded exactly one completed ETLantic attempt and canonical report.",
+    "A real Process-worker child exited after its durable execution claim but before the adapter began connector effects; recovery marked that attempt lost, ran one completed attempt, and created exactly one PostgreSQL sink-effect record.",
+    "A Process-worker child exited after PostgreSQL staged replacement rows and an effect-ledger entry in an uncommitted transaction; those writes rolled back, then recovery committed one successful execution and exactly one effect-ledger record.",
+    "A Process-worker child exited immediately after PostgreSQL deleted existing replace-target rows inside an open transaction and before replacement inserts; another connection continued to observe the original row, rollback restored it, and recovery committed one replacement and one effect-ledger record.",
+    "After acceptance and dispatch, worker-time pre-execution policy denial, a separately revoked run.submit grant, and a missing policy provider for fingerprinted work each failed before connector I/O; the real Process workers left no sink rows or effect-ledger records.",
+    "When the trusted worker principal differs from the accepted submitter, its run.execute grant is rechecked before resource reads or connector I/O; a worker lacking that grant failed with no sink rows or effect-ledger record.",
+    "A real Process-worker child exited after the PostgreSQL sink effect, durable pending report, and run.completed event append but before adapter return and host finalization; recovery published the canonical report, preserved one started/completed event per attempt, and added no second sink effect-ledger entry.",
+    "A reviewer-approved pre-execution authorization was revoked after durable dispatch and before the worker claim; the real Process worker failed before connector I/O and left the sink and effect ledger empty.",
+    "A second Process-worker child exited after PostgreSQL committed but before ETLantic received the connector receipt; recovery marked the canonical effect unknown and failed closed without repeating the write or adding a second effect-ledger entry.",
+    "Two PostgreSQL-backed live dispatcher ticks were held at the remote-create boundary; only one claimed the route, created a Prefect flow run, and linked it durably; the competing tick found no ready dispatch candidate while the lease was held.",
+    "A separate dispatcher process exited after Prefect created a flow run but before durable linkage; after lease expiry, a new dispatcher reused the same creation identity, linked the original flow-run ID, and the Process worker completed the accepted submission.",
+    "With inherited PYTHONPATH removed, a separate Prefect Process flow process reconstructed its backend and executed only the dispatched accepted target.",
+    "A separate submitter subprocess durably accepted the target and exited before the dispatcher and Process worker executed it.",
+    "An ordinary ETLantic host poll left the Prefect-routed accepted submission untouched, with no execution attempt before route-specific dispatch.",
+    "A separately supervised Prefect API process used its own PostgreSQL database while the worker ran both CSV-to-PostgreSQL and PostgreSQL-to-PostgreSQL replace-mode pilots.",
+    "The self-hosted Prefect API was stopped and restarted after a completed target; the prior flow run and deployment remained readable, and subsequent Process-worker work completed.",
+    "The second accepted submission remained unattempted while the first target completed and published its canonical report.",
+    "After revision 2 was registered, a revision-2 dispatcher could not claim accepted revision-1 PostgreSQL work; a live Process worker completed it through revision 1 with the original durable route and flow-run deployment binding.",
+    "The ETLantic timer admitted a due PostgreSQL-backed schedule occurrence; its pinned Prefect route was dispatched and completed by a real Process worker with the expected sink row and one effect-ledger record.",
+    "A separately supervised Prefect API backed by PostgreSQL accepted a flow-run create whose response was lost; retry reused the same key and parameters and linked the original flow-run ID.",
+    "Repeating a managed schedule firing after the configured route changed returned the original firing and accepted submission without creating an execution attempt.",
+    "Cross-tenant status and cancellation were denied opaquely; durable cancellation preceded remote coordination and a late Prefect completion required reconciliation without changing canonical status.",
+    "CSV-to-PostgreSQL and PostgreSQL-to-PostgreSQL replace-mode runs produced the expected rows, effect records, and successful reports.",
+    "The complete Prefect suite passed from installed core, Prefect, FastAPI, SQL, SQLModel, and separate backend-plugin wheels in a fresh environment with inherited PYTHONPATH removed.",
+    "Barrier-controlled successful and failed direct executions overlapped on one scheduler and retained disjoint actual Prefect flow/task IDs and runtime outputs.",
+    "Run-level and step-level timeouts failed the outer Prefect flow while preserving unsuccessful ETLantic reports; unsupported cancellation policy options were rejected during analysis.",
+    "The direct selection fixture retained the upstream dependency closure and left downstream loads unexecuted.",
+    "ETLantic retry policy performed exactly two transformation attempts while Prefect task retries remained disabled.",
+    "Caller cancellation of an active direct run stopped its in-flight Prefect task promptly and retained a canonical CANCELLED report.",
+    "Separate dispatcher processes exited after durable claim but before remote creation, after remote creation before linkage, and after durable linkage before dispatcher return; recovery completed each target once and the post-link retry created no second flow run.",
+    "An authorized cancellation after Prefect dispatch but before worker effects persisted canonical cancel_requested status, reported remote coordination separately, and reconciled to cancelled with empty sink and effect-ledger tables.",
+    "A failed or crashed remote flow with no active ETLantic lease, attempt, effect, or report is rearmed atomically under a new, bounded creation generation; the replacement Process flow completes one canonical attempt and one PostgreSQL effect.",
+    "Re-registering the prior immutable deployment specification restores the original versioned binding without changing the route on already accepted work.",
+    "The registrar rejected a managed deployment after a native Prefect schedule was added, preserving ETLantic as the sole recurrence authority.",
+    "A cancellation requested while the worker held a prepared PostgreSQL replacement at the commit boundary was observed before release; the transaction committed once, the canonical report remained cancelled, and the durable effect stayed classified as committed.",
+    "A guarded schedule amendment was rejected while an old firing remained active; after its attempt completed, route B and the new schedule revision survived reopening the installed SQLModel/PostgreSQL store, the old submission remained on route A, and the next due firing used route B.",
+    "A terminal canonical completion paired with a remote Prefect Failed observation was reported as a reconciliation conflict; reading status left the completed submission and attempt unchanged.",
+    "The dispatcher waited for its configured missing-run grace, then advanced a bounded identity cursor across pages so persistent early missing runs did not starve later accepted submissions."
+  ],
+  "runtime": {
+    "python": "3.11.15",
+    "etlantic": "0.57.2",
+    "etlantic_prefect": "0.57.2",
+    "etlantic_sqlmodel": "0.57.2",
+    "etlantic_sql": "0.57.2",
+    "worker_backend_plugin": "etlantic-phase058-test-worker-plugin 0.1.0 installed from a separately built wheel",
+    "prefect": "3.7.8",
+    "postgresql": "16.14",
+    "worker_pool": "Process",
+    "prefect_server": "Separately supervised Prefect server process with a dedicated PostgreSQL database",
+    "etlantic_fastapi": "0.57.2"
+  },
+  "wheel_sha256": {
+    "etlantic-0.57.2-py3-none-any.whl": "9d0eed9e0f80c5de57c585d8a696b0cbdcff2f95b0e1ae9d35740fab10f29d63",
+    "etlantic_fastapi-0.57.2-py3-none-any.whl": "a07fb1e4094d1ef51bd7542d37e623ddb205b2be98a8d8ff796e2be0310c62ea",
+    "etlantic_prefect-0.57.2-py3-none-any.whl": "696a722242f5217289f0632e30c4ed0fc2e8babdd4e690334445a4ab5baafa21",
+    "etlantic_sql-0.57.2-py3-none-any.whl": "9019d028b077ab3e90a80de7f3c43e0cd7cb555a4abc43252e4bbe96d3c33ca4",
+    "etlantic_sqlmodel-0.57.2-py3-none-any.whl": "507411700b8cda08266fb5d5ae5afbce39fb9158fe7655ece9cf7596f626bb30",
+    "etlantic_phase058_test_worker_plugin-0.1.0-py3-none-any.whl": "cfa92f0ca1ef8306f907e9d8b9c6ce5967f8690b18488184cf6b79ebe747f737"
+  },
+  "fingerprints": {
+    "etlantic_prefect_source_sha256": "310b8b3620d3390ff7cacb24ad4fee759ed76647db3d7839c3cc49aea27729e8",
+    "etlantic_prefect_source_sha256_method": "SHA-256 over sorted package-relative Python and JSON paths and file bytes, with NUL separators",
+    "uv_lock_sha256": "3b5507c03e752619016552c9fcc00e4961d9d6b3b426deb11bbdbfca240c73ec"
+  },
+  "limitations": [
+    "The fixture uses in-memory policy configuration and a SQLModel approval store; external policy-service revocation, broader approval/reviewer races, and credential rotation remain unqualified.",
+    "The separately built backend wheel is an integration fixture, not a production or third-party backend; an independent consumer remains unqualified.",
+    "Worker-crash evidence covers known-no-effect crashes, partial and rolled-back PostgreSQL writes, after-effect publication, and lost connector receipt; non-transactional connector partial effects and report/event/artifact publication crashes remain open.",
+    "The installed-wheel headless/FastAPI parity check covers one routed submission equivalence case; broader HTTP/headless authorization and lifecycle parity remains open."
+  ],
+  "ci_configuration": {
+    "workflow": ".github/workflows/checks.yml",
+    "job": "prefect",
+    "remote_ci_run": false,
+    "fresh_venv": true,
+    "workspace_editable_packages_emitted": false,
+    "database_service": "postgres:16",
+    "dependency_groups": [
+      "dev",
+      "prefect",
+      "sql",
+      "sqlmodel"
+    ],
+    "optional_extras": [
+      "fastapi"
+    ],
+    "installed_wheels": [
+      "etlantic",
+      "etlantic-prefect",
+      "etlantic-fastapi",
+      "etlantic-sql",
+      "etlantic-sqlmodel",
+      "etlantic-phase058-test-worker-plugin"
+    ]
+  },
+  "cleanup": [
+    "The test uses unique tenant, workspace, submission, deployment, and target-table identities.",
+    "The separately created Prefect PostgreSQL database is dropped after the campaign; a post-run scan found no leftover phase databases.",
+    "The disposable test virtual environment and runtime/backend wheel directories were kept outside the repository under /tmp."
+  ],
+  "artifacts": []
+}

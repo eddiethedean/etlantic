@@ -10,6 +10,11 @@ audience: developer
 > **Status: ETLantic 0.57.2 Beta release.** Prefect local scheduler MVP.
 > Install narrative: package README. Hub: [Optional packages API](../API_OPTIONAL_PACKAGES.md).
 
+The managed Process-deployment adapter implemented under phase 0.58 is
+experimental and is not production-qualified. See the package guide and
+[phase 0.58 implementation plan](../../11_DEVELOPMENT/IMPLEMENTATION_PLAN_0_58.md)
+for its trusted backend, dispatcher, worker, and current qualification status.
+
 ## Setup
 
 ```bash

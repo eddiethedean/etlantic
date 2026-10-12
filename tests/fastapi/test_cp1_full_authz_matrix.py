@@ -89,6 +89,16 @@ SCOPED_LIST_CASES: list[tuple[str, str, str, dict | None]] = [
         None,
     ),
     ("cp_list_reliability", "GET", "/v1/reliability", None),
+    (
+        "cp_reconcile_prefect_dispatch",
+        "POST",
+        "/v1/dispatches/{submission_id}/reconcile",
+        {
+            "expected_generation": 1,
+            "expected_flow_run_id": "flow-run-matrix",
+            "evidence": "operator verified pre-execution failure",
+        },
+    ),
 ]
 
 PUBLIC_OPERATION_IDS = {"cp_health", "cp_ready"}
@@ -113,6 +123,7 @@ ACTIONS = (
     "schema.observations.list",
     "schema.observations.ack",
     "reliability.list",
+    "execution.dispatch.reconcile",
 )
 
 
@@ -170,6 +181,7 @@ def _path(template: str, *, definition_id: str, run_id: str) -> str:
         template.replace("{definition_id}", definition_id)
         .replace("{run_id}", run_id)
         .replace("{observation_id}", "obs-1")
+        .replace("{submission_id}", "missing-submission")
     )
 
 
@@ -254,6 +266,7 @@ def test_in_tenant_allow(
             "cp_resume_run",
             "cp_list_connector_catalog",
             "cp_get_run_artifact_content",
+            "cp_reconcile_prefect_dispatch",
         }
         else {200, 202}
     )

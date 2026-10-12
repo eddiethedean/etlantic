@@ -52,6 +52,7 @@ REQUIRED_OPERATION_IDS = {
     "cp_list_schema_observations",
     "cp_ack_schema_observation",
     "cp_list_reliability",
+    "cp_reconcile_prefect_dispatch",
 }
 
 SNAPSHOT = Path(__file__).parent / "openapi_cp1_snapshot.json"

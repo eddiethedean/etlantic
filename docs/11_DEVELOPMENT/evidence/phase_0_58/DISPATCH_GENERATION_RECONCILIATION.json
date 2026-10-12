@@ -1,0 +1,84 @@
+{
+  "schema": "etlantic.phase_0_58.campaign_evidence/1",
+  "campaign_id": "dispatch-generation-reconciliation-clean-wheels-2026-10-11",
+  "recorded_at": "2026-10-11",
+  "status": "passed",
+  "qualifies_release": false,
+  "test": [
+    "tests/prefect/test_managed_prefect_0_58.py::test_remote_failure_rearm_is_versioned_and_requires_no_etl_attempt",
+    "tests/prefect/test_managed_prefect_0_58.py::test_exhausted_dispatch_can_be_cancelled_before_route_retirement",
+    "tests/prefect/test_managed_prefect_0_58.py::test_cancellation_preserves_uncertain_and_leased_dispatches_for_reconciliation",
+    "tests/prefect/test_managed_prefect_0_58.py::test_sqlmodel_dispatch_snapshot_survives_store_reconstruction",
+    "tests/prefect/test_managed_prefect_0_58.py::test_remote_status_and_cancellation_remain_separate_observations",
+    "tests/prefect/test_managed_prefect_0_58.py::test_deployment_retirement_drains_route_and_retains_binding",
+    "tests/fastapi/test_managed_application_0_56.py::test_http_exhausted_prefect_dispatch_reconciliation_is_authorized_and_cas"
+  ],
+  "command": "env -u PYTHONPATH /tmp/phase058-reconciliation-wheel-venv/bin/python -m pytest -c /Volumes/T7/coding/etlantic/pyproject.toml -o pythonpath= --import-mode=importlib -q /Volumes/T7/coding/etlantic/tests/prefect/test_managed_prefect_0_58.py::test_remote_failure_rearm_is_versioned_and_requires_no_etl_attempt /Volumes/T7/coding/etlantic/tests/prefect/test_managed_prefect_0_58.py::test_exhausted_dispatch_can_be_cancelled_before_route_retirement /Volumes/T7/coding/etlantic/tests/prefect/test_managed_prefect_0_58.py::test_cancellation_preserves_uncertain_and_leased_dispatches_for_reconciliation /Volumes/T7/coding/etlantic/tests/prefect/test_managed_prefect_0_58.py::test_sqlmodel_dispatch_snapshot_survives_store_reconstruction /Volumes/T7/coding/etlantic/tests/prefect/test_managed_prefect_0_58.py::test_remote_status_and_cancellation_remain_separate_observations /Volumes/T7/coding/etlantic/tests/prefect/test_managed_prefect_0_58.py::test_deployment_retirement_drains_route_and_retains_binding /Volumes/T7/coding/etlantic/tests/fastapi/test_managed_application_0_56.py::test_http_exhausted_prefect_dispatch_reconciliation_is_authorized_and_cas",
+  "result": "7 passed in 6.10s from fresh installed wheels; core, FastAPI, Prefect, SQL, and SQLModel imports resolved from the isolated environment site-packages.",
+  "assertions": [
+    "After the third automatic pre-claim generation fails, the durable dispatch enters reconciliation_required, retains the exact failed flow-run ID, and no longer appears as pending or claimable work.",
+    "Authorized status still reads the linked Prefect run and reports its failed state, dispatch status, generation, and bounded diagnostic alongside canonical reconciliation_required status.",
+    "An operator retry requires execution.dispatch.reconcile, the exact generation and flow-run ID, and a bounded evidence note; compare-and-swap rejects stale requests.",
+    "The durable store rechecks an active route, no active execution lease, and no canonical attempt, effect, or publication before generating a new creation key; it persists the acting principal and evidence digest without storing the note, and emits an idempotent audit event.",
+    "Cancelling an unresolved exhausted acceptance or a still-pending dispatch finalizes delivery as cancelled and clears route drain counters; uncertain and leased dispatches remain outstanding and prevent retirement.",
+    "SQLModel snapshot reconstruction preserves reconciliation history and its actor/evidence digest without a new provider table or migration.",
+    "The installed-wheel HTTP operator route rejects a cross-tenant caller before mutation, rearms only the exact exhausted generation for an authorized principal, redacts the evidence note, rejects a stale retry with 409, and emits one reconciliation audit event."
+  ],
+  "runtime": {
+    "python": "CPython 3.11.15",
+    "etlantic": "0.57.2 installed wheel",
+    "etlantic_prefect": "0.57.2 installed wheel",
+    "etlantic_sqlmodel": "0.57.2 installed wheel",
+    "prefect": "3.7.8",
+    "durable_stores": [
+      "MemoryDurableWorkStore",
+      "SQLModelDurableWorkStore with SQLite"
+    ],
+    "prefect_api": "controlled client fixture",
+    "wheel_environment": "Fresh CPython 3.11.15 virtual environment; all ETLantic packages loaded from site-packages; inherited PYTHONPATH unset; pytest pythonpath disabled and importlib mode enabled.",
+    "etlantic_fastapi": "0.57.2 installed wheel",
+    "etlantic_sql": "0.57.2 installed wheel",
+    "fastapi": "0.139.2"
+  },
+  "limitations": [
+    "This installed-wheel contract campaign uses SQLite durable stores and a controlled Prefect client; it does not qualify the operator route against live PostgreSQL, a self-hosted Prefect server, or multiple API processes.",
+    "The authorization case uses MemoryAuthorizer and proves tenant/workspace isolation behavior only; production identity-provider policy and credential lifecycle remain unqualified.",
+    "The authorized retry is limited to a failed or aged missing remote run established as pre-claim; ambiguous create-response recovery continues to reuse its existing creation key."
+  ],
+  "source_files": [
+    "packages/etlantic-fastapi/src/etlantic_fastapi/routes.py",
+    "packages/etlantic-fastapi/src/etlantic_fastapi/schemas.py",
+    "packages/etlantic-prefect/src/etlantic_prefect/worker.py",
+    "packages/etlantic-sqlmodel/src/etlantic_sqlmodel/control_plane/durable_stores.py",
+    "src/etlantic/control_plane/__init__.py",
+    "src/etlantic/control_plane/durable_memory.py",
+    "src/etlantic/control_plane/durable_models.py",
+    "src/etlantic/control_plane/durable_protocols.py",
+    "src/etlantic/service/managed.py",
+    "tests/fastapi/test_managed_application_0_56.py",
+    "tests/prefect/test_managed_prefect_0_58.py"
+  ],
+  "source_sha256": "409b5d63dad9aa29b1893adf10ef734b71260f602d4cfd04babfa5897acc9930",
+  "source_sha256_method": "SHA-256 over sorted repository-relative source paths and file bytes, with NUL separators.",
+  "lockfile_sha256": "3b5507c03e752619016552c9fcc00e4961d9d6b3b426deb11bbdbfca240c73ec",
+  "wheel_sha256": {
+    "etlantic-0.57.2-py3-none-any.whl": "7fa7d883789ec6106413a393aededacbc2b5a7d862956ff51cfa3b49177a9f5c",
+    "etlantic_fastapi-0.57.2-py3-none-any.whl": "18ea8c7eedbb47d6666d1cd4f1bf3ba41543a6f3307ba904432191382c9c4508",
+    "etlantic_prefect-0.57.2-py3-none-any.whl": "eadeff04dc43abdb91a4ed802116b1789d704bc6541e24f110c43ecd3834e3be",
+    "etlantic_sql-0.57.2-py3-none-any.whl": "9019d028b077ab3e90a80de7f3c43e0cd7cb555a4abc43252e4bbe96d3c33ca4",
+    "etlantic_sqlmodel-0.57.2-py3-none-any.whl": "b0dff08be5c898ceb7ea83294fe10cb39da10c1cbc4181012f67d7ae4c329f6a"
+  },
+  "artifacts": [],
+  "commands": [
+    "uv build --wheel --out-dir /tmp/phase058-reconciliation-wheel-dist .",
+    "uv build --wheel --out-dir /tmp/phase058-reconciliation-wheel-dist packages/etlantic-prefect",
+    "uv build --package etlantic-sql --wheel --out-dir /tmp/phase058-reconciliation-wheel-dist",
+    "uv build --wheel --out-dir /tmp/phase058-reconciliation-wheel-dist packages/etlantic-sqlmodel",
+    "uv build --wheel --out-dir /tmp/phase058-reconciliation-wheel-dist packages/etlantic-fastapi",
+    "uv export --locked --no-default-groups --group dev --group prefect --group sql --group sqlmodel --extra fastapi --no-emit-workspace --format requirements.txt --output-file /tmp/phase058-reconciliation-wheel-requirements.txt",
+    "uv venv --python 3.11 /tmp/phase058-reconciliation-wheel-venv",
+    "uv pip sync --python /tmp/phase058-reconciliation-wheel-venv/bin/python /tmp/phase058-reconciliation-wheel-requirements.txt",
+    "uv pip install --python /tmp/phase058-reconciliation-wheel-venv/bin/python --no-deps /tmp/phase058-reconciliation-wheel-dist/*.whl",
+    "env -u PYTHONPATH /tmp/phase058-reconciliation-wheel-venv/bin/python -m pytest -c /Volumes/T7/coding/etlantic/pyproject.toml -o pythonpath= --import-mode=importlib -q /Volumes/T7/coding/etlantic/tests/prefect/test_managed_prefect_0_58.py::test_remote_failure_rearm_is_versioned_and_requires_no_etl_attempt /Volumes/T7/coding/etlantic/tests/prefect/test_managed_prefect_0_58.py::test_exhausted_dispatch_can_be_cancelled_before_route_retirement /Volumes/T7/coding/etlantic/tests/prefect/test_managed_prefect_0_58.py::test_cancellation_preserves_uncertain_and_leased_dispatches_for_reconciliation /Volumes/T7/coding/etlantic/tests/prefect/test_managed_prefect_0_58.py::test_sqlmodel_dispatch_snapshot_survives_store_reconstruction /Volumes/T7/coding/etlantic/tests/prefect/test_managed_prefect_0_58.py::test_remote_status_and_cancellation_remain_separate_observations /Volumes/T7/coding/etlantic/tests/prefect/test_managed_prefect_0_58.py::test_deployment_retirement_drains_route_and_retains_binding /Volumes/T7/coding/etlantic/tests/fastapi/test_managed_application_0_56.py::test_http_exhausted_prefect_dispatch_reconciliation_is_authorized_and_cas"
+  ]
+}

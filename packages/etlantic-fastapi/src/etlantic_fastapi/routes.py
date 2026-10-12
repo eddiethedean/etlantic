@@ -42,6 +42,8 @@ from etlantic_fastapi.schemas import (
     DefinitionSummary,
     DefinitionWriteBody,
     DefinitionWriteResponse,
+    DispatchReconciliationBody,
+    DispatchReconciliationResponse,
     DurableCheckpointCasBody,
     DurableFinishAttemptBody,
     DurableLeaseBody,
@@ -1249,6 +1251,40 @@ def build_control_plane_router(api: ETLanticAPI) -> APIRouter:
         except KeyError as exc:
             raise ControlPlaneError.not_found(f"Run {run_id!r} not found") from exc
         return RunStatusResponse.model_validate(record)
+
+    @router.post(
+        "/v1/dispatches/{submission_id}/reconcile",
+        operation_id="cp_reconcile_prefect_dispatch",
+        response_model=DispatchReconciliationResponse,
+        tags=["dispatches"],
+    )
+    def reconcile_prefect_dispatch(
+        submission_id: str,
+        body: DispatchReconciliationBody,
+        ctx: ControlPlaneContext = Depends(get_ctx),
+    ) -> DispatchReconciliationResponse:
+        require_authorized(
+            api.authorizer,
+            ctx,
+            "execution.dispatch.reconcile",
+            f"submission:{submission_id}",
+        )
+        if api.managed_service is None:
+            raise ControlPlaneError(
+                "Managed dispatch reconciliation is not configured",
+                code="PMCP501",
+                status=501,
+                title="Not Implemented",
+            )
+        return DispatchReconciliationResponse.model_validate(
+            api.managed_service.rearm_exhausted_prefect_dispatch(
+                ctx,
+                submission_id,
+                expected_generation=body.expected_generation,
+                expected_flow_run_id=body.expected_flow_run_id,
+                evidence=body.evidence,
+            )
+        )
 
     @router.get(
         "/v1/runs/{run_id}/actions",

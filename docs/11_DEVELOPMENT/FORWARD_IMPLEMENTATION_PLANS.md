@@ -1,13 +1,13 @@
 ---
 title: Forward Implementation Plans
-description: Shared delivery contract and release sequence for ETLantic 0.39 through 0.61.
+description: Shared delivery contract and release sequence for ETLantic 0.39 through 0.62.
 plan_status: current
-plan_last_reviewed: 0.54.0
+plan_last_reviewed: 2026-10-11
 ---
 
 # Forward Implementation Plans
 
-This document is the delivery contract for ETLantic phases 0.39 through 0.61.
+This document is the delivery contract for ETLantic phases 0.39 through 0.62.
 The [roadmap summary](ROADMAP_SUMMARY.md) defines product intent, while the
 phase plans linked below define implementation order, evidence, and exit gates.
 Integrated domain plans remain authoritative for cross-release architecture.
@@ -35,10 +35,11 @@ Integrated domain plans remain authoritative for cross-release architecture.
 | 0.55 | Optional data-first authoring with forward and target-guided inference across source, transformation, and target models | [0.55](IMPLEMENTATION_PLAN_0_55.md) | [Portable transformations](PORTABLE_TRANSFORM_PLAN.md) + [schema drift](SCHEMA_DRIFT_PLAN.md) |
 | 0.56 | Complete application ETL backend with full specification and run control | [0.56](IMPLEMENTATION_PLAN_0_56.md), [execution](EXECUTION_PLAN_0_56.md), [review](FINDINGS_0_56.md) | [Control plane](MULTI_TENANT_CONTROL_PLANE_PLAN.md) + [adoption ecosystem](ADOPTION_ECOSYSTEM_PLAN.md) |
 | 0.57 | Managed backend independence, schedule services, schema inspection, and runtime supervision (#278–#282); release 0.57.0 | [0.57](IMPLEMENTATION_PLAN_0_57.md) | [Control plane](MULTI_TENANT_CONTROL_PLANE_PLAN.md) + [adoption ecosystem](ADOPTION_ECOSYSTEM_PLAN.md) |
-| 0.58 | Brownfield bridges and orchestration compilers | [0.58](IMPLEMENTATION_PLAN_0_58.md) | [Adoption ecosystem](ADOPTION_ECOSYSTEM_PLAN.md) |
-| 0.59 | Operator console | [0.59](IMPLEMENTATION_PLAN_0_59.md) | [UI/UX](UI_UX_PLAN.md) |
-| 0.60 | Managed-runtime and provider packs | [0.60](IMPLEMENTATION_PLAN_0_60.md) | [Adoption ecosystem](ADOPTION_ECOSYSTEM_PLAN.md) |
-| 0.61 | TransformationModel incubation | [0.61](IMPLEMENTATION_PLAN_0_61.md) | [TransformationModel](TRANSFORMATIONMODEL_PLAN.md) |
+| 0.58 | Managed Prefect execution on the durable runtime (#290, #291–#298), direct compatibility, deployments, dispatch, schedules, and recovery qualification | [0.58](IMPLEMENTATION_PLAN_0_58.md) | [Scheduler and Prefect](SCHEDULER_AND_PREFECT_PLAN.md) + [adoption ecosystem](ADOPTION_ECOSYSTEM_PLAN.md) |
+| 0.59 | Brownfield bridges and orchestration compilers; Prefect interoperability consumes 0.58 | [0.59](IMPLEMENTATION_PLAN_0_59.md) | [Adoption ecosystem](ADOPTION_ECOSYSTEM_PLAN.md) |
+| 0.60 | Operator console | [0.60](IMPLEMENTATION_PLAN_0_60.md) | [UI/UX](UI_UX_PLAN.md) |
+| 0.61 | Managed-runtime and provider packs | [0.61](IMPLEMENTATION_PLAN_0_61.md) | [Adoption ecosystem](ADOPTION_ECOSYSTEM_PLAN.md) |
+| 0.62 | TransformationModel incubation | [0.62](IMPLEMENTATION_PLAN_0_62.md) | [TransformationModel](TRANSFORMATIONMODEL_PLAN.md) |
 
 ## Authority And Change Control
 

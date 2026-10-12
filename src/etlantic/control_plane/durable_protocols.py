@@ -13,7 +13,11 @@ from etlantic.control_plane.durable_models import (
     BaselineAcknowledgement,
     CheckpointRecord,
     DiffRecord,
+    DispatchRecord,
     EffectRecord,
+    ExecutionRouteLifecycle,
+    ExecutionRouteRecord,
+    ExecutionRouteWorkload,
     ExecutionScopePage,
     LeaseRecord,
     OutboxRecord,
@@ -123,6 +127,7 @@ class DurableWorkStore(Protocol):
         schema_baseline_id: str | None = None,
         submission_id: str | None = None,
         run_id: str | None = None,
+        execution_route: str = "local",
     ) -> tuple[SubmissionRecord, bool]: ...
     def list_execution_scopes(
         self,
@@ -139,12 +144,138 @@ class DurableWorkStore(Protocol):
         limit: int = 100,
         include_terminal: bool = False,
         terminal_only: bool = False,
+        submission_id: str | None = None,
+        execution_route: str = "local",
     ) -> Sequence[OutboxRecord]:
         """List unpublished work, filtering status before applying ``limit``.
 
         ``terminal_only`` selects cancelled, completed and failed submissions
         regardless of ``include_terminal``; the default selects active work.
         """
+        ...
+
+    def pending_dispatches(
+        self,
+        ctx: ControlPlaneContext,
+        *,
+        execution_route: str,
+        limit: int = 100,
+    ) -> Sequence[OutboxRecord]: ...
+    def get_execution_route_state(
+        self, ctx: ControlPlaneContext, execution_route: str
+    ) -> ExecutionRouteRecord: ...
+    def execution_route_workload(
+        self, ctx: ControlPlaneContext, execution_route: str
+    ) -> ExecutionRouteWorkload: ...
+    def execution_route_reference_counts(
+        self, ctx: ControlPlaneContext, execution_route: str
+    ) -> Mapping[str, int]: ...
+    def reserve_execution_route_reference(
+        self,
+        ctx: ControlPlaneContext,
+        execution_route: str,
+        reference_id: str,
+    ) -> None: ...
+    def release_execution_route_reference(
+        self,
+        ctx: ControlPlaneContext,
+        execution_route: str,
+        reference_id: str,
+    ) -> None: ...
+    def release_execution_route_reference_id(
+        self, ctx: ControlPlaneContext, reference_id: str
+    ) -> None: ...
+    def transition_execution_route_state(
+        self,
+        ctx: ControlPlaneContext,
+        execution_route: str,
+        *,
+        expected_revision: int,
+        status: ExecutionRouteLifecycle,
+        now: datetime | None = None,
+    ) -> ExecutionRouteRecord: ...
+    def dispatched_for_reconciliation(
+        self,
+        ctx: ControlPlaneContext,
+        *,
+        execution_route: str,
+        limit: int = 100,
+        after_submission_id: str | None = None,
+    ) -> Sequence[DispatchRecord]:
+        """Return linked, active Prefect deliveries for bounded reconciliation."""
+        ...
+
+    def prepare_dispatch(
+        self, ctx: ControlPlaneContext, submission_id: str
+    ) -> DispatchRecord: ...
+    def get_dispatch(
+        self, ctx: ControlPlaneContext, submission_id: str
+    ) -> DispatchRecord: ...
+    def claim_dispatch(
+        self,
+        ctx: ControlPlaneContext,
+        submission_id: str,
+        *,
+        owner_id: str,
+        lease_seconds: int = 30,
+        now: datetime | None = None,
+    ) -> DispatchRecord | None: ...
+    def link_dispatch(
+        self,
+        ctx: ControlPlaneContext,
+        submission_id: str,
+        *,
+        owner_id: str,
+        fencing_token: int,
+        prefect_flow_run_id: str,
+        now: datetime | None = None,
+    ) -> DispatchRecord: ...
+    def release_dispatch(
+        self,
+        ctx: ControlPlaneContext,
+        submission_id: str,
+        *,
+        owner_id: str,
+        fencing_token: int,
+        outcome_uncertain: bool,
+        cancelled: bool = False,
+        error_code: str | None = None,
+        now: datetime | None = None,
+    ) -> DispatchRecord: ...
+    def rearm_dispatch_after_remote_failure(
+        self,
+        ctx: ControlPlaneContext,
+        submission_id: str,
+        *,
+        expected_flow_run_id: str,
+        now: datetime | None = None,
+    ) -> DispatchRecord | None:
+        """Rearm only matching remote failures with no ETL attempt or side effect."""
+        ...
+
+    def rearm_dispatch_after_remote_missing(
+        self,
+        ctx: ControlPlaneContext,
+        submission_id: str,
+        *,
+        expected_flow_run_id: str,
+        minimum_age_seconds: int = 300,
+        now: datetime | None = None,
+    ) -> DispatchRecord | None:
+        """Rearm an aged missing remote run before any canonical ETL attempt."""
+        ...
+
+    def rearm_reconciliation_required_dispatch(
+        self,
+        ctx: ControlPlaneContext,
+        submission_id: str,
+        *,
+        expected_generation: int,
+        expected_flow_run_id: str,
+        evidence_sha256: str,
+        now: datetime | None = None,
+    ) -> DispatchRecord:
+        """Rearm only after a durable, authorized pre-claim reconciliation."""
         ...
 
     def reconcile_terminal_outbox(

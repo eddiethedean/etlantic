@@ -58,6 +58,7 @@ REQUIRED_GA_OPERATION_IDS = {
     "cp_audit_list",
     "cp_quota_admit",
     "cp_objective_put",
+    "cp_reconcile_prefect_dispatch",
 }
 
 

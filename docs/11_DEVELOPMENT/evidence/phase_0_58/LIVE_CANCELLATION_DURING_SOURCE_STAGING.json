@@ -1,0 +1,62 @@
+{
+  "schema": "etlantic.phase_0_58.campaign_evidence/1",
+  "campaign_id": "live-postgresql-cancellation-during-source-staging-2026-10-11",
+  "recorded_at": "2026-10-11",
+  "status": "passed",
+  "qualifies_release": false,
+  "test": "tests/prefect/test_managed_prefect_0_58.py::test_process_worker_executes_targeted_csv_and_postgresql_transfers",
+  "command": "ETLANTIC_CP_TEST_URL=<ephemeral PostgreSQL+psycopg URL> uv run pytest -q tests/prefect/test_managed_prefect_0_58.py::test_process_worker_executes_targeted_csv_and_postgresql_transfers",
+  "result": "Workspace-source live Process-worker test passed: 1 passed in 7.02s.",
+  "assertions": [
+    "A real Prefect Process worker read one immutable CSV source batch and paused before releasing it to the transformation pipeline, with the canonical attempt durably running.",
+    "The authorized cancellation request was durably recorded while the worker was paused; the worker's managed cancellation event was observed before source staging was released.",
+    "After release, the accepted submission and attempt finished as cancelled, the durable run report was cancelled, and the canonical execution effect was classified as none.",
+    "The PostgreSQL sink and effect-ledger tables were empty both before and after staging resumed; cancellation did not start a sink effect.",
+    "A completed canonical ETL run was then forced to a real Prefect Failed state. Authorized status reported the remote failure and a conflict while the durable submission, attempt, successful report, and committed effect stayed completed."
+  ],
+  "runtime": {
+    "python": "3.11.15",
+    "etlantic": "0.57.2 workspace source",
+    "etlantic_prefect": "0.57.2 workspace source",
+    "prefect": "3.7.8",
+    "postgresql": "16.13 (Homebrew, ephemeral local cluster)",
+    "sqlalchemy": "2.0.51",
+    "psycopg": "3.3.4",
+    "worker_pool": "Process",
+    "prefect_server": "Separately supervised API process backed by PostgreSQL",
+    "worker_backend_plugin": "Repository integration-test fixture imported through its temporary test entry-point shim; not an installed-wheel run"
+  },
+  "fingerprints": {
+    "test_source_sha256": "da5adfacd206ad80f1917c318557abcf177b79380a0e062712682fd90bfbcc48",
+    "worker_plugin_source_sha256": "2ca743ddfefcc861e3b0e35a83a4999d1eccb1d45e2decf7d9d143aa43573ed3",
+    "uv_lock_sha256": "3b5507c03e752619016552c9fcc00e4961d9d6b3b426deb11bbdbfca240c73ec"
+  },
+  "source_files": [
+    "packages/etlantic-prefect/src/etlantic_prefect/worker.py",
+    "src/etlantic/runtime/execution_host.py",
+    "src/etlantic/runtime/managed_execution.py",
+    "tests/prefect/test_managed_prefect_0_58.py",
+    "tests/prefect/worker_plugin/src/phase058_worker_backend/__init__.py",
+    "uv.lock"
+  ],
+  "source_sha256": "45333e9e1e07a5e18637cb98967cf4c19f3b5d8e584889868844195e9b653942",
+  "source_sha256_method": "SHA-256 over sorted repository-relative source paths and file bytes, with NUL separators.",
+  "limitations": [
+    "This workspace-source test establishes cancellation during pre-effect source staging on a local Process pool; it is partial evidence and does not qualify the final installed-wheel compatibility matrix.",
+    "The live remote-disagreement scenario covers one completed-to-remote-failed case; broader outage and caller/worker authority-rotation combinations remain open.",
+    "Report-store and durable-artifact publication interruption remains outside this cancellation barrier and is still open."
+  ],
+  "ci_configuration": {
+    "workflow": ".github/workflows/checks.yml",
+    "job": "prefect",
+    "remote_ci_run": false,
+    "fresh_installed_wheels": false,
+    "database_service": "Ephemeral PostgreSQL 16.13 on localhost",
+    "server_process": "Separate Prefect API process with PostgreSQL persistence"
+  },
+  "cleanup": [
+    "The test used unique tenant, workspace, submission, deployment, sink-table, and effect-ledger identities.",
+    "The temporary PostgreSQL cluster and Prefect database were stopped and removed after the focused run."
+  ],
+  "artifacts": []
+}

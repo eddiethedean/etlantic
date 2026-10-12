@@ -1,0 +1,69 @@
+{
+  "schema": "etlantic.phase_0_58.campaign_evidence/1",
+  "campaign_id": "live-postgresql-multiprocess-route-retirement-rollback-2026-10-11",
+  "recorded_at": "2026-10-11",
+  "status": "passed",
+  "qualifies_release": false,
+  "test": "tests/prefect/test_managed_prefect_0_58.py::test_postgresql_multiprocess_retirement_and_revision_rollback",
+  "command": "ETLANTIC_CP_TEST_URL=<local PostgreSQL+psycopg URL> uv run pytest -q tests/prefect/test_managed_prefect_0_58.py::test_postgresql_multiprocess_retirement_and_revision_rollback",
+  "result": "Workspace-source live lifecycle test passed: 1 passed in 28.34s.",
+  "assertions": [
+    "A separately supervised Prefect API process used its own PostgreSQL database; version 1 and version 2 were registered as distinct immutable deployments on a Process work pool.",
+    "A canonical submission accepted on version 1 remained pinned to that route. Draining denied new admission, and retirement waited until cancellation reconciled the accepted work as drained.",
+    "Two spawned Python processes opened independent SQLModel backends and raced to retire the same PostgreSQL-backed route. Both observed the retained, paused version 1 deployment and converged on the retired lifecycle after the revision compare-and-swap race.",
+    "A separate process exited after Prefect paused version 1 but before the route's retired-state compare-and-swap. PostgreSQL still reported draining, admissions stayed closed, and the deployment remained paused.",
+    "At that exact pause-to-retired-CAS boundary, the Prefect API was stopped and restarted; both immutable deployment revisions remained readable and verifiable, the durable route stayed draining, and a new admission was denied before retirement resumed safely.",
+    "The version 2 deployment remained active and retained after version 1 retirement; the accepted submission still referenced version 1.",
+    "After closing and reopening the SQLModel backend, the retired route and accepted route binding were still present. Re-registering the exact version 1 spec reused its original deployment ID, and guarded reactivation restored the route without changing version 2.",
+    "Lifecycle history persisted through reopen and recorded draining, retired, then active."
+  ],
+  "runtime": {
+    "python": "3.11.15",
+    "etlantic": "0.57.2 workspace source",
+    "etlantic_prefect": "0.57.2 workspace source",
+    "etlantic_sqlmodel": "0.57.2 workspace source",
+    "prefect": "3.7.8",
+    "sqlmodel": "0.0.39",
+    "sqlalchemy": "2.0.51",
+    "psycopg": "3.3.4",
+    "postgresql": "16.13 (Homebrew)",
+    "work_pool": "Process",
+    "prefect_server": "Separately supervised API process backed by a dedicated per-test PostgreSQL database",
+    "worker_backend_plugin": "Not used by this route-lifecycle test"
+  },
+  "fingerprints": {
+    "etlantic_prefect_source_sha256": "b373799f7a1c5b99ca509d7eaf21628b357eaaf03f8bee55b8df604ff4bb2e6d",
+    "deployment_source_sha256": "d7bdcf41c8c4dbe5baa3420336171b50f9ee9fcbdb6ea3824857edf08739c1d9",
+    "test_source_sha256": "57d90d2fb57f663014c743b99b9f53f9b9358cf54a147856349b69318eebb699",
+    "uv_lock_sha256": "3b5507c03e752619016552c9fcc00e4961d9d6b3b426deb11bbdbfca240c73ec"
+  },
+  "source_files": [
+    "packages/etlantic-prefect/src/etlantic_prefect/deployment.py",
+    "packages/etlantic-sqlmodel/src/etlantic_sqlmodel/control_plane/durable_stores.py",
+    "packages/etlantic-sqlmodel/src/etlantic_sqlmodel/managed.py",
+    "src/etlantic/control_plane/managed_backend.py",
+    "src/etlantic/service/managed.py",
+    "tests/prefect/test_managed_prefect_0_58.py",
+    "uv.lock"
+  ],
+  "source_sha256": "dd22f15730fb6984a91f7c10e8a09ae25de1290701babb56a04d226a2bcb6a99",
+  "source_sha256_method": "SHA-256 over sorted repository-relative source paths and file bytes, with NUL separators.",
+  "limitations": [
+    "This workspace-source campaign proves API restart at the process-death cut between remote pause and the retired-state CAS; other lifecycle crash boundaries remain untested.",
+    "The campaign does not implement or qualify bounded cleanup of orphaned deployment revisions; deployments are retained for audit and rollback.",
+    "This is partial release evidence and does not qualify the final installed-wheel support matrix or remote CI."
+  ],
+  "ci_configuration": {
+    "workflow": ".github/workflows/checks.yml",
+    "job": "prefect",
+    "remote_ci_run": false,
+    "fresh_installed_wheels": false,
+    "database_service": "Local PostgreSQL 16.13; unique fixture rows and the dedicated Prefect database were cleaned after the test.",
+    "server_process": "Separate Prefect API process with PostgreSQL persistence"
+  },
+  "cleanup": [
+    "The test used unique tenant, workspace, store, deployment, and Prefect database identities; scoped SQLModel rows were removed after the run.",
+    "The per-test Prefect database was dropped after the API process stopped; the shared local PostgreSQL service was left running."
+  ],
+  "artifacts": []
+}

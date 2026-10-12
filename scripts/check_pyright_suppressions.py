@@ -58,8 +58,20 @@ from pathlib import Path
 # were added or removed. Re-pin the 789-entry inventory after source shifts.
 # Prefect test isolation shifts an existing inline ignore; no directives were
 # added or removed. Inline ignore locations are now part of the inventory, so
-# re-pin the unchanged 789-entry inventory after source shifts.
-EXPECTED_DIGEST = "2e57169563a22dc94f1b32c9c5f3de4818446a9946d6ac3d9c3caff9e23371af"
+# re-pin the unchanged 789-entry 0.57.2 baseline after source shifts.
+# Phase 0.58 adds six reviewed boundaries: Prefect's dynamic scheduler surface,
+# typed fixtures for the managed contract suite, and test-only backend method
+# injection plus structural dispatcher doubles. A newly added async-result
+# ignore was replaced with an explicit Awaitable cast. Re-pin the 795-entry
+# inventory after reviewing those changes.
+# The test backend now lives in a separately buildable wheel fixture; its
+# reviewed method-assignment exception moved with the package.
+# Direct scheduler hardening replaces a narrow legacy ignore with a reviewed
+# Prefect dynamic-API boundary, and the managed contract fixtures add their
+# file-scoped/test-backend boundaries. The reviewed inventory is 794 entries.
+# The phase 0.58 dispatch-reconciliation authorization guard and its CP1 matrix
+# coverage shift existing inline ignores without adding or removing directives.
+EXPECTED_DIGEST = "7047c4e0492e04af5ceac380a27fd78eff68ba24aeb3a8e43a575a96737fe16a"
 
 _IGNORED_DIRECTORIES = frozenset(
     {

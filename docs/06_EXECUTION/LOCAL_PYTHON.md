@@ -149,7 +149,8 @@ The same Pipeline Plan may also execute using:
 
 - Airflow (`etlantic-airflow` compile target)
 - Prefect (`etlantic-prefect` direct-execution scheduler; local MVP)
-- Future orchestration compilers (Dagster, Prefect compile targets)
+- Future Dagster/Argo compilers and the planned
+  [0.58 managed Prefect adapter](../11_DEVELOPMENT/IMPLEMENTATION_PLAN_0_58.md)
 
 Observable pipeline semantics should remain identical.
 

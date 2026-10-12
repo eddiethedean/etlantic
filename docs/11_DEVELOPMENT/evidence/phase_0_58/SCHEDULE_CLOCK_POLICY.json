@@ -1,0 +1,30 @@
+{
+  "schema": "etlantic.phase_0_58.campaign_evidence/1",
+  "campaign_id": "schedule-clock-policy-2026-10-11",
+  "recorded_at": "2026-10-11",
+  "status": "passed",
+  "qualifies_release": false,
+  "test": [
+    "tests/schedule/test_clock.py",
+    "tests/schedule/test_policy_enforcement.py"
+  ],
+  "command": "uv run pytest -q tests/schedule/test_clock.py tests/schedule/test_policy_enforcement.py",
+  "result": "14 passed in 1.32s",
+  "assertions": [
+    "Cron and interval occurrences are calculated in UTC with explicit timezone handling; the New York spring-forward gap is skipped and both fall-back 01:30 UTC occurrences remain distinct.",
+    "Catch-up is bounded by catch_up_max, and misfire=skip and catch_up_max=0 do not admit missed work.",
+    "Overlap=skip does not accept a second firing while a prior submission is in flight, and firing outside the effective time window is skipped.",
+    "Naive clock inputs are interpreted as UTC and schedule serialization preserves catch-up bounds."
+  ],
+  "runtime": {
+    "python": "3.11.15",
+    "etlantic": "0.57.2",
+    "schedule_store": "MemoryScheduleStore",
+    "durable_work_store": "MemoryDurableWorkStore",
+    "clock": "FakeScheduleClock"
+  },
+  "limitations": [
+    "These deterministic clock and policy tests use in-memory providers. They do not establish PostgreSQL timer authority, competing timer processes, recurrence restart recovery, authority transfer, or live Prefect admission parity."
+  ],
+  "artifacts": []
+}

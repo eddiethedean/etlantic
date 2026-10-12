@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import asyncio
 import os
 from typing import Any
 from uuid import uuid4
@@ -38,6 +39,17 @@ pytestmark = pytest.mark.sqlmodel
 def test_restricted_postgresql_role_inspects_schema_and_runs_headless_scheduler() -> (
     None
 ):
+    pytest.importorskip("prefect")
+    pytest.importorskip("etlantic_prefect")
+
+    from prefect.client.orchestration import get_client
+    from prefect.client.schemas.actions import WorkPoolCreate
+    from prefect.testing.utilities import prefect_test_harness
+
+    from etlantic import Data, Extract, Load, Pipeline
+    from etlantic.authoring import definition_from_pipeline
+    from etlantic.authoring.serialize import pipeline_to_dict
+
     url = os.environ.get("ETLANTIC_SQLMODEL_TEST_URL")
     if not url:
         pytest.skip("ETLANTIC_SQLMODEL_TEST_URL is not configured")
@@ -122,35 +134,133 @@ def test_restricted_postgresql_role_inspects_schema_and_runs_headless_scheduler(
         event.listen(runtime_engine, "commit", capture_commit)
         inspected = inspect_schema(runtime_engine)
         assert inspected.compatible
-        backend = create_managed_backend(
-            SQLModelBackendConfig(store_id=f"release-{uuid4().hex}"),
-            authorizer=MemoryAuthorizer(),
-            engine=runtime_engine,
+        spec_name = f"restricted-{uuid4().hex[:12]}"
+        from etlantic_prefect import (
+            ManagedDeploymentSpec,
+            PrefectDeploymentRegistrar,
+            PrefectDispatcher,
         )
-        event.remove(runtime_engine, "before_cursor_execute", capture_statement)
-        event.remove(runtime_engine, "commit", capture_commit)
-        assert not any(
-            statement in {"CREATE", "ALTER", "INSERT", "UPDATE", "DELETE"}
-            for statement in statements
-        )
-        assert not commits
 
-        context = ControlPlaneContext(
-            principal=Principal(subject="runtime", issuer="release-test"),
-            tenant=TenantRef(tenant_id="release-tenant"),
-            workspace=WorkspaceRef(
-                tenant_id="release-tenant", workspace_id="release-workspace"
-            ),
-            environment=EnvironmentRef(name="release-test"),
-            security_domain=SecurityDomain(domain_id="release-test"),
+        spec = ManagedDeploymentSpec.from_current_runtime(
+            name=spec_name,
+            work_pool_name=f"pool-{spec_name}",
+            worker_backend_entry_point="phase058_test_backend",
+            lockfile_sha256="a" * 64,
         )
-        assert (
-            backend.create_scheduler(owner_id=f"scheduler-{uuid4().hex}").tick(context)
-            == 0
-        )
-        with runtime_engine.connect() as connection:
-            assert connection.execute(text("SELECT 1")).scalar_one() == 1
-        assert set(inspect(admin_engine).get_table_names(schema=schema))
+
+        async def register_deployment():
+            async with get_client() as client:
+                await client.create_work_pool(
+                    WorkPoolCreate(name=spec.work_pool_name, type="process")
+                )
+            registrar = PrefectDeploymentRegistrar()
+            preview = await registrar.preview(spec)
+            return await registrar.register(
+                spec, expected_fingerprint=preview["spec"]["fingerprint"]
+            )
+
+        with prefect_test_harness():
+            binding = asyncio.run(register_deployment())
+            authz = MemoryAuthorizer()
+            context = ControlPlaneContext(
+                principal=Principal(subject="runtime", issuer="release-test"),
+                tenant=TenantRef(tenant_id="release-tenant"),
+                workspace=WorkspaceRef(
+                    tenant_id="release-tenant", workspace_id="release-workspace"
+                ),
+                environment=EnvironmentRef(name="release-test"),
+                security_domain=SecurityDomain(domain_id="release-test"),
+            )
+            for action in (
+                "definition.write",
+                "definition.read",
+                "definition.validate",
+                "definition.plan",
+                "run.submit",
+                "run.read",
+                "run.cancel",
+                "schedule.write",
+            ):
+                authz.grant(context, action)
+            backend = create_managed_backend(
+                SQLModelBackendConfig(
+                    store_id=f"release-{uuid4().hex}",
+                    execution_route=binding.execution_route,
+                ),
+                authorizer=authz,
+                engine=runtime_engine,
+            )
+            event.remove(runtime_engine, "before_cursor_execute", capture_statement)
+            event.remove(runtime_engine, "commit", capture_commit)
+            assert not any(
+                statement in {"CREATE", "ALTER", "INSERT", "UPDATE", "DELETE"}
+                for statement in statements
+            )
+            assert not commits
+
+            assert (
+                backend.create_scheduler(owner_id=f"scheduler-{uuid4().hex}").tick(
+                    context
+                )
+                == 0
+            )
+
+            class RestrictedRow(Data):
+                value: int
+
+            class RestrictedPipeline(Pipeline):
+                source: Extract[RestrictedRow] = Extract(asset="source")
+                output: Load[RestrictedRow] = Load(input=source, asset="output")
+
+            backend.managed_service.register_definition(
+                context,
+                "restricted-phase058",
+                pipeline_to_dict(definition_from_pipeline(RestrictedPipeline)),
+            )
+            accepted = backend.managed_service.submit_run(
+                context,
+                "restricted-phase058",
+                idempotency_key=f"restricted-route-{uuid4().hex}",
+            )
+            stored = backend.durable_work.get_submission(
+                context, accepted.submission_id
+            )
+            assert stored.execution_route == binding.execution_route
+            dispatcher = PrefectDispatcher(
+                backend=backend,
+                context=context,
+                binding=binding,
+                owner_id=f"restricted-dispatcher-{uuid4().hex}",
+            )
+            dispatched = asyncio.run(dispatcher.tick(limit=10))
+            assert len(dispatched) == 1
+            assert dispatched[0]["status"] == "dispatched"
+            assert dispatched[0]["submission_id"] == accepted.submission_id
+            flow_run_id = dispatched[0]["prefect_flow_run_id"]
+            assert flow_run_id
+            stored_dispatch = backend.durable_work.get_dispatch(
+                context, accepted.submission_id
+            )
+            assert stored_dispatch.status == "dispatched"
+            assert stored_dispatch.prefect_flow_run_id == flow_run_id
+
+            async def read_remote_flow_run():
+                async with get_client() as client:
+                    return await client.read_flow_run(flow_run_id)
+
+            remote_flow_run = asyncio.run(read_remote_flow_run())
+            assert str(remote_flow_run.deployment_id) == str(binding.deployment_id)
+            with runtime_engine.connect() as connection:
+                assert connection.execute(text("SELECT 1")).scalar_one() == 1
+            with admin_engine.connect() as connection:
+                assert (
+                    connection.execute(
+                        text("SELECT has_schema_privilege(:role, :schema, 'CREATE')"),
+                        {"role": role, "schema": schema},
+                    ).scalar_one()
+                    is False
+                )
+            assert set(inspect(admin_engine).get_table_names(schema=schema))
     finally:
         if runtime_engine is not None:
             if backend is not None:

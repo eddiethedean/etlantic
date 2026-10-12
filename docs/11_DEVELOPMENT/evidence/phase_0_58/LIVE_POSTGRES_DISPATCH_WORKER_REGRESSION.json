@@ -1,0 +1,54 @@
+{
+  "schema": "etlantic.phase_0_58.campaign_evidence/1",
+  "campaign_id": "live-postgresql-dispatch-worker-regression-2026-10-11",
+  "recorded_at": "2026-10-11",
+  "status": "passed",
+  "qualifies_release": false,
+  "test": [
+    "tests/prefect",
+    "tests/sqlmodel"
+  ],
+  "commands": [
+    "ETLANTIC_CP_TEST_URL=<temporary local PostgreSQL URL> uv run pytest -q tests/prefect",
+    "ETLANTIC_SQLMODEL_TEST_URL=<temporary local PostgreSQL URL> uv run pytest -q tests/sqlmodel"
+  ],
+  "result": "Prefect: 40 passed in 53.93s with no skips. SQLModel: 87 passed, 7 skipped in 14.38s.",
+  "assertions": [
+    "With PostgreSQL qualification enabled, the full Prefect suite ran its live gated cases, including multi-process dispatch claim/retry identity and a separately supervised Prefect API with Process-worker transfer checks.",
+    "The SQLModel suite executed the available live PostgreSQL schema, least-privilege, durable-store, and scheduler cases in addition to its memory and SQLite coverage.",
+    "The Prefect qualification fixture left zero databases with the phase-specific prefix; the temporary PostgreSQL cluster was stopped and removed after the run.",
+    "PostgreSQL-backed exhausted-dispatch coverage reached the third automatic generation, verified that it became unclaimable, authorized a new generation with actor/evidence-digest history, reconstructed that history from SQLModel storage, and rejected the stale generation CAS."
+  ],
+  "runtime": {
+    "python": "CPython 3.11.15",
+    "postgresql": "16.13 (Homebrew, local ephemeral cluster)",
+    "prefect": "3.7.8",
+    "worker_pool": "Process",
+    "prefect_server": "Separately supervised API process backed by PostgreSQL for live tests",
+    "source_mode": "Workspace source under the locked uv environment; not an installed-wheel live run"
+  },
+  "limitations": [
+    "The local PostgreSQL patch version was 16.13; this does not replace the phase candidate matrix evidence for PostgreSQL 16.14.",
+    "Seven SQLModel tests remained skipped; remote CI, independent-consumer, production identity-provider, Posit Connect hosting, and complete fault-injection coverage remain open.",
+    "The clean-wheel dispatch reconciliation campaign is recorded separately and uses isolated SQLite durable-store checks; this live campaign exercised workspace source."
+  ],
+  "source_files": [
+    "packages/etlantic-prefect/src/etlantic_prefect/deployment.py",
+    "packages/etlantic-prefect/src/etlantic_prefect/dispatcher.py",
+    "packages/etlantic-prefect/src/etlantic_prefect/worker.py",
+    "packages/etlantic-sqlmodel/src/etlantic_sqlmodel/control_plane/durable_stores.py",
+    "packages/etlantic-sqlmodel/src/etlantic_sqlmodel/control_plane/models.py",
+    "src/etlantic/control_plane/durable_memory.py",
+    "src/etlantic/control_plane/durable_models.py",
+    "src/etlantic/control_plane/durable_protocols.py",
+    "src/etlantic/runtime/managed_execution.py",
+    "src/etlantic/service/managed.py",
+    "tests/prefect/test_managed_prefect_0_58.py",
+    "tests/sqlmodel/test_managed_runtime_schema_privileges_0_57.py",
+    "tests/sqlmodel/test_managed_scheduler_postgresql_0_57.py"
+  ],
+  "source_sha256": "715157a36adc7a4069d5adec656c7e52f94508ce8b44a448a56978d8745c6351",
+  "source_sha256_method": "SHA-256 over sorted repository-relative source paths and file bytes, with NUL separators.",
+  "lockfile_sha256": "3b5507c03e752619016552c9fcc00e4961d9d6b3b426deb11bbdbfca240c73ec",
+  "artifacts": []
+}

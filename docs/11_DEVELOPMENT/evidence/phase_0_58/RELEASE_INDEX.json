@@ -1,0 +1,640 @@
+{
+  "schema": "etlantic.phase_0_58.release_evidence/1",
+  "phase": "0.58",
+  "status": "in_progress",
+  "release_qualified": false,
+  "campaigns": [
+    {
+      "id": "local-process-worker-postgresql-smoke-2026-10-11",
+      "path": "LOCAL_PROCESS_WORKER_POSTGRESQL_SMOKE.json",
+      "status": "passed",
+      "qualifies_release": false,
+      "covers": [
+        "AC058-002 partial",
+        "AC058-003 partial",
+        "AC058-004 partial",
+        "AC058-009 partial",
+        "#292 partial",
+        "#293 partial",
+        "#294 partial",
+        "#295 partial",
+        "#298 partial"
+      ]
+    },
+    {
+      "id": "prefect-postgresql-ci-smoke-2026-10-11",
+      "path": "PREFECT_POSTGRESQL_CI_SMOKE.json",
+      "status": "passed",
+      "qualifies_release": false,
+      "covers": [
+        "AC058-002 partial",
+        "AC058-003 partial",
+        "AC058-004 partial",
+        "AC058-009 partial",
+        "#292 partial",
+        "#293 partial",
+        "#294 partial",
+        "#295 partial",
+        "#298 partial"
+      ]
+    },
+    {
+      "id": "clean-wheel-process-worker-2026-10-11",
+      "path": "CLEAN_WHEEL_PROCESS_WORKER.json",
+      "status": "passed",
+      "qualifies_release": false,
+      "covers": [
+        "AC058-002 partial",
+        "AC058-003 partial",
+        "AC058-004 partial",
+        "AC058-005 partial",
+        "AC058-009 partial",
+        "AC058-010 partial",
+        "#292 partial",
+        "#293 partial",
+        "#294 partial",
+        "#295 partial",
+        "#298 partial",
+        "AC058-001 partial",
+        "#291 partial",
+        "#297 partial",
+        "AC058-007 partial"
+      ]
+    },
+    {
+      "id": "direct-scheduler-compatibility-2026-10-11",
+      "path": "DIRECT_SCHEDULER_COMPATIBILITY.json",
+      "status": "passed",
+      "qualifies_release": false,
+      "covers": [
+        "AC058-001 partial",
+        "AC058-008 partial",
+        "#291 partial"
+      ]
+    },
+    {
+      "id": "managed-schedule-firing-idempotency-2026-10-11",
+      "path": "SCHEDULE_FIRING_IDEMPOTENCY.json",
+      "status": "passed",
+      "qualifies_release": false,
+      "covers": [
+        "AC058-007 partial",
+        "058-A3 partial",
+        "#297 partial"
+      ]
+    },
+    {
+      "id": "schedule-route-transfer-api-contract-2026-10-11",
+      "path": "SCHEDULE_ROUTE_TRANSFER_API.json",
+      "status": "passed",
+      "qualifies_release": false,
+      "covers": [
+        "AC058-007 partial",
+        "AC058-008 partial",
+        "#297 partial",
+        "#298 partial"
+      ]
+    },
+    {
+      "id": "status-cancellation-reconciliation-2026-10-11",
+      "path": "STATUS_CANCELLATION_RECONCILIATION.json",
+      "status": "passed",
+      "qualifies_release": false,
+      "covers": [
+        "AC058-006 partial",
+        "AC058-008 partial",
+        "058-A3 partial",
+        "#296 partial"
+      ]
+    },
+    {
+      "id": "deployment-revision-retention-clean-wheel-2026-10-11",
+      "path": "DEPLOYMENT_REVISION_RETENTION.json",
+      "status": "passed",
+      "qualifies_release": false,
+      "covers": [
+        "AC058-004 partial",
+        "AC058-008 partial",
+        "058-A1 partial",
+        "#294 partial",
+        "#298 partial"
+      ]
+    },
+    {
+      "id": "route-lifecycle-retirement-contract-2026-10-11",
+      "path": "ROUTE_LIFECYCLE_RETIREMENT.json",
+      "status": "passed",
+      "qualifies_release": false,
+      "covers": [
+        "AC058-003 partial",
+        "AC058-004 partial",
+        "AC058-008 partial",
+        "AC058-010 partial",
+        "058-A1 partial",
+        "#294 partial",
+        "#298 partial"
+      ]
+    },
+    {
+      "id": "schedule-clock-policy-2026-10-11",
+      "path": "SCHEDULE_CLOCK_POLICY.json",
+      "status": "passed",
+      "qualifies_release": false,
+      "covers": [
+        "AC058-007 partial",
+        "AC058-008 partial",
+        "058-A3 partial",
+        "#297 partial"
+      ]
+    },
+    {
+      "id": "installed-process-worker-post-effect-crash-recovery-2026-10-11",
+      "path": "WORKER_CRASH_RECOVERY.json",
+      "status": "passed",
+      "qualifies_release": false,
+      "covers": [
+        "AC058-005 partial",
+        "AC058-009 partial",
+        "#293 partial",
+        "#295 partial",
+        "#298 partial"
+      ]
+    },
+    {
+      "id": "installed-deployment-drift-preclaim-2026-10-11",
+      "path": "DEPLOYMENT_DRIFT_PRECLAIM.json",
+      "status": "passed",
+      "qualifies_release": false,
+      "covers": [
+        "AC058-003 partial",
+        "AC058-004 partial",
+        "AC058-010 partial",
+        "058-A3 partial",
+        "#292 partial",
+        "#294 partial",
+        "#295 partial",
+        "#298 partial",
+        "AC058-005 partial",
+        "#293 partial"
+      ]
+    },
+    {
+      "id": "live-postgresql-schedule-route-recovery-2026-10-11",
+      "path": "LIVE_POSTGRES_SCHEDULE_ROUTE_RECOVERY.json",
+      "status": "passed",
+      "qualifies_release": false,
+      "covers": [
+        "AC058-007 partial",
+        "AC058-008 partial",
+        "058-A3 partial",
+        "#297 partial",
+        "#298 partial"
+      ]
+    },
+    {
+      "id": "live-postgresql-deployment-revision-worker-retention-2026-10-11",
+      "path": "LIVE_DEPLOYMENT_REVISION_WORKER_RETENTION.json",
+      "status": "passed",
+      "qualifies_release": false,
+      "covers": [
+        "AC058-004 partial",
+        "AC058-008 partial",
+        "AC058-009 partial",
+        "058-A1 partial",
+        "#294 partial",
+        "#298 partial"
+      ]
+    },
+    {
+      "id": "live-postgresql-scheduled-process-execution-2026-10-11",
+      "path": "LIVE_SCHEDULED_PROCESS_EXECUTION.json",
+      "status": "passed",
+      "qualifies_release": false,
+      "covers": [
+        "AC058-007 partial",
+        "AC058-008 partial",
+        "AC058-009 partial",
+        "058-A3 partial",
+        "#297 partial",
+        "#298 partial"
+      ]
+    },
+    {
+      "id": "live-postgresql-pre-effect-worker-crash-recovery-2026-10-11",
+      "path": "LIVE_PRE_EFFECT_WORKER_CRASH_RECOVERY.json",
+      "status": "passed",
+      "qualifies_release": false,
+      "covers": [
+        "AC058-005 partial",
+        "AC058-006 partial",
+        "058-A1 partial",
+        "#293 partial",
+        "#298 partial"
+      ]
+    },
+    {
+      "id": "live-postgresql-dispatch-crash-recovery-2026-10-11",
+      "path": "LIVE_DISPATCH_CREATE_LINK_CRASH_RECOVERY.json",
+      "status": "passed",
+      "qualifies_release": false,
+      "covers": [
+        "AC058-004 partial",
+        "AC058-008 partial",
+        "#295 partial",
+        "#298 partial"
+      ]
+    },
+    {
+      "id": "live-postgresql-unsettled-transaction-crash-recovery-2026-10-11",
+      "path": "LIVE_UNSETTLED_TRANSACTION_CRASH_RECOVERY.json",
+      "status": "passed",
+      "qualifies_release": false,
+      "covers": [
+        "AC058-005 partial",
+        "AC058-006 partial",
+        "#293 partial",
+        "#298 partial"
+      ]
+    },
+    {
+      "id": "live-postgresql-pre-execution-policy-and-authz-revocation-2026-10-11",
+      "path": "LIVE_POLICY_PRE_EFFECT_DENIAL.json",
+      "status": "passed",
+      "qualifies_release": false,
+      "covers": [
+        "AC058-003 partial",
+        "AC058-005 partial",
+        "#292 partial",
+        "#293 partial",
+        "#298 partial"
+      ]
+    },
+    {
+      "id": "pre-execution-policy-approval-audit-unit-2026-10-11",
+      "path": "PRE_EXECUTION_POLICY_UNIT.json",
+      "status": "passed",
+      "qualifies_release": false,
+      "covers": [
+        "AC058-003 partial",
+        "#292 partial"
+      ]
+    },
+    {
+      "id": "live-postgresql-partial-write-crash-recovery-2026-10-11",
+      "path": "LIVE_PARTIAL_WRITE_CRASH_RECOVERY.json",
+      "status": "passed",
+      "qualifies_release": false,
+      "covers": [
+        "AC058-005 partial",
+        "AC058-006 partial",
+        "#293 partial",
+        "#298 partial"
+      ]
+    },
+    {
+      "id": "live-postgresql-approval-revocation-before-claim-2026-10-11",
+      "path": "LIVE_APPROVAL_REVOCATION_PRE_EFFECT_DENIAL.json",
+      "status": "passed",
+      "qualifies_release": false,
+      "covers": [
+        "AC058-003 partial",
+        "AC058-005 partial",
+        "#292 partial",
+        "#293 partial",
+        "#298 partial"
+      ]
+    },
+    {
+      "id": "live-postgresql-report-event-append-crash-recovery-2026-10-11",
+      "path": "LIVE_REPORT_EVENT_APPEND_CRASH_RECOVERY.json",
+      "status": "passed",
+      "qualifies_release": false,
+      "covers": [
+        "AC058-005 partial",
+        "AC058-006 partial",
+        "#293 partial",
+        "#298 partial"
+      ]
+    },
+    {
+      "id": "live-postgresql-dispatched-run-cancellation-2026-10-11",
+      "path": "LIVE_POST_DISPATCH_CANCELLATION.json",
+      "status": "passed",
+      "qualifies_release": false,
+      "covers": [
+        "AC058-003 partial",
+        "AC058-005 partial",
+        "AC058-006 partial",
+        "#296 partial",
+        "#298 partial"
+      ]
+    },
+    {
+      "id": "live-postgresql-runtime-route-least-privilege-2026-10-11",
+      "path": "LIVE_RUNTIME_ROUTE_LEAST_PRIVILEGE.json",
+      "status": "passed",
+      "qualifies_release": false,
+      "covers": [
+        "AC058-010 partial",
+        "058-A3 partial",
+        "#292 partial",
+        "#298 partial"
+      ]
+    },
+    {
+      "id": "live-postgresql-cancellation-during-commit-2026-10-11",
+      "path": "LIVE_CANCELLATION_DURING_COMMIT.json",
+      "status": "passed",
+      "qualifies_release": false,
+      "covers": [
+        "AC058-005 partial",
+        "AC058-006 partial",
+        "#296 partial",
+        "#298 partial"
+      ]
+    },
+    {
+      "id": "live-postgresql-cancellation-during-source-staging-2026-10-11",
+      "path": "LIVE_CANCELLATION_DURING_SOURCE_STAGING.json",
+      "status": "passed",
+      "qualifies_release": false,
+      "covers": [
+        "AC058-005 partial",
+        "AC058-006 partial",
+        "#296 partial",
+        "#298 partial"
+      ]
+    },
+    {
+      "id": "remote-missing-dispatch-rearm-2026-10-11",
+      "path": "REMOTE_MISSING_DISPATCH_REARM.json",
+      "status": "passed",
+      "qualifies_release": false,
+      "covers": [
+        "AC058-004 partial",
+        "AC058-006 partial",
+        "AC058-008 partial",
+        "058-A2 partial",
+        "#295 partial",
+        "#296 partial",
+        "#298 partial"
+      ]
+    },
+    {
+      "id": "dispatch-generation-reconciliation-clean-wheels-2026-10-11",
+      "path": "DISPATCH_GENERATION_RECONCILIATION.json",
+      "status": "passed",
+      "qualifies_release": false,
+      "covers": [
+        "AC058-004 partial",
+        "AC058-006 partial",
+        "AC058-008 partial",
+        "AC058-010 partial",
+        "058-A2 partial",
+        "#292 partial",
+        "#295 partial",
+        "#296 partial",
+        "#298 partial"
+      ]
+    },
+    {
+      "id": "terminal-status-disagreement-2026-10-11",
+      "path": "TERMINAL_STATUS_DISAGREEMENT.json",
+      "status": "passed",
+      "qualifies_release": false,
+      "covers": [
+        "AC058-006 partial",
+        "058-A2 partial",
+        "#296 partial",
+        "#298 partial"
+      ]
+    },
+    {
+      "id": "live-postgresql-dispatch-worker-regression-2026-10-11",
+      "path": "LIVE_POSTGRES_DISPATCH_WORKER_REGRESSION.json",
+      "status": "passed",
+      "qualifies_release": false,
+      "covers": [
+        "AC058-004 partial",
+        "AC058-009 partial",
+        "AC058-010 partial",
+        "#292 partial",
+        "#293 partial",
+        "#295 partial",
+        "#298 partial"
+      ]
+    },
+    {
+      "id": "live-postgresql-multiprocess-route-retirement-rollback-2026-10-11",
+      "path": "LIVE_MULTIPROCESS_ROUTE_RETIREMENT_ROLLBACK.json",
+      "status": "passed",
+      "qualifies_release": false,
+      "covers": [
+        "AC058-008 partial",
+        "058-A1 partial",
+        "#294 partial",
+        "#298 partial"
+      ]
+    },
+    {
+      "id": "live-postgresql-report-store-publication-recovery-2026-10-11",
+      "path": "LIVE_REPORT_STORE_PUBLICATION_RECOVERY.json",
+      "status": "passed",
+      "qualifies_release": false,
+      "covers": [
+        "AC058-005 partial",
+        "AC058-006 partial",
+        "AC058-008 partial",
+        "#293 partial",
+        "#296 partial",
+        "#298 partial"
+      ]
+    },
+    {
+      "id": "live-postgresql-artifact-write-crash-recovery-2026-10-11",
+      "path": "LIVE_ARTIFACT_WRITE_CRASH_RECOVERY.json",
+      "status": "passed",
+      "qualifies_release": false,
+      "covers": [
+        "AC058-005 partial",
+        "AC058-008 partial",
+        "#293 partial",
+        "#295 partial",
+        "#298 partial"
+      ]
+    },
+    {
+      "id": "live-postgresql-worker-credential-rotation-2026-10-11",
+      "path": "LIVE_WORKER_CREDENTIAL_ROTATION.json",
+      "status": "passed",
+      "qualifies_release": false,
+      "covers": [
+        "AC058-003 partial",
+        "AC058-005 partial",
+        "058-A3 partial",
+        "#292 partial",
+        "#293 partial",
+        "#298 partial"
+      ]
+    },
+    {
+      "id": "live-postgresql-prefect-api-outage-recovery-2026-10-11",
+      "path": "LIVE_PREFECT_API_OUTAGE_RECOVERY.json",
+      "status": "passed",
+      "qualifies_release": false,
+      "covers": [
+        "AC058-004 partial",
+        "AC058-006 partial",
+        "058-A2 partial",
+        "#295 partial",
+        "#296 partial",
+        "#298 partial"
+      ]
+    },
+    {
+      "id": "clean-wheel-prefect-postgresql-final-2026-10-11",
+      "path": "CLEAN_WHEEL_FINAL_QUALIFICATION.json",
+      "status": "passed",
+      "qualifies_release": false,
+      "covers": [
+        "AC058-001 partial",
+        "AC058-002 partial",
+        "AC058-003 partial",
+        "AC058-004 partial",
+        "AC058-005 partial",
+        "AC058-006 partial",
+        "AC058-007 partial",
+        "AC058-008 partial",
+        "AC058-009 partial",
+        "AC058-010 partial",
+        "058-A1 partial",
+        "058-A2 partial",
+        "058-A3 partial",
+        "058-A4 partial",
+        "#291 partial",
+        "#292 partial",
+        "#293 partial",
+        "#294 partial",
+        "#295 partial",
+        "#296 partial",
+        "#297 partial",
+        "#298 partial"
+      ]
+    },
+    {
+      "id": "clean-wheel-nontransactional-partial-effect-recovery-2026-10-11",
+      "path": "NONTRANSACTIONAL_PARTIAL_EFFECT_RECOVERY.json",
+      "status": "passed",
+      "qualifies_release": false,
+      "covers": [
+        "AC058-005 partial",
+        "#293 partial",
+        "#295 partial",
+        "#298 partial"
+      ]
+    },
+    {
+      "id": "clean-wheel-prefect-api-mid-execution-recovery-2026-10-11",
+      "path": "LIVE_PREFECT_API_MID_EXECUTION_RECOVERY.json",
+      "status": "passed",
+      "qualifies_release": false,
+      "covers": [
+        "AC058-005 partial",
+        "AC058-006 partial",
+        "058-A2 partial",
+        "#295 partial",
+        "#296 partial",
+        "#298 partial"
+      ]
+    },
+    {
+      "id": "clean-wheel-route-cleanup-qualification-2026-10-11",
+      "path": "CLEAN_WHEEL_ROUTE_CLEANUP_QUALIFICATION.json",
+      "status": "passed",
+      "qualifies_release": false,
+      "covers": [
+        "AC058-007 partial",
+        "AC058-008 partial",
+        "AC058-009 partial",
+        "058-A1 partial",
+        "#294 partial",
+        "#297 partial",
+        "#298 partial"
+      ]
+    },
+    {
+      "id": "direct-effect-boundary-cancellation-2026-10-11",
+      "path": "DIRECT_EFFECT_BOUNDARY_CANCELLATION.json",
+      "status": "passed",
+      "qualifies_release": false,
+      "covers": [
+        "AC058-001 partial",
+        "AC058-005 partial",
+        "AC058-006 partial",
+        "#291 partial",
+        "#298 partial"
+      ]
+    },
+    {
+      "id": "clean-wheel-restricted-dispatch-create-link-2026-10-11",
+      "path": "CLEAN_WHEEL_RESTRICTED_DISPATCH_CREATE_LINK.json",
+      "status": "passed",
+      "qualifies_release": false,
+      "covers": [
+        "AC058-003 partial",
+        "AC058-004 partial",
+        "AC058-010 partial",
+        "#292 partial",
+        "#294 partial",
+        "#295 partial",
+        "#298 partial"
+      ]
+    },
+    {
+      "id": "clean-wheel-main-base-regression-2026-10-11",
+      "path": "CLEAN_WHEEL_CURRENT_REGRESSION.json",
+      "status": "passed",
+      "qualifies_release": false,
+      "covers": [
+        "AC058-001 partial",
+        "AC058-002 partial",
+        "AC058-003 partial",
+        "AC058-004 partial",
+        "AC058-005 partial",
+        "AC058-006 partial",
+        "AC058-007 partial",
+        "AC058-008 partial",
+        "AC058-009 partial",
+        "AC058-010 partial",
+        "058-A1 partial",
+        "058-A2 partial",
+        "058-A3 partial",
+        "058-A4 partial",
+        "#291 partial",
+        "#292 partial",
+        "#293 partial",
+        "#294 partial",
+        "#295 partial",
+        "#296 partial",
+        "#297 partial",
+        "#298 partial"
+      ]
+    }
+  ],
+  "open_gates": [
+    "AC058-001",
+    "AC058-002",
+    "AC058-003",
+    "AC058-004",
+    "AC058-005",
+    "AC058-006",
+    "AC058-007",
+    "AC058-008",
+    "AC058-009",
+    "AC058-010",
+    "058-A1",
+    "058-A2",
+    "058-A3",
+    "058-A4"
+  ]
+}

@@ -1,0 +1,93 @@
+{
+  "schema": "etlantic.phase_0_58.campaign_evidence/1",
+  "campaign_id": "clean-wheel-restricted-dispatch-create-link-2026-10-11",
+  "recorded_at": "2026-10-11",
+  "status": "passed",
+  "qualifies_release": false,
+  "test": "tests/sqlmodel/test_managed_runtime_schema_privileges_0_57.py::test_restricted_postgresql_role_inspects_schema_and_runs_headless_scheduler",
+  "command": "env -u PYTHONPATH ETLANTIC_SQLMODEL_TEST_URL=postgresql+psycopg:///postgres /tmp/phase058-direct-effect-venv/bin/python -m pytest -o pythonpath= -q tests/sqlmodel/test_managed_runtime_schema_privileges_0_57.py",
+  "result": "Clean installed-wheel PostgreSQL test: 1 passed in 6.20s. Workspace-source run: 1 passed in 74.37s. Full PostgreSQL-backed SQLModel suite: 86 passed, 5 skipped, 4 deselected in 61.71s.",
+  "assertions": [
+    "An operator applies SQLModel migrations in an isolated PostgreSQL schema; the restricted runtime role receives table DML and sequence grants but has no schema CREATE privilege.",
+    "Schema inspection and managed backend construction perform no DDL, DML, or commits.",
+    "The restricted runtime role registers a canonical pipeline, accepts it with the registered versioned Process deployment route, creates one remote Prefect flow run, and durably links the returned flow-run ID to that same accepted submission.",
+    "The dispatch and linkage complete while schema CREATE remains denied; the Prefect test harness uses its temporary SQLite server, while canonical route and dispatch state use the restricted PostgreSQL role.",
+    "The test ran with PYTHONPATH unset and pytest's configured pythonpath disabled; core, Prefect, SQL, SQLModel, and FastAPI imports resolve from installed wheels."
+  ],
+  "runtime": {
+    "python": "3.11.15",
+    "etlantic": "0.57.2 wheel",
+    "etlantic_prefect": "0.57.2 wheel",
+    "etlantic_sql": "0.57.2 wheel",
+    "etlantic_sqlmodel": "0.57.2 wheel",
+    "etlantic_fastapi": "0.57.2 wheel",
+    "prefect": "3.7.8",
+    "sqlmodel": "0.0.39",
+    "sqlalchemy": "2.0.51",
+    "psycopg": "3.3.4",
+    "postgresql": "16.13 (Homebrew)",
+    "prefect_server": "Temporary Prefect test server with SQLite"
+  },
+  "fingerprints": {
+    "source_sha256": "68f3ccaa2588dcd8a318175e2907ff26afa5745461f027d31409c01dddb1dc13",
+    "source_sha256_method": "SHA-256 over sorted repository-relative source paths and file bytes, with NUL separators.",
+    "test_source_sha256": "716f56afdda4aec1821c87542646d1deab6ad2ab87ecac4dfdacab24c5c89e9f",
+    "uv_lock_sha256": "3b5507c03e752619016552c9fcc00e4961d9d6b3b426deb11bbdbfca240c73ec"
+  },
+  "source_files": [
+    ".github/workflows/checks.yml",
+    "packages/etlantic-prefect/src/etlantic_prefect/deployment.py",
+    "packages/etlantic-prefect/src/etlantic_prefect/dispatcher.py",
+    "packages/etlantic-prefect/src/etlantic_prefect/worker.py",
+    "packages/etlantic-sqlmodel/src/etlantic_sqlmodel/managed.py",
+    "packages/etlantic-sqlmodel/src/etlantic_sqlmodel/control_plane/durable_stores.py",
+    "src/etlantic/control_plane/durable_memory.py",
+    "src/etlantic/control_plane/durable_models.py",
+    "src/etlantic/control_plane/durable_protocols.py",
+    "src/etlantic/service/managed.py",
+    "tests/sqlmodel/test_managed_runtime_schema_privileges_0_57.py",
+    "uv.lock"
+  ],
+  "wheel_artifacts": [
+    {
+      "name": "etlantic-0.57.2-py3-none-any.whl",
+      "sha256": "246c392334b4816cb93b1f42e6bf6c59ad89478b8f22a906cc829c9424cc6354"
+    },
+    {
+      "name": "etlantic_prefect-0.57.2-py3-none-any.whl",
+      "sha256": "e2937f49bd8e38c84662783aea401d832f9cc5c82f839b171e1a70e2688f2ea1"
+    },
+    {
+      "name": "etlantic_sql-0.57.2-py3-none-any.whl",
+      "sha256": "9019d028b077ab3e90a80de7f3c43e0cd7cb555a4abc43252e4bbe96d3c33ca4"
+    },
+    {
+      "name": "etlantic_sqlmodel-0.57.2-py3-none-any.whl",
+      "sha256": "8feaa93d7fba12408c938309b0c91747133d899e9dbf14087eca934636ceaaf4"
+    },
+    {
+      "name": "etlantic_fastapi-0.57.2-py3-none-any.whl",
+      "sha256": "1f3c08a263a2040e1e482d28c6c901104b7fedaea3f56e90cdfe016066ed834a"
+    }
+  ],
+  "limitations": [
+    "The Prefect API in this focused test uses the temporary SQLite test harness; PostgreSQL stores the accepted work and dispatch record.",
+    "The test creates and links a remote flow run but does not start a Process worker for this restricted database role.",
+    "This is local installed-wheel evidence, not remote CI, a production backend consumer, or a complete least-privilege policy matrix.",
+    "The full phase release decision remains open."
+  ],
+  "ci_configuration": {
+    "workflow": ".github/workflows/checks.yml",
+    "job": "prefect; test_managed_runtime_schema_privileges_0_57.py step",
+    "remote_ci_run": false,
+    "fresh_installed_wheels": true,
+    "pythonpath_unset": true,
+    "pytest_pythonpath_disabled": true,
+    "database_service": "Local PostgreSQL 16.13; isolated schema and restricted role created and removed by the test"
+  },
+  "cleanup": [
+    "The test drops its isolated PostgreSQL schema and role after completion.",
+    "The shared local PostgreSQL service and temporary installed-wheel environment were left intact."
+  ],
+  "artifacts": []
+}

@@ -179,6 +179,9 @@ class ManagedBackend:
                     artifact_root=self.artifact_root,
                     artifact_report_resolver=self.managed_service.resolve_artifact_report,
                     event_publisher=publish_event,
+                    pre_execution_authorizer=(
+                        self.managed_service.authorize_accepted_execution
+                    ),
                     profile=self.execution_profile,
                     input_resource_store=self.input_resources,
                     run_artifact_retention_seconds=self.run_artifact_retention_seconds,
@@ -188,6 +191,39 @@ class ManagedBackend:
             )
             self._roles.append(host)
             return host
+
+    def execute_submission(
+        self,
+        ctx: ControlPlaneContext,
+        submission_id: str,
+        *,
+        owner_id: str,
+        execution_route: str,
+        ttl_seconds: int = 30,
+    ) -> Mapping[str, Any]:
+        """Execute exactly one accepted submission using canonical host ownership.
+
+        ``ctx`` must come from trusted worker configuration. The submission ID
+        only locates work inside that authorized tenant/workspace scope.
+        """
+        if not _is_nonempty_text(submission_id):
+            raise ValueError("submission_id must be a non-empty identifier")
+        submission = self.durable_work.get_submission(ctx, submission_id)
+        host = self.create_execution_host(owner_id=owner_id, ttl_seconds=ttl_seconds)
+        processed = host.execute_submission(
+            ctx, submission_id, execution_route=execution_route
+        )
+        submission = self.durable_work.get_submission(ctx, submission_id)
+        publication = self.durable_work.get_latest_result_publication(
+            ctx, submission_id
+        )
+        return {
+            "submission_id": submission_id,
+            "status": submission.status,
+            "attempt_id": publication.attempt_id if publication else None,
+            "report_sha256": publication.report_sha256 if publication else None,
+            "executed": processed == 1,
+        }
 
     def create_action_execution_host(
         self, *, worker_id: str = "action-worker-1"

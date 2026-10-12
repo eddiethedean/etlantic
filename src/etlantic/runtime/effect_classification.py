@@ -11,7 +11,7 @@ FailedEffectStatus = Literal["none", "committed", "unknown"]
 
 
 def classify_failed_report_effect(report: PipelineRunReport) -> FailedEffectStatus:
-    """Classify effects evidenced by a failed report, failing closed on ambiguity."""
+    """Classify effects in a failed or cancelled report, failing closed on ambiguity."""
     metadata = report.metadata
     execution_raw = metadata.get("etlantic.control_plane.execution")
     execution: Mapping[str, object] = {}

@@ -7,7 +7,7 @@ from collections.abc import Awaitable, Callable, Mapping
 from dataclasses import dataclass, field
 from typing import Any, cast
 
-from etlantic.control_plane import ManagedBackend
+from etlantic.control_plane import ManagedBackend, validate_execution_route
 from etlantic.control_plane.action_jobs import (
     MAX_PREVIEW_RESULT_TTL_SECONDS,
     MIN_PREVIEW_RESULT_TTL_SECONDS,
@@ -70,6 +70,7 @@ class SQLModelBackendConfig:
     audit: Any = field(default=None, repr=False)
     attestations: Any = field(default=None, repr=False)
     require_attestations: bool = False
+    execution_route: str = "local"
     schedule_parameter_resolver: Any = field(default=None, repr=False)
 
     def __post_init__(self) -> None:
@@ -77,6 +78,7 @@ class SQLModelBackendConfig:
             raise ValueError("database_url must be a non-empty SQLAlchemy URL")
         if not _is_nonempty_text(self.store_id):
             raise ValueError("store_id must be non-empty")
+        validate_execution_route(self.execution_route)
         for name in (
             "event_retention_max_events_per_scope",
             "event_idempotency_retention_seconds",
@@ -241,6 +243,7 @@ def create_managed_backend(
             audit=config.audit,
             attestations=config.attestations,
             require_attestations=config.require_attestations,
+            execution_route=config.execution_route,
             planning_context_factory=planning_context_factory,
             input_resources=input_resources,
             input_resource_retention_seconds=config.input_resource_retention_seconds,
