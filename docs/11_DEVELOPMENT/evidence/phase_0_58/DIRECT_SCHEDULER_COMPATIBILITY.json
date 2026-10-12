@@ -1,12 +1,12 @@
 {
   "schema": "etlantic.phase_0_58.campaign_evidence/1",
   "campaign_id": "direct-scheduler-compatibility-2026-10-11",
-  "recorded_at": "2026-10-11",
+  "recorded_at": "2026-10-12",
   "status": "passed",
   "qualifies_release": false,
   "test": "tests/prefect/test_prefect_scheduler.py",
   "command": "uv run pytest -q tests/prefect/test_prefect_scheduler.py -m prefect",
-  "result": "15 passed in 38.44s",
+  "result": "18 passed in 32.96s",
   "assertions": [
     "Two calls on the same PrefectScheduler overlap at a barrier using distinct runtimes and run IDs; one succeeds while one fails without mixing outputs, reports, flow IDs, or task IDs.",
     "Prefect flow-run IDs remain distinct and observed task-run IDs parse as UUIDs rather than ETLantic fallback identifiers.",
@@ -16,10 +16,12 @@
     "Selecting the normalized step retained its source dependency and excluded the downstream load.",
     "A fail-once transformation used the ETLantic retry policy for exactly two attempts while Prefect task retries remained disabled.",
     "Cancelling an active PrefectScheduler.execute caller stopped the in-flight node promptly and preserved a CANCELLED ETLantic report with the actual Prefect flow-run ID.",
-    "Setting an active flow to CANCELLING through the Prefect API stopped the in-flight node promptly and preserved a CANCELLED ETLantic report."
+    "Setting an active flow to CANCELLING through the Prefect API stopped the in-flight node promptly and preserved a CANCELLED ETLantic report.",
+    "Three independent ready branches reached peak concurrency two under Profile(concurrency=2), despite request metadata asking for three; all branch outputs and the report succeeded.",
+    "Hostile Prefect defaults enabling three retries, caching, and result persistence did not alter ETLantic-owned two-attempt retry behavior, did not reuse cached results on a second run, and did not persist flow/task result data or task cache keys."
   ],
   "runtime": {
-    "python": "3.11.15",
+    "python": "3.11.14",
     "etlantic": "0.57.2",
     "etlantic_prefect": "0.57.2",
     "prefect": "3.7.8",
@@ -31,9 +33,7 @@
     "uv_lock_sha256": "3b5507c03e752619016552c9fcc00e4961d9d6b3b426deb11bbdbfca240c73ec"
   },
   "limitations": [
-    "Cancellation across effect/publication boundaries remains unqualified.",
-    "The campaign does not qualify every plan-selection, retry-safety, or ambient Prefect-setting combination.",
-    "This direct scheduler campaign uses the workspace environment; clean-wheel coverage is recorded separately.",
+    "This source-checkout run is local proof; the installed-wheel candidate matrix is the release qualification gate.",
     "The temporary SQLite Prefect server is not the self-hosted Prefect/PostgreSQL release topology."
   ],
   "ci_configuration": {

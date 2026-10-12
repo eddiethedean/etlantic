@@ -7,6 +7,7 @@ import asyncio
 import os
 import tempfile
 import threading
+from collections.abc import Awaitable, Callable
 from concurrent.futures import ThreadPoolExecutor
 from contextvars import copy_context
 from types import SimpleNamespace
@@ -197,6 +198,27 @@ class _RetryPipeline(Pipeline):
     out: Load[_Raw] = Load(input=copied.result, asset="out")
 
 
+class _BranchProbe(Transformation):
+    rows: Input[_Raw]
+    result: Output[_Raw]
+
+
+@_BranchProbe.implementation("local")
+async def _branch_probe(rows: list[_Raw]) -> list[_Raw]:
+    await asyncio.sleep(0.02)
+    return list(rows)
+
+
+class _BoundedBranchesPipeline(Pipeline):
+    raw: Extract[_Raw] = Extract(asset="raw")
+    left = _BranchProbe.step(rows=raw)
+    middle = _BranchProbe.step(rows=raw)
+    right = _BranchProbe.step(rows=raw)
+    left_out: Load[_Raw] = Load(input=left.result, asset="left_out")
+    middle_out: Load[_Raw] = Load(input=middle.result, asset="middle_out")
+    right_out: Load[_Raw] = Load(input=right.result, asset="right_out")
+
+
 _cancel_probe_started: asyncio.Event | None = None
 
 
@@ -353,6 +375,64 @@ def test_concurrent_runs_isolate_prefect_flow_and_task_state() -> None:
     assert not runtime_b.memory.get("out")
 
 
+def test_prefect_ready_branches_respect_resolved_concurrency_limit() -> None:
+    profile = Profile(
+        name="prefect-branch-concurrency-test",
+        orchestrator="prefect",
+        concurrency=2,
+    )
+    plan = plan_pipeline(_BoundedBranchesPipeline, profile=profile)
+    runtime = PipelineRuntime()
+    rows = [_Raw(customer_id=707, first_name="Ada", last_name="Lovelace")]
+    runtime.memory.seed("raw", rows)
+    active = 0
+    peak = 0
+    lock = threading.Lock()
+
+    async def observe_concurrency(
+        _context: object,
+        call_next: Callable[[], Awaitable[object]],
+    ) -> object:
+        nonlocal active, peak
+        with lock:
+            active += 1
+            peak = max(peak, active)
+        try:
+            await asyncio.sleep(0.01)
+            return await call_next()
+        finally:
+            with lock:
+                active -= 1
+
+    runtime.step_middleware.add(observe_concurrency)
+
+    async def execute():
+        async with runtime.session():
+            return await PrefectScheduler().execute(
+                plan,
+                request=RunRequest(metadata={"concurrency": 3}),
+                runtime=runtime,
+                pipeline_cls=_BoundedBranchesPipeline,
+                context=SchedulingContext(
+                    run_id="prefect-branch-concurrency-test",
+                    pipeline_id=plan.pipeline_id,
+                    plan_id=plan.plan_id,
+                    profile_name=plan.profile_name,
+                ),
+            )
+
+    from prefect.testing.utilities import prefect_test_harness
+
+    with prefect_test_harness():
+        report = asyncio.run(execute())
+
+    assert report.status is RunStatus.SUCCEEDED
+    assert peak == 2
+    assert all(
+        runtime.memory.get(asset) for asset in ("left_out", "middle_out", "right_out")
+    )
+
+
 @pytest.mark.parametrize(
     "timeout_policy",
     [TimeoutPolicy(run_seconds=0.02), TimeoutPolicy(step_seconds=0.02)],
@@ -431,6 +511,105 @@ def test_prefect_uses_etlantic_retry_policy_without_prefect_task_retries() -> No
     assert copied.attempts == 2
     assert _retry_probe_calls == 2
     assert runtime.memory.get("out") == [expected]
+
+
+def test_prefect_execution_ignores_ambient_retry_cache_and_persistence_defaults() -> (
+    None
+):
+    from prefect.client.orchestration import get_client
+    from prefect.client.schemas.filters import FlowRunFilter, FlowRunFilterId
+    from prefect.settings import (
+        PREFECT_FLOWS_DEFAULT_RETRIES,
+        PREFECT_RESULTS_PERSIST_BY_DEFAULT,
+        PREFECT_TASKS_DEFAULT_NO_CACHE,
+        PREFECT_TASKS_DEFAULT_PERSIST_RESULT,
+        PREFECT_TASKS_DEFAULT_RETRIES,
+        PREFECT_TASKS_DISABLE_CACHING,
+        temporary_settings,
+    )
+    from prefect.testing.utilities import prefect_test_harness
+
+    global _retry_probe_calls
+    _retry_probe_calls = 0
+    profile = Profile(name="prefect-ambient-defaults-test", orchestrator="prefect")
+    plan = plan_pipeline(_RetryPipeline, profile=profile)
+    runtime = PipelineRuntime()
+    expected = _Raw(customer_id=506, first_name="Katherine", last_name="Johnson")
+    runtime.memory.seed("raw", [expected])
+    scheduler = PrefectScheduler()
+    request = RunRequest(
+        retry=RetryPolicy(max_attempts=2, retry_on=("RuntimeError",)),
+        metadata={
+            "retry_safety": {
+                "copied": {"safe": True, "max_attempts": 2},
+            }
+        },
+    )
+
+    async def execute(run_id: str):
+        async with runtime.session():
+            return await scheduler.execute(
+                plan,
+                request=request,
+                runtime=runtime,
+                pipeline_cls=_RetryPipeline,
+                context=SchedulingContext(
+                    run_id=run_id,
+                    pipeline_id=plan.pipeline_id,
+                    plan_id=plan.plan_id,
+                    profile_name=plan.profile_name,
+                ),
+            )
+
+    async def read_prefect_results(flow_run_id: UUID):
+        async with get_client() as client:
+            flow_run = await client.read_flow_run(flow_run_id)
+            task_runs = await client.read_task_runs(
+                flow_run_filter=FlowRunFilter(
+                    id=FlowRunFilterId(any_=[flow_run_id]),
+                ),
+                limit=20,
+            )
+            return flow_run, task_runs
+
+    with (
+        prefect_test_harness(),
+        temporary_settings(
+            {
+                PREFECT_FLOWS_DEFAULT_RETRIES: 3,
+                PREFECT_RESULTS_PERSIST_BY_DEFAULT: True,
+                PREFECT_TASKS_DEFAULT_NO_CACHE: False,
+                PREFECT_TASKS_DEFAULT_PERSIST_RESULT: True,
+                PREFECT_TASKS_DEFAULT_RETRIES: 3,
+                PREFECT_TASKS_DISABLE_CACHING: False,
+            }
+        ),
+    ):
+        first = asyncio.run(execute("prefect-ambient-defaults-first"))
+        assert _retry_probe_calls == 2
+        second = asyncio.run(execute("prefect-ambient-defaults-second"))
+        assert _retry_probe_calls == 3
+
+        first_flow, first_tasks = asyncio.run(
+            read_prefect_results(UUID(first.metadata["etlantic.prefect.flow_run_id"]))
+        )
+        second_flow, second_tasks = asyncio.run(
+            read_prefect_results(UUID(second.metadata["etlantic.prefect.flow_run_id"]))
+        )
+
+    assert first.status is RunStatus.SUCCEEDED
+    assert second.status is RunStatus.SUCCEEDED
+    assert first_flow.state is not None
+    assert second_flow.state is not None
+    assert first_flow.state.data is None
+    assert second_flow.state.data is None
+    assert first_tasks and second_tasks
+    assert all(
+        task.state is not None
+        and task.state.data is None
+        and task.state.state_details.cache_key is None
+        for task in [*first_tasks, *second_tasks]
+    )
 
 
 def test_prefect_cancellation_preserves_cancelled_etl_report() -> None:

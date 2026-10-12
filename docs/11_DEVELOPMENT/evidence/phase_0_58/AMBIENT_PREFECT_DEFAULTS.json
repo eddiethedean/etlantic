@@ -1,0 +1,26 @@
+{
+  "schema": "etlantic.phase_0_58.campaign_evidence/1",
+  "campaign_id": "ambient-prefect-defaults-2026-10-12",
+  "recorded_at": "2026-10-12",
+  "status": "passed",
+  "qualifies_release": false,
+  "test": "tests/prefect/test_prefect_scheduler.py::test_prefect_execution_ignores_ambient_retry_cache_and_persistence_defaults",
+  "command": "uv run --locked pytest -q tests/prefect/test_prefect_scheduler.py::test_prefect_execution_ignores_ambient_retry_cache_and_persistence_defaults",
+  "result": "1 passed in 8.67s.",
+  "assertions": [
+    "The test sets hostile global Prefect defaults: three flow/task retries, flow/task result persistence enabled, and caching permitted.",
+    "ETLantic still performs exactly two transformation attempts for its fail-once request, then executes the same plan again instead of reusing cached node results.",
+    "The Prefect flow state and every persisted task-run state contain no result data; the task states contain no cache key.",
+    "Both ETLantic reports complete successfully while ETLantic remains the owner of retry behavior."
+  ],
+  "runtime": {
+    "python": "3.11.14",
+    "prefect": "3.7.8",
+    "prefect_server": "Prefect temporary test server with its own SQLite test database",
+    "execution_mode": "Direct PrefectScheduler with ETLantic LocalOrchestrator"
+  },
+  "limitations": [
+    "This focused source-checkout test verifies direct adapter isolation from ambient Prefect defaults; the installed-wheel candidate matrix must include it before final qualification."
+  ],
+  "artifacts": []
+}
