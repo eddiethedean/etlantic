@@ -505,8 +505,21 @@ def test_prefect_uses_etlantic_retry_policy_without_prefect_task_retries() -> No
 def test_prefect_execution_ignores_ambient_retry_cache_and_persistence_defaults() -> (
     None
 ):
+    import prefect.settings as prefect_settings
     from prefect.client.orchestration import get_client
     from prefect.client.schemas.filters import FlowRunFilter, FlowRunFilterId
+
+    setting_names = (
+        "PREFECT_FLOWS_DEFAULT_RETRIES",
+        "PREFECT_RESULTS_PERSIST_BY_DEFAULT",
+        "PREFECT_TASKS_DEFAULT_NO_CACHE",
+        "PREFECT_TASKS_DEFAULT_PERSIST_RESULT",
+        "PREFECT_TASKS_DEFAULT_RETRIES",
+        "PREFECT_TASKS_DISABLE_CACHING",
+    )
+    if any(not hasattr(prefect_settings, name) for name in setting_names):
+        pytest.skip("This Prefect version lacks ambient cache-default settings.")
+
     from prefect.settings import (
         PREFECT_FLOWS_DEFAULT_RETRIES,
         PREFECT_RESULTS_PERSIST_BY_DEFAULT,
