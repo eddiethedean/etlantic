@@ -198,25 +198,14 @@ class _RetryPipeline(Pipeline):
     out: Load[_Raw] = Load(input=copied.result, asset="out")
 
 
-class _BranchProbe(Transformation):
-    rows: Input[_Raw]
-    result: Output[_Raw]
-
-
-@_BranchProbe.implementation("local")
-async def _branch_probe(rows: list[_Raw]) -> list[_Raw]:
-    await asyncio.sleep(0.02)
-    return list(rows)
-
-
 class _BoundedBranchesPipeline(Pipeline):
     raw: Extract[_Raw] = Extract(asset="raw")
-    left = _BranchProbe.step(rows=raw)
-    middle = _BranchProbe.step(rows=raw)
-    right = _BranchProbe.step(rows=raw)
-    left_out: Load[_Raw] = Load(input=left.result, asset="left_out")
-    middle_out: Load[_Raw] = Load(input=middle.result, asset="middle_out")
-    right_out: Load[_Raw] = Load(input=right.result, asset="right_out")
+    left = _Normalize.step(customers=raw)
+    middle = _Normalize.step(customers=raw)
+    right = _Normalize.step(customers=raw)
+    left_out: Load[_Out] = Load(input=left.result, asset="left_out")
+    middle_out: Load[_Out] = Load(input=middle.result, asset="middle_out")
+    right_out: Load[_Out] = Load(input=right.result, asset="right_out")
 
 
 _cancel_probe_started: asyncio.Event | None = None
@@ -381,7 +370,7 @@ def test_prefect_ready_branches_respect_resolved_concurrency_limit() -> None:
         orchestrator="prefect",
         concurrency=2,
     )
-    plan = plan_pipeline(_BoundedBranchesPipeline, profile=profile)
+    plan = cast(PipelinePlan, plan_pipeline(_BoundedBranchesPipeline, profile=profile))
     runtime = PipelineRuntime()
     rows = [_Raw(customer_id=707, first_name="Ada", last_name="Lovelace")]
     runtime.memory.seed("raw", rows)
@@ -532,7 +521,7 @@ def test_prefect_execution_ignores_ambient_retry_cache_and_persistence_defaults(
     global _retry_probe_calls
     _retry_probe_calls = 0
     profile = Profile(name="prefect-ambient-defaults-test", orchestrator="prefect")
-    plan = plan_pipeline(_RetryPipeline, profile=profile)
+    plan = cast(PipelinePlan, plan_pipeline(_RetryPipeline, profile=profile))
     runtime = PipelineRuntime()
     expected = _Raw(customer_id=506, first_name="Katherine", last_name="Johnson")
     runtime.memory.seed("raw", [expected])

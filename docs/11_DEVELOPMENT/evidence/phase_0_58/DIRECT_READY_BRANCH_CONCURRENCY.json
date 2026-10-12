@@ -6,7 +6,7 @@
   "qualifies_release": false,
   "test": "tests/prefect/test_prefect_scheduler.py::test_prefect_ready_branches_respect_resolved_concurrency_limit",
   "command": "uv run --locked pytest -q tests/prefect/test_prefect_scheduler.py::test_prefect_ready_branches_respect_resolved_concurrency_limit",
-  "result": "1 passed in 21.83s.",
+  "result": "1 passed in 7.23s.",
   "assertions": [
     "Three independent ready branches execute with peak active-node concurrency exactly equal to the resolved Profile limit of two.",
     "The request metadata asks for concurrency three; the plan's resolved Profile setting remains authoritative.",

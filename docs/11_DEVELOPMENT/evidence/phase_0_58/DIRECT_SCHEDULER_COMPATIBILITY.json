@@ -5,8 +5,8 @@
   "status": "passed",
   "qualifies_release": false,
   "test": "tests/prefect/test_prefect_scheduler.py",
-  "command": "uv run pytest -q tests/prefect/test_prefect_scheduler.py -m prefect",
-  "result": "18 passed in 32.96s",
+  "command": "uv run --locked pytest -q tests/prefect/test_prefect_scheduler.py",
+  "result": "18 passed in 49.41s",
   "assertions": [
     "Two calls on the same PrefectScheduler overlap at a barrier using distinct runtimes and run IDs; one succeeds while one fails without mixing outputs, reports, flow IDs, or task IDs.",
     "Prefect flow-run IDs remain distinct and observed task-run IDs parse as UUIDs rather than ETLantic fallback identifiers.",

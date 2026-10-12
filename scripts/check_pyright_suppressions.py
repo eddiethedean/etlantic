@@ -77,7 +77,9 @@ from pathlib import Path
 # Dispatcher diagnostics and FastAPI route-pin coverage shift existing inline
 # fixture ignores. A redundant structural-test ignore was replaced with a cast;
 # the reviewed inventory remains 794 entries and is re-pinned here.
-EXPECTED_DIGEST = "78de9e88b0943a6efba1c9fa6de33d7b06af04855245955fd55d294def13ebca"
+# Direct scheduler test annotations add one import line above an existing inline
+# ignore. No suppression was added or removed; re-pin the shifted 794-entry list.
+EXPECTED_DIGEST = "9b94c427ac143b3444be84fccec137f969ed48237c148cd54241fb7c2151a534"
 
 _IGNORED_DIRECTORIES = frozenset(
     {
