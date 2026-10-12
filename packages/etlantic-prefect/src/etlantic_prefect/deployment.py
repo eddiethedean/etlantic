@@ -33,6 +33,21 @@ _SPEC_ENV = "ETLANTIC_PREFECT_DEPLOYMENT_SPEC_JSON"
 _DEFAULT_DEPLOYMENT_RETENTION_SECONDS = 30 * 24 * 60 * 60
 
 
+async def _set_deployment_paused(
+    client: Any, deployment_id: UUID, *, paused: bool
+) -> None:
+    """Pause a deployment through the client API available in this Prefect version."""
+    operation_name = "pause_deployment" if paused else "resume_deployment"
+    operation = getattr(client, operation_name, None)
+    if callable(operation):
+        await operation(deployment_id)
+        return
+    setter = getattr(client, "set_deployment_paused_state", None)
+    if not callable(setter):
+        raise RuntimeError("Prefect client does not support deployment pause state")
+    await setter(deployment_id, paused)
+
+
 def _json_digest(payload: dict[str, Any]) -> str:
     encoded = json.dumps(
         payload,
@@ -479,7 +494,9 @@ class PrefectDeploymentRegistrar:
                     )
                 remote = await client.read_deployment(binding.deployment_id)
                 binding.verify_remote_deployment(remote, require_active=False)
-                await client.resume_deployment(binding.deployment_id)
+                await _set_deployment_paused(
+                    client, binding.deployment_id, paused=False
+                )
                 remote = await client.read_deployment(binding.deployment_id)
                 binding.verify_remote_deployment(remote)
                 return binding
@@ -527,7 +544,7 @@ class PrefectDeploymentRegistrar:
             )
             remote = await client.read_deployment(binding.deployment_id)
             binding.verify_remote_deployment(remote, require_active=False)
-            await client.resume_deployment(binding.deployment_id)
+            await _set_deployment_paused(client, binding.deployment_id, paused=False)
             remote = await client.read_deployment(binding.deployment_id)
             binding.verify_remote_deployment(remote)
             return binding
@@ -581,7 +598,9 @@ class PrefectDeploymentRegistrar:
                 pool = await client.read_work_pool(binding.spec.work_pool_name)
                 binding.verify_remote_work_pool(pool)
                 if getattr(remote, "paused", None) is not True:
-                    await client.pause_deployment(binding.deployment_id)
+                    await _set_deployment_paused(
+                        client, binding.deployment_id, paused=True
+                    )
                 if await self._has_active_deployment_runs(client, binding):
                     return {
                         **lifecycle,
@@ -630,7 +649,7 @@ class PrefectDeploymentRegistrar:
                     "reason": "remote_flow_runs_remain",
                 }
             if getattr(remote, "paused", None) is not True:
-                await client.pause_deployment(binding.deployment_id)
+                await _set_deployment_paused(client, binding.deployment_id, paused=True)
             remote = await client.read_deployment(binding.deployment_id)
             binding.verify_remote_deployment(remote, require_active=False)
             if await self._has_active_deployment_runs(client, binding):
@@ -702,7 +721,9 @@ class PrefectDeploymentRegistrar:
             pool = await client.read_work_pool(binding.spec.work_pool_name)
             binding.verify_remote_work_pool(pool)
             if getattr(deployment, "paused", None) is True:
-                await client.resume_deployment(binding.deployment_id)
+                await _set_deployment_paused(
+                    client, binding.deployment_id, paused=False
+                )
             deployment = await client.read_deployment(binding.deployment_id)
             binding.verify_remote_deployment(deployment)
         if lifecycle["status"] == "active":
@@ -821,7 +842,7 @@ class PrefectDeploymentRegistrar:
             pool = await client.read_work_pool(binding.spec.work_pool_name)
             binding.verify_remote_work_pool(pool)
             if getattr(remote, "paused", None) is not True:
-                await client.pause_deployment(binding.deployment_id)
+                await _set_deployment_paused(client, binding.deployment_id, paused=True)
                 remote = await client.read_deployment(binding.deployment_id)
                 binding.verify_remote_deployment(remote, require_active=False)
             if getattr(remote, "paused", None) is not True:

@@ -1410,4 +1410,9 @@ jobs:
           cp "$RUNNER_TEMP/uv.lock" uv.lock
 
       - name: Optional package suites at dependency minimums
-        run: uv run --no-sync pytest -q -n 8 --dist=load -m "not airflow and not real_pyspark" tests/polars_compiler tests/pandas_compiler tests/dataframe tests/portable_conformance tests/datafusion tests/duckdb tests/sql tests/sqlmodel tests/fastapi tests/prefect tests/keyring tests/s3
+        run: uv run --no-sync pytest -q -n 8 --dist=load -m "not airflow and not real_pyspark" tests/polars_compiler tests/pandas_compiler tests/dataframe tests/portable_conformance tests/datafusion tests/duckdb tests/sql tests/sqlmodel tests/fastapi tests/keyring tests/s3
+
+      - name: Prefect suite at dependency minimums
+        # Prefect's test harness starts an ephemeral API server per test. Keep
+        # these subprocess-heavy cases serial to avoid worker startup timeouts.
+        run: uv run --no-sync pytest -q -m "not airflow and not real_pyspark" tests/prefect

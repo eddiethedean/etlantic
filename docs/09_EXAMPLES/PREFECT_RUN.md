@@ -67,7 +67,7 @@ bounded pre-attempt recovery, and a graceful Prefect API restart. It does not
 qualify the path for production: broader crash/effect recovery, host parity, and
 the full supported-version matrix remain open. Deployment setup, trusted worker
 configuration, supervision, and qualification status are documented in the
-[`etlantic-prefect` package guide](../../packages/etlantic-prefect/README.md)
+[`etlantic-prefect` package guide](https://github.com/eddiethedean/etlantic/blob/main/packages/etlantic-prefect/README.md)
 and [phase 0.58 plan](../11_DEVELOPMENT/IMPLEMENTATION_PLAN_0_58.md).
 
 For deployment boundaries, see [Deployment](../06_EXECUTION/DEPLOYMENT.md) and
