@@ -3000,6 +3000,14 @@ def test_remote_failure_rearm_is_versioned_and_requires_no_etl_attempt(
     event_payload = reconciliation_events[0].payload
     assert event_payload is not None
     assert event_payload["evidence_sha256"] == evidence_digest
+
+    restored_store = MemoryDurableWorkStore()
+    restored_store.load(json.loads(json.dumps(durable.dump())))
+    restored_dispatch = restored_store.get_dispatch(ctx, bounded.submission_id)
+    assert restored_dispatch == reauthorized
+    assert restored_dispatch.to_dict() == reauthorized.to_dict()
+    assert restored_dispatch.reconciliation_history[0].to_dict() == audit.to_dict()
+
     with pytest.raises(ControlPlaneError) as stale:
         managed.rearm_exhausted_prefect_dispatch(
             ctx,
