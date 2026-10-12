@@ -6561,6 +6561,107 @@ backend.close()
                 finally:
                     approval_engine.dispose()
 
+                # An approval that was valid when accepted and dispatched must
+                # still be rechecked at worker claim. Advance only the worker
+                # fixture's clock so this boundary is deterministic and fast.
+                monkeypatch.setenv(
+                    "ETLANTIC_PHASE058_REQUIRE_PRE_EXECUTION_APPROVAL", "1"
+                )
+                approval_policy.set_rule("pre_execution", "require_approval")
+                expired_approval = managed.submit_run(
+                    ctx,
+                    "phase058-process-pipeline",
+                    idempotency_key=f"phase058-approval-expired-before-claim-{scope}",
+                    request=RunRequest(materialization=MaterializationPolicy.DURABLE),
+                )
+                expired_record = backend.durable_work.get_submission(
+                    ctx, expired_approval.submission_id
+                )
+                assert expired_record.input_snapshot is not None
+                expired_envelope = ExecutionEnvelope.from_json(
+                    expired_record.input_snapshot
+                )
+                expired_decision = approval_policy.decide(
+                    ctx,
+                    hook="pre_execution",
+                    plan_fingerprint=expired_envelope.effective_fingerprint,
+                    revision_id=expired_envelope.revision_id,
+                    resource=f"definition:{expired_envelope.definition_id}",
+                )
+                expired_at = datetime.now(UTC) + timedelta(minutes=5)
+                expired_request = approval_store.create(
+                    ctx,
+                    hook="pre_execution",
+                    plan_fingerprint=expired_envelope.effective_fingerprint,
+                    policy_fingerprint=expired_decision.policy_fingerprint,
+                    revision_id=expired_envelope.revision_id,
+                    expires_at=expired_at,
+                )
+                approval_store.decide(
+                    reviewer,
+                    approval_id=expired_request.approval_id,
+                    approve=True,
+                    plan_fingerprint=expired_envelope.effective_fingerprint,
+                    policy_fingerprint=expired_decision.policy_fingerprint,
+                )
+                expired_dispatch = await dispatcher.tick(limit=1)
+                assert len(expired_dispatch) == 1
+                assert (
+                    expired_dispatch[0]["submission_id"]
+                    == expired_approval.submission_id
+                )
+                monkeypatch.setenv(
+                    "ETLANTIC_PHASE058_APPROVAL_NOW",
+                    (expired_at + timedelta(seconds=1)).isoformat(),
+                )
+                try:
+                    await ProcessWorker(
+                        work_pool_name=spec.work_pool_name,
+                        name=f"phase058-approval-expired-worker-{scope[:8]}",
+                    ).start(run_once=True, printer=lambda *_args, **_kwargs: None)
+                finally:
+                    monkeypatch.delenv("ETLANTIC_PHASE058_APPROVAL_NOW", raising=False)
+                    monkeypatch.delenv(
+                        "ETLANTIC_PHASE058_REQUIRE_PRE_EXECUTION_APPROVAL",
+                        raising=False,
+                    )
+                    approval_policy.set_rule("pre_execution", "allow")
+                expired_record = backend.durable_work.get_submission(
+                    ctx, expired_approval.submission_id
+                )
+                assert expired_record.status == "failed"
+                expired_attempts = backend.durable_work.list_attempts(
+                    ctx, expired_approval.submission_id
+                )
+                assert len(expired_attempts) == 1
+                assert expired_attempts[0].status == "failed"
+                with pytest.raises(ControlPlaneError) as no_expired_approval_effect:
+                    backend.durable_work.get_effect(
+                        ctx, f"{expired_approval.submission_id}:execution"
+                    )
+                assert no_expired_approval_effect.value.status == 404
+                expired_engine = create_engine(url, pool_pre_ping=True)
+                try:
+                    with expired_engine.connect() as connection:
+                        assert (
+                            connection.execute(
+                                text(
+                                    f'SELECT id, payload FROM public."{approval_denied_table}"'
+                                )
+                            ).all()
+                            == []
+                        )
+                        assert (
+                            connection.execute(
+                                text(
+                                    f'SELECT effect_id FROM public."{approval_denied_effects}"'
+                                )
+                            ).all()
+                            == []
+                        )
+                finally:
+                    expired_engine.dispose()
+
                 destination_table = policy_denied_table
                 destination_effects = policy_denied_effects
                 monkeypatch.setenv(
