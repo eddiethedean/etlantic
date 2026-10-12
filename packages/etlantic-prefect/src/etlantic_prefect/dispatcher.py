@@ -312,6 +312,7 @@ class PrefectDispatcher:
             return self._receipt(durable.get_dispatch(self.context, submission_id))
 
         remote_create_started = False
+        uncertain_resolution_started = False
         try:
             submission = durable.get_submission(self.context, submission_id)
             if submission.status not in {"accepted", "dispatched"}:
@@ -319,6 +320,7 @@ class PrefectDispatcher:
                     "cancel_requested",
                     "cancelled",
                 }:
+                    uncertain_resolution_started = True
                     return await self._resolve_cancelled_uncertain_create(
                         submission_id,
                         creation_key=claim.creation_key,
@@ -381,10 +383,12 @@ class PrefectDispatcher:
                     submission_id,
                     owner_id=self.owner_id,
                     fencing_token=claim.lease_fencing_token,
-                    outcome_uncertain=remote_create_started,
+                    outcome_uncertain=(
+                        remote_create_started or uncertain_resolution_started
+                    ),
                     error_code=(
                         "prefect_create_uncertain"
-                        if remote_create_started
+                        if remote_create_started or uncertain_resolution_started
                         else "dispatch_prepare_failed"
                     ),
                 )

@@ -948,6 +948,7 @@ def test_dispatcher_recovers_lost_create_response_with_prefect_idempotency(
     now = [datetime.now(UTC)]
     create_calls: list[dict[str, Any]] = []
     accepted_remote_runs: list[Any] = []
+    lookup_failures = [0]
 
     class _LostResponseClient:
         def __init__(self) -> None:
@@ -975,6 +976,12 @@ def test_dispatcher_recovers_lost_create_response_with_prefect_idempotency(
             if len(create_calls) in {1, 3}:
                 raise ConnectionError("simulated response loss after remote create")
             return flow_run
+
+        async def read_flow_runs(self, *args: Any, **kwargs: Any) -> list[Any]:
+            if lookup_failures[0]:
+                lookup_failures[0] -= 1
+                raise ConnectionError("simulated lookup outage")
+            return await self._client.read_flow_runs(*args, **kwargs)
 
     monkeypatch.setattr(durable_memory, "_now", lambda: now[0])
 
@@ -1057,7 +1064,19 @@ def test_dispatcher_recovers_lost_create_response_with_prefect_idempotency(
             "cancel_requested"
         )
 
+        lookup_failures[0] = 1
         now[0] += timedelta(seconds=3)
+        unresolved_cancellation = await dispatcher.tick(limit=1)
+        assert len(unresolved_cancellation) == 1
+        assert unresolved_cancellation[0]["status"] == "uncertain"
+        assert durable.get_dispatch(ctx, cancelled.submission_id).status == (
+            "uncertain"
+        )
+        assert durable.get_submission(ctx, cancelled.submission_id).status == (
+            "cancel_requested"
+        )
+
+        now[0] += timedelta(seconds=5)
         recovered_cancellation = await dispatcher.tick(limit=1)
         assert len(recovered_cancellation) == 1
         assert recovered_cancellation[0]["status"] == "dispatched"
