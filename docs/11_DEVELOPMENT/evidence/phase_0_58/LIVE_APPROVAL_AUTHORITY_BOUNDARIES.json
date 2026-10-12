@@ -1,0 +1,48 @@
+{
+  "schema": "etlantic.phase_0_58.campaign_evidence/1",
+  "campaign_id": "live-postgresql-approval-authority-boundaries-2026-10-12",
+  "recorded_at": "2026-10-12",
+  "status": "passed",
+  "qualifies_release": false,
+  "test": "tests/prefect/test_managed_prefect_0_58.py::test_process_worker_executes_targeted_csv_and_postgresql_transfers",
+  "command": "ETLANTIC_CP_TEST_URL=<isolated PostgreSQL service URL> uv run pytest -q tests/prefect/test_managed_prefect_0_58.py::test_process_worker_executes_targeted_csv_and_postgresql_transfers",
+  "result": "Workspace-source live Process-worker run: 1 passed in 7.78s.",
+  "assertions": [
+    "An approved request was revoked after canonical acceptance and before dispatch; the durable dispatcher linked the target, and the Process worker rejected it before connector effects.",
+    "A second approved request was revoked after dispatch and before worker claim; claim-time authorization failed before connector effects.",
+    "A third request remained valid through acceptance and dispatch, then expired before worker claim when only the worker fixture clock advanced; the worker rejected it before connector effects.",
+    "For each denied run, the canonical submission and attempt failed, the execution effect record was absent, and the destination and connector effect-ledger tables remained empty.",
+    "The Prefect API ran as a separate process backed by its own PostgreSQL database; the ETLantic control-plane and sink state used the isolated test database."
+  ],
+  "runtime": {
+    "python": "3.11.15",
+    "etlantic": "0.57.2 workspace source",
+    "etlantic_prefect": "0.57.2 workspace source",
+    "etlantic_sqlmodel": "0.57.2 workspace source",
+    "prefect": "3.7.8",
+    "sqlmodel": "0.0.39",
+    "sqlalchemy": "2.0.51",
+    "psycopg": "3.3.4",
+    "postgresql": "16.14",
+    "worker_pool": "Process",
+    "approval_store": "SQLModelApprovalStore backed by PostgreSQL",
+    "worker_backend_plugin": "Workspace integration-test plugin loaded through the test entry-point shim; not an installed-wheel run",
+    "prefect_server": "Separately supervised Prefect API process backed by a temporary PostgreSQL database"
+  },
+  "fingerprints": {
+    "source_sha256": "c3da13307870634723e36e8d8bd892dba5ec710ee3986956dea45fcd7cbb03b7",
+    "source_sha256_method": "SHA-256 over sorted repository-relative source paths and file bytes, with NUL separators.",
+    "uv_lock_sha256": "3b5507c03e752619016552c9fcc00e4961d9d6b3b426deb11bbdbfca240c73ec",
+    "test_source_sha256": "1fb5c027c3bf1d11478b893e77b6490aef4ed5a57141341e85bc23d09df56885"
+  },
+  "limitations": [
+    "This is local workspace-source evidence for one Python, Prefect, and PostgreSQL tuple; it does not establish clean-wheel or independent-consumer qualification.",
+    "The fixture clock makes expiry deterministic; external identity-provider revocation, credential rotation across every acceptance boundary, and actual elapsed retention remain unqualified.",
+    "The campaign is partial evidence and does not qualify the full phase release or supported-version matrix."
+  ],
+  "cleanup": [
+    "The test uses unique tenant, workspace, submission, deployment, destination-table, and approval-store identities.",
+    "The dedicated outer test database was dropped after the run; the harness dropped the separate Prefect database after stopping the API process."
+  ],
+  "artifacts": []
+}

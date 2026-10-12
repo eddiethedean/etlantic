@@ -6465,6 +6465,103 @@ backend.close()
                     backend.engine, store_id=f"{store_id}:approvals"
                 )
                 managed.approvals = approval_store
+
+                approval_revoked_before_dispatch = managed.submit_run(
+                    ctx,
+                    "phase058-process-pipeline",
+                    idempotency_key=f"phase058-approval-revoked-before-dispatch-{scope}",
+                    request=RunRequest(materialization=MaterializationPolicy.DURABLE),
+                )
+                approval_record = backend.durable_work.get_submission(
+                    ctx, approval_revoked_before_dispatch.submission_id
+                )
+                assert approval_record.input_snapshot is not None
+                approval_envelope = ExecutionEnvelope.from_json(
+                    approval_record.input_snapshot
+                )
+                approval_decision = approval_policy.decide(
+                    ctx,
+                    hook="pre_execution",
+                    plan_fingerprint=approval_envelope.effective_fingerprint,
+                    revision_id=approval_envelope.revision_id,
+                    resource=f"definition:{approval_envelope.definition_id}",
+                )
+                approval_request = approval_store.create(
+                    ctx,
+                    hook="pre_execution",
+                    plan_fingerprint=approval_envelope.effective_fingerprint,
+                    policy_fingerprint=approval_decision.policy_fingerprint,
+                    revision_id=approval_envelope.revision_id,
+                )
+                reviewer = replace(
+                    ctx,
+                    principal=Principal(
+                        subject=f"reviewer-{scope}",
+                        issuer="phase058-tests",
+                        kind="human",
+                    ),
+                )
+                approval_store.decide(
+                    reviewer,
+                    approval_id=approval_request.approval_id,
+                    approve=True,
+                    plan_fingerprint=approval_envelope.effective_fingerprint,
+                    policy_fingerprint=approval_decision.policy_fingerprint,
+                )
+                approval_store.revoke(
+                    ctx,
+                    approval_id=approval_request.approval_id,
+                    reason="revoked after acceptance before dispatch",
+                )
+                approval_dispatch = await dispatcher.tick(limit=1)
+                assert len(approval_dispatch) == 1
+                assert (
+                    approval_dispatch[0]["submission_id"]
+                    == approval_revoked_before_dispatch.submission_id
+                )
+                await ProcessWorker(
+                    work_pool_name=spec.work_pool_name,
+                    name=f"phase058-approval-revoked-before-dispatch-{scope[:8]}",
+                ).start(run_once=True, printer=lambda *_args, **_kwargs: None)
+                revoked_before_dispatch_record = backend.durable_work.get_submission(
+                    ctx, approval_revoked_before_dispatch.submission_id
+                )
+                assert revoked_before_dispatch_record.status == "failed"
+                revoked_before_dispatch_attempts = backend.durable_work.list_attempts(
+                    ctx, approval_revoked_before_dispatch.submission_id
+                )
+                assert len(revoked_before_dispatch_attempts) == 1
+                assert revoked_before_dispatch_attempts[0].status == "failed"
+                with pytest.raises(
+                    ControlPlaneError
+                ) as no_revoked_before_dispatch_effect:
+                    backend.durable_work.get_effect(
+                        ctx,
+                        f"{approval_revoked_before_dispatch.submission_id}:execution",
+                    )
+                assert no_revoked_before_dispatch_effect.value.status == 404
+                revoked_before_dispatch_engine = create_engine(url, pool_pre_ping=True)
+                try:
+                    with revoked_before_dispatch_engine.connect() as connection:
+                        assert (
+                            connection.execute(
+                                text(
+                                    f'SELECT id, payload FROM public."{approval_denied_table}"'
+                                )
+                            ).all()
+                            == []
+                        )
+                        assert (
+                            connection.execute(
+                                text(
+                                    f'SELECT effect_id FROM public."{approval_denied_effects}"'
+                                )
+                            ).all()
+                            == []
+                        )
+                finally:
+                    revoked_before_dispatch_engine.dispose()
+
                 approval_revoked = managed.submit_run(
                     ctx,
                     "phase058-process-pipeline",

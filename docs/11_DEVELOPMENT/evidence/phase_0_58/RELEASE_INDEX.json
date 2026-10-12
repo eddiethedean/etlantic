@@ -305,6 +305,34 @@
       ]
     },
     {
+      "id": "live-postgresql-approved-authority-expiry-before-claim-2026-10-12",
+      "path": "LIVE_APPROVAL_EXPIRY_PRE_EFFECT_DENIAL.json",
+      "status": "passed",
+      "qualifies_release": false,
+      "covers": [
+        "AC058-003 partial",
+        "AC058-005 partial",
+        "058-A3 partial",
+        "#292 partial",
+        "#293 partial",
+        "#298 partial"
+      ]
+    },
+    {
+      "id": "live-postgresql-approval-authority-boundaries-2026-10-12",
+      "path": "LIVE_APPROVAL_AUTHORITY_BOUNDARIES.json",
+      "status": "passed",
+      "qualifies_release": false,
+      "covers": [
+        "AC058-003 partial",
+        "AC058-005 partial",
+        "058-A3 partial",
+        "#292 partial",
+        "#293 partial",
+        "#298 partial"
+      ]
+    },
+    {
       "id": "live-postgresql-report-event-append-crash-recovery-2026-10-11",
       "path": "LIVE_REPORT_EVENT_APPEND_CRASH_RECOVERY.json",
       "status": "passed",

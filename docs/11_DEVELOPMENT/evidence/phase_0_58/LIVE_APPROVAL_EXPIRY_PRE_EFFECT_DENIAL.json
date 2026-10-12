@@ -1,0 +1,47 @@
+{
+  "schema": "etlantic.phase_0_58.campaign_evidence/1",
+  "campaign_id": "live-postgresql-approved-authority-expiry-before-claim-2026-10-12",
+  "recorded_at": "2026-10-12",
+  "status": "passed",
+  "qualifies_release": false,
+  "test": "tests/prefect/test_managed_prefect_0_58.py::test_process_worker_executes_targeted_csv_and_postgresql_transfers",
+  "command": "ETLANTIC_CP_TEST_URL=<isolated PostgreSQL service URL> uv run pytest -q tests/prefect/test_managed_prefect_0_58.py::test_process_worker_executes_targeted_csv_and_postgresql_transfers",
+  "result": "Workspace-source live Process-worker run: 1 passed in 10.84s.",
+  "assertions": [
+    "A matching approval was created with a future expiry, independently approved, and accepted work was durably dispatched while the approval remained valid.",
+    "The separate Process worker advanced only its test fixture approval clock beyond the expiry before claim-time authorization.",
+    "The worker failed the canonical submission and attempt before connector effects; the execution effect record, destination rows, and connector effect-ledger rows were absent.",
+    "The API and Process worker ran against the test deployment; Prefect server state and ETLantic control state used separate PostgreSQL databases."
+  ],
+  "runtime": {
+    "python": "3.11.15",
+    "etlantic": "0.57.2 workspace source",
+    "etlantic_prefect": "0.57.2 workspace source",
+    "etlantic_sqlmodel": "0.57.2 workspace source",
+    "prefect": "3.7.8",
+    "sqlmodel": "0.0.39",
+    "sqlalchemy": "2.0.51",
+    "psycopg": "3.3.4",
+    "postgresql": "16.14",
+    "worker_pool": "Process",
+    "approval_store": "SQLModelApprovalStore backed by PostgreSQL",
+    "worker_backend_plugin": "Workspace integration-test plugin loaded through the test entry-point shim; not an installed-wheel run",
+    "prefect_server": "Separately supervised Prefect API process backed by a temporary PostgreSQL database"
+  },
+  "fingerprints": {
+    "source_sha256": "1b89943cd07493640790aabb4cf1e1bc2a04c05bcfc8523493db0e8f3ad4e496",
+    "source_sha256_method": "SHA-256 over sorted repository-relative source paths and file bytes, with NUL separators.",
+    "uv_lock_sha256": "3b5507c03e752619016552c9fcc00e4961d9d6b3b426deb11bbdbfca240c73ec",
+    "commit": "ec27f8e8104b0c472be53b96f25059f849c2f912"
+  },
+  "limitations": [
+    "This is local workspace-source evidence for one Python, Prefect, and PostgreSQL tuple; the clean installed-wheel run and remote CI result remain separate evidence.",
+    "The fixture clock makes expiry deterministic; elapsed production retention, external identity-provider revocation, and credential rotation across every acceptance boundary remain unqualified.",
+    "This campaign does not qualify the full phase release or the complete supported-version matrix."
+  ],
+  "cleanup": [
+    "The test used unique tenant, workspace, submission, deployment, destination-table, and approval-store identities.",
+    "The dedicated outer test database was dropped after the run; the harness dropped the separate Prefect database after stopping the API process."
+  ],
+  "artifacts": []
+}
