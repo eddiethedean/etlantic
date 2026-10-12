@@ -354,6 +354,51 @@ def test_managed_backend_persists_and_resolves_definition_revision(
         restarted.close()
 
 
+def test_managed_fastapi_config_pins_prefect_route_at_acceptance(
+    tmp_path: Path,
+) -> None:
+    ctx = _context()
+    execution_route = "prefect:" + "9" * 64
+    authorizer = MemoryAuthorizer()
+    authorizer.grant(ctx, "definition.write")
+    authorizer.grant(ctx, "run.submit")
+    app = create_managed_app(
+        ManagedBackendConfig(
+            database_url=_migrated_url(tmp_path),
+            store_id="managed-prefect-route",
+            execution_route=execution_route,
+        ),
+        authorizer=authorizer,
+        context_factory=static_context_factory(
+            tenant_id=ctx.tenant.tenant_id,
+            workspace_id=ctx.workspace.workspace_id,
+            environment=ctx.environment.name,
+            security_domain=ctx.security_domain.domain_id,
+        ),
+    )
+    backend = app.state.managed_backend
+    try:
+        service = backend.api.managed_service
+        assert service is not None
+        assert service.execution_route == execution_route
+        service.register_definition(
+            ctx,
+            "managed-prefect-route-pipeline",
+            pipeline_to_dict(definition_from_pipeline(_ManagedBackendPipeline)),
+        )
+        receipt = service.submit_run(
+            ctx,
+            "managed-prefect-route-pipeline",
+            idempotency_key="managed-prefect-route-acceptance",
+        )
+        durable = backend.api.durable_work
+        assert durable is not None
+        accepted = durable.get_submission(ctx, receipt.submission_id)
+        assert accepted.execution_route == execution_route
+    finally:
+        backend.close()
+
+
 def test_sqlmodel_run_ids_are_principal_scoped_and_survive_restart(
     tmp_path: Path,
 ) -> None:

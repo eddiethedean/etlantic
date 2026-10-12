@@ -69,6 +69,8 @@ the full supported-version matrix remain open. Deployment setup, trusted worker
 configuration, supervision, and qualification status are documented in the
 [`etlantic-prefect` package guide](https://github.com/eddiethedean/etlantic/blob/main/packages/etlantic-prefect/README.md)
 and [phase 0.58 plan](../11_DEVELOPMENT/IMPLEMENTATION_PLAN_0_58.md).
+For a separately hosted FastAPI control plane, see the
+[Posit Connect deployment recipe](PREFECT_MANAGED_CONNECT.md).
 
 For deployment boundaries, see [Deployment](../06_EXECUTION/DEPLOYMENT.md) and
 [Production Profiles](../06_EXECUTION/PRODUCTION_PROFILES.md).

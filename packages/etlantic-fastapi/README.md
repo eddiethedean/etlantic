@@ -96,6 +96,13 @@ Prefect schedules hold a durable route reference; deleting or transferring a
 schedule releases its old route only after the schedule record is updated, so
 an operator can drain and retire that route safely.
 
+`ManagedBackendConfig.execution_route` is trusted host configuration. Set it to
+the reviewed `binding.execution_route` returned by
+`PrefectDeploymentRegistrar`; accepted submissions then keep that route even
+if the host's default changes later. Request fields cannot choose an execution
+route. For a separate API host and Prefect dispatcher/worker, see the
+[managed Prefect on Posit Connect recipe](../../docs/09_EXAMPLES/PREFECT_MANAGED_CONNECT.md).
+
 Run ETL in a separate worker process with the same migrated backend settings:
 
 ```python

@@ -543,6 +543,7 @@ nav:
       - Orchestration:
           - Airflow compilation: 06_EXECUTION/AIRFLOW_TUTORIAL.md
           - Prefect local execution: 09_EXAMPLES/PREFECT_RUN.md
+          - Managed Prefect on Posit Connect: 09_EXAMPLES/PREFECT_MANAGED_CONNECT.md
       - Human-governed AI: 01_GETTING_STARTED/HUMAN_GOVERNED_AI.md
       - Scheduler and worker: 01_GETTING_STARTED/SCHEDULER_TUTORIAL.md
   - How-to:
