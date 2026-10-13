@@ -1,6 +1,6 @@
 # etlantic-s3 (Experimental / Preview)
 
-> **Release status:** ETLantic 0.58.0 is a Beta release candidate; publication is pending.
+> **Release status:** ETLantic 0.59.0 is a Beta release candidate; publication is pending.
 
 
 Version **0.57.0** (lockstep with ETLantic core).
@@ -16,13 +16,13 @@ prepare/commit.
 ## Install
 
 ```bash
-pip install 'etlantic-s3==0.58.0'
+pip install 'etlantic-s3==0.59.0'
 # Live AWS (opt-in later; not required for CI):
-# pip install 'etlantic-s3[aws]==0.58.0'
-# pip install 'etlantic==0.58.0'
+# pip install 'etlantic-s3[aws]==0.59.0'
+# pip install 'etlantic==0.59.0'
 ```
 
-Core dependency: `etlantic>=0.58.0`. Optional: `boto3`, `pyarrow`.
+Core dependency: `etlantic>=0.59.0`. Optional: `boto3`, `pyarrow`.
 
 ## Behavior
 

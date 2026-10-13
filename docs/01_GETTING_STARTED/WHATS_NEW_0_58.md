@@ -2,7 +2,7 @@
 title: What's New in ETLantic 0.58
 status: candidate
 since: "0.58.0"
-current_minor: "0.58"
+current_minor: "0.59"
 ---
 
 # What's New in ETLantic 0.58

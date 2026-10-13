@@ -51,7 +51,7 @@ python -m etlantic validate pipeline.py:SamplePipeline --profile development
 python -m etlantic run pipeline.py:SamplePipeline --profile development
 ```
 
-ETLantic 0.58.0 is the current Beta release candidate. The latest published
+ETLantic 0.59.0 is the current Beta release candidate. The latest published
 and supported line remains 0.57.x. The run should succeed and write Ada and
 Grace to `data/out.json`. Until publication, `pip install etlantic` installs
 the latest published 0.57.x package. See the
@@ -106,7 +106,7 @@ The public CLI (see the
 Core has no dataframe, database, Spark, or orchestrator dependency. Install
 only the integrations a pipeline needs:
 
-| Capability | 0.58 |
+| Capability | 0.59 |
 |---|---|
 | Local Python + JSON/CSV | `etlantic` |
 | Polars or Pandas | `etlantic[polars]` or `etlantic[pandas]` |

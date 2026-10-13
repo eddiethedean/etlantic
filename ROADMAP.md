@@ -6,7 +6,7 @@
 > [Capabilities](docs/01_GETTING_STARTED/CAPABILITIES.md) for what ships now.
 > Review this header for every release or sequence change.
 
-**Latest published release:** ETLantic **0.57.2** (Beta). **0.58.0 is a
+**Latest published release:** ETLantic **0.57.2** (Beta). **0.59.0 is a
 release candidate** for the qualified managed Prefect support profile; publication
 is pending. The 0.57 release adds managed backend independence and runtime
 supervision. The 0.56 release completes the application backend. The scoped
@@ -41,8 +41,8 @@ through **0.37** (stable foundation) are shipped.
 | Previous | 0.38 | Data connectivity and connector SDK | Gate-ready / shipped evidence |
 | Previous | 0.56 | Complete application ETL backend with full specification and run control | Published / shipped evidence |
 | Previous | 0.57 | Managed backend independence and runtime supervision (#278–#282), plus Local canonical sort fix (#283) | Published / shipped evidence; 0.57.x is the supported line |
-| Current | 0.58 | Managed Prefect Execution (#290 / #291–#298) | Gate-ready for tag/publish |
-| Later | 0.59 | Managed runtime consolidation and trigger contracts | Planned — [implementation plan](docs/11_DEVELOPMENT/IMPLEMENTATION_PLAN_0_59.md) |
+| Previous | 0.58 | Managed Prefect Execution (#290 / #291–#298) | Qualified candidate; publication pending |
+| Current | 0.59 | Managed runtime consolidation and trigger contracts ([exit gate](docs/11_DEVELOPMENT/EXIT_GATE_0_59.md)) | Implementation in progress; qualification pending |
 | Later | 0.60 | Posit Connect scheduling and HTTPS triggers | Planned — [implementation plan](docs/11_DEVELOPMENT/IMPLEMENTATION_PLAN_0_60.md) |
 | Later | 0.61 | AWS Scheduler/Lambda and one ECS/Fargate executor | Planned — [implementation plan](docs/11_DEVELOPMENT/IMPLEMENTATION_PLAN_0_61.md) |
 | Later | 0.62 | One Data Mover host and optional trusted URL discovery | Planned — [implementation plan](docs/11_DEVELOPMENT/IMPLEMENTATION_PLAN_0_62.md) |
@@ -51,7 +51,7 @@ through **0.37** (stable foundation) are shipped.
 | Later | 0.65 | Demand-selected enterprise deployment/provider packs | Planned |
 | Later | 0.66 | Conditional TransformationModel incubation | Proposed |
 | Foundation | 0.36–0.37 | Joint burn-in → stable foundation | Gate-ready (0.37) |
-| Post-foundation | 0.38–0.66 | Connectivity → control plane → developer intelligence → optimization → streaming → federation → governed AI → DuckDB package → portable-engine baseline → adaptive execution → inferred model authoring → complete application backend → backend independence → managed Prefect → managed consolidation → Connect triggers → Scheduler/ECS adapters → Data Mover integration → adoption → operations → providers → modeling incubation | In progress (0.57 published; 0.58 qualified candidate; adaptive graduation pending) |
+| Post-foundation | 0.38–0.66 | Connectivity → control plane → developer intelligence → optimization → streaming → federation → governed AI → DuckDB package → portable-engine baseline → adaptive execution → inferred model authoring → complete application backend → backend independence → managed Prefect → managed consolidation → Connect triggers → Scheduler/ECS adapters → Data Mover integration → adoption → operations → providers → modeling incubation | In progress (0.57 published; 0.59 candidate qualification pending; adaptive graduation pending) |
 
 For connectivity evidence, see
 [What's New in 0.38](docs/01_GETTING_STARTED/WHATS_NEW_0_38.md) and the
@@ -4897,6 +4897,16 @@ Acceptance:
   reject explicitly, installed version metadata agrees and compatibility windows
   are recorded before any release-unit retirement;
 - a non-FastAPI receiver and independent worker pass the shared trigger suite.
+
+The implementation plan defines ordered Gates A–F: characterize current owners
+and state, freeze public/configuration/migration seams, consolidate managed
+implementation, freeze the trigger contract, prove durable recovery, then publish
+release evidence and downstream contracts. Receipt lookup is authorized; pending
+preparation is distinct from accepted work; firing receipts have no automatic
+compaction in 0.59, and timer transfer cannot admit an occurrence twice.
+Persistence coverage includes entities absent
+from the current memory snapshot helpers, and rollback is limited to legacy
+representable work with unsafe downgrades rejected before mutation.
 
 `etlantic-quarto` does not exist and must not be created or planned. New wheels
 require real consolidation or dependency isolation; helper-only splits are

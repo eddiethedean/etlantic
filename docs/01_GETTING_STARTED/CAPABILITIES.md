@@ -1,9 +1,9 @@
 # Current Capabilities and Limitations
 
-> **Version boundary:** ETLantic 0.58.0 is a Beta release candidate; 0.57.x remains the published and supported line.
+> **Version boundary:** ETLantic 0.59.0 is a Beta release candidate; 0.57.x remains the published and supported line.
 
 
-> **Status: ETLantic 0.58.0 is a Beta release candidate; 0.57.x remains the published and supported line.** This page records
+> **Status: ETLantic 0.59.0 is a Beta release candidate; 0.57.x remains the published and supported line.** This page records
 > the published 0.56 envelope for controlled single-tenant pilots and
 > Supported isolation profiles.
 
@@ -11,9 +11,9 @@
     Read **What works today** and **Limits** first. Residual gaps and CI
     starter JSON are further down for evaluators.
 
-## What works today (0.57 published; 0.58 candidate)
+## What works today (0.57 published; 0.59 candidate)
 
-ETLantic 0.58.0 is the current **Beta release candidate**. The latest
+ETLantic 0.59.0 is the current **Beta release candidate**. The latest
 published and supported line is 0.57.x, for documented, controlled,
 single-tenant pilots. Install the latest published `etlantic` package from PyPI. You can embed an
 HTTP control plane with **Supported** isolation profiles
@@ -285,8 +285,8 @@ These planning changes do not add current capabilities; Batch is unscheduled.
 | Streaming poison-record/DLQ policy and schema-registry interoperability | **Supported** core policy/protocol in 0.46; Kafka (`etlantic-kafka`) and Confluent adapter (`etlantic-schemaregistry`) remain **Experimental** — never Available-in-core |
 | Complete application ETL backend | **Candidate qualified for 0.56** — shared authorized services, real managed execution/results, full specification/run controls, live PostgreSQL/CSV qualification and Semblance-backed Foundry API qualification; no live Foundry account required. See [plan](../11_DEVELOPMENT/IMPLEMENTATION_PLAN_0_56.md) and [reviewed gaps](../11_DEVELOPMENT/FINDINGS_0_56.md) |
 | Transport-independent managed backend, shared schedule commands, complete scheduler factory, provider schema inspection, and role supervision (#278–#282) | Planned for 0.57.0; [implementation plan](../11_DEVELOPMENT/IMPLEMENTATION_PLAN_0_57.md) |
-| Managed Prefect execution | The bounded [0.58 support profile](../11_DEVELOPMENT/IMPLEMENTATION_PLAN_0_58.md) is qualified for static-batch `/1`, self-hosted Prefect Process workers, PostgreSQL, and the documented Python matrix; it is part of the 0.58.0 release candidate. See the [qualification decision](../11_DEVELOPMENT/evidence/phase_0_58/FINAL_QUALIFICATION_DECISION_2026-10-12.json). |
-| Managed runtime consolidation and trigger contracts | **Planned for 0.59; not available** — [implementation plan](../11_DEVELOPMENT/IMPLEMENTATION_PLAN_0_59.md) |
+| Managed Prefect execution | The bounded 0.58 profile was qualified on the prior candidate. Its support on 0.59 awaits requalification after dispatch and persistence changes; see the [0.58 evidence](../11_DEVELOPMENT/evidence/phase_0_58/FINAL_QUALIFICATION_DECISION_2026-10-12.json) and [0.59 exit gate](../11_DEVELOPMENT/EXIT_GATE_0_59.md). |
+| Managed runtime consolidation and trigger contracts | Implemented in the 0.59 candidate; **qualification pending and not supported for production use** — [implementation plan](../11_DEVELOPMENT/IMPLEMENTATION_PLAN_0_59.md) and [exit gate](../11_DEVELOPMENT/EXIT_GATE_0_59.md) |
 | Posit Connect scheduling and HTTPS triggers | **Planned for 0.60; not available** — [implementation plan](../11_DEVELOPMENT/IMPLEMENTATION_PLAN_0_60.md) |
 | AWS Scheduler/Lambda delivery and one ECS/Fargate executor | **Planned for 0.61; not available** — [implementation plan](../11_DEVELOPMENT/IMPLEMENTATION_PLAN_0_61.md) |
 | One Data Mover host and optional Posit endpoint discovery | **Planned for 0.62; not available** — [implementation plan](../11_DEVELOPMENT/IMPLEMENTATION_PLAN_0_62.md) |
@@ -316,7 +316,7 @@ Never put secrets in plans, reports, or CI logs.
 
 **Pip users:** create `profiles/prod.json` yourself. Start from the JSON
 below, then **trim `plugin_allowlist` to the engines you actually install**
-(the sample uses Polars — install `etlantic-polars==0.58.0` first).
+(the sample uses Polars — install `etlantic-polars==0.59.0` first).
 
 ```json
 {
@@ -329,7 +329,7 @@ below, then **trim `plugin_allowlist` to the engines you actually install**
   "validation_policy": "strict",
   "allow_trusted_sql": false,
   "plugin_allowlist": {
-    "etlantic-polars": "==0.58.0"
+    "etlantic-polars": "==0.59.0"
   },
   "assets": {},
   "secrets": {},
@@ -345,17 +345,17 @@ python -m etlantic plan path/to/pipeline.py:MyPipeline --profile ./profiles/prod
 ```
 
 ```bash
-pip install 'etlantic==0.58.0'
-pip install 'etlantic[lsp]==0.58.0'            # optional language server
-pip install 'etlantic-polars==0.58.0'          # optional
-pip install 'etlantic-pandas==0.58.0'          # optional
-pip install 'etlantic-sql==0.58.0'             # optional
-pip install 'etlantic-pyspark==0.58.0'         # optional
-pip install 'etlantic-airflow==0.58.0'         # optional
-pip install 'etlantic-prefect==0.58.0'         # optional
-pip install 'etlantic-keyring==0.58.0'         # optional
-pip install 'etlantic-sqlmodel==0.58.0'        # optional
-pip install 'medallantic==0.58.0'              # optional
+pip install 'etlantic==0.59.0'
+pip install 'etlantic[lsp]==0.59.0'            # optional language server
+pip install 'etlantic-polars==0.59.0'          # optional
+pip install 'etlantic-pandas==0.59.0'          # optional
+pip install 'etlantic-sql==0.59.0'             # optional
+pip install 'etlantic-pyspark==0.59.0'         # optional
+pip install 'etlantic-airflow==0.59.0'         # optional
+pip install 'etlantic-prefect==0.59.0'         # optional
+pip install 'etlantic-keyring==0.59.0'         # optional
+pip install 'etlantic-sqlmodel==0.59.0'        # optional
+pip install 'medallantic==0.59.0'              # optional
 ```
 
 See [Installation](INSTALLATION.md), [Evaluator brief](EVALUATOR.md), and

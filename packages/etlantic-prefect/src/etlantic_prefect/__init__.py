@@ -16,7 +16,7 @@ from etlantic_prefect.worker import (
     request_managed_run_cancellation,
 )
 
-__version__ = "0.58.0"
+__version__ = "0.59.0"
 
 __all__ = [
     "ManagedDeploymentBinding",

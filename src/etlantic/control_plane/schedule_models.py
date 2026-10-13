@@ -1,11 +1,13 @@
 # pyright: reportUnknownArgumentType=false, reportUnknownVariableType=false
-"""Schedule and firing records (`etlantic.schedule/1`, `etlantic.firing/1`)."""
+"""Versioned schedule and firing records with checked legacy readers."""
 
 from __future__ import annotations
 
 from collections.abc import Mapping
 from dataclasses import asdict, dataclass, field
-from typing import Any, Literal
+from datetime import datetime
+from typing import Any, Literal, cast
+from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 
 from etlantic.control_plane.durable_models import validate_execution_route
 from etlantic.control_plane.models import Principal
@@ -16,8 +18,55 @@ from etlantic.control_plane.redaction import (
 from etlantic.control_plane.schedule_diagnostics import fire_diagnostic
 from etlantic.secrets.ref import SecretRef
 
-SCHEDULE_SCHEMA = "etlantic.schedule/1"
-FIRING_SCHEMA = "etlantic.firing/1"
+SCHEDULE_SCHEMA = "etlantic.schedule/2"
+FIRING_SCHEMA = "etlantic.firing/2"
+
+_SCHEDULE_FIELDS = frozenset(
+    {
+        "schema",
+        "schedule_id",
+        "definition_id",
+        "revision_id",
+        "tenant_id",
+        "workspace_id",
+        "profile_name",
+        "policy_fingerprint",
+        "spec",
+        "created_at",
+        "updated_at",
+        "status",
+        "next_fire_at",
+        "definition_revision_id",
+        "parameter_refs",
+        "secret_refs",
+        "metadata",
+        "revision_policy",
+        "workload_identity",
+        "execution_route",
+        "timer_owner",
+        "timer_owner_generation",
+        "timer_revision_policy",
+    }
+)
+_FIRING_FIELDS = frozenset(
+    {
+        "schema",
+        "firing_id",
+        "schedule_id",
+        "revision_id",
+        "nominal_fire_time",
+        "tenant_id",
+        "workspace_id",
+        "created_at",
+        "status",
+        "submission_id",
+        "metadata",
+        "logical_key",
+        "preparation_owner_id",
+        "preparation_fencing_token",
+        "preparation_expires_at",
+    }
+)
 
 ScheduleKind = Literal["interval", "cron"]
 ScheduleStatus = Literal["active", "paused", "deleted"]
@@ -27,6 +76,7 @@ FiringStatus = Literal[
     "accepted", "skipped_overlap", "skipped_misfire", "skipped_window"
 ]
 ScheduleRevisionPolicy = Literal["pinned", "latest-approved"]
+TimerOwner = Literal["local", "external"]
 
 FORBIDDEN_SCHEDULE_KEYS = frozenset(
     {"payload", "secret", "password", "token", "row", "event", "body"}
@@ -36,6 +86,18 @@ FORBIDDEN_SCHEDULE_KEYS = frozenset(
 def _metadata(value: Mapping[str, Any] | None) -> dict[str, Any]:
     result = redact_control_plane_payload(dict(value or {}))
     return dict(result) if isinstance(result, dict) else {}
+
+
+def _timer_owner(value: object) -> TimerOwner:
+    if not isinstance(value, str) or value not in ("local", "external"):
+        raise ValueError("schedule timer_owner must be local or external")
+    return value
+
+
+def _revision_policy(value: object) -> ScheduleRevisionPolicy:
+    if not isinstance(value, str) or value not in ("pinned", "latest-approved"):
+        raise ValueError("schedule revision_policy is unsupported")
+    return value
 
 
 def assert_schedule_payload_clean(data: Mapping[str, Any]) -> None:
@@ -120,18 +182,46 @@ class ScheduleSpec:
     window_end: str | None = None
 
     def __post_init__(self) -> None:
-        if self.catch_up_max < 0:
+        timezone_value: object = cast(object, self.timezone)
+        if not isinstance(timezone_value, str) or not timezone_value.strip():
+            raise ValueError("schedule timezone must be non-empty")
+        try:
+            ZoneInfo(self.timezone)
+        except (ZoneInfoNotFoundError, ValueError) as exc:
+            raise ValueError("schedule timezone must be a known IANA zone") from exc
+        if type(self.catch_up_max) is not int or self.catch_up_max < 0:
             raise ValueError("catch_up_max must be >= 0")
-        if self.jitter_seconds < 0:
+        if type(self.jitter_seconds) is not int or self.jitter_seconds < 0:
             raise ValueError("jitter_seconds must be >= 0")
+        if self.misfire not in ("skip", "fire_once", "catch_up"):
+            raise ValueError("schedule misfire policy is unsupported")
+        if self.overlap not in ("skip", "queue"):
+            raise ValueError("schedule overlap policy is unsupported")
         if self.kind == "interval":
-            if self.interval_seconds is None or int(self.interval_seconds) <= 0:
+            if type(self.interval_seconds) is not int or self.interval_seconds <= 0:
                 raise ValueError("interval schedules require interval_seconds > 0")
         elif self.kind == "cron":
-            if not (self.cron or "").strip():
+            if not isinstance(self.cron, str) or not self.cron.strip():
                 raise ValueError("cron schedules require a 5-field cron expression")
         else:
             raise ValueError(f"unsupported schedule kind: {self.kind}")
+        for name in ("window_start", "window_end"):
+            value = getattr(self, name)
+            if value is None:
+                continue
+            if not isinstance(value, str) or not value.strip():
+                raise ValueError(f"schedule {name} must be a timestamp when set")
+            try:
+                moment = datetime.fromisoformat(value.replace("Z", "+00:00"))
+            except ValueError as exc:
+                raise ValueError(f"schedule {name} must be ISO-8601") from exc
+            if moment.tzinfo is None or moment.utcoffset() is None:
+                raise ValueError(f"schedule {name} must include a timezone")
+        if self.window_start is not None and self.window_end is not None:
+            start = datetime.fromisoformat(self.window_start.replace("Z", "+00:00"))
+            end = datetime.fromisoformat(self.window_end.replace("Z", "+00:00"))
+            if start >= end:
+                raise ValueError("schedule window_start must precede window_end")
 
     def to_dict(self) -> dict[str, Any]:
         return {
@@ -150,20 +240,18 @@ class ScheduleSpec:
     @classmethod
     def from_dict(cls, data: Mapping[str, Any]) -> ScheduleSpec:
         return cls(
-            kind=str(data["kind"]),  # type: ignore[arg-type]
-            timezone=str(data.get("timezone") or "UTC"),
-            interval_seconds=(
-                int(data["interval_seconds"])
-                if data.get("interval_seconds") is not None
-                else None
-            ),
+            kind=data["kind"],
+            timezone=data.get("timezone") or "UTC",
+            interval_seconds=data.get("interval_seconds"),
             cron=data.get("cron"),
-            misfire=str(data.get("misfire") or "fire_once"),  # type: ignore[arg-type]
-            catch_up_max=int(
+            misfire=data.get("misfire") or "fire_once",
+            catch_up_max=(
                 10 if data.get("catch_up_max") is None else data["catch_up_max"]
             ),
-            overlap=str(data.get("overlap") or "skip"),  # type: ignore[arg-type]
-            jitter_seconds=int(data.get("jitter_seconds") or 0),
+            overlap=data.get("overlap") or "skip",
+            jitter_seconds=(
+                0 if data.get("jitter_seconds") is None else data["jitter_seconds"]
+            ),
             window_start=data.get("window_start"),
             window_end=data.get("window_end"),
         )
@@ -204,16 +292,56 @@ class ScheduleRecord:
     occurrence_inputs: Mapping[str, Any] | None = field(
         default=None, repr=False, compare=False
     )
+    # Owner changes use the generation-fenced transfer operation. Existing
+    # records without these fields remain locally owned at generation one.
+    timer_owner: TimerOwner = "local"
+    timer_owner_generation: int = 1
 
     def __post_init__(self) -> None:
+        for name in (
+            "schedule_id",
+            "definition_id",
+            "revision_id",
+            "tenant_id",
+            "workspace_id",
+            "profile_name",
+            "created_at",
+            "updated_at",
+        ):
+            value = getattr(self, name)
+            if not isinstance(value, str) or not value.strip():
+                raise ValueError(f"schedule {name} must be non-empty")
+        if self.status not in ("active", "paused", "deleted"):
+            raise ValueError("schedule status is unsupported")
         if self.revision_policy not in ("pinned", "latest-approved"):
             raise ValueError("schedule revision_policy is unsupported")
-        validate_execution_route(self.execution_route)
-        if self.workload_identity is not None and self.workload_identity.kind not in (
-            "workload",
-            "service",
+        if self.timer_owner not in ("local", "external"):
+            raise ValueError("schedule timer_owner must be local or external")
+        if (
+            type(self.timer_owner_generation) is not int
+            or self.timer_owner_generation < 1
         ):
-            raise ValueError("schedule workload_identity must be workload or service")
+            raise ValueError("schedule timer_owner_generation must be positive")
+        validate_execution_route(self.execution_route)
+        workload_identity: object = cast(object, self.workload_identity)
+        if workload_identity is not None:
+            if not isinstance(workload_identity, Principal):
+                raise ValueError("schedule workload_identity must be a Principal")
+            if workload_identity.kind not in ("workload", "service"):
+                raise ValueError(
+                    "schedule workload_identity must be workload or service"
+                )
+        if self.timer_owner == "external" and self.workload_identity is None:
+            raise ValueError("externally owned schedule requires a workload identity")
+        if self.next_fire_at is not None:
+            try:
+                next_fire = datetime.fromisoformat(
+                    self.next_fire_at.replace("Z", "+00:00")
+                )
+            except (AttributeError, TypeError, ValueError) as exc:
+                raise ValueError("schedule next_fire_at must be ISO-8601") from exc
+            if next_fire.tzinfo is None or next_fire.utcoffset() is None:
+                raise ValueError("schedule next_fire_at must include a timezone")
 
     def to_dict(self) -> dict[str, Any]:
         payload = {
@@ -241,28 +369,42 @@ class ScheduleRecord:
                 else None
             ),
             "execution_route": self.execution_route,
+            "timer_owner": self.timer_owner,
+            "timer_owner_generation": self.timer_owner_generation,
         }
         assert_schedule_payload_clean(payload)
         return payload
 
     @classmethod
     def from_dict(cls, data: Mapping[str, Any]) -> ScheduleRecord:
+        schema = data.get("schema")
+        if schema not in (None, "etlantic.schedule/1", SCHEDULE_SCHEMA):
+            raise ValueError(f"unsupported schedule schema: {schema!r}")
+        if set(data) - _SCHEDULE_FIELDS:
+            raise ValueError("schedule record contains unsupported fields")
         assert_schedule_payload_clean(data)
+        timer_owner = _timer_owner(data.get("timer_owner", "local"))
+        revision_policy_value: object = data.get("revision_policy") or "pinned"
+        if revision_policy_value == "external_timer_owned":
+            if timer_owner != "external":
+                raise ValueError("external timer rollback fence is inconsistent")
+            revision_policy_value = data.get("timer_revision_policy") or ""
+        revision_policy = _revision_policy(revision_policy_value)
         return cls(
-            schedule_id=str(data["schedule_id"]),
-            definition_id=str(data["definition_id"]),
-            revision_id=str(data["revision_id"]),
-            tenant_id=str(data["tenant_id"]),
-            workspace_id=str(data["workspace_id"]),
-            profile_name=str(data["profile_name"]),
-            policy_fingerprint=str(data.get("policy_fingerprint") or ""),
+            schedule_id=data["schedule_id"],
+            definition_id=data["definition_id"],
+            revision_id=data["revision_id"],
+            tenant_id=data["tenant_id"],
+            workspace_id=data["workspace_id"],
+            profile_name=data["profile_name"],
+            policy_fingerprint=data.get("policy_fingerprint") or "",
             spec=ScheduleSpec.from_dict(data["spec"]),
             created_at=str(data["created_at"]),
             updated_at=str(data["updated_at"]),
-            status=str(data.get("status") or "active"),  # type: ignore[arg-type]
+            status=data.get("status") or "active",
             next_fire_at=data.get("next_fire_at"),
             definition_revision_id=(
-                str(data["definition_revision_id"])
+                data["definition_revision_id"]
                 if data.get("definition_revision_id") is not None
                 else None
             ),
@@ -272,7 +414,7 @@ class ScheduleRecord:
                 for name, value in dict(data.get("secret_refs") or {}).items()
             },
             metadata=_metadata(data.get("metadata")),
-            revision_policy=str(data.get("revision_policy") or "pinned"),  # type: ignore[arg-type]
+            revision_policy=revision_policy,
             workload_identity=(
                 Principal.from_dict(data["workload_identity"])
                 if isinstance(data.get("workload_identity"), Mapping)
@@ -281,6 +423,8 @@ class ScheduleRecord:
             execution_route=validate_execution_route(
                 data.get("execution_route", "local")
             ),
+            timer_owner=timer_owner,
+            timer_owner_generation=data.get("timer_owner_generation", 1),
         )
 
 
@@ -298,12 +442,91 @@ class FiringRecord:
     status: FiringStatus = "accepted"
     submission_id: str | None = None
     metadata: Mapping[str, Any] = field(default_factory=dict)
+    preparation_owner_id: str | None = field(default=None, repr=False, compare=False)
+    preparation_fencing_token: int = field(default=0, repr=False, compare=False)
+    preparation_expires_at: str | None = field(default=None, repr=False, compare=False)
+
+    def __post_init__(self) -> None:
+        for name in (
+            "firing_id",
+            "schedule_id",
+            "revision_id",
+            "nominal_fire_time",
+            "tenant_id",
+            "workspace_id",
+            "created_at",
+        ):
+            value = getattr(self, name)
+            if not isinstance(value, str) or not value.strip():
+                raise ValueError(f"firing {name} must be non-empty")
+        if self.status not in (
+            "accepted",
+            "skipped_overlap",
+            "skipped_misfire",
+            "skipped_window",
+        ):
+            raise ValueError("firing status is unsupported")
+        for name in ("nominal_fire_time", "created_at"):
+            try:
+                moment = datetime.fromisoformat(
+                    getattr(self, name).replace("Z", "+00:00")
+                )
+            except ValueError as exc:
+                raise ValueError(f"firing {name} must be ISO-8601") from exc
+            if moment.tzinfo is None or moment.utcoffset() is None:
+                raise ValueError(f"firing {name} must include a timezone")
+        submission_id: object = cast(object, self.submission_id)
+        if submission_id is not None and (
+            not isinstance(submission_id, str) or not submission_id.strip()
+        ):
+            raise ValueError("firing submission_id must be non-empty when set")
+        if type(self.preparation_fencing_token) is not int or (
+            self.preparation_fencing_token < 0
+        ):
+            raise ValueError("firing preparation_fencing_token must be non-negative")
+        if (self.preparation_owner_id is None) != (self.preparation_expires_at is None):
+            raise ValueError("firing preparation lease fields must be paired")
+        preparation_owner_id: object = cast(object, self.preparation_owner_id)
+        preparation_expires_at: object = cast(object, self.preparation_expires_at)
+        if preparation_owner_id is not None:
+            if (
+                not isinstance(preparation_owner_id, str)
+                or not preparation_owner_id.strip()
+            ):
+                raise ValueError("firing preparation owner must be non-empty")
+            if not isinstance(preparation_expires_at, str):
+                raise ValueError("firing preparation expiry must be non-empty")
+            try:
+                expiry = datetime.fromisoformat(
+                    preparation_expires_at.replace("Z", "+00:00")
+                )
+            except (AttributeError, ValueError) as exc:
+                raise ValueError("firing preparation expiry must be ISO-8601") from exc
+            if expiry.tzinfo is None or expiry.utcoffset() is None:
+                raise ValueError("firing preparation expiry must include a timezone")
 
     @property
     def logical_key(self) -> str:
         return firing_key(self.schedule_id, self.revision_id, self.nominal_fire_time)
 
     def to_dict(self) -> dict[str, Any]:
+        """Return a caller-safe firing representation without the prep lease."""
+        values = asdict(self)
+        values.pop("preparation_owner_id", None)
+        values.pop("preparation_fencing_token", None)
+        values.pop("preparation_expires_at", None)
+        payload = {
+            "schema": FIRING_SCHEMA,
+            **values,
+            "logical_key": self.logical_key,
+            "metadata": _metadata(self.metadata),
+        }
+        payload["created_at"] = redact_control_plane_text(self.created_at)
+        assert_schedule_payload_clean(payload)
+        return payload
+
+    def to_storage_dict(self) -> dict[str, Any]:
+        """Return the complete durable row, including its private prep lease."""
         payload = {
             "schema": FIRING_SCHEMA,
             **asdict(self),
@@ -316,16 +539,59 @@ class FiringRecord:
 
     @classmethod
     def from_dict(cls, data: Mapping[str, Any]) -> FiringRecord:
+        schema = data.get("schema")
+        if schema not in (None, "etlantic.firing/1", FIRING_SCHEMA):
+            raise ValueError(f"unsupported firing schema: {schema!r}")
+        if set(data) - _FIRING_FIELDS:
+            raise ValueError("firing record contains unsupported fields")
         assert_schedule_payload_clean(data)
-        return cls(
-            firing_id=str(data["firing_id"]),
-            schedule_id=str(data["schedule_id"]),
-            revision_id=str(data["revision_id"]),
-            nominal_fire_time=str(data["nominal_fire_time"]),
-            tenant_id=str(data["tenant_id"]),
-            workspace_id=str(data["workspace_id"]),
-            created_at=str(data["created_at"]),
-            status=str(data.get("status") or "accepted"),  # type: ignore[arg-type]
+        preparation_token = data.get("preparation_fencing_token", 0)
+        if type(preparation_token) is not int or preparation_token < 0:
+            raise ValueError("firing preparation_fencing_token must be non-negative")
+        preparation_owner = data.get("preparation_owner_id")
+        preparation_expiry = data.get("preparation_expires_at")
+        if (preparation_owner is None) != (preparation_expiry is None):
+            raise ValueError("firing preparation lease fields must be paired")
+        if preparation_owner is not None:
+            if not isinstance(preparation_owner, str) or not preparation_owner.strip():
+                raise ValueError("firing preparation owner must be non-empty")
+            if (
+                not isinstance(preparation_expiry, str)
+                or not preparation_expiry.strip()
+            ):
+                raise ValueError("firing preparation expiry must be non-empty")
+            try:
+                expiry = datetime.fromisoformat(
+                    preparation_expiry.replace("Z", "+00:00")
+                )
+            except ValueError as exc:
+                raise ValueError("firing preparation expiry must be ISO-8601") from exc
+            if expiry.tzinfo is None or expiry.utcoffset() is None:
+                raise ValueError("firing preparation expiry must include a timezone")
+        record = cls(
+            firing_id=data["firing_id"],
+            schedule_id=data["schedule_id"],
+            revision_id=data["revision_id"],
+            nominal_fire_time=data["nominal_fire_time"],
+            tenant_id=data["tenant_id"],
+            workspace_id=data["workspace_id"],
+            created_at=data["created_at"],
+            status=data.get("status") or "accepted",
             submission_id=data.get("submission_id"),
             metadata=_metadata(data.get("metadata")),
+            preparation_owner_id=(
+                data["preparation_owner_id"]
+                if data.get("preparation_owner_id") is not None
+                else None
+            ),
+            preparation_fencing_token=preparation_token,
+            preparation_expires_at=(
+                data["preparation_expires_at"]
+                if data.get("preparation_expires_at") is not None
+                else None
+            ),
         )
+        logical_key = data.get("logical_key")
+        if logical_key is not None and logical_key != record.logical_key:
+            raise ValueError("firing logical_key does not match its identity fields")
+        return record

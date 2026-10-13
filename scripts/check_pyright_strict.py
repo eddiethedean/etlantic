@@ -165,11 +165,14 @@ EXPECTED_DIGESTS = {
     # compatibility tests; the new managed package modules add none. The
     # pre-execution policy gate adds one PolicyHook literal. The current main
     # baseline contains 10,080 suppression-free diagnostics.
+    # Phase 0.59 validates durable snapshot and schedule decoders. Comparison
+    # with this branch's pre-change tree found no new shadow diagnostics and
+    # removed 63; the reviewed inventory is 10,035.
     # Fingerprints pin path, diagnostic rule, message, and multiplicity while
     # ignoring source coordinates. Line shifts therefore do not require a
     # manual baseline refresh; diagnostic content changes still fail closed.
-    "Darwin": "ce35a791e1df61071d9ff708bd2d3cf88bc255626a2ad9514503c64ff7bc6fe3",
-    "Linux": "ce35a791e1df61071d9ff708bd2d3cf88bc255626a2ad9514503c64ff7bc6fe3",
+    "Darwin": "cabddaf573a434c7b0516990720ad6f06960f43b2448fb97cb94cdeb0dba2aea",
+    "Linux": "cabddaf573a434c7b0516990720ad6f06960f43b2448fb97cb94cdeb0dba2aea",
 }
 
 

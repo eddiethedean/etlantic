@@ -27,7 +27,7 @@ from etlantic.control_plane import (
     TenantRef,
     WorkspaceRef,
 )
-from etlantic.control_plane.schedule_models import FiringStatus
+from etlantic.control_plane.schedule_models import FiringStatus, TimerOwner
 from etlantic.reports.model import PipelineRunReport
 from etlantic.runtime.execution_host import ExecutionHost, UnknownCommitError
 from etlantic.runtime.request import RunIntent
@@ -195,6 +195,10 @@ def test_due_scan_cannot_admit_firing_after_schedule_is_paused() -> None:
             admit_submission: bool = True,
             skip_status: FiringStatus | None = None,
             metadata: Mapping[str, object] | None = None,
+            expected_next_fire_at: str | None = None,
+            expected_timer_owner: TimerOwner | None = None,
+            expected_timer_owner_generation: int | None = None,
+            require_active: bool = False,
         ) -> tuple[FiringRecord, bool]:
             if self.pause_before_claim:
                 self.pause_before_claim = False
@@ -213,6 +217,10 @@ def test_due_scan_cannot_admit_firing_after_schedule_is_paused() -> None:
                 admit_submission=admit_submission,
                 skip_status=skip_status,
                 metadata=metadata,
+                expected_next_fire_at=expected_next_fire_at,
+                expected_timer_owner=expected_timer_owner,
+                expected_timer_owner_generation=expected_timer_owner_generation,
+                require_active=require_active,
             )
 
     ctx = _ctx()

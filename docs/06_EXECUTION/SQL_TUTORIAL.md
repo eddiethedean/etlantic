@@ -1,6 +1,6 @@
 # Execute Inside SQL
 
-> **Status: Available in ETLantic 0.58.0 Beta.** Prefer the
+> **Status: Available in ETLantic 0.59.0 Beta.** Prefer the
 > [SQL hello (PyPI path)](SQL_HELLO_PYPI.md) first (SQLite, no clone).
 > This page is the deeper clone companion. PostgreSQL is the reference
 > backend for production; MERGE is PostgreSQL-only.
@@ -12,8 +12,8 @@
 ## Install and run (clone companion)
 
 ```bash
-python -m pip install 'etlantic==0.58.0' 'etlantic-sql==0.58.0'
-git clone --branch v0.57.0 https://github.com/eddiethedean/etlantic.git
+python -m pip install 'etlantic==0.59.0' 'etlantic-sql==0.59.0'
+git clone --branch v0.59.0 https://github.com/eddiethedean/etlantic.git
 cd etlantic
 python examples/sql_to_sql.py
 ```

@@ -489,7 +489,7 @@ def test_remote_status_and_cancellation_remain_separate_observations(
     dispatch = SimpleNamespace(
         status="dispatched",
         execution_route=binding.execution_route,
-        prefect_flow_run_id=str(uuid4()),
+        remote_run_id=str(uuid4()),
         dispatch_attempts=1,
     )
 
@@ -501,13 +501,13 @@ def test_remote_status_and_cancellation_remain_separate_observations(
             return None
 
         def read_flow_run(self, flow_run_id: UUID) -> Any:
-            assert str(flow_run_id) == dispatch.prefect_flow_run_id
+            assert str(flow_run_id) == dispatch.remote_run_id
             return SimpleNamespace(state=State(type=StateType.RUNNING, name="Running"))
 
         def set_flow_run_state(
             self, flow_run_id: UUID, state: Any, *, force: bool
         ) -> Any:
-            assert flow_run_id == dispatch.prefect_flow_run_id
+            assert flow_run_id == dispatch.remote_run_id
             assert state.type is StateType.CANCELLING
             assert force is False
             return SimpleNamespace(
@@ -524,7 +524,7 @@ def test_remote_status_and_cancellation_remain_separate_observations(
     observation = _remote_flow_run_observation(dispatch, binding)
     assert observation["status"] == "Running"
     assert observation["state_type"] == "RUNNING"
-    assert observation["flow_run_id"] == dispatch.prefect_flow_run_id
+    assert observation["flow_run_id"] == dispatch.remote_run_id
     assert observation["observed_at"]
     assert observation["dispatch_status"] == "dispatched"
 
@@ -558,7 +558,7 @@ def test_remote_status_and_cancellation_remain_separate_observations(
 
     class _FailedClient(_Client):
         def read_flow_run(self, flow_run_id: UUID) -> Any:
-            assert str(flow_run_id) == dispatch.prefect_flow_run_id
+            assert str(flow_run_id) == dispatch.remote_run_id
             return SimpleNamespace(state=State(type=StateType.FAILED, name="Failed"))
 
     def _get_failed_client(**_kwargs: Any) -> _FailedClient:

@@ -295,7 +295,7 @@ fragmentation, not a claim of a demonstrated exploit.
 
 **Observed.** `etlantic-sql` installs psycopg even for SQLite-only use. Core
 installs Typer/Click even for SDK-only consumers. First-party requirements mostly
-allow any later core release (`etlantic>=0.58.0`), while installation guidance
+allow any later core release (`etlantic>=0.59.0`), while installation guidance
 requires matching versions and rejects cross-minor support assumptions.
 See [SQL dependencies](https://github.com/eddiethedean/etlantic/blob/d0708ba4ebbf9f98cbdf9a9142aa780ce4c241e6/packages/etlantic-sql/pyproject.toml),
 [core manifest](https://github.com/eddiethedean/etlantic/blob/d0708ba4ebbf9f98cbdf9a9142aa780ce4c241e6/pyproject.toml), and
@@ -314,7 +314,7 @@ claims require measurement; neither was benchmarked in this review.
 
 ### F11 — P2: Metadata and deprecation drift show the cost of the portfolio
 
-**Observed.** Workspace manifests say 0.58.0, while K8s, Spark Connect, MCP, and
+**Observed.** Workspace manifests say 0.59.0, while K8s, Spark Connect, MCP, and
 Kafka provider metadata still contains 0.56.0. Several README headings retain
 older release labels. The SparkForge redirect README says “Final release,” yet
 the workspace and release workflow still build/version/publish it in lockstep.

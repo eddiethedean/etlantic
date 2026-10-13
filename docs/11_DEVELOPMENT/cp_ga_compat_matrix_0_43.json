@@ -14,8 +14,8 @@
     {
       "id": "compat_floor",
       "status": "pass",
-      "policy": ">=0.58.0",
-      "installed": "0.58.0"
+      "policy": ">=0.59.0",
+      "installed": "0.59.0"
     }
   ],
   "pass": true,

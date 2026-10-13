@@ -2,18 +2,15 @@
 
 from __future__ import annotations
 
-import inspect
 from collections.abc import Awaitable, Callable, Mapping
 from dataclasses import dataclass, field
 from typing import Any, cast
 
-from etlantic.control_plane import ManagedBackend, validate_execution_route
-from etlantic.control_plane.action_jobs import (
-    MAX_PREVIEW_RESULT_TTL_SECONDS,
-    MIN_PREVIEW_RESULT_TTL_SECONDS,
-)
-from etlantic.control_plane.event_retention import (
-    DEFAULT_EVENT_IDEMPOTENCY_RETENTION_SECONDS,
+from etlantic.control_plane import ManagedBackend
+from etlantic.control_plane.managed_config import (
+    MANAGED_BACKEND_DEFAULTS,
+    empty_managed_mapping,
+    validate_managed_backend_settings,
 )
 from etlantic.control_plane.protocols import Authorizer
 from etlantic.control_plane.registry_protocols import RegistryProvider
@@ -25,140 +22,66 @@ from etlantic_sqlmodel.schema import inspect_schema
 ActionHandler = Callable[[Any, Mapping[str, Any]], Awaitable[Mapping[str, Any]]]
 
 
-def _empty_engine_options() -> dict[str, Any]:
-    return {}
-
-
-def _empty_action_handlers() -> dict[str, ActionHandler]:
-    return {}
-
-
-def _is_nonempty_text(value: object) -> bool:
-    return isinstance(value, str) and bool(value.strip())
-
-
 @dataclass(frozen=True, slots=True)
 class SQLModelBackendConfig:
     """SQLModel deployment settings; database URLs never appear in repr."""
 
-    database_url: str | None = field(default=None, repr=False)
-    store_id: str = "default"
-    profile: Any = field(default="development", repr=False)
+    database_url: str | None = field(
+        default=MANAGED_BACKEND_DEFAULTS["database_url"], repr=False
+    )
+    store_id: str = MANAGED_BACKEND_DEFAULTS["store_id"]
+    profile: Any = field(default=MANAGED_BACKEND_DEFAULTS["profile"], repr=False)
     engine_options: Mapping[str, Any] = field(
-        default_factory=_empty_engine_options, repr=False
+        default_factory=empty_managed_mapping, repr=False
     )
-    event_retention_max_events_per_scope: int = 100_000
-    event_idempotency_retention_seconds: int = (
-        DEFAULT_EVENT_IDEMPOTENCY_RETENTION_SECONDS
+    event_retention_max_events_per_scope: int = MANAGED_BACKEND_DEFAULTS[
+        "event_retention_max_events_per_scope"
+    ]
+    event_idempotency_retention_seconds: int = MANAGED_BACKEND_DEFAULTS[
+        "event_idempotency_retention_seconds"
+    ]
+    max_input_upload_bytes: int = MANAGED_BACKEND_DEFAULTS["max_input_upload_bytes"]
+    input_upload_ttl_seconds: int = MANAGED_BACKEND_DEFAULTS["input_upload_ttl_seconds"]
+    input_resource_retention_seconds: int = MANAGED_BACKEND_DEFAULTS[
+        "input_resource_retention_seconds"
+    ]
+    action_job_max_deadline_seconds: int = MANAGED_BACKEND_DEFAULTS[
+        "action_job_max_deadline_seconds"
+    ]
+    action_job_lease_seconds: int = MANAGED_BACKEND_DEFAULTS["action_job_lease_seconds"]
+    preview_result_ttl_seconds: int = MANAGED_BACKEND_DEFAULTS[
+        "preview_result_ttl_seconds"
+    ]
+    run_artifact_retention_seconds: int | None = MANAGED_BACKEND_DEFAULTS[
+        "run_artifact_retention_seconds"
+    ]
+    run_artifact_cleanup_batch_size: int = MANAGED_BACKEND_DEFAULTS[
+        "run_artifact_cleanup_batch_size"
+    ]
+    schedule_clock: Any = field(
+        default=MANAGED_BACKEND_DEFAULTS["schedule_clock"], repr=False
     )
-    max_input_upload_bytes: int = 64 * 1024 * 1024
-    input_upload_ttl_seconds: int = 60 * 60
-    input_resource_retention_seconds: int = 90 * 24 * 60 * 60
-    action_job_max_deadline_seconds: int = 300
-    action_job_lease_seconds: int = 330
-    preview_result_ttl_seconds: int = 60 * 60
-    run_artifact_retention_seconds: int | None = None
-    run_artifact_cleanup_batch_size: int = 100
-    schedule_clock: Any = field(default=None, repr=False)
-    artifact_root: str | None = field(default=None, repr=False)
+    artifact_root: str | None = field(
+        default=MANAGED_BACKEND_DEFAULTS["artifact_root"], repr=False
+    )
     action_handlers: Mapping[str, ActionHandler] = field(
-        default_factory=_empty_action_handlers, repr=False
+        default_factory=empty_managed_mapping, repr=False
     )
-    policy: Any = field(default=None, repr=False)
-    approvals: Any = field(default=None, repr=False)
-    quotas: Any = field(default=None, repr=False)
-    audit: Any = field(default=None, repr=False)
-    attestations: Any = field(default=None, repr=False)
-    require_attestations: bool = False
-    execution_route: str = "local"
-    schedule_parameter_resolver: Any = field(default=None, repr=False)
+    policy: Any = field(default=MANAGED_BACKEND_DEFAULTS["policy"], repr=False)
+    approvals: Any = field(default=MANAGED_BACKEND_DEFAULTS["approvals"], repr=False)
+    quotas: Any = field(default=MANAGED_BACKEND_DEFAULTS["quotas"], repr=False)
+    audit: Any = field(default=MANAGED_BACKEND_DEFAULTS["audit"], repr=False)
+    attestations: Any = field(
+        default=MANAGED_BACKEND_DEFAULTS["attestations"], repr=False
+    )
+    require_attestations: bool = MANAGED_BACKEND_DEFAULTS["require_attestations"]
+    execution_route: str = MANAGED_BACKEND_DEFAULTS["execution_route"]
+    schedule_parameter_resolver: Any = field(
+        default=MANAGED_BACKEND_DEFAULTS["schedule_parameter_resolver"], repr=False
+    )
 
     def __post_init__(self) -> None:
-        if self.database_url is not None and not _is_nonempty_text(self.database_url):
-            raise ValueError("database_url must be a non-empty SQLAlchemy URL")
-        if not _is_nonempty_text(self.store_id):
-            raise ValueError("store_id must be non-empty")
-        validate_execution_route(self.execution_route)
-        for name in (
-            "event_retention_max_events_per_scope",
-            "event_idempotency_retention_seconds",
-            "max_input_upload_bytes",
-            "input_upload_ttl_seconds",
-            "input_resource_retention_seconds",
-        ):
-            value = getattr(self, name)
-            if type(value) is not int or value < 1:
-                raise ValueError(f"{name} must be a positive integer")
-        if (
-            type(self.action_job_max_deadline_seconds) is not int
-            or not 1 <= self.action_job_max_deadline_seconds <= 300
-        ):
-            raise ValueError(
-                "action_job_max_deadline_seconds must be between 1 and 300"
-            )
-        if (
-            type(self.action_job_lease_seconds) is not int
-            or self.action_job_lease_seconds <= self.action_job_max_deadline_seconds
-        ):
-            raise ValueError("action_job_lease_seconds must exceed the action deadline")
-        if (
-            type(self.preview_result_ttl_seconds) is not int
-            or not MIN_PREVIEW_RESULT_TTL_SECONDS
-            <= self.preview_result_ttl_seconds
-            <= MAX_PREVIEW_RESULT_TTL_SECONDS
-        ):
-            raise ValueError(
-                "preview_result_ttl_seconds must be between "
-                f"{MIN_PREVIEW_RESULT_TTL_SECONDS} and "
-                f"{MAX_PREVIEW_RESULT_TTL_SECONDS}"
-            )
-        if self.run_artifact_retention_seconds is not None and (
-            type(self.run_artifact_retention_seconds) is not int
-            or self.run_artifact_retention_seconds < 1
-        ):
-            raise ValueError("run_artifact_retention_seconds must be positive or None")
-        if (
-            type(self.run_artifact_cleanup_batch_size) is not int
-            or not 1 <= self.run_artifact_cleanup_batch_size <= 1000
-        ):
-            raise ValueError(
-                "run_artifact_cleanup_batch_size must be between 1 and 1000"
-            )
-        supported_actions = {
-            "connector.test",
-            "connector.catalog",
-            "connector.schema.inspect",
-            "connector.preflight",
-            "connector.preview",
-            "connector.provision",
-            "connector.provision.cleanup",
-        }
-        unsupported_actions = {
-            action
-            for action in cast(Mapping[object, ActionHandler], self.action_handlers)
-            if not isinstance(action, str)
-            or (
-                action not in supported_actions
-                and not (
-                    action.startswith("connector.catalog.")
-                    and action.removeprefix("connector.catalog.")
-                    .replace("-", "")
-                    .replace("_", "")
-                    .isalnum()
-                )
-            )
-        }
-        if unsupported_actions:
-            raise ValueError(
-                "action_handlers contains unsupported action(s): "
-                + ", ".join(sorted(map(str, unsupported_actions)))
-            )
-        for action, handler in self.action_handlers.items():
-            if not callable(handler) or not (
-                inspect.iscoroutinefunction(handler)
-                or inspect.iscoroutinefunction(type(handler).__call__)
-            ):
-                raise TypeError(f"action handler {action!r} must be asynchronous")
+        validate_managed_backend_settings(self)
 
 
 def create_managed_backend(
@@ -265,6 +188,7 @@ def create_managed_backend(
             durable_work=durable,
             schedule_store=schedules,
             input_resources=input_resources,
+            input_upload_ttl_seconds=config.input_upload_ttl_seconds,
             report_store_factory=report_provider.for_context,
             report_store_scope_key=report_provider_scope,
             execution_profile=profile,

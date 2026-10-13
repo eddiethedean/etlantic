@@ -1724,6 +1724,13 @@
         {
           "surface": "request",
           "media_type": "application/json",
+          "path": "timer_owner",
+          "required": false,
+          "type": "string"
+        },
+        {
+          "surface": "request",
+          "media_type": "application/json",
           "path": "timezone",
           "required": false,
           "type": "object"
@@ -3523,6 +3530,288 @@
       ]
     },
     {
+      "operation_id": "cp_external_schedule_trigger",
+      "method": "POST",
+      "path": "/v1/schedules/{schedule_id}/external-trigger",
+      "tag": "schedules",
+      "kind": "command",
+      "handler": "external_trigger_schedule",
+      "coverage": "mapped",
+      "fields": [
+        {
+          "surface": "parameter",
+          "location": "path",
+          "path": "schedule_id",
+          "required": true,
+          "type": "string"
+        },
+        {
+          "surface": "request",
+          "media_type": "application/json",
+          "path": "correlation_id",
+          "required": true,
+          "type": "string"
+        },
+        {
+          "surface": "request",
+          "media_type": "application/json",
+          "path": "delivery_attempt_id",
+          "required": true,
+          "type": "string"
+        },
+        {
+          "surface": "request",
+          "media_type": "application/json",
+          "path": "occurrence_id",
+          "required": true,
+          "type": "string"
+        },
+        {
+          "surface": "request",
+          "media_type": "application/json",
+          "path": "schedule_id",
+          "required": true,
+          "type": "string"
+        },
+        {
+          "surface": "request",
+          "media_type": "application/json",
+          "path": "schedule_revision_id",
+          "required": true,
+          "type": "string"
+        },
+        {
+          "surface": "request",
+          "media_type": "application/json",
+          "path": "scheduled_at",
+          "required": true,
+          "type": "string"
+        },
+        {
+          "surface": "request",
+          "media_type": "application/json",
+          "path": "schema",
+          "required": true,
+          "type": "object"
+        },
+        {
+          "surface": "request",
+          "media_type": "application/json",
+          "path": "timer_owner_generation",
+          "required": true,
+          "type": "integer"
+        },
+        {
+          "surface": "response",
+          "status_code": "200",
+          "media_type": "application/json",
+          "path": "duplicate",
+          "required": false,
+          "type": "boolean"
+        },
+        {
+          "surface": "response",
+          "status_code": "200",
+          "media_type": "application/json",
+          "path": "firing_status",
+          "required": true,
+          "type": "string"
+        },
+        {
+          "surface": "response",
+          "status_code": "200",
+          "media_type": "application/json",
+          "path": "occurrence_id",
+          "required": true,
+          "type": "string"
+        },
+        {
+          "surface": "response",
+          "status_code": "200",
+          "media_type": "application/json",
+          "path": "run_id",
+          "required": false,
+          "type": "object"
+        },
+        {
+          "surface": "response",
+          "status_code": "200",
+          "media_type": "application/json",
+          "path": "schedule_id",
+          "required": true,
+          "type": "string"
+        },
+        {
+          "surface": "response",
+          "status_code": "200",
+          "media_type": "application/json",
+          "path": "schedule_revision_id",
+          "required": true,
+          "type": "string"
+        },
+        {
+          "surface": "response",
+          "status_code": "200",
+          "media_type": "application/json",
+          "path": "schema",
+          "required": false,
+          "type": "string"
+        },
+        {
+          "surface": "response",
+          "status_code": "200",
+          "media_type": "application/json",
+          "path": "status",
+          "required": true,
+          "type": "string"
+        },
+        {
+          "surface": "response",
+          "status_code": "200",
+          "media_type": "application/json",
+          "path": "status_reference",
+          "required": false,
+          "type": "object"
+        },
+        {
+          "surface": "response",
+          "status_code": "200",
+          "media_type": "application/json",
+          "path": "submission_id",
+          "required": false,
+          "type": "object"
+        },
+        {
+          "surface": "response",
+          "status_code": "202",
+          "media_type": "application/json",
+          "path": "duplicate",
+          "required": false,
+          "type": "boolean"
+        },
+        {
+          "surface": "response",
+          "status_code": "202",
+          "media_type": "application/json",
+          "path": "firing_status",
+          "required": true,
+          "type": "string"
+        },
+        {
+          "surface": "response",
+          "status_code": "202",
+          "media_type": "application/json",
+          "path": "occurrence_id",
+          "required": true,
+          "type": "string"
+        },
+        {
+          "surface": "response",
+          "status_code": "202",
+          "media_type": "application/json",
+          "path": "run_id",
+          "required": false,
+          "type": "object"
+        },
+        {
+          "surface": "response",
+          "status_code": "202",
+          "media_type": "application/json",
+          "path": "schedule_id",
+          "required": true,
+          "type": "string"
+        },
+        {
+          "surface": "response",
+          "status_code": "202",
+          "media_type": "application/json",
+          "path": "schedule_revision_id",
+          "required": true,
+          "type": "string"
+        },
+        {
+          "surface": "response",
+          "status_code": "202",
+          "media_type": "application/json",
+          "path": "schema",
+          "required": false,
+          "type": "string"
+        },
+        {
+          "surface": "response",
+          "status_code": "202",
+          "media_type": "application/json",
+          "path": "status",
+          "required": true,
+          "type": "string"
+        },
+        {
+          "surface": "response",
+          "status_code": "202",
+          "media_type": "application/json",
+          "path": "status_reference",
+          "required": false,
+          "type": "object"
+        },
+        {
+          "surface": "response",
+          "status_code": "202",
+          "media_type": "application/json",
+          "path": "submission_id",
+          "required": false,
+          "type": "object"
+        },
+        {
+          "surface": "response",
+          "status_code": "422",
+          "media_type": "application/json",
+          "path": "detail",
+          "required": false,
+          "type": "array"
+        },
+        {
+          "surface": "response",
+          "status_code": "422",
+          "media_type": "application/json",
+          "path": "detail[].ctx",
+          "required": false,
+          "type": "object"
+        },
+        {
+          "surface": "response",
+          "status_code": "422",
+          "media_type": "application/json",
+          "path": "detail[].input",
+          "required": false,
+          "type": "object"
+        },
+        {
+          "surface": "response",
+          "status_code": "422",
+          "media_type": "application/json",
+          "path": "detail[].loc",
+          "required": true,
+          "type": "array"
+        },
+        {
+          "surface": "response",
+          "status_code": "422",
+          "media_type": "application/json",
+          "path": "detail[].msg",
+          "required": true,
+          "type": "string"
+        },
+        {
+          "surface": "response",
+          "status_code": "422",
+          "media_type": "application/json",
+          "path": "detail[].type",
+          "required": true,
+          "type": "string"
+        }
+      ]
+    },
+    {
       "operation_id": "cp_finalize_input_resource",
       "method": "POST",
       "path": "/v1/input-resources/{upload_id}/finalize",
@@ -3810,6 +4099,159 @@
           "media_type": "application/json",
           "path": "document",
           "required": true,
+          "type": "object"
+        },
+        {
+          "surface": "response",
+          "status_code": "422",
+          "media_type": "application/json",
+          "path": "detail",
+          "required": false,
+          "type": "array"
+        },
+        {
+          "surface": "response",
+          "status_code": "422",
+          "media_type": "application/json",
+          "path": "detail[].ctx",
+          "required": false,
+          "type": "object"
+        },
+        {
+          "surface": "response",
+          "status_code": "422",
+          "media_type": "application/json",
+          "path": "detail[].input",
+          "required": false,
+          "type": "object"
+        },
+        {
+          "surface": "response",
+          "status_code": "422",
+          "media_type": "application/json",
+          "path": "detail[].loc",
+          "required": true,
+          "type": "array"
+        },
+        {
+          "surface": "response",
+          "status_code": "422",
+          "media_type": "application/json",
+          "path": "detail[].msg",
+          "required": true,
+          "type": "string"
+        },
+        {
+          "surface": "response",
+          "status_code": "422",
+          "media_type": "application/json",
+          "path": "detail[].type",
+          "required": true,
+          "type": "string"
+        }
+      ]
+    },
+    {
+      "operation_id": "cp_get_external_schedule_occurrence",
+      "method": "GET",
+      "path": "/v1/schedules/{schedule_id}/occurrences/{occurrence_id}",
+      "tag": "schedules",
+      "kind": "query",
+      "handler": "get_external_trigger_receipt",
+      "coverage": "mapped",
+      "fields": [
+        {
+          "surface": "parameter",
+          "location": "path",
+          "path": "occurrence_id",
+          "required": true,
+          "type": "string"
+        },
+        {
+          "surface": "parameter",
+          "location": "path",
+          "path": "schedule_id",
+          "required": true,
+          "type": "string"
+        },
+        {
+          "surface": "response",
+          "status_code": "200",
+          "media_type": "application/json",
+          "path": "duplicate",
+          "required": false,
+          "type": "boolean"
+        },
+        {
+          "surface": "response",
+          "status_code": "200",
+          "media_type": "application/json",
+          "path": "firing_status",
+          "required": true,
+          "type": "string"
+        },
+        {
+          "surface": "response",
+          "status_code": "200",
+          "media_type": "application/json",
+          "path": "occurrence_id",
+          "required": true,
+          "type": "string"
+        },
+        {
+          "surface": "response",
+          "status_code": "200",
+          "media_type": "application/json",
+          "path": "run_id",
+          "required": false,
+          "type": "object"
+        },
+        {
+          "surface": "response",
+          "status_code": "200",
+          "media_type": "application/json",
+          "path": "schedule_id",
+          "required": true,
+          "type": "string"
+        },
+        {
+          "surface": "response",
+          "status_code": "200",
+          "media_type": "application/json",
+          "path": "schedule_revision_id",
+          "required": true,
+          "type": "string"
+        },
+        {
+          "surface": "response",
+          "status_code": "200",
+          "media_type": "application/json",
+          "path": "schema",
+          "required": false,
+          "type": "string"
+        },
+        {
+          "surface": "response",
+          "status_code": "200",
+          "media_type": "application/json",
+          "path": "status",
+          "required": true,
+          "type": "string"
+        },
+        {
+          "surface": "response",
+          "status_code": "200",
+          "media_type": "application/json",
+          "path": "status_reference",
+          "required": false,
+          "type": "object"
+        },
+        {
+          "surface": "response",
+          "status_code": "200",
+          "media_type": "application/json",
+          "path": "submission_id",
+          "required": false,
           "type": "object"
         },
         {
@@ -6213,8 +6655,8 @@
           "surface": "request",
           "media_type": "application/json",
           "path": "expected_flow_run_id",
-          "required": true,
-          "type": "string"
+          "required": false,
+          "type": "object"
         },
         {
           "surface": "request",
@@ -6222,6 +6664,13 @@
           "path": "expected_generation",
           "required": true,
           "type": "integer"
+        },
+        {
+          "surface": "request",
+          "media_type": "application/json",
+          "path": "expected_remote_run_id",
+          "required": false,
+          "type": "object"
         },
         {
           "surface": "response",
@@ -9278,6 +9727,121 @@
           "status_code": "202",
           "media_type": "application/json",
           "path": "workspace_id",
+          "required": true,
+          "type": "string"
+        },
+        {
+          "surface": "response",
+          "status_code": "422",
+          "media_type": "application/json",
+          "path": "detail",
+          "required": false,
+          "type": "array"
+        },
+        {
+          "surface": "response",
+          "status_code": "422",
+          "media_type": "application/json",
+          "path": "detail[].ctx",
+          "required": false,
+          "type": "object"
+        },
+        {
+          "surface": "response",
+          "status_code": "422",
+          "media_type": "application/json",
+          "path": "detail[].input",
+          "required": false,
+          "type": "object"
+        },
+        {
+          "surface": "response",
+          "status_code": "422",
+          "media_type": "application/json",
+          "path": "detail[].loc",
+          "required": true,
+          "type": "array"
+        },
+        {
+          "surface": "response",
+          "status_code": "422",
+          "media_type": "application/json",
+          "path": "detail[].msg",
+          "required": true,
+          "type": "string"
+        },
+        {
+          "surface": "response",
+          "status_code": "422",
+          "media_type": "application/json",
+          "path": "detail[].type",
+          "required": true,
+          "type": "string"
+        }
+      ]
+    },
+    {
+      "operation_id": "cp_transfer_schedule_timer_owner",
+      "method": "POST",
+      "path": "/v1/schedules/{schedule_id}/timer-owner-transfer",
+      "tag": "schedules",
+      "kind": "command",
+      "handler": "transfer_schedule_timer_owner",
+      "coverage": "mapped",
+      "fields": [
+        {
+          "surface": "parameter",
+          "location": "path",
+          "path": "schedule_id",
+          "required": true,
+          "type": "string"
+        },
+        {
+          "surface": "request",
+          "media_type": "application/json",
+          "path": "expected_generation",
+          "required": true,
+          "type": "integer"
+        },
+        {
+          "surface": "request",
+          "media_type": "application/json",
+          "path": "expected_revision_id",
+          "required": true,
+          "type": "string"
+        },
+        {
+          "surface": "request",
+          "media_type": "application/json",
+          "path": "timer_owner",
+          "required": true,
+          "type": "string"
+        },
+        {
+          "surface": "request",
+          "media_type": "application/json",
+          "path": "workload_identity",
+          "required": false,
+          "type": "object"
+        },
+        {
+          "surface": "request",
+          "media_type": "application/json",
+          "path": "workload_identity<anyOf:0>.issuer",
+          "required": false,
+          "type": "object"
+        },
+        {
+          "surface": "request",
+          "media_type": "application/json",
+          "path": "workload_identity<anyOf:0>.kind",
+          "required": true,
+          "type": "string"
+        },
+        {
+          "surface": "request",
+          "media_type": "application/json",
+          "path": "workload_identity<anyOf:0>.subject",
           "required": true,
           "type": "string"
         },

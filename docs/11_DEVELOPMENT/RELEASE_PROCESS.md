@@ -15,8 +15,8 @@ foundation, and post-foundation capabilities continue in later 0.x minors.
 
 Breaking changes must be documented. Official plugin packages currently share
 the core minor version (for example `0.38.0`).
-Official plugins and root extras declare the compatible 0.58 line floor
-(`>=0.58.0`) without a patch lockstep pin or upper cap.
+Official plugins and root extras declare the compatible 0.59 line floor
+(`>=0.59.0`) without a patch lockstep pin or upper cap.
 
 ## Planned package truth and compatibility gates — 0.59 onward
 
@@ -39,9 +39,10 @@ for supported patches and explicit exceptions. Update bump/lock tooling and
 install guidance together; never infer cross-minor compatibility. These are
 planned changes, not altered 0.58 manifests or historical qualification records.
 
-Record SparkForge's exact final compatibility version, warning/migration window
-and retirement trigger in 0.59. Remove it from routine bump/build/publish lists
-only after the window and migration evidence pass; historic wheels remain.
+The final `etlantic-sparkforge` compatibility wheel is **0.62.0**. Its visible
+deprecation warning and migration window run from 0.59 through 0.62. Remove the
+package from routine bump/build/publish lists and root extras starting with
+0.63, after the 0.62 migration evidence is recorded; historic wheels remain.
 Apply the same declared lifecycle to superseded reference fixture distributions.
 New runtime/testing/HTTP wheels need an owner/extraction map and duplicate-
 retirement evidence before release; conditional/deferred decisions stay explicit.

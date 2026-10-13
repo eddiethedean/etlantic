@@ -54,6 +54,9 @@ class _FailOnceLinkStore(SQLModelScheduleStore):
         submission_id: str,
         plan_fingerprint: str,
         durable: DurableWorkStore,
+        preparation_owner_id: str | None = None,
+        preparation_fencing_token: int | None = None,
+        recovered: bool = False,
     ) -> FiringRecord:
         if self.fail_next_link:
             self.fail_next_link = False
@@ -64,6 +67,9 @@ class _FailOnceLinkStore(SQLModelScheduleStore):
             submission_id=submission_id,
             plan_fingerprint=plan_fingerprint,
             durable=durable,
+            preparation_owner_id=preparation_owner_id,
+            preparation_fencing_token=preparation_fencing_token,
+            recovered=recovered,
         )
 
 

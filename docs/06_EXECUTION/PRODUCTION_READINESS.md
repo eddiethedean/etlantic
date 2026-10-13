@@ -1,6 +1,6 @@
 # Production Readiness and Deployment Boundaries
 
-> **Status: ETLantic 0.58.0 Beta release candidate.**
+> **Status: ETLantic 0.59.0 Beta release candidate.**
 
 ## Residual evaluation lead
 
@@ -50,7 +50,7 @@ multi-tenant claims.
 
 ## Reference single-process topology
 
-1. Pin `etlantic==0.58.0` and matching plugins in a lockfile.
+1. Pin `etlantic==0.59.0` and matching plugins in a lockfile.
 2. Build an immutable image or venv; do not install untrusted entry points.
 3. Configure `Profile.plugin_allowlist` for production.
 4. Resolve secrets from env/files/keyring at runtime only.

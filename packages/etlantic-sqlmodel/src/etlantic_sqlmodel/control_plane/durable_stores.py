@@ -12,35 +12,25 @@ from __future__ import annotations
 
 import hashlib
 import json
-from collections.abc import Callable, Mapping
+from collections.abc import Callable
 from dataclasses import asdict
 from datetime import UTC, datetime
 from typing import Any, TypeVar, cast
 
-from sqlalchemy import text
+from sqlalchemy import Column, text
 from sqlalchemy.engine import Engine
 
 from etlantic.control_plane.durable_memory import MemoryDurableWorkStore
 from etlantic.control_plane.durable_models import (
-    ActionJobRecord,
-    AttemptRecord,
-    BaselineAcknowledgement,
-    CheckpointRecord,
     DiffRecord,
-    DispatchReconciliation,
-    DispatchRecord,
     EffectRecord,
     ExecutionRouteLifecycle,
     ExecutionRouteRecord,
-    ExecutionRouteTransition,
     ExecutionRouteWorkload,
     ExecutionScopePage,
-    LeaseRecord,
-    OutboxRecord,
     PreviewWorkspace,
     ResultPublicationRecord,
     ShadowRunRecord,
-    StateDiagnostic,
     SubmissionRecord,
     execution_context_from_submission,
 )
@@ -67,160 +57,19 @@ def create_durable_tables(engine: Engine) -> None:
     """Create CP3 durable tables (tests/demos only)."""
     SQLModel.metadata.create_all(
         engine,
-        tables=[cls.__table__ for cls in DURABLE_TABLES],  # type: ignore[list-item]
+        tables=[
+            SQLModel.metadata.tables[table_name]
+            for table_name in (
+                "cp_durable_snapshot",
+                "cp_durable_submission_entity",
+                "cp_durable_outbox_entity",
+            )
+        ],
     )
 
 
 def _utcnow_iso() -> str:
     return datetime.now(UTC).isoformat().replace("+00:00", "Z")
-
-
-def _encode_key(parts: tuple[str, ...]) -> str:
-    return json.dumps(list(parts), separators=(",", ":"))
-
-
-def _decode_key(text: str) -> tuple[str, ...]:
-    raw = json.loads(text)
-    if not isinstance(raw, list) or not all(isinstance(p, str) for p in raw):
-        raise ValueError("durable snapshot key must be a JSON string array")
-    return tuple(raw)
-
-
-def _dump_store(store: MemoryDurableWorkStore) -> dict[str, Any]:
-    return {
-        "admission_limit": store.admission_limit,
-        "submissions": {
-            _encode_key(k): asdict(v) for k, v in store._submissions.items()
-        },
-        "action_jobs": {
-            _encode_key(k): asdict(v) for k, v in store._action_jobs.items()
-        },
-        "action_idempotency": {
-            _encode_key(k): v for k, v in store._action_idempotency.items()
-        },
-        "idempotency": {_encode_key(k): v for k, v in store._idempotency.items()},
-        "outbox": {_encode_key(k): asdict(v) for k, v in store._outbox.items()},
-        "dispatches": {_encode_key(k): asdict(v) for k, v in store._dispatches.items()},
-        "leases": {_encode_key(k): asdict(v) for k, v in store._leases.items()},
-        "attempts": {_encode_key(k): asdict(v) for k, v in store._attempts.items()},
-        "result_publications": {
-            _encode_key(k): asdict(v) for k, v in store._result_publications.items()
-        },
-        "checkpoints": {
-            _encode_key(k): asdict(v) for k, v in store._checkpoints.items()
-        },
-        "effects": {_encode_key(k): asdict(v) for k, v in store._effects.items()},
-        "previews": {_encode_key(k): asdict(v) for k, v in store._previews.items()},
-        "diffs": {_encode_key(k): asdict(v) for k, v in store._diffs.items()},
-        "shadows": {_encode_key(k): asdict(v) for k, v in store._shadows.items()},
-        "baselines": {_encode_key(k): asdict(v) for k, v in store._baselines.items()},
-        "diagnostics": [asdict(d) for d in store._diagnostics],
-        "execution_route_states": {
-            route: asdict(record)
-            for route, record in store._execution_route_states.items()
-        },
-        "execution_route_references": {
-            route: sorted(references)
-            for route, references in store._execution_route_references.items()
-        },
-    }
-
-
-def _load_store(payload: Mapping[str, Any]) -> MemoryDurableWorkStore:
-    store = MemoryDurableWorkStore(admission_limit=payload.get("admission_limit"))
-    store._submissions = {
-        _decode_key(k): SubmissionRecord(**v)  # type: ignore[arg-type]
-        for k, v in dict(payload.get("submissions") or {}).items()
-    }
-    store._action_jobs = {
-        _decode_key(k): ActionJobRecord(**cast(dict[str, Any], v))
-        for k, v in dict(payload.get("action_jobs") or {}).items()
-    }
-    store._action_idempotency = {
-        _decode_key(k): v
-        for k, v in dict(payload.get("action_idempotency") or {}).items()
-    }
-    store._idempotency = {
-        _decode_key(k): v for k, v in dict(payload.get("idempotency") or {}).items()
-    }
-    store._outbox = {
-        _decode_key(k): OutboxRecord(**v)  # type: ignore[arg-type]
-        for k, v in dict(payload.get("outbox") or {}).items()
-    }
-    store._dispatches = {
-        _decode_key(k): DispatchRecord(
-            **{
-                **cast(dict[str, Any], v),
-                "reconciliation_history": tuple(
-                    DispatchReconciliation(**cast(dict[str, Any], item))
-                    for item in cast(dict[str, Any], v).get(
-                        "reconciliation_history", ()
-                    )
-                ),
-            }
-        )
-        for k, v in dict(payload.get("dispatches") or {}).items()
-    }
-    store._leases = {
-        _decode_key(k): LeaseRecord(**v)  # type: ignore[arg-type]
-        for k, v in dict(payload.get("leases") or {}).items()
-    }
-    store._attempts = {
-        _decode_key(k): AttemptRecord(**v)  # type: ignore[arg-type]
-        for k, v in dict(payload.get("attempts") or {}).items()
-    }
-    store._result_publications = {
-        _decode_key(k): ResultPublicationRecord(**cast(Any, v))
-        for k, v in dict(payload.get("result_publications") or {}).items()
-    }
-    store._checkpoints = {
-        _decode_key(k): CheckpointRecord(**v)  # type: ignore[arg-type]
-        for k, v in dict(payload.get("checkpoints") or {}).items()
-    }
-    store._effects = {
-        _decode_key(k): EffectRecord(**v)  # type: ignore[arg-type]
-        for k, v in dict(payload.get("effects") or {}).items()
-    }
-    store._previews = {
-        _decode_key(k): PreviewWorkspace(**v)  # type: ignore[arg-type]
-        for k, v in dict(payload.get("previews") or {}).items()
-    }
-    store._diffs = {
-        _decode_key(k): DiffRecord(**v)  # type: ignore[arg-type]
-        for k, v in dict(payload.get("diffs") or {}).items()
-    }
-    store._shadows = {
-        _decode_key(k): ShadowRunRecord(**v)  # type: ignore[arg-type]
-        for k, v in dict(payload.get("shadows") or {}).items()
-    }
-    store._baselines = {
-        _decode_key(k): BaselineAcknowledgement(**v)  # type: ignore[arg-type]
-        for k, v in dict(payload.get("baselines") or {}).items()
-    }
-    store._diagnostics = [
-        StateDiagnostic(**d)  # type: ignore[arg-type]
-        for d in list(payload.get("diagnostics") or [])
-    ]
-    store._execution_route_states = {}
-    for route, raw in dict(payload.get("execution_route_states") or {}).items():
-        value = cast(dict[str, Any], raw)
-        store._execution_route_states[route] = ExecutionRouteRecord(
-            execution_route=value["execution_route"],
-            status=value["status"],
-            revision=value["revision"],
-            changed_at=value.get("changed_at"),
-            history=tuple(
-                ExecutionRouteTransition(**cast(dict[str, Any], item))
-                for item in value.get("history", ())
-            ),
-        )
-    store._execution_route_references = {
-        route: set(cast(list[str], references))
-        for route, references in dict(
-            payload.get("execution_route_references") or {}
-        ).items()
-    }
-    return store
 
 
 class SQLModelDurableWorkStore:
@@ -259,7 +108,7 @@ class SQLModelDurableWorkStore:
             return
         digest = hashlib.sha256(self.store_id.encode("utf-8")).digest()[:8]
         lock_id = int.from_bytes(digest, byteorder="big", signed=True)
-        session.execute(
+        session.connection().execute(
             text("SELECT pg_advisory_xact_lock(:lock_id)"), {"lock_id": lock_id}
         )
 
@@ -300,8 +149,9 @@ class SQLModelDurableWorkStore:
         row = session.exec(stmt).first()
         if row is None:
             return MemoryDurableWorkStore(admission_limit=self.admission_limit), 0
-        return _load_store(json.loads(row.payload_json or "{}")), int(
-            row.payload_version or 0
+        return (
+            MemoryDurableWorkStore.from_snapshot(json.loads(row.payload_json or "{}")),
+            int(row.payload_version or 0),
         )
 
     def _write(
@@ -311,7 +161,7 @@ class SQLModelDurableWorkStore:
         *,
         expected_version: int,
     ) -> None:
-        payload = json.dumps(_dump_store(store), sort_keys=True)
+        payload = json.dumps(store.to_snapshot(), sort_keys=True)
         row = session.exec(
             select(DurableSnapshotRow)
             .where(DurableSnapshotRow.store_id == self.store_id)
@@ -357,7 +207,7 @@ class SQLModelDurableWorkStore:
             for row in submission_rows
         }
         current_submission_keys: set[tuple[str, str, str]] = set()
-        for key, submission in store._submissions.items():
+        for key, submission in store.iter_submission_records():
             tenant_id, workspace_id, submission_id = key
             row_key = (tenant_id, workspace_id, submission_id)
             current_submission_keys.add(row_key)
@@ -388,7 +238,7 @@ class SQLModelDurableWorkStore:
             (row.tenant_id, row.workspace_id, row.outbox_id): row for row in outbox_rows
         }
         current_outbox_keys: set[tuple[str, str, str]] = set()
-        for key, outbox in store._outbox.items():
+        for key, outbox in store.iter_outbox_records():
             tenant_id, workspace_id, outbox_id = key
             row_key = (tenant_id, workspace_id, outbox_id)
             current_outbox_keys.add(row_key)
@@ -432,21 +282,23 @@ class SQLModelDurableWorkStore:
         with session_scope(self.engine) as session:
             high_watermark = through_submission_id
             watermark_row_id: int | None = None
+            submission_table = SQLModel.metadata.tables["cp_durable_submission_entity"]
+            id_column = cast(Column[int], submission_table.c["id"])
             if high_watermark is None:
                 last_row = session.exec(
                     select(
-                        DurableSubmissionEntityRow.id,
+                        id_column,
                         DurableSubmissionEntityRow.submission_id,
                     )
                     .where(*workspace_filter)
-                    .order_by(DurableSubmissionEntityRow.id.desc())
+                    .order_by(id_column.desc())
                     .limit(1)
                 ).first()
                 if last_row is not None:
                     watermark_row_id, high_watermark = last_row
-            elif high_watermark is not None:
+            else:
                 watermark_row_id = session.exec(
-                    select(DurableSubmissionEntityRow.id)
+                    select(id_column)
                     .where(
                         *workspace_filter,
                         DurableSubmissionEntityRow.submission_id == high_watermark,
@@ -455,7 +307,7 @@ class SQLModelDurableWorkStore:
                 ).first()
             stmt = select(DurableSubmissionEntityRow).where(*workspace_filter)
             if watermark_row_id is not None:
-                stmt = stmt.where(DurableSubmissionEntityRow.id <= watermark_row_id)
+                stmt = stmt.where(id_column <= watermark_row_id)
             else:
                 stmt = stmt.where(False)
             if after_submission_id is not None:
@@ -639,7 +491,8 @@ class SQLModelDurableWorkStore:
         *,
         owner_id: str,
         fencing_token: int,
-        prefect_flow_run_id: str,
+        remote_run_id: str | None = None,
+        prefect_flow_run_id: str | None = None,
         now: datetime | None = None,
     ):
         return self._txn(
@@ -648,6 +501,7 @@ class SQLModelDurableWorkStore:
                 submission_id,
                 owner_id=owner_id,
                 fencing_token=fencing_token,
+                remote_run_id=remote_run_id,
                 prefect_flow_run_id=prefect_flow_run_id,
                 now=now,
             )
@@ -683,13 +537,15 @@ class SQLModelDurableWorkStore:
         ctx: ControlPlaneContext,
         submission_id: str,
         *,
-        expected_flow_run_id: str,
+        expected_remote_run_id: str | None = None,
+        expected_flow_run_id: str | None = None,
         now: datetime | None = None,
     ):
         return self._txn(
             lambda m: m.rearm_dispatch_after_remote_failure(
                 ctx,
                 submission_id,
+                expected_remote_run_id=expected_remote_run_id,
                 expected_flow_run_id=expected_flow_run_id,
                 now=now,
             )
@@ -700,7 +556,8 @@ class SQLModelDurableWorkStore:
         ctx: ControlPlaneContext,
         submission_id: str,
         *,
-        expected_flow_run_id: str,
+        expected_remote_run_id: str | None = None,
+        expected_flow_run_id: str | None = None,
         minimum_age_seconds: int = 300,
         now: datetime | None = None,
     ):
@@ -708,6 +565,7 @@ class SQLModelDurableWorkStore:
             lambda m: m.rearm_dispatch_after_remote_missing(
                 ctx,
                 submission_id,
+                expected_remote_run_id=expected_remote_run_id,
                 expected_flow_run_id=expected_flow_run_id,
                 minimum_age_seconds=minimum_age_seconds,
                 now=now,
@@ -720,7 +578,8 @@ class SQLModelDurableWorkStore:
         submission_id: str,
         *,
         expected_generation: int,
-        expected_flow_run_id: str,
+        expected_remote_run_id: str | None = None,
+        expected_flow_run_id: str | None = None,
         evidence_sha256: str,
         now: datetime | None = None,
     ):
@@ -729,6 +588,7 @@ class SQLModelDurableWorkStore:
                 ctx,
                 submission_id,
                 expected_generation=expected_generation,
+                expected_remote_run_id=expected_remote_run_id,
                 expected_flow_run_id=expected_flow_run_id,
                 evidence_sha256=evidence_sha256,
                 now=now,

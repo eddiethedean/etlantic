@@ -5,7 +5,7 @@
   "passed_scenarios": 2,
   "planner_version": "0.52",
   "public_schema": "etlantic.plan/2",
-  "repository_revision": "sha256:fc51265d1657c0aaaf2b92ef201318d31a7db359eb47311aaf918d060643da53",
+  "repository_revision": "sha256:724fe163bba5a3aad536916dad18b3b597e72c213bd81541564a6aaffd383603",
   "result": "pass",
   "scenario_count": 2,
   "scenarios": [
@@ -15,7 +15,7 @@
       "executed": true,
       "expected": "pass",
       "id": "test_adaptive_cross_target_requires_directional_handoff_evidence",
-      "plan_fingerprint": "037488c78f593edf5c2d9cf618858432121bd5849b996c014b8772e6e5793b2c",
+      "plan_fingerprint": "ed17603c2e76230f04b196472eb27e737c0946c61a2eefb93cebfe3920fc1f38",
       "result": "pass",
       "verification": "test_adaptive_cross_target_requires_directional_handoff_evidence"
     },
@@ -25,7 +25,7 @@
       "executed": true,
       "expected": "pass",
       "id": "test_adaptive_artifacts_redact_absolute_target_resources",
-      "plan_fingerprint": "037488c78f593edf5c2d9cf618858432121bd5849b996c014b8772e6e5793b2c",
+      "plan_fingerprint": "ed17603c2e76230f04b196472eb27e737c0946c61a2eefb93cebfe3920fc1f38",
       "result": "pass",
       "verification": "test_adaptive_artifacts_redact_absolute_target_resources"
     }

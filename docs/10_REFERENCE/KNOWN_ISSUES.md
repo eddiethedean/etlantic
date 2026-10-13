@@ -1,8 +1,8 @@
 # Known Limitations
 
-> **Status: ETLantic 0.58.0 Beta release candidate; adaptive execution remains Experimental.**
+> **Status: ETLantic 0.59.0 Beta release candidate; adaptive execution remains Experimental.**
 
-ETLantic **0.57.x** is the current published Beta line; 0.58.0 is the
+ETLantic **0.57.x** is the current published Beta line; 0.59.0 is the
 candidate and is not yet the latest published patch. Prior baselines are suitable for documented
 single-tenant reference deployments and Supported multi-tenant profiles.
 0.x releases may still introduce breaking API changes between minor versions.
@@ -12,7 +12,7 @@ single-tenant reference deployments and Supported multi-tenant profiles.
 
 | ID | Component | Affected | Symptom | Workaround | Status |
 |---|---|---|---|---|---|
-| DOC-001 | Release maturity | All adopters | Breaking API changes possible between 0.x minors | Pin `etlantic==0.58.0` and matching plugins; follow Upgrade hub | Open (Beta) |
+| DOC-001 | Release maturity | All adopters | Breaking API changes possible between 0.x minors | Pin `etlantic==0.59.0` and matching plugins; follow Upgrade hub | Open (Beta) |
 | DOC-026 | Control plane | Multi-tenant hosts | Treating CP1–CP4 alone as GA isolation | Use Supported profiles only; see [cp_ga_support_matrix_0_43.json](../11_DEVELOPMENT/cp_ga_support_matrix_0_43.json) | By design |
 | DOC-002 | Portable transforms | Polars / PySpark vs Pandas / SQL | Advanced portable families graduate unevenly across engines | Use [Portable compiler matrix](PORTABLE_COMPILER_MATRIX.md); keep Pandas/SQL on kernel + relational `/1` | Partial |
 | DOC-003 | Portable window | Window frames | Explicit `rowsBetween` / `rangeBetween` fail closed; `first_value` / `last_value` use ordered partition semantics | Avoid frame clauses until claimed; watch `portable-window/2` | Open |
@@ -21,7 +21,7 @@ single-tenant reference deployments and Supported multi-tenant profiles.
 | DOC-006 | [DTCS](../04_TRANSFORMATIONS/DTCS.md) 3.0 families | Facades / compilers | Facades may emit IR for unclaimed families; first-party compilers reject at analyze | Check claimed profiles before authoring advanced DTCS families | By design |
 | DOC-007 | Runtime | Local execution | In-process only; not a distributed scheduler | Use Airflow/Prefect/external schedulers for multi-process orchestration | By design |
 | DOC-008 | Spark providers | Cloud Spark | 0.49 ships Kubernetes and Spark Connect Experimental fakes, not live managed providers | Run local `etlantic-pyspark` or your own provider; live packs remain planned for 0.65 | Open |
-| DOC-009 | Orchestration | Compilers / schedulers | Airflow via `etlantic-airflow` (compile-only); Prefect local MVP via `etlantic-prefect`; the bounded managed Prefect profile is qualified and included in the 0.58.0 candidate; Dagster/Argo compilers follow in 0.63 | Use shipped Airflow compile or Prefect local path on the published 0.57.x line; follow the 0.58 migration guide before enabling managed execution | Partial |
+| DOC-009 | Orchestration | Compilers / schedulers | Airflow via `etlantic-airflow` (compile-only); Prefect local MVP via `etlantic-prefect`; the 0.58 managed Prefect profile awaits requalification on 0.59; Dagster/Argo compilers follow in 0.63 | Use shipped Airflow compile or Prefect local path on the published 0.57.x line; follow the 0.58 → 0.59 migration guide before enabling managed execution | Partial |
 | DOC-010 | Streaming | Structured Streaming | APIs experimental since 0.7+ | Prefer batch Spark for production-shaped pilots | Experimental |
 | DOC-011 | SQL safety | SQL plugins | Untrusted raw SQL is not treated as safe | Use typed expression model and dialect identifier/parameter APIs | By design |
 | DOC-012 | SQL MERGE | SQLite / non-PG | `MERGE` / upsert implemented for PostgreSQL (`sql_merge=True`); SQLite and others fail closed | Use PostgreSQL when merge is required | Partial |

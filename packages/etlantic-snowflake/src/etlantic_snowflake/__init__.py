@@ -2,8 +2,7 @@
 
 from __future__ import annotations
 
-__version__ = "0.58.0"
-
+from etlantic import __version__
 from etlantic_snowflake.connectors import (
     SnowflakeSinkConnector,
     SnowflakeSourceConnector,

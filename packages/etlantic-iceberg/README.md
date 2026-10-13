@@ -1,6 +1,6 @@
 # etlantic-iceberg (Experimental)
 
-> **Release status:** ETLantic 0.58.0 is a Beta release candidate; publication is pending.
+> **Release status:** ETLantic 0.59.0 is a Beta release candidate; publication is pending.
 
 
 Version **0.57.0** (lockstep with ETLantic core).
@@ -18,13 +18,13 @@ until partition-scoped replace is real.
 ## Install
 
 ```bash
-pip install 'etlantic-iceberg==0.58.0'
+pip install 'etlantic-iceberg==0.59.0'
 # Optional live PyIceberg:
-# pip install 'etlantic-iceberg[pyiceberg]==0.58.0'
-# pip install 'etlantic==0.58.0'
+# pip install 'etlantic-iceberg[pyiceberg]==0.59.0'
+# pip install 'etlantic==0.59.0'
 ```
 
-Core dependency: `etlantic>=0.58.0`.
+Core dependency: `etlantic>=0.59.0`.
 
 ## Entry points
 

@@ -1,7 +1,7 @@
 ---
 title: ETLantic 0.57 Exit Gate
 status: release-ready
-current_minor: "0.58"
+current_minor: "0.59"
 ---
 
 # ETLantic 0.57 Exit Gate — Managed Backend Independence and Runtime Supervision

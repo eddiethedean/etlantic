@@ -29,8 +29,8 @@ Maintainer and CI helpers under `scripts/`. Prefer the paths documented in
 
 ```bash
 # Preview and apply a lockstep 0.x.y package version bump
-uv run python scripts/bump_version.py 0.58.0 --dry-run
-uv run python scripts/bump_version.py 0.58.0
+uv run python scripts/bump_version.py 0.59.0 --dry-run
+uv run python scripts/bump_version.py 0.59.0
 ```
 
 The preview lists affected tracked files. Applying the change also refreshes

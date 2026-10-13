@@ -4,7 +4,7 @@ ETLantic **0.35.0** closed **Migration Completion and Joint Freeze (M7)**.
 **0.36.0** closed joint compatibility burn-in. **0.37** closed the
 stable-foundation gate. **0.38.0** closed the connectivity line.
 **0.39.0** closed CP1 incubation. **0.40.0** closed CP2 registry incubation.
-**0.57.2** is the latest published **Beta release**. **0.58.0 is a release
+**0.57.2** is the latest published **Beta release**. **0.59.0 is a release
 candidate** for managed Prefect execution; its bounded support profile is
 qualified and publication is pending. Phase 0.56 is published; see its exit
 gate and migration guide. Adaptive graduation remains pending. The 0.54
@@ -51,7 +51,7 @@ For the status, current boundary, and owner of every domain plan, use the
 | Previous | 0.56 | Complete application ETL backend with full specification and run control | Published — [exit gate](EXIT_GATE_0_56.md) |
 | Previous | 0.57 | Managed backend independence and runtime supervision (#278–#282) | 0.57.2 is the latest published and supported patch — [implementation plan](IMPLEMENTATION_PLAN_0_57.md), [exit gate](EXIT_GATE_0_57.md) |
 | Current | 0.58 | Managed Prefect execution | Bounded static-batch Process-worker/PostgreSQL profile qualified; candidate publication pending — [implementation plan](IMPLEMENTATION_PLAN_0_58.md), [final decision](evidence/phase_0_58/FINAL_QUALIFICATION_DECISION_2026-10-12.json), [#290](https://github.com/eddiethedean/etlantic/issues/290) |
-| Later | 0.59 | Managed runtime consolidation and trigger contracts | Planned — [implementation plan](IMPLEMENTATION_PLAN_0_59.md) |
+| Later | 0.59 | Managed runtime consolidation and trigger contracts | Implementation in progress; qualification pending — [implementation plan](IMPLEMENTATION_PLAN_0_59.md) |
 | Later | 0.60 | Posit Connect scheduling and HTTPS triggers | Planned — [implementation plan](IMPLEMENTATION_PLAN_0_60.md) |
 | Later | 0.61 | AWS Scheduler/Lambda and one ECS/Fargate executor | Planned — [implementation plan](IMPLEMENTATION_PLAN_0_61.md) |
 | Later | 0.62 | One Data Mover host and optional trusted URL discovery | Planned — [implementation plan](IMPLEMENTATION_PLAN_0_62.md) |
@@ -77,6 +77,12 @@ new trigger seams. 0.60 proves one explicit-URL Connect topology; 0.61 qualifies
 Scheduler/Lambda and one ECS/Fargate executor, with Batch unscheduled. 0.62 proves
 one Data Mover host with timer variants rather than all hosting/executor pairs.
 0.63 owns targeted engine/helper, HTTP, fixture and dependency simplification.
+
+The [0.59 plan](IMPLEMENTATION_PLAN_0_59.md) orders characterization, public
+seams, single-owner consolidation, trigger contract freeze, durable recovery and
+release handoff through Gates A–F. It maps current code owners, complete persisted
+state, upgrade/rollback limits and AC evidence; pending preparation, authorized
+receipt recovery and new-occurrence admission have distinct rules.
 
 Runtime must remove named implementation ownership before a wheel is justified.
 Testing and HTTP wheels are conditional on real consumers and duplicate removal;

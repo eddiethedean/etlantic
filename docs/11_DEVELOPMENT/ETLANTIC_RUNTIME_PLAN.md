@@ -7,7 +7,8 @@ plan_last_reviewed: 2026-10-12
 
 # ETLantic Runtime Integration Plan
 
-**Status: planned; phase [0.59](IMPLEMENTATION_PLAN_0_59.md).** The proposed
+**Status: 0.59 implementation in progress; qualification pending; see the
+[phase plan](IMPLEMENTATION_PLAN_0_59.md).** The proposed
 `etlantic-runtime` package is a conditional implementation extraction, not a
 shipped API or another contracts-only layer. The accepted
 [package scope review](PACKAGE_SCOPE_REVIEW_2026-10-12.md) is integrated by the
@@ -114,8 +115,9 @@ and conditional package decisions.
 
 `ScheduleBackend` and `ExecutionBackend` are illustrative names, pending
 0.59 mapping to existing public protocols. New interfaces require a demonstrated
-missing seam, not an overlapping name for existing behavior. Scheduling decides when to request fresh admission; execution
-consumes only canonically accepted work. Neither capability implies the other.
+missing seam, not an overlapping name for existing behavior. Scheduling decides
+when to request fresh admission; execution consumes only canonically accepted
+work. Neither capability implies the other.
 The existing local scheduler, 0.57 schedule service, and 0.58 Prefect adapter
 remain compatible and retain their distinct supported matrices.
 
@@ -126,15 +128,21 @@ remain compatible and retain their distinct supported matrices.
    revision, stable occurrence ID, intended scheduled time, pipeline reference,
    and correlation metadata. Delivery-attempt IDs are separate. Retries and
    redelivery preserve occurrence identity; wall-clock send time is not identity.
-3. Authenticate the caller and derive authorized scope server-side. Validate
-   revision, replay window, allowed target, policy, and requested references;
-   payload scope does not grant authority. Each new occurrence undergoes fresh
-   canonical preparation and admission rather than reusing an old accepted run.
+3. Authenticate the caller and derive authorized scope server-side. Authorize
+   the operation and validate the bounded wire before scoped receipt lookup;
+   payload scope does not grant authority. A matching authorized duplicate
+   recovers its receipt without repeating preparation or quota charging.
+   For a new occurrence, validate revision, replay window, registered target,
+   policy and references; resolve pinned/latest-approved intent once and persist
+   that selection before recoverable canonical preparation and admission.
 4. Atomically persist the deduplication record, canonical run linkage, and
    dispatch intent, or use an existing qualified outbox/recovery protocol where
    stores differ. A bounded accepted receipt is returned only after durable
-   acceptance. Same occurrence and content returns the same run; conflicting
-   content under that key is rejected. Concurrent requests cannot admit twice.
+   acceptance. A pending preparation response names the canonical operation and
+   is not an accepted-run receipt. Same occurrence and semantic content returns
+   the same run; conflicting content under that key is rejected. Delivery-attempt
+   IDs, correlation and send timestamps do not change semantic identity.
+   Concurrent requests cannot admit twice or select different pipeline revisions.
 5. Independently supervised workers claim accepted work through public runtime
    contracts. Dispatch acknowledgement, remote job state, ETL outcome, external
    effect certainty, and result publication remain separate facts.
@@ -147,6 +155,51 @@ must not permit a delayed occurrence to create a new run. Schedule updates,
 pause/delete, deployment replacement, and timer-owner migration must specify
 which already-issued occurrences remain admissible.
 
+### Occurrence Authority And Change Boundaries
+
+The deduplication key uses trusted tenant/workspace, schedule ID/revision and
+stable occurrence identity. Intended scheduled time is validated against the
+declared recurrence and timezone/ambiguity policy. The registered schedule binds
+the permitted pipeline, parameters, receiver, execution binding and workload
+identity; wire references cannot replace those bindings. Retries of pending
+preparation reuse its durable resolved intent even if the pipeline is edited.
+Policy/credential checks still occur at the canonical required boundaries.
+
+| Change | Required behavior |
+|---|---|
+| Schedule update | Create an immutable revision and record the cutoff for previously issued but unaccepted occurrences. Never rewrite accepted intent. |
+| Pause or delete | Stop new occurrences at a durable cutoff. Define whether previously issued deliveries can still be admitted; cancel accepted work only through an explicit authorized run command. |
+| Timer-owner transfer | Fence the old owner generation before activating the new one; transfer outstanding identities. Generation authorizes delivery but is not part of occurrence deduplication identity. |
+| Receipt compaction | Retain a tombstone or enforce a validated admission horizon so delayed deliveries cannot become new work. Retained receipt queries remain distinct from new delivery admission. |
+| Credential rotation/revocation | Reauthorize delivery and receipt lookup using the current trusted scope. A duplicate key does not bypass revocation or expose another scope's work. |
+
+Freeze the exact wire version, semantic digest, error/retry classes, response
+statuses, machine-credential profile, body bounds, clock skew and retention
+limits before trigger activation. Unsupported semantics fail closed. An HTTP 2xx
+or a preparation acknowledgement cannot establish durable run acceptance.
+
+### Persistence And Dispatch Migration
+
+Characterize the complete persisted-entity inventory before selecting a public
+codec/transition seam. The current memory `dump/load` and SQLModel private
+serializer have different coverage; replacing the latter with the former alone
+would omit state. The [phase owner map and rollout](IMPLEMENTATION_PLAN_0_59.md)
+identify these implementations and the entity families requiring evidence.
+Keep separately owned schedule/definition/event/input/report stores separate.
+Version and validate the complete payload before state replacement; malformed or
+unsupported snapshots must not partially mutate a live store.
+
+Preserve existing `local`/`prefect:<digest>` routes, binding/envelope fingerprints,
+remote identities, scope, dispatch idempotency and lease/fencing ownership during
+generic-record migration. Compatibility readers precede new writers; declared
+mixed-version process combinations pass readiness before claims. Provider schema
+migrations remain explicit and read-only inspection never runs DDL.
+
+Prove upgrade and rollback on accepted legacy Prefect work. A legacy binary is
+not assumed to read new backend kinds or trigger state: reject unrepresentable
+downgrades before mutation and document compatible recovery or drain/export.
+Backup restore cannot authorize replay of externally committed effects.
+
 ## Security And Failure Boundaries
 
 - Require HTTPS, scoped trigger credentials, rotation/revocation, replay
@@ -154,8 +207,9 @@ which already-issued occurrences remain admissible.
 - Endpoint registration is authorized configuration. Reuse existing outbound
   policy/conformance for origins, paths, redirects, timeouts, byte bounds and
   redaction. Test actual DNS/connect behavior and explicit trusted private
-  deployment configuration; a URL validator alone is insufficient. Under that policy, untrusted
-  callers cannot choose URLs, credential references, backend factories, or code.
+  deployment configuration; a URL validator alone is insufficient. Under that
+  policy, untrusted callers cannot choose URLs, credential references, backend
+  factories, or code.
 - Schedulers receive trigger credentials only, never source/sink credentials,
   source rows, transformations, or complete pipeline configuration.
 - Production plugins and applicable optimization, schema-registry, and resource
@@ -175,10 +229,14 @@ are required. Phases 0.60/0.61
 qualify actual platform behavior; phase 0.62 proves the full application path.
 No live-support claim follows from mocks or a successful trigger response.
 
-Runtime and security maintainers must decide the public package dependency map,
-wire version, occurrence/replay retention policy, and initial authentication
-profile before 0.59 implementation. Platform maintainers must resolve recurrence
-translation and stable occurrence derivation before platform qualification.
+The [0.59 ordered gates and decision register](IMPLEMENTATION_PLAN_0_59.md)
+sequence characterization, public seams, managed consolidation, contract freeze,
+durable recovery and release handoff. Runtime/backend maintainers freeze the
+dependency map before extraction; security/schedule maintainers freeze wire,
+occurrence/replay retention and authentication before trigger activation.
+Unresolved decisions block their dependent work while characterization proceeds.
+Platform maintainers must resolve recurrence translation and stable occurrence
+derivation before platform qualification.
 Review this plan whenever those decisions, upstream APIs, or release gates change.
 
 Required evidence includes a before/after single-owner implementation map,
@@ -189,3 +247,7 @@ version-skew corpus, non-FastAPI interoperability, duplicate/conflict/replay
 tests, restart and lost-response recovery, callback reconciliation, credential
 redaction, and explicit supported/unsupported matrices. The
 [forward delivery contract](FORWARD_IMPLEMENTATION_PLANS.md) applies throughout.
+The phase evidence index maps E059-OWN/MIG/WIRE/OCC/SEC/REC/REL to all
+AC059-001–011 and assigned findings, with exact wheel/provider/process versions
+and immutable results. Gate F hands the frozen contract, minimal consumer and
+unsupported matrix to 0.60–0.62; it does not qualify their platform behavior.

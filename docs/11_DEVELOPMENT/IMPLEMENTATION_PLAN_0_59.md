@@ -1,7 +1,7 @@
 ---
 title: ETLantic 0.59 Implementation Plan
 description: Consolidate managed ownership, configuration and dispatch before adding external trigger seams.
-plan_status: planned
+plan_status: implementation_in_progress
 plan_last_reviewed: 2026-10-12
 ---
 
@@ -40,6 +40,30 @@ executes it. Embedded pipeline/DAG execution remains in core.
   work in 0.60/0.61 must already consume shared outbound policy.
 - The [shared delivery contract](FORWARD_IMPLEMENTATION_PLANS.md) applies.
 
+## Implementation Baseline And Owner Map
+
+The following map is grounded in repository revision `d742f560` (0.58.0
+candidate), not a claim that every implemented path is qualified. Refresh it
+against the implementation branch before moving code. The 0.58 release evidence
+and exact support matrix are prerequisites for claiming preserved support;
+characterization and consolidation can proceed while publication is pending.
+
+| Concern | Current implementation | 0.59 disposition |
+|---|---|---|
+| Backend graph and role lifecycle | Core `ManagedBackend`, SQLModel `create_managed_backend`, FastAPI `ManagedBackend`, core `RuntimeRoleLifecycle` | Keep one graph and lifecycle implementation. SQLModel constructs relational resources; HTTP adapts the graph. Name the duplicated methods removed before deciding on a runtime wheel. |
+| Settings | SQLModel `SQLModelBackendConfig` and FastAPI `ManagedBackendConfig` | Inventory the 25 common fields plus adapter-only fields; preserve defaults, constraints and callable/resource ownership. HTTP title/version/auth settings remain separate. |
+| Preparation/admission and run control | `ManagedApplicationService` | Preserve canonical preparation, authorization, acceptance, cancellation and effects. A trigger bridge invokes these operations rather than rebuilding them. |
+| Schedule commands and clock | `ScheduleApplicationService`, `schedule_models`, `SchedulerService` | Reuse revision, recurrence and firing policies; add only external timer ownership/delivery facts. Ready-node scheduling remains separate. |
+| Dispatch state and recovery | `DispatchRecord` / `DispatchReconciliation`, `DurableWorkStore`, service `rearm_exhausted_prefect_dispatch`, `PrefectDispatcher` | Replace shared Prefect naming through versioned compatibility. Keep remote binding verification, SDK calls and vendor state translation in the adapter. |
+| Worker and result execution | `ExecutionHost`, `ManagedExecutionAdapter` | Preserve leases, fencing, checkpoints, effects and publication. Extract managed coordination only through a public boundary; embedded execution stays core. |
+| Persistence | `MemoryDurableWorkStore.dump/load`, SQLModel `durable_stores`, separate schedule/definition/report stores | Characterize the union of persisted state before replacing private serialization. Current memory dump/load covers fewer entity families than SQLModel's serializer; it is not a complete replacement codec. |
+| HTTP destination policy | Public `etlantic.outbound` and profile policy | Reuse policy decisions and bounds; add transport enforcement/conformance for DNS, connection destinations and redirects, rather than a second policy model. |
+
+The ownership ADR records each symbol's old/new import, implementation owner,
+delegating compatibility export, supported installation and retirement window.
+Consolidation may leave canonical services in core. A compatibility delegate is
+not a duplicate implementation; two independently maintained bodies are.
+
 ## Workstreams
 
 | ID | Workstream | Deliverables | Completion evidence |
@@ -76,6 +100,100 @@ executes it. Embedded pipeline/DAG execution remains in core.
    exact seams consumed by 0.60–0.62. A second concrete dispatch adapter is proven
    in 0.61, not by claiming AWS support in this phase.
 
+### Ordered Delivery Gates
+
+Each gate is a reviewable change set with its own evidence. Characterization
+must pass before replacing an owner; namespace consolidation can ship without
+extracting a wheel. Do not combine store migration, package extraction and new
+trigger activation into one unreviewable cutover.
+
+| Gate | Workstreams | Required input | Exit artifact / stop condition |
+|---|---|---|---|
+| A — truth and characterization | 059-V/F/B/P | Existing 0.58 candidate and review findings | Factory/version matrix, shared-setting inventory, owner/dependency ADR and persisted-entity inventory. Missing qualification is recorded explicitly. |
+| B — public seams and compatibility | 059-F/P/G | Gate A inventories | One settings validator, complete public codec/transition boundary, generic dispatch decoder and tested legacy translations. Unknown schemas or unrepresentable rollback block mutation. |
+| C — one managed implementation | 059-M/B/T | Gate B seams and migration fixtures | Installed headless/HTTP/Prefect parity, lifecycle/restart evidence and optional wheel decision with named implementation retirement. A deferred wheel does not waive consolidation. |
+| D — trigger contract freeze | 059-C/O/A | Gate C authority; security and schedule decisions | Versioned wire/receipt schema, lifecycle/replay/authentication profile, shared transport conformance and minimal consumer. Unresolved occurrence identity or retention prevents activation. |
+| E — durable bridge and recovery | 059-D/R/T | Gate D contract | Independent receiver/worker campaign over real stores; process kill, response loss, concurrent admission and uncertain-effect evidence. A request-local executor fails the gate. |
+| F — release and downstream handoff | All | Gates A–E and unchanged 0.58 support evidence | AC/finding evidence index, compatibility/install report, bounded support matrix, runbook and explicit release decision. Missing required evidence remains a blocker. |
+
+## Trigger Admission And Lifecycle Contract
+
+The runtime domain plan owns the lifecycle rules below; Gate D freezes their
+exact public schema and diagnostic codes. Proposed fields are requirements,
+not currently shipped API names.
+
+- A registered schedule revision binds its allowed pipeline/revision policy,
+  parameters, receiver, execution binding and trusted workload identity. The
+  trigger carries only bounded references and correlation metadata; it cannot
+  supply arbitrary pipeline code, profiles, factories, URLs or credential values.
+  Any transmitted target reference must match the registered binding.
+- Identity is scoped by trusted tenant/workspace, schedule ID/revision and a
+  stable occurrence ID. Intended scheduled time is checked against the declared
+  recurrence, timezone and ambiguity policy. Timer-owner generation authorizes
+  delivery; it must not change the occurrence's deduplication identity. Delivery
+  attempt, correlation and send time are excluded from the semantic digest.
+- Authenticate, authorize the operation and bound/validate the wire before
+  scoped receipt lookup. An authorized duplicate with matching semantic content
+  recovers the existing receipt without repeating live preparation, quota
+  charging or admission. Changed semantic content conflicts. Revocation denies
+  access without exposing another scope's receipt.
+- A new occurrence resolves pinned/latest-approved selection once, durably binds
+  the selected revision and effective intent, then uses canonical preparation
+  and admission. Recoverable preparation has the existing operation identity;
+  retries cannot choose a newer pipeline revision. Recheck policy and credential
+  access at the existing required boundaries without rewriting accepted intent.
+- A preparation acknowledgement reports pending preparation and its query
+  reference; it is not an accepted-run receipt. An accepted receipt binds the
+  occurrence, submission/run identities and authorized status reference only
+  after durable acceptance and recoverable dispatch linkage. Freeze response
+  statuses and retry classification; an HTTP 2xx alone cannot establish acceptance.
+- Persist occurrence reservation, resolved intent, canonical acceptance linkage
+  and outbox/dispatch intent in one transaction where supported. Otherwise reuse
+  a qualified durable handoff with recovery for every intermediate state. A
+  crash before acceptance leaves a recoverable operation or explicit rejection;
+  a crash after acceptance returns the same receipt and never admits again.
+- Replay deadlines, clock skew and deduplication retention are one policy.
+  After receipt compaction, a tombstone or validated admission horizon prevents
+  an old occurrence from becoming new work. An authorized retained receipt may
+  be queried after the delivery window; expiry cannot create a fresh admission.
+- Pause/delete stops new occurrences at a recorded cutoff. Updates create a new
+  immutable schedule revision. Owner migration fences the old generation before
+  activating the new one and transfers outstanding occurrence identities.
+  Specify admissibility of issued-but-unaccepted occurrences at each cutoff;
+  already accepted work remains queryable and follows explicit run cancellation.
+
+## Compatibility And Rollout
+
+1. Freeze 0.58 installed import/config/dispatch/store fixtures, including pending,
+   leased, uncertain, dispatched, cancelled and reconciliation-required work,
+   route lifecycle history, attempts, checkpoints, effects and publication.
+2. Introduce checked compatibility readers/exports before switching writers.
+   Preserve `local` and `prefect:<digest>` meaning, remote IDs, idempotency keys,
+   accepted envelope fingerprints, principal scope and lease/fencing ownership.
+   A new backend kind is trusted registered configuration, not arbitrary input.
+3. Inventory complete codec coverage, including action jobs and
+   their idempotency, result publications, checkpoints, previews, diffs, shadows,
+   baselines, diagnostics and route reference counts, plus separately stored
+   schedules, definitions, events, inputs and reports. Each entity has one owner,
+   schema/version and round-trip/restart case; explicitly cover families missing
+   from the existing memory dump. Do not merge all stores into one
+   snapshot. Validate the whole snapshot before replacing any live state.
+4. Migrate schemas explicitly through the provider's migration authority, with
+   backup/restore and process-version compatibility checks. Constructors, HTTP
+   startup and read-only schema inspection never perform implicit DDL. Declare
+   mixed-version worker/dispatcher compatibility; unsupported combinations fail
+   readiness before claims or writes.
+5. Exercise upgrade and rollback on populated Prefect stores. Rollback promises
+   apply only to representable legacy work; a pre-0.59 binary cannot be assumed
+   to understand new kinds or trigger records. Block unsafe downgrade before
+   mutation and document drain/export or compatible recovery requirements.
+   Restoring an old backup must not repeat externally committed effects.
+6. Publish the `managed-headless` extra with SQLModel and the supported
+   PostgreSQL driver without FastAPI. Preserve the existing HTTP-oriented `managed`
+   extra during its declared window; adding a headless option does not silently
+   change that extra's meaning. Test legacy HTTP constructors and explicit
+   backend injection, including borrowed/owned engine and partial-start cleanup.
+
 ## Exit Gates
 
 - **AC059-001:** Existing imports/protocols remain compatible; plain core
@@ -109,6 +227,52 @@ executes it. Embedded pipeline/DAG execution remains in core.
   requests fail. Factory/distribution versions agree independently of protocol
   versions, reference packages are clearly labelled, dependency policy has resolver
   evidence, and SparkForge has a recorded final version and migration window.
+
+## Acceptance Evidence Matrix
+
+These are required evidence families, not assertions that tests already pass.
+Keep AC059-001–011 stable and attach each subcase to its gate and artifact. A
+single happy-path receipt cannot satisfy a family.
+
+| Evidence family | AC coverage | Required cases | Environment / owner |
+|---|---|---|---|
+| E059-OWN | 001, 007, 008 | Before/after symbols; all shared defaults/invalid values/legacy translations; direct and managed imports; separate HTTP settings; start/drain/close and partial-start failure | Built wheels in clean core-only, headless, HTTP and Prefect installs; runtime/backend |
+| E059-MIG | 001, 009, 010 | Every persisted entity; unknown/truncated schema; upgrade/rollback; mixed process versions; accepted fingerprint/binding preservation; no implicit DDL or private serializer coupling | Memory/SQLite labelled separately; real PostgreSQL populated-store, multi-process and backup/restore campaign; persistence/Prefect |
+| E059-WIRE | 002, 007 | Minimal wire-only consumer; non-FastAPI receiver; version skew, malformed/oversize payloads, unknown semantic fields and response validation | Independent receiver and worker processes over the canonical services; runtime/transport |
+| E059-OCC | 003, 004, 005 | Concurrent duplicates/content conflicts; response loss; preparation crash and revision edit; delayed replay after compaction; DST/misfire/overlap; pause/update/delete and fenced owner transfer | Deterministic clock fixtures plus real PostgreSQL races and restart; schedule/backend |
+| E059-SEC | 002, 003, 008 | Cross-scope lookup denial; revoked/rotated machine credentials; binding substitution; secret/row redaction; destination/DNS rebinding/redirect/TLS/byte/timeout bounds; explicitly trusted private destinations | Credential-free fixtures and controlled network servers using actual connections; security/transport |
+| E059-REC | 005, 006, 007, 009 | Kill before/after acceptance/outbox/remote-create linkage; uncertain remote create; worker lease loss/stale callback; cancellation race; committed effect with missing result publication; stale/out-of-order observations | Independent real workers and durable stores; effectful 0.58 qualified tuples; runtime/Prefect/persistence |
+| E059-REL | 011 | SDK absent/present × requested fake/live × actual backend; metadata/protocol version separation; lower/upper supported dependency boundaries and rejected combinations; declared SparkForge sunset | Built first-party wheel resolver/factory matrix, with actual live qualification separately identified; provider/release |
+
+Each evidence row records case ID, AC IDs, workstream/finding, source revision,
+wheel hashes, exact dependency/provider/store/process tuple, expected and observed
+outcome, immutable artifact reference and pass/fail/unavailable status. Required
+skips remain blockers. Accepted F01–F04/F06–F07/F09–F11 findings link to these
+families; F12 is covered by the bounded downstream handoff.
+
+## Decision Register And Downstream Handoff
+
+| Decision | Accountable owner | Due / required record |
+|---|---|---|
+| D059-OWN: package or namespace consolidation | Runtime + backend | Gate A freezes boundaries; Gate C decides the wheel from actual retired implementations and installed acyclic imports. |
+| D059-CFG: canonical settings and install migration | SQLModel + FastAPI + release | Gate B freezes the field/validator inventory, precedence, legacy translation and named optional extra/import windows. |
+| D059-STORE: codec and dispatch compatibility | Persistence + Prefect | Gate B freezes schema versions, complete entity coverage, supported process combinations and downgrade guard; Gate E proves recovery. |
+| D059-WIRE: delivery/authentication profile | Runtime + security | Frozen in `etlantic.control_plane.trigger`: envelope/1, 16 KiB UTF-8 JSON maximum, exact fields, duplicate-key rejection, trusted `ControlPlaneContext`, `schedule.trigger` authorization, bound workload identity, scoped receipt lookup, and OpenAPI JSON Schema. Malformed/unsupported is 400, oversize 413, stale or early occurrence 409, pending preparation 202, and accepted/skipped receipt 200. Gate D still requires independent consumer and credential-rotation evidence. |
+| D059-OCC: occurrence and retention policy | Schedule + security | Frozen: occurrence identity is SHA-256 of schedule ID, revision ID and canonical UTC nominal time; delivery attempt and correlation are excluded. New delivery must match the atomic next-fire cursor and may be at most 60 seconds early. Known deliveries recover their receipt; schedule firings have no automatic compaction in 0.59 and remain durable. Pause/delete atomically reject new deliveries; delete also waits for unlinked occurrences to recover. Amendment invalidates unaccepted old-revision triggers, and owner transfer compare-and-swaps generation only after unlinked firings recover. Gate D still requires concurrency, delayed-retry, DST/misfire and retention evidence. |
+| D059-REL: truthful ranges and sunset | Provider + release | Final SparkForge compatibility release is 0.62.0 with visible warnings through 0.62; Gate F still supplies resolver and migration evidence. |
+
+Decisions block dependent activation or mutation, not unrelated characterization.
+Other unresolved decisions remain assigned to their owner and gate; never present a proposed wire,
+package or support tuple as shipped.
+
+The Gate F handoff to 0.60–0.62 contains the versioned schema/error corpus,
+minimal trigger consumer, endpoint/auth registration rules, capability and
+occurrence mapping, timer-transfer procedure, generic dispatch public operations,
+installed recipes and exact supported matrix. It qualifies a framework-neutral
+receiver and existing durable worker with managed Prefect compatibility; Connect
+and AWS platform behavior and Data Mover product integration retain their own
+later gates. A second backend contract fixture can test extensibility here but
+cannot establish ECS/Fargate support.
 
 ## Required Release Evidence And Decisions
 

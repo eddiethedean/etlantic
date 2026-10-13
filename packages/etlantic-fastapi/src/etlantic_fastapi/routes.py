@@ -1277,11 +1277,11 @@ def build_control_plane_router(api: ETLanticAPI) -> APIRouter:
                 title="Not Implemented",
             )
         return DispatchReconciliationResponse.model_validate(
-            api.managed_service.rearm_exhausted_prefect_dispatch(
+            api.managed_service.rearm_exhausted_dispatch(
                 ctx,
                 submission_id,
                 expected_generation=body.expected_generation,
-                expected_flow_run_id=body.expected_flow_run_id,
+                expected_remote_run_id=body.remote_run_id,
                 evidence=body.evidence,
             )
         )

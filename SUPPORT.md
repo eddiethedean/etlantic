@@ -1,9 +1,9 @@
 # Support
 
-> **Version boundary:** ETLantic 0.58.0 is a Beta release candidate; 0.57.x remains the published and supported line.
+> **Version boundary:** ETLantic 0.59.0 is a Beta release candidate; 0.57.x remains the published and supported line.
 
 
-ETLantic **0.58.0** is a Beta release candidate. The latest published and
+ETLantic **0.59.0** is a Beta release candidate. The latest published and
 supported line is **0.57.x**. It targets documented single-tenant pilots and
 retains **Supported** isolation
 profiles (`isolated-deployment`, `dedicated-schema`). There is no hosted

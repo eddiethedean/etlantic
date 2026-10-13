@@ -1,7 +1,7 @@
 ---
 status: available
 since: "0.43.0"
-current_minor: "0.58"
+current_minor: "0.59"
 audience: developer
 ---
 
@@ -14,7 +14,7 @@ audience: developer
 ## Setup
 
 ```bash
-pip install 'etlantic-s3==0.58.0'
+pip install 'etlantic-s3==0.59.0'
 ```
 
 ```python

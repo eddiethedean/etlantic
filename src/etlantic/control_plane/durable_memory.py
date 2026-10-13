@@ -13,7 +13,7 @@ import threading
 import uuid
 from collections.abc import Mapping, Sequence
 from copy import deepcopy
-from dataclasses import replace
+from dataclasses import asdict, replace
 from datetime import UTC, datetime, timedelta
 from typing import Any, cast
 
@@ -22,6 +22,7 @@ from etlantic.control_plane.action_jobs import (
     MIN_PREVIEW_RESULT_TTL_SECONDS,
 )
 from etlantic.control_plane.durable_models import (
+    ACTION_JOB_SCHEMA,
     STATE_NAMESPACES,
     ActionJobRecord,
     ActionJobStatus,
@@ -41,10 +42,12 @@ from etlantic.control_plane.durable_models import (
     OutboxRecord,
     PreviewWorkspace,
     RepairPlan,
+    RepairPlanKind,
     ReplayRecord,
     ResultPublicationRecord,
     ShadowRunRecord,
     StateDiagnostic,
+    StateDiagnosticKind,
     StateTransitionExplanation,
     SubmissionRecord,
     execution_context_from_submission,
@@ -77,8 +80,90 @@ def _scope(ctx: ControlPlaneContext) -> tuple[str, str]:
     return ctx.scope_key
 
 
+def _select_remote_run_id(
+    remote_run_id: object,
+    legacy_prefect_run_id: object,
+    *,
+    required: bool = True,
+) -> str | None:
+    """Resolve generic and 0.58 Prefect identity inputs without ambiguity."""
+    if remote_run_id is None:
+        remote_run_id = legacy_prefect_run_id
+    elif legacy_prefect_run_id is not None and remote_run_id != legacy_prefect_run_id:
+        raise ValueError("remote_run_id conflicts with prefect_flow_run_id")
+    if remote_run_id is None:
+        if required:
+            raise ValueError("remote_run_id is required")
+        return None
+    if (
+        not isinstance(remote_run_id, str)
+        or not remote_run_id.strip()
+        or len(remote_run_id) > 256
+    ):
+        raise ValueError("remote_run_id must contain 1 to 256 characters")
+    return remote_run_id
+
+
 _NON_TERMINAL = {"accepted", "dispatched", "cancel_requested"}
 _MAX_DISPATCH_GENERATIONS = 3
+_PERSISTED_RECORD_SCHEMAS: dict[str, frozenset[str]] = {
+    "SubmissionRecord": frozenset({"etlantic.control_plane.submission_record/1"}),
+    "ExecutionRouteTransition": frozenset(
+        {"etlantic.control_plane.execution_route_transition/2"}
+    ),
+    "ExecutionRouteRecord": frozenset({"etlantic.control_plane.execution_route/2"}),
+    "OutboxRecord": frozenset({"etlantic.control_plane.outbox_record/1"}),
+    "DispatchReconciliation": frozenset(
+        {
+            "etlantic.control_plane.dispatch_reconciliation/1",
+            "etlantic.control_plane.dispatch_reconciliation/2",
+        }
+    ),
+    "DispatchRecord": frozenset(
+        {
+            "etlantic.control_plane.dispatch_record/2",
+            "etlantic.control_plane.dispatch_record/3",
+        }
+    ),
+    "LeaseRecord": frozenset({"etlantic.control_plane.lease_record/1"}),
+    "AttemptRecord": frozenset({"etlantic.control_plane.attempt_record/1"}),
+    "ResultPublicationRecord": frozenset(
+        {"etlantic.control_plane.result_publication/1"}
+    ),
+    "CheckpointRecord": frozenset({"etlantic.control_plane.checkpoint_record/1"}),
+    "EffectRecord": frozenset({"etlantic.control_plane.effect_record/1"}),
+    "PreviewWorkspace": frozenset({"etlantic.control_plane.preview_workspace/1"}),
+    "DiffRecord": frozenset({"etlantic.control_plane.diff_record/1"}),
+    "ShadowRunRecord": frozenset({"etlantic.control_plane.shadow_run_record/1"}),
+    "BaselineAcknowledgement": frozenset(
+        {"etlantic.control_plane.baseline_acknowledgement/1"}
+    ),
+    "ActionJobRecord": frozenset({"etlantic.control_plane.action_job/1"}),
+    "StateDiagnostic": frozenset({"etlantic.control_plane.state_diagnostic/1"}),
+}
+
+
+def _snapshot_mapping(value: object) -> dict[str, Any]:
+    if not isinstance(value, Mapping):
+        raise ValueError("durable snapshot record must be an object")
+    raw_fields = cast(Mapping[object, Any], value)
+    fields: dict[str, Any] = {}
+    for key, data in raw_fields.items():
+        if not isinstance(key, str):
+            raise ValueError("durable snapshot field names must be strings")
+        fields[key] = data
+    return fields
+
+
+def _snapshot_record_fields(value: object, record_type: type[Any]) -> dict[str, Any]:
+    fields = _snapshot_mapping(value)
+    schema = fields.get("schema")
+    known = _PERSISTED_RECORD_SCHEMAS.get(record_type.__name__)
+    if schema is not None and (known is None or schema not in known):
+        raise ValueError(f"unsupported {record_type.__name__} schema: {schema!r}")
+    return {field: data for field, data in fields.items() if field != "schema"}
+
+
 _ACTION_ERROR_CODES = frozenset(
     {
         "action_failed",
@@ -91,6 +176,28 @@ _ACTION_ERROR_CODES = frozenset(
         "provision_parent_unavailable",
         "result_limit_exceeded",
     }
+)
+
+DURABLE_WORK_SNAPSHOT_SCHEMA = "etlantic.control_plane.durable_work_snapshot/1"
+_SNAPSHOT_STATE_FIELDS = (
+    "_submissions",
+    "_idempotency",
+    "_outbox",
+    "_dispatches",
+    "_leases",
+    "_attempts",
+    "_result_publications",
+    "_checkpoints",
+    "_effects",
+    "_previews",
+    "_diffs",
+    "_shadows",
+    "_baselines",
+    "_action_jobs",
+    "_action_idempotency",
+    "_diagnostics",
+    "_execution_route_states",
+    "_execution_route_references",
 )
 
 
@@ -137,6 +244,20 @@ class MemoryDurableWorkStore:
         self._execution_route_states: dict[str, ExecutionRouteRecord] = {}
         self._execution_route_references: dict[str, set[str]] = {}
         self._lock = threading.RLock()
+
+    def iter_submission_records(
+        self,
+    ) -> tuple[tuple[tuple[str, str, str], SubmissionRecord], ...]:
+        """Return a stable snapshot of submission rows for provider adapters."""
+        with self._lock:
+            return tuple(self._submissions.items())
+
+    def iter_outbox_records(
+        self,
+    ) -> tuple[tuple[tuple[str, str, str], OutboxRecord], ...]:
+        """Return a stable snapshot of outbox rows for provider adapters."""
+        with self._lock:
+            return tuple(self._outbox.items())
 
     def accept(
         self,
@@ -716,8 +837,9 @@ class MemoryDurableWorkStore:
                 for key, record in self._dispatches.items()
                 if key[:2] == scope
                 and record.execution_route == execution_route
+                and record.backend_kind == "prefect"
                 and record.status == "dispatched"
-                and record.prefect_flow_run_id is not None
+                and record.remote_run_id is not None
                 and (
                     after_submission_id is None
                     or record.submission_id > after_submission_id
@@ -797,6 +919,7 @@ class MemoryDurableWorkStore:
                 created_at=now,
                 updated_at=now,
                 status=status,
+                backend_kind="prefect",
             )
             self._dispatches[key] = record
             return deepcopy(record)
@@ -873,11 +996,14 @@ class MemoryDurableWorkStore:
         *,
         owner_id: str,
         fencing_token: int,
-        prefect_flow_run_id: str,
+        remote_run_id: str | None = None,
+        prefect_flow_run_id: str | None = None,
         now: datetime | None = None,
     ) -> DispatchRecord:
-        if not prefect_flow_run_id.strip() or len(prefect_flow_run_id) > 128:
-            raise ValueError("prefect_flow_run_id must contain 1 to 128 characters")
+        selected_remote_run_id = _select_remote_run_id(
+            remote_run_id, prefect_flow_run_id
+        )
+        assert selected_remote_run_id is not None
         current = now or _now()
         key = (*_scope(ctx), submission_id)
         with self._lock:
@@ -885,10 +1011,10 @@ class MemoryDurableWorkStore:
             if record is None:
                 raise ControlPlaneError.not_found("Dispatch record not found")
             if record.status == "dispatched":
-                if record.prefect_flow_run_id == prefect_flow_run_id:
+                if record.remote_run_id == selected_remote_run_id:
                     return deepcopy(record)
                 raise ControlPlaneError.conflict(
-                    "Dispatch is already linked to a different Prefect flow run"
+                    "Dispatch is already linked to a different remote run"
                 )
             if (
                 record.status != "leased"
@@ -901,7 +1027,8 @@ class MemoryDurableWorkStore:
             linked = replace(
                 record,
                 status="dispatched",
-                prefect_flow_run_id=prefect_flow_run_id,
+                remote_run_id=selected_remote_run_id,
+                prefect_flow_run_id=selected_remote_run_id,
                 lease_owner_id=None,
                 lease_expires_at=None,
                 retry_after_at=None,
@@ -979,14 +1106,19 @@ class MemoryDurableWorkStore:
         ctx: ControlPlaneContext,
         submission_id: str,
         *,
-        expected_flow_run_id: str,
+        expected_remote_run_id: str | None = None,
+        expected_flow_run_id: str | None = None,
         now: datetime | None = None,
     ) -> DispatchRecord | None:
         """Retry only a terminal remote failure proven to predate ETL execution."""
+        selected_remote_run_id = _select_remote_run_id(
+            expected_remote_run_id, expected_flow_run_id
+        )
+        assert selected_remote_run_id is not None
         return self._rearm_dispatch_if_unclaimed(
             ctx,
             submission_id,
-            expected_flow_run_id=expected_flow_run_id,
+            expected_remote_run_id=selected_remote_run_id,
             reason_code="remote_failed_before_claim",
             now=now,
         )
@@ -996,7 +1128,8 @@ class MemoryDurableWorkStore:
         ctx: ControlPlaneContext,
         submission_id: str,
         *,
-        expected_flow_run_id: str,
+        expected_remote_run_id: str | None = None,
+        expected_flow_run_id: str | None = None,
         minimum_age_seconds: int = 300,
         now: datetime | None = None,
     ) -> DispatchRecord | None:
@@ -1006,10 +1139,14 @@ class MemoryDurableWorkStore:
             or not 30 <= minimum_age_seconds <= 86_400
         ):
             raise ValueError("minimum_age_seconds must be between 30 and 86400")
+        selected_remote_run_id = _select_remote_run_id(
+            expected_remote_run_id, expected_flow_run_id
+        )
+        assert selected_remote_run_id is not None
         return self._rearm_dispatch_if_unclaimed(
             ctx,
             submission_id,
-            expected_flow_run_id=expected_flow_run_id,
+            expected_remote_run_id=selected_remote_run_id,
             reason_code="remote_missing_before_claim",
             minimum_age_seconds=minimum_age_seconds,
             now=now,
@@ -1020,14 +1157,16 @@ class MemoryDurableWorkStore:
         ctx: ControlPlaneContext,
         submission_id: str,
         *,
-        expected_flow_run_id: str,
+        expected_remote_run_id: str,
         reason_code: str,
         minimum_age_seconds: int = 0,
         now: datetime | None = None,
     ) -> DispatchRecord | None:
         """Create a bounded generation only while no ETL effect could exist."""
-        if not expected_flow_run_id.strip() or len(expected_flow_run_id) > 128:
-            raise ValueError("expected_flow_run_id must be a bounded identifier")
+        expected_remote_run_id = cast(
+            str,
+            _select_remote_run_id(expected_remote_run_id, None),
+        )
         current = now or _now()
         wall_now = _now()
         key = (*_scope(ctx), submission_id)
@@ -1039,7 +1178,7 @@ class MemoryDurableWorkStore:
                 record is None
                 or submission is None
                 or record.status != "dispatched"
-                or record.prefect_flow_run_id != expected_flow_run_id
+                or record.remote_run_id != expected_remote_run_id
                 or submission.status != "accepted"
                 or (
                     minimum_age_seconds > 0
@@ -1083,6 +1222,7 @@ class MemoryDurableWorkStore:
                 ),
                 status="pending",
                 prefect_flow_run_id=None,
+                remote_run_id=None,
                 retry_after_at=None,
                 last_error_code=reason_code,
                 updated_at=_iso(current),
@@ -1096,15 +1236,18 @@ class MemoryDurableWorkStore:
         submission_id: str,
         *,
         expected_generation: int,
-        expected_flow_run_id: str,
+        expected_remote_run_id: str | None = None,
+        expected_flow_run_id: str | None = None,
         evidence_sha256: str,
         now: datetime | None = None,
     ) -> DispatchRecord:
         """Record explicit operator approval for one exhausted pre-claim retry."""
         if type(expected_generation) is not int or expected_generation < 1:
             raise ValueError("expected_generation must be a positive integer")
-        if not expected_flow_run_id.strip() or len(expected_flow_run_id) > 128:
-            raise ValueError("expected_flow_run_id must be a bounded identifier")
+        selected_remote_run_id = _select_remote_run_id(
+            expected_remote_run_id, expected_flow_run_id
+        )
+        assert selected_remote_run_id is not None
         if len(evidence_sha256) != 64 or any(
             char not in "0123456789abcdef" for char in evidence_sha256
         ):
@@ -1119,7 +1262,7 @@ class MemoryDurableWorkStore:
             if (
                 record.status != "reconciliation_required"
                 or record.generation != expected_generation
-                or record.prefect_flow_run_id != expected_flow_run_id
+                or record.remote_run_id != selected_remote_run_id
                 or submission.status != "accepted"
             ):
                 raise ControlPlaneError.conflict(
@@ -1165,7 +1308,9 @@ class MemoryDurableWorkStore:
             audit = DispatchReconciliation(
                 from_generation=record.generation,
                 to_generation=generation,
-                prefect_flow_run_id=expected_flow_run_id,
+                prefect_flow_run_id=selected_remote_run_id,
+                backend_kind=record.backend_kind,
+                remote_run_id=selected_remote_run_id,
                 authorized_at=_iso(current),
                 principal_subject=ctx.principal.subject,
                 principal_issuer=ctx.principal.issuer,
@@ -1179,6 +1324,7 @@ class MemoryDurableWorkStore:
                 ),
                 status="pending",
                 prefect_flow_run_id=None,
+                remote_run_id=None,
                 retry_after_at=None,
                 last_error_code="operator_reconciled_preclaim",
                 updated_at=_iso(current),
@@ -2460,7 +2606,7 @@ class MemoryDurableWorkStore:
         ctx: ControlPlaneContext,
         checkpoint_id: str,
         *,
-        kind: str = "corruption",
+        kind: StateDiagnosticKind = "corruption",
         detail: str = "",
     ) -> StateDiagnostic:
         if kind not in {"corruption", "migration", "conflict"}:
@@ -2474,7 +2620,7 @@ class MemoryDurableWorkStore:
                 f"diag-{uuid.uuid4().hex[:16]}",
                 *_scope(ctx),
                 checkpoint_id,
-                kind,  # type: ignore[arg-type]
+                kind,
                 redact_control_plane_text(detail) or kind,
                 _iso(),
                 recoverable=kind == "migration",
@@ -2769,7 +2915,7 @@ class MemoryDurableWorkStore:
         ctx: ControlPlaneContext,
         submission_id: str,
         *,
-        kind: str,
+        kind: RepairPlanKind,
         checkpoint_id: str | None,
         partition_ids: tuple[str, ...] = (),
         reusable_artifact_ids: tuple[str, ...] = (),
@@ -2802,7 +2948,7 @@ class MemoryDurableWorkStore:
                     )
             return RepairPlan(
                 f"rpl-{uuid.uuid4().hex[:16]}",
-                kind,  # type: ignore[arg-type]
+                kind,
                 submission_id,
                 *_scope(ctx),
                 _iso(),
@@ -2999,31 +3145,38 @@ class MemoryDurableWorkStore:
                 },
             }
 
-    def load(self, payload: Mapping[str, Any]) -> None:
-        def _record_fields(value: Mapping[str, Any]) -> dict[str, Any]:
-            return {
-                field: data for field, data in dict(value).items() if field != "schema"
-            }
-
+    def _load_legacy_unchecked(self, payload: Mapping[str, Any]) -> None:
         def _typed_records(raw: Sequence[Any], cls: type) -> tuple[Any, ...]:
-            return tuple(
-                item if isinstance(item, cls) else cls(**_record_fields(item))
-                for item in (raw or ())
-            )
+            records: list[Any] = []
+            for item in raw or ():
+                if isinstance(item, cls):
+                    records.append(item)
+                elif cls is DispatchReconciliation and isinstance(item, Mapping):
+                    records.append(
+                        DispatchReconciliation.from_dict(
+                            _snapshot_mapping(cast(object, item))
+                        )
+                    )
+                else:
+                    records.append(
+                        cls(**_snapshot_record_fields(cast(object, item), cls))
+                    )
+            return tuple(records)
 
         def _rows(raw: Mapping[str, Any], cls: type) -> dict[tuple[Any, ...], Any]:
             loaded: dict[tuple[Any, ...], Any] = {}
             for key, value in dict(raw or {}).items():
-                fields = _record_fields(value)
+                fields = _snapshot_record_fields(cast(object, value), cls)
                 if cls is DispatchRecord:
-                    fields["reconciliation_history"] = _typed_records(
-                        fields.get("reconciliation_history", ()), DispatchReconciliation
-                    )
+                    record = DispatchRecord.from_dict(value)
                 elif cls is ExecutionRouteRecord:
                     fields["history"] = _typed_records(
                         fields.get("history", ()), ExecutionRouteTransition
                     )
-                loaded[tuple(json.loads(key))] = cls(**fields)
+                    record = cls(**fields)
+                else:
+                    record = cls(**fields)
+                loaded[tuple(json.loads(key))] = record
             return loaded
 
         with self._lock:
@@ -3044,7 +3197,9 @@ class MemoryDurableWorkStore:
                 payload.get("execution_route_states") or {}
             ).items():
                 validate_execution_route(route)
-                fields = _record_fields(value)
+                fields = _snapshot_record_fields(
+                    cast(object, value), ExecutionRouteRecord
+                )
                 if fields.get("execution_route") != route:
                     raise ValueError(
                         "execution route snapshot key does not match its record"
@@ -3075,5 +3230,232 @@ class MemoryDurableWorkStore:
                     route_references[route] = references
             self._execution_route_references = route_references
 
+    def to_snapshot(self) -> dict[str, Any]:
+        """Export the complete durable-work state in a versioned data format.
 
-__all__ = ["MemoryDurableWorkStore"]
+        This is the public codec boundary for persistence adapters. The older
+        ``dump`` shape remains available for compatibility with local tooling.
+        """
+        with self._lock:
+            data = self.dump()
+            data["admission_limit"] = self.admission_limit
+            data["action_jobs"] = {
+                json.dumps(list(key)): {
+                    "schema": ACTION_JOB_SCHEMA,
+                    **asdict(record),
+                }
+                for key, record in self._action_jobs.items()
+            }
+            data["action_idempotency"] = {
+                json.dumps(list(key)): value
+                for key, value in self._action_idempotency.items()
+            }
+            data["result_publications"] = {
+                json.dumps(list(key)): record.to_dict()
+                for key, record in self._result_publications.items()
+            }
+            data["checkpoints"] = {
+                json.dumps(list(key)): record.to_dict()
+                for key, record in self._checkpoints.items()
+            }
+            data["previews"] = {
+                json.dumps(list(key)): record.to_dict()
+                for key, record in self._previews.items()
+            }
+            data["diffs"] = {
+                json.dumps(list(key)): record.to_dict()
+                for key, record in self._diffs.items()
+            }
+            data["shadows"] = {
+                json.dumps(list(key)): record.to_dict()
+                for key, record in self._shadows.items()
+            }
+            data["baselines"] = {
+                json.dumps(list(key)): record.to_dict()
+                for key, record in self._baselines.items()
+            }
+            data["diagnostics"] = [record.to_dict() for record in self._diagnostics]
+
+            def without_schema(value: object) -> object:
+                if isinstance(value, Mapping):
+                    mapping = cast(Mapping[object, Any], value)
+                    cleaned: dict[str, object] = {}
+                    for key, item in mapping.items():
+                        if not isinstance(key, str):
+                            raise ValueError(
+                                "durable snapshot field names must be strings"
+                            )
+                        if key != "schema":
+                            cleaned[key] = without_schema(item)
+                    return cleaned
+                if isinstance(value, list):
+                    return [without_schema(item) for item in cast(list[object], value)]
+                if isinstance(value, tuple):
+                    return tuple(
+                        without_schema(item) for item in cast(tuple[object, ...], value)
+                    )
+                return value
+
+            # Preserve the pre-0.59 SQLModel body at top level so a rollback
+            # reader can recover accepted Prefect work. New generic dispatch
+            # fields stay inside the versioned envelope until old binaries are
+            # outside the declared rollback window.
+            legacy_data = cast(dict[str, Any], without_schema(data))
+            raw_legacy_dispatches: object = legacy_data.get("dispatches", {})
+            if not isinstance(raw_legacy_dispatches, Mapping):
+                raise ValueError("durable snapshot dispatches must be an object")
+            legacy_dispatches: dict[str, Any] = {}
+            for key, value in cast(
+                Mapping[object, object], raw_legacy_dispatches
+            ).items():
+                if not isinstance(key, str):
+                    raise ValueError("durable snapshot dispatch keys must be strings")
+                legacy_dispatches[key] = value
+            for record in legacy_dispatches.values():
+                if isinstance(record, dict):
+                    record_fields = cast(dict[str, Any], record)
+                    record_fields.pop("backend_kind", None)
+                    record_fields.pop("remote_run_id", None)
+                    raw_history: object = record_fields.get(
+                        "reconciliation_history", ()
+                    )
+                    if not isinstance(raw_history, (list, tuple)):
+                        raise ValueError(
+                            "durable snapshot reconciliation history must be an array"
+                        )
+                    history = cast(Sequence[Any], raw_history)
+                    for reconciliation in history:
+                        if isinstance(reconciliation, dict):
+                            reconciliation_fields = cast(dict[str, Any], reconciliation)
+                            reconciliation_fields.pop("backend_kind", None)
+                            reconciliation_fields.pop("remote_run_id", None)
+            return {
+                "schema": DURABLE_WORK_SNAPSHOT_SCHEMA,
+                "data": data,
+                **legacy_data,
+            }
+
+    @classmethod
+    def from_snapshot(cls, payload: object) -> MemoryDurableWorkStore:
+        """Decode a versioned snapshot or a supported legacy SQL/memory payload."""
+        if not isinstance(payload, Mapping):
+            raise TypeError("durable work snapshot must be an object")
+        payload = cast(Mapping[str, Any], payload)
+        if "schema" in payload:
+            if payload.get("schema") != DURABLE_WORK_SNAPSHOT_SCHEMA:
+                raise ValueError("unsupported durable work snapshot schema")
+            raw_data_value: object = payload.get("data")
+            if not isinstance(raw_data_value, Mapping):
+                raise ValueError("durable work snapshot data must be an object")
+            data = cast(Mapping[str, Any], raw_data_value)
+            expected_fields = {
+                "admission_limit",
+                "submissions",
+                "idempotency",
+                "outbox",
+                "dispatches",
+                "leases",
+                "attempts",
+                "effects",
+                "execution_route_states",
+                "execution_route_references",
+                "action_jobs",
+                "action_idempotency",
+                "result_publications",
+                "checkpoints",
+                "previews",
+                "diffs",
+                "shadows",
+                "baselines",
+                "diagnostics",
+            }
+            if set(data) != expected_fields:
+                raise ValueError("durable work snapshot has unsupported data fields")
+        else:
+            # The 0.58 memory and SQLModel codecs persisted their body without
+            # an envelope. Continue reading those records during migration.
+            data = payload
+
+        store = cls(admission_limit=data.get("admission_limit"))
+        store._load_legacy_unchecked(data)
+
+        def rows(raw: object, record_type: type[Any]) -> dict[tuple[Any, ...], Any]:
+            if raw is None:
+                return {}
+            if not isinstance(raw, Mapping):
+                raise ValueError("durable snapshot record family must be an object")
+            records = cast(Mapping[object, object], raw)
+            result: dict[tuple[Any, ...], Any] = {}
+            for encoded_key, value in records.items():
+                if not isinstance(encoded_key, str) or not isinstance(value, Mapping):
+                    raise ValueError("durable snapshot record is malformed")
+                key_value: object = cast(object, json.loads(encoded_key))
+                if not isinstance(key_value, list):
+                    raise ValueError("durable snapshot key must be a JSON array")
+                key = cast(list[object], key_value)
+                if not all(isinstance(part, str) for part in key):
+                    raise ValueError("durable snapshot key must contain strings")
+                fields = _snapshot_record_fields(cast(object, value), record_type)
+                if record_type is ShadowRunRecord and isinstance(
+                    fields.get("effect_ids"), list
+                ):
+                    fields["effect_ids"] = tuple(fields["effect_ids"])
+                result[tuple(key)] = record_type(**fields)
+            return result
+
+        store._action_jobs = rows(data.get("action_jobs"), ActionJobRecord)
+        raw_action_idempotency: object = data.get("action_idempotency") or {}
+        if not isinstance(raw_action_idempotency, Mapping):
+            raise ValueError("durable action idempotency must be an object")
+        action_entries = cast(Mapping[object, object], raw_action_idempotency)
+        action_idempotency: dict[tuple[Any, ...], str] = {}
+        for key, value in action_entries.items():
+            if not isinstance(key, str) or not isinstance(value, str) or not value:
+                raise ValueError("durable action idempotency entry is malformed")
+            decoded_key_value: object = cast(object, json.loads(key))
+            if not isinstance(decoded_key_value, list):
+                raise ValueError("durable action idempotency key is malformed")
+            decoded_key = cast(list[object], decoded_key_value)
+            if not all(isinstance(part, str) for part in decoded_key):
+                raise ValueError("durable action idempotency key is malformed")
+            action_idempotency[tuple(decoded_key)] = value
+        store._action_idempotency = action_idempotency
+        store._result_publications = rows(
+            data.get("result_publications"), ResultPublicationRecord
+        )
+        store._checkpoints = rows(data.get("checkpoints"), CheckpointRecord)
+        store._previews = rows(data.get("previews"), PreviewWorkspace)
+        store._diffs = rows(data.get("diffs"), DiffRecord)
+        store._shadows = rows(data.get("shadows"), ShadowRunRecord)
+        store._baselines = rows(data.get("baselines"), BaselineAcknowledgement)
+        raw_diagnostics: object = data.get("diagnostics") or ()
+        if not isinstance(raw_diagnostics, Sequence) or isinstance(
+            raw_diagnostics, (str, bytes)
+        ):
+            raise ValueError("durable diagnostics must be an array")
+        diagnostics: list[StateDiagnostic] = []
+        diagnostic_rows = cast(Sequence[Any], raw_diagnostics)
+        for item in diagnostic_rows:
+            if isinstance(item, StateDiagnostic):
+                diagnostics.append(item)
+            elif isinstance(item, Mapping):
+                diagnostics.append(
+                    StateDiagnostic(
+                        **_snapshot_record_fields(cast(object, item), StateDiagnostic)
+                    )
+                )
+            else:
+                raise ValueError("durable diagnostic record is malformed")
+        store._diagnostics = diagnostics
+        return store
+
+    def load(self, payload: Mapping[str, Any]) -> None:
+        """Atomically replace state after validating a complete snapshot."""
+        replacement = self.from_snapshot(payload)
+        with self._lock:
+            self.admission_limit = replacement.admission_limit
+            for name in _SNAPSHOT_STATE_FIELDS:
+                setattr(self, name, getattr(replacement, name))
+
+
+__all__ = ["DURABLE_WORK_SNAPSHOT_SCHEMA", "MemoryDurableWorkStore"]

@@ -5,7 +5,7 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [0.58.0] - Unreleased
+## [0.59.0] - Unreleased
 
 ### Added
 
@@ -16,13 +16,35 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   by PostgreSQL 16.15, on Ubuntu 24.04 x86_64 with Python 3.11.15, 3.12.13,
   or 3.13.16. Qualified connectors are CSV → PostgreSQL and PostgreSQL →
   PostgreSQL replace.
+- Add a public versioned external schedule-trigger envelope and receipt with
+  bounded JSON parsing, authenticated receipt lookup, idempotent occurrence
+  reservation, and recoverable managed submission. The 0.59 trigger profile
+  remains unqualified until its independent-store and security gates pass.
+- Add the `managed-headless` extra and public SQLModel modeling/store
+  namespaces so workers and schedulers can use the shared managed service
+  graph without installing FastAPI.
 
 ### Changed
 
-- Align the core and all first-party distribution versions at 0.58.0.
-- Preserve the SQLModel migration head at
-  `014_cp1_complete_principal_idempotency_0_56`; no database migration is
-  introduced for this release.
+- Align the core and all first-party distribution versions at 0.59.0.
+- Consolidate shared managed-backend defaults, validation, dispatch identity,
+  schedule ownership, and persisted durable-state codecs behind public core
+  contracts. Preserve compatibility readers for 0.58 Prefect work.
+- Declare SparkForge 0.62.0 as the final compatibility release, with migration
+  warnings through 0.62 and routine removal beginning in 0.63.
+- Keep the SQLModel migration head at
+  `014_cp1_complete_principal_idempotency_0_56`; this release adds no SQL DDL
+  migration.
+
+### Upgrade notes
+
+- Read [Migration 0.58 → 0.59](docs/11_DEVELOPMENT/MIGRATION_0_58_TO_0_59.md)
+  before upgrading managed stores or enabling external timer ownership. Back
+  up the database and apply provider migrations explicitly; constructors do
+  not perform DDL.
+- The 0.59 managed trigger and store changes are not release-qualified yet.
+  The 0.57.x line remains the supported published line until the 0.59 exit
+  gate is complete.
 
 ### Compatibility
 
@@ -32,7 +54,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Release status
 
-- 0.58.0 is a release candidate. Publication and PyPI availability are pending.
+- 0.59.0 is a release candidate. Qualification, publication, and PyPI
+  availability are pending.
 
 ## [0.57.2] - 2026-10-11
 
@@ -2290,8 +2313,8 @@ See `docs/11_DEVELOPMENT/MIGRATION_0_16_TO_0_17.md`.
 - uv + ruff toolchain, MkDocs documentation site, shared GitHub Actions
   checks, and tag-triggered PyPI release
 
-[Unreleased]: https://github.com/eddiethedean/etlantic/compare/v0.58.0...HEAD
-[0.58.0]: https://github.com/eddiethedean/etlantic/releases/tag/v0.58.0
+[Unreleased]: https://github.com/eddiethedean/etlantic/compare/v0.59.0...HEAD
+[0.59.0]: https://github.com/eddiethedean/etlantic/releases/tag/v0.59.0
 [0.57.2]: https://github.com/eddiethedean/etlantic/releases/tag/v0.57.2
 [0.57.1]: https://github.com/eddiethedean/etlantic/releases/tag/v0.57.1
 [0.57.0]: https://github.com/eddiethedean/etlantic/releases/tag/v0.57.0

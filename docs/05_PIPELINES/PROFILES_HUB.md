@@ -1,6 +1,6 @@
 # Profiles hub
 
-> **Status: ETLantic 0.58.0 Beta release candidate.** Start here for environment,
+> **Status: ETLantic 0.59.0 Beta release candidate.** Start here for environment,
 > allowlist, and production trust. Detail pages remain authoritative.
 
 ## Read in this order
@@ -16,7 +16,7 @@
 - Prefer named profiles (`development`, `test`, `production`).
 - Production fail-closed plugin trust uses **`Profile.security_mode`** (not name alone).
 - Production profiles require a non-empty `plugin_allowlist`.
-- Keep plugin package versions on the **same minor** as core (`==0.58.0`).
+- Keep plugin package versions on the **same minor** as core (`==0.59.0`).
 - Prefer `python -m etlantic … --profile <name>` for validate / plan / run.
 
 ## Related

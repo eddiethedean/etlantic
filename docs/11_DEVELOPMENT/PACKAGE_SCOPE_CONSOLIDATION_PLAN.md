@@ -1,13 +1,14 @@
 ---
 title: Package Scope Consolidation Plan
 description: Accepted package scope recommendations, ownership charters, phased delivery, and evidence gates.
-plan_status: planned
+plan_status: current
 plan_last_reviewed: 2026-10-12
 ---
 
 # Package Scope Consolidation Plan
 
-**Status: recommendations accepted into planning; implementation pending.**
+**Status: recommendations accepted; 0.59 implementation in progress, with
+qualification and later-phase work pending.**
 This plan integrates all findings and package decisions from the
 [2026-10-12 review](PACKAGE_SCOPE_REVIEW_2026-10-12.md). It governs consolidation
 across phases 0.59–0.66. It does not change current package availability,
@@ -36,7 +37,7 @@ implementation or its explicit conditional decision.
 | F08: identical compiler helpers | 0.63 063-C; compiler + [DTCS](../04_TRANSFORMATIONS/DTCS.md) integration | [Portable transforms](PORTABLE_TRANSFORM_PLAN.md) | One public helper implementation after DTCS authority check; unchanged engine conformance; engine-specific semantics remain separate |
 | F09: fragmented HTTP policy | Policy baseline in 0.59 059-A; consume in 0.60/0.61; existing-client alignment in 0.63 063-H; security + adapter | [Dependency strategy](DEPENDENCY_STRATEGY.md), [Connect](ETLANTIC_RSCONNECT_PLAN.md), [adoption](ADOPTION_ECOSYSTEM_PLAN.md) | Existing outbound policy/conformance shared; destination/redirect/timeout/byte/redaction parity; real DNS/connect tests and explicit trusted private deployment support |
 | F10: dependency breadth / support mismatch | Range policy in 0.59 059-V; PostgreSQL extra and install measurements in 0.63 063-P; packaging + SQL | [Dependency strategy](DEPENDENCY_STRATEGY.md), [release process](RELEASE_PROCESS.md) | Resolver matrix matches qualified minor line; SQLite-only install avoids psycopg after documented migration; CLI split requires measured benefit |
-| F11: version and sunset drift | Single version source / declared sunset in 0.59 059-V; retirement after window in 0.63 063-P or later; release + provider | [Release process](RELEASE_PROCESS.md), [deprecation policy](DEPRECATION_POLICY.md) | Factory/installed metadata agree; protocol and distribution versions distinct; named final SparkForge compatibility release, warnings, tested migration, then routine release removal |
+| F11: version and sunset drift | Single version source / declared sunset in 0.59 059-V; final SparkForge compatibility release 0.62.0; routine retirement in 0.63 after migration evidence; release + provider | [Release process](RELEASE_PROCESS.md), [deprecation policy](DEPRECATION_POLICY.md) | Factory/installed metadata agree; protocol and distribution versions distinct; visible warnings through 0.62, tested migration, then routine release removal |
 | F12: excessive initial platform matrix | 0.59–0.62 phase owners; runtime + Connect + AWS + application | [0.59](IMPLEMENTATION_PLAN_0_59.md), [0.60](IMPLEMENTATION_PLAN_0_60.md), [0.61](IMPLEMENTATION_PLAN_0_61.md), [0.62](IMPLEMENTATION_PLAN_0_62.md) | Consolidation first; one explicit-URL Connect topology; Scheduler/Lambda plus ECS/Fargate only; one Data Mover host; Batch demand-gated and unscheduled |
 
 ## Sequence And Scope Control

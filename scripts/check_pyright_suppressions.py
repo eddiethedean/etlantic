@@ -58,7 +58,7 @@ from pathlib import Path
 # were added or removed. Re-pin the 789-entry inventory after source shifts.
 # Prefect test isolation shifts an existing inline ignore; no directives were
 # added or removed. Inline ignore locations are now part of the inventory, so
-# re-pin the unchanged 789-entry 0.58.0 baseline after source shifts.
+# re-pin the unchanged 789-entry 0.59.0 baseline after source shifts.
 # Phase 0.58 adds six reviewed boundaries: Prefect's dynamic scheduler surface,
 # typed fixtures for the managed contract suite, and test-only backend method
 # injection plus structural dispatcher doubles. A newly added async-result
@@ -79,9 +79,10 @@ from pathlib import Path
 # the reviewed inventory remains 794 entries and is re-pinned here.
 # Direct scheduler test annotations add one import line above an existing inline
 # ignore. No suppression was added or removed; re-pin the shifted 794-entry list.
-# Targeted cancellation reconciliation and its regression shift five existing
-# inline ignores across the durable store and phase 0.58 tests; none changed.
-EXPECTED_DIGEST = "2f79496d657336cf95b3a5aa896e5a158e32011f70968510e3ff36edc547063f"
+# Phase 0.59 broadens durable snapshots and timer ownership. Review found no
+# new suppression directives and removed twenty-three existing inline entries;
+# no file-scoped suppression was introduced. The pinned inventory is 772.
+EXPECTED_DIGEST = "772d675616274b2c90befb2e120bd3175628b6628e5525ecc7540f1963a4ca81"
 
 _IGNORED_DIRECTORIES = frozenset(
     {

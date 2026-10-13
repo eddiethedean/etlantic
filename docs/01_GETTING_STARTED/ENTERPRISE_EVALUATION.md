@@ -1,6 +1,6 @@
 # Enterprise Evaluation Guide
 
-> **Status: ETLantic 0.58.0 is a Beta release candidate; publication is pending.** Deep diligence packet for the 0.56 release. The published supported package line is 0.57.x. Start with the
+> **Status: ETLantic 0.59.0 is a Beta release candidate; publication is pending.** Deep diligence packet for the 0.56 release. The published supported package line is 0.57.x. Start with the
 > one-page [Evaluator Brief](EVALUATOR.md) for residual risk and the capability
 > matrix; use this page to assemble review links and artifacts.
 
@@ -33,7 +33,7 @@
 
 ### 2. Run the green path
 
-1. [Installation](INSTALLATION.md) — `pip install etlantic==0.58.0`
+1. [Installation](INSTALLATION.md) — `pip install etlantic==0.59.0`
 2. [Quickstart](QUICKSTART.md) — `python -m etlantic init`, validate, plan, run
 3. [First Pipeline](FIRST_PIPELINE.md) — evolve the generated project
 4. [Engine selection](ENGINE_SELECTION.md) — pick one engine tutorial
@@ -75,7 +75,7 @@ and fill `assets` for your pipeline bindings before production-profile testing.
 
 | Artifact | Location |
 |---|---|
-| Version pins | Pin `etlantic==0.58.0` and matching plugin minors |
+| Version pins | Pin `etlantic==0.59.0` and matching plugin minors |
 | Changelog | [CHANGELOG](../CHANGELOG.md) |
 | Upgrade path | [Upgrade hub](UPGRADE.md), [Migration 0.38 → 0.39](../11_DEVELOPMENT/MIGRATION_0_38_TO_0_39.md) |
 | API stability | [Deprecation policy](../11_DEVELOPMENT/DEPRECATION_POLICY.md), [Surface inventory](../10_REFERENCE/SURFACE_INVENTORY.md) |
@@ -84,7 +84,7 @@ and fill `assets` for your pipeline bindings before production-profile testing.
 
 ### Verify release attestations
 
-Verify a GitHub Release asset (example: wheel from the `v0.57.0` release):
+Verify a GitHub Release asset (example: wheel from the latest published `v0.57.2` release):
 
 ```bash
 # Download the wheel from the GitHub Release, then:
@@ -95,12 +95,12 @@ gh attestation verify path/to/etlantic-0.57.0-*.whl \
 
 Verify the published SHA-256 manifest (`release-artifacts.json`) and GitHub
 build provenance attestations from the
-[v0.57.0 GitHub Release](https://github.com/eddiethedean/etlantic/releases/tag/v0.57.0).
+[v0.57.2 GitHub Release](https://github.com/eddiethedean/etlantic/releases/tag/v0.57.2).
 CycloneDX SBOM generation is optional: the release may include
 `etlantic-environment.cdx.json` or `sbom-warning.txt`—confirm the published
 asset before recording supply-chain evidence. Full checklist:
 [Release artifact verification](RELEASE_ARTIFACT_VERIFICATION.md).
-Prefer exact pins (`etlantic==0.58.0` and matching plugins) over floating
+Prefer exact pins (`etlantic==0.59.0` and matching plugins) over floating
 ranges when recording diligence evidence.
 
 Optional surfaces to review: `etlantic-sqlmodel`, `etlantic-prefect` (MVP),
@@ -147,6 +147,6 @@ adopter-owned ops.
 
 ## Next steps
 
-- Practitioners: continue the [Current 0.57 Guide](CURRENT_VERSION.md)
+- Practitioners: continue the [Current 0.59 Guide](CURRENT_VERSION.md)
 - Decision-makers: return to [Evaluator Brief](EVALUATOR.md) with this checklist
 - Production pilots: [Pilot walkthrough](../06_EXECUTION/PILOT_WALKTHROUGH.md)

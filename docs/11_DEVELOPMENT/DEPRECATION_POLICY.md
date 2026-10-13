@@ -1,6 +1,6 @@
 # API Stability and Deprecation Policy
 
-ETLantic 0.57.2 is the latest published Beta; 0.58.0 is a qualified release
+ETLantic 0.57.2 is the latest published Beta; 0.59.0 is a qualified release
 candidate awaiting publication. Support remains within documented pilot and
 production profiles. The roadmap remains entirely
 within the 0.x series; **0.37** closed the stable-foundation gate and later

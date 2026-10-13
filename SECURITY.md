@@ -1,9 +1,9 @@
 # Security Policy
 
-> **Version boundary:** ETLantic 0.58.0 is a Beta release candidate; 0.57.x remains the published and supported line.
+> **Version boundary:** ETLantic 0.59.0 is a Beta release candidate; 0.57.x remains the published and supported line.
 
 
-ETLantic 0.58.0 is a **Beta release candidate**. The latest published and
+ETLantic 0.59.0 is a **Beta release candidate**. The latest published and
 supported line is 0.57.x, for documented single-tenant pilots.
 You can embed an HTTP control plane with **Supported** isolation
 profiles (`isolated-deployment`, `dedicated-schema`). There is no hosted
@@ -16,7 +16,7 @@ and PySpark plugins, documentation, or repository automation are welcome.
 
 | Version | Support |
 |---|---|
-| 0.58.x | Release candidate; not yet published or supported |
+| 0.59.x | Release candidate; not yet published or supported |
 | 0.57.x | Current published and supported Beta line |
 | 0.56.x | Previous release line; not actively maintained |
 | 0.55.x | Previous release line; not actively maintained |

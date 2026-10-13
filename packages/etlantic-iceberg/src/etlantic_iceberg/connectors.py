@@ -7,6 +7,7 @@ from collections.abc import AsyncIterator, Mapping
 from dataclasses import dataclass, field
 from typing import Any
 
+from etlantic import __version__ as PACKAGE_VERSION
 from etlantic.connectors.capabilities import (
     IDEMPOTENCY,
     PUBLICATION_ATOMIC,
@@ -39,7 +40,6 @@ from etlantic.connectors.models import (
 from etlantic_iceberg.fake import FakeIcebergCatalog, pyiceberg_available
 
 PROVIDER = "iceberg"
-PACKAGE_VERSION = "0.58.0"
 
 SOURCE_CAPS = frozenset(
     {
@@ -63,9 +63,32 @@ SINK_CAPS = frozenset(
 def _public_config(binding: Mapping[str, Any]) -> dict[str, Any]:
     raw = binding.get("config")
     if isinstance(raw, dict):
-        return dict(raw)
-    keys = ("table", "namespace", "mode", "identifier")
-    return {k: binding[k] for k in keys if k in binding and binding[k] is not None}
+        config = dict(raw)
+    else:
+        keys = ("table", "namespace", "mode", "identifier")
+        config = {
+            k: binding[k] for k in keys if k in binding and binding[k] is not None
+        }
+    _reject_live_config(config)
+    return config
+
+
+def _reject_live_config(config: Mapping[str, Any]) -> None:
+    requested = (
+        config.get("live") is True
+        or config.get("fake") is False
+        or config.get("force_fake") is False
+        or str(config.get("connector_mode") or "").lower() in {"live", "production"}
+        or str(config.get("implementation") or "").lower() in {"live", "production"}
+        or str(config.get("mode") or "").lower() in {"live", "production"}
+        or str(config.get("backend") or "").lower() in {"live", "production"}
+    )
+    if requested:
+        raise ConnectorConfigError(
+            "Iceberg live I/O is not implemented; this factory is reference-fake only",
+            code="PMCONN824",
+            provider=PROVIDER,
+        )
 
 
 def _table_id(binding: Mapping[str, Any], cfg: Mapping[str, Any]) -> str:
@@ -96,7 +119,10 @@ class IcebergSourceConnector:
             capabilities=tuple(sorted(SOURCE_CAPS)),
             maturity=ConnectorMaturity.EXPERIMENTAL,
             metadata={
-                "fake": not pyiceberg_available(),
+                "fake": True,
+                "implementation": "reference_fake",
+                "live_capability": False,
+                "sdk_available": pyiceberg_available(),
                 "publication_identity": "snapshot_id",
             },
         )
@@ -166,7 +192,10 @@ class IcebergSinkConnector:
             capabilities=tuple(sorted(SINK_CAPS)),
             maturity=ConnectorMaturity.EXPERIMENTAL,
             metadata={
-                "fake": not pyiceberg_available(),
+                "fake": True,
+                "implementation": "reference_fake",
+                "live_capability": False,
+                "sdk_available": pyiceberg_available(),
                 "publication_identity": "snapshot_id",
             },
         )
@@ -384,7 +413,12 @@ class IcebergStorageConnector:
             provider=PROVIDER,
             capabilities=(SOURCE_SCHEMA_DISCOVERY,),
             maturity=ConnectorMaturity.EXPERIMENTAL,
-            metadata={"fake": not pyiceberg_available()},
+            metadata={
+                "fake": True,
+                "implementation": "reference_fake",
+                "live_capability": False,
+                "sdk_available": pyiceberg_available(),
+            },
         )
 
     async def inspect_schema(
