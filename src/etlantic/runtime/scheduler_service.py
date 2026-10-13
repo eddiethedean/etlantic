@@ -7,7 +7,7 @@ from collections.abc import Callable, Mapping
 from contextlib import suppress
 from dataclasses import replace
 from datetime import datetime
-from inspect import Parameter, signature
+from inspect import signature
 from typing import Any, cast
 
 from etlantic.control_plane.authz import validate_control_plane_context
@@ -47,15 +47,12 @@ def _is_nonempty_text(value: object) -> bool:
 
 
 def _accepts_checkpoint(callback: Callable[..., Any]) -> bool:
-    """Keep legacy four-argument occurrence callbacks working."""
+    """Check keyword support without breaking legacy four-argument callbacks."""
     try:
-        parameters = signature(callback).parameters.values()
+        signature(callback).bind(None, None, None, None, checkpoint=None)
     except (TypeError, ValueError):
         return False
-    return any(
-        parameter.name == "checkpoint" or parameter.kind is Parameter.VAR_KEYWORD
-        for parameter in parameters
-    )
+    return True
 
 
 class SchedulerService:

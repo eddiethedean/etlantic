@@ -23,6 +23,7 @@ from etlantic.control_plane import (
     MemoryDurableWorkStore,
     MemoryScheduleStore,
     Principal,
+    ScheduleRecord,
     ScheduleSpec,
     SecurityDomain,
     TenantRef,
@@ -210,6 +211,90 @@ def test_scheduler_persists_occurrence_selection_before_preparation_can_fail() -
         ]
         == "revision-a"
     )
+
+
+@pytest.mark.parametrize(
+    "checkpoint_shape",
+    ["positional-only", "variadic-positional", "already-positional"],
+)
+def test_scheduler_retries_legacy_preparers_without_keyword_checkpoint(
+    checkpoint_shape: str,
+) -> None:
+    ctx = _ctx()
+    schedules = MemoryScheduleStore()
+    due_at = datetime(2026, 1, 1, 0, 1, tzinfo=UTC)
+    schedule = schedules.create(
+        ctx,
+        definition_id="legacy-preparer",
+        profile_name="test",
+        spec=ScheduleSpec(kind="interval", interval_seconds=60),
+        next_fire_at=due_at.isoformat().replace("+00:00", "Z"),
+    )
+    preparations: list[str] = []
+    submissions: list[str] = []
+
+    def positional_only_preparer(
+        _ctx: ControlPlaneContext,
+        occurrence: ScheduleRecord,
+        _nominal: str,
+        firing: FiringRecord | None,
+        checkpoint: object = None,
+        /,
+    ) -> ScheduleRecord:
+        assert checkpoint is None
+        assert firing is not None
+        preparations.append(firing.firing_id)
+        return occurrence
+
+    def variadic_positional_preparer(
+        _ctx: ControlPlaneContext,
+        occurrence: ScheduleRecord,
+        _nominal: str,
+        firing: FiringRecord | None,
+        *checkpoint: object,
+    ) -> ScheduleRecord:
+        assert checkpoint == ()
+        assert firing is not None
+        preparations.append(firing.firing_id)
+        return occurrence
+
+    def submit_run(
+        _ctx: ControlPlaneContext, _occurrence: ScheduleRecord, nominal: str
+    ) -> tuple[str, str]:
+        submissions.append(nominal)
+        raise OSError("simulated interruption before submission")
+
+    def existing_parameter_preparer(
+        _ctx: ControlPlaneContext,
+        occurrence: ScheduleRecord,
+        _nominal: str,
+        checkpoint: FiringRecord | None,
+    ) -> ScheduleRecord:
+        assert checkpoint is not None
+        preparations.append(checkpoint.firing_id)
+        return occurrence
+
+    preparers = {
+        "positional-only": positional_only_preparer,
+        "variadic-positional": variadic_positional_preparer,
+        "already-positional": existing_parameter_preparer,
+    }
+    scheduler = SchedulerService(
+        schedules,
+        durable=MemoryDurableWorkStore(),
+        clock=FakeScheduleClock(due_at),
+        occurrence_preparer=preparers[checkpoint_shape],
+        occurrence_recoverer=lambda _ctx, _occurrence, _nominal: None,
+        run_submitter=submit_run,
+    )
+
+    assert scheduler.tick(ctx) == 0
+    firing = schedules.list_firings(ctx, schedule.schedule_id)[0]
+    assert preparations == [firing.firing_id]
+    assert scheduler.tick(ctx) == 0
+    assert preparations == [firing.firing_id, firing.firing_id]
+    assert submissions == [firing.nominal_fire_time, firing.nominal_fire_time]
+    assert len(schedules.list_firings(ctx, schedule.schedule_id)) == 1
 
 
 def test_failed_due_occurrence_does_not_starve_other_schedules() -> None:
