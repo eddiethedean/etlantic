@@ -167,3 +167,59 @@ def test_versioned_snapshot_rollback_projection_preserves_nested_schema_data() -
 
     restored = MemoryDurableWorkStore.from_snapshot(rollback_projection)
     assert restored.get_effect(ctx, "effect-1").metadata["provider_receipt"] == receipt
+
+
+def test_versioned_snapshot_rejects_malformed_family_without_replacing_state() -> None:
+    ctx = _context()
+    source = MemoryDurableWorkStore()
+    source.accept(
+        ctx,
+        idempotency_key="snapshot-source",
+        operation="run.submit",
+        plan_fingerprint="source-plan",
+    )
+    snapshot = json.loads(json.dumps(source.to_snapshot()))
+    snapshot["data"]["submissions"] = None
+
+    restored = MemoryDurableWorkStore()
+    retained, _ = restored.accept(
+        ctx,
+        idempotency_key="retained-before-invalid-load",
+        operation="run.submit",
+        plan_fingerprint="retained-plan",
+    )
+    with pytest.raises(ValueError, match="submissions must be an object"):
+        restored.load(snapshot)
+
+    assert restored.get_submission(ctx, retained.submission_id) == retained
+
+
+def test_versioned_snapshot_rejects_record_scope_key_mismatch_atomically() -> None:
+    ctx = _context()
+    source = MemoryDurableWorkStore()
+    submission, _ = source.accept(
+        ctx,
+        idempotency_key="snapshot-scope",
+        operation="run.submit",
+        plan_fingerprint="source-plan",
+    )
+    snapshot = json.loads(json.dumps(source.to_snapshot()))
+    family = snapshot["data"]["submissions"]
+    encoded_key, row = next(iter(family.items()))
+    key = json.loads(encoded_key)
+    key[0] = "tenant-other"
+    key[1] = "workspace-other"
+    snapshot["data"]["submissions"] = {json.dumps(key): row}
+
+    restored = MemoryDurableWorkStore()
+    retained, _ = restored.accept(
+        ctx,
+        idempotency_key="retained-before-mismatched-load",
+        operation="run.submit",
+        plan_fingerprint="retained-plan",
+    )
+    with pytest.raises(ValueError, match="key does not match its record identity"):
+        restored.load(snapshot)
+
+    assert restored.get_submission(ctx, retained.submission_id) == retained
+    assert submission.submission_id != retained.submission_id

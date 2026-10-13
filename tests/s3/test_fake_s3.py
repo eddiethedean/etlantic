@@ -5,7 +5,13 @@ from __future__ import annotations
 
 import anyio
 import pytest
-from etlantic_s3 import InMemoryS3Fake, create_sink, create_source, create_storage
+from etlantic_s3 import (
+    InMemoryS3Fake,
+    __version__,
+    create_sink,
+    create_source,
+    create_storage,
+)
 from etlantic_s3.fake import boto3_available
 
 from etlantic.connectors.errors import ConnectorConfigError
@@ -24,6 +30,7 @@ def test_factories_and_protocols() -> None:
     assert isinstance(sink, SinkConnector)
     assert isinstance(storage, StorageConnector)
     assert source.info().maturity.value == "experimental"
+    assert source.info().version == __version__
     assert sink.info().metadata.get("commit_pointer") == "conditional"
 
 

@@ -7,7 +7,6 @@ from collections.abc import AsyncIterator, Mapping
 from dataclasses import dataclass, field
 from typing import Any
 
-from etlantic import __version__ as PACKAGE_VERSION
 from etlantic.connectors.capabilities import (
     IDEMPOTENCY,
     PUBLICATION_ATOMIC,
@@ -40,6 +39,7 @@ from etlantic.connectors.models import (
 from etlantic_iceberg.fake import FakeIcebergCatalog, pyiceberg_available
 
 PROVIDER = "iceberg"
+PACKAGE_VERSION = "0.59.0"
 
 SOURCE_CAPS = frozenset(
     {

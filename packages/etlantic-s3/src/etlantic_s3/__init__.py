@@ -2,7 +2,9 @@
 
 from __future__ import annotations
 
-from etlantic import __version__
+from etlantic_s3.connectors import (
+    PACKAGE_VERSION as __version__,
+)
 from etlantic_s3.connectors import (
     S3SinkConnector,
     S3SourceConnector,

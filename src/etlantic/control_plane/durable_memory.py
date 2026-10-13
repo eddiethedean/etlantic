@@ -3437,6 +3437,14 @@ class MemoryDurableWorkStore:
             }
             if set(data) != expected_fields:
                 raise ValueError("durable work snapshot has unsupported data fields")
+            mapping_families = expected_fields - {"admission_limit", "diagnostics"}
+            for family in mapping_families:
+                if not isinstance(data[family], Mapping):
+                    raise ValueError(
+                        f"durable work snapshot {family} must be an object"
+                    )
+            if not isinstance(data["diagnostics"], (list, tuple)):
+                raise ValueError("durable work snapshot diagnostics must be an array")
         else:
             # The 0.58 memory and SQLModel codecs persisted their body without
             # an envelope. Continue reading those records during migration.
@@ -3445,7 +3453,11 @@ class MemoryDurableWorkStore:
         store = cls(admission_limit=data.get("admission_limit"))
         store._load_legacy_unchecked(data)
 
-        def rows(raw: object, record_type: type[Any]) -> dict[tuple[Any, ...], Any]:
+        def rows(
+            raw: object,
+            record_type: type[Any],
+            identity_fields: tuple[str, ...],
+        ) -> dict[tuple[Any, ...], Any]:
             if raw is None:
                 return {}
             if not isinstance(raw, Mapping):
@@ -3462,14 +3474,62 @@ class MemoryDurableWorkStore:
                 if not all(isinstance(part, str) for part in key):
                     raise ValueError("durable snapshot key must contain strings")
                 fields = _snapshot_record_fields(cast(object, value), record_type)
+                if any(
+                    not isinstance(fields.get(name), str) for name in identity_fields
+                ):
+                    raise ValueError("durable snapshot record identity is malformed")
+                expected_key = tuple(fields[name] for name in identity_fields)
+                if tuple(key) != expected_key:
+                    raise ValueError(
+                        "durable snapshot key does not match its record identity"
+                    )
                 if record_type is ShadowRunRecord and isinstance(
                     fields.get("effect_ids"), list
                 ):
                     fields["effect_ids"] = tuple(fields["effect_ids"])
-                result[tuple(key)] = record_type(**fields)
+                record = (
+                    DispatchRecord.from_dict(cast(Mapping[str, Any], value))
+                    if record_type is DispatchRecord
+                    else record_type(**fields)
+                )
+                result[expected_key] = record
             return result
 
-        store._action_jobs = rows(data.get("action_jobs"), ActionJobRecord)
+        store._submissions = rows(
+            data.get("submissions"),
+            SubmissionRecord,
+            ("tenant_id", "workspace_id", "submission_id"),
+        )
+        store._outbox = rows(
+            data.get("outbox"),
+            OutboxRecord,
+            ("tenant_id", "workspace_id", "outbox_id"),
+        )
+        store._dispatches = rows(
+            data.get("dispatches"),
+            DispatchRecord,
+            ("tenant_id", "workspace_id", "submission_id"),
+        )
+        store._leases = rows(
+            data.get("leases"),
+            LeaseRecord,
+            ("tenant_id", "workspace_id", "submission_id"),
+        )
+        store._attempts = rows(
+            data.get("attempts"),
+            AttemptRecord,
+            ("tenant_id", "workspace_id", "attempt_id"),
+        )
+        store._effects = rows(
+            data.get("effects"),
+            EffectRecord,
+            ("tenant_id", "workspace_id", "effect_id"),
+        )
+        store._action_jobs = rows(
+            data.get("action_jobs"),
+            ActionJobRecord,
+            ("tenant_id", "workspace_id", "action_id"),
+        )
         raw_action_idempotency: object = data.get("action_idempotency") or {}
         if not isinstance(raw_action_idempotency, Mapping):
             raise ValueError("durable action idempotency must be an object")
@@ -3487,13 +3547,35 @@ class MemoryDurableWorkStore:
             action_idempotency[tuple(decoded_key)] = value
         store._action_idempotency = action_idempotency
         store._result_publications = rows(
-            data.get("result_publications"), ResultPublicationRecord
+            data.get("result_publications"),
+            ResultPublicationRecord,
+            ("tenant_id", "workspace_id", "submission_id", "attempt_id"),
         )
-        store._checkpoints = rows(data.get("checkpoints"), CheckpointRecord)
-        store._previews = rows(data.get("previews"), PreviewWorkspace)
-        store._diffs = rows(data.get("diffs"), DiffRecord)
-        store._shadows = rows(data.get("shadows"), ShadowRunRecord)
-        store._baselines = rows(data.get("baselines"), BaselineAcknowledgement)
+        store._checkpoints = rows(
+            data.get("checkpoints"),
+            CheckpointRecord,
+            ("tenant_id", "workspace_id", "checkpoint_id"),
+        )
+        store._previews = rows(
+            data.get("previews"),
+            PreviewWorkspace,
+            ("tenant_id", "workspace_id", "preview_id"),
+        )
+        store._diffs = rows(
+            data.get("diffs"),
+            DiffRecord,
+            ("tenant_id", "workspace_id", "diff_id"),
+        )
+        store._shadows = rows(
+            data.get("shadows"),
+            ShadowRunRecord,
+            ("tenant_id", "workspace_id", "shadow_run_id"),
+        )
+        store._baselines = rows(
+            data.get("baselines"),
+            BaselineAcknowledgement,
+            ("tenant_id", "workspace_id", "schema_baseline_id"),
+        )
         raw_diagnostics: object = data.get("diagnostics") or ()
         if not isinstance(raw_diagnostics, Sequence) or isinstance(
             raw_diagnostics, (str, bytes)

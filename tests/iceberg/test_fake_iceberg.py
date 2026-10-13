@@ -5,7 +5,12 @@ from __future__ import annotations
 
 import anyio
 import pytest
-from etlantic_iceberg import FakeIcebergCatalog, create_sink, create_source
+from etlantic_iceberg import (
+    FakeIcebergCatalog,
+    __version__,
+    create_sink,
+    create_source,
+)
 
 from etlantic.connectors.errors import ConnectorConfigError
 from etlantic.connectors.protocol import SinkConnector, SourceConnector
@@ -59,6 +64,7 @@ def test_abort_discards_staged_rows() -> None:
 def test_protocols() -> None:
     assert isinstance(create_source(), SourceConnector)
     assert isinstance(create_sink(), SinkConnector)
+    assert create_source().info().version == __version__
     assert create_sink().info().metadata["publication_identity"] == "snapshot_id"
 
 
