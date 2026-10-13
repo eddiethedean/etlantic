@@ -948,6 +948,7 @@ def test_dispatcher_recovers_lost_create_response_with_prefect_idempotency(
     now = [datetime.now(UTC)]
     create_calls: list[dict[str, Any]] = []
     accepted_remote_runs: list[Any] = []
+    lookup_failures = [0]
 
     class _LostResponseClient:
         def __init__(self) -> None:
@@ -972,9 +973,15 @@ def test_dispatcher_recovers_lost_create_response_with_prefect_idempotency(
                 *args, **kwargs
             )
             accepted_remote_runs.append(flow_run)
-            if len(create_calls) == 1:
+            if len(create_calls) in {1, 3}:
                 raise ConnectionError("simulated response loss after remote create")
             return flow_run
+
+        async def read_flow_runs(self, *args: Any, **kwargs: Any) -> list[Any]:
+            if lookup_failures[0]:
+                lookup_failures[0] -= 1
+                raise ConnectionError("simulated lookup outage")
+            return await self._client.read_flow_runs(*args, **kwargs)
 
     monkeypatch.setattr(durable_memory, "_now", lambda: now[0])
 
@@ -1043,6 +1050,59 @@ def test_dispatcher_recovers_lost_create_response_with_prefect_idempotency(
         dispatch = durable.get_dispatch(ctx, receipt.submission_id)
         assert dispatch.dispatch_attempts == 2
         assert dispatch.creation_key == create_calls[0]["idempotency_key"]
+
+        cancelled = service.submit_run(
+            ctx, "pipeline-058", idempotency_key=f"lost-create-cancel-{scope}"
+        )
+        uncertain = await dispatcher.tick(limit=1)
+        assert len(uncertain) == 1
+        assert uncertain[0]["status"] == "uncertain"
+        assert len(accepted_remote_runs) == 3
+        durable.cancel_submission(ctx, cancelled.submission_id)
+        assert durable.reconcile_cancelled_submissions(ctx, limit=10) == []
+        assert durable.get_submission(ctx, cancelled.submission_id).status == (
+            "cancel_requested"
+        )
+
+        lookup_failures[0] = 1
+        now[0] += timedelta(seconds=3)
+        unresolved_cancellation = await dispatcher.tick(limit=1)
+        assert len(unresolved_cancellation) == 1
+        assert unresolved_cancellation[0]["status"] == "uncertain"
+        assert durable.get_dispatch(ctx, cancelled.submission_id).status == (
+            "uncertain"
+        )
+        assert durable.get_submission(ctx, cancelled.submission_id).status == (
+            "cancel_requested"
+        )
+
+        now[0] += timedelta(seconds=5)
+        recovered_cancellation = await dispatcher.tick(limit=1)
+        assert len(recovered_cancellation) == 1
+        assert recovered_cancellation[0]["status"] == "dispatched"
+        assert recovered_cancellation[0]["prefect_flow_run_id"] == str(
+            accepted_remote_runs[2].id
+        )
+        assert len(create_calls) == 3
+        assert len(accepted_remote_runs) == 3
+        assert durable.get_submission(ctx, cancelled.submission_id).status == (
+            "cancelled"
+        )
+        assert (
+            durable.execution_route_workload(
+                ctx, binding.execution_route
+            ).incomplete_dispatches
+            == 0
+        )
+        assert (
+            durable.pending_outbox(
+                ctx,
+                terminal_only=True,
+                submission_id=cancelled.submission_id,
+                execution_route=binding.execution_route,
+            )
+            == []
+        )
 
     postgres_url = os.environ.get("ETLANTIC_CP_TEST_URL")
     if postgres_url:
@@ -3081,9 +3141,13 @@ def test_exhausted_dispatch_can_be_cancelled_before_route_retirement(
 
 
 def test_cancellation_preserves_uncertain_and_leased_dispatches_for_reconciliation(
-    tmp_path: Path,
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
+    import etlantic.control_plane.durable_memory as durable_memory
+
     route = f"prefect:{'d' * 64}"
+    now = [datetime.now(UTC)]
+    monkeypatch.setattr(durable_memory, "_now", lambda: now[0])
     ctx, _authz, durable, managed = _managed_service(tmp_path, execution_route=route)
     uncertain_receipt = managed.submit_run(
         ctx, "pipeline-058", idempotency_key="uncertain-dispatch-cancel"
@@ -3116,13 +3180,21 @@ def test_cancellation_preserves_uncertain_and_leased_dispatches_for_reconciliati
     durable.cancel_submission(ctx, uncertain_receipt.submission_id)
     durable.cancel_submission(ctx, leased_receipt.submission_id)
     durable.reconcile_cancelled_submissions(ctx, limit=10)
+    now[0] += timedelta(seconds=3)
 
     assert durable.get_dispatch(ctx, uncertain_receipt.submission_id).status == (
         "uncertain"
     )
     assert durable.get_dispatch(ctx, leased_receipt.submission_id).status == "leased"
+    assert [
+        item.submission_id
+        for item in durable.pending_dispatches(ctx, execution_route=route, limit=10)
+    ] == [uncertain_receipt.submission_id]
+    assert durable.get_submission(ctx, uncertain_receipt.submission_id).status == (
+        "cancel_requested"
+    )
     workload = durable.execution_route_workload(ctx, route)
-    assert workload.active_submissions == 0
+    assert workload.active_submissions == 1
     assert workload.incomplete_dispatches == 2
     assert workload.drained is False
 

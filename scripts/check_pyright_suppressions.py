@@ -79,10 +79,10 @@ from pathlib import Path
 # the reviewed inventory remains 794 entries and is re-pinned here.
 # Direct scheduler test annotations add one import line above an existing inline
 # ignore. No suppression was added or removed; re-pin the shifted 794-entry list.
-# Phase 0.59 broadens durable snapshots and timer ownership. Review found no
-# new suppression directives and removed twenty-three existing inline entries;
-# no file-scoped suppression was introduced. The pinned inventory is 772.
-EXPECTED_DIGEST = "772d675616274b2c90befb2e120bd3175628b6628e5525ecc7540f1963a4ca81"
+# Phase 0.59 broadens durable snapshots and timer ownership. The merged 0.58
+# cancellation recovery fixture adds one reviewed private-usage suppression;
+# the candidate inventory contains 773 entries.
+EXPECTED_DIGEST = "b6e7217d8c85c2bc031491df2cc1f3c3c86a48acf09d47ae85b377d51d3fc0b6"
 
 _IGNORED_DIRECTORIES = frozenset(
     {
