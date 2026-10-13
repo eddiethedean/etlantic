@@ -1,7 +1,7 @@
 # TransformationModel Incubation Plan
 
-> **Plan status: proposed post-foundation 0.62 incubation; not shipped.** The
-> [0.62 implementation plan](IMPLEMENTATION_PLAN_0_62.md) defines delivery
+> **Plan status: proposed post-foundation 0.66 incubation; not shipped.** The
+> [0.66 implementation plan](IMPLEMENTATION_PLAN_0_66.md) defines delivery
 > order, evidence, and phase exit gates.
 >
 > The work is deferred from 0.20+ and the former 0.38 slot. Connectivity,
@@ -17,8 +17,12 @@
 >
 > **Review trigger:** Update if the incubation horizon changes or TM-0 begins.
 
-TransformationModel begins as an independently buildable workspace package at
-`packages/transformationmodel`. It may become a separately released ETLantic
+Under the accepted [package consolidation plan](PACKAGE_SCOPE_CONSOLIDATION_PLAN.md),
+package creation is conditional on a named independent consumer and an exact
+before/after authoring extraction and duplicate-retirement map. A new wrapper
+over unchanged owners is insufficient; absent that evidence, refactor modules
+and defer the wheel. TransformationModel may then begin as an independently
+buildable workspace package at `packages/transformationmodel`. It may become a separately released ETLantic
 dependency only after the graduation gates in this plan pass.
 
 ## Product outcome
@@ -92,9 +96,9 @@ independent consumer proves that the boundary is useful.
   relational expressions
 - DTCS semantic action and function mappings
 - portable-profile and capability declarations
-- expression and transformation-definition validation
-- deterministic portable-plan construction and fingerprinting
-- DTCS import, export, diagnostics, compatibility, and fidelity
+- typed authoring validation and delegation to public DTCS normative validation
+- portable-plan construction/fingerprinting through public DTCS APIs
+- authoring translation for DTCS import/export, diagnostics, compatibility and fidelity
 - compiler capability protocols containing no runtime objects
 
 Current sources to assess include `src/etlantic/transform/`, the semantic parts
@@ -117,6 +121,12 @@ for a mechanical move; ownership must be decided symbol by symbol.
 - backend-native functions outside declared DTCS portability
 - data access, pushdown, collection, materialization, and writes
 - engine sessions, credentials, resources, and side effects
+
+No candidate above authorizes copying normative DTCS parsing, canonicalization
+or validation. Those remain upstream; the extraction owns Python authoring and
+translation. Migrated authoring implementation is removed from its old owner,
+with compatibility imports calling one implementation and temporary incubation
+copies having explicit retirement gates.
 
 ## Initial package shape
 
@@ -244,7 +254,7 @@ sessions never participate in semantic fingerprints.
 
 ## Implementation phases
 
-### TM-0 — Boundary audit and fixtures
+### TM-0 — Consumer/value gate, boundary audit and fixtures
 
 Deliver:
 
@@ -261,11 +271,15 @@ Deliver:
 Exit: representative behavior is protected and every proposed move has an
 explicit ownership rationale.
 
-### TM-1 — Package skeleton and semantic kernel
+A named independent consumer and moved-code/duplicate-retirement map are also
+required before creating the wheel. Defer creation if these cannot be proven.
+
+### TM-1 — Package skeleton and authoring facade
 
 Deliver an independently buildable typed package, declaration types, immutable
-descriptors, canonical serialization, fingerprints, diagnostics, fidelity, and
-package documentation without ETLantic or backend imports.
+descriptors, public DTCS-backed serialization/fingerprints/diagnostics, authoring
+fidelity and package documentation without ETLantic or backend imports; no copied
+normative parser, canonicalizer or validator.
 
 Exit: a transformation can be declared, described, serialized, loaded, and
 fingerprinted without importing ETLantic.
@@ -316,7 +330,9 @@ Use incremental delegation rather than a repository-wide move:
 4. Keep compatibility imports while downstream consumers migrate.
 5. Move executable registration, step creation, and runtime selection behind
    explicit ETLantic adapters.
-6. Remove duplicates only after parity tests pass.
+6. Delete named migrated authoring duplication after parity passes; compatibility
+   exports delegate to one owner, and no second normative DTCS parser,
+   canonicalizer or validator may be introduced during incubation.
 7. Require the dependency only after an independent release proves the seam.
 
 Every temporary dual implementation needs an owner and removal milestone.
@@ -347,7 +363,8 @@ Every temporary dual implementation needs an owner and removal milestone.
 ## Graduation gates
 
 - an independent consumer can author, validate, inspect, round-trip, and diff a
-  transformation
+  transformation; named migrated authoring duplication has been removed and
+  public DTCS remains the single normative semantic implementation
 - equivalent definitions serialize and fingerprint identically across
   supported Python versions and operating systems
 - unsupported and lossy semantics are explicit and fail closed when required

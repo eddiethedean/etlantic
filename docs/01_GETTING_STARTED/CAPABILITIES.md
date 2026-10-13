@@ -261,6 +261,10 @@ See also [Experimental surfaces](EXPERIMENTAL_SURFACES.md).
 
 ## Planned and residual appendix (not unrestricted production)
 
+The [accepted package scope plan](../11_DEVELOPMENT/PACKAGE_SCOPE_CONSOLIDATION_PLAN.md)
+narrows future platform matrices and makes new consolidation wheels conditional.
+These planning changes do not add current capabilities; Batch is unscheduled.
+
 | Capability | Status |
 |---|---|
 | Source/sink/storage connector SDK and reference set | **Available** in 0.38 — see [Connector SDK](../07_PLUGIN_SDK/CONNECTOR_SDK.md); cloud packages Experimental |
@@ -268,7 +272,7 @@ See also [Experimental surfaces](EXPERIMENTAL_SURFACES.md).
 | OpenLineage metadata interoperability | **Experimental** outbound via `etlantic-openlineage` (non-authority; not production multi-tenant) |
 | GitOps preview-to-production workflow | **Available** (CP-GA in-process evidence; see [WHATS_NEW_0_43](WHATS_NEW_0_43.md)) |
 | PySpark / SQL Arrow physical boundaries | Follow-up after Polars↔Pandas Gate A |
-| Managed Spark providers (Databricks/EMR/Connect) | Kubernetes Job + Spark Connect **Experimental fakes** ship in 0.47; live provider packs remain planned for 0.61 |
+| Managed Spark providers (Databricks/EMR/Connect) | Kubernetes Job + Spark Connect **Experimental fakes** ship in 0.47; live provider packs remain planned for 0.65 |
 | FastAPI scheduler/runner service and remote federation | **Available in the bounded 0.47 envelope** — gateway routes plus separate scheduler/worker processes; see [What's new in 0.47](WHATS_NEW_0_47.md) and [ADR-023](../11_DEVELOPMENT/adr/ADR-023-SCHEDULER-SERVICE-AND-FEDERATION.md) |
 | Human-governed AI context/proposals | **Available in the bounded 0.49 envelope** — redacted bundles, proposal sandbox, user-region generators; `etlantic-mcp` Experimental — see [What's new in 0.49](WHATS_NEW_0_49.md) and [ADR-024](../11_DEVELOPMENT/adr/ADR-024-HUMAN-GOVERNED-AI.md) |
 | Embedded DuckDB engine package | **Available (qualified subset)** in 0.49: optional `etlantic-duckdb` package with native embedded runtime, dialect/compiler subset, security policy, and qualification evidence — see [implementation plan](../11_DEVELOPMENT/IMPLEMENTATION_PLAN_0_49.md), [exit gate](../11_DEVELOPMENT/EXIT_GATE_0_49.md), and [What's new in 0.49](WHATS_NEW_0_49.md) |
@@ -282,16 +286,20 @@ See also [Experimental surfaces](EXPERIMENTAL_SURFACES.md).
 | Complete application ETL backend | **Candidate qualified for 0.56** — shared authorized services, real managed execution/results, full specification/run controls, live PostgreSQL/CSV qualification and Semblance-backed Foundry API qualification; no live Foundry account required. See [plan](../11_DEVELOPMENT/IMPLEMENTATION_PLAN_0_56.md) and [reviewed gaps](../11_DEVELOPMENT/FINDINGS_0_56.md) |
 | Transport-independent managed backend, shared schedule commands, complete scheduler factory, provider schema inspection, and role supervision (#278–#282) | Planned for 0.57.0; [implementation plan](../11_DEVELOPMENT/IMPLEMENTATION_PLAN_0_57.md) |
 | Managed Prefect execution | The bounded [0.58 support profile](../11_DEVELOPMENT/IMPLEMENTATION_PLAN_0_58.md) is qualified for static-batch `/1`, self-hosted Prefect Process workers, PostgreSQL, and the documented Python matrix; it is part of the 0.58.0 release candidate. See the [qualification decision](../11_DEVELOPMENT/evidence/phase_0_58/FINAL_QUALIFICATION_DECISION_2026-10-12.json). |
-| Dagster / Argo compilers and Prefect migration interoperability | Planned brownfield bridges in 0.59; Prefect reuses the 0.58 managed adapter |
-| Read-only-first operator console | Planned first-class for 0.60 |
-| AWS/Azure/GCP/Vault secret-provider packs | Planned as optional providers in 0.61 |
-| TransformationModel incubation | Deferred to 0.62 |
+| Managed runtime consolidation and trigger contracts | **Planned for 0.59; not available** — [implementation plan](../11_DEVELOPMENT/IMPLEMENTATION_PLAN_0_59.md) |
+| Posit Connect scheduling and HTTPS triggers | **Planned for 0.60; not available** — [implementation plan](../11_DEVELOPMENT/IMPLEMENTATION_PLAN_0_60.md) |
+| AWS Scheduler/Lambda delivery and one ECS/Fargate executor | **Planned for 0.61; not available** — [implementation plan](../11_DEVELOPMENT/IMPLEMENTATION_PLAN_0_61.md) |
+| One Data Mover host and optional Posit endpoint discovery | **Planned for 0.62; not available** — [implementation plan](../11_DEVELOPMENT/IMPLEMENTATION_PLAN_0_62.md) |
+| Dagster / Argo compilers and Prefect migration interoperability | Demand-gated brownfield adapters in 0.63; Prefect reuses the 0.58 managed adapter |
+| Read-only-first operator console | Planned first-class for 0.64 |
+| AWS/Azure/GCP/Vault secret-provider packs | Demand-selected optional providers in 0.65 |
+| TransformationModel incubation | Conditional in 0.66; independent consumer and duplicate removal required |
 | Full LSP server productization | **Available** in 0.44 (`etlantic-lsp`; VS Code client Experimental) |
 | Registry-backed schema history | **Available** (CP2 metadata-only histories) |
 | Production multi-tenant control plane | **Available** for Supported profiles (`isolated-deployment`, `dedicated-schema`); `shared-service` remains Experimental (see [support matrix](../11_DEVELOPMENT/cp_ga_support_matrix_0_43.json)) |
 | Stable-foundation compatibility inventories | Available in 0.37 (surface / protocol / diagnostic tiers; Beta retained) |
 | Portable continuation families (`relational-extended`, …) | Not yet — see [Portable Compiler Matrix](../10_REFERENCE/PORTABLE_COMPILER_MATRIX.md) |
-| Dedicated multi-worker / multi-tenant ops control plane | Partial — Supported profiles via CP-GA; Operator Console remains 0.60 ([plan](../11_DEVELOPMENT/MULTI_TENANT_CONTROL_PLANE_PLAN.md)) |
+| Dedicated multi-worker / multi-tenant ops control plane | Partial — Supported profiles via CP-GA; Operator Console remains 0.64 ([plan](../11_DEVELOPMENT/MULTI_TENANT_CONTROL_PLANE_PLAN.md)) |
 
 **Already shipped (0.28–0.34):** Plugin SDK `/1` freeze; quality; materialization;
 PySpark/Delta parity; SQL builder parity; M6 observability, run history, and

@@ -1,11 +1,37 @@
 # API Stability and Deprecation Policy
 
-ETLantic 0.58.0 is the current Beta (PyPI) release suitable for documented single-tenant
-pilots—not unrestricted enterprise production. The roadmap remains entirely
+ETLantic 0.57.2 is the latest published Beta; 0.58.0 is a qualified release
+candidate awaiting publication. Support remains within documented pilot and
+production profiles. The roadmap remains entirely
 within the 0.x series; **0.37** closed the stable-foundation gate and later
 minors continue post-foundation incubation. Breaking
 changes remain possible, but they must not be silent. See
 [Surface Inventory](../10_REFERENCE/SURFACE_INVENTORY.md).
+
+## Planned consolidation migration windows — 0.59 onward
+
+The accepted [package consolidation plan](PACKAGE_SCOPE_CONSOLIDATION_PLAN.md)
+requires named windows for moved managed imports, legacy backend constructors,
+the HTTP-oriented `managed` extra, PostgreSQL-driver installation, testing APIs
+and reference provider identities/entry points. Compatibility exports delegate
+to one implementation, emit appropriate diagnostics/warnings and do not become
+indefinite second owners. Plain core authoring/embedded execution stays complete.
+
+In 0.59, release maintainers record the exact final compatibility version of
+`etlantic-sparkforge`, its replacement/migration instructions, first warning
+release, last compatible release and removal trigger. Do not label each new
+minor another final release. No new features belong in the redirect. After the
+published window and migration tests pass, remove it from routine version bumps,
+build/publish workflows and supported current install recipes. Retain historical
+wheels and old installations; do not delete published distributions.
+
+0.63 may retire superseded reference-only release units after their recorded
+windows. Preserve old provider identities/entry points or diagnose explicit
+migration; moving a fake must not silently replace a production provider.
+Conditional runtime/testing packages need explicit optional-install errors for
+moved surfaces and a supported old-import path during the window. Dependency
+ranges and installed old/new combinations must be tested alongside warnings.
+None of these future removals is enacted by updating the plan.
 
 ## Stability levels
 

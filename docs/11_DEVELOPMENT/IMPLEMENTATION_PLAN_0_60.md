@@ -1,102 +1,84 @@
 ---
 title: ETLantic 0.60 Implementation Plan
-description: Implementation-grade plan for the separately deployable operator console.
-plan_status: current
-plan_last_reviewed: 2026-10-11
+description: Posit Connect scheduling and generic authenticated HTTPS triggers.
+plan_status: planned
+plan_last_reviewed: 2026-10-12
 ---
 
 # ETLantic 0.60 Implementation Plan
 
-Phase 0.60 delivers a separately deployable, read-only-first operator console.
-It consumes the versioned control-plane API through a generated client and uses
-the shared artifact language from the [UI/UX plan](UI_UX_PLAN.md).
+Phase 0.60 builds optional `etlantic-rsconnect` for native Connect scheduling
+and lightweight HTTPS triggers. The [rsconnect domain plan](ETLANTIC_RSCONNECT_PLAN.md)
+owns platform boundaries. Former 0.60 console scope moves intact to
+[0.64](IMPLEMENTATION_PLAN_0_64.md). All new capabilities remain planned.
 
 ## Outcome
 
-Authorized operators can inspect definitions, revisions, plans, diffs, runs,
-attempts, events, lineage, partitions, checkpoints, quality, schema, repairs,
-backfills, delivery objectives, deadline/escalation state, erasure operations,
-dynamic expansions and branches, dead-letter/redrive state, schema-registry
-compatibility, quotas, policy, approvals, audit, providers, and health.
-Privileged actions reuse API policy, idempotency, approval, and audit paths
-exactly.
-
-This phase moves from 0.59 to 0.60 after insertion of the
-[0.58 managed Prefect phase](IMPLEMENTATION_PLAN_0_58.md). Its
-complete scope is retained.
+Operators deploy and manage scheduled trigger content that calls any configured,
+compatible HTTPS receiver. Receivers durably admit work and independent workers
+execute ETL; Connect trigger success is reported separately from ETL success.
 
 ## Prerequisites And Non-Goals
 
-- 0.56 shared services, real result projections and allowed-action schemas
-  are prerequisites; console code must not fill backend implementation gaps.
-- 0.57 owns headless backend/schedule parity, schema inspection, and runtime
-  status/drain contracts. Console health views project those facts; they do not
-  infer library health from work counts or implement another ETL state machine.
-- 0.58 owns managed Prefect correlation, dispatch, cancellation, and
-  reconciliation facts. Console views consume their authorized API projections
-  and show orchestration observations separately from ETL/effect/publication
-  outcomes; the browser must not contact Prefect as a second control authority.
-- 0.43 API/auth/event support and 0.44 artifact/interaction contracts are stable;
-  0.46–0.59 capabilities appear only where the server advertises them.
-- The console owns no source of truth, authorization rule, execution path, policy
-  engine, schema authority, or provider credential.
-- The core and API packages never depend on frontend code or its toolchain.
-- Preview rendering is bounded and hostile content is treated as data, not markup
-  or executable instruction.
+- 0.59 supplies consolidated managed ownership, shared outbound policy and the
+  missing versioned trigger/schedule seams, auth, identities, receipt
+  semantics, and reference conformance; existing durable workers can be used
+  before Data Mover integration in 0.62.
+- No `etlantic-fastapi`, `fastapi-posit`, or Data Mover package dependency.
+  Explicit target configuration is sufficient.
+- No direct Connect ETL executor and no `etlantic-quarto` package creation or
+  planning. External Quarto tooling required by the chosen documented Connect
+  content type is recorded in the platform matrix.
+- The initial matrix is one selected script content type, one schedule per
+  owned content item and one explicit-URL receiver/worker topology; extra hosting
+  or content variants are demand-gated. Generated content consumes the wire
+  contract without installing the full ETL engine/provider environment.
+- Arbitrary cron conversion or shared content with independent schedules is not
+  assumed; unsupported or ambiguous behavior fails closed.
 
 ## Workstreams
 
 | ID | Workstream | Deliverables | Completion evidence |
 |---|---|---|---|
-| 060-F | Frontend foundation | Separate package/deployment, pinned generated client, session/bootstrap, capability negotiation, routing | Clean build/deploy and client/server compatibility matrix |
-| 060-R | Read surfaces | Scoped list/detail views for definitions through health; stable URLs and breadcrumbs | View fixture matrix, pagination, empty/error/loading states |
-| 060-E | Live events | Resumable run/event views, cursor persistence, history fallback, reconnect and duplicate suppression | Refresh/disconnect/cursor-expiry tests |
-| 060-A | Privileged actions | Cancel, retry, repair, backfill, approve, promote, authorize/retry erasure, suspend, containment actions through public API | Policy/idempotency/approval/audit equivalence traces |
-| 060-D | Objectives and dynamic execution | Deadline timelines, breach/escalation/recovery state, map/reduce children, branch decisions, stable identities, bounds, and capability explanations | Clock/reconnect/dedupe fixtures plus large bounded expansion and branch-state tests |
-| 060-P | Privacy and stream errors | Erasure request/plan/provider/reconciliation views plus payload-free DLQ/redrive and schema-compatibility views | No-subject/no-payload browser-state tests and partial/unsupported outcome fixtures |
-| 060-S | Security/privacy | Object authorization, non-enumeration, cache partitioning, bounded previews, CSP, hostile-content redaction | Two-tenant/two-workspace UI leakage campaign |
-| 060-U | Usability/accessibility | Keyboard/screen-reader flows, localization readiness, responsive layouts, latency budgets | WCAG-oriented audit, locale/pseudo-localization, performance report |
-| 060-T | Test fixtures | Deterministic generated-client mocks plus integrated API fixtures for all capability states | CI visual/interaction tests without production credentials |
-| 060-O | Operations | OCI image, configuration, health, telemetry, upgrade/rollback and incident runbooks | Deployment, version-skew, failover, and rollback drill |
+| 060-P | Platform characterization | Supported API/content/tool versions, recurrence and task metadata mapping | Recorded platform contract and versioned fixtures |
+| 060-B | Trigger bundle | Minimal deterministic wire consumer, no full ETL environment, pinned explicit URL and credential references | Artifact inspection, reproducible deployment and clean install |
+| 060-S | Schedule lifecycle | Create/read/update/pause/resume/delete, one timer owner, scoped content mapping | Live lifecycle, DST/misfire/overlap and drift tests |
+| 060-T | HTTPS transport | Existing outbound policy/conformance, stable occurrence, auth/replay, bounded delivery retry and response validation | Non-FastAPI interoperability, response-loss and concurrent duplicate campaign |
+| 060-R | Recovery and operations | Deployment idempotency, restart reconciliation, failed delivery, rollback/cleanup | Lost deployment response, process kill, orphan and credential-rotation drills |
+| 060-Q | Qualification | Isolated live Connect campaign and truthful support matrix | Exact package/platform evidence; no fake-only support claims |
 
 ## Delivery Sequence
 
-1. Freeze console information architecture, threat model, and generated-client
-   version policy.
-2. Implement read-only registry, plan, run, quality, schema, delivery-objective,
-   erasure, dynamic-control, dead-letter, and operations views.
-3. Add resumable live events, bounded previews, deadline/escalation timelines,
-   dynamic child/branch navigation, and lineage/partition navigation.
-4. Add privileged actions only through existing API commands and approvals.
-5. Complete accessibility, localization, hostile-content, isolation, and
-   performance qualification.
-6. Publish deployment artifacts and the supported server/client matrix.
+1. Freeze one explicit-URL content/receiver/worker topology, recurrence translation,
+   occurrence derivation and explicit unsupported combinations.
+2. Build and inspect the minimal trigger bundle against the 0.59 test receiver.
+3. Implement explicit deployment and schedule lifecycle with durable correlation.
+4. Qualify HTTPS failure/retry/security behavior and independent execution.
+5. Run isolated live Connect lifecycle/recovery tests and publish operations docs.
 
 ## Exit Gates
 
-- The console contains no independent database, authorization decision, schema
-  mutation, run scheduler, secret resolver, or provider control path.
-- Every mutation produces the same policy, idempotency, approval, state-machine,
-  and audit evidence as the equivalent API operation.
-- Unauthorized scope cannot leak through counts, search, links, error shape,
-  browser/server caches, history, event streams, downloadable artifacts, or
-  timing-sensitive pagination behavior.
-- Refresh and reconnect resume events without duplicating attempts or actions.
-- Hostile names, diagnostics, payloads, and artifact previews are bounded,
-  escaped, redacted, and covered by content-security policy.
-- Erasure and dead-letter views never place data-subject values or event
-  payloads in browser state, URLs, telemetry, caches, logs, or fixtures, and
-  cannot report completion while required effects remain unknown or
-  unreconciled.
-- Critical workflows pass keyboard and screen-reader review, localization
-  readiness, responsive layouts, and published latency budgets.
-- The console deploys, upgrades, rolls back, and version-negotiates independently
-  from ETLantic core and the control-plane API.
+- **AC060-001:** Installed adapter targets a non-FastAPI receiver without either
+  FastAPI or Data Mover installed and without shipping pipeline code/credentials
+  or pulling the complete ETL engine/provider stack into generated content.
+- **AC060-002:** Every advertised recurrence preserves required semantics;
+  unsupported recurrence or uncertain occurrence identity prevents activation.
+- **AC060-003:** Platform retries, trigger restarts, and lost HTTP responses
+  preserve one occurrence/run linkage under concurrent delivery.
+- **AC060-004:** Live schedule and content updates, pause/resume, rollback,
+  reconciliation, and deletion affect only owned resources and retain run history.
+- **AC060-005:** Auth, TLS, endpoint policy, malformed responses, replay, and
+  credential rotation produce bounded redacted outcomes under shared outbound
+  policy, including actual DNS/connect and trusted private-deployment tests.
+- **AC060-006:** Accepted work completes or fails in an independent executor
+  after API restart; trigger success cannot overwrite ETL failure/unknown effects.
 
-## Required Release Evidence
+## Required Release Evidence And Decisions
 
-- Generated-client compatibility and deployment report.
-- Full view/action-to-API traceability matrix.
-- Cross-tenant UI leakage and hostile-content report.
-- Event reconnect/refresh results.
-- Accessibility, localization, and performance audits.
+Map AC060-001–006 to live Connect transcripts, transport/conformance tests,
+bundle/secret inspection, recurrence support tables, and deployment/cleanup
+runbooks. Platform maintainers freeze Connect content topology and occurrence
+metadata before implementation and re-review on API/tool changes. Record
+platform Quarto prerequisites accurately without creating an ETLantic package.
+The [consolidation plan](PACKAGE_SCOPE_CONSOLIDATION_PLAN.md) supplies F09/F12
+traceability; one live topology suffices and broader combinations are not implied.

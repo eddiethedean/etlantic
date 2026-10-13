@@ -21,6 +21,25 @@
 > **Review trigger:** Update when a protocol version or the public compiler
 > support matrix changes.
 
+## Accepted engine and helper cleanup — 0.63
+
+F05/F08 in the [package consolidation plan](PACKAGE_SCOPE_CONSOLIDATION_PLAN.md)
+move concrete Polars fusion execution/inspection and Parquet/vendor helpers
+behind one qualified plugin capability. Core retains admission, trust,
+fingerprints, scope and lifecycle. Preserve the exact current implementation/
+version checks and qualified/rejected matrix as capability validation; do not
+loosen admission or claim more engines merely because the code moved.
+
+Centralize identical parameter-name walking, literal unwrapping, constant-Python
+conversion and output normalization in existing public `etlantic.transform` or
+`etlantic.dataframe.helpers` modules after checking [DTCS](../04_TRANSFORMATIONS/DTCS.md)
+ownership. Delete exact copied implementations and verify engine conformance.
+Null/type/timezone, aggregation, dialect and eager/lazy lowering stay engine-specific.
+Pandas, Polars, PySpark, SQL, DuckDB and DataFusion remain separate dependency
+boundaries. No universal compiler superclass, engine-base or compiler-base wheel
+is planned for these helpers. TransformationModel incubation also delegates
+normative parsing/canonicalization/validation to DTCS rather than copying it.
+
 ## Outcome
 
 Authors define relational transformation logic once through a PySpark-inspired

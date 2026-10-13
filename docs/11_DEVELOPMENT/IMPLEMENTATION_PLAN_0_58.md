@@ -35,9 +35,13 @@ scope, policy, quotas, leases, fencing, retry safety, effect reconciliation,
 reports, artifacts, and result publication. Prefect owns remote orchestration
 and infrastructure supervision.
 
-The existing 0.58–0.61 programs move to 0.59–0.62: brownfield bridges, operator
-console, managed-runtime/provider packs, and TransformationModel incubation.
-Their scope is retained. Brownfield Prefect interoperability consumes this
+The new [0.59–0.62 integration program](ETLANTIC_RUNTIME_PLAN.md) follows this
+phase and reuses its qualified public runtime contracts. Brownfield bridges,
+operator console, managed-runtime/provider packs, and TransformationModel
+incubation move from their former 0.59–0.62 slots to 0.63–0.66. Their future
+package and support matrices follow the accepted
+[scope consolidation plan](PACKAGE_SCOPE_CONSOLIDATION_PLAN.md).
+Brownfield Prefect interoperability consumes this
 phase's managed adapter; it does not introduce a Prefect DAG compiler or a
 second execution authority. This qualification does not set a public release date.
 
@@ -387,11 +391,11 @@ scope change to the roadmap and governing plans.
   diagnostics, upgrade notes, authenticated headless/FastAPI recipes, supervisor
   configuration, and Posit Connect ASGI/dependency/reachability recipe.
 
-[0.59 brownfield bridges](IMPLEMENTATION_PLAN_0_59.md) reuse this adapter for
+[0.63 brownfield bridges](IMPLEMENTATION_PLAN_0_63.md) reuse this adapter for
 fidelity and incremental migration; broader plan families need their own
-conformance before support expands. [0.60 console](IMPLEMENTATION_PLAN_0_60.md)
+conformance before support expands. [0.64 console](IMPLEMENTATION_PLAN_0_64.md)
 projects authorized correlation and reconciliation facts through the API.
-[0.61 provider packs](IMPLEMENTATION_PLAN_0_61.md) may qualify other pools and
+[0.65 provider packs](IMPLEMENTATION_PLAN_0_65.md) may qualify other pools and
 cloud infrastructure without weakening these contracts. A future application
 wrapper consumes public composition APIs and owns no ETL state machine.
 

@@ -38,7 +38,7 @@
 
 ## Not in 0.47
 
-- Helm/OCI production images (0.61)
+- Helm/OCI production images (0.65)
 - Live Kind / Databricks / EMR / Spark Connect (skips `047-K-01`, `047-S-01`)
 - Broker-backed wake-up (polling is the reference)
 - Merging the timer service into `etlantic.scheduler/1`

@@ -18,8 +18,14 @@ closes the [reviewed backend gaps](FINDINGS_0_56.md) through
 [0.57 managed backend independence and runtime supervision phase](IMPLEMENTATION_PLAN_0_57.md)
 fully implements issues #278–#282 for 0.57.0. The qualified candidate
 [0.58 managed Prefect phase](IMPLEMENTATION_PLAN_0_58.md) owns #290 and
-#291–#298. Brownfield, console, broader provider, and TransformationModel phases
-follow as 0.59–0.62 with scope retained.
+#291–#298. The new [0.59–0.62 integration program](ETLANTIC_RUNTIME_PLAN.md)
+starts with managed ownership/configuration/dispatch consolidation, then one
+Connect trigger topology, Scheduler/Lambda plus ECS/Fargate, and one Data Mover
+host. The accepted [package consolidation plan](PACKAGE_SCOPE_CONSOLIDATION_PLAN.md)
+traces all 12 review findings and 25 package charters into 0.59–0.66. Brownfield
+simplification, console, demand-selected providers and conditional modeling
+incubation follow; Batch and helper-only wheel splits are deferred. `etlantic-quarto` does not exist and must not be
+created or planned.
 
 This section defines how ETLantic is designed, tested, contributed to, and
 released.
@@ -37,6 +43,8 @@ released.
 - [API stability and deprecation](DEPRECATION_POLICY.md)
 - [Dependency Strategy](DEPENDENCY_STRATEGY.md)
 - [Planning Hub](PLAN_INDEX.md)
+- [Accepted package scope consolidation plan](PACKAGE_SCOPE_CONSOLIDATION_PLAN.md)
+- [Package scope review — 2026-10-12](PACKAGE_SCOPE_REVIEW_2026-10-12.md)
 - [Roadmap summary](ROADMAP_SUMMARY.md)
 - [Full roadmap](https://github.com/eddiethedean/etlantic/blob/main/ROADMAP.md)
 
@@ -134,7 +142,7 @@ released.
 - [Exit gate 0.38](EXIT_GATE_0_38.md) (Done — connectivity)
 - [Findings ledger 0.38](FINDINGS_0_38.md)
 - [0.38 implementation plan](IMPLEMENTATION_PLAN_0_38.md)
-- [Forward implementation plans](FORWARD_IMPLEMENTATION_PLANS.md) (0.39–0.62 delivery contract)
+- [Forward implementation plans](FORWARD_IMPLEMENTATION_PLANS.md) (0.39–0.66 delivery contract)
 - [ADR-015: Connector protocols](adr/ADR-015-CONNECTOR-PROTOCOLS.md)
 - [Migration 0.36 → 0.37](MIGRATION_0_36_TO_0_37.md)
 - [Exit gate 0.37](EXIT_GATE_0_37.md) (Gate-ready — stable foundation)

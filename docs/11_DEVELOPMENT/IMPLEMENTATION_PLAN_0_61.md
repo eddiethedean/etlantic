@@ -1,102 +1,88 @@
 ---
 title: ETLantic 0.61 Implementation Plan
-description: Implementation-grade plan for managed-runtime and provider packs.
-plan_status: current
-plan_last_reviewed: 2026-10-11
+description: Bounded AWS Scheduler/Lambda delivery and one ECS/Fargate executor over shared dispatch.
+plan_status: planned
+plan_last_reviewed: 2026-10-12
 ---
 
 # ETLantic 0.61 Implementation Plan
 
-Phase 0.61 packages qualified deployment and provider integrations without
-turning any cloud, secret manager, runtime, or connector into a core dependency.
-The [adoption ecosystem plan](ADOPTION_ECOSYSTEM_PLAN.md) governs provider
-maturity and support claims.
+Phase 0.61 builds optional `etlantic-aws` with independent scheduling and
+execution capabilities. The [AWS domain plan](ETLANTIC_AWS_PLAN.md) owns service
+boundaries and the [package consolidation plan](PACKAGE_SCOPE_CONSOLIDATION_PLAN.md)
+applies F02/F09/F12. Enterprise provider candidates follow in
+[0.65](IMPLEMENTATION_PLAN_0_65.md) under demand gates. New AWS adapters remain planned.
 
 ## Outcome
 
-Operators can deploy supported ETLantic control-plane/runtime profiles with OCI
-images and Helm, use hardened Kubernetes and managed Spark execution, obtain
-credentials through workload identity and optional secret-provider packs, and
-select promoted cloud connector packs with explicit compatibility, cost, quota,
-region, lifecycle, and cleanup behavior.
-
-This phase moves from 0.60 to 0.61 after insertion of the
-[0.58 managed Prefect phase](IMPLEMENTATION_PLAN_0_58.md). Its
-complete scope is retained.
+EventBridge Scheduler delivers runtime triggers through a qualified HTTPS relay;
+One ECS/Fargate adapter executes canonically accepted work with durable correlation,
+recovery, and publication. Scheduling can use a different executor, and AWS
+execution can receive work admitted from another scheduler.
 
 ## Prerequisites And Non-Goals
 
-- 0.56 owns the generic Foundry package and PostgreSQL/CSV application backend
-  floor. This phase expands the enterprise portfolio and deployment hardening
-  using those service, action, identity and recovery contracts.
-- 0.57 owns complete headless role construction, provider compatibility
-  inspection, and cooperative runtime supervision. Deployment packs configure
-  and supervise these public contracts without duplicating schema or ETL logic.
-- 0.58 owns the static-batch `/1` managed Prefect Process-worker adapter.
-  Provider packs may add pool/cloud qualifications only with installed/live
-  evidence for the same accepted-reference, dispatch, trust, fencing, and effect
-  recovery contracts; Process qualification does not imply other pool support.
-- 0.43 qualification and 0.47 remote-provider **fake** conformance are
-  mandatory ([IMPLEMENTATION_PLAN_0_47](IMPLEMENTATION_PLAN_0_47.md),
-  [ADR-023](adr/ADR-023-SCHEDULER-SERVICE-AND-FEDERATION.md)). 0.47 ships
-  `FakeKubernetes` (`etlantic-k8s`) and an in-process Spark Connect fake
-  (`etlantic-spark-connect`); live Kind/cluster and live Databricks/EMR are
-  this phase. The console from 0.60 may observe providers but does not own
-  them.
-- Provider packs are independently versioned, allowlisted in production, and
-  capability-negotiated before plan acceptance.
-- Long-lived cloud credentials are not embedded in plans, reports, artifacts,
-  images, Helm values, examples, or test fixtures.
-- Infrastructure recipes are maintained examples with tested support matrices,
-  not claims that every topology or cloud service is supported.
+- Reuse consolidated 0.59 managed implementation, generic dispatch and outbound
+  policy/conformance plus public 0.56–0.58 admission, accepted
+  references, execution/fencing, and effect recovery. No dependency on Connect,
+  FastAPI, or Data Mover; no vendor SDK in core.
+- Initial scope is static-batch `/1` with PostgreSQL durable state. Broader
+  plan/runtime support requires separate evidence, never inferred compatibility.
+- Do not promise direct arbitrary HTTPS delivery from EventBridge Scheduler.
+  Qualify Scheduler → scoped Lambda relay → receiver as the initial transport.
+- ECS/Fargate is the sole initial executor. Batch, event-bus/API-destination
+  relay variants and other AWS services are unscheduled demand-gated candidates.
+  No S3 data access, Secrets Manager, general infrastructure provisioning or
+  second runtime is absorbed into this package. Broader provider packs stay in 0.65.
 
 ## Workstreams
 
 | ID | Workstream | Deliverables | Completion evidence |
 |---|---|---|---|
-| 061-D | Distribution | Versioned OCI images, SBOM/attestations, Helm chart, configuration schema, upgrade/rollback hooks | Clean install, signed-image verification, upgrade/rollback matrix |
-| 061-K | Kubernetes hardening | Workload identity, network/storage policies, pod security, autoscaling, disruption, scoped cleanup | Isolated cluster, node-loss, policy, and orphan tests |
-| 061-S | Managed Spark | Promoted provider(s), runtime images, capability/cost/region model, cancellation/recovery | Live isolated conformance and workload comparison |
-| 061-X | Secret providers | AWS, Azure, GCP, and Vault provider packs; references, rotation, expiry, outage semantics | Missing/expired/rotated/outage and redaction suite |
-| 061-C | Connector packs | Promoted cloud connectors with schema, state, reliability, effect, erasure/delete/anonymize proof, quota, and cleanup conformance | Per-provider live isolated qualification matrix |
-| 061-E | Enterprise event providers | Qualified notification/escalation, dead-letter, and schema-registry provider packs where maintained demand justifies support | Live delivery/dedupe/redaction, DLQ/redrive, registry-outage, and compatibility matrix |
-| 061-G | Governance | Compatibility/support tiers, region/cost/quota metadata, deprecation, incident and security lifecycle | Published support matrix and provider retirement drill |
-| 061-I | Infrastructure recipes | Tested reference deployments, least-privilege identities, observability, backup/restore | Reproducible environment creation and recovery evidence |
+| 061-S | Scheduling | Native schedule lifecycle and exact recurrence/identity mapping | Live schedule, timezone/DST, update/pause/delete and misfire matrix |
+| 061-H | HTTPS relay | Scoped delivery-only Lambda, shared outbound policy, bounded retry/deadline, DLQ/redrive | Lost responses, duplicates, replay and redacted delivery failure tests |
+| 061-E | ECS/Fargate | Pinned task binding, immutable accepted reference, installed targeted worker | Live ETL effects/publication, task loss, cancel and recovery |
+| 061-D | Durable dispatch | Reuse validated backend kind, immutable binding, opaque remote-run ID and shared reconciliation/callback/publication operations | Response-loss, orphan, stale callback and uncertain-write campaign |
+| 061-I | Identity and operations | Least-privilege roles, workload identity, network policy, scoped cleanup | Cross-scope denial, revoked credentials, outage, quotas and cleanup proof |
+| 061-Q | Qualification | One relay topology and one ECS reference deployment; separate timer/executor matrices and unsupported combinations | Installed package and isolated account/region qualification |
 
 ## Delivery Sequence
 
-1. Freeze package/version/support policy and the provider qualification matrix.
-2. Build signed distribution artifacts and validate clean deployment lifecycle.
-3. Harden the 0.47 Kubernetes (`etlantic-k8s`) and Spark Connect
-   (`etlantic-spark-connect`) Experimental extras against live isolated
-   conformance; promote Databricks/EMR packs only after that evidence.
-4. Add secret-provider packs and credential-rotation/outage behavior.
-5. Promote connector packs only after state, schema, reliability, effect,
-   erasure, and cleanup conformance pass in isolated accounts/projects.
-6. Promote notification/escalation, DLQ, and schema-registry packs only after
-   live authorization, redaction, retry, outage, and reconciliation evidence.
-7. Publish tested recipes, costs/quotas/regions, lifecycle policy, and runbooks.
+1. Freeze one Scheduler/Lambda transport and one ECS/Fargate reference deployment,
+   supported versions/regions, trust/network policy and explicit unsupported combinations.
+2. Qualify scheduled delivery to the 0.59 receiver independently of executors.
+3. Prove accepted-reference execution through an installed ECS/Fargate worker.
+4. Prove ECS is the second concrete consumer of the same generic dispatch
+   operations, preserving Prefect migration compatibility and adding no AWS fields
+   to shared core records. Inject worker/callback/credential/effect failures.
+5. Publish independent timer/executor decisions, recipes, cleanup proof and the
+   demand criteria for any later executor; Batch is not required for this exit.
 
 ## Exit Gates
 
-- Every provider pack installs independently, is production-allowlisted
-  explicitly, advertises versioned capabilities, and fails closed when missing.
-- Credential references resolve through workload identity or a scoped provider;
-  secret values never appear in persistent artifacts or diagnostics.
-- Missing, expired, rotated, revoked, and unavailable credentials produce stable
-  redacted outcomes and do not fall back to broader ambient authority.
-- External effects use normalized pending/committed/failed/unknown state and
-  provider cleanup is tenant/workspace scoped and idempotent.
-- Each claimed provider passes live isolated conformance for identity, policy,
-  schema, state, reliability, effects, cancellation, recovery, and cleanup.
-- Distribution and recipes pass clean install, upgrade, rollback, backup/restore,
-  region/limit documentation, and dependency/SBOM verification.
-- No vendor SDK or managed-runtime dependency enters ETLantic core.
+- **AC061-001:** Optional installation keeps AWS SDKs out of core and supports
+  schedule-only and execution-only configuration independently.
+- **AC061-002:** Schedule retries/relay retries/redrive preserve occurrence
+  identity and authorization; unsupported recurrence fails before activation.
+- **AC061-003:** The one ECS/Fargate adapter executes actual accepted pipelines
+  through pinned installed workers and publishes canonical effects/results.
+  The same generic dispatch operations serve Prefect and ECS without per-vendor
+  core fields or a copied managed runtime.
+- **AC061-004:** Lost submit responses, crashes, stale callbacks, and remote
+  retry defaults cannot cause unfenced publication or blind repeated effects.
+- **AC061-005:** Cross-scope identity/override attempts fail; secrets resolve only
+  at authorized runtime boundaries and remain absent from persistent artifacts.
+- **AC061-006:** Live cancellation, polling recovery, resource cleanup, upgrades,
+  and service outages preserve durable evidence within the advertised matrix.
 
-## Required Release Evidence
+## Required Release Evidence And Decisions
 
-- Signed distribution and Helm lifecycle report.
-- Per-provider support/conformance matrix.
-- Workload-identity and credential lifecycle/redaction report.
-- Failure, external-effect, and scoped-cleanup campaign.
-- Reference deployment reproducibility and recovery transcript.
+Map AC061-001–006 to per-service live tests, real PostgreSQL execution/effect
+traces, IAM/redaction reports, install/version matrices, and cost/quota/cleanup
+runbooks. AWS/security maintainers own relay, regions, IAM, and task/job bindings
+before implementation. Fakes do not qualify live support; a scheduler gate cannot
+close the ECS execution gate. Include shared outbound DNS/connect conformance.
+Batch may be considered only for a named workload ECS cannot adequately serve,
+with an owner, dependency/operational cost decision and its own live/failure gates.
+It has no assigned release and is not a 0.61 completion requirement. Any expansion
+requires the roadmap and owning plans to be updated first.

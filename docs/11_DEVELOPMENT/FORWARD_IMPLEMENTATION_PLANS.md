@@ -1,13 +1,13 @@
 ---
 title: Forward Implementation Plans
-description: Shared delivery contract and release sequence for ETLantic 0.39 through 0.62.
+description: Shared delivery contract and release sequence for ETLantic 0.39 through 0.66.
 plan_status: current
-plan_last_reviewed: 2026-10-11
+plan_last_reviewed: 2026-10-12
 ---
 
 # Forward Implementation Plans
 
-This document is the delivery contract for ETLantic phases 0.39 through 0.62.
+This document is the delivery contract for ETLantic phases 0.39 through 0.66.
 The [roadmap summary](ROADMAP_SUMMARY.md) defines product intent, while the
 phase plans linked below define implementation order, evidence, and exit gates.
 Integrated domain plans remain authoritative for cross-release architecture.
@@ -36,10 +36,44 @@ Integrated domain plans remain authoritative for cross-release architecture.
 | 0.56 | Complete application ETL backend with full specification and run control | [0.56](IMPLEMENTATION_PLAN_0_56.md), [execution](EXECUTION_PLAN_0_56.md), [review](FINDINGS_0_56.md) | [Control plane](MULTI_TENANT_CONTROL_PLANE_PLAN.md) + [adoption ecosystem](ADOPTION_ECOSYSTEM_PLAN.md) |
 | 0.57 | Managed backend independence, schedule services, schema inspection, and runtime supervision (#278–#282); release 0.57.0 | [0.57](IMPLEMENTATION_PLAN_0_57.md) | [Control plane](MULTI_TENANT_CONTROL_PLANE_PLAN.md) + [adoption ecosystem](ADOPTION_ECOSYSTEM_PLAN.md) |
 | 0.58 | Managed Prefect execution on the durable runtime (#290, #291–#298), direct compatibility, deployments, dispatch, schedules, and recovery qualification | [0.58](IMPLEMENTATION_PLAN_0_58.md) | [Scheduler and Prefect](SCHEDULER_AND_PREFECT_PLAN.md) + [adoption ecosystem](ADOPTION_ECOSYSTEM_PLAN.md) |
-| 0.59 | Brownfield bridges and orchestration compilers; Prefect interoperability consumes 0.58 | [0.59](IMPLEMENTATION_PLAN_0_59.md) | [Adoption ecosystem](ADOPTION_ECOSYSTEM_PLAN.md) |
-| 0.60 | Operator console | [0.60](IMPLEMENTATION_PLAN_0_60.md) | [UI/UX](UI_UX_PLAN.md) |
-| 0.61 | Managed-runtime and provider packs | [0.61](IMPLEMENTATION_PLAN_0_61.md) | [Adoption ecosystem](ADOPTION_ECOSYSTEM_PLAN.md) |
-| 0.62 | TransformationModel incubation | [0.62](IMPLEMENTATION_PLAN_0_62.md) | [TransformationModel](TRANSFORMATIONMODEL_PLAN.md) |
+| 0.59 | Managed runtime consolidation and trigger contracts | [0.59](IMPLEMENTATION_PLAN_0_59.md) | [Managed runtime consolidation and trigger contracts](ETLANTIC_RUNTIME_PLAN.md) |
+| 0.60 | Posit Connect scheduling and HTTPS triggers | [0.60](IMPLEMENTATION_PLAN_0_60.md) | [Posit Connect scheduling and HTTPS triggers](ETLANTIC_RSCONNECT_PLAN.md) |
+| 0.61 | AWS scheduling and execution adapters | [0.61](IMPLEMENTATION_PLAN_0_61.md) | [AWS scheduling and execution adapters](ETLANTIC_AWS_PLAN.md) |
+| 0.62 | Data Mover integration and optional Posit endpoint discovery | [0.62](IMPLEMENTATION_PLAN_0_62.md) | [Data Mover integration and optional Posit endpoint discovery](ETLANTIC_DATA_MOVER_INTEGRATION_PLAN.md) |
+| 0.63 | Brownfield bridges and orchestration compilers; Prefect interoperability consumes 0.58 | [0.63](IMPLEMENTATION_PLAN_0_63.md) | [Adoption ecosystem](ADOPTION_ECOSYSTEM_PLAN.md) |
+| 0.64 | Operator console | [0.64](IMPLEMENTATION_PLAN_0_64.md) | [UI/UX](UI_UX_PLAN.md) |
+| 0.65 | Managed-runtime and provider packs | [0.65](IMPLEMENTATION_PLAN_0_65.md) | [Adoption ecosystem](ADOPTION_ECOSYSTEM_PLAN.md) |
+| 0.66 | TransformationModel incubation | [0.66](IMPLEMENTATION_PLAN_0_66.md) | [TransformationModel](TRANSFORMATIONMODEL_PLAN.md) |
+
+## Accepted Package Scope Contract — 0.59 Onward
+
+The [package consolidation plan](PACKAGE_SCOPE_CONSOLIDATION_PLAN.md) adopts all
+F01–F12 findings and the complete 25-package charter. Each phase evidence record
+traces its assigned findings to implementation evidence or a documented
+conditional/deferred decision; documentation adoption does not close code work.
+
+- 0.59 consolidates existing managed operations/configuration/dispatch and public
+  persistence seams before adding missing trigger concepts; runtime packaging is
+  conditional on an acyclic extraction with named duplication removed.
+- 0.60 qualifies one explicit-URL Connect topology; 0.61 qualifies Scheduler/Lambda
+  and ECS/Fargate only, with Batch unscheduled; 0.62 qualifies one Data Mover
+  CP1/PostgreSQL/worker host and timer variants individually.
+- 0.63 owns targeted qualified engine/helper, existing-client, fixture and driver
+  cleanup plus declared compatibility retirements; testing/HTTP wheels need real
+  independent use, deleted implementations and fewer owners.
+- 0.64 remains an API consumer, 0.65 selects providers by actual adopter demand,
+  and 0.66 requires an independent consumer and removal of migrated authoring
+  duplication without replicating [DTCS](../04_TRANSFORMATIONS/DTCS.md) authority.
+
+Before a new wheel, record its user/authority/delegated owners and justify it by
+consolidation, dependency isolation, or a real independent consumer. Consolidation
+and extraction proposals also record named code/API retirement and a compatibility
+window. Preserve core embedded imports and vendor/engine isolation; reject
+helper-only wrapper splits.
+Every release publishes one bounded reference deployment and unsupported
+combinations rather than assuming a full timer/executor/host matrix. Broader
+support needs evidence and an explicit scope update. Correct factory identity,
+distribution metadata and support ranges before claiming more live adapters.
 
 ## Authority And Change Control
 

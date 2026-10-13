@@ -530,10 +530,14 @@ def check_zero_x_roadmap_phases() -> None:
         "## 0.56 — Complete Application ETL Backend",
         "## 0.57 — Managed Backend Independence and Runtime Supervision",
         "## 0.58 — Managed Prefect Execution",
-        "## 0.59 — Brownfield Adoption Bridges",
-        "## 0.60 — Operator Console",
-        "## 0.61 — Managed Runtime and Enterprise Provider Packs",
-        "## 0.62 — TransformationModel Incubation",
+        "## 0.59 — Managed Runtime Consolidation and Trigger Contracts",
+        "## 0.60 — Posit Connect Scheduling and HTTPS Triggers",
+        "## 0.61 — AWS Scheduling and Execution Adapters",
+        "## 0.62 — Data Mover Integration and Optional Posit Endpoint Discovery",
+        "## 0.63 — Brownfield Adoption Bridges",
+        "## 0.64 — Operator Console",
+        "## 0.65 — Managed Runtime and Enterprise Provider Packs",
+        "## 0.66 — TransformationModel Incubation",
     )
     for marker in required_markers:
         if marker not in roadmap:
@@ -587,18 +591,34 @@ def check_zero_x_roadmap_phases() -> None:
         ),
         "0.59": (
             "IMPLEMENTATION_PLAN_0_59.md",
-            "brownfield metadata bridges",
+            "etlantic-runtime",
         ),
         "0.60": (
             "IMPLEMENTATION_PLAN_0_60.md",
-            "operator console",
+            "etlantic-rsconnect",
         ),
         "0.61": (
             "IMPLEMENTATION_PLAN_0_61.md",
-            "provider packs",
+            "etlantic-aws",
         ),
         "0.62": (
             "IMPLEMENTATION_PLAN_0_62.md",
+            "fastapi-posit",
+        ),
+        "0.63": (
+            "IMPLEMENTATION_PLAN_0_63.md",
+            "brownfield metadata bridges",
+        ),
+        "0.64": (
+            "IMPLEMENTATION_PLAN_0_64.md",
+            "operator console",
+        ),
+        "0.65": (
+            "IMPLEMENTATION_PLAN_0_65.md",
+            "provider packs",
+        ),
+        "0.66": (
+            "IMPLEMENTATION_PLAN_0_66.md",
             "TransformationModel",
         ),
     }

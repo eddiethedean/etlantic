@@ -18,6 +18,34 @@ the core minor version (for example `0.38.0`).
 Official plugins and root extras declare the compatible 0.58 line floor
 (`>=0.58.0`) without a patch lockstep pin or upper cap.
 
+## Planned package truth and compatibility gates — 0.59 onward
+
+F07/F10/F11 in the [package consolidation plan](PACKAGE_SCOPE_CONSOLIDATION_PLAN.md)
+add release gates before expanding platform support. Generate each distribution's
+version metadata from its manifest/build/installed metadata source; remove stale
+hard-coded provider release strings and reconcile README scope claims. Protocol
+versions are separate identifiers, not copies of package versions. Compare
+registered factory metadata with installed distributions in a clean environment.
+
+The factory inventory must report instantiated backend identity, live capability
+and qualification separately. Exercise SDK present/absent × requested fake/live
+× actual backend; an installed SDK cannot turn a fake into a live claim, and
+unimplemented live requests must fail. Reference-only K8s, Spark Connect, Kafka
+and MCP remain clearly labelled until actual live evidence passes.
+
+For new minors, replace the current open floors with dependency constraints
+matching the qualified core/runtime/plugin minor line, with resolver evidence
+for supported patches and explicit exceptions. Update bump/lock tooling and
+install guidance together; never infer cross-minor compatibility. These are
+planned changes, not altered 0.58 manifests or historical qualification records.
+
+Record SparkForge's exact final compatibility version, warning/migration window
+and retirement trigger in 0.59. Remove it from routine bump/build/publish lists
+only after the window and migration evidence pass; historic wheels remain.
+Apply the same declared lifecycle to superseded reference fixture distributions.
+New runtime/testing/HTTP wheels need an owner/extraction map and duplicate-
+retirement evidence before release; conditional/deferred decisions stay explicit.
+
 ## Version bump workflow
 
 Use `scripts/bump_version.py` for a lockstep release version change. It accepts

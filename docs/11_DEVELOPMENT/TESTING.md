@@ -2,6 +2,37 @@
 
 > **Status: Available in ETLantic 0.51.0 (published Beta).**
 
+## Planned fixture and conformance consolidation — 0.59 and 0.63
+
+The [package consolidation plan](PACKAGE_SCOPE_CONSOLIDATION_PLAN.md) implements
+F06/F07 without changing current public testing imports in this planning update.
+0.59 classifies K8s, Spark Connect, Kafka and MCP factories as reference/test
+artifacts and freezes fake-only feature growth until real adapter work is scoped.
+Test actual backend identity separately from SDK availability, live capability
+and qualification for all factories, especially Iceberg, Snowflake and S3.
+
+0.63 first organizes reusable conformance, fault injection, reference fakes and
+fixture builders in existing `etlantic.testing` modules. Keep project-specific
+campaigns in repository tests; move medallion-specific campaigns to Medallantic's
+test area rather than a production core dependency. Preserve published provider
+identities/entry points through explicit windows and never register production
+plugins merely by importing fixtures. Real transports/SDKs retain separate
+qualified vendor distributions.
+
+`etlantic-testing` is conditional after this organization: prove an independent
+third-party conformance consumer can install it, preserve the documented
+`etlantic.testing` surface via compatible delegation, and retire/freeze replaced
+reference release units after migration. A new wheel plus permanent old owners
+does not pass. Focused shared-setting/vendor-field/import checks guard ownership;
+no arbitrary line limits or blanket bans on every optional import are proposed.
+
+Runtime extraction requires installed headless/HTTP/Prefect parity, accepted
+record upgrade/rollback and restart/effect evidence. Engine cleanup requires the
+same qualified/rejected fusion and compiler conformance matrix. HTTP policy needs
+real DNS/connect tests, not just validator invocation. Platform support uses one
+bounded reference deployment per phase; fixtures or importable SDKs never count
+as live qualification.
+
 ## Test-cost matrix (order of magnitude)
 
 Use the cheapest green suite that covers your change. Durations are rough

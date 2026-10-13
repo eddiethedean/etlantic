@@ -42,12 +42,16 @@ through **0.37** (stable foundation) are shipped.
 | Previous | 0.56 | Complete application ETL backend with full specification and run control | Published / shipped evidence |
 | Previous | 0.57 | Managed backend independence and runtime supervision (#278–#282), plus Local canonical sort fix (#283) | Published / shipped evidence; 0.57.x is the supported line |
 | Current | 0.58 | Managed Prefect Execution (#290 / #291–#298) | Gate-ready for tag/publish |
-| Later | 0.59 | Brownfield adoption bridges | Planning freeze |
-| Later | 0.60 | Operator Console | Planned |
-| Later | 0.61 | Managed runtime and enterprise provider packs | Planned |
-| Later | 0.62 | TransformationModel incubation | Proposed |
+| Later | 0.59 | Managed runtime consolidation and trigger contracts | Planned — [implementation plan](docs/11_DEVELOPMENT/IMPLEMENTATION_PLAN_0_59.md) |
+| Later | 0.60 | Posit Connect scheduling and HTTPS triggers | Planned — [implementation plan](docs/11_DEVELOPMENT/IMPLEMENTATION_PLAN_0_60.md) |
+| Later | 0.61 | AWS Scheduler/Lambda and one ECS/Fargate executor | Planned — [implementation plan](docs/11_DEVELOPMENT/IMPLEMENTATION_PLAN_0_61.md) |
+| Later | 0.62 | One Data Mover host and optional trusted URL discovery | Planned — [implementation plan](docs/11_DEVELOPMENT/IMPLEMENTATION_PLAN_0_62.md) |
+| Later | 0.63 | Brownfield bridges and targeted package simplification | Planning freeze |
+| Later | 0.64 | Operator Console | Planned |
+| Later | 0.65 | Demand-selected enterprise deployment/provider packs | Planned |
+| Later | 0.66 | Conditional TransformationModel incubation | Proposed |
 | Foundation | 0.36–0.37 | Joint burn-in → stable foundation | Gate-ready (0.37) |
-| Post-foundation | 0.38–0.62 | Connectivity → control plane → developer intelligence → optimization → streaming → federation → governed AI → DuckDB package → portable-engine baseline → adaptive execution → inferred model authoring → complete application backend → backend independence → managed Prefect → adoption → operations → providers → modeling incubation | In progress (0.57 published; 0.58 qualified candidate; adaptive graduation pending) |
+| Post-foundation | 0.38–0.66 | Connectivity → control plane → developer intelligence → optimization → streaming → federation → governed AI → DuckDB package → portable-engine baseline → adaptive execution → inferred model authoring → complete application backend → backend independence → managed Prefect → managed consolidation → Connect triggers → Scheduler/ECS adapters → Data Mover integration → adoption → operations → providers → modeling incubation | In progress (0.57 published; 0.58 qualified candidate; adaptive graduation pending) |
 
 For connectivity evidence, see
 [What's New in 0.38](docs/01_GETTING_STARTED/WHATS_NEW_0_38.md) and the
@@ -216,9 +220,9 @@ diagnostics, reports, lineage, authorization decisions, and audit evidence.
 |---|---|---|
 | 1 | Human CLI renderer, actionable diagnostics, target discovery, and progressive onboarding | Stable-foundation tooling follow-up; prerequisite for 0.44 |
 | 2 | React architecture spike, then an interactive, accessible, self-contained pipeline HTML workspace | Visualization/tooling precursor to 0.44 |
-| 3 | Local run dashboard and visual plan/report comparisons | Read-only precursor to 0.60 |
+| 3 | Local run dashboard and visual plan/report comparisons | Read-only precursor to 0.64 |
 | 4 | Watch mode, LSP, editor previews, and profile/impact explanations | 0.44 Developer Intelligence |
-| 5 | Hosted, governed product experience | 0.39–0.43 control-plane substrate; 0.60 Operator Console |
+| 5 | Hosted, governed product experience | 0.39–0.43 control-plane substrate; 0.64 Operator Console |
 
 Phases may land incrementally, but later phases cannot bypass earlier
 consistency, accessibility, redaction, safe-I/O, or bounded-rendering gates.
@@ -2467,7 +2471,7 @@ parity, followed by joint burn-in in **0.37** toward the 0.37 stable foundation.
 
 This is **not** a control-plane, GUI, or new-engine milestone. Data
 connectivity (0.38), FastAPI (0.39), registry/workspaces (0.40), and
-TransformationModel incubation (0.62) remain post-foundation phases.
+TransformationModel incubation (0.66) remain post-foundation phases.
 
 ### Prerequisites already shipped (0.24)
 
@@ -3527,7 +3531,7 @@ All planned ETLantic releases remain in the 0.x series. This roadmap has no
 sequential 0.x minors. Versions belonging to external standards, dependencies,
 or user-authored artifacts do not change this release-numbering policy.
 
-Phases 0.38 through 0.62 expand ETLantic around the stable-foundation model
+Phases 0.38 through 0.66 expand ETLantic around the stable-foundation model
 while keeping storage systems, HTTP servers, catalogs, IDEs, cloud provisioning
 and AI runtimes behind optional packages and providers. ETL scheduling and
 execution semantics remain ETLantic-owned. Each initiative has one assigned
@@ -4114,7 +4118,7 @@ Planning freeze after **0.46.0**: [IMPLEMENTATION_PLAN_0_47](docs/11_DEVELOPMENT
 (Proposed), [EXIT_GATE_0_47](docs/11_DEVELOPMENT/EXIT_GATE_0_47.md). These
 surfaces are not Available. Kubernetes and Spark Connect are Experimental
 in-process fakes; live Kind/cluster and live Databricks/EMR hardening are
-**0.61**. Implementation of scheduler/worker processes, schedule HTTP routes,
+**0.65**. Implementation of scheduler/worker processes, schedule HTTP routes,
 or new packages is out of scope for this freeze.
 
 Deliver:
@@ -4147,10 +4151,10 @@ Deliver:
   terminal-state reconciliation, and bounded provider-owned cleanup;
   live Kind/cluster is skip `047-K-01`;
 - an Experimental Spark Connect reference (`etlantic-spark-connect`) plus
-  in-process fake; live Databricks, EMR, and Spark Connect packs remain 0.61
+  in-process fake; live Databricks, EMR, and Spark Connect packs remain 0.65
   (skip `047-S-01`);
 - FastAPI gateway support without requiring FastAPI in workers;
-- Helm/OCI production images remain out of 0.47 (0.61 `061-D`).
+- Helm/OCI production images remain out of 0.47 (0.65 `065-D`).
 
 Acceptance:
 
@@ -4197,8 +4201,8 @@ and 0.44 impact artifacts; hand off apply to existing 0.42 `ApprovalStore` /
 
 **Non-goals:** vendor AI SDKs or credentials in core; write MCP tools;
 autonomous run submission; applying optimizations without approval;
-brownfield dbt/orchestrator import (0.59); operator console (0.60); live
-cloud providers (0.61); live paid-model eval as a release blocker
+brownfield dbt/orchestrator import (0.63); operator console (0.64); live
+cloud providers (0.65); live paid-model eval as a release blocker
 (skip `048-E-01`).
 
 Supported vs Experimental (claims only until the exit gate is Met):
@@ -4210,7 +4214,7 @@ Supported vs Experimental (claims only until the exit gate is Met):
   prompt-injection and false-authority tests.
 - **Experimental:** optional `etlantic-mcp` read-only extra. Live MCP-client
   interop is skip `048-M-01` if fixtures suffice.
-- **Out of 0.48:** write MCP, vendor SDKs in core, GitOps promotion, 0.59–0.61
+- **Out of 0.48:** write MCP, vendor SDKs in core, GitOps promotion, 0.63–0.65
   programs.
 
 0.46/0.47 surfaces are **explain-only**: delivery objectives, DLQ, erasure,
@@ -4727,12 +4731,16 @@ must need no ETL implementation, provider factory graph or preparation callbacks
 Every qualified public control remains accessible; operator policy and actual
 provider capabilities explain restrictions. ETLantic has no dependency on any
 consuming product. Required Foundry/PostgreSQL delivery belongs to 0.56; broader
-enterprise runtime/provider packs remain 0.61.
+enterprise runtime/provider packs remain 0.65.
 
 Phase 0.57 delivers managed backend independence and runtime supervision.
-Phase 0.58 now owns managed Prefect execution from #290. The former 0.58–0.61
-programs move to 0.59–0.62 with scope retained. Published release versions and
-qualification evidence remain unchanged.
+Phase 0.58 owns managed Prefect execution from #290. The new 0.59–0.62
+integration program consolidates managed implementation before Connect triggers,
+Scheduler/ECS adapters and one Data Mover composition. Existing later programs
+move to 0.63–0.66 under the accepted
+[package scope gates](docs/11_DEVELOPMENT/PACKAGE_SCOPE_CONSOLIDATION_PLAN.md). Published release versions and qualification evidence
+remain unchanged. `etlantic-quarto` does not exist and must not be created or
+planned. See the [runtime program plan](docs/11_DEVELOPMENT/ETLANTIC_RUNTIME_PLAN.md).
 
 ## 0.57 — Managed Backend Independence and Runtime Supervision
 
@@ -4845,7 +4853,161 @@ Acceptance:
   envelope schema remains valid for supported `/1` plans. Fakes/skips do not qualify
   live support; Posit Connect recipe status is distinguished from live proof.
 
-## 0.59 — Brownfield Adoption Bridges
+## 0.59 — Managed Runtime Consolidation and Trigger Contracts
+
+**Objective:** consolidate existing managed ownership, configuration and dispatch
+before adding missing external timer/HTTP seams. The optional `etlantic-runtime`
+wheel is conditional on actual implementation extraction and duplicate retirement.
+The [0.59 implementation plan](docs/11_DEVELOPMENT/IMPLEMENTATION_PLAN_0_59.md),
+[runtime domain plan](docs/11_DEVELOPMENT/ETLANTIC_RUNTIME_PLAN.md) and
+[package scope consolidation plan](docs/11_DEVELOPMENT/PACKAGE_SCOPE_CONSOLIDATION_PLAN.md)
+apply all accepted [review recommendations](docs/11_DEVELOPMENT/PACKAGE_SCOPE_REVIEW_2026-10-12.md)
+across 0.59–0.66, including charters for all 25 current distributions.
+
+Deliver:
+
+- a before/after owner map, one shared managed construction/supervision,
+  dispatch/reconciliation implementation and public acyclic dependency seams;
+- canonical provider/backend settings, separate HTTP settings, checked legacy
+  constructors and an explicit headless installation without FastAPI;
+- generic validated dispatch kind, immutable deployment binding and opaque remote
+  identity, with accepted Prefect record migration/rollback rather than vendor
+  fields or a record/store family per platform;
+- SQLModel modeling/stores/schema/managed namespaces and a characterized public
+  versioned codec/transition seam replacing private dictionary persistence;
+- only missing timer/trigger wire concepts over existing admission/run/results,
+  stable occurrences, replay/retention, one timer owner and shared outbound policy;
+- truthful actual-backend/live-capability/qualification and distribution-version
+  metadata, supported dependency-range policy and a SparkForge sunset declaration.
+
+Acceptance:
+
+- one managed operation implementation passes installed headless/HTTP/Prefect
+  parity and restart/effect recovery; embedded DAG execution stays in core;
+- any new runtime wheel removes named code/duplicate APIs and depends on public
+  core without a mandatory reverse dependency or concrete store/vendor imports;
+  otherwise consolidate namespaces and defer the wheel;
+- all 25 shared settings have one default/validator; legacy HTTP installs have a
+  migration and the public persistence seam passes complete store conformance;
+- accepted Prefect work survives generic-record upgrade/rollback, unknown backend
+  kinds fail closed, and AWS second-backend proof is reserved for 0.61;
+- duplicates map to one canonically admitted run; admission/dispatch survive
+  process failure and transport/job/ETL/effect/publication facts stay distinct;
+- factories report the instantiated backend truthfully, unavailable live modes
+  reject explicitly, installed version metadata agrees and compatibility windows
+  are recorded before any release-unit retirement;
+- a non-FastAPI receiver and independent worker pass the shared trigger suite.
+
+`etlantic-quarto` does not exist and must not be created or planned. New wheels
+require real consolidation or dependency isolation; helper-only splits are
+rejected. This phase adds no new platform or engine support claim.
+
+## 0.60 — Posit Connect Scheduling and HTTPS Triggers
+
+**Objective:** build optional `etlantic-rsconnect` to deploy lightweight scheduled
+trigger content that calls any configured compatible HTTPS endpoint. The
+[0.60 implementation plan](docs/11_DEVELOPMENT/IMPLEMENTATION_PLAN_0_60.md)
+and [rsconnect domain plan](docs/11_DEVELOPMENT/ETLANTIC_RSCONNECT_PLAN.md)
+own the platform support matrix and qualification gates.
+
+Deliver:
+
+- one selected content/receiver/worker topology with an explicit target URL;
+- deterministic wire-only trigger bundles without the full ETL engine/provider
+  environment, shared outbound policy and scoped deployment lifecycle;
+- native Connect schedule create/read/update/pause/resume/delete/reconciliation;
+- exact recurrence translation and stable occurrence mapping across retries;
+- bounded authenticated HTTPS delivery, credential references, redacted failures,
+  and operational lifecycle/cleanup evidence.
+
+Acceptance:
+
+- the adapter works without `etlantic-fastapi`, `fastapi-posit`, or Data Mover;
+- one live topology qualifies the declared recurrence/content/version matrix;
+  additional hosting/content combinations need demand and separate evidence;
+  unsupported cron, content sharing, or ambiguous identity fails before activation;
+- duplicates, restarts and response loss preserve one occurrence/run mapping;
+- Connect delivery success never substitutes for ETL outcome in the independent
+  executor, and scheduler artifacts contain no source/sink secrets or ETL code.
+
+The chosen Connect content type may require external Quarto tooling, as recorded
+in the domain plan's platform documentation. This is not a proposal for an
+`etlantic-quarto` package or a direct Connect pipeline executor.
+
+## 0.61 — AWS Scheduling and Execution Adapters
+
+**Objective:** build optional `etlantic-aws` with independently selectable
+scheduling and execution capabilities. The
+[0.61 implementation plan](docs/11_DEVELOPMENT/IMPLEMENTATION_PLAN_0_61.md)
+and [AWS domain plan](docs/11_DEVELOPMENT/ETLANTIC_AWS_PLAN.md) own the bounded
+service matrix, transport topology, and live qualification requirements.
+
+Deliver:
+
+- EventBridge Scheduler integration with a qualified delivery-only HTTPS relay;
+- one ECS/Fargate executor consuming immutable accepted work; Batch is deferred;
+- durable dispatch correlation, installed pinned workers, status/cancellation,
+  authenticated callbacks and polling recovery over existing runtime services;
+- workload identity, least-privilege roles, explicit network/resource policy,
+  bounded cleanup, and per-service deployment/operations recipes.
+
+Acceptance:
+
+- schedule-only and execution-only configurations work without Connect,
+  FastAPI, or Data Mover; AWS SDKs remain outside core;
+- retries/redrive preserve occurrence identity; lost submission responses and
+  provider retries cannot bypass canonical claims, fencing, or effect recovery;
+- ECS/Fargate proves real installed execution and durable results independently
+  of scheduling, using the same generic dispatch operations as Prefect without
+  AWS-specific shared fields or a copied runtime;
+- credential revocation, cross-scope attempts, cancellation, callback loss,
+  worker failure, and cleanup pass the exact published support matrix.
+
+Broader enterprise Kubernetes/Spark, cross-cloud provider, and Helm scope remains
+0.65 under demand gates. Initial delivery is Scheduler → scoped Lambda → HTTPS.
+Batch and other relay/executor variants are unscheduled until a concrete workload
+justifies a scope decision and live qualification. S3 storage, secret providers
+and general infrastructure provisioning remain outside `etlantic-aws`.
+
+## 0.62 — Data Mover Integration and Optional Posit Endpoint Discovery
+
+**Objective:** compose Data Mover with shared runtime contracts and qualified
+platform adapters for durable trigger-to-result operation. The
+[0.62 implementation plan](docs/11_DEVELOPMENT/IMPLEMENTATION_PLAN_0_62.md)
+and [Data Mover domain plan](docs/11_DEVELOPMENT/ETLANTIC_DATA_MOVER_INTEGRATION_PLAN.md)
+own host composition, optional discovery, and consumer qualification.
+
+Deliver:
+
+- one CP1 FastAPI/SQLModel/PostgreSQL host and separately supervised installed
+  durable worker, with manual/Connect/AWS-Lambda timers qualified individually;
+- optional receiver support in existing `etlantic-fastapi` CP1 surfaces,
+  delegating authorization, preparation, deduplication and admission to services;
+- durable PostgreSQL run/dispatch linkage, independent placement and supervision,
+  canonical result projections, and callback/polling reconciliation;
+- optional verified `fastapi-posit` integration for trusted public URL discovery,
+  explicit URL override, prefix-preserving route composition, and persisted
+  configuration independent of startup request context; use a small optional
+  consumer adapter and do not create an `etlantic-fastapi-posit` wheel;
+- Data Mover consumer examples, lifecycle controls, migration and recovery runbooks.
+
+Acceptance:
+
+- manual, Connect, and AWS triggers share policy and canonical admission;
+  duplicate requests, API/worker restarts, and lost responses cannot lose work;
+- missed callbacks, failed pipelines, partial writes and cancellation preserve
+  actual ETL/effect/publication evidence rather than inventing success;
+- spoofed proxy headers cannot choose destinations; explicit URL configuration
+  works without `fastapi-posit`, and app/router prefixes remain correct;
+- real PostgreSQL and independent processes prove CSV→PostgreSQL and
+  PostgreSQL→PostgreSQL flows plus cross-tenant isolation and recovery.
+
+Data Mover remains a consumer; core has no product dependency, and long-running
+ETL never relies on FastAPI `BackgroundTasks`. Executor swaps or other host
+compositions require demand and their own qualification; no Cartesian deployment
+matrix is promised. The full operator console is 0.64.
+
+## 0.63 — Brownfield Adoption Bridges
 
 **Objective:** let teams introduce ETLantic alongside existing dbt and
 orchestrator projects through bounded metadata import, explicit fidelity
@@ -4860,14 +5022,21 @@ Deliver:
 - deterministic contract and pipeline skeleton generation with provenance,
   reviewable diffs, and no implicit overwrite;
 - semantic diff between source artifacts and generated ETLantic definitions;
-- optional Dagster Definitions compiler;
+- demand-gated optional Dagster Definitions compiler for a named adopter;
 - Prefect migration and deployment interoperability over the 0.58 managed
   adapter, with explicit fidelity and separate qualification for broader plan
   semantics; the direct scheduler remains independent and no Prefect DAG
   compiler is introduced;
-- an Argo Workflow compiler consuming only valid plans;
+- a demand-gated Argo Workflow compiler consuming only valid plans; neither
+  compiler owns another runtime;
 - side-by-side validation, plan, lineage, and normalized report comparison;
-- compatibility fixtures for every supported upstream artifact version.
+- compatibility fixtures for every supported upstream artifact version;
+- shared reference fakes/conformance in existing testing modules first, with
+  `etlantic-testing` conditional on independent use and retired release owners;
+- qualified Polars execution/inspection in the plugin, identical public compiler
+  helpers, Foundry/registry outbound-policy parity and internal adapter modules;
+- a migrated PostgreSQL driver extra, measured SDK install choices and release-
+  unit retirement only after declared compatibility windows.
 
 Acceptance:
 
@@ -4882,9 +5051,11 @@ Acceptance:
 - generated files never overwrite user work without an explicit target and
   review;
 - at least one real project adopts ETLantic incrementally without a flag-day
-  rewrite.
+  rewrite;
+- consolidation preserves the exact engine/fusion matrix, published fixture
+  identities, canonical authority and outbound network/security behavior.
 
-## 0.60 — Operator Console
+## 0.64 — Operator Console
 
 **Objective:** provide a separately deployable, read-only-first operations UI
 over the graduated multi-tenant control plane.
@@ -4921,21 +5092,24 @@ Acceptance:
 - ETLantic core and the control API remain usable without frontend
   dependencies.
 
-## 0.61 — Managed Runtime and Enterprise Provider Packs
+## 0.65 — Managed Runtime and Enterprise Provider Packs
 
 **Objective:** graduate common cloud integrations into maintained,
 independently installable production profiles without coupling ETLantic core to
-vendor SDKs.
+vendor SDKs. Select a named adopter, one reference deployment and the minimum
+provider set before implementation; remaining vendors are candidates rather than
+all being release requirements.
 
 Deliver:
 
-- reference OCI images and Helm deployment profiles for the control plane and
+- demand-backed reference OCI images and Helm deployment profiles for the control plane and
   execution hosts;
-- production hardening of the 0.47 Kubernetes Job execution provider;
-- managed Spark providers for Databricks, EMR, and Spark Connect with truthful
-  capability profiles;
-- optional secret-provider packages for AWS Secrets Manager, Azure Key Vault,
-  Google Cloud Secret Manager, and HashiCorp Vault;
+- live implementation/hardening of the reference Kubernetes provider when selected;
+- demand-selected managed Spark providers from Databricks, EMR and Spark Connect
+  with truthful capability profiles and separate remote-session/realization owners;
+- demand-selected optional secret adapters from AWS Secrets Manager, Azure Key
+  Vault, Google Cloud Secret Manager and Vault through the existing protocol;
+  no all-vendor default bundle or new secret authority;
 - cloud storage and warehouse providers promoted from the 0.38 connector
   program through live conformance;
 - short-lived workload identity and credential flows where supported;
@@ -4945,7 +5119,9 @@ Deliver:
 
 Acceptance:
 
-- every provider is independently versioned, installable, removable, and
+- the release records one selected deployment/provider set, actual adopter
+  demand and unselected candidates; shared managed implementation is reused;
+- every selected provider is independently versioned, installable, removable, and
   allowlistable;
 - secret providers resolve only at authorized runtime boundaries and prove
   redaction, rotation, missing-secret, and outage behavior;
@@ -4957,7 +5133,7 @@ Acceptance:
 - live conformance uses isolated accounts or projects and proves cleanup;
 - no provider-specific type or SDK becomes a mandatory core dependency.
 
-## 0.62 — TransformationModel Incubation
+## 0.66 — TransformationModel Incubation
 
 **Status:** deferred from the 0.20+ and former 0.38 tracks; begins only after
 the higher-adoption connectivity, control-plane, interoperability, operations,
@@ -4976,9 +5152,12 @@ translation, and fidelity APIs over that standard. The package must not import
 ETLantic or acquire backend execution, orchestration, plugin-loading,
 secret-resolution, or mutable-resource concerns.
 
+Before package creation, name an independent consumer, authoring code to move
+and old duplication to retire; otherwise refactor modules and defer the wheel.
+
 #### Incubation deliverables
 
-- create `packages/transformationmodel` as an independently buildable, typed
+- conditionally create `packages/transformationmodel` as an independently buildable, typed
   package with its own public API, tests, documentation, changelog, and release
   policy;
 - define `TransformationModel`, typed input/output references, expressions,
@@ -4989,9 +5168,9 @@ secret-resolution, or mutable-resource concerns.
 - provide deterministic [DTCS](docs/04_TRANSFORMATIONS/DTCS.md) import, export,
   canonical serialization, fingerprinting, structured diagnostics, semantic
   diff, and explicit loss/fidelity reports;
-- extract reusable transformation authoring and lowering behavior from
-  ETLantic incrementally, preserving compatibility shims at the ETLantic
-  public surface;
+- extract reusable transformation authoring incrementally, delete migrated
+  duplication and keep compatibility shims delegating to one implementation;
+  no second DTCS parser, canonicalizer or normative validator;
 - keep Pandas, Polars, PySpark, SQL, orchestration, and other backend
   realization in ETLantic plugins or provider packages rather than
   TransformationModel core;
@@ -5006,6 +5185,8 @@ secret-resolution, or mutable-resource concerns.
 
 - at least one consumer independent of ETLantic can author, validate, inspect,
   round-trip, and diff a transformation;
+- named migrated authoring duplication is removed and DTCS remains the single
+  normative parsing/canonicalization/validation authority;
 - equivalent definitions serialize and fingerprint identically across
   supported Python versions and operating systems;
 - every conversion reports unsupported or lossy semantics explicitly and
@@ -5021,7 +5202,7 @@ secret-resolution, or mutable-resource concerns.
 
 #### ETLantic adoption
 
-During 0.62, ETLantic may consume TransformationModel from the workspace behind
+During 0.66, ETLantic may consume TransformationModel from the workspace behind
 provisional boundaries. It becomes a required ETLantic dependency only after
 the graduation gates pass and a separately released version has proven the
 package boundary. No later 0.x compatibility promise may depend exclusively on
