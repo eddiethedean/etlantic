@@ -1833,7 +1833,11 @@ def test_managed_report_outage_recovers_fenced_result_without_rerunning(
         toggled_factory = use_toggled_report_store(backend.report_store_factory)
         backend.report_store_factory = toggled_factory
         service.report_store_factory = toggled_factory
-        host = backend.create_execution_host(owner_id="report-outage-worker")
+        # Keep SQLite lease heartbeats from expiring while the low-dependency
+        # CI suite runs this report-recovery scenario under xdist load.
+        host = backend.create_execution_host(
+            owner_id="report-outage-worker", ttl_seconds=300
+        )
         assert host.tick(ctx) == 1
         online = True
         assert target.exists()
