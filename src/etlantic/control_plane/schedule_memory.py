@@ -11,7 +11,7 @@ from collections.abc import Mapping, Sequence
 from copy import deepcopy
 from dataclasses import asdict, replace
 from datetime import UTC, datetime, timedelta
-from typing import Any
+from typing import Any, cast
 
 from etlantic.control_plane.durable_models import validate_execution_route
 from etlantic.control_plane.durable_protocols import DurableWorkStore
@@ -22,7 +22,10 @@ from etlantic.control_plane.schedule_models import (
     FiringRecord,
     FiringStatus,
     ScheduleRecord,
+    ScheduleRevisionPolicy,
     ScheduleSpec,
+    ScheduleStatus,
+    TimerOwner,
     assert_schedule_payload_clean,
     firing_key,
 )
@@ -88,9 +91,10 @@ class MemoryScheduleStore:
         definition_revision_id: str | None = None,
         parameter_refs: dict[str, str] | None = None,
         secret_refs: dict[str, Mapping[str, Any] | str] | None = None,
-        revision_policy: str = "pinned",
+        revision_policy: ScheduleRevisionPolicy = "pinned",
         workload_identity: Principal | None = None,
         execution_route: str = "local",
+        timer_owner: TimerOwner = "local",
         next_fire_at: str | None = None,
     ) -> ScheduleRecord:
         sid = (schedule_id or f"sch-{uuid.uuid4().hex[:16]}").strip()
@@ -115,9 +119,10 @@ class MemoryScheduleStore:
                 str(name): dict(value) if isinstance(value, Mapping) else value
                 for name, value in (secret_refs or {}).items()
             },
-            revision_policy=revision_policy,  # type: ignore[arg-type]
+            revision_policy=revision_policy,
             workload_identity=workload_identity,
             execution_route=validate_execution_route(execution_route),
+            timer_owner=timer_owner,
         )
         key = (*_scope(ctx), sid)
         with self._lock:
@@ -214,18 +219,88 @@ class MemoryScheduleStore:
             self._schedules[key] = amended
             return deepcopy(amended)
 
+    def transfer_timer_owner(
+        self,
+        ctx: ControlPlaneContext,
+        schedule_id: str,
+        *,
+        expected_revision_id: str,
+        expected_generation: int,
+        timer_owner: TimerOwner,
+        workload_identity: Principal | None,
+        policy_fingerprint: str,
+    ) -> ScheduleRecord:
+        """Fence one timer generation before switching delivery authority."""
+        if timer_owner not in ("local", "external"):
+            raise ValueError("timer_owner must be local or external")
+        if type(expected_generation) is not int or expected_generation < 1:
+            raise ValueError("expected_generation must be positive")
+        if timer_owner == "external" and workload_identity is None:
+            raise ValueError("external timer ownership requires workload_identity")
+        if workload_identity is not None and workload_identity.kind not in (
+            "workload",
+            "service",
+        ):
+            raise ValueError("timer workload identity must be workload or service")
+        key = (*_scope(ctx), schedule_id)
+        with self._lock:
+            current = self._schedules.get(key)
+            if current is None or current.status == "deleted":
+                raise ControlPlaneError.not_found("schedule not found")
+            if (
+                current.revision_id != expected_revision_id
+                or current.timer_owner_generation != expected_generation
+            ):
+                raise ControlPlaneError.conflict(
+                    "Schedule timer owner changed before transfer"
+                )
+            if any(
+                firing.schedule_id == schedule_id
+                and (firing.tenant_id, firing.workspace_id) == _scope(ctx)
+                and firing.status == "accepted"
+                and firing.submission_id is None
+                for firing in self._firings.values()
+            ):
+                raise ControlPlaneError.conflict(
+                    "Schedule timer owner cannot transfer while an occurrence is unlinked",
+                    code="PMFIRE409",
+                    extensions={"reason": "occurrence_preparation_pending"},
+                )
+            updated = replace(
+                current,
+                timer_owner=timer_owner,
+                timer_owner_generation=current.timer_owner_generation + 1,
+                workload_identity=workload_identity,
+                policy_fingerprint=policy_fingerprint,
+                updated_at=_iso(),
+            )
+            self._schedules[key] = updated
+            return deepcopy(updated)
+
     def delete(self, ctx: ControlPlaneContext, schedule_id: str) -> ScheduleRecord:
         return self._set_status(ctx, schedule_id, "deleted")
 
     def _set_status(
-        self, ctx: ControlPlaneContext, schedule_id: str, status: str
+        self, ctx: ControlPlaneContext, schedule_id: str, status: ScheduleStatus
     ) -> ScheduleRecord:
         key = (*_scope(ctx), schedule_id)
         with self._lock:
             rec = self._schedules.get(key)
             if rec is None or rec.status == "deleted":
                 raise ControlPlaneError.not_found("schedule not found")
-            rec = replace(rec, status=status, updated_at=_iso())  # type: ignore[arg-type]
+            if status == "deleted" and any(
+                firing.schedule_id == schedule_id
+                and (firing.tenant_id, firing.workspace_id) == _scope(ctx)
+                and firing.status == "accepted"
+                and firing.submission_id is None
+                for firing in self._firings.values()
+            ):
+                raise ControlPlaneError.conflict(
+                    "Schedule cannot be deleted while an occurrence is unlinked",
+                    code="PMFIRE409",
+                    extensions={"reason": "occurrence_preparation_pending"},
+                )
+            rec = replace(rec, status=status, updated_at=_iso())
             self._schedules[key] = rec
             return deepcopy(rec)
 
@@ -320,11 +395,15 @@ class MemoryScheduleStore:
     ) -> Sequence[ScheduleRecord]:
         scope = _scope(ctx)
         with self._lock:
-            due = []
+            due: list[ScheduleRecord] = []
             for (tenant, workspace, _), rec in self._schedules.items():
                 if (tenant, workspace) != scope:
                     continue
-                if rec.status != "active" or rec.next_fire_at is None:
+                if (
+                    rec.status != "active"
+                    or rec.timer_owner != "local"
+                    or rec.next_fire_at is None
+                ):
                     continue
                 if rec.next_fire_at <= now:
                     due.append(deepcopy(rec))
@@ -346,6 +425,10 @@ class MemoryScheduleStore:
         admit_submission: bool = True,
         skip_status: FiringStatus | None = None,
         metadata: Mapping[str, Any] | None = None,
+        expected_next_fire_at: str | None = None,
+        expected_timer_owner: TimerOwner | None = None,
+        expected_timer_owner_generation: int | None = None,
+        require_active: bool = False,
     ) -> tuple[FiringRecord, bool]:
         logical = firing_key(schedule_id, revision_id, nominal_fire_time)
         scope = _scope(ctx)
@@ -353,9 +436,6 @@ class MemoryScheduleStore:
         with self._lock:
             if require_leader_lease:
                 self._require_leader(scope, owner_id, fencing_token)
-            existing = self._firings.get(firing_scope)
-            if existing is not None:
-                return deepcopy(existing), False
             sk = (*scope, schedule_id)
             rec = self._schedules.get(sk)
             if rec is None:
@@ -372,7 +452,43 @@ class MemoryScheduleStore:
                     code="PMFIRE409",
                     extensions={"reason": "stale_revision"},
                 )
-            if require_leader_lease and rec.status != "active":
+            if require_leader_lease and rec.timer_owner != "local":
+                raise ControlPlaneError.conflict(
+                    "Polling scheduler cannot claim an externally owned schedule",
+                    code="PMFIRE409",
+                    extensions={"reason": "timer_owner_changed"},
+                )
+            if (
+                expected_timer_owner is not None
+                and rec.timer_owner != expected_timer_owner
+            ):
+                raise ControlPlaneError.conflict(
+                    "Schedule timer owner changed before firing claim",
+                    code="PMFIRE409",
+                    extensions={"reason": "timer_owner_changed"},
+                )
+            if (
+                expected_timer_owner_generation is not None
+                and rec.timer_owner_generation != expected_timer_owner_generation
+            ):
+                raise ControlPlaneError.conflict(
+                    "Schedule timer owner generation changed before firing claim",
+                    code="PMFIRE409",
+                    extensions={"reason": "timer_generation_changed"},
+                )
+            existing = self._firings.get(firing_scope)
+            if existing is not None:
+                return deepcopy(existing), False
+            if (
+                expected_next_fire_at is not None
+                and rec.next_fire_at != expected_next_fire_at
+            ):
+                raise ControlPlaneError.conflict(
+                    "Schedule next occurrence changed before external trigger admission",
+                    code="PMFIRE409",
+                    extensions={"reason": "stale_occurrence"},
+                )
+            if (require_active or require_leader_lease) and rec.status != "active":
                 raise ControlPlaneError.conflict(
                     "Only active schedules can accept a scheduled firing",
                     code="PMFIRE409",
@@ -420,6 +536,147 @@ class MemoryScheduleStore:
             )
             return deepcopy(firing), True
 
+    def acquire_firing_preparation(
+        self,
+        ctx: ControlPlaneContext,
+        firing_id: str,
+        *,
+        owner_id: object,
+        ttl_seconds: int = 300,
+    ) -> tuple[FiringRecord, bool]:
+        if not isinstance(owner_id, str) or not owner_id.strip():
+            raise ValueError("preparation owner_id must be non-empty")
+        if type(ttl_seconds) is not int or not 1 <= ttl_seconds <= 900:
+            raise ValueError("preparation ttl_seconds must be between 1 and 900")
+        scope = _scope(ctx)
+        with self._lock:
+            matches = [
+                (key, firing)
+                for key, firing in self._firings.items()
+                if key[:2] == scope and firing.firing_id == firing_id
+            ]
+            if not matches:
+                raise ControlPlaneError.not_found("schedule firing not found")
+            key, firing = matches[0]
+            if firing.status != "accepted":
+                return deepcopy(firing), False
+            if firing.submission_id is not None:
+                return deepcopy(firing), False
+            now = _now()
+            expires = (
+                datetime.fromisoformat(
+                    firing.preparation_expires_at.replace("Z", "+00:00")
+                )
+                if firing.preparation_expires_at is not None
+                else None
+            )
+            if (
+                firing.preparation_owner_id is not None
+                and expires is not None
+                and expires > now
+                and firing.preparation_owner_id != owner_id
+            ):
+                return deepcopy(firing), False
+            token = firing.preparation_fencing_token
+            if (
+                firing.preparation_owner_id != owner_id
+                or expires is None
+                or expires <= now
+            ):
+                token += 1
+            updated = replace(
+                firing,
+                preparation_owner_id=owner_id,
+                preparation_fencing_token=token,
+                preparation_expires_at=_iso(now + timedelta(seconds=ttl_seconds)),
+            )
+            self._firings[key] = updated
+            return deepcopy(updated), True
+
+    def update_firing_metadata(
+        self,
+        ctx: ControlPlaneContext,
+        firing_id: str,
+        *,
+        metadata: Mapping[str, Any],
+        owner_id: str,
+        fencing_token: int,
+    ) -> FiringRecord:
+        assert_schedule_payload_clean({"metadata": dict(metadata)})
+        scope = _scope(ctx)
+        with self._lock:
+            matches = [
+                (key, firing)
+                for key, firing in self._firings.items()
+                if key[:2] == scope and firing.firing_id == firing_id
+            ]
+            if not matches:
+                raise ControlPlaneError.not_found("schedule firing not found")
+            key, firing = matches[0]
+            self._require_firing_preparation_lease(
+                firing, owner_id=owner_id, fencing_token=fencing_token
+            )
+            merged = dict(firing.metadata)
+            for name, value in metadata.items():
+                if name in merged and merged[name] != value:
+                    raise ControlPlaneError.conflict(
+                        "Schedule occurrence metadata changed after its durable claim",
+                        code="PMFIRE409",
+                        extensions={
+                            "reason": "occurrence_intent_changed",
+                            "field": name,
+                        },
+                    )
+                merged[name] = value
+            updated = replace(firing, metadata=merged)
+            self._firings[key] = updated
+            return deepcopy(updated)
+
+    def release_firing_preparation(
+        self,
+        ctx: ControlPlaneContext,
+        firing_id: str,
+        *,
+        owner_id: str,
+        fencing_token: int,
+    ) -> None:
+        scope = _scope(ctx)
+        with self._lock:
+            for key, firing in self._firings.items():
+                if key[:2] != scope or firing.firing_id != firing_id:
+                    continue
+                if (
+                    firing.preparation_owner_id == owner_id
+                    and firing.preparation_fencing_token == fencing_token
+                ):
+                    self._firings[key] = replace(
+                        firing,
+                        preparation_owner_id=None,
+                        preparation_expires_at=None,
+                    )
+                return
+
+    @staticmethod
+    def _require_firing_preparation_lease(
+        firing: FiringRecord, *, owner_id: str, fencing_token: int
+    ) -> None:
+        expires = (
+            datetime.fromisoformat(firing.preparation_expires_at.replace("Z", "+00:00"))
+            if firing.preparation_expires_at is not None
+            else None
+        )
+        if (
+            firing.preparation_owner_id != owner_id
+            or firing.preparation_fencing_token != fencing_token
+            or expires is None
+            or expires <= _now()
+        ):
+            raise ControlPlaneError.conflict(
+                "Schedule occurrence preparation lease is stale",
+                code="PMFIRE409",
+                extensions={"reason": "stale_preparation_lease"},
+            )
+
     def link_firing_submission(
         self,
         ctx: ControlPlaneContext,
@@ -428,6 +685,9 @@ class MemoryScheduleStore:
         submission_id: str,
         plan_fingerprint: str,
         durable: DurableWorkStore,
+        preparation_owner_id: str | None = None,
+        preparation_fencing_token: int | None = None,
+        recovered: bool = False,
     ) -> FiringRecord:
         scope = _scope(ctx)
         with self._lock:
@@ -443,6 +703,19 @@ class MemoryScheduleStore:
                 raise ControlPlaneError.conflict(
                     "Only accepted schedule firings can link managed work"
                 )
+            if firing.preparation_owner_id is not None:
+                if recovered:
+                    pass
+                elif preparation_owner_id is None or preparation_fencing_token is None:
+                    raise ControlPlaneError.conflict(
+                        "Schedule occurrence preparation lease is required to link managed work"
+                    )
+                else:
+                    self._require_firing_preparation_lease(
+                        firing,
+                        owner_id=preparation_owner_id,
+                        fencing_token=preparation_fencing_token,
+                    )
             if firing.submission_id is not None:
                 if firing.submission_id != submission_id:
                     raise ControlPlaneError.conflict(
@@ -482,7 +755,13 @@ class MemoryScheduleStore:
                     "admission": "managed",
                 }
             )
-            linked = replace(firing, submission_id=submission_id, metadata=metadata)
+            linked = replace(
+                firing,
+                submission_id=submission_id,
+                metadata=metadata,
+                preparation_owner_id=None,
+                preparation_expires_at=None,
+            )
             self._firings[key] = linked
             return deepcopy(linked)
 
@@ -518,13 +797,19 @@ class MemoryScheduleStore:
 
     def dump(self) -> dict[str, Any]:
         with self._lock:
+            schedules: dict[str, Any] = {}
+            for key, record in self._schedules.items():
+                payload = record.to_dict()
+                if record.timer_owner == "external":
+                    # 0.58 readers validate revision_policy and will fail
+                    # closed instead of treating an external timer as local.
+                    payload["timer_revision_policy"] = record.revision_policy
+                    payload["revision_policy"] = "external_timer_owned"
+                schedules[json.dumps(list(key))] = payload
             return {
-                "schedules": {
-                    json.dumps(list(key)): rec.to_dict()
-                    for key, rec in self._schedules.items()
-                },
+                "schedules": schedules,
                 "firings": {
-                    json.dumps(list(key)): rec.to_dict()
+                    json.dumps(list(key)): rec.to_storage_dict()
                     for key, rec in self._firings.items()
                 },
                 "leaders": {
@@ -534,23 +819,86 @@ class MemoryScheduleStore:
             }
 
     def load(self, payload: Mapping[str, Any]) -> None:
-        with self._lock:
-            self._schedules = {
-                tuple(json.loads(key)): ScheduleRecord.from_dict(value)
-                for key, value in dict(payload.get("schedules") or {}).items()
-            }
-            # Rebuild from canonical record scope so pre-fix snapshots whose
-            # index keys omitted tenant/workspace remain readable and retain
-            # their original firing and submission identities.
-            firings = (
-                FiringRecord.from_dict(value)
-                for value in dict(payload.get("firings") or {}).values()
+        def checked_mapping(value: object, label: str) -> dict[str, Any]:
+            if not isinstance(value, Mapping):
+                raise ValueError(f"{label} must be an object")
+            result: dict[str, Any] = {}
+            for key, item in cast(Mapping[object, Any], value).items():
+                if not isinstance(key, str):
+                    raise ValueError(f"{label} field names must be strings")
+                result[key] = item
+            return result
+
+        payload = checked_mapping(payload, "schedule snapshot")
+        if set(payload) - {"schedules", "firings", "leaders"}:
+            raise ValueError("schedule snapshot contains unsupported fields")
+
+        raw_schedules = checked_mapping(
+            payload.get("schedules") or {}, "schedule snapshot schedules"
+        )
+        schedules: dict[tuple[str, str, str], ScheduleRecord] = {}
+        for encoded_key, value in raw_schedules.items():
+            row = checked_mapping(value, "schedule snapshot schedule row")
+            key_value: object = json.loads(encoded_key)
+            if not isinstance(key_value, list):
+                raise ValueError("schedule snapshot schedule key is malformed")
+            key = cast(list[object], key_value)
+            if len(key) != 3 or not all(isinstance(part, str) and part for part in key):
+                raise ValueError("schedule snapshot schedule key is malformed")
+            record = ScheduleRecord.from_dict(row)
+            canonical_key = (record.tenant_id, record.workspace_id, record.schedule_id)
+            if tuple(key) != canonical_key:
+                raise ValueError("schedule snapshot key does not match its record")
+            schedules[canonical_key] = record
+
+        raw_firings = checked_mapping(
+            payload.get("firings") or {}, "schedule snapshot firings"
+        )
+        firings: dict[tuple[str, str, str], FiringRecord] = {}
+        for encoded_key, value in raw_firings.items():
+            row = checked_mapping(value, "schedule snapshot firing row")
+            legacy_key: str | None = None
+            try:
+                key_value: object = cast(object, json.loads(encoded_key))
+            except json.JSONDecodeError:
+                # Older snapshots used the logical firing key directly.
+                key_value = encoded_key
+            if isinstance(key_value, list):
+                key = cast(list[object], key_value)
+                if not all(isinstance(part, str) for part in key):
+                    raise ValueError("schedule snapshot firing key is malformed")
+            elif isinstance(key_value, str):
+                legacy_key = key_value
+            else:
+                raise ValueError("schedule snapshot firing key is malformed")
+            record = FiringRecord.from_dict(row)
+            if legacy_key is not None and legacy_key != record.logical_key:
+                raise ValueError("legacy schedule firing key does not match its row")
+            # Rebuild from canonical record scope so old snapshots whose index
+            # keys omitted tenant/workspace retain firing and submission IDs.
+            firings[(record.tenant_id, record.workspace_id, record.logical_key)] = (
+                record
             )
-            self._firings = {
-                (record.tenant_id, record.workspace_id, record.logical_key): record
-                for record in firings
-            }
-            self._leaders = {
-                tuple(json.loads(key)): SchedulerLeaderLease(**value)
-                for key, value in dict(payload.get("leaders") or {}).items()
-            }
+
+        raw_leaders = checked_mapping(
+            payload.get("leaders") or {}, "schedule snapshot leaders"
+        )
+        leaders: dict[tuple[str, str], SchedulerLeaderLease] = {}
+        for encoded_key, value in raw_leaders.items():
+            row = checked_mapping(value, "schedule snapshot leader row")
+            key_value: object = json.loads(encoded_key)
+            if not isinstance(key_value, list):
+                raise ValueError("schedule snapshot leader key is malformed")
+            key = cast(list[object], key_value)
+            if len(key) != 2 or not all(isinstance(part, str) and part for part in key):
+                raise ValueError("schedule snapshot leader key is malformed")
+            lease = SchedulerLeaderLease(**row)
+            leader_scope = (cast(str, key[0]), cast(str, key[1]))
+            if (lease.tenant_id, lease.workspace_id) != leader_scope:
+                raise ValueError("schedule snapshot leader key does not match its row")
+            leaders[leader_scope] = lease
+
+        with self._lock:
+            self._schedules = schedules
+            self._firings = firings
+            self._leaders = leaders

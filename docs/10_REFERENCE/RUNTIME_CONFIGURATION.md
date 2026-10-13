@@ -1,6 +1,6 @@
 # Runtime configuration (shipped)
 
-> **Status: ETLantic 0.58.0 Beta release candidate.** Configure profiles, bindings, and
+> **Status: ETLantic 0.59.0 Beta release candidate.** Configure profiles, bindings, and
 > engines in Python or JSON. Optional `etlantic.toml` may set `default_profile`
 > and named profile references. Only the environment variables listed here are
 > read by shipped code.
@@ -19,8 +19,8 @@ profile = Profile(
     spark_engine="pyspark",     # requires etlantic-pyspark
     validation_policy="strict",
     plugin_allowlist={
-        "etlantic-polars": "==0.58.0",
-        "etlantic-sql": "==0.58.0",
+        "etlantic-polars": "==0.59.0",
+        "etlantic-sql": "==0.59.0",
     },
     assets={"customer_source": "customers"},
 )
@@ -74,7 +74,7 @@ Do not configure these as if they exist in 0.37:
 
 - `ETLANTIC_CONFIG` / `ETLANTIC_PROFILE` / `ETLANTIC_PROJECT` auto-loading
 - AWS Secrets Manager / Vault providers (OS keyring is optional via
-  `etlantic-keyring`; cloud providers are planned for 0.61)
+  `etlantic-keyring`; cloud providers are planned for 0.65)
 
 Proposed 0.37 names beyond the optional project toml live under Future Design:
 [Configuration](CONFIGURATION.md) and

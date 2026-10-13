@@ -1,7 +1,7 @@
 ---
 title: Migration from ETLantic 0.55 to 0.56
 status: available
-current_minor: "0.58"
+current_minor: "0.59"
 ---
 
 # Migration from 0.55 to 0.56

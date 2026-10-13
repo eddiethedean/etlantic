@@ -14,6 +14,48 @@
 > **Review trigger:** Update this boundary whenever a program gate passes or
 > the main roadmap changes its sequence.
 
+## Accepted package charters and consolidation
+
+The [2026-10-12 package review](PACKAGE_SCOPE_REVIEW_2026-10-12.md) is accepted
+through the [consolidation plan](PACKAGE_SCOPE_CONSOLIDATION_PLAN.md), including
+all F01–F12 findings and all 25 distribution charters. Implementation remains
+pending. Preserve thin adapters and independent heavy dependencies; consolidate
+shared implementation/configuration before adding provider choices.
+
+0.59 corrects fake/live and version claims, establishes one backend settings
+owner and generic dispatch, replaces private persistence coupling, and conditionally
+extracts managed implementation. 0.60 proves one explicit-URL Connect topology;
+0.61 proves Scheduler/Lambda delivery and ECS/Fargate only; Batch is unscheduled.
+0.62 proves one CP1/SQLModel/PostgreSQL host with one installed durable worker and
+individually qualified timers. New matrices require demand and new evidence.
+
+0.63 organizes shared fakes/conformance in existing testing modules, moves qualified
+Polars mechanics and identical helpers to existing owners, aligns Foundry/registry
+outbound policy, and modularizes Foundry transport/codecs/connectors and SQL
+internally. SQL's driver extra has an explicit migration; CLI/PostgreSQL wheels
+are deferred. Keyring, LSP, native engines, S3 data access, read-only registry and
+OpenLineage export retain their appropriate isolated scopes. Medallion authoring
+and its domain campaigns remain with Medallantic, not core semantics.
+
+`etlantic-testing` requires an independent conformance consumer, compatible testing
+imports and fewer release owners after retirement. `etlantic-http` requires two
+real shared-client consumers and deleted transport duplication; sharing validators
+alone is insufficient. Persistence, connector/compiler-base and contracts wrapper
+wheels are deferred or rejected under their explicit gates. Fake fixture imports
+must not register production plugins; unavailable live modes fail even with SDKs.
+Version metadata comes from installed/build sources with separate protocol IDs.
+SparkForge gets a named final release/window before leaving routine releases.
+
+Dagster/Argo creation needs a real adoption project and faithful valid-plan output,
+without a cloned runtime. Enterprise secret/connector/compute providers remain
+optional, selected for a named adopter through existing protocols and live tests;
+S3 and cloud secrets are not absorbed into `etlantic-aws`. Data Mover remains a
+consumer, optional `fastapi-posit` uses a small host adapter, and no
+`etlantic-fastapi-posit` or `etlantic-quarto` package is planned. The console is a
+separate authorized projection; TransformationModel needs an independent consumer,
+deleted migrated authoring duplication and one normative
+[DTCS](../04_TRANSFORMATIONS/DTCS.md) authority.
+
 ## Decision
 
 ETLantic will treat production connectivity, application-pipeline testing,
@@ -28,7 +70,8 @@ model to a deployable workload in an existing data platform.
 
 - an assigned 0.x phase or mandatory multi-phase gate;
 - a public boundary with explicit stability status;
-- at least one separately installable reference implementation;
+- a public reference path, separately installable when dependency/transport
+  isolation justifies it; module reuse does not require a new wheel;
 - capability-driven conformance and compatibility tests;
 - security, redaction, failure, upgrade, and rollback evidence;
 - runnable documentation with expected outputs;
@@ -50,15 +93,19 @@ adoption and ecosystem gates described below.
 | 0.40 | Metadata identity and OpenLineage interoperability | Tenant-aware metadata export preview |
 | 0.41–0.43 | GitOps previews, delivery objectives, governed erasure, promotion evidence, and graduation | Supported preview-to-production and governed operations workflow |
 | 0.46 | Bounded dynamic control flow, incremental/CDC semantics, DLQ policy, and schema registries | Supported dynamic and change-stream contract |
-| 0.47 | Kubernetes and managed execution **Experimental fakes** (`etlantic-k8s`, `etlantic-spark-connect`) plus conforming remote-runtime protocol | Remote execution profiles (fakes); live packs remain 0.61 |
+| 0.47 | Kubernetes and managed execution **Experimental fakes** (`etlantic-k8s`, `etlantic-spark-connect`) plus conforming remote-runtime protocol | Remote execution profiles (fakes); live packs remain 0.65 |
 | 0.55 | Optional data-first authoring and inferred models for qualified sources and write targets | Qualified interactive authoring, target-guided backward inference, existing-target compatibility, and reviewable durable export |
 | 0.56 | Complete application ETL backend; public services, live PostgreSQL and immutable CSV qualification, and Semblance-backed Foundry API qualification | Fully specified managed ETL without application implementation; all gates required |
 | 0.57 | Managed backend independence and runtime supervision (#278–#282) | Transport-independent backend and schedule services, complete runtime factories, read-only provider inspection, and safe role supervision; 0.57.0 |
 | 0.58 | Managed Prefect execution (#290, #291–#298) | Qualified static-batch `/1`, self-hosted Process-worker deployment/dispatch/recovery matrix; direct scheduler compatibility |
-| 0.59 | Brownfield adoption bridges | Supported import/compiler compatibility matrix; Prefect interoperability consumes 0.58 |
-| 0.60 | Operator console | Supported control-plane operations UI |
-| 0.61 | Enterprise provider packs | Supported cloud provider matrix |
-| 0.62 | TransformationModel incubation | Independently useful modeling package |
+| 0.59 | Managed runtime consolidation and trigger contracts | Single managed owner/configuration/dispatch and missing trigger seams; see [plan](IMPLEMENTATION_PLAN_0_59.md) |
+| 0.60 | Posit Connect scheduling and HTTPS triggers | Qualified bounded adapter/consumer matrix; see [plan](IMPLEMENTATION_PLAN_0_60.md) |
+| 0.61 | AWS Scheduler/Lambda and ECS/Fargate | Independently qualified one relay topology and one executor; see [plan](IMPLEMENTATION_PLAN_0_61.md) |
+| 0.62 | One Data Mover host and optional Posit endpoint discovery | Qualified CP1/PostgreSQL/worker host with timer variants; see [plan](IMPLEMENTATION_PLAN_0_62.md) |
+| 0.63 | Brownfield bridges and targeted package simplification | Supported import/compiler compatibility matrix; Prefect interoperability consumes 0.58 |
+| 0.64 | Operator console | Supported control-plane operations UI |
+| 0.65 | Demand-selected enterprise provider packs | Supported selected cloud provider matrix; other candidates deferred |
+| 0.66 | Conditional TransformationModel incubation | Independent consumer and migrated authoring duplication removed |
 
 No capability in this table is available merely because its phase is planned.
 Each claim begins only after the corresponding exit gate passes.
@@ -80,12 +127,24 @@ to every program below. Detailed implementation and release evidence live in:
   [execution gates](EXECUTION_PLAN_0_56.md) and [source review](FINDINGS_0_56.md)
 - [0.57 managed backend independence and runtime supervision](IMPLEMENTATION_PLAN_0_57.md)
 - [0.58 managed Prefect execution](IMPLEMENTATION_PLAN_0_58.md)
-- [0.59 brownfield bridges](IMPLEMENTATION_PLAN_0_59.md)
-- [0.60 operator console](IMPLEMENTATION_PLAN_0_60.md)
-- [0.61 managed-runtime and provider packs](IMPLEMENTATION_PLAN_0_61.md)
-- [0.62 TransformationModel incubation](IMPLEMENTATION_PLAN_0_62.md)
+- [0.59 managed runtime consolidation and trigger contracts](IMPLEMENTATION_PLAN_0_59.md)
+- [0.60 Posit Connect scheduling and HTTPS triggers](IMPLEMENTATION_PLAN_0_60.md)
+- [0.61 AWS scheduling and execution adapters](IMPLEMENTATION_PLAN_0_61.md)
+- [0.62 Data Mover integration and optional Posit endpoint discovery](IMPLEMENTATION_PLAN_0_62.md)
+- [0.63 brownfield bridges](IMPLEMENTATION_PLAN_0_63.md)
+- [0.64 operator console](IMPLEMENTATION_PLAN_0_64.md)
+- [0.65 managed-runtime and provider packs](IMPLEMENTATION_PLAN_0_65.md)
+- [0.66 TransformationModel incubation](IMPLEMENTATION_PLAN_0_66.md)
 
 ## Product Boundaries
+
+The [0.59–0.62 runtime integration program](ETLANTIC_RUNTIME_PLAN.md) consolidates
+managed implementation and missing scheduling/trigger seams before Connect/AWS adapters,
+and Data Mover composition before brownfield adoption. The four domain plans
+own the new platform boundaries; this plan retains ecosystem qualification
+rules. A schedule adapter does not qualify an executor. Data Mover remains a
+consumer of public services, and broader enterprise providers remain 0.65.
+`etlantic-quarto` does not exist and must not be created or planned.
 
 ETLantic owns logical contracts, deterministic plans, capability negotiation,
 ETL scheduling/execution semantics, normalized execution evidence and provider
@@ -99,7 +158,7 @@ services remain integrations behind those providers.
 Semblance API simulator, live PostgreSQL/CSV transfer qualification, isolated
 provider actions and scoped resource lifecycle. A live Foundry account is not
 required.
-The larger cloud/runtime/secret-provider portfolio remains 0.61. The source
+The larger cloud/runtime/secret-provider portfolio remains 0.65. The source
 review documents gaps in composing existing foundations; historical component
 gates do not alone qualify the complete application execution path.
 
@@ -368,11 +427,11 @@ path.
 - generated contract and pipeline skeletons that never overwrite user files
   without an explicit target and review;
 - semantic diff between source artifacts and generated ETLantic definitions;
-- optional Dagster Definitions compiler;
+- demand-gated optional Dagster Definitions compiler for a named adopter;
 - Prefect migration/deployment interoperability over the 0.58 managed adapter,
   with explicit fidelity and separate qualification for broader plan semantics;
   direct scheduling remains separate and no Prefect DAG compiler is introduced;
-- Argo Workflow compiler based on validated plans;
+- demand-gated Argo Workflow compiler based on validated plans;
 - side-by-side validation and normalized report comparison;
 - maintained compatibility fixtures for every supported upstream artifact
   version.
@@ -391,6 +450,8 @@ path.
    contracts and lineage.
 5. Every compiler rejects a plan whose required semantics it cannot preserve.
 6. At least one real project migrates incrementally without a flag-day rewrite.
+7. New compiler wheels name an actual consumer and isolated artifact/dependency
+   boundary; no additional ETL runtime or approximate lowering is introduced.
 
 ## OC — Operator Console { #operator-console }
 
@@ -438,21 +499,22 @@ durable reports and history.
 
 ### Outcome
 
-Common cloud environments have maintained, separately installable providers
-that pass the same public trust, lifecycle, recovery, and conformance rules as
-local implementations.
+A named adopter has one selected deployment and the minimum separately
+installable provider set needed for it, passing existing public trust, lifecycle,
+recovery and conformance rules. The list below is a portfolio of candidates;
+unselected vendors/topologies remain deferred rather than all blocking 0.65.
 
 ### Deliver
 
-- reference OCI images and Helm deployment profiles for the control plane and
-  execution hosts;
+- selected reference OCI images and Helm profiles where the adopter needs them;
+  canonical configuration and managed role construction remain shared;
 - Kubernetes Job remote-execution provider with workload identity, resource
   limits, cancellation, log/event correlation, cleanup, and terminal-state
   reconciliation;
-- managed Spark providers for Databricks, EMR, and Spark Connect with truthful
-  capability profiles;
-- secret-provider packages for AWS Secrets Manager, Azure Key Vault, Google
-  Cloud Secret Manager, and HashiCorp Vault;
+- demand-selected managed Spark providers from Databricks, EMR and Spark Connect
+  with truthful capabilities and separate session/realization boundaries;
+- demand-selected optional AWS/Azure/GCP/Vault secret adapters with isolated
+  SDK/identity dependencies and the existing secret protocol; no all-vendor bundle;
 - cloud storage and warehouse providers promoted from the 0.38 connector
   program through live production conformance;
 - short-lived identity and credential flows where supported;
@@ -462,7 +524,9 @@ local implementations.
 
 ### Gates
 
-1. Every provider is independently installable and versioned.
+1. Record actual demand, one reference deployment and selected/deferred providers;
+   every selected provider is independently installable and versioned and adds
+   no duplicate managed/state/secret authority.
 2. Workload identity is preferred; static credentials are never serialized
    into plans, reports, deployment manifests, or examples.
 3. Secret providers resolve only at authorized runtime boundaries and prove
@@ -550,7 +614,7 @@ This program will not:
 - [Schema Drift and Evolution Plan](SCHEMA_DRIFT_PLAN.md) owns observations,
   baselines, acknowledgement, and schema-change impact.
 - [TransformationModel Incubation Plan](TRANSFORMATIONMODEL_PLAN.md) owns the
-  0.62 package boundary and graduation.
+  0.66 package boundary and graduation.
 - [Security Model](../02_FOUNDATIONS/SECURITY.md) owns threat-model changes and
   mandatory controls.
 - [Dependency Strategy](DEPENDENCY_STRATEGY.md) owns package isolation and
@@ -567,9 +631,9 @@ must be reconciled in the same change before implementation proceeds.
 | Select the 0.38 local, object, table-format, warehouse, and relational reference set | Integration maintainers | Before 0.38 implementation freeze |
 | Freeze OpenLineage namespace, identity, and facet mappings | Observability + registry maintainers | Before CP2 conformance |
 | Define preview workspace lifecycle and untrusted-fork policy | Control-plane + security maintainers | Before CP3 conformance |
-| Select supported dbt artifact and orchestrator versions | Migration + orchestration maintainers | Before 0.59 preview |
-| Select operator-console frontend architecture and support matrix | API + UI maintainers | Before 0.60 implementation |
-| Select supported cloud regions, identity modes, and live-test accounts | Provider + security maintainers | Before 0.61 preview |
+| Select supported dbt artifact and orchestrator versions | Migration + orchestration maintainers | Before 0.63 preview |
+| Select operator-console frontend architecture and support matrix | API + UI maintainers | Before 0.64 implementation |
+| Select supported cloud regions, identity modes, and live-test accounts | Provider + security maintainers | Before 0.65 preview |
 
 Every decision requires an ADR or explicit roadmap decision record,
 conformance changes, compatibility impact, and documentation updates.

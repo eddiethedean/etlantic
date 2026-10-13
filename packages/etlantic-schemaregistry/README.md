@@ -11,10 +11,10 @@ in inference observations.
 ## Install
 
 ```bash
-pip install 'etlantic-schemaregistry==0.58.0'
+pip install 'etlantic-schemaregistry==0.59.0'
 ```
 
-Core dependency: `etlantic>=0.58.0`. Production profiles require
+Core dependency: `etlantic>=0.59.0`. Production profiles require
 `Profile.schema_registry_allowlist`.
 
 ```python

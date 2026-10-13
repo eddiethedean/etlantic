@@ -8,6 +8,7 @@ from collections.abc import AsyncIterator, Mapping
 from dataclasses import dataclass, field
 from typing import Any
 
+from etlantic import __version__ as PACKAGE_VERSION
 from etlantic.connectors.capabilities import (
     CLEANUP,
     IDEMPOTENCY,
@@ -41,7 +42,6 @@ from etlantic.connectors.models import (
 from etlantic_s3.fake import InMemoryS3Fake, boto3_available
 
 PROVIDER = "s3"
-PACKAGE_VERSION = "0.58.0"
 
 S3_SOURCE_CAPS = frozenset(
     {
@@ -72,9 +72,32 @@ S3_STORAGE_CAPS = frozenset(
 def _public_config(binding: Mapping[str, Any]) -> dict[str, Any]:
     raw = binding.get("config")
     if isinstance(raw, dict):
-        return dict(raw)
-    keys = ("bucket", "prefix", "pointer_key", "format", "mode", "root_ref")
-    return {k: binding[k] for k in keys if k in binding and binding[k] is not None}
+        config = dict(raw)
+    else:
+        keys = ("bucket", "prefix", "pointer_key", "format", "mode", "root_ref")
+        config = {
+            k: binding[k] for k in keys if k in binding and binding[k] is not None
+        }
+    _reject_live_config(config)
+    return config
+
+
+def _reject_live_config(config: Mapping[str, Any]) -> None:
+    requested = (
+        config.get("live") is True
+        or config.get("fake") is False
+        or config.get("force_fake") is False
+        or str(config.get("connector_mode") or "").lower() in {"live", "production"}
+        or str(config.get("implementation") or "").lower() in {"live", "production"}
+        or str(config.get("mode") or "").lower() in {"live", "production"}
+        or str(config.get("backend") or "").lower() in {"live", "production"}
+    )
+    if requested:
+        raise ConnectorConfigError(
+            "S3 live I/O is not implemented; this factory is reference-fake only",
+            code="PMCONN804",
+            provider=PROVIDER,
+        )
 
 
 def _bucket(binding: Mapping[str, Any], cfg: Mapping[str, Any]) -> str:
@@ -97,6 +120,14 @@ class S3SourceConnector:
     backend: InMemoryS3Fake = field(default_factory=InMemoryS3Fake)
     force_fake: bool = True
 
+    def __post_init__(self) -> None:
+        if not self.force_fake:
+            raise ConnectorConfigError(
+                "S3 live I/O is not implemented; force_fake must remain true",
+                code="PMCONN804",
+                provider=PROVIDER,
+            )
+
     def info(self) -> ConnectorInfo:
         return ConnectorInfo(
             name=PROVIDER,
@@ -107,8 +138,10 @@ class S3SourceConnector:
             maturity=ConnectorMaturity.EXPERIMENTAL,
             metadata={
                 "format": "json",
-                "fake": self.force_fake or not boto3_available(),
-                "live_aws": "opt-in-later",
+                "fake": True,
+                "implementation": "reference_fake",
+                "live_capability": False,
+                "sdk_available": boto3_available(),
             },
         )
 
@@ -184,6 +217,14 @@ class S3SinkConnector:
     force_fake: bool = True
     _sessions: dict[str, dict[str, Any]] = field(default_factory=dict, repr=False)
 
+    def __post_init__(self) -> None:
+        if not self.force_fake:
+            raise ConnectorConfigError(
+                "S3 live I/O is not implemented; force_fake must remain true",
+                code="PMCONN804",
+                provider=PROVIDER,
+            )
+
     def info(self) -> ConnectorInfo:
         return ConnectorInfo(
             name=PROVIDER,
@@ -194,7 +235,10 @@ class S3SinkConnector:
             maturity=ConnectorMaturity.EXPERIMENTAL,
             metadata={
                 "format": "json",
-                "fake": self.force_fake or not boto3_available(),
+                "fake": True,
+                "implementation": "reference_fake",
+                "live_capability": False,
+                "sdk_available": boto3_available(),
                 "multipart": True,
                 "commit_pointer": "conditional",
             },
@@ -483,6 +527,14 @@ class S3StorageConnector:
     backend: InMemoryS3Fake = field(default_factory=InMemoryS3Fake)
     force_fake: bool = True
 
+    def __post_init__(self) -> None:
+        if not self.force_fake:
+            raise ConnectorConfigError(
+                "S3 live I/O is not implemented; force_fake must remain true",
+                code="PMCONN804",
+                provider=PROVIDER,
+            )
+
     def info(self) -> ConnectorInfo:
         return ConnectorInfo(
             name=PROVIDER,
@@ -491,7 +543,12 @@ class S3StorageConnector:
             provider=PROVIDER,
             capabilities=tuple(sorted(S3_STORAGE_CAPS)),
             maturity=ConnectorMaturity.EXPERIMENTAL,
-            metadata={"fake": self.force_fake or not boto3_available()},
+            metadata={
+                "fake": True,
+                "implementation": "reference_fake",
+                "live_capability": False,
+                "sdk_available": boto3_available(),
+            },
         )
 
     async def inspect_schema(

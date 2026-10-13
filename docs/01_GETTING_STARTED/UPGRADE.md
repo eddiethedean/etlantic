@@ -1,6 +1,6 @@
 # Upgrade Hub
 
-> **Status: 0.58.0 is the release candidate; 0.57.x remains the published upgrade target.**
+> **Status: 0.59.0 is the release candidate; 0.57.x remains the published upgrade target.**
 
 !!! warning "Upgraders only"
     New users: start at the [docs home green path](../README.md) or
@@ -9,21 +9,29 @@
 Upgrade between ETLantic 0.x releases using the guides below. Always pin core
 and first-party plugins to the **same minor** after upgrading.
 
-The latest published upgrade target is 0.57.2. The 0.58.0 candidate adds
-managed Prefect execution; its migration guide is available for review before
-publication. Older paths must complete the listed migrations through 0.56,
-then apply the 0.56 → 0.57 guide.
+The latest published upgrade target is 0.57.2. The 0.59.0 candidate includes
+managed runtime consolidation and external schedule triggers; qualification is
+pending. Follow each intervening migration guide in order before upgrading.
 
 Historical release notes: [Earlier releases](EARLIER_RELEASES.md).
 
+## 0.59 configuration cheat sheet
+
+The 0.59.0 candidate keeps core and plugin packages aligned at the same patch.
+The `managed-headless` extra installs the SQLModel backend and PostgreSQL
+driver without FastAPI. The external trigger receiver requires a trusted
+`ControlPlaneContext`, `schedule.trigger` authorization, and an already-bound
+workload identity. Read the [0.58 → 0.59 migration guide](../11_DEVELOPMENT/MIGRATION_0_58_TO_0_59.md)
+before changing managed stores or timer ownership. The candidate introduces
+no SQL DDL migration; its managed-store recovery and trigger behavior remain
+unqualified until the [exit gate](../11_DEVELOPMENT/EXIT_GATE_0_59.md) passes.
+
 ## 0.58 configuration cheat sheet
 
-The 0.58.0 candidate keeps core and plugin packages aligned at the same patch.
-Managed Prefect execution is optional and limited to the support profile in
-[What's New in 0.58](WHATS_NEW_0_58.md). It introduces no SQLModel migration;
-the existing migration head remains
-`014_cp1_complete_principal_idempotency_0_56`. See the
-[0.57 → 0.58 migration guide](../11_DEVELOPMENT/MIGRATION_0_57_TO_0_58.md).
+The 0.58 candidate added opt-in managed Prefect execution. Its bounded support
+profile was qualified on that candidate; support on 0.59 awaits requalification.
+See the [0.57 → 0.58 migration guide](../11_DEVELOPMENT/MIGRATION_0_57_TO_0_58.md)
+for the original transition notes.
 
 ## 0.57 configuration cheat sheet
 
@@ -42,8 +50,8 @@ partition capabilities. See [Migration 0.55 → 0.56](../11_DEVELOPMENT/MIGRATIO
 
 ## Current target
 
-**ETLantic 0.58.0** (Beta release candidate) — choose the
-[0.57 → 0.58 migration guide](../11_DEVELOPMENT/MIGRATION_0_57_TO_0_58.md).
+**ETLantic 0.59.0** (Beta release candidate) — choose the
+[0.58 → 0.59 migration guide](../11_DEVELOPMENT/MIGRATION_0_58_TO_0_59.md).
 The published upgrade target remains 0.57.2 until release.
 
 |---|---|

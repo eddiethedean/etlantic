@@ -1,6 +1,6 @@
 # Experimental surfaces (0.50)
 
-> **Status: ETLantic 0.58.0 is a Beta release candidate; publication is pending.** This page maps
+> **Status: ETLantic 0.59.0 is a Beta release candidate; publication is pending.** This page maps
 > Experimental APIs.
 > These are **not** part of the Beta Supported claim. Prefer Available paths on
 > [Capabilities](CAPABILITIES.md).
@@ -13,7 +13,7 @@
 | Prefect deployment / serve | `etlantic-prefect` | Local direct-execution MVP only; deployment/serve remain future |
 | FastAPI HTTP API | `etlantic-fastapi` | Embeddable `ETLanticAPI` is Available; `create_reference_app` is a thin non-CP demo |
 | Kafka / registry | `etlantic-kafka` / `etlantic-schemaregistry` | Experimental fakes |
-| Kubernetes / Spark Connect | `etlantic-k8s` / `etlantic-spark-connect` | Experimental fakes; live packs remain 0.61 |
+| Kubernetes / Spark Connect | `etlantic-k8s` / `etlantic-spark-connect` | Experimental fakes; live packs remain 0.65 |
 | MCP | `etlantic-mcp` | Experimental FakeMcpServer; live client skipped |
 
 When a page is labeled **Experimental** or **Future design**, treat APIs as

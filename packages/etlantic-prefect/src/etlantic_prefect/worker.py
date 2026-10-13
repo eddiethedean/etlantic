@@ -180,7 +180,7 @@ def _remote_flow_run_observation(
         return {"status": "binding_mismatch", "observed_at": None}
     if (
         dispatch.status not in {"dispatched", "reconciliation_required"}
-        or not dispatch.prefect_flow_run_id
+        or not dispatch.remote_run_id
     ):
         return {
             "status": dispatch.status,
@@ -190,7 +190,7 @@ def _remote_flow_run_observation(
             "dispatch_attempts": dispatch.dispatch_attempts,
             "error_code": getattr(dispatch, "last_error_code", None),
         }
-    flow_run_id = str(dispatch.prefect_flow_run_id)
+    flow_run_id = str(dispatch.remote_run_id)
     from prefect.client.orchestration import get_client
     from prefect.exceptions import ObjectNotFound
 
@@ -242,9 +242,9 @@ def _request_remote_cancellation(
         return {"status": "not_dispatched"}
     if dispatch.execution_route != binding.execution_route:
         return {"status": "binding_mismatch"}
-    if dispatch.status != "dispatched" or not dispatch.prefect_flow_run_id:
+    if dispatch.status != "dispatched" or not dispatch.remote_run_id:
         return {"status": "not_dispatched"}
-    flow_run_id = str(dispatch.prefect_flow_run_id)
+    flow_run_id = str(dispatch.remote_run_id)
     try:
         from prefect.client.orchestration import get_client
         from prefect.client.schemas.objects import State, StateType
@@ -431,8 +431,8 @@ def managed_execution_flow(reference: Mapping[str, Any]) -> Mapping[str, Any]:
             or dispatch.status not in {"leased", "uncertain", "dispatched"}
             or (
                 dispatch.status == "dispatched"
-                and dispatch.prefect_flow_run_id is not None
-                and str(dispatch.prefect_flow_run_id) != str(remote_flow_run_id)
+                and dispatch.remote_run_id is not None
+                and str(dispatch.remote_run_id) != str(remote_flow_run_id)
             )
         ):
             raise RuntimeError(

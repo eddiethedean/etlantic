@@ -648,17 +648,31 @@ class ManagedApplicationService:
             "references": references,
         }
 
-    def rearm_exhausted_prefect_dispatch(
+    def rearm_exhausted_dispatch(
         self,
         ctx: ControlPlaneContext,
         submission_id: str,
         *,
         expected_generation: int,
-        expected_flow_run_id: str,
+        expected_remote_run_id: str | None = None,
+        expected_flow_run_id: str | None = None,
         evidence: str,
     ) -> dict[str, Any]:
-        """Authorize one explicit retry after bounded pre-execution dispatch."""
+        """Authorize one explicit retry before canonical execution begins."""
         validate_control_plane_context(ctx)
+        if expected_remote_run_id is None:
+            expected_remote_run_id = expected_flow_run_id
+        elif (
+            expected_flow_run_id is not None
+            and expected_flow_run_id != expected_remote_run_id
+        ):
+            raise ValueError("remote run identity inputs do not match")
+        if (
+            not isinstance(expected_remote_run_id, str)
+            or not expected_remote_run_id.strip()
+            or len(expected_remote_run_id) > 256
+        ):
+            raise ValueError("expected_remote_run_id must be a bounded identifier")
         if not submission_id.strip() or len(submission_id) > 256:
             raise ValueError("submission_id must contain 1 to 256 characters")
         if not evidence.strip() or len(evidence) > 2048:
@@ -676,16 +690,18 @@ class ManagedApplicationService:
                 ctx,
                 submission_id,
                 expected_generation=expected_generation,
-                expected_flow_run_id=expected_flow_run_id,
+                expected_remote_run_id=expected_remote_run_id,
                 evidence_sha256=evidence_sha256,
             )
         )
         payload = {
             "submission_id": dispatch.submission_id,
+            "backend_kind": dispatch.backend_kind,
             "execution_route": dispatch.execution_route,
             "from_generation": expected_generation,
             "to_generation": dispatch.generation,
-            "prefect_flow_run_id": expected_flow_run_id,
+            "remote_run_id": expected_remote_run_id,
+            "prefect_flow_run_id": expected_remote_run_id,
             "evidence_sha256": evidence_sha256,
             "principal_subject": ctx.principal.subject,
             "principal_issuer": ctx.principal.issuer,
@@ -696,9 +712,7 @@ class ManagedApplicationService:
             if callable(append_once):
                 append_once(
                     ctx,
-                    event_key=(
-                        f"prefect-dispatch:{submission_id}:generation:{dispatch.generation}"
-                    ),
+                    event_key=f"dispatch:{submission_id}:generation:{dispatch.generation}",
                     kind="execution.dispatch_reconciled",
                     payload=payload,
                 )
@@ -710,6 +724,24 @@ class ManagedApplicationService:
             "schema": "etlantic.control_plane.dispatch_reconciliation_result/1",
             "dispatch": dispatch.to_dict(),
         }
+
+    def rearm_exhausted_prefect_dispatch(
+        self,
+        ctx: ControlPlaneContext,
+        submission_id: str,
+        *,
+        expected_generation: int,
+        expected_flow_run_id: str,
+        evidence: str,
+    ) -> dict[str, Any]:
+        """Compatibility delegate for the 0.58 Prefect-specific operation."""
+        return self.rearm_exhausted_dispatch(
+            ctx,
+            submission_id,
+            expected_generation=expected_generation,
+            expected_flow_run_id=expected_flow_run_id,
+            evidence=evidence,
+        )
 
     def edit_definition(
         self,
@@ -1136,6 +1168,7 @@ class ManagedApplicationService:
         schedule: ScheduleRecord,
         nominal_fire_time: str,
         existing_firing: Any = None,
+        checkpoint: Callable[[Mapping[str, Any]], None] | None = None,
     ) -> ScheduleRecord:
         """Bind occurrence-time selection, identity and input policy once.
 
@@ -1183,6 +1216,13 @@ class ManagedApplicationService:
             ctx, schedule.definition_id, selector
         )
         self._decode_definition(resolution.document)
+        if checkpoint is not None:
+            checkpoint(
+                {
+                    "selected_definition_revision_id": resolution.revision_id,
+                    "trigger_principal": ctx.principal.to_dict(),
+                }
+            )
 
         parameter_overrides: dict[str, dict[str, Any]] = {}
         if schedule.parameter_refs:
@@ -1246,6 +1286,17 @@ class ManagedApplicationService:
             parameter_fingerprint = hashlib.sha256(parameter_bytes).hexdigest()
         else:
             parameter_fingerprint = hashlib.sha256(b"{}").hexdigest()
+        prior_parameter_fingerprint = prior_metadata.get("parameter_fingerprint")
+        if (
+            prior_parameter_fingerprint is not None
+            and prior_parameter_fingerprint != parameter_fingerprint
+        ):
+            raise ControlPlaneError.conflict(
+                "Schedule parameter snapshot changed after its durable claim",
+                extensions={"field": "parameter_fingerprint"},
+            )
+        if checkpoint is not None:
+            checkpoint({"parameter_fingerprint": parameter_fingerprint})
 
         profile = resolve_profile(self.profile, allow_adhoc_profile=False)
         if schedule.profile_name != profile.name:
@@ -1319,6 +1370,8 @@ class ManagedApplicationService:
                         "Schedule occurrence policy changed after its durable claim",
                         extensions={"field": key},
                     )
+        if checkpoint is not None:
+            checkpoint(snapshot)
         return replace(
             schedule,
             definition_revision_id=resolution.revision_id,

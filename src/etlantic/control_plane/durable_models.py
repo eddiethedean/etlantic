@@ -33,8 +33,8 @@ SUBMISSION_RECORD_SCHEMA = "etlantic.control_plane.submission_record/1"
 OUTBOX_RECORD_SCHEMA = "etlantic.control_plane.outbox_record/1"
 LEASE_RECORD_SCHEMA = "etlantic.control_plane.lease_record/1"
 ATTEMPT_RECORD_SCHEMA = "etlantic.control_plane.attempt_record/1"
-DISPATCH_RECORD_SCHEMA = "etlantic.control_plane.dispatch_record/2"
-DISPATCH_RECONCILIATION_SCHEMA = "etlantic.control_plane.dispatch_reconciliation/1"
+DISPATCH_RECORD_SCHEMA = "etlantic.control_plane.dispatch_record/3"
+DISPATCH_RECONCILIATION_SCHEMA = "etlantic.control_plane.dispatch_reconciliation/2"
 CHECKPOINT_RECORD_SCHEMA = "etlantic.control_plane.checkpoint_record/1"
 EFFECT_RECORD_SCHEMA = "etlantic.control_plane.effect_record/1"
 REPLAY_RECORD_SCHEMA = "etlantic.control_plane.replay_record/1"
@@ -67,6 +67,7 @@ EffectStatus = Literal[
     "none", "pending", "committed", "not_committed", "failed", "unknown"
 ]
 RepairPlanKind = Literal["resume", "repair", "backfill"]
+StateDiagnosticKind = Literal["corruption", "migration", "conflict"]
 ActionJobStatus = Literal[
     "queued",
     "running",
@@ -292,23 +293,54 @@ class OutboxRecord:
 
 @dataclass(frozen=True, slots=True)
 class DispatchReconciliation:
-    """Auditable operator authorization to resume exhausted pre-claim dispatch."""
+    """Auditable operator authorization to resume a remote delivery."""
 
     from_generation: int
     to_generation: int
-    prefect_flow_run_id: str
+    prefect_flow_run_id: str | None
     authorized_at: str
     principal_subject: str
     principal_issuer: str | None
     evidence_sha256: str
+    backend_kind: str = "prefect"
+    remote_run_id: str | None = None
+
+    def __post_init__(self) -> None:
+        if self.backend_kind != "prefect":
+            raise ValueError("dispatch backend kind is not registered")
+        if self.remote_run_id is None and self.prefect_flow_run_id is not None:
+            object.__setattr__(self, "remote_run_id", self.prefect_flow_run_id)
+        elif self.prefect_flow_run_id is None and self.remote_run_id is not None:
+            object.__setattr__(self, "prefect_flow_run_id", self.remote_run_id)
+        elif self.remote_run_id != self.prefect_flow_run_id:
+            raise ValueError("legacy and generic remote run identities differ")
+        if self.remote_run_id is not None and (
+            not self.remote_run_id.strip() or len(self.remote_run_id) > 256
+        ):
+            raise ValueError("remote_run_id must contain 1 to 256 characters")
 
     def to_dict(self) -> dict[str, Any]:
         return {"schema": DISPATCH_RECONCILIATION_SCHEMA, **asdict(self)}
 
+    @classmethod
+    def from_dict(cls, data: Mapping[str, Any]) -> DispatchReconciliation:
+        schema = data.get("schema")
+        if schema not in {
+            None,
+            "etlantic.control_plane.dispatch_reconciliation/1",
+            DISPATCH_RECONCILIATION_SCHEMA,
+        }:
+            raise ValueError("unsupported dispatch reconciliation schema")
+        fields = {key: value for key, value in data.items() if key != "schema"}
+        fields.setdefault("backend_kind", "prefect")
+        fields.setdefault("remote_run_id", fields.get("prefect_flow_run_id"))
+        fields.setdefault("prefect_flow_run_id", fields.get("remote_run_id"))
+        return cls(**fields)
+
 
 @dataclass(frozen=True, slots=True)
 class DispatchRecord:
-    """Durable, fenced Prefect delivery state for one immutable submission."""
+    """Durable, fenced remote delivery for one immutable submission."""
 
     submission_id: str
     tenant_id: str
@@ -330,6 +362,25 @@ class DispatchRecord:
     prefect_flow_run_id: str | None = None
     last_error_code: str | None = None
     reconciliation_history: tuple[DispatchReconciliation, ...] = ()
+    backend_kind: str = "prefect"
+    remote_run_id: str | None = None
+
+    def __post_init__(self) -> None:
+        route = validate_execution_route(self.execution_route)
+        if self.backend_kind != "prefect" or not route.startswith("prefect:"):
+            raise ValueError("dispatch backend kind is not registered for its route")
+        if self.binding_fingerprint != route.removeprefix("prefect:"):
+            raise ValueError("dispatch binding does not match its immutable route")
+        remote = self.remote_run_id
+        legacy = self.prefect_flow_run_id
+        if remote is not None and (not remote.strip() or len(remote) > 256):
+            raise ValueError("remote_run_id must contain 1 to 256 characters")
+        if remote is not None and legacy is not None and remote != legacy:
+            raise ValueError("legacy and generic remote run identities differ")
+        if remote is None and legacy is not None:
+            object.__setattr__(self, "remote_run_id", legacy)
+        elif remote is not None and legacy is None:
+            object.__setattr__(self, "prefect_flow_run_id", remote)
 
     def to_dict(self) -> dict[str, Any]:
         return {
@@ -339,6 +390,26 @@ class DispatchRecord:
                 item.to_dict() for item in self.reconciliation_history
             ],
         }
+
+    @classmethod
+    def from_dict(cls, data: Mapping[str, Any]) -> DispatchRecord:
+        schema = data.get("schema")
+        if schema not in {
+            None,
+            "etlantic.control_plane.dispatch_record/2",
+            DISPATCH_RECORD_SCHEMA,
+        }:
+            raise ValueError("unsupported dispatch record schema")
+        fields = {key: value for key, value in data.items() if key != "schema"}
+        fields.setdefault("backend_kind", "prefect")
+        fields.setdefault("remote_run_id", fields.get("prefect_flow_run_id"))
+        fields["reconciliation_history"] = tuple(
+            item
+            if isinstance(item, DispatchReconciliation)
+            else DispatchReconciliation.from_dict(item)
+            for item in fields.get("reconciliation_history", ())
+        )
+        return cls(**fields)
 
 
 @dataclass(frozen=True, slots=True)
@@ -613,7 +684,7 @@ class StateDiagnostic:
     tenant_id: str
     workspace_id: str
     checkpoint_id: str
-    kind: Literal["corruption", "migration", "conflict"]
+    kind: StateDiagnosticKind
     detail: str
     created_at: str
     recoverable: bool = False
@@ -753,6 +824,7 @@ __all__ = [
     "ReplayRecord",
     "ShadowRunRecord",
     "StateDiagnostic",
+    "StateDiagnosticKind",
     "StateTransitionExplanation",
     "SubmissionRecord",
     "SubmissionStatus",

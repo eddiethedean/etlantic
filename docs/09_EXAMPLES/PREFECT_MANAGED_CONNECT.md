@@ -1,6 +1,6 @@
 # Managed Prefect on Posit Connect
 
-!!! warning "Status: Available in ETLantic 0.58.0 Beta (deployment recipe only)"
+!!! warning "Status: Available in ETLantic 0.59.0 Beta (deployment recipe only)"
     The managed Prefect path has not been live-qualified on Posit Connect. This
     guide describes a host composition; it does not add Connect to ETLantic's
     supported hosting matrix.
@@ -65,11 +65,11 @@ schema readiness and owns its connection pool; it does not run migrations.
 ## Deploy the API
 
 Pin ETLantic packages on the same release line in the app's dependency file.
-For the 0.58.0 candidate, the managed adapter installation is:
+For the 0.59.0 candidate, the managed adapter installation is:
 
 ```text
-etlantic==0.58.0
-etlantic-fastapi[managed]==0.58.0
+etlantic==0.59.0
+etlantic-fastapi[managed]==0.59.0
 ```
 
 Install and configure `rsconnect-python` in the publishing environment, then

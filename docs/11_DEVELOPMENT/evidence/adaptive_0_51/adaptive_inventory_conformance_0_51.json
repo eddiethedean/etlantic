@@ -5,7 +5,7 @@
   "passed_scenarios": 2,
   "planner_version": "0.52",
   "public_schema": "etlantic.plan/2",
-  "repository_revision": "sha256:039d6dd0f9c0db8ffc136698f9172984b6bc9eff95b434193b0ede8b8f8e6f7b",
+  "repository_revision": "sha256:2d9a3a4a4c7c607980ba9fc92c44d1d7b119a06ba8978ed0765f6a97e0069c2c",
   "result": "pass",
   "scenario_count": 2,
   "scenarios": [
@@ -15,7 +15,7 @@
       "executed": true,
       "expected": "pass",
       "id": "test_final_052_001_missing_target_reference_is_negative",
-      "plan_fingerprint": "037488c78f593edf5c2d9cf618858432121bd5849b996c014b8772e6e5793b2c",
+      "plan_fingerprint": "ed17603c2e76230f04b196472eb27e737c0946c61a2eefb93cebfe3920fc1f38",
       "result": "pass",
       "verification": "test_final_052_001_missing_target_reference_is_negative"
     },
@@ -25,7 +25,7 @@
       "executed": true,
       "expected": "pass",
       "id": "test_final_052_002_generic_engine_pair_is_not_handoff_evidence",
-      "plan_fingerprint": "037488c78f593edf5c2d9cf618858432121bd5849b996c014b8772e6e5793b2c",
+      "plan_fingerprint": "ed17603c2e76230f04b196472eb27e737c0946c61a2eefb93cebfe3920fc1f38",
       "result": "pass",
       "verification": "test_final_052_002_generic_engine_pair_is_not_handoff_evidence"
     }

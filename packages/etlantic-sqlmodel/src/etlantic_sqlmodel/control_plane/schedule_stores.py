@@ -8,11 +8,13 @@ the same engine, firing claim and durable accept share one commit.
 
 from __future__ import annotations
 
+import hashlib
 import json
 from collections.abc import Callable, Mapping, Sequence
 from datetime import UTC, datetime
 from typing import Any, TypeVar
 
+from sqlalchemy import text
 from sqlalchemy.engine import Engine
 
 from etlantic.control_plane.durable_memory import MemoryDurableWorkStore
@@ -23,7 +25,9 @@ from etlantic.control_plane.schedule_memory import MemoryScheduleStore
 from etlantic.control_plane.schedule_models import (
     FiringRecord,
     ScheduleRecord,
+    ScheduleRevisionPolicy,
     ScheduleSpec,
+    TimerOwner,
 )
 from etlantic.control_plane.schedule_protocols import SchedulerLeaderLease
 from etlantic_sqlmodel.control_plane.durable_stores import SQLModelDurableWorkStore
@@ -40,7 +44,7 @@ def create_schedule_tables(engine: Engine) -> None:
     """Create schedule snapshot tables (tests/demos only)."""
     SQLModel.metadata.create_all(
         engine,
-        tables=[cls.__table__ for cls in SCHEDULE_TABLES],  # type: ignore[list-item]
+        tables=[SQLModel.metadata.tables["cp_schedule_snapshot"]],
     )
 
 
@@ -57,10 +61,28 @@ class SQLModelScheduleStore:
 
     def _txn(self, fn: Callable[[MemoryScheduleStore], T]) -> T:
         with session_scope(self.engine) as session:
+            self._lock_store(session)
             mem, version = self._read(session, for_update=True)
             result = fn(mem)
             self._write(session, mem, expected_version=version)
             return result
+
+    def _lock_store(self, session: Session) -> None:
+        """Serialize PostgreSQL mutations even before the snapshot row exists.
+
+        ``SELECT FOR UPDATE`` cannot lock a missing row. Without a transaction
+        advisory lock, concurrent first schedule writes both observe version
+        zero and race to create the unique snapshot row.
+        """
+        if self.engine.dialect.name != "postgresql":
+            return
+        digest = hashlib.sha256(("schedule:" + self.store_id).encode("utf-8")).digest()[
+            :8
+        ]
+        lock_id = int.from_bytes(digest, byteorder="big", signed=True)
+        session.connection().execute(
+            text("SELECT pg_advisory_xact_lock(:lock_id)"), {"lock_id": lock_id}
+        )
 
     def _read_only(self, fn: Callable[[MemoryScheduleStore], T]) -> T:
         with session_scope(self.engine) as session:
@@ -131,9 +153,10 @@ class SQLModelScheduleStore:
         definition_revision_id: str | None = None,
         parameter_refs: dict[str, str] | None = None,
         secret_refs: dict[str, Mapping[str, Any] | str] | None = None,
-        revision_policy: str = "pinned",
+        revision_policy: ScheduleRevisionPolicy = "pinned",
         workload_identity: Principal | None = None,
         execution_route: str = "local",
+        timer_owner: TimerOwner = "local",
         next_fire_at: str | None = None,
     ) -> ScheduleRecord:
         return self._txn(
@@ -150,6 +173,7 @@ class SQLModelScheduleStore:
                 revision_policy=revision_policy,
                 workload_identity=workload_identity,
                 execution_route=execution_route,
+                timer_owner=timer_owner,
                 next_fire_at=next_fire_at,
             )
         )
@@ -193,6 +217,29 @@ class SQLModelScheduleStore:
                 execution_route=execution_route,
                 policy_fingerprint=policy_fingerprint,
                 durable=durable,
+            )
+        )
+
+    def transfer_timer_owner(
+        self,
+        ctx: ControlPlaneContext,
+        schedule_id: str,
+        *,
+        expected_revision_id: str,
+        expected_generation: int,
+        timer_owner: TimerOwner,
+        workload_identity: Principal | None,
+        policy_fingerprint: str,
+    ) -> ScheduleRecord:
+        return self._txn(
+            lambda memory: memory.transfer_timer_owner(
+                ctx,
+                schedule_id,
+                expected_revision_id=expected_revision_id,
+                expected_generation=expected_generation,
+                timer_owner=timer_owner,
+                workload_identity=workload_identity,
+                policy_fingerprint=policy_fingerprint,
             )
         )
 
@@ -260,6 +307,10 @@ class SQLModelScheduleStore:
         admit_submission: bool = True,
         skip_status: str | None = None,
         metadata: Mapping[str, Any] | None = None,
+        expected_next_fire_at: str | None = None,
+        expected_timer_owner: TimerOwner | None = None,
+        expected_timer_owner_generation: int | None = None,
+        require_active: bool = False,
     ) -> tuple[FiringRecord, bool]:
         kwargs: dict[str, Any] = {
             "schedule_id": schedule_id,
@@ -273,12 +324,17 @@ class SQLModelScheduleStore:
             "admit_submission": admit_submission,
             "skip_status": skip_status,
             "metadata": metadata,
+            "expected_next_fire_at": expected_next_fire_at,
+            "expected_timer_owner": expected_timer_owner,
+            "expected_timer_owner_generation": expected_timer_owner_generation,
+            "require_active": require_active,
         }
         if (
             isinstance(durable, SQLModelDurableWorkStore)
             and durable.engine is self.engine
         ):
             with session_scope(self.engine) as session:
+                self._lock_store(session)
                 sched, sv = self._read(session, for_update=True)
 
                 def claim(
@@ -291,6 +347,59 @@ class SQLModelScheduleStore:
                 return durable.apply_in_transaction(session, claim)
         return self._txn(lambda m: m.claim_firing(ctx, durable=durable, **kwargs))
 
+    def acquire_firing_preparation(
+        self,
+        ctx: ControlPlaneContext,
+        firing_id: str,
+        *,
+        owner_id: str,
+        ttl_seconds: int = 300,
+    ) -> tuple[FiringRecord, bool]:
+        return self._txn(
+            lambda store: store.acquire_firing_preparation(
+                ctx,
+                firing_id,
+                owner_id=owner_id,
+                ttl_seconds=ttl_seconds,
+            )
+        )
+
+    def update_firing_metadata(
+        self,
+        ctx: ControlPlaneContext,
+        firing_id: str,
+        *,
+        metadata: Mapping[str, object],
+        owner_id: str,
+        fencing_token: int,
+    ) -> FiringRecord:
+        return self._txn(
+            lambda store: store.update_firing_metadata(
+                ctx,
+                firing_id,
+                metadata=metadata,
+                owner_id=owner_id,
+                fencing_token=fencing_token,
+            )
+        )
+
+    def release_firing_preparation(
+        self,
+        ctx: ControlPlaneContext,
+        firing_id: str,
+        *,
+        owner_id: str,
+        fencing_token: int,
+    ) -> None:
+        self._txn(
+            lambda store: store.release_firing_preparation(
+                ctx,
+                firing_id,
+                owner_id=owner_id,
+                fencing_token=fencing_token,
+            )
+        )
+
     def link_firing_submission(
         self,
         ctx: ControlPlaneContext,
@@ -299,12 +408,16 @@ class SQLModelScheduleStore:
         submission_id: str,
         plan_fingerprint: str,
         durable: DurableWorkStore,
+        preparation_owner_id: str | None = None,
+        preparation_fencing_token: int | None = None,
+        recovered: bool = False,
     ) -> FiringRecord:
         if (
             isinstance(durable, SQLModelDurableWorkStore)
             and durable.engine is self.engine
         ):
             with session_scope(self.engine) as session:
+                self._lock_store(session)
                 sched, version = self._read(session, for_update=True)
 
                 def link(durable_memory: MemoryDurableWorkStore) -> FiringRecord:
@@ -314,6 +427,9 @@ class SQLModelScheduleStore:
                         submission_id=submission_id,
                         plan_fingerprint=plan_fingerprint,
                         durable=durable_memory,
+                        preparation_owner_id=preparation_owner_id,
+                        preparation_fencing_token=preparation_fencing_token,
+                        recovered=recovered,
                     )
                     self._write(session, sched, expected_version=version)
                     return result
@@ -326,6 +442,9 @@ class SQLModelScheduleStore:
                 submission_id=submission_id,
                 plan_fingerprint=plan_fingerprint,
                 durable=durable,
+                preparation_owner_id=preparation_owner_id,
+                preparation_fencing_token=preparation_fencing_token,
+                recovered=recovered,
             )
         )
 

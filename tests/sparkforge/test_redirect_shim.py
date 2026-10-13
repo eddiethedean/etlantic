@@ -19,7 +19,7 @@ def test_sparkforge_shim_reexports_medallantic() -> None:
     deprecated = [
         w
         for w in caught
-        if issubclass(w.category, DeprecationWarning)
+        if issubclass(w.category, (DeprecationWarning, FutureWarning))
         and "medallantic" in str(w.message).lower()
     ]
     assert len(deprecated) >= 1

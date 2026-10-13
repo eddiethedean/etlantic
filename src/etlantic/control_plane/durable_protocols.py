@@ -27,6 +27,7 @@ from etlantic.control_plane.durable_models import (
     ResultPublicationRecord,
     ShadowRunRecord,
     StateDiagnostic,
+    StateDiagnosticKind,
     StateTransitionExplanation,
     SubmissionRecord,
 )
@@ -228,7 +229,8 @@ class DurableWorkStore(Protocol):
         *,
         owner_id: str,
         fencing_token: int,
-        prefect_flow_run_id: str,
+        remote_run_id: str | None = None,
+        prefect_flow_run_id: str | None = None,
         now: datetime | None = None,
     ) -> DispatchRecord: ...
     def release_dispatch(
@@ -248,7 +250,8 @@ class DurableWorkStore(Protocol):
         ctx: ControlPlaneContext,
         submission_id: str,
         *,
-        expected_flow_run_id: str,
+        expected_remote_run_id: str | None = None,
+        expected_flow_run_id: str | None = None,
         now: datetime | None = None,
     ) -> DispatchRecord | None:
         """Rearm only matching remote failures with no ETL attempt or side effect."""
@@ -259,7 +262,8 @@ class DurableWorkStore(Protocol):
         ctx: ControlPlaneContext,
         submission_id: str,
         *,
-        expected_flow_run_id: str,
+        expected_remote_run_id: str | None = None,
+        expected_flow_run_id: str | None = None,
         minimum_age_seconds: int = 300,
         now: datetime | None = None,
     ) -> DispatchRecord | None:
@@ -272,7 +276,8 @@ class DurableWorkStore(Protocol):
         submission_id: str,
         *,
         expected_generation: int,
-        expected_flow_run_id: str,
+        expected_remote_run_id: str | None = None,
+        expected_flow_run_id: str | None = None,
         evidence_sha256: str,
         now: datetime | None = None,
     ) -> DispatchRecord:
@@ -400,7 +405,7 @@ class DurableWorkStore(Protocol):
         ctx: ControlPlaneContext,
         checkpoint_id: str,
         *,
-        kind: str = "corruption",
+        kind: StateDiagnosticKind = "corruption",
         detail: str = "",
     ) -> StateDiagnostic: ...
     def acknowledge_baseline(

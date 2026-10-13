@@ -9,14 +9,20 @@ from datetime import UTC, datetime
 from typing import Any, cast
 
 from etlantic.control_plane import (
+    MAX_TRIGGER_ENVELOPE_BYTES,
     ControlPlaneContext,
     ControlPlaneError,
     Principal,
     ScheduleSpec,
     require_authorized,
+    trigger_envelope_json_schema,
 )
-from etlantic_fastapi.schemas import ScheduleCreateBody
-from fastapi import APIRouter, Depends
+from etlantic_fastapi.schemas import (
+    ScheduleCreateBody,
+    ScheduleTimerTransferBody,
+    TriggerReceiptResponse,
+)
+from fastapi import APIRouter, Depends, Request, Response
 
 
 def register_schedule_routes(
@@ -46,6 +52,48 @@ def register_schedule_routes(
                 title="Unprocessable Entity",
                 type="etlantic.control_plane/validation_error",
             ) from exc
+
+    async def bounded_trigger_body(request: Request) -> bytes:
+        declared = request.headers.get("content-length")
+        if declared is not None:
+            try:
+                declared_length = int(declared)
+            except ValueError as exc:
+                raise ControlPlaneError(
+                    "Trigger content length is invalid",
+                    code="PMTRG400",
+                    status=400,
+                    title="Bad Request",
+                    type="etlantic.control_plane/bad_request",
+                ) from exc
+            if declared_length < 0:
+                raise ControlPlaneError(
+                    "Trigger content length is invalid",
+                    code="PMTRG400",
+                    status=400,
+                    title="Bad Request",
+                    type="etlantic.control_plane/bad_request",
+                )
+            if declared_length > MAX_TRIGGER_ENVELOPE_BYTES:
+                raise ControlPlaneError(
+                    "Trigger envelope exceeds the size limit",
+                    code="PMTRG413",
+                    status=413,
+                    title="Payload Too Large",
+                    type="etlantic.control_plane/payload_too_large",
+                )
+        body = bytearray()
+        async for chunk in request.stream():
+            if len(body) + len(chunk) > MAX_TRIGGER_ENVELOPE_BYTES:
+                raise ControlPlaneError(
+                    "Trigger envelope exceeds the size limit",
+                    code="PMTRG413",
+                    status=413,
+                    title="Payload Too Large",
+                    type="etlantic.control_plane/payload_too_large",
+                )
+            body.extend(chunk)
+        return bytes(body)
 
     @router.post(
         "/v1/definitions/{definition_id}/schedules",
@@ -102,6 +150,7 @@ def register_schedule_routes(
             secret_refs=body_data.get("secret_refs") or {},
             revision_selector=str(body_data.get("revision_selector") or "current"),
             workload_identity=workload_identity,
+            timer_owner=str(body_data.get("timer_owner") or "local"),
         )
         return record.to_dict()
 
@@ -142,6 +191,34 @@ def register_schedule_routes(
     ) -> dict[str, Any]:
         service().authorize(ctx, "schedule.write", f"schedule:{schedule_id}")
         return service().delete(ctx, schedule_id).to_dict()
+
+    @router.post(
+        "/v1/schedules/{schedule_id}/timer-owner-transfer",
+        operation_id="cp_transfer_schedule_timer_owner",
+        tags=["schedules"],
+    )
+    def transfer_schedule_timer_owner(
+        schedule_id: str,
+        body: ScheduleTimerTransferBody,
+        ctx: ControlPlaneContext = Depends(get_ctx),
+    ) -> dict[str, Any]:
+        workload_identity = (
+            Principal.from_dict(body.workload_identity.model_dump())
+            if body.workload_identity is not None
+            else None
+        )
+        return (
+            service()
+            .transfer_timer_owner(
+                ctx,
+                schedule_id,
+                expected_revision_id=body.expected_revision_id,
+                expected_generation=body.expected_generation,
+                timer_owner=body.timer_owner,
+                workload_identity=workload_identity,
+            )
+            .to_dict()
+        )
 
     @router.post(
         "/v1/schedules/{schedule_id}/amend",
@@ -258,6 +335,60 @@ def register_schedule_routes(
                 ) from exc
         firing, created = service().trigger(ctx, schedule_id, nominal_fire_time=when)
         return {**firing.to_dict(), "created": created}
+
+    @router.post(
+        "/v1/schedules/{schedule_id}/external-trigger",
+        operation_id="cp_external_schedule_trigger",
+        tags=["schedules"],
+        response_model=TriggerReceiptResponse,
+        responses={202: {"model": TriggerReceiptResponse}},
+        openapi_extra={
+            "requestBody": {
+                "required": True,
+                "content": {
+                    "application/json": {"schema": trigger_envelope_json_schema()}
+                },
+            }
+        },
+    )
+    async def external_trigger_schedule(
+        schedule_id: str,
+        request: Request,
+        response: Response,
+        ctx: ControlPlaneContext = Depends(get_ctx),
+    ) -> TriggerReceiptResponse:
+        from etlantic.control_plane import TriggerEnvelope
+
+        service().authorize(ctx, "schedule.trigger", f"schedule:{schedule_id}")
+        envelope = TriggerEnvelope.from_json(await bounded_trigger_body(request))
+        if envelope.schedule_id != schedule_id:
+            raise ControlPlaneError(
+                "Trigger schedule_id must match the route",
+                code="PMCP400",
+                status=400,
+                title="Bad Request",
+                type="etlantic.control_plane/bad_request",
+            )
+        receipt = service().trigger_external(ctx, envelope)
+        if receipt.status == "pending":
+            response.status_code = 202
+        return receipt.to_dict()
+
+    @router.get(
+        "/v1/schedules/{schedule_id}/occurrences/{occurrence_id}",
+        operation_id="cp_get_external_schedule_occurrence",
+        tags=["schedules"],
+        response_model=TriggerReceiptResponse,
+    )
+    def get_external_trigger_receipt(
+        schedule_id: str,
+        occurrence_id: str,
+        ctx: ControlPlaneContext = Depends(get_ctx),
+    ) -> TriggerReceiptResponse:
+        receipt = service().get_external_trigger_receipt(
+            ctx, schedule_id, occurrence_id
+        )
+        return receipt.to_dict()
 
     @router.get(
         "/v1/schedules/{schedule_id}/firings",

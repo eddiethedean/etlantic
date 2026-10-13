@@ -15,8 +15,9 @@ from etlantic.control_plane.action_jobs import (
     MIN_PREVIEW_RESULT_TTL_SECONDS,
 )
 from etlantic.control_plane.authz import validate_control_plane_context
-from etlantic.control_plane.event_retention import (
-    DEFAULT_EVENT_IDEMPOTENCY_RETENTION_SECONDS,
+from etlantic.control_plane.managed_config import (
+    MANAGED_BACKEND_DEFAULTS,
+    empty_managed_mapping,
 )
 from etlantic.control_plane.models import ControlPlaneContext
 from etlantic.control_plane.protocols import Authorizer, IdempotentEventStore
@@ -32,6 +33,7 @@ _CONFIGURABLE_FIELDS = frozenset(
         "report_store_factory",
         "report_store_scope_key",
         "input_resources",
+        "input_upload_ttl_seconds",
         "artifact_root",
         "action_handlers",
         "action_job_lease_seconds",
@@ -41,10 +43,6 @@ _CONFIGURABLE_FIELDS = frozenset(
         "execution_profile",
     }
 )
-
-
-def _empty_action_handlers() -> dict[str, ActionHandler]:
-    return {}
 
 
 def _empty_roles() -> list[Any]:
@@ -81,16 +79,23 @@ class ManagedBackend:
     execution_profile: Profile | None = field(default=None, repr=False)
     artifact_root: str | None = field(default=None, repr=False)
     action_handlers: Mapping[str, ActionHandler] = field(
-        default_factory=_empty_action_handlers, repr=False
+        default_factory=empty_managed_mapping, repr=False
     )
-    action_job_lease_seconds: int = 330
-    preview_result_ttl_seconds: int = 60 * 60
-    run_artifact_retention_seconds: int | None = None
-    run_artifact_cleanup_batch_size: int = 100
+    input_upload_ttl_seconds: int = MANAGED_BACKEND_DEFAULTS["input_upload_ttl_seconds"]
+    action_job_lease_seconds: int = MANAGED_BACKEND_DEFAULTS["action_job_lease_seconds"]
+    preview_result_ttl_seconds: int = MANAGED_BACKEND_DEFAULTS[
+        "preview_result_ttl_seconds"
+    ]
+    run_artifact_retention_seconds: int | None = MANAGED_BACKEND_DEFAULTS[
+        "run_artifact_retention_seconds"
+    ]
+    run_artifact_cleanup_batch_size: int = MANAGED_BACKEND_DEFAULTS[
+        "run_artifact_cleanup_batch_size"
+    ]
     schedule_clock: Any = field(default=None, repr=False)
-    event_idempotency_retention_seconds: int = (
-        DEFAULT_EVENT_IDEMPOTENCY_RETENTION_SECONDS
-    )
+    event_idempotency_retention_seconds: int = MANAGED_BACKEND_DEFAULTS[
+        "event_idempotency_retention_seconds"
+    ]
     owns_engine: bool = field(default=True, repr=False)
     _closed: bool = field(default=False, init=False, repr=False)
     _lock: RLock = field(default_factory=RLock, init=False, repr=False)
@@ -115,6 +120,10 @@ class ManagedBackend:
             or self.action_job_lease_seconds < 1
         ):
             raise ValueError("action_job_lease_seconds must be positive")
+        if type(self.input_upload_ttl_seconds) is not int or (
+            self.input_upload_ttl_seconds < 1
+        ):
+            raise ValueError("input_upload_ttl_seconds must be positive")
         if (
             type(self.run_artifact_cleanup_batch_size) is not int
             or not 1 <= self.run_artifact_cleanup_batch_size <= 1000
@@ -417,6 +426,10 @@ class ManagedBackend:
         unknown = set(changes) - _CONFIGURABLE_FIELDS
         if unknown:
             raise ValueError("unsupported managed backend configuration field")
+        if "input_upload_ttl_seconds" in changes:
+            upload_ttl = changes["input_upload_ttl_seconds"]
+            if type(upload_ttl) is not int or upload_ttl < 1:
+                raise ValueError("input_upload_ttl_seconds must be a positive integer")
         with self._lock:
             self._ensure_open()
             for name, value in changes.items():

@@ -1,0 +1,3282 @@
+{
+  "review_date": "2026-10-12",
+  "git_head": "d0708ba4ebbf9f98cbdf9a9142aa780ce4c241e6",
+  "baseline": "Working tree including uncommitted phase 0.59\u20130.66 planning updates. This review changes only report/index artifacts.",
+  "methodology": "All root/packages pyproject.toml manifests, all src/**/*.py physical lines including comments/docstrings/blank lines; excludes tests/docs/non-Python assets. AST imports include lazy and TYPE_CHECKING imports and are dependency observations, not runtime-import proof. Size is a triage signal, not evidence of overengineering.",
+  "distribution_count": 25,
+  "python_file_count": 604,
+  "physical_python_lines": 187000,
+  "packages": [
+    {
+      "name": "etlantic",
+      "manifest": "pyproject.toml",
+      "version": "0.59.0",
+      "description": "Typed, contract-driven data pipeline modeling for Python.",
+      "python_file_count": 435,
+      "physical_python_lines": 136533,
+      "source_and_manifest_sha256": "7d371ad8e8dc52b5f6f7ef939a0f427cad67a06985e6d5ee0fdff135403bc096",
+      "dependencies": [
+        "contractmodel>=0.2",
+        "pydantic>=2.12",
+        "packaging>=24",
+        "dtcs>=0.13",
+        "dpcs>=0.13",
+        "typer>=0.15",
+        "click>=8",
+        "anyio>=4",
+        "jsonschema>=4.23",
+        "tzdata>=2024.1"
+      ],
+      "extras": {
+        "polars": [
+          "etlantic-polars>=0.59.0"
+        ],
+        "pandas": [
+          "etlantic-pandas>=0.59.0"
+        ],
+        "sql": [
+          "etlantic-sql>=0.59.0"
+        ],
+        "postgresql": [
+          "etlantic-sql>=0.59.0"
+        ],
+        "foundry": [
+          "etlantic-foundry>=0.59.0"
+        ],
+        "pyspark": [
+          "etlantic-pyspark>=0.59.0"
+        ],
+        "spark": [
+          "etlantic-pyspark>=0.59.0"
+        ],
+        "airflow": [
+          "etlantic-airflow>=0.59.0"
+        ],
+        "prefect": [
+          "etlantic-prefect>=0.59.0"
+        ],
+        "keyring": [
+          "etlantic-keyring>=0.59.0"
+        ],
+        "sqlmodel": [
+          "etlantic-sqlmodel>=0.59.0"
+        ],
+        "medallantic": [
+          "medallantic>=0.59.0"
+        ],
+        "sparkforge": [
+          "etlantic-sparkforge>=0.59.0"
+        ],
+        "fastapi": [
+          "etlantic-fastapi>=0.59.0"
+        ],
+        "managed": [
+          "etlantic-fastapi[managed]>=0.59.0"
+        ],
+        "datafusion": [
+          "etlantic-datafusion>=0.59.0"
+        ],
+        "s3": [
+          "etlantic-s3>=0.59.0"
+        ],
+        "kafka": [
+          "etlantic-kafka>=0.59.0"
+        ],
+        "k8s": [
+          "etlantic-k8s>=0.59.0"
+        ],
+        "spark-connect": [
+          "etlantic-spark-connect>=0.59.0"
+        ],
+        "schemaregistry": [
+          "etlantic-schemaregistry>=0.59.0"
+        ],
+        "iceberg": [
+          "etlantic-iceberg>=0.59.0"
+        ],
+        "snowflake": [
+          "etlantic-snowflake>=0.59.0"
+        ],
+        "openlineage": [
+          "etlantic-openlineage>=0.59.0"
+        ],
+        "mcp": [
+          "etlantic-mcp>=0.59.0"
+        ],
+        "otel": [
+          "opentelemetry-api>=1.36"
+        ],
+        "observability": [
+          "opentelemetry-api>=1.36"
+        ],
+        "arrow": [
+          "pyarrow>=17"
+        ],
+        "notebook": [
+          "ipython>=8",
+          "ipywidgets>=8"
+        ],
+        "lsp": [
+          "etlantic-lsp>=0.59.0"
+        ],
+        "dataframes": [
+          "etlantic-polars>=0.59.0",
+          "etlantic-pandas>=0.59.0"
+        ],
+        "duckdb": [
+          "etlantic-duckdb>=0.59.0"
+        ]
+      },
+      "entry_points": {
+        "etlantic.source_connectors": {
+          "local-files": "etlantic.connectors.local_files:create_local_files_source"
+        }
+      },
+      "module_lines": {
+        "runtime": 20188,
+        "control_plane": 17952,
+        "inference": 15325,
+        "(top-level)": 12717,
+        "testing": 8589,
+        "transform": 7776,
+        "service": 6409,
+        "plan": 5577,
+        "connectors": 5283,
+        "cli": 4132,
+        "planning": 3824,
+        "authoring": 3642,
+        "interchange": 2984,
+        "optimization": 2555,
+        "ide": 1953,
+        "streaming": 1844,
+        "agents": 1449,
+        "orchestration": 1387,
+        "quality": 1361,
+        "spark": 1332,
+        "storage": 1279,
+        "validation": 1112,
+        "reports": 1109,
+        "sql": 1024,
+        "observability": 963,
+        "dataframe": 949,
+        "lifecycle": 928,
+        "plugin_lifecycle": 758,
+        "secrets": 648,
+        "plugins": 580,
+        "engines": 333,
+        "diagnostics": 320,
+        "resources": 157,
+        "_profile": 61,
+        "schemas": 33
+      },
+      "largest_files": [
+        {
+          "path": "src/etlantic/runtime/orchestrator.py",
+          "lines": 6355
+        },
+        {
+          "path": "src/etlantic/service/managed.py",
+          "lines": 5209
+        },
+        {
+          "path": "src/etlantic/inference/targets.py",
+          "lines": 3869
+        },
+        {
+          "path": "src/etlantic/control_plane/durable_memory.py",
+          "lines": 3079
+        },
+        {
+          "path": "src/etlantic/testing/portable_fixtures/corpus.py",
+          "lines": 2550
+        }
+      ],
+      "cross_package_imports": {
+        "etlantic_duckdb.frame": [
+          {
+            "path": "src/etlantic/testing/portable_transform_conformance.py",
+            "line": 147
+          }
+        ],
+        "etlantic_polars": [
+          {
+            "path": "src/etlantic/runtime/adaptive_admission.py",
+            "line": 670
+          }
+        ],
+        "etlantic_polars.compiler": [
+          {
+            "path": "src/etlantic/runtime/adaptive_admission.py",
+            "line": 860
+          }
+        ],
+        "etlantic_polars.fusion": [
+          {
+            "path": "src/etlantic/runtime/fused_execution.py",
+            "line": 56
+          }
+        ],
+        "etlantic_polars.parquet_storage": [
+          {
+            "path": "src/etlantic/runtime/fused_execution.py",
+            "line": 57
+          }
+        ],
+        "etlantic_pyspark": [
+          {
+            "path": "src/etlantic/testing/portable_transform_conformance.py",
+            "line": 114
+          }
+        ],
+        "etlantic_pyspark.sparkless_shim": [
+          {
+            "path": "src/etlantic/testing/portable_transform_conformance.py",
+            "line": 116
+          }
+        ],
+        "etlantic_sql.frame": [
+          {
+            "path": "src/etlantic/testing/portable_transform_conformance.py",
+            "line": 140
+          }
+        ],
+        "etlantic_sqlmodel": [
+          {
+            "path": "src/etlantic/cli/cmds/compile.py",
+            "line": 251
+          }
+        ],
+        "etlantic_sqlmodel.control_plane.cp4_stores": [
+          {
+            "path": "src/etlantic/testing/cp_ga_campaigns.py",
+            "line": 505
+          }
+        ],
+        "etlantic_sqlmodel.control_plane.session": [
+          {
+            "path": "src/etlantic/testing/cp_ga_campaigns.py",
+            "line": 76
+          },
+          {
+            "path": "src/etlantic/testing/cp_ga_campaigns.py",
+            "line": 509
+          }
+        ],
+        "etlantic_sqlmodel.migrations": [
+          {
+            "path": "src/etlantic/testing/cp_ga_campaigns.py",
+            "line": 77
+          },
+          {
+            "path": "src/etlantic/testing/cp_ga_campaigns.py",
+            "line": 510
+          }
+        ],
+        "medallantic.adapt": [
+          {
+            "path": "src/etlantic/testing/sparkforge_differential.py",
+            "line": 106
+          },
+          {
+            "path": "src/etlantic/testing/sql_builder_differential.py",
+            "line": 106
+          }
+        ],
+        "medallantic.ir": [
+          {
+            "path": "src/etlantic/testing/sparkforge_differential.py",
+            "line": 110
+          },
+          {
+            "path": "src/etlantic/testing/sql_builder_differential.py",
+            "line": 110
+          }
+        ]
+      }
+    },
+    {
+      "name": "etlantic-airflow",
+      "manifest": "packages/etlantic-airflow/pyproject.toml",
+      "version": "0.59.0",
+      "description": "Airflow reference orchestrator compiler for ETLantic.",
+      "python_file_count": 4,
+      "physical_python_lines": 518,
+      "source_and_manifest_sha256": "36a0d531e3b094c18064d5b8608e97f9c38fa64c96f4fbbb1915a4b5abe25441",
+      "dependencies": [
+        "etlantic>=0.59.0"
+      ],
+      "extras": {},
+      "entry_points": {
+        "etlantic.orchestrator_plugins": {
+          "airflow": "etlantic_airflow:create_plugin"
+        }
+      },
+      "module_lines": {
+        "(top-level)": 518
+      },
+      "largest_files": [
+        {
+          "path": "packages/etlantic-airflow/src/etlantic_airflow/plugin.py",
+          "lines": 383
+        },
+        {
+          "path": "packages/etlantic-airflow/src/etlantic_airflow/operator.py",
+          "lines": 69
+        },
+        {
+          "path": "packages/etlantic-airflow/src/etlantic_airflow/loader.py",
+          "lines": 50
+        },
+        {
+          "path": "packages/etlantic-airflow/src/etlantic_airflow/__init__.py",
+          "lines": 16
+        }
+      ],
+      "cross_package_imports": {
+        "etlantic.capabilities": [
+          {
+            "path": "packages/etlantic-airflow/src/etlantic_airflow/plugin.py",
+            "line": 10
+          }
+        ],
+        "etlantic.orchestration.artifacts": [
+          {
+            "path": "packages/etlantic-airflow/src/etlantic_airflow/operator.py",
+            "line": 8
+          }
+        ],
+        "etlantic.orchestration.mapping": [
+          {
+            "path": "packages/etlantic-airflow/src/etlantic_airflow/plugin.py",
+            "line": 11
+          }
+        ],
+        "etlantic.orchestration.protocol": [
+          {
+            "path": "packages/etlantic-airflow/src/etlantic_airflow/plugin.py",
+            "line": 12
+          }
+        ],
+        "etlantic.plan.artifacts": [
+          {
+            "path": "packages/etlantic-airflow/src/etlantic_airflow/operator.py",
+            "line": 9
+          }
+        ],
+        "etlantic.plan.model": [
+          {
+            "path": "packages/etlantic-airflow/src/etlantic_airflow/plugin.py",
+            "line": 19
+          }
+        ]
+      }
+    },
+    {
+      "name": "etlantic-datafusion",
+      "manifest": "packages/etlantic-datafusion/pyproject.toml",
+      "version": "0.59.0",
+      "description": "DataFusion dataframe + portable transform plugin for ETLantic.",
+      "python_file_count": 3,
+      "physical_python_lines": 1061,
+      "source_and_manifest_sha256": "6bcbeaf4e6ee06b1bb8e8d42a284465786d69c7601c7743d3d213fd5516e1fc4",
+      "dependencies": [
+        "etlantic>=0.59.0",
+        "datafusion>=49",
+        "pyarrow>=17"
+      ],
+      "extras": {},
+      "entry_points": {
+        "etlantic.dataframe_plugins": {
+          "datafusion": "etlantic_datafusion:create_plugin"
+        },
+        "etlantic.transform_compilers": {
+          "datafusion": "etlantic_datafusion:create_transform_compiler"
+        }
+      },
+      "module_lines": {
+        "(top-level)": 1061
+      },
+      "largest_files": [
+        {
+          "path": "packages/etlantic-datafusion/src/etlantic_datafusion/compiler.py",
+          "lines": 742
+        },
+        {
+          "path": "packages/etlantic-datafusion/src/etlantic_datafusion/plugin.py",
+          "lines": 290
+        },
+        {
+          "path": "packages/etlantic-datafusion/src/etlantic_datafusion/__init__.py",
+          "lines": 29
+        }
+      ],
+      "cross_package_imports": {
+        "etlantic.capabilities": [
+          {
+            "path": "packages/etlantic-datafusion/src/etlantic_datafusion/plugin.py",
+            "line": 12
+          }
+        ],
+        "etlantic.dataframe.helpers": [
+          {
+            "path": "packages/etlantic-datafusion/src/etlantic_datafusion/plugin.py",
+            "line": 13
+          }
+        ],
+        "etlantic.dataframe.protocol": [
+          {
+            "path": "packages/etlantic-datafusion/src/etlantic_datafusion/plugin.py",
+            "line": 18
+          }
+        ],
+        "etlantic.interchange.tabular": [
+          {
+            "path": "packages/etlantic-datafusion/src/etlantic_datafusion/plugin.py",
+            "line": 27
+          }
+        ],
+        "etlantic.quality.model": [
+          {
+            "path": "packages/etlantic-datafusion/src/etlantic_datafusion/plugin.py",
+            "line": 28
+          }
+        ],
+        "etlantic.reliability": [
+          {
+            "path": "packages/etlantic-datafusion/src/etlantic_datafusion/plugin.py",
+            "line": 29
+          }
+        ],
+        "etlantic.storage.protocol": [
+          {
+            "path": "packages/etlantic-datafusion/src/etlantic_datafusion/plugin.py",
+            "line": 30
+          }
+        ],
+        "etlantic.transform.capabilities": [
+          {
+            "path": "packages/etlantic-datafusion/src/etlantic_datafusion/compiler.py",
+            "line": 15
+          },
+          {
+            "path": "packages/etlantic-datafusion/src/etlantic_datafusion/compiler.py",
+            "line": 231
+          }
+        ],
+        "etlantic.transform.compiler": [
+          {
+            "path": "packages/etlantic-datafusion/src/etlantic_datafusion/compiler.py",
+            "line": 25
+          }
+        ],
+        "etlantic.transform.portable_baseline": [
+          {
+            "path": "packages/etlantic-datafusion/src/etlantic_datafusion/compiler.py",
+            "line": 39
+          }
+        ],
+        "etlantic.transform.protocol": [
+          {
+            "path": "packages/etlantic-datafusion/src/etlantic_datafusion/compiler.py",
+            "line": 49
+          }
+        ]
+      }
+    },
+    {
+      "name": "etlantic-duckdb",
+      "manifest": "packages/etlantic-duckdb/pyproject.toml",
+      "version": "0.59.0",
+      "description": "Optional DuckDB SQL execution and portable transform plugin for ETLantic.",
+      "python_file_count": 7,
+      "physical_python_lines": 3403,
+      "source_and_manifest_sha256": "c919fe718261725c025892e4de8d34a676c19d59d27f247f98a2a763b5901069",
+      "dependencies": [
+        "etlantic>=0.59.0",
+        "duckdb>=1.0",
+        "numpy>=2"
+      ],
+      "extras": {},
+      "entry_points": {
+        "etlantic.sql_plugins": {
+          "duckdb": "etlantic_duckdb:create_plugin"
+        },
+        "etlantic.transform_compilers": {
+          "duckdb": "etlantic_duckdb.transform_compiler:create_transform_compiler"
+        }
+      },
+      "module_lines": {
+        "(top-level)": 3403
+      },
+      "largest_files": [
+        {
+          "path": "packages/etlantic-duckdb/src/etlantic_duckdb/transform_compiler.py",
+          "lines": 2150
+        },
+        {
+          "path": "packages/etlantic-duckdb/src/etlantic_duckdb/plugin.py",
+          "lines": 558
+        },
+        {
+          "path": "packages/etlantic-duckdb/src/etlantic_duckdb/dialect.py",
+          "lines": 331
+        },
+        {
+          "path": "packages/etlantic-duckdb/src/etlantic_duckdb/config.py",
+          "lines": 174
+        },
+        {
+          "path": "packages/etlantic-duckdb/src/etlantic_duckdb/connection.py",
+          "lines": 153
+        }
+      ],
+      "cross_package_imports": {
+        "etlantic.capabilities": [
+          {
+            "path": "packages/etlantic-duckdb/src/etlantic_duckdb/plugin.py",
+            "line": 14
+          }
+        ],
+        "etlantic.runtime.logging": [
+          {
+            "path": "packages/etlantic-duckdb/src/etlantic_duckdb/config.py",
+            "line": 13
+          }
+        ],
+        "etlantic.sql.helpers": [
+          {
+            "path": "packages/etlantic-duckdb/src/etlantic_duckdb/dialect.py",
+            "line": 10
+          },
+          {
+            "path": "packages/etlantic-duckdb/src/etlantic_duckdb/plugin.py",
+            "line": 15
+          },
+          {
+            "path": "packages/etlantic-duckdb/src/etlantic_duckdb/transform_compiler.py",
+            "line": 15
+          }
+        ],
+        "etlantic.sql.protocol": [
+          {
+            "path": "packages/etlantic-duckdb/src/etlantic_duckdb/dialect.py",
+            "line": 11
+          },
+          {
+            "path": "packages/etlantic-duckdb/src/etlantic_duckdb/plugin.py",
+            "line": 16
+          },
+          {
+            "path": "packages/etlantic-duckdb/src/etlantic_duckdb/transform_compiler.py",
+            "line": 16
+          }
+        ],
+        "etlantic.transform.capabilities": [
+          {
+            "path": "packages/etlantic-duckdb/src/etlantic_duckdb/transform_compiler.py",
+            "line": 17
+          }
+        ],
+        "etlantic.transform.compiler": [
+          {
+            "path": "packages/etlantic-duckdb/src/etlantic_duckdb/transform_compiler.py",
+            "line": 26
+          }
+        ],
+        "etlantic.transform.portable_baseline": [
+          {
+            "path": "packages/etlantic-duckdb/src/etlantic_duckdb/transform_compiler.py",
+            "line": 40
+          }
+        ],
+        "etlantic.transform.protocol": [
+          {
+            "path": "packages/etlantic-duckdb/src/etlantic_duckdb/transform_compiler.py",
+            "line": 50
+          }
+        ]
+      }
+    },
+    {
+      "name": "etlantic-fastapi",
+      "manifest": "packages/etlantic-fastapi/pyproject.toml",
+      "version": "0.59.0",
+      "description": "FastAPI adapter for ETLantic control-plane (CP1) and authoring reference.",
+      "python_file_count": 15,
+      "physical_python_lines": 6604,
+      "source_and_manifest_sha256": "513ae79b46596079a46252491b41d1b5b199b3a8823f8222118eec4d255fd312",
+      "dependencies": [
+        "etlantic>=0.59.0",
+        "fastapi>=0.115",
+        "pydantic>=2.12"
+      ],
+      "extras": {
+        "managed": [
+          "etlantic-sqlmodel>=0.59.0"
+        ],
+        "test": [
+          "httpx2>=2"
+        ]
+      },
+      "entry_points": {},
+      "module_lines": {
+        "(top-level)": 6604
+      },
+      "largest_files": [
+        {
+          "path": "packages/etlantic-fastapi/src/etlantic_fastapi/routes.py",
+          "lines": 3459
+        },
+        {
+          "path": "packages/etlantic-fastapi/src/etlantic_fastapi/managed.py",
+          "lines": 668
+        },
+        {
+          "path": "packages/etlantic-fastapi/src/etlantic_fastapi/schemas.py",
+          "lines": 589
+        },
+        {
+          "path": "packages/etlantic-fastapi/src/etlantic_fastapi/api.py",
+          "lines": 428
+        },
+        {
+          "path": "packages/etlantic-fastapi/src/etlantic_fastapi/schedule_routes.py",
+          "lines": 341
+        }
+      ],
+      "cross_package_imports": {
+        "etlantic.agents.context": [
+          {
+            "path": "packages/etlantic-fastapi/src/etlantic_fastapi/ai_routes.py",
+            "line": 8
+          }
+        ],
+        "etlantic.agents.proposal": [
+          {
+            "path": "packages/etlantic-fastapi/src/etlantic_fastapi/ai_routes.py",
+            "line": 9
+          }
+        ],
+        "etlantic.authoring.lifecycle": [
+          {
+            "path": "packages/etlantic-fastapi/src/etlantic_fastapi/routes.py",
+            "line": 227
+          },
+          {
+            "path": "packages/etlantic-fastapi/src/etlantic_fastapi/routes.py",
+            "line": 273
+          },
+          {
+            "path": "packages/etlantic-fastapi/src/etlantic_fastapi/routes.py",
+            "line": 276
+          }
+        ],
+        "etlantic.authoring.preview": [
+          {
+            "path": "packages/etlantic-fastapi/src/etlantic_fastapi/routes.py",
+            "line": 231
+          },
+          {
+            "path": "packages/etlantic-fastapi/src/etlantic_fastapi/routes.py",
+            "line": 283
+          }
+        ],
+        "etlantic.authoring.serialize": [
+          {
+            "path": "packages/etlantic-fastapi/src/etlantic_fastapi/ai_routes.py",
+            "line": 23
+          },
+          {
+            "path": "packages/etlantic-fastapi/src/etlantic_fastapi/routes.py",
+            "line": 220
+          },
+          {
+            "path": "packages/etlantic-fastapi/src/etlantic_fastapi/routes.py",
+            "line": 269
+          }
+        ],
+        "etlantic.control_plane": [
+          {
+            "path": "packages/etlantic-fastapi/src/etlantic_fastapi/ai_routes.py",
+            "line": 10
+          },
+          {
+            "path": "packages/etlantic-fastapi/src/etlantic_fastapi/api.py",
+            "line": 11
+          },
+          {
+            "path": "packages/etlantic-fastapi/src/etlantic_fastapi/auth.py",
+            "line": 18
+          },
+          {
+            "path": "packages/etlantic-fastapi/src/etlantic_fastapi/collections.py",
+            "line": 6
+          },
+          {
+            "path": "packages/etlantic-fastapi/src/etlantic_fastapi/deps.py",
+            "line": 8
+          },
+          {
+            "path": "packages/etlantic-fastapi/src/etlantic_fastapi/errors.py",
+            "line": 13
+          },
+          {
+            "path": "packages/etlantic-fastapi/src/etlantic_fastapi/managed.py",
+            "line": 13
+          },
+          {
+            "path": "packages/etlantic-fastapi/src/etlantic_fastapi/routes.py",
+            "line": 12
+          },
+          {
+            "path": "packages/etlantic-fastapi/src/etlantic_fastapi/routes.py",
+            "line": 2355
+          },
+          {
+            "path": "packages/etlantic-fastapi/src/etlantic_fastapi/routes.py",
+            "line": 2394
+          },
+          {
+            "path": "packages/etlantic-fastapi/src/etlantic_fastapi/routes.py",
+            "line": 2491
+          },
+          {
+            "path": "packages/etlantic-fastapi/src/etlantic_fastapi/routes.py",
+            "line": 2832
+          },
+          {
+            "path": "packages/etlantic-fastapi/src/etlantic_fastapi/routes.py",
+            "line": 2862
+          },
+          {
+            "path": "packages/etlantic-fastapi/src/etlantic_fastapi/routes.py",
+            "line": 2955
+          },
+          {
+            "path": "packages/etlantic-fastapi/src/etlantic_fastapi/routes.py",
+            "line": 3071
+          },
+          {
+            "path": "packages/etlantic-fastapi/src/etlantic_fastapi/routes.py",
+            "line": 3179
+          },
+          {
+            "path": "packages/etlantic-fastapi/src/etlantic_fastapi/schedule_routes.py",
+            "line": 11
+          },
+          {
+            "path": "packages/etlantic-fastapi/src/etlantic_fastapi/schemas.py",
+            "line": 9
+          },
+          {
+            "path": "packages/etlantic-fastapi/src/etlantic_fastapi/sse.py",
+            "line": 24
+          }
+        ],
+        "etlantic.control_plane.action_jobs": [
+          {
+            "path": "packages/etlantic-fastapi/src/etlantic_fastapi/managed.py",
+            "line": 14
+          }
+        ],
+        "etlantic.control_plane.event_retention": [
+          {
+            "path": "packages/etlantic-fastapi/src/etlantic_fastapi/managed.py",
+            "line": 18
+          }
+        ],
+        "etlantic.control_plane.models": [
+          {
+            "path": "packages/etlantic-fastapi/src/etlantic_fastapi/managed.py",
+            "line": 21
+          }
+        ],
+        "etlantic.control_plane.protocols": [
+          {
+            "path": "packages/etlantic-fastapi/src/etlantic_fastapi/collections.py",
+            "line": 7
+          },
+          {
+            "path": "packages/etlantic-fastapi/src/etlantic_fastapi/managed.py",
+            "line": 22
+          }
+        ],
+        "etlantic.control_plane.schedule_trust": [
+          {
+            "path": "packages/etlantic-fastapi/src/etlantic_fastapi/api.py",
+            "line": 29
+          }
+        ],
+        "etlantic.plan": [
+          {
+            "path": "packages/etlantic-fastapi/src/etlantic_fastapi/routes.py",
+            "line": 27
+          }
+        ],
+        "etlantic.plugin_trust": [
+          {
+            "path": "packages/etlantic-fastapi/src/etlantic_fastapi/routes.py",
+            "line": 160
+          }
+        ],
+        "etlantic.profile": [
+          {
+            "path": "packages/etlantic-fastapi/src/etlantic_fastapi/managed.py",
+            "line": 23
+          },
+          {
+            "path": "packages/etlantic-fastapi/src/etlantic_fastapi/routes.py",
+            "line": 161
+          }
+        ],
+        "etlantic.registry": [
+          {
+            "path": "packages/etlantic-fastapi/src/etlantic_fastapi/api.py",
+            "line": 30
+          },
+          {
+            "path": "packages/etlantic-fastapi/src/etlantic_fastapi/managed.py",
+            "line": 24
+          }
+        ],
+        "etlantic.reports.retention": [
+          {
+            "path": "packages/etlantic-fastapi/src/etlantic_fastapi/__init__.py",
+            "line": 8
+          },
+          {
+            "path": "packages/etlantic-fastapi/src/etlantic_fastapi/managed.py",
+            "line": 25
+          }
+        ],
+        "etlantic.runtime.action_execution_host": [
+          {
+            "path": "packages/etlantic-fastapi/src/etlantic_fastapi/managed.py",
+            "line": 37
+          },
+          {
+            "path": "packages/etlantic-fastapi/src/etlantic_fastapi/managed.py",
+            "line": 400
+          }
+        ],
+        "etlantic.runtime.artifact_retention": [
+          {
+            "path": "packages/etlantic-fastapi/src/etlantic_fastapi/managed.py",
+            "line": 368
+          }
+        ],
+        "etlantic.runtime.execution_host": [
+          {
+            "path": "packages/etlantic-fastapi/src/etlantic_fastapi/managed.py",
+            "line": 320
+          }
+        ],
+        "etlantic.runtime.logging": [
+          {
+            "path": "packages/etlantic-fastapi/src/etlantic_fastapi/reference.py",
+            "line": 15
+          }
+        ],
+        "etlantic.runtime.managed_execution": [
+          {
+            "path": "packages/etlantic-fastapi/src/etlantic_fastapi/managed.py",
+            "line": 321
+          }
+        ],
+        "etlantic.runtime.scheduler_service": [
+          {
+            "path": "packages/etlantic-fastapi/src/etlantic_fastapi/managed.py",
+            "line": 437
+          }
+        ],
+        "etlantic.service": [
+          {
+            "path": "packages/etlantic-fastapi/src/etlantic_fastapi/__init__.py",
+            "line": 9
+          },
+          {
+            "path": "packages/etlantic-fastapi/src/etlantic_fastapi/api.py",
+            "line": 31
+          },
+          {
+            "path": "packages/etlantic-fastapi/src/etlantic_fastapi/api.py",
+            "line": 195
+          },
+          {
+            "path": "packages/etlantic-fastapi/src/etlantic_fastapi/reference.py",
+            "line": 16
+          }
+        ],
+        "etlantic_sqlmodel": [
+          {
+            "path": "packages/etlantic-fastapi/src/etlantic_fastapi/managed.py",
+            "line": 493
+          }
+        ]
+      }
+    },
+    {
+      "name": "etlantic-foundry",
+      "manifest": "packages/etlantic-foundry/pyproject.toml",
+      "version": "0.59.0",
+      "description": "Foundry dataset and file connectors for ETLantic.",
+      "python_file_count": 4,
+      "physical_python_lines": 2544,
+      "source_and_manifest_sha256": "5c23261ffec9ef83c0edfe1d4f78f4e38e2a676b99f02d06ea90e0de26189625",
+      "dependencies": [
+        "etlantic>=0.59.0",
+        "httpx2>=2"
+      ],
+      "extras": {},
+      "entry_points": {
+        "etlantic.source_connectors": {
+          "foundry": "etlantic_foundry.connectors:create_source"
+        },
+        "etlantic.sink_connectors": {
+          "foundry": "etlantic_foundry.connectors:create_sink"
+        },
+        "etlantic.storage_connectors": {
+          "foundry": "etlantic_foundry.connectors:create_storage"
+        }
+      },
+      "module_lines": {
+        "(top-level)": 2544
+      },
+      "largest_files": [
+        {
+          "path": "packages/etlantic-foundry/src/etlantic_foundry/connectors.py",
+          "lines": 2165
+        },
+        {
+          "path": "packages/etlantic-foundry/src/etlantic_foundry/schemas.py",
+          "lines": 161
+        },
+        {
+          "path": "packages/etlantic-foundry/src/etlantic_foundry/action_handlers.py",
+          "lines": 159
+        },
+        {
+          "path": "packages/etlantic-foundry/src/etlantic_foundry/__init__.py",
+          "lines": 59
+        }
+      ],
+      "cross_package_imports": {
+        "etlantic.connectors.capabilities": [
+          {
+            "path": "packages/etlantic-foundry/src/etlantic_foundry/connectors.py",
+            "line": 27
+          }
+        ],
+        "etlantic.connectors.errors": [
+          {
+            "path": "packages/etlantic-foundry/src/etlantic_foundry/connectors.py",
+            "line": 37
+          }
+        ],
+        "etlantic.connectors.maturity": [
+          {
+            "path": "packages/etlantic-foundry/src/etlantic_foundry/connectors.py",
+            "line": 42
+          }
+        ],
+        "etlantic.connectors.models": [
+          {
+            "path": "packages/etlantic-foundry/src/etlantic_foundry/connectors.py",
+            "line": 43
+          }
+        ],
+        "etlantic.control_plane": [
+          {
+            "path": "packages/etlantic-foundry/src/etlantic_foundry/action_handlers.py",
+            "line": 13
+          }
+        ],
+        "etlantic.runtime": [
+          {
+            "path": "packages/etlantic-foundry/src/etlantic_foundry/action_handlers.py",
+            "line": 14
+          }
+        ],
+        "etlantic.secrets": [
+          {
+            "path": "packages/etlantic-foundry/src/etlantic_foundry/connectors.py",
+            "line": 61
+          }
+        ]
+      }
+    },
+    {
+      "name": "etlantic-iceberg",
+      "manifest": "packages/etlantic-iceberg/pyproject.toml",
+      "version": "0.59.0",
+      "description": "Experimental Apache Iceberg connector for ETLantic (PyIceberg).",
+      "python_file_count": 3,
+      "physical_python_lines": 582,
+      "source_and_manifest_sha256": "cb37f7cf8a079117bcec3cd2ae53bcb1e5bf95ccfa2aa39789b775553edc7797",
+      "dependencies": [
+        "etlantic>=0.59.0"
+      ],
+      "extras": {
+        "pyiceberg": [
+          "pyiceberg>=0.7"
+        ]
+      },
+      "entry_points": {
+        "etlantic.source_connectors": {
+          "iceberg": "etlantic_iceberg:create_source"
+        },
+        "etlantic.sink_connectors": {
+          "iceberg": "etlantic_iceberg:create_sink"
+        },
+        "etlantic.storage_connectors": {
+          "iceberg": "etlantic_iceberg:create_storage"
+        }
+      },
+      "module_lines": {
+        "(top-level)": 582
+      },
+      "largest_files": [
+        {
+          "path": "packages/etlantic-iceberg/src/etlantic_iceberg/connectors.py",
+          "lines": 435
+        },
+        {
+          "path": "packages/etlantic-iceberg/src/etlantic_iceberg/fake.py",
+          "lines": 120
+        },
+        {
+          "path": "packages/etlantic-iceberg/src/etlantic_iceberg/__init__.py",
+          "lines": 27
+        }
+      ],
+      "cross_package_imports": {
+        "etlantic.connectors.capabilities": [
+          {
+            "path": "packages/etlantic-iceberg/src/etlantic_iceberg/connectors.py",
+            "line": 10
+          }
+        ],
+        "etlantic.connectors.errors": [
+          {
+            "path": "packages/etlantic-iceberg/src/etlantic_iceberg/connectors.py",
+            "line": 20
+          }
+        ],
+        "etlantic.connectors.maturity": [
+          {
+            "path": "packages/etlantic-iceberg/src/etlantic_iceberg/connectors.py",
+            "line": 21
+          }
+        ],
+        "etlantic.connectors.models": [
+          {
+            "path": "packages/etlantic-iceberg/src/etlantic_iceberg/connectors.py",
+            "line": 22
+          }
+        ]
+      }
+    },
+    {
+      "name": "etlantic-k8s",
+      "manifest": "packages/etlantic-k8s/pyproject.toml",
+      "version": "0.59.0",
+      "description": "Experimental Kubernetes resource provider for ETLantic (fake by default).",
+      "python_file_count": 2,
+      "physical_python_lines": 80,
+      "source_and_manifest_sha256": "0bc84ebdc46ca00eca8dd9fd3905e811e9ed95f6824c6f96c4843f2827030695",
+      "dependencies": [
+        "etlantic>=0.59.0"
+      ],
+      "extras": {},
+      "entry_points": {
+        "etlantic.resource_providers": {
+          "kubernetes": "etlantic_k8s:create_provider"
+        }
+      },
+      "module_lines": {
+        "(top-level)": 80
+      },
+      "largest_files": [
+        {
+          "path": "packages/etlantic-k8s/src/etlantic_k8s/provider.py",
+          "lines": 66
+        },
+        {
+          "path": "packages/etlantic-k8s/src/etlantic_k8s/__init__.py",
+          "lines": 14
+        }
+      ],
+      "cross_package_imports": {
+        "etlantic.capabilities": [
+          {
+            "path": "packages/etlantic-k8s/src/etlantic_k8s/provider.py",
+            "line": 9
+          }
+        ],
+        "etlantic.resources.protocol": [
+          {
+            "path": "packages/etlantic-k8s/src/etlantic_k8s/provider.py",
+            "line": 10
+          }
+        ]
+      }
+    },
+    {
+      "name": "etlantic-kafka",
+      "manifest": "packages/etlantic-kafka/pyproject.toml",
+      "version": "0.59.0",
+      "description": "Experimental Kafka reference connector for ETLantic (fake by default).",
+      "python_file_count": 3,
+      "physical_python_lines": 344,
+      "source_and_manifest_sha256": "e55d617fe6d9568121f756f799c3ada2e700f1359c5fffb3f79a85f375abd3bd",
+      "dependencies": [
+        "etlantic>=0.59.0"
+      ],
+      "extras": {},
+      "entry_points": {
+        "etlantic.source_connectors": {
+          "kafka": "etlantic_kafka:create_source"
+        },
+        "etlantic.sink_connectors": {
+          "kafka": "etlantic_kafka:create_sink"
+        }
+      },
+      "module_lines": {
+        "(top-level)": 344
+      },
+      "largest_files": [
+        {
+          "path": "packages/etlantic-kafka/src/etlantic_kafka/connectors.py",
+          "lines": 257
+        },
+        {
+          "path": "packages/etlantic-kafka/src/etlantic_kafka/fake.py",
+          "lines": 64
+        },
+        {
+          "path": "packages/etlantic-kafka/src/etlantic_kafka/__init__.py",
+          "lines": 23
+        }
+      ],
+      "cross_package_imports": {
+        "etlantic.connectors.capabilities": [
+          {
+            "path": "packages/etlantic-kafka/src/etlantic_kafka/connectors.py",
+            "line": 9
+          }
+        ],
+        "etlantic.connectors.maturity": [
+          {
+            "path": "packages/etlantic-kafka/src/etlantic_kafka/connectors.py",
+            "line": 18
+          }
+        ],
+        "etlantic.connectors.models": [
+          {
+            "path": "packages/etlantic-kafka/src/etlantic_kafka/connectors.py",
+            "line": 19
+          }
+        ]
+      }
+    },
+    {
+      "name": "etlantic-keyring",
+      "manifest": "packages/etlantic-keyring/pyproject.toml",
+      "version": "0.59.0",
+      "description": "OS keyring secret provider for ETLantic.",
+      "python_file_count": 1,
+      "physical_python_lines": 95,
+      "source_and_manifest_sha256": "da269fcd477592d4382c34cd9011f23e7db3179537d3b38ac1e50ab2228b8f50",
+      "dependencies": [
+        "etlantic>=0.59.0",
+        "keyring>=25"
+      ],
+      "extras": {},
+      "entry_points": {},
+      "module_lines": {
+        "(top-level)": 95
+      },
+      "largest_files": [
+        {
+          "path": "packages/etlantic-keyring/src/etlantic_keyring/__init__.py",
+          "lines": 95
+        }
+      ],
+      "cross_package_imports": {
+        "etlantic.exceptions": [
+          {
+            "path": "packages/etlantic-keyring/src/etlantic_keyring/__init__.py",
+            "line": 9
+          }
+        ],
+        "etlantic.secrets.provider": [
+          {
+            "path": "packages/etlantic-keyring/src/etlantic_keyring/__init__.py",
+            "line": 10
+          }
+        ],
+        "etlantic.secrets.ref": [
+          {
+            "path": "packages/etlantic-keyring/src/etlantic_keyring/__init__.py",
+            "line": 16
+          }
+        ],
+        "etlantic.secrets.value": [
+          {
+            "path": "packages/etlantic-keyring/src/etlantic_keyring/__init__.py",
+            "line": 17
+          }
+        ]
+      }
+    },
+    {
+      "name": "etlantic-lsp",
+      "manifest": "packages/etlantic-lsp/pyproject.toml",
+      "version": "0.59.0",
+      "description": "Language server for ETLantic pipelines (editor-neutral LSP host).",
+      "python_file_count": 4,
+      "physical_python_lines": 421,
+      "source_and_manifest_sha256": "2058d311feb1fe3494e2d5146e29e3a00eb20c65a390067fb02c9d442e02a925",
+      "dependencies": [
+        "etlantic>=0.59.0",
+        "pygls>=1.3,<2",
+        "lsprotocol>=2023.0.1"
+      ],
+      "extras": {
+        "test": [
+          "pytest>=8"
+        ]
+      },
+      "entry_points": {},
+      "module_lines": {
+        "(top-level)": 421
+      },
+      "largest_files": [
+        {
+          "path": "packages/etlantic-lsp/src/etlantic_lsp/server.py",
+          "lines": 399
+        },
+        {
+          "path": "packages/etlantic-lsp/src/etlantic_lsp/__main__.py",
+          "lines": 13
+        },
+        {
+          "path": "packages/etlantic-lsp/src/etlantic_lsp/__init__.py",
+          "lines": 8
+        },
+        {
+          "path": "packages/etlantic-lsp/src/etlantic_lsp/_version.py",
+          "lines": 1
+        }
+      ],
+      "cross_package_imports": {
+        "etlantic.ide.analysis": [
+          {
+            "path": "packages/etlantic-lsp/src/etlantic_lsp/server.py",
+            "line": 11
+          }
+        ],
+        "etlantic.ide.commands": [
+          {
+            "path": "packages/etlantic-lsp/src/etlantic_lsp/server.py",
+            "line": 12
+          }
+        ],
+        "etlantic.ide.protocol": [
+          {
+            "path": "packages/etlantic-lsp/src/etlantic_lsp/server.py",
+            "line": 13
+          }
+        ],
+        "etlantic.ide.trust": [
+          {
+            "path": "packages/etlantic-lsp/src/etlantic_lsp/server.py",
+            "line": 14
+          }
+        ]
+      }
+    },
+    {
+      "name": "etlantic-mcp",
+      "manifest": "packages/etlantic-mcp/pyproject.toml",
+      "version": "0.59.0",
+      "description": "Experimental read-only MCP server for ETLantic (fake by default).",
+      "python_file_count": 2,
+      "physical_python_lines": 175,
+      "source_and_manifest_sha256": "9f6ee75e80bd8e3375f98e488c58faaaa349322c000235a941043bf21f94ee35",
+      "dependencies": [
+        "etlantic>=0.59.0"
+      ],
+      "extras": {},
+      "entry_points": {
+        "etlantic.mcp_servers": {
+          "mcp": "etlantic_mcp:create_server"
+        }
+      },
+      "module_lines": {
+        "(top-level)": 175
+      },
+      "largest_files": [
+        {
+          "path": "packages/etlantic-mcp/src/etlantic_mcp/server.py",
+          "lines": 161
+        },
+        {
+          "path": "packages/etlantic-mcp/src/etlantic_mcp/__init__.py",
+          "lines": 14
+        }
+      ],
+      "cross_package_imports": {
+        "etlantic.agents.catalog": [
+          {
+            "path": "packages/etlantic-mcp/src/etlantic_mcp/server.py",
+            "line": 10
+          }
+        ],
+        "etlantic.agents.context": [
+          {
+            "path": "packages/etlantic-mcp/src/etlantic_mcp/server.py",
+            "line": 11
+          }
+        ],
+        "etlantic.agents.diagnostics": [
+          {
+            "path": "packages/etlantic-mcp/src/etlantic_mcp/server.py",
+            "line": 12
+          }
+        ],
+        "etlantic.agents.mcp_trust": [
+          {
+            "path": "packages/etlantic-mcp/src/etlantic_mcp/server.py",
+            "line": 13
+          }
+        ],
+        "etlantic.agents.proposal": [
+          {
+            "path": "packages/etlantic-mcp/src/etlantic_mcp/server.py",
+            "line": 14
+          }
+        ],
+        "etlantic.profile": [
+          {
+            "path": "packages/etlantic-mcp/src/etlantic_mcp/server.py",
+            "line": 15
+          }
+        ],
+        "etlantic.runtime.logging": [
+          {
+            "path": "packages/etlantic-mcp/src/etlantic_mcp/server.py",
+            "line": 16
+          }
+        ]
+      }
+    },
+    {
+      "name": "etlantic-openlineage",
+      "manifest": "packages/etlantic-openlineage/pyproject.toml",
+      "version": "0.59.0",
+      "description": "Experimental outbound OpenLineage export for ETLantic CP2.",
+      "python_file_count": 2,
+      "physical_python_lines": 195,
+      "source_and_manifest_sha256": "4cbe07e79d831c38e73916df00e81c866aad8b73e54900033520f5e57772db01",
+      "dependencies": [
+        "etlantic>=0.59.0"
+      ],
+      "extras": {
+        "openlineage": [
+          "openlineage-python>=1.0"
+        ]
+      },
+      "entry_points": {},
+      "module_lines": {
+        "(top-level)": 195
+      },
+      "largest_files": [
+        {
+          "path": "packages/etlantic-openlineage/src/etlantic_openlineage/exporter.py",
+          "lines": 175
+        },
+        {
+          "path": "packages/etlantic-openlineage/src/etlantic_openlineage/__init__.py",
+          "lines": 20
+        }
+      ],
+      "cross_package_imports": {
+        "etlantic.control_plane.redaction": [
+          {
+            "path": "packages/etlantic-openlineage/src/etlantic_openlineage/exporter.py",
+            "line": 16
+          }
+        ]
+      }
+    },
+    {
+      "name": "etlantic-pandas",
+      "manifest": "packages/etlantic-pandas/pyproject.toml",
+      "version": "0.59.0",
+      "description": "Pandas dataframe execution plugin for ETLantic.",
+      "python_file_count": 5,
+      "physical_python_lines": 1570,
+      "source_and_manifest_sha256": "3aa5c458cef247dcd18f2d78bb54f6cde5fce0e2369fb143886f6121768b4e4c",
+      "dependencies": [
+        "etlantic>=0.59.0",
+        "pandas>=2.2"
+      ],
+      "extras": {
+        "arrow": [
+          "pyarrow>=17"
+        ]
+      },
+      "entry_points": {
+        "etlantic.dataframe_plugins": {
+          "pandas": "etlantic_pandas:create_plugin"
+        },
+        "etlantic.transform_compilers": {
+          "pandas": "etlantic_pandas:create_transform_compiler"
+        }
+      },
+      "module_lines": {
+        "lowering": 803,
+        "(top-level)": 767
+      },
+      "largest_files": [
+        {
+          "path": "packages/etlantic-pandas/src/etlantic_pandas/compiler.py",
+          "lines": 408
+        },
+        {
+          "path": "packages/etlantic-pandas/src/etlantic_pandas/lowering/expr.py",
+          "lines": 404
+        },
+        {
+          "path": "packages/etlantic-pandas/src/etlantic_pandas/lowering/actions.py",
+          "lines": 398
+        },
+        {
+          "path": "packages/etlantic-pandas/src/etlantic_pandas/__init__.py",
+          "lines": 359
+        },
+        {
+          "path": "packages/etlantic-pandas/src/etlantic_pandas/lowering/__init__.py",
+          "lines": 1
+        }
+      ],
+      "cross_package_imports": {
+        "etlantic.capabilities": [
+          {
+            "path": "packages/etlantic-pandas/src/etlantic_pandas/__init__.py",
+            "line": 10
+          }
+        ],
+        "etlantic.dataframe.arrow": [
+          {
+            "path": "packages/etlantic-pandas/src/etlantic_pandas/__init__.py",
+            "line": 11
+          }
+        ],
+        "etlantic.dataframe.helpers": [
+          {
+            "path": "packages/etlantic-pandas/src/etlantic_pandas/__init__.py",
+            "line": 16
+          },
+          {
+            "path": "packages/etlantic-pandas/src/etlantic_pandas/__init__.py",
+            "line": 293
+          }
+        ],
+        "etlantic.dataframe.protocol": [
+          {
+            "path": "packages/etlantic-pandas/src/etlantic_pandas/__init__.py",
+            "line": 21
+          }
+        ],
+        "etlantic.interchange.tabular": [
+          {
+            "path": "packages/etlantic-pandas/src/etlantic_pandas/__init__.py",
+            "line": 31
+          }
+        ],
+        "etlantic.quality.model": [
+          {
+            "path": "packages/etlantic-pandas/src/etlantic_pandas/__init__.py",
+            "line": 32
+          }
+        ],
+        "etlantic.reliability": [
+          {
+            "path": "packages/etlantic-pandas/src/etlantic_pandas/__init__.py",
+            "line": 33
+          }
+        ],
+        "etlantic.storage.protocol": [
+          {
+            "path": "packages/etlantic-pandas/src/etlantic_pandas/__init__.py",
+            "line": 34
+          },
+          {
+            "path": "packages/etlantic-pandas/src/etlantic_pandas/compiler.py",
+            "line": 293
+          }
+        ],
+        "etlantic.transform.capabilities": [
+          {
+            "path": "packages/etlantic-pandas/src/etlantic_pandas/compiler.py",
+            "line": 10
+          },
+          {
+            "path": "packages/etlantic-pandas/src/etlantic_pandas/compiler.py",
+            "line": 138
+          },
+          {
+            "path": "packages/etlantic-pandas/src/etlantic_pandas/compiler.py",
+            "line": 244
+          }
+        ],
+        "etlantic.transform.compiler": [
+          {
+            "path": "packages/etlantic-pandas/src/etlantic_pandas/compiler.py",
+            "line": 11
+          }
+        ],
+        "etlantic.transform.portable_baseline": [
+          {
+            "path": "packages/etlantic-pandas/src/etlantic_pandas/compiler.py",
+            "line": 26
+          }
+        ],
+        "etlantic.transform.protocol": [
+          {
+            "path": "packages/etlantic-pandas/src/etlantic_pandas/compiler.py",
+            "line": 27
+          },
+          {
+            "path": "packages/etlantic-pandas/src/etlantic_pandas/compiler.py",
+            "line": 206
+          }
+        ]
+      }
+    },
+    {
+      "name": "etlantic-polars",
+      "manifest": "packages/etlantic-polars/pyproject.toml",
+      "version": "0.59.0",
+      "description": "Polars dataframe execution plugin for ETLantic.",
+      "python_file_count": 7,
+      "physical_python_lines": 2224,
+      "source_and_manifest_sha256": "22265e0b5b2024983d99924a78e8ce38d9d396aa7c25731afb34d70ee4505357",
+      "dependencies": [
+        "etlantic>=0.59.0",
+        "polars>=1.22"
+      ],
+      "extras": {
+        "arrow": [
+          "pyarrow>=17"
+        ]
+      },
+      "entry_points": {
+        "etlantic.dataframe_plugins": {
+          "polars": "etlantic_polars:create_plugin"
+        },
+        "etlantic.transform_compilers": {
+          "polars": "etlantic_polars:create_transform_compiler"
+        }
+      },
+      "module_lines": {
+        "(top-level)": 1449,
+        "lowering": 775
+      },
+      "largest_files": [
+        {
+          "path": "packages/etlantic-polars/src/etlantic_polars/compiler.py",
+          "lines": 493
+        },
+        {
+          "path": "packages/etlantic-polars/src/etlantic_polars/parquet_storage.py",
+          "lines": 462
+        },
+        {
+          "path": "packages/etlantic-polars/src/etlantic_polars/__init__.py",
+          "lines": 410
+        },
+        {
+          "path": "packages/etlantic-polars/src/etlantic_polars/lowering/expr.py",
+          "lines": 406
+        },
+        {
+          "path": "packages/etlantic-polars/src/etlantic_polars/lowering/actions.py",
+          "lines": 369
+        }
+      ],
+      "cross_package_imports": {
+        "etlantic.capabilities": [
+          {
+            "path": "packages/etlantic-polars/src/etlantic_polars/__init__.py",
+            "line": 10
+          }
+        ],
+        "etlantic.dataframe.arrow": [
+          {
+            "path": "packages/etlantic-polars/src/etlantic_polars/__init__.py",
+            "line": 11
+          }
+        ],
+        "etlantic.dataframe.helpers": [
+          {
+            "path": "packages/etlantic-polars/src/etlantic_polars/__init__.py",
+            "line": 16
+          },
+          {
+            "path": "packages/etlantic-polars/src/etlantic_polars/__init__.py",
+            "line": 298
+          },
+          {
+            "path": "packages/etlantic-polars/src/etlantic_polars/__init__.py",
+            "line": 311
+          }
+        ],
+        "etlantic.dataframe.protocol": [
+          {
+            "path": "packages/etlantic-polars/src/etlantic_polars/__init__.py",
+            "line": 22
+          }
+        ],
+        "etlantic.interchange.tabular": [
+          {
+            "path": "packages/etlantic-polars/src/etlantic_polars/__init__.py",
+            "line": 32
+          }
+        ],
+        "etlantic.io_policy": [
+          {
+            "path": "packages/etlantic-polars/src/etlantic_polars/parquet_storage.py",
+            "line": 22
+          }
+        ],
+        "etlantic.quality.model": [
+          {
+            "path": "packages/etlantic-polars/src/etlantic_polars/__init__.py",
+            "line": 33
+          }
+        ],
+        "etlantic.reliability": [
+          {
+            "path": "packages/etlantic-polars/src/etlantic_polars/__init__.py",
+            "line": 34
+          }
+        ],
+        "etlantic.storage.protocol": [
+          {
+            "path": "packages/etlantic-polars/src/etlantic_polars/__init__.py",
+            "line": 35
+          },
+          {
+            "path": "packages/etlantic-polars/src/etlantic_polars/parquet_storage.py",
+            "line": 23
+          }
+        ],
+        "etlantic.transform.capabilities": [
+          {
+            "path": "packages/etlantic-polars/src/etlantic_polars/compiler.py",
+            "line": 9
+          },
+          {
+            "path": "packages/etlantic-polars/src/etlantic_polars/compiler.py",
+            "line": 240
+          },
+          {
+            "path": "packages/etlantic-polars/src/etlantic_polars/compiler.py",
+            "line": 352
+          }
+        ],
+        "etlantic.transform.compiler": [
+          {
+            "path": "packages/etlantic-polars/src/etlantic_polars/compiler.py",
+            "line": 10
+          }
+        ],
+        "etlantic.transform.fusion": [
+          {
+            "path": "packages/etlantic-polars/src/etlantic_polars/compiler.py",
+            "line": 181
+          },
+          {
+            "path": "packages/etlantic-polars/src/etlantic_polars/compiler.py",
+            "line": 218
+          },
+          {
+            "path": "packages/etlantic-polars/src/etlantic_polars/fusion.py",
+            "line": 12
+          },
+          {
+            "path": "packages/etlantic-polars/src/etlantic_polars/parquet_storage.py",
+            "line": 24
+          }
+        ],
+        "etlantic.transform.portable_baseline": [
+          {
+            "path": "packages/etlantic-polars/src/etlantic_polars/compiler.py",
+            "line": 26
+          }
+        ],
+        "etlantic.transform.protocol": [
+          {
+            "path": "packages/etlantic-polars/src/etlantic_polars/compiler.py",
+            "line": 27
+          },
+          {
+            "path": "packages/etlantic-polars/src/etlantic_polars/compiler.py",
+            "line": 317
+          }
+        ]
+      }
+    },
+    {
+      "name": "etlantic-prefect",
+      "manifest": "packages/etlantic-prefect/pyproject.toml",
+      "version": "0.59.0",
+      "description": "Prefect ExecutionScheduler plugin for ETLantic.",
+      "python_file_count": 5,
+      "physical_python_lines": 2270,
+      "source_and_manifest_sha256": "b557f9c7a2ef591462e6033cf5d5b0346e9cfb5fb99f9e5256c8feb35c7a4d26",
+      "dependencies": [
+        "etlantic>=0.59.0",
+        "prefect>=3",
+        "sqlalchemy>=2.0.36"
+      ],
+      "extras": {},
+      "entry_points": {
+        "etlantic.scheduler_plugins": {
+          "prefect": "etlantic_prefect:create_plugin"
+        }
+      },
+      "module_lines": {
+        "(top-level)": 2270
+      },
+      "largest_files": [
+        {
+          "path": "packages/etlantic-prefect/src/etlantic_prefect/deployment.py",
+          "lines": 987
+        },
+        {
+          "path": "packages/etlantic-prefect/src/etlantic_prefect/worker.py",
+          "lines": 488
+        },
+        {
+          "path": "packages/etlantic-prefect/src/etlantic_prefect/dispatcher.py",
+          "lines": 407
+        },
+        {
+          "path": "packages/etlantic-prefect/src/etlantic_prefect/plugin.py",
+          "lines": 355
+        },
+        {
+          "path": "packages/etlantic-prefect/src/etlantic_prefect/__init__.py",
+          "lines": 33
+        }
+      ],
+      "cross_package_imports": {
+        "etlantic.control_plane": [
+          {
+            "path": "packages/etlantic-prefect/src/etlantic_prefect/deployment.py",
+            "line": 19
+          },
+          {
+            "path": "packages/etlantic-prefect/src/etlantic_prefect/dispatcher.py",
+            "line": 11
+          },
+          {
+            "path": "packages/etlantic-prefect/src/etlantic_prefect/worker.py",
+            "line": 16
+          }
+        ],
+        "etlantic.exceptions": [
+          {
+            "path": "packages/etlantic-prefect/src/etlantic_prefect/plugin.py",
+            "line": 13
+          }
+        ],
+        "etlantic.plan.adaptive_model": [
+          {
+            "path": "packages/etlantic-prefect/src/etlantic_prefect/plugin.py",
+            "line": 67
+          }
+        ],
+        "etlantic.plan.model": [
+          {
+            "path": "packages/etlantic-prefect/src/etlantic_prefect/plugin.py",
+            "line": 14
+          },
+          {
+            "path": "packages/etlantic-prefect/src/etlantic_prefect/worker.py",
+            "line": 22
+          }
+        ],
+        "etlantic.reports.model": [
+          {
+            "path": "packages/etlantic-prefect/src/etlantic_prefect/plugin.py",
+            "line": 15
+          }
+        ],
+        "etlantic.runtime.orchestrator": [
+          {
+            "path": "packages/etlantic-prefect/src/etlantic_prefect/plugin.py",
+            "line": 267
+          }
+        ],
+        "etlantic.runtime.request": [
+          {
+            "path": "packages/etlantic-prefect/src/etlantic_prefect/plugin.py",
+            "line": 16
+          }
+        ],
+        "etlantic.runtime.role": [
+          {
+            "path": "packages/etlantic-prefect/src/etlantic_prefect/dispatcher.py",
+            "line": 16
+          }
+        ],
+        "etlantic.runtime.scheduler": [
+          {
+            "path": "packages/etlantic-prefect/src/etlantic_prefect/plugin.py",
+            "line": 17
+          }
+        ],
+        "etlantic.runtime.state": [
+          {
+            "path": "packages/etlantic-prefect/src/etlantic_prefect/plugin.py",
+            "line": 24
+          }
+        ]
+      }
+    },
+    {
+      "name": "etlantic-pyspark",
+      "manifest": "packages/etlantic-pyspark/pyproject.toml",
+      "version": "0.59.0",
+      "description": "PySpark reference execution plugin for ETLantic.",
+      "python_file_count": 8,
+      "physical_python_lines": 2649,
+      "source_and_manifest_sha256": "01c3590ebded222390a5cd3066d4884de5f96bb40fa5e51307ea1660a951df52",
+      "dependencies": [
+        "etlantic>=0.59.0",
+        "pyspark>=3.5"
+      ],
+      "extras": {
+        "delta": [
+          "delta-spark>=3.0"
+        ]
+      },
+      "entry_points": {
+        "etlantic.spark_plugins": {
+          "pyspark": "etlantic_pyspark:create_plugin"
+        },
+        "etlantic.spark_providers": {
+          "local": "etlantic_pyspark:create_provider"
+        },
+        "etlantic.transform_compilers": {
+          "pyspark": "etlantic_pyspark:create_transform_compiler"
+        }
+      },
+      "module_lines": {
+        "(top-level)": 1808,
+        "lowering": 841
+      },
+      "largest_files": [
+        {
+          "path": "packages/etlantic-pyspark/src/etlantic_pyspark/plugin.py",
+          "lines": 997
+        },
+        {
+          "path": "packages/etlantic-pyspark/src/etlantic_pyspark/compiler.py",
+          "lines": 482
+        },
+        {
+          "path": "packages/etlantic-pyspark/src/etlantic_pyspark/lowering/expr.py",
+          "lines": 432
+        },
+        {
+          "path": "packages/etlantic-pyspark/src/etlantic_pyspark/lowering/actions.py",
+          "lines": 408
+        },
+        {
+          "path": "packages/etlantic-pyspark/src/etlantic_pyspark/provider.py",
+          "lines": 228
+        }
+      ],
+      "cross_package_imports": {
+        "etlantic.capabilities": [
+          {
+            "path": "packages/etlantic-pyspark/src/etlantic_pyspark/plugin.py",
+            "line": 9
+          },
+          {
+            "path": "packages/etlantic-pyspark/src/etlantic_pyspark/provider.py",
+            "line": 9
+          }
+        ],
+        "etlantic.spark.protocol": [
+          {
+            "path": "packages/etlantic-pyspark/src/etlantic_pyspark/plugin.py",
+            "line": 10
+          },
+          {
+            "path": "packages/etlantic-pyspark/src/etlantic_pyspark/plugin.py",
+            "line": 181
+          }
+        ],
+        "etlantic.spark.provider": [
+          {
+            "path": "packages/etlantic-pyspark/src/etlantic_pyspark/plugin.py",
+            "line": 29
+          },
+          {
+            "path": "packages/etlantic-pyspark/src/etlantic_pyspark/provider.py",
+            "line": 10
+          }
+        ],
+        "etlantic.spark.schema": [
+          {
+            "path": "packages/etlantic-pyspark/src/etlantic_pyspark/plugin.py",
+            "line": 30
+          }
+        ],
+        "etlantic.sql.helpers": [
+          {
+            "path": "packages/etlantic-pyspark/src/etlantic_pyspark/plugin.py",
+            "line": 590
+          }
+        ],
+        "etlantic.storage.protocol": [
+          {
+            "path": "packages/etlantic-pyspark/src/etlantic_pyspark/compiler.py",
+            "line": 377
+          },
+          {
+            "path": "packages/etlantic-pyspark/src/etlantic_pyspark/plugin.py",
+            "line": 34
+          }
+        ],
+        "etlantic.transform.capabilities": [
+          {
+            "path": "packages/etlantic-pyspark/src/etlantic_pyspark/compiler.py",
+            "line": 12
+          },
+          {
+            "path": "packages/etlantic-pyspark/src/etlantic_pyspark/compiler.py",
+            "line": 187
+          },
+          {
+            "path": "packages/etlantic-pyspark/src/etlantic_pyspark/compiler.py",
+            "line": 289
+          }
+        ],
+        "etlantic.transform.compiler": [
+          {
+            "path": "packages/etlantic-pyspark/src/etlantic_pyspark/compiler.py",
+            "line": 13
+          }
+        ],
+        "etlantic.transform.portable_baseline": [
+          {
+            "path": "packages/etlantic-pyspark/src/etlantic_pyspark/compiler.py",
+            "line": 28
+          }
+        ],
+        "etlantic.transform.protocol": [
+          {
+            "path": "packages/etlantic-pyspark/src/etlantic_pyspark/compiler.py",
+            "line": 29
+          },
+          {
+            "path": "packages/etlantic-pyspark/src/etlantic_pyspark/compiler.py",
+            "line": 253
+          }
+        ]
+      }
+    },
+    {
+      "name": "etlantic-s3",
+      "manifest": "packages/etlantic-s3/pyproject.toml",
+      "version": "0.59.0",
+      "description": "Experimental S3-compatible JSON connector for ETLantic.",
+      "python_file_count": 3,
+      "physical_python_lines": 809,
+      "source_and_manifest_sha256": "7233d379fd0898b40f84813850c491b0d51fe6014815b9d81294b2866c9fe46e",
+      "dependencies": [
+        "etlantic>=0.59.0"
+      ],
+      "extras": {
+        "aws": [
+          "boto3>=1.34",
+          "pyarrow>=17"
+        ],
+        "boto3": [
+          "boto3>=1.34"
+        ],
+        "pyarrow": [
+          "pyarrow>=17"
+        ]
+      },
+      "entry_points": {
+        "etlantic.source_connectors": {
+          "s3": "etlantic_s3:create_source"
+        },
+        "etlantic.sink_connectors": {
+          "s3": "etlantic_s3:create_sink"
+        },
+        "etlantic.storage_connectors": {
+          "s3": "etlantic_s3:create_storage"
+        }
+      },
+      "module_lines": {
+        "(top-level)": 809
+      },
+      "largest_files": [
+        {
+          "path": "packages/etlantic-s3/src/etlantic_s3/connectors.py",
+          "lines": 573
+        },
+        {
+          "path": "packages/etlantic-s3/src/etlantic_s3/fake.py",
+          "lines": 209
+        },
+        {
+          "path": "packages/etlantic-s3/src/etlantic_s3/__init__.py",
+          "lines": 27
+        }
+      ],
+      "cross_package_imports": {
+        "etlantic.connectors.capabilities": [
+          {
+            "path": "packages/etlantic-s3/src/etlantic_s3/connectors.py",
+            "line": 11
+          }
+        ],
+        "etlantic.connectors.errors": [
+          {
+            "path": "packages/etlantic-s3/src/etlantic_s3/connectors.py",
+            "line": 22
+          }
+        ],
+        "etlantic.connectors.maturity": [
+          {
+            "path": "packages/etlantic-s3/src/etlantic_s3/connectors.py",
+            "line": 23
+          }
+        ],
+        "etlantic.connectors.models": [
+          {
+            "path": "packages/etlantic-s3/src/etlantic_s3/connectors.py",
+            "line": 24
+          }
+        ]
+      }
+    },
+    {
+      "name": "etlantic-schemaregistry",
+      "manifest": "packages/etlantic-schemaregistry/pyproject.toml",
+      "version": "0.59.0",
+      "description": "Experimental Confluent-compatible schema-registry adapter for ETLantic.",
+      "python_file_count": 2,
+      "physical_python_lines": 146,
+      "source_and_manifest_sha256": "a1cd898af08597cf15dc48f2c5b980378a4d67332a2a5bbc16027ab6bf16fe11",
+      "dependencies": [
+        "etlantic>=0.59.0"
+      ],
+      "extras": {},
+      "entry_points": {
+        "etlantic.schema_registries": {
+          "confluent": "etlantic_schemaregistry:create_registry"
+        }
+      },
+      "module_lines": {
+        "(top-level)": 146
+      },
+      "largest_files": [
+        {
+          "path": "packages/etlantic-schemaregistry/src/etlantic_schemaregistry/http.py",
+          "lines": 101
+        },
+        {
+          "path": "packages/etlantic-schemaregistry/src/etlantic_schemaregistry/__init__.py",
+          "lines": 45
+        }
+      ],
+      "cross_package_imports": {
+        "etlantic.streaming.registry": [
+          {
+            "path": "packages/etlantic-schemaregistry/src/etlantic_schemaregistry/__init__.py",
+            "line": 7
+          },
+          {
+            "path": "packages/etlantic-schemaregistry/src/etlantic_schemaregistry/http.py",
+            "line": 11
+          }
+        ]
+      }
+    },
+    {
+      "name": "etlantic-snowflake",
+      "manifest": "packages/etlantic-snowflake/pyproject.toml",
+      "version": "0.59.0",
+      "description": "Experimental Snowflake connector for ETLantic.",
+      "python_file_count": 3,
+      "physical_python_lines": 560,
+      "source_and_manifest_sha256": "3c42eef3434b7e59e71d6932c3dab701384864fec0ad29a11f2e6c33f27b4cb3",
+      "dependencies": [
+        "etlantic>=0.59.0"
+      ],
+      "extras": {
+        "snowflake": [
+          "snowflake-connector-python>=3.6"
+        ]
+      },
+      "entry_points": {
+        "etlantic.source_connectors": {
+          "snowflake": "etlantic_snowflake:create_source"
+        },
+        "etlantic.sink_connectors": {
+          "snowflake": "etlantic_snowflake:create_sink"
+        },
+        "etlantic.storage_connectors": {
+          "snowflake": "etlantic_snowflake:create_storage"
+        }
+      },
+      "module_lines": {
+        "(top-level)": 560
+      },
+      "largest_files": [
+        {
+          "path": "packages/etlantic-snowflake/src/etlantic_snowflake/connectors.py",
+          "lines": 417
+        },
+        {
+          "path": "packages/etlantic-snowflake/src/etlantic_snowflake/fake.py",
+          "lines": 116
+        },
+        {
+          "path": "packages/etlantic-snowflake/src/etlantic_snowflake/__init__.py",
+          "lines": 27
+        }
+      ],
+      "cross_package_imports": {
+        "etlantic.connectors.capabilities": [
+          {
+            "path": "packages/etlantic-snowflake/src/etlantic_snowflake/connectors.py",
+            "line": 10
+          }
+        ],
+        "etlantic.connectors.errors": [
+          {
+            "path": "packages/etlantic-snowflake/src/etlantic_snowflake/connectors.py",
+            "line": 22
+          }
+        ],
+        "etlantic.connectors.maturity": [
+          {
+            "path": "packages/etlantic-snowflake/src/etlantic_snowflake/connectors.py",
+            "line": 23
+          }
+        ],
+        "etlantic.connectors.models": [
+          {
+            "path": "packages/etlantic-snowflake/src/etlantic_snowflake/connectors.py",
+            "line": 24
+          }
+        ]
+      }
+    },
+    {
+      "name": "etlantic-spark-connect",
+      "manifest": "packages/etlantic-spark-connect/pyproject.toml",
+      "version": "0.59.0",
+      "description": "Experimental Spark Connect provider for ETLantic (fake by default).",
+      "python_file_count": 2,
+      "physical_python_lines": 85,
+      "source_and_manifest_sha256": "ab569b0f16e7502308b832c491b0100f60ce1f57e1f14fc3e695b7914565483b",
+      "dependencies": [
+        "etlantic>=0.59.0"
+      ],
+      "extras": {},
+      "entry_points": {
+        "etlantic.spark_providers": {
+          "spark-connect": "etlantic_spark_connect:create_provider"
+        }
+      },
+      "module_lines": {
+        "(top-level)": 85
+      },
+      "largest_files": [
+        {
+          "path": "packages/etlantic-spark-connect/src/etlantic_spark_connect/provider.py",
+          "lines": 67
+        },
+        {
+          "path": "packages/etlantic-spark-connect/src/etlantic_spark_connect/__init__.py",
+          "lines": 18
+        }
+      ],
+      "cross_package_imports": {
+        "etlantic.capabilities": [
+          {
+            "path": "packages/etlantic-spark-connect/src/etlantic_spark_connect/provider.py",
+            "line": 7
+          }
+        ],
+        "etlantic.spark.provider": [
+          {
+            "path": "packages/etlantic-spark-connect/src/etlantic_spark_connect/provider.py",
+            "line": 8
+          }
+        ]
+      }
+    },
+    {
+      "name": "etlantic-sparkforge",
+      "manifest": "packages/etlantic-sparkforge/pyproject.toml",
+      "version": "0.59.0",
+      "description": "Final compatibility redirect to Medallantic (deprecated).",
+      "python_file_count": 6,
+      "physical_python_lines": 110,
+      "source_and_manifest_sha256": "16fb83ffafe3dacaf9e08da077967c9ceffa90f2875ba8761b6999ed8a5c2a7e",
+      "dependencies": [
+        "medallantic>=0.59.0"
+      ],
+      "extras": {},
+      "entry_points": {},
+      "module_lines": {
+        "(top-level)": 110
+      },
+      "largest_files": [
+        {
+          "path": "packages/etlantic-sparkforge/src/etlantic_sparkforge/adapt.py",
+          "lines": 27
+        },
+        {
+          "path": "packages/etlantic-sparkforge/src/etlantic_sparkforge/compat.py",
+          "lines": 19
+        },
+        {
+          "path": "packages/etlantic-sparkforge/src/etlantic_sparkforge/__init__.py",
+          "lines": 17
+        },
+        {
+          "path": "packages/etlantic-sparkforge/src/etlantic_sparkforge/ir.py",
+          "lines": 17
+        },
+        {
+          "path": "packages/etlantic-sparkforge/src/etlantic_sparkforge/runtime_map.py",
+          "lines": 17
+        }
+      ],
+      "cross_package_imports": {
+        "medallantic": [
+          {
+            "path": "packages/etlantic-sparkforge/src/etlantic_sparkforge/__init__.py",
+            "line": 7
+          },
+          {
+            "path": "packages/etlantic-sparkforge/src/etlantic_sparkforge/__init__.py",
+            "line": 8
+          }
+        ],
+        "medallantic.adapt": [
+          {
+            "path": "packages/etlantic-sparkforge/src/etlantic_sparkforge/adapt.py",
+            "line": 5
+          }
+        ],
+        "medallantic.compat": [
+          {
+            "path": "packages/etlantic-sparkforge/src/etlantic_sparkforge/compat.py",
+            "line": 5
+          }
+        ],
+        "medallantic.ir": [
+          {
+            "path": "packages/etlantic-sparkforge/src/etlantic_sparkforge/ir.py",
+            "line": 5
+          }
+        ],
+        "medallantic.reports": [
+          {
+            "path": "packages/etlantic-sparkforge/src/etlantic_sparkforge/reports.py",
+            "line": 5
+          }
+        ],
+        "medallantic.runtime_map": [
+          {
+            "path": "packages/etlantic-sparkforge/src/etlantic_sparkforge/runtime_map.py",
+            "line": 5
+          }
+        ]
+      }
+    },
+    {
+      "name": "etlantic-sql",
+      "manifest": "packages/etlantic-sql/pyproject.toml",
+      "version": "0.59.0",
+      "description": "PostgreSQL reference SQL execution plugin for ETLantic.",
+      "python_file_count": 20,
+      "physical_python_lines": 9268,
+      "source_and_manifest_sha256": "882bdcaaf0c1c2e49b31c1fb39a8d734f161c8b8d1fac5f6fd615f2424dcee84",
+      "dependencies": [
+        "etlantic>=0.59.0",
+        "sqlalchemy>=2.0",
+        "psycopg[binary]>=3.1"
+      ],
+      "extras": {
+        "sqlite": []
+      },
+      "entry_points": {
+        "etlantic.sql_plugins": {
+          "sql": "etlantic_sql:create_plugin"
+        },
+        "etlantic.transform_compilers": {
+          "sql": "etlantic_sql.transform_compiler:create_transform_compiler"
+        },
+        "etlantic.source_connectors": {
+          "postgresql": "etlantic_sql.connectors:create_source"
+        },
+        "etlantic.sink_connectors": {
+          "postgresql": "etlantic_sql.connectors:create_sink"
+        },
+        "etlantic.storage_connectors": {
+          "postgresql": "etlantic_sql.connectors:create_storage"
+        }
+      },
+      "module_lines": {
+        "(top-level)": 8367,
+        "lowering": 901
+      },
+      "largest_files": [
+        {
+          "path": "packages/etlantic-sql/src/etlantic_sql/live_postgresql.py",
+          "lines": 1600
+        },
+        {
+          "path": "packages/etlantic-sql/src/etlantic_sql/unicode_data.py",
+          "lines": 1541
+        },
+        {
+          "path": "packages/etlantic-sql/src/etlantic_sql/transform_compiler.py",
+          "lines": 1160
+        },
+        {
+          "path": "packages/etlantic-sql/src/etlantic_sql/compiler.py",
+          "lines": 945
+        },
+        {
+          "path": "packages/etlantic-sql/src/etlantic_sql/action_handlers.py",
+          "lines": 925
+        }
+      ],
+      "cross_package_imports": {
+        "etlantic.capabilities": [
+          {
+            "path": "packages/etlantic-sql/src/etlantic_sql/plugin.py",
+            "line": 13
+          }
+        ],
+        "etlantic.connectors.capabilities": [
+          {
+            "path": "packages/etlantic-sql/src/etlantic_sql/connectors.py",
+            "line": 11
+          },
+          {
+            "path": "packages/etlantic-sql/src/etlantic_sql/live_postgresql.py",
+            "line": 23
+          }
+        ],
+        "etlantic.connectors.errors": [
+          {
+            "path": "packages/etlantic-sql/src/etlantic_sql/connectors.py",
+            "line": 23
+          },
+          {
+            "path": "packages/etlantic-sql/src/etlantic_sql/live_postgresql.py",
+            "line": 37
+          }
+        ],
+        "etlantic.connectors.maturity": [
+          {
+            "path": "packages/etlantic-sql/src/etlantic_sql/connectors.py",
+            "line": 24
+          },
+          {
+            "path": "packages/etlantic-sql/src/etlantic_sql/live_postgresql.py",
+            "line": 42
+          }
+        ],
+        "etlantic.connectors.models": [
+          {
+            "path": "packages/etlantic-sql/src/etlantic_sql/connectors.py",
+            "line": 25
+          },
+          {
+            "path": "packages/etlantic-sql/src/etlantic_sql/connectors.py",
+            "line": 460
+          },
+          {
+            "path": "packages/etlantic-sql/src/etlantic_sql/live_postgresql.py",
+            "line": 43
+          }
+        ],
+        "etlantic.control_plane": [
+          {
+            "path": "packages/etlantic-sql/src/etlantic_sql/action_handlers.py",
+            "line": 36
+          }
+        ],
+        "etlantic.diagnostics": [
+          {
+            "path": "packages/etlantic-sql/src/etlantic_sql/catalog.py",
+            "line": 11
+          }
+        ],
+        "etlantic.inference": [
+          {
+            "path": "packages/etlantic-sql/src/etlantic_sql/sqlite_target.py",
+            "line": 13
+          }
+        ],
+        "etlantic.runtime": [
+          {
+            "path": "packages/etlantic-sql/src/etlantic_sql/action_handlers.py",
+            "line": 37
+          }
+        ],
+        "etlantic.runtime.logging": [
+          {
+            "path": "packages/etlantic-sql/src/etlantic_sql/async_executor.py",
+            "line": 11
+          },
+          {
+            "path": "packages/etlantic-sql/src/etlantic_sql/executor.py",
+            "line": 12
+          }
+        ],
+        "etlantic.secrets": [
+          {
+            "path": "packages/etlantic-sql/src/etlantic_sql/live_postgresql.py",
+            "line": 60
+          }
+        ],
+        "etlantic.sql.helpers": [
+          {
+            "path": "packages/etlantic-sql/src/etlantic_sql/catalog.py",
+            "line": 12
+          },
+          {
+            "path": "packages/etlantic-sql/src/etlantic_sql/compiler.py",
+            "line": 11
+          },
+          {
+            "path": "packages/etlantic-sql/src/etlantic_sql/dialect_postgresql.py",
+            "line": 7
+          },
+          {
+            "path": "packages/etlantic-sql/src/etlantic_sql/executor.py",
+            "line": 13
+          },
+          {
+            "path": "packages/etlantic-sql/src/etlantic_sql/plugin.py",
+            "line": 14
+          },
+          {
+            "path": "packages/etlantic-sql/src/etlantic_sql/transform_compiler.py",
+            "line": 13
+          }
+        ],
+        "etlantic.sql.protocol": [
+          {
+            "path": "packages/etlantic-sql/src/etlantic_sql/async_executor.py",
+            "line": 12
+          },
+          {
+            "path": "packages/etlantic-sql/src/etlantic_sql/catalog.py",
+            "line": 13
+          },
+          {
+            "path": "packages/etlantic-sql/src/etlantic_sql/compiler.py",
+            "line": 12
+          },
+          {
+            "path": "packages/etlantic-sql/src/etlantic_sql/executor.py",
+            "line": 14
+          },
+          {
+            "path": "packages/etlantic-sql/src/etlantic_sql/lowering/actions.py",
+            "line": 7
+          },
+          {
+            "path": "packages/etlantic-sql/src/etlantic_sql/lowering/actions.py",
+            "line": 430
+          },
+          {
+            "path": "packages/etlantic-sql/src/etlantic_sql/lowering/expr.py",
+            "line": 8
+          },
+          {
+            "path": "packages/etlantic-sql/src/etlantic_sql/plugin.py",
+            "line": 15
+          },
+          {
+            "path": "packages/etlantic-sql/src/etlantic_sql/transform_compiler.py",
+            "line": 14
+          },
+          {
+            "path": "packages/etlantic-sql/src/etlantic_sql/writes.py",
+            "line": 5
+          }
+        ],
+        "etlantic.transform.capabilities": [
+          {
+            "path": "packages/etlantic-sql/src/etlantic_sql/transform_compiler.py",
+            "line": 15
+          },
+          {
+            "path": "packages/etlantic-sql/src/etlantic_sql/transform_compiler.py",
+            "line": 186
+          },
+          {
+            "path": "packages/etlantic-sql/src/etlantic_sql/transform_compiler.py",
+            "line": 296
+          }
+        ],
+        "etlantic.transform.compiler": [
+          {
+            "path": "packages/etlantic-sql/src/etlantic_sql/transform_compiler.py",
+            "line": 16
+          }
+        ],
+        "etlantic.transform.portable_baseline": [
+          {
+            "path": "packages/etlantic-sql/src/etlantic_sql/compiler.py",
+            "line": 30
+          },
+          {
+            "path": "packages/etlantic-sql/src/etlantic_sql/transform_compiler.py",
+            "line": 31
+          }
+        ],
+        "etlantic.transform.protocol": [
+          {
+            "path": "packages/etlantic-sql/src/etlantic_sql/transform_compiler.py",
+            "line": 32
+          },
+          {
+            "path": "packages/etlantic-sql/src/etlantic_sql/transform_compiler.py",
+            "line": 260
+          }
+        ]
+      }
+    },
+    {
+      "name": "etlantic-sqlmodel",
+      "manifest": "packages/etlantic-sqlmodel/pyproject.toml",
+      "version": "0.59.0",
+      "description": "ContractModel \u2194 SQLModel bridge for ETLantic.",
+      "python_file_count": 31,
+      "physical_python_lines": 9073,
+      "source_and_manifest_sha256": "fa64b3a5d218283fb0772699cc942f695a4a90312d4304087717bd45a9662987",
+      "dependencies": [
+        "etlantic>=0.59.0",
+        "sqlmodel>=0.0.22"
+      ],
+      "extras": {},
+      "entry_points": {},
+      "module_lines": {
+        "control_plane": 6390,
+        "migrations": 1382,
+        "(top-level)": 1301
+      },
+      "largest_files": [
+        {
+          "path": "packages/etlantic-sqlmodel/src/etlantic_sqlmodel/control_plane/registry_stores.py",
+          "lines": 1309
+        },
+        {
+          "path": "packages/etlantic-sqlmodel/src/etlantic_sqlmodel/control_plane/durable_stores.py",
+          "lines": 945
+        },
+        {
+          "path": "packages/etlantic-sqlmodel/src/etlantic_sqlmodel/control_plane/stores.py",
+          "lines": 917
+        },
+        {
+          "path": "packages/etlantic-sqlmodel/src/etlantic_sqlmodel/control_plane/cp4_stores.py",
+          "lines": 715
+        },
+        {
+          "path": "packages/etlantic-sqlmodel/src/etlantic_sqlmodel/control_plane/input_resource_stores.py",
+          "lines": 655
+        }
+      ],
+      "cross_package_imports": {
+        "etlantic.contracts": [
+          {
+            "path": "packages/etlantic-sqlmodel/src/etlantic_sqlmodel/__init__.py",
+            "line": 11
+          }
+        ],
+        "etlantic.control_plane": [
+          {
+            "path": "packages/etlantic-sqlmodel/src/etlantic_sqlmodel/control_plane/registry_backup.py",
+            "line": 19
+          },
+          {
+            "path": "packages/etlantic-sqlmodel/src/etlantic_sqlmodel/control_plane/registry_stores.py",
+            "line": 21
+          },
+          {
+            "path": "packages/etlantic-sqlmodel/src/etlantic_sqlmodel/control_plane/stores.py",
+            "line": 18
+          },
+          {
+            "path": "packages/etlantic-sqlmodel/src/etlantic_sqlmodel/managed.py",
+            "line": 10
+          }
+        ],
+        "etlantic.control_plane.action_jobs": [
+          {
+            "path": "packages/etlantic-sqlmodel/src/etlantic_sqlmodel/managed.py",
+            "line": 11
+          }
+        ],
+        "etlantic.control_plane.approval_memory": [
+          {
+            "path": "packages/etlantic-sqlmodel/src/etlantic_sqlmodel/control_plane/cp4_stores.py",
+            "line": 14
+          }
+        ],
+        "etlantic.control_plane.approval_models": [
+          {
+            "path": "packages/etlantic-sqlmodel/src/etlantic_sqlmodel/control_plane/cp4_stores.py",
+            "line": 15
+          }
+        ],
+        "etlantic.control_plane.attestation_memory": [
+          {
+            "path": "packages/etlantic-sqlmodel/src/etlantic_sqlmodel/control_plane/cp4_stores.py",
+            "line": 19
+          }
+        ],
+        "etlantic.control_plane.attestation_models": [
+          {
+            "path": "packages/etlantic-sqlmodel/src/etlantic_sqlmodel/control_plane/cp4_stores.py",
+            "line": 20
+          }
+        ],
+        "etlantic.control_plane.audit_memory": [
+          {
+            "path": "packages/etlantic-sqlmodel/src/etlantic_sqlmodel/control_plane/cp4_stores.py",
+            "line": 21
+          }
+        ],
+        "etlantic.control_plane.audit_models": [
+          {
+            "path": "packages/etlantic-sqlmodel/src/etlantic_sqlmodel/control_plane/cp4_stores.py",
+            "line": 22
+          }
+        ],
+        "etlantic.control_plane.durable_memory": [
+          {
+            "path": "packages/etlantic-sqlmodel/src/etlantic_sqlmodel/control_plane/durable_stores.py",
+            "line": 23
+          },
+          {
+            "path": "packages/etlantic-sqlmodel/src/etlantic_sqlmodel/control_plane/schedule_stores.py",
+            "line": 18
+          }
+        ],
+        "etlantic.control_plane.durable_models": [
+          {
+            "path": "packages/etlantic-sqlmodel/src/etlantic_sqlmodel/control_plane/durable_stores.py",
+            "line": 24
+          }
+        ],
+        "etlantic.control_plane.durable_protocols": [
+          {
+            "path": "packages/etlantic-sqlmodel/src/etlantic_sqlmodel/control_plane/schedule_stores.py",
+            "line": 19
+          }
+        ],
+        "etlantic.control_plane.erasure_memory": [
+          {
+            "path": "packages/etlantic-sqlmodel/src/etlantic_sqlmodel/control_plane/cp4_stores.py",
+            "line": 23
+          }
+        ],
+        "etlantic.control_plane.erasure_models": [
+          {
+            "path": "packages/etlantic-sqlmodel/src/etlantic_sqlmodel/control_plane/cp4_stores.py",
+            "line": 24
+          }
+        ],
+        "etlantic.control_plane.errors": [
+          {
+            "path": "packages/etlantic-sqlmodel/src/etlantic_sqlmodel/control_plane/cp4_stores.py",
+            "line": 31
+          },
+          {
+            "path": "packages/etlantic-sqlmodel/src/etlantic_sqlmodel/control_plane/durable_stores.py",
+            "line": 47
+          },
+          {
+            "path": "packages/etlantic-sqlmodel/src/etlantic_sqlmodel/control_plane/input_resource_stores.py",
+            "line": 30
+          },
+          {
+            "path": "packages/etlantic-sqlmodel/src/etlantic_sqlmodel/control_plane/schedule_stores.py",
+            "line": 20
+          }
+        ],
+        "etlantic.control_plane.event_retention": [
+          {
+            "path": "packages/etlantic-sqlmodel/src/etlantic_sqlmodel/control_plane/stores.py",
+            "line": 27
+          },
+          {
+            "path": "packages/etlantic-sqlmodel/src/etlantic_sqlmodel/managed.py",
+            "line": 15
+          },
+          {
+            "path": "packages/etlantic-sqlmodel/src/etlantic_sqlmodel/migrations/versions/012_bounded_event_tombstone_retention_0_56.py",
+            "line": 10
+          }
+        ],
+        "etlantic.control_plane.governance_models": [
+          {
+            "path": "packages/etlantic-sqlmodel/src/etlantic_sqlmodel/control_plane/cp4_stores.py",
+            "line": 32
+          }
+        ],
+        "etlantic.control_plane.input_resources": [
+          {
+            "path": "packages/etlantic-sqlmodel/src/etlantic_sqlmodel/control_plane/input_resource_stores.py",
+            "line": 31
+          }
+        ],
+        "etlantic.control_plane.models": [
+          {
+            "path": "packages/etlantic-sqlmodel/src/etlantic_sqlmodel/control_plane/cp4_stores.py",
+            "line": 33
+          },
+          {
+            "path": "packages/etlantic-sqlmodel/src/etlantic_sqlmodel/control_plane/durable_stores.py",
+            "line": 48
+          },
+          {
+            "path": "packages/etlantic-sqlmodel/src/etlantic_sqlmodel/control_plane/input_resource_stores.py",
+            "line": 38
+          },
+          {
+            "path": "packages/etlantic-sqlmodel/src/etlantic_sqlmodel/control_plane/registry_search.py",
+            "line": 7
+          },
+          {
+            "path": "packages/etlantic-sqlmodel/src/etlantic_sqlmodel/control_plane/report_stores.py",
+            "line": 13
+          },
+          {
+            "path": "packages/etlantic-sqlmodel/src/etlantic_sqlmodel/control_plane/schedule_stores.py",
+            "line": 21
+          }
+        ],
+        "etlantic.control_plane.objective_memory": [
+          {
+            "path": "packages/etlantic-sqlmodel/src/etlantic_sqlmodel/control_plane/cp4_stores.py",
+            "line": 34
+          }
+        ],
+        "etlantic.control_plane.objective_models": [
+          {
+            "path": "packages/etlantic-sqlmodel/src/etlantic_sqlmodel/control_plane/cp4_stores.py",
+            "line": 35
+          }
+        ],
+        "etlantic.control_plane.policy_memory": [
+          {
+            "path": "packages/etlantic-sqlmodel/src/etlantic_sqlmodel/control_plane/cp4_stores.py",
+            "line": 39
+          }
+        ],
+        "etlantic.control_plane.protocols": [
+          {
+            "path": "packages/etlantic-sqlmodel/src/etlantic_sqlmodel/managed.py",
+            "line": 18
+          }
+        ],
+        "etlantic.control_plane.quota_memory": [
+          {
+            "path": "packages/etlantic-sqlmodel/src/etlantic_sqlmodel/control_plane/cp4_stores.py",
+            "line": 40
+          }
+        ],
+        "etlantic.control_plane.quota_models": [
+          {
+            "path": "packages/etlantic-sqlmodel/src/etlantic_sqlmodel/control_plane/cp4_stores.py",
+            "line": 41
+          }
+        ],
+        "etlantic.control_plane.redaction": [
+          {
+            "path": "packages/etlantic-sqlmodel/src/etlantic_sqlmodel/control_plane/registry_stores.py",
+            "line": 36
+          }
+        ],
+        "etlantic.control_plane.registry_definitions": [
+          {
+            "path": "packages/etlantic-sqlmodel/src/etlantic_sqlmodel/managed.py",
+            "line": 205
+          }
+        ],
+        "etlantic.control_plane.registry_memory": [
+          {
+            "path": "packages/etlantic-sqlmodel/src/etlantic_sqlmodel/control_plane/registry_backup.py",
+            "line": 38
+          },
+          {
+            "path": "packages/etlantic-sqlmodel/src/etlantic_sqlmodel/control_plane/registry_stores.py",
+            "line": 37
+          },
+          {
+            "path": "packages/etlantic-sqlmodel/src/etlantic_sqlmodel/migrations/versions/006_managed_definition_revisions_0_56.py",
+            "line": 18
+          }
+        ],
+        "etlantic.control_plane.registry_ops": [
+          {
+            "path": "packages/etlantic-sqlmodel/src/etlantic_sqlmodel/control_plane/registry_search.py",
+            "line": 8
+          }
+        ],
+        "etlantic.control_plane.registry_protocols": [
+          {
+            "path": "packages/etlantic-sqlmodel/src/etlantic_sqlmodel/managed.py",
+            "line": 19
+          }
+        ],
+        "etlantic.control_plane.schedule_memory": [
+          {
+            "path": "packages/etlantic-sqlmodel/src/etlantic_sqlmodel/control_plane/schedule_stores.py",
+            "line": 22
+          }
+        ],
+        "etlantic.control_plane.schedule_models": [
+          {
+            "path": "packages/etlantic-sqlmodel/src/etlantic_sqlmodel/control_plane/schedule_stores.py",
+            "line": 23
+          }
+        ],
+        "etlantic.control_plane.schedule_protocols": [
+          {
+            "path": "packages/etlantic-sqlmodel/src/etlantic_sqlmodel/control_plane/schedule_stores.py",
+            "line": 28
+          }
+        ],
+        "etlantic.dataframe.helpers": [
+          {
+            "path": "packages/etlantic-sqlmodel/src/etlantic_sqlmodel/__init__.py",
+            "line": 12
+          }
+        ],
+        "etlantic.diagnostics": [
+          {
+            "path": "packages/etlantic-sqlmodel/src/etlantic_sqlmodel/__init__.py",
+            "line": 13
+          }
+        ],
+        "etlantic.profile": [
+          {
+            "path": "packages/etlantic-sqlmodel/src/etlantic_sqlmodel/managed.py",
+            "line": 20
+          }
+        ],
+        "etlantic.registry": [
+          {
+            "path": "packages/etlantic-sqlmodel/src/etlantic_sqlmodel/managed.py",
+            "line": 21
+          }
+        ],
+        "etlantic.reports.model": [
+          {
+            "path": "packages/etlantic-sqlmodel/src/etlantic_sqlmodel/control_plane/report_stores.py",
+            "line": 14
+          }
+        ],
+        "etlantic.reports.retention": [
+          {
+            "path": "packages/etlantic-sqlmodel/src/etlantic_sqlmodel/control_plane/report_stores.py",
+            "line": 15
+          },
+          {
+            "path": "packages/etlantic-sqlmodel/src/etlantic_sqlmodel/migrations/versions/011_run_artifact_retention_0_56.py",
+            "line": 11
+          }
+        ],
+        "etlantic.schema_drift": [
+          {
+            "path": "packages/etlantic-sqlmodel/src/etlantic_sqlmodel/__init__.py",
+            "line": 14
+          }
+        ],
+        "etlantic.service": [
+          {
+            "path": "packages/etlantic-sqlmodel/src/etlantic_sqlmodel/managed.py",
+            "line": 22
+          }
+        ]
+      }
+    },
+    {
+      "name": "medallantic",
+      "manifest": "packages/medallantic/pyproject.toml",
+      "version": "0.59.0",
+      "description": "Engine-agnostic medallion facade on ETLantic (native authoring + SparkForge IR migrate).",
+      "python_file_count": 27,
+      "physical_python_lines": 5681,
+      "source_and_manifest_sha256": "9ad1d4edb46cf2b1f81a9ef3ad7f977c7a480f926178c6a0c44e7b2d00991ca1",
+      "dependencies": [
+        "etlantic>=0.59.0"
+      ],
+      "extras": {},
+      "entry_points": {},
+      "module_lines": {
+        "(top-level)": 4067,
+        "migrate": 1614
+      },
+      "largest_files": [
+        {
+          "path": "packages/medallantic/src/medallantic/lower.py",
+          "lines": 1022
+        },
+        {
+          "path": "packages/medallantic/src/medallantic/reports.py",
+          "lines": 539
+        },
+        {
+          "path": "packages/medallantic/src/medallantic/migrate/sql_live.py",
+          "lines": 410
+        },
+        {
+          "path": "packages/medallantic/src/medallantic/adapt.py",
+          "lines": 393
+        },
+        {
+          "path": "packages/medallantic/src/medallantic/migrate/inventory.py",
+          "lines": 390
+        }
+      ],
+      "cross_package_imports": {
+        "etlantic": [
+          {
+            "path": "packages/medallantic/src/medallantic/lower.py",
+            "line": 9
+          }
+        ],
+        "etlantic.authoring": [
+          {
+            "path": "packages/medallantic/src/medallantic/migrate/generate.py",
+            "line": 16
+          }
+        ],
+        "etlantic.authoring.definition": [
+          {
+            "path": "packages/medallantic/src/medallantic/authoring.py",
+            "line": 7
+          },
+          {
+            "path": "packages/medallantic/src/medallantic/builder.py",
+            "line": 7
+          },
+          {
+            "path": "packages/medallantic/src/medallantic/explain.py",
+            "line": 7
+          }
+        ],
+        "etlantic.authoring.normalize": [
+          {
+            "path": "packages/medallantic/src/medallantic/lower.py",
+            "line": 18
+          }
+        ],
+        "etlantic.authoring.serialize": [
+          {
+            "path": "packages/medallantic/src/medallantic/authoring.py",
+            "line": 8
+          },
+          {
+            "path": "packages/medallantic/src/medallantic/builder.py",
+            "line": 8
+          }
+        ],
+        "etlantic.capabilities": [
+          {
+            "path": "packages/medallantic/src/medallantic/adapt.py",
+            "line": 12
+          },
+          {
+            "path": "packages/medallantic/src/medallantic/compat.py",
+            "line": 7
+          }
+        ],
+        "etlantic.diagnostics": [
+          {
+            "path": "packages/medallantic/src/medallantic/adapt.py",
+            "line": 13
+          },
+          {
+            "path": "packages/medallantic/src/medallantic/compat.py",
+            "line": 8
+          },
+          {
+            "path": "packages/medallantic/src/medallantic/diagnostics.py",
+            "line": 5
+          },
+          {
+            "path": "packages/medallantic/src/medallantic/ir.py",
+            "line": 12
+          },
+          {
+            "path": "packages/medallantic/src/medallantic/lower.py",
+            "line": 19
+          },
+          {
+            "path": "packages/medallantic/src/medallantic/migrate/generate.py",
+            "line": 23
+          },
+          {
+            "path": "packages/medallantic/src/medallantic/migrate/inventory.py",
+            "line": 19
+          },
+          {
+            "path": "packages/medallantic/src/medallantic/migrate/sparkforge_live.py",
+            "line": 12
+          },
+          {
+            "path": "packages/medallantic/src/medallantic/migrate/sql_live.py",
+            "line": 13
+          }
+        ],
+        "etlantic.extensions": [
+          {
+            "path": "packages/medallantic/src/medallantic/lower.py",
+            "line": 20
+          }
+        ],
+        "etlantic.pipeline": [
+          {
+            "path": "packages/medallantic/src/medallantic/adapt.py",
+            "line": 14
+          }
+        ],
+        "etlantic.plan.explain": [
+          {
+            "path": "packages/medallantic/src/medallantic/explain.py",
+            "line": 8
+          }
+        ],
+        "etlantic.plan.freeze": [
+          {
+            "path": "packages/medallantic/src/medallantic/lower.py",
+            "line": 21
+          }
+        ],
+        "etlantic.plan.model": [
+          {
+            "path": "packages/medallantic/src/medallantic/adapt.py",
+            "line": 15
+          },
+          {
+            "path": "packages/medallantic/src/medallantic/explain.py",
+            "line": 9
+          },
+          {
+            "path": "packages/medallantic/src/medallantic/lower.py",
+            "line": 22
+          }
+        ],
+        "etlantic.plugin_trust": [
+          {
+            "path": "packages/medallantic/src/medallantic/lower.py",
+            "line": 335
+          }
+        ],
+        "etlantic.policy": [
+          {
+            "path": "packages/medallantic/src/medallantic/adapt.py",
+            "line": 16
+          },
+          {
+            "path": "packages/medallantic/src/medallantic/lower.py",
+            "line": 23
+          }
+        ],
+        "etlantic.profile": [
+          {
+            "path": "packages/medallantic/src/medallantic/adapt.py",
+            "line": 17
+          },
+          {
+            "path": "packages/medallantic/src/medallantic/lower.py",
+            "line": 24
+          },
+          {
+            "path": "packages/medallantic/src/medallantic/profiles.py",
+            "line": 7
+          }
+        ],
+        "etlantic.quality.gate": [
+          {
+            "path": "packages/medallantic/src/medallantic/lower.py",
+            "line": 25
+          }
+        ],
+        "etlantic.quality.model": [
+          {
+            "path": "packages/medallantic/src/medallantic/rules.py",
+            "line": 7
+          }
+        ],
+        "etlantic.reliability": [
+          {
+            "path": "packages/medallantic/src/medallantic/adapt.py",
+            "line": 18
+          },
+          {
+            "path": "packages/medallantic/src/medallantic/compat.py",
+            "line": 9
+          },
+          {
+            "path": "packages/medallantic/src/medallantic/lifecycle.py",
+            "line": 7
+          },
+          {
+            "path": "packages/medallantic/src/medallantic/lower.py",
+            "line": 26
+          }
+        ],
+        "etlantic.reports.model": [
+          {
+            "path": "packages/medallantic/src/medallantic/lifecycle_views.py",
+            "line": 8
+          },
+          {
+            "path": "packages/medallantic/src/medallantic/reports.py",
+            "line": 8
+          }
+        ],
+        "etlantic.runtime.events": [
+          {
+            "path": "packages/medallantic/src/medallantic/lifecycle_views.py",
+            "line": 9
+          }
+        ],
+        "etlantic.runtime.execute": [
+          {
+            "path": "packages/medallantic/src/medallantic/runtime_map.py",
+            "line": 7
+          }
+        ],
+        "etlantic.runtime.incremental": [
+          {
+            "path": "packages/medallantic/src/medallantic/lifecycle.py",
+            "line": 8
+          }
+        ],
+        "etlantic.runtime.lifecycle_policy": [
+          {
+            "path": "packages/medallantic/src/medallantic/lifecycle.py",
+            "line": 9
+          }
+        ],
+        "etlantic.runtime.logging": [
+          {
+            "path": "packages/medallantic/src/medallantic/migrate/sparkforge_live.py",
+            "line": 273
+          },
+          {
+            "path": "packages/medallantic/src/medallantic/migrate/sql_live.py",
+            "line": 290
+          },
+          {
+            "path": "packages/medallantic/src/medallantic/reports.py",
+            "line": 16
+          }
+        ],
+        "etlantic.runtime.request": [
+          {
+            "path": "packages/medallantic/src/medallantic/compat.py",
+            "line": 10
+          },
+          {
+            "path": "packages/medallantic/src/medallantic/reports.py",
+            "line": 17
+          },
+          {
+            "path": "packages/medallantic/src/medallantic/runtime_map.py",
+            "line": 8
+          }
+        ],
+        "etlantic.runtime.state": [
+          {
+            "path": "packages/medallantic/src/medallantic/reports.py",
+            "line": 18
+          },
+          {
+            "path": "packages/medallantic/src/medallantic/reports.py",
+            "line": 500
+          }
+        ],
+        "etlantic.secrets.value": [
+          {
+            "path": "packages/medallantic/src/medallantic/reports.py",
+            "line": 19
+          }
+        ],
+        "etlantic.storage.delta_capabilities": [
+          {
+            "path": "packages/medallantic/src/medallantic/compat.py",
+            "line": 11
+          }
+        ],
+        "etlantic.transformation": [
+          {
+            "path": "packages/medallantic/src/medallantic/callables.py",
+            "line": 9
+          }
+        ]
+      }
+    }
+  ],
+  "review_probes": {
+    "focused_boundary_tests": {
+      "passed": 6,
+      "deselected": 1,
+      "reason": "Live PostgreSQL-role test excluded; not run."
+    },
+    "configuration_fields": {
+      "shared": 25,
+      "fastapi_only": [
+        "title",
+        "version"
+      ],
+      "sqlmodel_only": []
+    },
+    "sdk_available_true_simulation": [
+      {
+        "provider": "iceberg",
+        "actual_backend": "FakeIcebergCatalog",
+        "reported_fake": false
+      },
+      {
+        "provider": "snowflake",
+        "actual_backend": "FakeSnowflakeConnection",
+        "reported_fake": false
+      }
+    ],
+    "probe_limitations": "SDK availability predicates overridden in an isolated local process; no live SDK/service execution; no source modifications."
+  }
+}

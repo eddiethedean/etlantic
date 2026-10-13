@@ -71,7 +71,10 @@ from etlantic.control_plane.authz import (
     require_authorized_run,
     validate_control_plane_context,
 )
-from etlantic.control_plane.durable_memory import MemoryDurableWorkStore
+from etlantic.control_plane.durable_memory import (
+    DURABLE_WORK_SNAPSHOT_SCHEMA,
+    MemoryDurableWorkStore,
+)
 from etlantic.control_plane.durable_models import (
     ACTION_JOB_SCHEMA,
     ATTEMPT_RECORD_SCHEMA,
@@ -183,6 +186,11 @@ from etlantic.control_plane.input_resources import (
     MemoryInputResourceStore,
 )
 from etlantic.control_plane.managed_backend import ManagedBackend
+from etlantic.control_plane.managed_config import (
+    MANAGED_BACKEND_DEFAULTS,
+    MANAGED_BACKEND_SHARED_FIELDS,
+    validate_managed_backend_settings,
+)
 from etlantic.control_plane.memory import (
     MemoryAuthorizer,
     MemoryDefinitionRepository,
@@ -335,6 +343,7 @@ from etlantic.control_plane.schedule_models import (
     FiringRecord,
     ScheduleRecord,
     ScheduleSpec,
+    TimerOwner,
     assert_schedule_payload_clean,
     firing_key,
 )
@@ -348,6 +357,16 @@ from etlantic.control_plane.schedule_protocols import (
 from etlantic.control_plane.schedule_trust import (
     assert_schedule_store_allowed,
     resource_provider_allowed,
+)
+from etlantic.control_plane.trigger import (
+    MAX_TRIGGER_ENVELOPE_BYTES,
+    MAX_TRIGGER_FUTURE_SKEW_SECONDS,
+    TRIGGER_ENVELOPE_SCHEMA,
+    TRIGGER_RECEIPT_SCHEMA,
+    TriggerEnvelope,
+    TriggerReceipt,
+    external_occurrence_id,
+    trigger_envelope_json_schema,
 )
 from etlantic.control_plane.workspace_resources import (
     WORKSPACE_RESOURCE_RECORD_SCHEMA,
@@ -383,6 +402,7 @@ __all__ = [  # noqa: RUF022
     "DIFF_RECORD_SCHEMA",
     "DISPATCH_RECONCILIATION_SCHEMA",
     "DISPATCH_RECORD_SCHEMA",
+    "DURABLE_WORK_SNAPSHOT_SCHEMA",
     "EFFECT_RECORD_SCHEMA",
     "EXECUTION_ENVELOPE_SCHEMA",
     "ENVIRONMENT_RECORD_SCHEMA",
@@ -419,6 +439,8 @@ __all__ = [  # noqa: RUF022
     "STATE_DIAGNOSTIC_SCHEMA",
     "STATE_NAMESPACES",
     "STATE_TRANSITION_EXPLANATION_SCHEMA",
+    "TRIGGER_ENVELOPE_SCHEMA",
+    "TRIGGER_RECEIPT_SCHEMA",
     "SUBMISSION_RECORD_SCHEMA",
     "TENANT_RECORD_SCHEMA",
     "VERIFICATION_RESULT_SCHEMA",
@@ -497,6 +519,8 @@ __all__ = [  # noqa: RUF022
     "FIRING_SCHEMA",
     "FakeScheduleClock",
     "FiringRecord",
+    "TriggerEnvelope",
+    "TriggerReceipt",
     "GovernanceConstraints",
     "HistoryStore",
     "IdempotencyKey",
@@ -515,7 +539,11 @@ __all__ = [  # noqa: RUF022
     "MemoryAuthorizer",
     "MemoryDefinitionRepository",
     "MemoryDurableWorkStore",
+    "MANAGED_BACKEND_DEFAULTS",
+    "MANAGED_BACKEND_SHARED_FIELDS",
     "ManagedBackend",
+    "MAX_TRIGGER_ENVELOPE_BYTES",
+    "MAX_TRIGGER_FUTURE_SKEW_SECONDS",
     "MemoryErasureProvider",
     "MemoryErasureStore",
     "MemoryEventStore",
@@ -570,6 +598,7 @@ __all__ = [  # noqa: RUF022
     "ScheduleRecord",
     "ScheduleSpec",
     "ScheduleStore",
+    "TimerOwner",
     "ScheduledOccurrenceService",
     "SchedulerLeaderLease",
     "RevisionRegistry",
@@ -589,6 +618,7 @@ __all__ = [  # noqa: RUF022
     "SUPPORTED_INPUT_MEDIA_TYPES",
     "TenantDirectory",
     "validate_execution_route",
+    "validate_managed_backend_settings",
     "TenantRecord",
     "TenantRef",
     "VerificationResult",
@@ -618,6 +648,8 @@ __all__ = [  # noqa: RUF022
     "gate_pre_plan",
     "gate_pre_promote",
     "firing_key",
+    "external_occurrence_id",
+    "trigger_envelope_json_schema",
     "gate_pre_submit",
     "is_absolute_root_ref",
     "map_deny_disclosure",

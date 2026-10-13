@@ -1,6 +1,6 @@
 # Learning path
 
-> **Status: ETLantic 0.58.0 Beta release candidate.** One ordered ladder from first
+> **Status: ETLantic 0.59.0 Beta release candidate.** One ordered ladder from first
 > install to week-2 CI. First paste still lives on the
 > [docs home green path](../README.md).
 
@@ -42,7 +42,7 @@ pilot. Details: [Capabilities](CAPABILITIES.md).
 
 ## Reference after first success
 
-- [Current 0.57 Guide](CURRENT_VERSION.md) — task table
+- [Current 0.59 Guide](CURRENT_VERSION.md) — task table
 - [Cheatsheet](../10_REFERENCE/CHEATSHEET.md)
 - [FAQ](FAQ.md) / [Troubleshooting](TROUBLESHOOTING.md) / [Upgrade](UPGRADE.md)
 - Evaluators: [Evaluator Brief](EVALUATOR.md) → [Enterprise evaluation](ENTERPRISE_EVALUATION.md)

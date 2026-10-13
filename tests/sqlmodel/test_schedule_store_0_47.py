@@ -24,6 +24,7 @@ from etlantic.control_plane import (
     ScheduleStore,
     SecurityDomain,
     TenantRef,
+    TimerOwner,
     WorkspaceRef,
     firing_key,
 )
@@ -289,6 +290,10 @@ def test_sqlmodel_firing_claim_rechecks_pause_after_due_scan(
         require_leader_lease: bool = True,
         admit_submission: bool = True,
         skip_status: FiringStatus | None = None,
+        expected_next_fire_at: str | None = None,
+        expected_timer_owner: TimerOwner | None = None,
+        expected_timer_owner_generation: int | None = None,
+        require_active: bool = False,
     ) -> tuple[FiringRecord, bool]:
         nonlocal paused
         if not paused:
@@ -307,6 +312,10 @@ def test_sqlmodel_firing_claim_rechecks_pause_after_due_scan(
             require_leader_lease=require_leader_lease,
             admit_submission=admit_submission,
             skip_status=skip_status,
+            expected_next_fire_at=expected_next_fire_at,
+            expected_timer_owner=expected_timer_owner,
+            expected_timer_owner_generation=expected_timer_owner_generation,
+            require_active=require_active,
         )
 
     monkeypatch.setattr(schedules, "claim_firing", pause_then_claim)

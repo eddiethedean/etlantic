@@ -11,6 +11,39 @@ adoption, and fit with ETLantic's public design.
 Versions must be selected and locked when implementation begins. The ranges in
 this document describe compatibility intent, not final pins.
 
+## Accepted package and install simplification — 0.59 and 0.63
+
+The [package consolidation plan](PACKAGE_SCOPE_CONSOLIDATION_PLAN.md) governs
+F09/F10 and new wheel decisions. Prefer an existing public module or extra when
+sharing a few helpers or isolating a driver. Keep engine/vendor SDKs separate;
+size alone does not justify merging keyring, LSP or native engine adapters.
+
+0.59 defines and applies first-party core/runtime/plugin dependency ranges that
+match the qualified minor line, rather than open-ended floors that imply future
+minor compatibility. Test supported patch combinations and reject incompatible
+minor/wire/protocol combinations. Publish any exceptions with their actual
+qualified matrix. Existing 0.58 requirements remain unchanged by this plan.
+Headless composition gets an explicit installation without FastAPI, while the
+old HTTP-oriented `managed` extra has a documented migration window.
+
+0.63 keeps the SQLAlchemy execution/compiler/PostgreSQL action/target stack in
+one wheel, with internal modules and a migrated PostgreSQL-driver extra. SQLite
+must install/run without psycopg; PostgreSQL requests without the extra fail
+with an actionable install diagnostic. Preserve existing PostgreSQL users through
+an explicit transitional install path and warning/removal policy. Measure SDK
+install size/startup before extracting CLI dependencies; `etlantic-postgresql`
+and `etlantic-cli` remain deferred.
+
+Use existing outbound policy and conformance for Foundry, read-only registry,
+Connect delivery and AWS relay: configured destinations/redirects/timeouts/byte
+bounds/redaction agree, real DNS/connect behavior is tested and explicitly trusted
+private deployments work. Auth, request construction, pagination, provider error
+translation and effect-aware retries stay with each adapter. An optional
+`etlantic-http` wheel is conditional on two real consumers adopting one client
+implementation and deleting duplicate transport code; sharing URL validators
+alone does not justify it. No new connector/compiler/contracts wrapper wheel
+is planned without actual independent extraction value.
+
 ## Policy
 
 ETLantic should prefer:

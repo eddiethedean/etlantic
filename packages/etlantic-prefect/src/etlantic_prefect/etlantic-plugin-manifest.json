@@ -3,7 +3,7 @@
     "managed_execution",
     "scheduler"
   ],
-  "digest": "sha256:7e8482118b7b08d5404f781dda8fc041ea2db85ce476cf49ac033bffbea613bc",
+  "digest": "sha256:b1615eee1eee60fe0925bfbb8f724417c961799015e0465c7823b135b8ac3cbe",
   "entries": [
     {
       "capabilities": [
@@ -23,5 +23,5 @@
     "publisher": "etlantic"
   },
   "schema": "etlantic.plugin_manifest/1",
-  "version": "0.58.0"
+  "version": "0.59.0"
 }

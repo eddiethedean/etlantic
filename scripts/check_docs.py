@@ -13,6 +13,7 @@ import subprocess
 import sys
 import textwrap
 from pathlib import Path
+from typing import cast
 from urllib.parse import unquote
 
 ROOT = Path(__file__).parents[1]
@@ -66,12 +67,20 @@ STANDARD_URLS_ALIASES = {
 }
 
 
-def load_release_facts() -> dict:
+def load_release_facts() -> dict[str, object]:
     """Load machine-readable release facts (single source of truth)."""
     path = ROOT / "docs" / "release-facts.json"
     if not path.is_file():
         raise SystemExit(f"Missing {path.relative_to(ROOT)}")
-    data = json.loads(path.read_text(encoding="utf-8"))
+    decoded: object = json.loads(path.read_text(encoding="utf-8"))
+    if not isinstance(decoded, dict):
+        raise SystemExit("release-facts.json must contain an object")
+    raw = cast(dict[object, object], decoded)
+    data: dict[str, object] = {}
+    for key, value in raw.items():
+        if not isinstance(key, str):
+            raise SystemExit("release-facts.json keys must be strings")
+        data[key] = value
     required = (
         "current_version",
         "current_minor",
@@ -530,10 +539,14 @@ def check_zero_x_roadmap_phases() -> None:
         "## 0.56 — Complete Application ETL Backend",
         "## 0.57 — Managed Backend Independence and Runtime Supervision",
         "## 0.58 — Managed Prefect Execution",
-        "## 0.59 — Brownfield Adoption Bridges",
-        "## 0.60 — Operator Console",
-        "## 0.61 — Managed Runtime and Enterprise Provider Packs",
-        "## 0.62 — TransformationModel Incubation",
+        "## 0.59 — Managed Runtime Consolidation and Trigger Contracts",
+        "## 0.60 — Posit Connect Scheduling and HTTPS Triggers",
+        "## 0.61 — AWS Scheduling and Execution Adapters",
+        "## 0.62 — Data Mover Integration and Optional Posit Endpoint Discovery",
+        "## 0.63 — Brownfield Adoption Bridges",
+        "## 0.64 — Operator Console",
+        "## 0.65 — Managed Runtime and Enterprise Provider Packs",
+        "## 0.66 — TransformationModel Incubation",
     )
     for marker in required_markers:
         if marker not in roadmap:
@@ -587,18 +600,34 @@ def check_zero_x_roadmap_phases() -> None:
         ),
         "0.59": (
             "IMPLEMENTATION_PLAN_0_59.md",
-            "brownfield metadata bridges",
+            "etlantic-runtime",
         ),
         "0.60": (
             "IMPLEMENTATION_PLAN_0_60.md",
-            "operator console",
+            "etlantic-rsconnect",
         ),
         "0.61": (
             "IMPLEMENTATION_PLAN_0_61.md",
-            "provider packs",
+            "etlantic-aws",
         ),
         "0.62": (
             "IMPLEMENTATION_PLAN_0_62.md",
+            "fastapi-posit",
+        ),
+        "0.63": (
+            "IMPLEMENTATION_PLAN_0_63.md",
+            "brownfield metadata bridges",
+        ),
+        "0.64": (
+            "IMPLEMENTATION_PLAN_0_64.md",
+            "operator console",
+        ),
+        "0.65": (
+            "IMPLEMENTATION_PLAN_0_65.md",
+            "provider packs",
+        ),
+        "0.66": (
+            "IMPLEMENTATION_PLAN_0_66.md",
             "TransformationModel",
         ),
     }
@@ -774,8 +803,18 @@ def check_release_surface_version_drift(package_version: str) -> None:
         if release_facts.get("publication_status") == "published"
         else "Implementation candidate / review pending"
         if current_minor == "0.54"
+        else "Implementation in progress; qualification pending"
+        if release_facts.get("release_readiness") == "blocked"
         else "Gate-ready for tag/publish"
     )
+    if release_facts.get("release_readiness") == "blocked":
+        exit_gate = ROOT / "docs" / str(release_facts["exit_gate"])
+        if not exit_gate.is_file() or "NOT READY TO TAG OR PUBLISH" not in (
+            exit_gate.read_text(encoding="utf-8")
+        ):
+            raise SystemExit(
+                "A blocked candidate must have an exit gate that explicitly blocks publication"
+            )
     current_row = re.compile(
         rf"(?m)^\| Current \| {re.escape(current_minor)} \| [^|]+ "
         rf"\| {re.escape(expected_status)} \|$"
@@ -3205,9 +3244,7 @@ def main() -> None:
 
 def has_current_release_status(text: str) -> bool:
     """Return whether a page's status banner matches the current release facts."""
-    from typing import cast
-
-    facts = cast(dict[str, object], load_release_facts())
+    facts = load_release_facts()
     status = f"ETLantic {facts['current_version']} {facts['maturity']} release"
     if facts.get("publication_status") != "published":
         status += " candidate; publication pending"

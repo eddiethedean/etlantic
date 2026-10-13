@@ -182,7 +182,7 @@ class PrefectDispatcher:
             async with get_client() as client:
                 client_ready = True
                 for dispatch in candidates:
-                    flow_run_id = dispatch.prefect_flow_run_id
+                    flow_run_id = dispatch.remote_run_id
                     if flow_run_id is None:
                         continue
                     try:
@@ -192,7 +192,7 @@ class PrefectDispatcher:
                         self.backend.durable_work.rearm_dispatch_after_remote_missing(
                             self.context,
                             dispatch.submission_id,
-                            expected_flow_run_id=flow_run_id,
+                            expected_remote_run_id=flow_run_id,
                             minimum_age_seconds=self.missing_run_grace_seconds,
                             now=now,
                         )
@@ -209,7 +209,7 @@ class PrefectDispatcher:
                     self.backend.durable_work.rearm_dispatch_after_remote_failure(
                         self.context,
                         dispatch.submission_id,
-                        expected_flow_run_id=flow_run_id,
+                        expected_remote_run_id=flow_run_id,
                         now=now,
                     )
         except Exception:
@@ -371,7 +371,7 @@ class PrefectDispatcher:
                 submission_id,
                 owner_id=self.owner_id,
                 fencing_token=claim.lease_fencing_token,
-                prefect_flow_run_id=str(flow_run.id),
+                remote_run_id=str(flow_run.id),
             )
             return self._receipt(linked)
         except Exception:
@@ -482,6 +482,8 @@ class PrefectDispatcher:
             "submission_id": dispatch.submission_id,
             "status": dispatch.status,
             "generation": dispatch.generation,
+            "backend_kind": dispatch.backend_kind,
+            "remote_run_id": dispatch.remote_run_id,
             "prefect_flow_run_id": dispatch.prefect_flow_run_id,
             "dispatch_attempts": dispatch.dispatch_attempts,
             "error_code": dispatch.last_error_code,

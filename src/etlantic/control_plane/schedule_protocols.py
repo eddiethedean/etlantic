@@ -12,7 +12,9 @@ from etlantic.control_plane.schedule_models import (
     FiringRecord,
     FiringStatus,
     ScheduleRecord,
+    ScheduleRevisionPolicy,
     ScheduleSpec,
+    TimerOwner,
 )
 
 
@@ -81,9 +83,10 @@ class ScheduleStore(Protocol):
         definition_revision_id: str | None = None,
         parameter_refs: dict[str, str] | None = None,
         secret_refs: dict[str, Mapping[str, object] | str] | None = None,
-        revision_policy: str = "pinned",
+        revision_policy: ScheduleRevisionPolicy = "pinned",
         workload_identity: Principal | None = None,
         execution_route: str = "local",
+        timer_owner: TimerOwner = "local",
         next_fire_at: str | None = None,
     ) -> ScheduleRecord: ...
 
@@ -108,6 +111,18 @@ class ScheduleStore(Protocol):
         execution_route: str | None = None,
         policy_fingerprint: str | None = None,
         durable: DurableWorkStore | None = None,
+    ) -> ScheduleRecord: ...
+
+    def transfer_timer_owner(
+        self,
+        ctx: ControlPlaneContext,
+        schedule_id: str,
+        *,
+        expected_revision_id: str,
+        expected_generation: int,
+        timer_owner: TimerOwner,
+        workload_identity: Principal | None,
+        policy_fingerprint: str,
     ) -> ScheduleRecord: ...
 
     def delete(self, ctx: ControlPlaneContext, schedule_id: str) -> ScheduleRecord: ...
@@ -157,6 +172,10 @@ class ScheduleStore(Protocol):
         admit_submission: bool = True,
         skip_status: FiringStatus | None = None,
         metadata: Mapping[str, object] | None = None,
+        expected_next_fire_at: str | None = None,
+        expected_timer_owner: TimerOwner | None = None,
+        expected_timer_owner_generation: int | None = None,
+        require_active: bool = False,
     ) -> tuple[FiringRecord, bool]:
         """Idempotently claim while checking current schedule state atomically.
 
@@ -164,6 +183,34 @@ class ScheduleStore(Protocol):
         require an active schedule. Existing logical firings remain replayable.
         """
         ...
+
+    def acquire_firing_preparation(
+        self,
+        ctx: ControlPlaneContext,
+        firing_id: str,
+        *,
+        owner_id: str,
+        ttl_seconds: int = 300,
+    ) -> tuple[FiringRecord, bool]: ...
+
+    def update_firing_metadata(
+        self,
+        ctx: ControlPlaneContext,
+        firing_id: str,
+        *,
+        metadata: Mapping[str, object],
+        owner_id: str,
+        fencing_token: int,
+    ) -> FiringRecord: ...
+
+    def release_firing_preparation(
+        self,
+        ctx: ControlPlaneContext,
+        firing_id: str,
+        *,
+        owner_id: str,
+        fencing_token: int,
+    ) -> None: ...
 
     def link_firing_submission(
         self,
@@ -173,6 +220,9 @@ class ScheduleStore(Protocol):
         submission_id: str,
         plan_fingerprint: str,
         durable: DurableWorkStore,
+        preparation_owner_id: str | None = None,
+        preparation_fencing_token: int | None = None,
+        recovered: bool = False,
     ) -> FiringRecord: ...
 
     def list_firings(

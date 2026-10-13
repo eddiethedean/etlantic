@@ -4,9 +4,9 @@ from __future__ import annotations
 
 from typing import Any, Literal
 
-from pydantic import BaseModel, ConfigDict, Field, field_validator
+from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
-from etlantic.control_plane import LifecycleState
+from etlantic.control_plane import TRIGGER_RECEIPT_SCHEMA, LifecycleState
 
 
 class AcceptReceiptResponse(BaseModel):
@@ -29,6 +29,25 @@ class AcceptReceiptResponse(BaseModel):
     events_url: str | None = None
 
     model_config = {"populate_by_name": True}
+
+
+class TriggerReceiptResponse(BaseModel):
+    """External timer admission receipt, separate from ETL run completion."""
+
+    schema_: str = Field(alias="schema", default=TRIGGER_RECEIPT_SCHEMA)
+    status: Literal["pending", "accepted", "skipped"]
+    firing_status: Literal[
+        "accepted", "skipped_overlap", "skipped_misfire", "skipped_window"
+    ]
+    schedule_id: str
+    schedule_revision_id: str
+    occurrence_id: str
+    submission_id: str | None = None
+    run_id: str | None = None
+    status_reference: str | None = None
+    duplicate: bool = False
+
+    model_config = {"populate_by_name": True, "extra": "forbid"}
 
 
 class DefinitionSummary(BaseModel):
@@ -101,19 +120,41 @@ class RunSubmitBody(BaseModel):
 
 
 class DispatchReconciliationBody(BaseModel):
-    """Authorized operator evidence to resume an exhausted Prefect dispatch."""
+    """Authorized evidence to resume a bounded remote dispatch."""
 
     expected_generation: int = Field(ge=1)
-    expected_flow_run_id: str = Field(min_length=1, max_length=128)
+    expected_remote_run_id: str | None = Field(
+        default=None, min_length=1, max_length=256
+    )
+    # 0.58 request field retained for existing Prefect callers.
+    expected_flow_run_id: str | None = Field(default=None, min_length=1, max_length=128)
     evidence: str = Field(min_length=1, max_length=2048)
 
     model_config = {"extra": "forbid"}
 
-    @field_validator("expected_flow_run_id", "evidence")
+    @field_validator("expected_remote_run_id", "expected_flow_run_id", "evidence")
     @classmethod
-    def require_nonblank_value(cls, value: str) -> str:
-        if not value.strip():
+    def require_nonblank_value(cls, value: str | None) -> str | None:
+        if value is not None and not value.strip():
             raise ValueError("value must not be blank")
+        return value
+
+    @model_validator(mode="after")
+    def require_one_matching_remote_identity(self) -> DispatchReconciliationBody:
+        if self.expected_remote_run_id is None and self.expected_flow_run_id is None:
+            raise ValueError("expected_remote_run_id is required")
+        if (
+            self.expected_remote_run_id is not None
+            and self.expected_flow_run_id is not None
+            and self.expected_remote_run_id != self.expected_flow_run_id
+        ):
+            raise ValueError("remote run identity fields must match")
+        return self
+
+    @property
+    def remote_run_id(self) -> str:
+        value = self.expected_remote_run_id or self.expected_flow_run_id
+        assert value is not None
         return value
 
 
@@ -141,6 +182,8 @@ class ScheduleSpecBody(BaseModel):
     window_start: str | None = None
     window_end: str | None = None
 
+    model_config = ConfigDict(extra="forbid")
+
 
 class ScheduleSecretRefBody(BaseModel):
     """Versioned secret selector; values are never accepted in this schema."""
@@ -163,7 +206,7 @@ class ScheduleWorkloadIdentityBody(BaseModel):
 class ScheduleCreateBody(BaseModel):
     """Explicit managed schedule policy, inputs and execution identity."""
 
-    model_config = ConfigDict(extra="allow")
+    model_config = ConfigDict(extra="forbid")
 
     spec: ScheduleSpecBody | None = None
     kind: Literal["interval", "cron"] | None = None
@@ -182,6 +225,18 @@ class ScheduleCreateBody(BaseModel):
     secret_refs: dict[str, ScheduleSecretRefBody | str] | None = None
     workload_identity: ScheduleWorkloadIdentityBody | None = None
     policy_fingerprint: str | None = None
+    timer_owner: Literal["local", "external"] = "local"
+
+
+class ScheduleTimerTransferBody(BaseModel):
+    """Compare-and-swap request to fence and replace a timer owner."""
+
+    expected_revision_id: str = Field(min_length=1, max_length=256)
+    expected_generation: int = Field(ge=1)
+    timer_owner: Literal["local", "external"]
+    workload_identity: ScheduleWorkloadIdentityBody | None = None
+
+    model_config = {"extra": "forbid"}
 
 
 class InputResourceFinalizeBody(BaseModel):

@@ -1,18 +1,18 @@
 ---
 title: Release artifact verification for 0.57.0
 status: available
-current_minor: "0.58"
+current_minor: "0.59"
 ---
 
-# Release artifact verification for 0.57.0
+# Release artifact verification for 0.57.2
 
-> **Release history:** the examples on this page use the published v0.57.0
-> assets. Apply the same verification steps to the 0.58.0 candidate after it
+> **Release history:** the examples on this page use the published v0.57.2
+> assets. Apply the same verification steps to the 0.59.0 candidate after it
 > is published.
 
 ## Verify published artifacts
 
-The [GitHub release](https://github.com/eddiethedean/etlantic/releases/tag/v0.57.0)
+The [GitHub release](https://github.com/eddiethedean/etlantic/releases/tag/v0.57.2)
 contains the published distributions and `release-artifacts.json`, which records
 the release artifact inventory and SHA-256 digests. The workflow also published
 provenance attestations. `sbom-warning.txt` records that an SBOM was unavailable

@@ -16,6 +16,18 @@
 This plan records the shipped 0.18 Gate A scope, contracts, milestones, and
 the still-planned Gate B policy.
 
+## Forward engine boundary maintenance — 0.63
+
+The accepted [scope consolidation plan](PACKAGE_SCOPE_CONSOLIDATION_PLAN.md)
+moves qualified concrete Polars fusion execution/inspection and snapshot helpers
+into the Polars provider behind one validated capability. Core retains physical
+boundary decisions, admission/trust, fingerprints and lifecycle; the plugin
+retains vendor execution and native/Parquet mechanics. Preserve every currently
+qualified and rejected shape/version. This is ownership cleanup and does not
+promote adaptive execution or DataFusion Gate B, change the interchange protocol,
+or merge optional engine distributions. Installed import-boundary and existing
+interchange/fusion differential evidence must pass after the move.
+
 ## Decision locks
 
 | Decision | Lock |

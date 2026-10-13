@@ -165,14 +165,15 @@ EXPECTED_DIGESTS = {
     # compatibility tests; the new managed package modules add none. The
     # pre-execution policy gate adds one PolicyHook literal. The current main
     # baseline contains 10,080 suppression-free diagnostics.
-    # Snapshot/cancellation persistence fixtures add four reviewed private-use
-    # diagnostics in strict shadow scans; the tests seed durable records to
-    # cover compatibility paths that have no public fixture constructor.
+    # Phase 0.59 validates durable snapshots and schedule decoders on top of
+    # the merged 0.58 cancellation fixes. A direct normalized comparison with
+    # current main removes 28 diagnostic identities and adds none; the reviewed
+    # scan contains 10,038 diagnostic occurrences.
     # Fingerprints pin path, diagnostic rule, message, and multiplicity while
     # ignoring source coordinates. Line shifts therefore do not require a
     # manual baseline refresh; diagnostic content changes still fail closed.
-    "Darwin": "9385eff9d8a32580c2a297be8ad83c1336a890759d09f7c735dc6bddea9bd9ea",
-    "Linux": "9385eff9d8a32580c2a297be8ad83c1336a890759d09f7c735dc6bddea9bd9ea",
+    "Darwin": "d4c18618e1c9e18b381ff67b6865f86adab8bea2781cb20546045d31b947157c",
+    "Linux": "d4c18618e1c9e18b381ff67b6865f86adab8bea2781cb20546045d31b947157c",
 }
 
 

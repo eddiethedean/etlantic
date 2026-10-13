@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import logging
 from collections.abc import Callable
+from contextlib import suppress
 from dataclasses import replace
 from datetime import datetime
 from typing import Any
@@ -232,6 +233,13 @@ class SchedulerService:
         for schedule in self.schedule_store.list_schedules(ctx):
             if self.draining:
                 return
+            occurrence_ctx = ctx
+            if schedule.workload_identity is not None:
+                occurrence_ctx = replace(
+                    ctx,
+                    principal=schedule.workload_identity,
+                    idempotency_key=None,
+                )
             for firing in self.schedule_store.list_firings(ctx, schedule.schedule_id):
                 if self.draining:
                     return
@@ -239,6 +247,8 @@ class SchedulerService:
                     continue
                 if not self._role.begin_dispatch():
                     return
+                preparation_owner: str | None = None
+                preparation_fencing_token: int | None = None
                 try:
                     # The firing revision is immutable even if the schedule
                     # was amended after a lost link acknowledgement.
@@ -251,34 +261,83 @@ class SchedulerService:
                     try:
                         recovered = (
                             self.occurrence_recoverer(
-                                ctx, occurrence, firing.nominal_fire_time
+                                occurrence_ctx, occurrence, firing.nominal_fire_time
                             )
                             if self.occurrence_recoverer is not None
                             else None
                         )
-                        if recovered is None:
-                            prepared = (
-                                self.occurrence_preparer(
-                                    ctx,
-                                    occurrence,
-                                    firing.nominal_fire_time,
-                                    firing,
-                                )
-                                if self.occurrence_preparer is not None
-                                else occurrence
+                        if recovered is not None:
+                            submission_id, fingerprint = recovered
+                            self.schedule_store.link_firing_submission(
+                                ctx,
+                                firing.firing_id,
+                                submission_id=submission_id,
+                                plan_fingerprint=fingerprint,
+                                durable=self.durable,
+                                recovered=True,
                             )
-                            recovered = self.run_submitter(
-                                ctx, prepared, firing.nominal_fire_time
+                            continue
+
+                        preparation_owner = f"scheduler:{self.owner_id}"
+                        firing, acquired = (
+                            self.schedule_store.acquire_firing_preparation(
+                                ctx,
+                                firing.firing_id,
+                                owner_id=preparation_owner,
                             )
-                        submission_id, fingerprint = recovered
+                        )
+                        if not acquired:
+                            continue
+                        preparation_fencing_token = firing.preparation_fencing_token
+                        occurrence = replace(
+                            schedule,
+                            revision_id=firing.revision_id,
+                            occurrence_snapshot=dict(firing.metadata),
+                            occurrence_inputs=None,
+                        )
+                        prepared = (
+                            self.occurrence_preparer(
+                                occurrence_ctx,
+                                occurrence,
+                                firing.nominal_fire_time,
+                                firing,
+                            )
+                            if self.occurrence_preparer is not None
+                            else occurrence
+                        )
+                        self.schedule_store.update_firing_metadata(
+                            ctx,
+                            firing.firing_id,
+                            metadata=dict(prepared.occurrence_snapshot or {}),
+                            owner_id=preparation_owner,
+                            fencing_token=preparation_fencing_token,
+                        )
+                        submission_id, fingerprint = self.run_submitter(
+                            occurrence_ctx, prepared, firing.nominal_fire_time
+                        )
                         self.schedule_store.link_firing_submission(
                             ctx,
                             firing.firing_id,
                             submission_id=submission_id,
                             plan_fingerprint=fingerprint,
                             durable=self.durable,
+                            preparation_owner_id=preparation_owner,
+                            preparation_fencing_token=preparation_fencing_token,
                         )
                     except Exception as exc:
+                        if (
+                            preparation_owner is not None
+                            and preparation_fencing_token is not None
+                        ):
+                            # Preserve the preparation error. A failed release
+                            # is recovered when its lease expires.
+                            with suppress(Exception):
+                                self.schedule_store.release_firing_preparation(
+                                    ctx,
+                                    firing.firing_id,
+                                    owner_id=preparation_owner,
+                                    fencing_token=preparation_fencing_token,
+                                )
                         # One unavailable parameter source must not prevent
                         # other schedules from reconciling or firing.
                         _LOG.warning(
@@ -339,6 +398,7 @@ class SchedulerService:
         else:
             nominals = [due]
         claimed = 0
+        expected_cursor = rec.next_fire_at
         for nominal in nominals:
             if self.draining:
                 break
@@ -349,8 +409,10 @@ class SchedulerService:
                 _iso(nominal),
                 fencing_token,
                 next_fire_at=_iso(nxt) if nxt is not None else None,
+                expected_current_next_fire_at=expected_cursor,
             )
             claimed += int(created)
+            expected_cursor = _iso(nxt) if nxt is not None else None
         return claimed
 
     def _claim_scheduled_firing(
@@ -362,6 +424,7 @@ class SchedulerService:
         *,
         next_fire_at: str | None,
         skip_status: FiringStatus | None = None,
+        expected_current_next_fire_at: str | None = None,
     ) -> bool:
         if not self._role.begin_dispatch():
             return False
@@ -373,6 +436,7 @@ class SchedulerService:
                 fencing_token,
                 next_fire_at=next_fire_at,
                 skip_status=skip_status,
+                expected_current_next_fire_at=expected_current_next_fire_at,
             )
         finally:
             self._role.end_dispatch()
@@ -386,15 +450,35 @@ class SchedulerService:
         *,
         next_fire_at: str | None,
         skip_status: FiringStatus | None = None,
+        expected_current_next_fire_at: str | None = None,
     ) -> bool:
+        occurrence_ctx = ctx
+        if rec.workload_identity is not None:
+            occurrence_ctx = replace(
+                ctx,
+                principal=rec.workload_identity,
+                idempotency_key=None,
+            )
         prepared = (
-            self.occurrence_preparer(ctx, rec, nominal_fire_time, None)
-            if self.occurrence_preparer is not None
+            self.occurrence_preparer(occurrence_ctx, rec, nominal_fire_time, None)
+            if self.occurrence_preparer is not None and self.run_submitter is None
             else rec
         )
         claim_options: dict[str, Any] = {}
-        if prepared.occurrence_snapshot is not None:
+        if self.run_submitter is None and prepared.occurrence_snapshot is not None:
             claim_options["metadata"] = dict(prepared.occurrence_snapshot)
+        claim_options.update(
+            {
+                "expected_next_fire_at": (
+                    rec.next_fire_at
+                    if expected_current_next_fire_at is None
+                    else expected_current_next_fire_at
+                ),
+                "expected_timer_owner": "local",
+                "expected_timer_owner_generation": rec.timer_owner_generation,
+                "require_active": True,
+            }
+        )
         try:
             firing, created = self.schedule_store.claim_firing(
                 ctx,
@@ -421,26 +505,86 @@ class SchedulerService:
                 return False
             raise
         if (
-            created
-            and firing.status == "accepted"
+            firing.status == "accepted"
             and self.run_submitter is not None
             and self.durable is not None
+            and firing.submission_id is None
         ):
-            prepared = (
-                self.occurrence_preparer(ctx, rec, nominal_fire_time, firing)
-                if self.occurrence_preparer is not None
-                else prepared
+            occurrence = replace(
+                rec,
+                revision_id=firing.revision_id,
+                occurrence_snapshot=dict(firing.metadata),
+                occurrence_inputs=None,
             )
-            submission_id, fingerprint = self.run_submitter(
-                ctx, prepared, nominal_fire_time
+            recovered = (
+                self.occurrence_recoverer(occurrence_ctx, occurrence, nominal_fire_time)
+                if self.occurrence_recoverer is not None
+                else None
             )
-            self.schedule_store.link_firing_submission(
+            if recovered is not None:
+                submission_id, fingerprint = recovered
+                self.schedule_store.link_firing_submission(
+                    ctx,
+                    firing.firing_id,
+                    submission_id=submission_id,
+                    plan_fingerprint=fingerprint,
+                    durable=self.durable,
+                    recovered=True,
+                )
+                return created
+
+            preparation_owner = f"scheduler:{self.owner_id}"
+            firing, acquired = self.schedule_store.acquire_firing_preparation(
                 ctx,
                 firing.firing_id,
-                submission_id=submission_id,
-                plan_fingerprint=fingerprint,
-                durable=self.durable,
+                owner_id=preparation_owner,
             )
+            if not acquired:
+                return created
+            preparation_fencing_token = firing.preparation_fencing_token
+            occurrence = replace(
+                rec,
+                revision_id=firing.revision_id,
+                occurrence_snapshot=dict(firing.metadata),
+                occurrence_inputs=None,
+            )
+            try:
+                prepared = (
+                    self.occurrence_preparer(
+                        occurrence_ctx, occurrence, nominal_fire_time, firing
+                    )
+                    if self.occurrence_preparer is not None
+                    else occurrence
+                )
+                self.schedule_store.update_firing_metadata(
+                    ctx,
+                    firing.firing_id,
+                    metadata=dict(prepared.occurrence_snapshot or {}),
+                    owner_id=preparation_owner,
+                    fencing_token=preparation_fencing_token,
+                )
+                submission_id, fingerprint = self.run_submitter(
+                    occurrence_ctx, prepared, nominal_fire_time
+                )
+                self.schedule_store.link_firing_submission(
+                    ctx,
+                    firing.firing_id,
+                    submission_id=submission_id,
+                    plan_fingerprint=fingerprint,
+                    durable=self.durable,
+                    preparation_owner_id=preparation_owner,
+                    preparation_fencing_token=preparation_fencing_token,
+                )
+            except Exception:
+                # Preserve the original preparation/submission failure.
+                with suppress(Exception):
+                    self.schedule_store.release_firing_preparation(
+                        ctx,
+                        firing.firing_id,
+                        owner_id=preparation_owner,
+                        fencing_token=preparation_fencing_token,
+                    )
+                raise
         return created
 
 

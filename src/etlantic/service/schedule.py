@@ -7,21 +7,31 @@ import json
 import uuid
 from collections.abc import Callable, Iterable, Mapping
 from dataclasses import replace
-from datetime import UTC, datetime
+from datetime import UTC, datetime, timedelta
 from typing import Any, TypeVar, cast, overload
+from urllib.parse import quote
 
 from etlantic.control_plane import (
+    MAX_TRIGGER_FUTURE_SKEW_SECONDS,
+    TRIGGER_ENVELOPE_SCHEMA,
     ControlPlaneContext,
     ControlPlaneError,
     Principal,
     ScheduleSpec,
+    TriggerEnvelope,
+    TriggerReceipt,
+    external_occurrence_id,
     next_fire_after,
     require_authorized,
     validate_control_plane_context,
 )
 from etlantic.control_plane.durable_models import validate_execution_route
 from etlantic.control_plane.protocols import Authorizer
-from etlantic.control_plane.schedule_models import ScheduleRecord
+from etlantic.control_plane.schedule_models import (
+    ScheduleRecord,
+    ScheduleRevisionPolicy,
+    TimerOwner,
+)
 from etlantic.control_plane.schedule_protocols import ScheduleStore
 
 T = TypeVar("T")
@@ -57,13 +67,14 @@ def _is_aware_datetime(value: object) -> bool:
 
 def _managed_schedule_policy_fingerprint(
     *,
-    revision_policy: str,
+    revision_policy: ScheduleRevisionPolicy,
     definition_revision_id: str | None,
     parameter_refs: Mapping[str, str],
     secret_refs: Mapping[str, Any],
     workload_identity: Principal | None,
     profile_name: str,
     execution_route: str,
+    timer_owner: TimerOwner,
 ) -> str:
     policy_data = {
         "revision_policy": revision_policy,
@@ -75,6 +86,7 @@ def _managed_schedule_policy_fingerprint(
         ),
         "profile_name": profile_name,
         "execution_route": execution_route,
+        "timer_owner": timer_owner,
     }
     return hashlib.sha256(
         json.dumps(
@@ -164,6 +176,7 @@ class ScheduleApplicationService:
         revision_selector: str = "current",
         workload_identity: Principal | None = None,
         schedule_id: str | None = None,
+        timer_owner: TimerOwner = "local",
     ) -> Any:
         validate_control_plane_context(ctx)
         require_authorized(
@@ -185,6 +198,28 @@ class ScheduleApplicationService:
             raise _bad_request("profile_name must be a string")
         if not _is_text(policy_fingerprint):
             raise _bad_request("policy_fingerprint must be a string")
+        if timer_owner not in ("local", "external"):
+            raise _bad_request("timer_owner must be local or external")
+        if timer_owner == "external":
+            if self.managed_service is None or self.durable_work is None:
+                raise ControlPlaneError(
+                    "External timer ownership requires managed durable scheduling",
+                    code="PMCP503",
+                    status=503,
+                    title="Service Unavailable",
+                    type="etlantic.control_plane/unavailable",
+                )
+            if workload_identity is None:
+                raise _bad_request(
+                    "External timer ownership requires a workload_identity"
+                )
+            require_authorized(
+                self.authorizer,
+                ctx,
+                "schedule.bind_external_timer",
+                f"schedule:{sid}",
+                resource_in_caller_scope=False,
+            )
         definition_revision_id = None
         revision_policy = "pinned"
         execution_route = "local"
@@ -233,6 +268,7 @@ class ScheduleApplicationService:
                 workload_identity=workload_identity,
                 profile_name=effective_profile,
                 execution_route=execution_route,
+                timer_owner=timer_owner,
             )
 
         profile_name = profile_name or "default"
@@ -256,6 +292,7 @@ class ScheduleApplicationService:
                 revision_policy=revision_policy,
                 workload_identity=workload_identity,
                 execution_route=execution_route,
+                timer_owner=timer_owner,
             )
         except BaseException:
             # The store may have committed before a connection failure. Keep
@@ -351,6 +388,7 @@ class ScheduleApplicationService:
                 workload_identity=current.workload_identity,
                 profile_name=current.profile_name,
                 execution_route=execution_route,
+                timer_owner=current.timer_owner,
             )
         next_fire = next_fire_after(spec, after=self._now())
         reference_id = self._schedule_route_reference_id(ctx, schedule_id)
@@ -393,6 +431,87 @@ class ScheduleApplicationService:
 
     def pause(self, ctx: ControlPlaneContext, schedule_id: str) -> Any:
         return self._mutate(ctx, schedule_id, "pause")
+
+    def transfer_timer_owner(
+        self,
+        ctx: ControlPlaneContext,
+        schedule_id: str,
+        *,
+        expected_revision_id: str,
+        expected_generation: int,
+        timer_owner: TimerOwner,
+        workload_identity: Principal | None = None,
+    ) -> ScheduleRecord:
+        """Fence the current timer generation before activating its successor."""
+        validate_control_plane_context(ctx)
+        require_authorized(
+            self.authorizer,
+            ctx,
+            "schedule.transfer_timer",
+            f"schedule:{schedule_id}",
+            resource_in_caller_scope=False,
+        )
+        if self.managed_service is None or self.durable_work is None:
+            raise ControlPlaneError(
+                "Timer ownership transfer requires managed durable scheduling",
+                code="PMCP503",
+                status=503,
+                title="Service Unavailable",
+                type="etlantic.control_plane/unavailable",
+            )
+        if timer_owner not in ("local", "external"):
+            raise _bad_request("timer_owner must be local or external")
+        if not _is_nonempty_text(expected_revision_id):
+            raise _bad_request("Timer transfer requires an expected revision")
+        if type(expected_generation) is not int or expected_generation < 1:
+            raise _bad_request("expected_generation must be positive")
+        schedule_store = self._require_schedule_store()
+        current = schedule_store.get(ctx, schedule_id)
+        if workload_identity is not None:
+            self._validate_workload_identity(workload_identity)
+            require_authorized(
+                self.authorizer,
+                ctx,
+                "schedule.bind_workload",
+                "principal:"
+                + (workload_identity.issuer or "")
+                + "/"
+                + workload_identity.subject,
+                resource_in_caller_scope=False,
+            )
+        if timer_owner == "external":
+            if workload_identity is None:
+                raise _bad_request(
+                    "External timer transfer requires a workload_identity"
+                )
+            require_authorized(
+                self.authorizer,
+                ctx,
+                "schedule.bind_external_timer",
+                f"schedule:{schedule_id}",
+                resource_in_caller_scope=False,
+            )
+        else:
+            workload_identity = workload_identity or current.workload_identity
+        policy_fingerprint = _managed_schedule_policy_fingerprint(
+            revision_policy=current.revision_policy,
+            definition_revision_id=current.definition_revision_id,
+            parameter_refs=current.parameter_refs,
+            secret_refs=current.secret_refs,
+            workload_identity=workload_identity,
+            profile_name=current.profile_name,
+            execution_route=current.execution_route,
+            timer_owner=timer_owner,
+        )
+        return schedule_store.transfer_timer_owner(
+            ctx,
+            schedule_id,
+            expected_revision_id=expected_revision_id,
+            expected_generation=expected_generation,
+            timer_owner=timer_owner,
+            workload_identity=workload_identity,
+            policy_fingerprint=policy_fingerprint,
+        )
 
     def resume(self, ctx: ControlPlaneContext, schedule_id: str) -> Any:
         return self._mutate(ctx, schedule_id, "resume")
@@ -450,6 +569,25 @@ class ScheduleApplicationService:
         )
         schedule_store = self._require_schedule_store()
         record = schedule_store.get(ctx, schedule_id)
+        if record.timer_owner != "local":
+            raise ControlPlaneError.forbidden(
+                "Externally owned schedules require an authenticated trigger envelope"
+            )
+        occurrence_ctx = ctx
+        if record.workload_identity is not None:
+            occurrence_ctx = replace(
+                ctx,
+                principal=record.workload_identity,
+                idempotency_key=None,
+            )
+        if self.managed_service is not None:
+            require_authorized(
+                self.authorizer,
+                occurrence_ctx,
+                "run.submit",
+                f"definition:{record.definition_id}",
+                resource_in_caller_scope=False,
+            )
         when: datetime = (
             nominal_fire_time if nominal_fire_time is not None else self._now()
         )
@@ -457,6 +595,30 @@ class ScheduleApplicationService:
             raise _bad_request(
                 "nominal_fire_time must be an ISO-8601 timestamp with a timezone"
             )
+        return self._trigger_record(
+            occurrence_ctx,
+            schedule_store,
+            record,
+            when,
+            expected_timer_owner="local",
+            expected_timer_owner_generation=record.timer_owner_generation,
+            require_active=True,
+        )
+
+    def _trigger_record(
+        self,
+        ctx: ControlPlaneContext,
+        schedule_store: ScheduleStore,
+        record: ScheduleRecord,
+        when: datetime,
+        *,
+        trigger_metadata: Mapping[str, Any] | None = None,
+        advance_schedule: bool = False,
+        expected_next_fire_at: str | None = None,
+        expected_timer_owner: TimerOwner | None = None,
+        expected_timer_owner_generation: int | None = None,
+        require_active: bool = False,
+    ) -> tuple[Any, bool]:
         nominal = _iso(when.astimezone(UTC))
         managed = self.managed_service
         if managed is not None:
@@ -471,37 +633,22 @@ class ScheduleApplicationService:
             existing = next(
                 (
                     item
-                    for item in schedule_store.list_firings(ctx, schedule_id)
+                    for item in schedule_store.list_firings(ctx, record.schedule_id)
                     if item.revision_id == record.revision_id
                     and item.nominal_fire_time == nominal
                 ),
                 None,
             )
-            if existing is not None and existing.status != "accepted":
-                return existing, False
-            occurrence = self._occurrence_record(record, existing)
-            recovered = managed.recover_scheduled_occurrence(ctx, occurrence, nominal)
-            if recovered is not None:
-                if existing is None:
-                    raise ControlPlaneError.conflict(
-                        "Recovered scheduled work has no durable firing record"
-                    )
-                submission_id, fingerprint = recovered
-                linked = schedule_store.link_firing_submission(
-                    ctx,
-                    existing.firing_id,
-                    submission_id=submission_id,
-                    plan_fingerprint=fingerprint,
-                    durable=self.durable_work,
-                )
-                return linked, False
-            if existing is not None and existing.submission_id is not None:
-                return existing, False
-
-            prepared = managed.prepare_scheduled_occurrence(
-                ctx, occurrence, nominal, existing_firing=existing
-            )
             if existing is None:
+                next_fire_at = record.next_fire_at
+                if advance_schedule:
+                    next_fire_at = _iso(
+                        next_fire_after(
+                            record.spec,
+                            after=when,
+                            last_nominal=when,
+                        )
+                    )
                 firing, created = schedule_store.claim_firing(
                     ctx,
                     schedule_id=record.schedule_id,
@@ -511,44 +658,92 @@ class ScheduleApplicationService:
                     fencing_token=0,
                     plan_fingerprint="managed-admission-pending",
                     durable=self.durable_work,
-                    next_fire_at=record.next_fire_at,
+                    next_fire_at=next_fire_at,
                     require_leader_lease=False,
                     admit_submission=False,
-                    metadata=dict(prepared.occurrence_snapshot or {}),
+                    metadata=trigger_metadata,
+                    expected_next_fire_at=expected_next_fire_at,
+                    expected_timer_owner=expected_timer_owner,
+                    expected_timer_owner_generation=expected_timer_owner_generation,
+                    require_active=require_active,
                 )
-                if not created:
-                    occurrence = self._occurrence_record(record, firing)
-                    recovered = managed.recover_scheduled_occurrence(
-                        ctx, occurrence, nominal
-                    )
-                    if recovered is not None:
-                        submission_id, fingerprint = recovered
-                        linked = schedule_store.link_firing_submission(
-                            ctx,
-                            firing.firing_id,
-                            submission_id=submission_id,
-                            plan_fingerprint=fingerprint,
-                            durable=self.durable_work,
-                        )
-                        return linked, False
-                    prepared = managed.prepare_scheduled_occurrence(
-                        ctx, occurrence, nominal, existing_firing=firing
-                    )
             else:
                 firing, created = existing, False
             if firing.status != "accepted" or firing.submission_id is not None:
                 return firing, created
-            submission_id, fingerprint = managed.submit_scheduled_run(
-                ctx, prepared, nominal
-            )
-            linked = schedule_store.link_firing_submission(
+
+            occurrence = self._occurrence_record(record, firing)
+            recovered = managed.recover_scheduled_occurrence(ctx, occurrence, nominal)
+            if recovered is not None:
+                submission_id, fingerprint = recovered
+                linked = schedule_store.link_firing_submission(
+                    ctx,
+                    firing.firing_id,
+                    submission_id=submission_id,
+                    plan_fingerprint=fingerprint,
+                    durable=self.durable_work,
+                    recovered=True,
+                )
+                return linked, created
+
+            preparation_owner = f"trigger-{uuid.uuid4().hex}"
+            firing, acquired = schedule_store.acquire_firing_preparation(
                 ctx,
                 firing.firing_id,
-                submission_id=submission_id,
-                plan_fingerprint=fingerprint,
-                durable=self.durable_work,
+                owner_id=preparation_owner,
             )
-            return linked, created
+            if not acquired:
+                return firing, created
+            fencing_token = firing.preparation_fencing_token
+            try:
+
+                def checkpoint(values: Mapping[str, Any]) -> None:
+                    schedule_store.update_firing_metadata(
+                        ctx,
+                        firing.firing_id,
+                        metadata=values,
+                        owner_id=preparation_owner,
+                        fencing_token=fencing_token,
+                    )
+
+                prepared = managed.prepare_scheduled_occurrence(
+                    ctx,
+                    occurrence,
+                    nominal,
+                    existing_firing=firing,
+                    checkpoint=checkpoint,
+                )
+                schedule_store.update_firing_metadata(
+                    ctx,
+                    firing.firing_id,
+                    metadata={
+                        **dict(prepared.occurrence_snapshot or {}),
+                        **dict(trigger_metadata or {}),
+                    },
+                    owner_id=preparation_owner,
+                    fencing_token=fencing_token,
+                )
+                submission_id, fingerprint = managed.submit_scheduled_run(
+                    ctx, prepared, nominal
+                )
+                linked = schedule_store.link_firing_submission(
+                    ctx,
+                    firing.firing_id,
+                    submission_id=submission_id,
+                    plan_fingerprint=fingerprint,
+                    durable=self.durable_work,
+                    preparation_owner_id=preparation_owner,
+                    preparation_fencing_token=fencing_token,
+                )
+                return linked, created
+            except Exception:
+                schedule_store.release_firing_preparation(
+                    ctx,
+                    firing.firing_id,
+                    owner_id=preparation_owner,
+                    fencing_token=fencing_token,
+                )
+                raise
 
         firing, created = schedule_store.claim_firing(
             ctx,
@@ -560,8 +755,253 @@ class ScheduleApplicationService:
             plan_fingerprint=str(record.policy_fingerprint or "gateway"),
             durable=self.durable_work,
             require_leader_lease=False,
+            expected_next_fire_at=expected_next_fire_at,
+            expected_timer_owner=expected_timer_owner,
+            expected_timer_owner_generation=expected_timer_owner_generation,
+            require_active=require_active,
         )
         return firing, created
+
+    def trigger_external(
+        self,
+        ctx: ControlPlaneContext,
+        envelope: TriggerEnvelope,
+    ) -> TriggerReceipt:
+        """Admit an authenticated occurrence from an external timer owner.
+
+        Authorization precedes schedule/firing lookup. Retries resolve to the
+        same schedule firing key and therefore the same durable submission.
+        """
+        validate_control_plane_context(ctx)
+        envelope_value = cast(object, envelope)
+        if not isinstance(envelope_value, TriggerEnvelope):
+            raise _bad_request("trigger envelope must be a validated TriggerEnvelope")
+        envelope = envelope_value
+        require_authorized(
+            self.authorizer,
+            ctx,
+            "schedule.trigger",
+            f"schedule:{envelope.schedule_id}",
+            resource_in_caller_scope=False,
+        )
+        schedule_store = self._require_schedule_store()
+        if self.managed_service is None or self.durable_work is None:
+            raise ControlPlaneError(
+                "External trigger admission requires managed durable scheduling",
+                code="PMCP503",
+                status=503,
+                title="Service Unavailable",
+                type="etlantic.control_plane/unavailable",
+            )
+        record = schedule_store.get(ctx, envelope.schedule_id)
+        if record.timer_owner != "external":
+            raise ControlPlaneError.forbidden(
+                "Schedule is not owned by an external timer"
+            )
+        if record.revision_id != envelope.schedule_revision_id:
+            raise ControlPlaneError.conflict("Trigger schedule revision is stale")
+        if record.timer_owner_generation != envelope.timer_owner_generation:
+            raise ControlPlaneError.conflict("Trigger timer owner generation is stale")
+        if record.workload_identity != ctx.principal:
+            raise ControlPlaneError.forbidden(
+                "Trigger principal does not match the bound workload identity"
+            )
+        require_authorized(
+            self.authorizer,
+            ctx,
+            "run.submit",
+            f"definition:{record.definition_id}",
+            resource_in_caller_scope=False,
+        )
+
+        when = datetime.fromisoformat(envelope.scheduled_at.replace("Z", "+00:00"))
+        existing = next(
+            (
+                item
+                for item in schedule_store.list_firings(ctx, record.schedule_id)
+                if item.revision_id == record.revision_id
+                and item.nominal_fire_time == envelope.scheduled_at
+            ),
+            None,
+        )
+        if existing is None and record.status != "active":
+            raise ControlPlaneError.conflict("Schedule is not active")
+        if existing is None:
+            if when.astimezone(UTC) > self._now().astimezone(UTC) + timedelta(
+                seconds=MAX_TRIGGER_FUTURE_SKEW_SECONDS
+            ):
+                raise ControlPlaneError.conflict(
+                    "External trigger arrived before its scheduled occurrence"
+                )
+            expected = record.next_fire_at
+            if expected is None:
+                raise ControlPlaneError.conflict(
+                    "External trigger has no next scheduled occurrence"
+                )
+            try:
+                expected_time = datetime.fromisoformat(
+                    expected.replace("Z", "+00:00")
+                ).astimezone(UTC)
+            except (AttributeError, TypeError, ValueError) as exc:
+                raise ControlPlaneError.conflict(
+                    "Schedule next occurrence is invalid"
+                ) from exc
+            if expected_time != when.astimezone(UTC):
+                raise ControlPlaneError.conflict(
+                    "Trigger timestamp does not match the next scheduled occurrence"
+                )
+
+        firing, created = self._trigger_record(
+            ctx,
+            schedule_store,
+            record,
+            when,
+            trigger_metadata={
+                "external_trigger_schema": TRIGGER_ENVELOPE_SCHEMA,
+                "external_trigger_occurrence_id": envelope.occurrence_id,
+                "external_trigger_fingerprint": envelope.semantic_fingerprint,
+            },
+            advance_schedule=True,
+            expected_next_fire_at=envelope.scheduled_at,
+            expected_timer_owner="external",
+            expected_timer_owner_generation=envelope.timer_owner_generation,
+            require_active=True,
+        )
+        run_id = None
+        if firing.submission_id is not None:
+            submission = self.durable_work.get_submission(ctx, firing.submission_id)
+            run_id = submission.run_id
+        return TriggerReceipt(
+            status=(
+                "skipped"
+                if firing.status != "accepted"
+                else "accepted"
+                if firing.submission_id is not None
+                else "pending"
+            ),
+            firing_status=firing.status,
+            schedule_id=record.schedule_id,
+            schedule_revision_id=record.revision_id,
+            occurrence_id=envelope.occurrence_id,
+            submission_id=firing.submission_id,
+            run_id=run_id,
+            status_reference=self._trigger_status_reference(
+                record.schedule_id, envelope.occurrence_id
+            ),
+            duplicate=not created,
+        )
+
+    def get_external_trigger_receipt(
+        self,
+        ctx: ControlPlaneContext,
+        schedule_id: str,
+        occurrence_id: str,
+    ) -> TriggerReceipt:
+        """Return the scoped status for one canonical external occurrence."""
+        validate_control_plane_context(ctx)
+        require_authorized(
+            self.authorizer,
+            ctx,
+            "schedule.trigger",
+            f"schedule:{schedule_id}",
+            resource_in_caller_scope=False,
+        )
+        occurrence_value = cast(object, occurrence_id)
+        if not isinstance(occurrence_value, str) or not occurrence_value.strip():
+            raise _bad_request("occurrence_id must be non-empty")
+        occurrence_id = occurrence_value
+        schedule_store = self._require_schedule_store()
+        firing = next(
+            (
+                item
+                for item in schedule_store.list_firings(ctx, schedule_id)
+                if external_occurrence_id(
+                    item.schedule_id, item.revision_id, item.nominal_fire_time
+                )
+                == occurrence_id
+            ),
+            None,
+        )
+        if firing is None:
+            raise ControlPlaneError.not_found("schedule occurrence not found")
+        submission_id = firing.submission_id
+        run_id = None
+        if submission_id is None and self.durable_work is not None:
+            occurrence_ctx = ctx
+            schedule = None
+            try:
+                schedule = schedule_store.get(ctx, schedule_id)
+            except ControlPlaneError as exc:
+                if exc.status != 404:
+                    raise
+            if schedule is not None and schedule.workload_identity is not None:
+                occurrence_ctx = replace(
+                    ctx,
+                    principal=schedule.workload_identity,
+                    idempotency_key=None,
+                )
+            occurrence_key = firing.logical_key
+            idempotency_key = (
+                "schedule-" + hashlib.sha256(occurrence_key.encode("utf-8")).hexdigest()
+            )
+            recovered = self.durable_work.get_submission_by_idempotency(
+                occurrence_ctx,
+                idempotency_key=idempotency_key,
+                operation="run.submit",
+            )
+            if recovered is not None:
+                selected_revision = firing.metadata.get(
+                    "selected_definition_revision_id"
+                )
+                expected_fingerprint = firing.metadata.get("plan_fingerprint")
+                if (
+                    recovered.operation != "run.submit"
+                    or not recovered.input_snapshot
+                    or (
+                        isinstance(selected_revision, str)
+                        and recovered.revision_id != selected_revision
+                    )
+                    or (
+                        isinstance(expected_fingerprint, str)
+                        and recovered.plan_fingerprint != expected_fingerprint
+                    )
+                ):
+                    raise ControlPlaneError.conflict(
+                        "Recovered schedule submission does not match its occurrence"
+                    )
+                submission_id = recovered.submission_id
+                run_id = recovered.run_id
+        if (
+            submission_id is not None
+            and run_id is None
+            and self.durable_work is not None
+        ):
+            run_id = self.durable_work.get_submission(ctx, submission_id).run_id
+        return TriggerReceipt(
+            status=(
+                "skipped"
+                if firing.status != "accepted"
+                else "accepted"
+                if submission_id is not None
+                else "pending"
+            ),
+            firing_status=firing.status,
+            schedule_id=firing.schedule_id,
+            schedule_revision_id=firing.revision_id,
+            occurrence_id=occurrence_id,
+            submission_id=submission_id,
+            run_id=run_id,
+            status_reference=self._trigger_status_reference(
+                firing.schedule_id, occurrence_id
+            ),
+        )
+
+    @staticmethod
+    def _trigger_status_reference(schedule_id: str, occurrence_id: str) -> str:
+        return (
+            f"/v1/schedules/{quote(schedule_id, safe='')}/occurrences/"
+            f"{quote(occurrence_id, safe='')}"
+        )
 
     def list_firings(
         self, ctx: ControlPlaneContext, schedule_id: str

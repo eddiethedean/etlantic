@@ -247,6 +247,10 @@ def _request_parts(
         json_schema = as_mapping(content.get("application/json", {})).get("schema")
         if json_schema is not None:
             body = _sample(as_mapping(json_schema), components)
+    if operation.get("operationId") == "cp_reconcile_prefect_dispatch":
+        payload = cast(dict[str, Any], body if isinstance(body, dict) else {})
+        payload["expected_remote_run_id"] = "remote-coverage"
+        body = payload
     return (
         {
             "path": path,

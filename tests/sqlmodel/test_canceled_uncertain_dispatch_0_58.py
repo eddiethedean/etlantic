@@ -74,7 +74,7 @@ def test_sqlmodel_recovers_canceled_uncertain_dispatch_before_route_drain() -> N
             tenant_id=ctx.tenant.tenant_id,
             workspace_id=ctx.workspace.workspace_id,
             execution_route=route,
-            binding_fingerprint="d" * 64,
+            binding_fingerprint=route.removeprefix("prefect:"),
             plan_fingerprint="b" * 64,
             envelope_sha256="e" * 64,
             generation=1,

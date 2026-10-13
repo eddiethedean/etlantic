@@ -6,7 +6,7 @@
 > multi-tenant is Available for `isolated-deployment` / `dedicated-schema`;
 > `shared-service` remains Experimental; community **non-SLA**.
 >
-> **Current 0.58 boundary:** Optional `etlantic-fastapi` exposes `ETLanticAPI`
+> **Current 0.59 boundary:** Optional `etlantic-fastapi` exposes `ETLanticAPI`
 > (control-plane host) plus thin `create_reference_app` (authoring demo only).
 > Phase 0.47 shipped separately supervised scheduler and execution-host service
 > roles behind this gateway ([ADR-023](adr/ADR-023-SCHEDULER-SERVICE-AND-FEDERATION.md),
@@ -27,6 +27,43 @@
 
 ETLantic's FastAPI integration exposes typed pipeline operations through an
 ordinary FastAPI application without making HTTP part of pipeline semantics.
+
+## Accepted scope consolidation — 0.59
+
+F03 in the [package consolidation plan](PACKAGE_SCOPE_CONSOLIDATION_PLAN.md)
+keeps this package an HTTP adapter: routing, identity, request/response models,
+events and authorized projections. Shared service construction/supervision,
+worker policy, dispatch and reconciliation have one managed owner.
+
+Make existing-backend adaptation (currently `adapt_managed_backend`) the
+preferred composition path. Canonical provider/backend configuration owns the
+25 shared fields and their defaults/validators; HTTP configuration adds only
+HTTP/application settings. Keep the current managed constructor as a checked
+compatibility translation with no independent worker-setting authority. Test
+translation parity, mutation checks and installed HTTP/headless equivalence.
+
+Document an explicit headless installation/extra without FastAPI. The existing
+root `managed` extra is HTTP-oriented; migrate it through a published warning/
+compatibility window rather than silently changing existing installs. CP1 and
+`create_reference_app` retain their distinct promises. The 0.62 receiver uses
+this canonical composition, and optional verified `fastapi-posit` integration
+is a small consumer adapter, not another ETLantic distribution. No worker loop
+or long-running ETL executes in ASGI request handlers or `BackgroundTasks`.
+
+## Planned scheduled-trigger receiver — 0.59–0.62
+
+The [runtime plan](ETLANTIC_RUNTIME_PLAN.md) defines a framework-neutral trigger
+contract in 0.59. [0.62](IMPLEMENTATION_PLAN_0_62.md) adapts that contract through
+the existing CP1 host surfaces and shared backend services for Data Mover.
+Authentication, canonical admission, durable run/dispatch linkage, and result
+reconciliation stay backend-owned; `create_reference_app` is not this receiver.
+
+The [rsconnect adapter](ETLANTIC_RSCONNECT_PLAN.md) targets any compatible HTTPS
+endpoint without depending on this package. Optional `fastapi-posit` discovery
+belongs to [host integration](ETLANTIC_DATA_MOVER_INTEGRATION_PLAN.md), with
+verified public API, trusted proxy/origin validation, persisted endpoint
+configuration, and an explicit URL override. None of these additions is shipped
+merely because it appears in a plan. No `etlantic-quarto` package is planned.
 
 ## Next application backend gate — 0.56
 

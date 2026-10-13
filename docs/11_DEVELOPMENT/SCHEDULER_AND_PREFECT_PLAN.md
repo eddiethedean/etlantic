@@ -8,7 +8,7 @@
 > ([IMPLEMENTATION_PLAN_0_47](IMPLEMENTATION_PLAN_0_47.md),
 > [ADR-023](adr/ADR-023-SCHEDULER-SERVICE-AND-FEDERATION.md)).
 >
-> **Current 0.58 boundary:** ETLantic core provides local scheduling, the
+> **Current 0.59 boundary:** ETLantic core provides local scheduling, the
 > optional Prefect package provides the Python-native local MVP, and
 > `etlantic-airflow` provides external artifact compilation. Production
 > profiles must explicitly select and allowlist their orchestrator.
@@ -24,6 +24,44 @@
 >
 > **Review trigger:** Update when #292 freezes managed contracts, the scheduler
 > protocol or version matrix changes, or conformance gates pass.
+
+## Accepted dispatch consolidation — 0.59 and 0.61
+
+F01/F02 in the [package consolidation plan](PACKAGE_SCOPE_CONSOLIDATION_PLAN.md)
+reuse existing dispatch and accepted-reference contracts before adding adapters.
+Evolve Prefect-specific shared fields/routes to a validated backend kind,
+immutable deployment binding and opaque remote-run ID. Generalize operations
+such as rearming exhausted dispatch at the shared service boundary; Prefect API
+calls, flow-run identity/state translation and binding verification stay in
+`etlantic-prefect`. Unknown kinds/bindings fail before effects; arbitrary route
+strings never become a plugin selection surface.
+
+Use a versioned decoder/migration for existing `prefect:<digest>` routes and
+accepted Prefect records. Record the upgrade/rollback behavior and prove accepted
+work, dispatch recovery, cancellation, fencing and uncertain effects survive.
+Do not create one record/store family per vendor. 0.61 ECS/Fargate supplies the
+second actual consumer of these operations without AWS-specific core fields.
+
+Direct scheduling and managed Prefect remain distinct modes in one optional
+vendor wheel; do not add `etlantic-prefect-managed`. Single managed role
+construction/supervision and reconciliation are consolidated conditionally in
+runtime, while embedded ready-node execution remains core. External timer
+occurrences and the existing `ExecutionScheduler` are different responsibilities.
+
+## Planned platform scheduling and execution — 0.59–0.62
+
+The [runtime integration program](ETLANTIC_RUNTIME_PLAN.md) consolidates managed
+implementation and missing trigger seams in 0.59, [Connect HTTPS triggers](ETLANTIC_RSCONNECT_PLAN.md) in 0.60,
+[AWS schedule/execution adapters](ETLANTIC_AWS_PLAN.md) in 0.61, and
+[Data Mover composition](ETLANTIC_DATA_MOVER_INTEGRATION_PLAN.md) in 0.62.
+Schedule backends request fresh canonical admission; execution backends consume
+accepted work. One timer owns each schedule, including during backend migration.
+
+Existing local/direct scheduling and qualified 0.58 managed Prefect contracts
+remain intact. New adapters consume public backend services rather than copy
+state machines or expand Prefect's support matrix. Connect triggers can target
+non-FastAPI receivers and do not execute ETL. No `etlantic-quarto` package exists
+or is to be created or planned.
 
 ## Decision
 

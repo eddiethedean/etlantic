@@ -3,7 +3,7 @@
 > **Plan status: partially shipped; application backend integration continues
 > in 0.56.**
 >
-> **Current 0.58 boundary:** The optional `etlantic-sqlmodel` package provides
+> **Current 0.59 boundary:** The optional `etlantic-sqlmodel` package provides
 > the contract-to-SQLModel bridge and control-plane persistence/migrations.
 > The [0.56 application backend plan](IMPLEMENTATION_PLAN_0_56.md) requires
 > prepared acceptance/handoff, runtime result projection and complete live
@@ -19,6 +19,35 @@
 >
 > **Review trigger:** Update when the optional package adds persistence or
 > migration scope, or its supported SQLModel dependency range changes.
+
+## Accepted persistence consolidation — 0.59
+
+F03/F04 in the [package consolidation plan](PACKAGE_SCOPE_CONSOLIDATION_PLAN.md)
+keep one SQLModel distribution. Introduce clearly owned public `modeling`,
+`stores`, `schema` and `managed` namespaces while retaining current root/import
+paths as compatibility exports with a recorded migration window. The modeling
+bridge is useful independently of managed persistence; no speculative new
+persistence framework or wheel is introduced.
+
+Provider/backend configuration is the single source of the 25 settings shared
+with FastAPI. The HTTP adapter consumes an existing backend and separate HTTP
+settings. Compose shared managed roles through the public consolidated owner;
+keep relational sessions, schemas, migrations and DDL authority here. Runtime
+receives store interfaces and must not import SQLModel concretely.
+
+Replace serialization of private `MemoryDurableWorkStore` dictionaries with a
+public versioned snapshot codec or transition boundary. First characterize
+existing `dump/load` coverage against every persisted entity, including schedules,
+dispatch/reconciliation, attempts, effects and publication; do not assume current
+helpers are complete. Both memory and relational stores use the same transition
+semantics. Test codec versions, legacy records, concurrent claims, restart and
+recovery before retiring the private coupling.
+
+Schema inspection stays read-only and migrations remain explicitly authorized.
+Measure realistic contention and transaction/storage costs before proposing a
+layout redesign; a large module or snapshot design alone is not proof of a
+bottleneck. `etlantic-persistence` remains deferred until a second concrete
+provider demonstrably shares implementation.
 
 ## Purpose
 

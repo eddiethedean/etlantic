@@ -4,7 +4,7 @@ ETLantic **0.35.0** closed **Migration Completion and Joint Freeze (M7)**.
 **0.36.0** closed joint compatibility burn-in. **0.37** closed the
 stable-foundation gate. **0.38.0** closed the connectivity line.
 **0.39.0** closed CP1 incubation. **0.40.0** closed CP2 registry incubation.
-**0.57.2** is the latest published **Beta release**. **0.58.0 is a release
+**0.57.2** is the latest published **Beta release**. **0.59.0 is a release
 candidate** for managed Prefect execution; its bounded support profile is
 qualified and publication is pending. Phase 0.56 is published; see its exit
 gate and migration guide. Adaptive graduation remains pending. The 0.54
@@ -51,15 +51,45 @@ For the status, current boundary, and owner of every domain plan, use the
 | Previous | 0.56 | Complete application ETL backend with full specification and run control | Published — [exit gate](EXIT_GATE_0_56.md) |
 | Previous | 0.57 | Managed backend independence and runtime supervision (#278–#282) | 0.57.2 is the latest published and supported patch — [implementation plan](IMPLEMENTATION_PLAN_0_57.md), [exit gate](EXIT_GATE_0_57.md) |
 | Current | 0.58 | Managed Prefect execution | Bounded static-batch Process-worker/PostgreSQL profile qualified; candidate publication pending — [implementation plan](IMPLEMENTATION_PLAN_0_58.md), [final decision](evidence/phase_0_58/FINAL_QUALIFICATION_DECISION_2026-10-12.json), [#290](https://github.com/eddiethedean/etlantic/issues/290) |
-| Later | 0.59 | Brownfield adoption bridges | Planning freeze — [implementation plan](IMPLEMENTATION_PLAN_0_59.md) |
-| Later | 0.60 | Operator console | Planned — [implementation plan](IMPLEMENTATION_PLAN_0_60.md) |
-| Later | 0.61 | Managed runtime and enterprise provider packs | Planned — [implementation plan](IMPLEMENTATION_PLAN_0_61.md) |
-| Later | 0.62 | TransformationModel incubation | Proposed — [implementation plan](IMPLEMENTATION_PLAN_0_62.md) |
+| Later | 0.59 | Managed runtime consolidation and trigger contracts | Implementation in progress; qualification pending — [implementation plan](IMPLEMENTATION_PLAN_0_59.md) |
+| Later | 0.60 | Posit Connect scheduling and HTTPS triggers | Planned — [implementation plan](IMPLEMENTATION_PLAN_0_60.md) |
+| Later | 0.61 | AWS Scheduler/Lambda and one ECS/Fargate executor | Planned — [implementation plan](IMPLEMENTATION_PLAN_0_61.md) |
+| Later | 0.62 | One Data Mover host and optional trusted URL discovery | Planned — [implementation plan](IMPLEMENTATION_PLAN_0_62.md) |
+| Later | 0.63 | Brownfield bridges and targeted package simplification | Planning freeze — [implementation plan](IMPLEMENTATION_PLAN_0_63.md) |
+| Later | 0.64 | Operator console | Planned — [implementation plan](IMPLEMENTATION_PLAN_0_64.md) |
+| Later | 0.65 | Demand-selected enterprise deployment/provider packs | Planned — [implementation plan](IMPLEMENTATION_PLAN_0_65.md) |
+| Later | 0.66 | Conditional TransformationModel incubation | Proposed — [implementation plan](IMPLEMENTATION_PLAN_0_66.md) |
 | Foundation | 0.36–0.37 | Joint burn-in → stable foundation | Gate-ready (0.37) |
-| Post-foundation | 0.38–0.62 | Connectivity → control plane → intelligence → federation → governed AI → DuckDB package → portable-engine baseline → adaptive execution → inferred model authoring → complete application backend → backend independence → managed Prefect → adoption → operations → providers → modeling incubation | Candidate review (0.56 is published Beta; adaptive graduation pending) |
+| Post-foundation | 0.38–0.66 | Connectivity → control plane → intelligence → federation → governed AI → DuckDB package → portable-engine baseline → adaptive execution → inferred model authoring → complete application backend → backend independence → managed Prefect → managed consolidation → Connect triggers → Scheduler/ECS adapters → Data Mover integration → adoption → operations → providers → modeling incubation | Candidate review (0.56 is published Beta; adaptive graduation pending) |
 
 “Planned” records capability order only. It does not imply a release date or
 that the capability is available in the current package.
+
+## Accepted package scope consolidation
+
+The [2026-10-12 review](PACKAGE_SCOPE_REVIEW_2026-10-12.md) is accepted into the
+[package consolidation plan](PACKAGE_SCOPE_CONSOLIDATION_PLAN.md), which maps
+F01–F12 to owners, workstreams and evidence and gives all 25 distributions a
+charter. Implementation remains pending.
+
+0.59 consolidates managed services, configuration and generic dispatch before
+new trigger seams. 0.60 proves one explicit-URL Connect topology; 0.61 qualifies
+Scheduler/Lambda and one ECS/Fargate executor, with Batch unscheduled. 0.62 proves
+one Data Mover host with timer variants rather than all hosting/executor pairs.
+0.63 owns targeted engine/helper, HTTP, fixture and dependency simplification.
+
+The [0.59 plan](IMPLEMENTATION_PLAN_0_59.md) orders characterization, public
+seams, single-owner consolidation, trigger contract freeze, durable recovery and
+release handoff through Gates A–F. It maps current code owners, complete persisted
+state, upgrade/rollback limits and AC evidence; pending preparation, authorized
+receipt recovery and new-occurrence admission have distinct rules.
+
+Runtime must remove named implementation ownership before a wheel is justified.
+Testing and HTTP wheels are conditional on real consumers and duplicate removal;
+persistence, CLI, PostgreSQL and helper-only wheels are deferred. Enterprise
+adapters and TransformationModel require actual demand/independent consumption.
+SparkForge/fixture retirement needs a recorded compatibility window, and
+`etlantic-quarto` must not be created or planned.
 
 ## Cross-cutting UI/UX sequence
 
@@ -73,7 +103,7 @@ outcomes without creating conflicting release numbers:
 3. A local run dashboard and visual plan/report comparison.
 4. Watch mode, LSP, editor previews, and profile/impact explanations in 0.44.
 5. A hosted, governed experience after the 0.39–0.43 control-plane gates,
-  culminating in the read-only-first 0.60 Operator Console.
+  culminating in the read-only-first 0.64 Operator Console.
 
 All views remain projections of the same public artifacts and must preserve
 redaction, safe-I/O, authorization, accessibility, and bounded rendering.
@@ -305,7 +335,7 @@ See the
 [ADR-015](adr/ADR-015-CONNECTOR-PROTOCOLS.md), and
 [Exit gate 0.38](EXIT_GATE_0_38.md).
 
-TransformationModel incubation moves to 0.62.
+TransformationModel incubation moves to 0.66.
 
 ## First-class control-plane program
 
@@ -343,7 +373,7 @@ shared entry, evidence, and completion rules for all later phases.
 - **[0.47](IMPLEMENTATION_PLAN_0_47.md):** optional FastAPI scheduler/runner
   service plus remote execution federation — [Gate-ready](EXIT_GATE_0_47.md)
   / [ADR-023](adr/ADR-023-SCHEDULER-SERVICE-AND-FEDERATION.md); Kubernetes and
-  Spark Connect are Experimental fakes; live packs remain 0.61
+  Spark Connect are Experimental fakes; live packs remain 0.65
 - **[0.48](IMPLEMENTATION_PLAN_0_48.md):** AI-assisted, human-governed
   proposals — [Gate-ready](EXIT_GATE_0_48.md) /
   [ADR-024](adr/ADR-024-HUMAN-GOVERNED-AI.md); MCP is Experimental
@@ -381,10 +411,14 @@ shared entry, evidence, and completion rules for all later phases.
   Foundry API qualification
 - **[0.57](IMPLEMENTATION_PLAN_0_57.md):** headless backend independence, authorized schedule services, complete scheduler construction, read-only schema inspection, and runtime supervision; all of #278–#282 release in 0.57.0
 - **[0.58](IMPLEMENTATION_PLAN_0_58.md):** managed Prefect execution over canonical accepted work; direct compatibility, installed workers, versioned deployments, durable dispatch, scoped status/cancel, recurring admission, and real recovery qualification ([#290](https://github.com/eddiethedean/etlantic/issues/290), #291–#298)
-- **[0.59](IMPLEMENTATION_PLAN_0_59.md):** brownfield adoption bridges for dbt, Dagster, Prefect, and Argo; Prefect interoperability reuses the 0.58 managed adapter
-- **[0.60](IMPLEMENTATION_PLAN_0_60.md):** read-only-first operator console
-- **[0.61](IMPLEMENTATION_PLAN_0_61.md):** managed runtime and enterprise provider packs
-- **[0.62](IMPLEMENTATION_PLAN_0_62.md):** TransformationModel incubation
+- **[0.59](IMPLEMENTATION_PLAN_0_59.md):** managed runtime consolidation and trigger contracts
+- **[0.60](IMPLEMENTATION_PLAN_0_60.md):** Posit Connect scheduling and HTTPS triggers
+- **[0.61](IMPLEMENTATION_PLAN_0_61.md):** Scheduler/Lambda delivery and one ECS/Fargate executor; Batch deferred
+- **[0.62](IMPLEMENTATION_PLAN_0_62.md):** one Data Mover host composition and optional trusted URL discovery
+- **[0.63](IMPLEMENTATION_PLAN_0_63.md):** brownfield adoption bridges for dbt, Dagster, Prefect, and Argo; Prefect interoperability reuses the 0.58 managed adapter
+- **[0.64](IMPLEMENTATION_PLAN_0_64.md):** read-only-first operator console
+- **[0.65](IMPLEMENTATION_PLAN_0_65.md):** demand-selected enterprise deployment/provider packs
+- **[0.66](IMPLEMENTATION_PLAN_0_66.md):** TransformationModel incubation
 
 These are assigned post-control-plane phases with explicit acceptance gates.
 The roadmap does not reserve a 1.0 or 1.x phase.
@@ -403,7 +437,7 @@ portable evidence needed to recover safely:
   roles, host-neutral recovery negotiation, fenced attempt attribution,
   resumable observation, and conformance semantics for retry, replay, repair,
   reconciliation, and manual review. The 0.47 gate is protocol plus in-process
-  fakes; live Kubernetes and managed Spark hardening remain 0.61.
+  fakes; live Kubernetes and managed Spark hardening remain 0.65.
 
 Before 0.47 ships, queue, worker, and scheduler leadership remain adopter-owned.
 The 0.47 optional service provides reference implementations behind public
@@ -421,7 +455,7 @@ frozen `/1` protocols (re-scoped at 0.27; closure owned by **0.28**), and
 burn-in (**0.25** / **0.26** / **0.27** / **0.28**), joint Medallantic feature
 parity (**0.29–0.35**), joint compatibility burn-in (**0.36**), and stable
 foundation (**0.37**).
-TransformationModel incubation is deferred to **0.62** so connectivity,
+TransformationModel incubation is deferred to **0.66** so connectivity,
 interoperability, operations, and provider work can precede it.
 
 > **Production use is supported only within the documented reference

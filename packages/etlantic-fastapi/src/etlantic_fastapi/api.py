@@ -26,6 +26,7 @@ from etlantic.control_plane import (
     RegistryProvider,
     SubmissionStore,
 )
+from etlantic.control_plane.managed_config import MANAGED_BACKEND_DEFAULTS
 from etlantic.control_plane.schedule_trust import validate_schedule_runtime
 from etlantic.registry import PlanningContext
 from etlantic.service import ManagedApplicationService
@@ -90,7 +91,7 @@ class ETLanticAPI:
     durable_work: DurableWorkStore | None = None
     # Optional owner-scoped immutable input bytes and accepted-run leases.
     input_resources: InputResourceStore | None = None
-    input_upload_ttl_seconds: int = 60 * 60
+    input_upload_ttl_seconds: int = MANAGED_BACKEND_DEFAULTS["input_upload_ttl_seconds"]
     input_resource_retention_seconds: int = 90 * 24 * 60 * 60
     # Optional 0.47 schedule store for /v1/schedules* (501 without it).
     schedule_store: Any = None

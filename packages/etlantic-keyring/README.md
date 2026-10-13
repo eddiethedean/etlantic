@@ -1,6 +1,6 @@
 # etlantic-keyring
 
-> **Release status:** ETLantic 0.58.0 is a Beta release candidate; publication is pending.
+> **Release status:** ETLantic 0.59.0 is a Beta release candidate; publication is pending.
 
 Local workstation secret provider for
 [ETLantic](https://github.com/eddiethedean/etlantic) 0.57 using the Python
@@ -42,6 +42,6 @@ Fail-closed: missing credentials raise `PipelineExecutionError` at runtime.
 
 ## Links
 
-[Secrets documentation](https://etlantic.readthedocs.io/en/v0.57.0/06_EXECUTION/SECRETS_MANAGEMENT/) ·
+[Secrets documentation](https://etlantic.readthedocs.io/en/v0.59.0/06_EXECUTION/SECRETS_MANAGEMENT/) ·
 [Source](https://github.com/eddiethedean/etlantic/tree/main/packages/etlantic-keyring) ·
 [Issues](https://github.com/eddiethedean/etlantic/issues)

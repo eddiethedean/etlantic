@@ -1,6 +1,6 @@
 # Medallantic
 
-> **Release status:** ETLantic 0.58.0 is a Beta release candidate; publication is pending.
+> **Release status:** ETLantic 0.59.0 is a Beta release candidate; publication is pending.
 
 Engine-agnostic **medallion facade** on ETLantic: native bronze/silver/gold
 authoring plus a SparkForge IR migrate path. Prefer `medallantic` over the

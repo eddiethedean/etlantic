@@ -71,7 +71,7 @@ ETLantic is designed to support:
 - [0.58 managed Prefect adapter](../11_DEVELOPMENT/IMPLEMENTATION_PLAN_0_58.md)
   is implemented for canonical durable admission and targeted local execution
   in remote workers; it remains unqualified for production pending its live gate
-- Planned 0.59 Dagster/Argo compilers and Prefect brownfield interoperability
+- Planned 0.63 Dagster/Argo compilers and Prefect brownfield interoperability
   over that managed adapter; additional cloud workflow services remain candidates
 
 Do not assume every platform is a compile target. Prefect's shipped path is

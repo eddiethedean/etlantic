@@ -1,6 +1,6 @@
 # Evaluator Brief
 
-> **Status: ETLantic 0.58.0 is a Beta release candidate; publication is pending. Adaptive graduation remains pending.**
+> **Status: ETLantic 0.59.0 is a Beta release candidate; publication is pending. Adaptive graduation remains pending.**
 
 A one-page answer for enterprise evaluators and technical decision-makers.
 
@@ -63,7 +63,7 @@ manager.
 | CP3 durable work store + `/v1/durable/*` host routes | Yes (foundation; dual-write submit) |
 | Multi-tenant durable orchestration GA | Yes — Supported profiles only (`isolated-deployment`, `dedicated-schema`); `shared-service` Experimental |
 | Formal SLA / support response times | No |
-| Production GUI | No — read-only-first operator console planned for 0.60 |
+| Production GUI | No — read-only-first operator console planned for 0.64 |
 | Production multi-tenant GA | Yes — Supported profiles; see [support matrix](../11_DEVELOPMENT/cp_ga_support_matrix_0_43.json) |
 
 ## Security posture
@@ -103,7 +103,7 @@ For the bounded reference topology and required controls, read
 
 ## Bounded production support (do not skip)
 
-ETLantic **0.58.0** is the current **Beta release candidate**; 0.57.x remains the published and supported line for documented single-tenant
+ETLantic **0.59.0** is the current **Beta release candidate**; 0.57.x remains the published and supported line for documented single-tenant
 pilots and Supported multi-tenant profiles. Shipped trust controls do not
 make an arbitrary shared-service topology safe.
 
@@ -134,11 +134,11 @@ How to read status labels in deeper chapters:
   `examples/airflow_compile.py` and `etlantic-airflow` instead
 - Treating Structured Streaming APIs as stable (they are experimental)
 - AWS Secrets Manager / Vault (not shipped; optional provider packs planned for
-  0.61); OS keyring **is** available via `etlantic-keyring`
+  0.65); OS keyring **is** available via `etlantic-keyring`
 - Process-local / durable file reports as an audit system of record
 - Stable-foundation compatibility inventories (shipped in 0.37; Beta retained)
 - Managed Databricks/EMR/Connect Spark providers (0.47+ Experimental fakes
-  shipped; live Kind/Databricks skipped; supported live packs planned for 0.61)
+  shipped; live Kind/Databricks skipped; supported live packs planned for 0.65)
 - **Undocumented advanced portable profiles** — Polars and PySpark ship the
   documented 0.17 Wave 1 / Wave 2 families; Pandas and SQL remain at kernel +
   `portable-relational/1`. Continuation profiles remain outside the advertised
@@ -165,14 +165,14 @@ How to read status labels in deeper chapters:
 Follow this path **after** the green path (Install → Quickstart → First Pipeline
 → Engine selection), or as an enterprise diligence track:
 
-1. [Installation](INSTALLATION.md) — `pip install etlantic==0.58.0`
+1. [Installation](INSTALLATION.md) — `pip install etlantic==0.59.0`
 2. [Quickstart](QUICKSTART.md) (`python -m etlantic init`; `examples/` requires a checkout)
 3. [First Pipeline](FIRST_PIPELINE.md)
 4. [Engine selection](ENGINE_SELECTION.md)
 5. [Capabilities](CAPABILITIES.md)
 6. Optional Gate A: checkout
    [`examples/interchange_polars_pandas.py`](https://github.com/eddiethedean/etlantic/blob/main/examples/interchange_polars_pandas.py)
-   with `etlantic-polars` + `etlantic-pandas` at `==0.58.0`
+   with `etlantic-polars` + `etlantic-pandas` at `==0.59.0`
 7. Optional engine examples from a checkout (portable kernels, SQL, PySpark,
    Airflow compile, Prefect)
 8. [Migration 0.41 → 0.42](../11_DEVELOPMENT/MIGRATION_0_41_TO_0_42.md) if
