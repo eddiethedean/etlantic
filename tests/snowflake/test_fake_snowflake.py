@@ -5,7 +5,12 @@ from __future__ import annotations
 
 import anyio
 import pytest
-from etlantic_snowflake import FakeSnowflakeConnection, create_sink, create_source
+from etlantic_snowflake import (
+    FakeSnowflakeConnection,
+    __version__,
+    create_sink,
+    create_source,
+)
 
 from etlantic.connectors.errors import ConnectorConfigError
 from etlantic.connectors.protocol import SinkConnector, SourceConnector
@@ -34,6 +39,7 @@ def test_autocommit_off_and_query_id_evidence() -> None:
     sink = create_sink()
     sink.connection = conn
     source = create_source()
+    assert source.info().version == __version__
     source.connection = conn
     binding = {
         "config": {

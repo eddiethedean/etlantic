@@ -28,6 +28,7 @@ from etlantic.control_plane import (
 from etlantic.control_plane.durable_models import validate_execution_route
 from etlantic.control_plane.protocols import Authorizer
 from etlantic.control_plane.schedule_models import (
+    FiringStatus,
     ScheduleRecord,
     ScheduleRevisionPolicy,
     TimerOwner,
@@ -614,6 +615,8 @@ class ScheduleApplicationService:
         *,
         trigger_metadata: Mapping[str, Any] | None = None,
         advance_schedule: bool = False,
+        advance_after: datetime | None = None,
+        skip_status: FiringStatus | None = None,
         expected_next_fire_at: str | None = None,
         expected_timer_owner: TimerOwner | None = None,
         expected_timer_owner_generation: int | None = None,
@@ -645,7 +648,7 @@ class ScheduleApplicationService:
                     next_fire_at = _iso(
                         next_fire_after(
                             record.spec,
-                            after=when,
+                            after=advance_after or when,
                             last_nominal=when,
                         )
                     )
@@ -661,6 +664,7 @@ class ScheduleApplicationService:
                     next_fire_at=next_fire_at,
                     require_leader_lease=False,
                     admit_submission=False,
+                    skip_status=skip_status,
                     metadata=trigger_metadata,
                     expected_next_fire_at=expected_next_fire_at,
                     expected_timer_owner=expected_timer_owner,
@@ -815,6 +819,7 @@ class ScheduleApplicationService:
         )
 
         when = datetime.fromisoformat(envelope.scheduled_at.replace("Z", "+00:00"))
+        now = self._now()
         existing = next(
             (
                 item
@@ -827,7 +832,7 @@ class ScheduleApplicationService:
         if existing is None and record.status != "active":
             raise ControlPlaneError.conflict("Schedule is not active")
         if existing is None:
-            if when.astimezone(UTC) > self._now().astimezone(UTC) + timedelta(
+            if when.astimezone(UTC) > now.astimezone(UTC) + timedelta(
                 seconds=MAX_TRIGGER_FUTURE_SKEW_SECONDS
             ):
                 raise ControlPlaneError.conflict(
@@ -862,6 +867,18 @@ class ScheduleApplicationService:
                 "external_trigger_fingerprint": envelope.semantic_fingerprint,
             },
             advance_schedule=True,
+            skip_status=(
+                "skipped_misfire"
+                if record.spec.misfire == "skip"
+                and when.astimezone(UTC) < now.astimezone(UTC)
+                else None
+            ),
+            advance_after=(
+                now
+                if record.spec.misfire == "skip"
+                and when.astimezone(UTC) < now.astimezone(UTC)
+                else None
+            ),
             expected_next_fire_at=envelope.scheduled_at,
             expected_timer_owner="external",
             expected_timer_owner_generation=envelope.timer_owner_generation,

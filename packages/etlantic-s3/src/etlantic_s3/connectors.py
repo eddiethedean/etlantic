@@ -8,7 +8,6 @@ from collections.abc import AsyncIterator, Mapping
 from dataclasses import dataclass, field
 from typing import Any
 
-from etlantic import __version__ as PACKAGE_VERSION
 from etlantic.connectors.capabilities import (
     CLEANUP,
     IDEMPOTENCY,
@@ -42,6 +41,7 @@ from etlantic.connectors.models import (
 from etlantic_s3.fake import InMemoryS3Fake, boto3_available
 
 PROVIDER = "s3"
+PACKAGE_VERSION = "0.59.0"
 
 S3_SOURCE_CAPS = frozenset(
     {

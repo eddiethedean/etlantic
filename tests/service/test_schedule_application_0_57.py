@@ -2,8 +2,9 @@
 
 from __future__ import annotations
 
+from dataclasses import replace
 from datetime import UTC, datetime
-from typing import cast
+from typing import Any, cast
 
 import pytest
 
@@ -18,7 +19,9 @@ from etlantic.control_plane import (
     ScheduleStore,
     SecurityDomain,
     TenantRef,
+    TriggerEnvelope,
     WorkspaceRef,
+    external_occurrence_id,
 )
 from etlantic.service import ScheduleApplicationService
 
@@ -72,3 +75,63 @@ def test_schedule_service_denies_before_reading_or_mutating_store() -> None:
             "pipeline-a",
             spec=ScheduleSpec(kind="interval", interval_seconds=60),
         )
+
+
+def test_external_trigger_skips_late_occurrence_and_advances_past_backlog() -> None:
+    ctx = replace(
+        _context(),
+        principal=Principal(subject="timer", issuer="tests", kind="workload"),
+    )
+    authorizer = MemoryAuthorizer()
+    for action in ("schedule.trigger", "run.submit"):
+        authorizer.grant(ctx, action)
+    schedules = MemoryScheduleStore()
+    nominal = "2026-10-01T12:00:00Z"
+    record = schedules.create(
+        ctx,
+        definition_id="pipeline-a",
+        profile_name="test",
+        spec=ScheduleSpec(
+            kind="interval", interval_seconds=60, misfire="skip", overlap="queue"
+        ),
+        workload_identity=ctx.principal,
+        timer_owner="external",
+        next_fire_at=nominal,
+    )
+
+    class UnusedManagedService:
+        def prepare_scheduled_occurrence(
+            self, *_args: object, **_kwargs: object
+        ) -> Any:
+            raise AssertionError("skipped misfire must not prepare a run")
+
+    now = datetime(2026, 10, 2, 12, 0, tzinfo=UTC)
+    service = ScheduleApplicationService(
+        authorizer=authorizer,
+        schedule_store=schedules,
+        managed_service=UnusedManagedService(),
+        durable_work=object(),
+        clock=lambda: now,
+    )
+    envelope = TriggerEnvelope(
+        schedule_id=record.schedule_id,
+        schedule_revision_id=record.revision_id,
+        timer_owner_generation=record.timer_owner_generation,
+        occurrence_id=external_occurrence_id(
+            record.schedule_id, record.revision_id, nominal
+        ),
+        scheduled_at=nominal,
+        delivery_attempt_id="attempt-late",
+        correlation_id="corr-late",
+    )
+
+    receipt = service.trigger_external(ctx, envelope)
+
+    assert receipt.status == "skipped"
+    assert receipt.firing_status == "skipped_misfire"
+    assert schedules.list_firings(ctx, record.schedule_id)[0].status == (
+        "skipped_misfire"
+    )
+    assert schedules.get(ctx, record.schedule_id).next_fire_at == (
+        "2026-10-02T12:01:00Z"
+    )

@@ -61,7 +61,7 @@ def test_sqlmodel_recovers_canceled_uncertain_dispatch_before_route_drain() -> N
             status="accepted",
             execution_route=route,
         )
-        memory._outbox[key] = OutboxRecord(
+        memory._outbox[(*ctx.scope_key, "outbox-canceled-uncertain")] = OutboxRecord(
             outbox_id="outbox-canceled-uncertain",
             submission_id=submission_id,
             tenant_id=ctx.tenant.tenant_id,
