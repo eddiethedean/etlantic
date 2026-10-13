@@ -280,31 +280,22 @@ def test_committed_effect_remains_verifiable_after_timeout_and_next_job(
 
     monkeypatch.setattr(actions.store, "finish_action_job", observed_finish)
     commit = actions.engine.dialect.do_commit
-    execute = cast(
-        Callable[..., dict[str, Any]], getattr(sql_actions, "_execute", None)
-    )
-    if acknowledgement == "delayed":
-        execute = cast(
-            Callable[..., dict[str, Any]], getattr(sql_actions, "_execute", None)
-        )
 
-        def delay_ack(*args: Any, **kwargs: Any) -> dict[str, Any]:
-            result = execute(*args, **kwargs)
-            committed.set()
-            assert release.wait(3)
-            return result
+    def delay_ack(connection: Any) -> None:
+        commit(connection)
+        committed.set()
+        release.wait()
 
-        monkeypatch.setattr(sql_actions, "_execute", delay_ack)
-    else:
-        commit = actions.engine.dialect.do_commit
-
-        def lose_ack(connection: Any) -> None:
-            commit(connection)
-            committed.set()
-            assert release.wait(3)
+    def lose_ack(connection: Any) -> None:
+        delay_ack(connection)
+        if acknowledgement == "lost":
             raise RuntimeError("private database commit acknowledgement failure")
 
-        monkeypatch.setattr(actions.engine.dialect, "do_commit", lose_ack)
+    monkeypatch.setattr(
+        actions.engine.dialect,
+        "do_commit",
+        delay_ack if acknowledgement == "delayed" else lose_ack,
+    )
     job = (
         actions.cleanup(parent, deadline=0.4)
         if kind == "cleanup"
@@ -333,8 +324,7 @@ def test_committed_effect_remains_verifiable_after_timeout_and_next_job(
         )
     finally:
         release.set()
-        if acknowledgement == "lost":
-            monkeypatch.setattr(actions.engine.dialect, "do_commit", commit)
+        monkeypatch.setattr(actions.engine.dialect, "do_commit", commit)
     assert retained.wait(3)
     receipt = actions.store.get_action_job(actions.ctx, job.action_id)
     assert receipt.status == "timed_out" and receipt.error_code == "deadline_exceeded"
@@ -366,8 +356,6 @@ def test_committed_effect_remains_verifiable_after_timeout_and_next_job(
             cleanup_request.to_dict(),
             idempotency_key="authorized-late-cleanup",
         )
-        if acknowledgement == "delayed":
-            monkeypatch.setattr(sql_actions, "_execute", execute)
         assert actions.worker.tick(actions.ctx, limit=1) == 1
         assert (
             actions.store.get_action_job(actions.ctx, str(accepted["action_id"])).status
