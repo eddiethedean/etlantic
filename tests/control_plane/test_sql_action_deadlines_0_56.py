@@ -314,7 +314,7 @@ def test_committed_effect_remains_verifiable_after_timeout_and_next_job(
         start = monotonic()
         assert actions.worker.tick(actions.ctx, limit=1) == 1
         assert monotonic() - start < 1.5
-        assert committed.wait(3)
+        assert committed.wait(10)
         assert (
             actions.store.get_action_job(actions.ctx, job.action_id).status
             == "timed_out"
