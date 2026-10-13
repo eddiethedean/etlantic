@@ -114,7 +114,7 @@ trigger activation into one unreviewable cutover.
 | C — one managed implementation | 059-M/B/T | Gate B seams and migration fixtures | Installed headless/HTTP/Prefect parity, lifecycle/restart evidence and optional wheel decision with named implementation retirement. A deferred wheel does not waive consolidation. |
 | D — trigger contract freeze | 059-C/O/A | Gate C authority; security and schedule decisions | Versioned wire/receipt schema, lifecycle/replay/authentication profile, shared transport conformance and minimal consumer. Unresolved occurrence identity or retention prevents activation. |
 | E — durable bridge and recovery | 059-D/R/T | Gate D contract | Independent receiver/worker campaign over real stores; process kill, response loss, concurrent admission and uncertain-effect evidence. A request-local executor fails the gate. |
-| F — release and downstream handoff | All | Gates A–E and unchanged 0.58 support evidence | AC/finding evidence index, compatibility/install report, bounded support matrix, runbook and explicit release decision. Missing required evidence remains a blocker. |
+| F — release and downstream handoff | All | In-repository outputs from A–E and unchanged 0.58 support evidence; external campaigns may be deferred by an explicit exit-gate decision | AC/finding evidence index, compatibility/install report, bounded support matrix, runbook and explicit release decision that records deferred evidence without claiming it passed. |
 
 ## Trigger Admission And Lifecycle Contract
 
@@ -246,9 +246,13 @@ single happy-path receipt cannot satisfy a family.
 
 Each evidence row records case ID, AC IDs, workstream/finding, source revision,
 wheel hashes, exact dependency/provider/store/process tuple, expected and observed
-outcome, immutable artifact reference and pass/fail/unavailable status. Required
-skips remain blockers. Accepted F01–F04/F06–F07/F09–F11 findings link to these
-families; F12 is covered by the bounded downstream handoff.
+outcome, immutable artifact reference and pass/fail/unavailable/deferred status.
+The 0.59 [exit gate](EXIT_GATE_0_59.md) defers all external campaigns in these
+families. A deferred row remains unqualified and must retain its requirements
+for follow-on work; it is not a pass. Required skips remain incomplete until
+evidence is supplied or an explicit deferral is recorded in the relevant exit
+gate. Accepted F01–F04/F06–F07/F09–F11 findings link to these families; F12 is
+covered by the bounded downstream handoff.
 
 ## Decision Register And Downstream Handoff
 

@@ -6,29 +6,34 @@ current_minor: "0.59"
 
 # ETLantic 0.59 Exit Gate — Managed Runtime Consolidation and Trigger Contracts
 
-**Release decision: NOT READY TO TAG OR PUBLISH.** The 0.59 implementation
-work and release metadata are present, but the required qualification evidence
-has not been collected. The latest published and supported line remains
-0.57.x.
+**Release decision: EXTERNAL QUALIFICATION DEFERRED. NOT READY TO TAG OR PUBLISH
+until the change is merged cleanly and exact-commit readiness passes.**
+ETLantic 0.59 remains a Beta release candidate. The external qualification
+campaigns below are deferred from the 0.59 exit. Their evidence remains open
+and is not represented as passed. The latest published and supported line
+remains 0.57.x.
 
-## Release blockers
+## Deferred external qualification
 
 The [implementation plan](IMPLEMENTATION_PLAN_0_59.md) defines AC059-001–011
 and evidence families E059-OWN, E059-MIG, E059-WIRE, E059-OCC, E059-SEC,
-E059-REC, and E059-REL. Their release status is:
+E059-REC, and E059-REL. All external acceptance campaigns in those families
+are deferred from the 0.59 exit and carried forward for later qualification.
+The detailed cases and required environments remain in the implementation
+plan; this decision records deferral, not completion.
 
 | Gate | Required evidence | Status |
 |---|---|---|
-| A–C | Settings parity, complete persistence compatibility, installed headless/HTTP/Prefect behavior, lifecycle and restart evidence | Pending |
-| D | Independent wire consumer, malformed/version-skew corpus, auth and replay behavior, schedule lifecycle fixtures | Pending |
-| E | Independent receiver/worker, process-loss recovery, concurrent admission and uncertain-effect evidence over real stores | Pending |
-| F | All phase evidence indexed; supported matrix, migration report, unchanged 0.58 qualification, and release decision | Pending |
+| A–C | Settings parity, complete persistence compatibility, installed headless/HTTP/Prefect behavior, lifecycle and restart evidence | Deferred from 0.59; retain requirements and do not claim external qualification |
+| D | Independent wire consumer, malformed/version-skew corpus, auth and replay behavior, schedule lifecycle fixtures | Deferred from 0.59; retain requirements and do not claim external qualification |
+| E | Independent receiver/worker, process-loss recovery, concurrent admission and uncertain-effect evidence over real stores | Deferred from 0.59; retain requirements and do not claim external qualification |
+| F | Evidence index, supported matrix, migration report, unchanged 0.58 qualification, and release decision | Deferral recorded; exact-commit readiness remains open |
 
-Static lint, formatting, and compilation checks alone do not satisfy these
-gates. Before changing this decision, attach each evidence result with source
-revision, package and dependency versions, store/process topology, and an
-immutable artifact reference. Required skips or unavailable environments
-remain blockers.
+Static lint, formatting, compilation, and local CI checks do not satisfy the
+deferred external campaigns. When qualification resumes, attach each result
+with source revision, package and dependency versions, store/process topology,
+and an immutable artifact reference. Required skips or unavailable environments
+remain incomplete until the relevant evidence is supplied.
 
 ## Release preparation
 
@@ -37,10 +42,13 @@ remain blockers.
   evidence bundles.
 - [x] Add candidate notes, migration guidance, and this exit gate.
 - [x] Pass the local release checks and build all 25 first-party distributions.
-- [ ] Complete and index E059-OWN/MIG/WIRE/OCC/SEC/REC/REL evidence.
+- [x] Defer external E059-OWN/MIG/WIRE/OCC/SEC/REC/REL campaigns from 0.59;
+  retain their evidence requirements and do not mark them passed.
 - [ ] Verify the release change is merged to `main` and the checkout is clean.
-- [ ] Re-run release readiness on the exact release commit; then tag `v0.59.0`.
+- [ ] Re-run release readiness on the exact release commit and record a release
+  decision before tagging `v0.59.0`.
 
-No tag, publish, or support-line change is authorized by this preparation
-record. See the [release process](RELEASE_PROCESS.md) for the publishing
-sequence.
+The external evidence deferral does not authorize a tag, publish, or
+support-line change. Complete the remaining merge and exact-commit readiness
+steps before making a separate release decision. See the
+[release process](RELEASE_PROCESS.md) for the publishing sequence.

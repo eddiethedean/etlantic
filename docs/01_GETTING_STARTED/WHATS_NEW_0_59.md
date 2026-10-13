@@ -7,8 +7,9 @@ current_minor: "0.59"
 
 # What's New in ETLantic 0.59
 
-> **Status: ETLantic 0.59.0 is a Beta release candidate. Qualification and
-> publication are pending; 0.57.x remains the published and supported line.**
+> **Status: ETLantic 0.59.0 is a Beta release candidate. External qualification
+> is deferred and publication is pending; 0.57.x remains the published and
+> supported line.**
 
 ETLantic 0.59 consolidates managed backend configuration, dispatch, and
 persistence contracts, then adds an external schedule-trigger boundary. The
