@@ -1575,7 +1575,8 @@ def test_standard_backend_worker_persists_queryable_report_in_sqlmodel(
         assert receipt.resource_id is not None
         durable = backend.api.durable_work
         assert durable is not None
-        host = backend.create_execution_host(owner_id="sqlmodel-worker", ttl_seconds=1)
+        # Keep SQLite lease heartbeats from masking report recovery under xdist load.
+        host = backend.create_execution_host(owner_id="sqlmodel-worker", ttl_seconds=10)
 
         original_report_put = SqlModelRunReportStore.put
         report_persist_faulted = False
@@ -1621,7 +1622,7 @@ def test_standard_backend_worker_persists_queryable_report_in_sqlmodel(
     # The restarted worker must reuse the published report rather than rerun
     # the transfer against changed source contents.
     source.write_text('[{"id": 30}]', encoding="utf-8")
-    sleep(1.1)
+    sleep(10.1)
 
     restarted = create_managed_backend(
         config,
@@ -1647,7 +1648,7 @@ def test_standard_backend_worker_persists_queryable_report_in_sqlmodel(
         )
         assert (
             restarted.create_execution_host(
-                owner_id="sqlmodel-worker-restarted", ttl_seconds=1
+                owner_id="sqlmodel-worker-restarted", ttl_seconds=10
             ).tick(ctx)
             == 1
         )
