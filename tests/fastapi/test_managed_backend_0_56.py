@@ -23,6 +23,7 @@ import sqlalchemy
 from fastapi.testclient import TestClient as FastAPITestClient
 from sqlalchemy.engine import Engine
 
+import etlantic_sqlmodel
 from etlantic import (
     Data,
     Extract,
@@ -70,6 +71,7 @@ from etlantic.transform import functions as F
 from etlantic_fastapi import (
     ManagedBackend,
     ManagedBackendConfig,
+    adapt_managed_backend,
     create_managed_app,
     create_managed_backend,
     static_context_factory,
@@ -1504,6 +1506,42 @@ def test_managed_http_stages_finalizes_and_aborts_only_staged_input(
             headers={"X-Principal": "different-owner"},
         )
         assert cross_owner.status_code == 404
+
+
+def test_adapter_upload_ttl_override_survives_scheduler_creation(
+    tmp_path: Path,
+) -> None:
+    ctx = _context()
+    core_backend = etlantic_sqlmodel.create_managed_backend(
+        etlantic_sqlmodel.SQLModelBackendConfig(
+            database_url=_migrated_url(tmp_path),
+            store_id="managed-adapter-upload-ttl",
+            input_upload_ttl_seconds=600,
+        ),
+        authorizer=MemoryAuthorizer(),
+    )
+    backend = adapt_managed_backend(
+        core_backend,
+        context_factory=static_context_factory(
+            tenant_id=ctx.tenant.tenant_id,
+            workspace_id=ctx.workspace.workspace_id,
+            environment=ctx.environment.name,
+            security_domain=ctx.security_domain.domain_id,
+        ),
+        input_upload_ttl_seconds=120,
+    )
+    try:
+        assert core_backend.input_upload_ttl_seconds == 120
+        assert backend.input_upload_ttl_seconds == 120
+        assert backend.api.input_upload_ttl_seconds == 120
+
+        backend.create_scheduler(owner_id="adapter-ttl-scheduler")
+
+        assert core_backend.input_upload_ttl_seconds == 120
+        assert backend.input_upload_ttl_seconds == 120
+        assert backend.api.input_upload_ttl_seconds == 120
+    finally:
+        backend.close()
 
 
 def test_standard_backend_worker_persists_queryable_report_in_sqlmodel(

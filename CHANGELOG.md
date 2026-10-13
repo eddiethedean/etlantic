@@ -36,6 +36,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `014_cp1_complete_principal_idempotency_0_56`; this release adds no SQL DDL
   migration.
 
+### Fixed
+
+- Preserve in-flight local schedule admission fences when an older snapshot
+  writer encounters a 0.59 schedule store.
+- Resolve a firing after definite durable-admission rejection only when CP1 is
+  cancelled and a fresh CP3 lookup confirms no durable submission exists;
+  uncertain outcomes keep the admission fence.
+
 ### Upgrade notes
 
 - Read [Migration 0.58 → 0.59](docs/11_DEVELOPMENT/MIGRATION_0_58_TO_0_59.md)

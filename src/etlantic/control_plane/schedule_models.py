@@ -3,7 +3,7 @@
 
 from __future__ import annotations
 
-from collections.abc import Mapping
+from collections.abc import Callable, Mapping
 from dataclasses import asdict, dataclass, field
 from datetime import datetime
 from typing import Any, Literal, cast
@@ -19,7 +19,7 @@ from etlantic.control_plane.schedule_diagnostics import fire_diagnostic
 from etlantic.secrets.ref import SecretRef
 
 SCHEDULE_SCHEMA = "etlantic.schedule/2"
-FIRING_SCHEMA = "etlantic.firing/2"
+FIRING_SCHEMA = "etlantic.firing/4"
 
 _SCHEDULE_FIELDS = frozenset(
     {
@@ -65,6 +65,8 @@ _FIRING_FIELDS = frozenset(
         "preparation_owner_id",
         "preparation_fencing_token",
         "preparation_expires_at",
+        "submission_started",
+        "submission_attempt_ids",
     }
 )
 
@@ -73,7 +75,11 @@ ScheduleStatus = Literal["active", "paused", "deleted"]
 MisfirePolicy = Literal["skip", "fire_once", "catch_up"]
 OverlapPolicy = Literal["skip", "queue"]
 FiringStatus = Literal[
-    "accepted", "skipped_overlap", "skipped_misfire", "skipped_window"
+    "accepted",
+    "skipped_overlap",
+    "skipped_misfire",
+    "skipped_window",
+    "failed_preparation",
 ]
 ScheduleRevisionPolicy = Literal["pinned", "latest-approved"]
 TimerOwner = Literal["local", "external"]
@@ -292,6 +298,15 @@ class ScheduleRecord:
     occurrence_inputs: Mapping[str, Any] | None = field(
         default=None, repr=False, compare=False
     )
+    # Invoked at admission; returns cleanup for a definite CP1 rejection only.
+    occurrence_acceptance_guard: Callable[[], Callable[[], None] | None] | None = field(
+        default=None, repr=False, compare=False
+    )
+    # Invoked only after CP1 cancellation and a verified CP3 miss following a
+    # definite durable-admission rejection.
+    occurrence_compensation_guard: Callable[[], None] | None = field(
+        default=None, repr=False, compare=False
+    )
     # Owner changes use the generation-fenced transfer operation. Existing
     # records without these fields remain locally owned at generation one.
     timer_owner: TimerOwner = "local"
@@ -322,6 +337,14 @@ class ScheduleRecord:
             or self.timer_owner_generation < 1
         ):
             raise ValueError("schedule timer_owner_generation must be positive")
+        if self.occurrence_acceptance_guard is not None and not callable(
+            self.occurrence_acceptance_guard
+        ):
+            raise ValueError("occurrence_acceptance_guard must be callable")
+        if self.occurrence_compensation_guard is not None and not callable(
+            self.occurrence_compensation_guard
+        ):
+            raise ValueError("occurrence_compensation_guard must be callable")
         validate_execution_route(self.execution_route)
         workload_identity: object = cast(object, self.workload_identity)
         if workload_identity is not None:
@@ -389,6 +412,10 @@ class ScheduleRecord:
             if timer_owner != "external":
                 raise ValueError("external timer rollback fence is inconsistent")
             revision_policy_value = data.get("timer_revision_policy") or ""
+        elif revision_policy_value == "admission_fenced":
+            if timer_owner != "local":
+                raise ValueError("local admission rollback fence is inconsistent")
+            revision_policy_value = data.get("timer_revision_policy") or ""
         revision_policy = _revision_policy(revision_policy_value)
         return cls(
             schedule_id=data["schedule_id"],
@@ -445,6 +472,11 @@ class FiringRecord:
     preparation_owner_id: str | None = field(default=None, repr=False, compare=False)
     preparation_fencing_token: int = field(default=0, repr=False, compare=False)
     preparation_expires_at: str | None = field(default=None, repr=False, compare=False)
+    # A started admission may still commit after its preparation lease expires.
+    submission_started: bool = field(default=False, repr=False, compare=False)
+    submission_attempt_ids: tuple[str, ...] = field(
+        default=(), repr=False, compare=False
+    )
 
     def __post_init__(self) -> None:
         for name in (
@@ -464,6 +496,7 @@ class FiringRecord:
             "skipped_overlap",
             "skipped_misfire",
             "skipped_window",
+            "failed_preparation",
         ):
             raise ValueError("firing status is unsupported")
         for name in ("nominal_fire_time", "created_at"):
@@ -484,6 +517,21 @@ class FiringRecord:
             self.preparation_fencing_token < 0
         ):
             raise ValueError("firing preparation_fencing_token must be non-negative")
+        if type(self.submission_started) is not bool:
+            raise ValueError("firing submission_started must be a boolean")
+        raw_attempt_ids: object = cast(object, self.submission_attempt_ids)
+        if (
+            not isinstance(raw_attempt_ids, tuple)
+            or any(
+                not isinstance(attempt, str) or not attempt.strip()
+                for attempt in cast(tuple[object, ...], raw_attempt_ids)
+            )
+            or len(set(self.submission_attempt_ids)) != len(self.submission_attempt_ids)
+            or (self.submission_attempt_ids and not self.submission_started)
+        ):
+            raise ValueError(
+                "firing submission attempt IDs must be unique non-empty strings with submission_started"
+            )
         if (self.preparation_owner_id is None) != (self.preparation_expires_at is None):
             raise ValueError("firing preparation lease fields must be paired")
         preparation_owner_id: object = cast(object, self.preparation_owner_id)
@@ -515,6 +563,8 @@ class FiringRecord:
         values.pop("preparation_owner_id", None)
         values.pop("preparation_fencing_token", None)
         values.pop("preparation_expires_at", None)
+        values.pop("submission_started", None)
+        values.pop("submission_attempt_ids", None)
         payload = {
             "schema": FIRING_SCHEMA,
             **values,
@@ -526,7 +576,7 @@ class FiringRecord:
         return payload
 
     def to_storage_dict(self) -> dict[str, Any]:
-        """Return the complete durable row, including its private prep lease."""
+        """Return the complete durable row, including internal admission state."""
         payload = {
             "schema": FIRING_SCHEMA,
             **asdict(self),
@@ -540,7 +590,13 @@ class FiringRecord:
     @classmethod
     def from_dict(cls, data: Mapping[str, Any]) -> FiringRecord:
         schema = data.get("schema")
-        if schema not in (None, "etlantic.firing/1", FIRING_SCHEMA):
+        if schema not in (
+            None,
+            "etlantic.firing/1",
+            "etlantic.firing/2",
+            "etlantic.firing/3",
+            FIRING_SCHEMA,
+        ):
             raise ValueError(f"unsupported firing schema: {schema!r}")
         if set(data) - _FIRING_FIELDS:
             raise ValueError("firing record contains unsupported fields")
@@ -548,6 +604,17 @@ class FiringRecord:
         preparation_token = data.get("preparation_fencing_token", 0)
         if type(preparation_token) is not int or preparation_token < 0:
             raise ValueError("firing preparation_fencing_token must be non-negative")
+        submission_started = data.get("submission_started", False)
+        if type(submission_started) is not bool:
+            raise ValueError("firing submission_started must be a boolean")
+        submission_attempt_ids = data.get("submission_attempt_ids", ())
+        if not isinstance(submission_attempt_ids, (list, tuple)):
+            raise ValueError("firing submission attempt IDs must be a sequence")
+        attempt_ids: list[str] = []
+        for attempt in cast(list[object] | tuple[object, ...], submission_attempt_ids):
+            if not isinstance(attempt, str) or not attempt.strip():
+                raise ValueError("firing submission attempt ID must be non-empty")
+            attempt_ids.append(attempt)
         preparation_owner = data.get("preparation_owner_id")
         preparation_expiry = data.get("preparation_expires_at")
         if (preparation_owner is None) != (preparation_expiry is None):
@@ -590,6 +657,8 @@ class FiringRecord:
                 if data.get("preparation_expires_at") is not None
                 else None
             ),
+            submission_started=submission_started,
+            submission_attempt_ids=tuple(attempt_ids),
         )
         logical_key = data.get("logical_key")
         if logical_key is not None and logical_key != record.logical_key:

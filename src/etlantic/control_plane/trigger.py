@@ -300,6 +300,7 @@ class TriggerReceipt:
             "skipped_overlap",
             "skipped_misfire",
             "skipped_window",
+            "failed_preparation",
         ):
             raise ValueError("trigger receipt firing_status is unsupported")
         if (self.status == "skipped") != (self.firing_status != "accepted"):

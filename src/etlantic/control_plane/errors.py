@@ -198,6 +198,26 @@ class ControlPlaneError(ETLanticError):
         )
 
 
+def is_permanent_control_plane_error(error: BaseException) -> bool:
+    """Return whether a control-plane failure is safe to terminalize."""
+    if not isinstance(error, ControlPlaneError):
+        return False
+    if error.status == 501:
+        return True
+    if error.status == 409 and error.extensions.get("reason") == (
+        "occurrence_intent_changed"
+    ):
+        return True
+    return 400 <= error.status < 500 and error.status not in {
+        408,
+        409,
+        423,
+        424,
+        425,
+        429,
+    }
+
+
 __all__ = [
     "CONTROL_PLANE_ERROR_SCHEMA",
     "ControlPlaneError",

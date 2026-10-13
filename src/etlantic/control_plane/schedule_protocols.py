@@ -59,7 +59,14 @@ class ScheduledOccurrenceService(Protocol):
         ctx: ControlPlaneContext,
         schedule: ScheduleRecord,
         nominal_fire_time: str,
-    ) -> tuple[str, str]: ...
+    ) -> tuple[str, str]:
+        """Invoke the runtime acceptance guard before admitting managed work.
+
+        Its returned callback releases only this admission attempt and must
+        run only after a definite CP1 rejection with verified receipt absence.
+        Accepted work and uncertain outcomes retain their admission fence.
+        """
+        ...
 
     def recover_scheduled_occurrence(
         self,
@@ -211,6 +218,41 @@ class ScheduleStore(Protocol):
         owner_id: str,
         fencing_token: int,
     ) -> None: ...
+
+    def begin_firing_submission(
+        self,
+        ctx: ControlPlaneContext,
+        firing_id: str,
+        *,
+        owner_id: str,
+        fencing_token: int,
+        attempt_id: str | None = None,
+    ) -> FiringRecord: ...
+
+    def reject_firing_submission(
+        self,
+        ctx: ControlPlaneContext,
+        firing_id: str,
+        *,
+        attempt_id: str,
+    ) -> FiringRecord: ...
+
+    def fail_firing_after_compensated_submission(
+        self,
+        ctx: ControlPlaneContext,
+        firing_id: str,
+        *,
+        attempt_id: str,
+    ) -> FiringRecord: ...
+
+    def fail_firing_preparation(
+        self,
+        ctx: ControlPlaneContext,
+        firing_id: str,
+        *,
+        owner_id: str,
+        fencing_token: int,
+    ) -> FiringRecord: ...
 
     def link_firing_submission(
         self,

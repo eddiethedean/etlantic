@@ -6,6 +6,7 @@ import hashlib
 import json
 import uuid
 from collections.abc import Callable, Iterable, Mapping
+from contextlib import suppress
 from dataclasses import replace
 from datetime import UTC, datetime, timedelta
 from typing import Any, TypeVar, cast, overload
@@ -26,6 +27,7 @@ from etlantic.control_plane import (
     validate_control_plane_context,
 )
 from etlantic.control_plane.durable_models import validate_execution_route
+from etlantic.control_plane.errors import is_permanent_control_plane_error
 from etlantic.control_plane.protocols import Authorizer
 from etlantic.control_plane.schedule_models import (
     FiringStatus,
@@ -47,7 +49,11 @@ def _iso(value: datetime | None) -> str | None: ...
 
 
 def _iso(value: datetime | None) -> str | None:
-    return value.isoformat().replace("+00:00", "Z") if value is not None else None
+    return (
+        value.astimezone(UTC).isoformat().replace("+00:00", "Z")
+        if value is not None
+        else None
+    )
 
 
 def _is_text(value: object) -> bool:
@@ -710,22 +716,66 @@ class ScheduleApplicationService:
                         fencing_token=fencing_token,
                     )
 
-                prepared = managed.prepare_scheduled_occurrence(
-                    ctx,
-                    occurrence,
-                    nominal,
-                    existing_firing=firing,
-                    checkpoint=checkpoint,
-                )
-                schedule_store.update_firing_metadata(
-                    ctx,
-                    firing.firing_id,
-                    metadata={
-                        **dict(prepared.occurrence_snapshot or {}),
-                        **dict(trigger_metadata or {}),
-                    },
-                    owner_id=preparation_owner,
-                    fencing_token=fencing_token,
+                try:
+                    prepared = managed.prepare_scheduled_occurrence(
+                        ctx,
+                        occurrence,
+                        nominal,
+                        existing_firing=firing,
+                        checkpoint=checkpoint,
+                    )
+                    schedule_store.update_firing_metadata(
+                        ctx,
+                        firing.firing_id,
+                        metadata={
+                            **dict(prepared.occurrence_snapshot or {}),
+                            **dict(trigger_metadata or {}),
+                        },
+                        owner_id=preparation_owner,
+                        fencing_token=fencing_token,
+                    )
+                except Exception as exc:
+                    if is_permanent_control_plane_error(exc):
+                        with suppress(Exception):
+                            schedule_store.fail_firing_preparation(
+                                ctx,
+                                firing.firing_id,
+                                owner_id=preparation_owner,
+                                fencing_token=fencing_token,
+                            )
+                    raise
+
+                attempt_id: str | None = None
+
+                def begin_admission() -> Callable[[], None]:
+                    nonlocal attempt_id
+                    attempt_id_value = uuid.uuid4().hex
+                    attempt_id = attempt_id_value
+                    schedule_store.begin_firing_submission(
+                        ctx,
+                        firing.firing_id,
+                        owner_id=preparation_owner,
+                        fencing_token=fencing_token,
+                        attempt_id=attempt_id_value,
+                    )
+
+                    def reject_admission() -> None:
+                        schedule_store.reject_firing_submission(
+                            ctx, firing.firing_id, attempt_id=attempt_id_value
+                        )
+
+                    return reject_admission
+
+                def fail_after_compensation() -> None:
+                    if attempt_id is not None:
+                        schedule_store.fail_firing_after_compensated_submission(
+                            ctx, firing.firing_id, attempt_id=attempt_id
+                        )
+
+                prepared = replace(
+                    prepared,
+                    occurrence_acceptance_guard=begin_admission,
+                    occurrence_compensation_guard=fail_after_compensation,
                 )
                 submission_id, fingerprint = managed.submit_scheduled_run(
                     ctx, prepared, nominal
@@ -741,12 +791,15 @@ class ScheduleApplicationService:
                 )
                 return linked, created
             except Exception:
-                schedule_store.release_firing_preparation(
-                    ctx,
-                    firing.firing_id,
-                    owner_id=preparation_owner,
-                    fencing_token=fencing_token,
-                )
+                # Preserve the original failure if compensation already
+                # terminalized the firing and released its preparation lease.
+                with suppress(Exception):
+                    schedule_store.release_firing_preparation(
+                        ctx,
+                        firing.firing_id,
+                        owner_id=preparation_owner,
+                        fencing_token=fencing_token,
+                    )
                 raise
 
         firing, created = schedule_store.claim_firing(
@@ -820,6 +873,13 @@ class ScheduleApplicationService:
 
         when = datetime.fromisoformat(envelope.scheduled_at.replace("Z", "+00:00"))
         now = self._now()
+        when_utc = when.astimezone(UTC)
+        now_utc = now.astimezone(UTC)
+        skip_misfire = (record.spec.misfire == "skip" and when_utc < now_utc) or (
+            record.spec.misfire == "catch_up"
+            and record.spec.catch_up_max == 0
+            and when_utc <= now_utc
+        )
         existing = next(
             (
                 item
@@ -829,6 +889,7 @@ class ScheduleApplicationService:
             ),
             None,
         )
+        expected = record.next_fire_at
         if existing is None and record.status != "active":
             raise ControlPlaneError.conflict("Schedule is not active")
         if existing is None:
@@ -838,7 +899,6 @@ class ScheduleApplicationService:
                 raise ControlPlaneError.conflict(
                     "External trigger arrived before its scheduled occurrence"
                 )
-            expected = record.next_fire_at
             if expected is None:
                 raise ControlPlaneError.conflict(
                     "External trigger has no next scheduled occurrence"
@@ -867,19 +927,11 @@ class ScheduleApplicationService:
                 "external_trigger_fingerprint": envelope.semantic_fingerprint,
             },
             advance_schedule=True,
-            skip_status=(
-                "skipped_misfire"
-                if record.spec.misfire == "skip"
-                and when.astimezone(UTC) < now.astimezone(UTC)
-                else None
-            ),
-            advance_after=(
-                now
-                if record.spec.misfire == "skip"
-                and when.astimezone(UTC) < now.astimezone(UTC)
-                else None
-            ),
-            expected_next_fire_at=envelope.scheduled_at,
+            skip_status="skipped_misfire" if skip_misfire else None,
+            advance_after=now if skip_misfire else None,
+            # Compare against the exact cursor read above. Older snapshots may
+            # store the same instant with a non-UTC offset.
+            expected_next_fire_at=expected,
             expected_timer_owner="external",
             expected_timer_owner_generation=envelope.timer_owner_generation,
             require_active=True,

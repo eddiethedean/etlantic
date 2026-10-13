@@ -28,6 +28,7 @@ from etlantic.control_plane import (
     WorkspaceRef,
     firing_key,
 )
+from etlantic.control_plane.errors import ControlPlaneError
 from etlantic.control_plane.schedule_models import FiringStatus
 from etlantic.runtime.scheduler_service import SchedulerService
 from etlantic.testing import run_schedule_store_conformance_suite
@@ -46,6 +47,134 @@ def test_sqlmodel_schedule_store_conformance(tmp_path: Path) -> None:
     assert apply_migrations(engine) == "014_cp1_complete_principal_idempotency_0_56"
     assert current_version(engine) == "014_cp1_complete_principal_idempotency_0_56"
     run_schedule_store_conformance_suite(SQLModelScheduleStore(engine))
+
+
+def test_sqlmodel_schedule_store_persists_failed_preparation(
+    tmp_path: Path,
+) -> None:
+    engine = create_sqlite_engine(f"sqlite:///{tmp_path / 'failed-preparation.db'}")
+    apply_migrations(engine)
+    schedules = SQLModelScheduleStore(engine)
+    ctx = ControlPlaneContext(
+        principal=Principal("schedule-author"),
+        tenant=TenantRef("failed-tenant"),
+        workspace=WorkspaceRef("failed-tenant", "failed-workspace"),
+        environment=EnvironmentRef("test"),
+        security_domain=SecurityDomain("failed-domain"),
+    )
+    schedule = schedules.create(
+        ctx,
+        definition_id="failed-pipeline",
+        profile_name="test",
+        spec=ScheduleSpec(kind="interval", interval_seconds=60),
+        next_fire_at="2026-10-01T12:00:00Z",
+    )
+    leader = schedules.acquire_leader_lease(
+        ctx, owner_id="failed-preparation-scheduler", ttl_seconds=30
+    )
+    firing, created = schedules.claim_firing(
+        ctx,
+        schedule_id=schedule.schedule_id,
+        revision_id=schedule.revision_id,
+        nominal_fire_time=schedule.next_fire_at or "",
+        owner_id=leader.owner_id,
+        fencing_token=leader.fencing_token,
+        plan_fingerprint="managed-admission-pending",
+        next_fire_at="2026-10-01T12:01:00Z",
+        admit_submission=False,
+    )
+    assert created
+    leased, acquired = schedules.acquire_firing_preparation(
+        ctx, firing.firing_id, owner_id="failed-preparation-worker"
+    )
+    assert acquired
+
+    failed = schedules.fail_firing_preparation(
+        ctx,
+        firing.firing_id,
+        owner_id="failed-preparation-worker",
+        fencing_token=leased.preparation_fencing_token,
+    )
+
+    assert failed.status == "failed_preparation"
+    assert failed.preparation_owner_id is None
+    assert SQLModelScheduleStore(engine).list_firings(ctx, schedule.schedule_id)[0] == (
+        failed
+    )
+
+
+def test_sqlmodel_schedule_store_persists_submission_start_fence(
+    tmp_path: Path,
+) -> None:
+    engine = create_sqlite_engine(f"sqlite:///{tmp_path / 'submission-start.db'}")
+    apply_migrations(engine)
+    schedules = SQLModelScheduleStore(engine)
+    ctx = ControlPlaneContext(
+        principal=Principal("submission-start-worker"),
+        tenant=TenantRef("submission-start-tenant"),
+        workspace=WorkspaceRef("submission-start-tenant", "submission-start-workspace"),
+        environment=EnvironmentRef("test"),
+        security_domain=SecurityDomain("submission-start-domain"),
+    )
+    nominal = "2026-10-01T12:00:00Z"
+    schedule = schedules.create(
+        ctx,
+        definition_id="submission-start-pipeline",
+        profile_name="test",
+        spec=ScheduleSpec(kind="interval", interval_seconds=60),
+        next_fire_at=nominal,
+    )
+    firing, created = schedules.claim_firing(
+        ctx,
+        schedule_id=schedule.schedule_id,
+        revision_id=schedule.revision_id,
+        nominal_fire_time=nominal,
+        owner_id="submission-start-scheduler",
+        fencing_token=0,
+        plan_fingerprint="managed-admission-pending",
+        require_leader_lease=False,
+        admit_submission=False,
+    )
+    assert created
+    leased, acquired = schedules.acquire_firing_preparation(
+        ctx, firing.firing_id, owner_id="submission-start-owner"
+    )
+    assert acquired
+
+    started = schedules.begin_firing_submission(
+        ctx,
+        firing.firing_id,
+        owner_id="submission-start-owner",
+        fencing_token=leased.preparation_fencing_token,
+    )
+    assert started.submission_started
+    reopened = SQLModelScheduleStore(engine)
+    persisted = reopened.list_firings(ctx, schedule.schedule_id)[0]
+    assert persisted.submission_started
+    assert persisted.submission_attempt_ids == started.submission_attempt_ids
+    with pytest.raises(ControlPlaneError, match="submission has already started"):
+        reopened.fail_firing_preparation(
+            ctx,
+            firing.firing_id,
+            owner_id="submission-start-owner",
+            fencing_token=leased.preparation_fencing_token,
+        )
+    assert reopened.list_firings(ctx, schedule.schedule_id)[0].status == "accepted"
+    rejected = reopened.reject_firing_submission(
+        ctx, firing.firing_id, attempt_id=started.submission_attempt_ids[0]
+    )
+    assert not rejected.submission_started
+    restarted = SQLModelScheduleStore(engine)
+    after_rejection = restarted.list_firings(ctx, schedule.schedule_id)[0]
+    assert not after_rejection.submission_started
+    assert not after_rejection.submission_attempt_ids
+    failed = restarted.fail_firing_preparation(
+        ctx,
+        firing.firing_id,
+        owner_id="submission-start-owner",
+        fencing_token=leased.preparation_fencing_token,
+    )
+    assert failed.status == "failed_preparation"
 
 
 def test_sqlmodel_schedule_occurrence_policy_survives_store_restart(

@@ -496,6 +496,10 @@ def adapt_managed_backend(
     )
     if type(effective_upload_ttl) is not int or effective_upload_ttl < 1:
         raise ValueError("input_upload_ttl_seconds must be a positive integer")
+    if input_upload_ttl_seconds is not None:
+        core_backend.update_configuration(
+            {"input_upload_ttl_seconds": effective_upload_ttl}
+        )
     service = core_backend.managed_service
     api = ETLanticAPI(
         authorizer=core_backend.authorizer,

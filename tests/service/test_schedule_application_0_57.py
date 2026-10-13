@@ -22,6 +22,7 @@ from etlantic.control_plane import (
     TriggerEnvelope,
     WorkspaceRef,
     external_occurrence_id,
+    next_fire_after,
 )
 from etlantic.service import ScheduleApplicationService
 
@@ -77,7 +78,13 @@ def test_schedule_service_denies_before_reading_or_mutating_store() -> None:
         )
 
 
-def test_external_trigger_skips_late_occurrence_and_advances_past_backlog() -> None:
+@pytest.mark.parametrize(
+    ("misfire", "catch_up_max"),
+    [("skip", 10), ("catch_up", 0)],
+)
+def test_external_trigger_skips_late_occurrence_and_advances_past_backlog(
+    misfire: Any, catch_up_max: int
+) -> None:
     ctx = replace(
         _context(),
         principal=Principal(subject="timer", issuer="tests", kind="workload"),
@@ -92,7 +99,11 @@ def test_external_trigger_skips_late_occurrence_and_advances_past_backlog() -> N
         definition_id="pipeline-a",
         profile_name="test",
         spec=ScheduleSpec(
-            kind="interval", interval_seconds=60, misfire="skip", overlap="queue"
+            kind="interval",
+            interval_seconds=60,
+            misfire=misfire,
+            catch_up_max=catch_up_max,
+            overlap="queue",
         ),
         workload_identity=ctx.principal,
         timer_owner="external",
@@ -134,4 +145,174 @@ def test_external_trigger_skips_late_occurrence_and_advances_past_backlog() -> N
     )
     assert schedules.get(ctx, record.schedule_id).next_fire_at == (
         "2026-10-02T12:01:00Z"
+    )
+
+
+def test_external_trigger_terminalizes_permanent_preparation_failure() -> None:
+    ctx = replace(
+        _context(),
+        principal=Principal(subject="timer", issuer="tests", kind="workload"),
+    )
+    authorizer = MemoryAuthorizer()
+    for action in ("schedule.trigger", "run.submit"):
+        authorizer.grant(ctx, action)
+    schedules = MemoryScheduleStore()
+    nominal = "2026-10-08T12:00:00Z"
+    record = schedules.create(
+        ctx,
+        definition_id="pipeline-a",
+        profile_name="test",
+        spec=ScheduleSpec(kind="interval", interval_seconds=60, overlap="queue"),
+        workload_identity=ctx.principal,
+        timer_owner="external",
+        next_fire_at=nominal,
+    )
+    preparations: list[str] = []
+
+    class InvalidManagedService:
+        def recover_scheduled_occurrence(
+            self, *_args: object, **_kwargs: object
+        ) -> None:
+            return None
+
+        def prepare_scheduled_occurrence(
+            self, *_args: object, **_kwargs: object
+        ) -> Any:
+            preparations.append("prepare")
+            raise ControlPlaneError(
+                "scheduled parameters are invalid", code="PMCP422", status=422
+            )
+
+        def submit_scheduled_run(self, *_args: object, **_kwargs: object) -> Any:
+            raise AssertionError("invalid preparation must not submit a run")
+
+    now = datetime(2026, 10, 8, 12, 0, tzinfo=UTC)
+    service = ScheduleApplicationService(
+        authorizer=authorizer,
+        schedule_store=schedules,
+        managed_service=InvalidManagedService(),
+        durable_work=object(),
+        clock=lambda: now,
+    )
+    envelope = TriggerEnvelope(
+        schedule_id=record.schedule_id,
+        schedule_revision_id=record.revision_id,
+        timer_owner_generation=record.timer_owner_generation,
+        occurrence_id=external_occurrence_id(
+            record.schedule_id, record.revision_id, nominal
+        ),
+        scheduled_at=nominal,
+        delivery_attempt_id="attempt-invalid-preparation",
+        correlation_id="corr-invalid-preparation",
+    )
+
+    with pytest.raises(ControlPlaneError) as failure:
+        service.trigger_external(ctx, envelope)
+    assert failure.value.status == 422
+    firing = schedules.list_firings(ctx, record.schedule_id)[0]
+    assert firing.status == "failed_preparation"
+    assert firing.preparation_owner_id is None
+
+    duplicate = service.trigger_external(ctx, envelope)
+    assert duplicate.status == "skipped"
+    assert duplicate.firing_status == "failed_preparation"
+    assert duplicate.duplicate
+    assert preparations == ["prepare"]
+
+    amended = schedules.amend(
+        ctx,
+        record.schedule_id,
+        expected_revision_id=record.revision_id,
+        spec=ScheduleSpec(kind="interval", interval_seconds=120, overlap="queue"),
+        next_fire_at="2026-10-08T12:02:00Z",
+    )
+    transferred = schedules.transfer_timer_owner(
+        ctx,
+        record.schedule_id,
+        expected_revision_id=amended.revision_id,
+        expected_generation=amended.timer_owner_generation,
+        timer_owner="local",
+        workload_identity=None,
+        policy_fingerprint="policy",
+    )
+    deleted = schedules.delete(ctx, record.schedule_id)
+    assert transferred.timer_owner == "local"
+    assert deleted.status == "deleted"
+
+
+def test_external_trigger_accepts_utc_delivery_for_legacy_offset_cursor() -> None:
+    ctx = replace(
+        _context(),
+        principal=Principal(subject="timer", issuer="tests", kind="workload"),
+    )
+    authorizer = MemoryAuthorizer()
+    for action in ("schedule.write", "schedule.trigger", "run.submit"):
+        authorizer.grant(ctx, action)
+    schedules = MemoryScheduleStore()
+    spec = ScheduleSpec(
+        kind="interval",
+        interval_seconds=60,
+        window_start="2026-10-08T08:00:00-04:00",
+        overlap="queue",
+    )
+    legacy_cursor = next_fire_after(
+        spec,
+        after=datetime(2026, 10, 8, 11, 0, tzinfo=UTC),
+    )
+    assert legacy_cursor is not None
+    stored_cursor = legacy_cursor.isoformat()
+    nominal = legacy_cursor.astimezone(UTC).isoformat().replace("+00:00", "Z")
+    record = schedules.create(
+        ctx,
+        definition_id="pipeline-a",
+        profile_name="test",
+        spec=spec,
+        workload_identity=ctx.principal,
+        timer_owner="external",
+        next_fire_at=stored_cursor,
+    )
+    normalized = ScheduleApplicationService(
+        authorizer=authorizer,
+        schedule_store=MemoryScheduleStore(),
+        clock=lambda: datetime(2026, 10, 8, 11, 0, tzinfo=UTC),
+    ).create(ctx, "pipeline-a", spec=spec)
+    assert normalized.next_fire_at == "2026-10-08T12:00:59Z"
+
+    class InvalidManagedService:
+        def recover_scheduled_occurrence(
+            self, *_args: object, **_kwargs: object
+        ) -> None:
+            return None
+
+        def prepare_scheduled_occurrence(
+            self, *_args: object, **_kwargs: object
+        ) -> Any:
+            raise ControlPlaneError(
+                "test reached occurrence preparation", code="PMCP422", status=422
+            )
+
+    service = ScheduleApplicationService(
+        authorizer=authorizer,
+        schedule_store=schedules,
+        managed_service=InvalidManagedService(),
+        durable_work=object(),
+        clock=lambda: legacy_cursor.astimezone(UTC),
+    )
+    envelope = TriggerEnvelope(
+        schedule_id=record.schedule_id,
+        schedule_revision_id=record.revision_id,
+        timer_owner_generation=record.timer_owner_generation,
+        occurrence_id=external_occurrence_id(
+            record.schedule_id, record.revision_id, nominal
+        ),
+        scheduled_at=nominal,
+        delivery_attempt_id="attempt-offset-cursor",
+        correlation_id="corr-offset-cursor",
+    )
+
+    with pytest.raises(ControlPlaneError) as failure:
+        service.trigger_external(ctx, envelope)
+    assert failure.value.status == 422
+    assert schedules.list_firings(ctx, record.schedule_id)[0].nominal_fire_time == (
+        nominal
     )

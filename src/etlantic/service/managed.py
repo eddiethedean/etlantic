@@ -1098,6 +1098,8 @@ class ManagedApplicationService:
             idempotency_key=idempotency_key,
             request=RunRequest.from_dict(dict(envelope.run_request)),
             revision_selector=envelope.revision_selector,
+            _acceptance_guard=schedule.occurrence_acceptance_guard,
+            _compensation_guard=schedule.occurrence_compensation_guard,
         )
         durable = self.durable_work.get_submission(ctx, receipt.submission_id)
         if (
@@ -1154,6 +1156,8 @@ class ManagedApplicationService:
             revision_selector=prepared.definition_revision_id,
             _profile_override=profile,
             _execution_route=prepared.execution_route,
+            _acceptance_guard=prepared.occurrence_acceptance_guard,
+            _compensation_guard=prepared.occurrence_compensation_guard,
         )
         submission = self.durable_work.get_submission(ctx, receipt.submission_id)
         if not submission.input_snapshot:
@@ -1293,7 +1297,10 @@ class ManagedApplicationService:
         ):
             raise ControlPlaneError.conflict(
                 "Schedule parameter snapshot changed after its durable claim",
-                extensions={"field": "parameter_fingerprint"},
+                extensions={
+                    "reason": "occurrence_intent_changed",
+                    "field": "parameter_fingerprint",
+                },
             )
         if checkpoint is not None:
             checkpoint({"parameter_fingerprint": parameter_fingerprint})
@@ -1595,6 +1602,8 @@ class ManagedApplicationService:
         _preparation_control: _PreparationControl | None = None,
         _profile_override: Profile | None = None,
         _execution_route: str | None = None,
+        _acceptance_guard: Callable[[], Callable[[], None] | None] | None = None,
+        _compensation_guard: Callable[[], None] | None = None,
     ) -> AcceptReceipt:
         """Prepare, bind and durably accept one managed execution."""
         if not idempotency_key.strip():
@@ -1681,6 +1690,7 @@ class ManagedApplicationService:
                     envelope=envelope,
                     receipt=prior_receipt,
                     execution_route=execution_route,
+                    acceptance_guard=_acceptance_guard,
                 )
             elif prior_durable.submission_id != prior_receipt.submission_id:
                 raise ControlPlaneError.conflict(
@@ -1917,13 +1927,16 @@ class ManagedApplicationService:
             },
         )
         payload = self._acceptance_payload(envelope, execution_route=execution_route)
-        if _preparation_control is not None:
-            try:
+        reject_acceptance: Callable[[], None] | None = None
+        try:
+            if _preparation_control is not None:
                 _preparation_control.begin_acceptance()
-            except Exception:
-                self._release_input_lease(ctx, input_lease_id)
-                self._release_quota_reservation(ctx, quota_key, quota_claim_id)
-                raise
+            if _acceptance_guard is not None:
+                reject_acceptance = _acceptance_guard()
+        except Exception:
+            self._release_input_lease(ctx, input_lease_id)
+            self._release_quota_reservation(ctx, quota_key, quota_claim_id)
+            raise
         try:
             receipt_result = self.submissions.accept(
                 ctx,
@@ -1941,6 +1954,7 @@ class ManagedApplicationService:
             prior_payload: Mapping[str, Any] | None = None
             candidate_receipt: AcceptReceipt | None = None
             candidate_payload: Mapping[str, Any] | None = None
+            reconciled = False
             try:
                 candidate_receipt = self.submissions.lookup_idempotency(
                     ctx, idempotency_key, operation="run.submit"
@@ -1948,6 +1962,7 @@ class ManagedApplicationService:
                 candidate_payload = self.submissions.lookup_idempotency_payload(
                     ctx, idempotency_key, operation="run.submit"
                 )
+                reconciled = True
             except Exception:
                 # Keep both unset when either read fails; a partial lookup
                 # cannot prove that the accepted snapshot matches.
@@ -1969,6 +1984,15 @@ class ManagedApplicationService:
                 receipt_result = AcceptResult(receipt=prior_receipt, created=False)
             else:
                 if isinstance(exc, ControlPlaneError) and exc.status < 500:
+                    # Only a definite rejection with verified receipt absence
+                    # can release this attempt's schedule admission fence.
+                    if (
+                        reconciled
+                        and candidate_payload is None
+                        and reject_acceptance is not None
+                    ):
+                        with suppress(Exception):
+                            reject_acceptance()
                     with suppress(Exception):
                         self._release_input_lease(ctx, input_lease_id)
                     with suppress(Exception):
@@ -2010,15 +2034,34 @@ class ManagedApplicationService:
             # that commit. Reconcile by the stable command identity before
             # compensating the separately durable CP1 receipt.
             durable_receipt: SubmissionRecord | None = None
-            with suppress(Exception):
+            durable_reconciled = False
+            try:
                 durable_receipt = self.durable_work.get_submission_by_idempotency(
                     ctx,
                     idempotency_key=idempotency_key,
                     operation="run.submit",
                 )
-            # A failed reconciliation read leaves the commit outcome unknown.
-            # Preserve the discoverable CP1 receipt so a caller can retry the
-            # same idempotency key and reconcile later.
+                durable_reconciled = True
+            except Exception:
+                # A failed read cannot distinguish a CP3 miss from a committed
+                # row whose acknowledgement was lost. Keep CP1 and its claims
+                # discoverable for a later retry.
+                pass
+            if not durable_reconciled:
+                raise ControlPlaneError(
+                    "Durable execution acceptance acknowledgement is uncertain; "
+                    "retry the same idempotency key to reconcile",
+                    code="PMCP503",
+                    status=503,
+                    title="Service Unavailable",
+                    type="etlantic.control_plane/unavailable",
+                    extensions={
+                        "submission_id": receipt_result.receipt.submission_id,
+                        "acceptance_uncertain": True,
+                    },
+                ) from exc
+            # A matching row proves the acceptance committed; preserve the
+            # original CP1 receipt as the public acknowledgement.
             if durable_receipt is not None:
                 if (
                     durable_receipt.submission_id
@@ -2041,26 +2084,36 @@ class ManagedApplicationService:
                 )
                 if receipt_result.created and definite_rejection:
                     try:
-                        record, changed = self._cancel_cp1(
+                        record, _changed = self._cancel_cp1(
                             ctx, receipt_result.receipt.resource_id
                         )
-                        compensated = changed or record.get("status") in {
+                        cp1_cancelled = record.get("status") in {
                             "cancel_requested",
                             "cancelled",
                         }
-                        if compensated:
-                            # A concurrent CP1 replay can accept durable work
-                            # between the earlier reconciliation read and CP1
-                            # cancellation. Request its cancellation as well.
-                            with suppress(Exception):
-                                concurrent = (
-                                    self.durable_work.get_submission_by_idempotency(
-                                        ctx,
-                                        idempotency_key=idempotency_key,
-                                        operation="run.submit",
-                                    )
+                        if cp1_cancelled:
+                            # Check again after CP1 cancellation because a
+                            # concurrent replay may have reached CP3 between
+                            # the first lookup and compensation.
+                            concurrent = (
+                                self.durable_work.get_submission_by_idempotency(
+                                    ctx,
+                                    idempotency_key=idempotency_key,
+                                    operation="run.submit",
                                 )
-                                if concurrent is not None:
+                            )
+                            compensated = True
+                            if concurrent is None:
+                                # The schedule store removes this exact attempt
+                                # atomically and fails the occurrence only when
+                                # no competing admission remains.
+                                if _compensation_guard is not None:
+                                    _compensation_guard()
+                            else:
+                                # A concurrent durable acceptance is real work;
+                                # request its cancellation and leave schedule
+                                # recovery able to discover and link it.
+                                with suppress(Exception):
                                     self.durable_work.cancel_submission(
                                         ctx, concurrent.submission_id
                                     )
@@ -2068,8 +2121,27 @@ class ManagedApplicationService:
                             self._release_quota_reservation(
                                 ctx, quota_key, quota_claim_id
                             )
+                        else:
+                            raise RuntimeError(
+                                "CP1 cancellation did not reach a cancelled state"
+                            )
                     except Exception:
-                        pass
+                        # Compensation or its second reconciliation read was
+                        # incomplete. The CP1 receipt remains the recovery
+                        # point; do not release resources or report a definite
+                        # rejection while its durable counterpart is unknown.
+                        raise ControlPlaneError(
+                            "Durable execution compensation acknowledgement is "
+                            "uncertain; retry the same idempotency key to reconcile",
+                            code="PMCP503",
+                            status=503,
+                            title="Service Unavailable",
+                            type="etlantic.control_plane/unavailable",
+                            extensions={
+                                "submission_id": receipt_result.receipt.submission_id,
+                                "acceptance_uncertain": True,
+                            },
+                        ) from exc
                 if isinstance(exc, ControlPlaneError) and definite_rejection:
                     raise
                 raise ControlPlaneError(
@@ -4833,6 +4905,7 @@ class ManagedApplicationService:
         envelope: ExecutionEnvelope,
         receipt: AcceptReceipt,
         execution_route: str,
+        acceptance_guard: Callable[[], Callable[[], None] | None] | None = None,
     ) -> None:
         """Repair partial acceptance only while its CP1 and quota claims remain live."""
         run_id = receipt.resource_id
@@ -4903,6 +4976,8 @@ class ManagedApplicationService:
             # Recheck after claiming quota: cancellation may have committed
             # between the first status read and the admission transaction.
             require_live_receipt()
+            if acceptance_guard is not None:
+                acceptance_guard()
             self._accept_durable(
                 ctx,
                 idempotency_key=idempotency_key,

@@ -400,6 +400,68 @@ class SQLModelScheduleStore:
             )
         )
 
+    def begin_firing_submission(
+        self,
+        ctx: ControlPlaneContext,
+        firing_id: str,
+        *,
+        owner_id: str,
+        fencing_token: int,
+        attempt_id: str | None = None,
+    ) -> FiringRecord:
+        return self._txn(
+            lambda store: store.begin_firing_submission(
+                ctx,
+                firing_id,
+                owner_id=owner_id,
+                fencing_token=fencing_token,
+                attempt_id=attempt_id,
+            )
+        )
+
+    def reject_firing_submission(
+        self,
+        ctx: ControlPlaneContext,
+        firing_id: str,
+        *,
+        attempt_id: str,
+    ) -> FiringRecord:
+        return self._txn(
+            lambda store: store.reject_firing_submission(
+                ctx, firing_id, attempt_id=attempt_id
+            )
+        )
+
+    def fail_firing_after_compensated_submission(
+        self,
+        ctx: ControlPlaneContext,
+        firing_id: str,
+        *,
+        attempt_id: str,
+    ) -> FiringRecord:
+        return self._txn(
+            lambda store: store.fail_firing_after_compensated_submission(
+                ctx, firing_id, attempt_id=attempt_id
+            )
+        )
+
+    def fail_firing_preparation(
+        self,
+        ctx: ControlPlaneContext,
+        firing_id: str,
+        *,
+        owner_id: str,
+        fencing_token: int,
+    ) -> FiringRecord:
+        return self._txn(
+            lambda store: store.fail_firing_preparation(
+                ctx,
+                firing_id,
+                owner_id=owner_id,
+                fencing_token=fencing_token,
+            )
+        )
+
     def link_firing_submission(
         self,
         ctx: ControlPlaneContext,

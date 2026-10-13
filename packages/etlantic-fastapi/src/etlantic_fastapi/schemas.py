@@ -37,7 +37,11 @@ class TriggerReceiptResponse(BaseModel):
     schema_: str = Field(alias="schema", default=TRIGGER_RECEIPT_SCHEMA)
     status: Literal["pending", "accepted", "skipped"]
     firing_status: Literal[
-        "accepted", "skipped_overlap", "skipped_misfire", "skipped_window"
+        "accepted",
+        "skipped_overlap",
+        "skipped_misfire",
+        "skipped_window",
+        "failed_preparation",
     ]
     schedule_id: str
     schedule_revision_id: str

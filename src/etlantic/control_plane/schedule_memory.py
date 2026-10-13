@@ -656,6 +656,191 @@ class MemoryScheduleStore:
                     )
                 return
 
+    def begin_firing_submission(
+        self,
+        ctx: ControlPlaneContext,
+        firing_id: str,
+        *,
+        owner_id: str,
+        fencing_token: int,
+        attempt_id: str | None = None,
+    ) -> FiringRecord:
+        """Fence preparation failure before a worker can accept managed work."""
+        attempt_value: object = cast(
+            object, uuid.uuid4().hex if attempt_id is None else attempt_id
+        )
+        if (
+            not isinstance(attempt_value, str)
+            or not attempt_value.strip()
+            or attempt_value == "legacy-untracked-admission"
+        ):
+            raise ValueError("submission attempt ID must be non-empty")
+        attempt_id = attempt_value
+        scope = _scope(ctx)
+        with self._lock:
+            matches = [
+                (key, firing)
+                for key, firing in self._firings.items()
+                if key[:2] == scope and firing.firing_id == firing_id
+            ]
+            if not matches:
+                raise ControlPlaneError.not_found("schedule firing not found")
+            key, firing = matches[0]
+            if firing.status != "accepted" or firing.submission_id is not None:
+                raise ControlPlaneError.conflict(
+                    "Only unlinked accepted firings can begin submission"
+                )
+            self._require_firing_preparation_lease(
+                firing, owner_id=owner_id, fencing_token=fencing_token
+            )
+            attempts = firing.submission_attempt_ids
+            # Older rows may have an untracked acceptance still in flight.
+            # A new attempt's rejection cannot clear that existing fence.
+            if firing.submission_started and not attempts:
+                attempts = ("legacy-untracked-admission",)
+            if attempt_id not in attempts:
+                firing = replace(
+                    firing,
+                    submission_started=True,
+                    submission_attempt_ids=(*attempts, attempt_id),
+                )
+                self._firings[key] = firing
+            return deepcopy(firing)
+
+    def reject_firing_submission(
+        self,
+        ctx: ControlPlaneContext,
+        firing_id: str,
+        *,
+        attempt_id: str,
+    ) -> FiringRecord:
+        """Release only an attempt proved rejected before CP1 acceptance.
+
+        Rejection can arrive after the preparation lease has expired. Other
+        attempts, including older admissions, must remain fenced.
+        """
+        scope = _scope(ctx)
+        with self._lock:
+            matches = [
+                (key, firing)
+                for key, firing in self._firings.items()
+                if key[:2] == scope and firing.firing_id == firing_id
+            ]
+            if not matches:
+                raise ControlPlaneError.not_found("schedule firing not found")
+            key, firing = matches[0]
+            if (
+                attempt_id != "legacy-untracked-admission"
+                and attempt_id in firing.submission_attempt_ids
+            ):
+                remaining = tuple(
+                    item for item in firing.submission_attempt_ids if item != attempt_id
+                )
+                firing = replace(
+                    firing,
+                    submission_started=bool(remaining),
+                    submission_attempt_ids=remaining,
+                )
+                self._firings[key] = firing
+            return deepcopy(firing)
+
+    def fail_firing_after_compensated_submission(
+        self,
+        ctx: ControlPlaneContext,
+        firing_id: str,
+        *,
+        attempt_id: str,
+    ) -> FiringRecord:
+        """Fail one attempt after its CP1 receipt and CP3 acceptance were reconciled.
+
+        Callers must first prove that CP1 is cancelled and a successful CP3
+        lookup found no durable submission for this occurrence. Other active
+        admission attempts keep the firing pending.
+        """
+        scope = _scope(ctx)
+        with self._lock:
+            matches = [
+                (key, firing)
+                for key, firing in self._firings.items()
+                if key[:2] == scope and firing.firing_id == firing_id
+            ]
+            if not matches:
+                raise ControlPlaneError.not_found("schedule firing not found")
+            key, firing = matches[0]
+            if firing.status != "accepted" or firing.submission_id is not None:
+                raise ControlPlaneError.conflict(
+                    "Only unlinked accepted firings can fail after compensation"
+                )
+            if attempt_id not in firing.submission_attempt_ids:
+                return deepcopy(firing)
+            remaining = tuple(
+                item for item in firing.submission_attempt_ids if item != attempt_id
+            )
+            if remaining:
+                updated = replace(
+                    firing,
+                    submission_started=True,
+                    submission_attempt_ids=remaining,
+                )
+            elif "legacy-untracked-admission" in firing.submission_attempt_ids:
+                updated = replace(
+                    firing,
+                    submission_started=True,
+                    submission_attempt_ids=firing.submission_attempt_ids,
+                )
+            else:
+                updated = replace(
+                    firing,
+                    status="failed_preparation",
+                    submission_started=False,
+                    submission_attempt_ids=(),
+                    preparation_owner_id=None,
+                    preparation_expires_at=None,
+                )
+            self._firings[key] = updated
+            return deepcopy(updated)
+
+    def fail_firing_preparation(
+        self,
+        ctx: ControlPlaneContext,
+        firing_id: str,
+        *,
+        owner_id: str,
+        fencing_token: int,
+    ) -> FiringRecord:
+        """Terminalize a permanently invalid occurrence under its preparation lease."""
+        scope = _scope(ctx)
+        with self._lock:
+            matches = [
+                (key, firing)
+                for key, firing in self._firings.items()
+                if key[:2] == scope and firing.firing_id == firing_id
+            ]
+            if not matches:
+                raise ControlPlaneError.not_found("schedule firing not found")
+            key, firing = matches[0]
+            self._require_firing_preparation_lease(
+                firing, owner_id=owner_id, fencing_token=fencing_token
+            )
+            if firing.status != "accepted" or firing.submission_id is not None:
+                raise ControlPlaneError.conflict(
+                    "Only unlinked accepted firings can fail preparation"
+                )
+            if firing.submission_started:
+                raise ControlPlaneError.conflict(
+                    "Schedule occurrence submission has already started",
+                    code="PMFIRE409",
+                    extensions={"reason": "occurrence_submission_started"},
+                )
+            updated = replace(
+                firing,
+                status="failed_preparation",
+                preparation_owner_id=None,
+                preparation_expires_at=None,
+            )
+            self._firings[key] = updated
+            return deepcopy(updated)
+
     @staticmethod
     def _require_firing_preparation_lease(
         firing: FiringRecord, *, owner_id: str, fencing_token: int
@@ -805,6 +990,18 @@ class MemoryScheduleStore:
                     # closed instead of treating an external timer as local.
                     payload["timer_revision_policy"] = record.revision_policy
                     payload["revision_policy"] = "external_timer_owned"
+                elif any(
+                    firing.schedule_id == record.schedule_id
+                    and (firing.tenant_id, firing.workspace_id) == key[:2]
+                    and firing.status == "accepted"
+                    and firing.submission_id is None
+                    and firing.submission_started
+                    for firing in self._firings.values()
+                ):
+                    # 0.58 readers cannot preserve the private admission
+                    # fence fields in firing rows, so reject their load.
+                    payload["timer_revision_policy"] = record.revision_policy
+                    payload["revision_policy"] = "admission_fenced"
                 schedules[json.dumps(list(key))] = payload
             return {
                 "schedules": schedules,

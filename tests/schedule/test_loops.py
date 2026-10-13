@@ -213,6 +213,64 @@ def test_scheduler_persists_occurrence_selection_before_preparation_can_fail() -
     )
 
 
+@pytest.mark.parametrize(("status", "code"), [(422, "PMCP422"), (501, "PMCP501")])
+def test_scheduler_terminalizes_permanent_preparation_failure(
+    status: int, code: str
+) -> None:
+    ctx = _ctx()
+    schedules = MemoryScheduleStore()
+    durable = MemoryDurableWorkStore()
+    due_at = datetime(2026, 1, 1, 0, 1, tzinfo=UTC)
+    schedule = schedules.create(
+        ctx,
+        definition_id="invalid-scheduled-parameters",
+        profile_name="test",
+        spec=ScheduleSpec(kind="interval", interval_seconds=60),
+        next_fire_at=due_at.isoformat().replace("+00:00", "Z"),
+    )
+    preparations = 0
+
+    def prepare_occurrence(
+        _ctx: ControlPlaneContext,
+        occurrence: ScheduleRecord,
+        _nominal_fire_time: str,
+        _firing: FiringRecord | None,
+        *,
+        checkpoint: Any = None,
+    ) -> ScheduleRecord:
+        nonlocal preparations
+        preparations += 1
+        raise ControlPlaneError(
+            "scheduled parameters cannot be prepared", code=code, status=status
+        )
+
+    def recover_occurrence(
+        _ctx: ControlPlaneContext, _occurrence: ScheduleRecord, _nominal: str
+    ) -> tuple[str, str] | None:
+        return None
+
+    def submit_run(
+        _ctx: ControlPlaneContext, _occurrence: ScheduleRecord, _nominal: str
+    ) -> tuple[str, str]:
+        raise AssertionError("invalid preparation must not submit a run")
+
+    scheduler = SchedulerService(
+        schedules,
+        durable=durable,
+        clock=FakeScheduleClock(due_at),
+        run_submitter=submit_run,
+        occurrence_preparer=prepare_occurrence,
+        occurrence_recoverer=recover_occurrence,
+    )
+
+    assert scheduler.tick(ctx) == 0
+    firing = schedules.list_firings(ctx, schedule.schedule_id)[0]
+    assert firing.status == "failed_preparation"
+    assert firing.preparation_owner_id is None
+    assert scheduler.tick(ctx) == 0
+    assert preparations == 1
+
+
 @pytest.mark.parametrize(
     "checkpoint_shape",
     ["positional-only", "variadic-positional", "already-positional"],

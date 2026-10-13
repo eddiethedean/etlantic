@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import logging
+import uuid
 from collections.abc import Callable, Mapping
 from contextlib import suppress
 from dataclasses import replace
@@ -12,7 +13,10 @@ from typing import Any, cast
 
 from etlantic.control_plane.authz import validate_control_plane_context
 from etlantic.control_plane.durable_protocols import DurableWorkStore
-from etlantic.control_plane.errors import ControlPlaneError
+from etlantic.control_plane.errors import (
+    ControlPlaneError,
+    is_permanent_control_plane_error,
+)
 from etlantic.control_plane.models import ControlPlaneContext
 from etlantic.control_plane.schedule_clock import (
     FakeScheduleClock,
@@ -323,23 +327,75 @@ class SchedulerService:
                                 fencing_token=fencing_token,
                             )
 
-                        prepared = (
-                            self._prepare_occurrence(
-                                occurrence_ctx,
-                                occurrence,
-                                firing.nominal_fire_time,
-                                firing,
-                                checkpoint,
+                        try:
+                            prepared = (
+                                self._prepare_occurrence(
+                                    occurrence_ctx,
+                                    occurrence,
+                                    firing.nominal_fire_time,
+                                    firing,
+                                    checkpoint,
+                                )
+                                if self.occurrence_preparer is not None
+                                else occurrence
                             )
-                            if self.occurrence_preparer is not None
-                            else occurrence
-                        )
-                        self.schedule_store.update_firing_metadata(
-                            ctx,
-                            firing.firing_id,
-                            metadata=dict(prepared.occurrence_snapshot or {}),
-                            owner_id=preparation_owner,
-                            fencing_token=preparation_fencing_token,
+                            self.schedule_store.update_firing_metadata(
+                                ctx,
+                                firing.firing_id,
+                                metadata=dict(prepared.occurrence_snapshot or {}),
+                                owner_id=preparation_owner,
+                                fencing_token=preparation_fencing_token,
+                            )
+                        except Exception as exc:
+                            if is_permanent_control_plane_error(exc):
+                                with suppress(Exception):
+                                    self.schedule_store.fail_firing_preparation(
+                                        ctx,
+                                        firing.firing_id,
+                                        owner_id=preparation_owner,
+                                        fencing_token=preparation_fencing_token,
+                                    )
+                            raise
+
+                        attempt_state: dict[str, str | None] = {"id": None}
+
+                        def begin_admission(
+                            firing_id: str = firing.firing_id,
+                            owner_id: str = preparation_owner,
+                            fencing_token: int = preparation_fencing_token,
+                            state: dict[str, str | None] = attempt_state,
+                        ) -> Callable[[], None]:
+                            attempt_id = uuid.uuid4().hex
+                            state["id"] = attempt_id
+                            self.schedule_store.begin_firing_submission(
+                                ctx,
+                                firing_id,
+                                owner_id=owner_id,
+                                fencing_token=fencing_token,
+                                attempt_id=attempt_id,
+                            )
+
+                            def reject_admission() -> None:
+                                self.schedule_store.reject_firing_submission(
+                                    ctx, firing_id, attempt_id=attempt_id
+                                )
+
+                            return reject_admission
+
+                        def fail_after_compensation(
+                            firing_id: str = firing.firing_id,
+                            state: dict[str, str | None] = attempt_state,
+                        ) -> None:
+                            attempt_id = state["id"]
+                            if attempt_id is not None:
+                                self.schedule_store.fail_firing_after_compensated_submission(
+                                    ctx, firing_id, attempt_id=attempt_id
+                                )
+
+                        prepared = replace(
+                            prepared,
+                            occurrence_acceptance_guard=begin_admission,
+                            occurrence_compensation_guard=fail_after_compensation,
                         )
                         submission_id, fingerprint = self.run_submitter(
                             occurrence_ctx, prepared, firing.nominal_fire_time
@@ -595,23 +651,67 @@ class SchedulerService:
                         fencing_token=fencing_token,
                     )
 
-                prepared = (
-                    self._prepare_occurrence(
-                        occurrence_ctx,
-                        occurrence,
-                        nominal_fire_time,
-                        firing,
-                        checkpoint,
+                try:
+                    prepared = (
+                        self._prepare_occurrence(
+                            occurrence_ctx,
+                            occurrence,
+                            nominal_fire_time,
+                            firing,
+                            checkpoint,
+                        )
+                        if self.occurrence_preparer is not None
+                        else occurrence
                     )
-                    if self.occurrence_preparer is not None
-                    else occurrence
-                )
-                self.schedule_store.update_firing_metadata(
-                    ctx,
-                    firing.firing_id,
-                    metadata=dict(prepared.occurrence_snapshot or {}),
-                    owner_id=preparation_owner,
-                    fencing_token=preparation_fencing_token,
+                    self.schedule_store.update_firing_metadata(
+                        ctx,
+                        firing.firing_id,
+                        metadata=dict(prepared.occurrence_snapshot or {}),
+                        owner_id=preparation_owner,
+                        fencing_token=preparation_fencing_token,
+                    )
+                except Exception as exc:
+                    if is_permanent_control_plane_error(exc):
+                        with suppress(Exception):
+                            self.schedule_store.fail_firing_preparation(
+                                ctx,
+                                firing.firing_id,
+                                owner_id=preparation_owner,
+                                fencing_token=preparation_fencing_token,
+                            )
+                    raise
+
+                attempt_id: str | None = None
+
+                def begin_admission() -> Callable[[], None]:
+                    nonlocal attempt_id
+                    attempt_id_value = uuid.uuid4().hex
+                    attempt_id = attempt_id_value
+                    self.schedule_store.begin_firing_submission(
+                        ctx,
+                        firing.firing_id,
+                        owner_id=preparation_owner,
+                        fencing_token=preparation_fencing_token,
+                        attempt_id=attempt_id_value,
+                    )
+
+                    def reject_admission() -> None:
+                        self.schedule_store.reject_firing_submission(
+                            ctx, firing.firing_id, attempt_id=attempt_id_value
+                        )
+
+                    return reject_admission
+
+                def fail_after_compensation() -> None:
+                    if attempt_id is not None:
+                        self.schedule_store.fail_firing_after_compensated_submission(
+                            ctx, firing.firing_id, attempt_id=attempt_id
+                        )
+
+                prepared = replace(
+                    prepared,
+                    occurrence_acceptance_guard=begin_admission,
+                    occurrence_compensation_guard=fail_after_compensation,
                 )
                 submission_id, fingerprint = self.run_submitter(
                     occurrence_ctx, prepared, nominal_fire_time

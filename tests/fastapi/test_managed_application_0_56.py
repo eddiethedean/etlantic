@@ -9,7 +9,7 @@ import time
 from collections.abc import Mapping
 from concurrent.futures import ThreadPoolExecutor
 from dataclasses import replace
-from datetime import UTC, datetime
+from datetime import UTC, datetime, timedelta
 from pathlib import Path
 from threading import Barrier, Event, Lock, Thread, current_thread
 from types import SimpleNamespace
@@ -86,7 +86,7 @@ from etlantic.runtime.request import (
     TimeoutPolicy,
 )
 from etlantic.runtime.scheduler_service import SchedulerService
-from etlantic.service import ManagedApplicationService
+from etlantic.service import ManagedApplicationService, ScheduleApplicationService
 from etlantic_fastapi import (
     ETLanticAPI,
     create_app,
@@ -163,6 +163,368 @@ class ParameterManagedPipeline(Pipeline):
     raw: Extract[Row] = Extract(asset="rows")
     limited = LimitRows.step(rows=raw)
     output: Load[Row] = Load(input=limited.result, asset="output")
+
+
+def test_changed_parameter_snapshot_terminalizes_unlinked_occurrence(
+    tmp_path: Path,
+) -> None:
+    ctx, authz, _definitions, _submissions, durable, _events, managed = _wired(tmp_path)
+    definition = definition_from_pipeline(ParameterManagedPipeline)
+    managed.register_definition(ctx, "parameter-pipe", pipeline_to_dict(definition))
+    parameter_value = {"limit": 10}
+    managed.schedule_parameter_resolver = lambda _ctx, _refs: {
+        "limited": dict(parameter_value)
+    }
+    authz.grant(ctx, "schedule.write")
+    schedules = MemoryScheduleStore()
+    fire_time = datetime(2026, 10, 8, 12, 0, tzinfo=UTC)
+    schedule_commands = ScheduleApplicationService(
+        authorizer=authz,
+        schedule_store=schedules,
+        managed_service=managed,
+        durable_work=durable,
+        clock=lambda: fire_time,
+    )
+    schedule = schedule_commands.create(
+        ctx,
+        "parameter-pipe",
+        spec=ScheduleSpec(kind="interval", interval_seconds=60, overlap="queue"),
+        parameter_refs={"limited.limit": "param://limits/row-limit@v1"},
+    )
+
+    class LoseFirstSubmissionAck:
+        fail_submission = True
+
+        def prepare_scheduled_occurrence(self, *args: Any, **kwargs: Any) -> Any:
+            return managed.prepare_scheduled_occurrence(*args, **kwargs)
+
+        def recover_scheduled_occurrence(self, *args: Any, **kwargs: Any) -> Any:
+            return managed.recover_scheduled_occurrence(*args, **kwargs)
+
+        def submit_scheduled_run(self, *args: Any, **kwargs: Any) -> Any:
+            if self.fail_submission:
+                self.fail_submission = False
+                raise OSError("simulated submit outage before durable acceptance")
+            return managed.submit_scheduled_run(*args, **kwargs)
+
+    occurrence_service = LoseFirstSubmissionAck()
+    scheduler = SchedulerService(
+        schedules,
+        durable=durable,
+        clock=FakeScheduleClock(datetime.fromisoformat(schedule.next_fire_at)),
+        occurrence_service=occurrence_service,
+    )
+
+    scheduler.tick(ctx)
+    firing = schedules.list_firings(ctx, schedule.schedule_id)[0]
+    assert firing.status == "accepted"
+    assert firing.submission_id is None
+    assert firing.metadata["parameter_fingerprint"]
+
+    parameter_value["limit"] = 20
+    scheduler.tick(ctx)
+
+    terminal = schedules.list_firings(ctx, schedule.schedule_id)[0]
+    assert terminal.status == "failed_preparation"
+    assert terminal.submission_id is None
+    assert terminal.preparation_owner_id is None
+    amended = schedule_commands.amend(
+        ctx,
+        schedule.schedule_id,
+        expected_revision_id=schedule.revision_id,
+        spec=schedule.spec,
+    )
+    assert amended.revision_id != schedule.revision_id
+
+
+@pytest.mark.parametrize("delivery", ["gateway", "scheduler"])
+@pytest.mark.parametrize(
+    "failure", ["rejected", "uncertain", "lookup_failed", "committed"]
+)
+def test_scheduled_admission_rejection_releases_only_confirmed_attempt(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, delivery: str, failure: str
+) -> None:
+    ctx, authz, _definitions, submissions, durable, _events, managed = _wired(tmp_path)
+    managed.register_definition(
+        ctx,
+        "rejection-pipe",
+        pipeline_to_dict(definition_from_pipeline(ParameterManagedPipeline)),
+    )
+    parameter_value = {"limit": 10}
+    managed.schedule_parameter_resolver = lambda _ctx, _refs: {
+        "limited": dict(parameter_value)
+    }
+    authz.grant(ctx, "schedule.write")
+    schedules = MemoryScheduleStore()
+    due = datetime(2026, 10, 8, 12, 0, tzinfo=UTC)
+    commands = ScheduleApplicationService(
+        authorizer=authz,
+        schedule_store=schedules,
+        managed_service=managed,
+        durable_work=durable,
+        clock=lambda: due,
+    )
+    schedule = commands.create(
+        ctx,
+        "rejection-pipe",
+        spec=ScheduleSpec(kind="interval", interval_seconds=60, overlap="queue"),
+        parameter_refs={"limited.limit": "param://limits/row-limit@v1"},
+    )
+    nominal = datetime.fromisoformat(schedule.next_fire_at)
+    scheduler = SchedulerService(
+        schedules,
+        durable=durable,
+        clock=FakeScheduleClock(nominal),
+        occurrence_service=managed,
+    )
+
+    def trigger() -> None:
+        if delivery == "gateway":
+            commands.trigger(ctx, schedule.schedule_id, nominal_fire_time=nominal)
+        else:
+            scheduler.tick(ctx)
+
+    accepted = submissions.accept
+    lookup = submissions.lookup_idempotency
+    entered_acceptance = False
+
+    def fail_acceptance(*args: Any, **kwargs: Any) -> Any:
+        nonlocal entered_acceptance
+        entered_acceptance = True
+        if failure == "committed":
+            accepted(*args, **kwargs)
+        if failure == "uncertain":
+            raise OSError("CP1 commit outcome is uncertain")
+        raise ControlPlaneError(
+            "CP1 rejected admission",
+            code="PMCP400",
+            status=400,
+            title="Bad Request",
+        )
+
+    def fail_reconciliation(*args: Any, **kwargs: Any) -> Any:
+        if failure == "lookup_failed" and entered_acceptance:
+            raise OSError("receipt lookup unavailable")
+        return lookup(*args, **kwargs)
+
+    monkeypatch.setattr(submissions, "accept", fail_acceptance)
+    monkeypatch.setattr(submissions, "lookup_idempotency", fail_reconciliation)
+    if delivery == "gateway" and failure != "committed":
+        with pytest.raises(ControlPlaneError):
+            trigger()
+    else:
+        trigger()
+    assert entered_acceptance
+    firing = schedules.list_firings(ctx, schedule.schedule_id)[0]
+    assert firing.submission_started is (failure != "rejected")
+    assert bool(firing.submission_attempt_ids) is (failure != "rejected")
+    monkeypatch.setattr(submissions, "accept", accepted)
+    monkeypatch.setattr(submissions, "lookup_idempotency", lookup)
+    parameter_value["limit"] = 20
+    if delivery == "gateway" and failure != "committed":
+        with pytest.raises(ControlPlaneError, match="snapshot changed"):
+            trigger()
+    else:
+        trigger()
+    final = schedules.list_firings(ctx, schedule.schedule_id)[0]
+    if failure == "rejected":
+        assert final.status == "failed_preparation"
+        assert final.submission_id is None
+        amended = commands.amend(
+            ctx,
+            schedule.schedule_id,
+            expected_revision_id=schedule.revision_id,
+            spec=schedule.spec,
+        )
+        assert amended.revision_id != schedule.revision_id
+        assert commands.delete(ctx, schedule.schedule_id).status == "deleted"
+    else:
+        assert final.status == "accepted"
+        assert final.submission_started
+    assert len(durable.pending_outbox(ctx)) == (1 if failure == "committed" else 0)
+
+
+@pytest.mark.parametrize("delivery", ["gateway", "scheduler"])
+@pytest.mark.parametrize("lookup_failure", [False, True])
+def test_definite_cp3_rejection_reconciles_scheduled_admission(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    delivery: str,
+    lookup_failure: bool,
+) -> None:
+    ctx, authz, _definitions, _submissions, durable, _events, managed = _wired(tmp_path)
+    managed.register_definition(
+        ctx,
+        "cp3-rejection-pipe",
+        pipeline_to_dict(definition_from_pipeline(ParameterManagedPipeline)),
+    )
+    managed.schedule_parameter_resolver = lambda _ctx, _refs: {"limited": {"limit": 10}}
+    authz.grant(ctx, "schedule.write")
+    schedules = MemoryScheduleStore()
+    due = datetime(2026, 10, 8, 12, 0, tzinfo=UTC)
+    commands = ScheduleApplicationService(
+        authorizer=authz,
+        schedule_store=schedules,
+        managed_service=managed,
+        durable_work=durable,
+        clock=lambda: due,
+    )
+    schedule = commands.create(
+        ctx,
+        "cp3-rejection-pipe",
+        spec=ScheduleSpec(kind="interval", interval_seconds=60, overlap="queue"),
+    )
+    nominal = datetime.fromisoformat(schedule.next_fire_at)
+    scheduler = SchedulerService(
+        schedules,
+        durable=durable,
+        clock=FakeScheduleClock(nominal),
+        occurrence_service=managed,
+    )
+    accepted = False
+    durable_accept = durable.accept
+    durable_lookup = durable.get_submission_by_idempotency
+
+    def reject_cp3(*args: Any, **kwargs: Any) -> Any:
+        nonlocal accepted
+        accepted = True
+        raise ControlPlaneError.conflict("definite CP3 rejection")
+
+    def lookup_cp3(*args: Any, **kwargs: Any) -> Any:
+        if accepted and lookup_failure:
+            raise OSError("CP3 reconciliation read unavailable")
+        return durable_lookup(*args, **kwargs)
+
+    monkeypatch.setattr(durable, "accept", reject_cp3)
+    monkeypatch.setattr(durable, "get_submission_by_idempotency", lookup_cp3)
+
+    if delivery == "gateway":
+        with pytest.raises(ControlPlaneError) as rejected:
+            commands.trigger(ctx, schedule.schedule_id, nominal_fire_time=nominal)
+        assert rejected.value.status == (503 if lookup_failure else 409)
+    else:
+        scheduler.tick(ctx)
+    assert accepted
+    firing = schedules.list_firings(ctx, schedule.schedule_id)[0]
+    assert firing.submission_id is None
+    assert durable.pending_outbox(ctx) == []
+    if lookup_failure:
+        assert firing.status == "accepted"
+        assert firing.submission_started
+        assert firing.submission_attempt_ids
+    else:
+        assert firing.status == "failed_preparation"
+        assert not firing.submission_started
+        assert not firing.submission_attempt_ids
+        amended = commands.amend(
+            ctx,
+            schedule.schedule_id,
+            expected_revision_id=schedule.revision_id,
+            spec=schedule.spec,
+        )
+        assert amended.revision_id != schedule.revision_id
+    monkeypatch.setattr(durable, "accept", durable_accept)
+
+
+def test_expired_preparation_owner_cannot_terminalize_inflight_acceptance(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    ctx, authz, _definitions, _submissions, durable, _events, managed = _wired(tmp_path)
+    managed.register_definition(
+        ctx,
+        "race-pipe",
+        pipeline_to_dict(definition_from_pipeline(ParameterManagedPipeline)),
+    )
+    parameter_value = {"limit": 10}
+    managed.schedule_parameter_resolver = lambda _ctx, _refs: {
+        "limited": dict(parameter_value)
+    }
+    authz.grant(ctx, "schedule.write")
+    revision, profile = managed.pin_schedule_definition_revision(ctx, "race-pipe")
+    schedules = MemoryScheduleStore()
+    due = datetime(2026, 10, 8, 12, 0, tzinfo=UTC)
+    now = [due]
+    monkeypatch.setattr("etlantic.control_plane.schedule_memory._now", lambda: now[0])
+    schedule = schedules.create(
+        ctx,
+        definition_id="race-pipe",
+        definition_revision_id=revision,
+        profile_name=profile,
+        spec=ScheduleSpec(kind="interval", interval_seconds=60, overlap="queue"),
+        parameter_refs={"limited.limit": "param://limits/row-limit@v1"},
+        next_fire_at=due.isoformat().replace("+00:00", "Z"),
+    )
+    commands = ScheduleApplicationService(
+        authorizer=authz,
+        schedule_store=schedules,
+        managed_service=managed,
+        durable_work=durable,
+        clock=lambda: now[0],
+    )
+    entered_acceptance = Event()
+    allow_acceptance = Event()
+    accepted = managed.submissions.accept
+
+    def pause_before_cp1_acceptance(*args: Any, **kwargs: Any) -> Any:
+        if current_thread().name == "old-schedule-admission":
+            entered_acceptance.set()
+            if not allow_acceptance.wait(timeout=10):
+                raise AssertionError("timed out waiting to resume scheduled admission")
+        else:
+            raise ControlPlaneError(
+                "Contending admission rejected before acceptance",
+                code="PMCP400",
+                status=400,
+                title="Bad Request",
+            )
+        return accepted(*args, **kwargs)
+
+    monkeypatch.setattr(managed.submissions, "accept", pause_before_cp1_acceptance)
+    old_result: list[Any] = []
+
+    def trigger_old_owner() -> None:
+        try:
+            old_result.append(
+                commands.trigger(ctx, schedule.schedule_id, nominal_fire_time=due)
+            )
+        except Exception as exc:
+            old_result.append(exc)
+
+    old_owner = Thread(target=trigger_old_owner, name="old-schedule-admission")
+    old_owner.start()
+    try:
+        assert entered_acceptance.wait(timeout=10)
+        # The old request has crossed the schedule store's submission-start
+        # fence, then loses its preparation lease while CP1 acceptance waits.
+        now[0] = due + timedelta(seconds=301)
+        # A second attempt with the same inputs is rejected. Its cleanup must
+        # not remove the first owner's in-flight admission fence.
+        with pytest.raises(ControlPlaneError, match="Contending admission rejected"):
+            commands.trigger(ctx, schedule.schedule_id, nominal_fire_time=due)
+        pending_firing = schedules.list_firings(ctx, schedule.schedule_id)[0]
+        assert pending_firing.submission_started
+        assert len(pending_firing.submission_attempt_ids) == 1
+        parameter_value["limit"] = 20
+        with pytest.raises(ControlPlaneError, match="snapshot changed"):
+            commands.trigger(ctx, schedule.schedule_id, nominal_fire_time=due)
+        pending_firing = schedules.list_firings(ctx, schedule.schedule_id)[0]
+        assert pending_firing.status == "accepted"
+        assert pending_firing.submission_started
+    finally:
+        allow_acceptance.set()
+        old_owner.join(timeout=10)
+    assert not old_owner.is_alive()
+    assert len(old_result) == 1
+    assert isinstance(old_result[0], tuple) or (
+        isinstance(old_result[0], ControlPlaneError)
+        and old_result[0].extensions.get("reason") == "stale_preparation_lease"
+    )
+    assert len(durable.pending_outbox(ctx)) == 1
+    # A duplicate trigger recovers and links the accepted immutable snapshot.
+    commands.trigger(ctx, schedule.schedule_id, nominal_fire_time=due)
+    linked = schedules.list_firings(ctx, schedule.schedule_id)[0]
+    assert linked.status == "accepted"
+    assert linked.submission_id is not None
 
 
 def _ctx() -> ControlPlaneContext:
