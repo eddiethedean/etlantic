@@ -4,8 +4,10 @@
 from __future__ import annotations
 
 import anyio
+import pytest
 from etlantic_iceberg import FakeIcebergCatalog, create_sink, create_source
 
+from etlantic.connectors.errors import ConnectorConfigError
 from etlantic.connectors.protocol import SinkConnector, SourceConnector
 
 
@@ -58,6 +60,23 @@ def test_protocols() -> None:
     assert isinstance(create_source(), SourceConnector)
     assert isinstance(create_sink(), SinkConnector)
     assert create_sink().info().metadata["publication_identity"] == "snapshot_id"
+
+
+@pytest.mark.parametrize(
+    "binding",
+    [
+        {"table": "events", "live": True},
+        {"table": "events", "config": {"live": True}},
+    ],
+)
+def test_live_binding_flags_are_rejected_before_fake_planning(
+    binding: dict[str, object],
+) -> None:
+    async def _run() -> None:
+        with pytest.raises(ConnectorConfigError, match="reference-fake only"):
+            await create_source().plan_read(binding=binding, context={})
+
+    anyio.run(_run)
     assert "write.partition_replace" not in create_sink().info().capabilities
 
 

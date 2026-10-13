@@ -4,9 +4,11 @@
 from __future__ import annotations
 
 import anyio
+import pytest
 from etlantic_s3 import InMemoryS3Fake, create_sink, create_source, create_storage
 from etlantic_s3.fake import boto3_available
 
+from etlantic.connectors.errors import ConnectorConfigError
 from etlantic.connectors.protocol import (
     SinkConnector,
     SourceConnector,
@@ -23,6 +25,23 @@ def test_factories_and_protocols() -> None:
     assert isinstance(storage, StorageConnector)
     assert source.info().maturity.value == "experimental"
     assert sink.info().metadata.get("commit_pointer") == "conditional"
+
+
+@pytest.mark.parametrize(
+    "binding",
+    [
+        {"bucket": "lake", "live": True},
+        {"bucket": "lake", "config": {"live": True}},
+    ],
+)
+def test_live_binding_flags_are_rejected_before_fake_planning(
+    binding: dict[str, object],
+) -> None:
+    async def _run() -> None:
+        with pytest.raises(ConnectorConfigError, match="reference-fake only"):
+            await create_source().plan_read(binding=binding, context={})
+
+    anyio.run(_run)
 
 
 def test_multipart_abort_discards_parts() -> None:

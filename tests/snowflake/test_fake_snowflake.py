@@ -4,9 +4,28 @@
 from __future__ import annotations
 
 import anyio
+import pytest
 from etlantic_snowflake import FakeSnowflakeConnection, create_sink, create_source
 
+from etlantic.connectors.errors import ConnectorConfigError
 from etlantic.connectors.protocol import SinkConnector, SourceConnector
+
+
+@pytest.mark.parametrize(
+    "binding",
+    [
+        {"table": "ORDERS", "fake": False},
+        {"table": "ORDERS", "config": {"fake": False}},
+    ],
+)
+def test_live_binding_flags_are_rejected_before_fake_planning(
+    binding: dict[str, object],
+) -> None:
+    async def _run() -> None:
+        with pytest.raises(ConnectorConfigError, match="reference-fake only"):
+            await create_source().plan_read(binding=binding, context={})
+
+    anyio.run(_run)
 
 
 def test_autocommit_off_and_query_id_evidence() -> None:

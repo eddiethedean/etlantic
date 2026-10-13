@@ -3296,31 +3296,77 @@ class MemoryDurableWorkStore:
             }
             data["diagnostics"] = [record.to_dict() for record in self._diagnostics]
 
-            def without_schema(value: object) -> object:
-                if isinstance(value, Mapping):
-                    mapping = cast(Mapping[object, Any], value)
-                    cleaned: dict[str, object] = {}
-                    for key, item in mapping.items():
-                        if not isinstance(key, str):
-                            raise ValueError(
-                                "durable snapshot field names must be strings"
-                            )
-                        if key != "schema":
-                            cleaned[key] = without_schema(item)
-                    return cleaned
-                if isinstance(value, list):
-                    return [without_schema(item) for item in cast(list[object], value)]
-                if isinstance(value, tuple):
-                    return tuple(
-                        without_schema(item) for item in cast(tuple[object, ...], value)
-                    )
-                return value
-
             # Preserve the pre-0.59 SQLModel body at top level so a rollback
             # reader can recover accepted Prefect work. New generic dispatch
             # fields stay inside the versioned envelope until old binaries are
-            # outside the declared rollback window.
-            legacy_data = cast(dict[str, Any], without_schema(data))
+            # outside the declared rollback window. Remove schema tags only
+            # from known persisted record objects; nested user metadata and
+            # provider receipts may legitimately contain their own schema keys.
+            def legacy_record(value: object) -> dict[str, Any]:
+                record = _snapshot_mapping(value)
+                record.pop("schema", None)
+                return record
+
+            legacy_data = dict(data)
+            for family in (
+                "submissions",
+                "outbox",
+                "dispatches",
+                "leases",
+                "attempts",
+                "result_publications",
+                "checkpoints",
+                "effects",
+                "previews",
+                "diffs",
+                "shadows",
+                "baselines",
+                "action_jobs",
+            ):
+                raw_family = data[family]
+                if not isinstance(raw_family, Mapping):
+                    raise ValueError(f"durable snapshot {family} must be an object")
+                legacy_data[family] = {
+                    key: legacy_record(value)
+                    for key, value in cast(Mapping[str, object], raw_family).items()
+                }
+
+            legacy_dispatches = cast(
+                dict[str, dict[str, Any]], legacy_data["dispatches"]
+            )
+            for record in legacy_dispatches.values():
+                raw_history = record.get("reconciliation_history", ())
+                if not isinstance(raw_history, (list, tuple)):
+                    raise ValueError(
+                        "durable snapshot reconciliation history must be an array"
+                    )
+                record["reconciliation_history"] = [
+                    legacy_record(item) for item in cast(Sequence[object], raw_history)
+                ]
+
+            raw_route_states = data["execution_route_states"]
+            if not isinstance(raw_route_states, Mapping):
+                raise ValueError(
+                    "durable snapshot execution route states must be an object"
+                )
+            legacy_route_states: dict[str, dict[str, Any]] = {}
+            for route, value in cast(Mapping[str, object], raw_route_states).items():
+                record = legacy_record(value)
+                raw_history = record.get("history", ())
+                if not isinstance(raw_history, (list, tuple)):
+                    raise ValueError(
+                        "durable snapshot execution route history must be an array"
+                    )
+                record["history"] = [
+                    legacy_record(item) for item in cast(Sequence[object], raw_history)
+                ]
+                legacy_route_states[route] = record
+            legacy_data["execution_route_states"] = legacy_route_states
+
+            legacy_data["diagnostics"] = [
+                legacy_record(item) for item in data["diagnostics"]
+            ]
+
             raw_legacy_dispatches: object = legacy_data.get("dispatches", {})
             if not isinstance(raw_legacy_dispatches, Mapping):
                 raise ValueError("durable snapshot dispatches must be an object")

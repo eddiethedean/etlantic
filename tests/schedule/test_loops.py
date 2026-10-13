@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import ast
 from collections.abc import Mapping
+from dataclasses import replace
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
 from threading import Event, Thread
@@ -132,6 +133,83 @@ def test_wake_outage_after_firing_commit_is_recoverable_without_duplicate() -> N
     assert [item.submission_id for item in recovered_durable.pending_outbox(ctx)] == [
         committed_outbox[0].submission_id
     ]
+
+
+def test_scheduler_persists_occurrence_selection_before_preparation_can_fail() -> None:
+    ctx = _ctx()
+    schedules = MemoryScheduleStore()
+    durable = MemoryDurableWorkStore()
+    due_at = datetime(2026, 1, 1, 0, 1, tzinfo=UTC)
+    schedule = schedules.create(
+        ctx,
+        definition_id="latest-approved-pipeline",
+        profile_name="test",
+        spec=ScheduleSpec(kind="interval", interval_seconds=60),
+        next_fire_at=due_at.isoformat().replace("+00:00", "Z"),
+    )
+    approval = {"revision": "revision-a"}
+    observed_on_retry: list[str | None] = []
+    fail_once = True
+
+    def prepare_occurrence(
+        _ctx: ControlPlaneContext,
+        occurrence: Any,
+        _nominal_fire_time: str,
+        firing: FiringRecord | None,
+        *,
+        checkpoint: Any = None,
+    ) -> Any:
+        nonlocal fail_once
+        prior = (
+            firing.metadata.get("selected_definition_revision_id")
+            if firing is not None
+            else None
+        )
+        selected = prior or approval["revision"]
+        if prior is not None:
+            observed_on_retry.append(prior)
+        if checkpoint is not None:
+            checkpoint({"selected_definition_revision_id": selected})
+        if fail_once:
+            fail_once = False
+            raise OSError("parameter provider unavailable")
+        return replace(
+            occurrence,
+            occurrence_snapshot={"selected_definition_revision_id": selected},
+        )
+
+    def submit_run(
+        _ctx: ControlPlaneContext, _occurrence: Any, _nominal_fire_time: str
+    ) -> tuple[str, str]:
+        raise OSError("simulated failure after preparation")
+
+    def recover_occurrence(
+        _ctx: ControlPlaneContext, _occurrence: Any, _nominal_fire_time: str
+    ) -> tuple[str, str] | None:
+        return None
+
+    scheduler = SchedulerService(
+        schedules,
+        durable=durable,
+        clock=FakeScheduleClock(due_at),
+        run_submitter=submit_run,
+        occurrence_preparer=prepare_occurrence,
+        occurrence_recoverer=recover_occurrence,
+    )
+
+    assert scheduler.tick(ctx) == 0
+    firing = schedules.list_firings(ctx, schedule.schedule_id)[0]
+    assert firing.metadata["selected_definition_revision_id"] == "revision-a"
+
+    approval["revision"] = "revision-b"
+    assert scheduler.tick(ctx) == 0
+    assert observed_on_retry == ["revision-a"]
+    assert (
+        schedules.list_firings(ctx, schedule.schedule_id)[0].metadata[
+            "selected_definition_revision_id"
+        ]
+        == "revision-a"
+    )
 
 
 def test_failed_due_occurrence_does_not_starve_other_schedules() -> None:

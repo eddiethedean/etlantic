@@ -3,11 +3,12 @@
 from __future__ import annotations
 
 import logging
-from collections.abc import Callable
+from collections.abc import Callable, Mapping
 from contextlib import suppress
 from dataclasses import replace
 from datetime import datetime
-from typing import Any
+from inspect import Parameter, signature
+from typing import Any, cast
 
 from etlantic.control_plane.authz import validate_control_plane_context
 from etlantic.control_plane.durable_protocols import DurableWorkStore
@@ -43,6 +44,18 @@ def _iso(value: datetime) -> str:
 
 def _is_nonempty_text(value: object) -> bool:
     return isinstance(value, str) and bool(value.strip())
+
+
+def _accepts_checkpoint(callback: Callable[..., Any]) -> bool:
+    """Keep legacy four-argument occurrence callbacks working."""
+    try:
+        parameters = signature(callback).parameters.values()
+    except (TypeError, ValueError):
+        return False
+    return any(
+        parameter.name == "checkpoint" or parameter.kind is Parameter.VAR_KEYWORD
+        for parameter in parameters
+    )
 
 
 class SchedulerService:
@@ -289,18 +302,37 @@ class SchedulerService:
                         if not acquired:
                             continue
                         preparation_fencing_token = firing.preparation_fencing_token
+                        assert preparation_owner is not None
+                        assert preparation_fencing_token is not None
                         occurrence = replace(
                             schedule,
                             revision_id=firing.revision_id,
                             occurrence_snapshot=dict(firing.metadata),
                             occurrence_inputs=None,
                         )
+
+                        def checkpoint(
+                            metadata: Mapping[str, object],
+                            *,
+                            firing_id: str = firing.firing_id,
+                            owner_id: str = preparation_owner,
+                            fencing_token: int = preparation_fencing_token,
+                        ) -> None:
+                            self.schedule_store.update_firing_metadata(
+                                ctx,
+                                firing_id,
+                                metadata=metadata,
+                                owner_id=owner_id,
+                                fencing_token=fencing_token,
+                            )
+
                         prepared = (
-                            self.occurrence_preparer(
+                            self._prepare_occurrence(
                                 occurrence_ctx,
                                 occurrence,
                                 firing.nominal_fire_time,
                                 firing,
+                                checkpoint,
                             )
                             if self.occurrence_preparer is not None
                             else occurrence
@@ -542,6 +574,7 @@ class SchedulerService:
             if not acquired:
                 return created
             preparation_fencing_token = firing.preparation_fencing_token
+            assert preparation_fencing_token is not None
             occurrence = replace(
                 rec,
                 revision_id=firing.revision_id,
@@ -549,9 +582,29 @@ class SchedulerService:
                 occurrence_inputs=None,
             )
             try:
+
+                def checkpoint(
+                    metadata: Mapping[str, object],
+                    *,
+                    firing_id: str = firing.firing_id,
+                    owner_id: str = preparation_owner,
+                    fencing_token: int = preparation_fencing_token,
+                ) -> None:
+                    self.schedule_store.update_firing_metadata(
+                        ctx,
+                        firing_id,
+                        metadata=metadata,
+                        owner_id=owner_id,
+                        fencing_token=fencing_token,
+                    )
+
                 prepared = (
-                    self.occurrence_preparer(
-                        occurrence_ctx, occurrence, nominal_fire_time, firing
+                    self._prepare_occurrence(
+                        occurrence_ctx,
+                        occurrence,
+                        nominal_fire_time,
+                        firing,
+                        checkpoint,
                     )
                     if self.occurrence_preparer is not None
                     else occurrence
@@ -586,6 +639,27 @@ class SchedulerService:
                     )
                 raise
         return created
+
+    def _prepare_occurrence(
+        self,
+        ctx: ControlPlaneContext,
+        schedule: ScheduleRecord,
+        nominal_fire_time: str,
+        firing: FiringRecord,
+        checkpoint: Callable[[Mapping[str, object]], None],
+    ) -> ScheduleRecord:
+        preparer = self.occurrence_preparer
+        if preparer is None:
+            return schedule
+        if _accepts_checkpoint(preparer):
+            return cast(Any, preparer)(
+                ctx,
+                schedule,
+                nominal_fire_time,
+                firing,
+                checkpoint=checkpoint,
+            )
+        return preparer(ctx, schedule, nominal_fire_time, firing)
 
 
 __all__ = ["FakeScheduleClock", "SchedulerService"]
