@@ -12,6 +12,7 @@ from etlantic.control_plane import (
     ControlPlaneError,
     DispatchReconciliation,
     DispatchRecord,
+    EffectRecord,
     EnvironmentRef,
     ExecutionRouteTransition,
     MemoryDurableWorkStore,
@@ -134,3 +135,35 @@ def test_memory_durable_snapshot_loads_legacy_payload_without_route_state() -> N
     assert state.status == "active"
     assert state.revision == 0
     assert state.history == ()
+
+
+def test_versioned_snapshot_rollback_projection_preserves_nested_schema_data() -> None:
+    ctx = _context()
+    store = MemoryDurableWorkStore()
+    submission, _ = store.accept(
+        ctx,
+        idempotency_key="schema-bearing-effect",
+        operation="run.submit",
+        plan_fingerprint="plan",
+    )
+    receipt = {"schema": "provider.receipt/1", "object_id": "object-1"}
+    store.record_effect(
+        ctx,
+        EffectRecord(
+            effect_id="effect-1",
+            submission_id=submission.submission_id,
+            tenant_id=ctx.tenant.tenant_id,
+            workspace_id=ctx.workspace.workspace_id,
+            status="unknown",
+            recorded_at="2026-10-13T12:00:00Z",
+            metadata={"provider_receipt": receipt},
+        ),
+    )
+
+    snapshot = json.loads(json.dumps(store.to_snapshot()))
+    rollback_projection = {
+        key: value for key, value in snapshot.items() if key not in {"schema", "data"}
+    }
+
+    restored = MemoryDurableWorkStore.from_snapshot(rollback_projection)
+    assert restored.get_effect(ctx, "effect-1").metadata["provider_receipt"] == receipt

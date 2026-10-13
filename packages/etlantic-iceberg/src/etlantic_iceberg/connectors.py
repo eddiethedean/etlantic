@@ -61,8 +61,9 @@ SINK_CAPS = frozenset(
 
 
 def _public_config(binding: Mapping[str, Any]) -> dict[str, Any]:
+    _reject_live_config(binding)
     raw = binding.get("config")
-    if isinstance(raw, dict):
+    if isinstance(raw, Mapping):
         config = dict(raw)
     else:
         keys = ("table", "namespace", "mode", "identifier")

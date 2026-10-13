@@ -3,6 +3,10 @@
 
 from __future__ import annotations
 
+import asyncio
+import json
+from threading import get_ident
+from types import SimpleNamespace
 from typing import Any, cast
 
 import pytest
@@ -11,6 +15,7 @@ pytest.importorskip("fastapi")
 pytest.importorskip("etlantic_fastapi")
 pytest.importorskip("httpx2")
 
+from fastapi.routing import APIRoute
 from fastapi.testclient import TestClient
 
 from etlantic.control_plane import (
@@ -26,7 +31,9 @@ from etlantic.control_plane import (
     ScheduleSpec,
     SecurityDomain,
     TenantRef,
+    TriggerEnvelope,
     WorkspaceRef,
+    external_occurrence_id,
 )
 from etlantic_fastapi import (
     ETLanticAPI,
@@ -34,6 +41,8 @@ from etlantic_fastapi import (
     membership_context_factory,
     principal_from_header,
 )
+from etlantic_fastapi.schedule_routes import register_schedule_routes
+from fastapi import APIRouter, Request, Response
 
 pytestmark = pytest.mark.fastapi
 
@@ -269,3 +278,61 @@ def test_schedule_route_transfer_accepts_only_the_managed_boolean() -> None:
             },
         )
     assert arbitrary_route.value.status == 400
+
+
+def test_external_trigger_runs_sync_service_calls_in_worker_threads() -> None:
+    request_thread = get_ident()
+    service_threads: list[int] = []
+
+    class ScheduleService:
+        def authorize(self, *_args: object) -> None:
+            service_threads.append(get_ident())
+
+        def trigger_external(self, *_args: object) -> Any:
+            service_threads.append(get_ident())
+            return SimpleNamespace(
+                status="pending",
+                to_dict=lambda: {"status": "pending"},
+            )
+
+    router = APIRouter()
+    service = ScheduleService()
+    register_schedule_routes(
+        router,
+        SimpleNamespace(get_schedule_service=lambda: service),
+        lambda: None,
+    )
+    external_route = next(
+        route
+        for route in router.routes
+        if isinstance(route, APIRoute)
+        and route.operation_id == "cp_external_schedule_trigger"
+    )
+    endpoint = external_route.endpoint
+    schedule_id = "schedule-thread-check"
+    revision_id = "revision-thread-check"
+    scheduled_at = "2026-10-13T12:00:00Z"
+    envelope = TriggerEnvelope(
+        schedule_id=schedule_id,
+        schedule_revision_id=revision_id,
+        timer_owner_generation=1,
+        occurrence_id=external_occurrence_id(schedule_id, revision_id, scheduled_at),
+        scheduled_at=scheduled_at,
+        delivery_attempt_id="delivery-thread-check",
+        correlation_id="thread-check",
+    )
+    body = json.dumps(envelope.to_dict()).encode("utf-8")
+
+    async def receive() -> dict[str, object]:
+        return {"type": "http.request", "body": body, "more_body": False}
+
+    async def invoke() -> None:
+        request = Request({"type": "http", "headers": []}, receive)
+        response = Response()
+        result = await endpoint(schedule_id, request, response, _ctx())
+        assert result["status"] == "pending"
+        assert response.status_code == 202
+
+    asyncio.run(invoke())
+    assert len(service_threads) == 2
+    assert all(thread_id != request_thread for thread_id in service_threads)

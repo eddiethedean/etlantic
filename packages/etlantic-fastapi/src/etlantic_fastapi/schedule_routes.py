@@ -8,6 +8,8 @@ from collections.abc import Callable, Mapping
 from datetime import UTC, datetime
 from typing import Any, cast
 
+from starlette.concurrency import run_in_threadpool
+
 from etlantic.control_plane import (
     MAX_TRIGGER_ENVELOPE_BYTES,
     ControlPlaneContext,
@@ -359,7 +361,13 @@ def register_schedule_routes(
     ) -> TriggerReceiptResponse:
         from etlantic.control_plane import TriggerEnvelope
 
-        service().authorize(ctx, "schedule.trigger", f"schedule:{schedule_id}")
+        schedule_service = service()
+        await run_in_threadpool(
+            schedule_service.authorize,
+            ctx,
+            "schedule.trigger",
+            f"schedule:{schedule_id}",
+        )
         envelope = TriggerEnvelope.from_json(await bounded_trigger_body(request))
         if envelope.schedule_id != schedule_id:
             raise ControlPlaneError(
@@ -369,7 +377,9 @@ def register_schedule_routes(
                 title="Bad Request",
                 type="etlantic.control_plane/bad_request",
             )
-        receipt = service().trigger_external(ctx, envelope)
+        receipt = await run_in_threadpool(
+            schedule_service.trigger_external, ctx, envelope
+        )
         if receipt.status == "pending":
             response.status_code = 202
         return receipt.to_dict()
