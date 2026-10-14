@@ -78,7 +78,12 @@ class _SlowTlsReceiver:
                     if len(request) > 32_768:
                         raise AssertionError("unexpectedly large test request")
                 self.request_count += 1
-                if self.fault == "truncated_content_length":
+                if self.fault in {
+                    "truncated_content_length",
+                    "duplicate_content_length",
+                    "conflicting_framing",
+                    "truncated_chunked_trailer",
+                }:
                     request_headers, _, request_body = bytes(request).partition(
                         b"\r\n\r\n"
                     )
@@ -102,14 +107,34 @@ class _SlowTlsReceiver:
                         submission_id="submission-1",
                     )
                     body = json.dumps(receipt.to_dict()).encode()
+                    if self.fault == "truncated_content_length":
+                        headers = f"Content-Length: {len(body) + 100}\r\n"
+                        wire_body = body
+                    elif self.fault == "duplicate_content_length":
+                        headers = (
+                            f"Content-Length: {len(body) + 100}\r\n"
+                            f"Content-Length: {len(body)}\r\n"
+                        )
+                        wire_body = body
+                    elif self.fault == "conflicting_framing":
+                        headers = (
+                            f"Content-Length: {len(body)}\r\n"
+                            "Transfer-Encoding: chunked\r\n"
+                        )
+                        wire_body = (
+                            f"{len(body):X}\r\n".encode() + body + b"\r\n0\r\n\r\n"
+                        )
+                    else:
+                        headers = "Transfer-Encoding: chunked\r\n"
+                        wire_body = f"{len(body):X}\r\n".encode() + body + b"\r\n0\r\n"
                     conn.sendall(
                         (
                             "HTTP/1.1 200 OK\r\n"
                             "Connection: close\r\n"
                             "Content-Type: application/json\r\n"
-                            f"Content-Length: {len(body) + 100}\r\n\r\n"
+                            f"{headers}\r\n"
                         ).encode()
-                        + body
+                        + wire_body
                     )
                     return
                 connection = "close" if self.close_response else "keep-alive"
@@ -234,6 +259,89 @@ def test_generated_runner_rejects_valid_receipt_before_declared_response_eof(
     assert result.returncode != 0
     assert "did not match its declared length" in result.stderr
     assert "synthetic-trigger-token" not in result.stdout + result.stderr
+    assert receiver.request_count == 1
+
+
+@pytest.mark.parametrize(
+    ("fault", "message"),
+    [
+        ("duplicate_content_length", "ambiguous HTTP response framing"),
+        ("conflicting_framing", "conflicting HTTP response framing"),
+        ("truncated_chunked_trailer", "response was lost"),
+    ],
+)
+@pytest.mark.parametrize("use_generated_runner", [False, True])
+def test_receipt_requires_unambiguous_complete_http_framing(
+    fault: str,
+    message: str,
+    use_generated_runner: bool,
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    monkeypatch.setenv("SSL_CERT_FILE", str(_CERT))
+    with _receiver(fault, True) as receiver:
+        envelope = build_trigger_envelope(
+            schedule_id="schedule-1",
+            schedule_revision_id="revision-1",
+            timer_owner_generation=1,
+            occurrence=OccurrenceContext(
+                scheduled_at="2026-10-13T12:00:00Z",
+                delivery_attempt_id="attempt-1",
+                correlation_id="correlation-1",
+            ),
+        )
+        if use_generated_runner:
+            bundle = build_trigger_bundle(
+                schedule_id="schedule-1",
+                schedule_revision_id="revision-1",
+                timer_owner_generation=1,
+                endpoint_url=receiver.endpoint,
+                credential_ref=SecretRef("env", "receiver", "token"),
+                credential_env="ETLANTIC_TRIGGER_TOKEN",
+                outbound_policy=_policy(),
+                timeout_seconds=1,
+                max_attempts=1,
+            )
+            target = bundle.write_to(tmp_path / "content")
+            config_path = target / "etlantic-trigger.json"
+            config = json.loads(config_path.read_text())
+            config["occurrence_context_provider"] = "test-fixture"
+            config_path.write_text(json.dumps(config))
+            env = {
+                "SSL_CERT_FILE": str(_CERT),
+                "ETLANTIC_TRIGGER_ARMED": "true",
+                "ETLANTIC_TRIGGER_TOKEN": "synthetic-trigger-token",
+                "ETLANTIC_SCHEDULED_AT": "2026-10-13T12:00:00Z",
+                "ETLANTIC_DELIVERY_ATTEMPT_ID": "attempt-1",
+                "ETLANTIC_CORRELATION_ID": "correlation-1",
+            }
+            if system_root := os.environ.get("SYSTEMROOT"):
+                env["SYSTEMROOT"] = system_root
+            result = subprocess.run(
+                [sys.executable, str(target / "etlantic-trigger.py")],
+                env=env,
+                capture_output=True,
+                text=True,
+                check=False,
+                timeout=6,
+            )
+            assert result.returncode != 0
+            assert message in result.stderr
+            assert "synthetic-trigger-token" not in result.stdout + result.stderr
+        else:
+            client = HttpsTriggerDelivery(
+                DeliveryConfig(
+                    endpoint_url=receiver.endpoint,
+                    credential_ref=SecretRef("env", "receiver", "token"),
+                    outbound_policy=_policy(),
+                    timeout_seconds=1,
+                    max_attempts=1,
+                ),
+                lambda _ref: "synthetic-trigger-token",
+            )
+            with pytest.raises(DeliveryError, match=message) as error:
+                client.deliver(envelope)
+            assert error.value.uncertain
     assert receiver.request_count == 1
 
 

@@ -197,11 +197,10 @@ def test_generated_runner_matches_public_occurrence_and_receipt_contract(
     assert not safe_receipt(malformed_skipped, emitted, 200)
 
     class NegativeLengthResponse:
-        def getheader(self, name: str) -> str:
-            assert name == "Content-Length"
-            return "-1"
+        def getheaders(self) -> list[tuple[str, str]]:
+            return [("Content-Length", "-1")]
 
-    with pytest.raises(RuntimeError, match="byte bound"):
+    with pytest.raises(RuntimeError, match="invalid response length"):
         runner["read_bounded"](
             NegativeLengthResponse(),
             SimpleNamespace(transport_socket=None),

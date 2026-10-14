@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import ssl
 from collections.abc import Callable, Mapping
 from concurrent.futures import ThreadPoolExecutor
 from dataclasses import replace
@@ -23,6 +24,7 @@ from etlantic_rsconnect import (
 
 from etlantic.control_plane import (
     ControlPlaneContext,
+    ControlPlaneError,
     EnvironmentRef,
     MemoryAuthorizer,
     MemoryScheduleStore,
@@ -613,6 +615,78 @@ def test_sdk_gateway_owns_a_destination_pinned_client(
     assert all(not request[3] for request in transport.requests)
 
 
+def test_sdk_gateway_preserves_custom_http_adapter_tls_configuration() -> None:
+    connect = pytest.importorskip("posit.connect")
+    requests = pytest.importorskip("requests")
+
+    content_guid = "01234567-89ab-cdef-0123-456789abcdef"
+    routes = {
+        f"/connect/__api__/v1/content/{content_guid}": {
+            "guid": content_guid,
+            "app_mode": "rmd-static",
+        },
+        f"/connect/__api__/applications/{content_guid}/variants": [
+            {"is_default": True, "id": 2, "app_id": 1}
+        ],
+        "/connect/__api__/variants/2/schedules": [],
+    }
+    tls_context = ssl.create_default_context()
+    http_adapter = requests.adapters.HTTPAdapter
+    sent_instances: list[Any] = []
+
+    def adapter_init(self: Any, context: ssl.SSLContext) -> None:
+        self.ssl_context = context
+        http_adapter.__init__(self)
+
+    def init_poolmanager(
+        self: Any,
+        connections: int,
+        maxsize: int,
+        block: bool = False,
+        **kwargs: Any,
+    ) -> None:
+        kwargs["ssl_context"] = self.ssl_context
+        http_adapter.init_poolmanager(self, connections, maxsize, block, **kwargs)
+
+    def send(self: Any, request: Any, **_kwargs: Any) -> Any:
+        assert self.ssl_context is tls_context
+        assert request.url is not None
+        request_url = cast(str, request.url)
+        path = urlsplit(request_url).path
+        response = requests.Response()
+        response.status_code = 200
+        response.headers["Content-Type"] = "application/json"
+        response.__dict__["_content"] = json.dumps(routes[path]).encode()
+        response.request = request
+        response.url = request_url
+        sent_instances.append(self)
+        return response
+
+    adapter_type: Any = type(
+        "CustomTlsAdapter",
+        (http_adapter,),
+        {"__init__": adapter_init, "init_poolmanager": init_poolmanager, "send": send},
+    )
+
+    client = connect.Client(
+        url="https://connect.example.com/connect", api_key="synthetic-test-key"
+    )
+    source_adapter = adapter_type(tls_context)
+    client.session.mount("https://", source_adapter)
+    gateway = PositSdkGateway(client, server_url="https://connect.example.com/connect")
+
+    with pytest.warns(FutureWarning, match="schedule API is experimental"):
+        assert gateway.read(content_guid) is None
+
+    assert source_adapter not in sent_instances
+    assert sent_instances
+    assert all(
+        adapter.ssl_context is tls_context
+        and adapter.poolmanager.connection_pool_kw["ssl_context"] is tls_context
+        for adapter in sent_instances
+    )
+
+
 def test_schedule_write_readback_failure_keeps_binding_pending_and_disarmed() -> None:
     record = _record()
     binding = _binding(record)
@@ -766,6 +840,11 @@ def test_apply_cannot_finalize_a_resume_before_its_writer_stops() -> None:
 
         def get(self, *_args: object) -> ScheduleRecord:
             return replace(paused_record, status=self.status)
+
+        def authorize(
+            self, ctx: ControlPlaneContext, action: str, resource: str
+        ) -> None:
+            return None
 
         def resume(self, *_args: object) -> ScheduleRecord:
             self.status = "active"
@@ -1078,6 +1157,11 @@ def test_pause_and_delete_claim_binding_before_canonical_mutation(
         def get(self, ctx: ControlPlaneContext, schedule_id: str) -> ScheduleRecord:
             return service.get(ctx, schedule_id)
 
+        def authorize(
+            self, ctx: ControlPlaneContext, action: str, resource: str
+        ) -> None:
+            service.authorize(ctx, action, resource)
+
         def pause(self, ctx: ControlPlaneContext, schedule_id: str) -> ScheduleRecord:
             mutation_started.set()
             if not allow_mutation.wait(timeout=3):
@@ -1136,6 +1220,123 @@ def test_pause_and_delete_claim_binding_before_canonical_mutation(
     assert store.get(record.schedule_id) == result
     assert gateway.schedule is None
     assert gateway.armed is False
+
+
+@pytest.mark.parametrize(
+    ("operation", "target_status"), [("pause", "paused"), ("delete", "deleted")]
+)
+def test_lifecycle_write_authorization_precedes_binding_claim(
+    operation: str, target_status: str
+) -> None:
+    context = _context()
+    authorizer = MemoryAuthorizer()
+    authorizer.grant(context, "schedule.read")
+    canonical_store = MemoryScheduleStore()
+    service = ScheduleApplicationService(
+        authorizer=authorizer,
+        schedule_store=canonical_store,
+        clock=lambda: datetime(2026, 10, 13, 12, 0, tzinfo=UTC),
+    )
+    record = canonical_store.create(
+        context,
+        definition_id="pipeline-a",
+        profile_name="test",
+        spec=ScheduleSpec(kind="interval", interval_seconds=3600),
+        workload_identity=context.principal,
+        timer_owner="external",
+        next_fire_at="2026-10-13T13:00:00Z",
+    )
+    gateway = Gateway()
+    store = Store()
+    adapter, registration = _register(record, _binding(record), gateway, store)
+    active = adapter.apply(record, registration)
+
+    with pytest.raises(ControlPlaneError) as denied:
+        getattr(adapter, operation)(service, context, record.schedule_id, active)
+
+    assert denied.value.status == 404
+    assert store.get(record.schedule_id) == active
+    assert service.get(context, record.schedule_id).status == "active"
+    assert gateway.armed is True
+
+    authorizer.grant(context, "schedule.write")
+    stopped = getattr(adapter, operation)(service, context, record.schedule_id, active)
+
+    assert stopped.status == target_status
+    assert store.get(record.schedule_id) == stopped
+    assert gateway.armed is False
+
+
+@pytest.mark.parametrize(
+    ("operation", "remote_failure"),
+    [
+        (operation, failure)
+        for operation in ("pause", "delete")
+        for failure in ("missing", "unavailable")
+    ],
+)
+def test_lifecycle_stops_canonical_admissions_before_connect_cleanup(
+    operation: str, remote_failure: str
+) -> None:
+    context = _context()
+    authorizer = MemoryAuthorizer()
+    authorizer.grant(context, "schedule.read")
+    authorizer.grant(context, "schedule.write")
+    canonical_store = MemoryScheduleStore()
+    service = ScheduleApplicationService(
+        authorizer=authorizer,
+        schedule_store=canonical_store,
+        clock=lambda: datetime(2026, 10, 13, 12, 0, tzinfo=UTC),
+    )
+    record = canonical_store.create(
+        context,
+        definition_id="pipeline-a",
+        profile_name="test",
+        spec=ScheduleSpec(kind="interval", interval_seconds=3600),
+        workload_identity=context.principal,
+        timer_owner="external",
+        next_fire_at="2026-10-13T13:00:00Z",
+    )
+
+    class FailingReadGateway(Gateway):
+        fail_read = False
+
+        def read(self, content_guid: str) -> Any | None:
+            if self.fail_read:
+                raise OSError("synthetic Connect outage with private details")
+            return super().read(content_guid)
+
+    gateway = FailingReadGateway()
+    store = Store()
+    adapter, registration = _register(record, _binding(record), gateway, store)
+    active = adapter.apply(record, registration)
+    if remote_failure == "missing":
+        gateway.schedule = None
+    else:
+        gateway.fail_read = True
+
+    expected_error = (
+        ScheduleOperationError
+        if remote_failure == "missing"
+        else ScheduleOperationUnknown
+    )
+    with pytest.raises(expected_error) as failure:
+        getattr(adapter, operation)(service, context, record.schedule_id, active)
+
+    assert "private details" not in str(failure.value)
+    if operation == "pause":
+        assert service.get(context, record.schedule_id).status == "paused"
+    else:
+        with pytest.raises(ControlPlaneError) as missing_record:
+            service.get(context, record.schedule_id)
+        assert missing_record.value.status == 404
+    pending = store.get(record.schedule_id)
+    assert pending is not None
+    assert pending.status == "pending"
+    assert pending.pending_target_status == (
+        "paused" if operation == "pause" else "deleted"
+    )
+    assert gateway.armed is True
 
 
 def test_amend_commit_ack_loss_cannot_pause_a_newer_owner() -> None:

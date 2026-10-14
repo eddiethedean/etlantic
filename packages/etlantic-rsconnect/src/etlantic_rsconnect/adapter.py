@@ -6,7 +6,7 @@ import re
 import uuid
 from collections.abc import Callable, Mapping
 from contextlib import suppress
-from copy import copy
+from copy import copy, deepcopy
 from dataclasses import dataclass, replace
 from datetime import UTC, datetime
 from typing import TYPE_CHECKING, Any, Literal, Protocol, cast
@@ -334,10 +334,71 @@ class PositSdkGateway:
         source_adapters = source.adapters
         mount = target.mount
         for prefix, adapter in source_adapters.items():
-            copied_adapter = copy(adapter)
-            if copied_adapter is adapter:
+            mount(prefix, PositSdkGateway._copy_transport_adapter(adapter))
+
+    @staticmethod
+    def _copy_transport_adapter(adapter: Any) -> Any:
+        """Clone a transport adapter without losing subclass TLS settings."""
+        clone_method = getattr(adapter, "clone", None)
+        if callable(clone_method):
+            cloned = clone_method()
+            if cloned is adapter:
                 raise ValueError("transport adapter cannot be isolated")
-            mount(prefix, copied_adapter)
+            return cloned
+
+        requests_http_adapter = any(
+            base.__module__ == "requests.adapters" and base.__name__ == "HTTPAdapter"
+            for base in type(adapter).__mro__
+        )
+        if not requests_http_adapter:
+            cloned = copy(adapter)
+            if cloned is adapter:
+                raise ValueError("transport adapter cannot be isolated")
+            return cloned
+
+        # HTTPAdapter's pickle state intentionally includes only its base
+        # attributes. Its normal copy path therefore loses subclass values
+        # such as an SSLContext before init_poolmanager runs. Restore the full
+        # instance state first, then build a fresh connection pool through the
+        # adapter's supported initialization hook.
+        adapter_type = cast(type[Any], type(adapter))
+        cloned: Any = object.__new__(adapter_type)
+        excluded = {"poolmanager", "proxy_manager"}
+        adapter_state = cast(Mapping[str, object], vars(adapter))
+        state_names: set[str] = set(adapter_state)
+        adapter_mro: tuple[type[Any], ...] = adapter_type.__mro__
+        for cls in adapter_mro:
+            slots: object = getattr(cls, "__slots__", ())
+            slot_names: tuple[str, ...]
+            if isinstance(slots, str):
+                slot_names = (slots,)
+            elif isinstance(slots, tuple):
+                slot_values = cast(tuple[object, ...], slots)
+                slot_names = tuple(
+                    name for name in slot_values if isinstance(name, str)
+                )
+            else:
+                slot_names = ()
+            state_names.update(
+                name for name in slot_names if name not in ("__dict__", "__weakref__")
+            )
+        for name in state_names - excluded:
+            value: Any
+            try:
+                value = deepcopy(getattr(adapter, name))
+            except Exception:
+                try:
+                    value = copy(getattr(adapter, name))
+                except Exception:
+                    value = getattr(adapter, name)
+            setattr(cloned, name, value)
+        cloned.proxy_manager = {}
+        cloned.init_poolmanager(
+            adapter._pool_connections,
+            adapter._pool_maxsize,
+            block=adapter._pool_block,
+        )
+        return cloned
 
     @property
     def server_url(self) -> str:
@@ -935,7 +996,7 @@ class ConnectScheduleAdapter:
         self._require_preview()
         current = service.get(context, schedule_id)
         self._preflight_control_plane_binding(current, binding)
-        self._verify_lifecycle_remote_state(current, binding)
+        service.authorize(context, "schedule.write", f"schedule:{schedule_id}")
         intent = self._claim_lifecycle_apply(binding, "paused")
         record = service.pause(context, schedule_id)
         return self._finish_lifecycle_apply(record, intent, binding)
@@ -951,7 +1012,7 @@ class ConnectScheduleAdapter:
         self._require_preview()
         current = service.get(context, schedule_id)
         self._preflight_control_plane_binding(current, binding)
-        self._verify_lifecycle_remote_state(current, binding)
+        service.authorize(context, "schedule.write", f"schedule:{schedule_id}")
         intent = self._claim_lifecycle_apply(binding, "deleted")
         record = service.delete(context, schedule_id)
         return self._finish_lifecycle_apply(record, intent, binding)
@@ -959,7 +1020,12 @@ class ConnectScheduleAdapter:
     def _verify_lifecycle_remote_state(
         self, record: ScheduleRecord, binding: ConnectScheduleBinding
     ) -> None:
-        remote = self.gateway.read(binding.content_guid)
+        try:
+            remote = self.gateway.read(binding.content_guid)
+        except Exception:
+            raise ScheduleOperationUnknown(
+                "canonical schedule was stopped but Connect state could not be read; reconcile before retrying"
+            ) from None
         if binding.status == "active":
             expected = _connect_recurrence(
                 record, start_time=binding.schedule_start_time

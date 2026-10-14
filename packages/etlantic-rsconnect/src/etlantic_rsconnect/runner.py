@@ -23,6 +23,7 @@ from urllib.parse import quote, urlsplit
 
 CONFIG = json.loads(Path(__file__).with_name("etlantic-trigger.json").read_text())
 MAX_RESPONSE_BYTES = CONFIG["max_response_bytes"]
+MAX_RESPONSE_TRAILER_BYTES = 65536
 RECEIPT_FIELDS = {
     "schema", "status", "firing_status", "schedule_id", "schedule_revision_id",
     "occurrence_id", "submission_id", "run_id", "status_reference", "duplicate",
@@ -30,7 +31,24 @@ RECEIPT_FIELDS = {
 SKIP_STATUSES = {"skipped_overlap", "skipped_misfire", "skipped_window", "failed_preparation"}
 BLOCKED_HOSTS = {"metadata", "metadata.google.internal", "169.254.169.254"}
 
+class StrictChunkedHTTPResponse(http.client.HTTPResponse):
+    def _read_and_discard_trailer(self):
+        if self.fp is None:
+            raise http.client.IncompleteRead(b"")
+        consumed = 0
+        while True:
+            line = self.fp.readline(MAX_RESPONSE_TRAILER_BYTES + 1)
+            consumed += len(line)
+            if consumed > MAX_RESPONSE_TRAILER_BYTES or len(line) > MAX_RESPONSE_TRAILER_BYTES:
+                raise http.client.LineTooLong("response trailer")
+            if not line or not line.endswith(b"\r\n"):
+                raise http.client.IncompleteRead(b"")
+            if line == b"\r\n":
+                return
+
 class PinnedHTTPS(http.client.HTTPSConnection):
+    response_class = StrictChunkedHTTPResponse
+
     def __init__(self, host, address, port, timeout, deadline):
         super().__init__(host, port=port, timeout=timeout, context=ssl.create_default_context())
         self.address = address
@@ -180,15 +198,32 @@ def safe_receipt(receipt, envelope, http_status):
     return True
 
 def read_bounded(response, conn, deadline):
-    content_length = response.getheader("Content-Length")
+    header_values = {}
+    for key, value in response.getheaders():
+        header_values.setdefault(key.lower(), []).append(value)
+    content_lengths = header_values.get("content-length", [])
+    transfer_encodings = header_values.get("transfer-encoding", [])
+    if len(content_lengths) > 1 or len(transfer_encodings) > 1:
+        raise RuntimeError("receiver returned ambiguous HTTP response framing")
+    if content_lengths and transfer_encodings:
+        raise RuntimeError("receiver returned conflicting HTTP response framing")
+
+    content_length = content_lengths[0] if content_lengths else None
     declared_size = None
     if content_length is not None:
         try:
-            declared_size = int(content_length)
+            normalized_length = content_length.strip()
+            if not normalized_length.isascii() or not normalized_length.isdigit():
+                raise ValueError
+            declared_size = int(normalized_length)
             if declared_size < 0 or declared_size > MAX_RESPONSE_BYTES:
                 raise RuntimeError("receiver response exceeds its byte bound")
         except ValueError:
             raise RuntimeError("receiver returned an invalid response length") from None
+    if transfer_encodings and (
+        transfer_encodings[0].strip().lower() != "chunked" or not response.chunked
+    ):
+        raise RuntimeError("receiver returned unsupported HTTP response framing")
     body = bytearray()
     while len(body) <= MAX_RESPONSE_BYTES:
         remaining = deadline - time.monotonic()

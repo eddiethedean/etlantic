@@ -58,6 +58,22 @@ class DeliveryError(RuntimeError):
         self.uncertain = uncertain
 
 
+class _StrictChunkedHTTPResponse(http.client.HTTPResponse):
+    """Require the final chunk and trailer terminator before accepting a body."""
+
+    def _read_and_discard_trailer(self) -> None:
+        consumed = 0
+        while True:
+            line = self.fp.readline(65_537)
+            consumed += len(line)
+            if consumed > 65_536 or len(line) > 65_536:
+                raise http.client.LineTooLong("response trailer")
+            if not line or not line.endswith(b"\r\n"):
+                raise http.client.IncompleteRead(b"")
+            if line == b"\r\n":
+                return
+
+
 @dataclass(frozen=True, slots=True)
 class OccurrenceContext:
     """Nominal slot resolved by a trusted platform/runtime integration."""
@@ -206,6 +222,8 @@ class DeliveryResult:
 
 class _PinnedHttpsConnection(http.client.HTTPSConnection):
     """HTTPS connection pinned to an already policy-checked IP address."""
+
+    response_class = _StrictChunkedHTTPResponse
 
     def __init__(
         self,
@@ -608,14 +626,37 @@ class HttpsTriggerDelivery:
         try:
             connection.request(method, path, body=body, headers=dict(headers))
             response = connection.getresponse()
-            response_headers = {
-                key.lower(): value for key, value in response.getheaders()
-            }
-            declared_length = response_headers.get("content-length")
+            response_headers: dict[str, str] = {}
+            header_values: dict[str, list[str]] = {}
+            for key, value in response.getheaders():
+                normalized_key = key.lower()
+                header_values.setdefault(normalized_key, []).append(value)
+            content_lengths = header_values.get("content-length", [])
+            transfer_encodings = header_values.get("transfer-encoding", [])
+            if len(content_lengths) > 1 or len(transfer_encodings) > 1:
+                raise DeliveryError(
+                    "receiver returned ambiguous HTTP response framing; reconcile occurrence",
+                    uncertain=True,
+                )
+            if content_lengths and transfer_encodings:
+                raise DeliveryError(
+                    "receiver returned conflicting HTTP response framing; reconcile occurrence",
+                    uncertain=True,
+                )
+            for key, values in header_values.items():
+                response_headers[key] = ", ".join(values)
+
+            declared_length = content_lengths[0] if content_lengths else None
             declared_size: int | None = None
             if declared_length is not None:
                 try:
-                    declared_size = int(declared_length)
+                    normalized_length = declared_length.strip()
+                    if (
+                        not normalized_length.isascii()
+                        or not normalized_length.isdigit()
+                    ):
+                        raise ValueError
+                    declared_size = int(normalized_length)
                     if (
                         declared_size < 0
                         or declared_size > self.config.max_response_bytes
@@ -629,6 +670,14 @@ class HttpsTriggerDelivery:
                         "receiver returned an invalid response length",
                         uncertain=True,
                     ) from None
+            if transfer_encodings and (
+                transfer_encodings[0].strip().lower() != "chunked"
+                or not response.chunked
+            ):
+                raise DeliveryError(
+                    "receiver returned unsupported HTTP response framing; reconcile occurrence",
+                    uncertain=True,
+                )
             response_chunks = bytearray()
             while len(response_chunks) <= self.config.max_response_bytes:
                 remaining = request_deadline - self._monotonic()
