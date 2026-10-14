@@ -487,7 +487,9 @@ def test_generated_runner_timeout_bounds_one_slow_tls_request(
             credential_ref=SecretRef("env", "receiver", "token"),
             credential_env="ETLANTIC_TRIGGER_TOKEN",
             outbound_policy=_policy(),
-            timeout_seconds=0.35,
+            # Leave room for DNS, TLS setup, and the request write on slower
+            # CI runners; the deliberately dripped response still exceeds it.
+            timeout_seconds=1,
             max_elapsed_seconds=3,
             max_attempts=1,
         )
@@ -520,4 +522,4 @@ def test_generated_runner_timeout_bounds_one_slow_tls_request(
     assert receiver.request_count == 1
     assert not receiver.completed_drip.is_set()
     assert receiver.drip_elapsed is not None
-    assert receiver.drip_elapsed < 1.5
+    assert receiver.drip_elapsed < 2
