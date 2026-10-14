@@ -5,17 +5,17 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [0.59.0] - Unreleased
+## [0.59.0] - 2026-10-14
 
 ### Added
 
-- Add the qualified, opt-in managed Prefect execution path in
+- Add the opt-in managed Prefect execution path in
   `etlantic-prefect`, using ETLantic's accepted-work and durable execution
-  contracts. The release candidate support profile is limited to static
+  contracts. The previously qualified 0.58 profile is limited to static
   `etlantic.plan/1` batches on self-hosted Prefect 3.7.8 Process workers backed
   by PostgreSQL 16.15, on Ubuntu 24.04 x86_64 with Python 3.11.15, 3.12.13,
-  or 3.13.16. Qualified connectors are CSV → PostgreSQL and PostgreSQL →
-  PostgreSQL replace.
+  or 3.13.16. Its CSV → PostgreSQL and PostgreSQL → PostgreSQL replace evidence
+  does not requalify the changed 0.59 managed path.
 - Add a public versioned external schedule-trigger envelope and receipt with
   bounded JSON parsing, authenticated receipt lookup, idempotent occurrence
   reservation, and recoverable managed submission. The 0.59 trigger profile
@@ -51,8 +51,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   up the database and apply provider migrations explicitly; constructors do
   not perform DDL.
 - The 0.59 managed trigger and store changes are not release-qualified yet.
-  The 0.57.x line remains the supported published line until the 0.59 exit
-  gate is complete.
+  The external qualification campaigns remain deferred; do not use these
+  additions in production until their evidence is completed.
 
 ### Compatibility
 
@@ -62,8 +62,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Release status
 
-- 0.59.0 is a release candidate. Qualification, publication, and PyPI
-  availability are pending.
+- Publish 0.59.0 as a Beta release. External qualification campaigns remain
+  deferred and are not represented as passed; the 0.59 managed runtime and
+  external trigger additions remain unqualified for production use.
 
 ## [0.57.2] - 2026-10-11
 

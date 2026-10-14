@@ -1,18 +1,21 @@
 # Support
 
-> **Version boundary:** ETLantic 0.59.0 is a Beta release candidate; 0.57.x remains the published and supported line.
+> **Version boundary:** ETLantic 0.59.0 is the current published Beta release; external qualification for its new managed runtime and trigger capabilities remains deferred.
 
 
-ETLantic **0.59.0** is a Beta release candidate. The latest published and
-supported line is **0.57.x**. It targets documented single-tenant pilots and
+ETLantic **0.59.0** is the current published Beta release, and **0.59.x** is
+the support line. It targets documented single-tenant pilots and
 retains **Supported** isolation
 profiles (`isolated-deployment`, `dedicated-schema`). There is no hosted
 multi-tenant SaaS. Community support has **no formal SLA** or guaranteed
 response time.
 
+The new managed runtime consolidation and external trigger capabilities remain
+unqualified for production use while their external campaigns are deferred.
+
 ## What we support
 
-- Bug reports against the latest published minor line (`0.57.x`)
+- Bug reports against the latest published minor line (`0.59.x`)
 - Questions about documented Available APIs
 - Security reports via [SECURITY.md](SECURITY.md) (private disclosure)
 
@@ -23,7 +26,7 @@ response time.
 - Compliance attestations (SOC2, GDPR certification, etc.)
 - Advanced supply-chain programs beyond shipped SHA-256 digests, attestations,
   OIDC publish, documented package pins, and plugin allowlists (CycloneDX SBOM
-  optional; verify the published release notes for the 0.57.x line)
+  optional; verify the published release notes for the 0.59.x line)
 - Guarantees for Experimental APIs (for example Structured Streaming, shared-service)
 - Guarantees for Future design / Design Proposal pages
 - Formal enterprise SLA or unbounded scale claims

@@ -6,9 +6,9 @@
 > [Capabilities](docs/01_GETTING_STARTED/CAPABILITIES.md) for what ships now.
 > Review this header for every release or sequence change.
 
-**Latest published release:** ETLantic **0.57.2** (Beta). **0.59.0 is a
-release candidate** for the qualified managed Prefect support profile; publication
-is pending. The 0.57 release adds managed backend independence and runtime
+**Latest published release:** ETLantic **0.59.0** (Beta). Its external
+qualification campaigns remain deferred; the newly added managed runtime and
+trigger capabilities are not qualified for production. The 0.57 release adds managed backend independence and runtime
 supervision. The 0.56 release completes the application backend. The scoped
 inferred-model authoring surface remains Experimental. Adaptive execution also
 remains Experimental; its independent graduation is still pending. See the [0.55 exit gate](docs/11_DEVELOPMENT/EXIT_GATE_0_55.md)
@@ -40,9 +40,9 @@ through **0.37** (stable foundation) are shipped.
 | Previous | 0.39 | Multi-tenant control plane (CP1) | Gate-ready / shipped evidence |
 | Previous | 0.38 | Data connectivity and connector SDK | Gate-ready / shipped evidence |
 | Previous | 0.56 | Complete application ETL backend with full specification and run control | Published / shipped evidence |
-| Previous | 0.57 | Managed backend independence and runtime supervision (#278–#282), plus Local canonical sort fix (#283) | Published / shipped evidence; 0.57.x is the supported line |
-| Previous | 0.58 | Managed Prefect Execution (#290 / #291–#298) | Qualified candidate; publication pending |
-| Current | 0.59 | Managed runtime consolidation and trigger contracts ([exit gate](docs/11_DEVELOPMENT/EXIT_GATE_0_59.md)) | Implementation in progress; qualification pending |
+| Previous | 0.57 | Managed backend independence and runtime supervision (#278–#282), plus Local canonical sort fix (#283) | Published / shipped evidence; superseded by the 0.59.x support line |
+| Previous | 0.58 | Managed Prefect Execution (#290 / #291–#298) | Qualified candidate; included in 0.59.0 |
+| Current | 0.59 | Managed runtime consolidation and trigger contracts ([exit gate](docs/11_DEVELOPMENT/EXIT_GATE_0_59.md)) | Published / shipped evidence |
 | Later | 0.60 | Posit Connect scheduling and HTTPS triggers | Planned — [implementation plan](docs/11_DEVELOPMENT/IMPLEMENTATION_PLAN_0_60.md) |
 | Later | 0.61 | AWS Scheduler/Lambda and one ECS/Fargate executor | Planned — [implementation plan](docs/11_DEVELOPMENT/IMPLEMENTATION_PLAN_0_61.md) |
 | Later | 0.62 | One Data Mover host and optional trusted URL discovery | Planned — [implementation plan](docs/11_DEVELOPMENT/IMPLEMENTATION_PLAN_0_62.md) |
@@ -51,7 +51,7 @@ through **0.37** (stable foundation) are shipped.
 | Later | 0.65 | Demand-selected enterprise deployment/provider packs | Planned |
 | Later | 0.66 | Conditional TransformationModel incubation | Proposed |
 | Foundation | 0.36–0.37 | Joint burn-in → stable foundation | Gate-ready (0.37) |
-| Post-foundation | 0.38–0.66 | Connectivity → control plane → developer intelligence → optimization → streaming → federation → governed AI → DuckDB package → portable-engine baseline → adaptive execution → inferred model authoring → complete application backend → backend independence → managed Prefect → managed consolidation → Connect triggers → Scheduler/ECS adapters → Data Mover integration → adoption → operations → providers → modeling incubation | In progress (0.57 published; 0.59 candidate qualification pending; adaptive graduation pending) |
+| Post-foundation | 0.38–0.66 | Connectivity → control plane → developer intelligence → optimization → streaming → federation → governed AI → DuckDB package → portable-engine baseline → adaptive execution → inferred model authoring → complete application backend → backend independence → managed Prefect → managed consolidation → Connect triggers → Scheduler/ECS adapters → Data Mover integration → adoption → operations → providers → modeling incubation | In progress (0.59 published; its qualification campaigns are deferred; adaptive graduation pending) |
 
 For connectivity evidence, see
 [What's New in 0.38](docs/01_GETTING_STARTED/WHATS_NEW_0_38.md) and the

@@ -1,13 +1,15 @@
 ---
 title: ETLantic 0.59 Implementation Plan
 description: Consolidate managed ownership, configuration and dispatch before adding external trigger seams.
-plan_status: implementation_in_progress
-plan_last_reviewed: 2026-10-12
+plan_status: implementation_complete_qualification_deferred
+plan_last_reviewed: 2026-10-14
 ---
 
 # ETLantic 0.59 Implementation Plan
 
-Phase 0.59 consolidates existing managed implementation before extending the
+Phase 0.59 is implemented and published. Its external qualification campaigns
+remain deferred and are not represented as passed. The phase consolidates
+existing managed implementation before extending the
 schedule/HTTP boundary. The [runtime domain plan](ETLANTIC_RUNTIME_PLAN.md) owns
 architecture; the [package consolidation plan](PACKAGE_SCOPE_CONSOLIDATION_PLAN.md)
 traces all accepted review recommendations. `etlantic-runtime` is a conditional
@@ -46,7 +48,8 @@ The following map is grounded in repository revision `d742f560` (0.58.0
 candidate), not a claim that every implemented path is qualified. Refresh it
 against the implementation branch before moving code. The 0.58 release evidence
 and exact support matrix are prerequisites for claiming preserved support;
-characterization and consolidation can proceed while publication is pending.
+characterization and consolidation proceeded while qualification evidence was
+deferred.
 
 | Concern | Current implementation | 0.59 disposition |
 |---|---|---|

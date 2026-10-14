@@ -1,17 +1,16 @@
 ---
 title: ETLantic 0.59 Exit Gate
-status: candidate
+status: published
 current_minor: "0.59"
 ---
 
 # ETLantic 0.59 Exit Gate — Managed Runtime Consolidation and Trigger Contracts
 
-**Release decision: EXTERNAL QUALIFICATION DEFERRED. NOT READY TO TAG OR PUBLISH
-until the change is merged cleanly and exact-commit readiness passes.**
-ETLantic 0.59 remains a Beta release candidate. The external qualification
-campaigns below are deferred from the 0.59 exit. Their evidence remains open
-and is not represented as passed. The latest published and supported line
-remains 0.57.x.
+**Release decision: 0.59.0 Beta published on 2026-10-14 with external
+qualification deferred.** The campaigns below remain open, are not represented
+as passed, and do not qualify the managed runtime consolidation or external
+trigger additions for production use. The separate release decision authorized
+publication while retaining this qualification deferral.
 
 ## Deferred external qualification
 
@@ -44,11 +43,14 @@ remain incomplete until the relevant evidence is supplied.
 - [x] Pass the local release checks and build all 25 first-party distributions.
 - [x] Defer external E059-OWN/MIG/WIRE/OCC/SEC/REC/REL campaigns from 0.59;
   retain their evidence requirements and do not mark them passed.
-- [ ] Verify the release change is merged to `main` and the checkout is clean.
-- [ ] Re-run release readiness on the exact release commit and record a release
-  decision before tagging `v0.59.0`.
+- [x] Merge the release change to `main`; verify the checkout is clean.
+- [x] Pass release checks on exact commit
+  `a787f91cf865dda06e59576625db0ad53bb7aa61` (CI run
+  [38489366012](https://github.com/eddiethedean/etlantic/actions/runs/38489366012)).
+- [x] Publish `v0.59.0` as a Beta release while keeping external qualification
+  campaigns deferred.
 
-The external evidence deferral does not authorize a tag, publish, or
-support-line change. Complete the remaining merge and exact-commit readiness
-steps before making a separate release decision. See the
-[release process](RELEASE_PROCESS.md) for the publishing sequence.
+The publication decision does not mark the deferred external qualification
+campaigns as passed. Continue to hold the affected managed-runtime and external
+trigger additions from production use until their evidence is completed. See
+the [release process](RELEASE_PROCESS.md) for the publishing sequence.

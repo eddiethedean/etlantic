@@ -1,11 +1,9 @@
 # Installing ETLantic 0.59.0
 
-> **Status: ETLantic 0.59.0 Beta release candidate.**
+> **Status: ETLantic 0.59.0 is the published Beta release. The new managed runtime and trigger capabilities remain unqualified for production use.**
 
-The 0.59.0 release candidate targets Python 3.11–3.13. Version 0.59.0 is not
-yet published on PyPI; the latest published package is 0.57.2. The PyPI page
-for 0.59.0 will be available [here](https://pypi.org/project/etlantic/0.59.0/)
-after release.
+ETLantic 0.59.0 targets Python 3.11–3.13 and is available on PyPI at
+[etlantic 0.59.0](https://pypi.org/project/etlantic/0.59.0/).
 
 !!! tip "PyPI user vs contributor clone"
     | Audience | Path |
@@ -26,16 +24,8 @@ reproducible evaluation.
 
 ### pip
 
-The pinned commands below target `0.59.0`. Before publication, use a candidate
-wheel from the release build; the version pin will install from PyPI after the
-release is published. For the currently published line, install `etlantic==0.57.2`.
-
-To resolve a candidate wheelhouse before publication, use its local package
-index without falling back to PyPI:
-
-```bash
-python -m pip install --no-index --find-links /path/to/0.59.0-candidate-wheels 'etlantic==0.59.0'
-```
+Install the published `0.59.0` release and pin companion packages to the same
+version.
 
 ```bash
 python -m venv .venv

@@ -1,6 +1,6 @@
 # Pilot evidence packet
 
-> **Status: ETLantic 0.59.0 Beta release candidate.** Reproducible checklist for a
+> **Status: ETLantic 0.59.0 is the published Beta release.** Reproducible checklist for a
 > controlled single-tenant pilot. This is an in-repo evidence template, not an
 > independent third-party case study.
 
@@ -15,7 +15,7 @@ Related evaluator pages (also in this packet):
 | Component | Pin |
 |---|---|
 | Core | `etlantic==0.59.0` |
-| Docs | `https://etlantic.readthedocs.io/en/stable/` (pin `v0.59.0` for a frozen candidate tree) |
+| Docs | `https://etlantic.readthedocs.io/en/stable/` (pin `v0.59.0` for the frozen release tree) |
 | Optional engines | Matching `0.59.0` plugins (`etlantic-polars`, `etlantic-sql`, …) |
 | Facade | `medallantic==0.59.0` when used |
 

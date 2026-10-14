@@ -1,6 +1,6 @@
 # Optional Packages
 
-> **Status: ETLantic 0.59.0 Beta release candidate.** Core `etlantic` does not install
+> **Status: ETLantic 0.59.0 is the published Beta release.** Core `etlantic` does not install
 > engines. Install only the plugins you need, pinned to the same minor line.
 
 !!! warning "Maturity vs PyPI classifiers"
@@ -40,9 +40,9 @@ pip install 'etlantic-mcp==0.59.0'
 ```
 
 Official first-party plugins declare `etlantic>=0.59.0`.
-Keep core and plugins on the same patch. Use matching 0.59.0 candidate
-artifacts while qualifying the release; 0.57.2 remains the latest published
-patch until 0.59.0 is released.
+Keep core and plugins on the same patch. Install matching 0.59.0 packages from
+PyPI. External qualification for the new managed runtime and trigger
+capabilities remains deferred.
 Cross-minor mixes are unsupported and commonly fail plugin discovery.
 
 DataFusion: `pip install 'etlantic[datafusion]==0.59.0'` or

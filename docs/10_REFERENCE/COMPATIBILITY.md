@@ -1,6 +1,6 @@
 # Compatibility Matrix
 
-> **Status: ETLantic 0.59.0 Beta release candidate.**
+> **Status: ETLantic 0.59.0 is the published Beta release.**
 
 This table describes the declared compatibility of the ETLantic 0.59.0 Beta
 release candidate. Package pins in this table target candidate artifacts and

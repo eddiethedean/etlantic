@@ -7,7 +7,7 @@ current_minor: "0.59"
 # Release artifact verification for 0.57.2
 
 > **Release history:** the examples on this page use the published v0.57.2
-> assets. Apply the same verification steps to the 0.59.0 candidate after it
+> assets. Apply the same verification steps to the 0.59.0 release after it
 > is published.
 
 ## Verify published artifacts

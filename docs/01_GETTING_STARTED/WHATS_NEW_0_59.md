@@ -1,19 +1,18 @@
 ---
 title: What's New in ETLantic 0.59
-status: candidate
+status: available
 since: "0.59.0"
 current_minor: "0.59"
 ---
 
 # What's New in ETLantic 0.59
 
-> **Status: ETLantic 0.59.0 is a Beta release candidate. External qualification
-> is deferred and publication is pending; 0.57.x remains the published and
-> supported line.**
+> **Status: ETLantic 0.59.0 is the published Beta release. External qualification
+> campaigns are deferred and are not represented as passed.**
 
 ETLantic 0.59 consolidates managed backend configuration, dispatch, and
 persistence contracts, then adds an external schedule-trigger boundary. The
-release candidate includes the 0.58 managed Prefect work; its prior
+release includes the 0.58 managed Prefect work; its prior
 qualification evidence does not qualify changes introduced in 0.59.
 
 ## Managed backend and persistence
@@ -47,6 +46,6 @@ older readers fail closed on externally owned schedules. Back up managed
 stores and follow the migration guide before upgrading or rolling back.
 
 The external trigger, store-recovery, installed-package, and security
-qualification campaigns remain pending. Do not use the 0.59 additions in
-production until the [0.59 exit gate](../11_DEVELOPMENT/EXIT_GATE_0_59.md)
+qualification campaigns remain deferred. Do not use the affected 0.59 additions
+in production until the [0.59 exit gate](../11_DEVELOPMENT/EXIT_GATE_0_59.md)
 records those results.

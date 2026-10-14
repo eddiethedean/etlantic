@@ -1,6 +1,8 @@
 # Development
 
-Latest published release: ETLantic 0.57.2; 0.59.0 is the release candidate.
+Latest published release: ETLantic 0.59.0 Beta; its external qualification
+campaigns remain deferred. Version 0.58's qualified candidate profile was
+included in 0.59.0 and was not published as a separate package release.
 See the [0.57 → 0.58 migration](MIGRATION_0_57_TO_0_58.md), [0.58 exit gate](EXIT_GATE_0_58.md),
 and [0.56 migration](MIGRATION_0_55_TO_0_56.md),
 [exit gate](EXIT_GATE_0_56.md), and
@@ -50,9 +52,9 @@ released.
 
 ## Current migrations and exit gates
 
-- [0.58 managed Prefect implementation](IMPLEMENTATION_PLAN_0_58.md), [migration 0.57 → 0.58](MIGRATION_0_57_TO_0_58.md), [exit gate](EXIT_GATE_0_58.md) (qualified candidate; publication pending)
+- [0.58 managed Prefect implementation](IMPLEMENTATION_PLAN_0_58.md), [migration 0.57 → 0.58](MIGRATION_0_57_TO_0_58.md), [exit gate](EXIT_GATE_0_58.md) (qualified on its candidate; included in 0.59.0)
 
-- [0.59 managed runtime implementation](IMPLEMENTATION_PLAN_0_59.md), [migration 0.58 → 0.59](MIGRATION_0_58_TO_0_59.md), and [exit gate](EXIT_GATE_0_59.md) (implementation in progress; qualification pending)
+- [0.59 managed runtime implementation](IMPLEMENTATION_PLAN_0_59.md), [migration 0.58 → 0.59](MIGRATION_0_58_TO_0_59.md), and [exit gate](EXIT_GATE_0_59.md) (published; external qualification deferred)
 
 - [0.56 implementation](IMPLEMENTATION_PLAN_0_56.md), [execution](EXECUTION_PLAN_0_56.md), [migration 0.55 → 0.56](MIGRATION_0_55_TO_0_56.md), and [exit gate](EXIT_GATE_0_56.md)
 

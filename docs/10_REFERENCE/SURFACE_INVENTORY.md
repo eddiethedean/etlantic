@@ -1,6 +1,6 @@
 # Public Surface Inventory (0.59)
 
-> **Status: 0.59.0 Beta release candidate; 0.57.x remains the published and supported line.** Canonical public surface for the
+> **Status: ETLantic 0.59.0 is the published Beta release; qualification for the new managed runtime and trigger capabilities is deferred.** Canonical public surface for the
 > **0.59 reference envelope**.
 
 Machine-readable companion: [`surface-inventory.json`](https://github.com/eddiethedean/etlantic/blob/main/src/etlantic/schemas/surface-inventory.json)

@@ -1,9 +1,9 @@
 # Frequently Asked Questions
 
-> **Version boundary:** ETLantic 0.59.0 is a Beta release candidate; 0.57.x remains the published and supported line.
+> **Version boundary:** ETLantic 0.59.0 is the published Beta release and 0.59.x is the support line; external qualification for the new managed runtime and trigger capabilities is deferred.
 
 
-> **Status: ETLantic 0.59.0 is a Beta release candidate; publication is pending.**
+> **Status: ETLantic 0.59.0 is the published Beta release; external qualification campaigns remain deferred.**
 
 Practical questions for ETLantic **0.59.0**. Philosophy and contract taxonomy
 live under [Foundations](../02_FOUNDATIONS/README.md).

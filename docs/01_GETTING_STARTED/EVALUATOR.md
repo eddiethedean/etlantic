@@ -1,6 +1,6 @@
 # Evaluator Brief
 
-> **Status: ETLantic 0.59.0 is a Beta release candidate; publication is pending. Adaptive graduation remains pending.**
+> **Status: ETLantic 0.59.0 is the published Beta release; external qualification campaigns and adaptive graduation remain deferred.**
 
 A one-page answer for enterprise evaluators and technical decision-makers.
 
@@ -17,7 +17,7 @@ A one-page answer for enterprise evaluators and technical decision-makers.
 | Maturity | Published **Beta release** |
 | Suitable for | Documented single-tenant pilots; Supported multi-tenant profiles |
 | Support | Community; **no formal SLA** |
-| LTS | No LTS; `0.57.x` is the current published line |
+| LTS | No LTS; `0.59.x` is the current published line |
 | Not included as GA | Unbounded scale; formal enterprise SLA; `shared-service` without real RLS |
 
 ## What ETLantic is
@@ -103,7 +103,7 @@ For the bounded reference topology and required controls, read
 
 ## Bounded production support (do not skip)
 
-ETLantic **0.59.0** is the current **Beta release candidate**; 0.57.x remains the published and supported line for documented single-tenant
+ETLantic **0.59.0** is the current **published Beta release**; 0.59.x is the support line for documented single-tenant
 pilots and Supported multi-tenant profiles. Shipped trust controls do not
 make an arbitrary shared-service topology safe.
 

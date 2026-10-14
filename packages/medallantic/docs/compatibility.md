@@ -5,7 +5,7 @@
 Medallantic follows ETLantic's 0.x minor line. Pin matching minors:
 
 ```text
-medallantic 0.58.x  <->  etlantic 0.58.x
+medallantic 0.59.x  <->  etlantic 0.59.x
 ```
 
 The package metadata currently requires `etlantic>=0.59.0`.

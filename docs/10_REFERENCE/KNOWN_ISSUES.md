@@ -1,9 +1,10 @@
 # Known Limitations
 
-> **Status: ETLantic 0.59.0 Beta release candidate; adaptive execution remains Experimental.**
+> **Status: ETLantic 0.59.0 is the published Beta release; adaptive execution remains Experimental and external 0.59 qualification campaigns remain deferred.**
 
-ETLantic **0.57.x** is the current published Beta line; 0.59.0 is the
-candidate and is not yet the latest published patch. Prior baselines are suitable for documented
+ETLantic **0.59.x** is the current published Beta line. The managed runtime
+consolidation and external trigger additions remain unqualified for production;
+prior baselines are suitable for documented
 single-tenant reference deployments and Supported multi-tenant profiles.
 0.x releases may still introduce breaking API changes between minor versions.
 **CP-GA** graduated production multi-tenant for `isolated-deployment` /
@@ -21,7 +22,7 @@ single-tenant reference deployments and Supported multi-tenant profiles.
 | DOC-006 | [DTCS](../04_TRANSFORMATIONS/DTCS.md) 3.0 families | Facades / compilers | Facades may emit IR for unclaimed families; first-party compilers reject at analyze | Check claimed profiles before authoring advanced DTCS families | By design |
 | DOC-007 | Runtime | Local execution | In-process only; not a distributed scheduler | Use Airflow/Prefect/external schedulers for multi-process orchestration | By design |
 | DOC-008 | Spark providers | Cloud Spark | 0.49 ships Kubernetes and Spark Connect Experimental fakes, not live managed providers | Run local `etlantic-pyspark` or your own provider; live packs remain planned for 0.65 | Open |
-| DOC-009 | Orchestration | Compilers / schedulers | Airflow via `etlantic-airflow` (compile-only); Prefect local MVP via `etlantic-prefect`; the 0.58 managed Prefect profile awaits requalification on 0.59; Dagster/Argo compilers follow in 0.63 | Use shipped Airflow compile or Prefect local path on the published 0.57.x line; follow the 0.58 → 0.59 migration guide before enabling managed execution | Partial |
+| DOC-009 | Orchestration | Compilers / schedulers | Airflow via `etlantic-airflow` (compile-only); Prefect local MVP via `etlantic-prefect`; managed execution and external schedule triggers await deferred 0.59 qualification; Dagster/Argo compilers follow in 0.63 | Use shipped Airflow compile or Prefect direct execution; follow the 0.58 → 0.59 migration guide and keep managed execution disabled until qualification resumes | Partial |
 | DOC-010 | Streaming | Structured Streaming | APIs experimental since 0.7+ | Prefer batch Spark for production-shaped pilots | Experimental |
 | DOC-011 | SQL safety | SQL plugins | Untrusted raw SQL is not treated as safe | Use typed expression model and dialect identifier/parameter APIs | By design |
 | DOC-012 | SQL MERGE | SQLite / non-PG | `MERGE` / upsert implemented for PostgreSQL (`sql_merge=True`); SQLite and others fail closed | Use PostgreSQL when merge is required | Partial |

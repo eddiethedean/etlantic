@@ -65,7 +65,7 @@ schema readiness and owns its connection pool; it does not run migrations.
 ## Deploy the API
 
 Pin ETLantic packages on the same release line in the app's dependency file.
-For the 0.59.0 candidate, the managed adapter installation is:
+For the 0.59.0 release, the managed adapter installation is:
 
 ```text
 etlantic==0.59.0

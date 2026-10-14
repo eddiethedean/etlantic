@@ -7,21 +7,21 @@ current_minor: "0.59"
 
 # Migration from 0.57 to 0.58
 
-> **Status: Candidate guide for ETLantic 0.58.0; publication is pending.**
-> The latest published line is 0.57.x.
+> **Status: Historical migration guide for the unpublished 0.58 candidate.**
+> The qualified 0.58 managed Prefect profile is included in 0.59.0; use the
+> [0.58 → 0.59 migration guide](MIGRATION_0_58_TO_0_59.md) for current installs.
 
-For existing 0.57 deployments, the 0.58 upgrade keeps package versions in
-lockstep and adds an optional managed Prefect execution path. Existing pipeline
+For existing 0.57 deployments, this guide records the intermediate 0.58
+candidate's optional managed Prefect path. Install the published 0.59.0 release
+and follow the next migration guide before adopting that path. Existing pipeline
 definitions and direct Prefect execution do not need to change. Only adopters
 who opt into the managed path need the additional Prefect configuration below.
 
 ## Package upgrade
 
-Install ETLantic and any first-party plugins at the same version. The candidate
-version is `0.58.0`; candidate wheels are not available from PyPI before
-publication. Use the release artifacts from the candidate build or a checkout
-of the release candidate. For an existing published installation, remain on
-the latest 0.57.x patch until 0.58.0 is published.
+The 0.58.0 version was never published separately. For an existing 0.57
+installation, install ETLantic and any first-party plugins at `0.59.0`, then
+follow the [0.58 → 0.59 migration guide](MIGRATION_0_58_TO_0_59.md).
 
 First-party plugins declare the compatible core floor `etlantic>=0.58.0`;
 deployment lockfiles should pin the core and selected plugins to `0.58.0`.
@@ -60,6 +60,6 @@ provisioning controls.
 4. Enable managed routing only for the qualified profile and verify status,
    cancellation, and recovery through the shared ETLantic service interface.
 
-See [What's New in 0.58](../01_GETTING_STARTED/WHATS_NEW_0_58.md) and the
-[release exit gate](EXIT_GATE_0_58.md). Until publication, 0.57.x remains the
-published and supported package line.
+See [What's New in 0.58](../01_GETTING_STARTED/WHATS_NEW_0_58.md) for the
+intermediate candidate's profile and the [0.58 exit gate](EXIT_GATE_0_58.md)
+for its historical qualification evidence. The published support line is 0.59.x.

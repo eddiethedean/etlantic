@@ -1,6 +1,6 @@
 # Upgrade Hub
 
-> **Status: 0.59.0 is the release candidate; 0.57.x remains the published upgrade target.**
+> **Status: ETLantic 0.59.0 is the published Beta release and current upgrade target.**
 
 !!! warning "Upgraders only"
     New users: start at the [docs home green path](../README.md) or
@@ -9,15 +9,16 @@
 Upgrade between ETLantic 0.x releases using the guides below. Always pin core
 and first-party plugins to the **same minor** after upgrading.
 
-The latest published upgrade target is 0.57.2. The 0.59.0 candidate includes
-managed runtime consolidation and external schedule triggers; qualification is
-pending. Follow each intervening migration guide in order before upgrading.
+The latest published upgrade target is 0.59.0. This release includes managed
+runtime consolidation and external schedule triggers; external qualification
+for those additions remains deferred. Follow each intervening migration guide
+in order before upgrading.
 
 Historical release notes: [Earlier releases](EARLIER_RELEASES.md).
 
 ## 0.59 configuration cheat sheet
 
-The 0.59.0 candidate keeps core and plugin packages aligned at the same patch.
+The 0.59.0 release keeps core and plugin packages aligned at the same patch.
 The `managed-headless` extra installs the SQLModel backend and PostgreSQL
 driver without FastAPI. The external trigger receiver requires a trusted
 `ControlPlaneContext`, `schedule.trigger` authorization, and an already-bound
@@ -28,8 +29,9 @@ unqualified until the [exit gate](../11_DEVELOPMENT/EXIT_GATE_0_59.md) passes.
 
 ## 0.58 configuration cheat sheet
 
-The 0.58 candidate added opt-in managed Prefect execution. Its bounded support
-profile was qualified on that candidate; support on 0.59 awaits requalification.
+The unpublished 0.58 candidate added opt-in managed Prefect execution. Its
+bounded profile was qualified on that candidate; requalification on 0.59 is
+deferred.
 See the [0.57 → 0.58 migration guide](../11_DEVELOPMENT/MIGRATION_0_57_TO_0_58.md)
 for the original transition notes.
 
@@ -50,9 +52,9 @@ partition capabilities. See [Migration 0.55 → 0.56](../11_DEVELOPMENT/MIGRATIO
 
 ## Current target
 
-**ETLantic 0.59.0** (Beta release candidate) — choose the
+**ETLantic 0.59.0** (published Beta release) — choose the
 [0.58 → 0.59 migration guide](../11_DEVELOPMENT/MIGRATION_0_58_TO_0_59.md).
-The published upgrade target remains 0.57.2 until release.
+The published upgrade target is 0.59.0.
 
 |---|---|
 | 0.57.x | [Migration 0.57 → 0.58](../11_DEVELOPMENT/MIGRATION_0_57_TO_0_58.md) (candidate guide) |

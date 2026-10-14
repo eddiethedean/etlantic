@@ -9,7 +9,7 @@ audience: adopter
 
 <div class="etlantic-hero">
   <div class="etlantic-hero__content">
-    <span class="etlantic-hero__eyebrow">ETLantic 0.59 · Beta release candidate</span>
+    <span class="etlantic-hero__eyebrow">ETLantic 0.59 · Published Beta release</span>
     <h1>One typed pipeline model. Many execution backends.</h1>
     <p>Define contracts and topology in Python, validate them before execution,
     then produce deterministic plans for local engines, backend plugins, or
@@ -62,7 +62,7 @@ audience: adopter
 
 ## Choose your path
 
-> **Status: ETLantic 0.59.0 is a Beta release candidate; 0.57.x remains the published and supported package line.**
+> **Status: ETLantic 0.59.0 is the latest published Beta release; its external qualification campaigns remain deferred.**
 
 
 <div class="etlantic-path-grid">
@@ -107,7 +107,7 @@ audience: adopter
 ## Green path: first success
 
 Install from PyPI first: `pip install etlantic`. The installer resolves the
-latest published supported line, currently 0.57.x. The complete
+latest published supported line, currently 0.59.x. The complete
 [Quickstart](01_GETTING_STARTED/QUICKSTART.md) uses that published package. The guide continues with an
 intentional validation failure after the first successful run.
 
@@ -246,7 +246,7 @@ before a pilot.
 | Author with the public Python facade | [Python SDK in 10 minutes](01_GETTING_STARTED/SDK_10_MINUTES.md) |
 | Configure CI validation | [CI integration](06_EXECUTION/CI_INTEGRATION.md) |
 | Diagnose a failure | [Troubleshooting](01_GETTING_STARTED/TROUBLESHOOTING.md) |
-| Review the current candidate | [What's new in 0.59](01_GETTING_STARTED/WHATS_NEW_0_59.md) |
-| Review the latest published release | [What's new in 0.57](01_GETTING_STARTED/WHATS_NEW_0_57.md) |
+| Review the current release | [What's new in 0.59](01_GETTING_STARTED/WHATS_NEW_0_59.md) |
+| Review the latest published release | [What's new in 0.59](01_GETTING_STARTED/WHATS_NEW_0_59.md) |
 | Review future direction | [Planning Hub](11_DEVELOPMENT/PLAN_INDEX.md) |
 | Contribute to ETLantic | [Contributor guide](11_DEVELOPMENT/CONTRIBUTING.md) |

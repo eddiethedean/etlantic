@@ -58,7 +58,7 @@ notes. Exhaustive code→source index:
 | `PMSQL` | stable | SQL capability and runtime |
 | `PMSRC` | stable | Source / Safe I/O loading |
 | `PMTRN` | stable | Transformation definitions |
-| `PMTRG` | provisional | External schedule-trigger wire and admission (0.59; qualification pending) |
+| `PMTRG` | provisional | External schedule-trigger wire and admission (0.59; qualification deferred) |
 | `PMXFORM` | stable | Portable transformation IR / compilers |
 
 Standards namespaces (`ODCS`, `DTCS`, `DPCS`) keep their upstream identity when

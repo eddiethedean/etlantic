@@ -1,6 +1,6 @@
 # Quickstart
 
-> **Status: ETLantic 0.59.0 Beta release candidate; publication is pending.** Use `python -m etlantic init` for the
+> **Status: ETLantic 0.59.0 is the published Beta release.** Use `python -m etlantic init` for the
 > recommended CLI-first path with durable reports and declarative assets.
 > Budget ~5–10 minutes for first success; optional validation aha below adds a
 > few minutes.
@@ -9,10 +9,10 @@
     This page is for **PyPI installs**. Repository `examples/` scripts need a
     git checkout and `uv` — see [Installation](INSTALLATION.md).
 
-The commands below target the 0.59.0 release candidate and will resolve from
-PyPI after publication. Until then, install 0.57.2 for the published quickstart;
-to test 0.59.0, install candidate wheels as described in
-[Installation](INSTALLATION.md).
+The commands below install the published 0.59.0 release from PyPI. The 0.59
+managed runtime and external trigger capabilities remain unqualified for
+production use; see [Capabilities](CAPABILITIES.md) and the [0.59 exit
+gate](../11_DEVELOPMENT/EXIT_GATE_0_59.md).
 
 ## 1. Install
 

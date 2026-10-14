@@ -1,6 +1,6 @@
 # Documentation versioning
 
-> **Status: ETLantic 0.59.0 Beta release candidate.** How Read the Docs aliases relate to PyPI pins.
+> **Status: ETLantic 0.59.0 is the published Beta release.** How Read the Docs aliases relate to PyPI pins.
 > Release facts live in [`docs/release-facts.json`](../release-facts.json).
 
 ETLantic docs are published on Read the Docs.
@@ -9,16 +9,15 @@ ETLantic docs are published on Read the Docs.
 
 | Alias / slug | Meaning |
 |---|---|
-| **`/en/v0.59.0/`** | Intended immutable docs path for the 0.59.0 candidate; activate it after the release tag is published. |
+| **`/en/v0.59.0/`** | Immutable docs path for the published 0.59.0 release; activate the tag in Read the Docs before using this URL. |
 | **`/en/v0.57.0/`** | Intended immutable docs path for `v0.57.0`. Activate the tag in Read the Docs before using this URL. |
 | **stable** | Moves to the newest published release. Fine for pilots tracking the tip of PyPI. |
 | **latest** | Tracks the default branch (`main`) and may document unreleased behavior. |
 
-Pair the `etlantic==0.59.0` package with the versioned docs after the candidate
-is published. Until then, 0.57.2 is the latest published package and `stable`
-continues to point to that published release.
-`stable` moves to the newest published release; `latest` follows `main` and
-may document unreleased behavior. Do not mix a pinned wheel with `latest`
+Pair the `etlantic==0.59.0` package with its versioned docs once Read the Docs
+has activated the published tag. `stable` moves to the newest published release;
+`latest` follows `main` and may document unreleased behavior.
+Do not mix a pinned wheel with `latest`
 docs that describe a newer branch tip.
 
 ### Maintainer: activate a tag on Read the Docs

@@ -1,9 +1,9 @@
 # Current Capabilities and Limitations
 
-> **Version boundary:** ETLantic 0.59.0 is a Beta release candidate; 0.57.x remains the published and supported line.
+> **Version boundary:** ETLantic 0.59.0 is the published Beta release and 0.59.x is the support line; the new managed runtime and trigger capabilities remain unqualified for production.
 
 
-> **Status: ETLantic 0.59.0 is a Beta release candidate; 0.57.x remains the published and supported line.** This page records
+> **Status: ETLantic 0.59.0 is the published Beta release.** This page records
 > the published 0.56 envelope for controlled single-tenant pilots and
 > Supported isolation profiles.
 
@@ -11,10 +11,10 @@
     Read **What works today** and **Limits** first. Residual gaps and CI
     starter JSON are further down for evaluators.
 
-## What works today (0.57 published; 0.59 candidate)
+## What works today (0.59 published; external qualification deferred)
 
-ETLantic 0.59.0 is the current **Beta release candidate**. The latest
-published and supported line is 0.57.x, for documented, controlled,
+ETLantic 0.59.0 is the current **published Beta release** and 0.59.x is the
+support line for documented, controlled,
 single-tenant pilots. Install the latest published `etlantic` package from PyPI. You can embed an
 HTTP control plane with **Supported** isolation profiles
 (`isolated-deployment`, `dedicated-schema`). There is no hosted multi-tenant
@@ -285,8 +285,8 @@ These planning changes do not add current capabilities; Batch is unscheduled.
 | Streaming poison-record/DLQ policy and schema-registry interoperability | **Supported** core policy/protocol in 0.46; Kafka (`etlantic-kafka`) and Confluent adapter (`etlantic-schemaregistry`) remain **Experimental** — never Available-in-core |
 | Complete application ETL backend | **Candidate qualified for 0.56** — shared authorized services, real managed execution/results, full specification/run controls, live PostgreSQL/CSV qualification and Semblance-backed Foundry API qualification; no live Foundry account required. See [plan](../11_DEVELOPMENT/IMPLEMENTATION_PLAN_0_56.md) and [reviewed gaps](../11_DEVELOPMENT/FINDINGS_0_56.md) |
 | Transport-independent managed backend, shared schedule commands, complete scheduler factory, provider schema inspection, and role supervision (#278–#282) | Planned for 0.57.0; [implementation plan](../11_DEVELOPMENT/IMPLEMENTATION_PLAN_0_57.md) |
-| Managed Prefect execution | The bounded 0.58 profile was qualified on the prior candidate. Its support on 0.59 awaits requalification after dispatch and persistence changes; see the [0.58 evidence](../11_DEVELOPMENT/evidence/phase_0_58/FINAL_QUALIFICATION_DECISION_2026-10-12.json) and [0.59 exit gate](../11_DEVELOPMENT/EXIT_GATE_0_59.md). |
-| Managed runtime consolidation and trigger contracts | Implemented in the 0.59 candidate; **qualification pending and not supported for production use** — [implementation plan](../11_DEVELOPMENT/IMPLEMENTATION_PLAN_0_59.md) and [exit gate](../11_DEVELOPMENT/EXIT_GATE_0_59.md) |
+| Managed Prefect execution | The bounded 0.58 profile was qualified on its candidate. That evidence does not qualify the changed 0.59 path; requalification is deferred — see the [0.58 evidence](../11_DEVELOPMENT/evidence/phase_0_58/FINAL_QUALIFICATION_DECISION_2026-10-12.json) and [0.59 exit gate](../11_DEVELOPMENT/EXIT_GATE_0_59.md). |
+| Managed runtime consolidation and trigger contracts | Implemented in the 0.59 release; **qualification is deferred and production use is not qualified** — [implementation plan](../11_DEVELOPMENT/IMPLEMENTATION_PLAN_0_59.md) and [exit gate](../11_DEVELOPMENT/EXIT_GATE_0_59.md) |
 | Posit Connect scheduling and HTTPS triggers | **Planned for 0.60; not available** — [implementation plan](../11_DEVELOPMENT/IMPLEMENTATION_PLAN_0_60.md) |
 | AWS Scheduler/Lambda delivery and one ECS/Fargate executor | **Planned for 0.61; not available** — [implementation plan](../11_DEVELOPMENT/IMPLEMENTATION_PLAN_0_61.md) |
 | One Data Mover host and optional Posit endpoint discovery | **Planned for 0.62; not available** — [implementation plan](../11_DEVELOPMENT/IMPLEMENTATION_PLAN_0_62.md) |

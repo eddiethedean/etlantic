@@ -7,13 +7,13 @@ plan_last_reviewed: 2026-10-12
 
 # ETLantic Runtime Integration Plan
 
-**Status: 0.59 implementation in progress; qualification pending; see the
+**Status: 0.59 is implemented and published; external qualification is deferred; see the
 [phase plan](IMPLEMENTATION_PLAN_0_59.md).** The proposed
 `etlantic-runtime` package is a conditional implementation extraction, not a
 shipped API or another contracts-only layer. The accepted
 [package scope review](PACKAGE_SCOPE_REVIEW_2026-10-12.md) is integrated by the
 [consolidation plan](PACKAGE_SCOPE_CONSOLIDATION_PLAN.md). Existing 0.56/0.57 backend
-services and the bounded 0.58 managed Prefect candidate retain their current
+services and the bounded 0.58 managed Prefect profile retain their current
 authority and support limits. See [Capabilities](../01_GETTING_STARTED/CAPABILITIES.md).
 
 ## Source And Program Sequence

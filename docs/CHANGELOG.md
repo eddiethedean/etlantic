@@ -1,5 +1,5 @@
 # Changelog
 
-> **Status: 0.58.0 is the Beta release candidate; 0.57.2 remains the latest published Beta release.**
+> **Status: 0.59.0 is the latest published Beta release; external 0.59 qualification campaigns remain deferred.**
 
 --8<-- "../CHANGELOG.md"

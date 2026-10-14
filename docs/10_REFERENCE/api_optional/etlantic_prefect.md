@@ -7,7 +7,7 @@ audience: developer
 
 # etlantic-prefect API
 
-> **Status: ETLantic 0.59.0 Beta release candidate.** Prefect local scheduler MVP.
+> **Status: ETLantic 0.59.0 is the published Beta release.** Prefect local scheduler MVP.
 > Install narrative: package README. Hub: [Optional packages API](../API_OPTIONAL_PACKAGES.md).
 
 The managed Process-deployment adapter implemented under phase 0.58 is
