@@ -224,7 +224,7 @@ def test_apply_creates_only_after_durable_deployment_registration() -> None:
     assert store.get(record.schedule_id) == active
 
 
-def test_apply_recovers_pending_activation_from_matching_remote_readback() -> None:
+def test_apply_keeps_pending_activation_claim_until_its_writer_stops() -> None:
     record = _record()
     binding = _binding(record)
     gateway = Gateway()
@@ -248,12 +248,11 @@ def test_apply_recovers_pending_activation_from_matching_remote_readback() -> No
     )
     gateway.events.clear()
 
-    active = adapter.apply(record, in_flight)
+    with pytest.raises(ScheduleOperationUnknown, match="writer has stopped"):
+        adapter.apply(record, in_flight)
 
-    assert active.status == "active"
-    assert [event[0] for event in gateway.events] == ["read", "armed"]
-    assert gateway.events[-1] == ("armed", True)
-    assert store.get(record.schedule_id) == active
+    assert [event[0] for event in gateway.events] == []
+    assert store.get(record.schedule_id) == in_flight
 
 
 def test_apply_does_not_replace_or_disarm_a_concurrent_pending_operation() -> None:
@@ -271,7 +270,7 @@ def test_apply_does_not_replace_or_disarm_a_concurrent_pending_operation() -> No
         assert in_flight.pending_operation == "apply"
         assert in_flight.pending_target_status == "active"
 
-        with pytest.raises(ScheduleOperationUnknown, match="not yet visible"):
+        with pytest.raises(ScheduleOperationUnknown, match="writer has stopped"):
             adapter.apply(record, pending)
 
         assert store.get(record.schedule_id) == in_flight
@@ -499,29 +498,78 @@ def test_binding_rejects_non_guid_content_id() -> None:
 
 
 def test_sdk_gateway_requires_its_actual_destination_to_match_the_binding() -> None:
-    matching_client = SimpleNamespace(
-        cfg=SimpleNamespace(url="https://connect.example.com/connect/__api__")
+    class StubClient:
+        def __init__(self, *, url: str, api_key: str) -> None:
+            self.cfg = SimpleNamespace(url=url, api_key=api_key)
+
+    matching_client = StubClient(
+        url="https://connect.example.com/connect/__api__", api_key="test-key"
     )
     gateway = PositSdkGateway(
         matching_client, server_url="https://connect.example.com/connect"
     )
     assert gateway.server_url == "https://connect.example.com/connect"
 
-    mismatched_client = SimpleNamespace(
-        cfg=SimpleNamespace(url="http://other-connect.example.com/connect/__api__")
+    mismatched_client = StubClient(
+        url="http://other-connect.example.com/connect/__api__", api_key="test-key"
     )
     with pytest.raises(ValueError, match="HTTPS Connect destination"):
         PositSdkGateway(
             mismatched_client, server_url="https://connect.example.com/connect"
         )
 
-    wrong_host_client = SimpleNamespace(
-        cfg=SimpleNamespace(url="https://other-connect.example.com/connect/__api__")
+    wrong_host_client = StubClient(
+        url="https://other-connect.example.com/connect/__api__", api_key="test-key"
     )
     with pytest.raises(ValueError, match="does not match"):
         PositSdkGateway(
             wrong_host_client, server_url="https://connect.example.com/connect"
         )
+
+
+def test_sdk_gateway_owns_a_destination_pinned_client(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    connect = pytest.importorskip("posit.connect")
+    content_guid = "01234567-89ab-cdef-0123-456789abcdef"
+    client = connect.Client(
+        url="https://connect.example.com/connect", api_key="synthetic-test-key"
+    )
+    gateway = PositSdkGateway(client, server_url="https://connect.example.com/connect")
+    requested_urls: list[str] = []
+
+    class FakeResponse:
+        def __init__(self, payload: object) -> None:
+            self._payload = payload
+
+        def json(self) -> Any:
+            return self._payload
+
+    def get(sdk_client: object, path: str, **_kwargs: object) -> FakeResponse:
+        sdk_client_any = cast(Any, sdk_client)
+        requested_urls.append(f"{sdk_client_any.cfg.url}/{path}")
+        if path == f"v1/content/{content_guid}":
+            return FakeResponse({"guid": content_guid, "app_mode": "rmd-static"})
+        if path == f"applications/{content_guid}/variants":
+            return FakeResponse([{"is_default": True, "id": 2, "app_id": 1}])
+        if path == "variants/2/schedules":
+            return FakeResponse([])
+        pytest.fail(f"unexpected Posit SDK request path: {path}")
+        return FakeResponse(None)
+
+    monkeypatch.setattr(connect.Client, "get", get)
+    client.cfg.url = type(client.cfg.url)(
+        "http://other-connect.example.invalid/connect"
+    )
+
+    with pytest.warns(FutureWarning, match="schedule API is experimental"):
+        assert gateway.read(content_guid) is None
+
+    assert requested_urls
+    assert all(
+        url.startswith("https://connect.example.com/connect/__api__/")
+        for url in requested_urls
+    )
 
 
 def test_schedule_write_readback_failure_keeps_binding_pending_and_disarmed() -> None:
@@ -644,6 +692,250 @@ def test_concurrent_resume_loser_cannot_disarm_winning_activation() -> None:
     assert active.status == "active"
     assert gateway.armed is True
     assert store.get(paused_record.schedule_id) == active
+
+
+def test_apply_cannot_finalize_a_resume_before_its_writer_stops() -> None:
+    paused_record = replace(_record(), status="paused")
+    active_record = replace(paused_record, status="active")
+    binding = replace(_binding(paused_record), status="paused")
+
+    class ReadbackBarrierGateway(Gateway):
+        readback_started = Event()
+        allow_readback = Event()
+        hold_readback = False
+
+        def create_or_update(
+            self, content_guid: str, kwargs: Mapping[str, object]
+        ) -> Any:
+            result = super().create_or_update(content_guid, kwargs)
+            self.hold_readback = True
+            return result
+
+        def read(self, content_guid: str) -> Any | None:
+            result = super().read(content_guid)
+            if self.hold_readback and not self.readback_started.is_set():
+                self.readback_started.set()
+                if not self.allow_readback.wait(timeout=3):
+                    raise TimeoutError("test did not release Connect readback")
+            return result
+
+    class Service:
+        status = "paused"
+        pause_calls = 0
+
+        def get(self, *_args: object) -> ScheduleRecord:
+            return replace(paused_record, status=self.status)
+
+        def resume(self, *_args: object) -> ScheduleRecord:
+            self.status = "active"
+            return active_record
+
+        def pause(self, *_args: object) -> ScheduleRecord:
+            self.pause_calls += 1
+            self.status = "paused"
+            return paused_record
+
+    gateway = ReadbackBarrierGateway()
+    store = Store(binding)
+    adapter = _adapter(
+        gateway,
+        store,
+        clock=lambda: datetime(2026, 10, 13, 12, 0, tzinfo=UTC),
+    )
+    service = Service()
+    context = _context()
+
+    with ThreadPoolExecutor(max_workers=1) as executor:
+        first = executor.submit(
+            adapter.resume,
+            cast(ScheduleApplicationService, service),
+            context,
+            paused_record.schedule_id,
+            binding,
+        )
+        try:
+            assert gateway.readback_started.wait(timeout=2)
+            in_flight = store.get(paused_record.schedule_id)
+            assert in_flight is not None
+            assert in_flight.pending_operation == "resume"
+
+            with pytest.raises(ScheduleOperationUnknown, match="writer has stopped"):
+                adapter.apply(active_record, in_flight)
+            with pytest.raises(
+                ScheduleOperationUnknown, match="prior Connect mutation"
+            ):
+                adapter.pause(
+                    cast(ScheduleApplicationService, service),
+                    context,
+                    paused_record.schedule_id,
+                    in_flight,
+                )
+
+            assert service.pause_calls == 0
+            assert gateway.armed is False
+            assert store.get(paused_record.schedule_id) == in_flight
+        finally:
+            gateway.allow_readback.set()
+
+        active = first.result(timeout=3)
+
+    assert active.status == "active"
+    assert gateway.armed is True
+    paused = adapter.pause(
+        cast(ScheduleApplicationService, service),
+        context,
+        paused_record.schedule_id,
+        active,
+    )
+    assert paused.status == "paused"
+    assert gateway.armed is False
+    assert service.pause_calls == 1
+    assert store.get(paused_record.schedule_id) == paused
+
+
+def test_resume_claims_rollback_before_cleanup_side_effects() -> None:
+    paused_record = replace(_record(), status="paused")
+    binding = replace(_binding(paused_record), status="paused")
+    trace: list[tuple[object, ...]] = []
+
+    class TracedStore(Store):
+        def put(
+            self,
+            binding: ConnectScheduleBinding,
+            *,
+            expected: ConnectScheduleBinding | None,
+        ) -> None:
+            trace.append(("store", binding.pending_operation))
+            super().put(binding, expected=expected)
+
+    class FailingGateway(Gateway):
+        def set_trigger_armed(self, content_guid: str, armed: bool) -> None:
+            trace.append(("armed", armed))
+            super().set_trigger_armed(content_guid, armed)
+
+        def create_or_update(
+            self, content_guid: str, kwargs: Mapping[str, object]
+        ) -> Any:
+            trace.append(("create",))
+            raise RuntimeError("synthetic Connect write failure")
+
+    class Service:
+        def get(self, *_args: object) -> ScheduleRecord:
+            return paused_record
+
+        def resume(self, *_args: object) -> ScheduleRecord:
+            return replace(paused_record, status="active")
+
+        def pause(self, *_args: object) -> ScheduleRecord:
+            trace.append(("pause",))
+            return paused_record
+
+    gateway = FailingGateway()
+    store = TracedStore(binding)
+    adapter = _adapter(
+        gateway,
+        store,
+        clock=lambda: datetime(2026, 10, 13, 12, 0, tzinfo=UTC),
+    )
+
+    with pytest.raises(RuntimeError, match="Connect write failure"):
+        adapter.resume(
+            cast(ScheduleApplicationService, Service()),
+            _context(),
+            paused_record.schedule_id,
+            binding,
+        )
+
+    rollback_index = trace.index(("store", "rollback"))
+    disarm_indices = [
+        index for index, event in enumerate(trace) if event == ("armed", False)
+    ]
+    pause_index = trace.index(("pause",))
+    assert len(disarm_indices) == 2
+    assert rollback_index < disarm_indices[1] < pause_index
+    pending = store.get(paused_record.schedule_id)
+    assert pending is not None
+    assert pending.status == "pending"
+    assert pending.pending_operation == "rollback"
+
+
+def test_resume_cleanup_cas_failure_does_not_disarm_new_owner() -> None:
+    paused_record = replace(_record(), status="paused")
+    binding = replace(_binding(paused_record), status="paused")
+
+    class FailingBlockingGateway(Gateway):
+        create_started = Event()
+        allow_failure = Event()
+
+        def create_or_update(
+            self, content_guid: str, kwargs: Mapping[str, object]
+        ) -> Any:
+            super().create_or_update(content_guid, kwargs)
+            self.create_started.set()
+            if not self.allow_failure.wait(timeout=3):
+                raise TimeoutError("test did not release failed Connect write")
+            raise RuntimeError("synthetic lost write response")
+
+    class Service:
+        pause_calls = 0
+
+        def get(self, *_args: object) -> ScheduleRecord:
+            return paused_record
+
+        def resume(self, *_args: object) -> ScheduleRecord:
+            return replace(paused_record, status="active")
+
+        def pause(self, *_args: object) -> ScheduleRecord:
+            self.pause_calls += 1
+            return paused_record
+
+    gateway = FailingBlockingGateway()
+    store = Store(binding)
+    adapter = _adapter(
+        gateway,
+        store,
+        clock=lambda: datetime(2026, 10, 13, 12, 0, tzinfo=UTC),
+    )
+    service = Service()
+    context = _context()
+
+    with ThreadPoolExecutor(max_workers=1) as executor:
+        first = executor.submit(
+            adapter.resume,
+            cast(ScheduleApplicationService, service),
+            context,
+            paused_record.schedule_id,
+            binding,
+        )
+        try:
+            assert gateway.create_started.wait(timeout=2)
+            in_flight = store.get(paused_record.schedule_id)
+            assert in_flight is not None
+            assert in_flight.pending_operation == "resume"
+
+            # Model a successful reconciliation that wins the durable CAS
+            # while the original request is still in flight.
+            recovered = replace(
+                in_flight,
+                status="active",
+                operation_id=None,
+                pending_operation=None,
+                pending_target_status=None,
+            )
+            store.put(recovered, expected=in_flight)
+            gateway.armed = True
+        finally:
+            gateway.allow_failure.set()
+
+        with pytest.raises(RuntimeError, match="lost write response"):
+            first.result(timeout=3)
+
+    assert store.get(paused_record.schedule_id) == recovered
+    assert gateway.armed is True
+    assert [event for event in gateway.events if event == ("armed", False)] == [
+        ("armed", False)
+    ]
+    assert service.pause_calls == 0
 
 
 def test_amend_refuses_remote_drift_before_pausing_or_deploying() -> None:

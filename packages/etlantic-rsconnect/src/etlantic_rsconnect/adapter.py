@@ -98,7 +98,9 @@ class ConnectScheduleBinding:
     operation_id: str | None = None
     # Pending operation metadata is a durable single-writer claim. Registration
     # is explicit; an in-flight or unclassified operation is never taken over.
-    pending_operation: Literal["registration", "apply", "resume", "amend"] | None = None
+    pending_operation: (
+        Literal["registration", "apply", "resume", "amend", "rollback"] | None
+    ) = None
     pending_target_status: Literal["active", "paused", "deleted"] | None = None
 
     def __post_init__(self) -> None:
@@ -151,6 +153,7 @@ class ConnectScheduleBinding:
                 "apply",
                 "resume",
                 "amend",
+                "rollback",
             ):
                 raise ValueError("pending operation is unsupported")
             if self.pending_operation in (None, "registration"):
@@ -171,6 +174,11 @@ class ConnectScheduleBinding:
                 and self.pending_target_status != "active"
             ):
                 raise ValueError("pending amendment must target active status")
+            elif (
+                self.pending_operation == "rollback"
+                and self.pending_target_status != "paused"
+            ):
+                raise ValueError("pending rollback must target paused status")
         elif self.operation_id is not None:
             raise ValueError("only pending bindings may retain an operation_id")
         elif (
@@ -186,8 +194,9 @@ class BindingStore(Protocol):
     A deployment registration is explicitly marked as such; the first
     lifecycle mutation changes it to a claimed pending operation before any
     remote write. Callers must never replace a claimed or unclassified pending
-    operation. The implementation must serialize competing writes across
-    processes.
+    operation while its writer may still be running. Exact remote readback does
+    not prove that an in-flight writer has stopped. The implementation must
+    serialize competing writes across processes.
     """
 
     def get(self, schedule_id: str) -> ConnectScheduleBinding | None: ...
@@ -231,7 +240,8 @@ class PositSdkGateway:
     """Small adapter over the public Posit Python SDK object model.
 
     The SDK currently marks schedule mutations experimental. This gateway
-    exposes that boundary instead of calling undocumented REST endpoints.
+    exposes that boundary instead of calling undocumented REST endpoints. It
+    owns a separate SDK client pinned to the validated destination.
     """
 
     def __init__(
@@ -263,7 +273,36 @@ class PositSdkGateway:
             raise ValueError(
                 "Posit SDK client destination does not match the configured Connect server"
             )
-        self.client = client
+        try:
+            api_key = client.cfg.api_key
+            if not isinstance(api_key, str) or not api_key:
+                raise ValueError
+            # The Posit SDK reads cfg.url for every request. Give this gateway
+            # its own client so later changes to the caller's mutable config
+            # cannot redirect requests or attach different credentials.
+            pinned_client = type(client)(url=client_url, api_key=api_key)
+            pinned_url = pinned_client.cfg.url
+            if not isinstance(pinned_url, str):
+                raise ValueError
+            parsed_pinned_url = urlsplit(pinned_url)
+            pinned_path = parsed_pinned_url.path.rstrip("/")
+            if pinned_path == "/__api__":
+                pinned_path = ""
+            elif pinned_path.endswith("/__api__"):
+                pinned_path = pinned_path[: -len("/__api__")]
+            pinned_base_url = _connect_base_url(
+                parsed_pinned_url._replace(path=pinned_path).geturl()
+            )
+        except Exception:
+            raise ValueError(
+                "Posit SDK client must support an isolated HTTPS Connect destination"
+            ) from None
+        if pinned_base_url != self._server_url:
+            raise ValueError(
+                "Posit SDK client destination does not match the configured Connect server"
+            )
+        self._client = pinned_client
+        self._client_url = pinned_url
         self._server_version = server_version
 
     @property
@@ -274,11 +313,22 @@ class PositSdkGateway:
     def server_version(self) -> str | None:
         return self._server_version
 
+    def _pinned_client(self) -> Any:
+        try:
+            current_url = self._client.cfg.url
+        except AttributeError:
+            current_url = None
+        if current_url != self._client_url:
+            raise ScheduleOperationError(
+                "Posit SDK client destination changed; create a new gateway"
+            )
+        return self._client
+
     def _schedule(self, content_guid: str) -> Any:
         if not _CONTENT_GUID.fullmatch(content_guid):
             raise ScheduleOperationError("content_guid must be a Connect GUID")
         try:
-            content = self.client.content.get(content_guid)
+            content = self._pinned_client().content.get(content_guid)
             schedule = content.schedule
         except Exception:
             raise ScheduleOperationError(
@@ -325,7 +375,7 @@ class PositSdkGateway:
     def set_trigger_armed(self, content_guid: str, armed: bool) -> None:
         """Set the generated script's disarmed-by-default environment switch."""
         try:
-            content = self.client.content.get(content_guid)
+            content = self._pinned_client().content.get(content_guid)
             environment = content.environment_variables
             update = getattr(environment, "update", None)
             if not callable(update):
@@ -342,7 +392,7 @@ class PositSdkGateway:
 
     def can_set_trigger_armed(self, content_guid: str) -> bool:
         try:
-            content = self.client.content.get(content_guid)
+            content = self._pinned_client().content.get(content_guid)
             return callable(
                 getattr(getattr(content, "environment_variables", None), "update", None)
             )
@@ -679,12 +729,9 @@ class ConnectScheduleAdapter:
                 raise ScheduleOperationUnknown(
                     "a Connect resume is pending for a different canonical state; reconcile before retrying"
                 )
-            if (
-                observed.pending_operation in ("apply", "resume")
-                and observed.pending_target_status != record.status
-            ):
+            if observed.pending_operation in ("apply", "resume", "rollback"):
                 raise ScheduleOperationUnknown(
-                    "a different Connect lifecycle operation is pending; reconcile before retrying"
+                    "a Connect lifecycle mutation is still pending; confirm its writer has stopped before reconciliation"
                 )
         else:
             if (
@@ -719,50 +766,6 @@ class ConnectScheduleAdapter:
             )
             desired = _connect_recurrence(record, start_time=schedule_start)
             remote = self.gateway.read(binding.content_guid)
-            if observed.status == "pending" and observed.pending_operation == "resume":
-                observed_rule = _schedule_rule_mapping(remote) if remote else None
-                if observed_rule is None or dict(observed_rule) != desired:
-                    raise ScheduleOperationUnknown(
-                        "pending Connect resume is not yet visible remotely; reconcile before retrying"
-                    )
-                self.gateway.set_trigger_armed(binding.content_guid, True)
-                active = replace(
-                    observed,
-                    status="active",
-                    operation_id=None,
-                    pending_operation=None,
-                    pending_target_status=None,
-                )
-                try:
-                    self.binding_store.put(active, expected=observed)
-                except Exception:
-                    raise ScheduleOperationUnknown(
-                        "Connect resume is visible but its ownership result could not be committed; reconcile before retrying"
-                    ) from None
-                return active
-            if observed.status == "pending" and observed.pending_operation == "apply":
-                observed_rule = _schedule_rule_mapping(remote) if remote else None
-                if observed_rule is None or dict(observed_rule) != desired:
-                    raise ScheduleOperationUnknown(
-                        "pending Connect activation is not yet visible remotely; reconcile before retrying"
-                    )
-                # A matching readback is safe to finish: this caller does not
-                # replace the operation claim or repeat its remote mutation.
-                self.gateway.set_trigger_armed(binding.content_guid, True)
-                active = replace(
-                    observed,
-                    status="active",
-                    operation_id=None,
-                    pending_operation=None,
-                    pending_target_status=None,
-                )
-                try:
-                    self.binding_store.put(active, expected=observed)
-                except Exception:
-                    raise ScheduleOperationUnknown(
-                        "Connect activation is visible but its ownership result could not be committed; reconcile before retrying"
-                    ) from None
-                return active
             if observed.status == "active":
                 observed_rule = _schedule_rule_mapping(remote) if remote else None
                 if observed_rule is None or dict(observed_rule) != desired:
@@ -818,26 +821,6 @@ class ConnectScheduleAdapter:
             if observed.status == "deleted":
                 return observed
             remote = self.gateway.read(binding.content_guid)
-            if observed.status == "pending" and observed.pending_operation == "apply":
-                if remote is not None:
-                    raise ScheduleOperationUnknown(
-                        "pending Connect deactivation is not yet visible remotely; reconcile before retrying"
-                    )
-                self.gateway.set_trigger_armed(binding.content_guid, False)
-                updated = replace(
-                    observed,
-                    status=record.status,
-                    operation_id=None,
-                    pending_operation=None,
-                    pending_target_status=None,
-                )
-                try:
-                    self.binding_store.put(updated, expected=observed)
-                except Exception:
-                    raise ScheduleOperationUnknown(
-                        "Connect deactivation is visible but its ownership result could not be committed; reconcile before retrying"
-                    ) from None
-                return updated
             if observed.status == "active" and remote is not None:
                 expected = _connect_recurrence(
                     record, start_time=binding.schedule_start_time
@@ -1017,11 +1000,22 @@ class ConnectScheduleAdapter:
                 ) from None
             return active
         except Exception:
+            rollback_claim = replace(
+                intent,
+                operation_id=uuid.uuid4().hex,
+                pending_operation="rollback",
+                pending_target_status="paused",
+            )
             try:
-                still_owned = self.binding_store.get(schedule_id) == intent
+                # Fence cleanup atomically before disarming or changing the
+                # canonical schedule. A read cannot protect these side effects
+                # from a concurrent recovery that commits after the read.
+                self.binding_store.put(rollback_claim, expected=intent)
             except Exception:
-                still_owned = False
-            if still_owned:
+                rollback_claimed = False
+            else:
+                rollback_claimed = True
+            if rollback_claimed:
                 with suppress(Exception):
                     self.gateway.set_trigger_armed(binding.content_guid, False)
                 with suppress(Exception):

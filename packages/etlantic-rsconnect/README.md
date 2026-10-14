@@ -57,9 +57,13 @@ mutations before Connect writes, disables the generated content before timer
 changes, and retains pending state after uncertain results. Binding stores
 must make compare-and-swap atomic across processes. A pending registration is
 explicitly marked in its operation metadata. A claimed pending operation
-cannot be taken over; a retry only finalizes it when Connect readback proves the
-exact requested state. Unfinished or mismatched operations stay pending for
-operator reconciliation. It supports the
+cannot be taken over while its writer may still be running. Exact Connect
+readback is only a snapshot and does not establish that the writer has stopped,
+so retries leave claimed operations pending for operator reconciliation. Resume
+failure first changes the claim atomically to a pending rollback before it
+disarms content or pauses the canonical schedule. The SDK gateway owns a client
+copy pinned to the validated server URL, so mutations to the caller's client
+configuration do not redirect its requests. It supports the
 UTC interval subset exactly representable by Connect's minute, hour, and day
 schedule types. For new content, deploy first, pass the successful deployment
 result and bundle to `register_deployed_content()`, then call `apply()` with
