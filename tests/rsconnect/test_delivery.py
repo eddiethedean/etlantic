@@ -255,7 +255,9 @@ def test_credential_resolution_shares_the_delivery_deadline(operation: str) -> N
         assert "late-synthetic-credential" not in str(error.value)
     finally:
         release.set()
-        assert finished.wait(1)
+        # The deadline deliberately lets the worker race with the caller. On
+        # slower CI runners it may not be scheduled immediately after release.
+        assert finished.wait(5)
 
 
 def test_credential_provider_errors_are_redacted() -> None:
