@@ -346,6 +346,20 @@ def main() -> int:
     else:
         print((freeze.stdout or "").strip() or "Protocol freeze gate passed.")
 
+    preview = subprocess.run(
+        [sys.executable, str(ROOT / "scripts/check_rsconnect_release.py")],
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+    if preview.returncode:
+        errors.append(
+            "Connect preview readiness failed: "
+            + (preview.stderr or preview.stdout).strip()
+        )
+    else:
+        print("Independently versioned Connect preview metadata verified.")
+
     if errors:
         print("Release readiness FAILED:")
         for err in errors:

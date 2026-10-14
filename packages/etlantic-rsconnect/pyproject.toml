@@ -26,7 +26,7 @@ Homepage = "https://github.com/eddiethedean/etlantic"
 Documentation = "https://github.com/eddiethedean/etlantic/tree/main/docs"
 Repository = "https://github.com/eddiethedean/etlantic"
 Issues = "https://github.com/eddiethedean/etlantic/issues"
-Changelog = "https://github.com/eddiethedean/etlantic/blob/main/CHANGELOG.md"
+Changelog = "https://github.com/eddiethedean/etlantic/blob/main/packages/etlantic-rsconnect/CHANGELOG.md"
 
 [build-system]
 requires = ["hatchling"]

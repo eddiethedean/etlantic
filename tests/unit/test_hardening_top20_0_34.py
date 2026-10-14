@@ -198,6 +198,7 @@ def test_run_maps_pmplug402_to_trust_failure(monkeypatch: pytest.MonkeyPatch) ->
 
 
 def test_medallion_validation_and_step_status_fail_closed() -> None:
+    pytest.importorskip("medallantic")
     from medallantic.reports import adapt_run_result
 
     report = adapt_run_result(
@@ -215,6 +216,7 @@ def test_medallion_validation_and_step_status_fail_closed() -> None:
 
 
 def test_empty_write_mode_rejected() -> None:
+    pytest.importorskip("medallantic")
     from medallantic.compat import write_mode_from_sparkforge
 
     with pytest.raises(ValueError, match="required"):

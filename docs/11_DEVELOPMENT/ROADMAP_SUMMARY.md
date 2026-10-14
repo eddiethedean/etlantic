@@ -52,7 +52,7 @@ For the status, current boundary, and owner of every domain plan, use the
 | Previous | 0.57 | Managed backend independence and runtime supervision (#278–#282) | Published line through 0.57.2 — [implementation plan](IMPLEMENTATION_PLAN_0_57.md), [exit gate](EXIT_GATE_0_57.md) |
 | Previous | 0.58 | Managed Prefect execution | Bounded static-batch Process-worker/PostgreSQL profile qualified on candidate; included in 0.59.0 — [implementation plan](IMPLEMENTATION_PLAN_0_58.md), [final decision](evidence/phase_0_58/FINAL_QUALIFICATION_DECISION_2026-10-12.json), [#290](https://github.com/eddiethedean/etlantic/issues/290) |
 | Current | 0.59 | Managed runtime consolidation and trigger contracts | Published Beta; external qualification campaigns deferred — [implementation plan](IMPLEMENTATION_PLAN_0_59.md), [exit gate](EXIT_GATE_0_59.md) |
-| In progress | 0.60 | Posit Connect scheduling and HTTPS triggers | Preview package can ship after local checks; live activation and production qualification deferred — [implementation plan](IMPLEMENTATION_PLAN_0_60.md) |
+| Preview complete | 0.60 | Posit Connect scheduling and HTTPS triggers | Independent preview release ready; live activation and production qualification deferred — [implementation plan](IMPLEMENTATION_PLAN_0_60.md), [exit record](EXIT_GATE_0_60.md) |
 | Later | 0.61 | AWS Scheduler/Lambda and one ECS/Fargate executor | Planned — [implementation plan](IMPLEMENTATION_PLAN_0_61.md) |
 | Later | 0.62 | One Data Mover host and optional trusted URL discovery | Planned — [implementation plan](IMPLEMENTATION_PLAN_0_62.md) |
 | Later | 0.63 | Brownfield bridges and targeted package simplification | Planning freeze — [implementation plan](IMPLEMENTATION_PLAN_0_63.md) |

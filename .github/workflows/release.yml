@@ -4,10 +4,11 @@ on:
   push:
     tags:
       - "v*.*.*"
+      - "etlantic-rsconnect-v*.*.*"
   workflow_dispatch:
     inputs:
       tag:
-        description: Git tag to publish remaining artifacts for (vX.Y.Z)
+        description: Release tag (vX.Y.Z or etlantic-rsconnect-vX.Y.Z)
         required: true
         type: string
 
@@ -25,7 +26,10 @@ jobs:
   publish:
     name: Publish to PyPI
     needs: checks
-    if: always() && (github.event_name == 'workflow_dispatch' || needs.checks.result == 'success')
+    if: >-
+      always() &&
+      !startsWith(github.event_name == 'workflow_dispatch' && github.event.inputs.tag || github.ref_name, 'etlantic-rsconnect-v') &&
+      (github.event_name == 'workflow_dispatch' || needs.checks.result == 'success')
     runs-on: ubuntu-latest
     environment: pypi
     env:
@@ -192,13 +196,8 @@ jobs:
           CORE="dist/etlantic-${TAG}-py3-none-any.whl"
           RSCONNECT="dist/etlantic_rsconnect-${RSCONNECT_VERSION}-py3-none-any.whl"
           uv run --isolated --no-project --with "$CORE" --with "$RSCONNECT" \
-            python -c "
-          import importlib.util
-          import etlantic_rsconnect
-          assert etlantic_rsconnect.__version__ == '$RSCONNECT_VERSION'
-          assert importlib.util.find_spec('posit') is None
-          print('rsconnect preview ok, SDK optional')
-          "
+            python -I scripts/check_rsconnect_release.py --installed \
+              --expected-version "$RSCONNECT_VERSION" --wheel "$RSCONNECT"
 
       - name: Smoke discover plugins on installed wheels
         run: |
@@ -585,4 +584,108 @@ jobs:
           if [ "$failures" -gt 0 ]; then
             echo "One or more new PyPI projects failed; re-dispatch Release after the rate-limit window."
             exit 1
+          fi
+
+  publish-rsconnect:
+    name: Publish independently versioned Connect preview
+    needs: checks
+    if: >-
+      always() &&
+      startsWith(github.event_name == 'workflow_dispatch' && github.event.inputs.tag || github.ref_name, 'etlantic-rsconnect-v') &&
+      (github.event_name == 'workflow_dispatch' || needs.checks.result == 'success')
+    runs-on: ubuntu-latest
+    environment: pypi
+    concurrency:
+      group: rsconnect-release-${{ github.event_name == 'workflow_dispatch' && github.event.inputs.tag || github.ref_name }}
+      cancel-in-progress: false
+    env:
+      RELEASE_TAG: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.tag || github.ref_name }}
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.tag || github.ref }}
+
+      - name: Verify rsconnect release tag ref
+        run: |
+          TAG_COMMIT="$(git rev-parse --verify "refs/tags/${RELEASE_TAG}^{commit}")"
+          if [ "$TAG_COMMIT" != "$(git rev-parse HEAD)" ]; then
+            echo "Preview release must use the selected immutable tag checkout"
+            exit 1
+          fi
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v9.0.0
+        with:
+          version: "0.12.0"
+          python-version: "3.11"
+          enable-cache: true
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Validate rsconnect preview release
+        run: |
+          uv sync --locked --extra rsconnect
+          uv run --no-sync python scripts/check_rsconnect_release.py --tag "$RELEASE_TAG"
+          RSCONNECT_VERSION="${RELEASE_TAG#etlantic-rsconnect-v}"
+          printf 'RSCONNECT_VERSION=%s\n' "$RSCONNECT_VERSION" >> "$GITHUB_ENV"
+          uv run --no-sync pytest -q tests/rsconnect \
+            tests/control_plane/test_trigger_0_59.py \
+            tests/service/test_schedule_application_0_57.py
+
+      - name: Build rsconnect preview artifacts
+        run: uv build --package etlantic-rsconnect --out-dir dist
+
+      - name: Qualify rsconnect preview installation
+        run: |
+          WHEEL="dist/etlantic_rsconnect-${RSCONNECT_VERSION}-py3-none-any.whl"
+          # Resolve the declared dependency floor from released packages, never
+          # the editable workspace. No Connect or receiver service is used.
+          uv run --isolated --no-project --with "$WHEEL" --with "etlantic==0.59.0" \
+            python -I scripts/check_rsconnect_release.py --installed \
+              --expected-version "$RSCONNECT_VERSION" --wheel "$WHEEL" \
+              --report dist/rsconnect-release-check.json
+          uv run --isolated --no-project --with "$WHEEL" --with "etlantic==0.59.0" \
+            --with "posit-sdk==0.17.0" --with pytest --with "httpx2>=2" \
+            python -I -m pytest -q -o pythonpath= tests/rsconnect \
+              tests/control_plane/test_trigger_0_59.py \
+              tests/service/test_schedule_application_0_57.py
+          uv publish --dry-run --trusted-publishing never \
+            "$WHEEL" "dist/etlantic_rsconnect-${RSCONNECT_VERSION}.tar.gz"
+
+      - name: Attest rsconnect preview provenance
+        uses: actions/attest-build-provenance@v4
+        with:
+          subject-path: |
+            dist/etlantic_rsconnect-*.whl
+            dist/etlantic_rsconnect-*.tar.gz
+
+      - name: Preserve rsconnect preview artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: etlantic-rsconnect-${{ env.RSCONNECT_VERSION }}
+          path: dist/
+          if-no-files-found: error
+
+      - name: Publish rsconnect preview
+        env:
+          UV_PUBLISH_TOKEN: ${{ secrets.PYPI_API_TOKEN }}
+        run: |
+          WHEEL="dist/etlantic_rsconnect-${RSCONNECT_VERSION}-py3-none-any.whl"
+          SDIST="dist/etlantic_rsconnect-${RSCONNECT_VERSION}.tar.gz"
+          if ! uv publish --trusted-publishing always --check-url https://pypi.org/simple/ "$WHEEL" "$SDIST"; then
+            if [ -z "${UV_PUBLISH_TOKEN:-}" ]; then
+              exit 1
+            fi
+            uv publish --check-url https://pypi.org/simple/ "$WHEEL" "$SDIST"
+          fi
+
+      - name: Create rsconnect preview GitHub release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          if gh release view "$RELEASE_TAG" > /dev/null 2>&1; then
+            gh release upload "$RELEASE_TAG" dist/*.whl dist/*.tar.gz dist/rsconnect-release-check.json --clobber
+          else
+            gh release create "$RELEASE_TAG" dist/*.whl dist/*.tar.gz dist/rsconnect-release-check.json \
+              --verify-tag --prerelease --title "etlantic-rsconnect ${RSCONNECT_VERSION} (preview)" \
+              --notes-file packages/etlantic-rsconnect/CHANGELOG.md
           fi

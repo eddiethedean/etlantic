@@ -47,11 +47,11 @@ field unless a reviewed source establishes it.
 
 ## Current Coverage And Regressions
 
-The pre-fix focused baseline passed **38 tests**. The current regression set
-passes **62 tests** across the package, trigger contract, and schedule service:
+The pre-fix focused baseline passed **38 tests**. The regression set covers the
+package, trigger contract, and schedule service with the pinned real SDK:
 
 ```bash
-uv run --no-sync pytest -q tests/rsconnect \
+uv run --no-sync --with posit-sdk==0.17.0 pytest -q tests/rsconnect \
   tests/control_plane/test_trigger_0_59.py \
   tests/service/test_schedule_application_0_57.py
 ```
@@ -114,6 +114,11 @@ The regression set also fixes related risks:
 - Release-shell simulations verify an independently versioned preview artifact
   and simulate duplicate-upload recovery using that artifact's version. They
   contact no package registry and publish no artifact.
+- The independent release tag is checked against package metadata, the module,
+  the lockfile, the root extra, and package release notes. Installed-wheel tests
+  clear pytest's workspace `pythonpath`; the base-wheel checker verifies import
+  origins and runs generated content with `python -I -S`, so source imports or
+  development dependencies cannot hide packaging errors.
 
 ## Test Architecture
 

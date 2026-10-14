@@ -665,6 +665,7 @@ nav:
   - Project:
       - Releases:
           - Changelog: CHANGELOG.md
+          - Connect 0.60 preview exit record: 11_DEVELOPMENT/EXIT_GATE_0_60.md
           - What's new in 0.59 (candidate): 01_GETTING_STARTED/WHATS_NEW_0_59.md
           - Migration from 0.58 to 0.59 (candidate): 11_DEVELOPMENT/MIGRATION_0_58_TO_0_59.md
           - Exit gate 0.59: 11_DEVELOPMENT/EXIT_GATE_0_59.md

@@ -83,11 +83,19 @@ unqualified. These are production support qualification items, not prerequisites
 for distributing the package as a preview. The preview does not claim active
 scheduled delivery or production support.
 
-See the [0.60 implementation plan](../../docs/11_DEVELOPMENT/IMPLEMENTATION_PLAN_0_60.md)
-and [Connect integration plan](../../docs/11_DEVELOPMENT/ETLANTIC_RSCONNECT_PLAN.md)
+See the [0.60 implementation plan](https://github.com/eddiethedean/etlantic/blob/main/docs/11_DEVELOPMENT/IMPLEMENTATION_PLAN_0_60.md)
+and [Connect integration plan](https://github.com/eddiethedean/etlantic/blob/main/docs/11_DEVELOPMENT/ETLANTIC_RSCONNECT_PLAN.md)
 for the remaining platform decisions and evidence gates.
 
-The [local simulation design](../../docs/11_DEVELOPMENT/CONNECT_SIMULATION_DESIGN_0_60.md)
+The preview has its own [release notes](https://github.com/eddiethedean/etlantic/blob/main/packages/etlantic-rsconnect/CHANGELOG.md) and tag:
+`etlantic-rsconnect-v0.60.0`. It can be published while the core remains at
+0.59.0. The [preview exit record](https://github.com/eddiethedean/etlantic/blob/main/docs/11_DEVELOPMENT/EXIT_GATE_0_60.md)
+lists the local checks and publishing procedure. `BindingStore`,
+`ConnectScheduleGateway`, and `DeploymentJournal` are public root imports for
+host integrations; storage implementations must provide the documented durable
+and atomic behavior.
+
+The [local simulation design](https://github.com/eddiethedean/etlantic/blob/main/docs/11_DEVELOPMENT/CONNECT_SIMULATION_DESIGN_0_60.md)
 records SDK, scheduling, HTTPS, and crash-recovery simulations that run without
 a Connect server. The regression suite covers SDK recurrence normalization,
 resume-anchor preservation, bounded DNS and credential resolution, and actual

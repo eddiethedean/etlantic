@@ -1061,7 +1061,27 @@ jobs:
           ls -la dist/
 
       - name: Test Posit Connect preview package
-        run: uv run --extra rsconnect pytest -q tests/rsconnect
+        run: |
+          uv run python scripts/check_rsconnect_release.py
+          uv run --extra rsconnect pytest -q tests/rsconnect \
+            tests/control_plane/test_trigger_0_59.py \
+            tests/service/test_schedule_application_0_57.py
+
+      - name: Qualify installed Posit Connect preview
+        run: |
+          CORE="dist/etlantic-$(uv version --short --package etlantic)-py3-none-any.whl"
+          VERSION="$(uv version --short --package etlantic-rsconnect)"
+          WHEEL="dist/etlantic_rsconnect-${VERSION}-py3-none-any.whl"
+          uv run --isolated --no-project --with "$CORE" --with "$WHEEL" \
+            python -I scripts/check_rsconnect_release.py --installed \
+              --expected-version "$VERSION" --wheel "$WHEEL"
+          uv run --isolated --no-project --with "$CORE" --with "$WHEEL" \
+            --with "posit-sdk==0.17.0" --with pytest --with "httpx2>=2" \
+            python -I -m pytest -q -o pythonpath= tests/rsconnect \
+              tests/control_plane/test_trigger_0_59.py \
+              tests/service/test_schedule_application_0_57.py
+          uv publish --dry-run --trusted-publishing never \
+            "$WHEEL" "dist/etlantic_rsconnect-${VERSION}.tar.gz"
 
       - name: Pytest against installed wheel
         shell: bash
@@ -1087,7 +1107,7 @@ jobs:
             exit 1
           fi
           uv run --isolated --no-project --with "$WHEEL" --with pytest \
-            python -m pytest -q tests/unit tests/cli
+            python -I -m pytest -q -o pythonpath= tests/unit tests/cli
 
       - name: Headless SQLModel backend from installed wheels without FastAPI
         shell: bash

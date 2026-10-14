@@ -17,7 +17,7 @@ scope moves intact to [0.64](IMPLEMENTATION_PLAN_0_64.md).
 The optional package source covers deterministic Quarto bundle generation with
 a verified source manifest, explicit-target publishing, preview-gated schedule
 lifecycle, durable-store protocols, and bounded HTTPS delivery/reconciliation
-over public 0.59 contracts. Focused package checks pass (44 tests), along with
+over public 0.59 contracts. Focused package and inherited contract checks pass, along with
 lint, source type, and wheel-build checks. The preview release bar is local and
 listed below. No AC060 production-support exit gate is closed:
 the SDK schedule surface remains experimental, live Connect and durable
@@ -48,9 +48,13 @@ receiver/worker, vendor API decisions, and external qualification campaigns are
 not prerequisites for this preview release. Release does not claim a qualified
 Connect deployment, active scheduled delivery, or production support.
 
-The release workflow verifies the preview package's metadata and module version
-independently of the core tag. It builds, smoke-tests, and publishes the adapter
-using its own artifact version, so preview `0.60.0` can accompany core `0.59.0`.
+The release workflow accepts `etlantic-rsconnect-v0.60.0` independently of the
+published core tag. It verifies the preview metadata, module, lockfile, dependency
+range, and package release notes; builds the adapter; and qualifies its installed
+wheel with workspace imports disabled. Only the preview artifacts are published
+for this tag, so `0.60.0` can accompany core `0.59.0` without moving an existing
+tag or rebuilding the lockstep release. The [preview exit record](EXIT_GATE_0_60.md)
+maps the completed local deliverables and records the support limits.
 
 The [Connect simulation design](CONNECT_SIMULATION_DESIGN_0_60.md) records local
 SDK, schedule, delivery, and recovery simulations with reproducible fault

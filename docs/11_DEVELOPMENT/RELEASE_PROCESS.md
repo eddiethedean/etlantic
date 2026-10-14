@@ -264,6 +264,34 @@ GitHub Actions workflow
    so a new-project `429` cannot block the rest of the line. Re-dispatch
    **Release** later for any new name still rate-limited.
 
+### Independently versioned Connect preview
+
+`etlantic-rsconnect` has an independent release tag. Core `v0.59.0` already
+exists and predates this package; keep that tag immutable. To prepare the
+preview from the intended clean commit:
+
+```bash
+uv sync --locked --extra rsconnect
+uv run python scripts/check_rsconnect_release.py --tag etlantic-rsconnect-v0.60.0
+uv run pytest -q tests/rsconnect tests/control_plane/test_trigger_0_59.py \
+  tests/service/test_schedule_application_0_57.py
+uv build --package etlantic-rsconnect
+```
+
+When publication is authorized, create and push
+`etlantic-rsconnect-v0.60.0`. The same `release.yml` workflow runs the full checks
+and selects its preview publishing job. It checks the installed adapter against
+released core 0.59.0, proves base installation needs no SDK or ETL engines, and
+runs the focused tests with workspace imports disabled. It publishes only the
+adapter wheel and sdist and creates a GitHub prerelease using the package's
+changelog. Re-dispatch **Release** with that same preview tag to retry an upload;
+existing artifacts are checked by `uv publish --check-url`.
+
+This path uses the existing `pypi` publishing environment and `release.yml`
+Trusted Publishing identity. It requires no live Connect, Quarto, PostgreSQL,
+receiver, or worker qualification. See the [0.60 exit record](EXIT_GATE_0_60.md)
+for the distinction between a complete preview and deferred production support.
+
 ## After PyPI succeeds
 
 1. Verify `pip install etlantic==X.Y.Z` and plugin extras from a clean venv.
