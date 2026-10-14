@@ -38,7 +38,7 @@ implementation or its explicit conditional decision.
 | F09: fragmented HTTP policy | Policy baseline in 0.59 059-A; consume in 0.60/0.61; existing-client alignment in 0.63 063-H; security + adapter | [Dependency strategy](DEPENDENCY_STRATEGY.md), [Connect](ETLANTIC_RSCONNECT_PLAN.md), [adoption](ADOPTION_ECOSYSTEM_PLAN.md) | Existing outbound policy/conformance shared; destination/redirect/timeout/byte/redaction parity; real DNS/connect tests and explicit trusted private deployment support |
 | F10: dependency breadth / support mismatch | Range policy in 0.59 059-V; PostgreSQL extra and install measurements in 0.63 063-P; packaging + SQL | [Dependency strategy](DEPENDENCY_STRATEGY.md), [release process](RELEASE_PROCESS.md) | Resolver matrix matches qualified minor line; SQLite-only install avoids psycopg after documented migration; CLI split requires measured benefit |
 | F11: version and sunset drift | Single version source / declared sunset in 0.59 059-V; final SparkForge compatibility release 0.62.0; routine retirement in 0.63 after migration evidence; release + provider | [Release process](RELEASE_PROCESS.md), [deprecation policy](DEPRECATION_POLICY.md) | Factory/installed metadata agree; protocol and distribution versions distinct; visible warnings through 0.62, tested migration, then routine release removal |
-| F12: excessive initial platform matrix | 0.59–0.62 phase owners; runtime + Connect + AWS + application | [0.59](IMPLEMENTATION_PLAN_0_59.md), [0.60](IMPLEMENTATION_PLAN_0_60.md), [0.61](IMPLEMENTATION_PLAN_0_61.md), [0.62](IMPLEMENTATION_PLAN_0_62.md) | Consolidation first; one explicit-URL Connect topology; Scheduler/Lambda plus ECS/Fargate only; one Data Mover host; Batch demand-gated and unscheduled |
+| F12: excessive initial platform matrix | 0.59–0.62 phase owners; runtime + Connect + AWS + application | [0.59](IMPLEMENTATION_PLAN_0_59.md), [0.60](IMPLEMENTATION_PLAN_0_60.md), [0.61](IMPLEMENTATION_PLAN_0_61.md), [0.62](IMPLEMENTATION_PLAN_0_62.md) | Consolidation first; locally checked 0.60 preview package; one explicit-URL Connect topology qualifies production support; Scheduler/Lambda plus ECS/Fargate only; one Data Mover host; Batch demand-gated and unscheduled |
 
 ## Sequence And Scope Control
 
@@ -47,9 +47,11 @@ implementation or its explicit conditional decision.
    only shared managed implementation through public seams. Characterize the
    persistence codec before changing its consumer. Add only missing timer/HTTP
    concepts and reuse existing authoritative value models.
-2. **0.60:** prove one explicit-URL Connect trigger topology using the shared
-   policy and minimal wire contract. Generated content must not carry the full
-   ETL engine/provider environment.
+2. **0.60:** release the optional preview package on local build, install,
+   contract, and security checks. Separately qualify one explicit-URL Connect
+   trigger topology using the shared policy and minimal wire contract before a
+   production support claim. Generated content must not carry the full ETL
+   engine/provider environment.
 3. **0.61:** prove schedule-only Scheduler → scoped Lambda → HTTPS delivery and
    one executor, ECS/Fargate. Reuse generic dispatch; qualify it independently
    from scheduling. Batch has no assigned release or exit gate until a concrete
@@ -96,6 +98,7 @@ delegates. Current qualification limits continue to apply.
 | `etlantic-pandas` | Owns eager/index-neutral execution and compiler semantics; share only identical helpers. |
 | `etlantic-polars` | Owns lazy/compiler, qualified fusion execution/inspection and Parquet snapshots; absorb matching core vendor logic without widening support. |
 | `etlantic-prefect` | Keeps direct and managed modes in one vendor wheel; owns API/state translation and deployment validation over shared generic dispatch. No managed-only companion wheel. |
+| `etlantic-rsconnect` | 0.60 optional Connect deployment/scheduling/delivery adapter over public trigger contracts; no FastAPI, Data Mover or ETL execution authority. Preview distribution needs no external platform evidence; lifecycle and generated content remain unqualified for production support until API stability and nominal-slot evidence pass. |
 | `etlantic-pyspark` | Owns Spark realization/compiler/local provider with optional Delta; remote-session provider remains a distinct dependency boundary. |
 | `etlantic-s3` | Owns S3-compatible source/sink/storage independently of AWS orchestration; audit fake selection and preserve truthful maturity. |
 | `etlantic-schemaregistry` | Owns read-only registry transport separately from Kafka; use shared outbound policy and never acquire mutation authority. |

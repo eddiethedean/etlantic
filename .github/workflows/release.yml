@@ -62,6 +62,14 @@ jobs:
           SPARKFORGE_VERSION="$(sed -n 's/^version = "\(.*\)"/\1/p' packages/etlantic-sparkforge/pyproject.toml | head -1)"
           DATAFUSION_VERSION="$(sed -n 's/^version = "\(.*\)"/\1/p' packages/etlantic-datafusion/pyproject.toml | head -1)"
           FASTAPI_VERSION="$(sed -n 's/^version = "\(.*\)"/\1/p' packages/etlantic-fastapi/pyproject.toml | head -1)"
+          RSCONNECT_VERSION="$(sed -n 's/^version = "\(.*\)"/\1/p' packages/etlantic-rsconnect/pyproject.toml | head -1)"
+          RSCONNECT_MODULE_VERSION="$(sed -n 's/^__version__ = "\(.*\)"/\1/p' packages/etlantic-rsconnect/src/etlantic_rsconnect/__init__.py)"
+          if [ "$RSCONNECT_VERSION" != "$RSCONNECT_MODULE_VERSION" ]; then
+            echo "Rsconnect preview version mismatch: metadata='$RSCONNECT_VERSION' module='$RSCONNECT_MODULE_VERSION'"
+            exit 1
+          fi
+          # The preview distribution has its own version, independent of core.
+          printf 'RSCONNECT_VERSION=%s\n' "$RSCONNECT_VERSION" >> "$GITHUB_ENV"
           LSP_VERSION="$(sed -n 's/^version = "\(.*\)"/\1/p' packages/etlantic-lsp/pyproject.toml | head -1)"
           S3_VERSION="$(sed -n 's/^version = "\(.*\)"/\1/p' packages/etlantic-s3/pyproject.toml | head -1)"
           KAFKA_VERSION="$(sed -n 's/^version = "\(.*\)"/\1/p' packages/etlantic-kafka/pyproject.toml | head -1)"
@@ -104,6 +112,7 @@ jobs:
           uv build --package etlantic-sparkforge --out-dir dist
           uv build --package etlantic-datafusion --out-dir dist
           uv build --package etlantic-fastapi --out-dir dist
+          uv build --package etlantic-rsconnect --out-dir dist
           uv build --package etlantic-lsp --out-dir dist
           uv build --package etlantic-s3 --out-dir dist
           uv build --package etlantic-kafka --out-dir dist
@@ -175,6 +184,20 @@ jobs:
           assert importlib.util.find_spec('airflow') is None
           assert importlib.util.find_spec('prefect') is None
           print('core ok, driver-free')
+          "
+
+      - name: Smoke test rsconnect preview wheel
+        run: |
+          TAG="${RELEASE_TAG#v}"
+          CORE="dist/etlantic-${TAG}-py3-none-any.whl"
+          RSCONNECT="dist/etlantic_rsconnect-${RSCONNECT_VERSION}-py3-none-any.whl"
+          uv run --isolated --no-project --with "$CORE" --with "$RSCONNECT" \
+            python -c "
+          import importlib.util
+          import etlantic_rsconnect
+          assert etlantic_rsconnect.__version__ == '$RSCONNECT_VERSION'
+          assert importlib.util.find_spec('posit') is None
+          print('rsconnect preview ok, SDK optional')
           "
 
       - name: Smoke discover plugins on installed wheels
@@ -303,6 +326,7 @@ jobs:
             local name="$1"
             local wheel="$2"
             local sdist="$3"
+            local version="${4:-$TAG}"
             local attempt=1
             local max_attempts=5
             local delay="$RETRY_BASE_SECONDS"
@@ -342,11 +366,11 @@ jobs:
               fi
               if printf '%s' "$log" | grep -Eiq \
                 'file already exists|already uploaded|skipping.*already'; then
-                if pypi_version_exists "$name" "$TAG"; then
-                  echo "Already published; verified on PyPI: ${name}==${TAG}"
+                if pypi_version_exists "$name" "$version"; then
+                  echo "Already published; verified on PyPI: ${name}==${version}"
                   return 0
                 fi
-                echo "Publish reported already exists but ${name}==${TAG} not found on PyPI"
+                echo "Publish reported already exists but ${name}==${version} not found on PyPI"
                 exit 1
               fi
               if [ "$attempt" -ge "$max_attempts" ]; then
@@ -408,6 +432,10 @@ jobs:
           publish_pair etlantic-fastapi \
             "dist/etlantic_fastapi-${TAG}-py3-none-any.whl" \
             "dist/etlantic_fastapi-${TAG}.tar.gz"
+          publish_pair etlantic-rsconnect \
+            "dist/etlantic_rsconnect-${RSCONNECT_VERSION}-py3-none-any.whl" \
+            "dist/etlantic_rsconnect-${RSCONNECT_VERSION}.tar.gz" \
+            "$RSCONNECT_VERSION"
           publish_pair etlantic-lsp \
             "dist/etlantic_lsp-${TAG}-py3-none-any.whl" \
             "dist/etlantic_lsp-${TAG}.tar.gz"

@@ -1,0 +1,56 @@
+{
+  "adapter_expected": {
+    "email": false,
+    "n": 1,
+    "start_time": "2026-10-13T13:00:00Z",
+    "timezone": "UTC",
+    "type": "hour"
+  },
+  "adapter_observed": {
+    "N": 1
+  },
+  "adapter_status": "drifted",
+  "evidence_kind": "offline_sdk_contract_probe",
+  "fixture_origin": "synthetic; shaped from pinned SDK source",
+  "http_trace": [
+    {
+      "method": "GET",
+      "path": "/connect/__api__/v1/content/01234567-89ab-cdef-0123-456789abcdef"
+    },
+    {
+      "method": "GET",
+      "path": "/connect/__api__/applications/01234567-89ab-cdef-0123-456789abcdef/variants"
+    },
+    {
+      "method": "GET",
+      "path": "/connect/__api__/variants/5/schedules"
+    },
+    {
+      "method": "GET",
+      "path": "/connect/__api__/v1/content/01234567-89ab-cdef-0123-456789abcdef"
+    },
+    {
+      "method": "GET",
+      "path": "/connect/__api__/applications/01234567-89ab-cdef-0123-456789abcdef/variants"
+    },
+    {
+      "method": "GET",
+      "path": "/connect/__api__/variants/5/schedules"
+    }
+  ],
+  "live_connect": false,
+  "qualification": "SDK object shape only; no platform or TLS qualification",
+  "schema": "etlantic.rsconnect.simulation_research/1",
+  "sdk_rule": {
+    "N": 1
+  },
+  "sdk_version": "0.17.0",
+  "source_sha256": {
+    "adapter": "857d5cc986ef659296094e29baa503cd22867eadc2aa2dcdd94707ad483dccf4",
+    "existing_adapter_tests": "0cda79c30c9ab53558bb2ac51ca0195d1cc27a9af39a3526bcb58db1bec9c325",
+    "sdk_schedule": "b643dffcd722d896282ec7450cb6babe02198b9adaef2517626b550fe98ae596"
+  },
+  "warning_categories": [
+    "FutureWarning"
+  ]
+}

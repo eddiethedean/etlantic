@@ -247,10 +247,14 @@ GitHub Actions workflow
 [release.yml](https://github.com/eddiethedean/etlantic/blob/main/.github/workflows/release.yml):
 
 1. Runs the full checks matrix.
-2. Verifies tag == core + all plugin versions.
-3. Builds all twenty-five wheels/sdists.
+2. Verifies tag == core + lockstep plugin versions. The `etlantic-rsconnect`
+   preview checks its metadata/module version independently of the core tag.
+3. Builds the core and included optional wheels/sdists.
 4. Smokes the core wheel (driver-free) **and** plugin discovery/import
    **before** any PyPI upload.
+   The rsconnect preview has a separate installed-wheel smoke and uses its own
+   version for artifact filenames and already-published checks. Preview
+   `0.60.0` can therefore accompany core `0.59.0` without a monorepo version bump.
 5. Publishes to PyPI: **existing projects first** (skip files already present
    via `--check-url`; retry transient 429s).
 6. Creates the GitHub Release from `CHANGELOG.md` notes when existing-project

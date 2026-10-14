@@ -43,7 +43,7 @@ through **0.37** (stable foundation) are shipped.
 | Previous | 0.57 | Managed backend independence and runtime supervision (#278–#282), plus Local canonical sort fix (#283) | Published / shipped evidence; superseded by the 0.59.x support line |
 | Previous | 0.58 | Managed Prefect Execution (#290 / #291–#298) | Qualified candidate; included in 0.59.0 |
 | Current | 0.59 | Managed runtime consolidation and trigger contracts ([exit gate](docs/11_DEVELOPMENT/EXIT_GATE_0_59.md)) | Published / shipped evidence |
-| Later | 0.60 | Posit Connect scheduling and HTTPS triggers | Planned — [implementation plan](docs/11_DEVELOPMENT/IMPLEMENTATION_PLAN_0_60.md) |
+| In progress | 0.60 | Posit Connect scheduling and HTTPS triggers | Preview package distribution uses local checks; live activation and production qualification deferred — [implementation plan](docs/11_DEVELOPMENT/IMPLEMENTATION_PLAN_0_60.md) |
 | Later | 0.61 | AWS Scheduler/Lambda and one ECS/Fargate executor | Planned — [implementation plan](docs/11_DEVELOPMENT/IMPLEMENTATION_PLAN_0_61.md) |
 | Later | 0.62 | One Data Mover host and optional trusted URL discovery | Planned — [implementation plan](docs/11_DEVELOPMENT/IMPLEMENTATION_PLAN_0_62.md) |
 | Later | 0.63 | Brownfield bridges and targeted package simplification | Planning freeze |
@@ -4914,11 +4914,18 @@ rejected. This phase adds no new platform or engine support claim.
 
 ## 0.60 — Posit Connect Scheduling and HTTPS Triggers
 
-**Objective:** build optional `etlantic-rsconnect` to deploy lightweight scheduled
-trigger content that calls any configured compatible HTTPS endpoint. The
+**Objective:** deliver optional `etlantic-rsconnect` for lightweight scheduled
+trigger content that calls any configured compatible HTTPS endpoint. A preview
+package release is based on repository-local checks; the
 [0.60 implementation plan](docs/11_DEVELOPMENT/IMPLEMENTATION_PLAN_0_60.md)
 and [rsconnect domain plan](docs/11_DEVELOPMENT/ETLANTIC_RSCONNECT_PLAN.md)
-own the platform support matrix and qualification gates.
+own the platform support matrix and deferred production qualification stages.
+External qualification is not a package release gate.
+
+The preview package source is implemented. Generated content has no qualified
+per-invocation occurrence provider and refuses delivery; schedule mutation uses
+an experimental SDK surface. Live Connect and production acceptance remain
+unqualified, but those external results do not block preview distribution.
 
 Deliver:
 
@@ -4930,7 +4937,27 @@ Deliver:
 - bounded authenticated HTTPS delivery, credential references, redacted failures,
   and operational lifecycle/cleanup evidence.
 
-Acceptance:
+For preview package release, build and install the wheel, pass the local package
+and inherited contract checks, verify deterministic bundle/manifest behavior,
+and verify that content without trusted occurrence context remains disarmed.
+This release does not require Connect, Quarto deployment tooling, PostgreSQL, or
+an independent receiver/worker. Separately characterize a Python/Quarto
+script/default-variant candidate over static-batch `/1`, PostgreSQL and
+independent non-FastAPI receiver/worker processes. Freeze the public 0.59
+envelope/receipt contract and qualify deferred seams before making production
+support claims. API stability, scheduled nominal-time provenance and safe
+deployment rendering block dependent activation. The owning plan defines
+production qualification stages, decision owners and AC-mapped evidence; they do
+not gate preview distribution.
+
+Preview package release acceptance:
+
+- a clean package install/import and local checks require no Connect server,
+  Quarto, PostgreSQL, receiver/worker, FastAPI, or Data Mover;
+- documentation states the experimental and inactive-delivery limits clearly;
+  release makes no live or production support claim.
+
+Deferred production support qualification:
 
 - the adapter works without `etlantic-fastapi`, `fastapi-posit`, or Data Mover;
 - one live topology qualifies the declared recurrence/content/version matrix;
@@ -4939,6 +4966,10 @@ Acceptance:
 - duplicates, restarts and response loss preserve one occurrence/run mapping;
 - Connect delivery success never substitutes for ETL outcome in the independent
   executor, and scheduler artifacts contain no source/sink secrets or ETL code.
+- pending preparation, accepted/skipped receipts and uncertain delivery remain
+  distinct; bounded retries preserve the same occurrence after cursor advancement;
+- lost deployment responses, concurrent updates, drift and rollback reconcile
+  only owned resources; build/deploy/manual refresh submit no unbound work.
 
 The chosen Connect content type may require external Quarto tooling, as recorded
 in the domain plan's platform documentation. This is not a proposal for an

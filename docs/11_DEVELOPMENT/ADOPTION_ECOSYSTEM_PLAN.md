@@ -24,8 +24,9 @@ shared implementation/configuration before adding provider choices.
 
 0.59 corrects fake/live and version claims, establishes one backend settings
 owner and generic dispatch, replaces private persistence coupling, and conditionally
-extracts managed implementation. 0.60 proves one explicit-URL Connect topology;
-0.61 proves Scheduler/Lambda delivery and ECS/Fargate only; Batch is unscheduled.
+extracts managed implementation. 0.60 can distribute a locally checked preview
+package; one explicit-URL Connect topology separately qualifies production
+support. 0.61 proves Scheduler/Lambda delivery and ECS/Fargate only; Batch is unscheduled.
 0.62 proves one CP1/SQLModel/PostgreSQL host with one installed durable worker and
 individually qualified timers. New matrices require demand and new evidence.
 
@@ -99,7 +100,7 @@ adoption and ecosystem gates described below.
 | 0.57 | Managed backend independence and runtime supervision (#278–#282) | Transport-independent backend and schedule services, complete runtime factories, read-only provider inspection, and safe role supervision; 0.57.0 |
 | 0.58 | Managed Prefect execution (#290, #291–#298) | Qualified static-batch `/1`, self-hosted Process-worker deployment/dispatch/recovery matrix; direct scheduler compatibility |
 | 0.59 | Managed runtime consolidation and trigger contracts | Single managed owner/configuration/dispatch and missing trigger seams; see [plan](IMPLEMENTATION_PLAN_0_59.md) |
-| 0.60 | Posit Connect scheduling and HTTPS triggers | Qualified bounded adapter/consumer matrix; see [plan](IMPLEMENTATION_PLAN_0_60.md) |
+| 0.60 | Posit Connect scheduling and HTTPS triggers | Preview package on local checks; live adapter/consumer matrix deferred for production support; see [plan](IMPLEMENTATION_PLAN_0_60.md) |
 | 0.61 | AWS Scheduler/Lambda and ECS/Fargate | Independently qualified one relay topology and one executor; see [plan](IMPLEMENTATION_PLAN_0_61.md) |
 | 0.62 | One Data Mover host and optional Posit endpoint discovery | Qualified CP1/PostgreSQL/worker host with timer variants; see [plan](IMPLEMENTATION_PLAN_0_62.md) |
 | 0.63 | Brownfield bridges and targeted package simplification | Supported import/compiler compatibility matrix; Prefect interoperability consumes 0.58 |

@@ -55,7 +55,8 @@ conditional/deferred decision; documentation adoption does not close code work.
 - 0.59 consolidates existing managed operations/configuration/dispatch and public
   persistence seams before adding missing trigger concepts; runtime packaging is
   conditional on an acyclic extraction with named duplication removed.
-- 0.60 qualifies one explicit-URL Connect topology; 0.61 qualifies Scheduler/Lambda
+- 0.60 can release a locally checked preview package; one explicit-URL Connect
+  topology separately qualifies production support. 0.61 qualifies Scheduler/Lambda
   and ECS/Fargate only, with Batch unscheduled; 0.62 qualifies one Data Mover
   CP1/PostgreSQL/worker host and timer variants individually.
 - 0.63 owns targeted qualified engine/helper, existing-client, fixture and driver

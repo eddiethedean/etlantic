@@ -45,6 +45,7 @@ sqlmodel = ["etlantic-sqlmodel>=0.59.0"]
 medallantic = ["medallantic>=0.59.0"]
 sparkforge = ["etlantic-sparkforge>=0.59.0"]
 fastapi = ["etlantic-fastapi>=0.59.0"]
+rsconnect = ["etlantic-rsconnect[connect]>=0.60.0"]
 managed = ["etlantic-fastapi[managed]>=0.59.0"]
 managed-headless = ["etlantic-sqlmodel>=0.59.0", "psycopg[binary]>=3.1"]
 datafusion = ["etlantic-datafusion>=0.59.0"]
@@ -217,6 +218,7 @@ members = [
     "packages/etlantic-sparkforge",
     "packages/etlantic-datafusion",
     "packages/etlantic-fastapi",
+    "packages/etlantic-rsconnect",
     "packages/etlantic-s3",
     "packages/etlantic-kafka",
     "packages/etlantic-k8s",
@@ -245,6 +247,7 @@ medallantic = { workspace = true }
 etlantic-sparkforge = { workspace = true }
 etlantic-datafusion = { workspace = true }
 etlantic-fastapi = { workspace = true }
+etlantic-rsconnect = { workspace = true }
 etlantic-s3 = { workspace = true }
 etlantic-kafka = { workspace = true }
 etlantic-k8s = { workspace = true }
@@ -268,6 +271,7 @@ pythonpath = [
     "packages/etlantic-pyspark/src",
     "packages/etlantic-airflow/src",
     "packages/etlantic-prefect/src",
+    "packages/etlantic-rsconnect/src",
     "packages/etlantic-keyring/src",
     "packages/etlantic-sqlmodel/src",
     "packages/medallantic/src",
@@ -385,7 +389,11 @@ docstring-code-format = true
 [tool.pyright]
 pythonVersion = "3.11"
 typeCheckingMode = "strict"
-extraPaths = ["src", "packages/etlantic-foundry/src"]
+extraPaths = [
+    "src",
+    "packages/etlantic-foundry/src",
+    "packages/etlantic-rsconnect/src",
+]
 # Check every first-party Python surface, including tests. Dynamic plugin and
 # fixture boundaries use explicit file-level exceptions where needed. The
 # inventory is locked and strict-scanned without file directives by the checks.

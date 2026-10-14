@@ -28,6 +28,7 @@ members = [
     "etlantic-polars",
     "etlantic-prefect",
     "etlantic-pyspark",
+    "etlantic-rsconnect",
     "etlantic-s3",
     "etlantic-schemaregistry",
     "etlantic-snowflake",
@@ -903,6 +904,9 @@ prefect = [
 pyspark = [
     { name = "etlantic-pyspark" },
 ]
+rsconnect = [
+    { name = "etlantic-rsconnect", extra = ["connect"] },
+]
 s3 = [
     { name = "etlantic-s3" },
 ]
@@ -1051,6 +1055,7 @@ requires-dist = [
     { name = "etlantic-prefect", marker = "extra == 'prefect'", editable = "packages/etlantic-prefect" },
     { name = "etlantic-pyspark", marker = "extra == 'pyspark'", editable = "packages/etlantic-pyspark" },
     { name = "etlantic-pyspark", marker = "extra == 'spark'", editable = "packages/etlantic-pyspark" },
+    { name = "etlantic-rsconnect", extras = ["connect"], marker = "extra == 'rsconnect'", editable = "packages/etlantic-rsconnect" },
     { name = "etlantic-s3", marker = "extra == 's3'", editable = "packages/etlantic-s3" },
     { name = "etlantic-schemaregistry", marker = "extra == 'schemaregistry'", editable = "packages/etlantic-schemaregistry" },
     { name = "etlantic-snowflake", marker = "extra == 'snowflake'", editable = "packages/etlantic-snowflake" },
@@ -1073,7 +1078,7 @@ requires-dist = [
     { name = "typer", specifier = ">=0.15" },
     { name = "tzdata", specifier = ">=2024.1" },
 ]
-provides-extras = ["polars", "pandas", "sql", "postgresql", "foundry", "pyspark", "spark", "airflow", "prefect", "keyring", "sqlmodel", "medallantic", "sparkforge", "fastapi", "managed", "managed-headless", "datafusion", "s3", "kafka", "k8s", "spark-connect", "schemaregistry", "iceberg", "snowflake", "openlineage", "mcp", "otel", "observability", "arrow", "notebook", "lsp", "dataframes", "duckdb"]
+provides-extras = ["polars", "pandas", "sql", "postgresql", "foundry", "pyspark", "spark", "airflow", "prefect", "keyring", "sqlmodel", "medallantic", "sparkforge", "fastapi", "rsconnect", "managed", "managed-headless", "datafusion", "s3", "kafka", "k8s", "spark-connect", "schemaregistry", "iceberg", "snowflake", "openlineage", "mcp", "otel", "observability", "arrow", "notebook", "lsp", "dataframes", "duckdb"]
 
 [package.metadata.requires-dev]
 airflow = [{ name = "etlantic-airflow", editable = "packages/etlantic-airflow" }]
@@ -1430,6 +1435,26 @@ requires-dist = [
     { name = "pyspark", specifier = ">=3.5" },
 ]
 provides-extras = ["delta"]
+
+[[package]]
+name = "etlantic-rsconnect"
+version = "0.60.0"
+source = { editable = "packages/etlantic-rsconnect" }
+dependencies = [
+    { name = "etlantic" },
+]
+
+[package.optional-dependencies]
+connect = [
+    { name = "posit-sdk" },
+]
+
+[package.metadata]
+requires-dist = [
+    { name = "etlantic", editable = "." },
+    { name = "posit-sdk", marker = "extra == 'connect'", specifier = "==0.17.0" },
+]
+provides-extras = ["connect"]
 
 [[package]]
 name = "etlantic-s3"
@@ -3044,6 +3069,20 @@ dependencies = [
 sdist = { url = "https://files.pythonhosted.org/packages/85/68/7717bd9e63ed254617a7d3dc9260904fb736d6ea203e58ffddcb186c64e4/polyfactory-3.3.0.tar.gz", hash = "sha256:237258b6ff43edf362ffd1f68086bb796466f786adfa002b0ac256dbf2246e9a", size = 348668, upload-time = "2026-02-22T09:46:28.01Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/dd/34/b6f19941adcdaf415b5e8a8d577499f5b6a76b59cbae37f9b125a9ffe9f2/polyfactory-3.3.0-py3-none-any.whl", hash = "sha256:686abcaa761930d3df87b91e95b26b8d8cb9fdbbbe0b03d5f918acff5c72606e", size = 62707, upload-time = "2026-02-22T09:46:25.985Z" },
+]
+
+[[package]]
+name = "posit-sdk"
+version = "0.17.0"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "packaging" },
+    { name = "requests" },
+    { name = "typing-extensions" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/26/34/2ae0e8291c53595e76b5c704f5e7f579b5c4f543ba1b3377715d436dfa2f/posit_sdk-0.17.0.tar.gz", hash = "sha256:1bae2dd30c409d80e80a1305722aee048cad058acc07f1f659101c243a8baf6d", size = 151536, upload-time = "2026-07-17T14:08:29.978Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/31/69/100f404d9aac213f1dca9a45abe11baef40bf4654d18846dfed5caa7981c/posit_sdk-0.17.0-py3-none-any.whl", hash = "sha256:b81548aedac1edbc2082f1adadbbbdaa07bbeed4bd894916176ad81e8903e38b", size = 97318, upload-time = "2026-07-17T14:08:28.763Z" },
 ]
 
 [[package]]

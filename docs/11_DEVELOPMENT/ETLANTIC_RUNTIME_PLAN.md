@@ -30,7 +30,7 @@ review supersedes the initial contracts-only runtime and dual-executor AWS scope
 | Phase | Outcome | Domain plan |
 |---|---|---|
 | 0.59 | Managed runtime consolidation and missing trigger seams | This plan |
-| 0.60 | One explicit-URL Connect trigger topology | [rsconnect](ETLANTIC_RSCONNECT_PLAN.md) |
+| 0.60 | Locally checked preview package; live Connect topology qualifies production support | [rsconnect](ETLANTIC_RSCONNECT_PLAN.md) |
 | 0.61 | Scheduler/Lambda delivery and ECS/Fargate execution | [AWS](ETLANTIC_AWS_PLAN.md) |
 | 0.62 | One Data Mover host and optional endpoint discovery | [Data Mover](ETLANTIC_DATA_MOVER_INTEGRATION_PLAN.md) |
 | 0.63 | Brownfield bridges (formerly 0.59) | [Implementation](IMPLEMENTATION_PLAN_0_63.md) |
