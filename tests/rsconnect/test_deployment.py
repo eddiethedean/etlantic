@@ -115,6 +115,20 @@ def test_deployer_keeps_credentials_out_of_arguments_and_records_result(
     assert journal.events[-1][2] == guid
 
 
+def test_deployer_reserves_the_tls_verification_environment_control() -> None:
+    deployment_ref, trigger_ref = _refs()
+
+    with pytest.raises(ValueError, match="environment variable name"):
+        RsconnectPythonDeployer(
+            server_url="https://connect.example.com",
+            deployment_credential_ref=deployment_ref,
+            trigger_credential_ref=trigger_ref,
+            trigger_credential_env="CONNECT_INSECURE",
+            resolve_secret=lambda _ref: "synthetic-secret",
+            journal=Journal(),
+        )
+
+
 def test_deployer_redacts_vendor_output_on_uncertain_publish() -> None:
     deployment_ref, trigger_ref = _refs()
     journal = Journal()

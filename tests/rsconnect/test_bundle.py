@@ -224,3 +224,19 @@ def test_bundle_rejects_time_budget_above_frozen_ceiling() -> None:
             ),
             timeout_seconds=61,
         )
+
+
+def test_bundle_reserves_the_tls_verification_environment_control() -> None:
+    with pytest.raises(ValueError, match="credential_env"):
+        build_trigger_bundle(
+            schedule_id="schedule-1",
+            schedule_revision_id="revision-1",
+            timer_owner_generation=2,
+            endpoint_url="https://receiver.example.com/base",
+            credential_ref=SecretRef("env", "trigger", "token"),
+            credential_env="CONNECT_INSECURE",
+            outbound_policy=OutboundPolicy(
+                allowed_hosts=("receiver.example.com",),
+                max_response_bytes=65_536,
+            ),
+        )

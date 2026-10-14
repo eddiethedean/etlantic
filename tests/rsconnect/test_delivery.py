@@ -153,6 +153,41 @@ def test_delivery_rejects_mismatched_receipt_as_uncertain() -> None:
     assert error.value.uncertain
 
 
+@pytest.mark.parametrize("operation", ["deliver", "reconcile"])
+def test_delivery_accepts_receipt_without_optional_status_reference(
+    operation: str,
+) -> None:
+    client = _delivery(attempts=1)
+    envelope = _envelope()
+    receipt = replace(_accepted_receipt(envelope), status_reference=None)
+
+    def request(
+        host: str,
+        address: str,
+        port: int,
+        path: str,
+        body: bytes | None,
+        headers: Mapping[str, str],
+        *,
+        timeout: float,
+        deadline: float,
+        method: str = "POST",
+    ) -> tuple[int, Mapping[str, str], bytes]:
+        assert method == ("POST" if operation == "deliver" else "GET")
+        return (
+            200,
+            {"content-type": "application/json"},
+            json.dumps(receipt.to_dict()).encode(),
+        )
+
+    vars(client)["_request"] = request
+
+    if operation == "deliver":
+        assert client.deliver(envelope).receipt == receipt
+    else:
+        assert client.reconcile(envelope) == receipt
+
+
 def test_delivery_attempt_limit_covers_all_resolved_addresses() -> None:
     client = _delivery(attempts=2)
 

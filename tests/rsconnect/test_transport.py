@@ -38,6 +38,7 @@ class _SlowTlsReceiver:
         self.close_response = close_response
         self.stop = threading.Event()
         self.completed_drip = threading.Event()
+        self.drip_elapsed: float | None = None
         self.request_count = 0
         self.listener = socket.socket()
         self.listener.bind(("127.0.0.1", 0))
@@ -50,13 +51,17 @@ class _SlowTlsReceiver:
         self.thread.start()
 
     def drip(self, conn: ssl.SSLSocket, payload: bytes) -> None:
-        for byte in payload:
-            if self.stop.is_set():
-                return
-            conn.sendall(bytes([byte]))
-            if self.stop.wait(0.03):
-                return
-        self.completed_drip.set()
+        started = time.monotonic()
+        try:
+            for byte in payload:
+                if self.stop.is_set():
+                    return
+                conn.sendall(bytes([byte]))
+                if self.stop.wait(0.03):
+                    return
+            self.completed_drip.set()
+        finally:
+            self.drip_elapsed = time.monotonic() - started
 
     def serve(self) -> None:
         try:
@@ -213,3 +218,87 @@ def test_generated_runner_deadline_survives_closing_tls_response(
         assert "synthetic-trigger-token" not in result.stdout + result.stderr
         assert receiver.request_count == 1
         assert not receiver.completed_drip.is_set()
+
+
+def test_client_timeout_bounds_one_slow_tls_request(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setenv("SSL_CERT_FILE", str(_CERT))
+    with _receiver("headers", True) as receiver:
+        client = HttpsTriggerDelivery(
+            DeliveryConfig(
+                endpoint_url=receiver.endpoint,
+                credential_ref=SecretRef("env", "receiver", "token"),
+                outbound_policy=_policy(),
+                timeout_seconds=0.35,
+                max_elapsed_seconds=3,
+                max_attempts=1,
+            ),
+            lambda _ref: "synthetic-trigger-token",
+        )
+        envelope = build_trigger_envelope(
+            schedule_id="schedule-1",
+            schedule_revision_id="revision-1",
+            timer_owner_generation=1,
+            occurrence=OccurrenceContext(
+                scheduled_at="2026-10-13T12:00:00Z",
+                delivery_attempt_id="attempt-1",
+                correlation_id="correlation-1",
+            ),
+        )
+        with pytest.raises(DeliveryError) as error:
+            client.deliver(envelope)
+
+        assert error.value.uncertain
+    assert receiver.request_count == 1
+    assert not receiver.completed_drip.is_set()
+    assert receiver.drip_elapsed is not None
+    assert receiver.drip_elapsed < 1.5
+
+
+def test_generated_runner_timeout_bounds_one_slow_tls_request(
+    tmp_path: Path,
+) -> None:
+    with _receiver("headers", True) as receiver:
+        bundle = build_trigger_bundle(
+            schedule_id="schedule-1",
+            schedule_revision_id="revision-1",
+            timer_owner_generation=1,
+            endpoint_url=receiver.endpoint,
+            credential_ref=SecretRef("env", "receiver", "token"),
+            credential_env="ETLANTIC_TRIGGER_TOKEN",
+            outbound_policy=_policy(),
+            timeout_seconds=0.35,
+            max_elapsed_seconds=3,
+            max_attempts=1,
+        )
+        target = bundle.write_to(tmp_path / "content")
+        config_path = target / "etlantic-trigger.json"
+        config = json.loads(config_path.read_text())
+        config["occurrence_context_provider"] = "test-fixture"
+        config_path.write_text(json.dumps(config))
+        env = {
+            "SSL_CERT_FILE": str(_CERT),
+            "ETLANTIC_TRIGGER_ARMED": "true",
+            "ETLANTIC_TRIGGER_TOKEN": "synthetic-trigger-token",
+            "ETLANTIC_SCHEDULED_AT": "2026-10-13T12:00:00Z",
+            "ETLANTIC_DELIVERY_ATTEMPT_ID": "attempt-1",
+            "ETLANTIC_CORRELATION_ID": "correlation-1",
+        }
+        if system_root := os.environ.get("SYSTEMROOT"):
+            env["SYSTEMROOT"] = system_root
+        result = subprocess.run(
+            [sys.executable, str(target / "etlantic-trigger.py")],
+            env=env,
+            capture_output=True,
+            text=True,
+            check=False,
+            timeout=6,
+        )
+
+    assert result.returncode != 0
+    assert "synthetic-trigger-token" not in result.stdout + result.stderr
+    assert receiver.request_count == 1
+    assert not receiver.completed_drip.is_set()
+    assert receiver.drip_elapsed is not None
+    assert receiver.drip_elapsed < 1.5

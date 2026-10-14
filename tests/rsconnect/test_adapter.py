@@ -13,6 +13,7 @@ from etlantic_rsconnect import (
     ConnectScheduleAdapter,
     ConnectScheduleBinding,
     DeploymentResult,
+    PositSdkGateway,
     ScheduleOperationError,
     ScheduleOperationUnknown,
     build_trigger_bundle,
@@ -497,6 +498,32 @@ def test_binding_rejects_non_guid_content_id() -> None:
         replace(_binding(record), content_guid="customer-name")
 
 
+def test_sdk_gateway_requires_its_actual_destination_to_match_the_binding() -> None:
+    matching_client = SimpleNamespace(
+        cfg=SimpleNamespace(url="https://connect.example.com/connect/__api__")
+    )
+    gateway = PositSdkGateway(
+        matching_client, server_url="https://connect.example.com/connect"
+    )
+    assert gateway.server_url == "https://connect.example.com/connect"
+
+    mismatched_client = SimpleNamespace(
+        cfg=SimpleNamespace(url="http://other-connect.example.com/connect/__api__")
+    )
+    with pytest.raises(ValueError, match="HTTPS Connect destination"):
+        PositSdkGateway(
+            mismatched_client, server_url="https://connect.example.com/connect"
+        )
+
+    wrong_host_client = SimpleNamespace(
+        cfg=SimpleNamespace(url="https://other-connect.example.com/connect/__api__")
+    )
+    with pytest.raises(ValueError, match="does not match"):
+        PositSdkGateway(
+            wrong_host_client, server_url="https://connect.example.com/connect"
+        )
+
+
 def test_schedule_write_readback_failure_keeps_binding_pending_and_disarmed() -> None:
     record = _record()
     binding = _binding(record)
@@ -559,3 +586,124 @@ def test_resume_refuses_a_passed_canonical_cursor_before_enabling_timer() -> Non
 
     assert not service.resumed
     assert gateway.events == []
+
+
+def test_concurrent_resume_loser_cannot_disarm_winning_activation() -> None:
+    paused_record = replace(_record(), status="paused")
+    binding = replace(_binding(paused_record), status="paused")
+    gateway = Gateway()
+    store = Store(binding)
+
+    class BlockingService:
+        resume_started = Event()
+        allow_resume = Event()
+        resume_calls = 0
+
+        def get(self, *_args: object) -> ScheduleRecord:
+            return paused_record
+
+        def resume(self, *_args: object) -> ScheduleRecord:
+            self.resume_calls += 1
+            self.resume_started.set()
+            if not self.allow_resume.wait(timeout=3):
+                raise TimeoutError("test did not release canonical resume")
+            return replace(paused_record, status="active")
+
+    service = BlockingService()
+    adapter = _adapter(
+        gateway,
+        store,
+        clock=lambda: datetime(2026, 10, 13, 12, 0, tzinfo=UTC),
+    )
+    with ThreadPoolExecutor(max_workers=1) as executor:
+        first = executor.submit(
+            adapter.resume,
+            cast(ScheduleApplicationService, service),
+            cast(ControlPlaneContext, None),
+            paused_record.schedule_id,
+            binding,
+        )
+        assert service.resume_started.wait(timeout=2)
+        in_flight = store.get(paused_record.schedule_id)
+        assert in_flight is not None
+        assert in_flight.pending_operation == "resume"
+
+        with pytest.raises(ScheduleOperationUnknown, match="pending"):
+            adapter.resume(
+                cast(ScheduleApplicationService, service),
+                cast(ControlPlaneContext, None),
+                paused_record.schedule_id,
+                binding,
+            )
+        assert service.resume_calls == 1
+        assert gateway.armed is False
+
+        service.allow_resume.set()
+        active = first.result(timeout=3)
+
+    assert active.status == "active"
+    assert gateway.armed is True
+    assert store.get(paused_record.schedule_id) == active
+
+
+def test_amend_refuses_remote_drift_before_pausing_or_deploying() -> None:
+    record = _record()
+    gateway = Gateway()
+    store = Store()
+    adapter, registration = _register(record, _binding(record), gateway, store)
+    active = adapter.apply(record, registration)
+    gateway.schedule = SimpleNamespace(
+        rule={
+            "type": "hour",
+            "n": 99,
+            "start_time": record.next_fire_at,
+            "timezone": "UTC",
+            "email": False,
+        }
+    )
+    gateway.events.clear()
+
+    class Service:
+        pauses = 0
+        amendments = 0
+
+        def get(self, *_args: object) -> ScheduleRecord:
+            return record
+
+        def pause(self, *_args: object) -> ScheduleRecord:
+            self.pauses += 1
+            return replace(record, status="paused")
+
+        def amend(self, *_args: object, **_kwargs: object) -> ScheduleRecord:
+            self.amendments += 1
+            return replace(record, status="paused")
+
+    class Deployer:
+        server_url = gateway.server_url
+        deploy_calls = 0
+
+        def deploy(self, *_args: object, **_kwargs: object) -> DeploymentResult:
+            self.deploy_calls += 1
+            raise AssertionError("remote drift must block deployment")
+
+    service = Service()
+    deployer = Deployer()
+    with pytest.raises(ScheduleOperationError, match="drift detected"):
+        adapter.amend(
+            cast(ScheduleApplicationService, service),
+            _context(),
+            record.schedule_id,
+            active,
+            expected_revision_id=record.revision_id,
+            spec=ScheduleSpec(kind="interval", interval_seconds=7200),
+            build_bundle=lambda _record: cast(Any, None),
+            deployer=cast(Any, deployer),
+            title="ETLantic schedule",
+            operation_id="amend-operation",
+        )
+
+    assert service.pauses == 0
+    assert service.amendments == 0
+    assert deployer.deploy_calls == 0
+    assert store.get(record.schedule_id) == active
+    assert [event[0] for event in gateway.events] == ["read"]

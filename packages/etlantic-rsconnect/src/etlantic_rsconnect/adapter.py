@@ -98,7 +98,7 @@ class ConnectScheduleBinding:
     operation_id: str | None = None
     # Pending operation metadata is a durable single-writer claim. Registration
     # is explicit; an in-flight or unclassified operation is never taken over.
-    pending_operation: Literal["registration", "apply", "amend"] | None = None
+    pending_operation: Literal["registration", "apply", "resume", "amend"] | None = None
     pending_target_status: Literal["active", "paused", "deleted"] | None = None
 
     def __post_init__(self) -> None:
@@ -149,6 +149,7 @@ class ConnectScheduleBinding:
                 None,
                 "registration",
                 "apply",
+                "resume",
                 "amend",
             ):
                 raise ValueError("pending operation is unsupported")
@@ -160,6 +161,11 @@ class ConnectScheduleBinding:
             elif self.pending_operation == "apply":
                 if self.pending_target_status not in ("active", "paused", "deleted"):
                     raise ValueError("pending apply requires a target status")
+            elif (
+                self.pending_operation == "resume"
+                and self.pending_target_status != "active"
+            ):
+                raise ValueError("pending resume must target active status")
             elif (
                 self.pending_operation == "amend"
                 and self.pending_target_status != "active"
@@ -235,8 +241,29 @@ class PositSdkGateway:
         server_url: str,
         server_version: str | None = None,
     ) -> None:
-        self.client = client
         self._server_url = _connect_base_url(server_url)
+        try:
+            client_url = client.cfg.url
+            if not isinstance(client_url, str):
+                raise ValueError
+            parsed_client_url = urlsplit(client_url)
+            api_path = parsed_client_url.path.rstrip("/")
+            if api_path == "/__api__":
+                api_path = ""
+            elif api_path.endswith("/__api__"):
+                api_path = api_path[: -len("/__api__")]
+            client_base_url = _connect_base_url(
+                parsed_client_url._replace(path=api_path).geturl()
+            )
+        except (AttributeError, TypeError, ValueError):
+            raise ValueError(
+                "Posit SDK client must expose a valid HTTPS Connect destination"
+            ) from None
+        if client_base_url != self._server_url:
+            raise ValueError(
+                "Posit SDK client destination does not match the configured Connect server"
+            )
+        self.client = client
         self._server_version = server_version
 
     @property
@@ -648,8 +675,12 @@ class ConnectScheduleAdapter:
                 raise ScheduleOperationUnknown(
                     "a Connect amendment is pending; inspect remote and canonical state before retrying"
                 )
+            if observed.pending_operation == "resume" and record.status != "active":
+                raise ScheduleOperationUnknown(
+                    "a Connect resume is pending for a different canonical state; reconcile before retrying"
+                )
             if (
-                observed.pending_operation == "apply"
+                observed.pending_operation in ("apply", "resume")
                 and observed.pending_target_status != record.status
             ):
                 raise ScheduleOperationUnknown(
@@ -688,6 +719,27 @@ class ConnectScheduleAdapter:
             )
             desired = _connect_recurrence(record, start_time=schedule_start)
             remote = self.gateway.read(binding.content_guid)
+            if observed.status == "pending" and observed.pending_operation == "resume":
+                observed_rule = _schedule_rule_mapping(remote) if remote else None
+                if observed_rule is None or dict(observed_rule) != desired:
+                    raise ScheduleOperationUnknown(
+                        "pending Connect resume is not yet visible remotely; reconcile before retrying"
+                    )
+                self.gateway.set_trigger_armed(binding.content_guid, True)
+                active = replace(
+                    observed,
+                    status="active",
+                    operation_id=None,
+                    pending_operation=None,
+                    pending_target_status=None,
+                )
+                try:
+                    self.binding_store.put(active, expected=observed)
+                except Exception:
+                    raise ScheduleOperationUnknown(
+                        "Connect resume is visible but its ownership result could not be committed; reconcile before retrying"
+                    ) from None
+                return active
             if observed.status == "pending" and observed.pending_operation == "apply":
                 observed_rule = _schedule_rule_mapping(remote) if remote else None
                 if observed_rule is None or dict(observed_rule) != desired:
@@ -916,15 +968,64 @@ class ConnectScheduleAdapter:
             raise ScheduleOperationError(
                 "canonical next_fire_at has passed; amend or reconcile the cursor before resuming"
             )
-        record = service.resume(context, schedule_id)
+        if self.gateway.read(binding.content_guid) is not None:
+            raise ScheduleOperationError(
+                "Connect schedule drift detected for a paused binding; reconcile before resuming"
+            )
+        intent = replace(
+            binding,
+            schedule_start_time=current.next_fire_at,
+            status="pending",
+            operation_id=uuid.uuid4().hex,
+            pending_operation="resume",
+            pending_target_status="active",
+        )
         try:
-            return self.apply(record, binding)
+            self.binding_store.put(intent, expected=binding)
         except Exception:
-            # Keep canonical admission disabled if remote timer activation failed.
-            with suppress(Exception):
-                self.gateway.set_trigger_armed(binding.content_guid, False)
-            with suppress(Exception):
-                service.pause(context, schedule_id)
+            raise ScheduleOperationUnknown(
+                "another Connect operation claimed this binding; reconcile before resuming"
+            ) from None
+        try:
+            record = service.resume(context, schedule_id)
+            if record.status != "active":
+                raise ScheduleOperationUnknown(
+                    "canonical schedule did not become active during Connect resume"
+                )
+            self._check_binding(record, intent)
+            if self.gateway.read(binding.content_guid) is not None:
+                raise ScheduleOperationUnknown(
+                    "Connect schedule appeared during resume; reconcile before mutation"
+                )
+            desired = _connect_recurrence(record, start_time=intent.schedule_start_time)
+            self.gateway.set_trigger_armed(binding.content_guid, False)
+            self.gateway.create_or_update(binding.content_guid, desired)
+            self._verify_schedule_rule(binding.content_guid, desired)
+            self.gateway.set_trigger_armed(binding.content_guid, True)
+            active = replace(
+                intent,
+                status="active",
+                operation_id=None,
+                pending_operation=None,
+                pending_target_status=None,
+            )
+            try:
+                self.binding_store.put(active, expected=intent)
+            except Exception:
+                raise ScheduleOperationUnknown(
+                    "Connect resumed but its ownership result could not be committed; reconcile before retrying"
+                ) from None
+            return active
+        except Exception:
+            try:
+                still_owned = self.binding_store.get(schedule_id) == intent
+            except Exception:
+                still_owned = False
+            if still_owned:
+                with suppress(Exception):
+                    self.gateway.set_trigger_armed(binding.content_guid, False)
+                with suppress(Exception):
+                    service.pause(context, schedule_id)
             raise
 
     def amend(
@@ -981,6 +1082,20 @@ class ConnectScheduleAdapter:
         if binding.status != "active":
             raise ScheduleOperationError(
                 "schedule amendment requires an active Connect binding"
+            )
+        expected_remote_rule = _connect_recurrence(
+            current, start_time=binding.schedule_start_time
+        )
+        remote = self.gateway.read(binding.content_guid)
+        observed_remote_rule = (
+            _schedule_rule_mapping(remote) if remote is not None else None
+        )
+        if (
+            observed_remote_rule is None
+            or dict(observed_remote_rule) != expected_remote_rule
+        ):
+            raise ScheduleOperationError(
+                "Connect schedule drift detected; reconcile before amendment"
             )
         intent = replace(
             binding,

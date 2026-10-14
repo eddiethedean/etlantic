@@ -30,6 +30,7 @@ _ENV_NAME = re.compile(r"^[A-Z_][A-Z0-9_]{0,127}$")
 _RESERVED_ENV = frozenset(
     {
         "CONNECT_API_KEY",
+        "CONNECT_INSECURE",
         "CONNECT_SERVER",
         "ETLANTIC_TRIGGER_ARMED",
         "ETLANTIC_SCHEDULED_AT",

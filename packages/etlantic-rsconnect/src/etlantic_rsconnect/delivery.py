@@ -583,17 +583,22 @@ class HttpsTriggerDelivery:
         deadline: float,
         method: str = "POST",
     ) -> tuple[int, Mapping[str, str], bytes]:
+        request_timeout = min(timeout, self.config.timeout_seconds)
+        request_started = self._monotonic()
+        request_deadline = min(deadline, request_started + request_timeout)
+        if request_deadline <= request_started:
+            raise TimeoutError("receiver request deadline expired")
         connection = _PinnedHttpsConnection(
             host,
             address,
             port,
-            timeout=timeout,
-            deadline=deadline,
+            timeout=request_timeout,
+            deadline=request_deadline,
             monotonic=self._monotonic,
             context=ssl.create_default_context(),
         )
         deadline_timer = threading.Timer(
-            max(0.0, deadline - self._monotonic()),
+            max(0.0, request_deadline - self._monotonic()),
             _interrupt_connection,
             args=(connection,),
         )
@@ -625,14 +630,14 @@ class HttpsTriggerDelivery:
                     ) from None
             response_chunks = bytearray()
             while len(response_chunks) <= self.config.max_response_bytes:
-                remaining = deadline - self._monotonic()
+                remaining = request_deadline - self._monotonic()
                 if remaining <= 0:
                     raise TimeoutError(
-                        "receiver response exceeded the delivery deadline"
+                        "receiver response exceeded the per-request deadline"
                     )
                 if connection.transport_socket is not None:
                     connection.transport_socket.settimeout(
-                        min(self.config.timeout_seconds, remaining)
+                        min(request_timeout, remaining)
                     )
                 chunk = response.read1(
                     min(8192, self.config.max_response_bytes + 1 - len(response_chunks))
@@ -704,6 +709,8 @@ class HttpsTriggerDelivery:
 
     @staticmethod
     def _valid_status_reference(receipt: TriggerReceipt) -> bool:
+        if receipt.status_reference is None:
+            return True
         expected = (
             f"/v1/schedules/{quote(receipt.schedule_id, safe='')}"
             f"/occurrences/{quote(receipt.occurrence_id, safe='')}"

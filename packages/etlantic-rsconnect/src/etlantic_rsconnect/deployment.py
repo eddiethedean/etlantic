@@ -28,6 +28,7 @@ _ENV_NAME = re.compile(r"^[A-Z_][A-Z0-9_]{0,127}$")
 _RESERVED_ENV = frozenset(
     {
         "CONNECT_API_KEY",
+        "CONNECT_INSECURE",
         "CONNECT_SERVER",
         "ETLANTIC_TRIGGER_ARMED",
         "ETLANTIC_SCHEDULED_AT",
@@ -174,11 +175,11 @@ class RsconnectPythonDeployer:
         child_env = os.environ.copy()
         child_env["CONNECT_SERVER"] = self.server_url
         child_env["CONNECT_API_KEY"] = api_key
-        # Posit Connect accepts CONNECT_INSECURE as an environment override.
-        # Force certificate and hostname verification even when the invoking
-        # shell inherited a setting that disables TLS checks.
-        child_env["CONNECT_INSECURE"] = "false"
         child_env[self.trigger_credential_env] = trigger_token
+        # Posit Connect accepts CONNECT_INSECURE as an environment override.
+        # Force certificate and hostname verification after credential injection
+        # so a runtime credential name can never replace this control.
+        child_env["CONNECT_INSECURE"] = "false"
         # Connect renders content as part of deployment. Keep the script inert
         # until the canonical timer binding has been reconciled and armed.
         child_env["ETLANTIC_TRIGGER_ARMED"] = "false"

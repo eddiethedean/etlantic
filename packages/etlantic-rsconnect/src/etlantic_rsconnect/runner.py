@@ -265,16 +265,22 @@ def main():
             remaining = deadline - time.monotonic()
             if remaining <= 0:
                 break
+            request_deadline = min(
+                deadline, time.monotonic() + CONFIG["timeout_seconds"]
+            )
+            request_timeout = request_deadline - time.monotonic()
+            if request_timeout <= 0:
+                break
             request_attempts += 1
             conn = PinnedHTTPS(
                 host,
                 address,
                 endpoint.port or 443,
-                min(CONFIG["timeout_seconds"], remaining),
-                deadline,
+                request_timeout,
+                request_deadline,
             )
             deadline_timer = threading.Timer(
-                max(0.0, deadline - time.monotonic()), interrupt, args=(conn,)
+                max(0.0, request_deadline - time.monotonic()), interrupt, args=(conn,)
             )
             deadline_timer.daemon = True
             deadline_timer.start()
@@ -282,7 +288,7 @@ def main():
             try:
                 conn.request("POST", path, body=body, headers=headers)
                 response = conn.getresponse()
-                data = read_bounded(response, conn, deadline)
+                data = read_bounded(response, conn, request_deadline)
                 if response.status in (429, 500, 502, 503, 504):
                     retry_after = response.getheader("Retry-After")
                     last_error = "receiver returned a transient error"
