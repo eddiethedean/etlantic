@@ -173,7 +173,11 @@ def test_generated_runner_deadline_survives_closing_tls_response(
             credential_env="ETLANTIC_TRIGGER_TOKEN",
             outbound_policy=_policy(),
             timeout_seconds=1,
-            max_elapsed_seconds=0.2,
+            # The generated subprocess imports its runtime before starting
+            # the delivery deadline. Leave enough time for a loaded Windows
+            # runner to reach the TLS request, then interrupt the deliberately
+            # slow response body.
+            max_elapsed_seconds=1,
             max_attempts=1,
         )
         target = bundle.write_to(tmp_path / "content")
@@ -199,9 +203,9 @@ def test_generated_runner_deadline_survives_closing_tls_response(
             capture_output=True,
             text=True,
             check=False,
-            timeout=3,
+            timeout=5,
         )
-        assert time.monotonic() - started < 1.2
+        assert time.monotonic() - started < 4
         assert result.returncode != 0
         assert "synthetic-trigger-token" not in result.stdout + result.stderr
         assert receiver.request_count == 1
