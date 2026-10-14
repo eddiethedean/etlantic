@@ -24,6 +24,7 @@ from etlantic_rsconnect import (
     build_trigger_envelope,
 )
 
+from etlantic.control_plane import TriggerReceipt
 from etlantic.outbound import OutboundPolicy
 from etlantic.secrets import SecretRef
 
@@ -77,6 +78,40 @@ class _SlowTlsReceiver:
                     if len(request) > 32_768:
                         raise AssertionError("unexpectedly large test request")
                 self.request_count += 1
+                if self.fault == "truncated_content_length":
+                    request_headers, _, request_body = bytes(request).partition(
+                        b"\r\n\r\n"
+                    )
+                    content_length = next(
+                        int(line.partition(b":")[2].strip())
+                        for line in request_headers.split(b"\r\n")
+                        if line.lower().startswith(b"content-length:")
+                    )
+                    while len(request_body) < content_length:
+                        chunk = conn.recv(8192)
+                        if not chunk:
+                            raise AssertionError("test request body was truncated")
+                        request_body += chunk
+                    envelope = json.loads(request_body[:content_length])
+                    receipt = TriggerReceipt(
+                        status="accepted",
+                        firing_status="accepted",
+                        schedule_id=envelope["schedule_id"],
+                        schedule_revision_id=envelope["schedule_revision_id"],
+                        occurrence_id=envelope["occurrence_id"],
+                        submission_id="submission-1",
+                    )
+                    body = json.dumps(receipt.to_dict()).encode()
+                    conn.sendall(
+                        (
+                            "HTTP/1.1 200 OK\r\n"
+                            "Connection: close\r\n"
+                            "Content-Type: application/json\r\n"
+                            f"Content-Length: {len(body) + 100}\r\n\r\n"
+                        ).encode()
+                        + body
+                    )
+                    return
                 connection = "close" if self.close_response else "keep-alive"
                 headers = (
                     "HTTP/1.1 200 OK\r\n"
@@ -124,6 +159,82 @@ def _policy() -> OutboundPolicy:
         timeout_seconds=1,
         max_response_bytes=65_536,
     )
+
+
+def test_client_rejects_valid_receipt_before_declared_response_eof(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setenv("SSL_CERT_FILE", str(_CERT))
+    with _receiver("truncated_content_length", True) as receiver:
+        client = HttpsTriggerDelivery(
+            DeliveryConfig(
+                endpoint_url=receiver.endpoint,
+                credential_ref=SecretRef("env", "receiver", "token"),
+                outbound_policy=_policy(),
+                timeout_seconds=1,
+                max_attempts=1,
+            ),
+            lambda _ref: "synthetic-trigger-token",
+        )
+        envelope = build_trigger_envelope(
+            schedule_id="schedule-1",
+            schedule_revision_id="revision-1",
+            timer_owner_generation=1,
+            occurrence=OccurrenceContext(
+                scheduled_at="2026-10-13T12:00:00Z",
+                delivery_attempt_id="attempt-1",
+                correlation_id="correlation-1",
+            ),
+        )
+        with pytest.raises(DeliveryError, match="declared length") as error:
+            client.deliver(envelope)
+        assert error.value.uncertain
+    assert receiver.request_count == 1
+
+
+def test_generated_runner_rejects_valid_receipt_before_declared_response_eof(
+    tmp_path: Path,
+) -> None:
+    with _receiver("truncated_content_length", True) as receiver:
+        bundle = build_trigger_bundle(
+            schedule_id="schedule-1",
+            schedule_revision_id="revision-1",
+            timer_owner_generation=1,
+            endpoint_url=receiver.endpoint,
+            credential_ref=SecretRef("env", "receiver", "token"),
+            credential_env="ETLANTIC_TRIGGER_TOKEN",
+            outbound_policy=_policy(),
+            timeout_seconds=1,
+            max_attempts=1,
+        )
+        target = bundle.write_to(tmp_path / "content")
+        config_path = target / "etlantic-trigger.json"
+        config = json.loads(config_path.read_text())
+        config["occurrence_context_provider"] = "test-fixture"
+        config_path.write_text(json.dumps(config))
+        env = {
+            "SSL_CERT_FILE": str(_CERT),
+            "ETLANTIC_TRIGGER_ARMED": "true",
+            "ETLANTIC_TRIGGER_TOKEN": "synthetic-trigger-token",
+            "ETLANTIC_SCHEDULED_AT": "2026-10-13T12:00:00Z",
+            "ETLANTIC_DELIVERY_ATTEMPT_ID": "attempt-1",
+            "ETLANTIC_CORRELATION_ID": "correlation-1",
+        }
+        if system_root := os.environ.get("SYSTEMROOT"):
+            env["SYSTEMROOT"] = system_root
+        result = subprocess.run(
+            [sys.executable, str(target / "etlantic-trigger.py")],
+            env=env,
+            capture_output=True,
+            text=True,
+            check=False,
+            timeout=6,
+        )
+
+    assert result.returncode != 0
+    assert "did not match its declared length" in result.stderr
+    assert "synthetic-trigger-token" not in result.stdout + result.stderr
+    assert receiver.request_count == 1
 
 
 @pytest.mark.parametrize("fault", ["headers", "chunk_header", "trailers"])

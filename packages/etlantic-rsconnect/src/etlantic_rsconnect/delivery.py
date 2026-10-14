@@ -612,6 +612,7 @@ class HttpsTriggerDelivery:
                 key.lower(): value for key, value in response.getheaders()
             }
             declared_length = response_headers.get("content-length")
+            declared_size: int | None = None
             if declared_length is not None:
                 try:
                     declared_size = int(declared_length)
@@ -649,6 +650,11 @@ class HttpsTriggerDelivery:
             if len(response_body) > self.config.max_response_bytes:
                 raise DeliveryError(
                     "receiver response exceeds the configured byte limit",
+                    uncertain=True,
+                )
+            if declared_size is not None and len(response_body) != declared_size:
+                raise DeliveryError(
+                    "receiver response did not match its declared length; reconcile occurrence",
                     uncertain=True,
                 )
             return response.status, response_headers, response_body

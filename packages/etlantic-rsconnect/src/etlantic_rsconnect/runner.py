@@ -181,9 +181,11 @@ def safe_receipt(receipt, envelope, http_status):
 
 def read_bounded(response, conn, deadline):
     content_length = response.getheader("Content-Length")
+    declared_size = None
     if content_length is not None:
         try:
-            if int(content_length) < 0 or int(content_length) > MAX_RESPONSE_BYTES:
+            declared_size = int(content_length)
+            if declared_size < 0 or declared_size > MAX_RESPONSE_BYTES:
                 raise RuntimeError("receiver response exceeds its byte bound")
         except ValueError:
             raise RuntimeError("receiver returned an invalid response length") from None
@@ -200,6 +202,8 @@ def read_bounded(response, conn, deadline):
         body.extend(chunk)
     if len(body) > MAX_RESPONSE_BYTES:
         raise RuntimeError("receiver response exceeds its byte bound")
+    if declared_size is not None and len(body) != declared_size:
+        raise RuntimeError("receiver response did not match its declared length")
     return bytes(body)
 
 def retry_delay(attempt, retry_after, remaining):

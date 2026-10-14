@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import json
 from collections.abc import Callable, Mapping
 from concurrent.futures import ThreadPoolExecutor
 from dataclasses import replace
@@ -7,6 +8,7 @@ from datetime import UTC, datetime
 from threading import Event, RLock
 from types import SimpleNamespace
 from typing import Any, cast
+from urllib.parse import urlsplit
 
 import pytest
 from etlantic_rsconnect import (
@@ -22,6 +24,7 @@ from etlantic_rsconnect import (
 from etlantic.control_plane import (
     ControlPlaneContext,
     EnvironmentRef,
+    MemoryAuthorizer,
     MemoryScheduleStore,
     Principal,
     ScheduleSpec,
@@ -531,33 +534,63 @@ def test_sdk_gateway_owns_a_destination_pinned_client(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     connect = pytest.importorskip("posit.connect")
+    requests = pytest.importorskip("requests")
     content_guid = "01234567-89ab-cdef-0123-456789abcdef"
     client = connect.Client(
         url="https://connect.example.com/connect", api_key="synthetic-test-key"
     )
+
+    class SyntheticTransport:
+        def __init__(self) -> None:
+            self.routes = {
+                f"/connect/__api__/v1/content/{content_guid}": {
+                    "guid": content_guid,
+                    "app_mode": "rmd-static",
+                },
+                f"/connect/__api__/applications/{content_guid}/variants": [
+                    {"is_default": True, "id": 2, "app_id": 1}
+                ],
+                "/connect/__api__/variants/2/schedules": [],
+            }
+            self.requests: list[tuple[str, object, object, object]] = []
+
+        def send(
+            self,
+            request: Any,
+            stream: bool = False,
+            timeout: Any = None,
+            verify: bool | str = True,
+            cert: Any = None,
+            proxies: Mapping[str, str] | None = None,
+        ) -> Any:
+            assert request.url is not None
+            request_url = cast(str, request.url)
+            path = urlsplit(request_url).path
+            if path not in self.routes:
+                pytest.fail(f"unexpected Posit SDK request path: {path}")
+            self.requests.append((request_url, verify, cert, proxies))
+            response = requests.Response()
+            response.status_code = 200
+            response.headers["Content-Type"] = "application/json"
+            response.__dict__["_content"] = json.dumps(self.routes[path]).encode()
+            response.request = request
+            response.url = request_url
+            return response
+
+        def close(self) -> None:
+            return
+
+    transport = SyntheticTransport()
+    client.session.verify = "/test/enterprise-ca.pem"
+    client.session.cert = ("/test/client.pem", "/test/client.key")
+    client.session.trust_env = False
+    client.session.mount("http://", transport)
+    client.session.mount("https://", transport)
+    monkeypatch.setenv("HTTPS_PROXY", "http://proxy.invalid:8080")
+    monkeypatch.setenv("https_proxy", "http://proxy.invalid:8080")
+    monkeypatch.setenv("NO_PROXY", "")
+    monkeypatch.setenv("no_proxy", "")
     gateway = PositSdkGateway(client, server_url="https://connect.example.com/connect")
-    requested_urls: list[str] = []
-
-    class FakeResponse:
-        def __init__(self, payload: object) -> None:
-            self._payload = payload
-
-        def json(self) -> Any:
-            return self._payload
-
-    def get(sdk_client: object, path: str, **_kwargs: object) -> FakeResponse:
-        sdk_client_any = cast(Any, sdk_client)
-        requested_urls.append(f"{sdk_client_any.cfg.url}/{path}")
-        if path == f"v1/content/{content_guid}":
-            return FakeResponse({"guid": content_guid, "app_mode": "rmd-static"})
-        if path == f"applications/{content_guid}/variants":
-            return FakeResponse([{"is_default": True, "id": 2, "app_id": 1}])
-        if path == "variants/2/schedules":
-            return FakeResponse([])
-        pytest.fail(f"unexpected Posit SDK request path: {path}")
-        return FakeResponse(None)
-
-    monkeypatch.setattr(connect.Client, "get", get)
     client.cfg.url = type(client.cfg.url)(
         "http://other-connect.example.invalid/connect"
     )
@@ -565,11 +598,19 @@ def test_sdk_gateway_owns_a_destination_pinned_client(
     with pytest.warns(FutureWarning, match="schedule API is experimental"):
         assert gateway.read(content_guid) is None
 
-    assert requested_urls
+    assert transport.requests
     assert all(
-        url.startswith("https://connect.example.com/connect/__api__/")
-        for url in requested_urls
+        request[0].startswith("https://connect.example.com/connect/__api__/")
+        for request in transport.requests
     )
+    assert all(
+        request[1] == "/test/enterprise-ca.pem" for request in transport.requests
+    )
+    assert all(
+        request[2] == ("/test/client.pem", "/test/client.key")
+        for request in transport.requests
+    )
+    assert all(not request[3] for request in transport.requests)
 
 
 def test_schedule_write_readback_failure_keeps_binding_pending_and_disarmed() -> None:
@@ -999,3 +1040,220 @@ def test_amend_refuses_remote_drift_before_pausing_or_deploying() -> None:
     assert deployer.deploy_calls == 0
     assert store.get(record.schedule_id) == active
     assert [event[0] for event in gateway.events] == ["read"]
+
+
+@pytest.mark.parametrize(
+    ("operation", "target_status"), [("pause", "paused"), ("delete", "deleted")]
+)
+def test_pause_and_delete_claim_binding_before_canonical_mutation(
+    operation: str, target_status: str
+) -> None:
+    context = _context()
+    authorizer = MemoryAuthorizer()
+    authorizer.grant(context, "schedule.read")
+    authorizer.grant(context, "schedule.write")
+    canonical_store = MemoryScheduleStore()
+    service = ScheduleApplicationService(
+        authorizer=authorizer,
+        schedule_store=canonical_store,
+        clock=lambda: datetime(2026, 10, 13, 12, 0, tzinfo=UTC),
+    )
+    record = canonical_store.create(
+        context,
+        definition_id="pipeline-a",
+        profile_name="test",
+        spec=ScheduleSpec(kind="interval", interval_seconds=3600),
+        workload_identity=context.principal,
+        timer_owner="external",
+        next_fire_at="2026-10-13T13:00:00Z",
+    )
+    gateway = Gateway()
+    store = Store()
+    adapter, registration = _register(record, _binding(record), gateway, store)
+    active = adapter.apply(record, registration)
+    mutation_started = Event()
+    allow_mutation = Event()
+
+    class BarrierService:
+        def get(self, ctx: ControlPlaneContext, schedule_id: str) -> ScheduleRecord:
+            return service.get(ctx, schedule_id)
+
+        def pause(self, ctx: ControlPlaneContext, schedule_id: str) -> ScheduleRecord:
+            mutation_started.set()
+            if not allow_mutation.wait(timeout=3):
+                raise TimeoutError("test did not release canonical pause")
+            return service.pause(ctx, schedule_id)
+
+        def delete(self, ctx: ControlPlaneContext, schedule_id: str) -> ScheduleRecord:
+            mutation_started.set()
+            if not allow_mutation.wait(timeout=3):
+                raise TimeoutError("test did not release canonical delete")
+            return service.delete(ctx, schedule_id)
+
+    barrier_service = BarrierService()
+
+    class Deployer:
+        server_url = gateway.server_url
+
+        def deploy(self, *_args: object, **_kwargs: object) -> DeploymentResult:
+            raise AssertionError("the concurrent amendment must lose the claim")
+
+    with ThreadPoolExecutor(max_workers=1) as executor:
+        pending_operation = executor.submit(
+            getattr(adapter, operation),
+            cast(ScheduleApplicationService, barrier_service),
+            context,
+            record.schedule_id,
+            active,
+        )
+        try:
+            assert mutation_started.wait(timeout=2)
+            claimed = store.get(record.schedule_id)
+            assert claimed is not None
+            assert claimed.status == "pending"
+            assert claimed.pending_operation == "apply"
+            assert claimed.pending_target_status == target_status
+
+            with pytest.raises(ScheduleOperationError, match="binding changed"):
+                adapter.amend(
+                    cast(ScheduleApplicationService, barrier_service),
+                    context,
+                    record.schedule_id,
+                    active,
+                    expected_revision_id=record.revision_id,
+                    spec=ScheduleSpec(kind="interval", interval_seconds=7200),
+                    build_bundle=lambda _record: cast(Any, None),
+                    deployer=cast(Any, Deployer()),
+                    title="ETLantic schedule",
+                    operation_id="concurrent-amendment",
+                )
+        finally:
+            allow_mutation.set()
+
+        result = pending_operation.result(timeout=3)
+
+    assert result.status == target_status
+    assert store.get(record.schedule_id) == result
+    assert gateway.schedule is None
+    assert gateway.armed is False
+
+
+def test_amend_commit_ack_loss_cannot_pause_a_newer_owner() -> None:
+    context = _context()
+    authorizer = MemoryAuthorizer()
+    authorizer.grant(context, "schedule.read")
+    authorizer.grant(context, "schedule.write")
+    canonical_store = MemoryScheduleStore()
+    service = ScheduleApplicationService(
+        authorizer=authorizer,
+        schedule_store=canonical_store,
+        clock=lambda: datetime(2026, 10, 13, 12, 0, tzinfo=UTC),
+    )
+    record = canonical_store.create(
+        context,
+        definition_id="pipeline-a",
+        profile_name="test",
+        spec=ScheduleSpec(kind="interval", interval_seconds=3600),
+        workload_identity=context.principal,
+        timer_owner="external",
+        next_fire_at="2026-10-13T13:00:00Z",
+    )
+    committed = Event()
+    release_first_writer = Event()
+
+    class CommitThenRaiseStore(Store):
+        blocked = False
+
+        def put(
+            self,
+            binding: ConnectScheduleBinding,
+            *,
+            expected: ConnectScheduleBinding | None,
+        ) -> None:
+            super().put(binding, expected=expected)
+            if (
+                not self.blocked
+                and binding.status == "active"
+                and expected is not None
+                and expected.pending_operation == "amend"
+            ):
+                self.blocked = True
+                committed.set()
+                if not release_first_writer.wait(timeout=4):
+                    raise TimeoutError("test did not release first amendment")
+                raise OSError("synthetic lost COMMIT acknowledgement")
+
+    gateway = Gateway()
+    store = CommitThenRaiseStore()
+    adapter, registration = _register(record, _binding(record), gateway, store)
+    active = adapter.apply(record, registration)
+
+    def build_bundle(amended: ScheduleRecord) -> Any:
+        return build_trigger_bundle(
+            schedule_id=amended.schedule_id,
+            schedule_revision_id=amended.revision_id,
+            timer_owner_generation=amended.timer_owner_generation,
+            endpoint_url="https://receiver.example.com/trigger",
+            credential_ref=SecretRef("env", "trigger", "token"),
+            credential_env="ETLANTIC_TRIGGER_TOKEN",
+            outbound_policy=OutboundPolicy(
+                allowed_hosts=("receiver.example.com",),
+                max_response_bytes=65_536,
+            ),
+        )
+
+    class Deployer:
+        server_url = gateway.server_url
+
+        def deploy(
+            self, bundle: Any, *, operation_id: str, **_kwargs: object
+        ) -> DeploymentResult:
+            return DeploymentResult(
+                content_guid=active.content_guid,
+                state="updated",
+                bundle_sha256=bundle.sha256,
+                server_url=self.server_url,
+                operation_id=operation_id,
+            )
+
+    deployer = Deployer()
+
+    def amend(binding: ConnectScheduleBinding, interval_seconds: int, op_id: str):
+        return adapter.amend(
+            service,
+            context,
+            record.schedule_id,
+            binding,
+            expected_revision_id=service.get(context, record.schedule_id).revision_id,
+            spec=ScheduleSpec(kind="interval", interval_seconds=interval_seconds),
+            build_bundle=build_bundle,
+            deployer=cast(Any, deployer),
+            title="ETLantic schedule",
+            operation_id=op_id,
+        )
+
+    with ThreadPoolExecutor(max_workers=1) as executor:
+        first = executor.submit(amend, active, 7200, "first-amendment")
+        try:
+            assert committed.wait(timeout=3)
+            first_committed_binding = store.get(record.schedule_id)
+            assert first_committed_binding is not None
+            assert first_committed_binding.status == "active"
+
+            latest = amend(first_committed_binding, 10_800, "second-amendment")
+            assert latest.status == "active"
+            assert gateway.armed is True
+        finally:
+            release_first_writer.set()
+
+        with pytest.raises(ScheduleOperationUnknown, match="could not be committed"):
+            first.result(timeout=3)
+
+    canonical = service.get(context, record.schedule_id)
+    assert canonical.status == "active"
+    assert canonical.spec.interval_seconds == 10_800
+    assert store.get(record.schedule_id) == latest
+    assert latest.revision_id == canonical.revision_id
+    assert gateway.armed is True
+    assert gateway.schedule is not None
+    assert gateway.schedule.rule["n"] == 3

@@ -6,6 +6,7 @@ import re
 import uuid
 from collections.abc import Callable, Mapping
 from contextlib import suppress
+from copy import copy
 from dataclasses import dataclass, replace
 from datetime import UTC, datetime
 from typing import TYPE_CHECKING, Any, Literal, Protocol, cast
@@ -79,9 +80,9 @@ class ConnectScheduleBinding:
 
     A pending binding marked ``registration`` records successful content
     deployment awaiting its first lifecycle operation. A claimed pending
-    binding is single-writer state; another caller may only finish it when
-    Connect readback already proves the exact requested result. An unclassified
-    pending binding fails closed.
+    binding is single-writer state and cannot be taken over automatically
+    while its writer may still be running. An unclassified pending binding
+    fails closed.
     """
 
     schedule_id: str
@@ -301,9 +302,42 @@ class PositSdkGateway:
             raise ValueError(
                 "Posit SDK client destination does not match the configured Connect server"
             )
+        source_session = getattr(client, "session", None)
+        pinned_session = getattr(pinned_client, "session", None)
+        if source_session is not None:
+            if pinned_session is None:
+                raise ValueError("Posit SDK client session could not be isolated")
+            try:
+                self._copy_session_configuration(source_session, pinned_session)
+            except Exception:
+                raise ValueError(
+                    "Posit SDK client session configuration could not be isolated"
+                ) from None
         self._client = pinned_client
         self._client_url = pinned_url
         self._server_version = server_version
+
+    @staticmethod
+    def _copy_session_configuration(source: Any, target: Any) -> None:
+        """Copy public requests session settings without copying SDK auth."""
+        for name in ("headers", "cookies", "proxies", "hooks", "params"):
+            value = getattr(source, name)
+            if name == "hooks":
+                copied = {key: list(callbacks) for key, callbacks in value.items()}
+            else:
+                copier = getattr(value, "copy", None)
+                copied = copier() if callable(copier) else copy(value)
+            setattr(target, name, copied)
+        for name in ("verify", "cert", "trust_env", "max_redirects"):
+            setattr(target, name, getattr(source, name))
+
+        source_adapters = source.adapters
+        mount = target.mount
+        for prefix, adapter in source_adapters.items():
+            copied_adapter = copy(adapter)
+            if copied_adapter is adapter:
+                raise ValueError("transport adapter cannot be isolated")
+            mount(prefix, copied_adapter)
 
     @property
     def server_url(self) -> str:
@@ -901,8 +935,10 @@ class ConnectScheduleAdapter:
         self._require_preview()
         current = service.get(context, schedule_id)
         self._preflight_control_plane_binding(current, binding)
+        self._verify_lifecycle_remote_state(current, binding)
+        intent = self._claim_lifecycle_apply(binding, "paused")
         record = service.pause(context, schedule_id)
-        return self.apply(record, binding)
+        return self._finish_lifecycle_apply(record, intent, binding)
 
     def delete(
         self,
@@ -915,8 +951,117 @@ class ConnectScheduleAdapter:
         self._require_preview()
         current = service.get(context, schedule_id)
         self._preflight_control_plane_binding(current, binding)
+        self._verify_lifecycle_remote_state(current, binding)
+        intent = self._claim_lifecycle_apply(binding, "deleted")
         record = service.delete(context, schedule_id)
-        return self.apply(record, binding)
+        return self._finish_lifecycle_apply(record, intent, binding)
+
+    def _verify_lifecycle_remote_state(
+        self, record: ScheduleRecord, binding: ConnectScheduleBinding
+    ) -> None:
+        remote = self.gateway.read(binding.content_guid)
+        if binding.status == "active":
+            expected = _connect_recurrence(
+                record, start_time=binding.schedule_start_time
+            )
+            observed = _schedule_rule_mapping(remote) if remote is not None else None
+            if observed is None or dict(observed) != expected:
+                raise ScheduleOperationError(
+                    "Connect schedule drift detected; reconcile before mutation"
+                )
+        elif remote is not None:
+            raise ScheduleOperationError(
+                "Connect schedule drift detected for a non-active binding; reconcile before mutation"
+            )
+
+    def _claim_lifecycle_apply(
+        self,
+        binding: ConnectScheduleBinding,
+        target_status: Literal["paused", "deleted"],
+    ) -> ConnectScheduleBinding:
+        intent = replace(
+            binding,
+            status="pending",
+            operation_id=uuid.uuid4().hex,
+            pending_operation="apply",
+            pending_target_status=target_status,
+        )
+        try:
+            self.binding_store.put(intent, expected=binding)
+        except Exception:
+            raise ScheduleOperationUnknown(
+                "another Connect operation claimed this binding; reconcile before retrying"
+            ) from None
+        return intent
+
+    def _finish_lifecycle_apply(
+        self,
+        record: ScheduleRecord,
+        intent: ConnectScheduleBinding,
+        prior_binding: ConnectScheduleBinding,
+    ) -> ConnectScheduleBinding:
+        target_status = intent.pending_target_status
+        if (
+            intent.status != "pending"
+            or intent.pending_operation != "apply"
+            or target_status not in ("paused", "deleted")
+        ):
+            raise ScheduleOperationError("Connect lifecycle claim is invalid")
+        self._check_binding(record, intent)
+        if record.timer_owner != "external" or record.status != target_status:
+            raise ScheduleOperationUnknown(
+                "canonical lifecycle mutation did not reach the claimed state"
+            )
+        # The canonical operation may take time. Recheck Connect after claiming
+        # ownership so a schedule changed during that interval is not removed.
+        self._verify_lifecycle_remote_state(record, prior_binding)
+        self.gateway.set_trigger_armed(intent.content_guid, False)
+        self.gateway.delete(intent.content_guid)
+        self._verify_schedule_absent(intent.content_guid)
+        updated = replace(
+            intent,
+            status=target_status,
+            operation_id=None,
+            pending_operation=None,
+            pending_target_status=None,
+        )
+        try:
+            self.binding_store.put(updated, expected=intent)
+        except Exception:
+            raise ScheduleOperationUnknown(
+                "canonical lifecycle mutation completed but Connect ownership could not be committed; reconcile before retrying"
+            ) from None
+        return updated
+
+    def _claim_amendment_rollback(
+        self, pending: ConnectScheduleBinding
+    ) -> ConnectScheduleBinding | None:
+        rollback = replace(
+            pending,
+            operation_id=uuid.uuid4().hex,
+            pending_operation="rollback",
+            pending_target_status="paused",
+        )
+        try:
+            self.binding_store.put(rollback, expected=pending)
+        except Exception:
+            return None
+        return rollback
+
+    def _rollback_amendment(
+        self,
+        service: ScheduleApplicationService,
+        context: ControlPlaneContext,
+        schedule_id: str,
+        pending: ConnectScheduleBinding,
+    ) -> None:
+        rollback = self._claim_amendment_rollback(pending)
+        if rollback is None:
+            return
+        with suppress(Exception):
+            self.gateway.set_trigger_armed(rollback.content_guid, False)
+        with suppress(Exception):
+            service.pause(context, schedule_id)
 
     def resume(
         self,
@@ -1162,15 +1307,13 @@ class ConnectScheduleAdapter:
             self.gateway.create_or_update(binding.content_guid, desired)
             self._verify_schedule_rule(binding.content_guid, desired)
         except Exception:
-            with suppress(Exception):
-                self.gateway.set_trigger_armed(binding.content_guid, False)
+            self._rollback_amendment(service, context, schedule_id, pending)
             raise
         resumed = service.resume(context, schedule_id)
         try:
             self.gateway.set_trigger_armed(binding.content_guid, True)
         except Exception:
-            with suppress(Exception):
-                service.pause(context, schedule_id)
+            self._rollback_amendment(service, context, schedule_id, pending)
             raise
         active = replace(
             pending,
@@ -1183,11 +1326,7 @@ class ConnectScheduleAdapter:
         try:
             self.binding_store.put(active, expected=pending)
         except Exception:
-            try:
-                self.gateway.set_trigger_armed(binding.content_guid, False)
-                service.pause(context, schedule_id)
-            except Exception:
-                pass
+            self._rollback_amendment(service, context, schedule_id, pending)
             raise ScheduleOperationUnknown(
                 "Connect amendment succeeded but ownership could not be committed; reconcile before retrying"
             ) from None

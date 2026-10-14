@@ -50,8 +50,8 @@
   },
   "sdk_version": "0.17.0",
   "source_sha256": {
-    "adapter": "dd616e7dd86576722e021e1ccc955deaf711910e40a4b896477da570f69e0b7e",
-    "existing_adapter_tests": "7df2767c979c746255459529ee9575807c7a2873e69b5ebfc00ea0de6e372f07",
+    "adapter": "665e84e45a0ce76871412c9089560cb8a0cd91ef7028b3ea2b990165e35fbbe1",
+    "existing_adapter_tests": "59341a5ebe75b3745550e8982083e96d40e7d9fada7a8b3a397ea9de7b8705a6",
     "sdk_schedule": "b643dffcd722d896282ec7450cb6babe02198b9adaef2517626b550fe98ae596"
   },
   "warning_categories": [
