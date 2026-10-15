@@ -12,6 +12,7 @@ from etlantic.control_plane import (
     ControlPlaneError,
     DispatchReconciliation,
     DispatchRecord,
+    EffectRecord,
     EnvironmentRef,
     MemoryDurableWorkStore,
     OutboxRecord,
@@ -106,8 +107,15 @@ def _insert_ecs_dispatch(
         "leased",
         "uncertain",
         "reconciliation_required",
+        "settled",
     ],
-    submission_status: Literal["accepted", "cancel_requested"] = "accepted",
+    submission_status: Literal[
+        "accepted",
+        "cancel_requested",
+        "cancelled",
+        "completed",
+        "failed",
+    ] = "accepted",
     remote_run_id: str | None = None,
     lease_expires_at: str | None = None,
 ) -> DispatchRecord:
@@ -172,6 +180,247 @@ def _insert_ecs_dispatch(
         }
     )
     return dispatch
+
+
+def test_stopped_ecs_dispatch_rearms_through_attempt_recovery() -> None:
+    ctx = _durable_context()
+    store = MemoryDurableWorkStore()
+    task_arn = "arn:aws:ecs:us-east-1:123456789012:task/cluster/stopped"
+    dispatch = _insert_ecs_dispatch(
+        store,
+        ctx,
+        status="dispatched",
+        remote_run_id=task_arn,
+    )
+    lease = store.acquire_lease(
+        ctx, dispatch.submission_id, owner_id="stopped-worker", ttl_seconds=30
+    )
+    attempt = store.start_attempt(
+        ctx,
+        dispatch.submission_id,
+        owner_id="stopped-worker",
+        fencing_token=lease.fencing_token,
+    )
+    effect = EffectRecord(
+        effect_id=f"{dispatch.submission_id}:execution",
+        submission_id=dispatch.submission_id,
+        tenant_id=ctx.tenant.tenant_id,
+        workspace_id=ctx.workspace.workspace_id,
+        status="unknown",
+        recorded_at="2026-10-14T12:01:00Z",
+    )
+    store.record_attempt_effect(
+        ctx,
+        effect,
+        attempt_id=attempt.attempt_id,
+        owner_id="stopped-worker",
+        fencing_token=lease.fencing_token,
+    )
+
+    assert (
+        store.rearm_ecs_dispatch_after_remote_stop(
+            ctx,
+            dispatch.submission_id,
+            expected_generation=dispatch.generation,
+            expected_remote_run_id=task_arn,
+        )
+        is None
+    )
+    store.release_lease(
+        ctx,
+        dispatch.submission_id,
+        owner_id="stopped-worker",
+        fencing_token=lease.fencing_token,
+    )
+
+    rearmed = store.rearm_ecs_dispatch_after_remote_stop(
+        ctx,
+        dispatch.submission_id,
+        expected_generation=dispatch.generation,
+        expected_remote_run_id=task_arn,
+    )
+
+    assert rearmed is not None
+    assert rearmed.status == "pending"
+    assert rearmed.generation == dispatch.generation + 1
+    assert rearmed.remote_run_id is None
+    assert rearmed.last_error_code == "ecs_task_stopped_after_claim"
+    assert store.list_attempts(ctx, dispatch.submission_id) == [attempt]
+    assert store.get_effect(ctx, effect.effect_id) == effect
+    assert (
+        store.rearm_ecs_dispatch_after_remote_stop(
+            ctx,
+            dispatch.submission_id,
+            expected_generation=dispatch.generation,
+            expected_remote_run_id=task_arn,
+        )
+        is None
+    )
+
+
+def test_exhausted_ecs_dispatch_can_be_rearmed_for_managed_recovery() -> None:
+    ctx = _durable_context()
+    store = MemoryDurableWorkStore()
+    first_task = "arn:aws:ecs:us-east-1:123456789012:task/cluster/first"
+    dispatch = _insert_ecs_dispatch(
+        store,
+        ctx,
+        status="dispatched",
+        remote_run_id=first_task,
+    )
+    lease = store.acquire_lease(
+        ctx, dispatch.submission_id, owner_id="recovery-worker", ttl_seconds=30
+    )
+    attempt = store.start_attempt(
+        ctx,
+        dispatch.submission_id,
+        owner_id="recovery-worker",
+        fencing_token=lease.fencing_token,
+    )
+    effect = EffectRecord(
+        effect_id=f"{dispatch.submission_id}:execution",
+        submission_id=dispatch.submission_id,
+        tenant_id=ctx.tenant.tenant_id,
+        workspace_id=ctx.workspace.workspace_id,
+        status="unknown",
+        recorded_at="2026-10-14T12:01:00Z",
+    )
+    store.record_attempt_effect(
+        ctx,
+        effect,
+        attempt_id=attempt.attempt_id,
+        owner_id="recovery-worker",
+        fencing_token=lease.fencing_token,
+    )
+    store.release_lease(
+        ctx,
+        dispatch.submission_id,
+        owner_id="recovery-worker",
+        fencing_token=lease.fencing_token,
+    )
+
+    current = store.rearm_ecs_dispatch_after_remote_stop(
+        ctx,
+        dispatch.submission_id,
+        expected_generation=1,
+        expected_remote_run_id=first_task,
+    )
+    assert current is not None and current.generation == 2
+    for generation in (2, 3):
+        claim = store.claim_dispatch(
+            ctx, dispatch.submission_id, owner_id=f"dispatcher-{generation}"
+        )
+        assert claim is not None
+        task_arn = f"arn:aws:ecs:us-east-1:123456789012:task/cluster/task-{generation}"
+        store.link_dispatch(
+            ctx,
+            dispatch.submission_id,
+            owner_id=f"dispatcher-{generation}",
+            fencing_token=claim.lease_fencing_token,
+            remote_run_id=task_arn,
+        )
+        current = store.rearm_ecs_dispatch_after_remote_stop(
+            ctx,
+            dispatch.submission_id,
+            expected_generation=generation,
+            expected_remote_run_id=task_arn,
+        )
+        assert current is not None
+
+    assert current.status == "reconciliation_required"
+    reconciled = store.rearm_reconciliation_required_dispatch(
+        ctx,
+        dispatch.submission_id,
+        expected_generation=current.generation,
+        expected_remote_run_id=task_arn,
+        evidence_sha256="d" * 64,
+    )
+
+    assert reconciled.status == "pending"
+    assert reconciled.generation == 4
+    assert reconciled.reconciliation_history[-1].evidence_sha256 == "d" * 64
+    assert store.list_attempts(ctx, dispatch.submission_id)[0].attempt_id == (
+        attempt.attempt_id
+    )
+    assert store.get_effect(ctx, effect.effect_id) == effect
+
+
+def test_terminal_unlinked_ecs_dispatch_settles_only_after_attempt_finishes() -> None:
+    ctx = _durable_context()
+    store = MemoryDurableWorkStore()
+    dispatch = _insert_ecs_dispatch(store, ctx, status="uncertain")
+    lease = store.acquire_lease(
+        ctx, dispatch.submission_id, owner_id="fast-worker", ttl_seconds=30
+    )
+    attempt = store.start_attempt(
+        ctx,
+        dispatch.submission_id,
+        owner_id="fast-worker",
+        fencing_token=lease.fencing_token,
+    )
+    store.finish_attempt(
+        ctx,
+        attempt.attempt_id,
+        owner_id="fast-worker",
+        fencing_token=lease.fencing_token,
+        status="completed",
+    )
+
+    assert (
+        store.settle_terminal_ecs_dispatch(
+            ctx,
+            dispatch.submission_id,
+            expected_generation=dispatch.generation,
+        )
+        is None
+    )
+    store.release_lease(
+        ctx,
+        dispatch.submission_id,
+        owner_id="fast-worker",
+        fencing_token=lease.fencing_token,
+    )
+    store.mark_published(ctx, "outbox-ecs")
+
+    candidates = store.dispatched_for_reconciliation(
+        ctx,
+        execution_route=dispatch.execution_route,
+        limit=10,
+    )
+    assert [item.submission_id for item in candidates] == [dispatch.submission_id]
+    settled = store.settle_terminal_ecs_dispatch(
+        ctx,
+        dispatch.submission_id,
+        expected_generation=dispatch.generation,
+    )
+
+    assert settled is not None
+    assert settled.status == "settled"
+    assert settled.remote_run_id is None
+    workload = store.execution_route_workload(ctx, dispatch.execution_route)
+    assert workload.incomplete_dispatches == 0
+    assert workload.drained is True
+
+
+def test_terminal_ecs_dispatch_without_attempt_cannot_be_settled() -> None:
+    ctx = _durable_context()
+    store = MemoryDurableWorkStore()
+    dispatch = _insert_ecs_dispatch(
+        store,
+        ctx,
+        status="uncertain",
+        submission_status="completed",
+    )
+
+    assert (
+        store.settle_terminal_ecs_dispatch(
+            ctx,
+            dispatch.submission_id,
+            expected_generation=dispatch.generation,
+        )
+        is None
+    )
+    assert store.get_dispatch(ctx, dispatch.submission_id).status == "uncertain"
 
 
 def test_expired_ecs_lease_remains_recoverable_after_cancellation() -> None:

@@ -86,6 +86,7 @@ DispatchStatus = Literal[
     "dispatched",
     "cancelled",
     "reconciliation_required",
+    "settled",
 ]
 ExecutionRouteLifecycle = Literal[
     "active", "draining", "retired", "cleanup_pending", "cleaned"

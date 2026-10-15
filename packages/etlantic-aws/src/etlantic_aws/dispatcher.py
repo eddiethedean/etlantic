@@ -127,10 +127,56 @@ class ECSDispatcher:
         ):
             raise RuntimeError("durable dispatch does not match this ECS binding")
         submission = durable.get_submission(self.context, submission_id)
-        if intent.status in {"uncertain", "leased", "reconciliation_required"} and (
-            submission.status in {"cancel_requested", "cancelled"}
+        if (
+            intent.status in {"uncertain", "leased", "reconciliation_required"}
+            and submission.status == "cancel_requested"
         ):
             return self._resolve_cancelled_uncertain(submission_id, intent)
+        if (
+            submission.status == "cancelled"
+            and intent.backend_kind == "ecs"
+            and intent.status in {"uncertain", "leased", "reconciliation_required"}
+            and intent.remote_run_id is None
+        ):
+            if durable.list_attempts(self.context, submission_id):
+                settled = durable.settle_terminal_ecs_dispatch(
+                    self.context,
+                    submission_id,
+                    expected_generation=intent.generation,
+                    now=self._now(),
+                )
+                return ECSDispatchResult(
+                    submission_id,
+                    settled.status if settled is not None else intent.status,
+                    error_code=(
+                        settled.last_error_code
+                        if settled is not None
+                        else "ecs_terminal_recovery_waiting"
+                    ),
+                )
+            return self._resolve_cancelled_uncertain(submission_id, intent)
+        if (
+            submission.status in {"completed", "failed"}
+            and intent.backend_kind == "ecs"
+            and intent.status in {"uncertain", "leased", "reconciliation_required"}
+            and intent.remote_run_id is None
+        ):
+            settled = durable.settle_terminal_ecs_dispatch(
+                self.context,
+                submission_id,
+                expected_generation=intent.generation,
+                now=self._now(),
+            )
+            return ECSDispatchResult(
+                submission_id,
+                settled.status if settled is not None else intent.status,
+                remote_run_id=(settled.remote_run_id if settled is not None else None),
+                error_code=(
+                    settled.last_error_code
+                    if settled is not None
+                    else "ecs_terminal_recovery_waiting"
+                ),
+            )
         if submission.status != "accepted":
             return ECSDispatchResult(
                 submission_id, "not_dispatched", error_code="submission_not_active"
@@ -370,13 +416,13 @@ class ECSDispatcher:
                         self.ecs_client.list_tasks(**request),
                         "ECS task lookup response is malformed",
                     )
-                    rows = response.get("taskArns", [])
-                    if not isinstance(rows, list) or any(
+                    task_arn_rows: object = response.get("taskArns", [])
+                    if not isinstance(task_arn_rows, list) or any(
                         not isinstance(item, str) or not item
-                        for item in cast(Iterable[object], rows)
+                        for item in cast(Iterable[object], task_arn_rows)
                     ):
                         raise RuntimeError("ECS task lookup response is malformed")
-                    task_arns.update(cast(list[str], rows))
+                    task_arns.update(cast(list[str], task_arn_rows))
                     following = response.get("nextToken")
                     if following is None:
                         next_token = None
@@ -427,11 +473,11 @@ class ECSDispatcher:
                     ),
                     "ECS task lookup response is malformed",
                 )
-                rows = _mapping_rows(response.get("tasks", []))
+                described_task_rows = _mapping_rows(response.get("tasks", []))
                 failures = _mapping_rows(response.get("failures", []))
-                if rows is None or failures is None or failures:
+                if described_task_rows is None or failures is None or failures:
                     raise RuntimeError("ECS task lookup is incomplete")
-                task_rows.extend(rows)
+                task_rows.extend(described_task_rows)
         except Exception:
             released = durable.release_dispatch(
                 self.context,
@@ -660,7 +706,7 @@ class ECSDispatcher:
         return parsed.astimezone(UTC)
 
     def reconcile(self, *, limit: int = 50) -> list[ECSDispatchResult]:
-        """Poll linked tasks and rearm only proven pre-claim stopped tasks."""
+        """Poll linked tasks, recover STOPPED work, and settle lost responses."""
         if type(limit) is not int or not 1 <= limit <= 100:
             raise ValueError("limit must be between 1 and 100")
         self.binding.verify(self.ecs_client, self.sts_client)
@@ -685,6 +731,41 @@ class ECSDispatcher:
         for record in records:
             task_arn = record.remote_run_id
             if task_arn is None:
+                submission = durable.get_submission(self.context, record.submission_id)
+                if submission.status == "cancel_requested":
+                    intent = durable.prepare_dispatch(
+                        self.context, record.submission_id
+                    )
+                    results.append(
+                        self._resolve_cancelled_uncertain(record.submission_id, intent)
+                    )
+                elif submission.status == "cancelled" and not durable.list_attempts(
+                    self.context, record.submission_id
+                ):
+                    intent = durable.prepare_dispatch(
+                        self.context, record.submission_id
+                    )
+                    results.append(
+                        self._resolve_cancelled_uncertain(record.submission_id, intent)
+                    )
+                elif submission.status in {"completed", "failed", "cancelled"}:
+                    settled = durable.settle_terminal_ecs_dispatch(
+                        self.context,
+                        record.submission_id,
+                        expected_generation=record.generation,
+                        now=self._now(),
+                    )
+                    results.append(
+                        ECSDispatchResult(
+                            record.submission_id,
+                            settled.status if settled is not None else record.status,
+                            error_code=(
+                                settled.last_error_code
+                                if settled is not None
+                                else "ecs_terminal_recovery_waiting"
+                            ),
+                        )
+                    )
                 continue
             try:
                 response = _as_mapping(
@@ -791,10 +872,12 @@ class ECSDispatcher:
                     ECSDispatchResult(record.submission_id, "dispatched", task_arn)
                 )
                 continue
-            rearmed = self.backend.durable_work.rearm_dispatch_after_remote_failure(
+            rearmed = self.backend.durable_work.rearm_ecs_dispatch_after_remote_stop(
                 self.context,
                 record.submission_id,
+                expected_generation=record.generation,
                 expected_remote_run_id=task_arn,
+                now=self._now(),
             )
             status = rearmed.status if rearmed is not None else "dispatched"
             results.append(
@@ -805,7 +888,7 @@ class ECSDispatcher:
                     error_code=(
                         rearmed.last_error_code
                         if rearmed
-                        else "canonical_execution_started"
+                        else "ecs_stopped_task_recovery_required"
                     ),
                 )
             )

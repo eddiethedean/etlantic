@@ -204,7 +204,7 @@ class DurableWorkStore(Protocol):
         limit: int = 100,
         after_submission_id: str | None = None,
     ) -> Sequence[DispatchRecord]:
-        """Return linked, active Prefect deliveries for bounded reconciliation."""
+        """Return linked active work and unresolved terminal ECS deliveries."""
         ...
 
     def prepare_dispatch(
@@ -278,6 +278,29 @@ class DurableWorkStore(Protocol):
         """Rearm only matching remote failures with no ETL attempt or side effect."""
         ...
 
+    def rearm_ecs_dispatch_after_remote_stop(
+        self,
+        ctx: ControlPlaneContext,
+        submission_id: str,
+        *,
+        expected_generation: int,
+        expected_remote_run_id: str,
+        now: datetime | None = None,
+    ) -> DispatchRecord | None:
+        """Start a new ECS generation after STOPPED, preserving attempt recovery."""
+        ...
+
+    def settle_terminal_ecs_dispatch(
+        self,
+        ctx: ControlPlaneContext,
+        submission_id: str,
+        *,
+        expected_generation: int,
+        now: datetime | None = None,
+    ) -> DispatchRecord | None:
+        """Settle a lost-response ECS dispatch after canonical terminal evidence."""
+        ...
+
     def rearm_dispatch_after_remote_missing(
         self,
         ctx: ControlPlaneContext,
@@ -302,7 +325,7 @@ class DurableWorkStore(Protocol):
         evidence_sha256: str,
         now: datetime | None = None,
     ) -> DispatchRecord:
-        """Rearm only after a durable, authorized pre-claim reconciliation."""
+        """Rearm after authorized reconciliation, including managed ECS recovery."""
         ...
 
     def reconcile_terminal_outbox(

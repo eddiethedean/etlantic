@@ -595,6 +595,42 @@ class SQLModelDurableWorkStore:
             )
         )
 
+    def rearm_ecs_dispatch_after_remote_stop(
+        self,
+        ctx: ControlPlaneContext,
+        submission_id: str,
+        *,
+        expected_generation: int,
+        expected_remote_run_id: str,
+        now: datetime | None = None,
+    ):
+        return self._txn(
+            lambda m: m.rearm_ecs_dispatch_after_remote_stop(
+                ctx,
+                submission_id,
+                expected_generation=expected_generation,
+                expected_remote_run_id=expected_remote_run_id,
+                now=now,
+            )
+        )
+
+    def settle_terminal_ecs_dispatch(
+        self,
+        ctx: ControlPlaneContext,
+        submission_id: str,
+        *,
+        expected_generation: int,
+        now: datetime | None = None,
+    ):
+        return self._txn(
+            lambda m: m.settle_terminal_ecs_dispatch(
+                ctx,
+                submission_id,
+                expected_generation=expected_generation,
+                now=now,
+            )
+        )
+
     def rearm_dispatch_after_remote_missing(
         self,
         ctx: ControlPlaneContext,

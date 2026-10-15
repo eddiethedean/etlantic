@@ -659,7 +659,7 @@ class ManagedApplicationService:
         expected_flow_run_id: str | None = None,
         evidence: str,
     ) -> dict[str, Any]:
-        """Authorize one explicit retry before canonical execution begins."""
+        """Authorize a reconciled retry or recovery for one exhausted dispatch."""
         validate_control_plane_context(ctx)
         if expected_remote_run_id is None:
             expected_remote_run_id = expected_flow_run_id

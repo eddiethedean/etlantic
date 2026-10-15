@@ -12,6 +12,7 @@ from unittest.mock import patch
 import pytest
 from etlantic_aws import (
     ECSDispatcher,
+    ECSDispatchResult,
     ECSExecutionBinding,
     EventBridgeScheduler,
     RelayRetryRequired,
@@ -870,10 +871,59 @@ class _DispatchStore:
     def dispatched_for_reconciliation(self, *_args: Any, **_kwargs: Any) -> list[Any]:
         if (
             self.record.status == "dispatched"
-            and self.submission.status == "cancel_requested"
+            and self.record.remote_run_id is not None
+            and self.submission.status in {"accepted", "cancel_requested"}
+        ) or (
+            self.record.backend_kind == "ecs"
+            and self.record.remote_run_id is None
+            and self.record.status in {"uncertain", "leased", "reconciliation_required"}
+            and self.submission.status in {"completed", "failed"}
         ):
             return [self.record]
         return []
+
+    def rearm_ecs_dispatch_after_remote_stop(
+        self,
+        _ctx: Any,
+        _submission_id: str,
+        *,
+        expected_generation: int,
+        expected_remote_run_id: str,
+        **_kwargs: Any,
+    ) -> Any:
+        if (
+            self.record.status != "dispatched"
+            or self.record.generation != expected_generation
+            or self.record.remote_run_id != expected_remote_run_id
+            or self.submission.status != "accepted"
+        ):
+            return None
+        self.record.generation += 1
+        self.record.status = "pending"
+        self.record.remote_run_id = None
+        self.record.last_error_code = "ecs_task_stopped_after_claim"
+        return self.record
+
+    def settle_terminal_ecs_dispatch(
+        self,
+        _ctx: Any,
+        _submission_id: str,
+        *,
+        expected_generation: int,
+        **_kwargs: Any,
+    ) -> Any:
+        if (
+            self.record.backend_kind != "ecs"
+            or self.record.generation != expected_generation
+            or self.record.status
+            not in {"uncertain", "leased", "reconciliation_required"}
+            or self.record.remote_run_id is not None
+            or self.submission.status not in {"completed", "failed"}
+        ):
+            return None
+        self.record.status = "settled"
+        self.record.last_error_code = "ecs_terminal_execution_recovered"
+        return self.record
 
     def confirm_dispatch_cancelled(self, *_args: Any, **_kwargs: Any) -> Any:
         self.record.status = "cancelled"
@@ -1060,6 +1110,88 @@ def test_ecs_reconciliation_cursor_visits_later_cancelled_tasks() -> None:
         ["a-running"],
     ]
     assert ecs.stop_calls == [task_arns[1]]
+
+
+def test_stopped_ecs_task_rearms_a_canonical_recovery_generation() -> None:
+    binding = _ecs_binding()
+    now = datetime(2026, 10, 15, 12, tzinfo=UTC)
+    durable = _DispatchStore(
+        binding,
+        status="dispatched",
+        submission_status="accepted",
+        creation_started_at=now - timedelta(minutes=5),
+    )
+    task_arn = f"arn:aws:ecs:{REGION}:{ACCOUNT}:task/etlantic/task-stopped"
+    durable.record.remote_run_id = task_arn
+    ecs = _ECSClient(binding)
+    ecs.task = {
+        "taskArn": task_arn,
+        "clusterArn": binding.cluster_arn,
+        "taskDefinitionArn": binding.task_definition_arn,
+        "lastStatus": "STOPPED",
+        "desiredStatus": "STOPPED",
+        "tags": [],
+    }
+    dispatcher = _dispatcher(binding, durable, ecs, [now])
+
+    result = dispatcher.reconcile()
+
+    assert result == [
+        ECSDispatchResult(
+            durable.record.submission_id,
+            "pending",
+            error_code="ecs_task_stopped_after_claim",
+        )
+    ]
+    assert durable.record.generation == 2
+    assert durable.record.remote_run_id is None
+    assert ecs.run_calls == 0
+
+
+def test_reconcile_settles_lost_ecs_response_after_terminal_work() -> None:
+    binding = _ecs_binding()
+    now = datetime(2026, 10, 15, 12, tzinfo=UTC)
+    durable = _DispatchStore(
+        binding,
+        status="uncertain",
+        submission_status="completed",
+        creation_started_at=now - timedelta(minutes=5),
+    )
+    ecs = _ECSClient(binding)
+    dispatcher = _dispatcher(binding, durable, ecs, [now])
+
+    result = dispatcher.reconcile()
+
+    assert result == [
+        ECSDispatchResult(
+            durable.record.submission_id,
+            "settled",
+            error_code="ecs_terminal_execution_recovered",
+        )
+    ]
+    assert durable.record.remote_run_id is None
+    assert ecs.run_calls == 0
+    assert ecs.list_task_requests == []
+
+
+def test_dispatch_retry_settles_terminal_ecs_work_without_relaunching() -> None:
+    binding = _ecs_binding()
+    now = datetime(2026, 10, 15, 12, tzinfo=UTC)
+    durable = _DispatchStore(
+        binding,
+        status="uncertain",
+        submission_status="completed",
+        creation_started_at=now - timedelta(minutes=5),
+    )
+    ecs = _ECSClient(binding)
+    dispatcher = _dispatcher(binding, durable, ecs, [now])
+
+    result = dispatcher.dispatch_submission(durable.record.submission_id)
+
+    assert result.status == "settled"
+    assert result.error_code == "ecs_terminal_execution_recovered"
+    assert durable.record.status == "settled"
+    assert ecs.run_calls == 0
 
 
 def test_expired_ecs_client_token_is_quarantined_before_retry() -> None:

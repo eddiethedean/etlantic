@@ -655,7 +655,7 @@ class MemoryDurableWorkStore:
                 if (*key[:2], attempt.submission_id) in keys
             ),
             incomplete_dispatches=sum(
-                dispatch.status not in {"dispatched", "cancelled"}
+                dispatch.status not in {"dispatched", "cancelled", "settled"}
                 for key, dispatch in self._dispatches.items()
                 if key in keys
             ),
@@ -824,7 +824,12 @@ class MemoryDurableWorkStore:
                 if (
                     dispatch is not None
                     and dispatch.status
-                    in {"dispatched", "cancelled", "reconciliation_required"}
+                    in {
+                        "dispatched",
+                        "cancelled",
+                        "reconciliation_required",
+                        "settled",
+                    }
                     and not (
                         dispatch.status == "reconciliation_required"
                         and cancellation_recovery
@@ -872,14 +877,31 @@ class MemoryDurableWorkStore:
                 if key[:2] == scope
                 and record.execution_route == execution_route
                 and record.backend_kind == backend_kind
-                and record.status == "dispatched"
-                and record.remote_run_id is not None
                 and (
                     after_submission_id is None
                     or record.submission_id > after_submission_id
                 )
                 and (submission := self._submissions.get(key)) is not None
-                and submission.status in {"accepted", "cancel_requested"}
+                and (
+                    (
+                        record.status == "dispatched"
+                        and record.remote_run_id is not None
+                        and submission.status in {"accepted", "cancel_requested"}
+                    )
+                    or (
+                        record.backend_kind == "ecs"
+                        and record.remote_run_id is None
+                        and record.status
+                        in {"uncertain", "leased", "reconciliation_required"}
+                        and submission.status
+                        in {
+                            "completed",
+                            "failed",
+                            "cancel_requested",
+                            "cancelled",
+                        }
+                    )
+                )
             ]
             rows.sort(key=lambda item: item.submission_id)
             return deepcopy(rows[:limit])
@@ -999,7 +1021,7 @@ class MemoryDurableWorkStore:
                 and record.status == "reconciliation_required"
                 and submission.status in {"cancel_requested", "cancelled"}
             )
-            if record.status in {"dispatched", "cancelled"} or (
+            if record.status in {"dispatched", "cancelled", "settled"} or (
                 record.status == "reconciliation_required" and not cancellation_recovery
             ):
                 return None
@@ -1242,7 +1264,7 @@ class MemoryDurableWorkStore:
                 record.status != "dispatched"
                 or record.generation != expected_generation
                 or record.remote_run_id != expected_remote_run_id
-                or submission.status != "cancel_requested"
+                or submission.status not in {"cancel_requested", "cancelled"}
             ):
                 raise ControlPlaneError.conflict(
                     "Dispatch changed before remote cancellation was confirmed"
@@ -1278,6 +1300,130 @@ class MemoryDurableWorkStore:
             reason_code="remote_failed_before_claim",
             now=now,
         )
+
+    def rearm_ecs_dispatch_after_remote_stop(
+        self,
+        ctx: ControlPlaneContext,
+        submission_id: str,
+        *,
+        expected_generation: int,
+        expected_remote_run_id: str,
+        now: datetime | None = None,
+    ) -> DispatchRecord | None:
+        """Launch a recovery worker only after its prior ECS task is STOPPED.
+
+        Existing attempts are retained. The next managed execution host sees
+        that history and must recover its durable report or fail closed on an
+        unknown effect before it can run the pipeline again.
+        """
+        if type(expected_generation) is not int or expected_generation < 1:
+            raise ValueError("expected_generation must be a positive integer")
+        selected_remote_run_id = cast(
+            str, _select_remote_run_id(expected_remote_run_id, None)
+        )
+        current = now or _now()
+        key = (*_scope(ctx), submission_id)
+        with self._lock:
+            record = self._dispatches.get(key)
+            submission = self._submissions.get(key)
+            if (
+                record is None
+                or submission is None
+                or record.backend_kind != "ecs"
+                or record.status != "dispatched"
+                or record.generation != expected_generation
+                or record.remote_run_id != selected_remote_run_id
+                or submission.status != "accepted"
+            ):
+                return None
+            lease = self._leases.get(key)
+            if lease is not None and _parse(lease.expires_at) > current:
+                return None
+            attempts = [
+                attempt
+                for attempt in self._attempts.values()
+                if attempt.submission_id == submission_id
+                and (attempt.tenant_id, attempt.workspace_id) == _scope(ctx)
+            ]
+            if not attempts and any(
+                row.submission_id == submission_id
+                and (row.tenant_id, row.workspace_id) == _scope(ctx)
+                for row in (
+                    *self._effects.values(),
+                    *self._result_publications.values(),
+                )
+            ):
+                return None
+            return self._rearm_dispatch_if_unclaimed(
+                ctx,
+                submission_id,
+                expected_remote_run_id=selected_remote_run_id,
+                reason_code=(
+                    "ecs_task_stopped_after_claim"
+                    if attempts
+                    else "remote_failed_before_claim"
+                ),
+                now=current,
+                allow_canonical_recovery=bool(attempts),
+            )
+
+    def settle_terminal_ecs_dispatch(
+        self,
+        ctx: ControlPlaneContext,
+        submission_id: str,
+        *,
+        expected_generation: int,
+        now: datetime | None = None,
+    ) -> DispatchRecord | None:
+        """Resolve an unlinked ECS create after canonical execution is terminal."""
+        if type(expected_generation) is not int or expected_generation < 1:
+            raise ValueError("expected_generation must be a positive integer")
+        current = now or _now()
+        key = (*_scope(ctx), submission_id)
+        with self._lock:
+            record = self._dispatches.get(key)
+            submission = self._submissions.get(key)
+            if (
+                record is None
+                or submission is None
+                or record.backend_kind != "ecs"
+                or record.status
+                not in {"uncertain", "leased", "reconciliation_required"}
+                or record.remote_run_id is not None
+                or record.generation != expected_generation
+                or submission.status not in {"completed", "failed", "cancelled"}
+            ):
+                return None
+            dispatch_lease_active = (
+                record.lease_expires_at is not None
+                and _parse(record.lease_expires_at) > current
+            )
+            execution_lease = self._leases.get(key)
+            execution_lease_active = (
+                execution_lease is not None
+                and _parse(execution_lease.expires_at) > current
+            )
+            if dispatch_lease_active or execution_lease_active:
+                return None
+            attempts = [
+                attempt
+                for attempt in self._attempts.values()
+                if attempt.submission_id == submission_id
+                and (attempt.tenant_id, attempt.workspace_id) == _scope(ctx)
+            ]
+            if not attempts or any(attempt.status == "running" for attempt in attempts):
+                return None
+            settled = replace(
+                record,
+                status="settled",
+                lease_owner_id=None,
+                lease_expires_at=None,
+                retry_after_at=None,
+                last_error_code="ecs_terminal_execution_recovered",
+                updated_at=_iso(current),
+            )
+            self._dispatches[key] = settled
+            return deepcopy(settled)
 
     def rearm_dispatch_after_remote_missing(
         self,
@@ -1317,8 +1463,9 @@ class MemoryDurableWorkStore:
         reason_code: str,
         minimum_age_seconds: int = 0,
         now: datetime | None = None,
+        allow_canonical_recovery: bool = False,
     ) -> DispatchRecord | None:
-        """Create a bounded generation only while no ETL effect could exist."""
+        """Create a bounded generation only when its recovery path is safe."""
         expected_remote_run_id = cast(
             str,
             _select_remote_run_id(expected_remote_run_id, None),
@@ -1330,6 +1477,24 @@ class MemoryDurableWorkStore:
             record = self._dispatches.get(key)
             submission = self._submissions.get(key)
             lease = self._leases.get(key)
+            attempts = [
+                attempt
+                for attempt in self._attempts.values()
+                if attempt.submission_id == submission_id
+                and (attempt.tenant_id, attempt.workspace_id) == _scope(ctx)
+            ]
+            effects = [
+                effect
+                for effect in self._effects.values()
+                if effect.submission_id == submission_id
+                and (effect.tenant_id, effect.workspace_id) == _scope(ctx)
+            ]
+            publications = [
+                publication
+                for publication in self._result_publications.values()
+                if publication.submission_id == submission_id
+                and (publication.tenant_id, publication.workspace_id) == _scope(ctx)
+            ]
             if (
                 record is None
                 or submission is None
@@ -1342,20 +1507,14 @@ class MemoryDurableWorkStore:
                     > current - timedelta(seconds=minimum_age_seconds)
                 )
                 or (lease is not None and _parse(lease.expires_at) > wall_now)
-                or any(
-                    attempt.submission_id == submission_id
-                    and (attempt.tenant_id, attempt.workspace_id) == _scope(ctx)
-                    for attempt in self._attempts.values()
+                or (
+                    not allow_canonical_recovery
+                    and (attempts or effects or publications)
                 )
-                or any(
-                    effect.submission_id == submission_id
-                    and (effect.tenant_id, effect.workspace_id) == _scope(ctx)
-                    for effect in self._effects.values()
-                )
-                or any(
-                    publication.submission_id == submission_id
-                    and (publication.tenant_id, publication.workspace_id) == _scope(ctx)
-                    for publication in self._result_publications.values()
+                or (
+                    allow_canonical_recovery
+                    and not attempts
+                    and (effects or publications)
                 )
             ):
                 return None
@@ -1401,7 +1560,7 @@ class MemoryDurableWorkStore:
         evidence_sha256: str,
         now: datetime | None = None,
     ) -> DispatchRecord:
-        """Record explicit operator approval for one exhausted pre-claim retry."""
+        """Record operator approval for one exhausted retry or ECS recovery."""
         if type(expected_generation) is not int or expected_generation < 1:
             raise ValueError("expected_generation must be a positive integer")
         if (
@@ -1452,25 +1611,29 @@ class MemoryDurableWorkStore:
                     "Dispatch cannot be reconciled while an execution lease is active",
                     extensions={"reason": "execution_lease_active"},
                 )
-            if (
-                any(
-                    attempt.submission_id == submission_id
-                    and (attempt.tenant_id, attempt.workspace_id) == _scope(ctx)
-                    for attempt in self._attempts.values()
-                )
-                or any(
-                    effect.submission_id == submission_id
-                    and (effect.tenant_id, effect.workspace_id) == _scope(ctx)
-                    for effect in self._effects.values()
-                )
-                or any(
-                    publication.submission_id == submission_id
-                    and (publication.tenant_id, publication.workspace_id) == _scope(ctx)
-                    for publication in self._result_publications.values()
-                )
-            ):
+            attempts = [
+                attempt
+                for attempt in self._attempts.values()
+                if attempt.submission_id == submission_id
+                and (attempt.tenant_id, attempt.workspace_id) == _scope(ctx)
+            ]
+            effects = [
+                effect
+                for effect in self._effects.values()
+                if effect.submission_id == submission_id
+                and (effect.tenant_id, effect.workspace_id) == _scope(ctx)
+            ]
+            publications = [
+                publication
+                for publication in self._result_publications.values()
+                if publication.submission_id == submission_id
+                and (publication.tenant_id, publication.workspace_id) == _scope(ctx)
+            ]
+            canonical_execution_started = bool(attempts or effects or publications)
+            recoverable_ecs_attempt = record.backend_kind == "ecs" and bool(attempts)
+            if canonical_execution_started and not recoverable_ecs_attempt:
                 raise ControlPlaneError.conflict(
-                    "Dispatch cannot be reconciled after canonical execution began",
+                    "Dispatch cannot be reconciled after canonical execution began without a recoverable ECS attempt",
                     extensions={"reason": "canonical_execution_started"},
                 )
             generation = record.generation + 1
