@@ -1413,6 +1413,15 @@ class MemoryDurableWorkStore:
             ]
             if not attempts or any(attempt.status == "running" for attempt in attempts):
                 return None
+            if any(
+                row.submission_id == submission_id
+                and key[:2] == _scope(ctx)
+                and row.published_at is None
+                for key, row in self._outbox.items()
+            ):
+                # Keep this dispatch visible until the canonical worker path
+                # releases terminal quota and acknowledges its outbox row.
+                return None
             settled = replace(
                 record,
                 status="settled",

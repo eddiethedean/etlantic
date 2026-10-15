@@ -175,8 +175,10 @@ prove that unsupported combinations fail before remote activation.
   one, it records an unknown effect and fails closed before rerunning the
   pipeline. A stopped task never establishes ETL success.
 - If a worker commits terminal canonical state before the `RunTask` response is
-  linked, settle the unlinked dispatch only after a terminal attempt is durable
-  and both dispatch and execution leases are inactive. Result publication and
+  linked, first run canonical terminal cleanup, including quota release and
+  outbox acknowledgement. Settle the unlinked dispatch only after a terminal
+  attempt is durable and both dispatch and execution leases are inactive. Keep
+  the record discoverable while cleanup is pending. Result publication and
   unknown-effect evidence remain governed by their own workload counts.
 - The worker resolves the immutable accepted envelope, verifies fingerprints,
   scope, route/binding and remote dispatch identity, then uses public targeted

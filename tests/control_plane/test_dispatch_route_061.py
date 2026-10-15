@@ -380,6 +380,17 @@ def test_terminal_unlinked_ecs_dispatch_settles_only_after_attempt_finishes() ->
         owner_id="fast-worker",
         fencing_token=lease.fencing_token,
     )
+    assert (
+        store.settle_terminal_ecs_dispatch(
+            ctx,
+            dispatch.submission_id,
+            expected_generation=dispatch.generation,
+        )
+        is None
+    )
+    assert (
+        store.execution_route_workload(ctx, dispatch.execution_route).drained is False
+    )
     store.mark_published(ctx, "outbox-ecs")
 
     candidates = store.dispatched_for_reconciliation(

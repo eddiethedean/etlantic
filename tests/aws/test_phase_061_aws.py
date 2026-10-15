@@ -793,6 +793,9 @@ class _DispatchStore:
             input_snapshot="opaque-unread-test-snapshot",
         )
         self.cancel_reconcile_calls = 0
+        self.outbox_published = False
+        self.terminal_cleanup_succeeds = True
+        self.terminal_cleanup_events: list[str] = []
 
     def prepare_dispatch(self, _ctx: Any, _submission_id: str) -> Any:
         return self.record
@@ -919,11 +922,22 @@ class _DispatchStore:
             not in {"uncertain", "leased", "reconciliation_required"}
             or self.record.remote_run_id is not None
             or self.submission.status not in {"completed", "failed"}
+            or not self.outbox_published
         ):
             return None
         self.record.status = "settled"
         self.record.last_error_code = "ecs_terminal_execution_recovered"
+        self.terminal_cleanup_events.append("settled")
         return self.record
+
+    def pending_outbox(self, *_args: Any, **_kwargs: Any) -> list[object]:
+        return [] if self.outbox_published else [object()]
+
+    def reconcile_terminal_outbox(self) -> None:
+        self.terminal_cleanup_events.append("cleanup")
+        if self.terminal_cleanup_succeeds:
+            self.outbox_published = True
+            self.terminal_cleanup_events.append("outbox_published")
 
     def confirm_dispatch_cancelled(self, *_args: Any, **_kwargs: Any) -> Any:
         self.record.status = "cancelled"
@@ -1017,6 +1031,18 @@ def _dispatcher(
     ecs: _ECSClient,
     clock: list[datetime],
 ) -> ECSDispatcher:
+    def create_execution_host(*, owner_id: str) -> Any:
+        assert owner_id.startswith("ecs-terminal-recovery:")
+
+        def execute_submission(
+            _ctx: Any, submission_id: str, *, execution_route: str
+        ) -> None:
+            assert submission_id == durable.record.submission_id
+            assert execution_route == binding.execution_route
+            durable.reconcile_terminal_outbox()
+
+        return SimpleNamespace(execute_submission=execute_submission)
+
     return ECSDispatcher(
         backend=cast(
             Any,
@@ -1025,6 +1051,7 @@ def _dispatcher(
                     execution_route=binding.execution_route
                 ),
                 durable_work=durable,
+                create_execution_host=create_execution_host,
             ),
         ),
         context=_context(),
@@ -1172,6 +1199,43 @@ def test_reconcile_settles_lost_ecs_response_after_terminal_work() -> None:
     assert durable.record.remote_run_id is None
     assert ecs.run_calls == 0
     assert ecs.list_task_requests == []
+    assert durable.terminal_cleanup_events == [
+        "cleanup",
+        "outbox_published",
+        "settled",
+    ]
+
+
+def test_terminal_dispatch_waits_for_managed_outbox_cleanup() -> None:
+    binding = _ecs_binding()
+    now = datetime(2026, 10, 15, 12, tzinfo=UTC)
+    durable = _DispatchStore(
+        binding,
+        status="uncertain",
+        submission_status="completed",
+        creation_started_at=now - timedelta(minutes=5),
+    )
+    durable.terminal_cleanup_succeeds = False
+    ecs = _ECSClient(binding)
+    dispatcher = _dispatcher(binding, durable, ecs, [now])
+
+    waiting = dispatcher.reconcile()
+
+    assert waiting[0].status == "uncertain"
+    assert waiting[0].error_code == "ecs_terminal_recovery_waiting"
+    assert durable.record.status == "uncertain"
+    assert durable.terminal_cleanup_events == ["cleanup"]
+
+    durable.terminal_cleanup_succeeds = True
+    settled = dispatcher.reconcile()
+
+    assert settled[0].status == "settled"
+    assert durable.terminal_cleanup_events == [
+        "cleanup",
+        "cleanup",
+        "outbox_published",
+        "settled",
+    ]
 
 
 def test_dispatch_retry_settles_terminal_ecs_work_without_relaunching() -> None:

@@ -78,6 +78,7 @@ class ECSDispatcher:
     lease_seconds: int = 30
     clock: Callable[[], datetime] | None = None
     _reconciliation_cursor: str | None = field(default=None, init=False, repr=False)
+    _terminal_cleanup_host: Any | None = field(default=None, init=False, repr=False)
 
     def __post_init__(self) -> None:
         validate_control_plane_context(self.context)
@@ -139,11 +140,8 @@ class ECSDispatcher:
             and intent.remote_run_id is None
         ):
             if durable.list_attempts(self.context, submission_id):
-                settled = durable.settle_terminal_ecs_dispatch(
-                    self.context,
-                    submission_id,
-                    expected_generation=intent.generation,
-                    now=self._now(),
+                settled = self._settle_terminal_dispatch(
+                    submission_id, expected_generation=intent.generation
                 )
                 return ECSDispatchResult(
                     submission_id,
@@ -161,11 +159,8 @@ class ECSDispatcher:
             and intent.status in {"uncertain", "leased", "reconciliation_required"}
             and intent.remote_run_id is None
         ):
-            settled = durable.settle_terminal_ecs_dispatch(
-                self.context,
-                submission_id,
-                expected_generation=intent.generation,
-                now=self._now(),
+            settled = self._settle_terminal_dispatch(
+                submission_id, expected_generation=intent.generation
             )
             return ECSDispatchResult(
                 submission_id,
@@ -693,6 +688,41 @@ class ECSDispatcher:
             raise ValueError("dispatcher clock must return an aware datetime")
         return value.astimezone(UTC)
 
+    def _settle_terminal_dispatch(
+        self, submission_id: str, *, expected_generation: int
+    ) -> Any:
+        """Run canonical terminal cleanup before closing an uncertain create."""
+        cleanup_host = self._terminal_cleanup_host
+        if cleanup_host is None:
+            owner_digest = hashlib.sha256(
+                f"{self.binding.fingerprint}:{self.owner_id}".encode("utf-8")
+            ).hexdigest()[:32]
+            cleanup_host = self.backend.create_execution_host(
+                owner_id=f"ecs-terminal-recovery:{owner_digest}"
+            )
+            self._terminal_cleanup_host = cleanup_host
+        cleanup_host.execute_submission(
+            self.context,
+            submission_id,
+            execution_route=self.binding.execution_route,
+        )
+        durable = self.backend.durable_work
+        pending_terminal = durable.pending_outbox(
+            self.context,
+            limit=1,
+            terminal_only=True,
+            submission_id=submission_id,
+            execution_route=self.binding.execution_route,
+        )
+        if pending_terminal:
+            return None
+        return durable.settle_terminal_ecs_dispatch(
+            self.context,
+            submission_id,
+            expected_generation=expected_generation,
+            now=self._now(),
+        )
+
     @staticmethod
     def _parse_time(value: str | None) -> datetime | None:
         if value is None:
@@ -749,11 +779,9 @@ class ECSDispatcher:
                         self._resolve_cancelled_uncertain(record.submission_id, intent)
                     )
                 elif submission.status in {"completed", "failed", "cancelled"}:
-                    settled = durable.settle_terminal_ecs_dispatch(
-                        self.context,
+                    settled = self._settle_terminal_dispatch(
                         record.submission_id,
                         expected_generation=record.generation,
-                        now=self._now(),
                     )
                     results.append(
                         ECSDispatchResult(
