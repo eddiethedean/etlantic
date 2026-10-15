@@ -211,7 +211,11 @@ def test_client_rejects_valid_receipt_before_declared_response_eof(
                 correlation_id="correlation-1",
             ),
         )
-        with pytest.raises(DeliveryError, match="declared length") as error:
+        # An abrupt TLS close can surface as a reset on Windows instead of a
+        # clean EOF; either way, the incomplete receipt must remain uncertain.
+        with pytest.raises(
+            DeliveryError, match=r"declared length|response was lost"
+        ) as error:
             client.deliver(envelope)
         assert error.value.uncertain
     assert receiver.request_count == 1
