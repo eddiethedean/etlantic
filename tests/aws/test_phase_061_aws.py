@@ -267,7 +267,18 @@ def test_scheduler_enable_retry_accepts_matching_enabled_schedule(
     with pytest.raises(RuntimeError, match="observation is unavailable"):
         enable(record)
 
-    assert enable(record)["State"] == "ENABLED"
+    next_fire_at = record.next_fire_at
+    assert isinstance(next_fire_at, str)
+    retry_time = datetime.fromisoformat(
+        next_fire_at.replace("Z", "+00:00")
+    ) + timedelta(seconds=1)
+    overdue_record = ScheduleRecord.from_dict(
+        {
+            **record.to_dict(),
+            "next_fire_at": retry_time.isoformat().replace("+00:00", "Z"),
+        }
+    )
+    assert enable(overdue_record)["State"] == "ENABLED"
 
 
 def test_scheduler_revision_update_retry_accepts_matching_disabled_replacement() -> (
@@ -531,6 +542,7 @@ class _DispatchStore:
             envelope_sha256=self.record.envelope_sha256,
             input_snapshot="opaque-unread-test-snapshot",
         )
+        self.cancel_reconcile_calls = 0
 
     def prepare_dispatch(self, _ctx: Any, _submission_id: str) -> Any:
         return self.record
@@ -620,6 +632,7 @@ class _DispatchStore:
         return self.record
 
     def reconcile_cancelled_submissions(self, *_args: Any, **_kwargs: Any) -> list[Any]:
+        self.cancel_reconcile_calls += 1
         if self.record.status == "cancelled":
             self.submission.status = "cancelled"
             return [self.submission]
@@ -919,7 +932,7 @@ def test_cancelled_uncertain_ecs_task_is_discovered_stopped_and_finalized() -> N
     assert ecs.run_calls == 0
 
 
-def test_quarantined_ecs_cancellation_remains_discoverable() -> None:
+def test_quarantined_ecs_cancellation_stays_uncertain_without_task_evidence() -> None:
     binding = _ecs_binding()
     now = datetime(2026, 10, 15, 12, tzinfo=UTC)
     durable = _DispatchStore(
@@ -933,9 +946,12 @@ def test_quarantined_ecs_cancellation_remains_discoverable() -> None:
 
     result = dispatcher.dispatch_submission(durable.record.submission_id)
 
-    assert result.status == "cancelled"
-    assert durable.submission.status == "cancelled"
-    assert durable.record.status == "cancelled"
+    assert result.status == "uncertain"
+    assert result.error_code == "ecs_cancel_identity_unresolved"
+    assert durable.submission.status == "cancel_requested"
+    assert durable.record.status == "uncertain"
+    assert durable.record.remote_run_id is None
+    assert durable.cancel_reconcile_calls == 0
     assert ecs.list_task_requests
     assert ecs.run_calls == 0
 
@@ -978,9 +994,7 @@ def test_cancelled_uncertain_stopped_ecs_task_is_discovered_without_stopping() -
     }
 
 
-def test_cancelled_uncertain_ecs_identity_stays_fenced_then_resolves_after_ttl() -> (
-    None
-):
+def test_cancelled_uncertain_ecs_identity_stays_uncertain_after_ttl() -> None:
     binding = _ecs_binding()
     created_at = datetime(2026, 10, 15, 12, tzinfo=UTC)
     clock = [created_at + timedelta(minutes=30)]
@@ -1000,6 +1014,8 @@ def test_cancelled_uncertain_ecs_identity_stays_fenced_then_resolves_after_ttl()
 
     clock[0] = created_at + timedelta(minutes=51)
     resolved = dispatcher.dispatch_submission(durable.record.submission_id)
-    assert resolved.status == "cancelled"
-    assert durable.submission.status == "cancelled"
+    assert resolved.status == "uncertain"
+    assert resolved.error_code == "ecs_cancel_identity_unresolved"
+    assert durable.record.status == "uncertain"
+    assert durable.submission.status == "cancel_requested"
     assert ecs.run_calls == 0

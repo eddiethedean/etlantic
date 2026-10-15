@@ -153,7 +153,6 @@ class EventBridgeScheduler:
     def activate(self, record: ScheduleRecord) -> Mapping[str, Any]:
         """Enable only a complete, readback-verified disabled schedule."""
         self._validate_record(record)
-        self._require_future_cursor(record)
         return self._with_mutation_guard(record, lambda: self._activate(record))
 
     def _activate(self, record: ScheduleRecord) -> Mapping[str, Any]:
@@ -162,6 +161,7 @@ class EventBridgeScheduler:
             self._assert_matches(record, prior, expected_state="ENABLED")
             return prior
         self._assert_matches(record, prior, expected_state="DISABLED")
+        self._require_future_cursor(record)
         desired = self._request(record, state="ENABLED")
         try:
             self.client.update_schedule(**desired)
@@ -194,7 +194,6 @@ class EventBridgeScheduler:
     def resume(self, record: ScheduleRecord) -> Mapping[str, Any]:
         """Re-enable a verified schedule at the same revision/generation."""
         self._validate_record(record)
-        self._require_future_cursor(record)
         return self._with_mutation_guard(record, lambda: self._resume(record))
 
     def _resume(self, record: ScheduleRecord) -> Mapping[str, Any]:
@@ -203,6 +202,7 @@ class EventBridgeScheduler:
             self._assert_matches(record, observed, expected_state="ENABLED")
             return observed
         self._assert_matches(record, observed, expected_state="DISABLED")
+        self._require_future_cursor(record)
         try:
             self.client.update_schedule(**self._request(record, state="ENABLED"))
         except Exception:

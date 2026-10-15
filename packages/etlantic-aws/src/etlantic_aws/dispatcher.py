@@ -494,35 +494,15 @@ class ECSDispatcher:
 
         rows.sort(key=lambda row: cast(str, row["taskArn"]))
         if not rows:
-            creation_started_at = self._parse_time(claim.creation_started_at)
-            retry_deadline = (
-                creation_started_at + _ECS_CLIENT_TOKEN_SAFE_RETRY_WINDOW
-                if creation_started_at is not None
-                else current_time
-            )
-            expired = current_time >= retry_deadline
             released = durable.release_dispatch(
                 self.context,
                 submission_id,
                 owner_id=self.owner_id,
                 fencing_token=claim.lease_fencing_token,
-                outcome_uncertain=not expired,
-                cancelled=expired,
-                error_code=(
-                    "ecs_cancel_identity_not_found"
-                    if expired
-                    else "ecs_cancel_identity_unresolved"
-                ),
+                outcome_uncertain=True,
+                error_code="ecs_cancel_identity_unresolved",
                 now=self._now(),
             )
-            if expired:
-                durable.reconcile_cancelled_submissions(
-                    self.context,
-                    limit=1,
-                    submission_id=submission_id,
-                    execution_route=self.binding.execution_route,
-                )
-                released = durable.get_dispatch(self.context, submission_id)
             return ECSDispatchResult(
                 submission_id,
                 released.status,
