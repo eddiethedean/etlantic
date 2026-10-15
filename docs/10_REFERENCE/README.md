@@ -1,6 +1,6 @@
 # Reference
 
-> **Status: ETLantic 0.59.0 is the published Beta release; the new managed runtime and trigger capabilities remain unqualified for production.**
+> **Status: ETLantic core 0.60.0 is a Beta candidate; 0.59.x remains the published support line; the new managed runtime and trigger capabilities remain unqualified for production.**
 
 This section documents the published 0.59.x support line, its deferred
 qualification boundaries, and proposed 0.x interfaces.

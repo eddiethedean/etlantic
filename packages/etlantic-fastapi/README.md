@@ -1,6 +1,6 @@
 # etlantic-fastapi
 
-> **Release status:** ETLantic 0.59.0 is a Beta release candidate; publication is pending.
+> **Release status:** ETLantic 0.60.0 is a Beta release candidate; publication is pending.
 
 Optional FastAPI adapter for ETLantic **0.57.0**. Use **CP1/CP2** (`ETLanticAPI`)
 when you need an embeddable, authz’d, durable-accept control-plane HTTP API.
@@ -24,9 +24,9 @@ pollers observe accepted jobs outside the request.
 ## Install
 
 ```bash
-pip install 'etlantic-fastapi==0.59.0'
+pip install 'etlantic-fastapi==0.60.0'
 # keep core on the same pin:
-# pip install 'etlantic==0.59.0'
+# pip install 'etlantic==0.60.0'
 ```
 
 ## Standard SQLModel-backed managed backend
@@ -42,7 +42,7 @@ scope-isolated run reports, expiring idempotent lifecycle-event tombstones,
 immutable input resources, and indexed result-retention metadata.
 
 ```bash
-pip install 'etlantic-fastapi[managed]==0.59.0'
+pip install 'etlantic-fastapi[managed]==0.60.0'
 ```
 
 For a worker or scheduler without an HTTP server, install the separate root

@@ -5,6 +5,26 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.60.0] - Unreleased
+
+### Added
+
+- Generic durable remote-dispatch identities and ECS-safe client-token retry
+  windows for managed execution.
+
+### Fixed
+
+- Keep canceled ECS submissions discoverable after a lost `RunTask` response,
+  stop verified tasks, and wait for stopped-state confirmation before finalizing.
+- Preserve externally scheduled interval grids when skipping delayed
+  occurrences, and serialize EventBridge schedule mutations across processes.
+- Allow the operator reconciliation path to authorize a new ECS dispatch
+  generation after an expired client-token window with no known task ARN.
+
+### Changed
+
+- Bump the core and first-party distribution versions to 0.60.0.
+
 ## [0.59.0] - 2026-10-14
 
 ### Added
@@ -2322,7 +2342,8 @@ See `docs/11_DEVELOPMENT/MIGRATION_0_16_TO_0_17.md`.
 - uv + ruff toolchain, MkDocs documentation site, shared GitHub Actions
   checks, and tag-triggered PyPI release
 
-[Unreleased]: https://github.com/eddiethedean/etlantic/compare/v0.59.0...HEAD
+[Unreleased]: https://github.com/eddiethedean/etlantic/compare/v0.60.0...HEAD
+[0.60.0]: https://github.com/eddiethedean/etlantic/releases/tag/v0.60.0
 [0.59.0]: https://github.com/eddiethedean/etlantic/releases/tag/v0.59.0
 [0.57.2]: https://github.com/eddiethedean/etlantic/releases/tag/v0.57.2
 [0.57.1]: https://github.com/eddiethedean/etlantic/releases/tag/v0.57.1

@@ -45,7 +45,7 @@ from etlantic_sql.live_postgresql import (
 )
 
 PROVIDER = "postgresql"
-PACKAGE_VERSION = "0.59.0"
+PACKAGE_VERSION = "0.60.0"
 
 SOURCE_CAPS = frozenset(
     {

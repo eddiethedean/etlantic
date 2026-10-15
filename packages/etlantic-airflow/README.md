@@ -1,6 +1,6 @@
 # etlantic-airflow
 
-> **Release status:** ETLantic 0.59.0 is a Beta release candidate; publication is pending.
+> **Release status:** ETLantic 0.60.0 is a Beta release candidate; publication is pending.
 
 Airflow reference orchestrator compiler for
 [ETLantic](https://github.com/eddiethedean/etlantic) 0.57.
@@ -51,6 +51,6 @@ Airflow-style compiler).
 
 ## Links
 
-[Documentation](https://etlantic.readthedocs.io/en/v0.59.0/06_EXECUTION/AIRFLOW/) ·
+[Documentation](https://etlantic.readthedocs.io/en/v0.60.0/06_EXECUTION/AIRFLOW/) ·
 [Source](https://github.com/eddiethedean/etlantic/tree/main/packages/etlantic-airflow) ·
 [Issues](https://github.com/eddiethedean/etlantic/issues)

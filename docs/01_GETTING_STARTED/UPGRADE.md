@@ -9,7 +9,10 @@
 Upgrade between ETLantic 0.x releases using the guides below. Always pin core
 and first-party plugins to the **same minor** after upgrading.
 
-The latest published upgrade target is 0.59.0. This release includes managed
+The latest published upgrade target is 0.59.0. Core 0.60.0 is an unpublished
+candidate. Review [Migration 0.59 → 0.60](../11_DEVELOPMENT/MIGRATION_0_59_TO_0_60.md)
+before testing that candidate; do not install it from PyPI until a release is recorded.
+The published 0.59 release includes managed
 runtime consolidation and external schedule triggers; external qualification
 for those additions remains deferred. Follow each intervening migration guide
 in order before upgrading.
@@ -23,9 +26,19 @@ The `managed-headless` extra installs the SQLModel backend and PostgreSQL
 driver without FastAPI. The external trigger receiver requires a trusted
 `ControlPlaneContext`, `schedule.trigger` authorization, and an already-bound
 workload identity. Read the [0.58 → 0.59 migration guide](../11_DEVELOPMENT/MIGRATION_0_58_TO_0_59.md)
-before changing managed stores or timer ownership. The candidate introduces
-no SQL DDL migration; its managed-store recovery and trigger behavior remain
-unqualified until the [exit gate](../11_DEVELOPMENT/EXIT_GATE_0_59.md) passes.
+before changing managed stores or timer ownership. The 0.59 release added no
+SQL DDL migration; its managed-store recovery and trigger behavior remain
+unqualified for production as recorded in the [exit gate](../11_DEVELOPMENT/EXIT_GATE_0_59.md).
+
+## 0.60 configuration cheat sheet
+
+Core 0.60.0 is an unpublished Beta candidate. It adds durable dispatch
+contracts used by the optional `etlantic-aws` 0.61 adapter. Its dispatch
+snapshot advances to schema `/5`, with a compatibility reader for `/4`; the
+change adds no SQL DDL migration. Do not install the candidate from PyPI.
+Before testing it from source, read [Migration 0.59 → 0.60](../11_DEVELOPMENT/MIGRATION_0_59_TO_0_60.md).
+Live EventBridge Scheduler, Lambda, ECS/Fargate, and production support remain
+unqualified; see the [0.61 implementation plan](../11_DEVELOPMENT/IMPLEMENTATION_PLAN_0_61.md).
 
 ## 0.58 configuration cheat sheet
 
@@ -54,7 +67,7 @@ partition capabilities. See [Migration 0.55 → 0.56](../11_DEVELOPMENT/MIGRATIO
 
 **ETLantic 0.59.0** (published Beta release) — choose the
 [0.58 → 0.59 migration guide](../11_DEVELOPMENT/MIGRATION_0_58_TO_0_59.md).
-The published upgrade target is 0.59.0.
+The published upgrade target is 0.59.0. Core 0.60.0 remains a candidate.
 
 |---|---|
 | 0.57.x | [Migration 0.57 → 0.58](../11_DEVELOPMENT/MIGRATION_0_57_TO_0_58.md) (candidate guide) |

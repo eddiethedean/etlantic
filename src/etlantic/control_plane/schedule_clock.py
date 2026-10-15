@@ -158,10 +158,18 @@ def next_fire_after(
 
     if spec.kind == "interval":
         step = timedelta(seconds=int(spec.interval_seconds or 0))
-        base = _as_utc(last_nominal) if last_nominal is not None else cursor
-        candidate = base + step
-        if candidate <= cursor:
+        if last_nominal is None:
             candidate = cursor + step
+        else:
+            base = _as_utc(last_nominal)
+            candidate = base + step
+            if candidate <= cursor:
+                # Skip missed occurrences without moving the interval's phase.
+                # Advancing from `cursor` would shift externally scheduled
+                # rate expressions after any delayed delivery.
+                elapsed = cursor - base
+                missed_steps = elapsed // step + 1
+                candidate = base + step * missed_steps
         if spec.jitter_seconds:
             candidate = candidate + timedelta(seconds=spec.jitter_seconds)
         if not _in_window(spec, candidate):

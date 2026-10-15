@@ -1,7 +1,7 @@
 ---
 status: available
 since: "0.43.0"
-current_minor: "0.59"
+current_minor: "0.60"
 audience: developer
 ---
 
@@ -19,7 +19,7 @@ candidate. No general connector pushdown is claimed. See the
 ## Setup
 
 ```bash
-pip install 'etlantic-polars==0.59.0'
+pip install 'etlantic-polars==0.60.0'
 ```
 
 ```python

@@ -1,8 +1,9 @@
 # Known Limitations
 
-> **Status: ETLantic 0.59.0 is the published Beta release; adaptive execution remains Experimental and external 0.59 qualification campaigns remain deferred.**
+> **Status: ETLantic core 0.60.0 is a Beta candidate; 0.59.x remains the published support line; adaptive execution remains Experimental and external 0.59 qualification campaigns remain deferred.**
 
-ETLantic **0.59.x** is the current published Beta line. The managed runtime
+ETLantic **0.59.x** is the current published Beta line. Core 0.60.0 is an
+unpublished candidate. The managed runtime
 consolidation and external trigger additions remain unqualified for production;
 prior baselines are suitable for documented
 single-tenant reference deployments and Supported multi-tenant profiles.

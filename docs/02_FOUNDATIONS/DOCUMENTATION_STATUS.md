@@ -1,8 +1,8 @@
 # Documentation Status and Conventions
 
 Prefer pages marked **Available in 0.59** for behavior in the latest published
-line, 0.59.0. External qualification for the new managed runtime and trigger
-capabilities is deferred; those additions are not qualified for production.
+line. **Candidate in 0.60** marks the unpublished core candidate on this branch;
+external AWS qualification and production support remain deferred.
 Follow the Green path for the latest published package. For what
 ships in the current package, start with
 [Capabilities](../01_GETTING_STARTED/CAPABILITIES.md)—not chapter length or
@@ -36,6 +36,7 @@ completed documentation audit:
 | Page status | Meaning |
 |---|---|
 | Available in 0.59 | Tested against the current published package |
+| Candidate in 0.60 | Unpublished core candidate; not available from PyPI yet |
 | Candidate in 0.57 | Historical prepublication review label for the 0.57.1 material, now published |
 | Deferred in 0.59 | Implemented in the published release; external qualification is deferred and production use is not qualified |
 | Shipped in 0.x | Available since that milestone (still current) |

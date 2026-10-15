@@ -10,7 +10,8 @@ from __future__ import annotations
 
 import hashlib
 import json
-from collections.abc import Callable, Mapping, Sequence
+from collections.abc import Callable, Generator, Mapping, Sequence
+from contextlib import contextmanager
 from datetime import UTC, datetime
 from typing import Any, TypeVar
 
@@ -58,6 +59,44 @@ class SQLModelScheduleStore:
     def __init__(self, engine: Engine, *, store_id: str = "default") -> None:
         self.engine = engine
         self.store_id = store_id
+
+    @contextmanager
+    def timer_mutation_lock(
+        self, ctx: ControlPlaneContext, schedule_id: str
+    ) -> Generator[None, None, None]:
+        """Serialize an external timer read/modify/write across processes.
+
+        Session advisory locks are deliberately limited to PostgreSQL, whose
+        lock lifetime spans the external AWS calls while releasing cleanly on
+        connection loss. SQLite and other dialects cannot provide this
+        cross-process guarantee and fail closed.
+        """
+        if self.engine.dialect.name != "postgresql":
+            raise RuntimeError(
+                "external timer mutation requires PostgreSQL advisory locks"
+            )
+        identity = "\0".join(
+            (
+                "schedule-timer-mutation",
+                self.store_id,
+                ctx.tenant.tenant_id,
+                ctx.workspace.workspace_id,
+                schedule_id,
+            )
+        )
+        digest = hashlib.sha256(identity.encode("utf-8")).digest()[:8]
+        lock_id = int.from_bytes(digest, byteorder="big", signed=True)
+        with self.engine.connect() as connection:
+            connection.execute(
+                text("SELECT pg_advisory_lock(:lock_id)"), {"lock_id": lock_id}
+            )
+            try:
+                yield
+            finally:
+                connection.execute(
+                    text("SELECT pg_advisory_unlock(:lock_id)"),
+                    {"lock_id": lock_id},
+                )
 
     def _txn(self, fn: Callable[[MemoryScheduleStore], T]) -> T:
         with session_scope(self.engine) as session:

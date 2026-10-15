@@ -4,9 +4,9 @@ version = "0.1.0"
 description = "Separately installed worker backend used by phase 0.58 integration tests."
 requires-python = ">=3.11"
 dependencies = [
-    "etlantic>=0.59.0",
-    "etlantic-sql>=0.59.0",
-    "etlantic-sqlmodel>=0.59.0",
+    "etlantic>=0.60.0",
+    "etlantic-sql>=0.60.0",
+    "etlantic-sqlmodel>=0.60.0",
 ]
 
 [project.entry-points."etlantic.prefect_worker_backends"]

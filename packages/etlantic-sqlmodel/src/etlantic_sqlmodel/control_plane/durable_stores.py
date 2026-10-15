@@ -532,6 +532,46 @@ class SQLModelDurableWorkStore:
             )
         )
 
+    def quarantine_expired_ecs_dispatch(
+        self,
+        ctx: ControlPlaneContext,
+        submission_id: str,
+        *,
+        expected_generation: int,
+        expected_creation_started_at: str | None,
+        safe_retry_deadline: datetime,
+        now: datetime | None = None,
+    ):
+        return self._txn(
+            lambda m: m.quarantine_expired_ecs_dispatch(
+                ctx,
+                submission_id,
+                expected_generation=expected_generation,
+                expected_creation_started_at=expected_creation_started_at,
+                safe_retry_deadline=safe_retry_deadline,
+                now=now,
+            )
+        )
+
+    def confirm_dispatch_cancelled(
+        self,
+        ctx: ControlPlaneContext,
+        submission_id: str,
+        *,
+        expected_generation: int,
+        expected_remote_run_id: str,
+        now: datetime | None = None,
+    ):
+        return self._txn(
+            lambda m: m.confirm_dispatch_cancelled(
+                ctx,
+                submission_id,
+                expected_generation=expected_generation,
+                expected_remote_run_id=expected_remote_run_id,
+                now=now,
+            )
+        )
+
     def rearm_dispatch_after_remote_failure(
         self,
         ctx: ControlPlaneContext,

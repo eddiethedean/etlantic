@@ -1,10 +1,23 @@
 from __future__ import annotations
 
+import json
+from datetime import UTC, datetime, timedelta
+from typing import Literal
+
 import pytest
 
 from etlantic.control_plane import (
+    ControlPlaneContext,
     DispatchReconciliation,
     DispatchRecord,
+    EnvironmentRef,
+    MemoryDurableWorkStore,
+    OutboxRecord,
+    Principal,
+    SecurityDomain,
+    SubmissionRecord,
+    TenantRef,
+    WorkspaceRef,
     execution_route_backend,
     execution_route_binding,
     validate_execution_route,
@@ -33,6 +46,7 @@ def test_ecs_dispatch_codec_uses_generic_remote_identity() -> None:
         status="dispatched",
         backend_kind="ecs",
         remote_run_id=task_arn,
+        creation_started_at="2026-10-14T11:59:59Z",
     )
 
     restored = DispatchRecord.from_dict(record.to_dict())
@@ -40,6 +54,7 @@ def test_ecs_dispatch_codec_uses_generic_remote_identity() -> None:
     assert restored == record
     assert restored.remote_run_id == task_arn
     assert restored.prefect_flow_run_id is None
+    assert restored.creation_started_at == "2026-10-14T11:59:59Z"
     assert execution_route_backend(route) == "ecs"
     assert execution_route_binding(route) == "a" * 64
 
@@ -67,3 +82,180 @@ def test_ecs_reconciliation_never_populates_prefect_alias() -> None:
 def test_unknown_execution_backend_stays_fail_closed() -> None:
     with pytest.raises(ValueError, match="execution_route"):
         validate_execution_route("batch:" + "a" * 64)
+
+
+def _durable_context() -> ControlPlaneContext:
+    return ControlPlaneContext(
+        principal=Principal("dispatcher", issuer="tests"),
+        tenant=TenantRef("dispatch-tenant"),
+        workspace=WorkspaceRef("dispatch-tenant", "dispatch-workspace"),
+        environment=EnvironmentRef("test"),
+        security_domain=SecurityDomain("default"),
+    )
+
+
+def _insert_ecs_dispatch(
+    store: MemoryDurableWorkStore,
+    ctx: ControlPlaneContext,
+    *,
+    status: Literal["pending", "dispatched", "leased"],
+    submission_status: Literal["accepted", "cancel_requested"] = "accepted",
+    remote_run_id: str | None = None,
+    lease_expires_at: str | None = None,
+) -> DispatchRecord:
+    route = _ecs_route()
+    submission_id = "submission-ecs"
+    submission = SubmissionRecord(
+        submission_id=submission_id,
+        tenant_id=ctx.tenant.tenant_id,
+        workspace_id=ctx.workspace.workspace_id,
+        principal_subject=ctx.principal.subject,
+        principal_issuer=ctx.principal.issuer,
+        operation="run.submit",
+        idempotency_key="ecs-idempotency",
+        created_at="2026-10-14T12:00:00Z",
+        plan_fingerprint="b" * 64,
+        input_snapshot="opaque-snapshot",
+        status=submission_status,
+        execution_route=route,
+    )
+    dispatch = DispatchRecord(
+        submission_id=submission_id,
+        tenant_id=ctx.tenant.tenant_id,
+        workspace_id=ctx.workspace.workspace_id,
+        execution_route=route,
+        binding_fingerprint="a" * 64,
+        plan_fingerprint="b" * 64,
+        envelope_sha256="c" * 64,
+        generation=1,
+        creation_key="ecs-creation-key",
+        created_at="2026-10-14T12:00:00Z",
+        updated_at="2026-10-14T12:00:00Z",
+        status=status,
+        lease_owner_id="stale-dispatcher" if status == "leased" else None,
+        lease_fencing_token=1 if status == "leased" else 0,
+        lease_expires_at=lease_expires_at,
+        backend_kind="ecs",
+        remote_run_id=remote_run_id,
+    )
+    store.load(
+        {
+            "submissions": {
+                json.dumps([*ctx.scope_key, submission_id]): submission.to_dict()
+            },
+            "dispatches": {
+                json.dumps([*ctx.scope_key, submission_id]): dispatch.to_dict()
+            },
+            "outbox": {
+                json.dumps([*ctx.scope_key, "outbox-ecs"]): OutboxRecord(
+                    outbox_id="outbox-ecs",
+                    submission_id=submission_id,
+                    tenant_id=ctx.tenant.tenant_id,
+                    workspace_id=ctx.workspace.workspace_id,
+                    created_at="2026-10-14T12:00:00Z",
+                    payload_fingerprint="e" * 64,
+                ).to_dict()
+            },
+        }
+    )
+    return dispatch
+
+
+def test_expired_ecs_lease_remains_recoverable_after_cancellation() -> None:
+    ctx = _durable_context()
+    store = MemoryDurableWorkStore()
+    dispatch = _insert_ecs_dispatch(
+        store,
+        ctx,
+        status="leased",
+        submission_status="cancel_requested",
+        lease_expires_at="2000-01-01T00:00:00Z",
+    )
+
+    pending = store.pending_dispatches(
+        ctx, execution_route=dispatch.execution_route, limit=1
+    )
+    assert [item.submission_id for item in pending] == [dispatch.submission_id]
+
+    claim = store.claim_dispatch(ctx, dispatch.submission_id, owner_id="recovery")
+    assert claim is not None
+    assert claim.status == "leased"
+    assert claim.lease_fencing_token == 2
+
+
+def test_ecs_uncertain_dispatch_expires_and_operator_rearm_starts_new_token_window() -> (
+    None
+):
+    ctx = _durable_context()
+    store = MemoryDurableWorkStore()
+    dispatch = _insert_ecs_dispatch(store, ctx, status="pending")
+    first_attempt = datetime(2026, 10, 14, 12, tzinfo=UTC)
+
+    claim = store.claim_dispatch(
+        ctx, dispatch.submission_id, owner_id="ecs-worker", now=first_attempt
+    )
+    assert claim is not None
+    assert claim.creation_started_at == "2026-10-14T12:00:00Z"
+    uncertain = store.release_dispatch(
+        ctx,
+        dispatch.submission_id,
+        owner_id="ecs-worker",
+        fencing_token=claim.lease_fencing_token,
+        outcome_uncertain=True,
+        error_code="ecs_run_task_uncertain",
+        now=first_attempt,
+    )
+    assert uncertain.status == "uncertain"
+
+    expired = store.quarantine_expired_ecs_dispatch(
+        ctx,
+        dispatch.submission_id,
+        expected_generation=1,
+        expected_creation_started_at=claim.creation_started_at,
+        safe_retry_deadline=first_attempt + timedelta(hours=23),
+        now=first_attempt + timedelta(hours=24),
+    )
+    assert expired.status == "reconciliation_required"
+    assert expired.remote_run_id is None
+
+    rearmed = store.rearm_reconciliation_required_dispatch(
+        ctx,
+        dispatch.submission_id,
+        expected_generation=1,
+        expected_remote_run_id=None,
+        evidence_sha256="d" * 64,
+        now=first_attempt + timedelta(hours=24),
+    )
+    assert rearmed.generation == 2
+    assert rearmed.status == "pending"
+    assert rearmed.creation_started_at is None
+
+
+def test_cancelled_ecs_submission_waits_until_stopped_is_durably_confirmed() -> None:
+    ctx = _durable_context()
+    store = MemoryDurableWorkStore()
+    dispatch = _insert_ecs_dispatch(
+        store,
+        ctx,
+        status="dispatched",
+        submission_status="cancel_requested",
+        remote_run_id="arn:aws:ecs:us-east-1:123456789012:task/cluster/task-1",
+    )
+
+    assert store.reconcile_cancelled_submissions(ctx, limit=1) == []
+    assert (
+        store.get_submission(ctx, dispatch.submission_id).status == "cancel_requested"
+    )
+
+    cancelled = store.confirm_dispatch_cancelled(
+        ctx,
+        dispatch.submission_id,
+        expected_generation=dispatch.generation,
+        expected_remote_run_id=dispatch.remote_run_id or "",
+    )
+    assert cancelled.status == "cancelled"
+    assert [
+        item.submission_id
+        for item in store.reconcile_cancelled_submissions(ctx, limit=1)
+    ] == [dispatch.submission_id]
+    assert store.get_submission(ctx, dispatch.submission_id).status == "cancelled"

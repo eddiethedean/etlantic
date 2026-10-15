@@ -127,6 +127,7 @@ _PERSISTED_RECORD_SCHEMAS: dict[str, frozenset[str]] = {
             "etlantic.control_plane.dispatch_record/2",
             "etlantic.control_plane.dispatch_record/3",
             "etlantic.control_plane.dispatch_record/4",
+            "etlantic.control_plane.dispatch_record/5",
         }
     ),
     "LeaseRecord": frozenset({"etlantic.control_plane.lease_record/1"}),
@@ -802,8 +803,12 @@ class MemoryDurableWorkStore:
                 ):
                     continue
                 dispatch = self._dispatches.get((*_scope(ctx), row.submission_id))
+                cancellation_recovery = dispatch is not None and dispatch.status in {
+                    "uncertain",
+                    "leased",
+                }
                 if submission.status in {"cancel_requested", "cancelled"} and not (
-                    dispatch is not None and dispatch.status == "uncertain"
+                    cancellation_recovery
                 ):
                     continue
                 if dispatch is not None and dispatch.status in {
@@ -860,7 +865,7 @@ class MemoryDurableWorkStore:
                     or record.submission_id > after_submission_id
                 )
                 and (submission := self._submissions.get(key)) is not None
-                and submission.status == "accepted"
+                and submission.status in {"accepted", "cancel_requested"}
             ]
             rows.sort(key=lambda item: item.submission_id)
             return deepcopy(rows[:limit])
@@ -983,10 +988,10 @@ class MemoryDurableWorkStore:
                 and _parse(record.retry_after_at) > current
             ):
                 return None
-            cancelled_uncertain = (
-                record.status == "uncertain"
-                and submission.status in {"cancel_requested", "cancelled"}
-            )
+            cancellation_recovery = record.status in {
+                "uncertain",
+                "leased",
+            } and submission.status in {"cancel_requested", "cancelled"}
             if (
                 submission.status
                 in {
@@ -995,7 +1000,7 @@ class MemoryDurableWorkStore:
                     "completed",
                     "failed",
                 }
-                and not cancelled_uncertain
+                and not cancellation_recovery
             ):
                 return None
             if (
@@ -1007,6 +1012,10 @@ class MemoryDurableWorkStore:
             claimed = replace(
                 record,
                 status="leased",
+                creation_started_at=(
+                    record.creation_started_at
+                    or (_iso(current) if record.backend_kind == "ecs" else None)
+                ),
                 dispatch_attempts=record.dispatch_attempts + 1,
                 lease_owner_id=owner_id,
                 lease_fencing_token=record.lease_fencing_token + 1,
@@ -1135,6 +1144,92 @@ class MemoryDurableWorkStore:
             self._dispatches[key] = released
             return deepcopy(released)
 
+    def quarantine_expired_ecs_dispatch(
+        self,
+        ctx: ControlPlaneContext,
+        submission_id: str,
+        *,
+        expected_generation: int,
+        expected_creation_started_at: str | None,
+        safe_retry_deadline: datetime,
+        now: datetime | None = None,
+    ) -> DispatchRecord:
+        """Stop automatic ECS retries after the idempotency safety window."""
+        current = now or _now()
+        key = (*_scope(ctx), submission_id)
+        with self._lock:
+            record = self._dispatches.get(key)
+            submission = self._submissions.get(key)
+            if record is None or submission is None:
+                raise ControlPlaneError.not_found("Dispatch record not found")
+            if (
+                record.backend_kind != "ecs"
+                or record.generation != expected_generation
+                or record.creation_started_at != expected_creation_started_at
+                or record.status not in {"uncertain", "leased"}
+                or record.remote_run_id is not None
+                or submission.status != "accepted"
+            ):
+                raise ControlPlaneError.conflict(
+                    "ECS dispatch changed before its retry window expired"
+                )
+            if (
+                record.lease_expires_at is not None
+                and _parse(record.lease_expires_at) > current
+            ):
+                raise ControlPlaneError.conflict("ECS dispatch lease is still active")
+            if current < safe_retry_deadline:
+                raise ControlPlaneError.conflict(
+                    "ECS dispatch retry window has not expired"
+                )
+            quarantined = replace(
+                record,
+                status="reconciliation_required",
+                lease_owner_id=None,
+                lease_expires_at=None,
+                retry_after_at=None,
+                last_error_code="ecs_token_window_expired",
+                updated_at=_iso(current),
+            )
+            self._dispatches[key] = quarantined
+            return deepcopy(quarantined)
+
+    def confirm_dispatch_cancelled(
+        self,
+        ctx: ControlPlaneContext,
+        submission_id: str,
+        *,
+        expected_generation: int,
+        expected_remote_run_id: str,
+        now: datetime | None = None,
+    ) -> DispatchRecord:
+        """Mark a linked remote task cancelled after its stopped state is observed."""
+        current = now or _now()
+        key = (*_scope(ctx), submission_id)
+        with self._lock:
+            record = self._dispatches.get(key)
+            submission = self._submissions.get(key)
+            if record is None or submission is None:
+                raise ControlPlaneError.not_found("Dispatch record not found")
+            if (
+                record.status != "dispatched"
+                or record.generation != expected_generation
+                or record.remote_run_id != expected_remote_run_id
+                or submission.status != "cancel_requested"
+            ):
+                raise ControlPlaneError.conflict(
+                    "Dispatch changed before remote cancellation was confirmed"
+                )
+            cancelled = replace(
+                record,
+                status="cancelled",
+                retry_after_at=None,
+                last_error_code="remote_task_stopped_after_cancel",
+                updated_at=_iso(current),
+            )
+            self._dispatches[key] = cancelled
+            return deepcopy(cancelled)
+
     def rearm_dispatch_after_remote_failure(
         self,
         ctx: ControlPlaneContext,
@@ -1258,6 +1353,7 @@ class MemoryDurableWorkStore:
                     record.backend_kind,
                 ),
                 status="pending",
+                creation_started_at=None,
                 prefect_flow_run_id=None,
                 remote_run_id=None,
                 retry_after_at=None,
@@ -1281,10 +1377,13 @@ class MemoryDurableWorkStore:
         """Record explicit operator approval for one exhausted pre-claim retry."""
         if type(expected_generation) is not int or expected_generation < 1:
             raise ValueError("expected_generation must be a positive integer")
-        selected_remote_run_id = _select_remote_run_id(
-            expected_remote_run_id, expected_flow_run_id
-        )
-        assert selected_remote_run_id is not None
+        if (
+            expected_remote_run_id is not None
+            and expected_flow_run_id is not None
+            and expected_remote_run_id != expected_flow_run_id
+        ):
+            raise ValueError("remote run identity inputs do not match")
+        selected_remote_run_id = expected_remote_run_id or expected_flow_run_id
         if len(evidence_sha256) != 64 or any(
             char not in "0123456789abcdef" for char in evidence_sha256
         ):
@@ -1300,6 +1399,12 @@ class MemoryDurableWorkStore:
                 record.status != "reconciliation_required"
                 or record.generation != expected_generation
                 or record.remote_run_id != selected_remote_run_id
+                or (
+                    selected_remote_run_id is None
+                    and (
+                        record.backend_kind != "ecs" or record.remote_run_id is not None
+                    )
+                )
                 or submission.status != "accepted"
             ):
                 raise ControlPlaneError.conflict(
@@ -1365,6 +1470,7 @@ class MemoryDurableWorkStore:
                     record.backend_kind,
                 ),
                 status="pending",
+                creation_started_at=None,
                 prefect_flow_run_id=None,
                 remote_run_id=None,
                 retry_after_at=None,
@@ -1454,6 +1560,14 @@ class MemoryDurableWorkStore:
                     # A remote create may have succeeded even though its
                     # response was lost. Keep the canonical cancellation
                     # discoverable until the dispatcher resolves that identity.
+                    continue
+                if (
+                    dispatch is not None
+                    and dispatch.status == "dispatched"
+                    and dispatch.backend_kind == "ecs"
+                ):
+                    # ECS cancellation is final only after the dispatcher has
+                    # observed STOPPED and fenced the linked dispatch.
                     continue
                 had_running_attempt = False
                 for attempt_key, attempt in tuple(self._attempts.items()):

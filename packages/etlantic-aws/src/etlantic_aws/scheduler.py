@@ -5,7 +5,8 @@ from __future__ import annotations
 import hashlib
 import json
 import re
-from collections.abc import Mapping
+from collections.abc import Callable, Mapping
+from contextlib import AbstractContextManager
 from datetime import UTC, datetime
 from typing import Any, cast
 
@@ -37,6 +38,7 @@ class EventBridgeScheduler:
         lambda_version_arn: str,
         scheduler_role_arn: str,
         dlq_arn: str,
+        mutation_guard: Callable[[ScheduleRecord], AbstractContextManager[Any]],
         maximum_event_age_seconds: int = 3600,
         maximum_retry_attempts: int = 2,
     ) -> None:
@@ -80,6 +82,11 @@ class EventBridgeScheduler:
         self.lambda_version_arn = lambda_version_arn
         self.scheduler_role_arn = scheduler_role_arn
         self.dlq_arn = dlq_arn
+        if not callable(mutation_guard):
+            raise TypeError(
+                "mutation_guard must provide durable schedule serialization"
+            )
+        self.mutation_guard = mutation_guard
         self.maximum_event_age_seconds = maximum_event_age_seconds
         self.maximum_retry_attempts = maximum_retry_attempts
 
@@ -112,6 +119,9 @@ class EventBridgeScheduler:
     def create_disabled(self, record: ScheduleRecord) -> Mapping[str, Any]:
         """Create or verify an owned disabled schedule for an external owner."""
         self._validate_record(record)
+        return self._with_mutation_guard(record, lambda: self._create_disabled(record))
+
+    def _create_disabled(self, record: ScheduleRecord) -> Mapping[str, Any]:
         desired = self._request(record, state="DISABLED")
         try:
             self.client.create_schedule(**desired)
@@ -128,6 +138,9 @@ class EventBridgeScheduler:
         """Enable only a complete, readback-verified disabled schedule."""
         self._validate_record(record)
         self._require_future_cursor(record)
+        return self._with_mutation_guard(record, lambda: self._activate(record))
+
+    def _activate(self, record: ScheduleRecord) -> Mapping[str, Any]:
         prior = self._read(record)
         self._assert_matches(record, prior, expected_state="DISABLED")
         desired = self._request(record, state="ENABLED")
@@ -144,6 +157,9 @@ class EventBridgeScheduler:
     def pause(self, record: ScheduleRecord) -> Mapping[str, Any]:
         """Disable only after verifying that the remote resource is still owned."""
         self._validate_record(record, allow_paused=True)
+        return self._with_mutation_guard(record, lambda: self._pause(record))
+
+    def _pause(self, record: ScheduleRecord) -> Mapping[str, Any]:
         observed = self._read(record)
         self._assert_matches(record, observed)
         try:
@@ -160,6 +176,9 @@ class EventBridgeScheduler:
         """Re-enable a verified schedule at the same revision/generation."""
         self._validate_record(record)
         self._require_future_cursor(record)
+        return self._with_mutation_guard(record, lambda: self._resume(record))
+
+    def _resume(self, record: ScheduleRecord) -> Mapping[str, Any]:
         observed = self._read(record)
         self._assert_matches(record, observed, expected_state="DISABLED")
         try:
@@ -175,6 +194,9 @@ class EventBridgeScheduler:
     def delete(self, record: ScheduleRecord) -> None:
         """Delete only the fully matching, deterministic resource owned here."""
         self._validate_record(record, allow_deleted=True, allow_paused=True)
+        self._with_mutation_guard(record, lambda: self._delete(record))
+
+    def _delete(self, record: ScheduleRecord) -> None:
         observed = self._read(record)
         self._assert_matches(record, observed)
         try:
@@ -206,6 +228,13 @@ class EventBridgeScheduler:
             raise ValueError(
                 "timer binding changes require a separately fenced migration"
             )
+        return self._with_mutation_guard(
+            previous, lambda: self._update_disabled(previous, replacement)
+        )
+
+    def _update_disabled(
+        self, previous: ScheduleRecord, replacement: ScheduleRecord
+    ) -> Mapping[str, Any]:
         observed = self._read(previous)
         self._assert_matches(previous, observed)
         if observed.get("State") != "DISABLED":
@@ -226,6 +255,12 @@ class EventBridgeScheduler:
         observed = self._read(replacement)
         self._assert_matches(replacement, observed, expected_state="DISABLED")
         return observed
+
+    def _with_mutation_guard(
+        self, record: ScheduleRecord, operation: Callable[[], Any]
+    ):
+        with self.mutation_guard(record):
+            return operation()
 
     def _request(self, record: ScheduleRecord, *, state: str) -> dict[str, Any]:
         spec = record.spec

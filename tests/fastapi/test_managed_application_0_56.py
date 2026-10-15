@@ -94,6 +94,7 @@ from etlantic_fastapi import (
     principal_dependency_from_callable,
     principal_from_header,
 )
+from etlantic_fastapi.schemas import DispatchReconciliationBody
 
 
 class Row(Data):
@@ -3033,6 +3034,58 @@ def test_http_exhausted_prefect_dispatch_reconciliation_is_authorized_and_cas(
         if event.kind == "execution.dispatch_reconciled"
     ]
     assert len(audit_events) == 1
+
+
+def test_ecs_expired_dispatch_reconciliation_does_not_require_a_task_arn(
+    tmp_path: Path,
+) -> None:
+    route = "ecs:" + "e" * 64
+    ctx, authz, _definitions, _submissions, durable, _events, service = _wired(
+        tmp_path, execution_route=route
+    )
+    authz.grant(ctx, "execution.dispatch.reconcile")
+    receipt = service.submit_run(
+        ctx, "pipe", idempotency_key="ecs-expired-token-reconcile"
+    )
+    now = datetime(2026, 10, 15, 12, tzinfo=UTC)
+    dispatch = durable.prepare_dispatch(ctx, receipt.submission_id)
+    claim = durable.claim_dispatch(
+        ctx, receipt.submission_id, owner_id="ecs-dispatcher", now=now
+    )
+    assert claim is not None
+    uncertain = durable.release_dispatch(
+        ctx,
+        receipt.submission_id,
+        owner_id="ecs-dispatcher",
+        fencing_token=claim.lease_fencing_token,
+        outcome_uncertain=True,
+        error_code="ecs_run_task_uncertain",
+        now=now,
+    )
+    expired = durable.quarantine_expired_ecs_dispatch(
+        ctx,
+        receipt.submission_id,
+        expected_generation=dispatch.generation,
+        expected_creation_started_at=uncertain.creation_started_at,
+        safe_retry_deadline=now + timedelta(hours=23),
+        now=now + timedelta(hours=24),
+    )
+    assert expired.status == "reconciliation_required"
+
+    body = DispatchReconciliationBody(
+        expected_generation=expired.generation,
+        evidence="Checked the cluster for the expired ECS client token.",
+    )
+    assert body.remote_run_id is None
+    result = service.rearm_exhausted_dispatch(
+        ctx,
+        receipt.submission_id,
+        expected_generation=body.expected_generation,
+        expected_remote_run_id=body.remote_run_id,
+        evidence=body.evidence,
+    )
+    assert result["dispatch"]["status"] == "pending"
+    assert result["dispatch"]["generation"] == expired.generation + 1
 
 
 def test_retry_reuses_accepted_plan_and_runs_through_http(tmp_path) -> None:

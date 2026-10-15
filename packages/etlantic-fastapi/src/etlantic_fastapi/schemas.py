@@ -145,8 +145,6 @@ class DispatchReconciliationBody(BaseModel):
 
     @model_validator(mode="after")
     def require_one_matching_remote_identity(self) -> DispatchReconciliationBody:
-        if self.expected_remote_run_id is None and self.expected_flow_run_id is None:
-            raise ValueError("expected_remote_run_id is required")
         if (
             self.expected_remote_run_id is not None
             and self.expected_flow_run_id is not None
@@ -156,10 +154,8 @@ class DispatchReconciliationBody(BaseModel):
         return self
 
     @property
-    def remote_run_id(self) -> str:
-        value = self.expected_remote_run_id or self.expected_flow_run_id
-        assert value is not None
-        return value
+    def remote_run_id(self) -> str | None:
+        return self.expected_remote_run_id or self.expected_flow_run_id
 
 
 class DispatchReconciliationResponse(BaseModel):

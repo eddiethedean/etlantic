@@ -35,14 +35,14 @@ def test_release_validates_independent_preview_version(
     module_version: str, tmp_path: Path
 ) -> None:
     checkout = tmp_path / "checkout"
-    _write(checkout / "pyproject.toml", '[project]\nversion = "0.59.0"\n')
+    _write(checkout / "pyproject.toml", '[project]\nversion = "0.60.0"\n')
     for source in (_ROOT / "packages").glob("*/pyproject.toml"):
-        version = "0.60.0" if source.parent.name == "etlantic-rsconnect" else "0.59.0"
+        version = "0.60.0"
         _write(
             checkout / source.relative_to(_ROOT),
             f'[project]\nversion = "{version}"\n',
         )
-    _write(checkout / "src/etlantic/_version.py", '__version__ = "0.59.0"\n')
+    _write(checkout / "src/etlantic/_version.py", '__version__ = "0.60.0"\n')
     _write(
         checkout / "packages/etlantic-rsconnect/src/etlantic_rsconnect/__init__.py",
         f'__version__ = "{module_version}"\n',
@@ -52,11 +52,11 @@ def test_release_validates_independent_preview_version(
         [
             "bash",
             "-euc",
-            'uv() { printf "0.59.0\\n"; }\n'
+            'uv() { printf "0.60.0\\n"; }\n'
             + _step("Verify tag matches package version"),
         ],
         cwd=checkout,
-        env={**os.environ, "RELEASE_TAG": "v0.59.0", "GITHUB_ENV": str(exports)},
+        env={**os.environ, "RELEASE_TAG": "v0.60.0", "GITHUB_ENV": str(exports)},
         capture_output=True,
         text=True,
         check=False,
@@ -106,7 +106,7 @@ def test_preview_publish_uses_its_artifacts_and_checks_its_own_version(
         cwd=tmp_path,
         env={
             **os.environ,
-            "RELEASE_TAG": "v0.59.0",
+            "RELEASE_TAG": "v0.60.0",
             "RSCONNECT_VERSION": "0.60.0",
             "PUBLISH_TRACE": str(trace),
             "UV_PUBLISH_TOKEN": "",
@@ -141,9 +141,9 @@ def test_preview_has_a_release_tag_independent_of_the_published_core(
     result = inspect_source(source, tag=f"{TAG_PREFIX}0.60.0")
 
     assert result["version"] == "0.60.0"
-    assert result["core_version"] == "0.59.0"
+    assert result["core_version"] == "0.60.0"
     assert result["external_services_required"] is False
-    for wrong_tag in ("v0.60.0", "etlantic-rsconnect-v0.59.0"):
+    for wrong_tag in ("v0.60.0", "etlantic-rsconnect-v0.60.1"):
         with pytest.raises(ValueError, match="preview tag must be"):
             inspect_source(source, tag=wrong_tag)
     workflow = _WORKFLOW.read_text()

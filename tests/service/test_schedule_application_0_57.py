@@ -37,6 +37,17 @@ def _context() -> ControlPlaneContext:
     )
 
 
+def test_interval_skip_preserves_the_external_rate_grid() -> None:
+    spec = ScheduleSpec(kind="interval", interval_seconds=60, misfire="skip")
+    next_cursor = next_fire_after(
+        spec,
+        after=datetime(2026, 10, 8, 12, 2, 5, tzinfo=UTC),
+        last_nominal=datetime(2026, 10, 8, 12, 0, tzinfo=UTC),
+    )
+
+    assert next_cursor == datetime(2026, 10, 8, 12, 3, tzinfo=UTC)
+
+
 def test_headless_schedule_service_authorizes_and_operates_on_canonical_models() -> (
     None
 ):

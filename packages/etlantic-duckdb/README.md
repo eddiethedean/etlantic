@@ -1,6 +1,6 @@
 # etlantic-duckdb
 
-> **Release status:** ETLantic 0.59.0 is a Beta release candidate; publication is pending.
+> **Release status:** ETLantic 0.60.0 is a Beta release candidate; publication is pending.
 
 Optional DuckDB support for ETLantic 0.57. The package is driver-free from core and
 is selected explicitly with `Profile(sql_engine="duckdb")`.

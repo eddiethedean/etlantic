@@ -2,8 +2,8 @@
 hide:
   - toc
 status: available
-since: "0.59.0"
-current_minor: "0.59"
+since: "0.60.0"
+current_minor: "0.60"
 audience: adopter
 ---
 
@@ -62,7 +62,7 @@ audience: adopter
 
 ## Choose your path
 
-> **Status: ETLantic core 0.59.0 is the latest published Beta release. The independent `etlantic-rsconnect` 0.60.0 preview is published; live Connect activation and production qualification remain deferred.**
+> **Status: ETLantic core 0.60.0 is an unpublished Beta candidate; 0.59.x remains the latest published support line. The independent `etlantic-rsconnect` 0.60.0 preview is published; live Connect activation and production qualification remain deferred.**
 
 
 <div class="etlantic-path-grid">
@@ -246,7 +246,7 @@ before a pilot.
 | Author with the public Python facade | [Python SDK in 10 minutes](01_GETTING_STARTED/SDK_10_MINUTES.md) |
 | Configure CI validation | [CI integration](06_EXECUTION/CI_INTEGRATION.md) |
 | Diagnose a failure | [Troubleshooting](01_GETTING_STARTED/TROUBLESHOOTING.md) |
-| Review the current release | [What's new in 0.59](01_GETTING_STARTED/WHATS_NEW_0_59.md) |
+| Review the current release | [What's new in 0.60](01_GETTING_STARTED/WHATS_NEW_0_60.md) |
 | Review the latest published release | [What's new in 0.59](01_GETTING_STARTED/WHATS_NEW_0_59.md) |
 | Review future direction | [Planning Hub](11_DEVELOPMENT/PLAN_INDEX.md) |
 | Contribute to ETLantic | [Contributor guide](11_DEVELOPMENT/CONTRIBUTING.md) |

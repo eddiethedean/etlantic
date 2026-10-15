@@ -1,6 +1,6 @@
 # Quickstart
 
-> **Status: ETLantic 0.59.0 is the published Beta release.** Use `python -m etlantic init` for the
+> **Status: ETLantic core 0.60.0 is an unpublished Beta candidate; 0.59.x remains the published support line.** Use `python -m etlantic init` for the
 > recommended CLI-first path with durable reports and declarative assets.
 > Budget ~5–10 minutes for first success; optional validation aha below adds a
 > few minutes.

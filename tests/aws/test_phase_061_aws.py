@@ -1,11 +1,15 @@
 from __future__ import annotations
 
+import hashlib
 from collections.abc import Mapping
 from datetime import UTC, datetime, timedelta
-from typing import Any
+from threading import RLock
+from types import SimpleNamespace
+from typing import Any, cast
 
 import pytest
 from etlantic_aws import (
+    ECSDispatcher,
     ECSExecutionBinding,
     EventBridgeScheduler,
     RelayRetryRequired,
@@ -32,6 +36,28 @@ from etlantic.secrets import SecretRef
 
 ACCOUNT = "123456789012"
 REGION = "us-east-1"
+_SCHEDULE_MUTATION_LOCK = RLock()
+
+
+def _ecs_binding() -> ECSExecutionBinding:
+    return ECSExecutionBinding(
+        account_id=ACCOUNT,
+        region=REGION,
+        cluster_arn=f"arn:aws:ecs:{REGION}:{ACCOUNT}:cluster/etlantic",
+        task_definition_arn=(
+            f"arn:aws:ecs:{REGION}:{ACCOUNT}:task-definition/etlantic-worker:7"
+        ),
+        task_role_arn=f"arn:aws:iam::{ACCOUNT}:role/worker",
+        execution_role_arn=f"arn:aws:iam::{ACCOUNT}:role/task-execution",
+        container_name="worker",
+        image_digest=(
+            f"123456789012.dkr.ecr.{REGION}.amazonaws.com/worker@sha256:" + "a" * 64
+        ),
+        subnet_ids=("subnet-0123456789abcdef0",),
+        security_group_ids=("sg-0123456789abcdef0",),
+        cpu="1024",
+        memory="2048",
+    )
 
 
 def _context() -> ControlPlaneContext:
@@ -106,6 +132,7 @@ def _scheduler(
         ),
         scheduler_role_arn=f"arn:aws:iam::{ACCOUNT}:role/scheduler",
         dlq_arn=f"arn:aws:sqs:{REGION}:{ACCOUNT}:scheduler-dlq",
+        mutation_guard=lambda _record: _SCHEDULE_MUTATION_LOCK,
     )
 
 
@@ -158,6 +185,10 @@ def test_scheduler_revision_update_disables_before_replacement() -> None:
     updated = adapter.update_disabled(previous, replacement)
     assert updated["State"] == "DISABLED"
     assert updated["Target"]["Input"] != previous_input
+    with pytest.raises(RuntimeError, match="drifted"):
+        adapter.activate(previous)
+    assert client.value is not None
+    assert client.value["State"] == "DISABLED"
     assert adapter.activate(replacement)["State"] == "ENABLED"
 
 
@@ -290,3 +321,299 @@ def test_ecs_binding_pins_worker_and_only_overrides_accepted_reference() -> None
     )
     with pytest.raises(ValueError, match="private networking"):
         ECSExecutionBinding.from_dict(binding.to_dict() | {"assign_public_ip": True})
+
+
+class _DispatchStore:
+    def __init__(
+        self,
+        binding: ECSExecutionBinding,
+        *,
+        status: str,
+        submission_status: str,
+        creation_started_at: datetime,
+    ) -> None:
+        self.record = SimpleNamespace(
+            submission_id="submission-ecs",
+            backend_kind="ecs",
+            execution_route=binding.execution_route,
+            binding_fingerprint=binding.fingerprint,
+            plan_fingerprint="a" * 64,
+            envelope_sha256="b" * 64,
+            generation=1,
+            creation_key="durable-creation-key",
+            creation_started_at=(
+                creation_started_at.isoformat().replace("+00:00", "Z")
+            ),
+            status=status,
+            remote_run_id=None,
+            lease_owner_id=None,
+            lease_fencing_token=0,
+            lease_expires_at=None,
+            retry_after_at=None,
+            last_error_code=None,
+        )
+        self.submission = SimpleNamespace(
+            submission_id=self.record.submission_id,
+            status=submission_status,
+            plan_fingerprint=self.record.plan_fingerprint,
+            envelope_sha256=self.record.envelope_sha256,
+            input_snapshot="opaque-unread-test-snapshot",
+        )
+
+    def prepare_dispatch(self, _ctx: Any, _submission_id: str) -> Any:
+        return self.record
+
+    def get_submission(self, _ctx: Any, _submission_id: str) -> Any:
+        return self.submission
+
+    def get_dispatch(self, _ctx: Any, _submission_id: str) -> Any:
+        return self.record
+
+    def claim_dispatch(
+        self,
+        _ctx: Any,
+        _submission_id: str,
+        *,
+        owner_id: str,
+        lease_seconds: int,
+        now: datetime,
+    ) -> Any:
+        del lease_seconds
+        if self.record.status != "uncertain":
+            return None
+        self.record.status = "leased"
+        self.record.lease_owner_id = owner_id
+        self.record.lease_fencing_token += 1
+        self.record.lease_expires_at = (
+            (now + timedelta(seconds=30)).isoformat().replace("+00:00", "Z")
+        )
+        return self.record
+
+    def release_dispatch(
+        self,
+        _ctx: Any,
+        _submission_id: str,
+        *,
+        outcome_uncertain: bool,
+        cancelled: bool = False,
+        error_code: str,
+        **_kwargs: Any,
+    ) -> Any:
+        self.record.status = (
+            "cancelled"
+            if cancelled
+            else ("uncertain" if outcome_uncertain else "pending")
+        )
+        self.record.lease_owner_id = None
+        self.record.lease_expires_at = None
+        self.record.last_error_code = error_code
+        return self.record
+
+    def quarantine_expired_ecs_dispatch(self, *_args: Any, **_kwargs: Any) -> Any:
+        self.record.status = "reconciliation_required"
+        self.record.last_error_code = "ecs_token_window_expired"
+        return self.record
+
+    def link_dispatch(
+        self,
+        _ctx: Any,
+        _submission_id: str,
+        *,
+        remote_run_id: str,
+        **_kwargs: Any,
+    ) -> Any:
+        self.record.status = "dispatched"
+        self.record.remote_run_id = remote_run_id
+        self.record.lease_owner_id = None
+        self.record.lease_expires_at = None
+        return self.record
+
+    def dispatched_for_reconciliation(self, *_args: Any, **_kwargs: Any) -> list[Any]:
+        if (
+            self.record.status == "dispatched"
+            and self.submission.status == "cancel_requested"
+        ):
+            return [self.record]
+        return []
+
+    def confirm_dispatch_cancelled(self, *_args: Any, **_kwargs: Any) -> Any:
+        self.record.status = "cancelled"
+        self.record.last_error_code = "remote_task_stopped_after_cancel"
+        return self.record
+
+    def reconcile_cancelled_submissions(self, *_args: Any, **_kwargs: Any) -> list[Any]:
+        if self.record.status == "cancelled":
+            self.submission.status = "cancelled"
+            return [self.submission]
+        return []
+
+
+class _ECSClient:
+    def __init__(self, binding: ECSExecutionBinding) -> None:
+        self.meta = SimpleNamespace(region_name=binding.region)
+        self.binding = binding
+        self.task: dict[str, Any] | None = None
+        self.stop_calls: list[str] = []
+        self.run_calls = 0
+
+    def describe_clusters(self, *, clusters: list[str]) -> Mapping[str, Any]:
+        return {"clusters": [{"status": "ACTIVE", "clusterArn": clusters[0]}]}
+
+    def describe_task_definition(self, *, taskDefinition: str) -> Mapping[str, Any]:
+        binding = self.binding
+        return {
+            "taskDefinition": {
+                "taskDefinitionArn": taskDefinition,
+                "status": "ACTIVE",
+                "requiresCompatibilities": ["FARGATE"],
+                "networkMode": "awsvpc",
+                "runtimePlatform": {
+                    "operatingSystemFamily": binding.operating_system_family,
+                    "cpuArchitecture": binding.cpu_architecture,
+                },
+                "taskRoleArn": binding.task_role_arn,
+                "executionRoleArn": binding.execution_role_arn,
+                "cpu": binding.cpu,
+                "memory": binding.memory,
+                "containerDefinitions": [
+                    {
+                        "name": binding.container_name,
+                        "image": binding.image_digest,
+                        "essential": True,
+                        "entryPoint": list(binding.entry_point),
+                        "command": [],
+                    }
+                ],
+            }
+        }
+
+    def run_task(self, **_kwargs: Any) -> Mapping[str, Any]:
+        self.run_calls += 1
+        raise AssertionError("a cancelled or expired dispatch must not call RunTask")
+
+    def list_tasks(self, *, desiredStatus: str, **_kwargs: Any) -> Mapping[str, Any]:
+        task = self.task
+        if task is None or task["lastStatus"] != desiredStatus:
+            return {"taskArns": []}
+        return {"taskArns": [task["taskArn"]]}
+
+    def describe_tasks(self, *, tasks: list[str], **_kwargs: Any) -> Mapping[str, Any]:
+        if self.task is None or self.task["taskArn"] not in tasks:
+            return {"tasks": [], "failures": [{"reason": "MISSING"}]}
+        return {"tasks": [self.task], "failures": []}
+
+    def stop_task(self, *, task: str, **_kwargs: Any) -> Mapping[str, Any]:
+        self.stop_calls.append(task)
+        return {"task": self.task or {}}
+
+
+def _dispatcher(
+    binding: ECSExecutionBinding,
+    durable: _DispatchStore,
+    ecs: _ECSClient,
+    clock: list[datetime],
+) -> ECSDispatcher:
+    return ECSDispatcher(
+        backend=cast(
+            Any,
+            SimpleNamespace(
+                managed_service=SimpleNamespace(
+                    execution_route=binding.execution_route
+                ),
+                durable_work=durable,
+            ),
+        ),
+        context=_context(),
+        binding=binding,
+        ecs_client=ecs,
+        sts_client=SimpleNamespace(
+            get_caller_identity=lambda: {"Account": binding.account_id}
+        ),
+        owner_id="ecs-dispatcher-test",
+        clock=lambda: clock[0],
+    )
+
+
+def test_expired_ecs_client_token_is_quarantined_before_retry() -> None:
+    binding = _ecs_binding()
+    now = datetime(2026, 10, 15, 12, tzinfo=UTC)
+    durable = _DispatchStore(
+        binding,
+        status="uncertain",
+        submission_status="accepted",
+        creation_started_at=now - timedelta(hours=24),
+    )
+    ecs = _ECSClient(binding)
+    dispatcher = _dispatcher(binding, durable, ecs, [now])
+
+    result = dispatcher.dispatch_submission(durable.record.submission_id)
+
+    assert result.status == "reconciliation_required"
+    assert result.error_code == "ecs_token_window_expired"
+    assert ecs.run_calls == 0
+
+
+def test_cancelled_uncertain_ecs_task_is_discovered_stopped_and_finalized() -> None:
+    binding = _ecs_binding()
+    now = datetime(2026, 10, 15, 12, tzinfo=UTC)
+    durable = _DispatchStore(
+        binding,
+        status="uncertain",
+        submission_status="cancel_requested",
+        creation_started_at=now - timedelta(minutes=5),
+    )
+    token = hashlib.sha256(durable.record.creation_key.encode("utf-8")).hexdigest()
+    task_arn = f"arn:aws:ecs:{REGION}:{ACCOUNT}:task/etlantic/task-a"
+    ecs = _ECSClient(binding)
+    ecs.task = {
+        "taskArn": task_arn,
+        "clusterArn": binding.cluster_arn,
+        "taskDefinitionArn": binding.task_definition_arn,
+        "startedBy": token[:36],
+        "lastStatus": "RUNNING",
+        "tags": [
+            {"key": "etlantic:managed", "value": "true"},
+            {"key": "etlantic:binding", "value": binding.fingerprint[:32]},
+        ],
+    }
+    clock = [now]
+    dispatcher = _dispatcher(binding, durable, ecs, clock)
+
+    first = dispatcher.dispatch_submission(durable.record.submission_id)
+    assert first.status == "dispatched"
+    assert first.remote_run_id == task_arn
+    assert ecs.stop_calls == [task_arn]
+    assert ecs.run_calls == 0
+
+    ecs.task["lastStatus"] = "STOPPED"
+    completed = dispatcher.reconcile()
+    assert completed[0].status == "cancelled"
+    assert durable.submission.status == "cancelled"
+    assert ecs.run_calls == 0
+
+
+def test_cancelled_uncertain_ecs_identity_stays_fenced_then_resolves_after_ttl() -> (
+    None
+):
+    binding = _ecs_binding()
+    created_at = datetime(2026, 10, 15, 12, tzinfo=UTC)
+    clock = [created_at + timedelta(hours=2)]
+    durable = _DispatchStore(
+        binding,
+        status="uncertain",
+        submission_status="cancel_requested",
+        creation_started_at=created_at,
+    )
+    ecs = _ECSClient(binding)
+    dispatcher = _dispatcher(binding, durable, ecs, clock)
+
+    waiting = dispatcher.dispatch_submission(durable.record.submission_id)
+    assert waiting.status == "uncertain"
+    assert durable.submission.status == "cancel_requested"
+    assert ecs.run_calls == 0
+
+    clock[0] = created_at + timedelta(hours=24)
+    resolved = dispatcher.dispatch_submission(durable.record.submission_id)
+    assert resolved.status == "cancelled"
+    assert durable.submission.status == "cancelled"
+    assert ecs.run_calls == 0

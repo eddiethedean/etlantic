@@ -3,9 +3,10 @@
 from __future__ import annotations
 
 import hashlib
-from collections.abc import Iterable, Mapping
+from collections.abc import Callable, Iterable, Mapping
 from contextlib import suppress
 from dataclasses import dataclass
+from datetime import UTC, datetime, timedelta
 from typing import Any, cast
 
 from etlantic.control_plane import (
@@ -16,6 +17,19 @@ from etlantic.control_plane import (
 )
 
 from etlantic_aws.binding import ECSExecutionBinding
+
+_ECS_CLIENT_TOKEN_SAFE_RETRY_WINDOW = timedelta(hours=23)
+_ECS_ACTIVE_TASK_STATES = frozenset(
+    {
+        "PROVISIONING",
+        "PENDING",
+        "ACTIVATING",
+        "RUNNING",
+        "DEACTIVATING",
+        "STOPPING",
+        "DEPROVISIONING",
+    }
+)
 
 
 def _as_mapping(value: object, message: str) -> Mapping[str, Any]:
@@ -60,6 +74,7 @@ class ECSDispatcher:
     sts_client: Any
     owner_id: str
     lease_seconds: int = 30
+    clock: Callable[[], datetime] | None = None
 
     def __post_init__(self) -> None:
         validate_control_plane_context(self.context)
@@ -109,10 +124,49 @@ class ECSDispatcher:
         ):
             raise RuntimeError("durable dispatch does not match this ECS binding")
         submission = durable.get_submission(self.context, submission_id)
+        if intent.status in {"uncertain", "leased"} and submission.status in {
+            "cancel_requested",
+            "cancelled",
+        }:
+            return self._resolve_cancelled_uncertain(submission_id, intent)
         if submission.status != "accepted":
             return ECSDispatchResult(
                 submission_id, "not_dispatched", error_code="submission_not_active"
             )
+        if (
+            intent.backend_kind == "ecs"
+            and intent.status in {"uncertain", "leased"}
+            and intent.remote_run_id is None
+        ):
+            current_time = self._now()
+            lease_expires_at = self._parse_time(intent.lease_expires_at)
+            if (
+                intent.status == "leased"
+                and lease_expires_at is not None
+                and lease_expires_at > current_time
+            ):
+                return ECSDispatchResult(submission_id, intent.status)
+            creation_started_at = self._parse_time(intent.creation_started_at)
+            retry_deadline = (
+                creation_started_at + _ECS_CLIENT_TOKEN_SAFE_RETRY_WINDOW
+                if creation_started_at is not None
+                else current_time
+            )
+            if current_time >= retry_deadline:
+                quarantined = durable.quarantine_expired_ecs_dispatch(
+                    self.context,
+                    submission_id,
+                    expected_generation=intent.generation,
+                    expected_creation_started_at=intent.creation_started_at,
+                    safe_retry_deadline=retry_deadline,
+                    now=current_time,
+                )
+                return ECSDispatchResult(
+                    submission_id,
+                    quarantined.status,
+                    remote_run_id=quarantined.remote_run_id,
+                    error_code=quarantined.last_error_code,
+                )
         reference = AcceptedExecutionReference.from_submission(submission)
         if (
             reference.plan_fingerprint != intent.plan_fingerprint
@@ -124,6 +178,7 @@ class ECSDispatcher:
             submission_id,
             owner_id=self.owner_id,
             lease_seconds=self.lease_seconds,
+            now=self._now(),
         )
         if claim is None:
             current = durable.get_dispatch(self.context, submission_id)
@@ -245,6 +300,348 @@ class ECSDispatcher:
                 )
             raise
 
+    def _resolve_cancelled_uncertain(
+        self, submission_id: str, intent: Any
+    ) -> ECSDispatchResult:
+        """Find and stop a task whose successful RunTask response was lost."""
+        durable = self.backend.durable_work
+        current_time = self._now()
+        claim = durable.claim_dispatch(
+            self.context,
+            submission_id,
+            owner_id=self.owner_id,
+            lease_seconds=self.lease_seconds,
+            now=current_time,
+        )
+        if claim is None:
+            current = durable.get_dispatch(self.context, submission_id)
+            return ECSDispatchResult(
+                submission_id,
+                current.status,
+                remote_run_id=current.remote_run_id,
+                error_code=current.last_error_code,
+            )
+
+        token = hashlib.sha256(intent.creation_key.encode("utf-8")).hexdigest()
+        task_arns: set[str] = set()
+        try:
+            for desired_status in ("PENDING", "RUNNING", "STOPPED"):
+                next_token: str | None = None
+                for _page in range(10):
+                    request: dict[str, Any] = {
+                        "cluster": self.binding.cluster_arn,
+                        "startedBy": token[:36],
+                        "desiredStatus": desired_status,
+                        "maxResults": 100,
+                    }
+                    if next_token is not None:
+                        request["nextToken"] = next_token
+                    response = _as_mapping(
+                        self.ecs_client.list_tasks(**request),
+                        "ECS task lookup response is malformed",
+                    )
+                    rows = response.get("taskArns", [])
+                    if not isinstance(rows, list) or any(
+                        not isinstance(item, str) or not item
+                        for item in cast(Iterable[object], rows)
+                    ):
+                        raise RuntimeError("ECS task lookup response is malformed")
+                    task_arns.update(cast(list[str], rows))
+                    following = response.get("nextToken")
+                    if following is None:
+                        next_token = None
+                        break
+                    if not isinstance(following, str) or not following:
+                        raise RuntimeError("ECS task lookup pagination is malformed")
+                    next_token = following
+                if next_token is not None:
+                    released = durable.release_dispatch(
+                        self.context,
+                        submission_id,
+                        owner_id=self.owner_id,
+                        fencing_token=claim.lease_fencing_token,
+                        outcome_uncertain=True,
+                        error_code="ecs_cancel_lookup_incomplete",
+                        now=self._now(),
+                    )
+                    return ECSDispatchResult(
+                        submission_id,
+                        released.status,
+                        error_code=released.last_error_code,
+                    )
+        except Exception:
+            released = durable.release_dispatch(
+                self.context,
+                submission_id,
+                owner_id=self.owner_id,
+                fencing_token=claim.lease_fencing_token,
+                outcome_uncertain=True,
+                error_code="ecs_cancel_lookup_unavailable",
+                now=self._now(),
+            )
+            return ECSDispatchResult(
+                submission_id,
+                released.status,
+                error_code=released.last_error_code,
+            )
+
+        if not task_arns:
+            creation_started_at = self._parse_time(claim.creation_started_at)
+            retry_deadline = (
+                creation_started_at + _ECS_CLIENT_TOKEN_SAFE_RETRY_WINDOW
+                if creation_started_at is not None
+                else current_time
+            )
+            expired = current_time >= retry_deadline
+            released = durable.release_dispatch(
+                self.context,
+                submission_id,
+                owner_id=self.owner_id,
+                fencing_token=claim.lease_fencing_token,
+                outcome_uncertain=not expired,
+                cancelled=expired,
+                error_code=(
+                    "ecs_cancel_identity_not_found"
+                    if expired
+                    else "ecs_cancel_identity_unresolved"
+                ),
+                now=self._now(),
+            )
+            if expired:
+                durable.reconcile_cancelled_submissions(
+                    self.context,
+                    limit=1,
+                    submission_id=submission_id,
+                    execution_route=self.binding.execution_route,
+                )
+                released = durable.get_dispatch(self.context, submission_id)
+            return ECSDispatchResult(
+                submission_id,
+                released.status,
+                remote_run_id=released.remote_run_id,
+                error_code=released.last_error_code,
+            )
+
+        task_rows: list[Mapping[str, Any]] = []
+        try:
+            ordered_arns = sorted(task_arns)
+            for offset in range(0, len(ordered_arns), 100):
+                response = _as_mapping(
+                    self.ecs_client.describe_tasks(
+                        cluster=self.binding.cluster_arn,
+                        tasks=ordered_arns[offset : offset + 100],
+                        include=["TAGS"],
+                    ),
+                    "ECS task lookup response is malformed",
+                )
+                rows = _mapping_rows(response.get("tasks", []))
+                failures = _mapping_rows(response.get("failures", []))
+                if rows is None or failures is None or failures:
+                    raise RuntimeError("ECS task lookup is incomplete")
+                task_rows.extend(rows)
+        except Exception:
+            released = durable.release_dispatch(
+                self.context,
+                submission_id,
+                owner_id=self.owner_id,
+                fencing_token=claim.lease_fencing_token,
+                outcome_uncertain=True,
+                error_code="ecs_cancel_observation_incomplete",
+                now=self._now(),
+            )
+            return ECSDispatchResult(
+                submission_id,
+                released.status,
+                error_code=released.last_error_code,
+            )
+
+        if len(task_rows) != len(task_arns) or any(
+            not isinstance(arn, str) or not self._matches_dispatch_task(row, arn, token)
+            for row in task_rows
+            for arn in [row.get("taskArn")]
+        ):
+            released = durable.release_dispatch(
+                self.context,
+                submission_id,
+                owner_id=self.owner_id,
+                fencing_token=claim.lease_fencing_token,
+                outcome_uncertain=True,
+                error_code="ecs_cancel_identity_mismatch",
+                now=self._now(),
+            )
+            return ECSDispatchResult(
+                submission_id,
+                released.status,
+                error_code=released.last_error_code,
+            )
+
+        by_arn = {cast(str, row["taskArn"]): row for row in task_rows}
+        if set(by_arn) != task_arns:
+            released = durable.release_dispatch(
+                self.context,
+                submission_id,
+                owner_id=self.owner_id,
+                fencing_token=claim.lease_fencing_token,
+                outcome_uncertain=True,
+                error_code="ecs_cancel_observation_incomplete",
+                now=self._now(),
+            )
+            return ECSDispatchResult(
+                submission_id,
+                released.status,
+                error_code=released.last_error_code,
+            )
+
+        rows = [by_arn[arn] for arn in sorted(by_arn)]
+        if any(
+            row.get("lastStatus") != "STOPPED"
+            and row.get("lastStatus") not in _ECS_ACTIVE_TASK_STATES
+            for row in rows
+        ):
+            released = durable.release_dispatch(
+                self.context,
+                submission_id,
+                owner_id=self.owner_id,
+                fencing_token=claim.lease_fencing_token,
+                outcome_uncertain=True,
+                error_code="ecs_cancel_task_state_unknown",
+                now=self._now(),
+            )
+            return ECSDispatchResult(
+                submission_id,
+                released.status,
+                error_code=released.last_error_code,
+            )
+
+        active_rows = [row for row in rows if row.get("lastStatus") != "STOPPED"]
+        if len(rows) == 1:
+            linked = durable.link_dispatch(
+                self.context,
+                submission_id,
+                owner_id=self.owner_id,
+                fencing_token=claim.lease_fencing_token,
+                remote_run_id=cast(str, rows[0]["taskArn"]),
+                now=self._now(),
+            )
+            if active_rows:
+                try:
+                    self.ecs_client.stop_task(
+                        cluster=self.binding.cluster_arn,
+                        task=linked.remote_run_id,
+                        reason="ETLantic canonical cancellation requested",
+                    )
+                except Exception:
+                    return ECSDispatchResult(
+                        submission_id,
+                        linked.status,
+                        remote_run_id=linked.remote_run_id,
+                        error_code="ecs_cancel_stop_unavailable",
+                    )
+                return ECSDispatchResult(
+                    submission_id,
+                    linked.status,
+                    remote_run_id=linked.remote_run_id,
+                    error_code="ecs_cancel_stop_requested",
+                )
+        elif active_rows:
+            try:
+                for row in active_rows:
+                    self.ecs_client.stop_task(
+                        cluster=self.binding.cluster_arn,
+                        task=cast(str, row["taskArn"]),
+                        reason="ETLantic canonical cancellation requested",
+                    )
+            except Exception:
+                pass
+            released = durable.release_dispatch(
+                self.context,
+                submission_id,
+                owner_id=self.owner_id,
+                fencing_token=claim.lease_fencing_token,
+                outcome_uncertain=True,
+                error_code="ecs_cancel_tasks_stopping",
+                now=self._now(),
+            )
+            return ECSDispatchResult(
+                submission_id,
+                released.status,
+                error_code=released.last_error_code,
+            )
+        else:
+            # If several tasks were already stopped, link one verified identity
+            # so durable cancellation has a stable audit reference.
+            linked = durable.link_dispatch(
+                self.context,
+                submission_id,
+                owner_id=self.owner_id,
+                fencing_token=claim.lease_fencing_token,
+                remote_run_id=cast(str, rows[0]["taskArn"]),
+                now=self._now(),
+            )
+
+        cancelled = durable.confirm_dispatch_cancelled(
+            self.context,
+            submission_id,
+            expected_generation=linked.generation,
+            expected_remote_run_id=cast(str, linked.remote_run_id),
+            now=self._now(),
+        )
+        durable.reconcile_cancelled_submissions(
+            self.context,
+            limit=1,
+            submission_id=submission_id,
+            execution_route=self.binding.execution_route,
+        )
+        return ECSDispatchResult(
+            submission_id,
+            cancelled.status,
+            remote_run_id=cancelled.remote_run_id,
+            error_code=cancelled.last_error_code,
+        )
+
+    def _matches_dispatch_task(
+        self, task: Mapping[str, Any], task_arn: str, token: str
+    ) -> bool:
+        task_prefix = (
+            f"arn:{self.binding.partition}:ecs:{self.binding.region}:"
+            f"{self.binding.account_id}:task/"
+        )
+        tags = _mapping_rows(task.get("tags"))
+        if tags is None:
+            return False
+        tag_values = {
+            tag.get("key"): tag.get("value")
+            for tag in tags
+            if isinstance(tag.get("key"), str)
+        }
+        return (
+            task.get("taskArn") == task_arn
+            and task_arn.startswith(task_prefix)
+            and task.get("clusterArn") == self.binding.cluster_arn
+            and task.get("taskDefinitionArn") == self.binding.task_definition_arn
+            and task.get("startedBy") == token[:36]
+            and tag_values.get("etlantic:managed") == "true"
+            and tag_values.get("etlantic:binding") == self.binding.fingerprint[:32]
+        )
+
+    def _now(self) -> datetime:
+        value = self.clock() if self.clock is not None else datetime.now(UTC)
+        if value.tzinfo is None or value.utcoffset() is None:
+            raise ValueError("dispatcher clock must return an aware datetime")
+        return value.astimezone(UTC)
+
+    @staticmethod
+    def _parse_time(value: str | None) -> datetime | None:
+        if value is None:
+            return None
+        try:
+            parsed = datetime.fromisoformat(value.replace("Z", "+00:00"))
+        except (AttributeError, TypeError, ValueError):
+            return None
+        if parsed.tzinfo is None or parsed.utcoffset() is None:
+            return None
+        return parsed.astimezone(UTC)
+
     def reconcile(self, *, limit: int = 50) -> list[ECSDispatchResult]:
         """Poll linked tasks and rearm only proven pre-claim stopped tasks."""
         if type(limit) is not int or not 1 <= limit <= 100:
@@ -307,6 +704,58 @@ class ECSDispatcher:
                         error_code="ecs_observation_mismatch",
                     )
                 )
+                continue
+            submission = self.backend.durable_work.get_submission(
+                self.context, record.submission_id
+            )
+            if submission.status == "cancel_requested":
+                if task.get("lastStatus") == "STOPPED":
+                    cancelled = self.backend.durable_work.confirm_dispatch_cancelled(
+                        self.context,
+                        record.submission_id,
+                        expected_generation=record.generation,
+                        expected_remote_run_id=task_arn,
+                        now=self._now(),
+                    )
+                    self.backend.durable_work.reconcile_cancelled_submissions(
+                        self.context,
+                        limit=1,
+                        submission_id=record.submission_id,
+                        execution_route=self.binding.execution_route,
+                    )
+                    results.append(
+                        ECSDispatchResult(
+                            record.submission_id,
+                            cancelled.status,
+                            remote_run_id=task_arn,
+                            error_code=cancelled.last_error_code,
+                        )
+                    )
+                    continue
+                try:
+                    self.ecs_client.stop_task(
+                        cluster=self.binding.cluster_arn,
+                        task=task_arn,
+                        reason="ETLantic canonical cancellation requested",
+                    )
+                except Exception:
+                    results.append(
+                        ECSDispatchResult(
+                            record.submission_id,
+                            "dispatched",
+                            remote_run_id=task_arn,
+                            error_code="ecs_cancel_stop_unavailable",
+                        )
+                    )
+                else:
+                    results.append(
+                        ECSDispatchResult(
+                            record.submission_id,
+                            "dispatched",
+                            remote_run_id=task_arn,
+                            error_code="ecs_cancel_stop_requested",
+                        )
+                    )
                 continue
             if task.get("lastStatus") != "STOPPED":
                 results.append(

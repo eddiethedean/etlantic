@@ -1,19 +1,19 @@
 ---
 status: available
 since: "0.43.0"
-current_minor: "0.59"
+current_minor: "0.60"
 audience: developer
 ---
 
 # etlantic-sql API
 
-> **Status: ETLantic 0.59.0 is the published Beta release.** SQL plugin (SQLite + PostgreSQL).
+> **Status: ETLantic core 0.60.0 is a Beta candidate; 0.59.x remains the published support line.** SQL plugin (SQLite + PostgreSQL).
 > Install narrative: package README. Hub: [Optional packages API](../API_OPTIONAL_PACKAGES.md).
 
 ## Setup
 
 ```bash
-pip install 'etlantic-sql==0.59.0'
+pip install 'etlantic-sql==0.60.0'
 ```
 
 ```python

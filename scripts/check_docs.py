@@ -99,6 +99,19 @@ def load_release_facts() -> dict[str, object]:
     return data
 
 
+def _string_object_mapping(value: object) -> dict[str, object] | None:
+    """Narrow nested JSON objects without leaking untyped ``dict`` values."""
+    if not isinstance(value, dict):
+        return None
+    raw = cast(dict[object, object], value)
+    result: dict[str, object] = {}
+    for key, item in raw.items():
+        if not isinstance(key, str):
+            return None
+        result[key] = item
+    return result
+
+
 def versioned_readthedocs_url(page: Path, *, docs_base_url: str) -> str:
     """Return immutable RTD URL for a docs page under the release slug."""
     base = docs_base_url.rstrip("/") + "/"
@@ -2727,6 +2740,9 @@ def main() -> None:
     }
     reference_packages = {"etlantic-fastapi"}
     redirect_packages = {"etlantic-sparkforge"}
+    independent_releases = _string_object_mapping(
+        load_release_facts().get("independent_releases")
+    )
     root_pyproject_path = ROOT / "pyproject.toml"
     root_text = root_pyproject_path.read_text(encoding="utf-8")
     if root_beta_classifier not in root_text:
@@ -2738,6 +2754,21 @@ def main() -> None:
     for path in (*(ROOT / "packages").glob("etlantic-*/pyproject.toml"),):
         text = path.read_text(encoding="utf-8")
         pkg_name = path.parent.name
+        independent_release = (
+            _string_object_mapping(independent_releases.get(pkg_name))
+            if independent_releases is not None
+            else None
+        )
+        if (
+            independent_release is not None
+            and independent_release.get("publication_status") == "published"
+        ):
+            compatible_core = independent_release.get("core_compatibility")
+            if not isinstance(compatible_core, str) or compatible_core not in text:
+                raise SystemExit(
+                    f"{path} must retain its published core compatibility range"
+                )
+            continue
         if pkg_name in experimental_packages:
             if alpha_classifier not in text:
                 raise SystemExit(f"{path} experimental package should use Alpha")

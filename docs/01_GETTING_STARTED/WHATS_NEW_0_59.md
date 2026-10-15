@@ -2,7 +2,7 @@
 title: What's New in ETLantic 0.59
 status: available
 since: "0.59.0"
-current_minor: "0.59"
+current_minor: "0.60"
 ---
 
 # What's New in ETLantic 0.59

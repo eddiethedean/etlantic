@@ -1,6 +1,6 @@
 # Support Policy (maintainers)
 
-> **Status: ETLantic core 0.59.0 is the published Beta release. The independent `etlantic-rsconnect` 0.60.0 preview is published without production support qualification.**
+> **Status: ETLantic core 0.60.0 is a Beta candidate; 0.59.x remains the published support line. The independent `etlantic-rsconnect` 0.60.0 preview is published without production support qualification.**
 
 > **Canonical adopter policy:** root
 > [`SUPPORT.md`](https://github.com/eddiethedean/etlantic/blob/main/SUPPORT.md).

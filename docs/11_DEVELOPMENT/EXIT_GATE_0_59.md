@@ -1,7 +1,7 @@
 ---
 title: ETLantic 0.59 Exit Gate
 status: published
-current_minor: "0.59"
+current_minor: "0.60"
 ---
 
 # ETLantic 0.59 Exit Gate — Managed Runtime Consolidation and Trigger Contracts

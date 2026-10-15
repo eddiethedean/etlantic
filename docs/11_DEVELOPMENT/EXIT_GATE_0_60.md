@@ -1,9 +1,22 @@
 ---
-title: ETLantic 0.60 Preview Exit Record
-description: Repository-local completion and publication of etlantic-rsconnect 0.60.0.
+title: ETLantic 0.60 Candidate Gate and Connect Preview Exit Record
+description: Core 0.60 candidate status and repository-local publication record for etlantic-rsconnect 0.60.0.
 ---
 
-# ETLantic 0.60 Preview Exit Record
+# ETLantic 0.60 Candidate Gate and Connect Preview Exit Record
+
+## Core 0.60 candidate
+
+Core 0.60.0 is an unpublished Beta candidate. It carries public durable
+dispatch contracts used by the phase 0.61 AWS adapter. The latest published
+and supported core line remains 0.59.x; no core 0.60.0 tag or PyPI artifact has
+been created. Local implementation and checks are tracked on the phase 0.61
+branch. Live AWS qualification and a production support decision remain open.
+See [Migration 0.59 → 0.60](MIGRATION_0_59_TO_0_60.md), [What's new in
+0.60](../01_GETTING_STARTED/WHATS_NEW_0_60.md), and the
+[0.61 implementation plan](IMPLEMENTATION_PLAN_0_61.md).
+
+## Independent Connect preview publication record
 
 The locally qualified `etlantic-rsconnect==0.60.0` preview was published at
 2026-10-15T00:02:34Z from commit

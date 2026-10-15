@@ -1,7 +1,7 @@
 # etlantic-prefect
 
 
-Version **0.59.0** (lockstep with ETLantic core).
+Version **0.60.0** (lockstep with ETLantic core).
 Optional Prefect **ExecutionScheduler** for ETLantic (`etlantic.scheduler/1`).
 The local MVP is shipped in ETLantic 0.20.
 
@@ -105,7 +105,7 @@ cases remain listed as local gates; prolonged-outage evidence is not required.
 
 The local clean-wheel campaign passed 44 Prefect tests with no skips and the
 headless/FastAPI parity test on Python 3.11.15, Prefect 3.7.8, PostgreSQL 16.13,
-the Process worker pool, and ETLantic core/Prefect/FastAPI/SQL/SQLModel 0.59.0
+the Process worker pool, and ETLantic core/Prefect/FastAPI/SQL/SQLModel 0.60.0
 wheels plus the separately built test backend. The earlier blocking CI
 clean-wheel job on candidate `7336d377` passed all 44 installed-wheel tests.
 GitHub Actions run 38222124256 passed all 46 installed-wheel tests without
@@ -129,7 +129,7 @@ The local clean-wheel run also passed the partial-effect and mid-execution API r
 |---|---|
 | OS and architecture | macOS 26.5.2, arm64 |
 | Python | CPython 3.11.15 |
-| ETLantic packages | core, Prefect, FastAPI, SQL, and SQLModel 0.59.0 |
+| ETLantic packages | core, Prefect, FastAPI, SQL, and SQLModel 0.60.0 |
 | Prefect server and worker | Prefect 3.7.8, self-hosted API, Process pool |
 | PostgreSQL | 16.13 for the control plane and Prefect API database |
 | SQL clients | SQLAlchemy 2.0.51, psycopg 3.3.4, asyncpg 0.31.0 |
@@ -142,7 +142,7 @@ The local clean-wheel run also passed the partial-effect and mid-execution API r
 | Worker pool | Process pool is the only accepted pool and was exercised in the recorded environment; other pool types are rejected at registration. |
 | Prefect hosting | Self-hosted API with PostgreSQL persistence. Prefect Cloud, Docker, Kubernetes, and other pools have no managed support claim. |
 | Host composition | Headless and FastAPI command parity passed from installed wheels. Posit Connect is a deployment recipe, not a live-qualified host. |
-| Qualification boundary | The candidate profile is Ubuntu 24.04, CPython 3.11.15/3.12.13/3.13.16, Prefect 3.7.8, PostgreSQL 16.15, the 0.59.0 candidate wheels, and the Process pool. Other combinations are unsupported in this phase. No production identity provider, third-party connector, external consumer, live Posit host, prolonged outage, sustained production-capacity, or elapsed-time evidence is required; no claim is made for them. |
+| Qualification boundary | The candidate profile is Ubuntu 24.04, CPython 3.11.15/3.12.13/3.13.16, Prefect 3.7.8, PostgreSQL 16.15, the 0.60.0 candidate wheels, and the Process pool. Other combinations are unsupported in this phase. No production identity provider, third-party connector, external consumer, live Posit host, prolonged outage, sustained production-capacity, or elapsed-time evidence is required; no claim is made for them. |
 
 The same scoped reference can read ETLantic's canonical run projection or
 persist an authorized ETLantic cancellation:
@@ -319,7 +319,7 @@ The managed adapter is implemented on the current 0.58 candidate under
 [phase 0.58](https://github.com/eddiethedean/etlantic/blob/main/docs/11_DEVELOPMENT/IMPLEMENTATION_PLAN_0_58.md)
 and [#290](https://github.com/eddiethedean/etlantic/issues/290) through #298;
 the bounded static-batch `/1` Process-worker/PostgreSQL profile is qualified for
-the 0.59.0 candidate. It is not in the currently published 0.57.2 distribution.
+the 0.60.0 candidate. It is not in the currently published 0.57.2 distribution.
 See the [final
 qualification decision](https://github.com/eddiethedean/etlantic/blob/main/docs/11_DEVELOPMENT/evidence/phase_0_58/FINAL_QUALIFICATION_DECISION_2026-10-12.json).
 The target is static-batch `/1`, self-hosted Process workers, and PostgreSQL;
@@ -335,6 +335,6 @@ other managed capabilities require their planned qualification.
 
 ## Links
 
-[Prefect example](https://etlantic.readthedocs.io/en/v0.59.0/09_EXAMPLES/PREFECT_RUN/) ·
+[Prefect example](https://etlantic.readthedocs.io/en/v0.60.0/09_EXAMPLES/PREFECT_RUN/) ·
 [Source](https://github.com/eddiethedean/etlantic/tree/main/packages/etlantic-prefect) ·
 [Issues](https://github.com/eddiethedean/etlantic/issues)

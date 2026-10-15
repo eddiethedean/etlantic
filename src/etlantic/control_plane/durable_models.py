@@ -33,7 +33,7 @@ SUBMISSION_RECORD_SCHEMA = "etlantic.control_plane.submission_record/1"
 OUTBOX_RECORD_SCHEMA = "etlantic.control_plane.outbox_record/1"
 LEASE_RECORD_SCHEMA = "etlantic.control_plane.lease_record/1"
 ATTEMPT_RECORD_SCHEMA = "etlantic.control_plane.attempt_record/1"
-DISPATCH_RECORD_SCHEMA = "etlantic.control_plane.dispatch_record/4"
+DISPATCH_RECORD_SCHEMA = "etlantic.control_plane.dispatch_record/5"
 DISPATCH_RECONCILIATION_SCHEMA = "etlantic.control_plane.dispatch_reconciliation/3"
 CHECKPOINT_RECORD_SCHEMA = "etlantic.control_plane.checkpoint_record/1"
 EFFECT_RECORD_SCHEMA = "etlantic.control_plane.effect_record/1"
@@ -389,6 +389,9 @@ class DispatchRecord:
     reconciliation_history: tuple[DispatchReconciliation, ...] = ()
     backend_kind: str = "prefect"
     remote_run_id: str | None = None
+    # Set atomically on the first remote-create claim and preserved for every
+    # retry in this generation. ECS uses it to bound client-token reuse.
+    creation_started_at: str | None = None
 
     def __post_init__(self) -> None:
         route = validate_execution_route(self.execution_route)
@@ -410,6 +413,15 @@ class DispatchRecord:
                 object.__setattr__(self, "prefect_flow_run_id", remote)
         elif legacy is not None:
             raise ValueError("non-Prefect dispatch cannot set Prefect run ID")
+        if self.creation_started_at is not None:
+            try:
+                started = datetime.fromisoformat(
+                    self.creation_started_at.replace("Z", "+00:00")
+                )
+            except (AttributeError, TypeError, ValueError) as exc:
+                raise ValueError("creation_started_at must be ISO-8601") from exc
+            if started.tzinfo is None or started.utcoffset() is None:
+                raise ValueError("creation_started_at must be timezone aware")
 
     def to_dict(self) -> dict[str, Any]:
         return {
@@ -427,6 +439,7 @@ class DispatchRecord:
             None,
             "etlantic.control_plane.dispatch_record/2",
             "etlantic.control_plane.dispatch_record/3",
+            "etlantic.control_plane.dispatch_record/4",
             DISPATCH_RECORD_SCHEMA,
         }:
             raise ValueError("unsupported dispatch record schema")

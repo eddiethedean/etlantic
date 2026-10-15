@@ -245,6 +245,25 @@ class DurableWorkStore(Protocol):
         error_code: str | None = None,
         now: datetime | None = None,
     ) -> DispatchRecord: ...
+    def quarantine_expired_ecs_dispatch(
+        self,
+        ctx: ControlPlaneContext,
+        submission_id: str,
+        *,
+        expected_generation: int,
+        expected_creation_started_at: str | None,
+        safe_retry_deadline: datetime,
+        now: datetime | None = None,
+    ) -> DispatchRecord: ...
+    def confirm_dispatch_cancelled(
+        self,
+        ctx: ControlPlaneContext,
+        submission_id: str,
+        *,
+        expected_generation: int,
+        expected_remote_run_id: str,
+        now: datetime | None = None,
+    ) -> DispatchRecord: ...
     def rearm_dispatch_after_remote_failure(
         self,
         ctx: ControlPlaneContext,

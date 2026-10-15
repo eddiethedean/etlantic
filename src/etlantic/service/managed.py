@@ -667,10 +667,11 @@ class ManagedApplicationService:
             and expected_flow_run_id != expected_remote_run_id
         ):
             raise ValueError("remote run identity inputs do not match")
-        if (
-            not isinstance(expected_remote_run_id, str)
-            or not expected_remote_run_id.strip()
-            or len(expected_remote_run_id) > 256
+        remote_run_id_value: object = cast(object, expected_remote_run_id)
+        if remote_run_id_value is not None and (
+            not isinstance(remote_run_id_value, str)
+            or not remote_run_id_value.strip()
+            or len(remote_run_id_value) > 256
         ):
             raise ValueError("expected_remote_run_id must be a bounded identifier")
         if not submission_id.strip() or len(submission_id) > 256:

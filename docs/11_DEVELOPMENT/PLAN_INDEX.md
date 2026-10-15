@@ -1,6 +1,6 @@
 # Planning Hub
 
-> **Status: ETLantic core 0.59.0 is the published Beta release; the independent `etlantic-rsconnect` 0.60.0 preview is published. Live Connect activation and production qualification remain deferred.**
+> **Status: ETLantic core 0.60.0 is a Beta candidate; 0.59.x remains the published support line; the independent `etlantic-rsconnect` 0.60.0 preview is published. Live Connect activation and production qualification remain deferred.**
 > Inferred-model authoring is qualified only for the scoped Experimental surface in the 0.55 exit gate. Adaptive execution remains Experimental and graduation remains pending.
 > Human-governed AI context/proposal surfaces are Available; MCP extra is
 > Experimental. Streaming and bounded dynamic control are Supported in core; Kafka and
@@ -17,6 +17,9 @@ release gates. They are **not** a substitute for current product documentation.
       [Capabilities](../01_GETTING_STARTED/CAPABILITIES.md), the
       [CLI reference](../10_REFERENCE/CLI.md), and the
       [Python API reference](../10_REFERENCE/API_REFERENCE.md).
+    - To review what **ETLantic 0.60 can do now** in the unpublished core candidate, use the
+      [candidate version guide](../01_GETTING_STARTED/CURRENT_VERSION.md) and
+      [What's new in 0.60](../01_GETTING_STARTED/WHATS_NEW_0_60.md).
     - To evaluate the **complete application backend gaps**, use the
       [0.55 source review](FINDINGS_0_56.md), [0.56 plan](IMPLEMENTATION_PLAN_0_56.md)
       and [execution gates](EXECUTION_PLAN_0_56.md). These are future requirements.
@@ -68,8 +71,8 @@ is available and its release gate has passed.
 
 ## Portfolio at a glance
 
-Status is relative to the **0.59.0 published release**; external qualification
-for its new managed runtime and trigger capabilities remains deferred.
+Status is relative to the **0.60.0 core candidate**; 0.59.x remains the
+published support line, and live AWS qualification remains deferred.
 See the [0.55 scoped exit gate](EXIT_GATE_0_55.md) for qualification evidence.
 Prior scheduler/federation evidence remains in **0.47**; Streaming evidence remains in **0.46**; Optimization SDK evidence remains
 in **0.45**; Developer Intelligence remains in **0.44**; CP-GA evidence remains
@@ -79,7 +82,7 @@ evidence remains in **0.38**.
 
 | Plan | Status | Current boundary | Next horizon or gate |
 |---|---|---|---|
-| [Main roadmap](https://github.com/eddiethedean/etlantic/blob/main/ROADMAP.md) | Current sequence | 0.59 published; new managed runtime and trigger qualification deferred | [ROADMAP](https://github.com/eddiethedean/etlantic/blob/main/ROADMAP.md) §§ 0.56–0.66 |
+| [Main roadmap](https://github.com/eddiethedean/etlantic/blob/main/ROADMAP.md) | Current sequence | Core 0.60 candidate; 0.59 published support line; AWS qualification deferred | [ROADMAP](https://github.com/eddiethedean/etlantic/blob/main/ROADMAP.md) §§ 0.56–0.66 |
 | [0.49 implementation plan](IMPLEMENTATION_PLAN_0_49.md) | Implemented qualified subset | Optional DuckDB engine package, embedded runtime, dialect/compiler subset, security policy, and qualification evidence; advanced matrix/release evidence remains tracked in the exit gate | [Exit gate 0.49](EXIT_GATE_0_49.md) · [findings ledger](FINDINGS_0_49.md) · [epic #110](https://github.com/eddiethedean/etlantic/issues/110) |
 | [0.50 implementation plan](IMPLEMENTATION_PLAN_0_50.md) | Published; technical qualification complete | Frozen seven-engine baseline, pushdown conformance, and requirement-level evidence generated for 0.51 consumption | [Exit gate 0.50](EXIT_GATE_0_50.md) · [evidence index](evidence/portable_0_50/portable_evidence_index_0_50.json) |
 | [0.51 implementation plan](IMPLEMENTATION_PLAN_0_51.md) | Foundation published; adaptive qualification pending | Profile policy, report metadata migration, and closed `/2` wire model are implemented; candidate discovery, solver, and runtime remain unavailable | [ADR-025](adr/ADR-025-ADAPTIVE-EXECUTION-AND-PHYSICAL-DAG.md) · [Exit gate 0.51](EXIT_GATE_0_51.md) · [epic #30](https://github.com/eddiethedean/etlantic/issues/30) |
@@ -90,6 +93,7 @@ evidence remains in **0.38**.
 | [0.56 complete application backend](IMPLEMENTATION_PLAN_0_56.md) · [execution plan](EXECUTION_PLAN_0_56.md) · [source review](FINDINGS_0_56.md) · [exit gate](EXIT_GATE_0_56.md) | Published in v0.57.0 | Twelve reconciled backend gaps, full developer control, real workers/results/actions, live PostgreSQL/CSV and Semblance-backed Foundry qualification | Gates A–F and AC056-001–044; see release evidence |
 | [0.57 managed backend independence and runtime supervision](IMPLEMENTATION_PLAN_0_57.md) · [ADR-026](adr/ADR-026-MANAGED-BACKEND-INDEPENDENCE-AND-SUPERVISION.md) · [migration](MIGRATION_0_56_TO_0_57.md) · [exit gate](EXIT_GATE_0_57.md) | 0.57.0 published | Shared headless graph, schedule commands/factory, provider inspection, and role status/drain implement #278–#282 | Gates A–G; installed-wheel, PostgreSQL, parity, race and recovery evidence tracked in the exit gate |
 | [0.59 managed runtime consolidation and trigger contracts](IMPLEMENTATION_PLAN_0_59.md) · [migration](MIGRATION_0_58_TO_0_59.md) | Published; external qualification deferred | Shared settings and persistence codecs, generic Prefect dispatch, timer-owner fencing, and external trigger receipts | Gates A–F remain open; installed-package, PostgreSQL recovery, security, and dependency evidence is not claimed |
+| [Shared managed-execution contracts](MIGRATION_0_59_TO_0_60.md) · [0.61 AWS implementation](IMPLEMENTATION_PLAN_0_61.md) | Core 0.60 candidate; local AWS implementation complete; live qualification deferred | Provider-neutral durable dispatch, ECS cancellation and idempotency recovery, serialized schedules | Core release gates and independent AWS qualification remain separate |
 | [Package scope consolidation](PACKAGE_SCOPE_CONSOLIDATION_PLAN.md) | Current program; 0.59 implementation in progress, qualification pending | All F01–F12 findings, 25 package charters, conditional/deferred wheels and explicit migration windows | [Review baseline](PACKAGE_SCOPE_REVIEW_2026-10-12.md); owning 0.59–0.66 workstreams and evidence |
 | [Managed runtime consolidation and trigger contracts](ETLANTIC_RUNTIME_PLAN.md) · [0.59 implementation](IMPLEMENTATION_PLAN_0_59.md) | Published; qualification deferred | Shared settings and persistence codecs, generic Prefect dispatch, timer-owner fencing, and external trigger receipts | Phase 0.59 external qualification gates remain open |
 | [Posit Connect scheduling and HTTPS triggers](ETLANTIC_RSCONNECT_PLAN.md) · [0.60 implementation](IMPLEMENTATION_PLAN_0_60.md) · [simulation design](CONNECT_SIMULATION_DESIGN_0_60.md) | Preview 0.60.0 published; production qualification deferred | Local-check preview distribution; no live Connect availability claim | Package checks and simulations; separate production qualification stages |
