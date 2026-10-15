@@ -113,6 +113,7 @@ class Gateway:
         self.schedule = None if rule is None else SimpleNamespace(rule=rule)
         self.events: list[tuple[object, ...]] = []
         self.armed = False
+        self.timer_generation: int | None = None
 
     def read(self, content_guid: str) -> Any | None:
         self.events.append(("read",))
@@ -124,6 +125,9 @@ class Gateway:
 
     def can_set_trigger_armed(self, content_guid: str) -> bool:
         return True
+
+    def set_trigger_generation(self, content_guid: str, generation: int) -> None:
+        self.timer_generation = generation
 
     def create_or_update(self, content_guid: str, kwargs: Mapping[str, object]) -> Any:
         self.events.append(("create", dict(kwargs)))
@@ -394,6 +398,7 @@ def test_resume_binds_the_reanchored_timer_generation() -> None:
     assert active.timer_owner_generation == canonical.timer_owner_generation
     assert active.timer_owner_generation == binding.timer_owner_generation + 1
     assert active.schedule_start_time == canonical.timer_schedule_start_at
+    assert gateway.timer_generation == canonical.timer_owner_generation
     assert gateway.schedule is not None
     assert gateway.schedule.rule["start_time"] == canonical.timer_schedule_start_at
 

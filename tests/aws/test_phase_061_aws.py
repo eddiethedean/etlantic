@@ -873,14 +873,31 @@ class _DispatchStore:
 
     def dispatched_for_reconciliation(self, *_args: Any, **_kwargs: Any) -> list[Any]:
         if (
-            self.record.status == "dispatched"
-            and self.record.remote_run_id is not None
-            and self.submission.status in {"accepted", "cancel_requested"}
-        ) or (
-            self.record.backend_kind == "ecs"
-            and self.record.remote_run_id is None
-            and self.record.status in {"uncertain", "leased", "reconciliation_required"}
-            and self.submission.status in {"completed", "failed"}
+            (
+                self.record.status == "dispatched"
+                and self.record.remote_run_id is not None
+                and self.submission.status in {"accepted", "cancel_requested"}
+            )
+            or (
+                self.record.backend_kind == "ecs"
+                and self.record.status == "cancelled"
+                and self.record.remote_run_id is not None
+                and self.submission.status == "cancel_requested"
+            )
+            or (
+                self.record.backend_kind == "ecs"
+                and self.record.status in {"dispatched", "cancelled"}
+                and self.record.remote_run_id is not None
+                and self.submission.status in {"completed", "failed", "cancelled"}
+                and not self.outbox_published
+            )
+            or (
+                self.record.backend_kind == "ecs"
+                and self.record.remote_run_id is None
+                and self.record.status
+                in {"uncertain", "leased", "reconciliation_required"}
+                and self.submission.status in {"completed", "failed"}
+            )
         ):
             return [self.record]
         return []
@@ -1039,6 +1056,13 @@ def _dispatcher(
         ) -> None:
             assert submission_id == durable.record.submission_id
             assert execution_route == binding.execution_route
+            durable.reconcile_cancelled_submissions(
+                _ctx,
+                limit=1,
+                submission_id=submission_id,
+                execution_route=execution_route,
+                acknowledge_outbox=False,
+            )
             durable.reconcile_terminal_outbox()
 
         return SimpleNamespace(execute_submission=execute_submission)
@@ -1104,6 +1128,7 @@ def test_ecs_reconciliation_cursor_visits_later_cancelled_tasks() -> None:
             execution_route=binding.execution_route,
             remote_run_id=task_arn,
             generation=1,
+            status="dispatched",
         )
         for submission_id, task_arn in zip(
             ("a-running", "b-cancel"), task_arns, strict=True
@@ -1206,6 +1231,64 @@ def test_reconcile_settles_lost_ecs_response_after_terminal_work() -> None:
     ]
 
 
+def test_reconcile_cleans_terminal_outbox_for_linked_ecs_task() -> None:
+    binding = _ecs_binding()
+    now = datetime(2026, 10, 15, 12, tzinfo=UTC)
+    durable = _DispatchStore(
+        binding,
+        status="dispatched",
+        submission_status="completed",
+        creation_started_at=now - timedelta(minutes=5),
+    )
+    durable.record.remote_run_id = (
+        f"arn:aws:ecs:{binding.region}:{binding.account_id}:task/etlantic/completed"
+    )
+    ecs = _ECSClient(binding)
+    dispatcher = _dispatcher(binding, durable, ecs, [now])
+
+    result = dispatcher.reconcile()
+
+    assert result == [
+        ECSDispatchResult(
+            durable.record.submission_id,
+            "dispatched",
+            remote_run_id=durable.record.remote_run_id,
+        )
+    ]
+    assert durable.terminal_cleanup_events == ["cleanup", "outbox_published"]
+    assert ecs.list_task_requests == []
+
+
+def test_reconcile_recovers_confirmed_cancellation_before_canonical_cleanup() -> None:
+    binding = _ecs_binding()
+    now = datetime(2026, 10, 15, 12, tzinfo=UTC)
+    durable = _DispatchStore(
+        binding,
+        status="cancelled",
+        submission_status="cancel_requested",
+        creation_started_at=now - timedelta(minutes=5),
+    )
+    durable.record.remote_run_id = (
+        f"arn:aws:ecs:{binding.region}:{binding.account_id}:task/etlantic/stopped"
+    )
+    ecs = _ECSClient(binding)
+    dispatcher = _dispatcher(binding, durable, ecs, [now])
+
+    result = dispatcher.reconcile()
+
+    assert result == [
+        ECSDispatchResult(
+            durable.record.submission_id,
+            "cancelled",
+            remote_run_id=durable.record.remote_run_id,
+        )
+    ]
+    assert durable.submission.status == "cancelled"
+    assert durable.cancel_reconcile_calls == 1
+    assert durable.terminal_cleanup_events == ["cleanup", "outbox_published"]
+    assert ecs.list_task_requests == []
+
+
 def test_terminal_dispatch_waits_for_managed_outbox_cleanup() -> None:
     binding = _ecs_binding()
     now = datetime(2026, 10, 15, 12, tzinfo=UTC)
@@ -1222,7 +1305,7 @@ def test_terminal_dispatch_waits_for_managed_outbox_cleanup() -> None:
     waiting = dispatcher.reconcile()
 
     assert waiting[0].status == "uncertain"
-    assert waiting[0].error_code == "ecs_terminal_recovery_waiting"
+    assert waiting[0].error_code == "ecs_terminal_cleanup_pending"
     assert durable.record.status == "uncertain"
     assert durable.terminal_cleanup_events == ["cleanup"]
 

@@ -644,17 +644,24 @@ class ECSDispatcher:
             expected_remote_run_id=cast(str, linked.remote_run_id),
             now=self._now(),
         )
-        durable.reconcile_cancelled_submissions(
-            self.context,
-            limit=1,
-            submission_id=submission_id,
-            execution_route=self.binding.execution_route,
+        cleanup_complete = (
+            self._execute_canonical_terminal_cleanup(submission_id)
+            if cancelled.status == "cancelled"
+            else False
         )
         return ECSDispatchResult(
             submission_id,
             cancelled.status,
             remote_run_id=cancelled.remote_run_id,
-            error_code=cancelled.last_error_code,
+            error_code=(
+                (
+                    cancelled.last_error_code
+                    if cleanup_complete
+                    else "ecs_terminal_cleanup_pending"
+                )
+                if cancelled.status == "cancelled"
+                else cancelled.last_error_code
+            ),
         )
 
     def _matches_dispatch_task(
@@ -692,36 +699,47 @@ class ECSDispatcher:
         self, submission_id: str, *, expected_generation: int
     ) -> Any:
         """Run canonical terminal cleanup before closing an uncertain create."""
-        cleanup_host = self._terminal_cleanup_host
-        if cleanup_host is None:
-            owner_digest = hashlib.sha256(
-                f"{self.binding.fingerprint}:{self.owner_id}".encode("utf-8")
-            ).hexdigest()[:32]
-            cleanup_host = self.backend.create_execution_host(
-                owner_id=f"ecs-terminal-recovery:{owner_digest}"
-            )
-            self._terminal_cleanup_host = cleanup_host
-        cleanup_host.execute_submission(
-            self.context,
-            submission_id,
-            execution_route=self.binding.execution_route,
-        )
-        durable = self.backend.durable_work
-        pending_terminal = durable.pending_outbox(
-            self.context,
-            limit=1,
-            terminal_only=True,
-            submission_id=submission_id,
-            execution_route=self.binding.execution_route,
-        )
-        if pending_terminal:
+        if not self._execute_canonical_terminal_cleanup(submission_id):
             return None
+        durable = self.backend.durable_work
         return durable.settle_terminal_ecs_dispatch(
             self.context,
             submission_id,
             expected_generation=expected_generation,
             now=self._now(),
         )
+
+    def _execute_canonical_terminal_cleanup(self, submission_id: str) -> bool:
+        """Let the managed execution host finalize terminal work and quota."""
+        try:
+            cleanup_host = self._terminal_cleanup_host
+            if cleanup_host is None:
+                owner_digest = hashlib.sha256(
+                    f"{self.binding.fingerprint}:{self.owner_id}".encode("utf-8")
+                ).hexdigest()[:32]
+                cleanup_host = self.backend.create_execution_host(
+                    owner_id=f"ecs-terminal-recovery:{owner_digest}"
+                )
+                self._terminal_cleanup_host = cleanup_host
+            cleanup_host.execute_submission(
+                self.context,
+                submission_id,
+                execution_route=self.binding.execution_route,
+            )
+            durable = self.backend.durable_work
+            submission = durable.get_submission(self.context, submission_id)
+            if submission.status not in {"completed", "failed", "cancelled"}:
+                return False
+            pending_terminal = durable.pending_outbox(
+                self.context,
+                limit=1,
+                terminal_only=True,
+                submission_id=submission_id,
+                execution_route=self.binding.execution_route,
+            )
+        except Exception:
+            return False
+        return not pending_terminal
 
     @staticmethod
     def _parse_time(value: str | None) -> datetime | None:
@@ -760,8 +778,53 @@ class ECSDispatcher:
         results: list[ECSDispatchResult] = []
         for record in records:
             task_arn = record.remote_run_id
+            submission = durable.get_submission(self.context, record.submission_id)
+            if record.status == "cancelled" and submission.status == "cancel_requested":
+                cleaned = self._execute_canonical_terminal_cleanup(record.submission_id)
+                results.append(
+                    ECSDispatchResult(
+                        record.submission_id,
+                        record.status,
+                        remote_run_id=task_arn,
+                        error_code=(
+                            None if cleaned else "ecs_terminal_cleanup_pending"
+                        ),
+                    )
+                )
+                continue
+            if submission.status in {"completed", "failed", "cancelled"}:
+                if task_arn is None:
+                    settled = self._settle_terminal_dispatch(
+                        record.submission_id,
+                        expected_generation=record.generation,
+                    )
+                    results.append(
+                        ECSDispatchResult(
+                            record.submission_id,
+                            settled.status if settled is not None else record.status,
+                            error_code=(
+                                settled.last_error_code
+                                if settled is not None
+                                else "ecs_terminal_cleanup_pending"
+                            ),
+                        )
+                    )
+                else:
+                    cleaned = self._execute_canonical_terminal_cleanup(
+                        record.submission_id
+                    )
+                    results.append(
+                        ECSDispatchResult(
+                            record.submission_id,
+                            record.status,
+                            remote_run_id=task_arn,
+                            error_code=(
+                                None if cleaned else "ecs_terminal_cleanup_pending"
+                            ),
+                        )
+                    )
+                continue
             if task_arn is None:
-                submission = durable.get_submission(self.context, record.submission_id)
                 if submission.status == "cancel_requested":
                     intent = durable.prepare_dispatch(
                         self.context, record.submission_id
@@ -855,18 +918,25 @@ class ECSDispatcher:
                         expected_remote_run_id=task_arn,
                         now=self._now(),
                     )
-                    self.backend.durable_work.reconcile_cancelled_submissions(
-                        self.context,
-                        limit=1,
-                        submission_id=record.submission_id,
-                        execution_route=self.binding.execution_route,
+                    cleanup_complete = (
+                        self._execute_canonical_terminal_cleanup(record.submission_id)
+                        if cancelled.status == "cancelled"
+                        else False
                     )
                     results.append(
                         ECSDispatchResult(
                             record.submission_id,
                             cancelled.status,
                             remote_run_id=task_arn,
-                            error_code=cancelled.last_error_code,
+                            error_code=(
+                                (
+                                    cancelled.last_error_code
+                                    if cleanup_complete
+                                    else "ecs_terminal_cleanup_pending"
+                                )
+                                if cancelled.status == "cancelled"
+                                else cancelled.last_error_code
+                            ),
                         )
                     )
                     continue

@@ -434,6 +434,36 @@ def test_terminal_ecs_dispatch_without_attempt_cannot_be_settled() -> None:
     assert store.get_dispatch(ctx, dispatch.submission_id).status == "uncertain"
 
 
+def test_linked_ecs_terminal_dispatch_remains_reconcilable_until_outbox_cleanup() -> (
+    None
+):
+    ctx = _durable_context()
+    store = MemoryDurableWorkStore()
+    dispatch = _insert_ecs_dispatch(
+        store,
+        ctx,
+        status="dispatched",
+        submission_status="completed",
+        remote_run_id="arn:aws:ecs:us-east-1:123456789012:task/cluster/completed",
+    )
+
+    candidates = store.dispatched_for_reconciliation(
+        ctx, execution_route=dispatch.execution_route, limit=10
+    )
+
+    assert [item.submission_id for item in candidates] == [dispatch.submission_id]
+    assert store.pending_outbox(
+        ctx,
+        execution_route=dispatch.execution_route,
+        terminal_only=True,
+        submission_id=dispatch.submission_id,
+    )
+    store.mark_published(ctx, "outbox-ecs")
+    assert not store.dispatched_for_reconciliation(
+        ctx, execution_route=dispatch.execution_route, limit=10
+    )
+
+
 def test_expired_ecs_lease_remains_recoverable_after_cancellation() -> None:
     ctx = _durable_context()
     store = MemoryDurableWorkStore()
@@ -650,3 +680,62 @@ def test_cancelled_ecs_submission_waits_until_stopped_is_durably_confirmed() -> 
         for item in store.reconcile_cancelled_submissions(ctx, limit=1)
     ] == [dispatch.submission_id]
     assert store.get_submission(ctx, dispatch.submission_id).status == "cancelled"
+
+
+def test_stopped_ecs_cancellation_waits_for_execution_lease_cleanup() -> None:
+    ctx = _durable_context()
+    store = MemoryDurableWorkStore()
+    dispatch = _insert_ecs_dispatch(
+        store,
+        ctx,
+        status="dispatched",
+        remote_run_id="arn:aws:ecs:us-east-1:123456789012:task/cluster/task-lease",
+    )
+    lease = store.acquire_lease(
+        ctx, dispatch.submission_id, owner_id="stopped-worker", ttl_seconds=30
+    )
+    store.start_attempt(
+        ctx,
+        dispatch.submission_id,
+        owner_id="stopped-worker",
+        fencing_token=lease.fencing_token,
+    )
+    store.cancel_submission(ctx, dispatch.submission_id)
+
+    waiting = store.confirm_dispatch_cancelled(
+        ctx,
+        dispatch.submission_id,
+        expected_generation=dispatch.generation,
+        expected_remote_run_id=dispatch.remote_run_id or "",
+    )
+    assert waiting.status == "dispatched"
+    assert waiting.last_error_code == "ecs_cancel_waiting_for_execution_lease"
+    assert store.reconcile_cancelled_submissions(ctx, limit=1) == []
+
+    store.release_lease(
+        ctx,
+        dispatch.submission_id,
+        owner_id="stopped-worker",
+        fencing_token=lease.fencing_token,
+    )
+    confirmed = store.confirm_dispatch_cancelled(
+        ctx,
+        dispatch.submission_id,
+        expected_generation=dispatch.generation,
+        expected_remote_run_id=dispatch.remote_run_id or "",
+    )
+    assert confirmed.status == "cancelled"
+    assert [
+        item.submission_id
+        for item in store.dispatched_for_reconciliation(
+            ctx, execution_route=dispatch.execution_route, limit=10
+        )
+    ] == [dispatch.submission_id]
+    assert [
+        item.submission_id
+        for item in store.reconcile_cancelled_submissions(ctx, limit=1)
+    ] == [dispatch.submission_id]
+    assert store.list_attempts(ctx, dispatch.submission_id)[0].status == "lost"
+    assert (
+        store.get_effect(ctx, f"{dispatch.submission_id}:execution").status == "unknown"
+    )

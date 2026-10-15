@@ -871,6 +871,11 @@ class MemoryDurableWorkStore:
             raise ValueError("limit must be between 1 and 1000")
         scope = _scope(ctx)
         with self._lock:
+            terminal_outbox_submissions = {
+                row.submission_id
+                for key, row in self._outbox.items()
+                if key[:2] == scope and row.published_at is None
+            }
             rows = [
                 record
                 for key, record in self._dispatches.items()
@@ -887,6 +892,19 @@ class MemoryDurableWorkStore:
                         record.status == "dispatched"
                         and record.remote_run_id is not None
                         and submission.status in {"accepted", "cancel_requested"}
+                    )
+                    or (
+                        record.backend_kind == "ecs"
+                        and record.status == "cancelled"
+                        and record.remote_run_id is not None
+                        and submission.status == "cancel_requested"
+                    )
+                    or (
+                        record.backend_kind == "ecs"
+                        and record.status in {"dispatched", "cancelled"}
+                        and record.remote_run_id is not None
+                        and submission.status in {"completed", "failed", "cancelled"}
+                        and record.submission_id in terminal_outbox_submissions
                     )
                     or (
                         record.backend_kind == "ecs"
@@ -1269,6 +1287,20 @@ class MemoryDurableWorkStore:
                 raise ControlPlaneError.conflict(
                     "Dispatch changed before remote cancellation was confirmed"
                 )
+            execution_lease = self._leases.get(key)
+            if (
+                execution_lease is not None
+                and _parse(execution_lease.expires_at) > current
+            ):
+                # Keep cancellation discoverable until the stopped task's
+                # worker lease expires and canonical cleanup can release quota.
+                waiting = replace(
+                    record,
+                    last_error_code="ecs_cancel_waiting_for_execution_lease",
+                    updated_at=_iso(current),
+                )
+                self._dispatches[key] = waiting
+                return deepcopy(waiting)
             cancelled = replace(
                 record,
                 status="cancelled",

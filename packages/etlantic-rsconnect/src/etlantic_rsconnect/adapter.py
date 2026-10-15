@@ -228,6 +228,8 @@ class ConnectScheduleGateway(Protocol):
 
     def set_trigger_armed(self, content_guid: str, armed: bool) -> None: ...
 
+    def set_trigger_generation(self, content_guid: str, generation: int) -> None: ...
+
     def can_set_trigger_armed(self, content_guid: str) -> bool: ...
 
 
@@ -483,6 +485,26 @@ class PositSdkGateway:
         except Exception:
             raise ScheduleOperationUnknown(
                 "Posit Connect content arming outcome is unknown; inspect content before retrying"
+            ) from None
+
+    def set_trigger_generation(self, content_guid: str, generation: int) -> None:
+        """Set the canonical timer generation read by an installed trigger."""
+        if type(generation) is not int or generation < 1:
+            raise ValueError("timer owner generation must be a positive integer")
+        try:
+            content = self._pinned_client().content.get(content_guid)
+            environment = content.environment_variables
+            update = getattr(environment, "update", None)
+            if not callable(update):
+                raise ScheduleOperationError(
+                    "installed Posit SDK does not expose content environment updates"
+                )
+            update({"ETLANTIC_TIMER_OWNER_GENERATION": str(generation)})
+        except ScheduleOperationError:
+            raise
+        except Exception:
+            raise ScheduleOperationUnknown(
+                "Posit Connect timer generation update outcome is unknown; inspect content before retrying"
             ) from None
 
     def can_set_trigger_armed(self, content_guid: str) -> bool:
@@ -894,6 +916,9 @@ class ConnectScheduleAdapter:
             # Existing renders become inert before a recurrence mutation. A
             # failed write leaves the operation pending for operator recovery.
             self.gateway.set_trigger_armed(binding.content_guid, False)
+            self._set_trigger_generation(
+                binding.content_guid, record.timer_owner_generation
+            )
             if observed.status != "pending" or remote is None:
                 self.gateway.create_or_update(binding.content_guid, desired)
             self._verify_schedule_rule(binding.content_guid, desired)
@@ -985,6 +1010,14 @@ class ConnectScheduleAdapter:
             raise ScheduleOperationUnknown(
                 "Connect schedule deletion may have committed but the schedule remains; reconcile before retrying"
             )
+
+    def _set_trigger_generation(self, content_guid: str, generation: int) -> None:
+        update = getattr(self.gateway, "set_trigger_generation", None)
+        if not callable(update):
+            raise ScheduleOperationError(
+                "Connect gateway cannot update the installed trigger generation"
+            )
+        update(content_guid, generation)
 
     def pause(
         self,
@@ -1215,6 +1248,9 @@ class ConnectScheduleAdapter:
                 )
             desired = _connect_recurrence(record, start_time=intent.schedule_start_time)
             self.gateway.set_trigger_armed(binding.content_guid, False)
+            self._set_trigger_generation(
+                binding.content_guid, record.timer_owner_generation
+            )
             self.gateway.create_or_update(binding.content_guid, desired)
             self._verify_schedule_rule(binding.content_guid, desired)
             self.gateway.set_trigger_armed(binding.content_guid, True)
@@ -1423,6 +1459,9 @@ class ConnectScheduleAdapter:
             self._rollback_amendment(service, context, schedule_id, pending)
             raise
         try:
+            self._set_trigger_generation(
+                binding.content_guid, resumed.timer_owner_generation
+            )
             self.gateway.set_trigger_armed(binding.content_guid, True)
         except Exception:
             self._rollback_amendment(service, context, schedule_id, pending)

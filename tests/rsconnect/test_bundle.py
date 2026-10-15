@@ -129,15 +129,20 @@ def test_generated_runner_matches_public_occurrence_and_receipt_contract(
     expected = build_trigger_envelope(
         schedule_id="schedule-1",
         schedule_revision_id="revision-1",
-        timer_owner_generation=2,
+        timer_owner_generation=3,
         occurrence=OccurrenceContext(
             scheduled_at="2026-10-13T12:00:00Z",
             delivery_attempt_id="attempt-1",
             correlation_id="correlation-1",
         ),
     ).to_dict()
+    monkeypatch.setenv("ETLANTIC_TIMER_OWNER_GENERATION", "3")
     emitted = runner["occurrence"]()
     assert emitted == expected
+
+    monkeypatch.setenv("ETLANTIC_TIMER_OWNER_GENERATION", "0")
+    with pytest.raises(RuntimeError, match="timer owner generation is invalid"):
+        runner["occurrence"]()
 
     status_reference = (
         "/v1/schedules/schedule-1/occurrences/" + expected["occurrence_id"]
