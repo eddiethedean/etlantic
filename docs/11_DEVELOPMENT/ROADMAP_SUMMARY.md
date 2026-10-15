@@ -4,9 +4,11 @@ ETLantic **0.35.0** closed **Migration Completion and Joint Freeze (M7)**.
 **0.36.0** closed joint compatibility burn-in. **0.37** closed the
 stable-foundation gate. **0.38.0** closed the connectivity line.
 **0.39.0** closed CP1 incubation. **0.40.0** closed CP2 registry incubation.
-**0.59.0** is the latest published **Beta release**. The external qualification
-campaigns for its managed runtime and trigger additions are deferred and not
-represented as passed. Phase 0.56 is published; see its exit
+**0.59.0** is the latest published core **Beta release**. The independently
+versioned `etlantic-rsconnect` **0.60.0 preview** is also published; live
+Connect activation and production qualification remain deferred. The external
+qualification campaigns for core 0.59's managed runtime and trigger additions
+are not represented as passed. Phase 0.56 is published; see its exit
 gate and migration guide. Adaptive graduation remains pending. The 0.54
 release added public conformance and the bounded source/fusion reference; its
 local adaptive physical-DAG execution is Experimental and fixture-qualified.
@@ -52,7 +54,7 @@ For the status, current boundary, and owner of every domain plan, use the
 | Previous | 0.57 | Managed backend independence and runtime supervision (#278–#282) | Published line through 0.57.2 — [implementation plan](IMPLEMENTATION_PLAN_0_57.md), [exit gate](EXIT_GATE_0_57.md) |
 | Previous | 0.58 | Managed Prefect execution | Bounded static-batch Process-worker/PostgreSQL profile qualified on candidate; included in 0.59.0 — [implementation plan](IMPLEMENTATION_PLAN_0_58.md), [final decision](evidence/phase_0_58/FINAL_QUALIFICATION_DECISION_2026-10-12.json), [#290](https://github.com/eddiethedean/etlantic/issues/290) |
 | Current | 0.59 | Managed runtime consolidation and trigger contracts | Published Beta; external qualification campaigns deferred — [implementation plan](IMPLEMENTATION_PLAN_0_59.md), [exit gate](EXIT_GATE_0_59.md) |
-| Preview complete | 0.60 | Posit Connect scheduling and HTTPS triggers | Independent preview release ready; live activation and production qualification deferred — [implementation plan](IMPLEMENTATION_PLAN_0_60.md), [exit record](EXIT_GATE_0_60.md) |
+| Preview published | 0.60 | Posit Connect scheduling and HTTPS triggers | `etlantic-rsconnect` 0.60.0 published independently; live activation and production qualification deferred — [implementation plan](IMPLEMENTATION_PLAN_0_60.md), [exit record](EXIT_GATE_0_60.md) |
 | Later | 0.61 | AWS Scheduler/Lambda and one ECS/Fargate executor | Planned — [implementation plan](IMPLEMENTATION_PLAN_0_61.md) |
 | Later | 0.62 | One Data Mover host and optional trusted URL discovery | Planned — [implementation plan](IMPLEMENTATION_PLAN_0_62.md) |
 | Later | 0.63 | Brownfield bridges and targeted package simplification | Planning freeze — [implementation plan](IMPLEMENTATION_PLAN_0_63.md) |
@@ -73,8 +75,9 @@ F01–F12 to owners, workstreams and evidence and gives all 25 distributions a
 charter. Implementation remains pending.
 
 0.59 consolidates managed services, configuration and generic dispatch before
-new trigger seams. 0.60 can distribute a locally qualified preview package;
-live proof of one explicit-URL Connect topology governs production support.
+new trigger seams. The 0.60 preview package is published after repository-local
+qualification; live proof of one explicit-URL Connect topology governs
+production support.
 0.61 qualifies
 Scheduler/Lambda and one ECS/Fargate executor, with Batch unscheduled. 0.62 proves
 one Data Mover host with timer variants rather than all hosting/executor pairs.
@@ -414,7 +417,7 @@ shared entry, evidence, and completion rules for all later phases.
 - **[0.57](IMPLEMENTATION_PLAN_0_57.md):** headless backend independence, authorized schedule services, complete scheduler construction, read-only schema inspection, and runtime supervision; all of #278–#282 release in 0.57.0
 - **[0.58](IMPLEMENTATION_PLAN_0_58.md):** managed Prefect execution over canonical accepted work; direct compatibility, installed workers, versioned deployments, durable dispatch, scoped status/cancel, recurring admission, and real recovery qualification ([#290](https://github.com/eddiethedean/etlantic/issues/290), #291–#298)
 - **[0.59](IMPLEMENTATION_PLAN_0_59.md):** managed runtime consolidation and trigger contracts
-- **[0.60](IMPLEMENTATION_PLAN_0_60.md):** preview package release on repository-local
+- **[0.60](IMPLEMENTATION_PLAN_0_60.md):** preview package published after repository-local
   checks; separately deferred explicit-URL Connect qualification, API stability
   and nominal-slot activation, public 0.59 wire reuse, bounded receipt-aware
   delivery and live lifecycle/recovery evidence

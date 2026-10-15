@@ -8,8 +8,8 @@ plan_last_reviewed: 2026-10-14
 # ETLantic 0.60 Implementation Plan
 
 Phase 0.60 delivers optional `etlantic-rsconnect` for Connect deployment,
-scheduling, and lightweight HTTPS triggers. The package can be distributed as a
-preview after the local release checks below; external services and live
+scheduling, and lightweight HTTPS triggers. Version 0.60.0 was published as an
+independent preview after the local release checks below; external services and live
 qualification are not release prerequisites. The [rsconnect domain
 plan](ETLANTIC_RSCONNECT_PLAN.md) owns platform boundaries. Former 0.60 console
 scope moves intact to [0.64](IMPLEMENTATION_PLAN_0_64.md).
@@ -29,7 +29,7 @@ block distribution of the preview package.
 
 ## Preview Package Release
 
-The package may be released as a preview when these repository-local checks pass:
+The preview was released after these repository-local checks passed:
 
 - Build and install the wheel from the locked workspace; import the public
   package API without requiring Connect, Quarto, FastAPI, Data Mover, PostgreSQL,

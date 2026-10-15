@@ -6,7 +6,9 @@
 > [Capabilities](docs/01_GETTING_STARTED/CAPABILITIES.md) for what ships now.
 > Review this header for every release or sequence change.
 
-**Latest published release:** ETLantic **0.59.0** (Beta). Its external
+**Latest published core release:** ETLantic **0.59.0** (Beta). The independent
+`etlantic-rsconnect` **0.60.0 preview** is also published; live Connect
+activation and production qualification remain deferred. Core 0.59's external
 qualification campaigns remain deferred; the newly added managed runtime and
 trigger capabilities are not qualified for production. The 0.57 release adds managed backend independence and runtime
 supervision. The 0.56 release completes the application backend. The scoped
@@ -43,7 +45,7 @@ through **0.37** (stable foundation) are shipped.
 | Previous | 0.57 | Managed backend independence and runtime supervision (#278–#282), plus Local canonical sort fix (#283) | Published / shipped evidence; superseded by the 0.59.x support line |
 | Previous | 0.58 | Managed Prefect Execution (#290 / #291–#298) | Qualified candidate; included in 0.59.0 |
 | Current | 0.59 | Managed runtime consolidation and trigger contracts ([exit gate](docs/11_DEVELOPMENT/EXIT_GATE_0_59.md)) | Published / shipped evidence |
-| In progress | 0.60 | Posit Connect scheduling and HTTPS triggers | Preview package distribution uses local checks; live activation and production qualification deferred — [implementation plan](docs/11_DEVELOPMENT/IMPLEMENTATION_PLAN_0_60.md) |
+| Preview published | 0.60 | Posit Connect scheduling and HTTPS triggers | Independent `etlantic-rsconnect` preview published after local checks; live activation and production qualification deferred — [implementation plan](docs/11_DEVELOPMENT/IMPLEMENTATION_PLAN_0_60.md), [exit record](docs/11_DEVELOPMENT/EXIT_GATE_0_60.md) |
 | Later | 0.61 | AWS Scheduler/Lambda and one ECS/Fargate executor | Planned — [implementation plan](docs/11_DEVELOPMENT/IMPLEMENTATION_PLAN_0_61.md) |
 | Later | 0.62 | One Data Mover host and optional trusted URL discovery | Planned — [implementation plan](docs/11_DEVELOPMENT/IMPLEMENTATION_PLAN_0_62.md) |
 | Later | 0.63 | Brownfield bridges and targeted package simplification | Planning freeze |

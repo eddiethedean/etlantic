@@ -1,6 +1,6 @@
 # Earlier release notes
 
-> **Status: 0.59.0 is the latest published release.** Earlier release notes follow. Full history:
+> **Core status: ETLantic 0.59.0 is the latest published and supported core release.** The separately versioned [`etlantic-rsconnect` 0.60.0 preview](https://pypi.org/project/etlantic-rsconnect/0.60.0/) is also published; its [exit record](../11_DEVELOPMENT/EXIT_GATE_0_60.md) describes the deferred live and production qualification. Earlier core release notes follow. Full history:
 > [Changelog](../CHANGELOG.md).
 
 | Release | Notes |

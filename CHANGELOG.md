@@ -62,9 +62,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Release status
 
-- Publish 0.59.0 as a Beta release. External qualification campaigns remain
-  deferred and are not represented as passed; the 0.59 managed runtime and
-  external trigger additions remain unqualified for production use.
+- 0.59.0 was published as a Beta release on 2026-10-14. External qualification
+  campaigns remain deferred and are not represented as passed; the 0.59 managed
+  runtime and external trigger additions remain unqualified for production use.
 
 ## [0.57.2] - 2026-10-11
 

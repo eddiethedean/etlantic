@@ -5,12 +5,17 @@ description: Repository-local completion and publication of etlantic-rsconnect 0
 
 # ETLantic 0.60 Preview Exit Record
 
-The phase implementation is complete for the locally qualified
-`etlantic-rsconnect==0.60.0` preview. Core remains at 0.59.0; its existing tag
-stays immutable. The package is ready for the independent
-`etlantic-rsconnect-v0.60.0` release path after the checks below pass on the
-intended commit. This record does not publish an artifact or qualify live
-Connect activation.
+The locally qualified `etlantic-rsconnect==0.60.0` preview was published at
+2026-10-15T00:02:34Z from commit
+[`def8a940`](https://github.com/eddiethedean/etlantic/commit/def8a9402a983524e0134f43dbf9fea0fd1fc89c),
+under tag `etlantic-rsconnect-v0.60.0`. The package is available on
+[PyPI](https://pypi.org/project/etlantic-rsconnect/0.60.0/) and as a
+[GitHub prerelease](https://github.com/eddiethedean/etlantic/releases/tag/etlantic-rsconnect-v0.60.0).
+The release workflow completed successfully, including its full checks and
+preview publishing job ([run 38656000427](https://github.com/eddiethedean/etlantic/actions/runs/38656000427)).
+Core remains at 0.59.0 and its existing tag stays immutable. Publication records
+distribution only; it does not qualify live Connect activation or production
+support.
 
 | Deliverable | Implemented surface and verification |
 |---|---|
@@ -22,7 +27,8 @@ Connect activation.
 | Simulations | Real pinned SDK over strict synthetic HTTP, controlled lifecycle races, request/response loss, actual loopback TLS, and generated-runner subprocess tests. The larger stateful simulator campaign remains documented future work. |
 | Distribution | Independent tag validation, package release notes, wheel/sdist builds, isolated base installation, installed contract tests with workspace imports disabled, and package-only PyPI/GitHub prerelease publishing. |
 
-Run the source gate and focused suite from the locked workspace:
+The pre-publication source gate and focused suite were run from the locked
+workspace at the release commit:
 
 ```bash
 uv sync --locked --extra rsconnect
@@ -42,9 +48,9 @@ content with `python -I -S`. The installed focused suite uses
 The independent publishing job repeats these checks against released core
 0.59.0. Release artifacts include a JSON check report and build provenance.
 
-Publication uses the [release process](RELEASE_PROCESS.md#independently-versioned-connect-preview)
+Publication used the [independent Connect preview release process](RELEASE_PROCESS.md#independently-versioned-connect-preview)
 and package [release notes](https://github.com/eddiethedean/etlantic/blob/main/packages/etlantic-rsconnect/CHANGELOG.md).
-No external platform campaign is a distribution gate.
+No external platform campaign was a distribution gate.
 
 The generated Connect content remains inactive because its documented scheduled
 invocation has no trusted nominal-slot/retry provider. The package does not

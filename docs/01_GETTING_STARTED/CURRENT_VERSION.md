@@ -7,9 +7,13 @@ current_minor: "0.59"
 
 # ETLantic 0.59 Current Version Guide
 
-> **Status: ETLantic 0.59.0 is the published Beta release; external qualification campaigns for its new managed runtime and trigger capabilities are deferred.**
+> **Status: ETLantic core 0.59.0 is the published Beta release. The separately versioned `etlantic-rsconnect` 0.60.0 preview is published; live Connect activation and production qualification remain deferred.**
 
-The latest published and supported package line is 0.59.x. The 0.59.0 release
+The latest published and supported **core** package line is 0.59.x. The separately
+published [`etlantic-rsconnect` 0.60.0 preview](https://pypi.org/project/etlantic-rsconnect/0.60.0/)
+integrates with core `etlantic>=0.59.0,<0.61.0`; it does not change the core
+version or support line. See the [0.60 preview exit record](../11_DEVELOPMENT/EXIT_GATE_0_60.md)
+for its release status and qualification boundaries. The 0.59.0 release
 consolidates managed configuration, dispatch, persistence, and
 schedule ownership, and adds an external schedule-trigger contract. Its
 [exit gate](../11_DEVELOPMENT/EXIT_GATE_0_59.md) tracks release qualification.

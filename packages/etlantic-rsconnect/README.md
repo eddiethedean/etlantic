@@ -88,9 +88,9 @@ and [Connect integration plan](https://github.com/eddiethedean/etlantic/blob/mai
 for the remaining platform decisions and evidence gates.
 
 The preview has its own [release notes](https://github.com/eddiethedean/etlantic/blob/main/packages/etlantic-rsconnect/CHANGELOG.md) and tag:
-`etlantic-rsconnect-v0.60.0`. It can be published while the core remains at
+`etlantic-rsconnect-v0.60.0`. It was published while the core remained at
 0.59.0. The [preview exit record](https://github.com/eddiethedean/etlantic/blob/main/docs/11_DEVELOPMENT/EXIT_GATE_0_60.md)
-lists the local checks and publishing procedure. `BindingStore`,
+records the local checks and successful publication. `BindingStore`,
 `ConnectScheduleGateway`, and `DeploymentJournal` are public root imports for
 host integrations; storage implementations must provide the documented durable
 and atomic behavior.

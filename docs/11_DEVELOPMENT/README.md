@@ -1,7 +1,8 @@
 # Development
 
-Latest published release: ETLantic 0.59.0 Beta; its external qualification
-campaigns remain deferred. Version 0.58's qualified candidate profile was
+Latest published core release: ETLantic 0.59.0 Beta. The independent
+`etlantic-rsconnect` 0.60.0 preview is published; live activation and production
+qualification remain deferred. Version 0.58's qualified candidate profile was
 included in 0.59.0 and was not published as a separate package release.
 See the [0.57 → 0.58 migration](MIGRATION_0_57_TO_0_58.md), [0.58 exit gate](EXIT_GATE_0_58.md),
 and [0.56 migration](MIGRATION_0_55_TO_0_56.md),

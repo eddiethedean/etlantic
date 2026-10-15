@@ -267,8 +267,10 @@ GitHub Actions workflow
 ### Independently versioned Connect preview
 
 `etlantic-rsconnect` has an independent release tag. Core `v0.59.0` already
-exists and predates this package; keep that tag immutable. To prepare the
-preview from the intended clean commit:
+exists and predates this package; keep that tag immutable. The 0.60.0 preview
+was released from commit `def8a940` under
+`etlantic-rsconnect-v0.60.0`; core remains at 0.59.0. The release validation
+commands run against the intended clean release commit were:
 
 ```bash
 uv sync --locked --extra rsconnect
@@ -278,14 +280,14 @@ uv run pytest -q tests/rsconnect tests/control_plane/test_trigger_0_59.py \
 uv build --package etlantic-rsconnect
 ```
 
-When publication is authorized, create and push
-`etlantic-rsconnect-v0.60.0`. The same `release.yml` workflow runs the full checks
-and selects its preview publishing job. It checks the installed adapter against
-released core 0.59.0, proves base installation needs no SDK or ETL engines, and
-runs the focused tests with workspace imports disabled. It publishes only the
-adapter wheel and sdist and creates a GitHub prerelease using the package's
-changelog. Re-dispatch **Release** with that same preview tag to retry an upload;
-existing artifacts are checked by `uv publish --check-url`.
+The [release workflow run](https://github.com/eddiethedean/etlantic/actions/runs/38656000427)
+completed successfully and published the adapter wheel and sdist, then created
+the [GitHub prerelease](https://github.com/eddiethedean/etlantic/releases/tag/etlantic-rsconnect-v0.60.0).
+It ran the full checks, checked the installed adapter against released core
+0.59.0, proved base installation needs no SDK or ETL engines, and ran the
+focused tests with workspace imports disabled. Re-dispatch **Release** with the
+same preview tag to retry an upload; existing artifacts are checked by
+`uv publish --check-url`.
 
 This path uses the existing `pypi` publishing environment and `release.yml`
 Trusted Publishing identity. It requires no live Connect, Quarto, PostgreSQL,

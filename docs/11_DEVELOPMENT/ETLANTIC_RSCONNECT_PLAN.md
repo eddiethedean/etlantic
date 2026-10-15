@@ -2,14 +2,14 @@
 title: ETLantic rsconnect Integration Plan
 description: Optional Posit Connect schedule adapter targeting compatible HTTPS receivers.
 plan_status: implementation_complete_qualification_deferred
-plan_last_reviewed: 2026-10-13
+plan_last_reviewed: 2026-10-14
 ---
 
 # ETLantic rsconnect Integration Plan
 
-**Status: preview package implementation complete; production qualification is
-deferred; phase [0.60](IMPLEMENTATION_PLAN_0_60.md).** The optional package may
-be distributed after its repository-local checks pass. No Connect support tuple
+**Status: `etlantic-rsconnect` 0.60.0 preview published; production qualification is
+deferred; phase [0.60](IMPLEMENTATION_PLAN_0_60.md).** The optional package was
+distributed after its repository-local checks passed. No Connect support tuple
 or live acceptance gate is qualified, and neither is required for preview
 distribution. Source provenance and the four-plan sequence are recorded in the
 [runtime plan](ETLANTIC_RUNTIME_PLAN.md).

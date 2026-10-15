@@ -62,7 +62,7 @@ audience: adopter
 
 ## Choose your path
 
-> **Status: ETLantic 0.59.0 is the latest published Beta release; its external qualification campaigns remain deferred.**
+> **Status: ETLantic core 0.59.0 is the latest published Beta release. The independent `etlantic-rsconnect` 0.60.0 preview is published; live Connect activation and production qualification remain deferred.**
 
 
 <div class="etlantic-path-grid">

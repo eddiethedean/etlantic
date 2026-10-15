@@ -52,7 +52,10 @@ python -m etlantic run pipeline.py:SamplePipeline --profile development
 ```
 
 ETLantic 0.59.0 is the current published Beta release, and 0.59.x is the
-supported line. The run should succeed and write Ada and Grace to
+supported core line. The independent
+[`etlantic-rsconnect` 0.60.0 preview](https://pypi.org/project/etlantic-rsconnect/0.60.0/)
+is published for Posit Connect integration; live activation and production
+qualification remain deferred. The run should succeed and write Ada and Grace to
 `data/out.json`. See the
 [full Quickstart](https://etlantic.readthedocs.io/en/stable/01_GETTING_STARTED/QUICKSTART/)
 for setup details and expected output.

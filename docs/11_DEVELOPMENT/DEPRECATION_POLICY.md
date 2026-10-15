@@ -1,6 +1,6 @@
 # API Stability and Deprecation Policy
 
-ETLantic 0.59.0 is the latest published Beta; external qualification for its
+ETLantic core 0.59.0 is the latest published Beta; external qualification for its
 managed runtime and trigger additions remains deferred. Support remains within documented pilot and
 production profiles. The roadmap remains entirely
 within the 0.x series; **0.37** closed the stable-foundation gate and later

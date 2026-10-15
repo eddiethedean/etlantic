@@ -8,6 +8,7 @@
 | Fact | Owning page | Must not diverge |
 |---|---|---|
 | Current package version / minor | `docs/release-facts.json` (+ `src/etlantic/_version.py`) | ROADMAP header, CAPABILITIES, SUPPORT, homepage “current release”, INSTALLATION pins |
+| Independent preview package releases | `docs/release-facts.json` → `independent_releases` | Package release notes, preview exit record, roadmap and release-status banners |
 | Maturity (Beta) and support line | [`SUPPORT.md`](https://github.com/eddiethedean/etlantic/blob/main/SUPPORT.md) | docs SUPPORT pointer, KNOWN_ISSUES opening, SECURITY support table |
 | What ships now | [`CAPABILITIES.md`](../01_GETTING_STARTED/CAPABILITIES.md) | Homepage limits copy, EVALUATOR, COMPARE |
 | What's new / migration / exit gate | release-facts paths | Plan Index, Getting Started hub, ROADMAP evidence links |

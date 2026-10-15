@@ -1,10 +1,12 @@
 # Support
 
-> **Version boundary:** ETLantic 0.59.0 is the current published Beta release; external qualification for its new managed runtime and trigger capabilities remains deferred.
+> **Version boundary:** ETLantic core 0.59.0 is the current published Beta release; the independent `etlantic-rsconnect` 0.60.0 preview is published, with live Connect and production qualification deferred.
 
 
-ETLantic **0.59.0** is the current published Beta release, and **0.59.x** is
-the support line. It targets documented single-tenant pilots and
+ETLantic **0.59.0** is the current published core Beta release, and **0.59.x**
+is the core support line. The `etlantic-rsconnect` 0.60.0 preview is published
+as a separate package without live Connect or production support qualification.
+Core targets documented single-tenant pilots and
 retains **Supported** isolation
 profiles (`isolated-deployment`, `dedicated-schema`). There is no hosted
 multi-tenant SaaS. Community support has **no formal SLA** or guaranteed

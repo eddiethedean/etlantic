@@ -1,11 +1,13 @@
 # Security Policy
 
-> **Version boundary:** ETLantic 0.59.0 is the current published Beta release; external qualification for its new managed runtime and trigger capabilities remains deferred.
+> **Version boundary:** ETLantic core 0.59.0 is the current published Beta release; the independent `etlantic-rsconnect` 0.60.0 preview is published, with live Connect and production qualification deferred.
 
 
-ETLantic 0.59.0 is the current **published Beta release**, and 0.59.x is the
-supported line for documented single-tenant pilots. The new managed runtime
-and trigger capabilities remain unqualified for production use.
+ETLantic 0.59.0 is the current **published core Beta release**, and 0.59.x is the
+supported line for documented single-tenant pilots. The independent
+`etlantic-rsconnect` 0.60.0 preview is distributed separately and is not a
+production support claim. Core managed runtime and trigger capabilities remain
+unqualified for production use.
 You can embed an HTTP control plane with **Supported** isolation
 profiles (`isolated-deployment`, `dedicated-schema`). There is no hosted
 multi-tenant SaaS. Security reports
