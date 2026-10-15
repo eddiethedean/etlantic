@@ -112,7 +112,10 @@ class SQLModelDurableWorkStore:
                 # this operation is in flight. Re-read and re-apply the pure
                 # memory-store operation against the committed state instead
                 # of treating an unrelated heartbeat as lease loss.
-                if not exc.detail.startswith("Durable snapshot version conflict"):
+                if (
+                    attempt + 1 == _DURABLE_TXN_MAX_ATTEMPTS
+                    or not exc.detail.startswith("Durable snapshot version conflict")
+                ):
                     raise
             except OperationalError as exc:
                 # SQLite reports a stale read transaction as "database is
@@ -120,8 +123,10 @@ class SQLModelDurableWorkStore:
                 # upgrades its read lock. The failed transaction is rolled
                 # back by session_scope, so retrying the in-memory operation is
                 # safe and lets the next read observe the winning snapshot.
-                if self.engine.dialect.name != "sqlite" or not _is_sqlite_lock_error(
-                    exc
+                if (
+                    attempt + 1 == _DURABLE_TXN_MAX_ATTEMPTS
+                    or self.engine.dialect.name != "sqlite"
+                    or not _is_sqlite_lock_error(exc)
                 ):
                     raise
 
