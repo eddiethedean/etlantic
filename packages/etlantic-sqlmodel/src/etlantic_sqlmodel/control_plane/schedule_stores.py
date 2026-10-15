@@ -53,6 +53,11 @@ def _utcnow_iso() -> str:
     return datetime.now(UTC).isoformat().replace("+00:00", "Z")
 
 
+def _schedule_advisory_lock_id(store_id: str) -> int:
+    digest = hashlib.sha256(("schedule:" + store_id).encode("utf-8")).digest()[:8]
+    return int.from_bytes(digest, byteorder="big", signed=True)
+
+
 class SQLModelScheduleStore:
     """Transactional ScheduleStore backed by a SQL snapshot row."""
 
@@ -77,15 +82,18 @@ class SQLModelScheduleStore:
             raise RuntimeError(
                 "external timer mutation requires PostgreSQL advisory locks"
             )
-        digest = hashlib.sha256(("schedule:" + self.store_id).encode("utf-8")).digest()[
-            :8
-        ]
-        lock_id = int.from_bytes(digest, byteorder="big", signed=True)
+        lock_id = _schedule_advisory_lock_id(self.store_id)
         with self.engine.connect() as connection:
-            connection.execute(
-                text("SELECT pg_advisory_lock(:lock_id)"), {"lock_id": lock_id}
-            )
+            lock_attempted = False
             try:
+                lock_attempted = True
+                connection.execute(
+                    text("SELECT pg_advisory_lock(:lock_id)"), {"lock_id": lock_id}
+                )
+                # Session locks survive transaction end. Finish the transaction
+                # whose lock query may have established a stale REPEATABLE READ
+                # snapshot before waiting for another canonical writer.
+                connection.commit()
                 payload_json = connection.execute(
                     select(ScheduleSnapshotRow.payload_json).where(
                         ScheduleSnapshotRow.store_id == self.store_id
@@ -102,10 +110,24 @@ class SQLModelScheduleStore:
                             raise
                 yield current
             finally:
-                connection.execute(
-                    text("SELECT pg_advisory_unlock(:lock_id)"),
-                    {"lock_id": lock_id},
-                )
+                if lock_attempted:
+                    try:
+                        # A failed snapshot query leaves PostgreSQL's transaction
+                        # aborted. Clear it before attempting the session unlock.
+                        if connection.in_transaction():
+                            connection.rollback()
+                        unlock = text("SELECT pg_advisory_unlock(:lock_id)")
+                        while connection.execute(
+                            unlock, {"lock_id": lock_id}
+                        ).scalar_one():
+                            pass
+                        connection.commit()
+                    except BaseException:
+                        # Closing a pooled connection does not release a session
+                        # advisory lock. Invalidate it so PostgreSQL closes the
+                        # backend and releases any lock that could not be unlocked.
+                        connection.invalidate()
+                        raise
 
     def _txn(self, fn: Callable[[MemoryScheduleStore], T]) -> T:
         with session_scope(self.engine) as session:
@@ -124,10 +146,7 @@ class SQLModelScheduleStore:
         """
         if self.engine.dialect.name != "postgresql":
             return
-        digest = hashlib.sha256(("schedule:" + self.store_id).encode("utf-8")).digest()[
-            :8
-        ]
-        lock_id = int.from_bytes(digest, byteorder="big", signed=True)
+        lock_id = _schedule_advisory_lock_id(self.store_id)
         session.connection().execute(
             text("SELECT pg_advisory_xact_lock(:lock_id)"), {"lock_id": lock_id}
         )

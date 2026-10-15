@@ -115,6 +115,28 @@ def _schedule_record(*, schedule_id: str = "schedule-a") -> ScheduleRecord:
     )
 
 
+def _create_canonical_external_schedule(
+    ctx: ControlPlaneContext,
+    store: MemoryScheduleStore,
+    adapter: EventBridgeScheduler,
+    *,
+    schedule_id: str,
+) -> ScheduleRecord:
+    start = datetime.now(UTC).replace(microsecond=0)
+    return store.create(
+        ctx,
+        definition_id="pipeline-a",
+        profile_name="test",
+        spec=ScheduleSpec(kind="interval", interval_seconds=60),
+        schedule_id=schedule_id,
+        timer_owner="external",
+        workload_identity=Principal("timer", issuer="tests", kind="workload"),
+        next_fire_at=(start + timedelta(seconds=60)).isoformat().replace("+00:00", "Z"),
+        timer_schedule_start_at=start.isoformat().replace("+00:00", "Z"),
+        timer_binding_fingerprint=adapter.binding_fingerprint,
+    )
+
+
 class _SchedulerClient:
     def __init__(self) -> None:
         self.value: dict[str, Any] | None = None
@@ -275,6 +297,119 @@ def test_scheduler_refuses_stale_activation_after_canonical_pause() -> None:
 
     assert client.value is not None
     assert client.value["State"] == "DISABLED"
+
+
+def test_scheduler_activation_retry_accepts_advanced_canonical_cursor() -> None:
+    class _LostEnableResponseClient(_SchedulerClient):
+        lose_next_enable = True
+        lose_readback = False
+
+        def update_schedule(self, **kwargs: Any) -> None:
+            super().update_schedule(**kwargs)
+            if kwargs["State"] == "ENABLED" and self.lose_next_enable:
+                self.lose_next_enable = False
+                self.lose_readback = True
+                raise TimeoutError("update response lost")
+
+        def get_schedule(self, *, Name: str, GroupName: str) -> Mapping[str, Any]:
+            if self.lose_readback:
+                self.lose_readback = False
+                raise TimeoutError("readback unavailable")
+            return super().get_schedule(Name=Name, GroupName=GroupName)
+
+    ctx = _context()
+    store = MemoryScheduleStore()
+    schedule_id = "schedule-advanced-cursor"
+
+    @contextmanager
+    def canonical_guard(
+        _record: ScheduleRecord,
+    ) -> Generator[ScheduleRecord, None, None]:
+        with _SCHEDULE_MUTATION_LOCK:
+            yield store.get(ctx, schedule_id)
+
+    client = _LostEnableResponseClient()
+    adapter = _scheduler(client, mutation_guard=canonical_guard)
+    record = _create_canonical_external_schedule(
+        ctx, store, adapter, schedule_id=schedule_id
+    )
+    adapter.create_disabled(record)
+
+    with pytest.raises(RuntimeError, match="observation is unavailable"):
+        adapter.activate(record)
+
+    assert isinstance(record.next_fire_at, str)
+    original_cursor = record.next_fire_at
+    advanced_cursor = datetime.fromisoformat(
+        original_cursor.replace("Z", "+00:00")
+    ) + timedelta(seconds=60)
+    store.claim_firing(
+        ctx,
+        schedule_id=schedule_id,
+        revision_id=record.revision_id,
+        nominal_fire_time=original_cursor,
+        owner_id="timer-relay",
+        fencing_token=0,
+        plan_fingerprint="phase061-plan",
+        next_fire_at=advanced_cursor.isoformat().replace("+00:00", "Z"),
+        require_leader_lease=False,
+        admit_submission=False,
+        expected_timer_owner="external",
+        expected_timer_owner_generation=record.timer_owner_generation,
+        require_active=True,
+    )
+
+    assert adapter.activate(record)["State"] == "ENABLED"
+    assert client.value is not None
+    assert client.value["State"] == "ENABLED"
+
+
+def test_scheduler_activation_uses_fresh_canonical_cursor() -> None:
+    ctx = _context()
+    store = MemoryScheduleStore()
+    schedule_id = "schedule-current-cursor"
+
+    @contextmanager
+    def canonical_guard(
+        _record: ScheduleRecord,
+    ) -> Generator[ScheduleRecord, None, None]:
+        with _SCHEDULE_MUTATION_LOCK:
+            yield store.get(ctx, schedule_id)
+
+    client = _SchedulerClient()
+    adapter = _scheduler(client, mutation_guard=canonical_guard)
+    record = _create_canonical_external_schedule(
+        ctx, store, adapter, schedule_id=schedule_id
+    )
+    adapter.create_disabled(record)
+    assert isinstance(record.next_fire_at, str)
+    original_cursor = record.next_fire_at
+    advanced_cursor = datetime.fromisoformat(
+        original_cursor.replace("Z", "+00:00")
+    ) + timedelta(seconds=60)
+    store.claim_firing(
+        ctx,
+        schedule_id=schedule_id,
+        revision_id=record.revision_id,
+        nominal_fire_time=original_cursor,
+        owner_id="timer-relay",
+        fencing_token=0,
+        plan_fingerprint="phase061-plan",
+        next_fire_at=advanced_cursor.isoformat().replace("+00:00", "Z"),
+        require_leader_lease=False,
+        admit_submission=False,
+        expected_timer_owner="external",
+        expected_timer_owner_generation=record.timer_owner_generation,
+        require_active=True,
+    )
+
+    with patch(
+        "etlantic_aws.scheduler.datetime",
+        _datetime_after(original_cursor),
+    ):
+        assert adapter.activate(record)["State"] == "ENABLED"
+    assert client.value is not None
+    assert client.value["State"] == "ENABLED"
 
 
 def test_scheduler_names_are_scoped_to_tenant_and_workspace() -> None:

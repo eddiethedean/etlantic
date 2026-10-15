@@ -137,7 +137,7 @@ class EventBridgeScheduler:
     def create_disabled(self, record: ScheduleRecord) -> Mapping[str, Any]:
         """Create or verify an owned disabled schedule for an external owner."""
         self._validate_record(record)
-        return self._with_mutation_guard(record, lambda: self._create_disabled(record))
+        return self._with_mutation_guard(record, self._create_disabled)
 
     def _create_disabled(self, record: ScheduleRecord) -> Mapping[str, Any]:
         desired = self._request(record, state="DISABLED")
@@ -155,7 +155,7 @@ class EventBridgeScheduler:
     def activate(self, record: ScheduleRecord) -> Mapping[str, Any]:
         """Enable only a complete, readback-verified disabled schedule."""
         self._validate_record(record)
-        return self._with_mutation_guard(record, lambda: self._activate(record))
+        return self._with_mutation_guard(record, self._activate)
 
     def _activate(self, record: ScheduleRecord) -> Mapping[str, Any]:
         prior = self._read(record)
@@ -178,7 +178,7 @@ class EventBridgeScheduler:
     def pause(self, record: ScheduleRecord) -> Mapping[str, Any]:
         """Disable only after verifying that the remote resource is still owned."""
         self._validate_record(record, allow_paused=True)
-        return self._with_mutation_guard(record, lambda: self._pause(record))
+        return self._with_mutation_guard(record, self._pause)
 
     def _pause(self, record: ScheduleRecord) -> Mapping[str, Any]:
         observed = self._read(record)
@@ -196,7 +196,7 @@ class EventBridgeScheduler:
     def resume(self, record: ScheduleRecord) -> Mapping[str, Any]:
         """Re-enable a verified schedule at the same revision/generation."""
         self._validate_record(record)
-        return self._with_mutation_guard(record, lambda: self._resume(record))
+        return self._with_mutation_guard(record, self._resume)
 
     def _resume(self, record: ScheduleRecord) -> Mapping[str, Any]:
         observed = self._read(record)
@@ -220,7 +220,7 @@ class EventBridgeScheduler:
         self._validate_record(record, allow_deleted=True, allow_paused=True)
         self._with_mutation_guard(
             record,
-            lambda: self._delete(record),
+            self._delete,
             allow_missing=record.status == "deleted",
         )
 
@@ -266,7 +266,8 @@ class EventBridgeScheduler:
                 "timer binding changes require a separately fenced migration"
             )
         return self._with_mutation_guard(
-            replacement, lambda: self._update_disabled(previous, replacement)
+            replacement,
+            lambda canonical: self._update_disabled(previous, canonical),
         )
 
     def _update_disabled(
@@ -303,7 +304,7 @@ class EventBridgeScheduler:
     def _with_mutation_guard(
         self,
         record: ScheduleRecord,
-        operation: Callable[[], Any],
+        operation: Callable[[ScheduleRecord], Any],
         *,
         allow_missing: bool = False,
     ):
@@ -313,11 +314,24 @@ class EventBridgeScheduler:
                     raise RuntimeError(
                         "canonical schedule is unavailable under the mutation guard"
                     )
-            elif canonical != record:
+                canonical = record
+            elif not self._same_timer_mutation_fence(canonical, record):
                 raise RuntimeError(
                     "canonical schedule changed before the remote mutation"
                 )
-            return operation()
+            return operation(canonical)
+
+    @staticmethod
+    def _same_timer_mutation_fence(
+        canonical: ScheduleRecord, requested: ScheduleRecord
+    ) -> bool:
+        """Allow firing progress while fencing lifecycle and remote config."""
+        canonical_payload = canonical.to_dict()
+        requested_payload = requested.to_dict()
+        for field in ("updated_at", "next_fire_at"):
+            canonical_payload.pop(field, None)
+            requested_payload.pop(field, None)
+        return canonical_payload == requested_payload
 
     def _request(self, record: ScheduleRecord, *, state: str) -> dict[str, Any]:
         spec = record.spec
