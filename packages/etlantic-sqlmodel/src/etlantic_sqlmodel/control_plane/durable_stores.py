@@ -15,10 +15,12 @@ import json
 from collections.abc import Callable
 from dataclasses import asdict
 from datetime import UTC, datetime
+from time import sleep
 from typing import Any, TypeVar, cast
 
 from sqlalchemy import Column, text
 from sqlalchemy.engine import Engine
+from sqlalchemy.exc import OperationalError
 
 from etlantic.control_plane.durable_memory import MemoryDurableWorkStore
 from etlantic.control_plane.durable_models import (
@@ -46,6 +48,9 @@ from sqlmodel import Session, SQLModel, select
 
 T = TypeVar("T")
 
+_DURABLE_TXN_MAX_ATTEMPTS = 4
+_DURABLE_TXN_RETRY_BASE_SECONDS = 0.01
+
 DURABLE_TABLES = (
     DurableSnapshotRow,
     DurableSubmissionEntityRow,
@@ -72,6 +77,11 @@ def _utcnow_iso() -> str:
     return datetime.now(UTC).isoformat().replace("+00:00", "Z")
 
 
+def _is_sqlite_lock_error(error: OperationalError) -> bool:
+    message = str(error).lower()
+    return "database is locked" in message or "database table is locked" in message
+
+
 class SQLModelDurableWorkStore:
     """Transactional DurableWorkStore backed by a SQL snapshot row."""
 
@@ -87,14 +97,37 @@ class SQLModelDurableWorkStore:
         self.store_id = store_id
 
     def _txn(self, fn: Callable[[MemoryDurableWorkStore], T]) -> T:
-        with session_scope(self.engine) as session:
-            self._lock_store(session)
-            mem, version = self._read(session, for_update=True)
-            if self.admission_limit is not None:
-                mem.admission_limit = self.admission_limit
-            result = fn(mem)
-            self._write(session, mem, expected_version=version)
-            return result
+        for attempt in range(_DURABLE_TXN_MAX_ATTEMPTS):
+            try:
+                with session_scope(self.engine) as session:
+                    self._lock_store(session)
+                    mem, version = self._read(session, for_update=True)
+                    if self.admission_limit is not None:
+                        mem.admission_limit = self.admission_limit
+                    result = fn(mem)
+                    self._write(session, mem, expected_version=version)
+                    return result
+            except ControlPlaneError as exc:
+                # A concurrent durable mutation can win the snapshot CAS while
+                # this operation is in flight. Re-read and re-apply the pure
+                # memory-store operation against the committed state instead
+                # of treating an unrelated heartbeat as lease loss.
+                if not exc.detail.startswith("Durable snapshot version conflict"):
+                    raise
+            except OperationalError as exc:
+                # SQLite reports a stale read transaction as "database is
+                # locked" when another writer commits before this transaction
+                # upgrades its read lock. The failed transaction is rolled
+                # back by session_scope, so retrying the in-memory operation is
+                # safe and lets the next read observe the winning snapshot.
+                if self.engine.dialect.name != "sqlite" or not _is_sqlite_lock_error(
+                    exc
+                ):
+                    raise
+
+            if attempt + 1 < _DURABLE_TXN_MAX_ATTEMPTS:
+                sleep(_DURABLE_TXN_RETRY_BASE_SECONDS * (2**attempt))
+        raise RuntimeError("Durable transaction retry loop exhausted")
 
     def _lock_store(self, session: Session) -> None:
         """Serialize PostgreSQL mutations even before the snapshot row exists.
