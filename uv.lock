@@ -13,6 +13,7 @@ resolution-markers = [
 members = [
     "etlantic",
     "etlantic-airflow",
+    "etlantic-aws",
     "etlantic-datafusion",
     "etlantic-duckdb",
     "etlantic-fastapi",
@@ -1150,6 +1151,28 @@ dependencies = [
 
 [package.metadata]
 requires-dist = [{ name = "etlantic", editable = "." }]
+
+[[package]]
+name = "etlantic-aws"
+version = "0.61.0"
+source = { editable = "packages/etlantic-aws" }
+dependencies = [
+    { name = "etlantic" },
+    { name = "etlantic-rsconnect" },
+]
+
+[package.optional-dependencies]
+aws = [
+    { name = "boto3" },
+]
+
+[package.metadata]
+requires-dist = [
+    { name = "boto3", marker = "extra == 'aws'", specifier = ">=1.35,<2" },
+    { name = "etlantic", editable = "." },
+    { name = "etlantic-rsconnect", editable = "packages/etlantic-rsconnect" },
+]
+provides-extras = ["aws"]
 
 [[package]]
 name = "etlantic-datafusion"

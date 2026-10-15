@@ -230,6 +230,9 @@ class ScheduleCreateBody(BaseModel):
     workload_identity: ScheduleWorkloadIdentityBody | None = None
     policy_fingerprint: str | None = None
     timer_owner: Literal["local", "external"] = "local"
+    timer_binding_fingerprint: str | None = Field(
+        default=None, pattern=r"^[0-9a-f]{64}$"
+    )
 
 
 class ScheduleTimerTransferBody(BaseModel):
@@ -239,6 +242,9 @@ class ScheduleTimerTransferBody(BaseModel):
     expected_generation: int = Field(ge=1)
     timer_owner: Literal["local", "external"]
     workload_identity: ScheduleWorkloadIdentityBody | None = None
+    timer_binding_fingerprint: str | None = Field(
+        default=None, pattern=r"^[0-9a-f]{64}$"
+    )
 
     model_config = {"extra": "forbid"}
 

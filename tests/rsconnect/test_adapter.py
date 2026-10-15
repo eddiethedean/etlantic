@@ -356,6 +356,48 @@ def test_resume_retains_the_new_recurrence_anchor_in_active_binding() -> None:
     assert adapter.inspect_drift(later_cursor, active).state == "in_sync"
 
 
+def test_resume_binds_the_reanchored_timer_generation() -> None:
+    context = _context()
+    authorizer = MemoryAuthorizer()
+    authorizer.grant(context, "schedule.read")
+    authorizer.grant(context, "schedule.write")
+    canonical_store = MemoryScheduleStore()
+    now = datetime(2026, 10, 13, 12, 0, tzinfo=UTC)
+    service = ScheduleApplicationService(
+        authorizer=authorizer,
+        schedule_store=canonical_store,
+        clock=lambda: now,
+    )
+    record = canonical_store.create(
+        context,
+        definition_id="pipeline-a",
+        profile_name="test",
+        spec=ScheduleSpec(kind="interval", interval_seconds=3600),
+        workload_identity=context.principal,
+        timer_owner="external",
+        timer_schedule_start_at="2026-10-13T11:00:00Z",
+        next_fire_at="2026-10-13T13:00:00Z",
+    )
+    paused = service.pause(context, record.schedule_id)
+    binding = replace(
+        _binding(paused),
+        schedule_start_time=record.timer_schedule_start_at,
+        status="paused",
+    )
+    gateway = Gateway()
+    store = Store(binding)
+    adapter = _adapter(gateway, store, clock=lambda: now)
+
+    active = adapter.resume(service, context, record.schedule_id, binding)
+    canonical = service.get(context, record.schedule_id)
+
+    assert active.timer_owner_generation == canonical.timer_owner_generation
+    assert active.timer_owner_generation == binding.timer_owner_generation + 1
+    assert active.schedule_start_time == canonical.timer_schedule_start_at
+    assert gateway.schedule is not None
+    assert gateway.schedule.rule["start_time"] == canonical.timer_schedule_start_at
+
+
 def test_apply_refuses_to_adopt_an_unbound_connect_schedule() -> None:
     record = _record()
     gateway = Gateway({"type": "hour", "n": 1})
@@ -1455,6 +1497,8 @@ def test_amend_commit_ack_loss_cannot_pause_a_newer_owner() -> None:
     assert canonical.spec.interval_seconds == 10_800
     assert store.get(record.schedule_id) == latest
     assert latest.revision_id == canonical.revision_id
+    assert latest.timer_owner_generation == canonical.timer_owner_generation
+    assert latest.schedule_start_time == canonical.timer_schedule_start_at
     assert gateway.armed is True
     assert gateway.schedule is not None
     assert gateway.schedule.rule["n"] == 3

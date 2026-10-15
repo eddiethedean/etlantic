@@ -2,8 +2,6 @@
 
 from __future__ import annotations
 
-import hashlib
-import json
 import os
 import re
 from collections.abc import Mapping
@@ -15,98 +13,48 @@ from uuid import UUID, uuid4
 
 from etlantic.control_plane import (
     ControlPlaneContext,
-    ExecutionEnvelope,
     ManagedBackend,
     validate_execution_route,
 )
-from etlantic.plan.model import PLAN_SCHEMA
+from etlantic.control_plane.managed_reference import (
+    PREFECT_MANAGED_REFERENCE_SCHEMA,
+    AcceptedExecutionReference,
+)
 from etlantic_prefect.deployment import ManagedDeploymentBinding
 from prefect import flow
 
-MANAGED_REFERENCE_SCHEMA = "etlantic.prefect.managed_reference/1"
-_FINGERPRINT = re.compile(r"^[0-9a-f]{64}$")
+MANAGED_REFERENCE_SCHEMA = PREFECT_MANAGED_REFERENCE_SCHEMA
 _ENTRY_POINT_NAME = re.compile(r"^[A-Za-z0-9][A-Za-z0-9_.-]{0,127}$")
-_MAX_REFERENCE_BYTES = 4096
 
 
 @dataclass(frozen=True, slots=True)
-class ManagedExecutionReference:
-    """Bounded locator for an already accepted immutable execution."""
+class ManagedExecutionReference(AcceptedExecutionReference):
+    """Prefect compatibility spelling over the shared accepted-work reference."""
 
-    submission_id: str
-    plan_fingerprint: str
-    envelope_sha256: str
     schema: str = MANAGED_REFERENCE_SCHEMA
 
     def __post_init__(self) -> None:
+        super(ManagedExecutionReference, self).__post_init__()
         if self.schema != MANAGED_REFERENCE_SCHEMA:
-            raise ValueError("unsupported managed execution reference schema")
-        if not self.submission_id.strip() or len(self.submission_id) > 512:
-            raise ValueError("submission_id must contain 1 to 512 characters")
-        if _FINGERPRINT.fullmatch(self.plan_fingerprint) is None:
-            raise ValueError("plan_fingerprint must be a lowercase SHA-256 value")
-        if _FINGERPRINT.fullmatch(self.envelope_sha256) is None:
-            raise ValueError("envelope_sha256 must be a lowercase SHA-256 value")
+            raise ValueError("unsupported Prefect managed execution reference schema")
 
     @classmethod
-    def from_submission(cls, submission: Any) -> ManagedExecutionReference:
-        """Bind a Prefect parameter to the canonical accepted envelope bytes."""
-        snapshot = getattr(submission, "input_snapshot", None)
-        if not isinstance(snapshot, str) or not snapshot:
-            raise ValueError("accepted submission has no immutable execution envelope")
-        envelope = ExecutionEnvelope.from_json(snapshot)
-        if envelope.plan_document.get("schema") != PLAN_SCHEMA:
-            raise ValueError("managed Prefect worker supports only etlantic.plan/1")
-        if envelope.plan_fingerprint != submission.plan_fingerprint:
-            raise ValueError("accepted plan fingerprint does not match its envelope")
-        return cls(
-            submission_id=str(submission.submission_id),
-            plan_fingerprint=str(submission.plan_fingerprint),
-            envelope_sha256=hashlib.sha256(snapshot.encode("utf-8")).hexdigest(),
-        )
-
-    def to_dict(self) -> dict[str, str]:
-        return {
-            "schema": self.schema,
-            "submission_id": self.submission_id,
-            "plan_fingerprint": self.plan_fingerprint,
-            "envelope_sha256": self.envelope_sha256,
-        }
+    def from_submission(
+        cls, submission: Any, *, schema: str = MANAGED_REFERENCE_SCHEMA
+    ) -> ManagedExecutionReference:
+        """Keep the deployed Prefect parameter schema stable."""
+        if schema != MANAGED_REFERENCE_SCHEMA:
+            raise ValueError("Prefect references must use the legacy wire schema")
+        common = AcceptedExecutionReference.from_submission(submission, schema=schema)
+        return cls(**common.to_dict())
 
     @classmethod
     def from_dict(cls, value: Mapping[str, Any]) -> ManagedExecutionReference:
-        if set(value) != {
-            "schema",
-            "submission_id",
-            "plan_fingerprint",
-            "envelope_sha256",
-        }:
-            raise ValueError(
-                "managed execution reference has unknown or missing fields"
-            )
-        try:
-            encoded = json.dumps(
-                dict(value), sort_keys=True, separators=(",", ":"), allow_nan=False
-            ).encode("utf-8")
-        except (TypeError, ValueError) as exc:
-            raise ValueError("managed execution reference must be JSON data") from exc
-        if len(encoded) > _MAX_REFERENCE_BYTES:
-            raise ValueError("managed execution reference exceeds its size limit")
-        schema = value.get("schema")
-        submission_id = value.get("submission_id")
-        plan_fingerprint = value.get("plan_fingerprint")
-        envelope_sha256 = value.get("envelope_sha256")
-        if not all(
-            isinstance(item, str)
-            for item in (schema, submission_id, plan_fingerprint, envelope_sha256)
-        ):
-            raise ValueError("managed execution reference fields must be strings")
-        return cls(
-            schema=cast(str, schema),
-            submission_id=cast(str, submission_id),
-            plan_fingerprint=cast(str, plan_fingerprint),
-            envelope_sha256=cast(str, envelope_sha256),
-        )
+        """Accept only the established Prefect reference schema."""
+        common = AcceptedExecutionReference.from_dict(value)
+        if common.schema != MANAGED_REFERENCE_SCHEMA:
+            raise ValueError("Prefect references must use the legacy wire schema")
+        return cls(**common.to_dict())
 
 
 def _load_trusted_backend() -> tuple[ManagedBackend, ControlPlaneContext]:

@@ -124,6 +124,8 @@ from etlantic.control_plane.durable_models import (
     StateDiagnostic,
     StateTransitionExplanation,
     SubmissionRecord,
+    execution_route_backend,
+    execution_route_binding,
     namespaced_checkpoint_id,
     validate_execution_route,
 )
@@ -190,6 +192,11 @@ from etlantic.control_plane.managed_config import (
     MANAGED_BACKEND_DEFAULTS,
     MANAGED_BACKEND_SHARED_FIELDS,
     validate_managed_backend_settings,
+)
+from etlantic.control_plane.managed_reference import (
+    MANAGED_REFERENCE_SCHEMA,
+    PREFECT_MANAGED_REFERENCE_SCHEMA,
+    AcceptedExecutionReference,
 )
 from etlantic.control_plane.memory import (
     MemoryAuthorizer,
@@ -450,6 +457,7 @@ __all__ = [  # noqa: RUF022
     "AcceptResult",
     "ActionJobRecord",
     "ActionJobStatus",
+    "AcceptedExecutionReference",
     "AliasRecord",
     "ApprovalDecisionRecord",
     "ApprovalRequest",
@@ -531,6 +539,7 @@ __all__ = [  # noqa: RUF022
     "ImpactEdge",
     "ImpactIndex",
     "LeaseRecord",
+    "MANAGED_REFERENCE_SCHEMA",
     "LifecycleState",
     "LogicalIdentity",
     "MemoryApprovalStore",
@@ -577,6 +586,7 @@ __all__ = [  # noqa: RUF022
     "PollingWakeTransport",
     "PreviewWorkspace",
     "Principal",
+    "PREFECT_MANAGED_REFERENCE_SCHEMA",
     "ProblemDetails",
     "PromotionRecord",
     "QuotaBudget",
@@ -617,6 +627,8 @@ __all__ = [  # noqa: RUF022
     "SUPPORTED_INPUT_FORMATS",
     "SUPPORTED_INPUT_MEDIA_TYPES",
     "TenantDirectory",
+    "execution_route_backend",
+    "execution_route_binding",
     "validate_execution_route",
     "validate_managed_backend_settings",
     "TenantRecord",

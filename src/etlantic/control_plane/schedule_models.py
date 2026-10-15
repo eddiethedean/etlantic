@@ -3,9 +3,10 @@
 
 from __future__ import annotations
 
+import re
 from collections.abc import Callable, Mapping
 from dataclasses import asdict, dataclass, field
-from datetime import datetime
+from datetime import UTC, datetime
 from typing import Any, Literal, cast
 from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 
@@ -18,7 +19,7 @@ from etlantic.control_plane.redaction import (
 from etlantic.control_plane.schedule_diagnostics import fire_diagnostic
 from etlantic.secrets.ref import SecretRef
 
-SCHEDULE_SCHEMA = "etlantic.schedule/2"
+SCHEDULE_SCHEMA = "etlantic.schedule/3"
 FIRING_SCHEMA = "etlantic.firing/4"
 
 _SCHEDULE_FIELDS = frozenset(
@@ -46,6 +47,8 @@ _SCHEDULE_FIELDS = frozenset(
         "timer_owner",
         "timer_owner_generation",
         "timer_revision_policy",
+        "timer_schedule_start_at",
+        "timer_binding_fingerprint",
     }
 )
 _FIRING_FIELDS = frozenset(
@@ -311,6 +314,10 @@ class ScheduleRecord:
     # records without these fields remain locally owned at generation one.
     timer_owner: TimerOwner = "local"
     timer_owner_generation: int = 1
+    # Stable remote recurrence anchor; unlike next_fire_at it never advances.
+    timer_schedule_start_at: str | None = None
+    # Opaque durable digest of a timer adapter's immutable target configuration.
+    timer_binding_fingerprint: str | None = None
 
     def __post_init__(self) -> None:
         for name in (
@@ -356,6 +363,40 @@ class ScheduleRecord:
                 )
         if self.timer_owner == "external" and self.workload_identity is None:
             raise ValueError("externally owned schedule requires a workload identity")
+        if self.timer_schedule_start_at is not None:
+            try:
+                anchor = datetime.fromisoformat(
+                    self.timer_schedule_start_at.replace("Z", "+00:00")
+                )
+            except (AttributeError, TypeError, ValueError) as exc:
+                raise ValueError("schedule timer anchor must be ISO-8601") from exc
+            if anchor.tzinfo is None or anchor.utcoffset() is None:
+                raise ValueError("schedule timer anchor must be timezone aware")
+            if (
+                anchor.microsecond
+                or anchor.astimezone(UTC).isoformat().replace("+00:00", "Z")
+                != self.timer_schedule_start_at
+            ):
+                raise ValueError(
+                    "schedule timer anchor must be canonical UTC with whole seconds"
+                )
+            if self.timer_owner != "external":
+                raise ValueError(
+                    "local schedules cannot persist an external timer anchor"
+                )
+        if self.timer_binding_fingerprint is not None:
+            fingerprint: object = cast(object, self.timer_binding_fingerprint)
+            if (
+                not isinstance(fingerprint, str)
+                or re.fullmatch(r"[0-9a-f]{64}", fingerprint) is None
+            ):
+                raise ValueError(
+                    "timer binding fingerprint must be a lowercase SHA-256 value"
+                )
+            if self.timer_owner != "external":
+                raise ValueError(
+                    "local schedules cannot persist an external timer binding"
+                )
         if self.next_fire_at is not None:
             try:
                 next_fire = datetime.fromisoformat(
@@ -395,13 +436,22 @@ class ScheduleRecord:
             "timer_owner": self.timer_owner,
             "timer_owner_generation": self.timer_owner_generation,
         }
+        if self.timer_schedule_start_at is not None:
+            payload["timer_schedule_start_at"] = self.timer_schedule_start_at
+        if self.timer_binding_fingerprint is not None:
+            payload["timer_binding_fingerprint"] = self.timer_binding_fingerprint
         assert_schedule_payload_clean(payload)
         return payload
 
     @classmethod
     def from_dict(cls, data: Mapping[str, Any]) -> ScheduleRecord:
         schema = data.get("schema")
-        if schema not in (None, "etlantic.schedule/1", SCHEDULE_SCHEMA):
+        if schema not in (
+            None,
+            "etlantic.schedule/1",
+            "etlantic.schedule/2",
+            SCHEDULE_SCHEMA,
+        ):
             raise ValueError(f"unsupported schedule schema: {schema!r}")
         if set(data) - _SCHEDULE_FIELDS:
             raise ValueError("schedule record contains unsupported fields")
@@ -452,6 +502,8 @@ class ScheduleRecord:
             ),
             timer_owner=timer_owner,
             timer_owner_generation=data.get("timer_owner_generation", 1),
+            timer_schedule_start_at=data.get("timer_schedule_start_at"),
+            timer_binding_fingerprint=data.get("timer_binding_fingerprint"),
         )
 
 

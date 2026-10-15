@@ -51,6 +51,8 @@ from etlantic.control_plane.durable_models import (
     StateTransitionExplanation,
     SubmissionRecord,
     execution_context_from_submission,
+    execution_route_backend,
+    execution_route_binding,
     validate_execution_route,
 )
 from etlantic.control_plane.errors import ControlPlaneError
@@ -117,12 +119,14 @@ _PERSISTED_RECORD_SCHEMAS: dict[str, frozenset[str]] = {
         {
             "etlantic.control_plane.dispatch_reconciliation/1",
             "etlantic.control_plane.dispatch_reconciliation/2",
+            "etlantic.control_plane.dispatch_reconciliation/3",
         }
     ),
     "DispatchRecord": frozenset(
         {
             "etlantic.control_plane.dispatch_record/2",
             "etlantic.control_plane.dispatch_record/3",
+            "etlantic.control_plane.dispatch_record/4",
         }
     ),
     "LeaseRecord": frozenset({"etlantic.control_plane.lease_record/1"}),
@@ -202,11 +206,17 @@ _SNAPSHOT_STATE_FIELDS = (
 
 
 def _dispatch_creation_key(
-    key: tuple[str, str, str], binding_fingerprint: str, generation: int
+    key: tuple[str, str, str],
+    binding_fingerprint: str,
+    generation: int,
+    backend_kind: str = "prefect",
 ) -> str:
-    identity = json.dumps(
-        [*key, binding_fingerprint, generation], separators=(",", ":")
-    )
+    # Keep historical Prefect idempotency keys stable. New backend keys carry
+    # their kind so equal opaque fingerprints cannot collide across providers.
+    parts = [*key, binding_fingerprint, generation]
+    if backend_kind != "prefect":
+        parts.insert(-2, backend_kind)
+    identity = json.dumps(parts, separators=(",", ":"))
     return "etlantic-" + hashlib.sha256(identity.encode("utf-8")).hexdigest()
 
 
@@ -413,10 +423,10 @@ class MemoryDurableWorkStore:
     def get_execution_route_state(
         self, ctx: ControlPlaneContext, execution_route: str
     ) -> ExecutionRouteRecord:
-        """Read the store-wide lifecycle of a Prefect execution route."""
+        """Read the store-wide lifecycle of a registered remote execution route."""
         validate_execution_route(execution_route)
-        if not execution_route.startswith("prefect:"):
-            raise ValueError("route lifecycle applies only to Prefect routes")
+        if execution_route == "local":
+            raise ValueError("local execution has no remote route lifecycle")
         with self._lock:
             return deepcopy(
                 self._execution_route_states.get(
@@ -429,8 +439,8 @@ class MemoryDurableWorkStore:
     ) -> ExecutionRouteWorkload:
         """Count store-wide work and evidence that still depends on a route."""
         validate_execution_route(execution_route)
-        if not execution_route.startswith("prefect:"):
-            raise ValueError("route lifecycle applies only to Prefect routes")
+        if execution_route == "local":
+            raise ValueError("local execution has no remote route lifecycle")
         with self._lock:
             return self._execution_route_workload_unlocked(execution_route)
 
@@ -439,8 +449,8 @@ class MemoryDurableWorkStore:
     ) -> dict[str, int]:
         """Count all canonical history and active schedule reservations."""
         validate_execution_route(execution_route)
-        if not execution_route.startswith("prefect:"):
-            raise ValueError("route lifecycle applies only to Prefect routes")
+        if execution_route == "local":
+            raise ValueError("local execution has no remote route lifecycle")
         with self._lock:
             return self._execution_route_reference_counts_unlocked(execution_route)
 
@@ -452,8 +462,8 @@ class MemoryDurableWorkStore:
     ) -> None:
         """Fence schedule admission against route cleanup with a durable hold."""
         validate_execution_route(execution_route)
-        if not execution_route.startswith("prefect:"):
-            raise ValueError("route references apply only to Prefect routes")
+        if execution_route == "local":
+            raise ValueError("local execution cannot have remote route references")
         if not reference_id.strip():
             raise ValueError("reference_id must be a non-empty string")
         with self._lock:
@@ -481,8 +491,8 @@ class MemoryDurableWorkStore:
     ) -> None:
         """Release an existing schedule hold after its record is deleted/moved."""
         validate_execution_route(execution_route)
-        if not execution_route.startswith("prefect:"):
-            raise ValueError("route references apply only to Prefect routes")
+        if execution_route == "local":
+            raise ValueError("local execution cannot have remote route references")
         if not reference_id.strip():
             raise ValueError("reference_id must be a non-empty string")
         with self._lock:
@@ -515,8 +525,8 @@ class MemoryDurableWorkStore:
     ) -> ExecutionRouteRecord:
         """CAS a route lifecycle and refuse retirement while durable work remains."""
         validate_execution_route(execution_route)
-        if not execution_route.startswith("prefect:"):
-            raise ValueError("route lifecycle applies only to Prefect routes")
+        if execution_route == "local":
+            raise ValueError("local execution has no remote route lifecycle")
         if type(expected_revision) is not int or expected_revision < 0:
             raise ValueError("expected_revision must be a non-negative integer")
         if status not in {
@@ -766,8 +776,9 @@ class MemoryDurableWorkStore:
     ) -> list[OutboxRecord]:
         """List bounded accepted work needing remote delivery or recovery."""
         validate_execution_route(execution_route)
-        if not execution_route.startswith("prefect:"):
-            raise ValueError("dispatch polling requires a Prefect execution route")
+        backend_kind = execution_route_backend(execution_route)
+        if backend_kind == "local":
+            raise ValueError("dispatch polling requires a remote execution route")
         if type(limit) is not int or not 1 <= limit <= 1000:
             raise ValueError("limit must be between 1 and 1000")
         now = _now()
@@ -829,8 +840,9 @@ class MemoryDurableWorkStore:
     ) -> list[DispatchRecord]:
         """Return a bounded route-scoped page of linked dispatches."""
         validate_execution_route(execution_route)
-        if not execution_route.startswith("prefect:"):
-            raise ValueError("dispatch reconciliation requires a Prefect route")
+        backend_kind = execution_route_backend(execution_route)
+        if backend_kind == "local":
+            raise ValueError("dispatch reconciliation requires a remote route")
         if type(limit) is not int or not 1 <= limit <= 1000:
             raise ValueError("limit must be between 1 and 1000")
         scope = _scope(ctx)
@@ -840,7 +852,7 @@ class MemoryDurableWorkStore:
                 for key, record in self._dispatches.items()
                 if key[:2] == scope
                 and record.execution_route == execution_route
-                and record.backend_kind == "prefect"
+                and record.backend_kind == backend_kind
                 and record.status == "dispatched"
                 and record.remote_run_id is not None
                 and (
@@ -863,13 +875,14 @@ class MemoryDurableWorkStore:
             if submission is None:
                 raise ControlPlaneError.not_found("Submission not found")
             route = validate_execution_route(submission.execution_route)
-            if not route.startswith("prefect:"):
+            backend_kind = execution_route_backend(route)
+            if backend_kind == "local":
                 raise ControlPlaneError.conflict(
-                    "Submission is not assigned to a Prefect execution route"
+                    "Submission is not assigned to a remote execution route"
                 )
             if not submission.input_snapshot:
                 raise ControlPlaneError.conflict(
-                    "Prefect dispatch requires an immutable execution envelope"
+                    "Remote dispatch requires an immutable execution envelope"
                 )
             from etlantic.control_plane.execution_envelope import ExecutionEnvelope
             from etlantic.plan.model import PLAN_SCHEMA
@@ -880,15 +893,18 @@ class MemoryDurableWorkStore:
                 or envelope.plan_document.get("schema") != PLAN_SCHEMA
             ):
                 raise ControlPlaneError.conflict(
-                    "Submission envelope is unsupported for managed Prefect dispatch"
+                    "Submission envelope is unsupported for managed dispatch"
                 )
-            binding = route.removeprefix("prefect:")
+            binding = execution_route_binding(route)
+            assert binding is not None
             digest = hashlib.sha256(
                 submission.input_snapshot.encode("utf-8")
             ).hexdigest()
             existing = self._dispatches.get(key)
             generation = existing.generation if existing is not None else 1
-            creation_key = _dispatch_creation_key(key, binding, generation)
+            creation_key = _dispatch_creation_key(
+                key, binding, generation, backend_kind
+            )
             if existing is not None:
                 if (
                     existing.execution_route != route
@@ -922,7 +938,7 @@ class MemoryDurableWorkStore:
                 created_at=now,
                 updated_at=now,
                 status=status,
-                backend_kind="prefect",
+                backend_kind=backend_kind,
             )
             self._dispatches[key] = record
             return deepcopy(record)
@@ -1011,6 +1027,11 @@ class MemoryDurableWorkStore:
         prefect_flow_run_id: str | None = None,
         now: datetime | None = None,
     ) -> DispatchRecord:
+        if prefect_flow_run_id is not None:
+            with self._lock:
+                candidate = self._dispatches.get((*_scope(ctx), submission_id))
+            if candidate is not None and candidate.backend_kind != "prefect":
+                raise ValueError("Prefect run ID alias is only valid for Prefect")
         selected_remote_run_id = _select_remote_run_id(
             remote_run_id, prefect_flow_run_id
         )
@@ -1039,7 +1060,9 @@ class MemoryDurableWorkStore:
                 record,
                 status="dispatched",
                 remote_run_id=selected_remote_run_id,
-                prefect_flow_run_id=selected_remote_run_id,
+                prefect_flow_run_id=(
+                    selected_remote_run_id if record.backend_kind == "prefect" else None
+                ),
                 lease_owner_id=None,
                 lease_expires_at=None,
                 retry_after_at=None,
@@ -1229,7 +1252,10 @@ class MemoryDurableWorkStore:
                 record,
                 generation=generation,
                 creation_key=_dispatch_creation_key(
-                    key, record.binding_fingerprint, generation
+                    key,
+                    record.binding_fingerprint,
+                    generation,
+                    record.backend_kind,
                 ),
                 status="pending",
                 prefect_flow_run_id=None,
@@ -1319,7 +1345,9 @@ class MemoryDurableWorkStore:
             audit = DispatchReconciliation(
                 from_generation=record.generation,
                 to_generation=generation,
-                prefect_flow_run_id=selected_remote_run_id,
+                prefect_flow_run_id=(
+                    selected_remote_run_id if record.backend_kind == "prefect" else None
+                ),
                 backend_kind=record.backend_kind,
                 remote_run_id=selected_remote_run_id,
                 authorized_at=_iso(current),
@@ -1331,7 +1359,10 @@ class MemoryDurableWorkStore:
                 record,
                 generation=generation,
                 creation_key=_dispatch_creation_key(
-                    key, record.binding_fingerprint, generation
+                    key,
+                    record.binding_fingerprint,
+                    generation,
+                    record.backend_kind,
                 ),
                 status="pending",
                 prefect_flow_run_id=None,

@@ -701,12 +701,13 @@ class ManagedApplicationService:
             "from_generation": expected_generation,
             "to_generation": dispatch.generation,
             "remote_run_id": expected_remote_run_id,
-            "prefect_flow_run_id": expected_remote_run_id,
             "evidence_sha256": evidence_sha256,
             "principal_subject": ctx.principal.subject,
             "principal_issuer": ctx.principal.issuer,
             "occurred_at": dispatch.updated_at,
         }
+        if dispatch.backend_kind == "prefect":
+            payload["prefect_flow_run_id"] = expected_remote_run_id
         if self.events is not None:
             append_once = getattr(self.events, "append_once", None)
             if callable(append_once):

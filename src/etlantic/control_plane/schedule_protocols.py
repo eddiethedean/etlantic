@@ -95,6 +95,8 @@ class ScheduleStore(Protocol):
         execution_route: str = "local",
         timer_owner: TimerOwner = "local",
         next_fire_at: str | None = None,
+        timer_schedule_start_at: str | None = None,
+        timer_binding_fingerprint: str | None = None,
     ) -> ScheduleRecord: ...
 
     def get(self, ctx: ControlPlaneContext, schedule_id: str) -> ScheduleRecord: ...
@@ -107,6 +109,17 @@ class ScheduleStore(Protocol):
 
     def resume(self, ctx: ControlPlaneContext, schedule_id: str) -> ScheduleRecord: ...
 
+    def resume_external(
+        self,
+        ctx: ControlPlaneContext,
+        schedule_id: str,
+        *,
+        expected_revision_id: str,
+        expected_generation: int,
+        next_fire_at: str,
+        timer_schedule_start_at: str,
+    ) -> ScheduleRecord: ...
+
     def amend(
         self,
         ctx: ControlPlaneContext,
@@ -115,6 +128,8 @@ class ScheduleStore(Protocol):
         expected_revision_id: str,
         spec: ScheduleSpec,
         next_fire_at: str | None,
+        timer_schedule_start_at: str | None = None,
+        timer_binding_fingerprint: str | None = None,
         execution_route: str | None = None,
         policy_fingerprint: str | None = None,
         durable: DurableWorkStore | None = None,
@@ -130,6 +145,8 @@ class ScheduleStore(Protocol):
         timer_owner: TimerOwner,
         workload_identity: Principal | None,
         policy_fingerprint: str,
+        timer_schedule_start_at: str | None = None,
+        timer_binding_fingerprint: str | None = None,
     ) -> ScheduleRecord: ...
 
     def delete(self, ctx: ControlPlaneContext, schedule_id: str) -> ScheduleRecord: ...

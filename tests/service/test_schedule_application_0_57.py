@@ -61,6 +61,38 @@ def test_headless_schedule_service_authorizes_and_operates_on_canonical_models()
     assert service.list_definition(ctx, "pipeline-a") == (created,)
 
 
+def test_external_resume_reanchors_and_fences_old_scheduler_events() -> None:
+    ctx = _context()
+    authorizer = MemoryAuthorizer()
+    authorizer.grant(ctx, "schedule.write")
+    store = MemoryScheduleStore()
+    workload = Principal(subject="timer", issuer="tests", kind="workload")
+    anchor = "2026-10-08T10:00:00Z"
+    record = store.create(
+        ctx,
+        definition_id="pipeline-a",
+        profile_name="test",
+        spec=ScheduleSpec(kind="interval", interval_seconds=60),
+        workload_identity=workload,
+        timer_owner="external",
+        next_fire_at="2026-10-08T10:01:00Z",
+        timer_schedule_start_at=anchor,
+    )
+    store.pause(ctx, record.schedule_id)
+    service = ScheduleApplicationService(
+        authorizer=authorizer,
+        schedule_store=store,
+        clock=lambda: datetime(2026, 10, 8, 12, 0, 0, 900000, tzinfo=UTC),
+    )
+
+    resumed = service.resume(ctx, record.schedule_id)
+
+    assert resumed.status == "active"
+    assert resumed.timer_owner_generation == record.timer_owner_generation + 1
+    assert resumed.timer_schedule_start_at == "2026-10-08T12:00:00Z"
+    assert resumed.next_fire_at == "2026-10-08T12:01:00Z"
+
+
 def test_schedule_service_denies_before_reading_or_mutating_store() -> None:
     class UntouchableStore:
         def __getattr__(self, name: str) -> object:

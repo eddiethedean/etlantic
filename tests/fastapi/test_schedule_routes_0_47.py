@@ -210,6 +210,7 @@ def test_schedule_route_transfer_accepts_only_the_managed_boolean() -> None:
 
     class _ScheduleService:
         transfer_execution_route: bool | None = None
+        timer_binding_fingerprint: str | None = None
 
         def authorize(self, *_args: object) -> None:
             return None
@@ -222,10 +223,12 @@ def test_schedule_route_transfer_accepts_only_the_managed_boolean() -> None:
             expected_revision_id: str,
             spec: Any,
             transfer_execution_route: bool = False,
+            timer_binding_fingerprint: str | None = None,
         ) -> _Schedule:
             assert expected_revision_id == "revision-a"
             assert isinstance(spec, ScheduleSpec)
             self.transfer_execution_route = transfer_execution_route
+            self.timer_binding_fingerprint = timer_binding_fingerprint
             return _Schedule()
 
     class _API:
@@ -242,6 +245,7 @@ def test_schedule_route_transfer_accepts_only_the_managed_boolean() -> None:
     app.include_router(router)
     client = TestClient(app)
     headers = {"X-Principal": "alice"}
+    binding_fingerprint = "a" * 64
     response = client.post(
         "/v1/schedules/schedule-a/amend",
         headers=headers,
@@ -249,10 +253,12 @@ def test_schedule_route_transfer_accepts_only_the_managed_boolean() -> None:
             "expected_revision_id": "revision-a",
             "spec": {"kind": "interval", "interval_seconds": 120},
             "transfer_execution_route": True,
+            "timer_binding_fingerprint": binding_fingerprint,
         },
     )
     assert response.status_code == 200, response.text
     assert api.schedule_service.transfer_execution_route is True
+    assert api.schedule_service.timer_binding_fingerprint == binding_fingerprint
     assert response.json()["execution_route"] == "prefect:" + "a" * 64
 
     with pytest.raises(ControlPlaneError) as invalid_flag:

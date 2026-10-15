@@ -33,8 +33,8 @@ SUBMISSION_RECORD_SCHEMA = "etlantic.control_plane.submission_record/1"
 OUTBOX_RECORD_SCHEMA = "etlantic.control_plane.outbox_record/1"
 LEASE_RECORD_SCHEMA = "etlantic.control_plane.lease_record/1"
 ATTEMPT_RECORD_SCHEMA = "etlantic.control_plane.attempt_record/1"
-DISPATCH_RECORD_SCHEMA = "etlantic.control_plane.dispatch_record/3"
-DISPATCH_RECONCILIATION_SCHEMA = "etlantic.control_plane.dispatch_reconciliation/2"
+DISPATCH_RECORD_SCHEMA = "etlantic.control_plane.dispatch_record/4"
+DISPATCH_RECONCILIATION_SCHEMA = "etlantic.control_plane.dispatch_reconciliation/3"
 CHECKPOINT_RECORD_SCHEMA = "etlantic.control_plane.checkpoint_record/1"
 EFFECT_RECORD_SCHEMA = "etlantic.control_plane.effect_record/1"
 REPLAY_RECORD_SCHEMA = "etlantic.control_plane.replay_record/1"
@@ -55,7 +55,8 @@ EXECUTION_ROUTE_TRANSITION_SCHEMA = (
 )
 EXECUTION_ROUTE_WORKLOAD_SCHEMA = "etlantic.control_plane.execution_route_workload/1"
 EXECUTION_ROUTE_LIFECYCLE_SCHEMA = "etlantic.control_plane.execution_route_lifecycle/2"
-EXECUTION_ROUTE_PATTERN = re.compile(r"^(?:local|prefect:[0-9a-f]{64})$")
+EXECUTION_ROUTE_PATTERN = re.compile(r"^(?:local|(?:prefect|ecs):[0-9a-f]{64})$")
+EXECUTION_ROUTE_BACKENDS = frozenset({"prefect", "ecs"})
 
 STATE_NAMESPACES = ("cursor:", "watermark:", "partition:", "snapshot:", "checkpoint:")
 
@@ -214,14 +215,33 @@ class ExecutionRouteWorkload:
 
 
 def validate_execution_route(value: object) -> str:
-    """Validate a pinned execution route (`local` or a Prefect binding digest)."""
+    """Validate a local route or an explicitly registered remote backend route."""
     if (
         not isinstance(value, str)
         or len(value) > 72
         or EXECUTION_ROUTE_PATTERN.fullmatch(value) is None
     ):
-        raise ValueError("execution_route must be 'local' or 'prefect:<sha256>'")
+        raise ValueError(
+            "execution_route must be 'local', 'prefect:<sha256>', or 'ecs:<sha256>'"
+        )
     return value
+
+
+def execution_route_backend(value: object) -> str:
+    """Return the registered backend kind for a validated remote route."""
+    route = validate_execution_route(value)
+    if route == "local":
+        return "local"
+    backend, _ = route.split(":", 1)
+    if backend not in EXECUTION_ROUTE_BACKENDS:
+        raise ValueError("execution route backend is not registered")
+    return backend
+
+
+def execution_route_binding(value: object) -> str | None:
+    """Return the opaque binding fingerprint for a remote route, if present."""
+    route = validate_execution_route(value)
+    return route.split(":", 1)[1] if route != "local" else None
 
 
 @dataclass(frozen=True, slots=True)
@@ -306,14 +326,17 @@ class DispatchReconciliation:
     remote_run_id: str | None = None
 
     def __post_init__(self) -> None:
-        if self.backend_kind != "prefect":
+        if self.backend_kind not in EXECUTION_ROUTE_BACKENDS:
             raise ValueError("dispatch backend kind is not registered")
-        if self.remote_run_id is None and self.prefect_flow_run_id is not None:
-            object.__setattr__(self, "remote_run_id", self.prefect_flow_run_id)
-        elif self.prefect_flow_run_id is None and self.remote_run_id is not None:
-            object.__setattr__(self, "prefect_flow_run_id", self.remote_run_id)
-        elif self.remote_run_id != self.prefect_flow_run_id:
-            raise ValueError("legacy and generic remote run identities differ")
+        if self.backend_kind == "prefect":
+            if self.remote_run_id is None and self.prefect_flow_run_id is not None:
+                object.__setattr__(self, "remote_run_id", self.prefect_flow_run_id)
+            elif self.prefect_flow_run_id is None and self.remote_run_id is not None:
+                object.__setattr__(self, "prefect_flow_run_id", self.remote_run_id)
+            elif self.remote_run_id != self.prefect_flow_run_id:
+                raise ValueError("legacy and generic remote run identities differ")
+        elif self.prefect_flow_run_id is not None:
+            raise ValueError("non-Prefect reconciliation cannot set Prefect run ID")
         if self.remote_run_id is not None and (
             not self.remote_run_id.strip() or len(self.remote_run_id) > 256
         ):
@@ -328,13 +351,15 @@ class DispatchReconciliation:
         if schema not in {
             None,
             "etlantic.control_plane.dispatch_reconciliation/1",
+            "etlantic.control_plane.dispatch_reconciliation/2",
             DISPATCH_RECONCILIATION_SCHEMA,
         }:
             raise ValueError("unsupported dispatch reconciliation schema")
         fields = {key: value for key, value in data.items() if key != "schema"}
         fields.setdefault("backend_kind", "prefect")
         fields.setdefault("remote_run_id", fields.get("prefect_flow_run_id"))
-        fields.setdefault("prefect_flow_run_id", fields.get("remote_run_id"))
+        if fields["backend_kind"] == "prefect":
+            fields.setdefault("prefect_flow_run_id", fields.get("remote_run_id"))
         return cls(**fields)
 
 
@@ -367,9 +392,10 @@ class DispatchRecord:
 
     def __post_init__(self) -> None:
         route = validate_execution_route(self.execution_route)
-        if self.backend_kind != "prefect" or not route.startswith("prefect:"):
+        route_backend = execution_route_backend(route)
+        if route_backend == "local" or self.backend_kind != route_backend:
             raise ValueError("dispatch backend kind is not registered for its route")
-        if self.binding_fingerprint != route.removeprefix("prefect:"):
+        if self.binding_fingerprint != execution_route_binding(route):
             raise ValueError("dispatch binding does not match its immutable route")
         remote = self.remote_run_id
         legacy = self.prefect_flow_run_id
@@ -377,10 +403,13 @@ class DispatchRecord:
             raise ValueError("remote_run_id must contain 1 to 256 characters")
         if remote is not None and legacy is not None and remote != legacy:
             raise ValueError("legacy and generic remote run identities differ")
-        if remote is None and legacy is not None:
-            object.__setattr__(self, "remote_run_id", legacy)
-        elif remote is not None and legacy is None:
-            object.__setattr__(self, "prefect_flow_run_id", remote)
+        if self.backend_kind == "prefect":
+            if remote is None and legacy is not None:
+                object.__setattr__(self, "remote_run_id", legacy)
+            elif remote is not None and legacy is None:
+                object.__setattr__(self, "prefect_flow_run_id", remote)
+        elif legacy is not None:
+            raise ValueError("non-Prefect dispatch cannot set Prefect run ID")
 
     def to_dict(self) -> dict[str, Any]:
         return {
@@ -397,6 +426,7 @@ class DispatchRecord:
         if schema not in {
             None,
             "etlantic.control_plane.dispatch_record/2",
+            "etlantic.control_plane.dispatch_record/3",
             DISPATCH_RECORD_SCHEMA,
         }:
             raise ValueError("unsupported dispatch record schema")

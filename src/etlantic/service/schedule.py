@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import hashlib
 import json
+import re
 import uuid
 from collections.abc import Callable, Iterable, Mapping
 from contextlib import suppress
@@ -26,7 +27,10 @@ from etlantic.control_plane import (
     require_authorized,
     validate_control_plane_context,
 )
-from etlantic.control_plane.durable_models import validate_execution_route
+from etlantic.control_plane.durable_models import (
+    execution_route_backend,
+    validate_execution_route,
+)
 from etlantic.control_plane.errors import is_permanent_control_plane_error
 from etlantic.control_plane.protocols import Authorizer
 from etlantic.control_plane.schedule_models import (
@@ -62,6 +66,10 @@ def _is_text(value: object) -> bool:
 
 def _is_nonempty_text(value: object) -> bool:
     return isinstance(value, str) and bool(value.strip())
+
+
+def _is_timer_binding_fingerprint(value: object) -> bool:
+    return isinstance(value, str) and re.fullmatch(r"[0-9a-f]{64}", value) is not None
 
 
 def _is_aware_datetime(value: object) -> bool:
@@ -184,6 +192,7 @@ class ScheduleApplicationService:
         workload_identity: Principal | None = None,
         schedule_id: str | None = None,
         timer_owner: TimerOwner = "local",
+        timer_binding_fingerprint: str | None = None,
     ) -> Any:
         validate_control_plane_context(ctx)
         require_authorized(
@@ -207,6 +216,12 @@ class ScheduleApplicationService:
             raise _bad_request("policy_fingerprint must be a string")
         if timer_owner not in ("local", "external"):
             raise _bad_request("timer_owner must be local or external")
+        if timer_binding_fingerprint is not None and not _is_timer_binding_fingerprint(
+            cast(object, timer_binding_fingerprint)
+        ):
+            raise _bad_request(
+                "timer_binding_fingerprint must be a lowercase SHA-256 value"
+            )
         if timer_owner == "external":
             if self.managed_service is None or self.durable_work is None:
                 raise ControlPlaneError(
@@ -279,9 +294,15 @@ class ScheduleApplicationService:
             )
 
         profile_name = profile_name or "default"
-        next_fire = next_fire_after(spec, after=self._now())
+        schedule_start = self._now()
+        if timer_owner == "external":
+            schedule_start = schedule_start.replace(microsecond=0)
+        next_fire = next_fire_after(spec, after=schedule_start)
+        timer_schedule_start_at = (
+            _iso(schedule_start) if timer_owner == "external" else None
+        )
         reference_id = self._schedule_route_reference_id(ctx, sid)
-        reserved = execution_route.startswith("prefect:")
+        reserved = execution_route_backend(execution_route) != "local"
         if reserved:
             self._reserve_schedule_route_reference(ctx, execution_route, reference_id)
         try:
@@ -300,6 +321,8 @@ class ScheduleApplicationService:
                 workload_identity=workload_identity,
                 execution_route=execution_route,
                 timer_owner=timer_owner,
+                timer_schedule_start_at=timer_schedule_start_at,
+                timer_binding_fingerprint=timer_binding_fingerprint,
             )
         except BaseException:
             # The store may have committed before a connection failure. Keep
@@ -350,6 +373,7 @@ class ScheduleApplicationService:
         expected_revision_id: str,
         spec: ScheduleSpec,
         transfer_execution_route: bool = False,
+        timer_binding_fingerprint: str | None = None,
     ) -> Any:
         validate_control_plane_context(ctx)
         require_authorized(
@@ -364,6 +388,12 @@ class ScheduleApplicationService:
             raise _bad_request("Schedule amendment requires an expected revision")
         if type(transfer_execution_route) is not bool:
             raise _bad_request("transfer_execution_route must be a boolean")
+        if timer_binding_fingerprint is not None and not _is_timer_binding_fingerprint(
+            cast(object, timer_binding_fingerprint)
+        ):
+            raise _bad_request(
+                "timer_binding_fingerprint must be a lowercase SHA-256 value"
+            )
         amend_method = getattr(schedule_store, "amend", None)
         if not callable(amend_method):
             raise ControlPlaneError(
@@ -374,6 +404,7 @@ class ScheduleApplicationService:
                 type="etlantic.control_plane/not_implemented",
             )
         amend = cast(Callable[..., ScheduleRecord], amend_method)
+        existing_record = schedule_store.get(ctx, schedule_id)
         execution_route: str | None = None
         policy_fingerprint: str | None = None
         prior_route: str | None = None
@@ -382,7 +413,7 @@ class ScheduleApplicationService:
                 raise _bad_request(
                     "Execution-route transfer requires managed execution"
                 )
-            current = schedule_store.get(ctx, schedule_id)
+            current = existing_record
             prior_route = current.execution_route
             execution_route = validate_execution_route(
                 getattr(self.managed_service, "execution_route", "local")
@@ -397,11 +428,17 @@ class ScheduleApplicationService:
                 execution_route=execution_route,
                 timer_owner=current.timer_owner,
             )
-        next_fire = next_fire_after(spec, after=self._now())
+        schedule_start = self._now()
+        if existing_record.timer_owner == "external":
+            schedule_start = schedule_start.replace(microsecond=0)
+        next_fire = next_fire_after(spec, after=schedule_start)
+        timer_schedule_start_at = (
+            _iso(schedule_start) if existing_record.timer_owner == "external" else None
+        )
         reference_id = self._schedule_route_reference_id(ctx, schedule_id)
         reserved_new_route = (
             execution_route is not None
-            and execution_route.startswith("prefect:")
+            and execution_route_backend(execution_route) != "local"
             and execution_route != prior_route
         )
         if reserved_new_route:
@@ -414,6 +451,8 @@ class ScheduleApplicationService:
                 expected_revision_id=expected_revision_id,
                 spec=spec,
                 next_fire_at=_iso(next_fire),
+                timer_schedule_start_at=timer_schedule_start_at,
+                timer_binding_fingerprint=timer_binding_fingerprint,
                 execution_route=execution_route,
                 policy_fingerprint=policy_fingerprint,
                 durable=self.durable_work,
@@ -430,7 +469,7 @@ class ScheduleApplicationService:
             raise
         if (
             prior_route
-            and prior_route.startswith("prefect:")
+            and execution_route_backend(prior_route) != "local"
             and prior_route != amended.execution_route
         ):
             self._release_schedule_route_reference(ctx, prior_route, reference_id)
@@ -448,6 +487,7 @@ class ScheduleApplicationService:
         expected_generation: int,
         timer_owner: TimerOwner,
         workload_identity: Principal | None = None,
+        timer_binding_fingerprint: str | None = None,
     ) -> ScheduleRecord:
         """Fence the current timer generation before activating its successor."""
         validate_control_plane_context(ctx)
@@ -472,6 +512,12 @@ class ScheduleApplicationService:
             raise _bad_request("Timer transfer requires an expected revision")
         if type(expected_generation) is not int or expected_generation < 1:
             raise _bad_request("expected_generation must be positive")
+        if timer_binding_fingerprint is not None and not _is_timer_binding_fingerprint(
+            cast(object, timer_binding_fingerprint)
+        ):
+            raise _bad_request(
+                "timer_binding_fingerprint must be a lowercase SHA-256 value"
+            )
         schedule_store = self._require_schedule_store()
         current = schedule_store.get(ctx, schedule_id)
         if workload_identity is not None:
@@ -510,6 +556,12 @@ class ScheduleApplicationService:
             execution_route=current.execution_route,
             timer_owner=timer_owner,
         )
+        schedule_start = self._now()
+        if timer_owner == "external":
+            schedule_start = schedule_start.replace(microsecond=0)
+        timer_schedule_start_at = (
+            _iso(schedule_start) if timer_owner == "external" else None
+        )
         return schedule_store.transfer_timer_owner(
             ctx,
             schedule_id,
@@ -518,6 +570,8 @@ class ScheduleApplicationService:
             timer_owner=timer_owner,
             workload_identity=workload_identity,
             policy_fingerprint=policy_fingerprint,
+            timer_schedule_start_at=timer_schedule_start_at,
+            timer_binding_fingerprint=timer_binding_fingerprint,
         )
 
     def resume(self, ctx: ControlPlaneContext, schedule_id: str) -> Any:
@@ -544,7 +598,7 @@ class ScheduleApplicationService:
                 if callable(release):
                     release(ctx, reference_id)
             raise
-        if deleted.execution_route.startswith("prefect:"):
+        if execution_route_backend(deleted.execution_route) != "local":
             self._release_schedule_route_reference(
                 ctx,
                 deleted.execution_route,
@@ -1103,6 +1157,32 @@ class ScheduleApplicationService:
             resource_in_caller_scope=False,
         )
         schedule_store = self._require_schedule_store()
+        if operation == "resume":
+            current = schedule_store.get(ctx, schedule_id)
+            if current.timer_owner == "external":
+                resume_external = getattr(schedule_store, "resume_external", None)
+                if not callable(resume_external):
+                    raise ControlPlaneError(
+                        "Schedule store does not support fenced external resume",
+                        code="PMCP501",
+                        status=501,
+                        title="Not Implemented",
+                        type="etlantic.control_plane/not_implemented",
+                    )
+                schedule_start = self._now().replace(microsecond=0)
+                next_fire = next_fire_after(current.spec, after=schedule_start)
+                if next_fire is None:
+                    raise _bad_request(
+                        "External schedule has no future occurrence to resume"
+                    )
+                return resume_external(
+                    ctx,
+                    schedule_id,
+                    expected_revision_id=current.revision_id,
+                    expected_generation=current.timer_owner_generation,
+                    next_fire_at=_iso(next_fire),
+                    timer_schedule_start_at=_iso(schedule_start),
+                )
         return getattr(schedule_store, operation)(ctx, schedule_id)
 
     def _reserve_schedule_route_reference(

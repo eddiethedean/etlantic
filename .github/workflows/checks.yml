@@ -1053,7 +1053,7 @@ jobs:
         run: |
           for pkg in etlantic-polars etlantic-pandas etlantic-sql etlantic-foundry etlantic-pyspark \
             etlantic-airflow etlantic-prefect etlantic-keyring etlantic-sqlmodel \
-            medallantic etlantic-sparkforge etlantic-fastapi etlantic-rsconnect etlantic-lsp etlantic-datafusion \
+            medallantic etlantic-sparkforge etlantic-fastapi etlantic-rsconnect etlantic-aws etlantic-lsp etlantic-datafusion \
             etlantic-s3 etlantic-kafka etlantic-k8s etlantic-spark-connect etlantic-schemaregistry etlantic-iceberg etlantic-snowflake \
             etlantic-openlineage etlantic-mcp etlantic-duckdb; do
             uv build --package "$pkg" --out-dir dist
@@ -1231,6 +1231,16 @@ jobs:
             uv run --isolated --no-project --with "$CORE" --with "$wheel" \
               python -c "import $mod as m; import etlantic; assert m.__version__ == etlantic.__version__; print(m.__version__)"
           done
+
+      - name: AWS plugin wheel import smoke
+        shell: bash
+        run: |
+          CORE="dist/etlantic-$(uv version --short --package etlantic)-py3-none-any.whl"
+          RSCONNECT="dist/etlantic_rsconnect-$(uv version --short --package etlantic-rsconnect)-py3-none-any.whl"
+          AWS="dist/etlantic_aws-$(uv version --short --package etlantic-aws)-py3-none-any.whl"
+          uv run --isolated --no-project \
+            --with "$CORE" --with "$RSCONNECT" --with "$AWS" \
+            python -c "import importlib.metadata as md; import etlantic; import etlantic_aws as aws; assert md.version('etlantic-aws') == aws.__version__; print(aws.__version__, etlantic.__version__)"
 
       - name: Record candidate wheel hashes
         shell: bash

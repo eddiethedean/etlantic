@@ -219,6 +219,7 @@ members = [
     "packages/etlantic-datafusion",
     "packages/etlantic-fastapi",
     "packages/etlantic-rsconnect",
+    "packages/etlantic-aws",
     "packages/etlantic-s3",
     "packages/etlantic-kafka",
     "packages/etlantic-k8s",
@@ -270,6 +271,7 @@ pythonpath = [
     "packages/etlantic-foundry/src",
     "packages/etlantic-pyspark/src",
     "packages/etlantic-airflow/src",
+    "packages/etlantic-aws/src",
     "packages/etlantic-prefect/src",
     "packages/etlantic-rsconnect/src",
     "packages/etlantic-keyring/src",
@@ -391,6 +393,7 @@ pythonVersion = "3.11"
 typeCheckingMode = "strict"
 extraPaths = [
     "src",
+    "packages/etlantic-aws/src",
     "packages/etlantic-foundry/src",
     "packages/etlantic-rsconnect/src",
 ]

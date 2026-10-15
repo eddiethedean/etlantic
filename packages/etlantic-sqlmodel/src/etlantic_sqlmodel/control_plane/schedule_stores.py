@@ -158,6 +158,8 @@ class SQLModelScheduleStore:
         execution_route: str = "local",
         timer_owner: TimerOwner = "local",
         next_fire_at: str | None = None,
+        timer_schedule_start_at: str | None = None,
+        timer_binding_fingerprint: str | None = None,
     ) -> ScheduleRecord:
         return self._txn(
             lambda m: m.create(
@@ -175,6 +177,8 @@ class SQLModelScheduleStore:
                 execution_route=execution_route,
                 timer_owner=timer_owner,
                 next_fire_at=next_fire_at,
+                timer_schedule_start_at=timer_schedule_start_at,
+                timer_binding_fingerprint=timer_binding_fingerprint,
             )
         )
 
@@ -195,6 +199,27 @@ class SQLModelScheduleStore:
     def resume(self, ctx: ControlPlaneContext, schedule_id: str) -> ScheduleRecord:
         return self._txn(lambda m: m.resume(ctx, schedule_id))
 
+    def resume_external(
+        self,
+        ctx: ControlPlaneContext,
+        schedule_id: str,
+        *,
+        expected_revision_id: str,
+        expected_generation: int,
+        next_fire_at: str,
+        timer_schedule_start_at: str,
+    ) -> ScheduleRecord:
+        return self._txn(
+            lambda m: m.resume_external(
+                ctx,
+                schedule_id,
+                expected_revision_id=expected_revision_id,
+                expected_generation=expected_generation,
+                next_fire_at=next_fire_at,
+                timer_schedule_start_at=timer_schedule_start_at,
+            )
+        )
+
     def amend(
         self,
         ctx: ControlPlaneContext,
@@ -203,6 +228,8 @@ class SQLModelScheduleStore:
         expected_revision_id: str,
         spec: ScheduleSpec,
         next_fire_at: str | None,
+        timer_schedule_start_at: str | None = None,
+        timer_binding_fingerprint: str | None = None,
         execution_route: str | None = None,
         policy_fingerprint: str | None = None,
         durable: DurableWorkStore | None = None,
@@ -214,6 +241,8 @@ class SQLModelScheduleStore:
                 expected_revision_id=expected_revision_id,
                 spec=spec,
                 next_fire_at=next_fire_at,
+                timer_schedule_start_at=timer_schedule_start_at,
+                timer_binding_fingerprint=timer_binding_fingerprint,
                 execution_route=execution_route,
                 policy_fingerprint=policy_fingerprint,
                 durable=durable,
@@ -230,6 +259,8 @@ class SQLModelScheduleStore:
         timer_owner: TimerOwner,
         workload_identity: Principal | None,
         policy_fingerprint: str,
+        timer_schedule_start_at: str | None = None,
+        timer_binding_fingerprint: str | None = None,
     ) -> ScheduleRecord:
         return self._txn(
             lambda memory: memory.transfer_timer_owner(
@@ -240,6 +271,8 @@ class SQLModelScheduleStore:
                 timer_owner=timer_owner,
                 workload_identity=workload_identity,
                 policy_fingerprint=policy_fingerprint,
+                timer_schedule_start_at=timer_schedule_start_at,
+                timer_binding_fingerprint=timer_binding_fingerprint,
             )
         )
 

@@ -1724,6 +1724,13 @@
         {
           "surface": "request",
           "media_type": "application/json",
+          "path": "timer_binding_fingerprint",
+          "required": false,
+          "type": "object"
+        },
+        {
+          "surface": "request",
+          "media_type": "application/json",
           "path": "timer_owner",
           "required": false,
           "type": "string"
@@ -9809,6 +9816,13 @@
           "path": "expected_revision_id",
           "required": true,
           "type": "string"
+        },
+        {
+          "surface": "request",
+          "media_type": "application/json",
+          "path": "timer_binding_fingerprint",
+          "required": false,
+          "type": "object"
         },
         {
           "surface": "request",

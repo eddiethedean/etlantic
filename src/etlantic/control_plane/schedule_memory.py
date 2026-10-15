@@ -17,7 +17,7 @@ from etlantic.control_plane.durable_models import validate_execution_route
 from etlantic.control_plane.durable_protocols import DurableWorkStore
 from etlantic.control_plane.errors import ControlPlaneError
 from etlantic.control_plane.models import ControlPlaneContext, Principal
-from etlantic.control_plane.schedule_clock import _in_window
+from etlantic.control_plane.schedule_clock import _in_window, next_fire_after
 from etlantic.control_plane.schedule_models import (
     FiringRecord,
     FiringStatus,
@@ -96,6 +96,8 @@ class MemoryScheduleStore:
         execution_route: str = "local",
         timer_owner: TimerOwner = "local",
         next_fire_at: str | None = None,
+        timer_schedule_start_at: str | None = None,
+        timer_binding_fingerprint: str | None = None,
     ) -> ScheduleRecord:
         sid = (schedule_id or f"sch-{uuid.uuid4().hex[:16]}").strip()
         revision = f"rev-{uuid.uuid4().hex[:12]}"
@@ -123,6 +125,8 @@ class MemoryScheduleStore:
             workload_identity=workload_identity,
             execution_route=validate_execution_route(execution_route),
             timer_owner=timer_owner,
+            timer_schedule_start_at=timer_schedule_start_at,
+            timer_binding_fingerprint=timer_binding_fingerprint,
         )
         key = (*_scope(ctx), sid)
         with self._lock:
@@ -163,6 +167,49 @@ class MemoryScheduleStore:
     def resume(self, ctx: ControlPlaneContext, schedule_id: str) -> ScheduleRecord:
         return self._set_status(ctx, schedule_id, "active")
 
+    def resume_external(
+        self,
+        ctx: ControlPlaneContext,
+        schedule_id: str,
+        *,
+        expected_revision_id: str,
+        expected_generation: int,
+        next_fire_at: str,
+        timer_schedule_start_at: str,
+    ) -> ScheduleRecord:
+        """Resume external delivery from a fresh fenced recurrence anchor."""
+        key = (*_scope(ctx), schedule_id)
+        with self._lock:
+            record = self._schedules.get(key)
+            if record is None or record.status == "deleted":
+                raise ControlPlaneError.not_found("schedule not found")
+            if (
+                record.revision_id != expected_revision_id
+                or record.timer_owner_generation != expected_generation
+                or record.timer_owner != "external"
+            ):
+                raise ControlPlaneError.conflict(
+                    "Schedule timer owner changed before external resume",
+                    code="PMFIRE409",
+                    extensions={"reason": "stale_timer_owner"},
+                )
+            if record.status == "active":
+                return deepcopy(record)
+            if record.workload_identity is None:
+                raise ControlPlaneError.conflict(
+                    "External schedule has no registered workload identity"
+                )
+            resumed = replace(
+                record,
+                status="active",
+                timer_owner_generation=record.timer_owner_generation + 1,
+                next_fire_at=next_fire_at,
+                timer_schedule_start_at=timer_schedule_start_at,
+                updated_at=_iso(),
+            )
+            self._schedules[key] = resumed
+            return deepcopy(resumed)
+
     def amend(
         self,
         ctx: ControlPlaneContext,
@@ -171,6 +218,8 @@ class MemoryScheduleStore:
         expected_revision_id: str,
         spec: ScheduleSpec,
         next_fire_at: str | None,
+        timer_schedule_start_at: str | None = None,
+        timer_binding_fingerprint: str | None = None,
         execution_route: str | None = None,
         policy_fingerprint: str | None = None,
         durable: DurableWorkStore | None = None,
@@ -207,6 +256,16 @@ class MemoryScheduleStore:
                 revision_id=f"rev-{uuid.uuid4().hex[:12]}",
                 spec=spec,
                 next_fire_at=next_fire_at,
+                timer_schedule_start_at=(
+                    timer_schedule_start_at
+                    if timer_schedule_start_at is not None
+                    else record.timer_schedule_start_at
+                ),
+                timer_binding_fingerprint=(
+                    timer_binding_fingerprint
+                    if timer_binding_fingerprint is not None
+                    else record.timer_binding_fingerprint
+                ),
                 updated_at=_iso(),
                 metadata=metadata,
                 execution_route=amended_route,
@@ -229,6 +288,8 @@ class MemoryScheduleStore:
         timer_owner: TimerOwner,
         workload_identity: Principal | None,
         policy_fingerprint: str,
+        timer_schedule_start_at: str | None = None,
+        timer_binding_fingerprint: str | None = None,
     ) -> ScheduleRecord:
         """Fence one timer generation before switching delivery authority."""
         if timer_owner not in ("local", "external"):
@@ -266,12 +327,31 @@ class MemoryScheduleStore:
                     code="PMFIRE409",
                     extensions={"reason": "occurrence_preparation_pending"},
                 )
+            new_anchor = None
+            new_binding = None
+            next_fire_at = current.next_fire_at
+            if timer_owner == "external":
+                anchor = (
+                    _parse_iso(timer_schedule_start_at)
+                    if timer_schedule_start_at is not None
+                    else datetime.now(UTC)
+                )
+                new_anchor = _iso(anchor)
+                next_fire_at = _iso(next_fire_after(current.spec, after=anchor))
+                new_binding = (
+                    timer_binding_fingerprint
+                    if timer_binding_fingerprint is not None
+                    else current.timer_binding_fingerprint
+                )
             updated = replace(
                 current,
                 timer_owner=timer_owner,
                 timer_owner_generation=current.timer_owner_generation + 1,
                 workload_identity=workload_identity,
                 policy_fingerprint=policy_fingerprint,
+                timer_schedule_start_at=new_anchor,
+                timer_binding_fingerprint=new_binding,
+                next_fire_at=next_fire_at,
                 updated_at=_iso(),
             )
             self._schedules[key] = updated

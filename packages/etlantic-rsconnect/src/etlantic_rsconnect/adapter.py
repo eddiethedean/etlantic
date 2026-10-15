@@ -1186,6 +1186,28 @@ class ConnectScheduleAdapter:
                 raise ScheduleOperationUnknown(
                     "canonical schedule did not become active during Connect resume"
                 )
+            if (
+                record.schedule_id != intent.schedule_id
+                or record.revision_id != intent.revision_id
+            ):
+                raise ScheduleOperationUnknown(
+                    "canonical schedule changed during Connect resume"
+                )
+            resumed_intent = replace(
+                intent,
+                timer_owner_generation=record.timer_owner_generation,
+                schedule_start_time=(
+                    record.timer_schedule_start_at or intent.schedule_start_time
+                ),
+            )
+            if resumed_intent != intent:
+                try:
+                    self.binding_store.put(resumed_intent, expected=intent)
+                except Exception:
+                    raise ScheduleOperationUnknown(
+                        "canonical schedule resumed but its timer generation could not be committed; reconcile before retrying"
+                    ) from None
+                intent = resumed_intent
             self._check_binding(record, intent)
             if self.gateway.read(binding.content_guid) is not None:
                 raise ScheduleOperationUnknown(
@@ -1327,44 +1349,69 @@ class ConnectScheduleAdapter:
             raise ScheduleOperationUnknown(
                 "canonical schedule amendment did not remain paused"
             )
-        desired = _connect_recurrence(amended, start_time=amended.next_fire_at)
-        new_bundle = build_bundle(amended)
+        resumed = service.resume(context, schedule_id)
         if (
-            new_bundle.schedule_id != amended.schedule_id
-            or new_bundle.schedule_revision_id != amended.revision_id
-            or new_bundle.timer_owner_generation != amended.timer_owner_generation
+            resumed.status != "active"
+            or resumed.schedule_id != amended.schedule_id
+            or resumed.revision_id != amended.revision_id
         ):
-            raise ScheduleOperationError(
-                "rebuilt trigger bundle does not match the amended schedule"
-            )
-        deployment = deployer.deploy(
-            new_bundle,
-            schedule_id=amended.schedule_id,
-            operation_id=intent.operation_id or uuid.uuid4().hex,
-            title=title,
-            existing_content_guid=binding.content_guid,
-        )
-        if deployment.content_guid != binding.content_guid:
             raise ScheduleOperationUnknown(
-                "Connect update returned a different content ID; reconcile ownership before proceeding"
+                "canonical schedule did not resume at the amended revision"
             )
         pending = replace(
-            binding,
-            revision_id=amended.revision_id,
-            target_url=new_bundle.endpoint_url,
-            bundle_sha256=new_bundle.sha256,
-            schedule_start_time=amended.next_fire_at,
-            status="pending",
-            operation_id=intent.operation_id,
-            pending_operation="amend",
-            pending_target_status="active",
+            intent,
+            revision_id=resumed.revision_id,
+            timer_owner_generation=resumed.timer_owner_generation,
+            schedule_start_time=(
+                resumed.timer_schedule_start_at or resumed.next_fire_at
+            ),
         )
         try:
             self.binding_store.put(pending, expected=intent)
         except Exception:
             raise ScheduleOperationUnknown(
+                "canonical amendment resumed but its timer generation could not be committed; reconcile before retrying"
+            ) from None
+        try:
+            desired = _connect_recurrence(
+                resumed, start_time=pending.schedule_start_time
+            )
+            new_bundle = build_bundle(resumed)
+            if (
+                new_bundle.schedule_id != resumed.schedule_id
+                or new_bundle.schedule_revision_id != resumed.revision_id
+                or new_bundle.timer_owner_generation != resumed.timer_owner_generation
+            ):
+                raise ScheduleOperationError(
+                    "rebuilt trigger bundle does not match the amended schedule"
+                )
+            deployment = deployer.deploy(
+                new_bundle,
+                schedule_id=resumed.schedule_id,
+                operation_id=intent.operation_id or uuid.uuid4().hex,
+                title=title,
+                existing_content_guid=binding.content_guid,
+            )
+            if deployment.content_guid != binding.content_guid:
+                raise ScheduleOperationUnknown(
+                    "Connect update returned a different content ID; reconcile ownership before proceeding"
+                )
+            deployed_pending = replace(
+                pending,
+                target_url=new_bundle.endpoint_url,
+                bundle_sha256=new_bundle.sha256,
+            )
+        except Exception:
+            self._rollback_amendment(service, context, schedule_id, pending)
+            raise
+        try:
+            self.binding_store.put(deployed_pending, expected=pending)
+        except Exception:
+            self._rollback_amendment(service, context, schedule_id, pending)
+            raise ScheduleOperationUnknown(
                 "canonical amendment was saved but its new binding could not be committed; reconcile before retrying"
             ) from None
+        pending = deployed_pending
         # Replacing a differently typed rule by merge can retain stale fields;
         # remove the old timer before creating the exact desired rule.
         try:
@@ -1375,7 +1422,6 @@ class ConnectScheduleAdapter:
         except Exception:
             self._rollback_amendment(service, context, schedule_id, pending)
             raise
-        resumed = service.resume(context, schedule_id)
         try:
             self.gateway.set_trigger_armed(binding.content_guid, True)
         except Exception:
