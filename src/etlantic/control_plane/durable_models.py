@@ -34,6 +34,7 @@ OUTBOX_RECORD_SCHEMA = "etlantic.control_plane.outbox_record/1"
 LEASE_RECORD_SCHEMA = "etlantic.control_plane.lease_record/1"
 ATTEMPT_RECORD_SCHEMA = "etlantic.control_plane.attempt_record/1"
 DISPATCH_RECORD_SCHEMA = "etlantic.control_plane.dispatch_record/5"
+MAX_REMOTE_RUN_ID_LENGTH = 512
 DISPATCH_RECONCILIATION_SCHEMA = "etlantic.control_plane.dispatch_reconciliation/3"
 CHECKPOINT_RECORD_SCHEMA = "etlantic.control_plane.checkpoint_record/1"
 EFFECT_RECORD_SCHEMA = "etlantic.control_plane.effect_record/1"
@@ -338,9 +339,12 @@ class DispatchReconciliation:
         elif self.prefect_flow_run_id is not None:
             raise ValueError("non-Prefect reconciliation cannot set Prefect run ID")
         if self.remote_run_id is not None and (
-            not self.remote_run_id.strip() or len(self.remote_run_id) > 256
+            not self.remote_run_id.strip()
+            or len(self.remote_run_id) > MAX_REMOTE_RUN_ID_LENGTH
         ):
-            raise ValueError("remote_run_id must contain 1 to 256 characters")
+            raise ValueError(
+                f"remote_run_id must contain 1 to {MAX_REMOTE_RUN_ID_LENGTH} characters"
+            )
 
     def to_dict(self) -> dict[str, Any]:
         return {"schema": DISPATCH_RECONCILIATION_SCHEMA, **asdict(self)}
@@ -402,8 +406,12 @@ class DispatchRecord:
             raise ValueError("dispatch binding does not match its immutable route")
         remote = self.remote_run_id
         legacy = self.prefect_flow_run_id
-        if remote is not None and (not remote.strip() or len(remote) > 256):
-            raise ValueError("remote_run_id must contain 1 to 256 characters")
+        if remote is not None and (
+            not remote.strip() or len(remote) > MAX_REMOTE_RUN_ID_LENGTH
+        ):
+            raise ValueError(
+                f"remote_run_id must contain 1 to {MAX_REMOTE_RUN_ID_LENGTH} characters"
+            )
         if remote is not None and legacy is not None and remote != legacy:
             raise ValueError("legacy and generic remote run identities differ")
         if self.backend_kind == "prefect":

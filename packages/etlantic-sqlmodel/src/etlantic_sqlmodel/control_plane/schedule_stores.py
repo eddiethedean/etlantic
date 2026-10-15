@@ -63,35 +63,44 @@ class SQLModelScheduleStore:
     @contextmanager
     def timer_mutation_lock(
         self, ctx: ControlPlaneContext, schedule_id: str
-    ) -> Generator[None, None, None]:
-        """Serialize an external timer read/modify/write across processes.
+    ) -> Generator[ScheduleRecord | None, None, None]:
+        """Yield the current schedule while excluding canonical mutations.
 
         Session advisory locks are deliberately limited to PostgreSQL, whose
-        lock lifetime spans the external AWS calls while releasing cleanly on
-        connection loss. SQLite and other dialects cannot provide this
-        cross-process guarantee and fail closed.
+        lock lifetime spans the external AWS calls. The key matches the
+        transaction advisory lock used by canonical schedule writes, so the
+        yielded snapshot stays current through the remote mutation. SQLite and
+        other dialects cannot provide this cross-process guarantee and fail
+        closed.
         """
         if self.engine.dialect.name != "postgresql":
             raise RuntimeError(
                 "external timer mutation requires PostgreSQL advisory locks"
             )
-        identity = "\0".join(
-            (
-                "schedule-timer-mutation",
-                self.store_id,
-                ctx.tenant.tenant_id,
-                ctx.workspace.workspace_id,
-                schedule_id,
-            )
-        )
-        digest = hashlib.sha256(identity.encode("utf-8")).digest()[:8]
+        digest = hashlib.sha256(("schedule:" + self.store_id).encode("utf-8")).digest()[
+            :8
+        ]
         lock_id = int.from_bytes(digest, byteorder="big", signed=True)
         with self.engine.connect() as connection:
             connection.execute(
                 text("SELECT pg_advisory_lock(:lock_id)"), {"lock_id": lock_id}
             )
             try:
-                yield
+                payload_json = connection.execute(
+                    select(ScheduleSnapshotRow.payload_json).where(
+                        ScheduleSnapshotRow.store_id == self.store_id
+                    )
+                ).scalar_one_or_none()
+                current: ScheduleRecord | None = None
+                if payload_json is not None:
+                    memory = MemoryScheduleStore()
+                    memory.load(json.loads(payload_json))
+                    try:
+                        current = memory.get(ctx, schedule_id)
+                    except ControlPlaneError as exc:
+                        if exc.status != 404:
+                            raise
+                yield current
             finally:
                 connection.execute(
                     text("SELECT pg_advisory_unlock(:lock_id)"),

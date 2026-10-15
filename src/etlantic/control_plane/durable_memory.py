@@ -23,6 +23,7 @@ from etlantic.control_plane.action_jobs import (
 )
 from etlantic.control_plane.durable_models import (
     ACTION_JOB_SCHEMA,
+    MAX_REMOTE_RUN_ID_LENGTH,
     STATE_NAMESPACES,
     ActionJobRecord,
     ActionJobStatus,
@@ -100,9 +101,11 @@ def _select_remote_run_id(
     if (
         not isinstance(remote_run_id, str)
         or not remote_run_id.strip()
-        or len(remote_run_id) > 256
+        or len(remote_run_id) > MAX_REMOTE_RUN_ID_LENGTH
     ):
-        raise ValueError("remote_run_id must contain 1 to 256 characters")
+        raise ValueError(
+            f"remote_run_id must contain 1 to {MAX_REMOTE_RUN_ID_LENGTH} characters"
+        )
     return remote_run_id
 
 

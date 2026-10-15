@@ -1,11 +1,13 @@
 from __future__ import annotations
 
 import hashlib
-from collections.abc import Mapping
+from collections.abc import Generator, Mapping
+from contextlib import contextmanager
 from datetime import UTC, datetime, timedelta
 from threading import RLock
 from types import SimpleNamespace
 from typing import Any, cast
+from unittest.mock import patch
 
 import pytest
 from etlantic_aws import (
@@ -38,6 +40,31 @@ from etlantic.secrets import SecretRef
 ACCOUNT = "123456789012"
 REGION = "us-east-1"
 _SCHEDULE_MUTATION_LOCK = RLock()
+_DATETIME = datetime
+
+
+def _datetime_after(value: str) -> type[datetime]:
+    cursor = _DATETIME.fromisoformat(value.replace("Z", "+00:00"))
+    later = cursor + timedelta(seconds=1)
+
+    class _CompatibleDateTimeMeta(type):
+        def __instancecheck__(cls, instance: object) -> bool:
+            return isinstance(instance, _DATETIME)
+
+    class _LaterDateTime(_DATETIME, metaclass=_CompatibleDateTimeMeta):
+        @classmethod
+        def now(cls, tz: Any = None) -> datetime:
+            return later if tz is not None else later.replace(tzinfo=None)
+
+    return _LaterDateTime
+
+
+@contextmanager
+def _schedule_mutation_guard(
+    record: ScheduleRecord,
+) -> Generator[ScheduleRecord, None, None]:
+    with _SCHEDULE_MUTATION_LOCK:
+        yield record
 
 
 def _ecs_binding() -> ECSExecutionBinding:
@@ -167,7 +194,10 @@ class _ScopedSchedulerClient(_SchedulerClient):
 
 
 def _scheduler(
-    client: _SchedulerClient | None = None, *, lambda_version: int = 12
+    client: _SchedulerClient | None = None,
+    *,
+    lambda_version: int = 12,
+    mutation_guard: Any = None,
 ) -> EventBridgeScheduler:
     return EventBridgeScheduler(
         client or _SchedulerClient(),
@@ -179,7 +209,7 @@ def _scheduler(
         ),
         scheduler_role_arn=f"arn:aws:iam::{ACCOUNT}:role/scheduler",
         dlq_arn=f"arn:aws:sqs:{REGION}:{ACCOUNT}:scheduler-dlq",
-        mutation_guard=lambda _record: _SCHEDULE_MUTATION_LOCK,
+        mutation_guard=mutation_guard or _schedule_mutation_guard,
     )
 
 
@@ -206,6 +236,45 @@ def test_scheduler_uses_stable_anchor_and_rejects_remote_drift() -> None:
     changed_binding = _scheduler(lambda_version=13)
     with pytest.raises(ValueError, match="binding does not match"):
         changed_binding.create_disabled(record)
+
+
+def test_scheduler_refuses_stale_activation_after_canonical_pause() -> None:
+    ctx = _context()
+    start = datetime.now(UTC).replace(microsecond=0)
+    store = MemoryScheduleStore()
+    adapter = _scheduler()
+    record = store.create(
+        ctx,
+        definition_id="pipeline-a",
+        profile_name="test",
+        spec=ScheduleSpec(kind="interval", interval_seconds=60),
+        schedule_id="schedule-paused",
+        timer_owner="external",
+        workload_identity=Principal("timer", issuer="tests", kind="workload"),
+        next_fire_at=(start + timedelta(seconds=60)).isoformat().replace("+00:00", "Z"),
+        timer_schedule_start_at=start.isoformat().replace("+00:00", "Z"),
+        timer_binding_fingerprint=adapter.binding_fingerprint,
+    )
+
+    @contextmanager
+    def canonical_guard(
+        _record: ScheduleRecord,
+    ) -> Generator[ScheduleRecord, None, None]:
+        with _SCHEDULE_MUTATION_LOCK:
+            yield store.get(ctx, record.schedule_id)
+
+    client = _SchedulerClient()
+    adapter = _scheduler(client, mutation_guard=canonical_guard)
+    adapter.create_disabled(record)
+    adapter.activate(record)
+    paused = store.pause(ctx, record.schedule_id)
+    adapter.pause(paused)
+
+    with pytest.raises(RuntimeError, match="canonical schedule changed"):
+        adapter.activate(record)
+
+    assert client.value is not None
+    assert client.value["State"] == "DISABLED"
 
 
 def test_scheduler_names_are_scoped_to_tenant_and_workspace() -> None:
@@ -278,7 +347,16 @@ def test_scheduler_enable_retry_accepts_matching_enabled_schedule(
             "next_fire_at": retry_time.isoformat().replace("+00:00", "Z"),
         }
     )
-    assert enable(overdue_record)["State"] == "ENABLED"
+    assert _datetime_after(cast(str, overdue_record.next_fire_at)).now(UTC) > (
+        datetime.fromisoformat(
+            cast(str, overdue_record.next_fire_at).replace("Z", "+00:00")
+        )
+    )
+    with patch(
+        "etlantic_aws.scheduler.datetime",
+        _datetime_after(cast(str, overdue_record.next_fire_at)),
+    ):
+        assert enable(overdue_record)["State"] == "ENABLED"
 
 
 def test_scheduler_revision_update_retry_accepts_matching_disabled_replacement() -> (
@@ -329,7 +407,43 @@ def test_scheduler_revision_update_retry_accepts_matching_disabled_replacement()
     with pytest.raises(RuntimeError, match="observation is unavailable"):
         adapter.update_disabled(previous, replacement)
 
-    assert adapter.update_disabled(previous, replacement)["State"] == "DISABLED"
+    assert isinstance(replacement.next_fire_at, str)
+    with patch(
+        "etlantic_aws.scheduler.datetime",
+        _datetime_after(replacement.next_fire_at),
+    ):
+        assert adapter.update_disabled(previous, replacement)["State"] == "DISABLED"
+
+
+def test_scheduler_update_disables_old_revision_before_rejecting_overdue_cursor() -> (
+    None
+):
+    client = _SchedulerClient()
+    adapter = _scheduler(client)
+    previous = _schedule_record()
+    adapter.create_disabled(previous)
+    adapter.activate(previous)
+    assert client.value is not None
+    previous_input = client.value["Target"]["Input"]
+    overdue = ScheduleRecord.from_dict(
+        {
+            **previous.to_dict(),
+            "revision_id": "rev-overdue",
+            "timer_owner_generation": previous.timer_owner_generation + 1,
+            "next_fire_at": (
+                datetime.now(UTC).replace(microsecond=0) - timedelta(seconds=1)
+            )
+            .isoformat()
+            .replace("+00:00", "Z"),
+        }
+    )
+
+    with pytest.raises(ValueError, match="cursor is overdue"):
+        adapter.update_disabled(previous, overdue)
+
+    assert client.value is not None
+    assert client.value["State"] == "DISABLED"
+    assert client.value["Target"]["Input"] == previous_input
 
 
 def test_scheduler_delete_retry_accepts_an_absent_owned_resource() -> None:

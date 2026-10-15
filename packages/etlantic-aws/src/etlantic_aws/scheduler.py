@@ -54,7 +54,9 @@ class EventBridgeScheduler:
         lambda_version_arn: str,
         scheduler_role_arn: str,
         dlq_arn: str,
-        mutation_guard: Callable[[ScheduleRecord], AbstractContextManager[Any]],
+        mutation_guard: Callable[
+            [ScheduleRecord], AbstractContextManager[ScheduleRecord | None]
+        ],
         maximum_event_age_seconds: int = 3600,
         maximum_retry_attempts: int = 2,
     ) -> None:
@@ -216,7 +218,11 @@ class EventBridgeScheduler:
     def delete(self, record: ScheduleRecord) -> None:
         """Delete only the fully matching, deterministic resource owned here."""
         self._validate_record(record, allow_deleted=True, allow_paused=True)
-        self._with_mutation_guard(record, lambda: self._delete(record))
+        self._with_mutation_guard(
+            record,
+            lambda: self._delete(record),
+            allow_missing=record.status == "deleted",
+        )
 
     def _delete(self, record: ScheduleRecord) -> None:
         observed = self._read_optional(record)
@@ -245,7 +251,6 @@ class EventBridgeScheduler:
         """
         self._validate_record(previous, allow_paused=True)
         self._validate_record(replacement, allow_paused=True)
-        self._require_future_cursor(replacement)
         if (
             previous.schedule_id,
             previous.tenant_id,
@@ -261,7 +266,7 @@ class EventBridgeScheduler:
                 "timer binding changes require a separately fenced migration"
             )
         return self._with_mutation_guard(
-            previous, lambda: self._update_disabled(previous, replacement)
+            replacement, lambda: self._update_disabled(previous, replacement)
         )
 
     def _update_disabled(
@@ -284,6 +289,7 @@ class EventBridgeScheduler:
             else:
                 observed = self._read(previous)
                 self._assert_matches(previous, observed, expected_state="DISABLED")
+        self._require_future_cursor(replacement)
         try:
             self.client.update_schedule(**self._request(replacement, state="DISABLED"))
         except Exception:
@@ -295,9 +301,22 @@ class EventBridgeScheduler:
         return observed
 
     def _with_mutation_guard(
-        self, record: ScheduleRecord, operation: Callable[[], Any]
+        self,
+        record: ScheduleRecord,
+        operation: Callable[[], Any],
+        *,
+        allow_missing: bool = False,
     ):
-        with self.mutation_guard(record):
+        with self.mutation_guard(record) as canonical:
+            if canonical is None:
+                if not allow_missing:
+                    raise RuntimeError(
+                        "canonical schedule is unavailable under the mutation guard"
+                    )
+            elif canonical != record:
+                raise RuntimeError(
+                    "canonical schedule changed before the remote mutation"
+                )
             return operation()
 
     def _request(self, record: ScheduleRecord, *, state: str) -> dict[str, Any]:

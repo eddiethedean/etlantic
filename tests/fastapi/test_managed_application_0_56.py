@@ -3088,6 +3088,60 @@ def test_ecs_expired_dispatch_reconciliation_does_not_require_a_task_arn(
     assert result["dispatch"]["generation"] == expired.generation + 1
 
 
+def test_ecs_reconciliation_accepts_long_task_arn(tmp_path: Path) -> None:
+    route = "ecs:" + "e" * 64
+    ctx, authz, _definitions, _submissions, durable, _events, service = _wired(
+        tmp_path, execution_route=route
+    )
+    authz.grant(ctx, "execution.dispatch.reconcile")
+    receipt = service.submit_run(
+        ctx, "pipe", idempotency_key="ecs-long-task-arn-reconcile"
+    )
+    cluster_name = "c" * 200
+    exhausted: DispatchRecord | None = None
+    task_arn = ""
+    for generation in range(1, 4):
+        dispatch = durable.prepare_dispatch(ctx, receipt.submission_id)
+        assert dispatch.generation == generation
+        owner = f"ecs-dispatcher-{generation}"
+        claim = durable.claim_dispatch(ctx, receipt.submission_id, owner_id=owner)
+        assert claim is not None
+        task_arn = (
+            f"arn:aws:ecs:us-east-1:123456789012:task/{cluster_name}/{generation:032x}"
+        )
+        durable.link_dispatch(
+            ctx,
+            receipt.submission_id,
+            owner_id=owner,
+            fencing_token=claim.lease_fencing_token,
+            remote_run_id=task_arn,
+        )
+        exhausted = durable.rearm_dispatch_after_remote_failure(
+            ctx, receipt.submission_id, expected_remote_run_id=task_arn
+        )
+    assert exhausted is not None
+    assert exhausted.status == "reconciliation_required"
+    assert len(task_arn) > 256
+
+    body = DispatchReconciliationBody(
+        expected_generation=exhausted.generation,
+        expected_remote_run_id=task_arn,
+        evidence="ECS confirmed the task failed before ETLantic claim.",
+    )
+    result = service.rearm_exhausted_dispatch(
+        ctx,
+        receipt.submission_id,
+        expected_generation=body.expected_generation,
+        expected_remote_run_id=body.remote_run_id,
+        evidence=body.evidence,
+    )
+
+    assert result["dispatch"]["status"] == "pending"
+    assert result["dispatch"]["reconciliation_history"][-1]["remote_run_id"] == (
+        task_arn
+    )
+
+
 def test_retry_reuses_accepted_plan_and_runs_through_http(tmp_path) -> None:
     from etlantic.control_plane.durable_models import EffectRecord
     from etlantic.runtime.managed_errors import ExecutionRejected

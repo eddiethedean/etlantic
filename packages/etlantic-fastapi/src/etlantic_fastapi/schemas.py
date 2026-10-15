@@ -6,7 +6,11 @@ from typing import Any, Literal
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
-from etlantic.control_plane import TRIGGER_RECEIPT_SCHEMA, LifecycleState
+from etlantic.control_plane import (
+    MAX_REMOTE_RUN_ID_LENGTH,
+    TRIGGER_RECEIPT_SCHEMA,
+    LifecycleState,
+)
 
 
 class AcceptReceiptResponse(BaseModel):
@@ -128,7 +132,7 @@ class DispatchReconciliationBody(BaseModel):
 
     expected_generation: int = Field(ge=1)
     expected_remote_run_id: str | None = Field(
-        default=None, min_length=1, max_length=256
+        default=None, min_length=1, max_length=MAX_REMOTE_RUN_ID_LENGTH
     )
     # 0.58 request field retained for existing Prefect callers.
     expected_flow_run_id: str | None = Field(default=None, min_length=1, max_length=128)

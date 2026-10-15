@@ -16,9 +16,12 @@ DLQ, and retry limits; the schedule record keeps it with its revision, owner
 generation, recurrence, and stable start anchor. The remote name is derived from
 the schedule ID, and every mutation checks full readback before changing state.
 Supply `mutation_guard` to serialize the full readback/write/readback sequence
-across scheduler processes. With the SQLModel provider, pass
-`lambda record: schedule_store.timer_mutation_lock(ctx, record.schedule_id)`;
-this uses PostgreSQL session advisory locks and fails closed on other dialects.
+across scheduler processes. The guard must yield the current canonical
+`ScheduleRecord` while holding the lock; the adapter compares it with the
+requested revision before making a remote change. With the SQLModel provider,
+pass `lambda record: schedule_store.timer_mutation_lock(ctx, record.schedule_id)`.
+It uses the same PostgreSQL advisory lock as canonical schedule writes,
+provides the locked snapshot, and fails closed on other dialects.
 
 `ScheduledTriggerRelay` validates Scheduler context against a fresh durable
 schedule lookup and delegates delivery to the shared bounded

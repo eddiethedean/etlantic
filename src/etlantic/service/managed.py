@@ -36,6 +36,7 @@ from etlantic.control_plane.authz import (
 )
 from etlantic.control_plane.durable_models import (
     EXECUTION_ROUTE_LIFECYCLE_SCHEMA,
+    MAX_REMOTE_RUN_ID_LENGTH,
     ActionJobRecord,
     DispatchRecord,
     ExecutionRouteLifecycle,
@@ -671,7 +672,7 @@ class ManagedApplicationService:
         if remote_run_id_value is not None and (
             not isinstance(remote_run_id_value, str)
             or not remote_run_id_value.strip()
-            or len(remote_run_id_value) > 256
+            or len(remote_run_id_value) > MAX_REMOTE_RUN_ID_LENGTH
         ):
             raise ValueError("expected_remote_run_id must be a bounded identifier")
         if not submission_id.strip() or len(submission_id) > 256:
