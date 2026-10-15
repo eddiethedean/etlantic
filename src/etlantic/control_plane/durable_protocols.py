@@ -253,6 +253,8 @@ class DurableWorkStore(Protocol):
         expected_generation: int,
         expected_creation_started_at: str | None,
         safe_retry_deadline: datetime,
+        owner_id: str | None = None,
+        fencing_token: int | None = None,
         now: datetime | None = None,
     ) -> DispatchRecord: ...
     def confirm_dispatch_cancelled(

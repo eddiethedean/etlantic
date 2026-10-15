@@ -803,19 +803,30 @@ class MemoryDurableWorkStore:
                 ):
                     continue
                 dispatch = self._dispatches.get((*_scope(ctx), row.submission_id))
-                cancellation_recovery = dispatch is not None and dispatch.status in {
-                    "uncertain",
-                    "leased",
-                }
+                cancellation_recovery = dispatch is not None and (
+                    (
+                        dispatch.status in {"uncertain", "leased"}
+                        and submission.status in {"cancel_requested", "cancelled"}
+                    )
+                    or (
+                        dispatch.backend_kind == "ecs"
+                        and dispatch.status == "reconciliation_required"
+                        and submission.status in {"cancel_requested", "cancelled"}
+                    )
+                )
                 if submission.status in {"cancel_requested", "cancelled"} and not (
                     cancellation_recovery
                 ):
                     continue
-                if dispatch is not None and dispatch.status in {
-                    "dispatched",
-                    "cancelled",
-                    "reconciliation_required",
-                }:
+                if (
+                    dispatch is not None
+                    and dispatch.status
+                    in {"dispatched", "cancelled", "reconciliation_required"}
+                    and not (
+                        dispatch.status == "reconciliation_required"
+                        and cancellation_recovery
+                    )
+                ):
                     continue
                 if (
                     dispatch is not None
@@ -977,21 +988,23 @@ class MemoryDurableWorkStore:
             submission = self._submissions.get(key)
             if record is None or submission is None:
                 raise ControlPlaneError.not_found("Dispatch candidate not found")
-            if record.status in {
-                "dispatched",
-                "cancelled",
-                "reconciliation_required",
-            }:
+            cancellation_recovery = (
+                record.status in {"uncertain", "leased"}
+                and submission.status in {"cancel_requested", "cancelled"}
+            ) or (
+                record.backend_kind == "ecs"
+                and record.status == "reconciliation_required"
+                and submission.status in {"cancel_requested", "cancelled"}
+            )
+            if record.status in {"dispatched", "cancelled"} or (
+                record.status == "reconciliation_required" and not cancellation_recovery
+            ):
                 return None
             if (
                 record.retry_after_at is not None
                 and _parse(record.retry_after_at) > current
             ):
                 return None
-            cancellation_recovery = record.status in {
-                "uncertain",
-                "leased",
-            } and submission.status in {"cancel_requested", "cancelled"}
             if (
                 submission.status
                 in {
@@ -1152,9 +1165,13 @@ class MemoryDurableWorkStore:
         expected_generation: int,
         expected_creation_started_at: str | None,
         safe_retry_deadline: datetime,
+        owner_id: str | None = None,
+        fencing_token: int | None = None,
         now: datetime | None = None,
     ) -> DispatchRecord:
         """Stop automatic ECS retries after the idempotency safety window."""
+        if (owner_id is None) != (fencing_token is None):
+            raise ValueError("owner_id and fencing_token must be supplied together")
         current = now or _now()
         key = (*_scope(ctx), submission_id)
         with self._lock:
@@ -1173,9 +1190,16 @@ class MemoryDurableWorkStore:
                 raise ControlPlaneError.conflict(
                     "ECS dispatch changed before its retry window expired"
                 )
+            if owner_id is not None and (
+                record.status != "leased"
+                or record.lease_owner_id != owner_id
+                or record.lease_fencing_token != fencing_token
+            ):
+                raise ControlPlaneError.conflict("ECS dispatch lease was lost")
             if (
                 record.lease_expires_at is not None
                 and _parse(record.lease_expires_at) > current
+                and owner_id is None
             ):
                 raise ControlPlaneError.conflict("ECS dispatch lease is still active")
             if current < safe_retry_deadline:
@@ -1557,17 +1581,19 @@ class MemoryDurableWorkStore:
                     and dispatch.status == "uncertain"
                     and dispatch.prefect_flow_run_id is None
                 ):
-                    # A remote create may have succeeded even though its
-                    # response was lost. Keep the canonical cancellation
-                    # discoverable until the dispatcher resolves that identity.
+                    # Preserve Prefect response-loss recovery while its remote
+                    # flow-run identity is unresolved.
                     continue
                 if (
                     dispatch is not None
-                    and dispatch.status == "dispatched"
                     and dispatch.backend_kind == "ecs"
+                    and dispatch.status
+                    in {"uncertain", "leased", "reconciliation_required", "dispatched"}
                 ):
-                    # ECS cancellation is final only after the dispatcher has
-                    # observed STOPPED and fenced the linked dispatch.
+                    # An ECS create may have succeeded before the identity was
+                    # durably linked. Keep cancellation discoverable until the
+                    # dispatcher finds and stops that task, or proves no task
+                    # exists after the client-token safety window.
                     continue
                 had_running_attempt = False
                 for attempt_key, attempt in tuple(self._attempts.items()):

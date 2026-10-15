@@ -8,6 +8,7 @@ import pytest
 
 from etlantic.control_plane import (
     ControlPlaneContext,
+    ControlPlaneError,
     DispatchReconciliation,
     DispatchRecord,
     EnvironmentRef,
@@ -98,7 +99,13 @@ def _insert_ecs_dispatch(
     store: MemoryDurableWorkStore,
     ctx: ControlPlaneContext,
     *,
-    status: Literal["pending", "dispatched", "leased"],
+    status: Literal[
+        "pending",
+        "dispatched",
+        "leased",
+        "uncertain",
+        "reconciliation_required",
+    ],
     submission_status: Literal["accepted", "cancel_requested"] = "accepted",
     remote_run_id: str | None = None,
     lease_expires_at: str | None = None,
@@ -137,6 +144,11 @@ def _insert_ecs_dispatch(
         lease_expires_at=lease_expires_at,
         backend_kind="ecs",
         remote_run_id=remote_run_id,
+        creation_started_at=(
+            "2026-10-14T12:00:00Z"
+            if status in {"uncertain", "leased", "reconciliation_required"}
+            else None
+        ),
     )
     store.load(
         {
@@ -181,6 +193,45 @@ def test_expired_ecs_lease_remains_recoverable_after_cancellation() -> None:
     assert claim is not None
     assert claim.status == "leased"
     assert claim.lease_fencing_token == 2
+
+
+@pytest.mark.parametrize(
+    ("status", "remote_run_id"),
+    [
+        ("uncertain", None),
+        ("leased", None),
+        ("reconciliation_required", None),
+        (
+            "dispatched",
+            "arn:aws:ecs:us-east-1:123456789012:task/cluster/task-1",
+        ),
+    ],
+)
+def test_ecs_cancellation_stays_open_until_remote_identity_is_resolved(
+    status: Literal["uncertain", "leased", "reconciliation_required", "dispatched"],
+    remote_run_id: str | None,
+) -> None:
+    ctx = _durable_context()
+    store = MemoryDurableWorkStore()
+    dispatch = _insert_ecs_dispatch(
+        store,
+        ctx,
+        status=status,
+        submission_status="cancel_requested",
+        remote_run_id=remote_run_id,
+        lease_expires_at="2000-01-01T00:00:00Z" if status == "leased" else None,
+    )
+
+    assert store.reconcile_cancelled_submissions(ctx, limit=1) == []
+    assert (
+        store.get_submission(ctx, dispatch.submission_id).status == "cancel_requested"
+    )
+    assert store.get_dispatch(ctx, dispatch.submission_id).status == status
+    if status != "dispatched":
+        pending = store.pending_dispatches(
+            ctx, execution_route=dispatch.execution_route, limit=1
+        )
+        assert [item.submission_id for item in pending] == [dispatch.submission_id]
 
 
 def test_ecs_uncertain_dispatch_expires_and_operator_rearm_starts_new_token_window() -> (
@@ -229,6 +280,56 @@ def test_ecs_uncertain_dispatch_expires_and_operator_rearm_starts_new_token_wind
     assert rearmed.generation == 2
     assert rearmed.status == "pending"
     assert rearmed.creation_started_at is None
+
+
+def test_expired_ecs_token_can_be_quarantined_under_its_live_claim() -> None:
+    ctx = _durable_context()
+    store = MemoryDurableWorkStore()
+    created = datetime(2026, 10, 14, 12, tzinfo=UTC)
+    dispatch = _insert_ecs_dispatch(store, ctx, status="uncertain")
+    claim = store.claim_dispatch(
+        ctx,
+        dispatch.submission_id,
+        owner_id="ecs-worker",
+        now=created + timedelta(minutes=49),
+    )
+    assert claim is not None
+
+    with pytest.raises(ValueError, match="owner_id and fencing_token"):
+        store.quarantine_expired_ecs_dispatch(
+            ctx,
+            dispatch.submission_id,
+            expected_generation=claim.generation,
+            expected_creation_started_at=claim.creation_started_at,
+            safe_retry_deadline=created + timedelta(minutes=50),
+            owner_id="ecs-worker",
+            now=created + timedelta(hours=2),
+        )
+    with pytest.raises(ControlPlaneError, match="lease was lost"):
+        store.quarantine_expired_ecs_dispatch(
+            ctx,
+            dispatch.submission_id,
+            expected_generation=claim.generation,
+            expected_creation_started_at=claim.creation_started_at,
+            safe_retry_deadline=created + timedelta(minutes=50),
+            owner_id="stale-worker",
+            fencing_token=claim.lease_fencing_token,
+            now=created + timedelta(hours=2),
+        )
+
+    quarantined = store.quarantine_expired_ecs_dispatch(
+        ctx,
+        dispatch.submission_id,
+        expected_generation=claim.generation,
+        expected_creation_started_at=claim.creation_started_at,
+        safe_retry_deadline=created + timedelta(minutes=50),
+        owner_id="ecs-worker",
+        fencing_token=claim.lease_fencing_token,
+        now=created + timedelta(hours=2),
+    )
+
+    assert quarantined.status == "reconciliation_required"
+    assert quarantined.lease_owner_id is None
 
 
 def test_cancelled_ecs_submission_waits_until_stopped_is_durably_confirmed() -> None:

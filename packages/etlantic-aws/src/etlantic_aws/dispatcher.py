@@ -5,7 +5,7 @@ from __future__ import annotations
 import hashlib
 from collections.abc import Callable, Iterable, Mapping
 from contextlib import suppress
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from datetime import UTC, datetime, timedelta
 from typing import Any, cast
 
@@ -77,6 +77,7 @@ class ECSDispatcher:
     owner_id: str
     lease_seconds: int = 30
     clock: Callable[[], datetime] | None = None
+    _reconciliation_cursor: str | None = field(default=None, init=False, repr=False)
 
     def __post_init__(self) -> None:
         validate_control_plane_context(self.context)
@@ -126,10 +127,9 @@ class ECSDispatcher:
         ):
             raise RuntimeError("durable dispatch does not match this ECS binding")
         submission = durable.get_submission(self.context, submission_id)
-        if intent.status in {"uncertain", "leased"} and submission.status in {
-            "cancel_requested",
-            "cancelled",
-        }:
+        if intent.status in {"uncertain", "leased", "reconciliation_required"} and (
+            submission.status in {"cancel_requested", "cancelled"}
+        ):
             return self._resolve_cancelled_uncertain(submission_id, intent)
         if submission.status != "accepted":
             return ECSDispatchResult(
@@ -209,6 +209,32 @@ class ECSDispatcher:
         # creation key is stable per dispatch generation and fits after hashing.
         token = hashlib.sha256(claim.creation_key.encode("utf-8")).hexdigest()
         request = self.binding.request(client_token=token, reference=reference)
+        # The pre-claim check can become stale while the durable claim waits on
+        # storage. Recheck immediately before the non-transactional RunTask call.
+        claimed_at = self._now()
+        creation_started_at = self._parse_time(claim.creation_started_at)
+        retry_deadline = (
+            creation_started_at + _ECS_CLIENT_TOKEN_SAFE_RETRY_WINDOW
+            if creation_started_at is not None
+            else claimed_at
+        )
+        if claimed_at >= retry_deadline:
+            quarantined = durable.quarantine_expired_ecs_dispatch(
+                self.context,
+                submission_id,
+                expected_generation=claim.generation,
+                expected_creation_started_at=claim.creation_started_at,
+                safe_retry_deadline=retry_deadline,
+                owner_id=self.owner_id,
+                fencing_token=claim.lease_fencing_token,
+                now=claimed_at,
+            )
+            return ECSDispatchResult(
+                submission_id,
+                quarantined.status,
+                remote_run_id=quarantined.remote_run_id,
+                error_code=quarantined.last_error_code,
+            )
         create_started = False
         try:
             create_started = True
@@ -658,11 +684,23 @@ class ECSDispatcher:
         if type(limit) is not int or not 1 <= limit <= 100:
             raise ValueError("limit must be between 1 and 100")
         self.binding.verify(self.ecs_client, self.sts_client)
-        records = self.backend.durable_work.dispatched_for_reconciliation(
+        durable = self.backend.durable_work
+        candidates = durable.dispatched_for_reconciliation(
             self.context,
             execution_route=self.binding.execution_route,
             limit=limit,
+            after_submission_id=self._reconciliation_cursor,
         )
+        if not candidates and self._reconciliation_cursor is not None:
+            self._reconciliation_cursor = None
+            candidates = durable.dispatched_for_reconciliation(
+                self.context,
+                execution_route=self.binding.execution_route,
+                limit=limit,
+            )
+        if candidates:
+            self._reconciliation_cursor = candidates[-1].submission_id
+        records = candidates
         results: list[ECSDispatchResult] = []
         for record in records:
             task_arn = record.remote_run_id

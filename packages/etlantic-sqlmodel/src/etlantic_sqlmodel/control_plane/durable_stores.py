@@ -540,6 +540,8 @@ class SQLModelDurableWorkStore:
         expected_generation: int,
         expected_creation_started_at: str | None,
         safe_retry_deadline: datetime,
+        owner_id: str | None = None,
+        fencing_token: int | None = None,
         now: datetime | None = None,
     ):
         return self._txn(
@@ -549,6 +551,8 @@ class SQLModelDurableWorkStore:
                 expected_generation=expected_generation,
                 expected_creation_started_at=expected_creation_started_at,
                 safe_retry_deadline=safe_retry_deadline,
+                owner_id=owner_id,
+                fencing_token=fencing_token,
                 now=now,
             )
         )

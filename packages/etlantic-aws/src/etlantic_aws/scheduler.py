@@ -17,12 +17,28 @@ _VERSIONED_LAMBDA = re.compile(
 )
 
 
-def schedule_name(schedule_id: str) -> str:
-    """Return a stable AWS-safe name without disclosing the canonical ID."""
+def schedule_name(
+    schedule_id: str,
+    *,
+    tenant_id: str,
+    workspace_id: str,
+) -> str:
+    """Return a stable AWS-safe name without disclosing canonical identifiers."""
     schedule_id_value: object = cast(object, schedule_id)
     if not isinstance(schedule_id_value, str) or not schedule_id_value.strip():
         raise ValueError("schedule_id must be non-empty")
-    return "etl-" + hashlib.sha256(schedule_id.encode("utf-8")).hexdigest()[:60]
+    if not tenant_id.strip() or not workspace_id.strip():
+        raise ValueError("tenant_id and workspace_id must be non-empty")
+    identity = {
+        "schema": "etlantic.aws.schedule_name/2",
+        "tenant_id": tenant_id,
+        "workspace_id": workspace_id,
+        "schedule_id": schedule_id,
+    }
+    encoded = json.dumps(
+        identity, sort_keys=True, separators=(",", ":"), ensure_ascii=False
+    )
+    return "etl-" + hashlib.sha256(encoded.encode("utf-8")).hexdigest()[:60]
 
 
 class EventBridgeScheduler:
@@ -113,7 +129,7 @@ class EventBridgeScheduler:
         partition = "aws-us-gov" if self.region.startswith("us-gov-") else "aws"
         return (
             f"arn:{partition}:scheduler:{self.region}:{self.account_id}:schedule/"
-            f"{self.group_name}/{schedule_name(record.schedule_id)}"
+            f"{self.group_name}/{self._schedule_name(record)}"
         )
 
     def create_disabled(self, record: ScheduleRecord) -> Mapping[str, Any]:
@@ -142,6 +158,9 @@ class EventBridgeScheduler:
 
     def _activate(self, record: ScheduleRecord) -> Mapping[str, Any]:
         prior = self._read(record)
+        if prior.get("State") == "ENABLED":
+            self._assert_matches(record, prior, expected_state="ENABLED")
+            return prior
         self._assert_matches(record, prior, expected_state="DISABLED")
         desired = self._request(record, state="ENABLED")
         try:
@@ -180,6 +199,9 @@ class EventBridgeScheduler:
 
     def _resume(self, record: ScheduleRecord) -> Mapping[str, Any]:
         observed = self._read(record)
+        if observed.get("State") == "ENABLED":
+            self._assert_matches(record, observed, expected_state="ENABLED")
+            return observed
         self._assert_matches(record, observed, expected_state="DISABLED")
         try:
             self.client.update_schedule(**self._request(record, state="ENABLED"))
@@ -197,11 +219,13 @@ class EventBridgeScheduler:
         self._with_mutation_guard(record, lambda: self._delete(record))
 
     def _delete(self, record: ScheduleRecord) -> None:
-        observed = self._read(record)
+        observed = self._read_optional(record)
+        if observed is None:
+            return
         self._assert_matches(record, observed)
         try:
             self.client.delete_schedule(
-                Name=schedule_name(record.schedule_id), GroupName=self.group_name
+                Name=self._schedule_name(record), GroupName=self.group_name
             )
         except Exception:
             if self._read_optional(record) is not None:
@@ -222,8 +246,16 @@ class EventBridgeScheduler:
         self._validate_record(previous, allow_paused=True)
         self._validate_record(replacement, allow_paused=True)
         self._require_future_cursor(replacement)
-        if previous.schedule_id != replacement.schedule_id:
-            raise ValueError("schedule revisions must have the same schedule_id")
+        if (
+            previous.schedule_id,
+            previous.tenant_id,
+            previous.workspace_id,
+        ) != (
+            replacement.schedule_id,
+            replacement.tenant_id,
+            replacement.workspace_id,
+        ):
+            raise ValueError("schedule revisions must have the same canonical identity")
         if previous.timer_binding_fingerprint != replacement.timer_binding_fingerprint:
             raise ValueError(
                 "timer binding changes require a separately fenced migration"
@@ -236,6 +268,12 @@ class EventBridgeScheduler:
         self, previous: ScheduleRecord, replacement: ScheduleRecord
     ) -> Mapping[str, Any]:
         observed = self._read(previous)
+        try:
+            self._assert_matches(replacement, observed, expected_state="DISABLED")
+        except RuntimeError:
+            self._assert_matches(previous, observed)
+        else:
+            return observed
         self._assert_matches(previous, observed)
         if observed.get("State") != "DISABLED":
             try:
@@ -305,7 +343,7 @@ class EventBridgeScheduler:
             "attempt_number": "<aws.scheduler.attempt-number>",
         }
         return {
-            "Name": schedule_name(record.schedule_id),
+            "Name": self._schedule_name(record),
             "GroupName": self.group_name,
             "ScheduleExpression": schedule_expression,
             "ScheduleExpressionTimezone": "UTC",
@@ -372,7 +410,7 @@ class EventBridgeScheduler:
     def _read_optional(self, record: ScheduleRecord) -> Mapping[str, Any] | None:
         try:
             result = self.client.get_schedule(
-                Name=schedule_name(record.schedule_id), GroupName=self.group_name
+                Name=self._schedule_name(record), GroupName=self.group_name
             )
         except Exception as exc:
             response_value: object = getattr(exc, "response", {})
@@ -394,6 +432,14 @@ class EventBridgeScheduler:
         if observed is None:
             raise RuntimeError("owned schedule is absent")
         return observed
+
+    @staticmethod
+    def _schedule_name(record: ScheduleRecord) -> str:
+        return schedule_name(
+            record.schedule_id,
+            tenant_id=record.tenant_id,
+            workspace_id=record.workspace_id,
+        )
 
     def _assert_matches(
         self,
