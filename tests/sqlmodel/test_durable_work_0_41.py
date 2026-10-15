@@ -4,9 +4,10 @@
 from __future__ import annotations
 
 import json
+from collections.abc import Callable
 from pathlib import Path
 from time import sleep
-from typing import Any
+from typing import Any, cast
 
 import pytest
 
@@ -21,6 +22,7 @@ from etlantic.control_plane import (
     ControlPlaneContext,
     ControlPlaneError,
     EnvironmentRef,
+    MemoryDurableWorkStore,
     Principal,
     SecurityDomain,
     TenantRef,
@@ -324,7 +326,8 @@ def test_durable_mutation_retries_transient_snapshot_write_failures(
     engine = create_sqlite_engine(f"sqlite:///{tmp_path / 'retry.db'}")
     apply_migrations(engine)
     store = SQLModelDurableWorkStore(engine)
-    original_write = store._write
+    write_method_name = "_write"
+    original_write = cast(Callable[..., None], getattr(store, write_method_name))
     write_calls = 0
     transient_failures: list[Exception] = [
         ControlPlaneError.conflict("Durable snapshot version conflict (stale write)"),
@@ -335,12 +338,17 @@ def test_durable_mutation_retries_transient_snapshot_write_failures(
         ),
     ]
 
-    def conflict_once(*args: Any, **kwargs: Any) -> None:
+    def conflict_once(
+        session: Session,
+        memory: MemoryDurableWorkStore,
+        *,
+        expected_version: int,
+    ) -> None:
         nonlocal write_calls
         write_calls += 1
         if write_calls <= len(transient_failures):
             raise transient_failures[write_calls - 1]
-        original_write(*args, **kwargs)
+        original_write(session, memory, expected_version=expected_version)
 
     monkeypatch.setattr(store, "_write", conflict_once)
     submission, _created = store.accept(
