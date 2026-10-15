@@ -18,7 +18,9 @@ from etlantic.control_plane import (
 
 from etlantic_aws.binding import ECSExecutionBinding
 
-_ECS_CLIENT_TOKEN_SAFE_RETRY_WINDOW = timedelta(hours=23)
+# RunTask idempotency expires at the earlier of 24 hours or one hour after
+# the task stops. A task can stop immediately, so keep a ten-minute margin.
+_ECS_CLIENT_TOKEN_SAFE_RETRY_WINDOW = timedelta(minutes=50)
 _ECS_ACTIVE_TASK_STATES = frozenset(
     {
         "PROVISIONING",
@@ -325,12 +327,14 @@ class ECSDispatcher:
         token = hashlib.sha256(intent.creation_key.encode("utf-8")).hexdigest()
         task_arns: set[str] = set()
         try:
-            for desired_status in ("PENDING", "RUNNING", "STOPPED"):
+            # startedBy cannot be combined with desiredStatus. Enumerate both
+            # valid desired-status sets and verify the durable token locally
+            # from DescribeTasks. PENDING is not a useful desired status.
+            for desired_status in ("RUNNING", "STOPPED"):
                 next_token: str | None = None
                 for _page in range(10):
                     request: dict[str, Any] = {
                         "cluster": self.binding.cluster_arn,
-                        "startedBy": token[:36],
                         "desiredStatus": desired_status,
                         "maxResults": 100,
                     }
@@ -385,7 +389,85 @@ class ECSDispatcher:
                 error_code=released.last_error_code,
             )
 
-        if not task_arns:
+        task_rows: list[Mapping[str, Any]] = []
+        try:
+            ordered_arns = sorted(task_arns)
+            for offset in range(0, len(ordered_arns), 100):
+                response = _as_mapping(
+                    self.ecs_client.describe_tasks(
+                        cluster=self.binding.cluster_arn,
+                        tasks=ordered_arns[offset : offset + 100],
+                        include=["TAGS"],
+                    ),
+                    "ECS task lookup response is malformed",
+                )
+                rows = _mapping_rows(response.get("tasks", []))
+                failures = _mapping_rows(response.get("failures", []))
+                if rows is None or failures is None or failures:
+                    raise RuntimeError("ECS task lookup is incomplete")
+                task_rows.extend(rows)
+        except Exception:
+            released = durable.release_dispatch(
+                self.context,
+                submission_id,
+                owner_id=self.owner_id,
+                fencing_token=claim.lease_fencing_token,
+                outcome_uncertain=True,
+                error_code="ecs_cancel_observation_incomplete",
+                now=self._now(),
+            )
+            return ECSDispatchResult(
+                submission_id,
+                released.status,
+                error_code=released.last_error_code,
+            )
+
+        by_arn: dict[str, Mapping[str, Any]] = {}
+        for row in task_rows:
+            arn = row.get("taskArn")
+            if not isinstance(arn, str) or arn not in task_arns or arn in by_arn:
+                by_arn = {}
+                break
+            by_arn[arn] = row
+        if set(by_arn) != task_arns:
+            released = durable.release_dispatch(
+                self.context,
+                submission_id,
+                owner_id=self.owner_id,
+                fencing_token=claim.lease_fencing_token,
+                outcome_uncertain=True,
+                error_code="ecs_cancel_identity_mismatch",
+                now=self._now(),
+            )
+            return ECSDispatchResult(
+                submission_id,
+                released.status,
+                error_code=released.last_error_code,
+            )
+
+        rows: list[Mapping[str, Any]] = []
+        for arn, row in by_arn.items():
+            if row.get("startedBy") != token[:36]:
+                continue
+            if not self._matches_dispatch_task(row, arn, token):
+                released = durable.release_dispatch(
+                    self.context,
+                    submission_id,
+                    owner_id=self.owner_id,
+                    fencing_token=claim.lease_fencing_token,
+                    outcome_uncertain=True,
+                    error_code="ecs_cancel_identity_mismatch",
+                    now=self._now(),
+                )
+                return ECSDispatchResult(
+                    submission_id,
+                    released.status,
+                    error_code=released.last_error_code,
+                )
+            rows.append(row)
+
+        rows.sort(key=lambda row: cast(str, row["taskArn"]))
+        if not rows:
             creation_started_at = self._parse_time(claim.creation_started_at)
             retry_deadline = (
                 creation_started_at + _ECS_CLIENT_TOKEN_SAFE_RETRY_WINDOW
@@ -422,77 +504,6 @@ class ECSDispatcher:
                 error_code=released.last_error_code,
             )
 
-        task_rows: list[Mapping[str, Any]] = []
-        try:
-            ordered_arns = sorted(task_arns)
-            for offset in range(0, len(ordered_arns), 100):
-                response = _as_mapping(
-                    self.ecs_client.describe_tasks(
-                        cluster=self.binding.cluster_arn,
-                        tasks=ordered_arns[offset : offset + 100],
-                        include=["TAGS"],
-                    ),
-                    "ECS task lookup response is malformed",
-                )
-                rows = _mapping_rows(response.get("tasks", []))
-                failures = _mapping_rows(response.get("failures", []))
-                if rows is None or failures is None or failures:
-                    raise RuntimeError("ECS task lookup is incomplete")
-                task_rows.extend(rows)
-        except Exception:
-            released = durable.release_dispatch(
-                self.context,
-                submission_id,
-                owner_id=self.owner_id,
-                fencing_token=claim.lease_fencing_token,
-                outcome_uncertain=True,
-                error_code="ecs_cancel_observation_incomplete",
-                now=self._now(),
-            )
-            return ECSDispatchResult(
-                submission_id,
-                released.status,
-                error_code=released.last_error_code,
-            )
-
-        if len(task_rows) != len(task_arns) or any(
-            not isinstance(arn, str) or not self._matches_dispatch_task(row, arn, token)
-            for row in task_rows
-            for arn in [row.get("taskArn")]
-        ):
-            released = durable.release_dispatch(
-                self.context,
-                submission_id,
-                owner_id=self.owner_id,
-                fencing_token=claim.lease_fencing_token,
-                outcome_uncertain=True,
-                error_code="ecs_cancel_identity_mismatch",
-                now=self._now(),
-            )
-            return ECSDispatchResult(
-                submission_id,
-                released.status,
-                error_code=released.last_error_code,
-            )
-
-        by_arn = {cast(str, row["taskArn"]): row for row in task_rows}
-        if set(by_arn) != task_arns:
-            released = durable.release_dispatch(
-                self.context,
-                submission_id,
-                owner_id=self.owner_id,
-                fencing_token=claim.lease_fencing_token,
-                outcome_uncertain=True,
-                error_code="ecs_cancel_observation_incomplete",
-                now=self._now(),
-            )
-            return ECSDispatchResult(
-                submission_id,
-                released.status,
-                error_code=released.last_error_code,
-            )
-
-        rows = [by_arn[arn] for arn in sorted(by_arn)]
         if any(
             row.get("lastStatus") != "STOPPED"
             and row.get("lastStatus") not in _ECS_ACTIVE_TASK_STATES

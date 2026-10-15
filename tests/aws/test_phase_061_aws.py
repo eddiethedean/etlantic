@@ -453,6 +453,8 @@ class _ECSClient:
         self.meta = SimpleNamespace(region_name=binding.region)
         self.binding = binding
         self.task: dict[str, Any] | None = None
+        self.other_tasks: list[dict[str, Any]] = []
+        self.list_task_requests: list[dict[str, Any]] = []
         self.stop_calls: list[str] = []
         self.run_calls = 0
 
@@ -491,16 +493,28 @@ class _ECSClient:
         self.run_calls += 1
         raise AssertionError("a cancelled or expired dispatch must not call RunTask")
 
-    def list_tasks(self, *, desiredStatus: str, **_kwargs: Any) -> Mapping[str, Any]:
-        task = self.task
-        if task is None or task["lastStatus"] != desiredStatus:
-            return {"taskArns": []}
-        return {"taskArns": [task["taskArn"]]}
+    def list_tasks(self, **request: Any) -> Mapping[str, Any]:
+        assert "startedBy" not in request
+        assert request["cluster"] == self.binding.cluster_arn
+        assert request["desiredStatus"] in {"RUNNING", "STOPPED"}
+        self.list_task_requests.append(dict(request))
+        tasks = ([self.task] if self.task is not None else []) + self.other_tasks
+        return {
+            "taskArns": [
+                task["taskArn"]
+                for task in tasks
+                if task["desiredStatus"] == request["desiredStatus"]
+            ]
+        }
 
     def describe_tasks(self, *, tasks: list[str], **_kwargs: Any) -> Mapping[str, Any]:
-        if self.task is None or self.task["taskArn"] not in tasks:
-            return {"tasks": [], "failures": [{"reason": "MISSING"}]}
-        return {"tasks": [self.task], "failures": []}
+        candidates = ([self.task] if self.task is not None else []) + self.other_tasks
+        found = [task for task in candidates if task["taskArn"] in tasks]
+        missing = set(tasks) - {task["taskArn"] for task in found}
+        return {
+            "tasks": found,
+            "failures": ([{"reason": "MISSING"}] if missing else []),
+        }
 
     def stop_task(self, *, task: str, **_kwargs: Any) -> Mapping[str, Any]:
         self.stop_calls.append(task)
@@ -541,7 +555,7 @@ def test_expired_ecs_client_token_is_quarantined_before_retry() -> None:
         binding,
         status="uncertain",
         submission_status="accepted",
-        creation_started_at=now - timedelta(hours=24),
+        creation_started_at=now - timedelta(hours=2),
     )
     ecs = _ECSClient(binding)
     dispatcher = _dispatcher(binding, durable, ecs, [now])
@@ -570,12 +584,24 @@ def test_cancelled_uncertain_ecs_task_is_discovered_stopped_and_finalized() -> N
         "clusterArn": binding.cluster_arn,
         "taskDefinitionArn": binding.task_definition_arn,
         "startedBy": token[:36],
-        "lastStatus": "RUNNING",
+        "lastStatus": "PENDING",
+        "desiredStatus": "RUNNING",
         "tags": [
             {"key": "etlantic:managed", "value": "true"},
             {"key": "etlantic:binding", "value": binding.fingerprint[:32]},
         ],
     }
+    ecs.other_tasks.append(
+        {
+            "taskArn": f"arn:aws:ecs:{REGION}:{ACCOUNT}:task/etlantic/unrelated",
+            "clusterArn": binding.cluster_arn,
+            "taskDefinitionArn": binding.task_definition_arn,
+            "startedBy": "another-dispatch-token",
+            "lastStatus": "RUNNING",
+            "desiredStatus": "RUNNING",
+            "tags": [],
+        }
+    )
     clock = [now]
     dispatcher = _dispatcher(binding, durable, ecs, clock)
 
@@ -584,12 +610,56 @@ def test_cancelled_uncertain_ecs_task_is_discovered_stopped_and_finalized() -> N
     assert first.remote_run_id == task_arn
     assert ecs.stop_calls == [task_arn]
     assert ecs.run_calls == 0
+    assert {item["desiredStatus"] for item in ecs.list_task_requests} == {
+        "RUNNING",
+        "STOPPED",
+    }
+    assert all("startedBy" not in item for item in ecs.list_task_requests)
 
     ecs.task["lastStatus"] = "STOPPED"
+    ecs.task["desiredStatus"] = "STOPPED"
     completed = dispatcher.reconcile()
     assert completed[0].status == "cancelled"
     assert durable.submission.status == "cancelled"
     assert ecs.run_calls == 0
+
+
+def test_cancelled_uncertain_stopped_ecs_task_is_discovered_without_stopping() -> None:
+    binding = _ecs_binding()
+    now = datetime(2026, 10, 15, 12, tzinfo=UTC)
+    durable = _DispatchStore(
+        binding,
+        status="uncertain",
+        submission_status="cancel_requested",
+        creation_started_at=now - timedelta(minutes=5),
+    )
+    token = hashlib.sha256(durable.record.creation_key.encode("utf-8")).hexdigest()
+    task_arn = f"arn:aws:ecs:{REGION}:{ACCOUNT}:task/etlantic/task-stopped"
+    ecs = _ECSClient(binding)
+    ecs.task = {
+        "taskArn": task_arn,
+        "clusterArn": binding.cluster_arn,
+        "taskDefinitionArn": binding.task_definition_arn,
+        "startedBy": token[:36],
+        "lastStatus": "STOPPED",
+        "desiredStatus": "STOPPED",
+        "tags": [
+            {"key": "etlantic:managed", "value": "true"},
+            {"key": "etlantic:binding", "value": binding.fingerprint[:32]},
+        ],
+    }
+    dispatcher = _dispatcher(binding, durable, ecs, [now])
+
+    result = dispatcher.dispatch_submission(durable.record.submission_id)
+
+    assert result.status == "cancelled"
+    assert result.remote_run_id == task_arn
+    assert ecs.stop_calls == []
+    assert durable.submission.status == "cancelled"
+    assert {item["desiredStatus"] for item in ecs.list_task_requests} == {
+        "RUNNING",
+        "STOPPED",
+    }
 
 
 def test_cancelled_uncertain_ecs_identity_stays_fenced_then_resolves_after_ttl() -> (
@@ -597,7 +667,7 @@ def test_cancelled_uncertain_ecs_identity_stays_fenced_then_resolves_after_ttl()
 ):
     binding = _ecs_binding()
     created_at = datetime(2026, 10, 15, 12, tzinfo=UTC)
-    clock = [created_at + timedelta(hours=2)]
+    clock = [created_at + timedelta(minutes=30)]
     durable = _DispatchStore(
         binding,
         status="uncertain",
@@ -612,7 +682,7 @@ def test_cancelled_uncertain_ecs_identity_stays_fenced_then_resolves_after_ttl()
     assert durable.submission.status == "cancel_requested"
     assert ecs.run_calls == 0
 
-    clock[0] = created_at + timedelta(hours=24)
+    clock[0] = created_at + timedelta(minutes=51)
     resolved = dispatcher.dispatch_submission(durable.record.submission_id)
     assert resolved.status == "cancelled"
     assert durable.submission.status == "cancelled"

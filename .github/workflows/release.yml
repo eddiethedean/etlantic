@@ -639,11 +639,11 @@ jobs:
           WHEEL="dist/etlantic_rsconnect-${RSCONNECT_VERSION}-py3-none-any.whl"
           # Resolve the declared dependency floor from released packages, never
           # the editable workspace. No Connect or receiver service is used.
-          uv run --isolated --no-project --with "$WHEEL" --with "etlantic==0.60.0" \
+          uv run --isolated --no-project --with "$WHEEL" --with "etlantic==0.59.0" \
             python -I scripts/check_rsconnect_release.py --installed \
               --expected-version "$RSCONNECT_VERSION" --wheel "$WHEEL" \
               --report dist/rsconnect-release-check.json
-          uv run --isolated --no-project --with "$WHEEL" --with "etlantic==0.60.0" \
+          uv run --isolated --no-project --with "$WHEEL" --with "etlantic==0.59.0" \
             --with "posit-sdk==0.17.0" --with pytest --with "httpx2>=2" \
             python -I -m pytest -q -o pythonpath= tests/rsconnect \
               tests/control_plane/test_trigger_0_59.py \
