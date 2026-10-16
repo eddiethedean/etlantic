@@ -1188,6 +1188,7 @@ class ConnectScheduleAdapter:
         title: str | None = None,
     ) -> ConnectScheduleBinding:
         self._require_preview()
+        service.authorize(context, "schedule.write", f"schedule:{schedule_id}")
         current = service.get(context, schedule_id)
         self._preflight_control_plane_binding(current, binding)
         if current.status != "paused" or binding.status != "paused":
@@ -1262,6 +1263,14 @@ class ConnectScheduleAdapter:
             pending_operation="resume",
             pending_target_status="active",
         )
+        if upgrade_bundle is not None and upgrade_deployer is not None:
+            upgrade_deployer.validate_deployment(
+                upgrade_bundle,
+                schedule_id=current.schedule_id,
+                operation_id=intent.operation_id or "",
+                title=cast(str, title),
+                existing_content_guid=binding.content_guid,
+            )
         try:
             self.binding_store.put(intent, expected=binding)
         except Exception:
