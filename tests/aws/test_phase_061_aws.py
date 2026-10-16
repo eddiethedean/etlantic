@@ -3,6 +3,7 @@ from __future__ import annotations
 import hashlib
 from collections.abc import Generator, Mapping
 from contextlib import contextmanager
+from dataclasses import replace
 from datetime import UTC, datetime, timedelta
 from threading import RLock
 from types import SimpleNamespace
@@ -668,7 +669,9 @@ def test_relay_checks_durable_owner_and_reuses_canonical_receipt() -> None:
             submission_id="submission-1",
         )
 
-    def reconcile(envelope: TriggerEnvelope) -> TriggerReceipt:
+    def reconcile(envelope: TriggerEnvelope) -> TriggerReceipt | None:
+        if envelope.timer_owner_generation != record.timer_owner_generation:
+            return None
         return receipt(envelope)
 
     def deliver(envelope: TriggerEnvelope) -> None:
@@ -686,6 +689,39 @@ def test_relay_checks_durable_owner_and_reuses_canonical_receipt() -> None:
     stale["timer_owner_generation"] += 1
     with pytest.raises(ValueError, match="stale"):
         relay.handle_event(stale)
+
+
+def test_relay_reconciles_accepted_receipt_after_schedule_pause() -> None:
+    record = _schedule_record()
+    adapter = _scheduler()
+    delivery = _delivery()
+    lookups: list[TriggerEnvelope] = []
+    deliveries: list[TriggerEnvelope] = []
+
+    def reconcile(envelope: TriggerEnvelope) -> TriggerReceipt:
+        lookups.append(envelope)
+        return TriggerReceipt(
+            status="accepted",
+            firing_status="accepted",
+            schedule_id=envelope.schedule_id,
+            schedule_revision_id=envelope.schedule_revision_id,
+            occurrence_id=envelope.occurrence_id,
+            submission_id="submission-accepted-before-pause",
+        )
+
+    def deliver(envelope: TriggerEnvelope) -> None:
+        deliveries.append(envelope)
+
+    vars(delivery)["reconcile"] = reconcile
+    vars(delivery)["deliver"] = deliver
+    paused = replace(record, status="paused")
+    relay = ScheduledTriggerRelay(adapter, delivery, lambda _sid: paused)
+
+    result = relay.handle_event(_event(adapter, record))
+
+    assert result["status"] == "accepted"
+    assert len(lookups) == 1
+    assert deliveries == []
 
 
 def test_relay_raises_for_pending_canonical_admission() -> None:
@@ -978,6 +1014,7 @@ class _ECSClient:
         self.list_task_requests: list[dict[str, Any]] = []
         self.stop_calls: list[str] = []
         self.run_calls = 0
+        self.task_definition_status = "ACTIVE"
 
     def describe_clusters(self, *, clusters: list[str]) -> Mapping[str, Any]:
         return {"clusters": [{"status": "ACTIVE", "clusterArn": clusters[0]}]}
@@ -987,7 +1024,7 @@ class _ECSClient:
         return {
             "taskDefinition": {
                 "taskDefinitionArn": taskDefinition,
-                "status": "ACTIVE",
+                "status": self.task_definition_status,
                 "requiresCompatibilities": ["FARGATE"],
                 "networkMode": "awsvpc",
                 "runtimePlatform": {
@@ -1229,6 +1266,48 @@ def test_reconcile_settles_lost_ecs_response_after_terminal_work() -> None:
         "outbox_published",
         "settled",
     ]
+
+
+def test_inactive_task_definition_allows_recovery_but_blocks_launches() -> None:
+    binding = _ecs_binding()
+    now = datetime(2026, 10, 15, 12, tzinfo=UTC)
+    task_arn = (
+        f"arn:aws:ecs:{binding.region}:{binding.account_id}:task/etlantic/existing"
+    )
+    ecs = _ECSClient(binding)
+    ecs.task_definition_status = "INACTIVE"
+    sts = SimpleNamespace(get_caller_identity=lambda: {"Account": binding.account_id})
+
+    with pytest.raises(RuntimeError, match="pinned ECS task definition"):
+        binding.verify(ecs, sts)
+
+    terminal = _DispatchStore(
+        binding,
+        status="dispatched",
+        submission_status="completed",
+        creation_started_at=now - timedelta(minutes=5),
+    )
+    terminal.record.remote_run_id = task_arn
+    terminal_result = _dispatcher(binding, terminal, ecs, [now]).reconcile()
+    assert terminal_result[0].status == "dispatched"
+    assert terminal.terminal_cleanup_events == ["cleanup", "outbox_published"]
+
+    cancellation = _DispatchStore(
+        binding,
+        status="dispatched",
+        submission_status="cancel_requested",
+        creation_started_at=now - timedelta(minutes=5),
+    )
+    cancellation.record.remote_run_id = task_arn
+    cancellation_dispatcher = _dispatcher(binding, cancellation, ecs, [now])
+    assert (
+        cancellation_dispatcher.stop_cancelled_task(cancellation.record.submission_id)
+        is True
+    )
+    assert ecs.stop_calls == [task_arn]
+
+    with pytest.raises(RuntimeError, match="pinned ECS task definition"):
+        _dispatcher(binding, terminal, ecs, [now]).tick()
 
 
 def test_reconcile_cleans_terminal_outbox_for_linked_ecs_task() -> None:

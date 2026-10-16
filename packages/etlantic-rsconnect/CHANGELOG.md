@@ -1,5 +1,13 @@
 # etlantic-rsconnect changelog
 
+## [0.60.1] - 2026-10-15
+
+Compatible with `etlantic>=0.60.0,<0.61.0`.
+
+- Upgrade legacy deployed trigger bundles while paused before resuming a
+  canonical schedule with a new timer-owner generation.
+- Reserve `ETLANTIC_TIMER_OWNER_GENERATION` from runtime credential use.
+
 ## [0.60.0] - 2026-10-14
 
 Initial preview release, compatible with `etlantic>=0.59.0,<0.61.0`.

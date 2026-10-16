@@ -138,12 +138,12 @@ def test_preview_has_a_release_tag_independent_of_the_published_core(
     tmp_path: Path,
 ) -> None:
     source = _release_source(tmp_path)
-    result = inspect_source(source, tag=f"{TAG_PREFIX}0.60.0")
+    result = inspect_source(source, tag=f"{TAG_PREFIX}0.60.1")
 
-    assert result["version"] == "0.60.0"
+    assert result["version"] == "0.60.1"
     assert result["core_version"] == "0.60.0"
     assert result["external_services_required"] is False
-    for wrong_tag in ("v0.60.0", "etlantic-rsconnect-v0.60.1"):
+    for wrong_tag in ("etlantic-rsconnect-v0.60.0", "v0.60.1"):
         with pytest.raises(ValueError, match="preview tag must be"):
             inspect_source(source, tag=wrong_tag)
     workflow = _WORKFLOW.read_text()
@@ -202,8 +202,8 @@ def test_preview_dispatch_requires_a_real_tag_at_the_checked_out_commit(
     [
         (
             "packages/etlantic-rsconnect/src/etlantic_rsconnect/__init__.py",
-            '__version__ = "0.60.0"',
             '__version__ = "0.60.1"',
+            '__version__ = "0.60.0"',
             "metadata and module versions differ",
         ),
         (
@@ -220,8 +220,8 @@ def test_preview_dispatch_requires_a_real_tag_at_the_checked_out_commit(
         ),
         (
             "uv.lock",
-            'name = "etlantic-rsconnect"\nversion = "0.60.0"',
             'name = "etlantic-rsconnect"\nversion = "0.60.1"',
+            'name = "etlantic-rsconnect"\nversion = "0.60.0"',
             "lockfile does not match",
         ),
     ],

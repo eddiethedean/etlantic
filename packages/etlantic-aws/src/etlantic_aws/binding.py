@@ -287,8 +287,21 @@ class ECSExecutionBinding:
             ],
         }
 
-    def verify(self, ecs_client: Any, sts_client: Any) -> None:
-        """Fail closed unless caller, cluster and pinned task definition match."""
+    def verify(
+        self,
+        ecs_client: Any,
+        sts_client: Any,
+        *,
+        allow_inactive_task_definition: bool = False,
+    ) -> None:
+        """Fail closed unless caller, cluster and pinned task definition match.
+
+        New task launches require an ACTIVE task definition. Recovery operations
+        may inspect an INACTIVE revision because ECS keeps its existing tasks
+        running after deregistration and still permits them to be stopped.
+        """
+        if type(allow_inactive_task_definition) is not bool:
+            raise ValueError("allow_inactive_task_definition must be a boolean")
         caller = _as_mapping(
             sts_client.get_caller_identity(), "AWS caller identity is unavailable"
         )
@@ -326,9 +339,13 @@ class ECSExecutionBinding:
         containers = [
             item for item in all_containers if item.get("name") == self.container_name
         ]
+        task_status = task.get("status")
+        allowed_task_statuses = {"ACTIVE"}
+        if allow_inactive_task_definition:
+            allowed_task_statuses.add("INACTIVE")
         if (
             task.get("taskDefinitionArn") != self.task_definition_arn
-            or task.get("status") != "ACTIVE"
+            or task_status not in allowed_task_statuses
             or "FARGATE" not in task.get("requiresCompatibilities", [])
             or task.get("networkMode") != "awsvpc"
             or runtime_platform.get("operatingSystemFamily", "LINUX")

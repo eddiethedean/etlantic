@@ -24,12 +24,14 @@
   "independent_releases": {
     "etlantic-rsconnect": {
       "version": "0.60.0",
+      "candidate_version": "0.60.1",
       "maturity": "Preview",
       "publication_status": "published",
       "published_at": "2026-10-15T00:02:34Z",
       "tag": "etlantic-rsconnect-v0.60.0",
       "release_commit": "def8a9402a983524e0134f43dbf9fea0fd1fc89c",
       "core_compatibility": "etlantic>=0.59.0,<0.61.0",
+      "candidate_core_compatibility": "etlantic>=0.60.0,<0.61.0",
       "pypi_url": "https://pypi.org/project/etlantic-rsconnect/0.60.0/",
       "github_release_url": "https://github.com/eddiethedean/etlantic/releases/tag/etlantic-rsconnect-v0.60.0",
       "release_ci_status": "success",

@@ -230,7 +230,13 @@ def test_bundle_rejects_time_budget_above_frozen_ceiling() -> None:
         )
 
 
-def test_bundle_reserves_the_tls_verification_environment_control() -> None:
+@pytest.mark.parametrize(
+    "credential_env",
+    ("CONNECT_INSECURE", "ETLANTIC_TIMER_OWNER_GENERATION"),
+)
+def test_bundle_reserves_runtime_environment_controls(
+    credential_env: str,
+) -> None:
     with pytest.raises(ValueError, match="credential_env"):
         build_trigger_bundle(
             schedule_id="schedule-1",
@@ -238,9 +244,45 @@ def test_bundle_reserves_the_tls_verification_environment_control() -> None:
             timer_owner_generation=2,
             endpoint_url="https://receiver.example.com/base",
             credential_ref=SecretRef("env", "trigger", "token"),
-            credential_env="CONNECT_INSECURE",
+            credential_env=credential_env,
             outbound_policy=OutboundPolicy(
                 allowed_hosts=("receiver.example.com",),
                 max_response_bytes=65_536,
             ),
         )
+
+
+def test_archive_validation_reserves_timer_generation_environment(
+    tmp_path: Path,
+) -> None:
+    bundle = _bundle()
+    contents = _contents(bundle)
+    config = json.loads(contents["etlantic-trigger.json"])
+    config["credential_env"] = "ETLANTIC_TIMER_OWNER_GENERATION"
+    contents["etlantic-trigger.json"] = (
+        json.dumps(config, sort_keys=True, separators=(",", ":")) + "\n"
+    ).encode()
+    manifest = json.loads(contents["etlantic-trigger-manifest.json"])
+    manifest["files"]["etlantic-trigger.json"] = hashlib.sha256(
+        contents["etlantic-trigger.json"]
+    ).hexdigest()
+    contents["etlantic-trigger-manifest.json"] = (
+        json.dumps(manifest, sort_keys=True, separators=(",", ":")) + "\n"
+    ).encode()
+    raw = io.BytesIO()
+    with tarfile.open(fileobj=raw, mode="w:gz", format=tarfile.PAX_FORMAT) as archive:
+        for name, body in sorted(contents.items()):
+            entry = tarfile.TarInfo(name)
+            entry.size = len(body)
+            entry.mode = 0o644
+            entry.mtime = 0
+            archive.addfile(entry, io.BytesIO(body))
+    tampered = replace(
+        bundle,
+        archive=raw.getvalue(),
+        sha256=hashlib.sha256(raw.getvalue()).hexdigest(),
+        credential_env="ETLANTIC_TIMER_OWNER_GENERATION",
+    )
+
+    with pytest.raises(ValueError, match="host policy"):
+        tampered.write_to(tmp_path / "invalid")

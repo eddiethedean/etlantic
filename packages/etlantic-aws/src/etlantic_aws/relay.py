@@ -89,13 +89,10 @@ class ScheduledTriggerRelay:
         record = self.get_schedule(schedule_id)
         if (
             record.schedule_id != schedule_id
-            or record.status != "active"
             or record.timer_owner != "external"
-            or record.revision_id != revision_id
-            or record.timer_owner_generation != generation
             or record.workload_identity is None
         ):
-            raise ValueError("Scheduler event is stale for the durable schedule")
+            raise ValueError("Scheduler event does not match durable ownership")
         if schedule_arn != self.scheduler.schedule_arn(record):
             raise ValueError("Scheduler ARN does not match the registered schedule")
 
@@ -116,6 +113,14 @@ class ScheduledTriggerRelay:
         receipt = self.delivery.reconcile(envelope)
         if receipt is not None and receipt.status in {"accepted", "skipped"}:
             return receipt.to_dict()
+        if receipt is not None and receipt.status == "pending":
+            raise RelayRetryRequired("canonical trigger admission is still pending")
+        if (
+            record.status != "active"
+            or record.revision_id != revision_id
+            or record.timer_owner_generation != generation
+        ):
+            raise ValueError("Scheduler event is stale for the durable schedule")
         result = self.delivery.deliver(envelope)
         if result.receipt.status == "pending":
             raise RelayRetryRequired("canonical trigger admission is still pending")

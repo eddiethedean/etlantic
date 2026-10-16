@@ -115,7 +115,13 @@ def test_deployer_keeps_credentials_out_of_arguments_and_records_result(
     assert journal.events[-1][2] == guid
 
 
-def test_deployer_reserves_the_tls_verification_environment_control() -> None:
+@pytest.mark.parametrize(
+    "trigger_credential_env",
+    ("CONNECT_INSECURE", "ETLANTIC_TIMER_OWNER_GENERATION"),
+)
+def test_deployer_reserves_runtime_environment_controls(
+    trigger_credential_env: str,
+) -> None:
     deployment_ref, trigger_ref = _refs()
 
     with pytest.raises(ValueError, match="environment variable name"):
@@ -123,7 +129,7 @@ def test_deployer_reserves_the_tls_verification_environment_control() -> None:
             server_url="https://connect.example.com",
             deployment_credential_ref=deployment_ref,
             trigger_credential_ref=trigger_ref,
-            trigger_credential_env="CONNECT_INSECURE",
+            trigger_credential_env=trigger_credential_env,
             resolve_secret=lambda _ref: "synthetic-secret",
             journal=Journal(),
         )

@@ -12,6 +12,7 @@ import re
 import subprocess
 import sys
 import textwrap
+import tomllib
 from pathlib import Path
 from typing import cast
 from urllib.parse import unquote
@@ -2763,10 +2764,22 @@ def main() -> None:
             independent_release is not None
             and independent_release.get("publication_status") == "published"
         ):
-            compatible_core = independent_release.get("core_compatibility")
+            project = tomllib.loads(text).get("project")
+            project_mapping = cast(dict[str, object] | None, project)
+            source_version = (
+                project_mapping.get("version") if project_mapping is not None else None
+            )
+            if source_version == independent_release.get("version"):
+                compatible_core = independent_release.get("core_compatibility")
+            elif source_version == independent_release.get("candidate_version"):
+                compatible_core = independent_release.get(
+                    "candidate_core_compatibility"
+                )
+            else:
+                compatible_core = None
             if not isinstance(compatible_core, str) or compatible_core not in text:
                 raise SystemExit(
-                    f"{path} must retain its published core compatibility range"
+                    f"{path} must match its published or declared candidate core compatibility"
                 )
             continue
         if pkg_name in experimental_packages:

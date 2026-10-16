@@ -757,7 +757,11 @@ class ECSDispatcher:
         """Poll linked tasks, recover STOPPED work, and settle lost responses."""
         if type(limit) is not int or not 1 <= limit <= 100:
             raise ValueError("limit must be between 1 and 100")
-        self.binding.verify(self.ecs_client, self.sts_client)
+        self.binding.verify(
+            self.ecs_client,
+            self.sts_client,
+            allow_inactive_task_definition=True,
+        )
         durable = self.backend.durable_work
         candidates = durable.dispatched_for_reconciliation(
             self.context,
@@ -994,7 +998,11 @@ class ECSDispatcher:
 
     def stop_cancelled_task(self, submission_id: str) -> bool:
         """Stop only after canonical services durably recorded cancellation."""
-        self.binding.verify(self.ecs_client, self.sts_client)
+        self.binding.verify(
+            self.ecs_client,
+            self.sts_client,
+            allow_inactive_task_definition=True,
+        )
         submission = self.backend.durable_work.get_submission(
             self.context, submission_id
         )

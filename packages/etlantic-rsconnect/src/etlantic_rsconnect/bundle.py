@@ -36,6 +36,7 @@ _RESERVED_ENV = frozenset(
         "ETLANTIC_SCHEDULED_AT",
         "ETLANTIC_DELIVERY_ATTEMPT_ID",
         "ETLANTIC_CORRELATION_ID",
+        "ETLANTIC_TIMER_OWNER_GENERATION",
     }
 )
 _BUNDLE_MANIFEST = "etlantic-trigger-manifest.json"
@@ -82,6 +83,7 @@ class TriggerBundle:
     endpoint_url: str
     credential_ref: SecretRef
     credential_env: str
+    supports_timer_generation_override: bool = True
 
     def write_to(self, directory: str | Path) -> Path:
         """Write the known bundle files to an empty directory for rsconnect."""

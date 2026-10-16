@@ -1461,7 +1461,7 @@ provides-extras = ["delta"]
 
 [[package]]
 name = "etlantic-rsconnect"
-version = "0.60.0"
+version = "0.60.1"
 source = { editable = "packages/etlantic-rsconnect" }
 dependencies = [
     { name = "etlantic" },

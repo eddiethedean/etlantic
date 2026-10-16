@@ -41,7 +41,7 @@ from etlantic_rsconnect.limits import (
     MAX_RETRY_AFTER_SECONDS,
 )
 
-__version__ = "0.60.0"
+__version__ = "0.60.1"
 
 __all__ = [
     "CONNECT_SCHEDULE_API_PREVIEW",
