@@ -65,7 +65,9 @@ from etlantic.control_plane import (
     ScheduleSpec,
     SecurityDomain,
     TenantRef,
+    TriggerEnvelope,
     WorkspaceRef,
+    external_occurrence_id,
 )
 from etlantic.control_plane.durable_models import DispatchRecord, SubmissionRecord
 from etlantic.control_plane.errors import ControlPlaneError
@@ -1162,6 +1164,91 @@ def test_scheduler_recovers_accepted_snapshot_without_resolving_parameters(
     authz.forbidden_resources.add((*ctx.scope_key, "run.submit", "definition:pipe"))
     with pytest.raises(ControlPlaneError):
         service.submit_scheduled_run(ctx, schedule, firing.nominal_fire_time)
+
+
+def test_external_resume_links_accepted_unlinked_submission(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    ctx, authz, _definitions, _submissions, durable, _events, managed = _wired(tmp_path)
+    managed.register_definition(
+        ctx,
+        "pipe",
+        pipeline_to_dict(definition_from_pipeline(ManagedPipeline)),
+    )
+    revision, profile = managed.pin_schedule_definition_revision(ctx, "pipe")
+    workload = Principal(subject="schedule-timer", issuer="tests", kind="workload")
+    trigger_ctx = replace(ctx, principal=workload)
+    authz.grant(ctx, "schedule.write")
+    for action in (
+        "schedule.trigger",
+        "run.submit",
+        "definition.read",
+        "definition.validate",
+        "definition.plan",
+        "connector.catalog",
+    ):
+        authz.grant(trigger_ctx, action)
+
+    now = datetime(2026, 10, 8, 12, 0, tzinfo=UTC)
+    nominal = now.isoformat().replace("+00:00", "Z")
+    schedules = MemoryScheduleStore()
+    schedule = schedules.create(
+        ctx,
+        definition_id="pipe",
+        definition_revision_id=revision,
+        profile_name=profile,
+        spec=ScheduleSpec(kind="interval", interval_seconds=60, overlap="queue"),
+        workload_identity=workload,
+        timer_owner="external",
+        next_fire_at=nominal,
+        timer_schedule_start_at=(now - timedelta(seconds=60))
+        .isoformat()
+        .replace("+00:00", "Z"),
+    )
+    commands = ScheduleApplicationService(
+        authorizer=authz,
+        schedule_store=schedules,
+        managed_service=managed,
+        durable_work=durable,
+        clock=lambda: now,
+    )
+    envelope = TriggerEnvelope(
+        schedule_id=schedule.schedule_id,
+        schedule_revision_id=schedule.revision_id,
+        timer_owner_generation=schedule.timer_owner_generation,
+        occurrence_id=external_occurrence_id(
+            schedule.schedule_id, schedule.revision_id, nominal
+        ),
+        scheduled_at=nominal,
+        delivery_attempt_id="attempt-resume-link-recovery",
+        correlation_id="corr-resume-link-recovery",
+    )
+    link = schedules.link_firing_submission
+
+    def lose_link_ack(*_args: Any, **_kwargs: Any) -> None:
+        raise OSError("schedule-store unavailable after durable run acceptance")
+
+    monkeypatch.setattr(schedules, "link_firing_submission", lose_link_ack)
+    with pytest.raises(OSError, match="after durable run acceptance"):
+        commands.trigger_external(trigger_ctx, envelope)
+    monkeypatch.setattr(schedules, "link_firing_submission", link)
+
+    firing = schedules.list_firings(ctx, schedule.schedule_id)[0]
+    assert firing.status == "accepted"
+    assert firing.submission_id is None
+    receipt = commands.get_external_trigger_receipt(
+        trigger_ctx, schedule.schedule_id, envelope.occurrence_id
+    )
+    assert receipt.status == "accepted"
+    schedules.pause(ctx, schedule.schedule_id)
+
+    resumed = commands.resume(ctx, schedule.schedule_id)
+
+    linked = schedules.list_firings(ctx, schedule.schedule_id)[0]
+    assert resumed.status == "active"
+    assert resumed.timer_owner_generation == schedule.timer_owner_generation + 1
+    assert linked.submission_id == receipt.submission_id
+    assert len(durable.pending_outbox(trigger_ctx)) == 1
 
 
 def test_managed_run_identity_is_scoped_to_principal_and_operation(

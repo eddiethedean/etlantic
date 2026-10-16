@@ -1160,6 +1160,10 @@ class ScheduleApplicationService:
         if operation == "resume":
             current = schedule_store.get(ctx, schedule_id)
             if current.timer_owner == "external":
+                if current.status == "paused":
+                    self._recover_accepted_external_firings(
+                        ctx, schedule_store, current
+                    )
                 resume_external = getattr(schedule_store, "resume_external", None)
                 if not callable(resume_external):
                     raise ControlPlaneError(
@@ -1184,6 +1188,43 @@ class ScheduleApplicationService:
                     timer_schedule_start_at=_iso(schedule_start),
                 )
         return getattr(schedule_store, operation)(ctx, schedule_id)
+
+    def _recover_accepted_external_firings(
+        self,
+        ctx: ControlPlaneContext,
+        schedule_store: ScheduleStore,
+        record: ScheduleRecord,
+    ) -> None:
+        """Link durable acceptances before resume fences their timer generation."""
+        durable = self.durable_work
+        workload_identity = record.workload_identity
+        recover = getattr(self.managed_service, "recover_scheduled_occurrence", None)
+        if durable is None or workload_identity is None or not callable(recover):
+            return
+        occurrence_ctx = replace(ctx, principal=workload_identity, idempotency_key=None)
+        for firing in schedule_store.list_firings(ctx, record.schedule_id):
+            if (
+                firing.status != "accepted"
+                or firing.submission_id is not None
+                or firing.revision_id != record.revision_id
+            ):
+                continue
+            occurrence = self._occurrence_record(record, firing)
+            recovered = cast(
+                tuple[str, str] | None,
+                recover(occurrence_ctx, occurrence, firing.nominal_fire_time),
+            )
+            if recovered is None:
+                continue
+            submission_id, plan_fingerprint = recovered
+            schedule_store.link_firing_submission(
+                occurrence_ctx,
+                firing.firing_id,
+                submission_id=submission_id,
+                plan_fingerprint=plan_fingerprint,
+                durable=durable,
+                recovered=True,
+            )
 
     def _reserve_schedule_route_reference(
         self, ctx: ControlPlaneContext, execution_route: str, reference_id: str
