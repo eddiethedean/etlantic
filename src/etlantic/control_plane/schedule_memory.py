@@ -195,6 +195,18 @@ class MemoryScheduleStore:
                 )
             if record.status == "active":
                 return deepcopy(record)
+            if any(
+                firing.schedule_id == schedule_id
+                and (firing.tenant_id, firing.workspace_id) == _scope(ctx)
+                and firing.status == "accepted"
+                and firing.submission_id is None
+                for firing in self._firings.values()
+            ):
+                raise ControlPlaneError.conflict(
+                    "Schedule cannot resume while an occurrence is unlinked",
+                    code="PMFIRE409",
+                    extensions={"reason": "occurrence_preparation_pending"},
+                )
             if record.workload_identity is None:
                 raise ControlPlaneError.conflict(
                     "External schedule has no registered workload identity"

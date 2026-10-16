@@ -753,6 +753,49 @@ def test_relay_raises_for_pending_canonical_admission() -> None:
         relay.handle_event(_event(adapter, record))
 
 
+def test_relay_retries_pending_receipt_with_same_occurrence_while_paused() -> None:
+    record = _schedule_record()
+    adapter = _scheduler()
+    delivery = _delivery()
+    lookups: list[TriggerEnvelope] = []
+    deliveries: list[TriggerEnvelope] = []
+
+    def reconcile(envelope: TriggerEnvelope) -> TriggerReceipt:
+        lookups.append(envelope)
+        return TriggerReceipt(
+            status="pending",
+            firing_status="accepted",
+            schedule_id=envelope.schedule_id,
+            schedule_revision_id=envelope.schedule_revision_id,
+            occurrence_id=envelope.occurrence_id,
+        )
+
+    def deliver(envelope: TriggerEnvelope) -> Any:
+        deliveries.append(envelope)
+        return SimpleNamespace(
+            receipt=TriggerReceipt(
+                status="accepted",
+                firing_status="accepted",
+                schedule_id=envelope.schedule_id,
+                schedule_revision_id=envelope.schedule_revision_id,
+                occurrence_id=envelope.occurrence_id,
+                submission_id="submission-recovered",
+            )
+        )
+
+    vars(delivery)["reconcile"] = reconcile
+    vars(delivery)["deliver"] = deliver
+    paused = replace(record, status="paused")
+    relay = ScheduledTriggerRelay(adapter, delivery, lambda _sid: paused)
+    event = _event(adapter, record)
+
+    result = relay.handle_event(event)
+
+    assert result["status"] == "accepted"
+    assert len(deliveries) == 1
+    assert deliveries == lookups
+
+
 def test_ecs_binding_pins_worker_and_only_overrides_accepted_reference() -> None:
     digest = "sha256:" + "a" * 64
     binding = ECSExecutionBinding(

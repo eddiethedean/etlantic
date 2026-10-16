@@ -113,12 +113,10 @@ class ScheduledTriggerRelay:
         receipt = self.delivery.reconcile(envelope)
         if receipt is not None and receipt.status in {"accepted", "skipped"}:
             return receipt.to_dict()
-        if receipt is not None and receipt.status == "pending":
-            raise RelayRetryRequired("canonical trigger admission is still pending")
         if (
-            record.status != "active"
-            or record.revision_id != revision_id
+            record.revision_id != revision_id
             or record.timer_owner_generation != generation
+            or (receipt is None and record.status != "active")
         ):
             raise ValueError("Scheduler event is stale for the durable schedule")
         result = self.delivery.deliver(envelope)
