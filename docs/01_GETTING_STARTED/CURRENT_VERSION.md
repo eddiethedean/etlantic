@@ -21,7 +21,7 @@ Its publication does not qualify live Connect activation or production support;
 see the [preview exit record](../11_DEVELOPMENT/EXIT_GATE_0_60.md).
 The workspace carries a 0.60.1 adapter candidate with core compatibility
 `etlantic>=0.60.0,<0.61.0`; existing deployed 0.60.0 bundles need the paused
-resume upgrade described in the adapter's [migration notes](../../packages/etlantic-rsconnect/README.md).
+resume upgrade described in the [Connect adapter migration guide](../11_DEVELOPMENT/MIGRATION_RSCONNECT_0_60_1.md).
 
 For an install available from PyPI today, use the [0.59 release notes](WHATS_NEW_0_59.md),
 [Migration 0.58 → 0.59](../11_DEVELOPMENT/MIGRATION_0_58_TO_0_59.md), and the

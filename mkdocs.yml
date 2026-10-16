@@ -667,6 +667,7 @@ nav:
           - Changelog: CHANGELOG.md
           - What's new in 0.60 (candidate): 01_GETTING_STARTED/WHATS_NEW_0_60.md
           - Migration from 0.59 to 0.60 (candidate): 11_DEVELOPMENT/MIGRATION_0_59_TO_0_60.md
+          - Connect adapter 0.60.1 migration: 11_DEVELOPMENT/MIGRATION_RSCONNECT_0_60_1.md
           - Core 0.60 candidate and Connect preview exit record: 11_DEVELOPMENT/EXIT_GATE_0_60.md
           - What's new in 0.59: 01_GETTING_STARTED/WHATS_NEW_0_59.md
           - Migration from 0.58 to 0.59: 11_DEVELOPMENT/MIGRATION_0_58_TO_0_59.md
