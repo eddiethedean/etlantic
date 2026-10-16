@@ -16,7 +16,7 @@ foundation, and post-foundation capabilities continue in later 0.x minors.
 Breaking changes must be documented. Official plugin packages currently share
 the core minor version (for example `0.38.0`).
 Official plugins and root extras declare the compatible 0.59 line floor
-(`>=0.59.0`) without a patch lockstep pin or upper cap.
+(`>=0.60.0`) without a patch lockstep pin or upper cap.
 
 ## Planned package truth and compatibility gates — 0.59 onward
 
@@ -254,7 +254,7 @@ GitHub Actions workflow
    **before** any PyPI upload.
    The rsconnect preview has a separate installed-wheel smoke and uses its own
    version for artifact filenames and already-published checks. Preview
-   `0.60.0` can therefore accompany core `0.59.0` without a monorepo version bump.
+   `0.60.0` can therefore accompany core `0.60.0` without a monorepo version bump.
 5. Publishes to PyPI: **existing projects first** (skip files already present
    via `--check-url`; retry transient 429s).
 6. Creates the GitHub Release from `CHANGELOG.md` notes when existing-project
@@ -266,10 +266,10 @@ GitHub Actions workflow
 
 ### Independently versioned Connect preview
 
-`etlantic-rsconnect` has an independent release tag. Core `v0.59.0` already
+`etlantic-rsconnect` has an independent release tag. Core `v0.60.0` already
 exists and predates this package; keep that tag immutable. The 0.60.0 preview
 was released from commit `def8a940` under
-`etlantic-rsconnect-v0.60.0`; core remains at 0.59.0. The release validation
+`etlantic-rsconnect-v0.60.0`; core remains at 0.60.0. The release validation
 commands run against the intended clean release commit were:
 
 ```bash
@@ -284,7 +284,7 @@ The [release workflow run](https://github.com/eddiethedean/etlantic/actions/runs
 completed successfully and published the adapter wheel and sdist, then created
 the [GitHub prerelease](https://github.com/eddiethedean/etlantic/releases/tag/etlantic-rsconnect-v0.60.0).
 It ran the full checks, checked the installed adapter against released core
-0.59.0, proved base installation needs no SDK or ETL engines, and ran the
+0.60.0, proved base installation needs no SDK or ETL engines, and ran the
 focused tests with workspace imports disabled. Re-dispatch **Release** with the
 same preview tag to retry an upload; existing artifacts are checked by
 `uv publish --check-url`.

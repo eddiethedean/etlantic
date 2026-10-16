@@ -1,15 +1,15 @@
 # Your First Pipeline
 
-> **Version boundary:** 0.59.0 is the published Beta release; external qualification for the new managed runtime and trigger capabilities is deferred.
+> **Version boundary:** 0.60.0 is a Beta candidate; 0.59.x remains the published support line; external qualification for the new managed runtime and trigger capabilities is deferred.
 
 
-> **Status: ETLantic 0.59.0 is the published Beta release.** Extends the project from
+> **Status: ETLantic core 0.60.0 is a Beta candidate; 0.59.x remains the published support line.** Extends the project from
 > [Quickstart](QUICKSTART.md). Local Python + JSON assets only.
 
 !!! tip "PyPI vs clone"
     This page is **PyPI-only**. No repository checkout required.
 
-The 0.59.0 package pin below becomes available from PyPI after publication.
+The 0.60.0 package pin below becomes available from PyPI after publication.
 Until then, follow the published 0.57.2 quickstart or use candidate wheels as
 described in [Installation](INSTALLATION.md).
 
@@ -20,7 +20,7 @@ directory—do not reinstall. Otherwise install from PyPI, then scaffold:
 
 ```bash
 # Only if you do not already have a Quickstart project:
-python -m pip install 'etlantic==0.59.0'
+python -m pip install 'etlantic==0.60.0'
 mkdir my-pipeline && cd my-pipeline
 python -m etlantic init --with-toml
 ```

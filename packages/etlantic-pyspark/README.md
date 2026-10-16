@@ -1,6 +1,6 @@
 # etlantic-pyspark
 
-> **Release status:** ETLantic 0.59.0 is a Beta release candidate; publication is pending.
+> **Release status:** ETLantic 0.60.0 is a Beta release candidate; publication is pending.
 
 PySpark reference execution plugin **and** portable transform compiler for
 [ETLantic](https://github.com/eddiethedean/etlantic) 0.57.
@@ -60,7 +60,7 @@ Native UDF policy stays separate. Default CI uses sparkless; set
 
 ## Links
 
-[PySpark tutorial](https://etlantic.readthedocs.io/en/v0.59.0/06_EXECUTION/PYSPARK_TUTORIAL/) ·
-[Compatibility](https://etlantic.readthedocs.io/en/v0.59.0/10_REFERENCE/COMPATIBILITY/) ·
+[PySpark tutorial](https://etlantic.readthedocs.io/en/v0.60.0/06_EXECUTION/PYSPARK_TUTORIAL/) ·
+[Compatibility](https://etlantic.readthedocs.io/en/v0.60.0/10_REFERENCE/COMPATIBILITY/) ·
 [Source](https://github.com/eddiethedean/etlantic/tree/main/packages/etlantic-pyspark) ·
 [Issues](https://github.com/eddiethedean/etlantic/issues)

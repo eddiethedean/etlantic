@@ -95,6 +95,32 @@ records the local checks and successful publication. `BindingStore`,
 host integrations; storage implementations must provide the documented durable
 and atomic behavior.
 
+Install `etlantic-rsconnect>=0.60.1,<0.61.0` with core
+`etlantic>=0.60.0,<0.61.0` when using timer-generation fencing. Bindings created
+before 0.60.1 are treated as legacy because their deployed runner ignores the
+generation environment variable. Resume those bindings through the adapter's
+upgrade path so it can rebuild and redeploy the trigger while the canonical
+schedule is paused:
+
+```python
+adapter.resume(
+    service,
+    context,
+    schedule_id,
+    binding,
+    build_bundle=build_bundle,
+    deployer=deployer,
+    title="ETLantic schedule",
+)
+```
+
+`build_bundle` must build from the paused canonical record passed to it. The
+adapter checks the schedule, revision, generation, receiver URL, and Connect
+server before publishing. It records generation support before resuming the
+canonical schedule, then sets the new generation in Connect's runtime
+environment before arming the recurrence. New 0.60.1 deployments already
+support this environment override.
+
 The [local simulation design](https://github.com/eddiethedean/etlantic/blob/main/docs/11_DEVELOPMENT/CONNECT_SIMULATION_DESIGN_0_60.md)
 records SDK, scheduling, HTTPS, and crash-recovery simulations that run without
 a Connect server. The regression suite covers SDK recurrence normalization,

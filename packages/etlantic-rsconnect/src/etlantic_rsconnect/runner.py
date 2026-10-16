@@ -133,6 +133,20 @@ def occurrence():
     canonical = parsed.astimezone(timezone.utc).isoformat().replace("+00:00", "Z")
     if scheduled_at != canonical:
         raise RuntimeError("scheduled occurrence must use canonical UTC form")
+    configured_generation = os.environ.get("ETLANTIC_TIMER_OWNER_GENERATION")
+    if configured_generation is None:
+        timer_owner_generation = CONFIG.get("timer_owner_generation")
+    else:
+        if (
+            not configured_generation.isascii()
+            or not configured_generation.isdigit()
+            or configured_generation.startswith("0")
+            or len(configured_generation) > 18
+        ):
+            raise RuntimeError("timer owner generation is invalid")
+        timer_owner_generation = int(configured_generation)
+    if type(timer_owner_generation) is not int or timer_owner_generation < 1:
+        raise RuntimeError("timer owner generation is invalid")
     for value in (attempt_id, correlation_id):
         if not isinstance(value, str) or not value.strip() or len(value) > 256:
             raise RuntimeError("scheduled occurrence metadata is invalid")
@@ -144,7 +158,7 @@ def occurrence():
         "schema": CONFIG["schema"],
         "schedule_id": CONFIG["schedule_id"],
         "schedule_revision_id": CONFIG["schedule_revision_id"],
-        "timer_owner_generation": CONFIG["timer_owner_generation"],
+        "timer_owner_generation": timer_owner_generation,
         "occurrence_id": "occ-" + hashlib.sha256(semantic).hexdigest(),
         "scheduled_at": scheduled_at,
         "delivery_attempt_id": attempt_id,

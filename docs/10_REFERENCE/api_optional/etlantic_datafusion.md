@@ -1,7 +1,7 @@
 ---
 status: provisional
 since: "0.43.0"
-current_minor: "0.59"
+current_minor: "0.60"
 audience: developer
 ---
 
@@ -13,7 +13,7 @@ audience: developer
 ## Setup
 
 ```bash
-pip install 'etlantic-datafusion==0.59.0'
+pip install 'etlantic-datafusion==0.60.0'
 ```
 
 ```python

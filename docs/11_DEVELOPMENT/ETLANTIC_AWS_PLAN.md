@@ -1,16 +1,25 @@
 ---
 title: ETLantic AWS Integration Plan
 description: Independent AWS scheduling and execution adapters over canonical ETLantic runtime contracts.
-plan_status: planned
-plan_last_reviewed: 2026-10-12
+plan_status: implementation_complete_qualification_deferred
+plan_last_reviewed: 2026-10-14
 ---
 
 # ETLantic AWS Integration Plan
 
-**Status: planned; phase [0.61](IMPLEMENTATION_PLAN_0_61.md).** The proposed
-`etlantic-aws` package is optional and unavailable until its own gates pass.
+**Status: source implementation complete; AWS qualification deferred; phase
+[0.61](IMPLEMENTATION_PLAN_0_61.md).** The optional `etlantic-aws` package is
+present in the workspace with Scheduler/Lambda relay and ECS/Fargate adapters.
+Core durable dispatch accepts the registered `prefect:` and `ecs:` routes, and
+schedule schema/3 persists an external timer anchor and binding digest. Local
+contract, fault, lint and type checks do not qualify a live AWS tuple.
 See the [runtime plan](ETLANTIC_RUNTIME_PLAN.md) for source provenance, shared
 contracts, and the four-phase program.
+
+The [0.61 implementation record](IMPLEMENTATION_PLAN_0_61.md#implemented-shared-contracts-and-local-evidence)
+describes the shared-runtime changes and their local evidence. The [0.59 exit
+record](EXIT_GATE_0_59.md) retains deferred external qualification; that release
+and the local 0.60 preview do not qualify an AWS composition.
 
 ## Outcome And Dependencies
 
@@ -49,6 +58,13 @@ DST, flexible windows, misfires, and overlap explicitly. Unsupported semantics
 fail before activation. A redrive preserves identity and must satisfy replay
 and authorization rules, rather than bypass them.
 
+Use the implementation plan's [AWS facts and initial candidate](IMPLEMENTATION_PLAN_0_61.md#aws-facts-and-initial-support-candidate)
+and [relay lifecycle rules](IMPLEMENTATION_PLAN_0_61.md#scheduling-relay-and-lifecycle-rules)
+for nominal-time provenance, the initial UTC interval mapping and independently
+bounded Scheduler/Lambda failure channels. Disabled-first activation, durable
+ownership, drift detection and canonical revision/generation fencing apply to
+every schedule mutation.
+
 ## Execution Path
 
 1. Canonical ETLantic services prepare and accept a run, binding scope, plan,
@@ -71,6 +87,13 @@ concrete adapter without AWS-specific fields or another store family in core.
 Do not copy Prefect implementation or infer AWS support from Prefect qualification. Provider/queue retry defaults must not blindly rerun effects.
 Unknown writes require reconciliation before retry. Lost submission responses
 must reconcile through durable dispatch identity before creating another job.
+
+The [ECS recovery rules](IMPLEMENTATION_PLAN_0_61.md#ecs-dispatch-execution-and-recovery-rules)
+require one pinned on-demand Fargate task, an explicit durable request/token
+binding, and reconciliation that remains safe after AWS token retention expires.
+The canonical store retains effect/result authority when remote observations
+are missing, stale or ambiguous. Initial polling recovery needs no new event-bus
+transport.
 
 ## Deliverables And Gates
 
@@ -102,6 +125,9 @@ unbounded cloud logs in results.
 AWS and security maintainers freeze relay topology, supported regions, role
 permissions, network reachability, and execution support matrices before the
 pilot. Review on changes to service APIs, retry behavior, runtime contracts,
-or release qualification. Required release artifacts include independently
-installable wheels, reproducible deployment recipes, per-service live failure
-reports, cleanup proof, and the shared conformance results.
+or release qualification. The implementation plan owns staged delivery,
+AC061/E061 evidence and accountable decisions. Local package delivery requires
+built-wheel isolation, contract/fault/security checks and truthful preview
+boundaries; production support additionally requires reproducible deployment
+recipes, per-service live failure reports, cleanup proof and shared conformance.
+Scheduler, ECS and their composed path receive separate support decisions.

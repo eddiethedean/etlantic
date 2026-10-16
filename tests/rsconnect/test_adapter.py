@@ -17,10 +17,12 @@ from etlantic_rsconnect import (
     ConnectScheduleBinding,
     DeploymentResult,
     PositSdkGateway,
+    RsconnectPythonDeployer,
     ScheduleOperationError,
     ScheduleOperationUnknown,
     build_trigger_bundle,
 )
+from etlantic_rsconnect.deployment import DeploymentIntent
 
 from etlantic.control_plane import (
     ControlPlaneContext,
@@ -74,6 +76,7 @@ def _binding(record: ScheduleRecord) -> ConnectScheduleBinding:
         server_url="https://connect.example.com",
         target_url="https://receiver.example.com/trigger",
         bundle_sha256="a" * 64,
+        supports_timer_generation_override=True,
     )
 
 
@@ -106,6 +109,22 @@ class Store:
             del self.values[schedule_id]
 
 
+class Journal:
+    def __init__(self) -> None:
+        self.events: list[tuple[object, ...]] = []
+
+    def begin(self, intent: DeploymentIntent) -> None:
+        self.events.append(("begin", intent))
+
+    def complete(
+        self, intent: DeploymentIntent, *, content_guid: str, result: str
+    ) -> None:
+        self.events.append(("complete", intent, content_guid, result))
+
+    def uncertain(self, intent: DeploymentIntent, *, result: str) -> None:
+        self.events.append(("uncertain", intent, result))
+
+
 class Gateway:
     server_url = "https://connect.example.com"
 
@@ -113,6 +132,7 @@ class Gateway:
         self.schedule = None if rule is None else SimpleNamespace(rule=rule)
         self.events: list[tuple[object, ...]] = []
         self.armed = False
+        self.timer_generation: int | None = None
 
     def read(self, content_guid: str) -> Any | None:
         self.events.append(("read",))
@@ -124,6 +144,9 @@ class Gateway:
 
     def can_set_trigger_armed(self, content_guid: str) -> bool:
         return True
+
+    def set_trigger_generation(self, content_guid: str, generation: int) -> None:
+        self.timer_generation = generation
 
     def create_or_update(self, content_guid: str, kwargs: Mapping[str, object]) -> Any:
         self.events.append(("create", dict(kwargs)))
@@ -354,6 +377,300 @@ def test_resume_retains_the_new_recurrence_anchor_in_active_binding() -> None:
     assert active.schedule_start_time == "2026-10-13T14:00:00Z"
     assert store.get(paused_record.schedule_id) == active
     assert adapter.inspect_drift(later_cursor, active).state == "in_sync"
+
+
+def test_resume_binds_the_reanchored_timer_generation() -> None:
+    context = _context()
+    authorizer = MemoryAuthorizer()
+    authorizer.grant(context, "schedule.read")
+    authorizer.grant(context, "schedule.write")
+    canonical_store = MemoryScheduleStore()
+    now = datetime(2026, 10, 13, 12, 0, tzinfo=UTC)
+    service = ScheduleApplicationService(
+        authorizer=authorizer,
+        schedule_store=canonical_store,
+        clock=lambda: now,
+    )
+    record = canonical_store.create(
+        context,
+        definition_id="pipeline-a",
+        profile_name="test",
+        spec=ScheduleSpec(kind="interval", interval_seconds=3600),
+        workload_identity=context.principal,
+        timer_owner="external",
+        timer_schedule_start_at="2026-10-13T11:00:00Z",
+        next_fire_at="2026-10-13T13:00:00Z",
+    )
+    paused = service.pause(context, record.schedule_id)
+    binding = replace(
+        _binding(paused),
+        schedule_start_time=record.timer_schedule_start_at,
+        status="paused",
+    )
+    gateway = Gateway()
+    store = Store(binding)
+    adapter = _adapter(gateway, store, clock=lambda: now)
+
+    active = adapter.resume(service, context, record.schedule_id, binding)
+    canonical = service.get(context, record.schedule_id)
+
+    assert active.timer_owner_generation == canonical.timer_owner_generation
+    assert active.timer_owner_generation == binding.timer_owner_generation + 1
+    assert active.schedule_start_time == canonical.timer_schedule_start_at
+    assert gateway.timer_generation == canonical.timer_owner_generation
+    assert gateway.schedule is not None
+    assert gateway.schedule.rule["start_time"] == canonical.timer_schedule_start_at
+
+
+def test_resume_requires_legacy_trigger_upgrade_before_mutation() -> None:
+    context = _context()
+    authorizer = MemoryAuthorizer()
+    authorizer.grant(context, "schedule.read")
+    authorizer.grant(context, "schedule.write")
+    canonical_store = MemoryScheduleStore()
+    now = datetime(2026, 10, 13, 12, 0, tzinfo=UTC)
+    service = ScheduleApplicationService(
+        authorizer=authorizer,
+        schedule_store=canonical_store,
+        clock=lambda: now,
+    )
+    record = canonical_store.create(
+        context,
+        definition_id="pipeline-a",
+        profile_name="test",
+        spec=ScheduleSpec(kind="interval", interval_seconds=3600),
+        workload_identity=context.principal,
+        timer_owner="external",
+        timer_schedule_start_at="2026-10-13T11:00:00Z",
+        next_fire_at="2026-10-13T13:00:00Z",
+    )
+    paused = service.pause(context, record.schedule_id)
+    binding = replace(
+        _binding(paused),
+        schedule_start_time=record.timer_schedule_start_at,
+        status="paused",
+        supports_timer_generation_override=False,
+    )
+    gateway = Gateway()
+    store = Store(binding)
+    adapter = _adapter(gateway, store, clock=lambda: now)
+
+    with pytest.raises(ScheduleOperationError, match="upgrade it during resume"):
+        adapter.resume(service, context, record.schedule_id, binding)
+
+    assert service.get(context, record.schedule_id).status == "paused"
+    assert store.get(record.schedule_id) == binding
+    assert gateway.events == []
+    assert gateway.timer_generation is None
+
+
+def test_resume_authorizes_schedule_write_before_legacy_upgrade_work() -> None:
+    context = _context()
+    authorizer = MemoryAuthorizer()
+    authorizer.grant(context, "schedule.read")
+    authorizer.grant(context, "schedule.write")
+    canonical_store = MemoryScheduleStore()
+    now = datetime(2026, 10, 13, 12, 0, tzinfo=UTC)
+    service = ScheduleApplicationService(
+        authorizer=authorizer,
+        schedule_store=canonical_store,
+        clock=lambda: now,
+    )
+    record = canonical_store.create(
+        context,
+        definition_id="pipeline-a",
+        profile_name="test",
+        spec=ScheduleSpec(kind="interval", interval_seconds=3600),
+        workload_identity=context.principal,
+        timer_owner="external",
+        timer_schedule_start_at="2026-10-13T11:00:00Z",
+        next_fire_at="2026-10-13T13:00:00Z",
+    )
+    paused = service.pause(context, record.schedule_id)
+    binding = replace(
+        _binding(paused),
+        schedule_start_time=record.timer_schedule_start_at,
+        status="paused",
+        supports_timer_generation_override=False,
+    )
+    gateway = Gateway()
+    store = Store(binding)
+    adapter = _adapter(gateway, store, clock=lambda: now)
+    authorizer.grants.discard(
+        (context.tenant.tenant_id, context.workspace.workspace_id, "schedule.write")
+    )
+
+    with pytest.raises(ControlPlaneError):
+        adapter.resume(service, context, record.schedule_id, binding)
+
+    assert service.get(context, record.schedule_id).status == "paused"
+    assert store.get(record.schedule_id) == binding
+    assert gateway.events == []
+
+
+def test_resume_redeploys_legacy_trigger_before_advancing_generation() -> None:
+    context = _context()
+    authorizer = MemoryAuthorizer()
+    authorizer.grant(context, "schedule.read")
+    authorizer.grant(context, "schedule.write")
+    canonical_store = MemoryScheduleStore()
+    now = datetime(2026, 10, 13, 12, 0, tzinfo=UTC)
+    service = ScheduleApplicationService(
+        authorizer=authorizer,
+        schedule_store=canonical_store,
+        clock=lambda: now,
+    )
+    record = canonical_store.create(
+        context,
+        definition_id="pipeline-a",
+        profile_name="test",
+        spec=ScheduleSpec(kind="interval", interval_seconds=3600),
+        workload_identity=context.principal,
+        timer_owner="external",
+        timer_schedule_start_at="2026-10-13T11:00:00Z",
+        next_fire_at="2026-10-13T13:00:00Z",
+    )
+    paused = service.pause(context, record.schedule_id)
+    binding = replace(
+        _binding(paused),
+        schedule_start_time=record.timer_schedule_start_at,
+        status="paused",
+        supports_timer_generation_override=False,
+    )
+    gateway = Gateway()
+    store = Store(binding)
+    adapter = _adapter(gateway, store, clock=lambda: now)
+
+    def build_bundle(paused_record: ScheduleRecord) -> Any:
+        assert paused_record.status == "paused"
+        return build_trigger_bundle(
+            schedule_id=paused_record.schedule_id,
+            schedule_revision_id=paused_record.revision_id,
+            timer_owner_generation=paused_record.timer_owner_generation,
+            endpoint_url=binding.target_url,
+            credential_ref=SecretRef("env", "trigger", "token"),
+            credential_env="ETLANTIC_TRIGGER_TOKEN",
+            outbound_policy=OutboundPolicy(
+                allowed_hosts=("receiver.example.com",),
+                max_response_bytes=65_536,
+            ),
+        )
+
+    class Deployer:
+        def __init__(self) -> None:
+            self.server_url = binding.server_url
+            self.calls: list[tuple[Any, Mapping[str, Any]]] = []
+
+        def validate_deployment(self, bundle: Any, **kwargs: Any) -> None:
+            assert store.get(record.schedule_id) == binding
+            assert gateway.armed is False
+
+        def deploy(self, bundle: Any, **kwargs: Any) -> DeploymentResult:
+            assert service.get(context, record.schedule_id).status == "paused"
+            self.calls.append((bundle, kwargs))
+            return DeploymentResult(
+                content_guid=binding.content_guid,
+                state="updated",
+                bundle_sha256=bundle.sha256,
+                server_url=self.server_url,
+                operation_id=kwargs["operation_id"],
+            )
+
+    deployer = Deployer()
+    active = adapter.resume(
+        service,
+        context,
+        record.schedule_id,
+        binding,
+        build_bundle=build_bundle,
+        deployer=cast(Any, deployer),
+        title="ETLantic schedule",
+    )
+    canonical = service.get(context, record.schedule_id)
+
+    assert len(deployer.calls) == 1
+    upgraded_bundle, deployment_kwargs = deployer.calls[0]
+    assert deployment_kwargs["existing_content_guid"] == binding.content_guid
+    assert upgraded_bundle.timer_owner_generation == paused.timer_owner_generation
+    assert active.timer_owner_generation == canonical.timer_owner_generation
+    assert active.timer_owner_generation == paused.timer_owner_generation + 1
+    assert active.bundle_sha256 == upgraded_bundle.sha256
+    assert active.supports_timer_generation_override is True
+    assert gateway.timer_generation == canonical.timer_owner_generation
+    assert gateway.armed is True
+
+
+def test_resume_validates_legacy_deployment_before_claiming_binding() -> None:
+    context = _context()
+    authorizer = MemoryAuthorizer()
+    authorizer.grant(context, "schedule.read")
+    authorizer.grant(context, "schedule.write")
+    canonical_store = MemoryScheduleStore()
+    now = datetime(2026, 10, 13, 12, 0, tzinfo=UTC)
+    service = ScheduleApplicationService(
+        authorizer=authorizer,
+        schedule_store=canonical_store,
+        clock=lambda: now,
+    )
+    record = canonical_store.create(
+        context,
+        definition_id="pipeline-a",
+        profile_name="test",
+        spec=ScheduleSpec(kind="interval", interval_seconds=3600),
+        workload_identity=context.principal,
+        timer_owner="external",
+        timer_schedule_start_at="2026-10-13T11:00:00Z",
+        next_fire_at="2026-10-13T13:00:00Z",
+    )
+    paused = service.pause(context, record.schedule_id)
+    binding = replace(
+        _binding(paused),
+        schedule_start_time=record.timer_schedule_start_at,
+        status="paused",
+        supports_timer_generation_override=False,
+    )
+    gateway = Gateway()
+    store = Store(binding)
+    adapter = _adapter(gateway, store, clock=lambda: now)
+    trigger_ref = SecretRef("env", "trigger", "token")
+    bundle = build_trigger_bundle(
+        schedule_id=paused.schedule_id,
+        schedule_revision_id=paused.revision_id,
+        timer_owner_generation=paused.timer_owner_generation,
+        endpoint_url=binding.target_url,
+        credential_ref=trigger_ref,
+        credential_env="ETLANTIC_TRIGGER_TOKEN",
+        outbound_policy=OutboundPolicy(
+            allowed_hosts=("receiver.example.com",),
+            max_response_bytes=65_536,
+        ),
+    )
+    journal = Journal()
+    deployer = RsconnectPythonDeployer(
+        server_url=binding.server_url,
+        deployment_credential_ref=SecretRef("env", "connect", "api-key"),
+        trigger_credential_ref=trigger_ref,
+        resolve_secret=lambda _ref: pytest.fail("preflight must not resolve secrets"),
+        journal=journal,
+        run=lambda *_args, **_kwargs: pytest.fail("preflight must not publish"),
+    )
+
+    with pytest.raises(ValueError, match="bounded Connect content name"):
+        adapter.resume(
+            service,
+            context,
+            record.schedule_id,
+            binding,
+            build_bundle=lambda _record: bundle,
+            deployer=deployer,
+            title="",
+        )
+
+    assert service.get(context, record.schedule_id).status == "paused"
+    assert store.get(record.schedule_id) == binding
+    assert gateway.events == [("read",)]
+    assert gateway.armed is False
+    assert journal.events == []
 
 
 def test_apply_refuses_to_adopt_an_unbound_connect_schedule() -> None:
@@ -725,6 +1042,9 @@ def test_resume_refuses_a_passed_canonical_cursor_before_enabling_timer() -> Non
     class Service:
         resumed = False
 
+        def authorize(self, *_args: object) -> None:
+            pass
+
         def get(self, *_args: object) -> ScheduleRecord:
             return record
 
@@ -761,6 +1081,9 @@ def test_concurrent_resume_loser_cannot_disarm_winning_activation() -> None:
         resume_started = Event()
         allow_resume = Event()
         resume_calls = 0
+
+        def authorize(self, *_args: object) -> None:
+            pass
 
         def get(self, *_args: object) -> ScheduleRecord:
             return paused_record
@@ -940,6 +1263,9 @@ def test_resume_claims_rollback_before_cleanup_side_effects() -> None:
             raise RuntimeError("synthetic Connect write failure")
 
     class Service:
+        def authorize(self, *_args: object) -> None:
+            pass
+
         def get(self, *_args: object) -> ScheduleRecord:
             return paused_record
 
@@ -998,6 +1324,9 @@ def test_resume_cleanup_cas_failure_does_not_disarm_new_owner() -> None:
 
     class Service:
         pause_calls = 0
+
+        def authorize(self, *_args: object) -> None:
+            pass
 
         def get(self, *_args: object) -> ScheduleRecord:
             return paused_record
@@ -1455,6 +1784,8 @@ def test_amend_commit_ack_loss_cannot_pause_a_newer_owner() -> None:
     assert canonical.spec.interval_seconds == 10_800
     assert store.get(record.schedule_id) == latest
     assert latest.revision_id == canonical.revision_id
+    assert latest.timer_owner_generation == canonical.timer_owner_generation
+    assert latest.schedule_start_time == canonical.timer_schedule_start_at
     assert gateway.armed is True
     assert gateway.schedule is not None
     assert gateway.schedule.rule["n"] == 3

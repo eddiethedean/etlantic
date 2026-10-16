@@ -103,6 +103,8 @@ class ConnectScheduleBinding:
         Literal["registration", "apply", "resume", "amend", "rollback"] | None
     ) = None
     pending_target_status: Literal["active", "paused", "deleted"] | None = None
+    # False for bindings written before the runner accepted a generation override.
+    supports_timer_generation_override: bool = False
 
     def __post_init__(self) -> None:
         for field_name in ("schedule_id", "revision_id", "content_guid"):
@@ -116,6 +118,8 @@ class ConnectScheduleBinding:
             or self.timer_owner_generation < 1
         ):
             raise ValueError("timer_owner_generation must be a positive integer")
+        if type(self.supports_timer_generation_override) is not bool:
+            raise ValueError("supports_timer_generation_override must be a boolean")
         object.__setattr__(self, "server_url", _connect_base_url(self.server_url))
         parsed = urlsplit(self.target_url)
         if (
@@ -227,6 +231,8 @@ class ConnectScheduleGateway(Protocol):
     def delete(self, content_guid: str) -> None: ...
 
     def set_trigger_armed(self, content_guid: str, armed: bool) -> None: ...
+
+    def set_trigger_generation(self, content_guid: str, generation: int) -> None: ...
 
     def can_set_trigger_armed(self, content_guid: str) -> bool: ...
 
@@ -485,6 +491,26 @@ class PositSdkGateway:
                 "Posit Connect content arming outcome is unknown; inspect content before retrying"
             ) from None
 
+    def set_trigger_generation(self, content_guid: str, generation: int) -> None:
+        """Set the canonical timer generation read by an installed trigger."""
+        if type(generation) is not int or generation < 1:
+            raise ValueError("timer owner generation must be a positive integer")
+        try:
+            content = self._pinned_client().content.get(content_guid)
+            environment = content.environment_variables
+            update = getattr(environment, "update", None)
+            if not callable(update):
+                raise ScheduleOperationError(
+                    "installed Posit SDK does not expose content environment updates"
+                )
+            update({"ETLANTIC_TIMER_OWNER_GENERATION": str(generation)})
+        except ScheduleOperationError:
+            raise
+        except Exception:
+            raise ScheduleOperationUnknown(
+                "Posit Connect timer generation update outcome is unknown; inspect content before retrying"
+            ) from None
+
     def can_set_trigger_armed(self, content_guid: str) -> bool:
         try:
             content = self._pinned_client().content.get(content_guid)
@@ -542,6 +568,8 @@ def _same_binding_target(
         and left.server_url == right.server_url
         and left.target_url == right.target_url
         and left.bundle_sha256 == right.bundle_sha256
+        and left.supports_timer_generation_override
+        == right.supports_timer_generation_override
     )
 
 
@@ -738,6 +766,9 @@ class ConnectScheduleAdapter:
                 server_url=deployer.server_url,
                 target_url=bundle.endpoint_url,
                 bundle_sha256=bundle.sha256,
+                supports_timer_generation_override=(
+                    bundle.supports_timer_generation_override
+                ),
                 status="active",
             ),
         )
@@ -783,6 +814,9 @@ class ConnectScheduleAdapter:
             server_url=self.gateway.server_url,
             target_url=bundle.endpoint_url,
             bundle_sha256=bundle.sha256,
+            supports_timer_generation_override=(
+                bundle.supports_timer_generation_override
+            ),
             schedule_start_time=record.next_fire_at,
             status="pending",
             operation_id=deployment.operation_id,
@@ -837,6 +871,8 @@ class ConnectScheduleAdapter:
                 or observed.server_url != binding.server_url
                 or observed.target_url != binding.target_url
                 or observed.bundle_sha256 != binding.bundle_sha256
+                or observed.supports_timer_generation_override
+                != binding.supports_timer_generation_override
                 or observed.schedule_start_time != binding.schedule_start_time
                 or observed.status != binding.status
             ):
@@ -894,6 +930,9 @@ class ConnectScheduleAdapter:
             # Existing renders become inert before a recurrence mutation. A
             # failed write leaves the operation pending for operator recovery.
             self.gateway.set_trigger_armed(binding.content_guid, False)
+            self._set_trigger_generation(
+                binding.content_guid, record.timer_owner_generation
+            )
             if observed.status != "pending" or remote is None:
                 self.gateway.create_or_update(binding.content_guid, desired)
             self._verify_schedule_rule(binding.content_guid, desired)
@@ -985,6 +1024,14 @@ class ConnectScheduleAdapter:
             raise ScheduleOperationUnknown(
                 "Connect schedule deletion may have committed but the schedule remains; reconcile before retrying"
             )
+
+    def _set_trigger_generation(self, content_guid: str, generation: int) -> None:
+        update = getattr(self.gateway, "set_trigger_generation", None)
+        if not callable(update):
+            raise ScheduleOperationError(
+                "Connect gateway cannot update the installed trigger generation"
+            )
+        update(content_guid, generation)
 
     def pause(
         self,
@@ -1135,8 +1182,13 @@ class ConnectScheduleAdapter:
         context: ControlPlaneContext,
         schedule_id: str,
         binding: ConnectScheduleBinding,
+        *,
+        build_bundle: Callable[[ScheduleRecord], TriggerBundle] | None = None,
+        deployer: RsconnectPythonDeployer | None = None,
+        title: str | None = None,
     ) -> ConnectScheduleBinding:
         self._require_preview()
+        service.authorize(context, "schedule.write", f"schedule:{schedule_id}")
         current = service.get(context, schedule_id)
         self._preflight_control_plane_binding(current, binding)
         if current.status != "paused" or binding.status != "paused":
@@ -1162,6 +1214,43 @@ class ConnectScheduleAdapter:
             raise ScheduleOperationError(
                 "canonical next_fire_at has passed; amend or reconcile the cursor before resuming"
             )
+        upgrade_bundle: TriggerBundle | None = None
+        upgrade_deployer: RsconnectPythonDeployer | None = None
+        if not binding.supports_timer_generation_override:
+            if build_bundle is None or deployer is None or title is None:
+                raise ScheduleOperationError(
+                    "this deployed trigger cannot accept a resumed timer generation; "
+                    "upgrade it during resume with build_bundle, deployer, and title"
+                )
+            if (
+                deployer.server_url != binding.server_url
+                or binding.server_url != self.gateway.server_url
+            ):
+                raise ScheduleOperationError(
+                    "trigger upgrade deployer targets a different Connect server"
+                )
+            try:
+                upgrade_bundle = build_bundle(current)
+            except Exception as exc:
+                raise ScheduleOperationError(
+                    "generation-aware trigger bundle could not be built"
+                ) from exc
+            if (
+                upgrade_bundle.schedule_id != current.schedule_id
+                or upgrade_bundle.schedule_revision_id != current.revision_id
+                or upgrade_bundle.timer_owner_generation
+                != current.timer_owner_generation
+                or upgrade_bundle.endpoint_url != binding.target_url
+                or upgrade_bundle.supports_timer_generation_override is not True
+            ):
+                raise ScheduleOperationError(
+                    "generation-aware trigger bundle does not match the paused binding"
+                )
+            upgrade_deployer = deployer
+        elif build_bundle is not None or deployer is not None or title is not None:
+            raise ScheduleOperationError(
+                "bundle upgrade arguments are only valid for legacy trigger bindings"
+            )
         if self.gateway.read(binding.content_guid) is not None:
             raise ScheduleOperationError(
                 "Connect schedule drift detected for a paused binding; reconcile before resuming"
@@ -1174,6 +1263,14 @@ class ConnectScheduleAdapter:
             pending_operation="resume",
             pending_target_status="active",
         )
+        if upgrade_bundle is not None and upgrade_deployer is not None:
+            upgrade_deployer.validate_deployment(
+                upgrade_bundle,
+                schedule_id=current.schedule_id,
+                operation_id=intent.operation_id or "",
+                title=cast(str, title),
+                existing_content_guid=binding.content_guid,
+            )
         try:
             self.binding_store.put(intent, expected=binding)
         except Exception:
@@ -1181,11 +1278,64 @@ class ConnectScheduleAdapter:
                 "another Connect operation claimed this binding; reconcile before resuming"
             ) from None
         try:
+            if upgrade_bundle is not None and upgrade_deployer is not None:
+                self.gateway.set_trigger_armed(binding.content_guid, False)
+                deployment = upgrade_deployer.deploy(
+                    upgrade_bundle,
+                    schedule_id=current.schedule_id,
+                    operation_id=intent.operation_id or uuid.uuid4().hex,
+                    title=cast(str, title),
+                    existing_content_guid=binding.content_guid,
+                )
+                if (
+                    deployment.content_guid != binding.content_guid
+                    or deployment.state != "updated"
+                    or deployment.bundle_sha256 != upgrade_bundle.sha256
+                    or deployment.server_url != binding.server_url
+                    or not deployment.operation_id.strip()
+                ):
+                    raise ScheduleOperationUnknown(
+                        "generation-aware trigger deployment did not update the owned Connect content"
+                    )
+                upgraded_intent = replace(
+                    intent,
+                    bundle_sha256=upgrade_bundle.sha256,
+                    supports_timer_generation_override=True,
+                )
+                try:
+                    self.binding_store.put(upgraded_intent, expected=intent)
+                except Exception:
+                    raise ScheduleOperationUnknown(
+                        "trigger was upgraded but its generation support could not be committed; reconcile before resuming"
+                    ) from None
+                intent = upgraded_intent
             record = service.resume(context, schedule_id)
             if record.status != "active":
                 raise ScheduleOperationUnknown(
                     "canonical schedule did not become active during Connect resume"
                 )
+            if (
+                record.schedule_id != intent.schedule_id
+                or record.revision_id != intent.revision_id
+            ):
+                raise ScheduleOperationUnknown(
+                    "canonical schedule changed during Connect resume"
+                )
+            resumed_intent = replace(
+                intent,
+                timer_owner_generation=record.timer_owner_generation,
+                schedule_start_time=(
+                    record.timer_schedule_start_at or intent.schedule_start_time
+                ),
+            )
+            if resumed_intent != intent:
+                try:
+                    self.binding_store.put(resumed_intent, expected=intent)
+                except Exception:
+                    raise ScheduleOperationUnknown(
+                        "canonical schedule resumed but its timer generation could not be committed; reconcile before retrying"
+                    ) from None
+                intent = resumed_intent
             self._check_binding(record, intent)
             if self.gateway.read(binding.content_guid) is not None:
                 raise ScheduleOperationUnknown(
@@ -1193,6 +1343,9 @@ class ConnectScheduleAdapter:
                 )
             desired = _connect_recurrence(record, start_time=intent.schedule_start_time)
             self.gateway.set_trigger_armed(binding.content_guid, False)
+            self._set_trigger_generation(
+                binding.content_guid, record.timer_owner_generation
+            )
             self.gateway.create_or_update(binding.content_guid, desired)
             self._verify_schedule_rule(binding.content_guid, desired)
             self.gateway.set_trigger_armed(binding.content_guid, True)
@@ -1327,44 +1480,72 @@ class ConnectScheduleAdapter:
             raise ScheduleOperationUnknown(
                 "canonical schedule amendment did not remain paused"
             )
-        desired = _connect_recurrence(amended, start_time=amended.next_fire_at)
-        new_bundle = build_bundle(amended)
+        resumed = service.resume(context, schedule_id)
         if (
-            new_bundle.schedule_id != amended.schedule_id
-            or new_bundle.schedule_revision_id != amended.revision_id
-            or new_bundle.timer_owner_generation != amended.timer_owner_generation
+            resumed.status != "active"
+            or resumed.schedule_id != amended.schedule_id
+            or resumed.revision_id != amended.revision_id
         ):
-            raise ScheduleOperationError(
-                "rebuilt trigger bundle does not match the amended schedule"
-            )
-        deployment = deployer.deploy(
-            new_bundle,
-            schedule_id=amended.schedule_id,
-            operation_id=intent.operation_id or uuid.uuid4().hex,
-            title=title,
-            existing_content_guid=binding.content_guid,
-        )
-        if deployment.content_guid != binding.content_guid:
             raise ScheduleOperationUnknown(
-                "Connect update returned a different content ID; reconcile ownership before proceeding"
+                "canonical schedule did not resume at the amended revision"
             )
         pending = replace(
-            binding,
-            revision_id=amended.revision_id,
-            target_url=new_bundle.endpoint_url,
-            bundle_sha256=new_bundle.sha256,
-            schedule_start_time=amended.next_fire_at,
-            status="pending",
-            operation_id=intent.operation_id,
-            pending_operation="amend",
-            pending_target_status="active",
+            intent,
+            revision_id=resumed.revision_id,
+            timer_owner_generation=resumed.timer_owner_generation,
+            schedule_start_time=(
+                resumed.timer_schedule_start_at or resumed.next_fire_at
+            ),
         )
         try:
             self.binding_store.put(pending, expected=intent)
         except Exception:
             raise ScheduleOperationUnknown(
+                "canonical amendment resumed but its timer generation could not be committed; reconcile before retrying"
+            ) from None
+        try:
+            desired = _connect_recurrence(
+                resumed, start_time=pending.schedule_start_time
+            )
+            new_bundle = build_bundle(resumed)
+            if (
+                new_bundle.schedule_id != resumed.schedule_id
+                or new_bundle.schedule_revision_id != resumed.revision_id
+                or new_bundle.timer_owner_generation != resumed.timer_owner_generation
+            ):
+                raise ScheduleOperationError(
+                    "rebuilt trigger bundle does not match the amended schedule"
+                )
+            deployment = deployer.deploy(
+                new_bundle,
+                schedule_id=resumed.schedule_id,
+                operation_id=intent.operation_id or uuid.uuid4().hex,
+                title=title,
+                existing_content_guid=binding.content_guid,
+            )
+            if deployment.content_guid != binding.content_guid:
+                raise ScheduleOperationUnknown(
+                    "Connect update returned a different content ID; reconcile ownership before proceeding"
+                )
+            deployed_pending = replace(
+                pending,
+                target_url=new_bundle.endpoint_url,
+                bundle_sha256=new_bundle.sha256,
+                supports_timer_generation_override=(
+                    new_bundle.supports_timer_generation_override
+                ),
+            )
+        except Exception:
+            self._rollback_amendment(service, context, schedule_id, pending)
+            raise
+        try:
+            self.binding_store.put(deployed_pending, expected=pending)
+        except Exception:
+            self._rollback_amendment(service, context, schedule_id, pending)
+            raise ScheduleOperationUnknown(
                 "canonical amendment was saved but its new binding could not be committed; reconcile before retrying"
             ) from None
+        pending = deployed_pending
         # Replacing a differently typed rule by merge can retain stale fields;
         # remove the old timer before creating the exact desired rule.
         try:
@@ -1375,8 +1556,10 @@ class ConnectScheduleAdapter:
         except Exception:
             self._rollback_amendment(service, context, schedule_id, pending)
             raise
-        resumed = service.resume(context, schedule_id)
         try:
+            self._set_trigger_generation(
+                binding.content_guid, resumed.timer_owner_generation
+            )
             self.gateway.set_trigger_armed(binding.content_guid, True)
         except Exception:
             self._rollback_amendment(service, context, schedule_id, pending)

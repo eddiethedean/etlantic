@@ -1,6 +1,6 @@
 # Installing ETLantic 0.59.0
 
-> **Status: ETLantic 0.59.0 is the published Beta release. The new managed runtime and trigger capabilities remain unqualified for production use.**
+> **Status: ETLantic core 0.60.0 is an unpublished Beta candidate; 0.59.x remains the published support line. Install 0.59.0 from PyPI until the candidate is released.**
 
 ETLantic 0.59.0 targets Python 3.11–3.13 and is available on PyPI at
 [etlantic 0.59.0](https://pypi.org/project/etlantic/0.59.0/).

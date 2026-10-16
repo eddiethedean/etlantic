@@ -23,6 +23,7 @@ from etlantic.control_plane.action_jobs import (
 )
 from etlantic.control_plane.durable_models import (
     ACTION_JOB_SCHEMA,
+    MAX_REMOTE_RUN_ID_LENGTH,
     STATE_NAMESPACES,
     ActionJobRecord,
     ActionJobStatus,
@@ -51,6 +52,8 @@ from etlantic.control_plane.durable_models import (
     StateTransitionExplanation,
     SubmissionRecord,
     execution_context_from_submission,
+    execution_route_backend,
+    execution_route_binding,
     validate_execution_route,
 )
 from etlantic.control_plane.errors import ControlPlaneError
@@ -98,9 +101,11 @@ def _select_remote_run_id(
     if (
         not isinstance(remote_run_id, str)
         or not remote_run_id.strip()
-        or len(remote_run_id) > 256
+        or len(remote_run_id) > MAX_REMOTE_RUN_ID_LENGTH
     ):
-        raise ValueError("remote_run_id must contain 1 to 256 characters")
+        raise ValueError(
+            f"remote_run_id must contain 1 to {MAX_REMOTE_RUN_ID_LENGTH} characters"
+        )
     return remote_run_id
 
 
@@ -117,12 +122,15 @@ _PERSISTED_RECORD_SCHEMAS: dict[str, frozenset[str]] = {
         {
             "etlantic.control_plane.dispatch_reconciliation/1",
             "etlantic.control_plane.dispatch_reconciliation/2",
+            "etlantic.control_plane.dispatch_reconciliation/3",
         }
     ),
     "DispatchRecord": frozenset(
         {
             "etlantic.control_plane.dispatch_record/2",
             "etlantic.control_plane.dispatch_record/3",
+            "etlantic.control_plane.dispatch_record/4",
+            "etlantic.control_plane.dispatch_record/5",
         }
     ),
     "LeaseRecord": frozenset({"etlantic.control_plane.lease_record/1"}),
@@ -202,11 +210,17 @@ _SNAPSHOT_STATE_FIELDS = (
 
 
 def _dispatch_creation_key(
-    key: tuple[str, str, str], binding_fingerprint: str, generation: int
+    key: tuple[str, str, str],
+    binding_fingerprint: str,
+    generation: int,
+    backend_kind: str = "prefect",
 ) -> str:
-    identity = json.dumps(
-        [*key, binding_fingerprint, generation], separators=(",", ":")
-    )
+    # Keep historical Prefect idempotency keys stable. New backend keys carry
+    # their kind so equal opaque fingerprints cannot collide across providers.
+    parts = [*key, binding_fingerprint, generation]
+    if backend_kind != "prefect":
+        parts.insert(-2, backend_kind)
+    identity = json.dumps(parts, separators=(",", ":"))
     return "etlantic-" + hashlib.sha256(identity.encode("utf-8")).hexdigest()
 
 
@@ -413,10 +427,10 @@ class MemoryDurableWorkStore:
     def get_execution_route_state(
         self, ctx: ControlPlaneContext, execution_route: str
     ) -> ExecutionRouteRecord:
-        """Read the store-wide lifecycle of a Prefect execution route."""
+        """Read the store-wide lifecycle of a registered remote execution route."""
         validate_execution_route(execution_route)
-        if not execution_route.startswith("prefect:"):
-            raise ValueError("route lifecycle applies only to Prefect routes")
+        if execution_route == "local":
+            raise ValueError("local execution has no remote route lifecycle")
         with self._lock:
             return deepcopy(
                 self._execution_route_states.get(
@@ -429,8 +443,8 @@ class MemoryDurableWorkStore:
     ) -> ExecutionRouteWorkload:
         """Count store-wide work and evidence that still depends on a route."""
         validate_execution_route(execution_route)
-        if not execution_route.startswith("prefect:"):
-            raise ValueError("route lifecycle applies only to Prefect routes")
+        if execution_route == "local":
+            raise ValueError("local execution has no remote route lifecycle")
         with self._lock:
             return self._execution_route_workload_unlocked(execution_route)
 
@@ -439,8 +453,8 @@ class MemoryDurableWorkStore:
     ) -> dict[str, int]:
         """Count all canonical history and active schedule reservations."""
         validate_execution_route(execution_route)
-        if not execution_route.startswith("prefect:"):
-            raise ValueError("route lifecycle applies only to Prefect routes")
+        if execution_route == "local":
+            raise ValueError("local execution has no remote route lifecycle")
         with self._lock:
             return self._execution_route_reference_counts_unlocked(execution_route)
 
@@ -452,8 +466,8 @@ class MemoryDurableWorkStore:
     ) -> None:
         """Fence schedule admission against route cleanup with a durable hold."""
         validate_execution_route(execution_route)
-        if not execution_route.startswith("prefect:"):
-            raise ValueError("route references apply only to Prefect routes")
+        if execution_route == "local":
+            raise ValueError("local execution cannot have remote route references")
         if not reference_id.strip():
             raise ValueError("reference_id must be a non-empty string")
         with self._lock:
@@ -481,8 +495,8 @@ class MemoryDurableWorkStore:
     ) -> None:
         """Release an existing schedule hold after its record is deleted/moved."""
         validate_execution_route(execution_route)
-        if not execution_route.startswith("prefect:"):
-            raise ValueError("route references apply only to Prefect routes")
+        if execution_route == "local":
+            raise ValueError("local execution cannot have remote route references")
         if not reference_id.strip():
             raise ValueError("reference_id must be a non-empty string")
         with self._lock:
@@ -515,8 +529,8 @@ class MemoryDurableWorkStore:
     ) -> ExecutionRouteRecord:
         """CAS a route lifecycle and refuse retirement while durable work remains."""
         validate_execution_route(execution_route)
-        if not execution_route.startswith("prefect:"):
-            raise ValueError("route lifecycle applies only to Prefect routes")
+        if execution_route == "local":
+            raise ValueError("local execution has no remote route lifecycle")
         if type(expected_revision) is not int or expected_revision < 0:
             raise ValueError("expected_revision must be a non-negative integer")
         if status not in {
@@ -641,7 +655,7 @@ class MemoryDurableWorkStore:
                 if (*key[:2], attempt.submission_id) in keys
             ),
             incomplete_dispatches=sum(
-                dispatch.status not in {"dispatched", "cancelled"}
+                dispatch.status not in {"dispatched", "cancelled", "settled"}
                 for key, dispatch in self._dispatches.items()
                 if key in keys
             ),
@@ -766,8 +780,9 @@ class MemoryDurableWorkStore:
     ) -> list[OutboxRecord]:
         """List bounded accepted work needing remote delivery or recovery."""
         validate_execution_route(execution_route)
-        if not execution_route.startswith("prefect:"):
-            raise ValueError("dispatch polling requires a Prefect execution route")
+        backend_kind = execution_route_backend(execution_route)
+        if backend_kind == "local":
+            raise ValueError("dispatch polling requires a remote execution route")
         if type(limit) is not int or not 1 <= limit <= 1000:
             raise ValueError("limit must be between 1 and 1000")
         now = _now()
@@ -791,15 +806,35 @@ class MemoryDurableWorkStore:
                 ):
                     continue
                 dispatch = self._dispatches.get((*_scope(ctx), row.submission_id))
+                cancellation_recovery = dispatch is not None and (
+                    (
+                        dispatch.status in {"uncertain", "leased"}
+                        and submission.status in {"cancel_requested", "cancelled"}
+                    )
+                    or (
+                        dispatch.backend_kind == "ecs"
+                        and dispatch.status == "reconciliation_required"
+                        and submission.status in {"cancel_requested", "cancelled"}
+                    )
+                )
                 if submission.status in {"cancel_requested", "cancelled"} and not (
-                    dispatch is not None and dispatch.status == "uncertain"
+                    cancellation_recovery
                 ):
                     continue
-                if dispatch is not None and dispatch.status in {
-                    "dispatched",
-                    "cancelled",
-                    "reconciliation_required",
-                }:
+                if (
+                    dispatch is not None
+                    and dispatch.status
+                    in {
+                        "dispatched",
+                        "cancelled",
+                        "reconciliation_required",
+                        "settled",
+                    }
+                    and not (
+                        dispatch.status == "reconciliation_required"
+                        and cancellation_recovery
+                    )
+                ):
                     continue
                 if (
                     dispatch is not None
@@ -829,26 +864,62 @@ class MemoryDurableWorkStore:
     ) -> list[DispatchRecord]:
         """Return a bounded route-scoped page of linked dispatches."""
         validate_execution_route(execution_route)
-        if not execution_route.startswith("prefect:"):
-            raise ValueError("dispatch reconciliation requires a Prefect route")
+        backend_kind = execution_route_backend(execution_route)
+        if backend_kind == "local":
+            raise ValueError("dispatch reconciliation requires a remote route")
         if type(limit) is not int or not 1 <= limit <= 1000:
             raise ValueError("limit must be between 1 and 1000")
         scope = _scope(ctx)
         with self._lock:
+            terminal_outbox_submissions = {
+                row.submission_id
+                for key, row in self._outbox.items()
+                if key[:2] == scope and row.published_at is None
+            }
             rows = [
                 record
                 for key, record in self._dispatches.items()
                 if key[:2] == scope
                 and record.execution_route == execution_route
-                and record.backend_kind == "prefect"
-                and record.status == "dispatched"
-                and record.remote_run_id is not None
+                and record.backend_kind == backend_kind
                 and (
                     after_submission_id is None
                     or record.submission_id > after_submission_id
                 )
                 and (submission := self._submissions.get(key)) is not None
-                and submission.status == "accepted"
+                and (
+                    (
+                        record.status == "dispatched"
+                        and record.remote_run_id is not None
+                        and submission.status in {"accepted", "cancel_requested"}
+                    )
+                    or (
+                        record.backend_kind == "ecs"
+                        and record.status == "cancelled"
+                        and record.remote_run_id is not None
+                        and submission.status == "cancel_requested"
+                    )
+                    or (
+                        record.backend_kind == "ecs"
+                        and record.status in {"dispatched", "cancelled"}
+                        and record.remote_run_id is not None
+                        and submission.status in {"completed", "failed", "cancelled"}
+                        and record.submission_id in terminal_outbox_submissions
+                    )
+                    or (
+                        record.backend_kind == "ecs"
+                        and record.remote_run_id is None
+                        and record.status
+                        in {"uncertain", "leased", "reconciliation_required"}
+                        and submission.status
+                        in {
+                            "completed",
+                            "failed",
+                            "cancel_requested",
+                            "cancelled",
+                        }
+                    )
+                )
             ]
             rows.sort(key=lambda item: item.submission_id)
             return deepcopy(rows[:limit])
@@ -863,13 +934,14 @@ class MemoryDurableWorkStore:
             if submission is None:
                 raise ControlPlaneError.not_found("Submission not found")
             route = validate_execution_route(submission.execution_route)
-            if not route.startswith("prefect:"):
+            backend_kind = execution_route_backend(route)
+            if backend_kind == "local":
                 raise ControlPlaneError.conflict(
-                    "Submission is not assigned to a Prefect execution route"
+                    "Submission is not assigned to a remote execution route"
                 )
             if not submission.input_snapshot:
                 raise ControlPlaneError.conflict(
-                    "Prefect dispatch requires an immutable execution envelope"
+                    "Remote dispatch requires an immutable execution envelope"
                 )
             from etlantic.control_plane.execution_envelope import ExecutionEnvelope
             from etlantic.plan.model import PLAN_SCHEMA
@@ -880,15 +952,18 @@ class MemoryDurableWorkStore:
                 or envelope.plan_document.get("schema") != PLAN_SCHEMA
             ):
                 raise ControlPlaneError.conflict(
-                    "Submission envelope is unsupported for managed Prefect dispatch"
+                    "Submission envelope is unsupported for managed dispatch"
                 )
-            binding = route.removeprefix("prefect:")
+            binding = execution_route_binding(route)
+            assert binding is not None
             digest = hashlib.sha256(
                 submission.input_snapshot.encode("utf-8")
             ).hexdigest()
             existing = self._dispatches.get(key)
             generation = existing.generation if existing is not None else 1
-            creation_key = _dispatch_creation_key(key, binding, generation)
+            creation_key = _dispatch_creation_key(
+                key, binding, generation, backend_kind
+            )
             if existing is not None:
                 if (
                     existing.execution_route != route
@@ -922,7 +997,7 @@ class MemoryDurableWorkStore:
                 created_at=now,
                 updated_at=now,
                 status=status,
-                backend_kind="prefect",
+                backend_kind=backend_kind,
             )
             self._dispatches[key] = record
             return deepcopy(record)
@@ -956,21 +1031,23 @@ class MemoryDurableWorkStore:
             submission = self._submissions.get(key)
             if record is None or submission is None:
                 raise ControlPlaneError.not_found("Dispatch candidate not found")
-            if record.status in {
-                "dispatched",
-                "cancelled",
-                "reconciliation_required",
-            }:
+            cancellation_recovery = (
+                record.status in {"uncertain", "leased"}
+                and submission.status in {"cancel_requested", "cancelled"}
+            ) or (
+                record.backend_kind == "ecs"
+                and record.status == "reconciliation_required"
+                and submission.status in {"cancel_requested", "cancelled"}
+            )
+            if record.status in {"dispatched", "cancelled", "settled"} or (
+                record.status == "reconciliation_required" and not cancellation_recovery
+            ):
                 return None
             if (
                 record.retry_after_at is not None
                 and _parse(record.retry_after_at) > current
             ):
                 return None
-            cancelled_uncertain = (
-                record.status == "uncertain"
-                and submission.status in {"cancel_requested", "cancelled"}
-            )
             if (
                 submission.status
                 in {
@@ -979,7 +1056,7 @@ class MemoryDurableWorkStore:
                     "completed",
                     "failed",
                 }
-                and not cancelled_uncertain
+                and not cancellation_recovery
             ):
                 return None
             if (
@@ -991,6 +1068,10 @@ class MemoryDurableWorkStore:
             claimed = replace(
                 record,
                 status="leased",
+                creation_started_at=(
+                    record.creation_started_at
+                    or (_iso(current) if record.backend_kind == "ecs" else None)
+                ),
                 dispatch_attempts=record.dispatch_attempts + 1,
                 lease_owner_id=owner_id,
                 lease_fencing_token=record.lease_fencing_token + 1,
@@ -1011,6 +1092,11 @@ class MemoryDurableWorkStore:
         prefect_flow_run_id: str | None = None,
         now: datetime | None = None,
     ) -> DispatchRecord:
+        if prefect_flow_run_id is not None:
+            with self._lock:
+                candidate = self._dispatches.get((*_scope(ctx), submission_id))
+            if candidate is not None and candidate.backend_kind != "prefect":
+                raise ValueError("Prefect run ID alias is only valid for Prefect")
         selected_remote_run_id = _select_remote_run_id(
             remote_run_id, prefect_flow_run_id
         )
@@ -1039,7 +1125,9 @@ class MemoryDurableWorkStore:
                 record,
                 status="dispatched",
                 remote_run_id=selected_remote_run_id,
-                prefect_flow_run_id=selected_remote_run_id,
+                prefect_flow_run_id=(
+                    selected_remote_run_id if record.backend_kind == "prefect" else None
+                ),
                 lease_owner_id=None,
                 lease_expires_at=None,
                 retry_after_at=None,
@@ -1112,6 +1200,117 @@ class MemoryDurableWorkStore:
             self._dispatches[key] = released
             return deepcopy(released)
 
+    def quarantine_expired_ecs_dispatch(
+        self,
+        ctx: ControlPlaneContext,
+        submission_id: str,
+        *,
+        expected_generation: int,
+        expected_creation_started_at: str | None,
+        safe_retry_deadline: datetime,
+        owner_id: str | None = None,
+        fencing_token: int | None = None,
+        now: datetime | None = None,
+    ) -> DispatchRecord:
+        """Stop automatic ECS retries after the idempotency safety window."""
+        if (owner_id is None) != (fencing_token is None):
+            raise ValueError("owner_id and fencing_token must be supplied together")
+        current = now or _now()
+        key = (*_scope(ctx), submission_id)
+        with self._lock:
+            record = self._dispatches.get(key)
+            submission = self._submissions.get(key)
+            if record is None or submission is None:
+                raise ControlPlaneError.not_found("Dispatch record not found")
+            if (
+                record.backend_kind != "ecs"
+                or record.generation != expected_generation
+                or record.creation_started_at != expected_creation_started_at
+                or record.status not in {"uncertain", "leased"}
+                or record.remote_run_id is not None
+                or submission.status != "accepted"
+            ):
+                raise ControlPlaneError.conflict(
+                    "ECS dispatch changed before its retry window expired"
+                )
+            if owner_id is not None and (
+                record.status != "leased"
+                or record.lease_owner_id != owner_id
+                or record.lease_fencing_token != fencing_token
+            ):
+                raise ControlPlaneError.conflict("ECS dispatch lease was lost")
+            if (
+                record.lease_expires_at is not None
+                and _parse(record.lease_expires_at) > current
+                and owner_id is None
+            ):
+                raise ControlPlaneError.conflict("ECS dispatch lease is still active")
+            if current < safe_retry_deadline:
+                raise ControlPlaneError.conflict(
+                    "ECS dispatch retry window has not expired"
+                )
+            quarantined = replace(
+                record,
+                status="reconciliation_required",
+                lease_owner_id=None,
+                lease_expires_at=None,
+                retry_after_at=None,
+                last_error_code="ecs_token_window_expired",
+                updated_at=_iso(current),
+            )
+            self._dispatches[key] = quarantined
+            return deepcopy(quarantined)
+
+    def confirm_dispatch_cancelled(
+        self,
+        ctx: ControlPlaneContext,
+        submission_id: str,
+        *,
+        expected_generation: int,
+        expected_remote_run_id: str,
+        now: datetime | None = None,
+    ) -> DispatchRecord:
+        """Mark a linked remote task cancelled after its stopped state is observed."""
+        current = now or _now()
+        key = (*_scope(ctx), submission_id)
+        with self._lock:
+            record = self._dispatches.get(key)
+            submission = self._submissions.get(key)
+            if record is None or submission is None:
+                raise ControlPlaneError.not_found("Dispatch record not found")
+            if (
+                record.status != "dispatched"
+                or record.generation != expected_generation
+                or record.remote_run_id != expected_remote_run_id
+                or submission.status not in {"cancel_requested", "cancelled"}
+            ):
+                raise ControlPlaneError.conflict(
+                    "Dispatch changed before remote cancellation was confirmed"
+                )
+            execution_lease = self._leases.get(key)
+            if (
+                execution_lease is not None
+                and _parse(execution_lease.expires_at) > current
+            ):
+                # Keep cancellation discoverable until the stopped task's
+                # worker lease expires and canonical cleanup can release quota.
+                waiting = replace(
+                    record,
+                    last_error_code="ecs_cancel_waiting_for_execution_lease",
+                    updated_at=_iso(current),
+                )
+                self._dispatches[key] = waiting
+                return deepcopy(waiting)
+            cancelled = replace(
+                record,
+                status="cancelled",
+                retry_after_at=None,
+                last_error_code="remote_task_stopped_after_cancel",
+                updated_at=_iso(current),
+            )
+            self._dispatches[key] = cancelled
+            return deepcopy(cancelled)
+
     def rearm_dispatch_after_remote_failure(
         self,
         ctx: ControlPlaneContext,
@@ -1133,6 +1332,139 @@ class MemoryDurableWorkStore:
             reason_code="remote_failed_before_claim",
             now=now,
         )
+
+    def rearm_ecs_dispatch_after_remote_stop(
+        self,
+        ctx: ControlPlaneContext,
+        submission_id: str,
+        *,
+        expected_generation: int,
+        expected_remote_run_id: str,
+        now: datetime | None = None,
+    ) -> DispatchRecord | None:
+        """Launch a recovery worker only after its prior ECS task is STOPPED.
+
+        Existing attempts are retained. The next managed execution host sees
+        that history and must recover its durable report or fail closed on an
+        unknown effect before it can run the pipeline again.
+        """
+        if type(expected_generation) is not int or expected_generation < 1:
+            raise ValueError("expected_generation must be a positive integer")
+        selected_remote_run_id = cast(
+            str, _select_remote_run_id(expected_remote_run_id, None)
+        )
+        current = now or _now()
+        key = (*_scope(ctx), submission_id)
+        with self._lock:
+            record = self._dispatches.get(key)
+            submission = self._submissions.get(key)
+            if (
+                record is None
+                or submission is None
+                or record.backend_kind != "ecs"
+                or record.status != "dispatched"
+                or record.generation != expected_generation
+                or record.remote_run_id != selected_remote_run_id
+                or submission.status != "accepted"
+            ):
+                return None
+            lease = self._leases.get(key)
+            if lease is not None and _parse(lease.expires_at) > current:
+                return None
+            attempts = [
+                attempt
+                for attempt in self._attempts.values()
+                if attempt.submission_id == submission_id
+                and (attempt.tenant_id, attempt.workspace_id) == _scope(ctx)
+            ]
+            if not attempts and any(
+                row.submission_id == submission_id
+                and (row.tenant_id, row.workspace_id) == _scope(ctx)
+                for row in (
+                    *self._effects.values(),
+                    *self._result_publications.values(),
+                )
+            ):
+                return None
+            return self._rearm_dispatch_if_unclaimed(
+                ctx,
+                submission_id,
+                expected_remote_run_id=selected_remote_run_id,
+                reason_code=(
+                    "ecs_task_stopped_after_claim"
+                    if attempts
+                    else "remote_failed_before_claim"
+                ),
+                now=current,
+                allow_canonical_recovery=bool(attempts),
+            )
+
+    def settle_terminal_ecs_dispatch(
+        self,
+        ctx: ControlPlaneContext,
+        submission_id: str,
+        *,
+        expected_generation: int,
+        now: datetime | None = None,
+    ) -> DispatchRecord | None:
+        """Resolve an unlinked ECS create after canonical execution is terminal."""
+        if type(expected_generation) is not int or expected_generation < 1:
+            raise ValueError("expected_generation must be a positive integer")
+        current = now or _now()
+        key = (*_scope(ctx), submission_id)
+        with self._lock:
+            record = self._dispatches.get(key)
+            submission = self._submissions.get(key)
+            if (
+                record is None
+                or submission is None
+                or record.backend_kind != "ecs"
+                or record.status
+                not in {"uncertain", "leased", "reconciliation_required"}
+                or record.remote_run_id is not None
+                or record.generation != expected_generation
+                or submission.status not in {"completed", "failed", "cancelled"}
+            ):
+                return None
+            dispatch_lease_active = (
+                record.lease_expires_at is not None
+                and _parse(record.lease_expires_at) > current
+            )
+            execution_lease = self._leases.get(key)
+            execution_lease_active = (
+                execution_lease is not None
+                and _parse(execution_lease.expires_at) > current
+            )
+            if dispatch_lease_active or execution_lease_active:
+                return None
+            attempts = [
+                attempt
+                for attempt in self._attempts.values()
+                if attempt.submission_id == submission_id
+                and (attempt.tenant_id, attempt.workspace_id) == _scope(ctx)
+            ]
+            if not attempts or any(attempt.status == "running" for attempt in attempts):
+                return None
+            if any(
+                row.submission_id == submission_id
+                and key[:2] == _scope(ctx)
+                and row.published_at is None
+                for key, row in self._outbox.items()
+            ):
+                # Keep this dispatch visible until the canonical worker path
+                # releases terminal quota and acknowledges its outbox row.
+                return None
+            settled = replace(
+                record,
+                status="settled",
+                lease_owner_id=None,
+                lease_expires_at=None,
+                retry_after_at=None,
+                last_error_code="ecs_terminal_execution_recovered",
+                updated_at=_iso(current),
+            )
+            self._dispatches[key] = settled
+            return deepcopy(settled)
 
     def rearm_dispatch_after_remote_missing(
         self,
@@ -1172,8 +1504,9 @@ class MemoryDurableWorkStore:
         reason_code: str,
         minimum_age_seconds: int = 0,
         now: datetime | None = None,
+        allow_canonical_recovery: bool = False,
     ) -> DispatchRecord | None:
-        """Create a bounded generation only while no ETL effect could exist."""
+        """Create a bounded generation only when its recovery path is safe."""
         expected_remote_run_id = cast(
             str,
             _select_remote_run_id(expected_remote_run_id, None),
@@ -1185,6 +1518,24 @@ class MemoryDurableWorkStore:
             record = self._dispatches.get(key)
             submission = self._submissions.get(key)
             lease = self._leases.get(key)
+            attempts = [
+                attempt
+                for attempt in self._attempts.values()
+                if attempt.submission_id == submission_id
+                and (attempt.tenant_id, attempt.workspace_id) == _scope(ctx)
+            ]
+            effects = [
+                effect
+                for effect in self._effects.values()
+                if effect.submission_id == submission_id
+                and (effect.tenant_id, effect.workspace_id) == _scope(ctx)
+            ]
+            publications = [
+                publication
+                for publication in self._result_publications.values()
+                if publication.submission_id == submission_id
+                and (publication.tenant_id, publication.workspace_id) == _scope(ctx)
+            ]
             if (
                 record is None
                 or submission is None
@@ -1197,20 +1548,14 @@ class MemoryDurableWorkStore:
                     > current - timedelta(seconds=minimum_age_seconds)
                 )
                 or (lease is not None and _parse(lease.expires_at) > wall_now)
-                or any(
-                    attempt.submission_id == submission_id
-                    and (attempt.tenant_id, attempt.workspace_id) == _scope(ctx)
-                    for attempt in self._attempts.values()
+                or (
+                    not allow_canonical_recovery
+                    and (attempts or effects or publications)
                 )
-                or any(
-                    effect.submission_id == submission_id
-                    and (effect.tenant_id, effect.workspace_id) == _scope(ctx)
-                    for effect in self._effects.values()
-                )
-                or any(
-                    publication.submission_id == submission_id
-                    and (publication.tenant_id, publication.workspace_id) == _scope(ctx)
-                    for publication in self._result_publications.values()
+                or (
+                    allow_canonical_recovery
+                    and not attempts
+                    and (effects or publications)
                 )
             ):
                 return None
@@ -1229,9 +1574,13 @@ class MemoryDurableWorkStore:
                 record,
                 generation=generation,
                 creation_key=_dispatch_creation_key(
-                    key, record.binding_fingerprint, generation
+                    key,
+                    record.binding_fingerprint,
+                    generation,
+                    record.backend_kind,
                 ),
                 status="pending",
+                creation_started_at=None,
                 prefect_flow_run_id=None,
                 remote_run_id=None,
                 retry_after_at=None,
@@ -1252,13 +1601,16 @@ class MemoryDurableWorkStore:
         evidence_sha256: str,
         now: datetime | None = None,
     ) -> DispatchRecord:
-        """Record explicit operator approval for one exhausted pre-claim retry."""
+        """Record operator approval for one exhausted retry or ECS recovery."""
         if type(expected_generation) is not int or expected_generation < 1:
             raise ValueError("expected_generation must be a positive integer")
-        selected_remote_run_id = _select_remote_run_id(
-            expected_remote_run_id, expected_flow_run_id
-        )
-        assert selected_remote_run_id is not None
+        if (
+            expected_remote_run_id is not None
+            and expected_flow_run_id is not None
+            and expected_remote_run_id != expected_flow_run_id
+        ):
+            raise ValueError("remote run identity inputs do not match")
+        selected_remote_run_id = expected_remote_run_id or expected_flow_run_id
         if len(evidence_sha256) != 64 or any(
             char not in "0123456789abcdef" for char in evidence_sha256
         ):
@@ -1274,6 +1626,12 @@ class MemoryDurableWorkStore:
                 record.status != "reconciliation_required"
                 or record.generation != expected_generation
                 or record.remote_run_id != selected_remote_run_id
+                or (
+                    selected_remote_run_id is None
+                    and (
+                        record.backend_kind != "ecs" or record.remote_run_id is not None
+                    )
+                )
                 or submission.status != "accepted"
             ):
                 raise ControlPlaneError.conflict(
@@ -1294,32 +1652,38 @@ class MemoryDurableWorkStore:
                     "Dispatch cannot be reconciled while an execution lease is active",
                     extensions={"reason": "execution_lease_active"},
                 )
-            if (
-                any(
-                    attempt.submission_id == submission_id
-                    and (attempt.tenant_id, attempt.workspace_id) == _scope(ctx)
-                    for attempt in self._attempts.values()
-                )
-                or any(
-                    effect.submission_id == submission_id
-                    and (effect.tenant_id, effect.workspace_id) == _scope(ctx)
-                    for effect in self._effects.values()
-                )
-                or any(
-                    publication.submission_id == submission_id
-                    and (publication.tenant_id, publication.workspace_id) == _scope(ctx)
-                    for publication in self._result_publications.values()
-                )
-            ):
+            attempts = [
+                attempt
+                for attempt in self._attempts.values()
+                if attempt.submission_id == submission_id
+                and (attempt.tenant_id, attempt.workspace_id) == _scope(ctx)
+            ]
+            effects = [
+                effect
+                for effect in self._effects.values()
+                if effect.submission_id == submission_id
+                and (effect.tenant_id, effect.workspace_id) == _scope(ctx)
+            ]
+            publications = [
+                publication
+                for publication in self._result_publications.values()
+                if publication.submission_id == submission_id
+                and (publication.tenant_id, publication.workspace_id) == _scope(ctx)
+            ]
+            canonical_execution_started = bool(attempts or effects or publications)
+            recoverable_ecs_attempt = record.backend_kind == "ecs" and bool(attempts)
+            if canonical_execution_started and not recoverable_ecs_attempt:
                 raise ControlPlaneError.conflict(
-                    "Dispatch cannot be reconciled after canonical execution began",
+                    "Dispatch cannot be reconciled after canonical execution began without a recoverable ECS attempt",
                     extensions={"reason": "canonical_execution_started"},
                 )
             generation = record.generation + 1
             audit = DispatchReconciliation(
                 from_generation=record.generation,
                 to_generation=generation,
-                prefect_flow_run_id=selected_remote_run_id,
+                prefect_flow_run_id=(
+                    selected_remote_run_id if record.backend_kind == "prefect" else None
+                ),
                 backend_kind=record.backend_kind,
                 remote_run_id=selected_remote_run_id,
                 authorized_at=_iso(current),
@@ -1331,9 +1695,13 @@ class MemoryDurableWorkStore:
                 record,
                 generation=generation,
                 creation_key=_dispatch_creation_key(
-                    key, record.binding_fingerprint, generation
+                    key,
+                    record.binding_fingerprint,
+                    generation,
+                    record.backend_kind,
                 ),
                 status="pending",
+                creation_started_at=None,
                 prefect_flow_run_id=None,
                 remote_run_id=None,
                 retry_after_at=None,
@@ -1420,9 +1788,19 @@ class MemoryDurableWorkStore:
                     and dispatch.status == "uncertain"
                     and dispatch.prefect_flow_run_id is None
                 ):
-                    # A remote create may have succeeded even though its
-                    # response was lost. Keep the canonical cancellation
-                    # discoverable until the dispatcher resolves that identity.
+                    # Preserve Prefect response-loss recovery while its remote
+                    # flow-run identity is unresolved.
+                    continue
+                if (
+                    dispatch is not None
+                    and dispatch.backend_kind == "ecs"
+                    and dispatch.status
+                    in {"uncertain", "leased", "reconciliation_required", "dispatched"}
+                ):
+                    # An ECS create may have succeeded before the identity was
+                    # durably linked. Keep cancellation discoverable until the
+                    # dispatcher finds and stops that task, or proves no task
+                    # exists after the client-token safety window.
                     continue
                 had_running_attempt = False
                 for attempt_key, attempt in tuple(self._attempts.items()):

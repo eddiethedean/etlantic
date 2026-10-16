@@ -1,6 +1,6 @@
 # Command-Line Interface
 
-> **Status: ETLantic 0.59.0 is the published Beta release.** This page
+> **Status: ETLantic core 0.60.0 is a Beta candidate; 0.59.x remains the published support line.** This page
 > documents the commands implemented by the installed package.
 
 ```bash

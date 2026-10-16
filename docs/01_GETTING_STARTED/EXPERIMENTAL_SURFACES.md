@@ -1,6 +1,6 @@
 # Experimental surfaces (0.50)
 
-> **Status: ETLantic 0.59.0 is the published Beta release.** This page maps
+> **Status: ETLantic core 0.60.0 is a Beta candidate; 0.59.x remains the published support line.** This page maps
 > Experimental APIs.
 > These are **not** part of the Beta Supported claim. Prefer Available paths on
 > [Capabilities](CAPABILITIES.md).

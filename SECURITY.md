@@ -1,9 +1,9 @@
 # Security Policy
 
-> **Version boundary:** ETLantic core 0.59.0 is the current published Beta release; the independent `etlantic-rsconnect` 0.60.0 preview is published, with live Connect and production qualification deferred.
+> **Version boundary:** ETLantic core 0.60.0 is an unpublished Beta candidate; 0.59.x remains the published support line. The independent `etlantic-rsconnect` 0.60.0 preview is published, with live Connect and production qualification deferred.
 
 
-ETLantic 0.59.0 is the current **published core Beta release**, and 0.59.x is the
+ETLantic core 0.60.0 is a **Beta candidate**; 0.59.x remains the published and
 supported line for documented single-tenant pilots. The independent
 `etlantic-rsconnect` 0.60.0 preview is distributed separately and is not a
 production support claim. Core managed runtime and trigger capabilities remain
@@ -19,6 +19,7 @@ and PySpark plugins, documentation, or repository automation are welcome.
 
 | Version | Support |
 |---|---|
+| 0.60.x | Candidate Beta line; not yet published |
 | 0.59.x | Current published and supported Beta line |
 | 0.57.x | Previous release line; not actively maintained |
 | 0.56.x | Previous release line; not actively maintained |
@@ -28,7 +29,8 @@ and PySpark plugins, documentation, or repository automation are welcome.
 | 0.49.x and earlier | Not actively maintained; upgrade to the current line |
 
 Backports to older minor lines are not provided. Upgrade to the latest 0.59.x
-patch before reporting an issue.
+patch before reporting an issue. Candidate 0.60.x packages are not yet available
+from PyPI.
 
 ## Reporting a Vulnerability
 

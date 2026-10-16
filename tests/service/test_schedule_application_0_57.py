@@ -37,6 +37,17 @@ def _context() -> ControlPlaneContext:
     )
 
 
+def test_interval_skip_preserves_the_external_rate_grid() -> None:
+    spec = ScheduleSpec(kind="interval", interval_seconds=60, misfire="skip")
+    next_cursor = next_fire_after(
+        spec,
+        after=datetime(2026, 10, 8, 12, 2, 5, tzinfo=UTC),
+        last_nominal=datetime(2026, 10, 8, 12, 0, tzinfo=UTC),
+    )
+
+    assert next_cursor == datetime(2026, 10, 8, 12, 3, tzinfo=UTC)
+
+
 def test_headless_schedule_service_authorizes_and_operates_on_canonical_models() -> (
     None
 ):
@@ -59,6 +70,127 @@ def test_headless_schedule_service_authorizes_and_operates_on_canonical_models()
     assert created.definition_id == "pipeline-a"
     assert service.get(ctx, created.schedule_id) == created
     assert service.list_definition(ctx, "pipeline-a") == (created,)
+
+
+def test_external_resume_reanchors_and_fences_old_scheduler_events() -> None:
+    ctx = _context()
+    authorizer = MemoryAuthorizer()
+    authorizer.grant(ctx, "schedule.write")
+    store = MemoryScheduleStore()
+    workload = Principal(subject="timer", issuer="tests", kind="workload")
+    anchor = "2026-10-08T10:00:00Z"
+    record = store.create(
+        ctx,
+        definition_id="pipeline-a",
+        profile_name="test",
+        spec=ScheduleSpec(kind="interval", interval_seconds=60),
+        workload_identity=workload,
+        timer_owner="external",
+        next_fire_at="2026-10-08T10:01:00Z",
+        timer_schedule_start_at=anchor,
+    )
+    store.pause(ctx, record.schedule_id)
+    service = ScheduleApplicationService(
+        authorizer=authorizer,
+        schedule_store=store,
+        clock=lambda: datetime(2026, 10, 8, 12, 0, 0, 900000, tzinfo=UTC),
+    )
+
+    resumed = service.resume(ctx, record.schedule_id)
+
+    assert resumed.status == "active"
+    assert resumed.timer_owner_generation == record.timer_owner_generation + 1
+    assert resumed.timer_schedule_start_at == "2026-10-08T12:00:00Z"
+    assert resumed.next_fire_at == "2026-10-08T12:01:00Z"
+
+
+def test_external_resume_waits_for_unlinked_occurrence_preparation() -> None:
+    owner_ctx = _context()
+    workload = Principal(subject="timer", issuer="tests", kind="workload")
+    trigger_ctx = replace(owner_ctx, principal=workload)
+    authorizer = MemoryAuthorizer()
+    authorizer.grant(owner_ctx, "schedule.write")
+    for action in ("schedule.trigger", "run.submit"):
+        authorizer.grant(trigger_ctx, action)
+    store = MemoryScheduleStore()
+    nominal = "2026-10-08T12:00:00Z"
+    record = store.create(
+        owner_ctx,
+        definition_id="pipeline-a",
+        profile_name="test",
+        spec=ScheduleSpec(kind="interval", interval_seconds=60),
+        workload_identity=workload,
+        timer_owner="external",
+        next_fire_at=nominal,
+    )
+
+    class IntermittentManagedService:
+        preparation_calls = 0
+
+        def recover_scheduled_occurrence(
+            self, *_args: object, **_kwargs: object
+        ) -> None:
+            return None
+
+        def prepare_scheduled_occurrence(
+            self, *_args: object, **_kwargs: object
+        ) -> Any:
+            self.preparation_calls += 1
+            if self.preparation_calls == 1:
+                raise ControlPlaneError(
+                    "temporary preparation outage", code="PMCP503", status=503
+                )
+            raise ControlPlaneError(
+                "invalid scheduled parameters", code="PMCP422", status=422
+            )
+
+        def submit_scheduled_run(self, *_args: object, **_kwargs: object) -> Any:
+            raise AssertionError("failed preparation must not submit a run")
+
+    managed = IntermittentManagedService()
+    now = datetime(2026, 10, 8, 12, 0, tzinfo=UTC)
+    service = ScheduleApplicationService(
+        authorizer=authorizer,
+        schedule_store=store,
+        managed_service=managed,
+        durable_work=object(),
+        clock=lambda: now,
+    )
+    envelope = TriggerEnvelope(
+        schedule_id=record.schedule_id,
+        schedule_revision_id=record.revision_id,
+        timer_owner_generation=record.timer_owner_generation,
+        occurrence_id=external_occurrence_id(
+            record.schedule_id, record.revision_id, nominal
+        ),
+        scheduled_at=nominal,
+        delivery_attempt_id="attempt-resume-pending",
+        correlation_id="corr-resume-pending",
+    )
+
+    with pytest.raises(ControlPlaneError) as outage:
+        service.trigger_external(trigger_ctx, envelope)
+    assert outage.value.status == 503
+    store.pause(owner_ctx, record.schedule_id)
+
+    with pytest.raises(ControlPlaneError) as blocked_resume:
+        service.resume(owner_ctx, record.schedule_id)
+    assert blocked_resume.value.status == 409
+    assert blocked_resume.value.extensions["reason"] == (
+        "occurrence_preparation_pending"
+    )
+
+    with pytest.raises(ControlPlaneError) as retry:
+        service.trigger_external(trigger_ctx, envelope)
+    assert retry.value.status == 422
+    firing = store.list_firings(owner_ctx, record.schedule_id)[0]
+    assert firing.status == "failed_preparation"
+    assert firing.submission_id is None
+    assert managed.preparation_calls == 2
+
+    resumed = service.resume(owner_ctx, record.schedule_id)
+    assert resumed.status == "active"
+    assert resumed.timer_owner_generation == record.timer_owner_generation + 1
 
 
 def test_schedule_service_denies_before_reading_or_mutating_store() -> None:

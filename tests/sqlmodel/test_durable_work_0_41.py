@@ -4,9 +4,10 @@
 from __future__ import annotations
 
 import json
+from collections.abc import Callable
 from pathlib import Path
 from time import sleep
-from typing import Any
+from typing import Any, cast
 
 import pytest
 
@@ -15,11 +16,13 @@ pytest.importorskip("sqlmodel")
 pytest.importorskip("etlantic_sqlmodel")
 
 from sqlalchemy import event
+from sqlalchemy.exc import OperationalError
 
 from etlantic.control_plane import (
     ControlPlaneContext,
     ControlPlaneError,
     EnvironmentRef,
+    MemoryDurableWorkStore,
     Principal,
     SecurityDomain,
     TenantRef,
@@ -315,6 +318,48 @@ def test_snapshot_version_conflict_under_concurrent_hosts(tmp_path: Path) -> Non
         mem, _ = host1._read(session, for_update=True)
         with pytest.raises(ControlPlaneError, match="version conflict"):
             host1._write(session, mem, expected_version=stale_version)
+
+
+def test_durable_mutation_retries_transient_snapshot_write_failures(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    engine = create_sqlite_engine(f"sqlite:///{tmp_path / 'retry.db'}")
+    apply_migrations(engine)
+    store = SQLModelDurableWorkStore(engine)
+    write_method_name = "_write"
+    original_write = cast(Callable[..., None], getattr(store, write_method_name))
+    write_calls = 0
+    transient_failures: list[Exception] = [
+        ControlPlaneError.conflict("Durable snapshot version conflict (stale write)"),
+        OperationalError(
+            "UPDATE cp_durable_snapshot",
+            {},
+            OSError("database is locked"),
+        ),
+    ]
+
+    def conflict_once(
+        session: Session,
+        memory: MemoryDurableWorkStore,
+        *,
+        expected_version: int,
+    ) -> None:
+        nonlocal write_calls
+        write_calls += 1
+        if write_calls <= len(transient_failures):
+            raise transient_failures[write_calls - 1]
+        original_write(session, memory, expected_version=expected_version)
+
+    monkeypatch.setattr(store, "_write", conflict_once)
+    submission, _created = store.accept(
+        _ctx(),
+        idempotency_key="retry-stale-snapshot",
+        operation="run.submit",
+        plan_fingerprint="plan",
+    )
+
+    assert write_calls == 3
+    assert store.get_submission(_ctx(), submission.submission_id) == submission
 
 
 def test_read_only_durable_ops_do_not_bump_payload_version(tmp_path: Path) -> None:

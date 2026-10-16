@@ -2,7 +2,7 @@
 title: Migration from 0.57 to 0.58
 status: candidate
 since: "0.58.0"
-current_minor: "0.59"
+current_minor: "0.60"
 ---
 
 # Migration from 0.57 to 0.58

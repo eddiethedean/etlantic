@@ -36,6 +36,7 @@ from etlantic.control_plane.authz import (
 )
 from etlantic.control_plane.durable_models import (
     EXECUTION_ROUTE_LIFECYCLE_SCHEMA,
+    MAX_REMOTE_RUN_ID_LENGTH,
     ActionJobRecord,
     DispatchRecord,
     ExecutionRouteLifecycle,
@@ -658,7 +659,7 @@ class ManagedApplicationService:
         expected_flow_run_id: str | None = None,
         evidence: str,
     ) -> dict[str, Any]:
-        """Authorize one explicit retry before canonical execution begins."""
+        """Authorize a reconciled retry or recovery for one exhausted dispatch."""
         validate_control_plane_context(ctx)
         if expected_remote_run_id is None:
             expected_remote_run_id = expected_flow_run_id
@@ -667,10 +668,11 @@ class ManagedApplicationService:
             and expected_flow_run_id != expected_remote_run_id
         ):
             raise ValueError("remote run identity inputs do not match")
-        if (
-            not isinstance(expected_remote_run_id, str)
-            or not expected_remote_run_id.strip()
-            or len(expected_remote_run_id) > 256
+        remote_run_id_value: object = cast(object, expected_remote_run_id)
+        if remote_run_id_value is not None and (
+            not isinstance(remote_run_id_value, str)
+            or not remote_run_id_value.strip()
+            or len(remote_run_id_value) > MAX_REMOTE_RUN_ID_LENGTH
         ):
             raise ValueError("expected_remote_run_id must be a bounded identifier")
         if not submission_id.strip() or len(submission_id) > 256:
@@ -701,12 +703,13 @@ class ManagedApplicationService:
             "from_generation": expected_generation,
             "to_generation": dispatch.generation,
             "remote_run_id": expected_remote_run_id,
-            "prefect_flow_run_id": expected_remote_run_id,
             "evidence_sha256": evidence_sha256,
             "principal_subject": ctx.principal.subject,
             "principal_issuer": ctx.principal.issuer,
             "occurred_at": dispatch.updated_at,
         }
+        if dispatch.backend_kind == "prefect":
+            payload["prefect_flow_run_id"] = expected_remote_run_id
         if self.events is not None:
             append_once = getattr(self.events, "append_once", None)
             if callable(append_once):

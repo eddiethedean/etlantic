@@ -51,8 +51,8 @@ python -m etlantic validate pipeline.py:SamplePipeline --profile development
 python -m etlantic run pipeline.py:SamplePipeline --profile development
 ```
 
-ETLantic 0.59.0 is the current published Beta release, and 0.59.x is the
-supported core line. The independent
+ETLantic core 0.60.0 is an unpublished Beta candidate; 0.59.x remains the
+published and supported core line. The independent
 [`etlantic-rsconnect` 0.60.0 preview](https://pypi.org/project/etlantic-rsconnect/0.60.0/)
 is published for Posit Connect integration; live activation and production
 qualification remain deferred. The run should succeed and write Ada and Grace to
@@ -108,7 +108,7 @@ The public CLI (see the
 Core has no dataframe, database, Spark, or orchestrator dependency. Install
 only the integrations a pipeline needs:
 
-| Capability | 0.59 |
+| Capability | 0.60 |
 |---|---|
 | Local Python + JSON/CSV | `etlantic` |
 | Polars or Pandas | `etlantic[polars]` or `etlantic[pandas]` |

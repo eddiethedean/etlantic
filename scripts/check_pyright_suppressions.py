@@ -58,7 +58,7 @@ from pathlib import Path
 # were added or removed. Re-pin the 789-entry inventory after source shifts.
 # Prefect test isolation shifts an existing inline ignore; no directives were
 # added or removed. Inline ignore locations are now part of the inventory, so
-# re-pin the unchanged 789-entry 0.59.0 baseline after source shifts.
+# re-pin the unchanged 789-entry 0.60.0 baseline after source shifts.
 # Phase 0.58 adds six reviewed boundaries: Prefect's dynamic scheduler surface,
 # typed fixtures for the managed contract suite, and test-only backend method
 # injection plus structural dispatcher doubles. A newly added async-result

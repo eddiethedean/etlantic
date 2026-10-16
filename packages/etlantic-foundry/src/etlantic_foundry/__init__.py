@@ -25,7 +25,7 @@ if TYPE_CHECKING:
         create_storage as create_storage,
     )
 
-__version__ = "0.59.0"
+__version__ = "0.60.0"
 
 
 def __getattr__(name: str) -> Any:

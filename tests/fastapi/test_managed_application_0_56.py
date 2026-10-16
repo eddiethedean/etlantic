@@ -65,7 +65,9 @@ from etlantic.control_plane import (
     ScheduleSpec,
     SecurityDomain,
     TenantRef,
+    TriggerEnvelope,
     WorkspaceRef,
+    external_occurrence_id,
 )
 from etlantic.control_plane.durable_models import DispatchRecord, SubmissionRecord
 from etlantic.control_plane.errors import ControlPlaneError
@@ -94,6 +96,7 @@ from etlantic_fastapi import (
     principal_dependency_from_callable,
     principal_from_header,
 )
+from etlantic_fastapi.schemas import DispatchReconciliationBody
 
 
 class Row(Data):
@@ -1161,6 +1164,91 @@ def test_scheduler_recovers_accepted_snapshot_without_resolving_parameters(
     authz.forbidden_resources.add((*ctx.scope_key, "run.submit", "definition:pipe"))
     with pytest.raises(ControlPlaneError):
         service.submit_scheduled_run(ctx, schedule, firing.nominal_fire_time)
+
+
+def test_external_resume_links_accepted_unlinked_submission(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    ctx, authz, _definitions, _submissions, durable, _events, managed = _wired(tmp_path)
+    managed.register_definition(
+        ctx,
+        "pipe",
+        pipeline_to_dict(definition_from_pipeline(ManagedPipeline)),
+    )
+    revision, profile = managed.pin_schedule_definition_revision(ctx, "pipe")
+    workload = Principal(subject="schedule-timer", issuer="tests", kind="workload")
+    trigger_ctx = replace(ctx, principal=workload)
+    authz.grant(ctx, "schedule.write")
+    for action in (
+        "schedule.trigger",
+        "run.submit",
+        "definition.read",
+        "definition.validate",
+        "definition.plan",
+        "connector.catalog",
+    ):
+        authz.grant(trigger_ctx, action)
+
+    now = datetime(2026, 10, 8, 12, 0, tzinfo=UTC)
+    nominal = now.isoformat().replace("+00:00", "Z")
+    schedules = MemoryScheduleStore()
+    schedule = schedules.create(
+        ctx,
+        definition_id="pipe",
+        definition_revision_id=revision,
+        profile_name=profile,
+        spec=ScheduleSpec(kind="interval", interval_seconds=60, overlap="queue"),
+        workload_identity=workload,
+        timer_owner="external",
+        next_fire_at=nominal,
+        timer_schedule_start_at=(now - timedelta(seconds=60))
+        .isoformat()
+        .replace("+00:00", "Z"),
+    )
+    commands = ScheduleApplicationService(
+        authorizer=authz,
+        schedule_store=schedules,
+        managed_service=managed,
+        durable_work=durable,
+        clock=lambda: now,
+    )
+    envelope = TriggerEnvelope(
+        schedule_id=schedule.schedule_id,
+        schedule_revision_id=schedule.revision_id,
+        timer_owner_generation=schedule.timer_owner_generation,
+        occurrence_id=external_occurrence_id(
+            schedule.schedule_id, schedule.revision_id, nominal
+        ),
+        scheduled_at=nominal,
+        delivery_attempt_id="attempt-resume-link-recovery",
+        correlation_id="corr-resume-link-recovery",
+    )
+    link = schedules.link_firing_submission
+
+    def lose_link_ack(*_args: Any, **_kwargs: Any) -> None:
+        raise OSError("schedule-store unavailable after durable run acceptance")
+
+    monkeypatch.setattr(schedules, "link_firing_submission", lose_link_ack)
+    with pytest.raises(OSError, match="after durable run acceptance"):
+        commands.trigger_external(trigger_ctx, envelope)
+    monkeypatch.setattr(schedules, "link_firing_submission", link)
+
+    firing = schedules.list_firings(ctx, schedule.schedule_id)[0]
+    assert firing.status == "accepted"
+    assert firing.submission_id is None
+    receipt = commands.get_external_trigger_receipt(
+        trigger_ctx, schedule.schedule_id, envelope.occurrence_id
+    )
+    assert receipt.status == "accepted"
+    schedules.pause(ctx, schedule.schedule_id)
+
+    resumed = commands.resume(ctx, schedule.schedule_id)
+
+    linked = schedules.list_firings(ctx, schedule.schedule_id)[0]
+    assert resumed.status == "active"
+    assert resumed.timer_owner_generation == schedule.timer_owner_generation + 1
+    assert linked.submission_id == receipt.submission_id
+    assert len(durable.pending_outbox(trigger_ctx)) == 1
 
 
 def test_managed_run_identity_is_scoped_to_principal_and_operation(
@@ -3033,6 +3121,112 @@ def test_http_exhausted_prefect_dispatch_reconciliation_is_authorized_and_cas(
         if event.kind == "execution.dispatch_reconciled"
     ]
     assert len(audit_events) == 1
+
+
+def test_ecs_expired_dispatch_reconciliation_does_not_require_a_task_arn(
+    tmp_path: Path,
+) -> None:
+    route = "ecs:" + "e" * 64
+    ctx, authz, _definitions, _submissions, durable, _events, service = _wired(
+        tmp_path, execution_route=route
+    )
+    authz.grant(ctx, "execution.dispatch.reconcile")
+    receipt = service.submit_run(
+        ctx, "pipe", idempotency_key="ecs-expired-token-reconcile"
+    )
+    now = datetime(2026, 10, 15, 12, tzinfo=UTC)
+    dispatch = durable.prepare_dispatch(ctx, receipt.submission_id)
+    claim = durable.claim_dispatch(
+        ctx, receipt.submission_id, owner_id="ecs-dispatcher", now=now
+    )
+    assert claim is not None
+    uncertain = durable.release_dispatch(
+        ctx,
+        receipt.submission_id,
+        owner_id="ecs-dispatcher",
+        fencing_token=claim.lease_fencing_token,
+        outcome_uncertain=True,
+        error_code="ecs_run_task_uncertain",
+        now=now,
+    )
+    expired = durable.quarantine_expired_ecs_dispatch(
+        ctx,
+        receipt.submission_id,
+        expected_generation=dispatch.generation,
+        expected_creation_started_at=uncertain.creation_started_at,
+        safe_retry_deadline=now + timedelta(hours=23),
+        now=now + timedelta(hours=24),
+    )
+    assert expired.status == "reconciliation_required"
+
+    body = DispatchReconciliationBody(
+        expected_generation=expired.generation,
+        evidence="Checked the cluster for the expired ECS client token.",
+    )
+    assert body.remote_run_id is None
+    result = service.rearm_exhausted_dispatch(
+        ctx,
+        receipt.submission_id,
+        expected_generation=body.expected_generation,
+        expected_remote_run_id=body.remote_run_id,
+        evidence=body.evidence,
+    )
+    assert result["dispatch"]["status"] == "pending"
+    assert result["dispatch"]["generation"] == expired.generation + 1
+
+
+def test_ecs_reconciliation_accepts_long_task_arn(tmp_path: Path) -> None:
+    route = "ecs:" + "e" * 64
+    ctx, authz, _definitions, _submissions, durable, _events, service = _wired(
+        tmp_path, execution_route=route
+    )
+    authz.grant(ctx, "execution.dispatch.reconcile")
+    receipt = service.submit_run(
+        ctx, "pipe", idempotency_key="ecs-long-task-arn-reconcile"
+    )
+    cluster_name = "c" * 200
+    exhausted: DispatchRecord | None = None
+    task_arn = ""
+    for generation in range(1, 4):
+        dispatch = durable.prepare_dispatch(ctx, receipt.submission_id)
+        assert dispatch.generation == generation
+        owner = f"ecs-dispatcher-{generation}"
+        claim = durable.claim_dispatch(ctx, receipt.submission_id, owner_id=owner)
+        assert claim is not None
+        task_arn = (
+            f"arn:aws:ecs:us-east-1:123456789012:task/{cluster_name}/{generation:032x}"
+        )
+        durable.link_dispatch(
+            ctx,
+            receipt.submission_id,
+            owner_id=owner,
+            fencing_token=claim.lease_fencing_token,
+            remote_run_id=task_arn,
+        )
+        exhausted = durable.rearm_dispatch_after_remote_failure(
+            ctx, receipt.submission_id, expected_remote_run_id=task_arn
+        )
+    assert exhausted is not None
+    assert exhausted.status == "reconciliation_required"
+    assert len(task_arn) > 256
+
+    body = DispatchReconciliationBody(
+        expected_generation=exhausted.generation,
+        expected_remote_run_id=task_arn,
+        evidence="ECS confirmed the task failed before ETLantic claim.",
+    )
+    result = service.rearm_exhausted_dispatch(
+        ctx,
+        receipt.submission_id,
+        expected_generation=body.expected_generation,
+        expected_remote_run_id=body.remote_run_id,
+        evidence=body.evidence,
+    )
+
+    assert result["dispatch"]["status"] == "pending"
+    assert result["dispatch"]["reconciliation_history"][-1]["remote_run_id"] == (
+        task_arn
+    )
 
 
 def test_retry_reuses_accepted_plan_and_runs_through_http(tmp_path) -> None:

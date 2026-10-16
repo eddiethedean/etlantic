@@ -15,7 +15,7 @@ from etlantic.spark.provider import (
     SparkSessionRequest,
 )
 
-__version__ = "0.59.0"
+__version__ = "0.60.0"
 
 
 def _delta_spark_available() -> bool:

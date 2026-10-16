@@ -153,6 +153,7 @@ def register_schedule_routes(
             revision_selector=str(body_data.get("revision_selector") or "current"),
             workload_identity=workload_identity,
             timer_owner=str(body_data.get("timer_owner") or "local"),
+            timer_binding_fingerprint=body_data.get("timer_binding_fingerprint"),
         )
         return record.to_dict()
 
@@ -218,6 +219,7 @@ def register_schedule_routes(
                 expected_generation=body.expected_generation,
                 timer_owner=body.timer_owner,
                 workload_identity=workload_identity,
+                timer_binding_fingerprint=body.timer_binding_fingerprint,
             )
             .to_dict()
         )
@@ -237,9 +239,10 @@ def register_schedule_routes(
             "expected_revision_id",
             "spec",
             "transfer_execution_route",
+            "timer_binding_fingerprint",
         }:
             raise ControlPlaneError(
-                "Schedule amendment requires expected_revision_id and spec; only the managed route transfer option may also be supplied",
+                "Schedule amendment requires expected_revision_id and spec; only managed route and timer binding options may also be supplied",
                 code="PMCP400",
                 status=400,
                 title="Bad Request",
@@ -271,6 +274,7 @@ def register_schedule_routes(
                 expected_revision_id=revision,
                 spec=spec_from(body.get("spec")),
                 transfer_execution_route=transfer_execution_route,
+                timer_binding_fingerprint=body.get("timer_binding_fingerprint"),
             )
             .to_dict()
         )

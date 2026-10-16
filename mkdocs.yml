@@ -529,7 +529,7 @@ nav:
       - Engine selection: 01_GETTING_STARTED/ENGINE_SELECTION.md
       - Learning path: 01_GETTING_STARTED/LEARNING_PATH.md
       - All current guides: 01_GETTING_STARTED/ALL_CURRENT_GUIDES.md
-      - Current 0.59 Guide: 01_GETTING_STARTED/CURRENT_VERSION.md
+      - Current 0.60 Guide: 01_GETTING_STARTED/CURRENT_VERSION.md
   - Evaluate:
       - Is ETLantic for me?: 01_GETTING_STARTED/COMPARE.md
       - Capabilities: 01_GETTING_STARTED/CAPABILITIES.md
@@ -616,7 +616,7 @@ nav:
       - CLI and configuration:
           - CLI: 10_REFERENCE/CLI.md
           - Cheatsheet: 10_REFERENCE/CHEATSHEET.md
-          - Configuration in 0.59: 10_REFERENCE/CONFIGURATION_TODAY.md
+          - Configuration in 0.60 candidate: 10_REFERENCE/CONFIGURATION_TODAY.md
           - Runtime configuration: 10_REFERENCE/RUNTIME_CONFIGURATION.md
           - Secrets decision tree: 10_REFERENCE/SECRETS_DECISION.md
           - Optional packages: 10_REFERENCE/OPTIONAL_PACKAGES.md
@@ -665,9 +665,12 @@ nav:
   - Project:
       - Releases:
           - Changelog: CHANGELOG.md
-          - Connect 0.60 preview exit record: 11_DEVELOPMENT/EXIT_GATE_0_60.md
-          - What's new in 0.59 (candidate): 01_GETTING_STARTED/WHATS_NEW_0_59.md
-          - Migration from 0.58 to 0.59 (candidate): 11_DEVELOPMENT/MIGRATION_0_58_TO_0_59.md
+          - What's new in 0.60 (candidate): 01_GETTING_STARTED/WHATS_NEW_0_60.md
+          - Migration from 0.59 to 0.60 (candidate): 11_DEVELOPMENT/MIGRATION_0_59_TO_0_60.md
+          - Connect adapter 0.60.1 migration: 11_DEVELOPMENT/MIGRATION_RSCONNECT_0_60_1.md
+          - Core 0.60 candidate and Connect preview exit record: 11_DEVELOPMENT/EXIT_GATE_0_60.md
+          - What's new in 0.59: 01_GETTING_STARTED/WHATS_NEW_0_59.md
+          - Migration from 0.58 to 0.59: 11_DEVELOPMENT/MIGRATION_0_58_TO_0_59.md
           - Exit gate 0.59: 11_DEVELOPMENT/EXIT_GATE_0_59.md
           - What's new in 0.56: 01_GETTING_STARTED/WHATS_NEW_0_56.md
           - What's new in 0.58 (candidate): 01_GETTING_STARTED/WHATS_NEW_0_58.md

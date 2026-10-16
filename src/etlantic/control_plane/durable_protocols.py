@@ -204,7 +204,7 @@ class DurableWorkStore(Protocol):
         limit: int = 100,
         after_submission_id: str | None = None,
     ) -> Sequence[DispatchRecord]:
-        """Return linked, active Prefect deliveries for bounded reconciliation."""
+        """Return linked active work and unresolved terminal ECS deliveries."""
         ...
 
     def prepare_dispatch(
@@ -245,6 +245,27 @@ class DurableWorkStore(Protocol):
         error_code: str | None = None,
         now: datetime | None = None,
     ) -> DispatchRecord: ...
+    def quarantine_expired_ecs_dispatch(
+        self,
+        ctx: ControlPlaneContext,
+        submission_id: str,
+        *,
+        expected_generation: int,
+        expected_creation_started_at: str | None,
+        safe_retry_deadline: datetime,
+        owner_id: str | None = None,
+        fencing_token: int | None = None,
+        now: datetime | None = None,
+    ) -> DispatchRecord: ...
+    def confirm_dispatch_cancelled(
+        self,
+        ctx: ControlPlaneContext,
+        submission_id: str,
+        *,
+        expected_generation: int,
+        expected_remote_run_id: str,
+        now: datetime | None = None,
+    ) -> DispatchRecord: ...
     def rearm_dispatch_after_remote_failure(
         self,
         ctx: ControlPlaneContext,
@@ -255,6 +276,29 @@ class DurableWorkStore(Protocol):
         now: datetime | None = None,
     ) -> DispatchRecord | None:
         """Rearm only matching remote failures with no ETL attempt or side effect."""
+        ...
+
+    def rearm_ecs_dispatch_after_remote_stop(
+        self,
+        ctx: ControlPlaneContext,
+        submission_id: str,
+        *,
+        expected_generation: int,
+        expected_remote_run_id: str,
+        now: datetime | None = None,
+    ) -> DispatchRecord | None:
+        """Start a new ECS generation after STOPPED, preserving attempt recovery."""
+        ...
+
+    def settle_terminal_ecs_dispatch(
+        self,
+        ctx: ControlPlaneContext,
+        submission_id: str,
+        *,
+        expected_generation: int,
+        now: datetime | None = None,
+    ) -> DispatchRecord | None:
+        """Settle a lost-response ECS dispatch after canonical terminal evidence."""
         ...
 
     def rearm_dispatch_after_remote_missing(
@@ -281,7 +325,7 @@ class DurableWorkStore(Protocol):
         evidence_sha256: str,
         now: datetime | None = None,
     ) -> DispatchRecord:
-        """Rearm only after a durable, authorized pre-claim reconciliation."""
+        """Rearm after authorized reconciliation, including managed ECS recovery."""
         ...
 
     def reconcile_terminal_outbox(

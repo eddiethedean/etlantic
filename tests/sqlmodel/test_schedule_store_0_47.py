@@ -49,6 +49,24 @@ def test_sqlmodel_schedule_store_conformance(tmp_path: Path) -> None:
     run_schedule_store_conformance_suite(SQLModelScheduleStore(engine))
 
 
+def test_external_timer_mutation_lock_fails_closed_on_sqlite() -> None:
+    engine = create_sqlite_engine()
+    store = SQLModelScheduleStore(engine)
+    ctx = ControlPlaneContext(
+        principal=Principal("schedule-owner"),
+        tenant=TenantRef("lock-tenant"),
+        workspace=WorkspaceRef("lock-tenant", "lock-workspace"),
+        environment=EnvironmentRef("test"),
+        security_domain=SecurityDomain("default"),
+    )
+
+    with (
+        pytest.raises(RuntimeError, match="requires PostgreSQL advisory locks"),
+        store.timer_mutation_lock(ctx, "schedule-1"),
+    ):
+        pass
+
+
 def test_sqlmodel_schedule_store_persists_failed_preparation(
     tmp_path: Path,
 ) -> None:

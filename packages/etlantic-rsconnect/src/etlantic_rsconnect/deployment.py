@@ -34,6 +34,7 @@ _RESERVED_ENV = frozenset(
         "ETLANTIC_SCHEDULED_AT",
         "ETLANTIC_DELIVERY_ATTEMPT_ID",
         "ETLANTIC_CORRELATION_ID",
+        "ETLANTIC_TIMER_OWNER_GENERATION",
     }
 )
 
@@ -125,33 +126,13 @@ class RsconnectPythonDeployer:
         title: str,
         existing_content_guid: str | None = None,
     ) -> DeploymentResult:
-        if not _NAME.fullmatch(title):
-            raise ValueError("title must be a bounded Connect content name")
-        schedule_id_value: object = cast(object, schedule_id)
-        operation_id_value: object = cast(object, operation_id)
-        if (
-            not isinstance(schedule_id_value, str)
-            or not schedule_id_value.strip()
-            or len(schedule_id_value) > 512
-            or not isinstance(operation_id_value, str)
-            or not operation_id_value.strip()
-            or len(operation_id_value) > 256
-        ):
-            raise ValueError("schedule_id and operation_id must be non-empty")
-        if schedule_id != bundle.schedule_id:
-            raise ValueError("deployment schedule_id does not match the trigger bundle")
-        if self.trigger_credential_env != bundle.credential_env:
-            raise ValueError(
-                "deployment credential environment does not match the trigger bundle"
-            )
-        if self.trigger_credential_ref != bundle.credential_ref:
-            raise ValueError(
-                "runtime credential reference does not match the trigger bundle"
-            )
-        if existing_content_guid is not None and not _GUID_VALUE.fullmatch(
-            existing_content_guid
-        ):
-            raise ValueError("existing_content_guid must be a Connect GUID")
+        self.validate_deployment(
+            bundle,
+            schedule_id=schedule_id,
+            operation_id=operation_id,
+            title=title,
+            existing_content_guid=existing_content_guid,
+        )
         intent = DeploymentIntent(
             schedule_id=schedule_id,
             operation_id=operation_id,
@@ -271,6 +252,48 @@ class RsconnectPythonDeployer:
                 "Connect publishing succeeded but its durable result could not be recorded; reconcile the deployment before retrying"
             ) from None
         return result
+
+    def validate_deployment(
+        self,
+        bundle: TriggerBundle,
+        *,
+        schedule_id: str,
+        operation_id: str,
+        title: str,
+        existing_content_guid: str | None = None,
+    ) -> None:
+        """Check deployment inputs without resolving secrets or causing effects.
+
+        Coordinators can run this preflight before claiming another durable
+        resource that must stay consistent with the deployment.
+        """
+        if not _NAME.fullmatch(title):
+            raise ValueError("title must be a bounded Connect content name")
+        schedule_id_value: object = cast(object, schedule_id)
+        operation_id_value: object = cast(object, operation_id)
+        if (
+            not isinstance(schedule_id_value, str)
+            or not schedule_id_value.strip()
+            or len(schedule_id_value) > 512
+            or not isinstance(operation_id_value, str)
+            or not operation_id_value.strip()
+            or len(operation_id_value) > 256
+        ):
+            raise ValueError("schedule_id and operation_id must be non-empty")
+        if schedule_id != bundle.schedule_id:
+            raise ValueError("deployment schedule_id does not match the trigger bundle")
+        if self.trigger_credential_env != bundle.credential_env:
+            raise ValueError(
+                "deployment credential environment does not match the trigger bundle"
+            )
+        if self.trigger_credential_ref != bundle.credential_ref:
+            raise ValueError(
+                "runtime credential reference does not match the trigger bundle"
+            )
+        if existing_content_guid is not None and not _GUID_VALUE.fullmatch(
+            existing_content_guid
+        ):
+            raise ValueError("existing_content_guid must be a Connect GUID")
 
 
 def _secret_text(value: object) -> str:

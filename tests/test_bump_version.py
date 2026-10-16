@@ -15,8 +15,8 @@ def test_replace_version_updates_exact_tokens_without_touching_neighboring_versi
 ):
     text = "Current 0.57.1; next 0.57.10; release v0.57.1."
 
-    assert replace_version(text, "0.57.1", "0.59.0") == (
-        "Current 0.59.0; next 0.57.10; release v0.59.0."
+    assert replace_version(text, "0.57.1", "0.60.0") == (
+        "Current 0.60.0; next 0.57.10; release v0.60.0."
     )
 
 

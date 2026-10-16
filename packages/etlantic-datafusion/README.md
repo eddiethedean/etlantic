@@ -1,6 +1,6 @@
 # etlantic-datafusion
 
-> **Release status:** ETLantic 0.59.0 is a Beta release candidate; publication is pending.
+> **Release status:** ETLantic 0.60.0 is a Beta release candidate; publication is pending.
 
 Version **0.57.0** (provisional implementation; lockstep with ETLantic core).
 
@@ -25,6 +25,6 @@ eligible for adaptive execution; engine-specific bodies are not.
 
 ## Links
 
-[Capabilities](https://etlantic.readthedocs.io/en/v0.59.0/01_GETTING_STARTED/CAPABILITIES/) ·
+[Capabilities](https://etlantic.readthedocs.io/en/v0.60.0/01_GETTING_STARTED/CAPABILITIES/) ·
 [Source](https://github.com/eddiethedean/etlantic/tree/main/packages/etlantic-datafusion) ·
 [Issues](https://github.com/eddiethedean/etlantic/issues)

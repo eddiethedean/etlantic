@@ -1,8 +1,8 @@
-# Configuration in 0.58
+# Configuration in 0.60
 
-> **Status: ETLantic 0.59.0 is the published Beta release.**
+> **Status: ETLantic core 0.60.0 is a Beta candidate; 0.59.x remains the published support line.**
 
-The 0.59.0 release configures execution with a `Profile` object, a JSON
+The 0.60.0 candidate configures execution with a `Profile` object, a JSON
 profile document, and an optional project `etlantic.toml`. Prefer **`assets`** for
 logical-to-physical maps. Legacy profile JSON using `bindings` is rejected
 with `PMCFG111`; use `assets` in canonical 0.56 profile documents.
@@ -17,7 +17,7 @@ project = "my-pipeline"
 default_profile = "development"
 
 [metadata]
-etlantic.version = "0.59.0"
+etlantic.version = "0.60.0"
 ```
 
 Optional `[profiles]` entries may reference built-in names, `profiles/*.json`

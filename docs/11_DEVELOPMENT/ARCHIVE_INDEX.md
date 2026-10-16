@@ -25,6 +25,9 @@
 
 ## Recent migrations and exit gates
 
+- [Migration 0.59 → 0.60](MIGRATION_0_59_TO_0_60.md) (core candidate) · [Connect 0.60 preview exit record](EXIT_GATE_0_60.md)
+- [Migration 0.58 → 0.59](MIGRATION_0_58_TO_0_59.md) · [Exit gate 0.59](EXIT_GATE_0_59.md)
+
 - [Migration 0.30 → 0.31](MIGRATION_0_30_TO_0_31.md) · [Exit gate 0.31](EXIT_GATE_0_31.md)
 - [Migration 0.29 → 0.30](MIGRATION_0_29_TO_0_30.md) · [Exit gate 0.30](EXIT_GATE_0_30.md)
 - [Migration 0.28 → 0.29](MIGRATION_0_28_TO_0_29.md) · [Exit gate 0.29](EXIT_GATE_0_29.md)

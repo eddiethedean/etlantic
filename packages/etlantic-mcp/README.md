@@ -9,10 +9,10 @@ Live MCP-client interop is opt-in via `ETLANTIC_MCP_LIVE` and is skipped in CI (
 ## Install
 
 ```bash
-pip install 'etlantic-mcp==0.59.0'
+pip install 'etlantic-mcp==0.60.0'
 ```
 
-Core dependency: `etlantic>=0.59.0`. No MCP SDK in the default extra.
+Core dependency: `etlantic>=0.60.0`. No MCP SDK in the default extra.
 
 ## Entry points
 

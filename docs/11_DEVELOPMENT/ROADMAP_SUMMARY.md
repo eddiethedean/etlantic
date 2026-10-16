@@ -4,7 +4,8 @@ ETLantic **0.35.0** closed **Migration Completion and Joint Freeze (M7)**.
 **0.36.0** closed joint compatibility burn-in. **0.37** closed the
 stable-foundation gate. **0.38.0** closed the connectivity line.
 **0.39.0** closed CP1 incubation. **0.40.0** closed CP2 registry incubation.
-**0.59.0** is the latest published core **Beta release**. The independently
+Core **0.60.0** is an unpublished Beta candidate; core **0.59.0** remains the
+latest published release. The independently
 versioned `etlantic-rsconnect` **0.60.0 preview** is also published; live
 Connect activation and production qualification remain deferred. The external
 qualification campaigns for core 0.59's managed runtime and trigger additions
@@ -53,9 +54,10 @@ For the status, current boundary, and owner of every domain plan, use the
 | Previous | 0.56 | Complete application ETL backend with full specification and run control | Published — [exit gate](EXIT_GATE_0_56.md) |
 | Previous | 0.57 | Managed backend independence and runtime supervision (#278–#282) | Published line through 0.57.2 — [implementation plan](IMPLEMENTATION_PLAN_0_57.md), [exit gate](EXIT_GATE_0_57.md) |
 | Previous | 0.58 | Managed Prefect execution | Bounded static-batch Process-worker/PostgreSQL profile qualified on candidate; included in 0.59.0 — [implementation plan](IMPLEMENTATION_PLAN_0_58.md), [final decision](evidence/phase_0_58/FINAL_QUALIFICATION_DECISION_2026-10-12.json), [#290](https://github.com/eddiethedean/etlantic/issues/290) |
-| Current | 0.59 | Managed runtime consolidation and trigger contracts | Published Beta; external qualification campaigns deferred — [implementation plan](IMPLEMENTATION_PLAN_0_59.md), [exit gate](EXIT_GATE_0_59.md) |
+| Previous | 0.59 | Managed runtime consolidation and trigger contracts | Published Beta; current support line; external qualification campaigns deferred — [implementation plan](IMPLEMENTATION_PLAN_0_59.md), [exit gate](EXIT_GATE_0_59.md) |
+| Current | 0.60 | Shared managed-execution contracts for the phase 0.61 adapter | Core Beta candidate; package release pending — [migration](MIGRATION_0_59_TO_0_60.md), [What's new](../01_GETTING_STARTED/WHATS_NEW_0_60.md) |
 | Preview published | 0.60 | Posit Connect scheduling and HTTPS triggers | `etlantic-rsconnect` 0.60.0 published independently; live activation and production qualification deferred — [implementation plan](IMPLEMENTATION_PLAN_0_60.md), [exit record](EXIT_GATE_0_60.md) |
-| Later | 0.61 | AWS Scheduler/Lambda and one ECS/Fargate executor | Planned — [implementation plan](IMPLEMENTATION_PLAN_0_61.md) |
+| Implemented | 0.61 | AWS Scheduler/Lambda and one ECS/Fargate executor | Local implementation complete; AWS qualification deferred — [implementation plan](IMPLEMENTATION_PLAN_0_61.md) |
 | Later | 0.62 | One Data Mover host and optional trusted URL discovery | Planned — [implementation plan](IMPLEMENTATION_PLAN_0_62.md) |
 | Later | 0.63 | Brownfield bridges and targeted package simplification | Planning freeze — [implementation plan](IMPLEMENTATION_PLAN_0_63.md) |
 | Later | 0.64 | Operator console | Planned — [implementation plan](IMPLEMENTATION_PLAN_0_64.md) |

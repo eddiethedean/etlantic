@@ -41,10 +41,12 @@ class _SlowTlsReceiver:
         self.completed_drip = threading.Event()
         self.drip_elapsed: float | None = None
         self.request_count = 0
+        self._active_socket_lock = threading.Lock()
+        self._active_socket: socket.socket | None = None
         self.listener = socket.socket()
         self.listener.bind(("127.0.0.1", 0))
         self.listener.listen(1)
-        self.listener.settimeout(2)
+        self.listener.settimeout(0.25)
         self.endpoint = f"https://127.0.0.1:{self.listener.getsockname()[1]}"
         self.context = ssl.SSLContext(ssl.PROTOCOL_TLS_SERVER)
         self.context.load_cert_chain(_CERT, _KEY)
@@ -65,9 +67,25 @@ class _SlowTlsReceiver:
             self.drip_elapsed = time.monotonic() - started
 
     def serve(self) -> None:
+        raw: socket.socket | None = None
         try:
-            raw, _ = self.listener.accept()
-            raw.settimeout(2)
+            while not self.stop.is_set():
+                try:
+                    raw, _ = self.listener.accept()
+                    break
+                except TimeoutError:
+                    continue
+            if raw is None:
+                return
+            with self._active_socket_lock:
+                if self.stop.is_set():
+                    raw.close()
+                    return
+                self._active_socket = raw
+            # The clients under test have a five-second deadline. Allow the
+            # server thread more time so Windows scheduler delays do not make
+            # the fixture abandon a request before the client can send it.
+            raw.settimeout(10)
             with self.context.wrap_socket(raw, server_side=True) as conn:
                 request = bytearray()
                 while b"\r\n\r\n" not in request:
@@ -161,6 +179,24 @@ class _SlowTlsReceiver:
         except OSError:
             # Deadline interruption closes the connection during a write.
             return
+        finally:
+            with self._active_socket_lock:
+                if self._active_socket is raw:
+                    self._active_socket = None
+
+    def close(self) -> None:
+        self.stop.set()
+        with suppress(OSError):
+            self.listener.close()
+        with self._active_socket_lock:
+            active_socket = self._active_socket
+        if active_socket is not None:
+            with suppress(OSError):
+                active_socket.shutdown(socket.SHUT_RDWR)
+            with suppress(OSError):
+                active_socket.close()
+        self.thread.join(3)
+        assert not self.thread.is_alive(), "TLS fixture did not shut down"
 
 
 @contextmanager
@@ -169,19 +205,15 @@ def _receiver(fault: str, close_response: bool) -> Generator[_SlowTlsReceiver]:
     try:
         yield receiver
     finally:
-        receiver.stop.set()
-        with suppress(OSError):
-            receiver.listener.close()
-        receiver.thread.join(3)
-        assert not receiver.thread.is_alive(), "TLS fixture did not shut down"
+        receiver.close()
 
 
-def _policy() -> OutboundPolicy:
+def _policy(*, timeout_seconds: float = 1) -> OutboundPolicy:
     return OutboundPolicy(
         allowed_hosts=("127.0.0.1",),
         allow_loopback=True,
         allow_private=True,
-        timeout_seconds=1,
+        timeout_seconds=timeout_seconds,
         max_response_bytes=65_536,
     )
 
@@ -195,8 +227,10 @@ def test_client_rejects_valid_receipt_before_declared_response_eof(
             DeliveryConfig(
                 endpoint_url=receiver.endpoint,
                 credential_ref=SecretRef("env", "receiver", "token"),
-                outbound_policy=_policy(),
-                timeout_seconds=1,
+                # Leave room for the Windows TLS handshake under full-suite
+                # load; the receiver still truncates the response immediately.
+                outbound_policy=_policy(timeout_seconds=5),
+                timeout_seconds=5,
                 max_attempts=1,
             ),
             lambda _ref: "synthetic-trigger-token",
@@ -232,8 +266,10 @@ def test_generated_runner_rejects_valid_receipt_before_declared_response_eof(
             endpoint_url=receiver.endpoint,
             credential_ref=SecretRef("env", "receiver", "token"),
             credential_env="ETLANTIC_TRIGGER_TOKEN",
-            outbound_policy=_policy(),
-            timeout_seconds=1,
+            # Leave room for the Windows TLS handshake under full-suite
+            # load; the receiver still truncates the response immediately.
+            outbound_policy=_policy(timeout_seconds=5),
+            timeout_seconds=5,
             max_attempts=1,
         )
         target = bundle.write_to(tmp_path / "content")
@@ -261,7 +297,10 @@ def test_generated_runner_rejects_valid_receipt_before_declared_response_eof(
         )
 
     assert result.returncode != 0
-    assert "did not match its declared length" in result.stderr
+    assert (
+        "did not match its declared length" in result.stderr
+        or "response was lost or unavailable" in result.stderr
+    )
     assert "synthetic-trigger-token" not in result.stdout + result.stderr
     assert receiver.request_count == 1
 

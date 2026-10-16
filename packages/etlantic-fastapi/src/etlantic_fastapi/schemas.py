@@ -6,7 +6,11 @@ from typing import Any, Literal
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
-from etlantic.control_plane import TRIGGER_RECEIPT_SCHEMA, LifecycleState
+from etlantic.control_plane import (
+    MAX_REMOTE_RUN_ID_LENGTH,
+    TRIGGER_RECEIPT_SCHEMA,
+    LifecycleState,
+)
 
 
 class AcceptReceiptResponse(BaseModel):
@@ -128,7 +132,7 @@ class DispatchReconciliationBody(BaseModel):
 
     expected_generation: int = Field(ge=1)
     expected_remote_run_id: str | None = Field(
-        default=None, min_length=1, max_length=256
+        default=None, min_length=1, max_length=MAX_REMOTE_RUN_ID_LENGTH
     )
     # 0.58 request field retained for existing Prefect callers.
     expected_flow_run_id: str | None = Field(default=None, min_length=1, max_length=128)
@@ -145,8 +149,6 @@ class DispatchReconciliationBody(BaseModel):
 
     @model_validator(mode="after")
     def require_one_matching_remote_identity(self) -> DispatchReconciliationBody:
-        if self.expected_remote_run_id is None and self.expected_flow_run_id is None:
-            raise ValueError("expected_remote_run_id is required")
         if (
             self.expected_remote_run_id is not None
             and self.expected_flow_run_id is not None
@@ -156,10 +158,8 @@ class DispatchReconciliationBody(BaseModel):
         return self
 
     @property
-    def remote_run_id(self) -> str:
-        value = self.expected_remote_run_id or self.expected_flow_run_id
-        assert value is not None
-        return value
+    def remote_run_id(self) -> str | None:
+        return self.expected_remote_run_id or self.expected_flow_run_id
 
 
 class DispatchReconciliationResponse(BaseModel):
@@ -230,6 +230,9 @@ class ScheduleCreateBody(BaseModel):
     workload_identity: ScheduleWorkloadIdentityBody | None = None
     policy_fingerprint: str | None = None
     timer_owner: Literal["local", "external"] = "local"
+    timer_binding_fingerprint: str | None = Field(
+        default=None, pattern=r"^[0-9a-f]{64}$"
+    )
 
 
 class ScheduleTimerTransferBody(BaseModel):
@@ -239,6 +242,9 @@ class ScheduleTimerTransferBody(BaseModel):
     expected_generation: int = Field(ge=1)
     timer_owner: Literal["local", "external"]
     workload_identity: ScheduleWorkloadIdentityBody | None = None
+    timer_binding_fingerprint: str | None = Field(
+        default=None, pattern=r"^[0-9a-f]{64}$"
+    )
 
     model_config = {"extra": "forbid"}
 

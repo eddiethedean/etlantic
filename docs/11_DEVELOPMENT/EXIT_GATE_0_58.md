@@ -1,7 +1,7 @@
 ---
 title: ETLantic 0.58 Exit Gate
 status: candidate
-current_minor: "0.59"
+current_minor: "0.60"
 ---
 
 # ETLantic 0.58 Exit Gate — Managed Prefect Execution

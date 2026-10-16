@@ -10,7 +10,7 @@
     {
       "name": "etlantic",
       "manifest": "pyproject.toml",
-      "version": "0.59.0",
+      "version": "0.60.0",
       "description": "Typed, contract-driven data pipeline modeling for Python.",
       "python_file_count": 435,
       "physical_python_lines": 136533,
@@ -29,79 +29,79 @@
       ],
       "extras": {
         "polars": [
-          "etlantic-polars>=0.59.0"
+          "etlantic-polars>=0.60.0"
         ],
         "pandas": [
-          "etlantic-pandas>=0.59.0"
+          "etlantic-pandas>=0.60.0"
         ],
         "sql": [
-          "etlantic-sql>=0.59.0"
+          "etlantic-sql>=0.60.0"
         ],
         "postgresql": [
-          "etlantic-sql>=0.59.0"
+          "etlantic-sql>=0.60.0"
         ],
         "foundry": [
-          "etlantic-foundry>=0.59.0"
+          "etlantic-foundry>=0.60.0"
         ],
         "pyspark": [
-          "etlantic-pyspark>=0.59.0"
+          "etlantic-pyspark>=0.60.0"
         ],
         "spark": [
-          "etlantic-pyspark>=0.59.0"
+          "etlantic-pyspark>=0.60.0"
         ],
         "airflow": [
-          "etlantic-airflow>=0.59.0"
+          "etlantic-airflow>=0.60.0"
         ],
         "prefect": [
-          "etlantic-prefect>=0.59.0"
+          "etlantic-prefect>=0.60.0"
         ],
         "keyring": [
-          "etlantic-keyring>=0.59.0"
+          "etlantic-keyring>=0.60.0"
         ],
         "sqlmodel": [
-          "etlantic-sqlmodel>=0.59.0"
+          "etlantic-sqlmodel>=0.60.0"
         ],
         "medallantic": [
-          "medallantic>=0.59.0"
+          "medallantic>=0.60.0"
         ],
         "sparkforge": [
-          "etlantic-sparkforge>=0.59.0"
+          "etlantic-sparkforge>=0.60.0"
         ],
         "fastapi": [
-          "etlantic-fastapi>=0.59.0"
+          "etlantic-fastapi>=0.60.0"
         ],
         "managed": [
-          "etlantic-fastapi[managed]>=0.59.0"
+          "etlantic-fastapi[managed]>=0.60.0"
         ],
         "datafusion": [
-          "etlantic-datafusion>=0.59.0"
+          "etlantic-datafusion>=0.60.0"
         ],
         "s3": [
-          "etlantic-s3>=0.59.0"
+          "etlantic-s3>=0.60.0"
         ],
         "kafka": [
-          "etlantic-kafka>=0.59.0"
+          "etlantic-kafka>=0.60.0"
         ],
         "k8s": [
-          "etlantic-k8s>=0.59.0"
+          "etlantic-k8s>=0.60.0"
         ],
         "spark-connect": [
-          "etlantic-spark-connect>=0.59.0"
+          "etlantic-spark-connect>=0.60.0"
         ],
         "schemaregistry": [
-          "etlantic-schemaregistry>=0.59.0"
+          "etlantic-schemaregistry>=0.60.0"
         ],
         "iceberg": [
-          "etlantic-iceberg>=0.59.0"
+          "etlantic-iceberg>=0.60.0"
         ],
         "snowflake": [
-          "etlantic-snowflake>=0.59.0"
+          "etlantic-snowflake>=0.60.0"
         ],
         "openlineage": [
-          "etlantic-openlineage>=0.59.0"
+          "etlantic-openlineage>=0.60.0"
         ],
         "mcp": [
-          "etlantic-mcp>=0.59.0"
+          "etlantic-mcp>=0.60.0"
         ],
         "otel": [
           "opentelemetry-api>=1.36"
@@ -117,14 +117,14 @@
           "ipywidgets>=8"
         ],
         "lsp": [
-          "etlantic-lsp>=0.59.0"
+          "etlantic-lsp>=0.60.0"
         ],
         "dataframes": [
-          "etlantic-polars>=0.59.0",
-          "etlantic-pandas>=0.59.0"
+          "etlantic-polars>=0.60.0",
+          "etlantic-pandas>=0.60.0"
         ],
         "duckdb": [
-          "etlantic-duckdb>=0.59.0"
+          "etlantic-duckdb>=0.60.0"
         ]
       },
       "entry_points": {
@@ -297,13 +297,13 @@
     {
       "name": "etlantic-airflow",
       "manifest": "packages/etlantic-airflow/pyproject.toml",
-      "version": "0.59.0",
+      "version": "0.60.0",
       "description": "Airflow reference orchestrator compiler for ETLantic.",
       "python_file_count": 4,
       "physical_python_lines": 518,
       "source_and_manifest_sha256": "36a0d531e3b094c18064d5b8608e97f9c38fa64c96f4fbbb1915a4b5abe25441",
       "dependencies": [
-        "etlantic>=0.59.0"
+        "etlantic>=0.60.0"
       ],
       "extras": {},
       "entry_points": {
@@ -374,13 +374,13 @@
     {
       "name": "etlantic-datafusion",
       "manifest": "packages/etlantic-datafusion/pyproject.toml",
-      "version": "0.59.0",
+      "version": "0.60.0",
       "description": "DataFusion dataframe + portable transform plugin for ETLantic.",
       "python_file_count": 3,
       "physical_python_lines": 1061,
       "source_and_manifest_sha256": "6bcbeaf4e6ee06b1bb8e8d42a284465786d69c7601c7743d3d213fd5516e1fc4",
       "dependencies": [
-        "etlantic>=0.59.0",
+        "etlantic>=0.60.0",
         "datafusion>=49",
         "pyarrow>=17"
       ],
@@ -486,13 +486,13 @@
     {
       "name": "etlantic-duckdb",
       "manifest": "packages/etlantic-duckdb/pyproject.toml",
-      "version": "0.59.0",
+      "version": "0.60.0",
       "description": "Optional DuckDB SQL execution and portable transform plugin for ETLantic.",
       "python_file_count": 7,
       "physical_python_lines": 3403,
       "source_and_manifest_sha256": "c919fe718261725c025892e4de8d34a676c19d59d27f247f98a2a763b5901069",
       "dependencies": [
-        "etlantic>=0.59.0",
+        "etlantic>=0.60.0",
         "duckdb>=1.0",
         "numpy>=2"
       ],
@@ -600,19 +600,19 @@
     {
       "name": "etlantic-fastapi",
       "manifest": "packages/etlantic-fastapi/pyproject.toml",
-      "version": "0.59.0",
+      "version": "0.60.0",
       "description": "FastAPI adapter for ETLantic control-plane (CP1) and authoring reference.",
       "python_file_count": 15,
       "physical_python_lines": 6604,
       "source_and_manifest_sha256": "513ae79b46596079a46252491b41d1b5b199b3a8823f8222118eec4d255fd312",
       "dependencies": [
-        "etlantic>=0.59.0",
+        "etlantic>=0.60.0",
         "fastapi>=0.115",
         "pydantic>=2.12"
       ],
       "extras": {
         "managed": [
-          "etlantic-sqlmodel>=0.59.0"
+          "etlantic-sqlmodel>=0.60.0"
         ],
         "test": [
           "httpx2>=2"
@@ -918,13 +918,13 @@
     {
       "name": "etlantic-foundry",
       "manifest": "packages/etlantic-foundry/pyproject.toml",
-      "version": "0.59.0",
+      "version": "0.60.0",
       "description": "Foundry dataset and file connectors for ETLantic.",
       "python_file_count": 4,
       "physical_python_lines": 2544,
       "source_and_manifest_sha256": "5c23261ffec9ef83c0edfe1d4f78f4e38e2a676b99f02d06ea90e0de26189625",
       "dependencies": [
-        "etlantic>=0.59.0",
+        "etlantic>=0.60.0",
         "httpx2>=2"
       ],
       "extras": {},
@@ -1008,13 +1008,13 @@
     {
       "name": "etlantic-iceberg",
       "manifest": "packages/etlantic-iceberg/pyproject.toml",
-      "version": "0.59.0",
+      "version": "0.60.0",
       "description": "Experimental Apache Iceberg connector for ETLantic (PyIceberg).",
       "python_file_count": 3,
       "physical_python_lines": 582,
       "source_and_manifest_sha256": "cb37f7cf8a079117bcec3cd2ae53bcb1e5bf95ccfa2aa39789b775553edc7797",
       "dependencies": [
-        "etlantic>=0.59.0"
+        "etlantic>=0.60.0"
       ],
       "extras": {
         "pyiceberg": [
@@ -1079,13 +1079,13 @@
     {
       "name": "etlantic-k8s",
       "manifest": "packages/etlantic-k8s/pyproject.toml",
-      "version": "0.59.0",
+      "version": "0.60.0",
       "description": "Experimental Kubernetes resource provider for ETLantic (fake by default).",
       "python_file_count": 2,
       "physical_python_lines": 80,
       "source_and_manifest_sha256": "0bc84ebdc46ca00eca8dd9fd3905e811e9ed95f6824c6f96c4843f2827030695",
       "dependencies": [
-        "etlantic>=0.59.0"
+        "etlantic>=0.60.0"
       ],
       "extras": {},
       "entry_points": {
@@ -1124,13 +1124,13 @@
     {
       "name": "etlantic-kafka",
       "manifest": "packages/etlantic-kafka/pyproject.toml",
-      "version": "0.59.0",
+      "version": "0.60.0",
       "description": "Experimental Kafka reference connector for ETLantic (fake by default).",
       "python_file_count": 3,
       "physical_python_lines": 344,
       "source_and_manifest_sha256": "e55d617fe6d9568121f756f799c3ada2e700f1359c5fffb3f79a85f375abd3bd",
       "dependencies": [
-        "etlantic>=0.59.0"
+        "etlantic>=0.60.0"
       ],
       "extras": {},
       "entry_points": {
@@ -1182,13 +1182,13 @@
     {
       "name": "etlantic-keyring",
       "manifest": "packages/etlantic-keyring/pyproject.toml",
-      "version": "0.59.0",
+      "version": "0.60.0",
       "description": "OS keyring secret provider for ETLantic.",
       "python_file_count": 1,
       "physical_python_lines": 95,
       "source_and_manifest_sha256": "da269fcd477592d4382c34cd9011f23e7db3179537d3b38ac1e50ab2228b8f50",
       "dependencies": [
-        "etlantic>=0.59.0",
+        "etlantic>=0.60.0",
         "keyring>=25"
       ],
       "extras": {},
@@ -1232,13 +1232,13 @@
     {
       "name": "etlantic-lsp",
       "manifest": "packages/etlantic-lsp/pyproject.toml",
-      "version": "0.59.0",
+      "version": "0.60.0",
       "description": "Language server for ETLantic pipelines (editor-neutral LSP host).",
       "python_file_count": 4,
       "physical_python_lines": 421,
       "source_and_manifest_sha256": "2058d311feb1fe3494e2d5146e29e3a00eb20c65a390067fb02c9d442e02a925",
       "dependencies": [
-        "etlantic>=0.59.0",
+        "etlantic>=0.60.0",
         "pygls>=1.3,<2",
         "lsprotocol>=2023.0.1"
       ],
@@ -1299,13 +1299,13 @@
     {
       "name": "etlantic-mcp",
       "manifest": "packages/etlantic-mcp/pyproject.toml",
-      "version": "0.59.0",
+      "version": "0.60.0",
       "description": "Experimental read-only MCP server for ETLantic (fake by default).",
       "python_file_count": 2,
       "physical_python_lines": 175,
       "source_and_manifest_sha256": "9f6ee75e80bd8e3375f98e488c58faaaa349322c000235a941043bf21f94ee35",
       "dependencies": [
-        "etlantic>=0.59.0"
+        "etlantic>=0.60.0"
       ],
       "extras": {},
       "entry_points": {
@@ -1374,13 +1374,13 @@
     {
       "name": "etlantic-openlineage",
       "manifest": "packages/etlantic-openlineage/pyproject.toml",
-      "version": "0.59.0",
+      "version": "0.60.0",
       "description": "Experimental outbound OpenLineage export for ETLantic CP2.",
       "python_file_count": 2,
       "physical_python_lines": 195,
       "source_and_manifest_sha256": "4cbe07e79d831c38e73916df00e81c866aad8b73e54900033520f5e57772db01",
       "dependencies": [
-        "etlantic>=0.59.0"
+        "etlantic>=0.60.0"
       ],
       "extras": {
         "openlineage": [
@@ -1413,13 +1413,13 @@
     {
       "name": "etlantic-pandas",
       "manifest": "packages/etlantic-pandas/pyproject.toml",
-      "version": "0.59.0",
+      "version": "0.60.0",
       "description": "Pandas dataframe execution plugin for ETLantic.",
       "python_file_count": 5,
       "physical_python_lines": 1570,
       "source_and_manifest_sha256": "3aa5c458cef247dcd18f2d78bb54f6cde5fce0e2369fb143886f6121768b4e4c",
       "dependencies": [
-        "etlantic>=0.59.0",
+        "etlantic>=0.60.0",
         "pandas>=2.2"
       ],
       "extras": {
@@ -1559,13 +1559,13 @@
     {
       "name": "etlantic-polars",
       "manifest": "packages/etlantic-polars/pyproject.toml",
-      "version": "0.59.0",
+      "version": "0.60.0",
       "description": "Polars dataframe execution plugin for ETLantic.",
       "python_file_count": 7,
       "physical_python_lines": 2224,
       "source_and_manifest_sha256": "22265e0b5b2024983d99924a78e8ce38d9d396aa7c25731afb34d70ee4505357",
       "dependencies": [
-        "etlantic>=0.59.0",
+        "etlantic>=0.60.0",
         "polars>=1.22"
       ],
       "extras": {
@@ -1733,13 +1733,13 @@
     {
       "name": "etlantic-prefect",
       "manifest": "packages/etlantic-prefect/pyproject.toml",
-      "version": "0.59.0",
+      "version": "0.60.0",
       "description": "Prefect ExecutionScheduler plugin for ETLantic.",
       "python_file_count": 5,
       "physical_python_lines": 2270,
       "source_and_manifest_sha256": "b557f9c7a2ef591462e6033cf5d5b0346e9cfb5fb99f9e5256c8feb35c7a4d26",
       "dependencies": [
-        "etlantic>=0.59.0",
+        "etlantic>=0.60.0",
         "prefect>=3",
         "sqlalchemy>=2.0.36"
       ],
@@ -1852,13 +1852,13 @@
     {
       "name": "etlantic-pyspark",
       "manifest": "packages/etlantic-pyspark/pyproject.toml",
-      "version": "0.59.0",
+      "version": "0.60.0",
       "description": "PySpark reference execution plugin for ETLantic.",
       "python_file_count": 8,
       "physical_python_lines": 2649,
       "source_and_manifest_sha256": "01c3590ebded222390a5cd3066d4884de5f96bb40fa5e51307ea1660a951df52",
       "dependencies": [
-        "etlantic>=0.59.0",
+        "etlantic>=0.60.0",
         "pyspark>=3.5"
       ],
       "extras": {
@@ -1997,13 +1997,13 @@
     {
       "name": "etlantic-s3",
       "manifest": "packages/etlantic-s3/pyproject.toml",
-      "version": "0.59.0",
+      "version": "0.60.0",
       "description": "Experimental S3-compatible JSON connector for ETLantic.",
       "python_file_count": 3,
       "physical_python_lines": 809,
       "source_and_manifest_sha256": "7233d379fd0898b40f84813850c491b0d51fe6014815b9d81294b2866c9fe46e",
       "dependencies": [
-        "etlantic>=0.59.0"
+        "etlantic>=0.60.0"
       ],
       "extras": {
         "aws": [
@@ -2075,13 +2075,13 @@
     {
       "name": "etlantic-schemaregistry",
       "manifest": "packages/etlantic-schemaregistry/pyproject.toml",
-      "version": "0.59.0",
+      "version": "0.60.0",
       "description": "Experimental Confluent-compatible schema-registry adapter for ETLantic.",
       "python_file_count": 2,
       "physical_python_lines": 146,
       "source_and_manifest_sha256": "a1cd898af08597cf15dc48f2c5b980378a4d67332a2a5bbc16027ab6bf16fe11",
       "dependencies": [
-        "etlantic>=0.59.0"
+        "etlantic>=0.60.0"
       ],
       "extras": {},
       "entry_points": {
@@ -2118,13 +2118,13 @@
     {
       "name": "etlantic-snowflake",
       "manifest": "packages/etlantic-snowflake/pyproject.toml",
-      "version": "0.59.0",
+      "version": "0.60.0",
       "description": "Experimental Snowflake connector for ETLantic.",
       "python_file_count": 3,
       "physical_python_lines": 560,
       "source_and_manifest_sha256": "3c42eef3434b7e59e71d6932c3dab701384864fec0ad29a11f2e6c33f27b4cb3",
       "dependencies": [
-        "etlantic>=0.59.0"
+        "etlantic>=0.60.0"
       ],
       "extras": {
         "snowflake": [
@@ -2189,13 +2189,13 @@
     {
       "name": "etlantic-spark-connect",
       "manifest": "packages/etlantic-spark-connect/pyproject.toml",
-      "version": "0.59.0",
+      "version": "0.60.0",
       "description": "Experimental Spark Connect provider for ETLantic (fake by default).",
       "python_file_count": 2,
       "physical_python_lines": 85,
       "source_and_manifest_sha256": "ab569b0f16e7502308b832c491b0100f60ce1f57e1f14fc3e695b7914565483b",
       "dependencies": [
-        "etlantic>=0.59.0"
+        "etlantic>=0.60.0"
       ],
       "extras": {},
       "entry_points": {
@@ -2234,13 +2234,13 @@
     {
       "name": "etlantic-sparkforge",
       "manifest": "packages/etlantic-sparkforge/pyproject.toml",
-      "version": "0.59.0",
+      "version": "0.60.0",
       "description": "Final compatibility redirect to Medallantic (deprecated).",
       "python_file_count": 6,
       "physical_python_lines": 110,
       "source_and_manifest_sha256": "16fb83ffafe3dacaf9e08da077967c9ceffa90f2875ba8761b6999ed8a5c2a7e",
       "dependencies": [
-        "medallantic>=0.59.0"
+        "medallantic>=0.60.0"
       ],
       "extras": {},
       "entry_points": {},
@@ -2315,13 +2315,13 @@
     {
       "name": "etlantic-sql",
       "manifest": "packages/etlantic-sql/pyproject.toml",
-      "version": "0.59.0",
+      "version": "0.60.0",
       "description": "PostgreSQL reference SQL execution plugin for ETLantic.",
       "python_file_count": 20,
       "physical_python_lines": 9268,
       "source_and_manifest_sha256": "882bdcaaf0c1c2e49b31c1fb39a8d734f161c8b8d1fac5f6fd615f2424dcee84",
       "dependencies": [
-        "etlantic>=0.59.0",
+        "etlantic>=0.60.0",
         "sqlalchemy>=2.0",
         "psycopg[binary]>=3.1"
       ],
@@ -2575,13 +2575,13 @@
     {
       "name": "etlantic-sqlmodel",
       "manifest": "packages/etlantic-sqlmodel/pyproject.toml",
-      "version": "0.59.0",
+      "version": "0.60.0",
       "description": "ContractModel \u2194 SQLModel bridge for ETLantic.",
       "python_file_count": 31,
       "physical_python_lines": 9073,
       "source_and_manifest_sha256": "fa64b3a5d218283fb0772699cc942f695a4a90312d4304087717bd45a9662987",
       "dependencies": [
-        "etlantic>=0.59.0",
+        "etlantic>=0.60.0",
         "sqlmodel>=0.0.22"
       ],
       "extras": {},
@@ -2933,13 +2933,13 @@
     {
       "name": "medallantic",
       "manifest": "packages/medallantic/pyproject.toml",
-      "version": "0.59.0",
+      "version": "0.60.0",
       "description": "Engine-agnostic medallion facade on ETLantic (native authoring + SparkForge IR migrate).",
       "python_file_count": 27,
       "physical_python_lines": 5681,
       "source_and_manifest_sha256": "9ad1d4edb46cf2b1f81a9ef3ad7f977c7a480f926178c6a0c44e7b2d00991ca1",
       "dependencies": [
-        "etlantic>=0.59.0"
+        "etlantic>=0.60.0"
       ],
       "extras": {},
       "entry_points": {},

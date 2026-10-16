@@ -325,7 +325,7 @@ def _package_report(repo: Path) -> dict[str, Any]:
                 "candidate_base_accepted": str(installed_base in requirement.specifier),
                 "outside_0_56_major_minor_rejected": str(
                     Version("0.55.99") not in requirement.specifier
-                    and Version("0.59.0") not in requirement.specifier
+                    and Version("0.60.0") not in requirement.specifier
                 ),
             }
         )

@@ -10,7 +10,8 @@ from __future__ import annotations
 
 import hashlib
 import json
-from collections.abc import Callable, Mapping, Sequence
+from collections.abc import Callable, Generator, Mapping, Sequence
+from contextlib import contextmanager
 from datetime import UTC, datetime
 from typing import Any, TypeVar
 
@@ -52,12 +53,81 @@ def _utcnow_iso() -> str:
     return datetime.now(UTC).isoformat().replace("+00:00", "Z")
 
 
+def _schedule_advisory_lock_id(store_id: str) -> int:
+    digest = hashlib.sha256(("schedule:" + store_id).encode("utf-8")).digest()[:8]
+    return int.from_bytes(digest, byteorder="big", signed=True)
+
+
 class SQLModelScheduleStore:
     """Transactional ScheduleStore backed by a SQL snapshot row."""
 
     def __init__(self, engine: Engine, *, store_id: str = "default") -> None:
         self.engine = engine
         self.store_id = store_id
+
+    @contextmanager
+    def timer_mutation_lock(
+        self, ctx: ControlPlaneContext, schedule_id: str
+    ) -> Generator[ScheduleRecord | None, None, None]:
+        """Yield the current schedule while excluding canonical mutations.
+
+        Session advisory locks are deliberately limited to PostgreSQL, whose
+        lock lifetime spans the external AWS calls. The key matches the
+        transaction advisory lock used by canonical schedule writes, so the
+        yielded snapshot stays current through the remote mutation. SQLite and
+        other dialects cannot provide this cross-process guarantee and fail
+        closed.
+        """
+        if self.engine.dialect.name != "postgresql":
+            raise RuntimeError(
+                "external timer mutation requires PostgreSQL advisory locks"
+            )
+        lock_id = _schedule_advisory_lock_id(self.store_id)
+        with self.engine.connect() as connection:
+            lock_attempted = False
+            try:
+                lock_attempted = True
+                connection.execute(
+                    text("SELECT pg_advisory_lock(:lock_id)"), {"lock_id": lock_id}
+                )
+                # Session locks survive transaction end. Finish the transaction
+                # whose lock query may have established a stale REPEATABLE READ
+                # snapshot before waiting for another canonical writer.
+                connection.commit()
+                payload_json = connection.execute(
+                    select(ScheduleSnapshotRow.payload_json).where(
+                        ScheduleSnapshotRow.store_id == self.store_id
+                    )
+                ).scalar_one_or_none()
+                current: ScheduleRecord | None = None
+                if payload_json is not None:
+                    memory = MemoryScheduleStore()
+                    memory.load(json.loads(payload_json))
+                    try:
+                        current = memory.get(ctx, schedule_id)
+                    except ControlPlaneError as exc:
+                        if exc.status != 404:
+                            raise
+                yield current
+            finally:
+                if lock_attempted:
+                    try:
+                        # A failed snapshot query leaves PostgreSQL's transaction
+                        # aborted. Clear it before attempting the session unlock.
+                        if connection.in_transaction():
+                            connection.rollback()
+                        unlock = text("SELECT pg_advisory_unlock(:lock_id)")
+                        while connection.execute(
+                            unlock, {"lock_id": lock_id}
+                        ).scalar_one():
+                            pass
+                        connection.commit()
+                    except BaseException:
+                        # Closing a pooled connection does not release a session
+                        # advisory lock. Invalidate it so PostgreSQL closes the
+                        # backend and releases any lock that could not be unlocked.
+                        connection.invalidate()
+                        raise
 
     def _txn(self, fn: Callable[[MemoryScheduleStore], T]) -> T:
         with session_scope(self.engine) as session:
@@ -76,10 +146,7 @@ class SQLModelScheduleStore:
         """
         if self.engine.dialect.name != "postgresql":
             return
-        digest = hashlib.sha256(("schedule:" + self.store_id).encode("utf-8")).digest()[
-            :8
-        ]
-        lock_id = int.from_bytes(digest, byteorder="big", signed=True)
+        lock_id = _schedule_advisory_lock_id(self.store_id)
         session.connection().execute(
             text("SELECT pg_advisory_xact_lock(:lock_id)"), {"lock_id": lock_id}
         )
@@ -158,6 +225,8 @@ class SQLModelScheduleStore:
         execution_route: str = "local",
         timer_owner: TimerOwner = "local",
         next_fire_at: str | None = None,
+        timer_schedule_start_at: str | None = None,
+        timer_binding_fingerprint: str | None = None,
     ) -> ScheduleRecord:
         return self._txn(
             lambda m: m.create(
@@ -175,6 +244,8 @@ class SQLModelScheduleStore:
                 execution_route=execution_route,
                 timer_owner=timer_owner,
                 next_fire_at=next_fire_at,
+                timer_schedule_start_at=timer_schedule_start_at,
+                timer_binding_fingerprint=timer_binding_fingerprint,
             )
         )
 
@@ -195,6 +266,27 @@ class SQLModelScheduleStore:
     def resume(self, ctx: ControlPlaneContext, schedule_id: str) -> ScheduleRecord:
         return self._txn(lambda m: m.resume(ctx, schedule_id))
 
+    def resume_external(
+        self,
+        ctx: ControlPlaneContext,
+        schedule_id: str,
+        *,
+        expected_revision_id: str,
+        expected_generation: int,
+        next_fire_at: str,
+        timer_schedule_start_at: str,
+    ) -> ScheduleRecord:
+        return self._txn(
+            lambda m: m.resume_external(
+                ctx,
+                schedule_id,
+                expected_revision_id=expected_revision_id,
+                expected_generation=expected_generation,
+                next_fire_at=next_fire_at,
+                timer_schedule_start_at=timer_schedule_start_at,
+            )
+        )
+
     def amend(
         self,
         ctx: ControlPlaneContext,
@@ -203,6 +295,8 @@ class SQLModelScheduleStore:
         expected_revision_id: str,
         spec: ScheduleSpec,
         next_fire_at: str | None,
+        timer_schedule_start_at: str | None = None,
+        timer_binding_fingerprint: str | None = None,
         execution_route: str | None = None,
         policy_fingerprint: str | None = None,
         durable: DurableWorkStore | None = None,
@@ -214,6 +308,8 @@ class SQLModelScheduleStore:
                 expected_revision_id=expected_revision_id,
                 spec=spec,
                 next_fire_at=next_fire_at,
+                timer_schedule_start_at=timer_schedule_start_at,
+                timer_binding_fingerprint=timer_binding_fingerprint,
                 execution_route=execution_route,
                 policy_fingerprint=policy_fingerprint,
                 durable=durable,
@@ -230,6 +326,8 @@ class SQLModelScheduleStore:
         timer_owner: TimerOwner,
         workload_identity: Principal | None,
         policy_fingerprint: str,
+        timer_schedule_start_at: str | None = None,
+        timer_binding_fingerprint: str | None = None,
     ) -> ScheduleRecord:
         return self._txn(
             lambda memory: memory.transfer_timer_owner(
@@ -240,6 +338,8 @@ class SQLModelScheduleStore:
                 timer_owner=timer_owner,
                 workload_identity=workload_identity,
                 policy_fingerprint=policy_fingerprint,
+                timer_schedule_start_at=timer_schedule_start_at,
+                timer_binding_fingerprint=timer_binding_fingerprint,
             )
         )
 
